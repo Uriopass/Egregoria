@@ -1,15 +1,19 @@
 use std::env;
 use std::path;
 
+use ggez::graphics::*;
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::*;
+use crate::gsb::GSB;
 
 mod camera;
+mod gsb;
+mod shape_render;
 
 struct State {
     dt: std::time::Duration,
     text: graphics::Text,
-    camera: camera::Camera,
+    gsb: GSB,
 }
 
 impl State {
@@ -23,12 +27,10 @@ impl State {
         let text = graphics::Text::new(("Hello world!", font, 48.0));
 
         graphics::set_resizable(ctx, true)?;
-        let c = camera::Camera::new(400., 300.0);
-
         Ok(State {
             text,
             dt: std::time::Duration::new(0, 0),
-            camera: c,
+            gsb: gsb::GSB::new(),
         })
     }
 }
@@ -44,34 +46,49 @@ where
 }
 
 impl ggez::event::EventHandler for State {
+
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.dt = timer::average_delta(ctx);
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        graphics::set_projection(ctx, self.camera.projection);
-        graphics::clear(ctx, graphics::Color::from_rgb(0, 0, 0));
-        graphics::set_window_title(ctx, format!("{} FPS", 1. / self.dt.as_secs_f32()).as_str());
+        self.gsb.clear(ctx);
+        self.gsb.easy_camera_movement(ctx);
 
-        let a = timer::ticks(ctx) / 10;
+        let lol = self.gsb.unproject_mouse_click(ctx);
+        let circle = ggez::graphics::MeshBuilder::new()
+            .circle(
+                DrawMode::fill(),
+                [0., 0.],
+                20.,
+                0.1,
+                Color::new(1., 1., 1., 1.),
+            )
+            .build(ctx)?;
 
-        let x = a as f32;
-        let y = a as f32;
+        let a = timer::ticks(ctx);
 
-        draw_text(ctx, &self.text, [x, y])?;
+        let x = 50.0*((a as f32)/10.).cos();
+        let y = 50.0*((1.5*a as f32 + 0.5)/7.).sin();
+
+        graphics::draw(
+            ctx,
+            &circle,
+            graphics::DrawParam::new().dest([lol.x, lol.y]),
+        )?;
+        graphics::draw(ctx, &circle, graphics::DrawParam::new().dest([x, y]))?;
+
+        draw_text(ctx, &self.text, [0., 0.])?;
         graphics::present(ctx)
     }
 
-    fn key_down_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _: KeyMods, _: bool) {
-        if keycode == KeyCode::A {
-            println!("A JUST PRESSED!!");
-        }
+    fn key_down_event(&mut self, ctx: &mut Context, keycode: KeyCode, _: KeyMods, _: bool) {
+        self.gsb.easy_camera_movement_keys(ctx, keycode);
     }
 
-    fn resize_event(&mut self, _ctx: &mut Context, width: f32, height: f32) {
-        self.camera.set_viewport(width, height);
-        self.camera.update();
+    fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
+        self.gsb.resize(ctx, width, height);
     }
 }
 
