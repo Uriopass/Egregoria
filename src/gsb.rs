@@ -1,16 +1,19 @@
 use crate::camera::Camera;
-use ggez::Context;
+use crate::shape_render;
+use crate::shape_render::ShapeRenderer;
 use ggez::graphics;
-use ggez::nalgebra::Vector2;
-use ggez::input;
-use ggez::input::mouse::MouseButton;
-use ggez::input::keyboard::KeyCode;
 use ggez::graphics::Rect;
+use ggez::input;
+use ggez::input::keyboard::KeyCode;
+use ggez::input::mouse::MouseButton;
+use ggez::nalgebra::Vector2;
+use ggez::Context;
 
 #[allow(dead_code)]
 pub struct GSB {
-    camera: Camera,
+    pub camera: Camera,
     last_pos: Vector2<f32>,
+    pub sr: shape_render::ShapeRenderer,
 }
 
 #[allow(dead_code)]
@@ -19,6 +22,7 @@ impl GSB {
         GSB {
             camera: Camera::new(800., 600.),
             last_pos: Vector2::new(0., 0.),
+            sr: ShapeRenderer::new(),
         }
     }
 
@@ -35,7 +39,9 @@ impl GSB {
 
     pub fn get_screen_box(&self) -> Rect {
         let upleft = self.camera.unproject([0., 0.].into());
-        let downright = self.camera.unproject([self.camera.viewport.x, self.camera.viewport.y].into());
+        let downright = self
+            .camera
+            .unproject([self.camera.viewport.x, self.camera.viewport.y].into());
         Rect {
             x: upleft.x,
             y: downright.y,

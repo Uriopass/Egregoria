@@ -13,6 +13,7 @@ mod shape_render;
 struct State {
     text: graphics::Text,
     gsb: GSB,
+    time: f32,
 }
 
 impl State {
@@ -29,6 +30,7 @@ impl State {
         Ok(State {
             text,
             gsb: gsb::GSB::new(),
+            time: 0.,
         })
     }
 }
@@ -45,6 +47,7 @@ where
 
 impl ggez::event::EventHandler for State {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        self.time += timer::delta(ctx).as_secs_f32();
         Ok(())
     }
 
@@ -53,27 +56,17 @@ impl ggez::event::EventHandler for State {
         self.gsb.easy_camera_movement(ctx);
 
         let lol = self.gsb.unproject_mouse_click(ctx);
-        let circle = ggez::graphics::MeshBuilder::new()
-            .circle(
-                DrawMode::fill(),
-                [0., 0.],
-                20.,
-                0.1,
-                Color::new(1., 1., 1., 1.),
-            )
-            .build(ctx)?;
 
-        let a = timer::ticks(ctx);
+        let x = 50.0 * (self.time as f32).cos();
+        let y = 50.0 * (1.5 * self.time as f32 + 0.5).sin();
 
-        let x = 50.0 * ((a as f32) / 10.).cos();
-        let y = 50.0 * ((1.5 * a as f32 + 0.5) / 7.).sin();
+        self.gsb.sr.begin();
+        for _i in 0..10000 {
+            self.gsb.sr.draw_circle(lol.x, lol.y, 20.);
+            self.gsb.sr.draw_circle(x, y, 20.);
+        }
 
-        graphics::draw(
-            ctx,
-            &circle,
-            graphics::DrawParam::new().dest([lol.x, lol.y]),
-        )?;
-        graphics::draw(ctx, &circle, graphics::DrawParam::new().dest([x, y]))?;
+        self.gsb.sr.end(ctx)?;
 
         draw_text(ctx, &self.text, [0., 0.])?;
         graphics::present(ctx)
@@ -89,7 +82,8 @@ impl ggez::event::EventHandler for State {
 }
 
 fn main() {
-    let c = conf::Conf::new();
+    let mut c = conf::Conf::new();
+    c.window_setup = c.window_setup.vsync(false);
 
     let mut cb = ContextBuilder::new("hello_ggez", "Uriopass").conf(c);
 
