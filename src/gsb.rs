@@ -5,6 +5,7 @@ use ggez::nalgebra::Vector2;
 use ggez::input;
 use ggez::input::mouse::MouseButton;
 use ggez::input::keyboard::KeyCode;
+use ggez::graphics::Rect;
 
 #[allow(dead_code)]
 pub struct GSB {
@@ -32,18 +33,16 @@ impl GSB {
         graphics::set_projection(ctx, self.camera.projection);
     }
 
-    /*
-    pub fn get_screen_box(&self) -> Rectangle {
-        let mut screen: Rectangle = Rectangle::new();
-        let mut width: f32 = GSB.camera.viewportWidth * GSB.camera.zoom;
-        let mut height: f32 = GSB.camera.viewportHeight * GSB.camera.zoom;
-        screen.x = GSB.camera.position.x - width / 2.0;
-        screen.y = GSB.camera.position.y - height / 2.0;
-        screen.width = width;
-        screen.height = height;
-        return screen;
+    pub fn get_screen_box(&self) -> Rect {
+        let upleft = self.camera.unproject([0., 0.].into());
+        let downright = self.camera.unproject([self.camera.viewport.x, self.camera.viewport.y].into());
+        Rect {
+            x: upleft.x,
+            y: downright.y,
+            w: downright.x - upleft.x,
+            h: upleft.y - downright.y,
+        }
     }
-    */
 
     pub fn resize(&mut self, ctx: &mut Context, width: f32, height: f32) {
         self.camera.set_viewport(width, height);

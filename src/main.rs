@@ -1,17 +1,16 @@
 use std::env;
 use std::path;
 
+use crate::gsb::GSB;
 use ggez::graphics::*;
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::*;
-use crate::gsb::GSB;
 
 mod camera;
 mod gsb;
 mod shape_render;
 
 struct State {
-    dt: std::time::Duration,
     text: graphics::Text,
     gsb: GSB,
 }
@@ -29,7 +28,6 @@ impl State {
         graphics::set_resizable(ctx, true)?;
         Ok(State {
             text,
-            dt: std::time::Duration::new(0, 0),
             gsb: gsb::GSB::new(),
         })
     }
@@ -46,9 +44,7 @@ where
 }
 
 impl ggez::event::EventHandler for State {
-
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        self.dt = timer::average_delta(ctx);
         Ok(())
     }
 
@@ -69,8 +65,8 @@ impl ggez::event::EventHandler for State {
 
         let a = timer::ticks(ctx);
 
-        let x = 50.0*((a as f32)/10.).cos();
-        let y = 50.0*((1.5*a as f32 + 0.5)/7.).sin();
+        let x = 50.0 * ((a as f32) / 10.).cos();
+        let y = 50.0 * ((1.5 * a as f32 + 0.5) / 7.).sin();
 
         graphics::draw(
             ctx,
