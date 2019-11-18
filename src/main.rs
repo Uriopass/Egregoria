@@ -2,6 +2,7 @@ use std::env;
 use std::path;
 
 use crate::gsb::GSB;
+use crate::shape_render::ShapeRenderer;
 use ggez::graphics::*;
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::*;
@@ -54,19 +55,21 @@ impl ggez::event::EventHandler for State {
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.gsb.clear(ctx);
         self.gsb.easy_camera_movement(ctx);
+        self.gsb.update(ctx);
 
         let lol = self.gsb.unproject_mouse_click(ctx);
 
         let x = 50.0 * (self.time as f32).cos();
         let y = 50.0 * (1.5 * self.time as f32 + 0.5).sin();
 
-        self.gsb.sr.begin();
-        for _i in 0..10000 {
-            self.gsb.sr.draw_circle(lol.x, lol.y, 20.);
-            self.gsb.sr.draw_circle(x, y, 20.);
-        }
+        let mut sr = ShapeRenderer::begin();
+        //sr.mode = DrawMode::fill();
 
-        self.gsb.sr.end(ctx)?;
+        for _i in 0..10000 {
+            sr.draw_rect(lol, 10., 10.);
+            sr.draw_rect([x, y], 10., 10.);
+        }
+        sr.end(ctx)?;
 
         draw_text(ctx, &self.text, [0., 0.])?;
         graphics::present(ctx)

@@ -1,8 +1,10 @@
-use ggez::nalgebra::*;
+use ggez::mint::{Point2, Vector2};
+use ggez::nalgebra;
+use ggez::nalgebra::Matrix4;
 
 pub struct Camera {
     pub viewport: Vector2<f32>,
-    pub position: Vector2<f32>,
+    pub position: Point2<f32>,
     pub zoom: f32,
     pub projection: Matrix4<f32>,
     pub invprojection: Matrix4<f32>,
@@ -11,9 +13,9 @@ pub struct Camera {
 impl Camera {
     pub fn new(viewport_width: f32, viewport_height: f32) -> Camera {
         let mut c = Camera {
-            viewport: Vector2::new(viewport_width, viewport_height),
+            viewport: [viewport_width, viewport_height].into(),
 
-            position: Vector2::new(0.0, 0.0),
+            position: [0.0, 0.0].into(),
             projection: Matrix4::zeros(),
             invprojection: Matrix4::zeros(),
             zoom: 1.0,
@@ -38,29 +40,29 @@ impl Camera {
 
     #[allow(dead_code)]
     pub fn translate(&mut self, x: f32, y: f32) {
-        self.position += Vector2::new(x, y);
+        self.position.x += x;
+        self.position.y += y;
     }
 
     #[allow(dead_code)]
-    pub fn unproject(&self, screen_coords: Vector2<f32>) -> Vector2<f32> {
+    pub fn unproject(&self, screen_coords: Point2<f32>) -> Point2<f32> {
         let v = self.invprojection
-            * Vector4::new(
+            * nalgebra::Vector4::new(
                 -1. + 2. * screen_coords.x / self.viewport.x,
                 1. - 2. * screen_coords.y / self.viewport.y,
                 0.0,
                 1.0,
             );
-        Vector2::new(v.x, v.y)
+        [v.x, v.y].into()
     }
 
     #[allow(dead_code)]
-    pub fn project(&self, world_coords: Vector2<f32>) -> Vector2<f32> {
-        let v = self.projection * Vector4::new(world_coords.x, world_coords.y, 0.0, 1.0);
-        Vector2::new(v.x, v.y)
+    pub fn project(&self, world_coords: Point2<f32>) -> Point2<f32> {
+        let v = self.projection * nalgebra::Vector4::new(world_coords.x, world_coords.y, 0.0, 1.0);
+        [v.x, v.y].into()
     }
 
     pub fn set_viewport(&mut self, viewport_width: f32, viewport_height: f32) {
-        self.viewport.x = viewport_width;
-        self.viewport.y = viewport_height;
+        self.viewport = [viewport_width, viewport_height].into();
     }
 }
