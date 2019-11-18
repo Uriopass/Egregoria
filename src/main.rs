@@ -65,10 +65,14 @@ impl ggez::event::EventHandler for State {
         let mut sr = ShapeRenderer::begin();
         //sr.mode = DrawMode::fill();
 
-        for _i in 0..10000 {
+        /*
+        for _i in 0..100 {
             sr.draw_rect(lol, 10., 10.);
             sr.draw_rect([x, y], 10., 10.);
         }
+        */
+        sr.draw_rect_skinny([x, y], 10., 10.);
+        sr.draw_rect_skinny(lol, 10., 10.);
         sr.end(ctx)?;
 
         draw_text(ctx, &self.text, [0., 0.])?;
