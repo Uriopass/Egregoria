@@ -1,19 +1,16 @@
 use crate::camera::Camera;
-use crate::shape_render;
-use crate::shape_render::ShapeRenderer;
 use ggez::graphics;
 use ggez::graphics::Rect;
 use ggez::input;
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::MouseButton;
-use ggez::nalgebra::Vector2;
+use ggez::mint::Point2;
 use ggez::Context;
 
 #[allow(dead_code)]
 pub struct GSB {
     pub camera: Camera,
-    last_pos: Vector2<f32>,
-    pub sr: shape_render::ShapeRenderer,
+    last_pos: Point2<f32>,
 }
 
 #[allow(dead_code)]
@@ -21,8 +18,7 @@ impl GSB {
     pub fn new() -> GSB {
         GSB {
             camera: Camera::new(800., 600.),
-            last_pos: Vector2::new(0., 0.),
-            sr: ShapeRenderer::new(),
+            last_pos: [0., 0.].into(),
         }
     }
 
@@ -55,20 +51,24 @@ impl GSB {
         self.update(ctx);
     }
 
-    pub fn unproject_mouse_click(&self, ctx: &Context) -> Vector2<f32> {
+    pub fn unproject_mouse_click(&self, ctx: &Context) -> Point2<f32> {
         let haha = ggez::input::mouse::position(ctx);
-        self.camera.unproject([haha.x, haha.y].into())
+        self.camera.unproject(haha)
     }
 
     pub fn clear(&self, ctx: &mut Context) {
         graphics::clear(ctx, graphics::Color::from_rgb(0, 0, 0));
-        graphics::set_window_title(ctx, format!("{} FPS", ggez::timer::fps(ctx)).as_ref());
+        graphics::set_window_title(
+            ctx,
+            format!("{} FPS", ggez::timer::fps(ctx) as i32).as_ref(),
+        );
     }
 
     pub fn easy_camera_movement(&mut self, ctx: &mut Context) {
         let p = self.unproject_mouse_click(ctx);
         if input::mouse::button_pressed(ctx, MouseButton::Right) {
-            self.camera.position -= p - self.last_pos;
+            self.camera.position.x -= p.x - self.last_pos.x;
+            self.camera.position.y -= p.y - self.last_pos.y;
             self.update(ctx);
         }
         self.last_pos = self.unproject_mouse_click(ctx);
