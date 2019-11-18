@@ -7,28 +7,6 @@ pub struct ShapeRenderer {
     pub mode: DrawMode,
     meshbuilder: MeshBuilder,
 }
-const QUAD_VERTS: [Vertex; 4] = [
-    Vertex {
-        pos: [0.0, 0.0],
-        uv: [0.0, 0.0],
-        color: [1.0, 1.0, 1.0, 1.0],
-    },
-    Vertex {
-        pos: [1.0, 0.0],
-        uv: [1.0, 0.0],
-        color: [1.0, 1.0, 1.0, 1.0],
-    },
-    Vertex {
-        pos: [1.0, 1.0],
-        uv: [1.0, 1.0],
-        color: [1.0, 1.0, 1.0, 1.0],
-    },
-    Vertex {
-        pos: [0.0, 1.0],
-        uv: [0.0, 1.0],
-        color: [1.0, 1.0, 1.0, 1.0],
-    },
-];
 
 const QUAD_INDICES: [u32; 6] = [0, 1, 2, 0, 2, 3];
 
@@ -53,7 +31,31 @@ impl ShapeRenderer {
 
     pub fn draw_rect_skinny(&mut self, p: impl Into<mint::Point2<f32>>, width: f32, height: f32) {
         let v = p.into();
-        self.meshbuilder.raw(&QUAD_VERTS, &QUAD_INDICES, None);
+
+        let verts: [Vertex; 4] = [
+            Vertex {
+                pos: [v.x, v.y],
+                uv: [0.0, 0.0],
+                color: [self.color.r, self.color.g, self.color.b, self.color.a],
+            },
+            Vertex {
+                pos: [v.x + width, v.y],
+                uv: [1.0, 0.0],
+                color: [self.color.r, self.color.g, self.color.b, self.color.a],
+            },
+            Vertex {
+                pos: [v.x + width, v.y + height],
+                uv: [1.0, 1.0],
+                color: [self.color.r, self.color.g, self.color.b, self.color.a],
+            },
+            Vertex {
+                pos: [v.x, v.y + height],
+                uv: [0.0, 1.0],
+                color: [self.color.r, self.color.g, self.color.b, self.color.a],
+            },
+        ];
+
+        self.meshbuilder.raw(&verts, &QUAD_INDICES, None);
     }
 
     pub fn end(self, ctx: &mut Context) -> GameResult<()> {
