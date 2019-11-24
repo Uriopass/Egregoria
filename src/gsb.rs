@@ -75,12 +75,17 @@ impl GSB {
     }
 
     pub fn easy_camera_movement_keys(&mut self, ctx: &mut Context, keycode: KeyCode) {
-        if keycode == KeyCode::Add {
-            self.camera.zoom *= 1.2;
+        if keycode == KeyCode::Add || keycode == KeyCode::Subtract {
+            let before = self.unproject_mouse_click(ctx);
+            if keycode == KeyCode::Add {
+                self.camera.zoom *= 1.2;
+            } else {
+                self.camera.zoom /= 1.2;
+            }
             self.update(ctx);
-        }
-        if keycode == KeyCode::Subtract {
-            self.camera.zoom /= 1.2;
+            let after = self.unproject_mouse_click(ctx);
+            self.camera.position.x -= after.x - before.x;
+            self.camera.position.y -= after.y - before.y;
             self.update(ctx);
         }
     }
