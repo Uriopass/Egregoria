@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 ggez = "0.5"
+rand = {version = "0.7.2", features = ["small_rng"]}
