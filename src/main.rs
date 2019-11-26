@@ -12,6 +12,7 @@ use rand::{Rng, SeedableRng};
 
 mod camera;
 mod car;
+mod dijkstra;
 mod gsb;
 mod shape_render;
 
