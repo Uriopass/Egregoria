@@ -64,3 +64,21 @@ pub fn dijsktra(nodes: &Vec<Node>, edges: &Vec<Vec<Edge>>, start: usize) -> Vec<
     }
     dist
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dijkstra() {
+        let nodes: Vec<Node> = (0..3).into_iter().map(|i| Node { value: i }).collect();
+        let edges = vec![
+            vec![Edge { to: 1, cost: 1 }, Edge { to: 2, cost: 3 }],
+            vec![Edge { to: 2, cost: 5 }],
+            vec![],
+        ];
+
+        let dists = dijsktra(&nodes, &edges, 0);
+        assert_eq!(dists, [0, 1, 3]);
+    }
+}
