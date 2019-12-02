@@ -15,6 +15,7 @@ mod car;
 mod dijkstra;
 mod gsb;
 mod shape_render;
+mod walking_simulation;
 
 fn draw_text<P>(ctx: &mut Context, text: &graphics::Text, pos: P) -> GameResult<()>
 where
