@@ -9,6 +9,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Update things
+      run: sudo apt-get update
+    - name: install libs
+      run: sudo apt-get install libasound2-dev libudev-dev pkg-config
     - name: Build
       run: cargo build --verbose
     - name: Run tests
