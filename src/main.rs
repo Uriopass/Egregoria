@@ -87,11 +87,7 @@ impl ggez::event::EventHandler for State {
         self.gsb.clear(ctx);
         self.gsb.easy_camera_movement(ctx);
         self.gsb.update(ctx);
-
         let _lol = self.gsb.unproject_mouse_click(ctx);
-
-        let x = 50.0 * (self.time as f32).cos();
-        let y = 50.0 * (1.5 * self.time as f32 + 0.5).sin();
 
         let mut sr = ShapeRenderer::begin();
         sr.color = graphics::WHITE;
