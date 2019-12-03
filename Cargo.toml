@@ -7,6 +7,6 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ggez = "0.5"
+ggez = "0.5.1"
 rand = {version = "0.7.2", features = ["small_rng"]}
-vecmath = "1.0.0"
+cgmath = "0.17.0"
