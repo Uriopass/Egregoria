@@ -57,30 +57,13 @@ impl State {
 
         //let font = graphics::Font::new(ctx, "/bmonofont-i18n.ttf")?;
         //let text = graphics::Text::new(("Hello world!", font, 48.0));
-        //let test: Image = graphics::Image::new(ctx, "/eva.png")?;
-        let test: Image = graphics::Image::new(ctx, "/shrek.png")?;
-        let ok: Vec<u8> = test.to_rgba8(ctx)?;
-
-        let on: Vec<EVACOLOR> = ok
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| i % 4 == 0)
-            .map(|(_, v)| {
-                if *v == 255 {
-                    EVACOLOR::RED
-                } else if *v == 128 {
-                    EVACOLOR::WHITE
-                } else {
-                    EVACOLOR::NONE
-                }
-            })
-            .collect();
+        //let test: Image = graphics::Image::new(ctx, "/test.png")?;
 
         graphics::set_resizable(ctx, true)?;
         Ok(State {
             gsb: gsb::GSB::new(),
             time: 0.,
-            hm: HumanManager::new_image(&on),
+            hm: HumanManager::new(100),
         })
     }
 }
@@ -99,18 +82,9 @@ impl ggez::event::EventHandler for State {
         self.gsb.clear(ctx);
         self.gsb.easy_camera_movement(ctx);
         self.gsb.update(ctx);
-        let _lol = self.gsb.unproject_mouse_click(ctx);
 
         let mut sr = ShapeRenderer::begin(self.gsb.get_screen_box());
-
-        sr.color = graphics::Color {
-            r: 1.,
-            g: 0.,
-            b: 0.,
-            a: 1.,
-        };
         self.hm.draw(&mut sr);
-
         sr.end(ctx)?;
 
         graphics::pop_transform(ctx);
@@ -138,7 +112,7 @@ impl ggez::event::EventHandler for State {
 
 fn main() {
     let mut c = conf::Conf::new();
-    c.window_mode = c.window_mode.dimensions(1690 as f32, 1000 as f32);
+    c.window_mode = c.window_mode.dimensions(1600 as f32, 900 as f32);
     c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Four);
 
     let mut cb = ContextBuilder::new("hello_ggez", "Uriopass").conf(c);
@@ -153,11 +127,6 @@ fn main() {
     let (ref mut ctx, ref mut event_loop) = cb.build().unwrap();
 
     let mut state = State::new(ctx).unwrap();
-
-    state.gsb.camera.zoom = 0.1;
-
-    state.gsb.camera.position.x = 30. * 100.;
-    state.gsb.camera.position.y = 30. * 100.;
 
     event::run(ctx, event_loop, &mut state).unwrap()
 }
