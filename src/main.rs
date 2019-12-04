@@ -8,6 +8,7 @@ use ggez::graphics::*;
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::nalgebra::Matrix4;
 
+use ggez::conf::NumSamples;
 use ggez::*;
 
 mod camera;
@@ -76,13 +77,12 @@ impl ggez::event::EventHandler for State {
         self.gsb.update(ctx);
         let _lol = self.gsb.unproject_mouse_click(ctx);
 
-        let mut sr = ShapeRenderer::begin();
+        let mut sr = ShapeRenderer::begin(self.gsb.get_screen_box());
 
         sr.color = graphics::WHITE;
         self.hm.draw(&mut sr);
 
         sr.end(ctx)?;
-        draw_image(ctx, &self.test, [0., 0.])?;
 
         graphics::pop_transform(ctx);
         graphics::apply_transformations(ctx)?;
@@ -96,11 +96,20 @@ impl ggez::event::EventHandler for State {
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
         self.gsb.resize(ctx, width, height);
     }
+
+    fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) {
+        if y > 0. {
+            self.gsb.easy_camera_movement_keys(ctx, KeyCode::Add);
+        }
+        if y < 0. {
+            self.gsb.easy_camera_movement_keys(ctx, KeyCode::Subtract);
+        }
+    }
 }
 
 fn main() {
     let mut c = conf::Conf::new();
-    c.window_setup = c.window_setup.vsync(false);
+    c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Eight);
 
     let mut cb = ContextBuilder::new("hello_ggez", "Uriopass").conf(c);
 
