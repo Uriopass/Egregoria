@@ -1,5 +1,7 @@
 use crate::shape_render::ShapeRenderer;
 use cgmath::{Point2, Vector2};
+use rand::prelude::SmallRng;
+use rand::SeedableRng;
 
 type Vector2f = Vector2<f32>;
 
@@ -22,7 +24,10 @@ impl Default for Human {
 
 impl Human {
     fn calc_acceleration(&self) -> Vector2f {
-        [rand::random::<f32>(), rand::random::<f32>()].into()
+        let a = rand::random::<f32>() - 0.5;
+        let b = rand::random::<f32>() - 0.5;
+        let r: Vector2f = [a, b].into();
+        r * 10.
     }
 }
 
@@ -47,6 +52,7 @@ impl HumanManager {
         for h in self.humans.iter_mut() {
             let acc = h.calc_acceleration();
             h.speed += acc * delta;
+            h.position += h.speed * delta;
         }
     }
 
