@@ -6,6 +6,7 @@ pub struct ShapeRenderer {
     pub color: Color,
     pub mode: DrawMode,
     meshbuilder: MeshBuilder,
+    once: bool,
 }
 
 const QUAD_INDICES: [u32; 6] = [0, 1, 2, 0, 2, 3];
@@ -17,16 +18,19 @@ impl ShapeRenderer {
             color: WHITE,
             mode: DrawMode::fill(),
             meshbuilder: MeshBuilder::new(),
+            once: false,
         }
     }
     pub fn draw_circle(&mut self, p: impl Into<mint::Point2<f32>>, r: f32) {
         self.meshbuilder.circle(self.mode, p, r, 0.5, self.color);
+        self.once = true;
     }
 
     pub fn draw_rect(&mut self, p: impl Into<mint::Point2<f32>>, width: f32, height: f32) {
         let v = p.into();
         self.meshbuilder
             .rectangle(self.mode, Rect::new(v.x, v.y, width, height), self.color);
+        self.once = true;
     }
 
     pub fn draw_rect_skinny(&mut self, p: impl Into<mint::Point2<f32>>, width: f32, height: f32) {
@@ -56,9 +60,13 @@ impl ShapeRenderer {
         ];
 
         self.meshbuilder.raw(&verts, &QUAD_INDICES, None);
+        self.once = true;
     }
 
     pub fn end(self, ctx: &mut Context) -> GameResult<()> {
+        if !self.once {
+            return Ok(());
+        }
         let mesh = self.meshbuilder.build(ctx)?;
         draw(ctx, &mesh, DrawParam::new().dest([0., 0.]))
     }

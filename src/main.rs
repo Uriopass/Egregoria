@@ -3,20 +3,20 @@ use std::path;
 
 use crate::gsb::GSB;
 use crate::shape_render::ShapeRenderer;
+use crate::walking_simulation::HumanManager;
 use ggez::graphics::*;
 use ggez::input::keyboard::{KeyCode, KeyMods};
+use ggez::nalgebra::Matrix4;
+
 use ggez::*;
 
-use rand::rngs::SmallRng;
-use rand::{Rng, SeedableRng};
-
 mod camera;
-mod car;
 mod dijkstra;
 mod gsb;
 mod shape_render;
 mod walking_simulation;
 
+#[allow(dead_code)]
 fn draw_text<P>(ctx: &mut Context, text: &graphics::Text, pos: P) -> GameResult<()>
 where
     P: Into<mint::Point2<f32>>,
@@ -38,11 +38,10 @@ where
 }
 
 struct State {
-    text: graphics::Text,
     gsb: GSB,
     time: f32,
-    cars: Vec<car::Car>,
-    test: graphics::Image,
+    hm: walking_simulation::HumanManager,
+    test: Image,
 }
 
 impl State {
@@ -55,15 +54,9 @@ impl State {
 
         graphics::set_resizable(ctx, true)?;
         Ok(State {
-            text,
             gsb: gsb::GSB::new(),
             time: 0.,
-            cars: (0..100000)
-                .into_iter()
-                .map(|_| car::Car {
-                    position: [0., 0.].into(),
-                })
-                .collect(),
+            hm: HumanManager::new(100),
             test,
         })
     }
@@ -73,13 +66,7 @@ impl ggez::event::EventHandler for State {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let delta = timer::delta(ctx).as_secs_f32();
         self.time += delta;
-
-        let mut rng = SmallRng::from_entropy();
-
-        for c in self.cars.iter_mut() {
-            c.position.x = rng.gen::<f32>() * 1000.;
-            c.position.y = rng.gen::<f32>() * 1000.;
-        }
+        self.hm.update(delta);
         Ok(())
     }
 
@@ -90,14 +77,15 @@ impl ggez::event::EventHandler for State {
         let _lol = self.gsb.unproject_mouse_click(ctx);
 
         let mut sr = ShapeRenderer::begin();
+
         sr.color = graphics::WHITE;
-        //sr.mode = DrawMode::stroke(1.0);
-        for c in self.cars.iter() {
-            sr.draw_rect(c.position, 1., 1.);
-        }
+        self.hm.draw(&mut sr);
+
         sr.end(ctx)?;
-        draw_text(ctx, &self.text, [0., 0.])?;
-        draw_image(ctx, &self.test, [0.0, 0.0])?;
+        draw_image(ctx, &self.test, [0., 0.])?;
+
+        graphics::pop_transform(ctx);
+        graphics::apply_transformations(ctx)?;
         graphics::present(ctx)
     }
 
