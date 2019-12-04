@@ -46,46 +46,6 @@ pub struct HumanManager {
 }
 
 impl HumanManager {
-    pub fn new_image(img: &Vec<EVACOLOR>) -> Self {
-        const SCALE: i32 = 60;
-        let mut humans: Vec<Human> = (0..10000)
-            .zip(img)
-            .filter(|(_, v)| **v != EVACOLOR::NONE)
-            .map(|(i, v)| Human {
-                position: [
-                    (SCALE * 50) as f32 + (rand::random::<f32>() - 0.5) * 50000.,
-                    (SCALE * 50) as f32 + (rand::random::<f32>() - 0.5) * 50000.,
-                ]
-                .into(),
-                speed: [0., 0.].into(),
-                direction: [1., 0.].into(),
-                size: 15.
-                    + rand::random::<f32>() * rand::random::<f32>() * rand::random::<f32>() * 90.,
-                objective: {
-                    let x = i % 100 * SCALE;
-                    let y = i / 100 * SCALE;
-                    [x as f32, (SCALE * 100 - y) as f32]
-                }
-                .into(),
-                color: match &*v {
-                    EVACOLOR::RED => ggez::graphics::WHITE,
-                    EVACOLOR::WHITE => ggez::graphics::Color {
-                        r: 0.9,
-                        g: 0.,
-                        b: 0.1,
-                        a: 1.,
-                    },
-                    _ => ggez::graphics::WHITE,
-                },
-            })
-            .collect();
-        HumanManager {
-            humans,
-            selected: None,
-            time: 0.,
-        }
-    }
-
     pub fn new(n_humans: i32) -> Self {
         let mut humans: Vec<Human> = (0..n_humans)
             .map(|_| Human {
@@ -106,18 +66,6 @@ impl HumanManager {
                 color: ggez::graphics::WHITE,
             })
             .collect();
-
-        /*humans.push(Human {
-            position: [
-                rand::random::<f32>() * 1000. - 500.,
-                rand::random::<f32>() * 1000. - 500.,
-            ]
-            .into(),
-            speed: [0., 0.].into(),
-            direction: [1., 0.].into(),
-            size: 1000.,
-            objective: [rand::random::<f32>() * 1000., rand::random::<f32>() * 1000.].into(),
-        });*/
 
         HumanManager {
             humans,
@@ -157,18 +105,6 @@ impl HumanManager {
         }
 
         for (h, acc) in self.humans.iter_mut().zip(accs) {
-            /*let mut nor = h.objective.normalize();
-            let nor_perp: Vector2f = [-nor.y, nor.x].into();
-
-            let sign = if (h.objective.magnitude() as i32) % 2 == 0 {
-                -1.
-            } else {
-                1.
-            };
-
-            nor += sign * nor_perp * 0.0002 * delta * h.objective.magnitude();
-            h.objective = nor * h.objective.magnitude();*/
-
             h.speed += acc * delta;
             h.position += h.speed * delta;
         }
@@ -177,8 +113,6 @@ impl HumanManager {
     pub fn draw(&self, sr: &mut ShapeRenderer) {
         for human in self.humans.iter() {
             sr.color = human.color;
-            sr.color.a = (self.time / 8.).min(1.);
-            sr.color.a *= sr.color.a;
             sr.draw_circle([human.position.x, human.position.y], human.size);
         }
     }
