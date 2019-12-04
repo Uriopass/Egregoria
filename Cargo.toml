@@ -10,3 +10,4 @@ edition = "2018"
 ggez = "0.5"
 rand = {version = "0.7.2", features = ["small_rng"]}
 cgmath = "0.17.0"
+rayon = "1.1"
