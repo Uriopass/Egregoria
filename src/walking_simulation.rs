@@ -1,15 +1,13 @@
-use crate::gsb::GSB;
-use crate::shape_render::ShapeRenderer;
-use cgmath::{InnerSpace, Point2, Vector2};
+use cgmath::{InnerSpace, Vector2};
+use ggez::graphics::Color;
 use ggez::input::mouse::MouseButton;
 use ggez::Context;
-use rand::prelude::SmallRng;
-use rand::SeedableRng;
+use rayon::prelude::*;
+
+use crate::camera_handler::CameraHandler;
+use crate::shape_render::ShapeRenderer;
 
 type Vector2f = Vector2<f32>;
-use crate::EVACOLOR;
-use ggez::graphics::Color;
-use rayon::prelude::*;
 
 #[allow(dead_code)]
 struct Human {
@@ -47,7 +45,7 @@ pub struct HumanManager {
 
 impl HumanManager {
     pub fn new(n_humans: i32) -> Self {
-        let mut humans: Vec<Human> = (0..n_humans)
+        let humans: Vec<Human> = (0..n_humans)
             .map(|_| Human {
                 position: [
                     rand::random::<f32>() * 1000. - 500.,
@@ -74,7 +72,7 @@ impl HumanManager {
         }
     }
 
-    pub fn update(&mut self, ctx: &Context, gsb: &GSB, delta: f32) {
+    pub fn update(&mut self, ctx: &Context, gsb: &CameraHandler, delta: f32) {
         self.time += delta;
         let accs: Vec<Vector2f> = self
             .humans

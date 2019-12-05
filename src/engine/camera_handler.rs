@@ -1,4 +1,3 @@
-use crate::camera::Camera;
 use ggez::graphics;
 use ggez::graphics::Rect;
 use ggez::input;
@@ -7,16 +6,18 @@ use ggez::input::mouse::MouseButton;
 use ggez::mint::Point2;
 use ggez::Context;
 
+use crate::camera::Camera;
+
 #[allow(dead_code)]
-pub struct GSB {
+pub struct CameraHandler {
     pub camera: Camera,
     last_pos: Point2<f32>,
 }
 
 #[allow(dead_code)]
-impl GSB {
-    pub fn new() -> GSB {
-        GSB {
+impl CameraHandler {
+    pub fn new() -> CameraHandler {
+        CameraHandler {
             camera: Camera::new(800., 600.),
             last_pos: [0., 0.].into(),
         }
@@ -54,14 +55,6 @@ impl GSB {
     pub fn unproject_mouse_click(&self, ctx: &Context) -> Point2<f32> {
         let haha = ggez::input::mouse::position(ctx);
         self.camera.unproject(haha)
-    }
-
-    pub fn clear(&self, ctx: &mut Context) {
-        graphics::clear(ctx, graphics::Color::from_rgb(0, 0, 0));
-        graphics::set_window_title(
-            ctx,
-            format!("{} FPS", ggez::timer::fps(ctx) as i32).as_ref(),
-        );
     }
 
     pub fn easy_camera_movement(&mut self, ctx: &mut Context) {
