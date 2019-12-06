@@ -10,5 +10,4 @@ edition = "2018"
 ggez = "0.5"
 rand = {version = "0.7.2", features = ["small_rng"]}
 cgmath = {version = "0.17", features = ["mint"]}
-rayon = "1.1"
 specs = {version = "0.15", features = ["specs-derive"]}
