@@ -45,7 +45,7 @@ impl Camera {
     }
 
     #[allow(dead_code)]
-    pub fn unproject(&self, screen_coords: Point2<f32>) -> Point2<f32> {
+    pub fn unproject(&self, screen_coords: Point2<f32>) -> cgmath::Vector2<f32> {
         let v = self.invprojection
             * nalgebra::Vector4::new(
                 -1. + 2. * screen_coords.x / self.viewport.x,
