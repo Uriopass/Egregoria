@@ -2,23 +2,34 @@ use cgmath::{EuclideanSpace, Point2, Vector2};
 use ggez::graphics::{DrawMode, DrawParam, Image, Mesh, MeshBuilder, WHITE};
 use ggez::{graphics, Context, GameResult};
 
-use crate::engine;
+
 use crate::engine::camera_handler;
 use crate::engine::camera_handler::CameraHandler;
 use crate::engine::shape_render::ShapeRenderer;
 
 pub struct RenderContext<'a> {
     pub cam: &'a mut camera_handler::CameraHandler,
+    pub sr: ShapeRenderer,
     ctx: &'a mut Context,
 }
 
 #[allow(dead_code)]
 impl<'a> RenderContext<'a> {
-    pub fn new(
-        cam: &'a mut engine::camera_handler::CameraHandler,
-        ctx: &'a mut Context,
-    ) -> RenderContext<'a> {
-        RenderContext { ctx, cam }
+    pub fn new(cam: &'a mut CameraHandler, ctx: &'a mut Context) -> RenderContext<'a> {
+        let mut rect = cam.get_screen_box();
+        rect.scale(1.1, 1.1);
+        rect.x -= 50.;
+        rect.y -= 50.;
+        rect.w += 100.;
+        rect.h += 100.;
+        let sr = ShapeRenderer {
+            color: WHITE,
+            mode: DrawMode::fill(),
+            meshbuilder: MeshBuilder::new(),
+            empty: true,
+            screen_box: rect,
+        };
+        RenderContext { ctx, cam, sr }
     }
 
     pub fn clear(&mut self) {
@@ -49,27 +60,12 @@ impl<'a> RenderContext<'a> {
         graphics::draw(self.ctx, mesh, dp)
     }
 
-    pub fn shape_render(&mut self, f: fn(&mut ShapeRenderer)) -> GameResult<()> {
-        let mut rect = self.cam.get_screen_box();
-        rect.scale(1.1, 1.1);
-        rect.x -= 50.;
-        rect.y -= 50.;
-        rect.w += 100.;
-        rect.h += 100.;
-        let mut sr = ShapeRenderer {
-            color: WHITE,
-            mode: DrawMode::fill(),
-            meshbuilder: MeshBuilder::new(),
-            empty: true,
-            screen_box: rect,
-        };
-
-        f(&mut sr);
-
-        if sr.empty {
-            return Ok(());
+    pub fn finish(self) -> GameResult<()> {
+        if !self.sr.empty {
+            let mesh = self.sr.meshbuilder.build(self.ctx)?;
+            graphics::draw(self.ctx, &mesh, DrawParam::new().dest([0.0, 0.0]))
+        } else {
+            Ok(())
         }
-        let mesh = sr.meshbuilder.build(self.ctx)?;
-        graphics::draw(self.ctx, &mesh, DrawParam::new().dest([0.0, 0.0]))
     }
 }
