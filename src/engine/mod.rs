@@ -60,7 +60,6 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.cam.easy_camera_movement(ctx);
-        self.cam.update(ctx);
 
         let mut rc = RenderContext::new(&mut self.cam, ctx);
         rc.clear();
@@ -75,8 +74,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
         rc.finish()?;
 
-        graphics::pop_transform(ctx);
-        graphics::apply_transformations(ctx)?;
+        //graphics::pop_transform(ctx);
         graphics::present(ctx)
     }
 
