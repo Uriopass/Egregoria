@@ -1,12 +1,13 @@
-use ggez::graphics;
 use ggez::graphics::Rect;
 use ggez::input;
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::MouseButton;
 use ggez::mint::Point2;
 use ggez::Context;
+use ggez::{graphics, GameResult};
 
 use crate::camera::Camera;
+use cgmath::{Matrix4, SquareMatrix};
 
 #[allow(dead_code)]
 pub struct CameraHandler {
@@ -32,6 +33,7 @@ impl CameraHandler {
     pub fn update(&mut self, ctx: &mut Context) {
         self.camera.update();
         graphics::set_projection(ctx, self.camera.projection);
+        graphics::apply_transformations(ctx).unwrap();
     }
 
     pub fn get_screen_box(&self) -> Rect {

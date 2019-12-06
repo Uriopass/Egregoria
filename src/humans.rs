@@ -54,15 +54,15 @@ impl<'a> System<'a> for HumanUpdate {
 
         let xx: Vec<(&Position, &Human)> = (&pos, &humans).join().collect();
 
-        for (p, v, h) in (&pos, &mut vel, &humans).join() {
+        (&pos, &mut vel, &humans).par_join().for_each(|(p, v, h)| {
             let acc = h.calc_acceleration(&p, &v, &xx);
             v.0 += acc * delta * 2.;
-        }
+        })
     }
 }
 
 pub fn setup(world: &mut World) {
-    for _ in 0..100 {
+    for _ in 0..10000 {
         let r: f32 = rand::random();
         let r = 15. + r * 100.;
         world
