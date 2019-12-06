@@ -62,7 +62,7 @@ impl<'a> System<'a> for HumanUpdate {
 }
 
 pub fn setup(world: &mut World) {
-    for _ in 0..10000 {
+    for _ in 0..100 {
         let r: f32 = rand::random();
         let r = 15. + r * 100.;
         world

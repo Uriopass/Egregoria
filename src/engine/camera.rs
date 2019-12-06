@@ -26,15 +26,18 @@ impl Camera {
 
     #[rustfmt::skip]
     pub fn update(&mut self) {
+        // If you have rendering problem on mac os, it doesnt come from the projection
+        // but don't forget to do cam.update at least once (dont suppose resize will be called)
+
         let scalex = 2. * self.zoom / self.viewport.x;
         let scaley = 2. * self.zoom / self.viewport.y;
-        let offsetx = - 2. * self.zoom * self.position.x / self.viewport.x;
-        let offsety = - 2. * self.zoom * self.position.y / self.viewport.y;
+        let offsetx = -2. * self.zoom * self.position.x / self.viewport.x;
+        let offsety = -2. * self.zoom * self.position.y / self.viewport.y;
 
-        self.projection = Matrix4::new(scalex, 0.,     0., offsetx,
-                                       0.,     scaley, 0., offsety,
-                                       0.,     0.,     1., 0.,
-                                       0.,     0.,     0., 1.);
+        self.projection = Matrix4::new(scalex, 0., 0., offsetx,
+                                       0., scaley, 0., offsety,
+                                       0., 0., 1., 0.,
+                                       0., 0., 0., 1.);
         self.invprojection = self.projection.try_inverse().unwrap();
     }
 
