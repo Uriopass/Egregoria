@@ -8,8 +8,11 @@ use ggez::*;
 use crate::engine::camera_handler::CameraHandler;
 use crate::engine::components::{CircleRender, Position};
 use crate::engine::render_context::RenderContext;
-use crate::engine::resources::DeltaTime;
+use crate::engine::resources::{DeltaTime, MouseInfo};
+use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
+use std::collections::HashSet;
+use std::iter::FromIterator;
 
 pub mod camera;
 pub mod camera_handler;
@@ -17,6 +20,7 @@ pub mod components;
 pub mod render_context;
 pub mod resources;
 pub mod shape_render;
+pub mod systems;
 
 pub struct EngineState<'a> {
     pub world: World,
@@ -52,6 +56,14 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         let delta = timer::delta(ctx).as_secs_f32();
         self.time += delta;
         *self.world.write_resource() = DeltaTime(delta);
+        *self.world.write_resource() = MouseInfo {
+            unprojected: self.cam.unproject_mouse_click(ctx),
+            buttons: HashSet::from_iter(
+                vec![MouseButton::Left, MouseButton::Right, MouseButton::Middle]
+                    .into_iter()
+                    .filter(|x| ggez::input::mouse::button_pressed(ctx, *x)),
+            ),
+        };
 
         self.dispatch.run_now(&mut self.world);
         self.world.maintain();

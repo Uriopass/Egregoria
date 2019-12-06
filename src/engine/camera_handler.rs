@@ -7,12 +7,12 @@ use ggez::Context;
 use ggez::{graphics, GameResult};
 
 use crate::camera::Camera;
-use cgmath::{Matrix4, SquareMatrix};
+use cgmath::{Matrix4, SquareMatrix, Vector2};
 
 #[allow(dead_code)]
 pub struct CameraHandler {
     pub camera: Camera,
-    last_pos: Point2<f32>,
+    last_pos: Vector2<f32>,
 }
 
 #[allow(dead_code)]
@@ -54,7 +54,7 @@ impl CameraHandler {
         self.update(ctx);
     }
 
-    pub fn unproject_mouse_click(&self, ctx: &Context) -> Point2<f32> {
+    pub fn unproject_mouse_click(&self, ctx: &Context) -> Vector2<f32> {
         let haha = ggez::input::mouse::position(ctx);
         self.camera.unproject(haha)
     }
