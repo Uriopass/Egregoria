@@ -5,22 +5,29 @@ use ggez::conf::NumSamples;
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::*;
 
+use legion::prelude::*;
+
 use crate::engine::camera_handler::CameraHandler;
+use crate::engine::components::{CircleRender, Position};
 use crate::engine::render_context::RenderContext;
+use crate::engine::resources::DeltaTime;
 
 pub mod camera;
 pub mod camera_handler;
-pub mod drawable;
+pub mod components;
 pub mod render_context;
+pub mod resources;
 pub mod shape_render;
 
-struct EngineState {
+pub(crate) struct EngineState {
+    pub world: World,
+    pub schedule: Schedule,
     pub time: f32,
     pub cam: CameraHandler,
 }
 
 impl EngineState {
-    fn new(ctx: &mut Context) -> GameResult<EngineState> {
+    fn new(world: World, schedule: Schedule, ctx: &mut Context) -> GameResult<EngineState> {
         println!("{}", filesystem::resources_dir(ctx).display());
 
         //let font = graphics::Font::new(ctx, "/bmonofont-i18n.ttf")?;
@@ -29,6 +36,8 @@ impl EngineState {
 
         graphics::set_resizable(ctx, true)?;
         Ok(EngineState {
+            world,
+            schedule,
             time: 0.,
             cam: CameraHandler::new(),
         })
@@ -39,6 +48,8 @@ impl ggez::event::EventHandler for EngineState {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let delta = timer::delta(ctx).as_secs_f32();
         self.time += delta;
+        self.world.resources.insert(DeltaTime(delta));
+        self.schedule.execute(&mut self.world);
         Ok(())
     }
 
@@ -47,8 +58,15 @@ impl ggez::event::EventHandler for EngineState {
         self.cam.update(ctx);
 
         let mut rc = RenderContext::new(&mut self.cam, ctx);
-
         rc.clear();
+        let query = <(Read<Position>, Read<CircleRender>)>::query();
+
+        for (pos, size) in query.iter(&mut self.world) {
+            let pos = pos.0;
+            rc.sr.draw_circle([pos.x, pos.y], size.radius);
+        }
+
+        rc.finish()?;
 
         graphics::pop_transform(ctx);
         graphics::apply_transformations(ctx)?;
@@ -73,7 +91,7 @@ impl ggez::event::EventHandler for EngineState {
     }
 }
 
-pub fn start() {
+pub fn start(world: World, schedule: Schedule) {
     let mut c = conf::Conf::new();
     c.window_mode = c.window_mode.dimensions(1600 as f32, 900 as f32);
     c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Four);
@@ -89,7 +107,7 @@ pub fn start() {
 
     let (ref mut ctx, ref mut event_loop) = cb.build().unwrap();
 
-    let mut state = EngineState::new(ctx).unwrap();
+    let mut state = EngineState::new(world, schedule, ctx).unwrap();
 
     event::run(ctx, event_loop, &mut state).unwrap()
 }
