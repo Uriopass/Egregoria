@@ -2,7 +2,9 @@ use engine::*;
 
 use crate::engine::components::{CircleRender, Position, Velocity};
 use crate::engine::resources::DeltaTime;
+use crate::engine::systems::MovableSystem;
 use crate::humans::HumanUpdate;
+use ggez::input::mouse::MouseContext;
 use specs::prelude::*;
 
 mod dijkstra;
@@ -31,11 +33,13 @@ fn main() {
     let mut world = World::new();
 
     world.insert(DeltaTime(0.));
+
     world.register::<CircleRender>();
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(HumanUpdate, "human_update", &[])
         .with(SpeedApply, "hello_world", &["human_update"])
+        .with(MovableSystem::default(), "movable", &[])
         .build();
 
     dispatcher.setup(&mut world);

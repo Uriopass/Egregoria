@@ -4,7 +4,7 @@ use ggez::graphics::Color;
 use specs::prelude::*;
 use specs::Component;
 
-use crate::engine::components::{CircleRender, Position, Velocity};
+use crate::engine::components::{CircleRender, Movable, Position, Velocity};
 use crate::engine::resources::DeltaTime;
 
 #[derive(Component)]
@@ -82,6 +82,7 @@ pub fn setup(world: &mut World) {
                 objective: [0.0, 0.0].into(),
                 color: ggez::graphics::WHITE,
             })
+            .with(Movable)
             .build();
     }
 }
