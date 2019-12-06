@@ -1,2 +1,2 @@
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Default)]
 pub struct DeltaTime(pub f32);

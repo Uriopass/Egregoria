@@ -5,12 +5,11 @@ use ggez::conf::NumSamples;
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::*;
 
-use legion::prelude::*;
-
 use crate::engine::camera_handler::CameraHandler;
 use crate::engine::components::{CircleRender, Position};
 use crate::engine::render_context::RenderContext;
 use crate::engine::resources::DeltaTime;
+use specs::prelude::*;
 
 pub mod camera;
 pub mod camera_handler;
@@ -19,15 +18,19 @@ pub mod render_context;
 pub mod resources;
 pub mod shape_render;
 
-pub(crate) struct EngineState {
+pub struct EngineState<'a> {
     pub world: World,
-    pub schedule: Schedule,
+    pub dispatch: Dispatcher<'a, 'a>,
     pub time: f32,
     pub cam: CameraHandler,
 }
 
-impl EngineState {
-    fn new(world: World, schedule: Schedule, ctx: &mut Context) -> GameResult<EngineState> {
+impl<'a> EngineState<'a> {
+    fn new(
+        world: World,
+        dispatch: Dispatcher<'a, 'a>,
+        ctx: &mut Context,
+    ) -> GameResult<EngineState<'a>> {
         println!("{}", filesystem::resources_dir(ctx).display());
 
         //let font = graphics::Font::new(ctx, "/bmonofont-i18n.ttf")?;
@@ -37,19 +40,21 @@ impl EngineState {
         graphics::set_resizable(ctx, true)?;
         Ok(EngineState {
             world,
-            schedule,
+            dispatch,
             time: 0.,
             cam: CameraHandler::new(),
         })
     }
 }
 
-impl ggez::event::EventHandler for EngineState {
+impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let delta = timer::delta(ctx).as_secs_f32();
         self.time += delta;
-        self.world.resources.insert(DeltaTime(delta));
-        self.schedule.execute(&mut self.world);
+        *self.world.write_resource() = DeltaTime(delta);
+
+        self.dispatch.run_now(&mut self.world);
+        self.world.maintain();
         Ok(())
     }
 
@@ -59,9 +64,11 @@ impl ggez::event::EventHandler for EngineState {
 
         let mut rc = RenderContext::new(&mut self.cam, ctx);
         rc.clear();
-        let query = <(Read<Position>, Read<CircleRender>)>::query();
 
-        for (pos, size) in query.iter(&mut self.world) {
+        let pos = self.world.read_component::<Position>();
+        let circle_render = self.world.read_component::<CircleRender>();
+
+        for (pos, size) in (&pos, &circle_render).join() {
             let pos = pos.0;
             rc.sr.draw_circle([pos.x, pos.y], size.radius);
         }
@@ -91,7 +98,7 @@ impl ggez::event::EventHandler for EngineState {
     }
 }
 
-pub fn start(world: World, schedule: Schedule) {
+pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
     let mut c = conf::Conf::new();
     c.window_mode = c.window_mode.dimensions(1600 as f32, 900 as f32);
     c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Four);
