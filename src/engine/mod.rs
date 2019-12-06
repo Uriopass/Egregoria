@@ -9,6 +9,7 @@ use crate::engine::camera_handler::CameraHandler;
 use crate::engine::components::{CircleRender, Position};
 use crate::engine::render_context::RenderContext;
 use crate::engine::resources::{DeltaTime, MouseInfo};
+use ggez::graphics::{DrawMode, DrawParam, MeshBuilder};
 use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
 use std::collections::HashSet;
@@ -55,7 +56,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let delta = timer::delta(ctx).as_secs_f32();
         self.time += delta;
-        *self.world.write_resource() = DeltaTime(delta);
+        *self.world.write_resource() = DeltaTime(delta * 5.);
         *self.world.write_resource() = MouseInfo {
             unprojected: self.cam.unproject_mouse_click(ctx),
             buttons: HashSet::from_iter(
@@ -72,6 +73,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         self.cam.easy_camera_movement(ctx);
+        self.cam.update(ctx);
 
         let mut rc = RenderContext::new(&mut self.cam, ctx);
         rc.clear();
@@ -85,8 +87,6 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         }
 
         rc.finish()?;
-
-        //graphics::pop_transform(ctx);
         graphics::present(ctx)
     }
 
@@ -110,7 +110,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
 pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
     let mut c = conf::Conf::new();
-    c.window_mode = c.window_mode.dimensions(1600 as f32, 900 as f32);
+    c.window_mode = c.window_mode.dimensions(800 as f32, 600 as f32);
     c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Four);
 
     let mut cb = ContextBuilder::new("Sandbox", "Uriopass").conf(c);
