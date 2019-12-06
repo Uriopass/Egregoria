@@ -1,31 +1,46 @@
-use legion::prelude::*;
-
 use engine::*;
 
-use crate::engine::components::{Position, Velocity};
+use crate::engine::components::{CircleRender, Position, Velocity};
 use crate::engine::resources::DeltaTime;
+use crate::humans::HumanUpdate;
+use specs::prelude::*;
 
 mod dijkstra;
 mod engine;
 mod humans;
 
+struct SpeedApply;
+
+impl<'a> System<'a> for SpeedApply {
+    type SystemData = (
+        Read<'a, DeltaTime>,
+        WriteStorage<'a, Position>,
+        ReadStorage<'a, Velocity>,
+    );
+
+    fn run(&mut self, (delta, mut pos, vel): Self::SystemData) {
+        let delta = delta.0;
+
+        for (vel, pos) in (&vel, &mut pos).join() {
+            pos.0 += vel.0 * delta;
+        }
+    }
+}
+
 fn main() {
-    let universe = Universe::new();
-    let mut world = universe.create_world();
+    let mut world = World::new();
 
-    let speed_apply = SystemBuilder::new("update_pos")
-        .with_query(<(Write<Position>, Read<Velocity>)>::query())
-        .read_resource::<DeltaTime>()
-        .build(|_, mut world, res, query| {
-            let delta: f32 = (**res).0;
-            for (mut pos, vel) in query.iter(&mut world) {
-                pos.0 += vel.0 * delta;
-            }
-        });
+    world.insert(DeltaTime(0.));
+    world.register::<CircleRender>();
 
-    let schedule = Schedule::builder()
-        .add_system(humans::setup(&mut world))
-        .add_system(speed_apply)
+    let mut dispatcher = DispatcherBuilder::new()
+        .with(HumanUpdate, "human_update", &[])
+        .with(SpeedApply, "hello_world", &["human_update"])
         .build();
-    engine::start(world, schedule);
+
+    dispatcher.setup(&mut world);
+
+    humans::setup(&mut world);
+
+    engine::start(world, dispatcher);
 }
