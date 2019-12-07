@@ -6,9 +6,10 @@ use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::*;
 
 use crate::engine::camera_handler::CameraHandler;
-use crate::engine::components::{CircleRender, Position};
+use crate::engine::components::{CircleRender, LineRender, Position};
 use crate::engine::render_context::RenderContext;
 use crate::engine::resources::{DeltaTime, MouseInfo};
+use cgmath::Vector2;
 use ggez::graphics::{DrawMode, DrawParam, MeshBuilder};
 use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
@@ -80,11 +81,23 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
         let pos = self.world.read_component::<Position>();
         let circle_render = self.world.read_component::<CircleRender>();
+        let line_render = self.world.read_component::<LineRender>();
 
         for (pos, cr) in (&pos, &circle_render).join() {
             let pos = pos.0;
             rc.sr.color = cr.color;
             rc.sr.draw_circle([pos.x, pos.y], cr.radius * 2.5);
+        }
+
+        for (ppos, lr) in (&pos, &line_render).join() {
+            let ppos = ppos.0;
+            let e = lr.to;
+            let pos2: Vector2<f32> = pos.get(e).unwrap().0;
+            rc.sr.meshbuilder.line(
+                &[[ppos.x, ppos.y], [pos2.x, pos2.y]],
+                1.0,
+                ggez::graphics::WHITE,
+            );
         }
 
         rc.finish()?;
