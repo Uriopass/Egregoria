@@ -1,4 +1,5 @@
-use specs::{Component, VecStorage};
+use ggez::graphics::Color;
+use specs::{Component, NullStorage, VecStorage};
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
@@ -12,8 +13,9 @@ pub struct Velocity(pub cgmath::Vector2<f32>);
 #[storage(VecStorage)]
 pub struct CircleRender {
     pub radius: f32,
+    pub color: Color,
 }
 
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
+#[derive(Component, Debug, Default)]
+#[storage(NullStorage)]
 pub struct Movable;

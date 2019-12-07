@@ -81,9 +81,10 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         let pos = self.world.read_component::<Position>();
         let circle_render = self.world.read_component::<CircleRender>();
 
-        for (pos, size) in (&pos, &circle_render).join() {
+        for (pos, cr) in (&pos, &circle_render).join() {
             let pos = pos.0;
-            rc.sr.draw_circle([pos.x, pos.y], size.radius);
+            rc.sr.color = cr.color;
+            rc.sr.draw_circle([pos.x, pos.y], cr.radius * 2.5);
         }
 
         rc.finish()?;
