@@ -1,6 +1,6 @@
 use engine::*;
 
-use crate::engine::components::{CircleRender, Position, Velocity};
+use crate::engine::components::{CircleRender, LineRender, Position, Velocity};
 use crate::engine::resources::DeltaTime;
 use crate::engine::systems::MovableSystem;
 use crate::humans::HumanUpdate;
@@ -35,6 +35,7 @@ fn main() {
     world.insert(DeltaTime(0.));
 
     world.register::<CircleRender>();
+    world.register::<LineRender>();
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(HumanUpdate, "human_update", &[])
