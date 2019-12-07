@@ -1,5 +1,5 @@
 use cgmath::{InnerSpace, Vector2};
-use ggez::graphics::Color;
+use ggez::graphics::{Color, WHITE};
 
 use specs::prelude::*;
 use specs::Component;
@@ -13,7 +13,6 @@ pub struct Human {
     direction: Vector2<f32>,
     size: f32,
     objective: Vector2<f32>,
-    color: Color,
 }
 
 impl Human {
@@ -62,12 +61,15 @@ impl<'a> System<'a> for HumanUpdate {
 }
 
 pub fn setup(world: &mut World) {
-    for _ in 0..100 {
+    for _ in 0..5000 {
         let r: f32 = rand::random();
-        let r = 15. + r * 100.;
+        let r = 20. + r * 20.;
         world
             .create_entity()
-            .with(CircleRender { radius: r })
+            .with(CircleRender {
+                radius: r,
+                color: WHITE,
+            })
             .with(Position(
                 [
                     rand::random::<f32>() * 1000. - 500.,
@@ -80,9 +82,29 @@ pub fn setup(world: &mut World) {
                 direction: [1.0, 0.0].into(),
                 size: r,
                 objective: [0.0, 0.0].into(),
-                color: ggez::graphics::WHITE,
             })
-            .with(Movable)
             .build();
     }
+
+    world
+        .create_entity()
+        .with(CircleRender {
+            radius: 200.,
+            color: ggez::graphics::Color::new(1., 0., 0., 1.),
+        })
+        .with(Position(
+            [
+                rand::random::<f32>() * 1000. - 500.,
+                rand::random::<f32>() * 1000. - 500.,
+            ]
+            .into(),
+        ))
+        .with(Velocity([0.0, 1.0].into()))
+        .with(Human {
+            direction: [1.0, 0.0].into(),
+            size: 2000.,
+            objective: [0.0, 0.0].into(),
+        })
+        .with(Movable)
+        .build();
 }
