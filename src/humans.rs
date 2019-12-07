@@ -4,7 +4,7 @@ use ggez::graphics::{Color, WHITE};
 use specs::prelude::*;
 use specs::Component;
 
-use crate::engine::components::{CircleRender, Movable, Position, Velocity};
+use crate::engine::components::{CircleRender, LineRender, Movable, Position, Velocity};
 use crate::engine::resources::DeltaTime;
 
 #[derive(Component)]
@@ -61,10 +61,11 @@ impl<'a> System<'a> for HumanUpdate {
 }
 
 pub fn setup(world: &mut World) {
+    let mut last: Option<Entity> = None;
     for _ in 0..5000 {
         let r: f32 = rand::random();
         let r = 20. + r * 20.;
-        world
+        let mut y = world
             .create_entity()
             .with(CircleRender {
                 radius: r,
@@ -82,8 +83,16 @@ pub fn setup(world: &mut World) {
                 direction: [1.0, 0.0].into(),
                 size: r,
                 objective: [0.0, 0.0].into(),
-            })
-            .build();
+            });
+        if let Some(x) = last {
+            y = y.with(LineRender {
+                color: ggez::graphics::WHITE,
+                to: x,
+            });
+        }
+
+        let e = y.build();
+        last = Some(e);
     }
 
     world
