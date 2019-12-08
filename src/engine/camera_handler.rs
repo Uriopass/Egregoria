@@ -1,4 +1,4 @@
-use ggez::graphics::Rect;
+use crate::geometry::rect;
 use ggez::input;
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::MouseButton;
@@ -7,6 +7,7 @@ use ggez::Context;
 use ggez::{graphics, GameResult};
 
 use crate::camera::Camera;
+use crate::geometry::rect::Rect;
 use cgmath::{Matrix4, SquareMatrix, Vector2};
 
 #[allow(dead_code)]

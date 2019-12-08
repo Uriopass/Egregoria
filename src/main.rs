@@ -9,6 +9,7 @@ use specs::prelude::*;
 
 mod dijkstra;
 mod engine;
+mod geometry;
 mod humans;
 
 struct SpeedApply;
