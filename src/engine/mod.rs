@@ -9,9 +9,9 @@ use crate::engine::camera_handler::CameraHandler;
 use crate::engine::components::{CircleRender, LineRender, Position};
 use crate::engine::render_context::RenderContext;
 use crate::engine::resources::{DeltaTime, MouseInfo};
-use cgmath::mint;
+
 use cgmath::Vector2;
-use ggez::graphics::{DrawMode, DrawParam, MeshBuilder};
+
 use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
 use std::collections::HashSet;

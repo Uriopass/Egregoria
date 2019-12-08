@@ -1,7 +1,7 @@
 use crate::engine::components::{Movable, Position};
 use crate::engine::resources::MouseInfo;
 use cgmath::{InnerSpace, Vector2, Zero};
-use ggez::input::mouse::{MouseButton, MouseContext};
+use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
 use std::f32;
 
