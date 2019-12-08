@@ -2,7 +2,6 @@ use cgmath::{EuclideanSpace, Point2, Vector2};
 use ggez::graphics::{DrawMode, DrawParam, Image, Mesh, MeshBuilder, WHITE};
 use ggez::{graphics, Context, GameResult};
 
-
 use crate::engine::camera_handler;
 use crate::engine::camera_handler::CameraHandler;
 use crate::engine::shape_render::ShapeRenderer;
@@ -13,15 +12,9 @@ pub struct RenderContext<'a> {
     ctx: &'a mut Context,
 }
 
-#[allow(dead_code)]
 impl<'a> RenderContext<'a> {
     pub fn new(cam: &'a mut CameraHandler, ctx: &'a mut Context) -> RenderContext<'a> {
         let mut rect = cam.get_screen_box();
-        rect.scale(1.1, 1.1);
-        rect.x -= 50.;
-        rect.y -= 50.;
-        rect.w += 100.;
-        rect.h += 100.;
         let sr = ShapeRenderer {
             color: WHITE,
             mode: DrawMode::fill(),
