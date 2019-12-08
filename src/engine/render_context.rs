@@ -14,7 +14,7 @@ pub struct RenderContext<'a> {
 
 impl<'a> RenderContext<'a> {
     pub fn new(cam: &'a mut CameraHandler, ctx: &'a mut Context) -> RenderContext<'a> {
-        let mut rect = cam.get_screen_box();
+        let rect = cam.get_screen_box();
         let sr = ShapeRenderer {
             color: WHITE,
             mode: DrawMode::fill(),

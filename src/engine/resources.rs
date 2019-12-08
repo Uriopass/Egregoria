@@ -1,5 +1,5 @@
 use cgmath::Vector2;
-use ggez::input::mouse::{MouseButton, MouseContext};
+use ggez::input::mouse::MouseButton;
 use std::collections::HashSet;
 
 #[derive(Default)]

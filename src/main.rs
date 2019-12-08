@@ -4,7 +4,7 @@ use crate::engine::components::{CircleRender, LineRender, Position, Velocity};
 use crate::engine::resources::DeltaTime;
 use crate::engine::systems::MovableSystem;
 use crate::humans::HumanUpdate;
-use ggez::input::mouse::MouseContext;
+
 use specs::prelude::*;
 
 mod dijkstra;

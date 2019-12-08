@@ -1,5 +1,5 @@
 use cgmath::{InnerSpace, Vector2};
-use ggez::graphics::{Color, WHITE};
+use ggez::graphics::WHITE;
 
 use specs::prelude::*;
 use specs::Component;
