@@ -1,4 +1,3 @@
-use crate::geometry::rect;
 use crate::geometry::rect::Rect;
 use cgmath::{EuclideanSpace, Point2, Vector2};
 use ggez::graphics::{Color, DrawMode, MeshBuilder};

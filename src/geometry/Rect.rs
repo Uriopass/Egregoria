@@ -1,4 +1,4 @@
-use cgmath::{Basis2, Rad, Rotation2, Vector2};
+use cgmath::Vector2;
 
 pub struct Rect {
     pub x: f32,
