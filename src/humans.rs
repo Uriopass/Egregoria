@@ -10,7 +10,6 @@ use crate::engine::resources::DeltaTime;
 #[derive(Component)]
 #[storage(VecStorage)]
 pub struct Human {
-    direction: Vector2<f32>,
     size: f32,
     objective: Vector2<f32>,
 }
@@ -22,7 +21,10 @@ impl Human {
         speed: &Velocity,
         others: &Vec<(&Position, &Human)>,
     ) -> Vector2<f32> {
-        let mut force: Vector2<f32> = (self.objective - position.0) * 0.3;
+        if (self.objective - position.0).magnitude2() < 1. {
+            return [0.0, 0.0].into();
+        }
+        let mut force: Vector2<f32> = (self.objective - position.0).normalize() * 20.;
 
         force -= speed.0;
 
@@ -31,7 +33,8 @@ impl Human {
             if x.x == 0. && x.y == 0. {
                 continue;
             }
-            x *= h.size * h.size * 0.5 / x.magnitude2();
+            let d = x.magnitude();
+            x *= (h.size * self.size) / (d * d);
             force += x;
         }
         force
@@ -62,27 +65,29 @@ impl<'a> System<'a> for HumanUpdate {
 
 pub fn setup(world: &mut World) {
     let mut last: Option<Entity> = None;
-    for _ in 0..5000 {
-        let r: f32 = rand::random();
-        let r = 20. + r * 20.;
+    for _ in 0..100 {
+        let size: f32 = rand::random();
+        let size = 10.;
+
+        let x: f32 = if rand::random() {
+            rand::random::<f32>() * 1000.
+        } else {
+            5000. + rand::random::<f32>() * 1000.
+        };
+        let y: f32 = rand::random::<f32>() * 1000.;
+        println!("{}", y);
+
         let mut y = world
             .create_entity()
             .with(CircleRender {
-                radius: r,
+                radius: size,
                 color: WHITE,
             })
-            .with(Position(
-                [
-                    rand::random::<f32>() * 1000. - 500.,
-                    rand::random::<f32>() * 1000. - 500.,
-                ]
-                .into(),
-            ))
+            .with(Position([x, y].into()))
             .with(Velocity([0.0, 1.0].into()))
             .with(Human {
-                direction: [1.0, 0.0].into(),
-                size: r,
-                objective: [0.0, 0.0].into(),
+                size: size * 2.,
+                objective: [5000. - x, y].into(),
             });
         if let Some(x) = last {
             y = y.with(LineRender {
@@ -94,26 +99,4 @@ pub fn setup(world: &mut World) {
         let e = y.build();
         last = Some(e);
     }
-
-    world
-        .create_entity()
-        .with(CircleRender {
-            radius: 200.,
-            color: ggez::graphics::Color::new(1., 0., 0., 1.),
-        })
-        .with(Position(
-            [
-                rand::random::<f32>() * 1000. - 500.,
-                rand::random::<f32>() * 1000. - 500.,
-            ]
-            .into(),
-        ))
-        .with(Velocity([0.0, 1.0].into()))
-        .with(Human {
-            direction: [1.0, 0.0].into(),
-            size: 2000.,
-            objective: [0.0, 0.0].into(),
-        })
-        .with(Movable)
-        .build();
 }
