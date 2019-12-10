@@ -15,11 +15,7 @@ pub struct RenderContext<'a> {
 impl<'a> RenderContext<'a> {
     pub fn new(cam: &'a mut CameraHandler, ctx: &'a mut Context) -> RenderContext<'a> {
         let rect = cam.get_screen_box();
-        let sr = ShapeRenderer {
-            screen_box: rect,
-            zoom: cam.camera.zoom,
-            ..Default::default()
-        };
+        let sr = ShapeRenderer::new(&rect, cam.camera.zoom);
         RenderContext { ctx, cam, sr }
     }
 
