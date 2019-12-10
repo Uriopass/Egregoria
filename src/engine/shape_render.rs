@@ -1,25 +1,40 @@
 use crate::geometry::rect::Rect;
 use cgmath::{EuclideanSpace, Point2, Vector2};
 use ggez::graphics::{Color, DrawMode, MeshBuilder, WHITE};
+use nalgebra::Isometry2;
+use ncollide2d::query::Proximity;
+use ncollide2d::shape::Cuboid;
+use ncollide2d::shape::Segment;
 
 pub struct ShapeRenderer {
     pub color: Color,
     pub mode: DrawMode,
     pub meshbuilder: MeshBuilder,
     pub screen_box: Rect,
+    pub screen_collider: (Cuboid<f32>, Isometry2<f32>),
     pub empty: bool,
     pub zoom: f32,
 }
 
-impl Default for ShapeRenderer {
-    fn default() -> Self {
+impl ShapeRenderer {
+    pub fn new(screen_box: &Rect, zoom: f32) -> Self {
         ShapeRenderer {
             color: WHITE,
             mode: DrawMode::fill(),
             meshbuilder: MeshBuilder::new(),
-            screen_box: Rect::new(0., 0., 0., 0.),
+            screen_box: screen_box.clone(),
+            screen_collider: (
+                Cuboid::new([screen_box.w / 2., screen_box.h / 2.].into()),
+                Isometry2::new(
+                    nalgebra::Vector2::new(
+                        screen_box.x + screen_box.w / 2.,
+                        screen_box.y + screen_box.h / 2.,
+                    ),
+                    nalgebra::zero(),
+                ),
+            ),
             empty: true,
-            zoom: 1.0,
+            zoom,
         }
     }
 }
@@ -44,7 +59,22 @@ impl ShapeRenderer {
     }
 
     pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) {
-        if self.screen_box.contains(p1) || self.screen_box.contains(p2) {
+        let zero_iso: Isometry2<f32> = nalgebra::Isometry2::new(nalgebra::zero(), nalgebra::zero());
+
+        let segment = Segment::new(
+            nalgebra::Point2::new(p1.x, p1.y),
+            nalgebra::Point2::new(p2.x, p2.y),
+        );
+
+        let p = ncollide2d::query::proximity(
+            &self.screen_collider.1,
+            &self.screen_collider.0,
+            &zero_iso,
+            &segment,
+            0.0,
+        );
+
+        if let Proximity::Intersecting = p {
             self.meshbuilder
                 .line(
                     &[Point2::from_vec(p1), Point2::from_vec(p2)],

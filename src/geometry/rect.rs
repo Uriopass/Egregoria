@@ -1,5 +1,6 @@
 use cgmath::Vector2;
 
+#[derive(Clone)]
 pub struct Rect {
     pub x: f32,
     pub y: f32,

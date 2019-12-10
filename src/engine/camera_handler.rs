@@ -56,7 +56,7 @@ impl CameraHandler {
 
     pub fn unproject_mouse_click(&self, ctx: &Context) -> Vector2<f32> {
         let haha = ggez::input::mouse::position(ctx);
-        self.camera.unproject(haha)
+        self.camera.unproject(Vector2::new(haha.x, haha.y))
     }
 
     pub fn easy_camera_movement(&mut self, ctx: &mut Context) {

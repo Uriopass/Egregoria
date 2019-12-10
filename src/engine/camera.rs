@@ -1,10 +1,8 @@
-use ggez::mint::{Point2, Vector2};
-use ggez::nalgebra;
-use ggez::nalgebra::Matrix4;
+use cgmath::{Matrix4, SquareMatrix, Vector2, Vector4, Zero};
 
 pub struct Camera {
     pub viewport: Vector2<f32>,
-    pub position: Point2<f32>,
+    pub position: Vector2<f32>,
     pub zoom: f32,
     pub projection: Matrix4<f32>,
     pub invprojection: Matrix4<f32>,
@@ -13,11 +11,10 @@ pub struct Camera {
 impl Camera {
     pub fn new(viewport_width: f32, viewport_height: f32) -> Camera {
         let mut c = Camera {
-            viewport: [viewport_width, viewport_height].into(),
-
-            position: [0.0, 0.0].into(),
-            projection: Matrix4::zeros(),
-            invprojection: Matrix4::zeros(),
+            viewport: Vector2::new(viewport_width, viewport_height),
+            position: Vector2::zero(),
+            projection: Matrix4::zero(),
+            invprojection: Matrix4::zero(),
             zoom: 1.0,
         };
         c.update();
@@ -34,38 +31,33 @@ impl Camera {
         let offsetx = -2. * self.zoom * self.position.x / self.viewport.x;
         let offsety = -2. * self.zoom * self.position.y / self.viewport.y;
 
-        self.projection = Matrix4::new(scalex, 0., 0., offsetx,
-                                       0., scaley, 0., offsety,
+
+        // cgmath matrix init is backward, beware
+        self.projection = Matrix4::new(scalex, 0., 0., 0.,
+                                       0., scaley, 0., 0.,
                                        0., 0., 1., 0.,
-                                       0., 0., 0., 1.);
-        self.invprojection = self.projection.try_inverse().unwrap();
+                                       offsetx, offsety, 0., 1.);
+        self.invprojection = self.projection.invert().unwrap();
     }
 
-    #[allow(dead_code)]
-    pub fn translate(&mut self, x: f32, y: f32) {
-        self.position.x += x;
-        self.position.y += y;
-    }
-
-    #[allow(dead_code)]
-    pub fn unproject(&self, screen_coords: Point2<f32>) -> cgmath::Vector2<f32> {
+    pub fn unproject(&self, screen_coords: Vector2<f32>) -> Vector2<f32> {
         let v = self.invprojection
-            * nalgebra::Vector4::new(
+            * Vector4::new(
                 -1. + 2. * screen_coords.x / self.viewport.x,
                 1. - 2. * screen_coords.y / self.viewport.y,
                 0.0,
                 1.0,
             );
-        [v.x, v.y].into()
+        v.xy()
     }
 
     #[allow(dead_code)]
-    pub fn project(&self, world_coords: Point2<f32>) -> Point2<f32> {
-        let v = self.projection * nalgebra::Vector4::new(world_coords.x, world_coords.y, 0.0, 1.0);
-        [v.x, v.y].into()
+    pub fn project(&self, world_coords: Vector2<f32>) -> Vector2<f32> {
+        let v = self.projection * Vector4::new(world_coords.x, world_coords.y, 0.0, 1.0);
+        v.xy()
     }
 
     pub fn set_viewport(&mut self, viewport_width: f32, viewport_height: f32) {
-        self.viewport = [viewport_width, viewport_height].into();
+        self.viewport = Vector2::new(viewport_width, viewport_height);
     }
 }
