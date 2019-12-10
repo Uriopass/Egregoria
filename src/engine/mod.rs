@@ -6,7 +6,7 @@ use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::*;
 
 use crate::engine::camera_handler::CameraHandler;
-use crate::engine::components::{CircleRender, Collider, LineRender, Position};
+use crate::engine::components::{CircleRender, LineRender, LineToRender, Position};
 use crate::engine::render_context::RenderContext;
 use crate::engine::resources::{DeltaTime, MouseInfo};
 
@@ -82,13 +82,21 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
         let pos = self.world.read_component::<Position>();
         let circle_render = self.world.read_component::<CircleRender>();
+        let line_to_render = self.world.read_component::<LineToRender>();
         let line_render = self.world.read_component::<LineRender>();
 
-        for (ppos, lr) in (&pos, &line_render).join() {
+        for (ppos, lr) in (&pos, &line_to_render).join() {
             let ppos = ppos.0;
             let e = lr.to;
             let pos2: Vector2<f32> = pos.get(e).unwrap().0;
             rc.sr.draw_line(ppos, pos2);
+        }
+
+        for lr in (&line_render).join() {
+            let start = lr.start;
+            let end = lr.end;
+            rc.sr.color = lr.color;
+            rc.sr.draw_line(start, end);
         }
 
         for (pos, cr) in (&pos, &circle_render).join() {
