@@ -11,3 +11,4 @@ ggez = "0.5"
 rand = {version = "0.7.2", features = ["small_rng"]}
 cgmath = {version = "0.17", features = ["mint"]}
 specs = {version = "0.15", features = ["specs-derive"]}
+ncollide2d = "0.21"

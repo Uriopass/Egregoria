@@ -4,6 +4,7 @@ use cgmath::{InnerSpace, Vector2, Zero};
 use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
 use std::f32;
+use std::ops::Deref;
 
 pub struct MovableSystem {
     offset: Vector2<f32>,
@@ -28,7 +29,7 @@ impl<'a> System<'a> for MovableSystem {
     );
 
     fn run(&mut self, (entities, mouse, mut pos, movables): Self::SystemData) {
-        let mouse: &MouseInfo = &*mouse;
+        let mouse: &MouseInfo = mouse.deref();
 
         if mouse.buttons.contains(&MouseButton::Left) {
             match self.selected {
