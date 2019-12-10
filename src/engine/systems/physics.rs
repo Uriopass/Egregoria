@@ -1,10 +1,10 @@
 use crate::engine::components::{CircleRender, Collider, Position, Velocity};
 use crate::engine::resources::DeltaTime;
 use crate::PhysicsWorld;
-use ggez::graphics::Color;
-use nalgebra as na;
-use ncollide2d::pipeline::ContactEvent;
 
+use nalgebra as na;
+
+use cgmath::{Vector2, Zero};
 use nalgebra::Isometry2;
 use specs::{Join, Read, ReadStorage, Write, WriteStorage};
 
@@ -19,17 +19,19 @@ impl<'a> specs::System<'a> for SpeedApply {
         // we can provide for CollisionWorld, I guess.
         Write<'a, PhysicsWorld, specs::shred::PanicHandler>,
         Read<'a, DeltaTime>,
-        WriteStorage<'a, CircleRender>,
     );
 
     fn run(
         &mut self,
-        (mut collider, mut position, velocity, mut ncollide_world, delta, mut circle): Self::SystemData,
+        (mut collider, mut position, velocity, mut ncollide_world, delta): Self::SystemData,
     ) {
         let delta = delta.0;
-        for (collider, position, velocity) in (&mut collider, &mut position, &velocity).join() {
-            position.0 += velocity.0 * delta;
 
+        for (position, velocity) in (&mut position, &velocity).join() {
+            position.0 += velocity.0 * delta;
+        }
+
+        for (collider, position, _velocity) in (&mut collider, &mut position, &velocity).join() {
             let collision_obj = ncollide_world
                 .get_mut(collider.0)
                 .expect("Invalid collision object; was it removed from ncollide but not specs?");
@@ -40,27 +42,28 @@ impl<'a> specs::System<'a> for SpeedApply {
         }
 
         ncollide_world.update();
-        for ev in ncollide_world.contact_events() {
-            println!("Contact event: {:?}", ev);
-            match ev {
-                ContactEvent::Started(h1, h2) => {
-                    let ent = ncollide_world.collision_object(*h1).unwrap();
-                    let e = circle.get_mut(*ent.data()).unwrap();
-                    e.color = Color::new(1., 0., 0., 1.);
+        for (h1, h2, _alg, manifold) in ncollide_world.contact_pairs(true) {
+            let ent_1 = ncollide_world.collision_object(h1).unwrap().data();
+            let ent_2 = ncollide_world.collision_object(h2).unwrap().data();
 
-                    let ent = ncollide_world.collision_object(*h2).unwrap();
-                    let e = circle.get_mut(*ent.data()).unwrap();
-                    e.color = Color::new(1., 0., 0., 1.);
-                }
-                ContactEvent::Stopped(h1, h2) => {
-                    let ent = ncollide_world.collision_object(*h1).unwrap();
-                    let e = circle.get_mut(*ent.data()).unwrap();
-                    e.color = Color::new(1., 1., 1., 1.);
+            let contact = manifold.deepest_contact().unwrap().contact;
 
-                    let ent = ncollide_world.collision_object(*h2).unwrap();
-                    let e = circle.get_mut(*ent.data()).unwrap();
-                    e.color = Color::new(1., 1., 1., 1.);
-                }
+            let mut direction =
+                Vector2::<f32>::new(contact.normal.x, contact.normal.y) * contact.depth;
+
+            let has_velocity_1 = velocity.get(*ent_1).map_or(false, |x| !x.0.is_zero());
+            let has_velocity_2 = velocity.get(*ent_2).map_or(false, |x| !x.0.is_zero());
+
+            if has_velocity_1 && has_velocity_2 {
+                direction /= 2.;
+            }
+            if has_velocity_1 {
+                let pos_1 = position.get_mut(*ent_1).unwrap();
+                (*pos_1).0 -= direction;
+            }
+            if has_velocity_2 {
+                let pos_2 = position.get_mut(*ent_2).unwrap();
+                (*pos_2).0 += direction;
             }
         }
     }

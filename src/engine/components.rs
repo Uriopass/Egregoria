@@ -1,3 +1,4 @@
+use cgmath::Vector2;
 use ggez::graphics::Color;
 use ncollide2d::pipeline::CollisionObjectSlabHandle;
 use specs::{Component, Entity, NullStorage, VecStorage};
@@ -23,8 +24,16 @@ pub struct CircleRender {
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
-pub struct LineRender {
+pub struct LineToRender {
     pub to: Entity,
+    pub color: Color,
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct LineRender {
+    pub start: Vector2<f32>,
+    pub end: Vector2<f32>,
     pub color: Color,
 }
 

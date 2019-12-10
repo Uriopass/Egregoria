@@ -4,13 +4,11 @@ use ggez::graphics::WHITE;
 use specs::prelude::*;
 use specs::Component;
 
-use crate::engine::components::{CircleRender, Collider, LineRender, Movable, Position, Velocity};
+use crate::engine::components::{CircleRender, Movable, Position, Velocity};
 use crate::engine::resources::DeltaTime;
-use crate::PhysicsWorld;
+use crate::{add_shape, PhysicsWorld};
 
-use nalgebra as na;
-use ncollide2d::pipeline::{CollisionGroups, GeometricQueryType};
-use ncollide2d::shape::{Ball, ShapeHandle};
+use ncollide2d::shape::Ball;
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -26,9 +24,6 @@ impl Human {
         speed: &Velocity,
         others: &[(&Position, &Human)],
     ) -> Vector2<f32> {
-        if (self.objective - position.0).magnitude2() < 1. {
-            return [0.0, 0.0].into();
-        }
         let mut force: Vector2<f32> = (self.objective - position.0).normalize() * 20.;
 
         force -= speed.0;
@@ -39,7 +34,10 @@ impl Human {
                 continue;
             }
             let d = x.magnitude();
-            x *= (h.size * self.size * 0.1) / (d * d);
+            if d > 200. {
+                continue;
+            }
+            x *= (h.size * self.size) / (d * d);
             force += x;
         }
         force
@@ -62,6 +60,11 @@ impl<'a> System<'a> for HumanUpdate {
         let xx: Vec<(&Position, &Human)> = (&pos, &humans).join().collect();
 
         (&pos, &mut vel, &humans).par_join().for_each(|(p, v, h)| {
+            if (h.objective - p.0).magnitude2() < 1. {
+                v.0 = [0.0, 0.0].into();
+                return;
+            }
+
             let acc = h.calc_acceleration(&p, &v, &xx);
             v.0 += acc * delta * 2.;
         })
@@ -70,8 +73,8 @@ impl<'a> System<'a> for HumanUpdate {
 
 pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
     let mut last: Option<Entity> = None;
-    let gr = CollisionGroups::new();
     const SCALE: f32 = 500.;
+
     for _ in 0..100 {
         let size = 10.;
 
@@ -82,7 +85,7 @@ pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
         };
         let y: f32 = rand::random::<f32>() * SCALE;
 
-        let mut y = world
+        let eb = world
             .create_entity()
             .with(CircleRender {
                 radius: size,
@@ -91,30 +94,23 @@ pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
             .with(Position([x, y].into()))
             .with(Velocity([0.0, 1.0].into()))
             .with(Human {
-                size: size * 2.,
+                size,
                 objective: [SCALE * 5. - x, y].into(),
             })
             .with(Movable);
+        /*
         if let Some(x) = last {
             y = y.with(LineRender {
                 color: ggez::graphics::WHITE,
                 to: x,
             });
         }
+        */
 
-        let e = y.build();
+        let e = eb.build();
         let shape = Ball::new(size);
 
-        let (h, _) = coworld.add(
-            na::Isometry2::new(na::Vector2::new(0., 0.), na::zero()),
-            ShapeHandle::new(shape),
-            gr,
-            GeometricQueryType::Contacts(0.0, 0.0),
-            e,
-        );
-
-        let mut x = world.write_component::<Collider>();
-        x.insert(e, Collider { 0: h }).unwrap();
+        add_shape(coworld, world, e, [x, y].into(), shape);
 
         last = Some(e);
     }
