@@ -19,7 +19,7 @@ impl Human {
         &self,
         position: &Position,
         speed: &Velocity,
-        others: &Vec<(&Position, &Human)>,
+        others: &[(&Position, &Human)],
     ) -> Vector2<f32> {
         if (self.objective - position.0).magnitude2() < 1. {
             return [0.0, 0.0].into();
@@ -66,7 +66,6 @@ impl<'a> System<'a> for HumanUpdate {
 pub fn setup(world: &mut World) {
     let mut last: Option<Entity> = None;
     for _ in 0..100 {
-        let size: f32 = rand::random();
         let size = 10.;
 
         let x: f32 = if rand::random() {
@@ -75,8 +74,6 @@ pub fn setup(world: &mut World) {
             5000. + rand::random::<f32>() * 1000.
         };
         let y: f32 = rand::random::<f32>() * 1000.;
-        println!("{}", y);
-
         let mut y = world
             .create_entity()
             .with(CircleRender {
@@ -88,7 +85,8 @@ pub fn setup(world: &mut World) {
             .with(Human {
                 size: size * 2.,
                 objective: [5000. - x, y].into(),
-            });
+            })
+            .with(Movable);
         if let Some(x) = last {
             y = y.with(LineRender {
                 color: ggez::graphics::WHITE,

@@ -1,6 +1,6 @@
 use crate::geometry::rect::Rect;
 use cgmath::{EuclideanSpace, Point2, Vector2};
-use ggez::graphics::{Color, DrawMode, MeshBuilder};
+use ggez::graphics::{Color, DrawMode, MeshBuilder, WHITE};
 
 pub struct ShapeRenderer {
     pub color: Color,
@@ -8,8 +8,21 @@ pub struct ShapeRenderer {
     pub meshbuilder: MeshBuilder,
     pub screen_box: Rect,
     pub empty: bool,
+    pub zoom: f32,
 }
 
+impl Default for ShapeRenderer {
+    fn default() -> Self {
+        ShapeRenderer {
+            color: WHITE,
+            mode: DrawMode::fill(),
+            meshbuilder: MeshBuilder::new(),
+            screen_box: Rect::new(0., 0., 0., 0.),
+            empty: true,
+            zoom: 1.0,
+        }
+    }
+}
 #[allow(dead_code)]
 impl ShapeRenderer {
     pub fn draw_circle(&mut self, p: Vector2<f32>, r: f32) {
@@ -35,8 +48,11 @@ impl ShapeRenderer {
             self.meshbuilder
                 .line(
                     &[Point2::from_vec(p1), Point2::from_vec(p2)],
-                    1.0,
-                    self.color,
+                    0.5 / self.zoom,
+                    Color {
+                        a: (self.zoom * self.zoom * 50.).min(1.).max(0.),
+                        ..self.color
+                    },
                 )
                 .expect("Line error");
             self.empty = false;

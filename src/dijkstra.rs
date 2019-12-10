@@ -33,7 +33,7 @@ pub struct Edge {
     cost: i32,
 }
 
-pub fn dijsktra(_nodes: &Vec<Node>, edges: &Vec<Vec<Edge>>, start: usize) -> Vec<i32> {
+pub fn dijsktra(_nodes: &[Node], edges: &[Vec<Edge>], start: usize) -> Vec<i32> {
     let mut heap = BinaryHeap::new();
 
     heap.push(State {

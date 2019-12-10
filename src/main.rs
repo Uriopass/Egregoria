@@ -1,8 +1,8 @@
 use engine::*;
 
-use crate::engine::components::{CircleRender, LineRender, Position, Velocity};
+use crate::engine::components::{CircleRender, LineRender};
 use crate::engine::resources::DeltaTime;
-use crate::engine::systems::MovableSystem;
+use crate::engine::systems::{CollisionSystem, MovableSystem, SpeedApply};
 use crate::humans::HumanUpdate;
 
 use specs::prelude::*;
@@ -11,24 +11,6 @@ mod dijkstra;
 mod engine;
 mod geometry;
 mod humans;
-
-struct SpeedApply;
-
-impl<'a> System<'a> for SpeedApply {
-    type SystemData = (
-        Read<'a, DeltaTime>,
-        WriteStorage<'a, Position>,
-        ReadStorage<'a, Velocity>,
-    );
-
-    fn run(&mut self, (delta, mut pos, vel): Self::SystemData) {
-        let delta = delta.0;
-
-        for (vel, pos) in (&vel, &mut pos).join() {
-            pos.0 += vel.0 * delta;
-        }
-    }
-}
 
 fn main() {
     let mut world = World::new();
@@ -40,7 +22,8 @@ fn main() {
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(HumanUpdate, "human_update", &[])
-        .with(SpeedApply, "hello_world", &["human_update"])
+        .with(SpeedApply, "speed_apply", &["human_update"])
+        .with(CollisionSystem, "collision_system", &["speed_apply"])
         .with(MovableSystem::default(), "movable", &[])
         .build();
 
