@@ -16,11 +16,9 @@ impl<'a> RenderContext<'a> {
     pub fn new(cam: &'a mut CameraHandler, ctx: &'a mut Context) -> RenderContext<'a> {
         let rect = cam.get_screen_box();
         let sr = ShapeRenderer {
-            color: WHITE,
-            mode: DrawMode::fill(),
-            meshbuilder: MeshBuilder::new(),
-            empty: true,
             screen_box: rect,
+            zoom: cam.camera.zoom,
+            ..Default::default()
         };
         RenderContext { ctx, cam, sr }
     }
@@ -41,6 +39,7 @@ impl<'a> RenderContext<'a> {
         graphics::draw(self.ctx, text, trans)
     }
 
+    #[allow(dead_code)]
     pub fn draw_image<P>(&mut self, image: &Image, mut pos: Vector2<f32>) -> GameResult<()> {
         pos.y += image.height() as f32;
         let trans = graphics::DrawParam::new()
@@ -49,6 +48,7 @@ impl<'a> RenderContext<'a> {
         graphics::draw(self.ctx, image, trans)
     }
 
+    #[allow(dead_code)]
     pub fn draw_mesh(&mut self, mesh: &Mesh, dp: DrawParam) -> GameResult<()> {
         graphics::draw(self.ctx, mesh, dp)
     }

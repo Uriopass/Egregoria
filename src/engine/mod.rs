@@ -68,7 +68,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             ),
         };
 
-        self.dispatch.run_now(&mut self.world);
+        self.dispatch.run_now(&self.world);
         self.world.maintain();
         Ok(())
     }
@@ -84,17 +84,17 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         let circle_render = self.world.read_component::<CircleRender>();
         let line_render = self.world.read_component::<LineRender>();
 
-        for (pos, cr) in (&pos, &circle_render).join() {
-            let pos = pos.0;
-            rc.sr.color = cr.color;
-            rc.sr.draw_circle(pos, cr.radius * 2.5);
-        }
-
         for (ppos, lr) in (&pos, &line_render).join() {
             let ppos = ppos.0;
             let e = lr.to;
             let pos2: Vector2<f32> = pos.get(e).unwrap().0;
             rc.sr.draw_line(ppos, pos2);
+        }
+
+        for (pos, cr) in (&pos, &circle_render).join() {
+            let pos = pos.0;
+            rc.sr.color = cr.color;
+            rc.sr.draw_circle(pos, cr.radius * 2.5);
         }
 
         rc.finish()?;
@@ -121,8 +121,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
 pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
     let mut c = conf::Conf::new();
-    c.window_mode = c.window_mode.dimensions(800 as f32, 600 as f32);
-    c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Eight);
+    c.window_mode = c.window_mode.dimensions(800., 600.);
+    c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Four);
 
     let mut cb = ContextBuilder::new("Sandbox", "Uriopass").conf(c);
 
