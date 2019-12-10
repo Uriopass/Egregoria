@@ -4,8 +4,13 @@ use ggez::graphics::WHITE;
 use specs::prelude::*;
 use specs::Component;
 
-use crate::engine::components::{CircleRender, LineRender, Movable, Position, Velocity};
+use crate::engine::components::{CircleRender, Collider, LineRender, Movable, Position, Velocity};
 use crate::engine::resources::DeltaTime;
+use crate::PhysicsWorld;
+
+use nalgebra as na;
+use ncollide2d::pipeline::{CollisionGroups, GeometricQueryType};
+use ncollide2d::shape::{Ball, ShapeHandle};
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -34,7 +39,7 @@ impl Human {
                 continue;
             }
             let d = x.magnitude();
-            x *= (h.size * self.size) / (d * d);
+            x *= (h.size * self.size * 0.1) / (d * d);
             force += x;
         }
         force
@@ -63,17 +68,20 @@ impl<'a> System<'a> for HumanUpdate {
     }
 }
 
-pub fn setup(world: &mut World) {
+pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
     let mut last: Option<Entity> = None;
+    let gr = CollisionGroups::new();
+    const SCALE: f32 = 500.;
     for _ in 0..100 {
         let size = 10.;
 
         let x: f32 = if rand::random() {
-            rand::random::<f32>() * 1000.
+            rand::random::<f32>() * SCALE
         } else {
-            5000. + rand::random::<f32>() * 1000.
+            SCALE * 5. + rand::random::<f32>() * SCALE
         };
-        let y: f32 = rand::random::<f32>() * 1000.;
+        let y: f32 = rand::random::<f32>() * SCALE;
+
         let mut y = world
             .create_entity()
             .with(CircleRender {
@@ -84,7 +92,7 @@ pub fn setup(world: &mut World) {
             .with(Velocity([0.0, 1.0].into()))
             .with(Human {
                 size: size * 2.,
-                objective: [5000. - x, y].into(),
+                objective: [SCALE * 5. - x, y].into(),
             })
             .with(Movable);
         if let Some(x) = last {
@@ -95,6 +103,19 @@ pub fn setup(world: &mut World) {
         }
 
         let e = y.build();
+        let shape = Ball::new(size);
+
+        let (h, _) = coworld.add(
+            na::Isometry2::new(na::Vector2::new(0., 0.), na::zero()),
+            ShapeHandle::new(shape),
+            gr,
+            GeometricQueryType::Contacts(0.0, 0.0),
+            e,
+        );
+
+        let mut x = world.write_component::<Collider>();
+        x.insert(e, Collider { 0: h }).unwrap();
+
         last = Some(e);
     }
 }

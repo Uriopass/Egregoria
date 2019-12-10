@@ -1,4 +1,5 @@
 use ggez::graphics::Color;
+use ncollide2d::pipeline::CollisionObjectSlabHandle;
 use specs::{Component, Entity, NullStorage, VecStorage};
 
 #[derive(Component, Debug)]
@@ -8,6 +9,10 @@ pub struct Position(pub cgmath::Vector2<f32>);
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Velocity(pub cgmath::Vector2<f32>);
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Collider(pub CollisionObjectSlabHandle);
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]

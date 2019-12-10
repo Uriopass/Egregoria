@@ -6,7 +6,7 @@ use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::*;
 
 use crate::engine::camera_handler::CameraHandler;
-use crate::engine::components::{CircleRender, LineRender, Position};
+use crate::engine::components::{CircleRender, Collider, LineRender, Position};
 use crate::engine::render_context::RenderContext;
 use crate::engine::resources::{DeltaTime, MouseInfo};
 
@@ -94,9 +94,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         for (pos, cr) in (&pos, &circle_render).join() {
             let pos = pos.0;
             rc.sr.color = cr.color;
-            rc.sr.draw_circle(pos, cr.radius * 2.5);
+            rc.sr.draw_circle(pos, cr.radius);
         }
-
         rc.finish()?;
         graphics::present(ctx)
     }
