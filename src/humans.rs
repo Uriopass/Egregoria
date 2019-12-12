@@ -1,5 +1,4 @@
 use cgmath::{InnerSpace, Vector2};
-use ggez::graphics::WHITE;
 
 use specs::prelude::*;
 use specs::Component;
@@ -89,7 +88,7 @@ pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
             .create_entity()
             .with(CircleRender {
                 radius: size,
-                color: WHITE,
+                ..Default::default()
             })
             .with(Position([x, y].into()))
             .with(Velocity([0.0, 1.0].into()))
