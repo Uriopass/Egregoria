@@ -1,4 +1,4 @@
-use crate::engine::components::{Movable, Position, Velocity};
+use crate::engine::components::{Kinematics, Movable, Position};
 use crate::engine::resources::{DeltaTime, MouseInfo};
 use crate::engine::PHYSICS_UPDATES;
 use cgmath::num_traits::zero;
@@ -27,12 +27,12 @@ impl<'a> System<'a> for MovableSystem {
         Entities<'a>,
         Read<'a, MouseInfo>,
         WriteStorage<'a, Position>,
-        WriteStorage<'a, Velocity>,
+        WriteStorage<'a, Kinematics>,
         ReadStorage<'a, Movable>,
         Read<'a, DeltaTime>,
     );
 
-    fn run(&mut self, (entities, mouse, mut pos, mut vel, movables, delta): Self::SystemData) {
+    fn run(&mut self, (entities, mouse, mut pos, mut kin, movables, delta): Self::SystemData) {
         let mouse: &MouseInfo = mouse.deref();
 
         if mouse.buttons.contains(&MouseButton::Left) {
@@ -48,8 +48,8 @@ impl<'a> System<'a> for MovableSystem {
                     }
                     if let Some(e) = self.selected {
                         let p = pos.get_mut(e).unwrap();
-                        if let Some(vel) = vel.get_mut(e) {
-                            vel.0 = zero();
+                        if let Some(kin) = kin.get_mut(e) {
+                            kin.velocity = zero();
                         }
                         self.offset = p.0 - mouse.unprojected;
                     }
@@ -60,8 +60,8 @@ impl<'a> System<'a> for MovableSystem {
                 }
             }
         } else if let Some(e) = self.selected.take() {
-            if let (Some(pos), Some(vel)) = (pos.get_mut(e), vel.get_mut(e)) {
-                vel.0 = (mouse.unprojected - (pos.0 - self.offset))
+            if let (Some(pos), Some(kin)) = (pos.get_mut(e), kin.get_mut(e)) {
+                kin.velocity = (mouse.unprojected - (pos.0 - self.offset))
                     / (PHYSICS_UPDATES as f32 * delta.0);
             }
         }
