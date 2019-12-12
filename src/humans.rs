@@ -3,11 +3,10 @@ use cgmath::{InnerSpace, Vector2};
 use specs::prelude::*;
 use specs::Component;
 
-use crate::engine::components::{CircleRender, Movable, Position, Velocity};
+use crate::engine::components::{CircleRender, Kinematics, Movable, Position};
 use crate::engine::resources::DeltaTime;
 use crate::{add_shape, PhysicsWorld};
 
-use cgmath::num_traits::zero;
 use ncollide2d::shape::Ball;
 
 #[derive(Component)]
@@ -21,11 +20,12 @@ impl Human {
     fn calc_acceleration(
         &self,
         position: &Position,
-        speed: &Velocity,
+        kin: &Kinematics,
         others: &[(&Position, &Human)],
     ) -> Vector2<f32> {
-        let mut force = -0.2 * speed.0;
-        force += Vector2::unit_y() * -200.;
+        let mut force = -0.2 * kin.velocity;
+        //
+        // +force += Vector2::unit_y() * -200.;
         return force;
         force += (self.objective - position.0).normalize() * 20.;
 
@@ -51,24 +51,26 @@ impl<'a> System<'a> for HumanUpdate {
     type SystemData = (
         Read<'a, DeltaTime>,
         ReadStorage<'a, Position>,
-        WriteStorage<'a, Velocity>,
+        WriteStorage<'a, Kinematics>,
         ReadStorage<'a, Human>,
     );
 
-    fn run(&mut self, (delta, pos, mut vel, humans): Self::SystemData) {
+    fn run(&mut self, (delta, pos, mut kinematics, humans): Self::SystemData) {
         let delta = delta.0;
 
         let xx: Vec<(&Position, &Human)> = (&pos, &humans).join().collect();
 
-        (&pos, &mut vel, &humans).par_join().for_each(|(p, v, h)| {
-            if (h.objective - p.0).magnitude2() < 1. {
-                v.0 = [0.0, 0.0].into();
-                return;
-            }
+        (&pos, &mut kinematics, &humans)
+            .par_join()
+            .for_each(|(p, k, h)| {
+                if (h.objective - p.0).magnitude2() < 1. {
+                    k.velocity = [0.0, 0.0].into();
+                    return;
+                }
 
-            let acc = h.calc_acceleration(&p, &v, &xx);
-            v.0 += acc * delta * 2.;
-        })
+                let acc = h.calc_acceleration(&p, &k, &xx);
+                k.acceleration += acc;
+            })
     }
 }
 
@@ -88,7 +90,7 @@ pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
                 ..Default::default()
             })
             .with(Position([x, y].into()))
-            .with(Velocity([0.0, 0.0].into()))
+            .with(Kinematics::zero())
             .with(Human {
                 size,
                 objective: [SCALE * 5. - x, y].into(),
@@ -100,22 +102,4 @@ pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
 
         add_shape(coworld, world, e, [x, y].into(), shape);
     }
-
-    let e1 = world
-        .create_entity()
-        .with(CircleRender {
-            radius: 10.,
-            ..Default::default()
-        })
-        .with(Position([0., -100.].into()))
-        .with(Velocity([1000.0, 0.0].into()))
-        .with(Human {
-            size: 30.,
-            objective: [0., 0.].into(),
-        })
-        .with(Movable)
-        .build();
-
-    let shape = Ball::new(10.);
-    add_shape(coworld, world, e1, [0., -100.].into(), shape);
 }
