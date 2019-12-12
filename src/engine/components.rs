@@ -1,5 +1,5 @@
 use cgmath::Vector2;
-use ggez::graphics::Color;
+use ggez::graphics::{Color, WHITE};
 use ncollide2d::pipeline::CollisionObjectSlabHandle;
 use specs::{Component, Entity, NullStorage, VecStorage};
 
@@ -20,6 +20,17 @@ pub struct Collider(pub CollisionObjectSlabHandle);
 pub struct CircleRender {
     pub radius: f32,
     pub color: Color,
+    pub filled: bool,
+}
+
+impl Default for CircleRender {
+    fn default() -> Self {
+        CircleRender {
+            radius: 0.0,
+            color: WHITE,
+            filled: true,
+        }
+    }
 }
 
 #[derive(Component, Debug)]
