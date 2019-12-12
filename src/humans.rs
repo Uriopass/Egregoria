@@ -7,6 +7,7 @@ use crate::engine::components::{CircleRender, Movable, Position, Velocity};
 use crate::engine::resources::DeltaTime;
 use crate::{add_shape, PhysicsWorld};
 
+use cgmath::num_traits::zero;
 use ncollide2d::shape::Ball;
 
 #[derive(Component)]
@@ -23,9 +24,10 @@ impl Human {
         speed: &Velocity,
         others: &[(&Position, &Human)],
     ) -> Vector2<f32> {
-        let mut force: Vector2<f32> = (self.objective - position.0).normalize() * 20.;
-
-        force -= speed.0;
+        let mut force = -0.2 * speed.0;
+        force += Vector2::unit_y() * -200.;
+        return force;
+        force += (self.objective - position.0).normalize() * 20.;
 
         for (p, h) in others {
             let mut x: Vector2<f32> = position.0 - p.0;
@@ -71,18 +73,13 @@ impl<'a> System<'a> for HumanUpdate {
 }
 
 pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
-    let mut last: Option<Entity> = None;
-    const SCALE: f32 = 500.;
+    const SCALE: f32 = 1000.;
 
     for _ in 0..100 {
         let size = 10.;
 
-        let x: f32 = if rand::random() {
-            rand::random::<f32>() * SCALE
-        } else {
-            SCALE * 5. + rand::random::<f32>() * SCALE
-        };
-        let y: f32 = rand::random::<f32>() * SCALE;
+        let x: f32 = rand::random::<f32>() * SCALE - SCALE / 2.;
+        let y: f32 = rand::random::<f32>() * SCALE + x.abs() + 50.;
 
         let eb = world
             .create_entity()
@@ -91,26 +88,34 @@ pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
                 ..Default::default()
             })
             .with(Position([x, y].into()))
-            .with(Velocity([0.0, 1.0].into()))
+            .with(Velocity([0.0, 0.0].into()))
             .with(Human {
                 size,
                 objective: [SCALE * 5. - x, y].into(),
             })
             .with(Movable);
-        /*
-        if let Some(x) = last {
-            y = y.with(LineRender {
-                color: ggez::graphics::WHITE,
-                to: x,
-            });
-        }
-        */
 
         let e = eb.build();
         let shape = Ball::new(size);
 
         add_shape(coworld, world, e, [x, y].into(), shape);
-
-        last = Some(e);
     }
+
+    let e1 = world
+        .create_entity()
+        .with(CircleRender {
+            radius: 10.,
+            ..Default::default()
+        })
+        .with(Position([0., -100.].into()))
+        .with(Velocity([1000.0, 0.0].into()))
+        .with(Human {
+            size: 30.,
+            objective: [0., 0.].into(),
+        })
+        .with(Movable)
+        .build();
+
+    let shape = Ball::new(10.);
+    add_shape(coworld, world, e1, [0., -100.].into(), shape);
 }

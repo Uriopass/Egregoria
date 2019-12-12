@@ -1,5 +1,7 @@
-use crate::engine::components::{Movable, Position};
-use crate::engine::resources::MouseInfo;
+use crate::engine::components::{Movable, Position, Velocity};
+use crate::engine::resources::{DeltaTime, MouseInfo};
+use crate::engine::PHYSICS_UPDATES;
+use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2, Zero};
 use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
@@ -25,10 +27,12 @@ impl<'a> System<'a> for MovableSystem {
         Entities<'a>,
         Read<'a, MouseInfo>,
         WriteStorage<'a, Position>,
+        WriteStorage<'a, Velocity>,
         ReadStorage<'a, Movable>,
+        Read<'a, DeltaTime>,
     );
 
-    fn run(&mut self, (entities, mouse, mut pos, movables): Self::SystemData) {
+    fn run(&mut self, (entities, mouse, mut pos, mut vel, movables, delta): Self::SystemData) {
         let mouse: &MouseInfo = mouse.deref();
 
         if mouse.buttons.contains(&MouseButton::Left) {
@@ -44,6 +48,9 @@ impl<'a> System<'a> for MovableSystem {
                     }
                     if let Some(e) = self.selected {
                         let p = pos.get_mut(e).unwrap();
+                        if let Some(vel) = vel.get_mut(e) {
+                            vel.0 = zero();
+                        }
                         self.offset = p.0 - mouse.unprojected;
                     }
                 }
@@ -52,8 +59,11 @@ impl<'a> System<'a> for MovableSystem {
                     p.0 = self.offset + mouse.unprojected;
                 }
             }
-        } else {
-            self.selected = None;
+        } else if let Some(e) = self.selected.take() {
+            if let (Some(pos), Some(vel)) = (pos.get_mut(e), vel.get_mut(e)) {
+                vel.0 = (mouse.unprojected - (pos.0 - self.offset))
+                    / (PHYSICS_UPDATES as f32 * delta.0);
+            }
         }
     }
 }
