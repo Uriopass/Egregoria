@@ -16,6 +16,7 @@ use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
 use std::collections::HashSet;
 use std::iter::FromIterator;
+use std::time::{Duration, Instant};
 
 pub mod camera;
 pub mod camera_handler;
@@ -30,6 +31,7 @@ pub struct EngineState<'a> {
     pub dispatch: Dispatcher<'a, 'a>,
     pub time: f32,
     pub cam: CameraHandler,
+    pub last_time: Instant,
 }
 
 impl<'a> EngineState<'a> {
@@ -50,15 +52,17 @@ impl<'a> EngineState<'a> {
             dispatch,
             time: 0.,
             cam: CameraHandler::new(),
+            last_time: Instant::now(),
         })
     }
 }
+
+const PHYSICS_UPDATES: usize = 2;
 
 impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let delta = timer::delta(ctx).as_secs_f32();
         self.time += delta;
-        *self.world.write_resource() = DeltaTime(delta * 5.);
         *self.world.write_resource() = MouseInfo {
             unprojected: self.cam.unproject_mouse_click(ctx),
             buttons: HashSet::from_iter(
@@ -68,8 +72,18 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             ),
         };
 
-        self.dispatch.run_now(&self.world);
-        self.world.maintain();
+        *self.world.write_resource() = DeltaTime(delta / (PHYSICS_UPDATES as f32));
+
+        for _ in 0..PHYSICS_UPDATES {
+            self.dispatch.run_now(&self.world);
+            self.world.maintain();
+        }
+
+        let diff = 1. / 120. - (Instant::now() - self.last_time).as_secs_f32();
+        if diff > 0. {
+            timer::sleep(Duration::from_secs_f32(diff));
+        }
+        self.last_time = Instant::now();
         Ok(())
     }
 
@@ -104,6 +118,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             rc.sr.color = cr.color;
             rc.sr.draw_circle(pos, cr.radius);
         }
+
         rc.finish()?;
         graphics::present(ctx)
     }
@@ -129,7 +144,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
     let mut c = conf::Conf::new();
     c.window_mode = c.window_mode.dimensions(800., 600.);
-    c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Four);
+    c.window_setup = c.window_setup.vsync(true).samples(NumSamples::Four);
 
     let mut cb = ContextBuilder::new("Sandbox", "Uriopass").conf(c);
 
@@ -143,6 +158,9 @@ pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
     let (ref mut ctx, ref mut event_loop) = cb.build().unwrap();
 
     let mut state = EngineState::new(world, schedule, ctx).unwrap();
+
+    state.cam.camera.zoom = 0.5;
+    state.cam.camera.position.y = 500.;
 
     event::run(ctx, event_loop, &mut state).unwrap()
 }

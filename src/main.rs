@@ -2,7 +2,7 @@ use engine::*;
 
 use crate::engine::components::{CircleRender, Collider, LineRender, LineToRender, Position};
 use crate::engine::resources::DeltaTime;
-use crate::engine::systems::{MovableSystem, SpeedApply};
+use crate::engine::systems::{MovableSystem, PhysicsUpdate, SpeedApply};
 use crate::humans::HumanUpdate;
 use cgmath::{Vector2, Zero};
 use ggez::graphics::Color;
@@ -58,6 +58,7 @@ fn main() {
     let mut dispatcher = DispatcherBuilder::new()
         .with(HumanUpdate, "human_update", &[])
         .with(SpeedApply, "speed_apply", &["human_update"])
+        .with(PhysicsUpdate, "physics", &["speed_apply"])
         .with(MovableSystem::default(), "movable", &[])
         .build();
 
@@ -69,8 +70,30 @@ fn main() {
         .create_entity()
         .with(Position([0.0, 0.0].into()))
         .with(LineRender {
-            start: Vector2::new(1000., 0.),
+            start: Vector2::new(0., 0.),
             end: Vector2::new(1000., 1000.),
+            color: Color {
+                r: 0.,
+                g: 1.,
+                b: 0.,
+                a: 1.,
+            },
+        })
+        .build();
+    add_shape(
+        &mut collision_world,
+        &mut world,
+        e,
+        Vector2::zero(),
+        Segment::new(na::Point2::new(0., 0.), na::Point2::new(1000., 1000.)),
+    );
+
+    let e = world
+        .create_entity()
+        .with(Position([0.0, 0.0].into()))
+        .with(LineRender {
+            start: Vector2::new(0., 0.),
+            end: Vector2::new(-1000., 1000.),
             color: Color {
                 r: 0.,
                 g: 1.,
@@ -85,7 +108,7 @@ fn main() {
         &mut world,
         e,
         Vector2::zero(),
-        Segment::new(na::Point2::new(1000., 0.), na::Point2::new(1000., 1000.)),
+        Segment::new(na::Point2::new(0., 0.), na::Point2::new(-1000., 1000.)),
     );
 
     world.insert::<PhysicsWorld>(collision_world);
