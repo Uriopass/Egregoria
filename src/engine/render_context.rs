@@ -1,5 +1,5 @@
 use cgmath::{EuclideanSpace, Point2, Vector2};
-use ggez::graphics::{DrawMode, DrawParam, Image, Mesh, MeshBuilder, WHITE};
+use ggez::graphics::{DrawParam, Image, Mesh};
 use ggez::{graphics, Context, GameResult};
 
 use crate::engine::camera_handler;
@@ -27,6 +27,7 @@ impl<'a> RenderContext<'a> {
         );
     }
 
+    #[allow(dead_code)]
     pub fn draw_text(&mut self, text: &graphics::Text, mut pos: Vector2<f32>) -> GameResult<()> {
         pos.y += text.height(self.ctx) as f32;
         let trans = graphics::DrawParam::new()
