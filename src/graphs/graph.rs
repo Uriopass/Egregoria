@@ -8,7 +8,7 @@ pub struct Edge {
 
 type EdgeList = Vec<Edge>;
 
-#[derive(Eq, PartialEq, PartialOrd, Ord, Hash, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Copy, Clone)]
 pub struct NodeID(usize);
 
 pub struct Graph<T> {
@@ -49,6 +49,10 @@ impl<T> Graph<T> {
         self.edges.get(&id).expect("Invalid node id")
     }
 
+    pub fn get_backward_neighs(&self, id: NodeID) -> &EdgeList {
+        self.backward_edges.get(&id).expect("Invalid node id")
+    }
+
     pub fn set_neighs(&mut self, id: NodeID, neighs: EdgeList) {
         self.edges.insert(id, neighs);
     }
@@ -57,20 +61,65 @@ impl<T> Graph<T> {
         self.edges
             .get_mut(&id)
             .expect("Invalid node id")
-            .push(Edge { to, weight })
+            .push(Edge { to, weight });
+        self.backward_edges
+            .get_mut(&to)
+            .expect("Invalid node id")
+            .push(Edge { to: id, weight });
     }
 
     pub fn remove_neigh(&mut self, id: NodeID, to: NodeID) {
-        self.edges
-            .get_mut(&id)
-            .expect("Invalid node id")
-            .retain(|e| e.to != to);
+        remove_from_list(&mut self.edges, id, to);
+        remove_from_list(&mut self.backward_edges, to, id);
     }
 
     pub fn remove_node(&mut self, id: NodeID) {
         self.nodes.remove(&id);
         for x in self.backward_edges.remove(&id).expect("Invalid node id") {
-            self.remove_neigh(x.to, id)
+            remove_from_list(&mut self.edges, x.to, id);
         }
+        for x in self.edges.remove(&id).expect("Invalid node id") {
+            remove_from_list(&mut self.backward_edges, x.to, id);
+        }
+    }
+}
+
+fn remove_from_list(hash: &mut HashMap<NodeID, EdgeList>, id: NodeID, elem: NodeID) {
+    hash.get_mut(&id)
+        .expect("Invalid node id")
+        .retain(|e| e.to != elem);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_graph() {
+        let mut g = Graph::new();
+        let a = g.add_node(0);
+        let b = g.add_node(1);
+        let c = g.add_node(2);
+
+        g.add_neigh(a, b, 1.);
+
+        assert_eq!(g.get_neighs(a).len(), 1);
+        assert_eq!(g.get_backward_neighs(b).get(0).unwrap().to, a);
+
+        g.add_neigh(b, c, 1.);
+
+        g.remove_node(b);
+
+        assert_eq!(g.len(), 2);
+        assert_eq!(g.edges.len(), 2);
+        assert_eq!(g.backward_edges.len(), 2);
+        assert_eq!(g.get_neighs(a).len(), 0);
+        assert_eq!(g.get_backward_neighs(c).len(), 0);
+
+        g.add_neigh(a, c, 1.);
+        g.remove_neigh(a, c);
+
+        assert_eq!(g.get_neighs(a).len(), 0);
+        assert_eq!(g.get_backward_neighs(c).len(), 0);
     }
 }
