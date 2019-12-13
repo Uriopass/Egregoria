@@ -3,7 +3,7 @@ use cgmath::num_traits::zero;
 use cgmath::Vector2;
 use ggez::graphics::{Color, WHITE};
 use ncollide2d::pipeline::CollisionObjectSlabHandle;
-use specs::{Component, Entity, NullStorage, VecStorage};
+use specs::{Component, Entity, NullStorage, ReadStorage, VecStorage};
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
@@ -70,7 +70,7 @@ impl MeshRenderBuilder {
 }
 
 pub trait MeshRenderable: Send + Sync {
-    fn draw(&self, pos: Vector2<f32>, rc: &mut RenderContext);
+    fn draw(&self, pos: Vector2<f32>, positions: &ReadStorage<Position>, rc: &mut RenderContext);
 }
 
 pub struct CircleRender {
@@ -90,7 +90,7 @@ impl Default for CircleRender {
 }
 
 impl MeshRenderable for CircleRender {
-    fn draw(&self, pos: Vector2<f32>, rc: &mut RenderContext) {
+    fn draw(&self, pos: Vector2<f32>, _: &ReadStorage<Position>, rc: &mut RenderContext) {
         rc.sr.color = self.color;
         rc.sr.set_filled(self.filled);
         rc.sr.draw_circle(pos, self.radius);
@@ -116,7 +116,7 @@ impl Default for RectRender {
 }
 
 impl MeshRenderable for RectRender {
-    fn draw(&self, pos: Vector2<f32>, rc: &mut RenderContext) {
+    fn draw(&self, pos: Vector2<f32>, _: &ReadStorage<Position>, rc: &mut RenderContext) {
         rc.sr.color = self.color;
         rc.sr.set_filled(self.filled);
         rc.sr.draw_rect(
@@ -127,11 +127,18 @@ impl MeshRenderable for RectRender {
     }
 }
 
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
 pub struct LineToRender {
     pub to: Entity,
     pub color: Color,
+}
+
+impl MeshRenderable for LineToRender {
+    fn draw(&self, pos: Vector2<f32>, positions: &ReadStorage<Position>, rc: &mut RenderContext) {
+        let e = self.to;
+        let pos2 = positions.get(e).unwrap().0;
+        rc.sr.color = self.color;
+        rc.sr.draw_line(pos, pos2);
+    }
 }
 
 pub struct LineRender {
@@ -141,7 +148,7 @@ pub struct LineRender {
 }
 
 impl MeshRenderable for LineRender {
-    fn draw(&self, _: Vector2<f32>, rc: &mut RenderContext) {
+    fn draw(&self, _: Vector2<f32>, _: &ReadStorage<Position>, rc: &mut RenderContext) {
         let start = self.start;
         let end = self.end;
         rc.sr.color = self.color;

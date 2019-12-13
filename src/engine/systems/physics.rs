@@ -6,12 +6,8 @@ use nalgebra as na;
 
 use cgmath::{InnerSpace, Vector2, Zero};
 use nalgebra::Isometry2;
-use ncollide2d::bounding_volume::AABB;
-use ncollide2d::pipeline::{
-    CollisionGroups, CollisionObject, CollisionObjectSet, CollisionObjectSlab,
-    CollisionObjectSlabHandle, InterferencesWithAABB,
-};
-use specs::{Entity, Join, Read, Write, WriteStorage};
+
+use specs::{Join, Read, Write, WriteStorage};
 
 pub struct KinematicsApply;
 pub struct PhysicsUpdate;
