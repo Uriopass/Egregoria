@@ -1,5 +1,7 @@
 use crate::engine::camera_handler::CameraHandler;
-use crate::engine::components::{CircleRender, LineRender, LineToRender, Position, RectRender};
+use crate::engine::components::{
+    CircleRender, LineRender, LineToRender, MeshRender, Position, RectRender,
+};
 use crate::engine::render_context::RenderContext;
 use crate::engine::resources::{DeltaTime, MouseInfo};
 use crate::engine::PHYSICS_UPDATES;
@@ -10,6 +12,7 @@ use ggez::{filesystem, graphics, timer, Context, GameResult};
 use specs::{Dispatcher, Join, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
+use std::ops::Deref;
 use std::time::Instant;
 
 pub struct EngineState<'a> {
@@ -73,10 +76,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         rc.clear();
 
         let positions = self.world.read_component::<Position>();
-        let circle_render = self.world.read_component::<CircleRender>();
-        let rect_render = self.world.read_component::<RectRender>();
+        let mesh_render = self.world.read_component::<MeshRender>();
         let line_to_render = self.world.read_component::<LineToRender>();
-        let line_render = self.world.read_component::<LineRender>();
 
         for (pos, lr) in (&positions, &line_to_render).join() {
             let ppos = pos.0;
@@ -85,26 +86,10 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             rc.sr.draw_line(ppos, pos2);
         }
 
-        for lr in (&line_render).join() {
-            let start = lr.start;
-            let end = lr.end;
-            rc.sr.color = lr.color;
-            rc.sr.draw_line(start, end);
-        }
-
-        for (pos, rr) in (&positions, &rect_render).join() {
-            rc.sr.color = rr.color;
-            rc.sr.draw_rect(
-                pos.0 - Vector2::new(rr.width / 2., rr.height / 2.),
-                rr.width,
-                rr.height,
-            )
-        }
-
-        for (pos, cr) in (&positions, &circle_render).join() {
-            let pos = pos.0;
-            rc.sr.color = cr.color;
-            rc.sr.draw_circle(pos, cr.radius);
+        for (pos, mr) in (&positions, &mesh_render).join() {
+            for order in &mr.orders {
+                order.draw(pos.0, &mut rc);
+            }
         }
 
         rc.finish()?;
