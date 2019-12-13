@@ -1,6 +1,8 @@
 use engine::*;
 
-use crate::engine::components::{CircleRender, Collider, LineRender, LineToRender, Position};
+use crate::engine::components::{
+    CircleRender, Collider, LineRender, LineToRender, Position, RectRender,
+};
 use crate::engine::resources::DeltaTime;
 use crate::engine::systems::{KinematicsApply, MovableSystem, PhysicsUpdate};
 use crate::humans::HumanUpdate;
@@ -8,7 +10,6 @@ use cgmath::{Vector2, Zero};
 use ggez::graphics::Color;
 use ncollide2d::shape::{Segment, Shape, ShapeHandle};
 use ncollide2d::world::CollisionWorld;
-use specs::prelude::*;
 
 mod dijkstra;
 mod engine;
@@ -17,18 +18,15 @@ mod humans;
 
 use nalgebra as na;
 use ncollide2d::pipeline::{CollisionGroups, GeometricQueryType};
+use specs::{Builder, DispatcherBuilder, Entity, World, WorldExt};
 
 type PhysicsWorld = CollisionWorld<f32, Entity>;
 
-pub fn add_shape<T>(
-    coworld: &mut PhysicsWorld,
-    world: &mut World,
-    e: Entity,
-    pos: Vector2<f32>,
-    shape: T,
-) where
+pub fn add_shape<T>(world: &mut World, e: Entity, pos: Vector2<f32>, shape: T)
+where
     T: Shape<f32>,
 {
+    let coworld = world.get_mut::<PhysicsWorld>().unwrap();
     let (h, _) = coworld.add(
         na::Isometry2::new(na::Vector2::new(pos.x, pos.y), na::zero()),
         ShapeHandle::new(shape),
@@ -43,12 +41,7 @@ pub fn add_shape<T>(
     collider_comp.insert(e, Collider(h)).unwrap();
 }
 
-pub fn add_segment(
-    coworld: &mut PhysicsWorld,
-    world: &mut World,
-    start: Vector2<f32>,
-    end: Vector2<f32>,
-) {
+pub fn add_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f32>) {
     let e = world
         .create_entity()
         .with(Position([0.0, 0.0].into()))
@@ -64,7 +57,6 @@ pub fn add_segment(
         })
         .build();
     add_shape(
-        coworld,
         world,
         e,
         Vector2::zero(),
@@ -81,8 +73,10 @@ fn main() {
     let mut world = World::new();
 
     world.insert(DeltaTime(0.));
+    world.insert::<PhysicsWorld>(collision_world);
 
     world.register::<CircleRender>();
+    world.register::<RectRender>();
     world.register::<LineToRender>();
     world.register::<LineRender>();
     world.register::<Collider>();
@@ -96,35 +90,14 @@ fn main() {
 
     dispatcher.setup(&mut world);
 
-    humans::setup(&mut world, &mut collision_world);
+    humans::setup(&mut world);
 
-    add_segment(
-        &mut collision_world,
-        &mut world,
-        [0.0, 0.0].into(),
-        [1000., 0.].into(),
-    );
+    add_segment(&mut world, [0.0, 0.0].into(), [1000., 0.].into());
 
-    add_segment(
-        &mut collision_world,
-        &mut world,
-        [0.0, 0.0].into(),
-        [0., 400.].into(),
-    );
+    add_segment(&mut world, [0.0, 0.0].into(), [0., 400.].into());
 
-    add_segment(
-        &mut collision_world,
-        &mut world,
-        [1000.0, 0.0].into(),
-        [1000., 400.].into(),
-    );
-    add_segment(
-        &mut collision_world,
-        &mut world,
-        [0., 400.0].into(),
-        [1000., 400.].into(),
-    );
+    add_segment(&mut world, [1000.0, 0.0].into(), [1000., 400.].into());
+    add_segment(&mut world, [0., 400.0].into(), [1000., 400.].into());
 
-    world.insert::<PhysicsWorld>(collision_world);
     engine::start(world, dispatcher);
 }
