@@ -1,13 +1,16 @@
 use cgmath::{InnerSpace, Vector2};
 
-use specs::prelude::*;
-use specs::Component;
+use specs::{
+    Builder, Component, Join, ParJoin, Read, ReadStorage, System, VecStorage, World, WorldExt,
+    WriteStorage,
+};
 
-use crate::engine::components::{CircleRender, Kinematics, Movable, Position};
+use crate::add_shape;
+use crate::engine::components::{Kinematics, Movable, Position, RectRender};
 use crate::engine::resources::DeltaTime;
-use crate::{add_shape, PhysicsWorld};
 
-use ncollide2d::shape::Ball;
+use ncollide2d::shape::Cuboid;
+use specs::prelude::ParallelIterator;
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -74,19 +77,20 @@ impl<'a> System<'a> for HumanUpdate {
     }
 }
 
-pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
+pub fn setup(world: &mut World) {
     const SCALE: f32 = 1000.;
 
-    for _ in 0..100 {
+    for _ in 0..10 {
         let size = 10.;
 
-        let x: f32 = rand::random::<f32>() * SCALE - SCALE / 2.;
-        let y: f32 = rand::random::<f32>() * SCALE + x.abs() + 50.;
+        let x: f32 = rand::random::<f32>() * SCALE;
+        let y: f32 = rand::random::<f32>() * SCALE * 0.4;
 
         let eb = world
             .create_entity()
-            .with(CircleRender {
-                radius: size,
+            .with(RectRender {
+                width: size * 2.,
+                height: size * 2.,
                 ..Default::default()
             })
             .with(Position([x, y].into()))
@@ -98,8 +102,9 @@ pub fn setup(world: &mut World, coworld: &mut PhysicsWorld) {
             .with(Movable);
 
         let e = eb.build();
-        let shape = Ball::new(size);
+        //let shape = Ball::new(size);
+        let shape = Cuboid::new([size, size].into());
 
-        add_shape(coworld, world, e, [x, y].into(), shape);
+        add_shape(world, e, [x, y].into(), shape);
     }
 }

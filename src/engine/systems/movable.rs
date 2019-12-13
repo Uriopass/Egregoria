@@ -1,5 +1,6 @@
 use crate::engine::components::{Kinematics, Movable, Position};
 use crate::engine::resources::{DeltaTime, MouseInfo};
+
 use crate::engine::PHYSICS_UPDATES;
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2, Zero};
@@ -32,14 +33,17 @@ impl<'a> System<'a> for MovableSystem {
         Read<'a, DeltaTime>,
     );
 
-    fn run(&mut self, (entities, mouse, mut pos, mut kin, movables, delta): Self::SystemData) {
+    fn run(
+        &mut self,
+        (entities, mouse, mut positions, mut kinematics, movables, delta): Self::SystemData,
+    ) {
         let mouse: &MouseInfo = mouse.deref();
 
         if mouse.buttons.contains(&MouseButton::Left) {
             match self.selected {
                 None => {
                     let mut min_dist = f32::MAX;
-                    for (entity, pos, _) in (&entities, &pos, &movables).join() {
+                    for (entity, pos, _) in (&entities, &positions, &movables).join() {
                         let dist: f32 = (pos.0 - mouse.unprojected).magnitude2();
                         if dist <= min_dist {
                             self.selected = Some(entity);
@@ -47,22 +51,23 @@ impl<'a> System<'a> for MovableSystem {
                         }
                     }
                     if let Some(e) = self.selected {
-                        let p = pos.get_mut(e).unwrap();
-                        if let Some(kin) = kin.get_mut(e) {
+                        let p = positions.get_mut(e).unwrap();
+                        if let Some(kin) = kinematics.get_mut(e) {
                             kin.velocity = zero();
                         }
                         self.offset = p.0 - mouse.unprojected;
                     }
                 }
                 Some(x) => {
-                    let p = pos.get_mut(x).unwrap();
+                    let p = positions.get_mut(x).unwrap();
                     p.0 = self.offset + mouse.unprojected;
                 }
             }
         } else if let Some(e) = self.selected.take() {
-            if let (Some(pos), Some(kin)) = (pos.get_mut(e), kin.get_mut(e)) {
-                kin.velocity = (mouse.unprojected - (pos.0 - self.offset))
-                    / (PHYSICS_UPDATES as f32 * delta.0);
+            if let Some(kin) = kinematics.get_mut(e) {
+                let p = positions.get(e).unwrap();
+                kin.velocity =
+                    (mouse.unprojected - (p.0 - self.offset)) / (PHYSICS_UPDATES as f32 * delta.0);
             }
         }
     }

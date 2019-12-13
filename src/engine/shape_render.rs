@@ -38,6 +38,7 @@ impl ShapeRenderer {
         }
     }
 }
+
 #[allow(dead_code)]
 impl ShapeRenderer {
     pub fn draw_circle(&mut self, p: Vector2<f32>, r: f32) {
