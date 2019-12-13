@@ -9,7 +9,6 @@ use crate::add_shape;
 use crate::engine::components::{Kinematics, MeshRenderBuilder, Movable, Position, RectRender};
 use crate::engine::resources::DeltaTime;
 
-use ggez::graphics::MeshBuilder;
 use ncollide2d::shape::Cuboid;
 use specs::prelude::ParallelIterator;
 
@@ -23,14 +22,15 @@ pub struct Human {
 impl Human {
     fn calc_acceleration(
         &self,
-        position: &Position,
+        //position: &Position,
         kin: &Kinematics,
-        others: &[(&Position, &Human)],
+        //others: &[(&Position, &Human)],
     ) -> Vector2<f32> {
-        let mut force = -0.2 * kin.velocity;
+        let force = -0.2 * kin.velocity;
         //
         // +force += Vector2::unit_y() * -200.;
         return force;
+        /*
         force += (self.objective - position.0).normalize() * 20.;
 
         for (p, h) in others {
@@ -46,6 +46,7 @@ impl Human {
             force += x;
         }
         force
+        */
     }
 }
 
@@ -60,9 +61,9 @@ impl<'a> System<'a> for HumanUpdate {
     );
 
     fn run(&mut self, (delta, pos, mut kinematics, humans): Self::SystemData) {
-        let delta = delta.0;
+        let _delta = delta.0;
 
-        let xx: Vec<(&Position, &Human)> = (&pos, &humans).join().collect();
+        let _xx: Vec<(&Position, &Human)> = (&pos, &humans).join().collect();
 
         (&pos, &mut kinematics, &humans)
             .par_join()
@@ -72,7 +73,7 @@ impl<'a> System<'a> for HumanUpdate {
                     return;
                 }
 
-                let acc = h.calc_acceleration(&p, &k, &xx);
+                let acc = h.calc_acceleration(&k);
                 k.acceleration += acc;
             })
     }
