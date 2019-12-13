@@ -41,6 +41,14 @@ impl ShapeRenderer {
 
 #[allow(dead_code)]
 impl ShapeRenderer {
+    pub fn set_filled(&mut self, filled: bool) {
+        if filled {
+            self.mode = DrawMode::fill()
+        } else {
+            self.mode = DrawMode::stroke(1.);
+        }
+    }
+
     pub fn draw_circle(&mut self, p: Vector2<f32>, r: f32) {
         let pp = Point2::from_vec(p);
 
