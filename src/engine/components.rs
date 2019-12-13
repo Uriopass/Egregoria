@@ -56,6 +56,26 @@ impl Default for CircleRender {
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
+pub struct RectRender {
+    pub width: f32,
+    pub height: f32,
+    pub color: Color,
+    pub filled: bool,
+}
+
+impl Default for RectRender {
+    fn default() -> Self {
+        RectRender {
+            width: 0.0,
+            height: 0.0,
+            color: WHITE,
+            filled: true,
+        }
+    }
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
 pub struct LineToRender {
     pub to: Entity,
     pub color: Color,
