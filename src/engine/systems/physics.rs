@@ -48,18 +48,6 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
                 let pos_1 = positions.get(*ent_1).unwrap().0;
                 let pos_2 = positions.get(*ent_2).unwrap().0;
 
-                let aaaaa = AABB::new(
-                    na::Point2::new(pos_1.x - 100., pos_1.y - 100.),
-                    na::Point2::new(pos_1.x + 100., pos_1.y + 100.),
-                );
-                let cggg = Default::default();
-                let test = coworld.interferences_with_aabb(&aaaaa, &cggg);
-
-                let objs: Vec<(CollisionObjectSlabHandle, &CollisionObject<f32, Entity>)> =
-                    test.collect();
-
-                println!("Collision! {} objects around ", objs.len());
-
                 let v_1 = kinematics.get(*ent_1).unwrap().velocity;
                 let v_2 = kinematics.get(*ent_2).unwrap().velocity;
 
