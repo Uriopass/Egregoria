@@ -19,3 +19,4 @@ cgmath = {version = "0.17", features = ["mint", "swizzle"]}
 specs = {version = "0.15", features = ["specs-derive", "parallel"]}
 ncollide2d = "0.21"
 nalgebra = "0.19.0"
+ordered-float = "1.0.2"

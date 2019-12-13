@@ -12,9 +12,9 @@ use ggez::graphics::Color;
 use ncollide2d::shape::{Segment, Shape, ShapeHandle};
 use ncollide2d::world::CollisionWorld;
 
-mod dijkstra;
 mod engine;
 mod geometry;
+mod graphs;
 mod humans;
 
 use nalgebra as na;
@@ -69,7 +69,7 @@ pub fn add_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f32>) {
 }
 
 fn main() {
-    let mut collision_world: PhysicsWorld = CollisionWorld::new(0.);
+    let collision_world: PhysicsWorld = CollisionWorld::new(0.);
 
     let mut world = World::new();
 

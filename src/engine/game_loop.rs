@@ -12,7 +12,7 @@ use ggez::{filesystem, graphics, timer, Context, GameResult};
 use specs::{Dispatcher, Join, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
-use std::ops::Deref;
+
 use std::time::Instant;
 
 pub struct EngineState<'a> {
