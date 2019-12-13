@@ -1,11 +1,9 @@
 use crate::engine::camera_handler::CameraHandler;
-use crate::engine::components::{
-    CircleRender, LineRender, LineToRender, MeshRender, Position, RectRender,
-};
+use crate::engine::components::{MeshRender, Position};
 use crate::engine::render_context::RenderContext;
 use crate::engine::resources::{DeltaTime, MouseInfo};
 use crate::engine::PHYSICS_UPDATES;
-use cgmath::Vector2;
+
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
@@ -77,18 +75,10 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
         let positions = self.world.read_component::<Position>();
         let mesh_render = self.world.read_component::<MeshRender>();
-        let line_to_render = self.world.read_component::<LineToRender>();
-
-        for (pos, lr) in (&positions, &line_to_render).join() {
-            let ppos = pos.0;
-            let e = lr.to;
-            let pos2: Vector2<f32> = positions.get(e).unwrap().0;
-            rc.sr.draw_line(ppos, pos2);
-        }
 
         for (pos, mr) in (&positions, &mesh_render).join() {
             for order in &mr.orders {
-                order.draw(pos.0, &mut rc);
+                order.draw(pos.0, &positions, &mut rc);
             }
         }
 
