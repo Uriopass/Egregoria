@@ -6,7 +6,12 @@ use nalgebra as na;
 
 use cgmath::{InnerSpace, Vector2, Zero};
 use nalgebra::Isometry2;
-use specs::{Join, Read, Write, WriteStorage};
+use ncollide2d::bounding_volume::AABB;
+use ncollide2d::pipeline::{
+    CollisionGroups, CollisionObject, CollisionObjectSet, CollisionObjectSlab,
+    CollisionObjectSlabHandle, InterferencesWithAABB,
+};
+use specs::{Entity, Join, Read, Write, WriteStorage};
 
 pub struct KinematicsApply;
 pub struct PhysicsUpdate;
@@ -30,7 +35,7 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
             let normal: Vector2<f32> =
                 Vector2::<f32>::new(contact.normal.x, contact.normal.y).normalize();
 
-            let direction = normal * contact.depth;
+            let direction = normal * (contact.depth + 0.01);
 
             let is_dynamic_1 = kinematics.get(*ent_1).is_some();
             let is_dynamic_2 = kinematics.get(*ent_2).is_some();
@@ -40,8 +45,20 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
 
             if is_dynamic_1 && is_dynamic_2 {
                 // elastic collision
-                let pos_1 = positions.get(*ent_1).unwrap();
-                let pos_2 = positions.get(*ent_2).unwrap();
+                let pos_1 = positions.get(*ent_1).unwrap().0;
+                let pos_2 = positions.get(*ent_2).unwrap().0;
+
+                let aaaaa = AABB::new(
+                    na::Point2::new(pos_1.x - 100., pos_1.y - 100.),
+                    na::Point2::new(pos_1.x + 100., pos_1.y + 100.),
+                );
+                let cggg = Default::default();
+                let test = coworld.interferences_with_aabb(&aaaaa, &cggg);
+
+                let objs: Vec<(CollisionObjectSlabHandle, &CollisionObject<f32, Entity>)> =
+                    test.collect();
+
+                println!("Collision! {} objects around ", objs.len());
 
                 let v_1 = kinematics.get(*ent_1).unwrap().velocity;
                 let v_2 = kinematics.get(*ent_2).unwrap().velocity;
@@ -50,7 +67,7 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
                 let r_2 = 2. * m_1 / (m_1 + m_2);
 
                 let v_diff: Vector2<f32> = v_1 - v_2;
-                let pos_diff: Vector2<f32> = pos_1.0 - pos_2.0;
+                let pos_diff: Vector2<f32> = pos_1 - pos_2;
                 let factor = pos_diff.dot(v_diff) / pos_diff.magnitude2();
 
                 kinematics.get_mut(*ent_1).unwrap().velocity -= r_1 * factor * pos_diff;

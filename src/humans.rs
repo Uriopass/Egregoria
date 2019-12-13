@@ -6,9 +6,10 @@ use specs::{
 };
 
 use crate::add_shape;
-use crate::engine::components::{Kinematics, Movable, Position, RectRender};
+use crate::engine::components::{Kinematics, MeshRenderBuilder, Movable, Position, RectRender};
 use crate::engine::resources::DeltaTime;
 
+use ggez::graphics::MeshBuilder;
 use ncollide2d::shape::Cuboid;
 use specs::prelude::ParallelIterator;
 
@@ -88,11 +89,21 @@ pub fn setup(world: &mut World) {
 
         let eb = world
             .create_entity()
-            .with(RectRender {
-                width: size * 2.,
-                height: size * 2.,
-                ..Default::default()
-            })
+            .with(
+                MeshRenderBuilder::new()
+                    .add(RectRender {
+                        width: size * 2.,
+                        height: size * 2.,
+                        ..Default::default()
+                    })
+                    .add(RectRender {
+                        width: 200.,
+                        height: 200.,
+                        filled: false,
+                        ..Default::default()
+                    })
+                    .build(),
+            )
             .with(Position([x, y].into()))
             .with(Kinematics::zero())
             .with(Human {

@@ -1,7 +1,8 @@
 use engine::*;
 
 use crate::engine::components::{
-    CircleRender, Collider, LineRender, LineToRender, Position, RectRender,
+    CircleRender, Collider, LineRender, LineToRender, MeshRender, MeshRenderBuilder, Position,
+    RectRender,
 };
 use crate::engine::resources::DeltaTime;
 use crate::engine::systems::{KinematicsApply, MovableSystem, PhysicsUpdate};
@@ -45,7 +46,7 @@ pub fn add_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f32>) {
     let e = world
         .create_entity()
         .with(Position([0.0, 0.0].into()))
-        .with(LineRender {
+        .with(MeshRenderBuilder::simple(LineRender {
             start,
             end,
             color: Color {
@@ -54,7 +55,7 @@ pub fn add_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f32>) {
                 b: 0.,
                 a: 1.,
             },
-        })
+        }))
         .build();
     add_shape(
         world,
@@ -68,17 +69,15 @@ pub fn add_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f32>) {
 }
 
 fn main() {
-    let mut collision_world: PhysicsWorld = CollisionWorld::new(1.);
+    let mut collision_world: PhysicsWorld = CollisionWorld::new(0.);
 
     let mut world = World::new();
 
     world.insert(DeltaTime(0.));
     world.insert::<PhysicsWorld>(collision_world);
 
-    world.register::<CircleRender>();
-    world.register::<RectRender>();
+    world.register::<MeshRender>();
     world.register::<LineToRender>();
-    world.register::<LineRender>();
     world.register::<Collider>();
 
     let mut dispatcher = DispatcherBuilder::new()
@@ -93,9 +92,7 @@ fn main() {
     humans::setup(&mut world);
 
     add_segment(&mut world, [0.0, 0.0].into(), [1000., 0.].into());
-
     add_segment(&mut world, [0.0, 0.0].into(), [0., 400.].into());
-
     add_segment(&mut world, [1000.0, 0.0].into(), [1000., 400.].into());
     add_segment(&mut world, [0., 400.0].into(), [1000., 400.].into());
 

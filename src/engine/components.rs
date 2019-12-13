@@ -1,3 +1,4 @@
+use crate::engine::render_context::RenderContext;
 use cgmath::num_traits::zero;
 use cgmath::Vector2;
 use ggez::graphics::{Color, WHITE};
@@ -36,8 +37,42 @@ impl Kinematics {
 #[storage(VecStorage)]
 pub struct Collider(pub CollisionObjectSlabHandle);
 
-#[derive(Component, Debug)]
+#[derive(Component)]
 #[storage(VecStorage)]
+pub struct MeshRender {
+    pub orders: Vec<Box<dyn MeshRenderable>>,
+}
+
+pub struct MeshRenderBuilder {
+    mr: MeshRender,
+}
+impl MeshRenderBuilder {
+    pub fn new() -> Self {
+        MeshRenderBuilder {
+            mr: MeshRender { orders: vec![] },
+        }
+    }
+
+    pub fn add<T: 'static + MeshRenderable>(mut self, x: T) -> Self {
+        self.mr.orders.push(Box::new(x));
+        self
+    }
+
+    pub fn build(self) -> MeshRender {
+        self.mr
+    }
+
+    pub fn simple<T: 'static + MeshRenderable>(x: T) -> MeshRender {
+        MeshRender {
+            orders: vec![Box::new(x)],
+        }
+    }
+}
+
+pub trait MeshRenderable: Send + Sync {
+    fn draw(&self, pos: Vector2<f32>, rc: &mut RenderContext);
+}
+
 pub struct CircleRender {
     pub radius: f32,
     pub color: Color,
@@ -54,8 +89,14 @@ impl Default for CircleRender {
     }
 }
 
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
+impl MeshRenderable for CircleRender {
+    fn draw(&self, pos: Vector2<f32>, rc: &mut RenderContext) {
+        rc.sr.color = self.color;
+        rc.sr.set_filled(self.filled);
+        rc.sr.draw_circle(pos, self.radius);
+    }
+}
+
 pub struct RectRender {
     pub width: f32,
     pub height: f32,
@@ -74,6 +115,18 @@ impl Default for RectRender {
     }
 }
 
+impl MeshRenderable for RectRender {
+    fn draw(&self, pos: Vector2<f32>, rc: &mut RenderContext) {
+        rc.sr.color = self.color;
+        rc.sr.set_filled(self.filled);
+        rc.sr.draw_rect(
+            pos - Vector2::new(self.width / 2., self.height / 2.),
+            self.width,
+            self.height,
+        )
+    }
+}
+
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct LineToRender {
@@ -81,12 +134,19 @@ pub struct LineToRender {
     pub color: Color,
 }
 
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
 pub struct LineRender {
     pub start: Vector2<f32>,
     pub end: Vector2<f32>,
     pub color: Color,
+}
+
+impl MeshRenderable for LineRender {
+    fn draw(&self, _: Vector2<f32>, rc: &mut RenderContext) {
+        let start = self.start;
+        let end = self.end;
+        rc.sr.color = self.color;
+        rc.sr.draw_line(start, end);
+    }
 }
 
 #[derive(Component, Debug, Default)]
