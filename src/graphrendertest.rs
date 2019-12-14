@@ -1,6 +1,4 @@
-use crate::engine::components::{
-    CircleRender, LineToRender, MeshRender, MeshRenderBuilder, Movable, Position,
-};
+use crate::engine::components::{CircleRender, LineToRender, MeshRender, Movable, Position};
 use crate::graphs::graph::{Graph, NodeID};
 use cgmath::Vector2;
 use ggez::graphics::{Color, BLACK, WHITE};
@@ -43,7 +41,7 @@ pub fn setup(world: &mut World) {
     for n in g.ids() {
         let e = e_map[n];
 
-        let mut meshb = MeshRenderBuilder::new().add(CircleRender {
+        let mut meshb = MeshRender::from(CircleRender {
             radius: 10.0,
             color: Color { g: 1.0, ..BLACK },
             filled: true,
@@ -51,14 +49,14 @@ pub fn setup(world: &mut World) {
 
         for nei in g.get_neighs(*n) {
             let e_nei = e_map[&nei.to];
-            meshb = meshb.add(LineToRender {
+            meshb.add(LineToRender {
                 color: WHITE,
                 to: e_nei,
             });
         }
 
         meshrenders
-            .insert(e, meshb.build())
+            .insert(e, meshb)
             .expect("Error inserting mesh for graph");
     }
 }

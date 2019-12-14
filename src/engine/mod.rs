@@ -18,7 +18,11 @@ const PHYSICS_UPDATES: usize = 4;
 
 pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
     let mut c = conf::Conf::new();
-    c.window_mode = c.window_mode.dimensions(800., 600.);
+    if cfg!(target_os = "windows") {
+        c.window_mode = c.window_mode.dimensions(1600., 900.);
+    } else {
+        c.window_mode = c.window_mode.dimensions(800., 600.);
+    }
     c.window_setup = c.window_setup.vsync(true).samples(NumSamples::Four);
 
     let mut cb = ContextBuilder::new("Sandbox", "Uriopass").conf(c);
