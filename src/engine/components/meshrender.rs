@@ -1,41 +1,8 @@
+use crate::engine::components::Position;
 use crate::engine::render_context::RenderContext;
-use cgmath::num_traits::zero;
 use cgmath::Vector2;
 use ggez::graphics::{Color, WHITE};
-use ncollide2d::pipeline::CollisionObjectSlabHandle;
-use specs::{Component, Entity, NullStorage, ReadStorage, VecStorage};
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct Position(pub Vector2<f32>);
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct Kinematics {
-    pub velocity: Vector2<f32>,
-    pub acceleration: Vector2<f32>,
-}
-
-impl Kinematics {
-    pub fn zero() -> Self {
-        Kinematics {
-            velocity: zero(),
-            acceleration: zero(),
-        }
-    }
-
-    #[allow(dead_code)]
-    pub fn from_velocity(x: Vector2<f32>) -> Self {
-        Kinematics {
-            velocity: x,
-            acceleration: zero(),
-        }
-    }
-}
-
-#[derive(Component, Debug)]
-#[storage(VecStorage)]
-pub struct Collider(pub CollisionObjectSlabHandle);
+use specs::{Component, Entity, ReadStorage, VecStorage};
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -43,29 +10,44 @@ pub struct MeshRender {
     pub orders: Vec<Box<dyn MeshRenderable>>,
 }
 
-pub struct MeshRenderBuilder {
-    mr: MeshRender,
-}
-impl MeshRenderBuilder {
-    pub fn new() -> Self {
-        MeshRenderBuilder {
-            mr: MeshRender { orders: vec![] },
-        }
+impl MeshRender {
+    pub fn empty() -> Self {
+        MeshRender { orders: vec![] }
     }
 
-    pub fn add<T: 'static + MeshRenderable>(mut self, x: T) -> Self {
-        self.mr.orders.push(Box::new(x));
+    pub fn add<T: 'static + MeshRenderable>(&mut self, x: T) -> &mut Self {
+        self.orders.push(Box::new(x));
         self
     }
 
-    pub fn build(self) -> MeshRender {
-        self.mr
-    }
-
-    pub fn simple<T: 'static + MeshRenderable>(x: T) -> MeshRender {
+    pub fn simple<T: 'static + MeshRenderable>(x: T) -> Self {
         MeshRender {
             orders: vec![Box::new(x)],
         }
+    }
+}
+
+impl<T: 'static + MeshRenderable> From<T> for MeshRender {
+    fn from(x: T) -> Self {
+        MeshRender::simple(x)
+    }
+}
+
+impl<T: 'static + MeshRenderable, U: 'static + MeshRenderable> From<(T, U)> for MeshRender {
+    fn from((x, y): (T, U)) -> Self {
+        let mut m = MeshRender::simple(x);
+        m.add(y);
+        m
+    }
+}
+
+impl<T: 'static + MeshRenderable, U: 'static + MeshRenderable, V: 'static + MeshRenderable>
+    From<(T, U, V)> for MeshRender
+{
+    fn from((x, y, z): (T, U, V)) -> Self {
+        let mut m = MeshRender::simple(x);
+        m.add(y).add(z);
+        m
     }
 }
 
@@ -155,7 +137,3 @@ impl MeshRenderable for LineRender {
         rc.sr.draw_line(start, end);
     }
 }
-
-#[derive(Component, Debug, Default)]
-#[storage(NullStorage)]
-pub struct Movable;
