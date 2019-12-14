@@ -1,6 +1,8 @@
+#![windows_subsystem = "windows"]
+
 use engine::*;
 
-use crate::engine::components::{Collider, LineRender, MeshRender, MeshRenderBuilder, Position};
+use crate::engine::components::{Collider, LineRender, MeshRender, Position};
 use crate::engine::resources::DeltaTime;
 use crate::engine::systems::{KinematicsApply, MovableSystem, PhysicsUpdate};
 use crate::humans::HumanUpdate;
@@ -45,7 +47,7 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f
     let e = world
         .create_entity()
         .with(Position([0.0, 0.0].into()))
-        .with(MeshRenderBuilder::simple(LineRender {
+        .with(MeshRender::simple(LineRender {
             start,
             end,
             color: Color {

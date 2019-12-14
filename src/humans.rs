@@ -6,7 +6,9 @@ use specs::{
 };
 
 use crate::add_shape;
-use crate::engine::components::{Kinematics, MeshRenderBuilder, Movable, Position, RectRender};
+use crate::engine::components::{
+    Kinematics, LineRender, MeshRender, MeshRenderable, Movable, Position, RectRender,
+};
 use crate::engine::resources::DeltaTime;
 
 use ncollide2d::shape::Cuboid;
@@ -26,7 +28,7 @@ impl Human {
         kin: &Kinematics,
         //others: &[(&Position, &Human)],
     ) -> Vector2<f32> {
-        let force = -0.2 * kin.velocity;
+        let force: Vector2<f32> = -0.2 * kin.velocity;
         //
         // +force += Vector2::unit_y() * -200.;
         return force;
@@ -90,21 +92,19 @@ pub fn setup(world: &mut World) {
 
         let eb = world
             .create_entity()
-            .with(
-                MeshRenderBuilder::new()
-                    .add(RectRender {
-                        width: size * 2.,
-                        height: size * 2.,
-                        ..Default::default()
-                    })
-                    .add(RectRender {
-                        width: 200.,
-                        height: 200.,
-                        filled: false,
-                        ..Default::default()
-                    })
-                    .build(),
-            )
+            .with(MeshRender::from((
+                RectRender {
+                    width: size * 2.,
+                    height: size * 2.,
+                    ..Default::default()
+                },
+                RectRender {
+                    width: 200.,
+                    height: 200.,
+                    filled: false,
+                    ..Default::default()
+                },
+            )))
             .with(Position([x, y].into()))
             .with(Kinematics::zero())
             .with(Human {
