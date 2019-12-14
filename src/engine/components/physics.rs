@@ -4,6 +4,17 @@ use specs::{Component, VecStorage};
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
+pub struct Drag(pub f32);
+
+const DRAG_COEFF: f32 = 0.2;
+impl Default for Drag {
+    fn default() -> Self {
+        Drag(DRAG_COEFF)
+    }
+}
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
 pub struct Position(pub Vector2<f32>);
 
 #[derive(Component, Debug)]

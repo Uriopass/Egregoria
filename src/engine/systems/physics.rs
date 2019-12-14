@@ -1,4 +1,4 @@
-use crate::engine::components::{Collider, Kinematics, Position};
+use crate::engine::components::{Collider, Drag, Kinematics, Position};
 use crate::engine::resources::DeltaTime;
 use crate::PhysicsWorld;
 
@@ -7,7 +7,7 @@ use nalgebra as na;
 use cgmath::{InnerSpace, Vector2, Zero};
 use nalgebra::Isometry2;
 
-use specs::{Join, Read, Write, WriteStorage};
+use specs::{Join, Read, ReadStorage, Write, WriteStorage};
 
 pub struct KinematicsApply;
 pub struct PhysicsUpdate;
@@ -78,11 +78,14 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
     }
 }
 
+const DRAG_COEFF: f32 = 0.2;
+
 impl<'a> specs::System<'a> for KinematicsApply {
     type SystemData = (
         WriteStorage<'a, Collider>,
         WriteStorage<'a, Position>,
         WriteStorage<'a, Kinematics>,
+        ReadStorage<'a, Drag>,
         // Gotta use the panic handler here 'cause there is no default
         // we can provide for CollisionWorld, I guess.
         Write<'a, PhysicsWorld, specs::shred::PanicHandler>,
@@ -91,9 +94,13 @@ impl<'a> specs::System<'a> for KinematicsApply {
 
     fn run(
         &mut self,
-        (mut collider, mut position, mut kinematics, mut ncollide_world, delta): Self::SystemData,
+        (mut collider, mut position, mut kinematics, drag, mut ncollide_world, delta): Self::SystemData,
     ) {
         let delta = delta.0;
+
+        for (kin, drag) in (&mut kinematics, &drag).join() {
+            kin.acceleration -= kin.velocity * drag.0;
+        }
 
         for (position, kin) in (&mut position, &mut kinematics).join() {
             kin.velocity += kin.acceleration * delta;
