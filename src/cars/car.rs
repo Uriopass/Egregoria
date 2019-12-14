@@ -1,8 +1,12 @@
 use cgmath::{InnerSpace, MetricSpace, Vector2};
 use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
-use crate::engine::components::{Kinematics, MeshRenderComponent, Movable, Position, RectRender};
+use crate::add_shape;
+use crate::engine::components::{
+    Drag, Kinematics, MeshRenderComponent, Movable, Position, RectRender,
+};
 use cgmath::num_traits::{zero, FloatConst};
+use ncollide2d::shape::Cuboid;
 
 #[derive(Component, Debug)]
 pub struct CarComponent {
@@ -30,7 +34,7 @@ impl CarComponent {
 }
 
 pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vector2<f32>) {
-    world
+    let e = world
         .create_entity()
         .with(MeshRenderComponent::from(RectRender {
             width: 20.,
@@ -43,8 +47,11 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
             direction: Vector2::unit_x(),
             objective: Some(objective),
         })
+        .with(Drag::default())
         .with(Movable)
         .build();
+
+    add_shape(world, e, position, Cuboid::new([10., 5.].into()))
 }
 
 /* ------------ old algorithm translated from java -------------------

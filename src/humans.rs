@@ -7,10 +7,12 @@ use specs::{
 
 use crate::add_shape;
 use crate::engine::components::{
-    Kinematics, LineRender, MeshRenderComponent, MeshRenderable, Movable, Position, RectRender,
+    Drag, Kinematics, LineRender, MeshRenderComponent, MeshRenderable, Movable, Position,
+    RectRender,
 };
 use crate::engine::resources::DeltaTime;
 
+use cgmath::num_traits::zero;
 use ncollide2d::shape::Cuboid;
 use specs::prelude::ParallelIterator;
 
@@ -28,7 +30,7 @@ impl Human {
         kin: &Kinematics,
         //others: &[(&Position, &Human)],
     ) -> Vector2<f32> {
-        let force: Vector2<f32> = -0.2 * kin.velocity;
+        let force: Vector2<f32> = zero();
         //
         // +force += Vector2::unit_y() * -200.;
         return force;
@@ -107,6 +109,7 @@ pub fn setup(world: &mut World) {
             )))
             .with(Position([x, y].into()))
             .with(Kinematics::zero())
+            .with(Drag::default())
             .with(Human {
                 size,
                 objective: [SCALE * 5. - x, y].into(),
