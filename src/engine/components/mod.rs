@@ -1,10 +1,10 @@
 use ncollide2d::pipeline::CollisionObjectSlabHandle;
 use specs::{Component, NullStorage, VecStorage};
 
-pub use location::*;
+pub use physics::*;
 pub use meshrender::*;
 
-mod location;
+mod physics;
 mod meshrender;
 
 #[derive(Component, Debug)]

@@ -7,7 +7,7 @@ use specs::{
 
 use crate::add_shape;
 use crate::engine::components::{
-    Kinematics, LineRender, MeshRender, MeshRenderable, Movable, Position, RectRender,
+    Kinematics, LineRender, MeshRenderComponent, MeshRenderable, Movable, Position, RectRender,
 };
 use crate::engine::resources::DeltaTime;
 
@@ -92,7 +92,7 @@ pub fn setup(world: &mut World) {
 
         let eb = world
             .create_entity()
-            .with(MeshRender::from((
+            .with(MeshRenderComponent::from((
                 RectRender {
                     width: size * 2.,
                     height: size * 2.,
