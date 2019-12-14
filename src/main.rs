@@ -2,7 +2,7 @@
 
 use engine::*;
 
-use crate::engine::components::{Collider, LineRender, MeshRender, Position};
+use crate::engine::components::{Collider, LineRender, MeshRenderComponent, Position};
 use crate::engine::resources::DeltaTime;
 use crate::engine::systems::{KinematicsApply, MovableSystem, PhysicsUpdate};
 use crate::humans::HumanUpdate;
@@ -11,13 +11,14 @@ use ggez::graphics::Color;
 use ncollide2d::shape::{Segment, Shape, ShapeHandle};
 use ncollide2d::world::CollisionWorld;
 
+mod cars;
 mod engine;
 mod geometry;
-mod graphrendertest;
 mod graphs;
 mod humans;
 
-use crate::graphrendertest::Node;
+use crate::cars::car_system::CarDecision;
+use crate::cars::RoadNodeComponent;
 use nalgebra as na;
 use ncollide2d::pipeline::{CollisionGroups, GeometricQueryType};
 use specs::{Builder, DispatcherBuilder, Entity, World, WorldExt};
@@ -47,7 +48,7 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f
     let e = world
         .create_entity()
         .with(Position([0.0, 0.0].into()))
-        .with(MeshRender::simple(LineRender {
+        .with(MeshRenderComponent::simple(LineRender {
             start,
             end,
             color: Color {
@@ -75,23 +76,24 @@ fn main() {
     let mut world = World::new();
 
     world.insert(DeltaTime(0.));
-    world.insert::<PhysicsWorld>(collision_world);
+    world.insert(collision_world);
 
-    world.register::<MeshRender>();
+    world.register::<MeshRenderComponent>();
     world.register::<Collider>();
-    world.register::<Node>();
+    world.register::<RoadNodeComponent>();
 
     let mut dispatcher = DispatcherBuilder::new()
-        .with(HumanUpdate, "human_update", &[])
-        .with(KinematicsApply, "speed_apply", &["human_update"])
-        .with(PhysicsUpdate, "physics", &["speed_apply"])
+        .with(HumanUpdate, "human update", &[])
+        .with(CarDecision, "car decision", &[])
+        .with(KinematicsApply, "speed apply", &["human update"])
+        .with(PhysicsUpdate, "physics", &["speed apply"])
         .with(MovableSystem::default(), "movable", &[])
         .build();
 
     dispatcher.setup(&mut world);
 
     humans::setup(&mut world);
-    graphrendertest::setup(&mut world);
+    cars::setup(&mut world);
 
     add_static_segment(&mut world, [0.0, 0.0].into(), [1000., 0.].into());
     add_static_segment(&mut world, [0.0, 0.0].into(), [0., 400.].into());

@@ -6,13 +6,13 @@ use specs::{Component, Entity, ReadStorage, VecStorage};
 
 #[derive(Component)]
 #[storage(VecStorage)]
-pub struct MeshRender {
+pub struct MeshRenderComponent {
     pub orders: Vec<Box<dyn MeshRenderable>>,
 }
 
-impl MeshRender {
+impl MeshRenderComponent {
     pub fn empty() -> Self {
-        MeshRender { orders: vec![] }
+        MeshRenderComponent { orders: vec![] }
     }
 
     pub fn add<T: 'static + MeshRenderable>(&mut self, x: T) -> &mut Self {
@@ -21,31 +21,31 @@ impl MeshRender {
     }
 
     pub fn simple<T: 'static + MeshRenderable>(x: T) -> Self {
-        MeshRender {
+        MeshRenderComponent {
             orders: vec![Box::new(x)],
         }
     }
 }
 
-impl<T: 'static + MeshRenderable> From<T> for MeshRender {
+impl<T: 'static + MeshRenderable> From<T> for MeshRenderComponent {
     fn from(x: T) -> Self {
-        MeshRender::simple(x)
+        MeshRenderComponent::simple(x)
     }
 }
 
-impl<T: 'static + MeshRenderable, U: 'static + MeshRenderable> From<(T, U)> for MeshRender {
+impl<T: 'static + MeshRenderable, U: 'static + MeshRenderable> From<(T, U)> for MeshRenderComponent {
     fn from((x, y): (T, U)) -> Self {
-        let mut m = MeshRender::simple(x);
+        let mut m = MeshRenderComponent::simple(x);
         m.add(y);
         m
     }
 }
 
 impl<T: 'static + MeshRenderable, U: 'static + MeshRenderable, V: 'static + MeshRenderable>
-    From<(T, U, V)> for MeshRender
+    From<(T, U, V)> for MeshRenderComponent
 {
     fn from((x, y, z): (T, U, V)) -> Self {
-        let mut m = MeshRender::simple(x);
+        let mut m = MeshRenderComponent::simple(x);
         m.add(y).add(z);
         m
     }
