@@ -31,10 +31,10 @@ pub fn setup(world: &mut World) {
         Vector2::new(2. * d, -200.),
     );
 
-    for _i in 0..10 {
+    for _i in 0..10000 {
         make_car_entity(
             world,
-            Vector2::<f32>::new(rand::random(), rand::random()) * 1000.,
+            Vector2::<f32>::new(rand::random(), rand::random()) * 10000.,
             Vector2::new(500., 500.),
         );
     }

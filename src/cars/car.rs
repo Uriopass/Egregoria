@@ -30,7 +30,7 @@ impl CarComponent {
         }
         let objective = self.objective.unwrap();
         let _delta_pos: Vector2<f32> = objective - transform;
-        (50., 1.)
+        (500., 1.)
     }
 }
 
@@ -44,7 +44,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
                 ..Default::default()
             },
             CircleRender {
-                radius: 2.,
+                radius: 5.,
                 offset: Vector2::new(10., 0.),
                 color: Color { r: 1., ..BLACK },
                 ..Default::default()
@@ -57,7 +57,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
                 .normalize(),
             objective: Some(objective),
         })
-        .with(Drag::default())
+        .with(Drag::new(1.5))
         .with(Movable)
         .build();
 
