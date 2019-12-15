@@ -1,6 +1,6 @@
-use crate::engine::camera_handler::CameraHandler;
 use crate::engine::components::{MeshRenderComponent, Transform};
-use crate::engine::render_context::RenderContext;
+use crate::engine::rendering::camera_handler::CameraHandler;
+use crate::engine::rendering::render_context::RenderContext;
 use crate::engine::resources::{DeltaTime, MouseInfo};
 use crate::engine::PHYSICS_UPDATES;
 
@@ -11,14 +11,11 @@ use specs::{Dispatcher, Join, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-use std::time::Instant;
-
 pub struct EngineState<'a> {
     pub world: World,
     pub dispatch: Dispatcher<'a, 'a>,
     pub time: f32,
     pub cam: CameraHandler,
-    pub last_time: Instant,
 }
 
 impl<'a> EngineState<'a> {
@@ -39,14 +36,13 @@ impl<'a> EngineState<'a> {
             dispatch,
             time: 0.,
             cam: CameraHandler::new(),
-            last_time: Instant::now(),
         })
     }
 }
 
 impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let delta = timer::delta(ctx).as_secs_f32();
+        let delta = timer::delta(ctx).as_secs_f32().min(1. / 100.);
         self.time += delta;
         *self.world.write_resource() = MouseInfo {
             unprojected: self.cam.unproject_mouse_click(ctx),

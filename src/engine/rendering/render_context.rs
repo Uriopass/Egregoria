@@ -2,9 +2,9 @@ use cgmath::{EuclideanSpace, Point2, Vector2};
 use ggez::graphics::{DrawParam, Image, Mesh};
 use ggez::{graphics, Context, GameResult};
 
-use crate::engine::camera_handler;
-use crate::engine::camera_handler::CameraHandler;
-use crate::engine::shape_render::ShapeRenderer;
+use crate::engine::rendering::camera_handler;
+use crate::engine::rendering::camera_handler::CameraHandler;
+use crate::engine::rendering::shape_render::ShapeRenderer;
 
 pub struct RenderContext<'a> {
     pub cam: &'a mut camera_handler::CameraHandler,
