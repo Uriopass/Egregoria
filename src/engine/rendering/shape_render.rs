@@ -1,10 +1,10 @@
 use crate::geometry::rect::Rect;
 use cgmath::{ElementWise, EuclideanSpace, Point2, Vector2};
 use ggez::graphics::{Color, DrawMode, MeshBuilder, Vertex, WHITE};
+use nalgebra as na;
 use nalgebra::Isometry2;
 use ncollide2d::query::Proximity;
-use ncollide2d::shape::Cuboid;
-use ncollide2d::shape::Segment;
+use ncollide2d::shape::{Cuboid, Segment};
 
 pub struct ShapeRenderer {
     pub color: Color,
@@ -59,6 +59,9 @@ impl ShapeRenderer {
     }
 
     pub fn draw_rect_centered(&mut self, p: Vector2<f32>, width: f32, height: f32) {
+        if !self.screen_box.contains_within(p, width.max(height)) {
+            return;
+        }
         self.meshbuilder.rectangle(
             self.mode,
             ggez::graphics::Rect::new(p.x - width / 2., p.y - height / 2., width, height),
@@ -75,6 +78,10 @@ impl ShapeRenderer {
         cos: f32,
         sin: f32,
     ) {
+        if !self.screen_box.contains_within(p, width.max(height)) {
+            return;
+        }
+
         let a = Point2::new(width / 2. * cos, width / 2. * sin);
         let b = Vector2::new(height / 2. * -sin, height / 2. * cos);
         let points: [Point2<f32>; 4] = [
