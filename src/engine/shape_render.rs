@@ -1,6 +1,6 @@
 use crate::geometry::rect::Rect;
 use cgmath::{ElementWise, EuclideanSpace, Point2, Vector2};
-use ggez::graphics::{Color, DrawMode, MeshBuilder, Vertex, WHITE};
+use ggez::graphics::{Color, DrawMode, MeshBuilder, WHITE};
 use nalgebra::Isometry2;
 use ncollide2d::query::Proximity;
 use ncollide2d::shape::Cuboid;
