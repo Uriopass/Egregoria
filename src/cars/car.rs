@@ -1,9 +1,12 @@
-use cgmath::Vector2;
+use cgmath::{InnerSpace, Vector2};
 use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
 use crate::add_shape;
-use crate::engine::components::{Kinematics, MeshRenderComponent, Movable, Position, RectRender};
+use crate::engine::components::{
+    CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, RectRender, Transform,
+};
 use cgmath::num_traits::zero;
+use ggez::graphics::{Color, BLACK};
 use ncollide2d::shape::Cuboid;
 
 #[derive(Component, Debug)]
@@ -21,31 +24,40 @@ impl CarComponent {
         }
     }
 
-    pub fn calc_decision(&self, position: Vector2<f32>) -> (Vector2<f32>, f32) {
+    pub fn calc_decision(&self, transform: Vector2<f32>) -> (f32, f32) {
         if self.objective.is_none() {
             return (zero(), 0.);
         }
         let objective = self.objective.unwrap();
-        let delta_pos: Vector2<f32> = objective - position;
-        (delta_pos, 1.)
+        let delta_pos: Vector2<f32> = objective - transform;
+        (50., 1.)
     }
 }
 
 pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vector2<f32>) {
     let e = world
         .create_entity()
-        .with(MeshRenderComponent::from(RectRender {
-            width: 20.,
-            height: 10.,
-            ..Default::default()
-        }))
-        .with(Position(position))
+        .with(MeshRenderComponent::from((
+            RectRender {
+                width: 20.,
+                height: 10.,
+                ..Default::default()
+            },
+            CircleRender {
+                radius: 2.,
+                offset: Vector2::new(10., 0.),
+                color: Color { r: 1., ..BLACK },
+                ..Default::default()
+            },
+        )))
+        .with(Transform::new(position))
         .with(Kinematics::zero())
         .with(CarComponent {
-            direction: Vector2::unit_x(),
+            direction: Vector2::new(rand::random::<f32>() - 0.5, rand::random::<f32>() - 0.5)
+                .normalize(),
             objective: Some(objective),
         })
-        //.with(Drag::default())
+        .with(Drag::default())
         .with(Movable)
         .build();
 
@@ -55,7 +67,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
 /* ------------ old algorithm translated from java -------------------
 
         let objective = self.objective.unwrap();
-        let delta_pos: Vector2<f32> = objective - position;
+        let delta_pos: Vector2<f32> = objective -transform;
         let angle_col = self.direction.dot(delta_pos.normalize());
 
         let mut angle: f64 = diff_to_target.angle(Vector2::unit_x());
@@ -88,11 +100,11 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
 
             //System.out.println("-------");
             for (enemy_pos, enemy) in neighbors {
-                if enemy_pos == position {
+                if enemy_pos ==transform {
                     continue;
                 }
 
-                let dist2: f32 = enemy_pos.distance2(position);
+                let dist2: f32 = enemy_pos.distance2(transform);
                 let dist_check = 20. + speed / 2.;
                 if dist2 < dist_check * dist_check {
                     let dot: f32 = enemy.direction.dot(self.direction);

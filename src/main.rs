@@ -2,7 +2,7 @@
 
 use engine::*;
 
-use crate::engine::components::{Collider, LineRender, MeshRenderComponent, Position};
+use crate::engine::components::{Collider, LineRender, MeshRenderComponent, Transform};
 use crate::engine::resources::DeltaTime;
 use crate::engine::systems::{KinematicsApply, MovableSystem, PhysicsUpdate};
 use crate::humans::HumanUpdate;
@@ -47,7 +47,7 @@ where
 pub fn add_static_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f32>) {
     let e = world
         .create_entity()
-        .with(Position([0.0, 0.0].into()))
+        .with(Transform::new([0.0, 0.0].into()))
         .with(MeshRenderComponent::simple(LineRender {
             start,
             end,
@@ -85,7 +85,11 @@ fn main() {
     let mut dispatcher = DispatcherBuilder::new()
         .with(HumanUpdate, "human update", &[])
         .with(CarDecision, "car decision", &[])
-        .with(KinematicsApply, "speed apply", &["human update"])
+        .with(
+            KinematicsApply,
+            "speed apply",
+            &["human update", "car decision"],
+        )
         .with(PhysicsUpdate, "physics", &["speed apply"])
         .with(MovableSystem::default(), "movable", &[])
         .build();
