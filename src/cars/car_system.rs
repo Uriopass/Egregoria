@@ -35,10 +35,14 @@ impl<'a> System<'a> for CarDecision {
                 let mut ang = -car.direction.angle(Vector2::unit_x());
                 ang.0 += ang_acc * delta;
 
-                car.direction = Vector2::new(ang.cos(), ang.sin());
-                trans.set_angle_cos_sin(car.direction.x, car.direction.y);
+                if kin.velocity.magnitude2() < 100.
+                    || kin.velocity.normalize().dot(car.direction) > 0.9
+                {
+                    car.direction = Vector2::new(ang.cos(), ang.sin());
+                    trans.set_angle_cos_sin(car.direction.x, car.direction.y);
 
-                kin.velocity = car.direction * speed;
+                    kin.velocity = car.direction * speed;
+                }
             });
     }
 }

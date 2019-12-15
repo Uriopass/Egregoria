@@ -7,6 +7,12 @@ use specs::{Component, VecStorage};
 pub struct Drag(pub f32);
 
 const DRAG_COEFF: f32 = 0.2;
+
+impl Drag {
+    pub fn new(coeff: f32) -> Self {
+        Drag(coeff)
+    }
+}
 impl Default for Drag {
     fn default() -> Self {
         Drag(DRAG_COEFF)

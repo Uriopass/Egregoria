@@ -99,10 +99,10 @@ fn main() {
     humans::setup(&mut world);
     cars::setup(&mut world);
 
-    add_static_segment(&mut world, [0., 0.].into(), [1000., 0.].into());
-    add_static_segment(&mut world, [0., 0.].into(), [0., 1000.].into());
-    add_static_segment(&mut world, [1000., 0.].into(), [1000., 1000.].into());
-    add_static_segment(&mut world, [0., 1000.].into(), [1000., 1000.].into());
+    add_static_segment(&mut world, [0., 0.].into(), [10000., 0.].into());
+    add_static_segment(&mut world, [0., 0.].into(), [0., 10000.].into());
+    add_static_segment(&mut world, [10000., 0.].into(), [10000., 10000.].into());
+    add_static_segment(&mut world, [0., 10000.].into(), [10000., 10000.].into());
 
     engine::start(world, dispatcher);
 }
