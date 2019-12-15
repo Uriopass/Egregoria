@@ -7,13 +7,13 @@ use specs::{
 
 use crate::add_shape;
 use crate::engine::components::{
-    Drag, Kinematics, LineRender, MeshRenderComponent, MeshRenderable, Movable, Position,
-    RectRender,
+    CircleRender, Drag, Kinematics, LineRender, MeshRenderComponent, MeshRenderable, Movable,
+    RectRender, Transform,
 };
 use crate::engine::resources::DeltaTime;
 
 use cgmath::num_traits::zero;
-use ncollide2d::shape::Cuboid;
+use ncollide2d::shape::Ball;
 use specs::prelude::ParallelIterator;
 
 #[derive(Component)]
@@ -26,19 +26,19 @@ pub struct Human {
 impl Human {
     fn calc_acceleration(
         &self,
-        //position: &Position,
+        //position: &transform,
         _kin: &Kinematics,
-        //others: &[(&Position, &Human)],
+        //others: &[(&transform, &Human)],
     ) -> Vector2<f32> {
         let force: Vector2<f32> = zero();
         //
         // +force += Vector2::unit_y() * -200.;
         return force;
         /*
-        force += (self.objective - position.0).normalize() * 20.;
+        force += (self.objective -transform.0).normalize() * 20.;
 
         for (p, h) in others {
-            let mut x: Vector2<f32> = position.0 - p.0;
+            let mut x: Vector2<f32> =transform.0 - p.0;
             if x.x == 0. && x.y == 0. {
                 continue;
             }
@@ -59,20 +59,20 @@ pub struct HumanUpdate;
 impl<'a> System<'a> for HumanUpdate {
     type SystemData = (
         Read<'a, DeltaTime>,
-        ReadStorage<'a, Position>,
+        ReadStorage<'a, Transform>,
         WriteStorage<'a, Kinematics>,
         ReadStorage<'a, Human>,
     );
 
-    fn run(&mut self, (delta, pos, mut kinematics, humans): Self::SystemData) {
+    fn run(&mut self, (delta, transforms, mut kinematics, humans): Self::SystemData) {
         let _delta = delta.0;
 
-        let _xx: Vec<(&Position, &Human)> = (&pos, &humans).join().collect();
+        let _xx: Vec<(&Transform, &Human)> = (&transforms, &humans).join().collect();
 
-        (&pos, &mut kinematics, &humans)
+        (&transforms, &mut kinematics, &humans)
             .par_join()
-            .for_each(|(p, k, h)| {
-                if (h.objective - p.0).magnitude2() < 1. {
+            .for_each(|(t, k, h)| {
+                if (h.objective - t.get_position()).magnitude2() < 1. {
                     k.velocity = [0.0, 0.0].into();
                     return;
                 }
@@ -94,20 +94,11 @@ pub fn setup(world: &mut World) {
 
         let eb = world
             .create_entity()
-            .with(MeshRenderComponent::from((
-                RectRender {
-                    width: size * 2.,
-                    height: size * 2.,
-                    ..Default::default()
-                },
-                RectRender {
-                    width: 200.,
-                    height: 200.,
-                    filled: false,
-                    ..Default::default()
-                },
-            )))
-            .with(Position([x, y].into()))
+            .with(MeshRenderComponent::from(CircleRender {
+                radius: size,
+                ..Default::default()
+            }))
+            .with(Transform::new([x, y].into()))
             .with(Kinematics::zero())
             .with(Drag::default())
             .with(Human {
@@ -118,7 +109,7 @@ pub fn setup(world: &mut World) {
 
         let e = eb.build();
         //let shape = Ball::new(size);
-        let shape = Cuboid::new([size, size].into());
+        let shape = Ball::new(size);
 
         add_shape(world, e, [x, y].into(), shape);
     }

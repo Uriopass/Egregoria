@@ -1,6 +1,6 @@
 use crate::geometry::rect::Rect;
-use cgmath::{EuclideanSpace, Point2, Vector2};
-use ggez::graphics::{Color, DrawMode, MeshBuilder, WHITE};
+use cgmath::{ElementWise, EuclideanSpace, Point2, Vector2};
+use ggez::graphics::{Color, DrawMode, MeshBuilder, Vertex, WHITE};
 use nalgebra::Isometry2;
 use ncollide2d::query::Proximity;
 use ncollide2d::shape::Cuboid;
@@ -58,13 +58,36 @@ impl ShapeRenderer {
         }
     }
 
-    pub fn draw_rect(&mut self, p: Vector2<f32>, width: f32, height: f32) {
+    pub fn draw_rect_centered(&mut self, p: Vector2<f32>, width: f32, height: f32) {
         self.meshbuilder.rectangle(
             self.mode,
-            ggez::graphics::Rect::new(p.x, p.y, width, height),
+            ggez::graphics::Rect::new(p.x - width / 2., p.y - height / 2., width, height),
             self.color,
         );
         self.empty = false;
+    }
+
+    pub fn draw_rect_cos_sin(
+        &mut self,
+        p: Vector2<f32>,
+        width: f32,
+        height: f32,
+        cos: f32,
+        sin: f32,
+    ) {
+        let a = Point2::new(width / 2. * cos, width / 2. * sin);
+        let b = Vector2::new(height / 2. * -sin, height / 2. * cos);
+
+        let points: [Point2<f32>; 4] = [
+            a + b + p,
+            a - b + p,
+            a.mul_element_wise(-1.) - b + p,
+            a.mul_element_wise(-1.) + b + p,
+        ];
+
+        self.meshbuilder
+            .polyline(self.mode, &points, self.color)
+            .expect("Error building rect");
     }
 
     pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) {
