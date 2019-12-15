@@ -74,16 +74,12 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
     }
 }
 
-const DRAG_COEFF: f32 = 0.2;
-
 impl<'a> specs::System<'a> for KinematicsApply {
     type SystemData = (
         WriteStorage<'a, Collider>,
         WriteStorage<'a, Position>,
         WriteStorage<'a, Kinematics>,
         ReadStorage<'a, Drag>,
-        // Gotta use the panic handler here 'cause there is no default
-        // we can provide for CollisionWorld, I guess.
         Write<'a, PhysicsWorld, specs::shred::PanicHandler>,
         Read<'a, DeltaTime>,
     );

@@ -33,7 +33,9 @@ impl<T: 'static + MeshRenderable> From<T> for MeshRenderComponent {
     }
 }
 
-impl<T: 'static + MeshRenderable, U: 'static + MeshRenderable> From<(T, U)> for MeshRenderComponent {
+impl<T: 'static + MeshRenderable, U: 'static + MeshRenderable> From<(T, U)>
+    for MeshRenderComponent
+{
     fn from((x, y): (T, U)) -> Self {
         let mut m = MeshRenderComponent::simple(x);
         m.add(y);

@@ -27,7 +27,7 @@ impl Human {
     fn calc_acceleration(
         &self,
         //position: &Position,
-        kin: &Kinematics,
+        _kin: &Kinematics,
         //others: &[(&Position, &Human)],
     ) -> Vector2<f32> {
         let force: Vector2<f32> = zero();
