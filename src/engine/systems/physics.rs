@@ -5,7 +5,7 @@ use crate::PhysicsWorld;
 use nalgebra as na;
 
 use cgmath::{InnerSpace, Vector2, Zero};
-use nalgebra::{Isometry2, Similarity2};
+use nalgebra::Isometry2;
 
 use specs::{Join, Read, ReadStorage, Write, WriteStorage};
 
