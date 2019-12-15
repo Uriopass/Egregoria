@@ -9,6 +9,7 @@ pub mod car;
 pub mod car_graph;
 pub mod car_system;
 
+#[allow(dead_code)]
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct RoadNodeComponent {

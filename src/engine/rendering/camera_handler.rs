@@ -5,7 +5,7 @@ use ggez::input::mouse::MouseButton;
 use ggez::graphics;
 use ggez::Context;
 
-use crate::camera::Camera;
+use crate::engine::rendering::camera::Camera;
 use crate::geometry::rect::Rect;
 use cgmath::Vector2;
 

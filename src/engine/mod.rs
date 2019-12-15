@@ -5,16 +5,13 @@ use ggez::conf::NumSamples;
 use ggez::{conf, event, ContextBuilder};
 use specs::{Dispatcher, World};
 
-pub mod camera;
-pub mod camera_handler;
 pub mod components;
 pub mod game_loop;
-pub mod render_context;
+pub mod rendering;
 pub mod resources;
-pub mod shape_render;
 pub mod systems;
 
-const PHYSICS_UPDATES: usize = 4;
+const PHYSICS_UPDATES: usize = 1;
 
 pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
     let mut c = conf::Conf::new();
@@ -23,7 +20,7 @@ pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
     } else {
         c.window_mode = c.window_mode.dimensions(800., 600.);
     }
-    c.window_setup = c.window_setup.vsync(true).samples(NumSamples::Four);
+    c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Four);
 
     let mut cb = ContextBuilder::new("Sandbox", "Uriopass").conf(c);
 
