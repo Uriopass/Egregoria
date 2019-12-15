@@ -16,6 +16,7 @@ pub struct EngineState<'a> {
     pub dispatch: Dispatcher<'a, 'a>,
     pub time: f32,
     pub cam: CameraHandler,
+    pub render_enabled: bool,
 }
 
 impl<'a> EngineState<'a> {
@@ -36,6 +37,7 @@ impl<'a> EngineState<'a> {
             dispatch,
             time: 0.,
             cam: CameraHandler::new(),
+            render_enabled: true,
         })
     }
 }
@@ -72,9 +74,11 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         let transforms = self.world.read_component::<Transform>();
         let mesh_render = self.world.read_component::<MeshRenderComponent>();
 
-        for (trans, mr) in (&transforms, &mesh_render).join() {
-            for order in &mr.orders {
-                order.draw(trans, &transforms, &mut rc);
+        if self.render_enabled {
+            for (trans, mr) in (&transforms, &mesh_render).join() {
+                for order in &mr.orders {
+                    order.draw(trans, &transforms, &mut rc);
+                }
             }
         }
 
@@ -92,6 +96,9 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
     }
 
     fn key_down_event(&mut self, ctx: &mut Context, keycode: KeyCode, _: KeyMods, _: bool) {
+        if keycode == KeyCode::R {
+            self.render_enabled = !self.render_enabled;
+        }
         self.cam.easy_camera_movement_keys(ctx, keycode);
     }
 
