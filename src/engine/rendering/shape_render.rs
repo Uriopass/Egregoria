@@ -1,6 +1,6 @@
 use crate::geometry::rect::Rect;
 use cgmath::{ElementWise, EuclideanSpace, Point2, Vector2};
-use ggez::graphics::{Color, DrawMode, MeshBuilder, WHITE};
+use ggez::graphics::{Color, DrawMode, MeshBuilder, Vertex, WHITE};
 use nalgebra::Isometry2;
 use ncollide2d::query::Proximity;
 use ncollide2d::shape::Cuboid;
@@ -77,7 +77,6 @@ impl ShapeRenderer {
     ) {
         let a = Point2::new(width / 2. * cos, width / 2. * sin);
         let b = Vector2::new(height / 2. * -sin, height / 2. * cos);
-
         let points: [Point2<f32>; 4] = [
             a + b + p,
             a - b + p,
@@ -85,9 +84,38 @@ impl ShapeRenderer {
             a.mul_element_wise(-1.) + b + p,
         ];
 
-        self.meshbuilder
-            .polyline(self.mode, &points, self.color)
-            .expect("Error building rect");
+        match self.mode {
+            DrawMode::Fill(_) => {
+                let verts: [Vertex; 4] = [
+                    Vertex {
+                        pos: [points[0].x, points[0].y],
+                        uv: [0.0, 0.0],
+                        color: [self.color.r, self.color.g, self.color.b, self.color.a],
+                    },
+                    Vertex {
+                        pos: [points[1].x, points[1].y],
+                        uv: [1.0, 0.0],
+                        color: [self.color.r, self.color.g, self.color.b, self.color.a],
+                    },
+                    Vertex {
+                        pos: [points[2].x, points[2].y],
+                        uv: [1.0, 1.0],
+                        color: [self.color.r, self.color.g, self.color.b, self.color.a],
+                    },
+                    Vertex {
+                        pos: [points[3].x, points[3].y],
+                        uv: [0.0, 1.0],
+                        color: [self.color.r, self.color.g, self.color.b, self.color.a],
+                    },
+                ];
+                self.meshbuilder.raw(&verts, &[0, 1, 2, 0, 2, 3], None);
+            }
+            DrawMode::Stroke(_) => {
+                self.meshbuilder
+                    .polygon(self.mode, &points, self.color)
+                    .expect("Error building rect");
+            }
+        }
     }
 
     pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) {
