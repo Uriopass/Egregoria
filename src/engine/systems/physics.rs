@@ -5,8 +5,9 @@ use crate::PhysicsWorld;
 use nalgebra as na;
 
 use cgmath::{InnerSpace, Vector2, Zero};
-use nalgebra::Isometry2;
+use nalgebra::{Isometry2, Rotation, Rotation2};
 
+use ggez::nalgebra::Complex;
 use specs::{Join, Read, ReadStorage, Write, WriteStorage};
 
 pub struct KinematicsApply;
@@ -111,10 +112,15 @@ impl<'a> specs::System<'a> for KinematicsApply {
                 .get_mut(collider.0)
                 .expect("Invalid collision object; was it removed from ncollide but not specs?");
             let p = transform.get_position();
-            collision_obj.set_position(Isometry2::new(
-                na::Vector2::new(p.x, p.y),
-                transform.get_angle(),
-            ));
+            let iso = Isometry2::from_parts(
+                na::Translation2::new(p.x, p.y),
+                na::UnitComplex::new_unchecked(na::Complex::new(
+                    transform.get_cos(),
+                    transform.get_sin(),
+                )),
+            );
+
+            collision_obj.set_position(iso);
         }
     }
 }

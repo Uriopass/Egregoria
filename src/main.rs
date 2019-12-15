@@ -69,7 +69,7 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f
 }
 
 fn main() {
-    let collision_world: PhysicsWorld = CollisionWorld::new(30.);
+    let collision_world: PhysicsWorld = CollisionWorld::new(15.);
 
     let mut world = World::new();
 
