@@ -1,6 +1,6 @@
 use crate::cars::RoadNodeComponent;
 use crate::engine::components::{
-    CircleRender, LineToRender, MeshRenderComponent, Movable, Position,
+    CircleRender, LineToRender, MeshRenderComponent, Movable, Transform,
 };
 use crate::graphs::graph::{Graph, NodeID};
 use cgmath::Vector2;
@@ -44,7 +44,7 @@ impl RoadGraph {
                 world
                     .create_entity()
                     .with(RoadNodeComponent { id: *n })
-                    .with(Position(g.nodes[n].pos))
+                    .with(Transform::new(g.nodes[n].pos))
                     .with(Movable)
                     .build(),
             );
@@ -59,6 +59,7 @@ impl RoadGraph {
                 radius: 10.0,
                 color: Color { g: 1.0, ..BLACK },
                 filled: true,
+                ..Default::default()
             });
 
             for nei in g.get_neighs(*n) {

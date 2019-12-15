@@ -1,5 +1,6 @@
-use crate::engine::components::Position;
+use crate::engine::components::Transform;
 use crate::engine::render_context::RenderContext;
+use cgmath::num_traits::zero;
 use cgmath::Vector2;
 use ggez::graphics::{Color, WHITE};
 use specs::{Component, Entity, ReadStorage, VecStorage};
@@ -10,6 +11,7 @@ pub struct MeshRenderComponent {
     pub orders: Vec<Box<dyn MeshRenderable>>,
 }
 
+#[allow(dead_code)]
 impl MeshRenderComponent {
     pub fn empty() -> Self {
         MeshRenderComponent { orders: vec![] }
@@ -54,10 +56,11 @@ impl<T: 'static + MeshRenderable, U: 'static + MeshRenderable, V: 'static + Mesh
 }
 
 pub trait MeshRenderable: Send + Sync {
-    fn draw(&self, pos: Vector2<f32>, positions: &ReadStorage<Position>, rc: &mut RenderContext);
+    fn draw(&self, trans: &Transform, transforms: &ReadStorage<Transform>, rc: &mut RenderContext);
 }
 
 pub struct CircleRender {
+    pub offset: Vector2<f32>,
     pub radius: f32,
     pub color: Color,
     pub filled: bool,
@@ -66,6 +69,7 @@ pub struct CircleRender {
 impl Default for CircleRender {
     fn default() -> Self {
         CircleRender {
+            offset: zero(),
             radius: 0.0,
             color: WHITE,
             filled: true,
@@ -74,10 +78,10 @@ impl Default for CircleRender {
 }
 
 impl MeshRenderable for CircleRender {
-    fn draw(&self, pos: Vector2<f32>, _: &ReadStorage<Position>, rc: &mut RenderContext) {
+    fn draw(&self, pos: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
         rc.sr.color = self.color;
         rc.sr.set_filled(self.filled);
-        rc.sr.draw_circle(pos, self.radius);
+        rc.sr.draw_circle(pos.project(self.offset), self.radius);
     }
 }
 
@@ -100,14 +104,21 @@ impl Default for RectRender {
 }
 
 impl MeshRenderable for RectRender {
-    fn draw(&self, pos: Vector2<f32>, _: &ReadStorage<Position>, rc: &mut RenderContext) {
+    fn draw(&self, pos: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
         rc.sr.color = self.color;
         rc.sr.set_filled(self.filled);
-        rc.sr.draw_rect(
-            pos - Vector2::new(self.width / 2., self.height / 2.),
-            self.width,
-            self.height,
-        )
+        if pos.is_angle_zero() {
+            rc.sr
+                .draw_rect_centered(pos.get_position(), self.width, self.height)
+        } else {
+            rc.sr.draw_rect_cos_sin(
+                pos.get_position(),
+                self.width,
+                self.height,
+                pos.get_cos(),
+                pos.get_sin(),
+            )
+        }
     }
 }
 
@@ -117,11 +128,11 @@ pub struct LineToRender {
 }
 
 impl MeshRenderable for LineToRender {
-    fn draw(&self, pos: Vector2<f32>, positions: &ReadStorage<Position>, rc: &mut RenderContext) {
+    fn draw(&self, trans: &Transform, transforms: &ReadStorage<Transform>, rc: &mut RenderContext) {
         let e = self.to;
-        let pos2 = positions.get(e).unwrap().0;
+        let pos2 = transforms.get(e).unwrap().get_position();
         rc.sr.color = self.color;
-        rc.sr.draw_line(pos, pos2);
+        rc.sr.draw_line(trans.get_position(), pos2);
     }
 }
 
@@ -132,7 +143,7 @@ pub struct LineRender {
 }
 
 impl MeshRenderable for LineRender {
-    fn draw(&self, _: Vector2<f32>, _: &ReadStorage<Position>, rc: &mut RenderContext) {
+    fn draw(&self, _: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
         let start = self.start;
         let end = self.end;
         rc.sr.color = self.color;

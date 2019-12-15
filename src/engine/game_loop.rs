@@ -1,5 +1,5 @@
 use crate::engine::camera_handler::CameraHandler;
-use crate::engine::components::{MeshRenderComponent, Position};
+use crate::engine::components::{MeshRenderComponent, Transform};
 use crate::engine::render_context::RenderContext;
 use crate::engine::resources::{DeltaTime, MouseInfo};
 use crate::engine::PHYSICS_UPDATES;
@@ -73,12 +73,12 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         let mut rc = RenderContext::new(&mut self.cam, ctx);
         rc.clear();
 
-        let positions = self.world.read_component::<Position>();
+        let transforms = self.world.read_component::<Transform>();
         let mesh_render = self.world.read_component::<MeshRenderComponent>();
 
-        for (pos, mr) in (&positions, &mesh_render).join() {
+        for (trans, mr) in (&transforms, &mesh_render).join() {
             for order in &mr.orders {
-                order.draw(pos.0, &positions, &mut rc);
+                order.draw(trans, &transforms, &mut rc);
             }
         }
 
