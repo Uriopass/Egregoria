@@ -1,7 +1,5 @@
 #![windows_subsystem = "windows"]
 
-use engine::*;
-
 use crate::engine::components::{Collider, LineRender, MeshRenderComponent, Transform};
 use crate::engine::resources::DeltaTime;
 use crate::engine::systems::{KinematicsApply, MovableSystem, PhysicsUpdate};
@@ -71,7 +69,7 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f
 }
 
 fn main() {
-    let collision_world: PhysicsWorld = CollisionWorld::new(0.);
+    let collision_world: PhysicsWorld = CollisionWorld::new(30.);
 
     let mut world = World::new();
 
