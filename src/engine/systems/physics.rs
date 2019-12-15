@@ -31,7 +31,7 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
             let normal: Vector2<f32> =
                 Vector2::<f32>::new(contact.normal.x, contact.normal.y).normalize();
 
-            let direction = normal * (contact.depth + 0.01);
+            let direction = normal * contact.depth;
 
             let is_dynamic_1 = kinematics.get(*ent_1).is_some();
             let is_dynamic_2 = kinematics.get(*ent_2).is_some();
@@ -41,9 +41,6 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
 
             if is_dynamic_1 && is_dynamic_2 {
                 // elastic collision
-                let pos_1 = positions.get(*ent_1).unwrap().0;
-                let pos_2 = positions.get(*ent_2).unwrap().0;
-
                 let v_1 = kinematics.get(*ent_1).unwrap().velocity;
                 let v_2 = kinematics.get(*ent_2).unwrap().velocity;
 
@@ -51,11 +48,10 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
                 let r_2 = 2. * m_1 / (m_1 + m_2);
 
                 let v_diff: Vector2<f32> = v_1 - v_2;
-                let pos_diff: Vector2<f32> = pos_1 - pos_2;
-                let factor = pos_diff.dot(v_diff) / pos_diff.magnitude2();
+                let factor = normal.dot(v_diff);
 
-                kinematics.get_mut(*ent_1).unwrap().velocity -= r_1 * factor * pos_diff;
-                kinematics.get_mut(*ent_2).unwrap().velocity += r_2 * factor * pos_diff;
+                kinematics.get_mut(*ent_1).unwrap().velocity -= r_1 * factor * normal;
+                kinematics.get_mut(*ent_2).unwrap().velocity += r_2 * factor * normal;
 
                 positions.get_mut(*ent_1).unwrap().0 -= direction / 2.;
                 positions.get_mut(*ent_2).unwrap().0 += direction / 2.;
