@@ -1,11 +1,11 @@
 use crate::cars::car::CarComponent;
 use crate::cars::car_graph::RoadGraph;
-use crate::engine::components::{Kinematics, MeshRenderComponent, RectRender, Transform};
+use crate::engine::components::{Kinematics, Transform};
 use crate::engine::resources::DeltaTime;
-use cgmath::{Angle, Array, InnerSpace, Vector2};
+use cgmath::{Angle, InnerSpace, Vector2};
 use specs::prelude::ParallelIterator;
 use specs::shred::PanicHandler;
-use specs::{Join, ParJoin, Read, ReadStorage, System, WriteStorage};
+use specs::{ParJoin, Read, System, WriteStorage};
 
 #[derive(Default)]
 pub struct CarDecision;

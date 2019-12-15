@@ -7,8 +7,7 @@ use specs::{
 
 use crate::add_shape;
 use crate::engine::components::{
-    CircleRender, Drag, Kinematics, LineRender, MeshRenderComponent, MeshRenderable, Movable,
-    RectRender, Transform,
+    CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, Transform,
 };
 use crate::engine::resources::DeltaTime;
 
@@ -19,7 +18,6 @@ use specs::prelude::ParallelIterator;
 #[derive(Component)]
 #[storage(VecStorage)]
 pub struct Human {
-    size: f32,
     objective: Vector2<f32>,
 }
 
@@ -30,27 +28,7 @@ impl Human {
         _kin: &Kinematics,
         //others: &[(&transform, &Human)],
     ) -> Vector2<f32> {
-        let force: Vector2<f32> = zero();
-        //
-        // +force += Vector2::unit_y() * -200.;
-        return force;
-        /*
-        force += (self.objective -transform.0).normalize() * 20.;
-
-        for (p, h) in others {
-            let mut x: Vector2<f32> =transform.0 - p.0;
-            if x.x == 0. && x.y == 0. {
-                continue;
-            }
-            let d = x.magnitude();
-            if d > 200. {
-                continue;
-            }
-            x *= (h.size * self.size) / (d * d);
-            force += x;
-        }
-        force
-        */
+        zero()
     }
 }
 
@@ -102,7 +80,6 @@ pub fn setup(world: &mut World) {
             .with(Kinematics::zero())
             .with(Drag::default())
             .with(Human {
-                size,
                 objective: [SCALE * 5. - x, y].into(),
             })
             .with(Movable);

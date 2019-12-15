@@ -29,7 +29,7 @@ impl CarComponent {
             return (zero(), 0.);
         }
         let objective = self.objective.unwrap();
-        let delta_pos: Vector2<f32> = objective - transform;
+        let _delta_pos: Vector2<f32> = objective - transform;
         (50., 1.)
     }
 }

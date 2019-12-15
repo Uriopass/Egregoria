@@ -1,5 +1,5 @@
 use cgmath::num_traits::zero;
-use cgmath::{Matrix3, SquareMatrix, Transform2, Vector2};
+use cgmath::{Matrix3, SquareMatrix, Vector2};
 use specs::{Component, VecStorage};
 
 #[derive(Component, Debug)]
@@ -58,7 +58,7 @@ impl Transform {
         self.m.x.y = sin;
         self.m.y.x = -sin;
         self.m.y.y = cos;
-        self.rotated = cos != 1.;
+        self.rotated = sin != 0.;
     }
 
     pub fn get_cos(&self) -> f32 {
