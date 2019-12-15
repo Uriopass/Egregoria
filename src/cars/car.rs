@@ -1,11 +1,9 @@
-use cgmath::{InnerSpace, MetricSpace, Vector2};
+use cgmath::Vector2;
 use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
 use crate::add_shape;
-use crate::engine::components::{
-    Drag, Kinematics, MeshRenderComponent, Movable, Position, RectRender,
-};
-use cgmath::num_traits::{zero, FloatConst};
+use crate::engine::components::{Kinematics, MeshRenderComponent, Movable, Position, RectRender};
+use cgmath::num_traits::zero;
 use ncollide2d::shape::Cuboid;
 
 #[derive(Component, Debug)]
@@ -47,7 +45,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
             direction: Vector2::unit_x(),
             objective: Some(objective),
         })
-        .with(Drag::default())
+        //.with(Drag::default())
         .with(Movable)
         .build();
 
