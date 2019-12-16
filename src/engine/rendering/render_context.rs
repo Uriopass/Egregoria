@@ -32,7 +32,7 @@ impl<'a> RenderContext<'a> {
         pos.y += text.height(self.ctx) as f32;
         let trans = graphics::DrawParam::new()
             .dest(Point2::from_vec(pos))
-            .scale([1., -1.]);
+            .scale([1.0, -1.0]);
         graphics::draw(self.ctx, text, trans)
     }
 
@@ -41,7 +41,7 @@ impl<'a> RenderContext<'a> {
         pos.y += image.height() as f32;
         let trans = graphics::DrawParam::new()
             .dest(Point2::from_vec(pos))
-            .scale([1., -1.]);
+            .scale([1.0, -1.0]);
         graphics::draw(self.ctx, image, trans)
     }
 

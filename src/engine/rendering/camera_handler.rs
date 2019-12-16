@@ -19,14 +19,14 @@ pub struct CameraHandler {
 impl CameraHandler {
     pub fn new() -> CameraHandler {
         CameraHandler {
-            camera: Camera::new(800., 600.),
-            last_pos: [0., 0.].into(),
+            camera: Camera::new(800.0, 600.0),
+            last_pos: [0.0, 0.0].into(),
         }
     }
 
     pub fn center_camera(&mut self, ctx: &mut Context) {
-        self.camera.position.x = 0.;
-        self.camera.position.y = 0.;
+        self.camera.position.x = 0.0;
+        self.camera.position.y = 0.0;
         self.update(ctx);
     }
 
@@ -37,7 +37,7 @@ impl CameraHandler {
     }
 
     pub fn get_screen_box(&self) -> Rect {
-        let upleft = self.camera.unproject([0., 0.].into());
+        let upleft = self.camera.unproject([0.0, 0.0].into());
         let downright = self
             .camera
             .unproject([self.camera.viewport.x, self.camera.viewport.y].into());

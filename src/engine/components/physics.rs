@@ -6,7 +6,7 @@ use specs::{Component, VecStorage};
 #[storage(VecStorage)]
 pub struct Drag(pub f32);
 
-const DRAG_COEFF: f32 = 0.2;
+const DRAG_COEFF: f32 = 0.1;
 
 impl Drag {
     pub fn new(coeff: f32) -> Self {
@@ -56,7 +56,7 @@ impl Transform {
         self.m.x.y = sin;
         self.m.y.x = -sin;
         self.m.y.y = cos;
-        self.rotated = angle != 0.;
+        self.rotated = angle != 0.0;
     }
 
     pub fn set_angle_cos_sin(&mut self, cos: f32, sin: f32) {
@@ -64,7 +64,7 @@ impl Transform {
         self.m.x.y = sin;
         self.m.y.x = -sin;
         self.m.y.y = cos;
-        self.rotated = sin != 0.;
+        self.rotated = sin != 0.0;
     }
 
     pub fn get_cos(&self) -> f32 {
@@ -84,7 +84,7 @@ impl Transform {
     }
 
     pub fn project(&self, point: Vector2<f32>) -> Vector2<f32> {
-        (self.m * point.extend(1.)).xy()
+        (self.m * point.extend(1.0)).xy()
     }
 }
 
@@ -128,7 +128,7 @@ mod tests {
         x.set_angle(-0.2);
         assert!((x.get_angle() + 0.2).abs() < 0.001);
 
-        x.set_angle(3.);
-        assert!((x.get_angle() - 3.).abs() < 0.001);
+        x.set_angle(3.0);
+        assert!((x.get_angle() - 3.0).abs() < 0.001);
     }
 }
