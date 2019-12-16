@@ -50,7 +50,7 @@ impl<'a> System<'a> for HumanUpdate {
         (&transforms, &mut kinematics, &humans)
             .par_join()
             .for_each(|(t, k, h)| {
-                if (h.objective - t.get_position()).magnitude2() < 1. {
+                if (h.objective - t.get_position()).magnitude2() < 1.0 {
                     k.velocity = [0.0, 0.0].into();
                     return;
                 }
@@ -62,10 +62,10 @@ impl<'a> System<'a> for HumanUpdate {
 }
 
 pub fn setup(world: &mut World) {
-    const SCALE: f32 = 1000.;
+    const SCALE: f32 = 10.0;
 
     for _ in 0..10 {
-        let size = 10.;
+        let size = 1.0;
 
         let x: f32 = rand::random::<f32>() * SCALE;
         let y: f32 = rand::random::<f32>() * SCALE * 0.4;
@@ -80,7 +80,7 @@ pub fn setup(world: &mut World) {
             .with(Kinematics::zero())
             .with(Drag::default())
             .with(Human {
-                objective: [SCALE * 5. - x, y].into(),
+                objective: [SCALE * 5.0 - x, y].into(),
             })
             .with(Movable);
 

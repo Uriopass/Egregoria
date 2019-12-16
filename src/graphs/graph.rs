@@ -102,12 +102,12 @@ mod tests {
         let b = g.add_node(1);
         let c = g.add_node(2);
 
-        g.add_neigh(a, b, 1.);
+        g.add_neigh(a, b, 1.0);
 
         assert_eq!(g.get_neighs(a).len(), 1);
         assert_eq!(g.get_backward_neighs(b).get(0).unwrap().to, a);
 
-        g.add_neigh(b, c, 1.);
+        g.add_neigh(b, c, 1.0);
 
         g.remove_node(b);
 
@@ -117,7 +117,7 @@ mod tests {
         assert_eq!(g.get_neighs(a).len(), 0);
         assert_eq!(g.get_backward_neighs(c).len(), 0);
 
-        g.add_neigh(a, c, 1.);
+        g.add_neigh(a, c, 1.0);
         g.remove_neigh(a, c);
 
         assert_eq!(g.get_neighs(a).len(), 0);

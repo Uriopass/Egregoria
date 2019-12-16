@@ -35,7 +35,7 @@ impl<'a> EngineState<'a> {
         Ok(EngineState {
             world,
             dispatch,
-            time: 0.,
+            time: 0.0,
             cam: CameraHandler::new(),
             render_enabled: true,
         })
@@ -44,7 +44,7 @@ impl<'a> EngineState<'a> {
 
 impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let delta = timer::delta(ctx).as_secs_f32().min(1. / 100.);
+        let delta = timer::delta(ctx).as_secs_f32().min(1.0 / 100.0);
         self.time += delta;
         *self.world.write_resource() = MouseInfo {
             unprojected: self.cam.unproject_mouse_click(ctx),
@@ -87,10 +87,10 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
     }
 
     fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) {
-        if y > 0. {
+        if y > 0.0 {
             self.cam.easy_camera_movement_keys(ctx, KeyCode::Add);
         }
-        if y < 0. {
+        if y < 0.0 {
             self.cam.easy_camera_movement_keys(ctx, KeyCode::Subtract);
         }
     }

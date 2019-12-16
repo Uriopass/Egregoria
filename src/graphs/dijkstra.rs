@@ -35,7 +35,7 @@ pub fn dijsktra<T>(graph: &Graph<T>, start: NodeID) -> HashMap<NodeID, f32> {
 
     heap.push(State {
         position: start,
-        cost: NotNan::from(0.),
+        cost: NotNan::from(0.0),
     });
 
     let mut dist: HashMap<NodeID, f32, RandomState> = HashMap::with_capacity(graph.len());
@@ -43,7 +43,7 @@ pub fn dijsktra<T>(graph: &Graph<T>, start: NodeID) -> HashMap<NodeID, f32> {
     for id in graph.ids() {
         dist.insert(*id, f32::MAX);
     }
-    dist.insert(start, 0.);
+    dist.insert(start, 0.0);
 
     while let Some(State { cost, position }) = heap.pop() {
         if cost.into_inner() > dist[&position] {
@@ -82,11 +82,11 @@ mod tests {
             vec![
                 Edge {
                     to: id2,
-                    weight: 1.,
+                    weight: 1.0,
                 },
                 Edge {
                     to: id3,
-                    weight: 3.,
+                    weight: 3.0,
                 },
             ],
         );
@@ -94,13 +94,13 @@ mod tests {
             id2,
             vec![Edge {
                 to: id3,
-                weight: 5.,
+                weight: 5.0,
             }],
         );
 
         let dists = dijsktra(&g, id);
-        assert_eq!(dists[&id], 0.);
-        assert_eq!(dists[&id2], 1.);
-        assert_eq!(dists[&id3], 3.);
+        assert_eq!(dists[&id], 0.0);
+        assert_eq!(dists[&id2], 1.0);
+        assert_eq!(dists[&id3], 3.0);
     }
 }

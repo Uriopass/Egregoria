@@ -13,7 +13,7 @@ pub struct MouseInfo {
 impl Default for MouseInfo {
     fn default() -> Self {
         MouseInfo {
-            unprojected: [0., 0.].into(),
+            unprojected: [0.0, 0.0].into(),
             buttons: HashSet::new(),
         }
     }
