@@ -5,9 +5,7 @@ use crate::PhysicsWorld;
 use nalgebra as na;
 
 use cgmath::{InnerSpace, Vector2, Zero};
-use nalgebra::{Isometry2, Rotation, Rotation2};
-
-use ggez::nalgebra::Complex;
+use nalgebra::Isometry2;
 use specs::{Join, Read, ReadStorage, Write, WriteStorage};
 
 pub struct KinematicsApply;
@@ -37,16 +35,16 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
             let is_dynamic_1 = kinematics.get(*ent_1).is_some();
             let is_dynamic_2 = kinematics.get(*ent_2).is_some();
 
-            let m_1 = 1.;
-            let m_2 = 1.;
+            let m_1 = 1.0;
+            let m_2 = 1.0;
 
             if is_dynamic_1 && is_dynamic_2 {
                 // elastic collision
                 let v_1 = kinematics.get(*ent_1).unwrap().velocity;
                 let v_2 = kinematics.get(*ent_2).unwrap().velocity;
 
-                let r_1 = 2. * m_2 / (m_1 + m_2);
-                let r_2 = 2. * m_1 / (m_1 + m_2);
+                let r_1 = 2.0 * m_2 / (m_1 + m_2);
+                let r_2 = 2.0 * m_1 / (m_1 + m_2);
 
                 let v_diff: Vector2<f32> = v_1 - v_2;
                 let factor = normal.dot(v_diff);
@@ -57,24 +55,24 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
                 transforms
                     .get_mut(*ent_1)
                     .unwrap()
-                    .translate(-direction / 2.);
+                    .translate(-direction / 2.0);
                 transforms
                     .get_mut(*ent_2)
                     .unwrap()
-                    .translate(direction / 2.);
+                    .translate(direction / 2.0);
             } else if is_dynamic_1 {
                 let pos_1 = transforms.get_mut(*ent_1).unwrap();
                 pos_1.translate(-direction);
 
                 let k_1 = kinematics.get_mut(*ent_1).unwrap();
-                let projected = k_1.velocity.project_on(normal) * -2.;
+                let projected = k_1.velocity.project_on(normal) * -2.0;
                 k_1.velocity += projected;
             } else if is_dynamic_2 {
                 let pos_2 = transforms.get_mut(*ent_2).unwrap();
                 pos_2.translate(direction);
 
                 let k_2 = kinematics.get_mut(*ent_2).unwrap();
-                let projected = k_2.velocity.project_on(-normal) * -2.;
+                let projected = k_2.velocity.project_on(-normal) * -2.0;
                 k_2.velocity += projected;
             }
         }

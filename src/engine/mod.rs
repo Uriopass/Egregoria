@@ -16,9 +16,9 @@ const PHYSICS_UPDATES: usize = 1;
 pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
     let mut c = conf::Conf::new();
     if cfg!(target_os = "windows") {
-        c.window_mode = c.window_mode.dimensions(1600., 900.);
+        c.window_mode = c.window_mode.dimensions(1600.0, 900.0);
     } else {
-        c.window_mode = c.window_mode.dimensions(800., 600.);
+        c.window_mode = c.window_mode.dimensions(800.0, 600.0);
     }
     c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Four);
 
@@ -35,8 +35,7 @@ pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
 
     let mut state = game_loop::EngineState::new(world, schedule, ctx).unwrap();
 
-    state.cam.camera.zoom = 0.5;
-    state.cam.camera.position.y = 500.;
+    state.cam.camera.zoom = 20.0;
 
     event::run(ctx, event_loop, &mut state).unwrap()
 }

@@ -24,13 +24,13 @@ impl RoadGraph {
     pub fn new() -> Self {
         let mut g = Graph::new();
 
-        let a = g.add_node(RoadNode::new(Vector2::<f32>::new(0., 0.)));
-        let b = g.add_node(RoadNode::new(Vector2::<f32>::new(100., 100.)));
-        let c = g.add_node(RoadNode::new(Vector2::<f32>::new(-100., 100.)));
+        let a = g.add_node(RoadNode::new(Vector2::<f32>::new(0.0, 0.0)));
+        let b = g.add_node(RoadNode::new(Vector2::<f32>::new(100.0, 100.0)));
+        let c = g.add_node(RoadNode::new(Vector2::<f32>::new(-100.0, 100.0)));
 
-        g.add_neigh(a, b, 1.);
-        g.add_neigh(a, c, 1.);
-        g.add_neigh(c, b, 1.);
+        g.add_neigh(a, b, 1.0);
+        g.add_neigh(a, c, 1.0);
+        g.add_neigh(c, b, 1.0);
 
         RoadGraph(g)
     }

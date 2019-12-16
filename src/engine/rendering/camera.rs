@@ -26,25 +26,25 @@ impl Camera {
         // If you have rendering problem on mac os, it doesnt come from the projection
         // but don't forget to do cam.update at least once (dont suppose resize will be called)
 
-        let scalex = 2. * self.zoom / self.viewport.x;
-        let scaley = 2. * self.zoom / self.viewport.y;
-        let offsetx = -2. * self.zoom * self.position.x / self.viewport.x;
-        let offsety = -2. * self.zoom * self.position.y / self.viewport.y;
+        let scalex = 2.0 * self.zoom / self.viewport.x;
+        let scaley = 2.0 * self.zoom / self.viewport.y;
+        let offsetx = -2.0 * self.zoom * self.position.x / self.viewport.x;
+        let offsety = -2.0 * self.zoom * self.position.y / self.viewport.y;
 
 
         // cgmath matrix init is backward, beware
-        self.projection = Matrix4::new(scalex, 0., 0., 0.,
-                                       0., scaley, 0., 0.,
-                                       0., 0., 1., 0.,
-                                       offsetx, offsety, 0., 1.);
+        self.projection = Matrix4::new(scalex, 0.0, 0.0, 0.0,
+                                       0.0, scaley, 0.0, 0.0,
+                                       0.0, 0.0, 1.0, 0.0,
+                                       offsetx, offsety, 0.0, 1.0);
         self.invprojection = self.projection.invert().unwrap();
     }
 
     pub fn unproject(&self, screen_coords: Vector2<f32>) -> Vector2<f32> {
         let v = self.invprojection
             * Vector4::new(
-                -1. + 2. * screen_coords.x / self.viewport.x,
-                1. - 2. * screen_coords.y / self.viewport.y,
+                -1.0 + 2.0 * screen_coords.x / self.viewport.x,
+                1.0 - 2.0 * screen_coords.y / self.viewport.y,
                 0.0,
                 1.0,
             );

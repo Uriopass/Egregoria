@@ -1,7 +1,6 @@
 use crate::geometry::rect::Rect;
 use cgmath::{ElementWise, EuclideanSpace, Point2, Vector2};
 use ggez::graphics::{Color, DrawMode, MeshBuilder, Vertex, WHITE};
-use nalgebra as na;
 use nalgebra::Isometry2;
 use ncollide2d::query::Proximity;
 use ncollide2d::shape::{Cuboid, Segment};
@@ -24,11 +23,11 @@ impl ShapeRenderer {
             meshbuilder: MeshBuilder::new(),
             screen_box: screen_box.clone(),
             screen_collider: (
-                Cuboid::new([screen_box.w / 2., screen_box.h / 2.].into()),
+                Cuboid::new([screen_box.w / 2.0, screen_box.h / 2.0].into()),
                 Isometry2::new(
                     nalgebra::Vector2::new(
-                        screen_box.x + screen_box.w / 2.,
-                        screen_box.y + screen_box.h / 2.,
+                        screen_box.x + screen_box.w / 2.0,
+                        screen_box.y + screen_box.h / 2.0,
                     ),
                     nalgebra::zero(),
                 ),
@@ -45,7 +44,7 @@ impl ShapeRenderer {
         if filled {
             self.mode = DrawMode::fill()
         } else {
-            self.mode = DrawMode::stroke(1.);
+            self.mode = DrawMode::stroke(1.0);
         }
     }
 
@@ -53,7 +52,8 @@ impl ShapeRenderer {
         let pp = Point2::from_vec(p);
 
         if self.screen_box.contains_within(p, r) {
-            self.meshbuilder.circle(self.mode, pp, r, 0.3, self.color);
+            self.meshbuilder
+                .circle(self.mode, pp, r, 0.3 / self.zoom, self.color);
             self.empty = false;
         }
     }
@@ -64,7 +64,7 @@ impl ShapeRenderer {
         }
         self.meshbuilder.rectangle(
             self.mode,
-            ggez::graphics::Rect::new(p.x - width / 2., p.y - height / 2., width, height),
+            ggez::graphics::Rect::new(p.x - width / 2.0, p.y - height / 2.0, width, height),
             self.color,
         );
         self.empty = false;
@@ -82,13 +82,13 @@ impl ShapeRenderer {
             return;
         }
 
-        let a = Point2::new(width / 2. * cos, width / 2. * sin);
-        let b = Vector2::new(height / 2. * -sin, height / 2. * cos);
+        let a = Point2::new(width / 2.0 * cos, width / 2.0 * sin);
+        let b = Vector2::new(height / 2.0 * -sin, height / 2.0 * cos);
         let points: [Point2<f32>; 4] = [
             a + b + p,
             a - b + p,
-            a.mul_element_wise(-1.) - b + p,
-            a.mul_element_wise(-1.) + b + p,
+            a.mul_element_wise(-1.0) - b + p,
+            a.mul_element_wise(-1.0) + b + p,
         ];
 
         match self.mode {
@@ -147,7 +147,7 @@ impl ShapeRenderer {
                     &[Point2::from_vec(p1), Point2::from_vec(p2)],
                     0.5 / self.zoom,
                     Color {
-                        a: (self.zoom * self.zoom * 50.).min(1.).max(0.),
+                        a: (self.zoom * self.zoom * 50.0).min(1.0).max(0.0),
                         ..self.color
                     },
                 )

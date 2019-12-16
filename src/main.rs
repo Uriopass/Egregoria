@@ -1,25 +1,25 @@
 #![windows_subsystem = "windows"]
 
+use cgmath::{Vector2, Zero};
+use ggez::graphics::Color;
+use nalgebra as na;
+use ncollide2d::pipeline::{CollisionGroups, GeometricQueryType};
+use ncollide2d::shape::{Segment, Shape, ShapeHandle};
+use ncollide2d::world::CollisionWorld;
+use specs::{Builder, DispatcherBuilder, Entity, World, WorldExt};
+
+use crate::cars::car_system::CarDecision;
+use crate::cars::RoadNodeComponent;
 use crate::engine::components::{Collider, LineRender, MeshRenderComponent, Transform};
 use crate::engine::resources::DeltaTime;
 use crate::engine::systems::{KinematicsApply, MovableSystem, PhysicsUpdate};
 use crate::humans::HumanUpdate;
-use cgmath::{Vector2, Zero};
-use ggez::graphics::Color;
-use ncollide2d::shape::{Segment, Shape, ShapeHandle};
-use ncollide2d::world::CollisionWorld;
 
 mod cars;
 mod engine;
 mod geometry;
 mod graphs;
 mod humans;
-
-use crate::cars::car_system::CarDecision;
-use crate::cars::RoadNodeComponent;
-use nalgebra as na;
-use ncollide2d::pipeline::{CollisionGroups, GeometricQueryType};
-use specs::{Builder, DispatcherBuilder, Entity, World, WorldExt};
 
 type PhysicsWorld = CollisionWorld<f32, Entity>;
 
@@ -50,10 +50,10 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f
             start,
             end,
             color: Color {
-                r: 0.,
-                g: 1.,
-                b: 0.,
-                a: 1.,
+                r: 0.0,
+                g: 1.0,
+                b: 0.0,
+                a: 1.0,
             },
         }))
         .build();
@@ -69,11 +69,11 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f
 }
 
 fn main() {
-    let collision_world: PhysicsWorld = CollisionWorld::new(15.);
+    let collision_world: PhysicsWorld = CollisionWorld::new(2.0);
 
     let mut world = World::new();
 
-    world.insert(DeltaTime(0.));
+    world.insert(DeltaTime(0.0));
     world.insert(collision_world);
 
     world.register::<MeshRenderComponent>();
@@ -97,10 +97,19 @@ fn main() {
     humans::setup(&mut world);
     cars::setup(&mut world);
 
-    add_static_segment(&mut world, [0., 0.].into(), [10000., 0.].into());
-    add_static_segment(&mut world, [0., 0.].into(), [0., 10000.].into());
-    add_static_segment(&mut world, [10000., 0.].into(), [10000., 10000.].into());
-    add_static_segment(&mut world, [0., 10000.].into(), [10000., 10000.].into());
+    let box_size = 100.0;
+    add_static_segment(&mut world, [0.0, 0.0].into(), [box_size, 0.0].into());
+    add_static_segment(&mut world, [0.0, 0.0].into(), [0.0, box_size].into());
+    add_static_segment(
+        &mut world,
+        [box_size, 0.0].into(),
+        [box_size, box_size].into(),
+    );
+    add_static_segment(
+        &mut world,
+        [0.0, box_size].into(),
+        [box_size, box_size].into(),
+    );
 
     engine::start(world, dispatcher);
 }
