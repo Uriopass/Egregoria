@@ -137,15 +137,14 @@ impl MeshRenderable for LineToRender {
 }
 
 pub struct LineRender {
-    pub start: Vector2<f32>,
-    pub end: Vector2<f32>,
+    pub offset: Vector2<f32>,
     pub color: Color,
 }
 
 impl MeshRenderable for LineRender {
-    fn draw(&self, _: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
-        let start = self.start;
-        let end = self.end;
+    fn draw(&self, trans: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
+        let start = trans.get_position();
+        let end = start + self.offset;
         rc.sr.color = self.color;
         rc.sr.draw_line(start, end);
     }

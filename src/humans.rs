@@ -62,13 +62,13 @@ impl<'a> System<'a> for HumanUpdate {
 }
 
 pub fn setup(world: &mut World) {
-    const SCALE: f32 = 10.0;
+    const SCALE: f32 = 100.0;
 
-    for _ in 0..10 {
+    for _ in 0..2000 {
         let size = 1.0;
 
         let x: f32 = rand::random::<f32>() * SCALE;
-        let y: f32 = rand::random::<f32>() * SCALE * 0.4;
+        let y: f32 = rand::random::<f32>() * SCALE;
 
         let eb = world
             .create_entity()
@@ -77,7 +77,7 @@ pub fn setup(world: &mut World) {
                 ..Default::default()
             }))
             .with(Transform::new([x, y].into()))
-            .with(Kinematics::zero())
+            .with(Kinematics::from_mass(0.1))
             .with(Drag::default())
             .with(Human {
                 objective: [SCALE * 5.0 - x, y].into(),
