@@ -10,10 +10,13 @@ use specs::{Builder, DispatcherBuilder, Entity, World, WorldExt};
 
 use crate::cars::car_system::CarDecision;
 use crate::cars::RoadNodeComponent;
-use crate::engine::components::{Collider, LineRender, MeshRenderComponent, Transform};
+use crate::engine::components::{
+    Collider, Kinematics, LineRender, MeshRenderComponent, Movable, Transform,
+};
 use crate::engine::resources::DeltaTime;
 use crate::engine::systems::{KinematicsApply, MovableSystem, PhysicsUpdate};
 use crate::humans::HumanUpdate;
+use cgmath::num_traits::zero;
 
 mod cars;
 mod engine;
@@ -42,13 +45,18 @@ where
     collider_comp.insert(e, Collider(h)).unwrap();
 }
 
-pub fn add_static_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f32>) {
-    let e = world
-        .create_entity()
-        .with(Transform::new([0.0, 0.0].into()))
+pub fn add_static_segment(world: &mut World, start: Vector2<f32>, offset: Vector2<f32>, vel: f32) {
+    let mut eb = world.create_entity().with(Transform::new(start));
+    if vel > 0.0 {
+        eb = eb.with(Kinematics {
+            velocity: Vector2::new(vel, 0.0),
+            acceleration: zero(),
+            mass: 1000000.0,
+        });
+    }
+    let e = eb
         .with(MeshRenderComponent::simple(LineRender {
-            start,
-            end,
+            offset: offset,
             color: Color {
                 r: 0.0,
                 g: 1.0,
@@ -56,14 +64,15 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, end: Vector2<f
                 a: 1.0,
             },
         }))
+        .with(Movable)
         .build();
     add_shape(
         world,
         e,
         Vector2::zero(),
         Segment::new(
-            na::Point2::new(start.x, start.y),
-            na::Point2::new(end.x, end.y),
+            na::Point2::new(0.0, 0.0),
+            na::Point2::new(offset.x, offset.y),
         ),
     );
 }
@@ -98,17 +107,24 @@ fn main() {
     cars::setup(&mut world);
 
     let box_size = 100.0;
-    add_static_segment(&mut world, [0.0, 0.0].into(), [box_size, 0.0].into());
-    add_static_segment(&mut world, [0.0, 0.0].into(), [0.0, box_size].into());
+    add_static_segment(&mut world, [0.0, 0.0].into(), [box_size, 0.0].into(), 0.0);
+    add_static_segment(
+        &mut world,
+        [0.0, 0.5].into(),
+        [0.0, box_size - 1.0].into(),
+        70.0,
+    );
     add_static_segment(
         &mut world,
         [box_size, 0.0].into(),
-        [box_size, box_size].into(),
+        [0.0, box_size].into(),
+        0.0,
     );
     add_static_segment(
         &mut world,
         [0.0, box_size].into(),
-        [box_size, box_size].into(),
+        [box_size, 0.0].into(),
+        0.0,
     );
 
     engine::start(world, dispatcher);

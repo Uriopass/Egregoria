@@ -73,9 +73,9 @@ impl CameraHandler {
         if keycode == KeyCode::Add || keycode == KeyCode::Subtract {
             let before = self.unproject_mouse_click(ctx);
             if keycode == KeyCode::Add {
-                self.camera.zoom *= 1.2;
+                self.camera.zoom *= 1.1;
             } else {
-                self.camera.zoom /= 1.2;
+                self.camera.zoom /= 1.1;
             }
             self.update(ctx);
             let after = self.unproject_mouse_click(ctx);

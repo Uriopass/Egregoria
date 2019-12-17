@@ -6,7 +6,7 @@ use nalgebra as na;
 
 use cgmath::{InnerSpace, Vector2, Zero};
 use nalgebra::Isometry2;
-use specs::{Join, Read, ReadStorage, Write, WriteStorage};
+use specs::{Entity, Join, Read, ReadStorage, Write, WriteStorage};
 
 pub struct KinematicsApply;
 pub struct PhysicsUpdate;
@@ -35,10 +35,10 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
             let is_dynamic_1 = kinematics.get(*ent_1).is_some();
             let is_dynamic_2 = kinematics.get(*ent_2).is_some();
 
-            let m_1 = 1.0;
-            let m_2 = 1.0;
-
             if is_dynamic_1 && is_dynamic_2 {
+                let m_1 = kinematics.get(*ent_1).unwrap().mass;
+                let m_2 = kinematics.get(*ent_2).unwrap().mass;
+
                 // elastic collision
                 let v_1 = kinematics.get(*ent_1).unwrap().velocity;
                 let v_2 = kinematics.get(*ent_2).unwrap().velocity;
@@ -52,14 +52,16 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
                 kinematics.get_mut(*ent_1).unwrap().velocity -= r_1 * factor * normal;
                 kinematics.get_mut(*ent_2).unwrap().velocity += r_2 * factor * normal;
 
+                let f_1 = m_2 / (m_1 + m_2);
+                let f_2 = 1.0 - f_1;
                 transforms
                     .get_mut(*ent_1)
                     .unwrap()
-                    .translate(-direction / 2.0);
+                    .translate(-direction * f_1);
                 transforms
                     .get_mut(*ent_2)
                     .unwrap()
-                    .translate(direction / 2.0);
+                    .translate(direction * f_2);
             } else if is_dynamic_1 {
                 let pos_1 = transforms.get_mut(*ent_1).unwrap();
                 pos_1.translate(-direction);
