@@ -44,7 +44,7 @@ impl<'a> EngineState<'a> {
 
 impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let delta = timer::delta(ctx).as_secs_f32().min(1.0 / 100.0);
+        let delta = timer::delta(ctx).as_secs_f32().min(1.0 / 1000.0);
         self.time += delta;
         *self.world.write_resource() = MouseInfo {
             unprojected: self.cam.unproject_mouse_click(ctx),

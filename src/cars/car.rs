@@ -74,7 +74,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
             },
         )))
         .with(Transform::new(position))
-        .with(Kinematics::zero())
+        .with(Kinematics::from_mass(1000.0))
         .with(CarComponent {
             direction: Vector2::new(rand::random::<f32>() - 0.5, rand::random::<f32>() - 0.5)
                 .normalize(),
