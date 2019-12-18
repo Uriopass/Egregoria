@@ -26,10 +26,15 @@ mod humans;
 
 type PhysicsWorld = CollisionWorld<f32, Entity>;
 
-pub fn add_shape<T>(world: &mut World, e: Entity, pos: Vector2<f32>, shape: T)
+pub fn add_shape<T>(world: &mut World, e: Entity, shape: T)
 where
     T: Shape<f32>,
 {
+    let pos = world
+        .read_component::<Transform>()
+        .get(e)
+        .unwrap()
+        .get_position();
     let coworld = world.get_mut::<PhysicsWorld>().unwrap();
     let (h, _) = coworld.add(
         na::Isometry2::new(na::Vector2::new(pos.x, pos.y), na::zero()),
@@ -45,18 +50,12 @@ where
     collider_comp.insert(e, Collider(h)).unwrap();
 }
 
-pub fn add_static_segment(world: &mut World, start: Vector2<f32>, offset: Vector2<f32>, vel: f32) {
-    let mut eb = world.create_entity().with(Transform::new(start));
-    if vel > 0.0 {
-        eb = eb.with(Kinematics {
-            velocity: Vector2::new(vel, 0.0),
-            acceleration: zero(),
-            mass: 1000000.0,
-        });
-    }
-    let e = eb
+pub fn add_static_segment(world: &mut World, start: Vector2<f32>, offset: Vector2<f32>) {
+    let e = world
+        .create_entity()
+        .with(Transform::new(start))
         .with(MeshRenderComponent::simple(LineRender {
-            offset: offset,
+            offset,
             color: Color {
                 r: 0.0,
                 g: 1.0,
@@ -66,10 +65,10 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, offset: Vector
         }))
         .with(Movable)
         .build();
+
     add_shape(
         world,
         e,
-        Vector2::zero(),
         Segment::new(
             na::Point2::new(0.0, 0.0),
             na::Point2::new(offset.x, offset.y),
@@ -93,39 +92,18 @@ fn main() {
         .with(HumanUpdate, "human update", &[])
         .with(CarDecision, "car decision", &[])
         .with(
-            KinematicsApply,
-            "speed apply",
+            MovableSystem::default(),
+            "movable",
             &["human update", "car decision"],
         )
+        .with(KinematicsApply, "speed apply", &["movable"])
         .with(PhysicsUpdate, "physics", &["speed apply"])
-        .with(MovableSystem::default(), "movable", &[])
         .build();
 
     dispatcher.setup(&mut world);
 
     humans::setup(&mut world);
     cars::setup(&mut world);
-
-    let box_size = 100.0;
-    add_static_segment(&mut world, [0.0, 0.0].into(), [box_size, 0.0].into(), 0.0);
-    add_static_segment(
-        &mut world,
-        [0.0, 0.5].into(),
-        [0.0, box_size - 1.0].into(),
-        70.0,
-    );
-    add_static_segment(
-        &mut world,
-        [box_size, 0.0].into(),
-        [0.0, box_size].into(),
-        0.0,
-    );
-    add_static_segment(
-        &mut world,
-        [0.0, box_size].into(),
-        [box_size, 0.0].into(),
-        0.0,
-    );
 
     engine::start(world, dispatcher);
 }

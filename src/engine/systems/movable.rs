@@ -54,12 +54,17 @@ impl<'a> System<'a> for MovableSystem {
                         let p = transforms.get_mut(e).unwrap();
                         if let Some(kin) = kinematics.get_mut(e) {
                             kin.velocity = zero();
+                            kin.acceleration = zero();
                         }
                         self.offset = p.get_position() - mouse.unprojected;
                     }
                 }
-                Some(x) => {
-                    let p = transforms.get_mut(x).unwrap();
+                Some(e) => {
+                    let p = transforms.get_mut(e).unwrap();
+                    if let Some(kin) = kinematics.get_mut(e) {
+                        kin.velocity = zero();
+                        kin.acceleration = zero();
+                    }
                     p.set_position(self.offset + mouse.unprojected);
                 }
             }
