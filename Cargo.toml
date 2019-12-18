@@ -5,11 +5,11 @@ authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
 edition = "2018"
 
 [profile.dev]
-opt-level = 1
+opt-level = 2
 
-[profile.release]
-debug = true
-incremental = true
+#[profile.release]
+#debug = true
+#incremental = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

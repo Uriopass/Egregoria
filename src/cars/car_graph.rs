@@ -24,9 +24,9 @@ impl RoadGraph {
     pub fn new() -> Self {
         let mut g = Graph::new();
 
-        let a = g.add_node(RoadNode::new(Vector2::<f32>::new(0.0, 0.0)));
-        let b = g.add_node(RoadNode::new(Vector2::<f32>::new(100.0, 100.0)));
-        let c = g.add_node(RoadNode::new(Vector2::<f32>::new(-100.0, 100.0)));
+        let a = g.add_node(RoadNode::new(Vector2::<f32>::new(-1.0, 0.0)));
+        let b = g.add_node(RoadNode::new(Vector2::<f32>::new(-1.0, -1.0)));
+        let c = g.add_node(RoadNode::new(Vector2::<f32>::new(-1.0, 1.0)));
 
         g.add_neigh(a, b, 1.0);
         g.add_neigh(a, c, 1.0);
@@ -56,7 +56,7 @@ impl RoadGraph {
             let e = e_map[n];
 
             let mut meshb = MeshRenderComponent::from(CircleRender {
-                radius: 10.0,
+                radius: 1.0,
                 color: Color { g: 1.0, ..BLACK },
                 filled: true,
                 ..Default::default()

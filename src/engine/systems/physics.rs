@@ -4,9 +4,9 @@ use crate::PhysicsWorld;
 
 use nalgebra as na;
 
-use cgmath::{InnerSpace, Vector2, Zero};
+use cgmath::{ElementWise, InnerSpace, Vector2, Zero};
 use nalgebra::Isometry2;
-use specs::{Entity, Join, Read, ReadStorage, Write, WriteStorage};
+use specs::{Join, Read, ReadStorage, Write, WriteStorage};
 
 pub struct KinematicsApply;
 pub struct PhysicsUpdate;
@@ -81,6 +81,8 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
     }
 }
 
+const RHO: f32 = 1.2;
+
 impl<'a> specs::System<'a> for KinematicsApply {
     type SystemData = (
         WriteStorage<'a, Collider>,
@@ -98,7 +100,10 @@ impl<'a> specs::System<'a> for KinematicsApply {
         let delta = delta.0;
 
         for (kin, drag) in (&mut kinematics, &drag).join() {
-            kin.acceleration -= kin.velocity * drag.0;
+            let force =
+                kin.velocity.mul_element_wise(kin.velocity) * drag.0 * (RHO / 2.0) / kin.mass;
+
+            kin.acceleration += -force;
         }
 
         for (transform, kin) in (&mut transforms, &mut kinematics).join() {

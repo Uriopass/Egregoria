@@ -58,6 +58,13 @@ impl ShapeRenderer {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.meshbuilder = MeshBuilder::new();
+        self.empty = true;
+        self.color = WHITE;
+        self.mode = DrawMode::fill();
+    }
+
     pub fn draw_rect_centered(&mut self, p: Vector2<f32>, width: f32, height: f32) {
         if !self.screen_box.contains_within(p, width.max(height)) {
             return;
