@@ -3,7 +3,8 @@ use crate::cars::car_graph::RoadGraph;
 use crate::engine::components::{Kinematics, Transform};
 use crate::engine::resources::DeltaTime;
 use crate::PhysicsWorld;
-use cgmath::{Angle, InnerSpace, Vector2};
+use cgmath::num_traits::Pow;
+use cgmath::{Angle, InnerSpace, Vector2, VectorSpace};
 use nalgebra as na;
 use ncollide2d::bounding_volume::AABB;
 use ncollide2d::pipeline::CollisionGroups;
@@ -14,8 +15,8 @@ use specs::{ParJoin, Read, System, WriteStorage};
 #[derive(Default)]
 pub struct CarDecision;
 
-const CAR_ACC: f32 = 20.0;
-const CAR_DEC: f32 = 20.0;
+const CAR_ACCELERATION: f32 = 3.0;
+const CAR_DECELERATION: f32 = 1.0;
 
 impl<'a> System<'a> for CarDecision {
     type SystemData = (
@@ -37,32 +38,42 @@ impl<'a> System<'a> for CarDecision {
         (&mut transforms, &mut kinematics, &mut cars)
             .par_join()
             .for_each(|(trans, kin, car)| {
+                let dot = kin.velocity.normalize().dot(car.direction);
+
+                if kin.velocity.magnitude2() > 1.0 && dot < 0.9 {
+                    let coeff = kin.velocity.magnitude().max(1.0).min(9.0) / 9.0;
+                    kin.acceleration -= kin.velocity / coeff;
+                    return;
+                }
+
                 let pos = trans.get_position();
+
                 let around = AABB::new(
-                    na::Point2::new(pos.x - 100.0, pos.y - 100.0),
-                    na::Point2::new(pos.x + 100.0, pos.y + 100.0),
+                    na::Point2::new(pos.x - 20.0, pos.y - 20.0),
+                    na::Point2::new(pos.x + 20.0, pos.y + 20.0),
                 );
 
                 let neighbors = coworld.interferences_with_aabb(&around, &all);
 
                 let objs: Vec<&na::Isometry2<f32>> = neighbors.map(|(_, y)| y.position()).collect();
 
-                let (desired_speed, desired_angle) = car.calc_decision(pos, objs);
+                let (desired_speed, desired_direction) = car.calc_decision(pos, objs);
 
                 let mut speed = kin.velocity.magnitude();
-                //speed += (desired_speed - speed).min(delta);
+                speed += (desired_speed - speed)
+                    .min(delta * CAR_ACCELERATION)
+                    .max(-delta * CAR_DECELERATION * speed.max(3.0));
 
-                let mut ang = -car.direction.angle(Vector2::unit_x());
-                ang.0 += desired_angle * delta;
+                let ang_acc = speed * 0.1;
 
-                if kin.velocity.magnitude2() < 100.0
-                    || kin.velocity.normalize().dot(car.direction) > 0.9
-                {
-                    car.direction = Vector2::new(ang.cos(), ang.sin());
-                    trans.set_angle_cos_sin(car.direction.x, car.direction.y);
+                let delta_ang = car.direction.angle(desired_direction);
+                let mut ang = Vector2::unit_x().angle(car.direction);
 
-                    kin.velocity = car.direction * speed;
-                }
+                ang.0 += delta_ang.0.min(ang_acc * delta).max(-ang_acc * delta);
+                car.direction = Vector2::new(ang.cos(), ang.sin());
+                trans.set_angle_cos_sin(car.direction.x, car.direction.y);
+
+                kin.velocity = car.direction * speed;
             });
     }
 }

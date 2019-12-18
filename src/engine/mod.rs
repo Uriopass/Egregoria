@@ -11,7 +11,7 @@ pub mod rendering;
 pub mod resources;
 pub mod systems;
 
-const PHYSICS_UPDATES: usize = 1;
+const PHYSICS_UPDATES: usize = 2;
 
 pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
     let mut c = conf::Conf::new();
@@ -35,7 +35,9 @@ pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
 
     let mut state = game_loop::EngineState::new(world, schedule, ctx).unwrap();
 
-    state.cam.camera.zoom = 20.0;
+    state.cam.camera.zoom = 10.0;
+    state.cam.camera.position.x = 50.0;
+    state.cam.camera.position.y = 50.0;
 
     event::run(ctx, event_loop, &mut state).unwrap()
 }

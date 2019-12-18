@@ -21,11 +21,12 @@ pub fn setup(world: &mut World) {
     g.add_to_world(world);
     world.insert(g);
 
-    for _i in 0..0 {
+    for i in 0..100 {
+        let y = ((i % 3) as f32) * 5.0;
         make_car_entity(
             world,
-            Vector2::<f32>::new(rand::random(), rand::random()) * 100.0,
-            Vector2::new(5.0, 5.0),
+            Vector2::<f32>::new(i as f32, y) * 2.0,
+            Vector2::new(1000.0, y * 2.0),
         );
     }
 }

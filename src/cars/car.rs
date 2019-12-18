@@ -9,6 +9,7 @@ use cgmath::num_traits::zero;
 use ggez::graphics::{Color, BLACK};
 use nalgebra as na;
 use ncollide2d::shape::Cuboid;
+use std::ops::Sub;
 
 #[derive(Component, Debug)]
 pub struct CarComponent {
@@ -25,32 +26,42 @@ impl CarComponent {
         }
     }
 
+    pub fn normal(&self) -> Vector2<f32> {
+        Vector2::new(-self.direction.y, self.direction.x)
+    }
+
     pub fn calc_decision(
         &self,
         position: Vector2<f32>,
         neighs: Vec<&na::Isometry2<f32>>,
-    ) -> (f32, f32) {
+    ) -> (f32, Vector2<f32>) {
         if self.objective.is_none() {
-            return (zero(), 0.0);
+            return (zero(), self.direction);
         }
 
+        let mut max_speed2: f32 = 50.0 * 50.0;
         // Collision avoidance
         for x in neighs {
             let e_pos = Vector2::new(x.translation.x, x.translation.y);
 
             let dist2 = e_pos.distance2(position);
-            if dist2 <= 0.0 || dist2 >= 30.0 * 30.0 {
+            if dist2 <= 0.0 || dist2 >= 15.0 * 15.0 {
+                continue;
+            }
+
+            let e_diff = e_pos - position;
+            if e_diff.normalize().dot(self.direction) < 0.75 {
                 continue;
             }
 
             let e_direction = Vector2::new(x.rotation.re, x.rotation.im);
             if e_direction.dot(self.direction) > 0.0 {
-                return (0.0, 0.0);
+                max_speed2 = max_speed2.min(e_diff.magnitude2());
             }
         }
         let objective = self.objective.unwrap();
-        let _delta_pos: Vector2<f32> = objective - position;
-        (500.0, 1.0)
+        let delta_pos: Vector2<f32> = objective - position;
+        ((max_speed2.sqrt() - 8.0).max(0.0), delta_pos.normalize())
     }
 }
 
@@ -76,18 +87,16 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
         .with(Transform::new(position))
         .with(Kinematics::from_mass(1000.0))
         .with(CarComponent {
-            direction: Vector2::new(rand::random::<f32>() - 0.5, rand::random::<f32>() - 0.5)
-                .normalize(),
+            direction: Vector2::new(1.0, 0.0),
             objective: Some(objective),
         })
-        .with(Drag::new(0.5))
+        .with(Drag::new(0.3))
         .with(Movable)
         .build();
 
     add_shape(
         world,
         e,
-        position,
         Cuboid::new([car_width / 2.0, car_height / 2.0].into()),
     )
 }
