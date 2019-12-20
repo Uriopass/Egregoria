@@ -1,16 +1,16 @@
 use crate::cars::car::CarComponent;
 use crate::cars::car_graph::RoadGraph;
-use crate::engine::components::{Kinematics, Transform};
+use crate::engine::components::{CircleRender, Kinematics, MeshRenderComponent, Transform};
 use crate::engine::resources::DeltaTime;
 use crate::PhysicsWorld;
-use cgmath::num_traits::Pow;
-use cgmath::{Angle, InnerSpace, Vector2, VectorSpace};
+use cgmath::{Angle, InnerSpace, Vector2};
 use nalgebra as na;
 use ncollide2d::bounding_volume::AABB;
 use ncollide2d::pipeline::CollisionGroups;
 use specs::prelude::ParallelIterator;
 use specs::shred::PanicHandler;
-use specs::{ParJoin, Read, System, WriteStorage};
+use specs::world::EntitiesRes;
+use specs::{Builder, Join, LazyUpdate, ParJoin, Read, System, WriteStorage};
 
 #[derive(Default)]
 pub struct CarDecision;
@@ -33,7 +33,6 @@ impl<'a> System<'a> for CarDecision {
         (_road_graph, delta, coworld, mut transforms, mut kinematics, mut cars): Self::SystemData,
     ) {
         let delta = delta.0;
-
         let all = CollisionGroups::new();
         (&mut transforms, &mut kinematics, &mut cars)
             .par_join()
@@ -64,7 +63,7 @@ impl<'a> System<'a> for CarDecision {
                     .min(delta * CAR_ACCELERATION)
                     .max(-delta * CAR_DECELERATION * speed.max(3.0));
 
-                let ang_acc = speed * 0.1;
+                let ang_acc = (speed * 0.1).min(1.0);
 
                 let delta_ang = car.direction.angle(desired_direction);
                 let mut ang = Vector2::unit_x().angle(car.direction);

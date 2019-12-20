@@ -2,6 +2,7 @@ use cgmath::{InnerSpace, MetricSpace, Vector2};
 use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
 use crate::add_shape;
+use crate::cars::car::CarObjective::Temporary;
 use crate::engine::components::{
     CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, RectRender, Transform,
 };
@@ -9,12 +10,18 @@ use cgmath::num_traits::zero;
 use ggez::graphics::{Color, BLACK};
 use nalgebra as na;
 use ncollide2d::shape::Cuboid;
-use std::ops::Sub;
+
+#[derive(Debug)]
+pub enum CarObjective {
+    None,
+    Temporary(Vector2<f32>),
+    Terminal(Vector2<f32>),
+}
 
 #[derive(Component, Debug)]
 pub struct CarComponent {
     pub direction: Vector2<f32>,
-    pub objective: Option<Vector2<f32>>,
+    pub objective: CarObjective,
 }
 
 #[allow(dead_code)]
@@ -22,7 +29,7 @@ impl CarComponent {
     pub fn new(angle: f32) -> CarComponent {
         CarComponent {
             direction: Vector2::new(angle.cos(), angle.sin()),
-            objective: None,
+            objective: CarObjective::None,
         }
     }
 
@@ -35,11 +42,23 @@ impl CarComponent {
         position: Vector2<f32>,
         neighs: Vec<&na::Isometry2<f32>>,
     ) -> (f32, Vector2<f32>) {
-        if self.objective.is_none() {
-            return (zero(), self.direction);
+        let objective: Vector2<f32>;
+        let is_terminal: bool;
+
+        match self.objective {
+            CarObjective::None => return (zero(), self.direction),
+            CarObjective::Temporary(x) => {
+                objective = x;
+                is_terminal = false;
+            }
+            CarObjective::Terminal(x) => {
+                objective = x;
+                is_terminal = true;
+            }
         }
 
-        let mut max_speed2: f32 = 50.0 * 50.0;
+        let mut min_dist2: f32 = 50.0 * 50.0;
+
         // Collision avoidance
         for x in neighs {
             let e_pos = Vector2::new(x.translation.x, x.translation.y);
@@ -56,12 +75,22 @@ impl CarComponent {
 
             let e_direction = Vector2::new(x.rotation.re, x.rotation.im);
             if e_direction.dot(self.direction) > 0.0 {
-                max_speed2 = max_speed2.min(e_diff.magnitude2());
+                min_dist2 = min_dist2.min(e_diff.magnitude2());
             }
         }
-        let objective = self.objective.unwrap();
-        let delta_pos: Vector2<f32> = objective - position;
-        ((max_speed2.sqrt() - 8.0).max(0.0), delta_pos.normalize())
+
+        let delta_pos = objective - position;
+        let dist_to_pos = delta_pos.magnitude();
+        let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
+
+        let mut speed: f32 = 50.0;
+        if is_terminal {
+            speed = dist_to_pos;
+        }
+        if dir_to_pos.dot(self.direction) < 0.8 {
+            speed = 5.0;
+        }
+        (speed.min(min_dist2.sqrt() - 8.0).max(0.0), dir_to_pos)
     }
 }
 
@@ -88,7 +117,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
         .with(Kinematics::from_mass(1000.0))
         .with(CarComponent {
             direction: Vector2::new(1.0, 0.0),
-            objective: Some(objective),
+            objective: Temporary(objective),
         })
         .with(Drag::new(0.3))
         .with(Movable)

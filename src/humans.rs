@@ -76,7 +76,7 @@ pub fn setup(world: &mut World) {
                 radius: size,
                 ..Default::default()
             }))
-            .with(Transform::new([x, y].into()))
+            .with(Transform::new((x, y)))
             .with(Kinematics::from_mass(100.0))
             .with(Drag::default())
             .with(Human {
