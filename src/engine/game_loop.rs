@@ -82,7 +82,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        self.cam.easy_camera_movement(ctx);
+        self.cam
+            .easy_camera_movement(ctx, timer::delta(ctx).as_secs_f32());
         self.cam.update(ctx);
 
         let mut rc = RenderContext::new(&mut self.cam, ctx, self.font);

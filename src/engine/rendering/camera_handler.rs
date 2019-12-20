@@ -1,5 +1,5 @@
 use ggez::input;
-use ggez::input::keyboard::KeyCode;
+use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 
 use ggez::graphics;
@@ -14,6 +14,8 @@ pub struct CameraHandler {
     pub camera: Camera,
     last_pos: Vector2<f32>,
 }
+
+const CAMERA_KEY_MOVESPEED: f32 = 300.0;
 
 #[allow(dead_code)]
 impl CameraHandler {
@@ -59,13 +61,26 @@ impl CameraHandler {
         self.camera.unproject(Vector2::new(haha.x, haha.y))
     }
 
-    pub fn easy_camera_movement(&mut self, ctx: &mut Context) {
+    pub fn easy_camera_movement(&mut self, ctx: &mut Context, delta: f32) {
         let p = self.unproject_mouse_click(ctx);
         if input::mouse::button_pressed(ctx, MouseButton::Right) {
             self.camera.position.x -= p.x - self.last_pos.x;
             self.camera.position.y -= p.y - self.last_pos.y;
             self.update(ctx);
         }
+        if input::keyboard::is_key_pressed(ctx, KeyCode::Right) {
+            self.camera.position.x += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+        }
+        if input::keyboard::is_key_pressed(ctx, KeyCode::Left) {
+            self.camera.position.x -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+        }
+        if input::keyboard::is_key_pressed(ctx, KeyCode::Up) {
+            self.camera.position.y += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+        }
+        if input::keyboard::is_key_pressed(ctx, KeyCode::Down) {
+            self.camera.position.y -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+        }
+
         self.last_pos = self.unproject_mouse_click(ctx);
     }
 
