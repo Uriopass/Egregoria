@@ -21,7 +21,7 @@ pub fn setup(world: &mut World) {
     g.add_to_world(world);
     world.insert(g);
 
-    for i in 0..100 {
+    for i in 0..1 {
         let y = ((i % 3) as f32) * 5.0;
         make_car_entity(
             world,

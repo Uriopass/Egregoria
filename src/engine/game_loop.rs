@@ -5,6 +5,7 @@ use crate::engine::resources::{DeltaTime, MouseInfo};
 use crate::engine::PHYSICS_UPDATES;
 
 use crate::cars::car::CarComponent;
+use crate::cars::car::CarObjective::Terminal;
 use cgmath::num_traits::Pow;
 use cgmath::{InnerSpace, Vector2, Zero};
 use ggez::graphics::{Color, Font, Text, TextFragment};
@@ -68,7 +69,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             let transforms = self.world.read_component::<Transform>();
             let mut cars = self.world.write_component::<CarComponent>();
             for (mut car, trans) in (&mut cars, &transforms).join() {
-                car.objective = Some(trans.get_position() + car.direction + car.normal() * 0.001);
+                //car.objective = Some(trans.get_position() + car.direction + car.normal());
+                car.objective = Terminal(self.cam.unproject_mouse_click(ctx));
             }
         }
 
