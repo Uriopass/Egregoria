@@ -1,11 +1,9 @@
 use crate::cars::RoadNodeComponent;
-use crate::engine::components::{
-    CircleRender, LineToRender, MeshRenderComponent, Movable, Transform,
-};
 use crate::graphs::graph::{Graph, NodeID};
-use cgmath::Vector2;
-use ggez::graphics::{Color, BLACK, WHITE};
-use specs::{Builder, Entity, World, WorldExt};
+use engine::cgmath::Vector2;
+use engine::components::{CircleRender, LineToRender, MeshRenderComponent, Movable, Transform};
+use engine::specs::{Builder, Entity, World, WorldExt};
+use engine::{GREEN, WHITE};
 use std::collections::HashMap;
 
 pub struct RoadNode {
@@ -57,7 +55,7 @@ impl RoadGraph {
 
             let mut meshb = MeshRenderComponent::from(CircleRender {
                 radius: 1.0,
-                color: Color { g: 1.0, ..BLACK },
+                color: GREEN,
                 filled: true,
                 ..Default::default()
             });

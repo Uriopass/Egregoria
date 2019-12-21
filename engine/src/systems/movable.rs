@@ -1,7 +1,7 @@
-use crate::engine::components::{Kinematics, Movable, Transform};
-use crate::engine::resources::{DeltaTime, MouseInfo};
+use crate::components::{Kinematics, Movable, Transform};
+use crate::resources::{DeltaTime, MouseInfo};
 
-use crate::engine::PHYSICS_UPDATES;
+use crate::PHYSICS_UPDATES;
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2, Zero};
 use ggez::input::mouse::MouseButton;

@@ -5,8 +5,8 @@ use ggez::input::mouse::MouseButton;
 use ggez::graphics;
 use ggez::Context;
 
-use crate::engine::rendering::camera::Camera;
 use crate::geometry::rect::Rect;
+use crate::rendering::camera::Camera;
 use cgmath::Vector2;
 
 #[allow(dead_code)]
