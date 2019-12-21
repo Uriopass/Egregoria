@@ -1,5 +1,5 @@
-use crate::engine::components::{Collider, Drag, Kinematics, Transform};
-use crate::engine::resources::DeltaTime;
+use crate::components::{Collider, Drag, Kinematics, Transform};
+use crate::resources::DeltaTime;
 use crate::PhysicsWorld;
 
 use nalgebra as na;
