@@ -1,16 +1,12 @@
 #![windows_subsystem = "windows"]
 
-use engine::cgmath::Zero;
 use engine::ncollide2d::world::CollisionWorld;
-use engine::specs::{Builder, DispatcherBuilder, Entity, World, WorldExt};
-use engine::GREEN;
+use engine::specs::{DispatcherBuilder, World, WorldExt};
 
 use crate::cars::car_system::CarDecision;
 use crate::cars::RoadNodeComponent;
 use crate::humans::HumanUpdate;
-use engine::components::{
-    Collider, Kinematics, LineRender, MeshRenderComponent, Movable, Transform,
-};
+use engine::components::{Collider, MeshRenderComponent};
 use engine::resources::DeltaTime;
 use engine::systems::{KinematicsApply, MovableSystem, PhysicsUpdate};
 use engine::PhysicsWorld;

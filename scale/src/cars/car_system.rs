@@ -1,8 +1,8 @@
 use crate::cars::car_data::CarComponent;
 use crate::cars::car_graph::RoadGraph;
 use engine::cgmath::{Angle, InnerSpace, Vector2};
-use engine::components::{CircleRender, Kinematics, MeshRenderComponent, Transform};
-use engine::nalgebra as na;
+use engine::components::{Kinematics, Transform};
+use engine::nalgebra::{Isometry2, Point2};
 use engine::ncollide2d::bounding_volume::AABB;
 use engine::ncollide2d::pipeline::CollisionGroups;
 use engine::resources::DeltaTime;
@@ -48,13 +48,13 @@ impl<'a> System<'a> for CarDecision {
                 let pos = trans.get_position();
 
                 let around = AABB::new(
-                    na::Point2::new(pos.x - 20.0, pos.y - 20.0),
-                    na::Point2::new(pos.x + 20.0, pos.y + 20.0),
+                    Point2::new(pos.x - 20.0, pos.y - 20.0),
+                    Point2::new(pos.x + 20.0, pos.y + 20.0),
                 );
 
                 let neighbors = coworld.interferences_with_aabb(&around, &all);
 
-                let objs: Vec<&na::Isometry2<f32>> = neighbors.map(|(_, y)| y.position()).collect();
+                let objs: Vec<&Isometry2<f32>> = neighbors.map(|(_, y)| y.position()).collect();
 
                 let (desired_speed, desired_direction) = car.calc_decision(pos, objs);
 
