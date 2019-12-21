@@ -1,5 +1,5 @@
 use ggez::input;
-use ggez::input::keyboard::{KeyCode, KeyMods};
+use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::MouseButton;
 
 use ggez::graphics;

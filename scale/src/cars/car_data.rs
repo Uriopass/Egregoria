@@ -7,10 +7,11 @@ use engine::cgmath::num_traits::zero;
 use engine::components::{
     CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, RectRender, Transform,
 };
-use engine::nalgebra as na;
+use engine::nalgebra::Isometry2;
 use engine::ncollide2d::shape::Cuboid;
 use engine::RED;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum CarObjective {
     None,
@@ -40,7 +41,7 @@ impl CarComponent {
     pub fn calc_decision(
         &self,
         position: Vector2<f32>,
-        neighs: Vec<&na::Isometry2<f32>>,
+        neighs: Vec<&Isometry2<f32>>,
     ) -> (f32, Vector2<f32>) {
         let objective: Vector2<f32>;
         let is_terminal: bool;

@@ -3,16 +3,15 @@ use crate::rendering::camera_handler::CameraHandler;
 use crate::rendering::render_context::RenderContext;
 use crate::resources::{DeltaTime, MouseInfo};
 use crate::PHYSICS_UPDATES;
-use cgmath::num_traits::Pow;
-use cgmath::{InnerSpace, Vector2, Zero};
-use ggez::graphics::{Color, Font, Text, TextFragment};
+
+use cgmath::InnerSpace;
+use ggez::graphics::{Color, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use specs::{Dispatcher, Join, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
-use std::ops::Mul;
 
 pub struct EngineState<'a> {
     pub world: World,

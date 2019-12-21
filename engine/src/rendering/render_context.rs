@@ -1,5 +1,5 @@
 use cgmath::{EuclideanSpace, Point2, Vector2};
-use ggez::graphics::{Color, DrawParam, Font, Image, Mesh, MeshBuilder, Text};
+use ggez::graphics::{Color, DrawParam, Font, Image, Mesh, Text};
 use ggez::{graphics, Context, GameResult};
 
 use crate::rendering::camera_handler;
