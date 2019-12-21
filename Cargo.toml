@@ -1,5 +1,8 @@
 [workspace]
-members = ["scale"]
+members = [
+    "scale",
+    "engine"
+]
 
 [profile.dev]
 opt-level = 2

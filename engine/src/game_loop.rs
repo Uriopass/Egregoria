@@ -1,11 +1,8 @@
-use crate::engine::components::{Kinematics, MeshRenderComponent, Transform};
-use crate::engine::rendering::camera_handler::CameraHandler;
-use crate::engine::rendering::render_context::RenderContext;
-use crate::engine::resources::{DeltaTime, MouseInfo};
-use crate::engine::PHYSICS_UPDATES;
-
-use crate::cars::car_data::CarComponent;
-use crate::cars::car_data::CarObjective::Terminal;
+use crate::components::{Kinematics, MeshRenderComponent, Transform};
+use crate::rendering::camera_handler::CameraHandler;
+use crate::rendering::render_context::RenderContext;
+use crate::resources::{DeltaTime, MouseInfo};
+use crate::PHYSICS_UPDATES;
 use cgmath::num_traits::Pow;
 use cgmath::{InnerSpace, Vector2, Zero};
 use ggez::graphics::{Color, Font, Text, TextFragment};
@@ -65,6 +62,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             ),
         };
 
+        /*
         {
             let transforms = self.world.read_component::<Transform>();
             let mut cars = self.world.write_component::<CarComponent>();
@@ -73,6 +71,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
                 car.objective = Terminal(self.cam.unproject_mouse_click(ctx));
             }
         }
+        */
 
         *self.world.write_resource() = DeltaTime(delta / (PHYSICS_UPDATES as f32));
 

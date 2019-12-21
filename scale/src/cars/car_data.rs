@@ -1,15 +1,15 @@
-use cgmath::{InnerSpace, MetricSpace, Vector2};
-use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
+use engine::cgmath::{InnerSpace, MetricSpace, Vector2};
+use engine::specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
-use crate::add_shape;
 use crate::cars::car_data::CarObjective::Temporary;
-use crate::engine::components::{
+use engine::add_shape;
+use engine::cgmath::num_traits::zero;
+use engine::components::{
     CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, RectRender, Transform,
 };
-use cgmath::num_traits::zero;
-use ggez::graphics::{Color, BLACK};
-use nalgebra as na;
-use ncollide2d::shape::Cuboid;
+use engine::nalgebra as na;
+use engine::ncollide2d::shape::Cuboid;
+use engine::RED;
 
 #[derive(Debug)]
 pub enum CarObjective {
@@ -109,7 +109,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
             CircleRender {
                 radius: 0.3,
                 offset: Vector2::new(car_width / 2.0, 0.0),
-                color: Color { r: 1.0, ..BLACK },
+                color: RED,
                 ..Default::default()
             },
         )))

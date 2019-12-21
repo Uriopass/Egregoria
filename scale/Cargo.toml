@@ -5,10 +5,6 @@ authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
 edition = "2018"
 
 [dependencies]
-ggez = "0.5"
 rand = {version = "0.7.2", features = ["small_rng"]}
-cgmath = {version = "0.17", features = ["mint", "swizzle"]}
-specs = {version = "0.15", features = ["specs-derive", "parallel"]}
-ncollide2d = "0.20"
-nalgebra = "0.18"
 ordered-float = "1.0.2"
+engine = { path = "../engine" }
