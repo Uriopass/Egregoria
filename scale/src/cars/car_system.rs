@@ -1,4 +1,4 @@
-use crate::cars::car::CarComponent;
+use crate::cars::car_data::CarComponent;
 use crate::cars::car_graph::RoadGraph;
 use crate::engine::components::{CircleRender, Kinematics, MeshRenderComponent, Transform};
 use crate::engine::resources::DeltaTime;
@@ -9,14 +9,14 @@ use ncollide2d::bounding_volume::AABB;
 use ncollide2d::pipeline::CollisionGroups;
 use specs::prelude::ParallelIterator;
 use specs::shred::PanicHandler;
-use specs::world::EntitiesRes;
-use specs::{Builder, Join, LazyUpdate, ParJoin, Read, System, WriteStorage};
+use specs::{ParJoin, Read, System, WriteStorage};
 
 #[derive(Default)]
 pub struct CarDecision;
 
 const CAR_ACCELERATION: f32 = 3.0;
 const CAR_DECELERATION: f32 = 1.0;
+const MIN_TURNING_RADIUS: f32 = 8.0;
 
 impl<'a> System<'a> for CarDecision {
     type SystemData = (
@@ -63,7 +63,7 @@ impl<'a> System<'a> for CarDecision {
                     .min(delta * CAR_ACCELERATION)
                     .max(-delta * CAR_DECELERATION * speed.max(3.0));
 
-                let ang_acc = (speed * 0.1).min(1.0);
+                let ang_acc = (speed / MIN_TURNING_RADIUS).min(1.0);
 
                 let delta_ang = car.direction.angle(desired_direction);
                 let mut ang = Vector2::unit_x().angle(car.direction);

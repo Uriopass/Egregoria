@@ -2,7 +2,7 @@ use cgmath::{InnerSpace, MetricSpace, Vector2};
 use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
 use crate::add_shape;
-use crate::cars::car::CarObjective::Temporary;
+use crate::cars::car_data::CarObjective::Temporary;
 use crate::engine::components::{
     CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, RectRender, Transform,
 };
@@ -88,7 +88,7 @@ impl CarComponent {
             speed = dist_to_pos;
         }
         if dir_to_pos.dot(self.direction) < 0.8 {
-            speed = 5.0;
+            speed = 7.0;
         }
         (speed.min(min_dist2.sqrt() - 8.0).max(0.0), dir_to_pos)
     }
