@@ -4,8 +4,8 @@ use crate::engine::rendering::render_context::RenderContext;
 use crate::engine::resources::{DeltaTime, MouseInfo};
 use crate::engine::PHYSICS_UPDATES;
 
-use crate::cars::car::CarComponent;
-use crate::cars::car::CarObjective::Terminal;
+use crate::cars::car_data::CarComponent;
+use crate::cars::car_data::CarObjective::Terminal;
 use cgmath::num_traits::Pow;
 use cgmath::{InnerSpace, Vector2, Zero};
 use ggez::graphics::{Color, Font, Text, TextFragment};
