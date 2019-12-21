@@ -1,11 +1,12 @@
 use crate::cars::car_data::CarComponent;
+use crate::cars::car_data::CarObjective::{Temporary, Terminal};
 use crate::cars::car_graph::RoadGraph;
 use engine::cgmath::{Angle, InnerSpace, Vector2};
 use engine::components::{Kinematics, Transform};
 use engine::nalgebra::{Isometry2, Point2};
 use engine::ncollide2d::bounding_volume::AABB;
 use engine::ncollide2d::pipeline::CollisionGroups;
-use engine::resources::DeltaTime;
+use engine::resources::{DeltaTime, MouseInfo};
 use engine::specs::prelude::ParallelIterator;
 use engine::specs::shred::PanicHandler;
 use engine::specs::{ParJoin, Read, System, WriteStorage};
@@ -23,6 +24,7 @@ impl<'a> System<'a> for CarDecision {
         Read<'a, RoadGraph, PanicHandler>,
         Read<'a, DeltaTime>,
         Read<'a, PhysicsWorld, PanicHandler>,
+        Read<'a, MouseInfo>,
         WriteStorage<'a, Transform>,
         WriteStorage<'a, Kinematics>,
         WriteStorage<'a, CarComponent>,
@@ -30,7 +32,7 @@ impl<'a> System<'a> for CarDecision {
 
     fn run(
         &mut self,
-        (_road_graph, delta, coworld, mut transforms, mut kinematics, mut cars): Self::SystemData,
+        (_road_graph, delta, coworld, mouse, mut transforms, mut kinematics, mut cars): Self::SystemData,
     ) {
         let delta = delta.0;
         let all = CollisionGroups::new();
@@ -38,6 +40,8 @@ impl<'a> System<'a> for CarDecision {
             .par_join()
             .for_each(|(trans, kin, car)| {
                 let dot = kin.velocity.normalize().dot(car.direction);
+
+                car.objective = Terminal(mouse.unprojected);
 
                 if kin.velocity.magnitude2() > 1.0 && dot < 0.9 {
                     let coeff = kin.velocity.magnitude().max(1.0).min(9.0) / 9.0;
