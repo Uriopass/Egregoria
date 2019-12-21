@@ -15,15 +15,6 @@ mod cars;
 mod graphs;
 mod humans;
 
-trait Id {
-    fn id() -> &'static str;
-}
-impl<T: ?Sized> Id for T {
-    fn id() -> &'static str {
-        std::any::type_name::<T>()
-    }
-}
-
 fn main() {
     let collision_world: PhysicsWorld = CollisionWorld::new(2.0);
 
@@ -37,19 +28,15 @@ fn main() {
     world.register::<RoadNodeComponent>();
 
     let mut dispatcher = DispatcherBuilder::new()
-        .with(HumanUpdate, HumanUpdate::id(), &[])
-        .with(CarDecision, CarDecision::id(), &[])
+        .with(HumanUpdate, "human update", &[])
+        .with(CarDecision, "car decision", &[])
         .with(
             MovableSystem::default(),
-            MovableSystem::id(),
-            &[HumanUpdate::id(), CarDecision::id()],
+            "movable",
+            &["human update", "car decision"],
         )
-        .with(
-            KinematicsApply,
-            KinematicsApply::id(),
-            &[MovableSystem::id()],
-        )
-        .with(PhysicsUpdate, PhysicsUpdate::id(), &[KinematicsApply::id()])
+        .with(KinematicsApply, "speed apply", &["movable"])
+        .with(PhysicsUpdate, "physics", &["speed apply"])
         .build();
 
     dispatcher.setup(&mut world);
