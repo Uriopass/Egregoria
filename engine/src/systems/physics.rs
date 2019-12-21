@@ -11,6 +11,7 @@ use specs::{Join, Read, ReadStorage, Write, WriteStorage};
 pub struct KinematicsApply;
 pub struct PhysicsUpdate;
 
+const C_R: f32 = 0.5; // 0 for inelastic, 1 for elastic
 impl<'a> specs::System<'a> for PhysicsUpdate {
     type SystemData = (
         WriteStorage<'a, Transform>,
@@ -43,8 +44,8 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
                 let v_1 = kinematics.get(*ent_1).unwrap().velocity;
                 let v_2 = kinematics.get(*ent_2).unwrap().velocity;
 
-                let r_1 = 2.0 * m_2 / (m_1 + m_2);
-                let r_2 = 2.0 * m_1 / (m_1 + m_2);
+                let r_1 = (1.0 + C_R) * m_2 / (m_1 + m_2);
+                let r_2 = (1.0 + C_R) * m_1 / (m_1 + m_2);
 
                 let v_diff: Vector2<f32> = v_1 - v_2;
                 let factor = normal.dot(v_diff);
