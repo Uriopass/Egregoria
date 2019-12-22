@@ -6,8 +6,9 @@ members = [
 
 [profile.dev]
 opt-level = 2
+codegen-units = 4
 
-#[profile.release]
-#debug = true
+[profile.release]
+debug = true
 #incremental = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
