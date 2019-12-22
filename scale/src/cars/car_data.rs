@@ -1,7 +1,7 @@
 use engine::cgmath::{InnerSpace, MetricSpace, Vector2};
 use engine::specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
-use crate::cars::car_data::CarObjective::Temporary;
+use crate::cars::car_data::CarObjective::Simple;
 use engine::add_shape;
 use engine::cgmath::num_traits::zero;
 use engine::components::{
@@ -15,8 +15,8 @@ use engine::RED;
 #[derive(Debug)]
 pub enum CarObjective {
     None,
-    Temporary(Vector2<f32>),
-    Terminal(Vector2<f32>),
+    Simple(Vector2<f32>),
+    Route(Vec<Vector2<f32>>),
 }
 
 #[derive(Component, Debug)]
@@ -46,15 +46,17 @@ impl CarComponent {
         let objective: Vector2<f32>;
         let is_terminal: bool;
 
-        match self.objective {
+        match &self.objective {
             CarObjective::None => return (zero(), self.direction),
-            CarObjective::Temporary(x) => {
-                objective = x;
-                is_terminal = false;
-            }
-            CarObjective::Terminal(x) => {
-                objective = x;
+            CarObjective::Simple(x) => {
+                objective = *x;
                 is_terminal = true;
+            }
+            CarObjective::Route(x) => {
+                objective = *x
+                    .first()
+                    .expect("Empty route is invalid, set objective to None");
+                is_terminal = x.len() == 1;
             }
         }
 
@@ -118,7 +120,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, objective: Vec
         .with(Kinematics::from_mass(1000.0))
         .with(CarComponent {
             direction: Vector2::new(1.0, 0.0),
-            objective: Temporary(objective),
+            objective: Simple(objective),
         })
         .with(Drag::new(0.3))
         .with(Movable)

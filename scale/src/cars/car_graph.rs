@@ -33,6 +33,7 @@ impl RoadGraph {
         RoadGraph(g)
     }
 
+    // FIXME: Movable doesn't move node position
     pub fn add_to_world(&self, world: &mut World) {
         let g = &self.0;
         let mut e_map: HashMap<NodeID, Entity> = HashMap::new();
