@@ -11,7 +11,7 @@ use specs::{Join, Read, ReadStorage, Write, WriteStorage};
 pub struct KinematicsApply;
 pub struct PhysicsUpdate;
 
-const C_R: f32 = 0.5; // 0 for inelastic, 1 for elastic
+const C_R: f32 = 0.2; // 0 for inelastic, 1 for elastic
 impl<'a> specs::System<'a> for PhysicsUpdate {
     type SystemData = (
         WriteStorage<'a, Transform>,
