@@ -2,7 +2,11 @@ use crate::cars::RoadNodeComponent;
 use crate::graphs::graph::{Graph, NodeID};
 use engine::cgmath::Vector2;
 use engine::components::{CircleRender, LineToRender, MeshRenderComponent, Movable, Transform};
-use engine::specs::{Builder, Entity, World, WorldExt};
+use engine::specs::Join;
+use engine::specs::{Builder, Entity, ReadStorage, System, World, WorldExt, Write};
+
+use engine::specs::shred::PanicHandler;
+use engine::systems::Moved;
 use engine::{GREEN, WHITE};
 use std::collections::HashMap;
 
@@ -17,6 +21,25 @@ impl RoadNode {
 }
 
 pub struct RoadGraph(pub Graph<RoadNode>);
+pub struct RoadGraphSynchronize;
+
+impl<'a> System<'a> for RoadGraphSynchronize {
+    type SystemData = (
+        Write<'a, RoadGraph, PanicHandler>,
+        ReadStorage<'a, Moved>,
+        ReadStorage<'a, RoadNodeComponent>,
+    );
+
+    fn run(&mut self, (mut road_graph, moved, roadnodecomponents): Self::SystemData) {
+        for (rnc, m) in (&roadnodecomponents, &moved).join() {
+            road_graph
+                .0
+                .nodes
+                .entry(rnc.id)
+                .and_modify(|x| x.pos = m.new_pos);
+        }
+    }
+}
 
 impl RoadGraph {
     pub fn new() -> Self {
@@ -33,7 +56,6 @@ impl RoadGraph {
         RoadGraph(g)
     }
 
-    // FIXME: Movable doesn't move node position
     pub fn add_to_world(&self, world: &mut World) {
         let g = &self.0;
         let mut e_map: HashMap<NodeID, Entity> = HashMap::new();
