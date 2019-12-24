@@ -1,21 +1,29 @@
 use crate::components::{Kinematics, Movable, Transform};
 use crate::resources::{DeltaTime, MouseInfo};
-
 use crate::PHYSICS_UPDATES;
+
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2, Zero};
 use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
+use specs::Component;
+use specs::HashMapStorage;
 use std::f32;
 use std::ops::Deref;
+
+#[derive(Component, Debug)]
+#[storage(HashMapStorage)]
+pub struct Moved {
+    pub new_pos: Vector2<f32>,
+}
 
 pub struct MovableSystem {
     offset: Vector2<f32>,
     selected: Option<Entity>,
 }
 
-impl Default for MovableSystem {
-    fn default() -> Self {
+impl MovableSystem {
+    pub fn new() -> Self {
         MovableSystem {
             offset: Vector2::zero(),
             selected: None,
@@ -29,16 +37,17 @@ impl<'a> System<'a> for MovableSystem {
         Read<'a, MouseInfo>,
         WriteStorage<'a, Transform>,
         WriteStorage<'a, Kinematics>,
+        WriteStorage<'a, Moved>,
         ReadStorage<'a, Movable>,
         Read<'a, DeltaTime>,
     );
 
     fn run(
         &mut self,
-        (entities, mouse, mut transforms, mut kinematics, movables, delta): Self::SystemData,
+        (entities, mouse, mut transforms, mut kinematics, mut moved, movables, delta): Self::SystemData,
     ) {
         let mouse: &MouseInfo = mouse.deref();
-
+        moved.clear();
         if mouse.buttons.contains(&MouseButton::Left) {
             match self.selected {
                 None => {
@@ -65,7 +74,11 @@ impl<'a> System<'a> for MovableSystem {
                         kin.velocity = zero();
                         kin.acceleration = zero();
                     }
-                    p.set_position(self.offset + mouse.unprojected);
+                    let new_pos = self.offset + mouse.unprojected;
+                    p.set_position(new_pos);
+                    moved
+                        .insert(e, Moved { new_pos })
+                        .expect("Something went wrong inserting Moved component");
                 }
             }
         } else if let Some(e) = self.selected.take() {

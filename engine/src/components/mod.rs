@@ -11,6 +11,6 @@ mod physics;
 #[storage(VecStorage)]
 pub struct Collider(pub CollisionObjectSlabHandle);
 
-#[derive(Component, Debug, Default)]
+#[derive(Component, Default)]
 #[storage(NullStorage)]
 pub struct Movable;

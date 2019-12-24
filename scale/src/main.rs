@@ -3,6 +3,7 @@
 use engine::ncollide2d::world::CollisionWorld;
 use engine::specs::{DispatcherBuilder, World, WorldExt};
 
+use crate::cars::car_graph::RoadGraphSynchronize;
 use crate::cars::car_system::CarDecision;
 use crate::cars::RoadNodeComponent;
 use crate::humans::HumanUpdate;
@@ -25,16 +26,16 @@ fn main() {
 
     world.register::<MeshRenderComponent>();
     world.register::<Collider>();
-    world.register::<RoadNodeComponent>();
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(HumanUpdate, "human update", &[])
         .with(CarDecision, "car decision", &[])
         .with(
-            MovableSystem::default(),
+            MovableSystem::new(),
             "movable",
             &["human update", "car decision"],
         )
+        .with(RoadGraphSynchronize, "rgnms", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
         .with(PhysicsUpdate, "physics", &["speed apply"])
         .build();
