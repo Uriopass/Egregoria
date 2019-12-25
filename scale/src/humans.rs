@@ -1,4 +1,4 @@
-use engine::cgmath::{InnerSpace, Vector2};
+use cgmath::{InnerSpace, Vector2};
 
 use engine::specs::{
     Builder, Component, Join, ParJoin, Read, ReadStorage, System, VecStorage, World, WorldExt,
@@ -9,7 +9,7 @@ use engine::add_shape;
 use engine::components::{CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, Transform};
 use engine::resources::DeltaTime;
 
-use engine::cgmath::num_traits::zero;
+use cgmath::num_traits::zero;
 use engine::ncollide2d::shape::Ball;
 use engine::specs::prelude::ParallelIterator;
 

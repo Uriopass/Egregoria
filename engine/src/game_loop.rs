@@ -1,7 +1,7 @@
 use crate::components::{Kinematics, MeshRenderComponent, Transform};
 use crate::rendering::camera_handler::CameraHandler;
 use crate::rendering::render_context::RenderContext;
-use crate::resources::{DeltaTime, MouseInfo};
+use crate::resources::{DeltaTime, KeyboardInfo, MouseInfo};
 use crate::PHYSICS_UPDATES;
 
 use cgmath::InnerSpace;
@@ -77,7 +77,13 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         for _ in 0..PHYSICS_UPDATES {
             self.dispatch.run_now(&self.world);
             self.world.maintain();
+
+            self.world
+                .write_resource::<KeyboardInfo>()
+                .just_pressed
+                .clear();
         }
+
         Ok(())
     }
 
@@ -138,6 +144,10 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
     }
 
     fn key_down_event(&mut self, ctx: &mut Context, keycode: KeyCode, _: KeyMods, _: bool) {
+        self.world
+            .write_resource::<KeyboardInfo>()
+            .just_pressed
+            .insert(keycode);
         if keycode == KeyCode::R {
             self.render_enabled = !self.render_enabled;
         }

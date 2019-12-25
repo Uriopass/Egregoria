@@ -1,15 +1,17 @@
 use crate::cars::RoadNodeComponent;
 use crate::graphs::graph::{Graph, NodeID};
-use engine::cgmath::Vector2;
+use cgmath::Vector2;
 use engine::components::{CircleRender, LineToRender, MeshRenderComponent, Movable, Transform};
 use engine::specs::Join;
 use engine::specs::{Builder, Entity, ReadStorage, System, World, WorldExt, Write};
 
+use cgmath::MetricSpace;
 use engine::specs::shred::PanicHandler;
 use engine::systems::Moved;
 use engine::{GREEN, WHITE};
 use std::collections::HashMap;
 
+#[derive(Clone, Copy)]
 pub struct RoadNode {
     pub pos: Vector2<f32>,
 }
@@ -43,17 +45,21 @@ impl<'a> System<'a> for RoadGraphSynchronize {
 
 impl RoadGraph {
     pub fn new() -> Self {
-        let mut g = Graph::new();
+        RoadGraph(Graph::<RoadNode>::new())
+    }
 
-        let a = g.add_node(RoadNode::new(Vector2::<f32>::new(-1.0, 0.0)));
-        let b = g.add_node(RoadNode::new(Vector2::<f32>::new(-1.0, -1.0)));
-        let c = g.add_node(RoadNode::new(Vector2::<f32>::new(-1.0, 1.0)));
+    pub fn closest_node(&self, pos: Vector2<f32>) -> NodeID {
+        let mut id: NodeID = *self.0.ids().next().unwrap();
+        let mut min_dist = self.0.nodes.get(&id).unwrap().pos.distance2(pos);
 
-        g.add_neigh(a, b, 1.0);
-        g.add_neigh(a, c, 1.0);
-        g.add_neigh(c, b, 1.0);
-
-        RoadGraph(g)
+        for (key, value) in &self.0.nodes {
+            let dist = pos.distance2(value.pos);
+            if dist < min_dist {
+                id = *key;
+                min_dist = dist;
+            }
+        }
+        id
     }
 
     pub fn add_to_world(&self, world: &mut World) {
