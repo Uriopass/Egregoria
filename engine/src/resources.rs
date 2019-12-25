@@ -1,4 +1,5 @@
 use cgmath::Vector2;
+use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::MouseButton;
 use std::collections::HashSet;
 
@@ -15,6 +16,18 @@ impl Default for MouseInfo {
         MouseInfo {
             unprojected: [0.0, 0.0].into(),
             buttons: HashSet::new(),
+        }
+    }
+}
+
+pub struct KeyboardInfo {
+    pub just_pressed: HashSet<KeyCode>,
+}
+
+impl Default for KeyboardInfo {
+    fn default() -> Self {
+        KeyboardInfo {
+            just_pressed: HashSet::new(),
         }
     }
 }
