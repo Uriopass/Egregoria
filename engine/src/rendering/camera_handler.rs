@@ -85,9 +85,13 @@ impl CameraHandler {
     }
 
     pub fn easy_camera_movement_keys(&mut self, ctx: &mut Context, keycode: KeyCode) {
-        if keycode == KeyCode::Add || keycode == KeyCode::Subtract {
+        if keycode == KeyCode::Add
+            || keycode == KeyCode::Subtract
+            || keycode == KeyCode::Equals
+            || keycode == KeyCode::Minus
+        {
             let before = self.unproject_mouse_click(ctx);
-            if keycode == KeyCode::Add {
+            if keycode == KeyCode::Add || keycode == KeyCode::Equals {
                 self.camera.zoom *= 1.1;
             } else {
                 self.camera.zoom /= 1.1;

@@ -17,7 +17,6 @@ pub mod rendering;
 pub mod resources;
 pub mod systems;
 
-pub use cgmath;
 pub use nalgebra;
 pub use ncollide2d;
 pub use rendering::colors::*;

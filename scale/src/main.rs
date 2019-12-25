@@ -5,10 +5,9 @@ use engine::specs::{DispatcherBuilder, World, WorldExt};
 
 use crate::cars::car_graph::RoadGraphSynchronize;
 use crate::cars::car_system::CarDecision;
-use crate::cars::RoadNodeComponent;
 use crate::humans::HumanUpdate;
 use engine::components::{Collider, MeshRenderComponent};
-use engine::resources::DeltaTime;
+use engine::resources::{DeltaTime, KeyboardInfo};
 use engine::systems::{KinematicsApply, MovableSystem, PhysicsUpdate};
 use engine::PhysicsWorld;
 
@@ -23,6 +22,7 @@ fn main() {
 
     world.insert(DeltaTime(0.0));
     world.insert(collision_world);
+    world.insert(KeyboardInfo::default());
 
     world.register::<MeshRenderComponent>();
     world.register::<Collider>();
