@@ -61,19 +61,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             ),
         };
 
-        /*
-        {
-            let transforms = self.world.read_component::<Transform>();
-            let mut cars = self.world.write_component::<CarComponent>();
-            for (mut car, trans) in (&mut cars, &transforms).join() {
-                //car.objective = Some(trans.get_position() + car.direction + car.normal());
-                car.objective = Terminal(self.cam.unproject_mouse_click(ctx));
-            }
-        }
-        */
-
         *self.world.write_resource() = DeltaTime(delta / (PHYSICS_UPDATES as f32));
-
         for _ in 0..PHYSICS_UPDATES {
             self.dispatch.run_now(&self.world);
             self.world.maintain();
