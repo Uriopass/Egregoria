@@ -67,8 +67,8 @@ impl CarComponent {
 
         let is_terminal = match &self.objective {
             CarObjective::None => return (zero(), self.direction),
-            CarObjective::Simple(x) => true,
-            CarObjective::Temporary(x) => false,
+            CarObjective::Simple(_x) => true,
+            CarObjective::Temporary(_x) => false,
             CarObjective::Route(x) => x.len() == 1,
         };
 

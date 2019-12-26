@@ -48,13 +48,8 @@ impl CityGenerator {
                 let dir = (inter2.pos - center).normalize();
                 let nor = Vector2::new(-dir.y, dir.x);
 
-                let out_id = g.add_node(RoadNode {
-                    pos: center + dir * 25.0 - nor * 4.0,
-                });
-
-                let in_id = g.add_node(RoadNode {
-                    pos: inter2.pos - dir * 25.0 - nor * 4.0,
-                });
+                let out_id = g.add_node(RoadNode::new(center + dir * 25.0 - nor * 4.0));
+                let in_id = g.add_node(RoadNode::new(inter2.pos - dir * 25.0 - nor * 4.0));
 
                 out_nodes
                     .entry(*id)
@@ -67,7 +62,7 @@ impl CityGenerator {
             }
         }
 
-        for (id, inter) in &self.intersections.nodes {
+        for (id, _) in &self.intersections.nodes {
             let outs = &out_nodes[id];
             let ins = &in_nodes[id];
 
