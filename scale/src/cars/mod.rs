@@ -1,5 +1,5 @@
 use crate::cars::car_data::make_car_entity;
-use crate::cars::car_graph::RoadGraph;
+
 use crate::cars::city_generator::{CityGenerator, Intersection};
 use crate::graphs::graph::NodeID;
 use cgmath::Vector2;
@@ -40,7 +40,7 @@ pub fn setup(world: &mut World) {
     g.add_to_world(world);
     world.insert(g);
 
-    for i in 0..30 {
+    for _i in 0..30 {
         make_car_entity(
             world,
             200.0 * Vector2::<f32>::new(rand::random::<f32>() - 0.5, rand::random::<f32>() - 0.5),

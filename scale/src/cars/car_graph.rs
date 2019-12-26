@@ -44,10 +44,6 @@ impl<'a> System<'a> for RoadGraphSynchronize {
 }
 
 impl RoadGraph {
-    pub fn new() -> Self {
-        RoadGraph(Graph::<RoadNode>::new())
-    }
-
     pub fn closest_node(&self, pos: Vector2<f32>) -> NodeID {
         let mut id: NodeID = *self.0.ids().next().unwrap();
         let mut min_dist = self.0.nodes.get(&id).unwrap().pos.distance2(pos);

@@ -35,9 +35,9 @@ fn main() {
             "movable",
             &["human update", "car decision"],
         )
-        .with(RoadGraphSynchronize, "rgnms", &["movable"])
+        .with(RoadGraphSynchronize, "rgs", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
-        .with(PhysicsUpdate, "physics", &["speed apply"])
+        .with(PhysicsUpdate::default(), "physics", &["speed apply"])
         .build();
 
     dispatcher.setup(&mut world);
