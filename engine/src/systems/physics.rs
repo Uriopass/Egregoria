@@ -1,26 +1,36 @@
 use crate::components::{Collider, Drag, Kinematics, Transform};
-use crate::resources::DeltaTime;
+use crate::resources::{DeltaTime, KeyboardInfo};
 use crate::PhysicsWorld;
 
 use nalgebra as na;
 
 use cgmath::{ElementWise, InnerSpace, Vector2, Zero};
+use ggez::input::keyboard::KeyCode;
 use nalgebra::Isometry2;
 use specs::{Join, Read, ReadStorage, Write, WriteStorage};
 
 pub struct KinematicsApply;
-pub struct PhysicsUpdate;
+
+#[derive(Default)]
+pub struct PhysicsUpdate {
+    dynamic_collisions_enabled: bool,
+}
 
 const C_R: f32 = 0.2; // 0 for inelastic, 1 for elastic
 impl<'a> specs::System<'a> for PhysicsUpdate {
     type SystemData = (
+        Read<'a, KeyboardInfo>,
         WriteStorage<'a, Transform>,
         WriteStorage<'a, Kinematics>,
         Write<'a, PhysicsWorld, specs::shred::PanicHandler>,
     );
 
-    fn run(&mut self, (mut transforms, mut kinematics, mut coworld): Self::SystemData) {
+    fn run(&mut self, (kb, mut transforms, mut kinematics, mut coworld): Self::SystemData) {
         coworld.update();
+
+        if kb.just_pressed.contains(&KeyCode::P) {
+            self.dynamic_collisions_enabled = !self.dynamic_collisions_enabled;
+        }
 
         for (h1, h2, _alg, manifold) in coworld.contact_pairs(true) {
             let ent_1 = coworld.collision_object(h1).unwrap().data();
@@ -37,6 +47,9 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
             let is_dynamic_2 = kinematics.get(*ent_2).is_some();
 
             if is_dynamic_1 && is_dynamic_2 {
+                if !self.dynamic_collisions_enabled {
+                    return;
+                }
                 let m_1 = kinematics.get(*ent_1).unwrap().mass;
                 let m_2 = kinematics.get(*ent_2).unwrap().mass;
 
@@ -63,14 +76,19 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
                     .get_mut(*ent_2)
                     .unwrap()
                     .translate(direction * f_2);
-            } else if is_dynamic_1 {
+                return;
+            }
+            if is_dynamic_1 {
                 let pos_1 = transforms.get_mut(*ent_1).unwrap();
                 pos_1.translate(-direction);
 
                 let k_1 = kinematics.get_mut(*ent_1).unwrap();
                 let projected = k_1.velocity.project_on(normal) * -2.0;
                 k_1.velocity += projected;
-            } else if is_dynamic_2 {
+                return;
+            }
+
+            if is_dynamic_2 {
                 let pos_2 = transforms.get_mut(*ent_2).unwrap();
                 pos_2.translate(direction);
 
