@@ -36,12 +36,13 @@ impl<'a> EngineState<'a> {
         //       let test: Image = graphics::Image::new(ctx, "/test.png")?;
 
         graphics::set_resizable(ctx, true)?;
+        let (width, height) = graphics::size(ctx);
         Ok(EngineState {
             font,
             world,
             dispatch,
             time: 0.0,
-            cam: CameraHandler::new(),
+            cam: CameraHandler::new(width, height),
             render_enabled: true,
             grid: true,
         })

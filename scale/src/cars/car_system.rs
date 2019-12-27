@@ -69,7 +69,7 @@ fn car_physics(
     trans: &mut Transform,
     kin: &mut Kinematics,
     car: &mut CarComponent,
-) -> () {
+) {
     let speed: f32 = kin.velocity.magnitude();
     let dot = (kin.velocity / speed).dot(car.direction);
 
