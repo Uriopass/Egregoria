@@ -31,7 +31,7 @@ fn main() {
         .with(HumanUpdate, "human update", &[])
         .with(CarDecision, "car decision", &[])
         .with(
-            MovableSystem::new(),
+            MovableSystem::default(),
             "movable",
             &["human update", "car decision"],
         )

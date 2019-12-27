@@ -99,6 +99,7 @@ impl CarComponent {
         let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
 
         let mut speed: f32 = 50.0;
+
         if is_terminal {
             speed = dist_to_pos;
         }
