@@ -53,16 +53,16 @@ impl CityGenerator {
 
                 out_nodes
                     .entry(*id)
-                    .or_insert(HashMap::new())
+                    .or_insert_with(HashMap::new)
                     .insert(*to, out_id);
                 in_nodes
                     .entry(*to)
-                    .or_insert(HashMap::new())
+                    .or_insert_with(HashMap::new)
                     .insert(*id, in_id);
             }
         }
 
-        for (id, _) in &self.intersections.nodes {
+        for id in self.intersections.nodes.keys() {
             let outs = &out_nodes[id];
             let ins = &in_nodes[id];
 

@@ -62,7 +62,7 @@ impl<'a> System<'a> for HumanUpdate {
 pub fn setup(world: &mut World) {
     const SCALE: f32 = 100.0;
 
-    for _ in 0..0 {
+    for _ in 0..1 {
         let size = 1.0;
 
         let x: f32 = rand::random::<f32>() * SCALE;

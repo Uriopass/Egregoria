@@ -22,8 +22,8 @@ pub struct MovableSystem {
     selected: Option<Entity>,
 }
 
-impl MovableSystem {
-    pub fn new() -> Self {
+impl Default for MovableSystem {
+    fn default() -> Self {
         MovableSystem {
             offset: Vector2::zero(),
             selected: None,
