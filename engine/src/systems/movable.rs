@@ -6,14 +6,13 @@ use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2, Zero};
 use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
-use specs::Component;
-use specs::HashMapStorage;
+use specs::shrev::EventChannel;
 use std::f32;
 use std::ops::Deref;
 
-#[derive(Component, Debug)]
-#[storage(HashMapStorage)]
-pub struct Moved {
+#[derive(Debug)]
+pub struct MovedEvent {
+    pub entity: Entity,
     pub new_pos: Vector2<f32>,
 }
 
@@ -37,17 +36,16 @@ impl<'a> System<'a> for MovableSystem {
         Read<'a, MouseInfo>,
         WriteStorage<'a, Transform>,
         WriteStorage<'a, Kinematics>,
-        WriteStorage<'a, Moved>,
+        Write<'a, EventChannel<MovedEvent>>,
         ReadStorage<'a, Movable>,
         Read<'a, DeltaTime>,
     );
 
     fn run(
         &mut self,
-        (entities, mouse, mut transforms, mut kinematics, mut moved, movables, delta): Self::SystemData,
+        (entities, mouse, mut transforms, mut kinematics, mut movedevents, movables, delta): Self::SystemData,
     ) {
         let mouse: &MouseInfo = mouse.deref();
-        moved.clear();
         if mouse.buttons.contains(&MouseButton::Left) {
             match self.selected {
                 None => {
@@ -76,9 +74,7 @@ impl<'a> System<'a> for MovableSystem {
                     }
                     let new_pos = self.offset + mouse.unprojected;
                     p.set_position(new_pos);
-                    moved
-                        .insert(e, Moved { new_pos })
-                        .expect("Something went wrong inserting Moved component");
+                    movedevents.single_write(MovedEvent { entity: e, new_pos });
                 }
             }
         } else if let Some(e) = self.selected.take() {

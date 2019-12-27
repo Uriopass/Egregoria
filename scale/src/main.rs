@@ -35,7 +35,7 @@ fn main() {
             "movable",
             &["human update", "car decision"],
         )
-        .with(RoadGraphSynchronize, "rgs", &["movable"])
+        .with(RoadGraphSynchronize::new(&mut world), "rgs", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
         .with(PhysicsUpdate::default(), "physics", &["speed apply"])
         .build();

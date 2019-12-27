@@ -2,12 +2,14 @@ use crate::cars::RoadNodeComponent;
 use crate::graphs::graph::{Graph, NodeID};
 use cgmath::Vector2;
 use engine::components::{CircleRender, LineToRender, MeshRenderComponent, Movable, Transform};
-use engine::specs::Join;
-use engine::specs::{Builder, Entity, ReadStorage, System, World, WorldExt, Write};
+use engine::specs::{
+    Builder, Entity, Read, ReadStorage, System, SystemData, World, WorldExt, Write,
+};
 
 use cgmath::MetricSpace;
 use engine::specs::shred::PanicHandler;
-use engine::systems::Moved;
+use engine::specs::shrev::{EventChannel, ReaderId};
+use engine::systems::MovedEvent;
 use engine::{GREEN, WHITE};
 use std::collections::HashMap;
 
@@ -23,22 +25,35 @@ impl RoadNode {
 }
 
 pub struct RoadGraph(pub Graph<RoadNode>);
-pub struct RoadGraphSynchronize;
+pub struct RoadGraphSynchronize {
+    reader: ReaderId<MovedEvent>,
+}
+
+impl RoadGraphSynchronize {
+    pub fn new(world: &mut World) -> Self {
+        <Self as System<'_>>::SystemData::setup(world);
+        let reader = world
+            .fetch_mut::<EventChannel<MovedEvent>>()
+            .register_reader();
+        Self { reader }
+    }
+}
 
 impl<'a> System<'a> for RoadGraphSynchronize {
     type SystemData = (
         Write<'a, RoadGraph, PanicHandler>,
-        ReadStorage<'a, Moved>,
+        Read<'a, EventChannel<MovedEvent>>,
         ReadStorage<'a, RoadNodeComponent>,
     );
 
     fn run(&mut self, (mut road_graph, moved, roadnodecomponents): Self::SystemData) {
-        for (rnc, m) in (&roadnodecomponents, &moved).join() {
+        for event in moved.read(&mut self.reader) {
+            let rnc = roadnodecomponents.get(event.entity).unwrap();
             road_graph
                 .0
                 .nodes
                 .entry(rnc.id)
-                .and_modify(|x| x.pos = m.new_pos);
+                .and_modify(|x| x.pos = event.new_pos);
         }
     }
 }
