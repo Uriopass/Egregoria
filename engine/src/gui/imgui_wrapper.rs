@@ -7,6 +7,7 @@ use gfx_device_gl;
 use imgui::*;
 use imgui_gfx_renderer::*;
 
+use specs::World;
 use std::time::Instant;
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
@@ -16,9 +17,13 @@ struct MouseState {
     wheel: f32,
 }
 
+pub trait Gui: Clone + Send + Sync {
+    fn render(&self, ui: &Ui, world: &mut World);
+}
+
 pub struct ImGuiWrapper {
-    pub imgui: imgui::Context,
-    pub renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
+    imgui: imgui::Context,
+    renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     last_frame: Instant,
     mouse_state: MouseState,
     show_popup: bool,
@@ -61,7 +66,13 @@ impl ImGuiWrapper {
         }
     }
 
-    pub fn render(&mut self, ctx: &mut Context, hidpi_factor: f32) {
+    pub fn render<G: Gui>(
+        &mut self,
+        ctx: &mut Context,
+        world: &mut World,
+        gui: G,
+        hidpi_factor: f32,
+    ) {
         // Update mouse
         self.update_mouse();
 
@@ -76,70 +87,9 @@ impl ImGuiWrapper {
         self.imgui.io_mut().display_framebuffer_scale = [hidpi_factor, hidpi_factor];
         self.imgui.io_mut().delta_time = delta_s;
 
-        let ui = self.imgui.frame();
+        let ui: Ui = self.imgui.frame();
 
-        // Various ui things
-        {
-            // Window
-            imgui::Window::new(im_str!("Hello world"))
-                .size([300.0, 600.0], imgui::Condition::FirstUseEver)
-                .position([100.0, 100.0], imgui::Condition::FirstUseEver)
-                .build(&ui, || {
-                    ui.text(im_str!("Hello world!"));
-                    ui.text(im_str!("こんにちは世界！"));
-                    ui.text(im_str!("This...is...imgui-rs!"));
-                    ui.separator();
-                    let mouse_pos = ui.io().mouse_pos;
-                    ui.text(im_str!(
-                        "Mouse Position: ({:.1},{:.1})",
-                        mouse_pos[0],
-                        mouse_pos[1]
-                    ));
-
-                    if ui.small_button(im_str!("small button")) {
-                        println!("Small button clicked");
-                    }
-                });
-
-            // Popup
-            ui.popup(im_str!("popup"), || {
-                if imgui::MenuItem::new(im_str!("popup menu item 1")).build(&ui) {
-                    println!("popup menu item 1 clicked");
-                }
-
-                if imgui::MenuItem::new(im_str!("popup menu item 2")).build(&ui) {
-                    println!("popup menu item 2 clicked");
-                }
-            });
-
-            // Menu bar
-            ui.main_menu_bar(|| {
-                ui.menu(im_str!("Menu 1"), true, || {
-                    if imgui::MenuItem::new(im_str!("Item 1.1")).build(&ui) {
-                        println!("item 1.1 inside menu bar clicked");
-                    }
-
-                    ui.menu(im_str!("Item 1.2"), true, || {
-                        if imgui::MenuItem::new(im_str!("Item 1.2.1")).build(&ui) {
-                            println!("item 1.2.1 inside menu bar clicked");
-                        }
-                        if imgui::MenuItem::new(im_str!("Item 1.2.2")).build(&ui) {
-                            println!("item 1.2.2 inside menu bar clicked");
-                        }
-                    });
-                });
-
-                ui.menu(im_str!("Menu 2"), true, || {
-                    if imgui::MenuItem::new(im_str!("Item 2.1")).build(&ui) {
-                        println!("item 2.1 inside menu bar clicked");
-                    }
-                });
-            });
-        }
-
-        if self.show_popup {
-            ui.open_popup(im_str!("popup"));
-        }
+        gui.render(&ui, world);
 
         // Render
         let (factory, _, encoder, _, render_target) = graphics::gfx_objects(ctx);

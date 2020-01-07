@@ -18,6 +18,8 @@ pub mod rendering;
 pub mod resources;
 pub mod systems;
 
+use crate::game_loop::EngineState;
+use crate::gui::imgui_wrapper::Gui;
 pub use nalgebra;
 pub use ncollide2d;
 pub use rendering::colors::*;
@@ -71,7 +73,7 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, offset: Vector
     );
 }
 
-pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
+pub fn start<'a, G: 'static + Gui>(world: World, schedule: Dispatcher<'a, 'a>) {
     let mut c = conf::Conf::new();
     if cfg!(target_os = "windows") {
         c.window_mode = c.window_mode.dimensions(1600.0, 900.0);
@@ -91,7 +93,7 @@ pub fn start<'a>(world: World, schedule: Dispatcher<'a, 'a>) {
 
     let (ref mut ctx, ref mut event_loop) = cb.build().unwrap();
 
-    let mut state = game_loop::EngineState::new(world, schedule, ctx).unwrap();
+    let mut state: EngineState<G> = game_loop::EngineState::new(world, schedule, ctx).unwrap();
 
     state.cam.camera.zoom = 10.0;
     state.cam.camera.position.x = 50.0;
