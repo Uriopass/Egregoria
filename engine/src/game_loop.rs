@@ -4,7 +4,7 @@ use crate::rendering::render_context::RenderContext;
 use crate::resources::{DeltaTime, KeyboardInfo, MouseInfo};
 use crate::PHYSICS_UPDATES;
 
-use crate::gui::imgui_wrapper::ImGuiWrapper;
+use crate::gui::imgui_wrapper::{Gui, ImGuiWrapper};
 use cgmath::InnerSpace;
 use ggez::graphics::{Color, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
@@ -14,7 +14,7 @@ use specs::{Dispatcher, Join, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-pub struct EngineState<'a> {
+pub struct EngineState<'a, G: Gui> {
     pub world: World,
     pub dispatch: Dispatcher<'a, 'a>,
     pub time: f32,
@@ -23,14 +23,15 @@ pub struct EngineState<'a> {
     pub grid: bool,
     pub font: Font,
     pub imgui_wrapper: ImGuiWrapper,
+    _gui: std::marker::PhantomData<G>,
 }
 
-impl<'a> EngineState<'a> {
+impl<'a, G: Gui> EngineState<'a, G> {
     pub(crate) fn new(
         world: World,
         dispatch: Dispatcher<'a, 'a>,
         mut ctx: &mut Context,
-    ) -> GameResult<EngineState<'a>> {
+    ) -> GameResult<EngineState<'a, G>> {
         println!("{}", filesystem::resources_dir(ctx).display());
 
         let font = graphics::Font::new(ctx, "/bmonofont-i18n.ttf")?;
@@ -49,11 +50,12 @@ impl<'a> EngineState<'a> {
             render_enabled: true,
             grid: true,
             imgui_wrapper,
+            _gui: std::marker::PhantomData::default(),
         })
     }
 }
 
-impl<'a> ggez::event::EventHandler for EngineState<'a> {
+impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let delta = timer::delta(ctx).as_secs_f32().min(1.0 / 100.0);
         self.time += delta;
@@ -97,42 +99,41 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             rc.draw_grid(10.0, Color::new(gray_maj, gray_maj, gray_maj, 1.0));
             rc.flush()?;
         }
+        {
+            let transforms = self.world.read_component::<Transform>();
+            let kinematics = self.world.read_component::<Kinematics>();
+            let mesh_render = self.world.read_component::<MeshRenderComponent>();
 
-        let transforms = self.world.read_component::<Transform>();
-        let kinematics = self.world.read_component::<Kinematics>();
-        let mesh_render = self.world.read_component::<MeshRenderComponent>();
-
-        if self.render_enabled {
-            for (trans, mr) in (&transforms, &mesh_render).join() {
-                for order in &mr.orders {
-                    order.draw(trans, &transforms, &mut rc);
+            if self.render_enabled {
+                for (trans, mr) in (&transforms, &mesh_render).join() {
+                    for order in &mr.orders {
+                        order.draw(trans, &transforms, &mut rc);
+                    }
                 }
             }
-        }
 
-        rc.flush()?;
+            rc.flush()?;
 
-        for (trans, kin) in (&transforms, &kinematics).join() {
-            let v = kin.velocity.magnitude();
-            let pos = trans.get_position();
-            rc.draw_text(
-                &format!("{:.2} m/s", v),
-                pos,
-                0.5,
-                Color::new(0.0, 0.0, 1.0, 1.0),
-            )?;
+            for (trans, kin) in (&transforms, &kinematics).join() {
+                let v = kin.velocity.magnitude();
+                let pos = trans.get_position();
+                rc.draw_text(
+                    &format!("{:.2} m/s", v),
+                    pos,
+                    0.5,
+                    Color::new(0.0, 0.0, 1.0, 1.0),
+                )?;
+            }
         }
 
         rc.finish()?;
 
+        let gui: G = (&*self.world.read_resource::<G>()).clone();
+
         // Render game ui
-        self.imgui_wrapper.render(ctx, 1.0);
+        self.imgui_wrapper.render(ctx, &mut self.world, gui, 1.0);
 
         graphics::present(ctx)
-    }
-
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
-        self.imgui_wrapper.update_mouse_pos(x, y);
     }
 
     fn mouse_button_down_event(
@@ -157,6 +158,10 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         _y: f32,
     ) {
         self.imgui_wrapper.update_mouse_down((false, false, false));
+    }
+
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
+        self.imgui_wrapper.update_mouse_pos(x, y);
     }
 
     fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) {
