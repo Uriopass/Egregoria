@@ -12,3 +12,4 @@ cgmath = {version = "0.17", features = ["mint", "swizzle"]}
 specs = {version = "0.15", features = ["specs-derive", "parallel"]}
 ncollide2d = "0.20"
 nalgebra = "0.18"
+serde = {version = "1.0"}

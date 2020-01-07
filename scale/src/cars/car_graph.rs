@@ -48,12 +48,13 @@ impl<'a> System<'a> for RoadGraphSynchronize {
 
     fn run(&mut self, (mut road_graph, moved, roadnodecomponents): Self::SystemData) {
         for event in moved.read(&mut self.reader) {
-            let rnc = roadnodecomponents.get(event.entity).unwrap();
-            road_graph
-                .0
-                .nodes
-                .entry(rnc.id)
-                .and_modify(|x| x.pos = event.new_pos);
+            if let Some(rnc) = roadnodecomponents.get(event.entity) {
+                road_graph
+                    .0
+                    .nodes
+                    .entry(rnc.id)
+                    .and_modify(|x| x.pos = event.new_pos);
+            }
         }
     }
 }
