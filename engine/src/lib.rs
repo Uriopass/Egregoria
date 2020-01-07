@@ -13,6 +13,7 @@ use specs::{Builder, Dispatcher, Entity, World, WorldExt};
 pub mod components;
 pub mod game_loop;
 pub mod geometry;
+pub mod gui;
 pub mod rendering;
 pub mod resources;
 pub mod systems;

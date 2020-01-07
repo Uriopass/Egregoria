@@ -13,3 +13,7 @@ specs = {version = "0.15", features = ["specs-derive", "parallel"]}
 ncollide2d = "0.20"
 nalgebra = "0.18"
 serde = {version = "1.0"}
+gfx_core = "0.9"
+gfx_device_gl = "0.16"
+imgui = "0.2"
+imgui-gfx-renderer = "0.2"
