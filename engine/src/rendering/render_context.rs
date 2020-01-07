@@ -1,10 +1,10 @@
 use cgmath::{EuclideanSpace, Point2, Vector2};
-use ggez::graphics::{Color, DrawParam, Font, Image, Mesh, MeshBuilder, Text};
+use ggez::graphics::{Color, DrawParam, Font, Image, Mesh, Text};
 use ggez::{graphics, Context, GameResult};
 
-use crate::engine::rendering::camera_handler;
-use crate::engine::rendering::camera_handler::CameraHandler;
-use crate::engine::rendering::shape_render::ShapeRenderer;
+use crate::rendering::camera_handler;
+use crate::rendering::camera_handler::CameraHandler;
+use crate::rendering::shape_render::ShapeRenderer;
 
 pub struct RenderContext<'a> {
     pub cam: &'a mut camera_handler::CameraHandler,

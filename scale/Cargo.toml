@@ -1,0 +1,11 @@
+[package]
+name = "scale"
+version = "0.1.0"
+authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
+edition = "2018"
+
+[dependencies]
+rand = {version = "0.7.2", features = ["small_rng"]}
+cgmath = {version = "0.17"}
+ordered-float = "1.0.2"
+engine = { path = "../engine" }

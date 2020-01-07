@@ -1,5 +1,5 @@
-use crate::engine::components::Transform;
-use crate::engine::rendering::render_context::RenderContext;
+use crate::components::Transform;
+use crate::rendering::render_context::RenderContext;
 use cgmath::num_traits::zero;
 use cgmath::Vector2;
 use ggez::graphics::{Color, WHITE};
