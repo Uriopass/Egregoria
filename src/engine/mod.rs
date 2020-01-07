@@ -7,6 +7,7 @@ use specs::{Dispatcher, World};
 
 pub mod components;
 pub mod game_loop;
+pub mod gui;
 pub mod rendering;
 pub mod resources;
 pub mod systems;
