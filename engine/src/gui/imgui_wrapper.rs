@@ -10,13 +10,6 @@ use imgui_gfx_renderer::*;
 use specs::World;
 use std::time::Instant;
 
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
-struct MouseState {
-    pos: (i32, i32),
-    pressed: (bool, bool, bool),
-    wheel: f32,
-}
-
 pub trait Gui: Clone + Send + Sync {
     fn render(&self, ui: &Ui, world: &mut World);
 }
@@ -25,7 +18,7 @@ pub struct ImGuiWrapper {
     imgui: imgui::Context,
     renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     last_frame: Instant,
-    mouse_state: MouseState,
+    pub last_mouse_wheel: f32,
     show_popup: bool,
 }
 
@@ -61,7 +54,7 @@ impl ImGuiWrapper {
             imgui,
             renderer,
             last_frame: Instant::now(),
-            mouse_state: MouseState::default(),
+            last_mouse_wheel: 0.0,
             show_popup: false,
         }
     }
@@ -74,7 +67,7 @@ impl ImGuiWrapper {
         hidpi_factor: f32,
     ) {
         // Update mouse
-        self.update_mouse();
+        self.update_mouse(ctx);
 
         // Create new frame
         let now = Instant::now();
@@ -104,32 +97,20 @@ impl ImGuiWrapper {
             .unwrap();
     }
 
-    fn update_mouse(&mut self) {
-        self.imgui.io_mut().mouse_pos =
-            [self.mouse_state.pos.0 as f32, self.mouse_state.pos.1 as f32];
+    fn update_mouse(&mut self, ctx: &mut Context) {
+        let pos = ggez::input::mouse::position(ctx);
+        self.imgui.io_mut().mouse_pos = [pos.x, pos.y];
 
         self.imgui.io_mut().mouse_down = [
-            self.mouse_state.pressed.0,
-            self.mouse_state.pressed.1,
-            self.mouse_state.pressed.2,
+            ggez::input::mouse::button_pressed(ctx, ggez::input::mouse::MouseButton::Left),
+            ggez::input::mouse::button_pressed(ctx, ggez::input::mouse::MouseButton::Right),
+            ggez::input::mouse::button_pressed(ctx, ggez::input::mouse::MouseButton::Middle),
             false,
             false,
         ];
 
-        self.imgui.io_mut().mouse_wheel = self.mouse_state.wheel;
-        self.mouse_state.wheel = 0.0;
-    }
-
-    pub fn update_mouse_pos(&mut self, x: f32, y: f32) {
-        self.mouse_state.pos = (x as i32, y as i32);
-    }
-
-    pub fn update_mouse_down(&mut self, pressed: (bool, bool, bool)) {
-        self.mouse_state.pressed = pressed;
-
-        if pressed.0 {
-            self.show_popup = false;
-        }
+        self.imgui.io_mut().mouse_wheel = self.last_mouse_wheel;
+        self.last_mouse_wheel = 0.0;
     }
 
     pub fn open_popup(&mut self) {
