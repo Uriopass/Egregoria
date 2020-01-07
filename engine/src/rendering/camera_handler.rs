@@ -5,8 +5,8 @@ use ggez::input::mouse::MouseButton;
 use ggez::graphics;
 use ggez::Context;
 
-use crate::engine::rendering::camera::Camera;
 use crate::geometry::rect::Rect;
+use crate::rendering::camera::Camera;
 use cgmath::Vector2;
 
 #[allow(dead_code)]
@@ -15,11 +15,13 @@ pub struct CameraHandler {
     last_pos: Vector2<f32>,
 }
 
+const CAMERA_KEY_MOVESPEED: f32 = 300.0;
+
 #[allow(dead_code)]
 impl CameraHandler {
-    pub fn new() -> CameraHandler {
+    pub fn new(width: f32, height: f32) -> CameraHandler {
         CameraHandler {
-            camera: Camera::new(800.0, 600.0),
+            camera: Camera::new(width, height),
             last_pos: [0.0, 0.0].into(),
         }
     }
@@ -59,20 +61,37 @@ impl CameraHandler {
         self.camera.unproject(Vector2::new(haha.x, haha.y))
     }
 
-    pub fn easy_camera_movement(&mut self, ctx: &mut Context) {
+    pub fn easy_camera_movement(&mut self, ctx: &mut Context, delta: f32) {
         let p = self.unproject_mouse_click(ctx);
         if input::mouse::button_pressed(ctx, MouseButton::Right) {
             self.camera.position.x -= p.x - self.last_pos.x;
             self.camera.position.y -= p.y - self.last_pos.y;
             self.update(ctx);
         }
+        if input::keyboard::is_key_pressed(ctx, KeyCode::Right) {
+            self.camera.position.x += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+        }
+        if input::keyboard::is_key_pressed(ctx, KeyCode::Left) {
+            self.camera.position.x -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+        }
+        if input::keyboard::is_key_pressed(ctx, KeyCode::Up) {
+            self.camera.position.y += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+        }
+        if input::keyboard::is_key_pressed(ctx, KeyCode::Down) {
+            self.camera.position.y -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+        }
+
         self.last_pos = self.unproject_mouse_click(ctx);
     }
 
     pub fn easy_camera_movement_keys(&mut self, ctx: &mut Context, keycode: KeyCode) {
-        if keycode == KeyCode::Add || keycode == KeyCode::Subtract {
+        if keycode == KeyCode::Add
+            || keycode == KeyCode::Subtract
+            || keycode == KeyCode::Equals
+            || keycode == KeyCode::Minus
+        {
             let before = self.unproject_mouse_click(ctx);
-            if keycode == KeyCode::Add {
+            if keycode == KeyCode::Add || keycode == KeyCode::Equals {
                 self.camera.zoom *= 1.1;
             } else {
                 self.camera.zoom /= 1.1;

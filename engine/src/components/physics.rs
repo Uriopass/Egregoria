@@ -28,7 +28,8 @@ pub struct Transform {
 
 #[allow(dead_code)]
 impl Transform {
-    pub fn new(position: Vector2<f32>) -> Self {
+    pub fn new<T: Into<Vector2<f32>>>(position: T) -> Self {
+        let position = position.into();
         let mut m = Matrix3::identity();
         m.z.x = position.x;
         m.z.y = position.y;

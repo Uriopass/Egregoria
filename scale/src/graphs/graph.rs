@@ -58,20 +58,20 @@ impl<T> Graph<T> {
         self.edges.insert(id, neighs);
     }
 
-    pub fn add_neigh(&mut self, id: NodeID, to: NodeID, weight: f32) {
+    pub fn add_neigh(&mut self, from: NodeID, to: NodeID, weight: f32) {
         self.edges
-            .get_mut(&id)
+            .get_mut(&from)
             .expect("Invalid node id")
             .push(Edge { to, weight });
         self.backward_edges
             .get_mut(&to)
             .expect("Invalid node id")
-            .push(Edge { to: id, weight });
+            .push(Edge { to: from, weight });
     }
 
-    pub fn remove_neigh(&mut self, id: NodeID, to: NodeID) {
-        remove_from_list(&mut self.edges, id, to);
-        remove_from_list(&mut self.backward_edges, to, id);
+    pub fn remove_neigh(&mut self, from: NodeID, to: NodeID) {
+        remove_from_list(&mut self.edges, from, to);
+        remove_from_list(&mut self.backward_edges, to, from);
     }
 
     pub fn remove_node(&mut self, id: NodeID) {

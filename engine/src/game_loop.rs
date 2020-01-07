@@ -1,20 +1,17 @@
-use crate::engine::components::{Kinematics, MeshRenderComponent, Transform};
-use crate::engine::rendering::camera_handler::CameraHandler;
-use crate::engine::rendering::render_context::RenderContext;
-use crate::engine::resources::{DeltaTime, MouseInfo};
-use crate::engine::PHYSICS_UPDATES;
+use crate::components::{Kinematics, MeshRenderComponent, Transform};
+use crate::rendering::camera_handler::CameraHandler;
+use crate::rendering::render_context::RenderContext;
+use crate::resources::{DeltaTime, KeyboardInfo, MouseInfo};
+use crate::PHYSICS_UPDATES;
 
-use crate::cars::car::CarComponent;
-use cgmath::num_traits::Pow;
-use cgmath::{InnerSpace, Vector2, Zero};
-use ggez::graphics::{Color, Font, Text, TextFragment};
+use cgmath::InnerSpace;
+use ggez::graphics::{Color, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use specs::{Dispatcher, Join, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
-use std::ops::Mul;
 
 pub struct EngineState<'a> {
     pub world: World,
@@ -39,12 +36,13 @@ impl<'a> EngineState<'a> {
         //       let test: Image = graphics::Image::new(ctx, "/test.png")?;
 
         graphics::set_resizable(ctx, true)?;
+        let (width, height) = graphics::size(ctx);
         Ok(EngineState {
             font,
             world,
             dispatch,
             time: 0.0,
-            cam: CameraHandler::new(),
+            cam: CameraHandler::new(width, height),
             render_enabled: true,
             grid: true,
         })
@@ -64,25 +62,23 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             ),
         };
 
-        {
-            let transforms = self.world.read_component::<Transform>();
-            let mut cars = self.world.write_component::<CarComponent>();
-            for (mut car, trans) in (&mut cars, &transforms).join() {
-                car.objective = Some(trans.get_position() + car.direction + car.normal() * 0.001);
-            }
-        }
-
         *self.world.write_resource() = DeltaTime(delta / (PHYSICS_UPDATES as f32));
-
         for _ in 0..PHYSICS_UPDATES {
             self.dispatch.run_now(&self.world);
             self.world.maintain();
+
+            self.world
+                .write_resource::<KeyboardInfo>()
+                .just_pressed
+                .clear();
         }
+
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        self.cam.easy_camera_movement(ctx);
+        self.cam
+            .easy_camera_movement(ctx, timer::delta(ctx).as_secs_f32());
         self.cam.update(ctx);
 
         let mut rc = RenderContext::new(&mut self.cam, ctx, self.font);
@@ -137,6 +133,10 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
     }
 
     fn key_down_event(&mut self, ctx: &mut Context, keycode: KeyCode, _: KeyMods, _: bool) {
+        self.world
+            .write_resource::<KeyboardInfo>()
+            .just_pressed
+            .insert(keycode);
         if keycode == KeyCode::R {
             self.render_enabled = !self.render_enabled;
         }

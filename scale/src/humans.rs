@@ -1,19 +1,17 @@
 use cgmath::{InnerSpace, Vector2};
 
-use specs::{
+use engine::specs::{
     Builder, Component, Join, ParJoin, Read, ReadStorage, System, VecStorage, World, WorldExt,
     WriteStorage,
 };
 
-use crate::add_shape;
-use crate::engine::components::{
-    CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, Transform,
-};
-use crate::engine::resources::DeltaTime;
+use engine::add_shape;
+use engine::components::{CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, Transform};
+use engine::resources::DeltaTime;
 
 use cgmath::num_traits::zero;
-use ncollide2d::shape::Ball;
-use specs::prelude::ParallelIterator;
+use engine::ncollide2d::shape::Ball;
+use engine::specs::prelude::ParallelIterator;
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -64,7 +62,7 @@ impl<'a> System<'a> for HumanUpdate {
 pub fn setup(world: &mut World) {
     const SCALE: f32 = 100.0;
 
-    for _ in 0..0 {
+    for _ in 0..1 {
         let size = 1.0;
 
         let x: f32 = rand::random::<f32>() * SCALE;
@@ -76,7 +74,7 @@ pub fn setup(world: &mut World) {
                 radius: size,
                 ..Default::default()
             }))
-            .with(Transform::new([x, y].into()))
+            .with(Transform::new((x, y)))
             .with(Kinematics::from_mass(100.0))
             .with(Drag::default())
             .with(Human {
