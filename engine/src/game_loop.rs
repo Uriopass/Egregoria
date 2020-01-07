@@ -4,6 +4,7 @@ use crate::rendering::render_context::RenderContext;
 use crate::resources::{DeltaTime, KeyboardInfo, MouseInfo};
 use crate::PHYSICS_UPDATES;
 
+use crate::gui::imgui_wrapper::ImGuiWrapper;
 use cgmath::InnerSpace;
 use ggez::graphics::{Color, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
@@ -21,13 +22,14 @@ pub struct EngineState<'a> {
     pub render_enabled: bool,
     pub grid: bool,
     pub font: Font,
+    pub imgui_wrapper: ImGuiWrapper,
 }
 
 impl<'a> EngineState<'a> {
     pub(crate) fn new(
         world: World,
         dispatch: Dispatcher<'a, 'a>,
-        ctx: &mut Context,
+        mut ctx: &mut Context,
     ) -> GameResult<EngineState<'a>> {
         println!("{}", filesystem::resources_dir(ctx).display());
 
@@ -37,6 +39,7 @@ impl<'a> EngineState<'a> {
 
         graphics::set_resizable(ctx, true)?;
         let (width, height) = graphics::size(ctx);
+        let imgui_wrapper = ImGuiWrapper::new(&mut ctx);
         Ok(EngineState {
             font,
             world,
@@ -45,6 +48,7 @@ impl<'a> EngineState<'a> {
             cam: CameraHandler::new(width, height),
             render_enabled: true,
             grid: true,
+            imgui_wrapper,
         })
     }
 }
@@ -120,7 +124,39 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         }
 
         rc.finish()?;
+
+        // Render game ui
+        self.imgui_wrapper.render(ctx, 1.0);
+
         graphics::present(ctx)
+    }
+
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
+        self.imgui_wrapper.update_mouse_pos(x, y);
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
+        self.imgui_wrapper.update_mouse_down((
+            button == MouseButton::Left,
+            button == MouseButton::Right,
+            button == MouseButton::Middle,
+        ));
+    }
+
+    fn mouse_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
+        self.imgui_wrapper.update_mouse_down((false, false, false));
     }
 
     fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) {
@@ -144,6 +180,13 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             self.grid = !self.grid;
         }
         self.cam.easy_camera_movement_keys(ctx, keycode);
+
+        match keycode {
+            KeyCode::P => {
+                self.imgui_wrapper.open_popup();
+            }
+            _ => (),
+        }
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
