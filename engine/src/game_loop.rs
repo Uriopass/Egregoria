@@ -136,34 +136,6 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
         graphics::present(ctx)
     }
 
-    fn mouse_button_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        button: MouseButton,
-        _x: f32,
-        _y: f32,
-    ) {
-        self.imgui_wrapper.update_mouse_down((
-            button == MouseButton::Left,
-            button == MouseButton::Right,
-            button == MouseButton::Middle,
-        ));
-    }
-
-    fn mouse_button_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        _button: MouseButton,
-        _x: f32,
-        _y: f32,
-    ) {
-        self.imgui_wrapper.update_mouse_down((false, false, false));
-    }
-
-    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
-        self.imgui_wrapper.update_mouse_pos(x, y);
-    }
-
     fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) {
         if y > 0.0 {
             self.cam.easy_camera_movement_keys(ctx, KeyCode::Add);
@@ -171,6 +143,7 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
         if y < 0.0 {
             self.cam.easy_camera_movement_keys(ctx, KeyCode::Subtract);
         }
+        self.imgui_wrapper.last_mouse_wheel = y;
     }
 
     fn key_down_event(&mut self, ctx: &mut Context, keycode: KeyCode, _: KeyMods, _: bool) {
@@ -185,13 +158,6 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
             self.grid = !self.grid;
         }
         self.cam.easy_camera_movement_keys(ctx, keycode);
-
-        match keycode {
-            KeyCode::P => {
-                self.imgui_wrapper.open_popup();
-            }
-            _ => (),
-        }
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
