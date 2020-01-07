@@ -1,8 +1,6 @@
 use ggez::graphics;
 use ggez::Context;
 
-use gfx_core::factory::Factory;
-use gfx_core::{format, texture};
 use gfx_core::{handle::RenderTargetView, memory::Typed};
 use gfx_device_gl;
 
@@ -24,7 +22,6 @@ pub struct ImGuiWrapper {
     last_frame: Instant,
     mouse_state: MouseState,
     show_popup: bool,
-    texture_id: Option<TextureId>,
 }
 
 impl ImGuiWrapper {
@@ -52,33 +49,7 @@ impl ImGuiWrapper {
         };
 
         // Renderer
-        let mut renderer = Renderer::init(&mut imgui, &mut *factory, shaders).unwrap();
-
-        let rgba_image = image::open(&std::path::Path::new("images/pikachu.png"))
-            .unwrap()
-            .to_rgba();
-
-        // Load an image as a texture
-        let image_dimensions = rgba_image.dimensions();
-        let kind = texture::Kind::D2(
-            image_dimensions.0 as texture::Size,
-            image_dimensions.1 as texture::Size,
-            texture::AaMode::Single,
-        );
-        let (_, texture_view) = factory
-            .create_texture_immutable_u8::<format::Srgba8>(
-                kind,
-                texture::Mipmap::Provided,
-                &[rgba_image.into_raw().as_slice()],
-            )
-            .unwrap();
-
-        // Register the texture with the gfx renderer
-        let sampler = factory.create_sampler(texture::SamplerInfo::new(
-            texture::FilterMethod::Bilinear,
-            texture::WrapMode::Clamp,
-        ));
-        let texture_id = renderer.textures().insert((texture_view, sampler));
+        let renderer = Renderer::init(&mut imgui, &mut *factory, shaders).unwrap();
 
         // Create instace
         Self {
@@ -87,7 +58,6 @@ impl ImGuiWrapper {
             last_frame: Instant::now(),
             mouse_state: MouseState::default(),
             show_popup: false,
-            texture_id: Some(texture_id),
         }
     }
 
@@ -110,24 +80,11 @@ impl ImGuiWrapper {
 
         // Various ui things
         {
-            // Window with texture
-            if let Some(texture_id) = self.texture_id {
-                let image = Image::new(&ui, texture_id, [100.0, 100.0]);
-
-                // Window with texture
-                ui.window(im_str!("Hello textures"))
-                    .size([150.0, 150.0], imgui::Condition::FirstUseEver)
-                    .position([300.0, 150.0], imgui::Condition::FirstUseEver)
-                    .build(|| {
-                        image.build();
-                    });
-            }
-
             // Window
-            ui.window(im_str!("Hello world"))
+            imgui::Window::new(im_str!("Hello world"))
                 .size([300.0, 600.0], imgui::Condition::FirstUseEver)
                 .position([100.0, 100.0], imgui::Condition::FirstUseEver)
-                .build(|| {
+                .build(&ui, || {
                     ui.text(im_str!("Hello world!"));
                     ui.text(im_str!("こんにちは世界！"));
                     ui.text(im_str!("This...is...imgui-rs!"));
@@ -146,34 +103,34 @@ impl ImGuiWrapper {
 
             // Popup
             ui.popup(im_str!("popup"), || {
-                if ui.menu_item(im_str!("popup menu item 1")).build() {
+                if imgui::MenuItem::new(im_str!("popup menu item 1")).build(&ui) {
                     println!("popup menu item 1 clicked");
                 }
 
-                if ui.menu_item(im_str!("popup menu item 2")).build() {
+                if imgui::MenuItem::new(im_str!("popup menu item 2")).build(&ui) {
                     println!("popup menu item 2 clicked");
                 }
             });
 
             // Menu bar
             ui.main_menu_bar(|| {
-                ui.menu(im_str!("Menu 1")).build(|| {
-                    if ui.menu_item(im_str!("Item 1.1")).build() {
+                ui.menu(im_str!("Menu 1"), true, || {
+                    if imgui::MenuItem::new(im_str!("Item 1.1")).build(&ui) {
                         println!("item 1.1 inside menu bar clicked");
                     }
 
-                    ui.menu(im_str!("Item 1.2")).build(|| {
-                        if ui.menu_item(im_str!("Item 1.2.1")).build() {
+                    ui.menu(im_str!("Item 1.2"), true, || {
+                        if imgui::MenuItem::new(im_str!("Item 1.2.1")).build(&ui) {
                             println!("item 1.2.1 inside menu bar clicked");
                         }
-                        if ui.menu_item(im_str!("Item 1.2.2")).build() {
+                        if imgui::MenuItem::new(im_str!("Item 1.2.2")).build(&ui) {
                             println!("item 1.2.2 inside menu bar clicked");
                         }
                     });
                 });
 
-                ui.menu(im_str!("Menu 2")).build(|| {
-                    if ui.menu_item(im_str!("Item 2.1")).build() {
+                ui.menu(im_str!("Menu 2"), true, || {
+                    if imgui::MenuItem::new(im_str!("Item 2.1")).build(&ui) {
                         println!("item 2.1 inside menu bar clicked");
                     }
                 });
