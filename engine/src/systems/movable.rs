@@ -1,13 +1,20 @@
-use crate::engine::components::{Kinematics, Movable, Transform};
-use crate::engine::resources::{DeltaTime, MouseInfo};
+use crate::components::{Kinematics, Movable, Transform};
+use crate::resources::{DeltaTime, MouseInfo};
+use crate::PHYSICS_UPDATES;
 
-use crate::engine::PHYSICS_UPDATES;
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2, Zero};
 use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
+use specs::shrev::EventChannel;
 use std::f32;
 use std::ops::Deref;
+
+#[derive(Debug)]
+pub struct MovedEvent {
+    pub entity: Entity,
+    pub new_pos: Vector2<f32>,
+}
 
 pub struct MovableSystem {
     offset: Vector2<f32>,
@@ -29,16 +36,16 @@ impl<'a> System<'a> for MovableSystem {
         Read<'a, MouseInfo>,
         WriteStorage<'a, Transform>,
         WriteStorage<'a, Kinematics>,
+        Write<'a, EventChannel<MovedEvent>>,
         ReadStorage<'a, Movable>,
         Read<'a, DeltaTime>,
     );
 
     fn run(
         &mut self,
-        (entities, mouse, mut transforms, mut kinematics, movables, delta): Self::SystemData,
+        (entities, mouse, mut transforms, mut kinematics, mut movedevents, movables, delta): Self::SystemData,
     ) {
         let mouse: &MouseInfo = mouse.deref();
-
         if mouse.buttons.contains(&MouseButton::Left) {
             match self.selected {
                 None => {
@@ -65,7 +72,9 @@ impl<'a> System<'a> for MovableSystem {
                         kin.velocity = zero();
                         kin.acceleration = zero();
                     }
-                    p.set_position(self.offset + mouse.unprojected);
+                    let new_pos = self.offset + mouse.unprojected;
+                    p.set_position(new_pos);
+                    movedevents.single_write(MovedEvent { entity: e, new_pos });
                 }
             }
         } else if let Some(e) = self.selected.take() {
