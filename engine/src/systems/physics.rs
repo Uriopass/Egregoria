@@ -4,7 +4,7 @@ use crate::PhysicsWorld;
 
 use nalgebra as na;
 
-use cgmath::{ElementWise, InnerSpace, Vector2, Zero};
+use cgmath::{InnerSpace, Vector2, Zero};
 use ggez::input::keyboard::KeyCode;
 use nalgebra::Isometry2;
 use specs::{Join, Read, ReadStorage, Write, WriteStorage};
@@ -119,10 +119,12 @@ impl<'a> specs::System<'a> for KinematicsApply {
         let delta = delta.0;
 
         for (kin, drag) in (&mut kinematics, &drag).join() {
-            let force =
-                kin.velocity.mul_element_wise(kin.velocity) * drag.0 * (RHO / 2.0) / kin.mass;
+            let force = kin.velocity.magnitude2() * drag.0 * (RHO / 2.0) / kin.mass;
+            if force == 0.0 {
+                continue;
+            }
 
-            kin.acceleration += -force;
+            kin.acceleration += kin.velocity.normalize_to(-force);
         }
 
         for (transform, kin) in (&mut transforms, &mut kinematics).join() {

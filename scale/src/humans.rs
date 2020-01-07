@@ -75,7 +75,7 @@ pub fn setup(world: &mut World) {
                 ..Default::default()
             }))
             .with(Transform::new((x, y)))
-            .with(Kinematics::from_mass(100.0))
+            .with(Kinematics::from_mass(70.0))
             .with(Drag::default())
             .with(Human {
                 objective: [SCALE * 5.0 - x, y].into(),
