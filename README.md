@@ -17,4 +17,4 @@ using their feet or their cars to go there.
 
 ## Devblog
 
-I will try to keep a blog of the updates to Scale [here](http://douady.paris/CV/blog/index.html).
+I will try to keep a blog of the updates to Scale [here](http://douady.paris/blog/index.html).
