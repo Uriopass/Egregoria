@@ -45,7 +45,7 @@ struct Test {
 }
 
 impl InspectRenderDefault<Transform> for Transform {
-    fn render(data: &[&Transform], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+    fn render(data: &[&Transform], _label: &'static str, ui: &Ui, _args: &InspectArgsDefault) {
         if let Some(trans) = imgui_inspect::get_same_or_none(data) {
             let pos = trans.get_position();
             let conv = Test {
@@ -61,9 +61,9 @@ impl InspectRenderDefault<Transform> for Transform {
     }
     fn render_mut(
         data: &mut [&mut Transform],
-        label: &'static str,
+        _label: &'static str,
         ui: &Ui,
-        args: &InspectArgsDefault,
+        _args: &InspectArgsDefault,
     ) -> bool {
         if let Some(trans) = data.get_mut(0) {
             let pos = trans.get_position();

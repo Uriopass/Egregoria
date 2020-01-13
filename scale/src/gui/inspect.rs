@@ -1,7 +1,7 @@
 use engine::components::Transform;
 use engine::specs::prelude::*;
 use imgui::Ui;
-use imgui_inspect::{InspectArgsDefault, InspectArgsStruct, InspectRenderDefault};
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
 macro_rules! inspect_macro {
     [
