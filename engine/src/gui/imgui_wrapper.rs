@@ -7,7 +7,7 @@ use gfx_device_gl;
 use imgui::*;
 use imgui_gfx_renderer::*;
 
-use scale::gui::gui::TestGui;
+use scale::gui::TestGui;
 use specs::World;
 use std::time::Instant;
 
@@ -88,7 +88,7 @@ impl ImGuiWrapper {
             .render(
                 &mut *factory,
                 encoder,
-                &mut RenderTargetView::new(render_target.clone()),
+                &mut RenderTargetView::new(render_target),
                 draw_data,
             )
             .unwrap();
