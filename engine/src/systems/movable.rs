@@ -1,6 +1,5 @@
 use crate::components::{Kinematics, Movable, Transform};
 use crate::resources::{DeltaTime, MouseInfo};
-use crate::PHYSICS_UPDATES;
 
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2, Zero};
@@ -50,8 +49,8 @@ impl<'a> System<'a> for MovableSystem {
             match self.selected {
                 None => {
                     let mut min_dist = f32::MAX;
-                    for (entity, pos, _) in (&entities, &transforms, &movables).join() {
-                        let dist: f32 = (pos.get_position() - mouse.unprojected).magnitude2();
+                    for (entity, trans, _) in (&entities, &transforms, &movables).join() {
+                        let dist: f32 = (trans.get_position() - mouse.unprojected).magnitude2();
                         if dist <= min_dist {
                             self.selected = Some(entity);
                             min_dist = dist;
@@ -80,8 +79,7 @@ impl<'a> System<'a> for MovableSystem {
         } else if let Some(e) = self.selected.take() {
             if let Some(kin) = kinematics.get_mut(e) {
                 let p = transforms.get(e).unwrap();
-                kin.velocity = (mouse.unprojected - (p.get_position() - self.offset))
-                    / (PHYSICS_UPDATES as f32 * delta.0);
+                kin.velocity = (mouse.unprojected - (p.get_position() - self.offset)) / delta.0;
             }
         }
     }
