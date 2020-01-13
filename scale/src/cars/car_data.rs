@@ -1,17 +1,20 @@
 use cgmath::{InnerSpace, MetricSpace, Vector2};
-use engine::specs::{Builder, Component, DenseVecStorage, World, WorldExt};
+use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
 use crate::cars::car_data::CarObjective::{Simple, Temporary};
 use crate::cars::car_graph::RoadGraph;
 use crate::graphs::graph::NodeID;
 use cgmath::num_traits::zero;
-use engine::add_shape;
-use engine::components::{
-    CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, RectRender, Selectable, Transform,
-};
-use engine::nalgebra::Isometry2;
-use engine::ncollide2d::shape::Cuboid;
-use engine::RED;
+
+use crate::rendering::meshrender_component::{CircleRender, RectRender};
+use nalgebra::Isometry2;
+use ncollide2d::shape::Cuboid;
+
+use crate::interaction::{Movable, Selectable};
+use crate::physics::add_shape;
+use crate::physics::physics_components::{Drag, Kinematics, Transform};
+use crate::rendering::meshrender_component::MeshRenderComponent;
+use crate::rendering::RED;
 
 #[allow(dead_code)]
 #[derive(Debug)]

@@ -1,19 +1,22 @@
-use crate::components::{Kinematics, MeshRenderComponent, Transform};
 use crate::rendering::camera_handler::CameraHandler;
 use crate::rendering::render_context::RenderContext;
-use crate::resources::{DeltaTime, KeyboardInfo, MouseInfo};
 
-use crate::gui::imgui_wrapper::{Gui, ImGuiWrapper};
+use crate::gui::imgui_wrapper::ImGuiWrapper;
+use crate::rendering::meshrenderable::MeshRenderable;
 use cgmath::InnerSpace;
 use ggez::graphics::{Color, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
+use scale::engine_interaction;
+use scale::engine_interaction::{DeltaTime, KeyboardInfo, MouseInfo, Transform};
+use scale::gui::gui::TestGui;
+use scale::rendering::meshrender_component::{MeshRenderComponent, MeshRenderEnum};
 use specs::{Dispatcher, Join, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
-pub struct EngineState<'a, G: Gui> {
+pub struct EngineState<'a> {
     pub world: World,
     pub dispatch: Dispatcher<'a, 'a>,
     pub cam: CameraHandler,
@@ -21,15 +24,14 @@ pub struct EngineState<'a, G: Gui> {
     pub grid: bool,
     pub font: Font,
     pub imgui_wrapper: ImGuiWrapper,
-    _gui: std::marker::PhantomData<G>,
 }
 
-impl<'a, G: Gui> EngineState<'a, G> {
+impl<'a> EngineState<'a> {
     pub(crate) fn new(
         world: World,
         dispatch: Dispatcher<'a, 'a>,
         mut ctx: &mut Context,
-    ) -> GameResult<EngineState<'a, G>> {
+    ) -> GameResult<EngineState<'a>> {
         println!("{}", filesystem::resources_dir(ctx).display());
 
         let font = graphics::Font::new(ctx, "/bmonofont-i18n.ttf")?;
@@ -47,23 +49,30 @@ impl<'a, G: Gui> EngineState<'a, G> {
             render_enabled: true,
             grid: true,
             imgui_wrapper,
-            _gui: std::marker::PhantomData::default(),
         })
     }
 }
 
-impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
+impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let delta = timer::delta(ctx).as_secs_f32().min(1.0 / 100.0);
 
-        let pressed: Vec<MouseButton> = if !self.imgui_wrapper.last_mouse_captured {
-            vec![MouseButton::Left, MouseButton::Right, MouseButton::Middle]
-                .into_iter()
-                .filter(|x| ggez::input::mouse::button_pressed(ctx, *x))
-                .collect()
-        } else {
-            vec![]
-        };
+        let pressed: Vec<engine_interaction::MouseButton> =
+            if !self.imgui_wrapper.last_mouse_captured {
+                vec![MouseButton::Left, MouseButton::Right, MouseButton::Middle]
+                    .into_iter()
+                    .filter(|x| ggez::input::mouse::button_pressed(ctx, *x))
+                    .map(|x| scale_mb(x))
+                    .collect()
+            } else {
+                vec![]
+            };
+
+        self.imgui_wrapper.update_mouse_down((
+            ggez::input::mouse::button_pressed(ctx, MouseButton::Left),
+            ggez::input::mouse::button_pressed(ctx, MouseButton::Right),
+            ggez::input::mouse::button_pressed(ctx, MouseButton::Middle),
+        ));
 
         // use info from last frame to determined "just pressed"
         let last_pressed = self.world.read_resource::<MouseInfo>().buttons.clone();
@@ -111,7 +120,6 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
         // Render entities
         {
             let transforms = self.world.read_component::<Transform>();
-            let kinematics = self.world.read_component::<Kinematics>();
             let mesh_render = self.world.read_component::<MeshRenderComponent>();
 
             if self.render_enabled {
@@ -124,6 +132,7 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
 
             rc.flush()?;
 
+            /*
             for (trans, kin) in (&transforms, &kinematics).join() {
                 let v = kin.velocity.magnitude();
                 let pos = trans.get_position();
@@ -134,38 +143,15 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
                     Color::new(0.0, 0.0, 1.0, 1.0),
                 )?;
             }
+            */
         }
 
         rc.finish()?;
 
-        let gui: G = (&*self.world.read_resource::<G>()).clone();
+        let gui: TestGui = (*self.world.read_resource::<TestGui>()).clone();
         self.imgui_wrapper.render(ctx, &mut self.world, gui, 1.0);
 
         graphics::present(ctx)
-    }
-
-    fn mouse_button_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        button: MouseButton,
-        _x: f32,
-        _y: f32,
-    ) {
-        self.imgui_wrapper.update_mouse_down((
-            button == MouseButton::Left,
-            button == MouseButton::Right,
-            button == MouseButton::Middle,
-        ));
-    }
-
-    fn mouse_button_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        _button: MouseButton,
-        _x: f32,
-        _y: f32,
-    ) {
-        self.imgui_wrapper.update_mouse_down((false, false, false));
     }
 
     fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
@@ -179,13 +165,14 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
         if y < 0.0 {
             self.cam.easy_camera_movement_keys(ctx, KeyCode::Subtract);
         }
+        self.imgui_wrapper.update_wheel(y);
     }
 
     fn key_down_event(&mut self, ctx: &mut Context, keycode: KeyCode, _: KeyMods, _: bool) {
         self.world
             .write_resource::<KeyboardInfo>()
             .just_pressed
-            .insert(keycode);
+            .insert(scale_kc(keycode));
         if keycode == KeyCode::R {
             self.render_enabled = !self.render_enabled;
         }
@@ -215,5 +202,181 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
 
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
         self.cam.resize(ctx, width, height);
+    }
+}
+
+fn scale_mb(x: MouseButton) -> scale::engine_interaction::MouseButton {
+    match x {
+        MouseButton::Left => scale::engine_interaction::MouseButton::Left,
+        MouseButton::Right => scale::engine_interaction::MouseButton::Right,
+        MouseButton::Middle => scale::engine_interaction::MouseButton::Middle,
+        MouseButton::Other(x) => scale::engine_interaction::MouseButton::Other(x),
+    }
+}
+
+// Thanks multi cursor
+fn scale_kc(x: KeyCode) -> scale::engine_interaction::KeyCode {
+    match x {
+        KeyCode::Key1 => scale::engine_interaction::KeyCode::Key1,
+        KeyCode::Key2 => scale::engine_interaction::KeyCode::Key2,
+        KeyCode::Key3 => scale::engine_interaction::KeyCode::Key3,
+        KeyCode::Key4 => scale::engine_interaction::KeyCode::Key4,
+        KeyCode::Key5 => scale::engine_interaction::KeyCode::Key5,
+        KeyCode::Key6 => scale::engine_interaction::KeyCode::Key6,
+        KeyCode::Key7 => scale::engine_interaction::KeyCode::Key7,
+        KeyCode::Key8 => scale::engine_interaction::KeyCode::Key8,
+        KeyCode::Key9 => scale::engine_interaction::KeyCode::Key9,
+        KeyCode::Key0 => scale::engine_interaction::KeyCode::Key0,
+        KeyCode::A => scale::engine_interaction::KeyCode::A,
+        KeyCode::B => scale::engine_interaction::KeyCode::B,
+        KeyCode::C => scale::engine_interaction::KeyCode::C,
+        KeyCode::D => scale::engine_interaction::KeyCode::D,
+        KeyCode::E => scale::engine_interaction::KeyCode::E,
+        KeyCode::F => scale::engine_interaction::KeyCode::F,
+        KeyCode::G => scale::engine_interaction::KeyCode::G,
+        KeyCode::H => scale::engine_interaction::KeyCode::H,
+        KeyCode::I => scale::engine_interaction::KeyCode::I,
+        KeyCode::J => scale::engine_interaction::KeyCode::J,
+        KeyCode::K => scale::engine_interaction::KeyCode::K,
+        KeyCode::L => scale::engine_interaction::KeyCode::L,
+        KeyCode::M => scale::engine_interaction::KeyCode::M,
+        KeyCode::N => scale::engine_interaction::KeyCode::N,
+        KeyCode::O => scale::engine_interaction::KeyCode::O,
+        KeyCode::P => scale::engine_interaction::KeyCode::P,
+        KeyCode::Q => scale::engine_interaction::KeyCode::Q,
+        KeyCode::R => scale::engine_interaction::KeyCode::R,
+        KeyCode::S => scale::engine_interaction::KeyCode::S,
+        KeyCode::T => scale::engine_interaction::KeyCode::T,
+        KeyCode::U => scale::engine_interaction::KeyCode::U,
+        KeyCode::V => scale::engine_interaction::KeyCode::V,
+        KeyCode::W => scale::engine_interaction::KeyCode::W,
+        KeyCode::X => scale::engine_interaction::KeyCode::X,
+        KeyCode::Y => scale::engine_interaction::KeyCode::Y,
+        KeyCode::Z => scale::engine_interaction::KeyCode::Z,
+        KeyCode::Escape => scale::engine_interaction::KeyCode::Escape,
+        KeyCode::F1 => scale::engine_interaction::KeyCode::F1,
+        KeyCode::F2 => scale::engine_interaction::KeyCode::F2,
+        KeyCode::F3 => scale::engine_interaction::KeyCode::F3,
+        KeyCode::F4 => scale::engine_interaction::KeyCode::F4,
+        KeyCode::F5 => scale::engine_interaction::KeyCode::F5,
+        KeyCode::F6 => scale::engine_interaction::KeyCode::F6,
+        KeyCode::F7 => scale::engine_interaction::KeyCode::F7,
+        KeyCode::F8 => scale::engine_interaction::KeyCode::F8,
+        KeyCode::F9 => scale::engine_interaction::KeyCode::F9,
+        KeyCode::F10 => scale::engine_interaction::KeyCode::F10,
+        KeyCode::F11 => scale::engine_interaction::KeyCode::F11,
+        KeyCode::F12 => scale::engine_interaction::KeyCode::F12,
+        KeyCode::F13 => scale::engine_interaction::KeyCode::F13,
+        KeyCode::F14 => scale::engine_interaction::KeyCode::F14,
+        KeyCode::F15 => scale::engine_interaction::KeyCode::F15,
+        KeyCode::F16 => scale::engine_interaction::KeyCode::F16,
+        KeyCode::F17 => scale::engine_interaction::KeyCode::F17,
+        KeyCode::F18 => scale::engine_interaction::KeyCode::F18,
+        KeyCode::F19 => scale::engine_interaction::KeyCode::F19,
+        KeyCode::F20 => scale::engine_interaction::KeyCode::F20,
+        KeyCode::F21 => scale::engine_interaction::KeyCode::F21,
+        KeyCode::F22 => scale::engine_interaction::KeyCode::F22,
+        KeyCode::F23 => scale::engine_interaction::KeyCode::F23,
+        KeyCode::F24 => scale::engine_interaction::KeyCode::F24,
+        KeyCode::Snapshot => scale::engine_interaction::KeyCode::Snapshot,
+        KeyCode::Scroll => scale::engine_interaction::KeyCode::Scroll,
+        KeyCode::Pause => scale::engine_interaction::KeyCode::Pause,
+        KeyCode::Insert => scale::engine_interaction::KeyCode::Insert,
+        KeyCode::Home => scale::engine_interaction::KeyCode::Home,
+        KeyCode::Delete => scale::engine_interaction::KeyCode::Delete,
+        KeyCode::End => scale::engine_interaction::KeyCode::End,
+        KeyCode::PageDown => scale::engine_interaction::KeyCode::PageDown,
+        KeyCode::PageUp => scale::engine_interaction::KeyCode::PageUp,
+        KeyCode::Left => scale::engine_interaction::KeyCode::Left,
+        KeyCode::Up => scale::engine_interaction::KeyCode::Up,
+        KeyCode::Right => scale::engine_interaction::KeyCode::Right,
+        KeyCode::Down => scale::engine_interaction::KeyCode::Down,
+        KeyCode::Back => scale::engine_interaction::KeyCode::Backspace,
+        KeyCode::Return => scale::engine_interaction::KeyCode::Return,
+        KeyCode::Space => scale::engine_interaction::KeyCode::Space,
+        KeyCode::Compose => scale::engine_interaction::KeyCode::Compose,
+        KeyCode::Caret => scale::engine_interaction::KeyCode::Caret,
+        KeyCode::Numlock => scale::engine_interaction::KeyCode::Numlock,
+        KeyCode::Numpad0 => scale::engine_interaction::KeyCode::Numpad0,
+        KeyCode::Numpad1 => scale::engine_interaction::KeyCode::Numpad1,
+        KeyCode::Numpad2 => scale::engine_interaction::KeyCode::Numpad2,
+        KeyCode::Numpad3 => scale::engine_interaction::KeyCode::Numpad3,
+        KeyCode::Numpad4 => scale::engine_interaction::KeyCode::Numpad4,
+        KeyCode::Numpad5 => scale::engine_interaction::KeyCode::Numpad5,
+        KeyCode::Numpad6 => scale::engine_interaction::KeyCode::Numpad6,
+        KeyCode::Numpad7 => scale::engine_interaction::KeyCode::Numpad7,
+        KeyCode::Numpad8 => scale::engine_interaction::KeyCode::Numpad8,
+        KeyCode::Numpad9 => scale::engine_interaction::KeyCode::Numpad9,
+        KeyCode::AbntC1 => scale::engine_interaction::KeyCode::AbntC1,
+        KeyCode::AbntC2 => scale::engine_interaction::KeyCode::AbntC2,
+        KeyCode::Add => scale::engine_interaction::KeyCode::Add,
+        KeyCode::Apostrophe => scale::engine_interaction::KeyCode::Apostrophe,
+        KeyCode::Apps => scale::engine_interaction::KeyCode::Apps,
+        KeyCode::At => scale::engine_interaction::KeyCode::At,
+        KeyCode::Ax => scale::engine_interaction::KeyCode::Ax,
+        KeyCode::Backslash => scale::engine_interaction::KeyCode::Backslash,
+        KeyCode::Calculator => scale::engine_interaction::KeyCode::Calculator,
+        KeyCode::Capital => scale::engine_interaction::KeyCode::Capital,
+        KeyCode::Colon => scale::engine_interaction::KeyCode::Colon,
+        KeyCode::Comma => scale::engine_interaction::KeyCode::Comma,
+        KeyCode::Convert => scale::engine_interaction::KeyCode::Convert,
+        KeyCode::Decimal => scale::engine_interaction::KeyCode::Decimal,
+        KeyCode::Divide => scale::engine_interaction::KeyCode::Divide,
+        KeyCode::Equals => scale::engine_interaction::KeyCode::Equals,
+        KeyCode::Grave => scale::engine_interaction::KeyCode::Grave,
+        KeyCode::Kana => scale::engine_interaction::KeyCode::Kana,
+        KeyCode::Kanji => scale::engine_interaction::KeyCode::Kanji,
+        KeyCode::LAlt => scale::engine_interaction::KeyCode::LAlt,
+        KeyCode::LBracket => scale::engine_interaction::KeyCode::LBracket,
+        KeyCode::LControl => scale::engine_interaction::KeyCode::LControl,
+        KeyCode::LShift => scale::engine_interaction::KeyCode::LShift,
+        KeyCode::LWin => scale::engine_interaction::KeyCode::LWin,
+        KeyCode::Mail => scale::engine_interaction::KeyCode::Mail,
+        KeyCode::MediaSelect => scale::engine_interaction::KeyCode::MediaSelect,
+        KeyCode::MediaStop => scale::engine_interaction::KeyCode::MediaStop,
+        KeyCode::Minus => scale::engine_interaction::KeyCode::Minus,
+        KeyCode::Multiply => scale::engine_interaction::KeyCode::Multiply,
+        KeyCode::Mute => scale::engine_interaction::KeyCode::Mute,
+        KeyCode::MyComputer => scale::engine_interaction::KeyCode::MyComputer,
+        KeyCode::NavigateForward => scale::engine_interaction::KeyCode::NavigateForward,
+        KeyCode::NavigateBackward => scale::engine_interaction::KeyCode::NavigateBackward,
+        KeyCode::NextTrack => scale::engine_interaction::KeyCode::NextTrack,
+        KeyCode::NoConvert => scale::engine_interaction::KeyCode::NoConvert,
+        KeyCode::NumpadComma => scale::engine_interaction::KeyCode::NumpadComma,
+        KeyCode::NumpadEnter => scale::engine_interaction::KeyCode::NumpadEnter,
+        KeyCode::NumpadEquals => scale::engine_interaction::KeyCode::NumpadEquals,
+        KeyCode::OEM102 => scale::engine_interaction::KeyCode::OEM102,
+        KeyCode::Period => scale::engine_interaction::KeyCode::Period,
+        KeyCode::PlayPause => scale::engine_interaction::KeyCode::PlayPause,
+        KeyCode::Power => scale::engine_interaction::KeyCode::Power,
+        KeyCode::PrevTrack => scale::engine_interaction::KeyCode::PrevTrack,
+        KeyCode::RAlt => scale::engine_interaction::KeyCode::RAlt,
+        KeyCode::RBracket => scale::engine_interaction::KeyCode::RBracket,
+        KeyCode::RControl => scale::engine_interaction::KeyCode::RControl,
+        KeyCode::RShift => scale::engine_interaction::KeyCode::RShift,
+        KeyCode::RWin => scale::engine_interaction::KeyCode::RWin,
+        KeyCode::Semicolon => scale::engine_interaction::KeyCode::Semicolon,
+        KeyCode::Slash => scale::engine_interaction::KeyCode::Slash,
+        KeyCode::Sleep => scale::engine_interaction::KeyCode::Sleep,
+        KeyCode::Stop => scale::engine_interaction::KeyCode::Stop,
+        KeyCode::Subtract => scale::engine_interaction::KeyCode::Subtract,
+        KeyCode::Sysrq => scale::engine_interaction::KeyCode::Sysrq,
+        KeyCode::Tab => scale::engine_interaction::KeyCode::Tab,
+        KeyCode::Underline => scale::engine_interaction::KeyCode::Underline,
+        KeyCode::Unlabeled => scale::engine_interaction::KeyCode::Unlabeled,
+        KeyCode::VolumeDown => scale::engine_interaction::KeyCode::VolumeDown,
+        KeyCode::VolumeUp => scale::engine_interaction::KeyCode::VolumeUp,
+        KeyCode::Wake => scale::engine_interaction::KeyCode::Wake,
+        KeyCode::WebBack => scale::engine_interaction::KeyCode::WebBack,
+        KeyCode::WebFavorites => scale::engine_interaction::KeyCode::WebFavorites,
+        KeyCode::WebForward => scale::engine_interaction::KeyCode::WebForward,
+        KeyCode::WebHome => scale::engine_interaction::KeyCode::WebHome,
+        KeyCode::WebRefresh => scale::engine_interaction::KeyCode::WebRefresh,
+        KeyCode::WebSearch => scale::engine_interaction::KeyCode::WebSearch,
+        KeyCode::WebStop => scale::engine_interaction::KeyCode::WebStop,
+        KeyCode::Yen => scale::engine_interaction::KeyCode::Yen,
+        KeyCode::Copy => scale::engine_interaction::KeyCode::Copy,
+        KeyCode::Paste => scale::engine_interaction::KeyCode::Paste,
+        KeyCode::Cut => scale::engine_interaction::KeyCode::Cut,
     }
 }

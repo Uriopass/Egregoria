@@ -1,15 +1,14 @@
-use engine::gui::imgui_wrapper::Gui;
-use engine::specs::world::World;
-use engine::specs::WorldExt;
-use engine::systems::SelectedEntity;
+use crate::interaction::SelectedEntity;
 use imgui::im_str;
 use imgui::Ui;
+use specs::world::World;
+use specs::WorldExt;
 
 #[derive(Clone)]
 pub struct TestGui;
 
-impl Gui for TestGui {
-    fn render(&self, ui: &Ui, world: &mut World) {
+impl TestGui {
+    pub fn render(&self, ui: &Ui, world: &mut World) {
         let selected = *world.read_resource::<SelectedEntity>();
         // Window
         imgui::Window::new(im_str!("Hello world"))

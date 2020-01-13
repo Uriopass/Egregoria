@@ -1,17 +1,18 @@
 use cgmath::{InnerSpace, Vector2};
 
-use engine::specs::{
+use specs::{
     Builder, Component, Join, ParJoin, Read, ReadStorage, System, VecStorage, World, WorldExt,
     WriteStorage,
 };
 
-use engine::add_shape;
-use engine::components::{CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, Transform};
-use engine::resources::DeltaTime;
-
+use crate::engine_interaction::DeltaTime;
+use crate::interaction::Movable;
+use crate::physics::add_shape;
+use crate::physics::physics_components::{Drag, Kinematics, Transform};
+use crate::rendering::meshrender_component::{CircleRender, MeshRenderComponent};
 use cgmath::num_traits::zero;
-use engine::ncollide2d::shape::Ball;
-use engine::specs::prelude::ParallelIterator;
+use ncollide2d::shape::Ball;
+use specs::prelude::ParallelIterator;
 
 #[derive(Component)]
 #[storage(VecStorage)]

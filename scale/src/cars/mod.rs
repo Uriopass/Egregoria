@@ -3,8 +3,8 @@ use crate::cars::car_data::make_car_entity;
 use crate::cars::city_generator::{CityGenerator, Intersection};
 use crate::graphs::graph::NodeID;
 use cgmath::Vector2;
-use engine::specs::storage::BTreeStorage;
-use engine::specs::{Component, World};
+use specs::storage::BTreeStorage;
+use specs::{Component, World};
 
 pub mod car_data;
 pub mod car_graph;

@@ -1,13 +1,16 @@
-use crate::components::{Kinematics, Movable, Transform};
-use crate::resources::{DeltaTime, MouseInfo};
-
+use crate::engine_interaction::{DeltaTime, MouseButton, MouseInfo};
+use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2, Zero};
-use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
 use specs::shrev::EventChannel;
+use specs::Component;
 use std::f32;
 use std::ops::Deref;
+
+#[derive(Component, Default)]
+#[storage(NullStorage)]
+pub struct Movable;
 
 #[derive(Debug)]
 pub struct MovedEvent {

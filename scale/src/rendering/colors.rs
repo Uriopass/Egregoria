@@ -1,4 +1,10 @@
-use ggez::graphics::Color;
+#[derive(Clone, Copy)]
+pub struct Color {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32,
+}
 
 pub const WHITE: Color = Color {
     r: 1.0,
