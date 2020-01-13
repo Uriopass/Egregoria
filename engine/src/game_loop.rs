@@ -3,7 +3,7 @@ use crate::rendering::render_context::RenderContext;
 
 use crate::gui::imgui_wrapper::ImGuiWrapper;
 use crate::rendering::meshrenderable::MeshRenderable;
-use cgmath::InnerSpace;
+
 use ggez::graphics::{Color, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
@@ -11,7 +11,7 @@ use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::engine_interaction;
 use scale::engine_interaction::{DeltaTime, KeyboardInfo, MouseInfo, Transform};
 use scale::gui::gui::TestGui;
-use scale::rendering::meshrender_component::{MeshRenderComponent, MeshRenderEnum};
+use scale::rendering::meshrender_component::MeshRenderComponent;
 use specs::{Dispatcher, Join, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
