@@ -11,3 +11,4 @@ ordered-float = "1.0.2"
 engine = { path = "../engine" }
 imgui = "0.2.1"
 imgui-inspect = "0.3.3"
+imgui-inspect-derive = "0.3.0"
