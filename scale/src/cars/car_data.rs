@@ -7,7 +7,7 @@ use crate::graphs::graph::NodeID;
 use cgmath::num_traits::zero;
 use engine::add_shape;
 use engine::components::{
-    CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, RectRender, Transform,
+    CircleRender, Drag, Kinematics, MeshRenderComponent, Movable, RectRender, Selectable, Transform,
 };
 use engine::nalgebra::Isometry2;
 use engine::ncollide2d::shape::Cuboid;
@@ -137,6 +137,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>) {
         })
         .with(Drag::new(0.3))
         .with(Movable)
+        .with(Selectable)
         .build();
 
     add_shape(
