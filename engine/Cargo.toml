@@ -16,6 +16,4 @@ serde = {version = "1.0"}
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
 imgui = "0.2.1"
-imgui-inspect = "0.3.3"
-imgui-inspect-derive = "0.3.0"
 imgui-gfx-renderer = "0.2"
