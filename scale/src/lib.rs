@@ -5,7 +5,7 @@ use ncollide2d::world::CollisionWorld;
 use crate::cars::car_graph::RoadGraphSynchronize;
 use crate::cars::car_system::CarDecision;
 use crate::engine_interaction::{DeltaTime, KeyboardInfo};
-use crate::gui::gui::TestGui;
+use crate::gui::TestGui;
 use crate::humans::HumanUpdate;
 use crate::interaction::{MovableSystem, SelectableSystem, SelectedEntity};
 use crate::physics::physics_components::Collider;
