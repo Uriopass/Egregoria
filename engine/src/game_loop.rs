@@ -65,6 +65,11 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
             vec![]
         };
 
+        self.imgui_wrapper.update_mouse_down((
+            ggez::input::mouse::button_pressed(ctx, MouseButton::Left),
+            ggez::input::mouse::button_pressed(ctx, MouseButton::Right),
+            ggez::input::mouse::button_pressed(ctx, MouseButton::Middle),
+        ));
         // use info from last frame to determined "just pressed"
         let last_pressed = self.world.read_resource::<MouseInfo>().buttons.clone();
 
@@ -144,30 +149,6 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
         graphics::present(ctx)
     }
 
-    fn mouse_button_down_event(
-        &mut self,
-        _ctx: &mut Context,
-        button: MouseButton,
-        _x: f32,
-        _y: f32,
-    ) {
-        self.imgui_wrapper.update_mouse_down((
-            button == MouseButton::Left,
-            button == MouseButton::Right,
-            button == MouseButton::Middle,
-        ));
-    }
-
-    fn mouse_button_up_event(
-        &mut self,
-        _ctx: &mut Context,
-        _button: MouseButton,
-        _x: f32,
-        _y: f32,
-    ) {
-        self.imgui_wrapper.update_mouse_down((false, false, false));
-    }
-
     fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
         self.imgui_wrapper.update_mouse_pos(x, y);
     }
@@ -179,6 +160,7 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
         if y < 0.0 {
             self.cam.easy_camera_movement_keys(ctx, KeyCode::Subtract);
         }
+        self.imgui_wrapper.update_wheel(y);
     }
 
     fn key_down_event(&mut self, ctx: &mut Context, keycode: KeyCode, _: KeyMods, _: bool) {
