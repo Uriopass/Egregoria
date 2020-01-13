@@ -25,7 +25,6 @@ pub use ncollide2d;
 pub use rendering::colors::*;
 pub use specs;
 
-const PHYSICS_UPDATES: usize = 1;
 pub type PhysicsWorld = CollisionWorld<f32, Entity>;
 
 pub fn add_shape<T>(world: &mut World, e: Entity, shape: T)

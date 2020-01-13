@@ -2,7 +2,6 @@ use crate::components::{Kinematics, MeshRenderComponent, Transform};
 use crate::rendering::camera_handler::CameraHandler;
 use crate::rendering::render_context::RenderContext;
 use crate::resources::{DeltaTime, KeyboardInfo, MouseInfo};
-use crate::PHYSICS_UPDATES;
 
 use crate::gui::imgui_wrapper::{Gui, ImGuiWrapper};
 use cgmath::InnerSpace;
@@ -17,7 +16,6 @@ use std::iter::FromIterator;
 pub struct EngineState<'a, G: Gui> {
     pub world: World,
     pub dispatch: Dispatcher<'a, 'a>,
-    pub time: f32,
     pub cam: CameraHandler,
     pub render_enabled: bool,
     pub grid: bool,
@@ -45,7 +43,6 @@ impl<'a, G: Gui> EngineState<'a, G> {
             font,
             world,
             dispatch,
-            time: 0.0,
             cam: CameraHandler::new(width, height),
             render_enabled: true,
             grid: true,
@@ -58,26 +55,36 @@ impl<'a, G: Gui> EngineState<'a, G> {
 impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let delta = timer::delta(ctx).as_secs_f32().min(1.0 / 100.0);
-        self.time += delta;
-        *self.world.write_resource() = MouseInfo {
+
+        let pressed: Vec<MouseButton> = if !self.imgui_wrapper.last_mouse_captured {
+            vec![MouseButton::Left, MouseButton::Right, MouseButton::Middle]
+                .into_iter()
+                .filter(|x| ggez::input::mouse::button_pressed(ctx, *x))
+                .collect()
+        } else {
+            vec![]
+        };
+
+        // use info from last frame to determined "just pressed"
+        let last_pressed = self.world.read_resource::<MouseInfo>().buttons.clone();
+
+        *self.world.write_resource::<MouseInfo>() = MouseInfo {
             unprojected: self.cam.unproject_mouse_click(ctx),
-            buttons: HashSet::from_iter(
-                vec![MouseButton::Left, MouseButton::Right, MouseButton::Middle]
-                    .into_iter()
-                    .filter(|x| ggez::input::mouse::button_pressed(ctx, *x)),
+            buttons: HashSet::from_iter(pressed.clone()),
+            just_pressed: HashSet::from_iter(
+                pressed.into_iter().filter(|x| !last_pressed.contains(x)),
             ),
         };
 
-        *self.world.write_resource() = DeltaTime(delta / (PHYSICS_UPDATES as f32));
-        for _ in 0..PHYSICS_UPDATES {
-            self.dispatch.run_now(&self.world);
-            self.world.maintain();
+        *self.world.write_resource() = DeltaTime(delta);
 
-            self.world
-                .write_resource::<KeyboardInfo>()
-                .just_pressed
-                .clear();
-        }
+        self.dispatch.run_now(&self.world);
+        self.world.maintain();
+
+        self.world
+            .write_resource::<KeyboardInfo>()
+            .just_pressed
+            .clear();
 
         Ok(())
     }
@@ -90,6 +97,7 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
         let mut rc = RenderContext::new(&mut self.cam, ctx, self.font);
         rc.clear();
 
+        // Render grid
         if self.grid && rc.cam.camera.zoom > 3.0 {
             let gray_maj = (rc.cam.camera.zoom / 40.0).min(0.2);
             let gray_min = gray_maj / 2.0;
@@ -99,6 +107,8 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
             rc.draw_grid(10.0, Color::new(gray_maj, gray_maj, gray_maj, 1.0));
             rc.flush()?;
         }
+
+        // Render entities
         {
             let transforms = self.world.read_component::<Transform>();
             let kinematics = self.world.read_component::<Kinematics>();
@@ -129,11 +139,37 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
         rc.finish()?;
 
         let gui: G = (&*self.world.read_resource::<G>()).clone();
-
-        // Render game ui
         self.imgui_wrapper.render(ctx, &mut self.world, gui, 1.0);
 
         graphics::present(ctx)
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
+        self.imgui_wrapper.update_mouse_down((
+            button == MouseButton::Left,
+            button == MouseButton::Right,
+            button == MouseButton::Middle,
+        ));
+    }
+
+    fn mouse_button_up_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
+        self.imgui_wrapper.update_mouse_down((false, false, false));
+    }
+
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, x: f32, y: f32, _dx: f32, _dy: f32) {
+        self.imgui_wrapper.update_mouse_pos(x, y);
     }
 
     fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) {
@@ -143,7 +179,6 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
         if y < 0.0 {
             self.cam.easy_camera_movement_keys(ctx, KeyCode::Subtract);
         }
-        self.imgui_wrapper.last_mouse_wheel = y;
     }
 
     fn key_down_event(&mut self, ctx: &mut Context, keycode: KeyCode, _: KeyMods, _: bool) {
@@ -156,6 +191,24 @@ impl<'a, G: 'static + Gui> ggez::event::EventHandler for EngineState<'a, G> {
         }
         if keycode == KeyCode::G {
             self.grid = !self.grid;
+        }
+        //        println!("Key pressed {:?}", keycode);
+
+        match keycode {
+            KeyCode::Back => self.imgui_wrapper.backspace(),
+            KeyCode::Return => self.imgui_wrapper.enter(),
+            KeyCode::Key0 => self.imgui_wrapper.queue_char('0'),
+            KeyCode::Key1 => self.imgui_wrapper.queue_char('1'),
+            KeyCode::Key2 => self.imgui_wrapper.queue_char('2'),
+            KeyCode::Key3 => self.imgui_wrapper.queue_char('3'),
+            KeyCode::Key4 => self.imgui_wrapper.queue_char('4'),
+            KeyCode::Key5 => self.imgui_wrapper.queue_char('5'),
+            KeyCode::Key6 => self.imgui_wrapper.queue_char('6'),
+            KeyCode::Key7 => self.imgui_wrapper.queue_char('7'),
+            KeyCode::Key8 => self.imgui_wrapper.queue_char('8'),
+            KeyCode::Key9 => self.imgui_wrapper.queue_char('9'),
+            KeyCode::Period => self.imgui_wrapper.queue_char('.'),
+            _ => (),
         }
         self.cam.easy_camera_movement_keys(ctx, keycode);
     }

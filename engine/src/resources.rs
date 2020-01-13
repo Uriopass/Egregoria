@@ -9,6 +9,7 @@ pub struct DeltaTime(pub f32);
 pub struct MouseInfo {
     pub unprojected: Vector2<f32>,
     pub buttons: HashSet<MouseButton>,
+    pub just_pressed: HashSet<MouseButton>,
 }
 
 impl Default for MouseInfo {
@@ -16,6 +17,7 @@ impl Default for MouseInfo {
         MouseInfo {
             unprojected: [0.0, 0.0].into(),
             buttons: HashSet::new(),
+            just_pressed: HashSet::new(),
         }
     }
 }
