@@ -46,7 +46,7 @@ impl CityGenerator {
             for Edge { to, .. } in self.intersections.get_neighs(*id) {
                 let inter2 = &self.intersections.nodes[to];
                 let dir = (inter2.pos - center).normalize();
-                let nor = Vector2::new(-dir.y, dir.x);
+                let nor: Vector2<f32> = Vector2::new(-dir.y, dir.x);
 
                 let out_id = g.add_node(RoadNode::new(center + dir * 25.0 - nor * 4.0));
                 let in_id = g.add_node(RoadNode::new(inter2.pos - dir * 25.0 - nor * 4.0));

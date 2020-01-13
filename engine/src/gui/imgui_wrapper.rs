@@ -7,12 +7,9 @@ use gfx_device_gl;
 use imgui::*;
 use imgui_gfx_renderer::*;
 
+use scale::gui::gui::TestGui;
 use specs::World;
 use std::time::Instant;
-
-pub trait Gui: Clone + Send + Sync {
-    fn render(&self, ui: &Ui, world: &mut World);
-}
 
 pub struct ImGuiWrapper {
     imgui: imgui::Context,
@@ -61,11 +58,11 @@ impl ImGuiWrapper {
         }
     }
 
-    pub fn render<G: Gui>(
+    pub fn render(
         &mut self,
         ctx: &mut Context,
         world: &mut World,
-        gui: G,
+        gui: TestGui,
         hidpi_factor: f32,
     ) {
         // Create new frame

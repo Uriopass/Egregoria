@@ -1,16 +1,15 @@
 use crate::cars::RoadNodeComponent;
 use crate::graphs::graph::{Graph, NodeID};
 use cgmath::Vector2;
-use engine::components::{CircleRender, LineToRender, MeshRenderComponent, Movable, Transform};
-use engine::specs::{
-    Builder, Entity, Read, ReadStorage, System, SystemData, World, WorldExt, Write,
-};
+use specs::{Builder, Entity, Read, ReadStorage, System, SystemData, World, WorldExt, Write};
 
+use crate::interaction::{Movable, MovedEvent};
+use crate::physics::physics_components::Transform;
+use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRenderComponent};
+use crate::rendering::{GREEN, WHITE};
 use cgmath::MetricSpace;
-use engine::specs::shred::PanicHandler;
-use engine::specs::shrev::{EventChannel, ReaderId};
-use engine::systems::MovedEvent;
-use engine::{GREEN, WHITE};
+use specs::shred::PanicHandler;
+use specs::shrev::{EventChannel, ReaderId};
 use std::collections::HashMap;
 
 #[derive(Clone, Copy)]

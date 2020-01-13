@@ -7,8 +7,10 @@ edition = "2018"
 [dependencies]
 rand = {version = "0.7.2", features = ["small_rng"]}
 cgmath = {version = "0.17"}
+specs = {version = "0.15", features = ["specs-derive", "parallel"]}
 ordered-float = "1.0.2"
-engine = { path = "../engine" }
+ncollide2d = "0.20"
+nalgebra = "0.18"
 imgui = "0.2.1"
 imgui-inspect = "0.3.3"
 imgui-inspect-derive = "0.3.0"
