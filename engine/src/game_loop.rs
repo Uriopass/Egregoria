@@ -73,12 +73,6 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             ggez::input::mouse::button_pressed(ctx, MouseButton::Right),
             ggez::input::mouse::button_pressed(ctx, MouseButton::Middle),
         ));
-
-        self.imgui_wrapper.update_mouse_down((
-            ggez::input::mouse::button_pressed(ctx, MouseButton::Left),
-            ggez::input::mouse::button_pressed(ctx, MouseButton::Right),
-            ggez::input::mouse::button_pressed(ctx, MouseButton::Middle),
-        ));
         // use info from last frame to determined "just pressed"
         let last_pressed = self.world.read_resource::<MouseInfo>().buttons.clone();
 
