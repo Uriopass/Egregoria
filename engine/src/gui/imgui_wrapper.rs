@@ -10,13 +10,6 @@ use imgui_gfx_renderer::*;
 use specs::World;
 use std::time::Instant;
 
-#[derive(Copy, Clone, PartialEq, Debug, Default)]
-struct MouseState {
-    pos: (i32, i32),
-    pressed: (bool, bool, bool),
-    wheel: f32,
-}
-
 pub trait Gui: Clone + Send + Sync {
     fn render(&self, ui: &Ui, world: &mut World);
 }
@@ -25,8 +18,7 @@ pub struct ImGuiWrapper {
     imgui: imgui::Context,
     renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     last_frame: Instant,
-    mouse_state: MouseState,
-    show_popup: bool,
+    pub last_mouse_captured: bool,
 }
 
 impl ImGuiWrapper {
@@ -53,6 +45,10 @@ impl ImGuiWrapper {
             }
         };
 
+        // Inputs
+        imgui.io_mut().key_map[imgui::Key::Backspace as usize] = 259;
+        imgui.io_mut().key_map[imgui::Key::Enter as usize] = 260;
+
         // Renderer
         let renderer = Renderer::init(&mut imgui, &mut *factory, shaders).unwrap();
 
@@ -61,8 +57,7 @@ impl ImGuiWrapper {
             imgui,
             renderer,
             last_frame: Instant::now(),
-            mouse_state: MouseState::default(),
-            show_popup: false,
+            last_mouse_captured: false,
         }
     }
 
@@ -73,9 +68,6 @@ impl ImGuiWrapper {
         gui: G,
         hidpi_factor: f32,
     ) {
-        // Update mouse
-        self.update_mouse();
-
         // Create new frame
         let now = Instant::now();
         let delta = now - self.last_frame;
@@ -87,9 +79,10 @@ impl ImGuiWrapper {
         self.imgui.io_mut().display_framebuffer_scale = [hidpi_factor, hidpi_factor];
         self.imgui.io_mut().delta_time = delta_s;
 
+        // Prepare
         let ui: Ui = self.imgui.frame();
-
         gui.render(&ui, world);
+        self.last_mouse_captured = ui.io().want_capture_mouse;
 
         // Render
         let (factory, _, encoder, _, render_target) = graphics::gfx_objects(ctx);
@@ -102,37 +95,33 @@ impl ImGuiWrapper {
                 draw_data,
             )
             .unwrap();
+
+        self.imgui.io_mut().mouse_wheel = 0.0;
+        self.imgui.io_mut().keys_down[259] = false;
+        self.imgui.io_mut().keys_down[260] = false;
     }
 
-    fn update_mouse(&mut self) {
-        self.imgui.io_mut().mouse_pos =
-            [self.mouse_state.pos.0 as f32, self.mouse_state.pos.1 as f32];
+    pub fn queue_char(&mut self, c: char) {
+        self.imgui.io_mut().add_input_character(c);
+    }
 
-        self.imgui.io_mut().mouse_down = [
-            self.mouse_state.pressed.0,
-            self.mouse_state.pressed.1,
-            self.mouse_state.pressed.2,
-            false,
-            false,
-        ];
+    pub fn backspace(&mut self) {
+        self.imgui.io_mut().keys_down[259] = true;
+    }
 
-        self.imgui.io_mut().mouse_wheel = self.mouse_state.wheel;
-        self.mouse_state.wheel = 0.0;
+    pub fn enter(&mut self) {
+        self.imgui.io_mut().keys_down[260] = true;
+    }
+
+    pub fn update_wheel(&mut self, value: f32) {
+        self.imgui.io_mut().mouse_wheel = value;
     }
 
     pub fn update_mouse_pos(&mut self, x: f32, y: f32) {
-        self.mouse_state.pos = (x as i32, y as i32);
+        self.imgui.io_mut().mouse_pos = [x, y];
     }
 
     pub fn update_mouse_down(&mut self, pressed: (bool, bool, bool)) {
-        self.mouse_state.pressed = pressed;
-
-        if pressed.0 {
-            self.show_popup = false;
-        }
-    }
-
-    pub fn open_popup(&mut self) {
-        self.show_popup = true;
+        self.imgui.io_mut().mouse_down = [pressed.0, pressed.1, pressed.2, false, false];
     }
 }
