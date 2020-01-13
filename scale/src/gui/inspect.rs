@@ -1,9 +1,9 @@
+use crate::physics::physics_components::Transform;
 use cgmath::Vector2;
-use engine::components::{Movable, Transform};
-use engine::specs::prelude::*;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
+use specs::prelude::*;
 
 #[derive(Inspect)]
 struct Vec2 {

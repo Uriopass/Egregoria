@@ -1,10 +1,13 @@
-use crate::components::{Selectable, Transform};
-use crate::resources::MouseInfo;
-
+use crate::engine_interaction::{MouseButton, MouseInfo};
+use crate::physics::physics_components::Transform;
 use cgmath::InnerSpace;
-use ggez::input::mouse::MouseButton;
 use specs::prelude::*;
+use specs::Component;
 use std::f32;
+
+#[derive(Component, Default)]
+#[storage(NullStorage)]
+pub struct Selectable;
 
 #[derive(Default, Clone, Copy)]
 pub struct SelectedEntity(pub Option<Entity>);

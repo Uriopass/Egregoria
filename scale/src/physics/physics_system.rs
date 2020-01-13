@@ -1,11 +1,10 @@
-use crate::components::{Collider, Drag, Kinematics, Transform};
-use crate::resources::{DeltaTime, KeyboardInfo};
 use crate::PhysicsWorld;
 
 use nalgebra as na;
 
+use crate::engine_interaction::{DeltaTime, KeyCode, KeyboardInfo};
+use crate::physics::physics_components::{Collider, Drag, Kinematics, Transform};
 use cgmath::{InnerSpace, Vector2, Zero};
-use ggez::input::keyboard::KeyCode;
 use nalgebra::Isometry2;
 use specs::{Join, Read, ReadStorage, Write, WriteStorage};
 
