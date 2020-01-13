@@ -2,11 +2,10 @@ use crate::rendering::render_context::RenderContext;
 use ggez::graphics::Color;
 use scale::engine_interaction::Transform;
 use scale::rendering::meshrender_component::{
-    CircleRender, LineRender, LineToRender, MeshRenderComponent, MeshRenderEnum, RectRender,
+    CircleRender, LineRender, LineToRender, MeshRenderEnum, RectRender,
 };
-use specs::shred::Fetch;
-use specs::storage::MaskedStorage;
-use specs::{ReadStorage, Storage};
+
+use specs::ReadStorage;
 
 pub trait MeshRenderable: Send + Sync {
     fn draw(&self, trans: &Transform, transforms: &ReadStorage<Transform>, rc: &mut RenderContext);

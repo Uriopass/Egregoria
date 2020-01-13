@@ -1,10 +1,9 @@
 use std::env;
 use std::path;
 
-use cgmath::Vector2;
 use ggez::conf::NumSamples;
 use ggez::{conf, event, ContextBuilder};
-use specs::{Builder, Dispatcher, Entity, World, WorldExt};
+use specs::{World, WorldExt};
 
 use crate::game_loop::EngineState;
 mod game_loop;
