@@ -14,3 +14,7 @@ a minimal viable product should be made where features are increasingly added.
 
 The first [milestone](https://github.com/Uriopass/Scale/projects/1) is to be able to have humans having homes and a workplace,
 using their feet or their cars to go there.  
+
+## Devblog
+
+I will try to keep a blog of the updates to Scale [here](http://douady.paris/blog/index.html).

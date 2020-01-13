@@ -10,3 +10,4 @@ cgmath = {version = "0.17"}
 ordered-float = "1.0.2"
 engine = { path = "../engine" }
 imgui = "0.2.1"
+imgui-inspect = "0.3.3"
