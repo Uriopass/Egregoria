@@ -1,8 +1,5 @@
 use cgmath::num_traits::zero;
 use cgmath::{Matrix3, SquareMatrix, Vector2};
-use imgui::Ui;
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault, InspectRenderSlider};
-use imgui_inspect_derive::*;
 use ncollide2d::pipeline::CollisionObjectSlabHandle;
 use specs::{Component, VecStorage};
 
@@ -32,54 +29,6 @@ impl Default for Drag {
 pub struct Transform {
     m: Matrix3<f32>,
     rotated: bool,
-}
-#[derive(Inspect)]
-struct Pos {
-    #[inspect_slider(min_value = 5.0, max_value = 53.0)]
-    x: f32,
-    y: f32,
-}
-#[derive(Inspect)]
-struct Test {
-    pos: Pos,
-}
-
-impl InspectRenderDefault<Transform> for Transform {
-    fn render(data: &[&Transform], _label: &'static str, ui: &Ui, _args: &InspectArgsDefault) {
-        if let Some(trans) = imgui_inspect::get_same_or_none(data) {
-            let pos = trans.get_position();
-            let conv = Test {
-                pos: Pos { x: pos.x, y: pos.y },
-            };
-            Test::render(
-                &[&conv],
-                &"my_struct_test",
-                ui,
-                &InspectArgsDefault::default(),
-            );
-        }
-    }
-    fn render_mut(
-        data: &mut [&mut Transform],
-        _label: &'static str,
-        ui: &Ui,
-        _args: &InspectArgsDefault,
-    ) -> bool {
-        if let Some(trans) = data.get_mut(0) {
-            let pos = trans.get_position();
-            let mut conv = Test {
-                pos: Pos { x: pos.x, y: pos.y },
-            };
-            Test::render_mut(
-                &mut [&mut conv],
-                &"my_struct_test",
-                ui,
-                &InspectArgsDefault::default(),
-            );
-            trans.set_position([conv.pos.x, conv.pos.y].into());
-        };
-        false
-    }
 }
 
 #[allow(dead_code)]

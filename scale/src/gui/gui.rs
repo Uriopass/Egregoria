@@ -23,7 +23,12 @@ impl Gui for TestGui {
 
                 if let Some(e) = selected.0 {
                     ui.text(im_str!("Selected entity"));
-                    crate::gui::inspect::render_inspect(world, ui, e);
+                    crate::gui::inspect::InspectRenderer {
+                        world,
+                        entity: e,
+                        ui,
+                    }
+                    .render();
                 }
 
                 if ui.small_button(im_str!("small button")) {
