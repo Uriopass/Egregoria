@@ -10,7 +10,7 @@ use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::engine_interaction;
 use scale::engine_interaction::{DeltaTime, KeyboardInfo, MouseInfo, Transform};
-use scale::gui::gui::TestGui;
+use scale::gui::TestGui;
 use scale::rendering::meshrender_component::MeshRenderComponent;
 use specs::{Dispatcher, Join, RunNow, World, WorldExt};
 use std::collections::HashSet;
@@ -62,7 +62,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
                 vec![MouseButton::Left, MouseButton::Right, MouseButton::Middle]
                     .into_iter()
                     .filter(|x| ggez::input::mouse::button_pressed(ctx, *x))
-                    .map(|x| scale_mb(x))
+                    .map(scale_mb)
                     .collect()
             } else {
                 vec![]
