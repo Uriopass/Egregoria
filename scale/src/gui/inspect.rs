@@ -3,13 +3,23 @@ use engine::specs::prelude::*;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectArgsStruct, InspectRenderDefault};
 
-pub fn render_inspect(world: &mut World, ui: &Ui, entity: Entity) {
-    if let Some(x) = world.write_component::<Transform>().get_mut(entity) {
-        <Transform as InspectRenderDefault<Transform>>::render_mut(
-            &mut [x],
-            "inspect_transform",
-            ui,
-            &InspectArgsDefault::default(),
-        );
+macro_rules! inspect_macro {
+    [
+        $(
+            $x: ty
+        ),*
+    ] => {
+        pub fn render_inspect(world: &mut World, ui: &Ui, entity: Entity) {
+           $(if let Some(x) = world.write_component::<$x>().get_mut(entity) {
+                 <$x as InspectRenderDefault<$x>>::render_mut(
+                    &mut [x],
+                    "generated_label",
+                    ui,
+                    &InspectArgsDefault::default(),
+                );
+            });*
+        }
     }
 }
+
+inspect_macro![Transform];
