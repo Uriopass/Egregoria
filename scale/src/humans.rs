@@ -49,7 +49,7 @@ impl<'a> System<'a> for HumanUpdate {
         (&transforms, &mut kinematics, &humans)
             .par_join()
             .for_each(|(t, k, h)| {
-                if (h.objective - t.get_position()).magnitude2() < 1.0 {
+                if (h.objective - t.position()).magnitude2() < 1.0 {
                     k.velocity = [0.0, 0.0].into();
                     return;
                 }

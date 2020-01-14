@@ -48,11 +48,11 @@ impl<'a> System<'a> for CarDecision {
 fn car_objective_update(car: &mut CarComponent, trans: &Transform, graph: &RoadGraph) {
     match car.objective {
         CarObjective::None | Simple(_) | Route(_) => {
-            car.objective = Temporary(graph.closest_node(trans.get_position()));
+            car.objective = Temporary(graph.closest_node(trans.position()));
         }
         CarObjective::Temporary(x) => {
             let p = graph.0.nodes.get(&x).unwrap().pos;
-            if p.distance2(trans.get_position()) < 25.0 {
+            if p.distance2(trans.position()) < 25.0 {
                 let neighs = &graph.0.edges[&x];
                 let r = rand::random::<f32>() * (neighs.len() as f32);
                 let new_obj = &neighs[r as usize].to;
@@ -79,7 +79,7 @@ fn car_physics(
         return;
     }
 
-    let pos = trans.get_position();
+    let pos = trans.position();
 
     let around = AABB::new(
         Point2::new(pos.x - 50.0, pos.y - 50.0),

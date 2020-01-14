@@ -136,7 +136,7 @@ impl<'a> specs::System<'a> for KinematicsApply {
             let collision_obj = ncollide_world
                 .get_mut(collider.0)
                 .expect("Invalid collision object; was it removed from ncollide but not specs?");
-            let p = transform.get_position();
+            let p = transform.position();
             let iso = Isometry2::from_parts(
                 na::Translation2::new(p.x, p.y),
                 na::UnitComplex::new_unchecked(na::Complex::new(

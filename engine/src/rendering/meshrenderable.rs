@@ -36,10 +36,10 @@ impl MeshRenderable for RectRender {
         rc.sr.set_filled(self.filled);
         if pos.is_angle_zero() {
             rc.sr
-                .draw_rect_centered(pos.get_position(), self.width, self.height)
+                .draw_rect_centered(pos.position(), self.width, self.height)
         } else {
             rc.sr.draw_rect_cos_sin(
-                pos.get_position(),
+                pos.position(),
                 self.width,
                 self.height,
                 pos.get_cos(),
@@ -52,15 +52,15 @@ impl MeshRenderable for RectRender {
 impl MeshRenderable for LineToRender {
     fn draw(&self, trans: &Transform, transforms: &ReadStorage<Transform>, rc: &mut RenderContext) {
         let e = self.to;
-        let pos2 = transforms.get(e).unwrap().get_position();
+        let pos2 = transforms.get(e).unwrap().position();
         rc.sr.color = scale_color(self.color);
-        rc.sr.draw_line(trans.get_position(), pos2);
+        rc.sr.draw_line(trans.position(), pos2);
     }
 }
 
 impl MeshRenderable for LineRender {
     fn draw(&self, trans: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
-        let start = trans.get_position();
+        let start = trans.position();
         let end = start + self.offset;
         rc.sr.color = scale_color(self.color);
         rc.sr.draw_line(start, end);
