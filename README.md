@@ -28,7 +28,7 @@ There are a few libraries to install which some of my dependencies need:
 
 ```
 sudo apt-get install libasound2-dev libudev-dev pkg-config
-cargo build
+cargo run
 ```
 
 ## Devblog
