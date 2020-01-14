@@ -5,6 +5,7 @@ use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
+use crate::cars::car_data::{CarComponent, CarObjective};
 use specs::prelude::*;
 
 pub struct ImCgVec2;
@@ -93,6 +94,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
             x.set_position(position);
         }
 
+        self.inspect_component::<CarComponent>();
         self.inspect_component::<Kinematics>();
         self.inspect_component::<Movable>();
     }
