@@ -1,12 +1,13 @@
 use crate::interaction::{Movable, Selectable};
-use crate::physics::physics_components::Transform;
+use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::Vector2;
+use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{get_same_or_none, InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
 use specs::prelude::*;
 
-struct ImCgVec2;
+pub struct ImCgVec2;
 impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
     fn render(data: &[&Vector2<f32>], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
         let xs: Vec<&f32> = data.iter().map(|x| &x.x).collect();
@@ -21,15 +22,18 @@ impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
-        let mut xs: Vec<&mut f32> = data.into_iter().map(|x| &mut (*x).x).collect();
-        let changed =
-            <f32 as InspectRenderDefault<f32>>::render_mut(xs.as_mut_slice(), "x", ui, args);
-
-        let mut ys: Vec<&mut f32> = data.into_iter().map(|x| &mut (*x).y).collect();
-        let changed =
-            <f32 as InspectRenderDefault<f32>>::render_mut(ys.as_mut_slice(), "y", ui, args)
-                || changed;
-        changed
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = &mut data[0];
+        let mut conv = [x.x, x.y];
+        ui.input_float2(&im_str!("{}", label), &mut conv).build();
+        if conv[0] == x.x && conv[1] == x.y {
+            return false;
+        }
+        x.x = conv[0];
+        x.y = conv[1];
+        true
     }
 }
 
@@ -65,7 +69,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         if let Some(x) = self.world.write_component::<T>().get_mut(self.entity) {
             <T as InspectRenderDefault<T>>::render_mut(
                 &mut [x],
-                "generated_label",
+                std::any::type_name::<T>().split("::").last().unwrap_or(""),
                 self.ui,
                 &InspectArgsDefault::default(),
             );
@@ -81,13 +85,14 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
             let mut position = x.get_position();
             <ImCgVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
                 &mut [&mut position],
-                "Transform",
+                "Pos",
                 self.ui,
                 &InspectArgsDefault::default(),
             );
             x.set_position(position);
         }
 
+        self.inspect_component::<Kinematics>();
         self.inspect_component::<Movable>();
     }
 }
