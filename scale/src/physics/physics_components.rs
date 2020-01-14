@@ -1,5 +1,7 @@
+use crate::gui::inspect::ImCgVec2;
 use cgmath::num_traits::zero;
 use cgmath::{Matrix3, SquareMatrix, Vector2};
+use imgui_inspect_derive::*;
 use ncollide2d::pipeline::CollisionObjectSlabHandle;
 use specs::{Component, VecStorage};
 
@@ -94,10 +96,12 @@ impl Transform {
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Inspect)]
 #[storage(VecStorage)]
 pub struct Kinematics {
+    #[inspect(proxy_type = "ImCgVec2")]
     pub velocity: Vector2<f32>,
+    #[inspect(proxy_type = "ImCgVec2", skip = true)]
     pub acceleration: Vector2<f32>,
     pub mass: f32,
 }
