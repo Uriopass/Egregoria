@@ -1,20 +1,21 @@
-use cgmath::{InnerSpace, MetricSpace, Vector2};
-use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
-
 use crate::cars::car_data::CarObjective::{Simple, Temporary};
 use crate::cars::car_graph::RoadGraph;
 use crate::graphs::graph::NodeID;
-use cgmath::num_traits::zero;
-
-use crate::rendering::meshrender_component::{CircleRender, RectRender};
-use nalgebra::Isometry2;
-use ncollide2d::shape::Cuboid;
-
+use crate::gui::inspect::ImCgVec2;
 use crate::interaction::{Movable, Selectable};
 use crate::physics::add_shape;
 use crate::physics::physics_components::{Drag, Kinematics, Transform};
-use crate::rendering::meshrender_component::MeshRenderComponent;
+use crate::rendering::meshrender_component::{CircleRender, MeshRenderComponent, RectRender};
 use crate::rendering::RED;
+use cgmath::num_traits::zero;
+use cgmath::{InnerSpace, MetricSpace, Vector2};
+use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
+
+use imgui::{im_str, Ui};
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault, InspectRenderStruct};
+use imgui_inspect_derive::*;
+use nalgebra::Isometry2;
+use ncollide2d::shape::Cuboid;
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -23,6 +24,36 @@ pub enum CarObjective {
     Simple(NodeID),
     Temporary(NodeID),
     Route(Vec<NodeID>),
+}
+
+impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
+    fn render(data: &[&CarObjective], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {}
+
+    fn render_mut(
+        data: &mut [&mut CarObjective],
+        label: &'static str,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            return false;
+        }
+
+        let (str, vec) = match &data[0] {
+            CarObjective::None => ("None", None),
+            Simple(x) => ("Simple", Some(x)),
+            Temporary(x) => ("Temporary", Some(x)),
+            CarObjective::Route(v) => ("Route", v.get(0)),
+        };
+
+        ui.text(im_str!(
+            "{} {} {}",
+            str,
+            &vec.map_or("None".to_string(), |x| format!("{:?}", x)),
+            label
+        ));
+        false
+    }
 }
 
 impl CarObjective {
@@ -34,9 +65,9 @@ impl CarObjective {
         }
     }
 }
-
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Inspect)]
 pub struct CarComponent {
+    #[inspect(proxy_type = "ImCgVec2")]
     pub direction: Vector2<f32>,
     pub objective: CarObjective,
 }
