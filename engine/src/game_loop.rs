@@ -67,13 +67,20 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             } else {
                 vec![]
             };
+        if self.imgui_wrapper.last_kb_captured {
+            self.world
+                .write_resource::<KeyboardInfo>()
+                .just_pressed
+                .clear();
+        }
 
         self.imgui_wrapper.update_mouse_down((
             ggez::input::mouse::button_pressed(ctx, MouseButton::Left),
             ggez::input::mouse::button_pressed(ctx, MouseButton::Right),
             ggez::input::mouse::button_pressed(ctx, MouseButton::Middle),
         ));
-        // use info from last frame to determined "just pressed"
+
+        // info from last frame to determine "just pressed"
         let last_pressed = self.world.read_resource::<MouseInfo>().buttons.clone();
 
         *self.world.write_resource::<MouseInfo>() = MouseInfo {
@@ -89,6 +96,14 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         self.dispatch.run_now(&self.world);
         self.world.maintain();
 
+        self.cam.easy_camera_movement(
+            ctx,
+            timer::delta(ctx).as_secs_f32(),
+            !self.imgui_wrapper.last_mouse_captured,
+            !self.imgui_wrapper.last_kb_captured,
+        );
+        self.cam.update(ctx);
+
         self.world
             .write_resource::<KeyboardInfo>()
             .just_pressed
@@ -98,10 +113,6 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
-        self.cam
-            .easy_camera_movement(ctx, timer::delta(ctx).as_secs_f32());
-        self.cam.update(ctx);
-
         let mut rc = RenderContext::new(&mut self.cam, ctx, self.font);
         rc.clear();
 
@@ -178,11 +189,15 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         if keycode == KeyCode::G {
             self.grid = !self.grid;
         }
-        //        println!("Key pressed {:?}", keycode);
+        //println!("Key pressed {:?}", keycode);
 
         match keycode {
+            KeyCode::Delete => self.imgui_wrapper.delete(),
             KeyCode::Back => self.imgui_wrapper.backspace(),
             KeyCode::Return => self.imgui_wrapper.enter(),
+            KeyCode::Left => self.imgui_wrapper.left_arrow(),
+            KeyCode::Right => self.imgui_wrapper.right_arrow(),
+            KeyCode::Tab => self.imgui_wrapper.tab(),
             KeyCode::Key0 => self.imgui_wrapper.queue_char('0'),
             KeyCode::Key1 => self.imgui_wrapper.queue_char('1'),
             KeyCode::Key2 => self.imgui_wrapper.queue_char('2'),
@@ -194,9 +209,12 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             KeyCode::Key8 => self.imgui_wrapper.queue_char('8'),
             KeyCode::Key9 => self.imgui_wrapper.queue_char('9'),
             KeyCode::Period => self.imgui_wrapper.queue_char('.'),
+            KeyCode::Minus => self.imgui_wrapper.queue_char('-'),
             _ => (),
         }
-        self.cam.easy_camera_movement_keys(ctx, keycode);
+        if !self.imgui_wrapper.last_kb_captured {
+            self.cam.easy_camera_movement_keys(ctx, keycode);
+        }
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {

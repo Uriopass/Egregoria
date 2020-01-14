@@ -16,6 +16,7 @@ pub struct ImGuiWrapper {
     renderer: Renderer<gfx_core::format::Rgba8, gfx_device_gl::Resources>,
     last_frame: Instant,
     pub last_mouse_captured: bool,
+    pub last_kb_captured: bool,
 }
 
 impl ImGuiWrapper {
@@ -42,19 +43,21 @@ impl ImGuiWrapper {
             }
         };
 
-        // Inputs
+        imgui.io_mut().key_map[imgui::Key::Delete as usize] = 258;
         imgui.io_mut().key_map[imgui::Key::Backspace as usize] = 259;
         imgui.io_mut().key_map[imgui::Key::Enter as usize] = 260;
+        imgui.io_mut().key_map[imgui::Key::LeftArrow as usize] = 261;
+        imgui.io_mut().key_map[imgui::Key::RightArrow as usize] = 262;
+        imgui.io_mut().key_map[imgui::Key::Tab as usize] = 263;
 
-        // Renderer
         let renderer = Renderer::init(&mut imgui, &mut *factory, shaders).unwrap();
 
-        // Create instace
         Self {
             imgui,
             renderer,
             last_frame: Instant::now(),
             last_mouse_captured: false,
+            last_kb_captured: false,
         }
     }
 
@@ -80,6 +83,7 @@ impl ImGuiWrapper {
         let ui: Ui = self.imgui.frame();
         gui.render(&ui, world);
         self.last_mouse_captured = ui.io().want_capture_mouse;
+        self.last_kb_captured = ui.io().want_capture_keyboard;
 
         // Render
         let (factory, _, encoder, _, render_target) = graphics::gfx_objects(ctx);
@@ -94,20 +98,35 @@ impl ImGuiWrapper {
             .unwrap();
 
         self.imgui.io_mut().mouse_wheel = 0.0;
+        self.imgui.io_mut().keys_down[258] = false;
         self.imgui.io_mut().keys_down[259] = false;
         self.imgui.io_mut().keys_down[260] = false;
+        self.imgui.io_mut().keys_down[261] = false;
+        self.imgui.io_mut().keys_down[262] = false;
+        self.imgui.io_mut().keys_down[263] = false;
     }
 
     pub fn queue_char(&mut self, c: char) {
         self.imgui.io_mut().add_input_character(c);
     }
 
+    pub fn delete(&mut self) {
+        self.imgui.io_mut().keys_down[258] = true;
+    }
     pub fn backspace(&mut self) {
         self.imgui.io_mut().keys_down[259] = true;
     }
-
     pub fn enter(&mut self) {
         self.imgui.io_mut().keys_down[260] = true;
+    }
+    pub fn left_arrow(&mut self) {
+        self.imgui.io_mut().keys_down[261] = true;
+    }
+    pub fn right_arrow(&mut self) {
+        self.imgui.io_mut().keys_down[262] = true;
+    }
+    pub fn tab(&mut self) {
+        self.imgui.io_mut().keys_down[263] = true;
     }
 
     pub fn update_wheel(&mut self, value: f32) {

@@ -3,12 +3,13 @@ use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::Vector2;
 use imgui::im_str;
 use imgui::Ui;
-use imgui_inspect::{get_same_or_none, InspectArgsDefault, InspectRenderDefault};
-use imgui_inspect_derive::*;
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+
 use specs::prelude::*;
 
 pub struct ImCgVec2;
 impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
+    // FIXME: Immutable inspecting of vec2
     fn render(data: &[&Vector2<f32>], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
         let xs: Vec<&f32> = data.iter().map(|x| &x.x).collect();
         let ys: Vec<&f32> = data.iter().map(|x| &x.y).collect();
@@ -20,7 +21,7 @@ impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
         data: &mut [&mut Vector2<f32>],
         label: &'static str,
         ui: &Ui,
-        args: &InspectArgsDefault,
+        _: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
             unimplemented!();
