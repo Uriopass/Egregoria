@@ -1,4 +1,4 @@
-use crate::interaction::{Movable, Selectable};
+use crate::interaction::Movable;
 use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::Vector2;
 use imgui::im_str;
@@ -10,7 +10,7 @@ use specs::prelude::*;
 pub struct ImCgVec2;
 impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
     // FIXME: Immutable inspecting of vec2
-    fn render(data: &[&Vector2<f32>], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+    fn render(data: &[&Vector2<f32>], _label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
         let xs: Vec<&f32> = data.iter().map(|x| &x.x).collect();
         let ys: Vec<&f32> = data.iter().map(|x| &x.y).collect();
         <f32 as InspectRenderDefault<f32>>::render(xs.as_slice(), "x", ui, args);
