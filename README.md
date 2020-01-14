@@ -15,6 +15,22 @@ a minimal viable product should be made where features are increasingly added.
 The first [milestone](https://github.com/Uriopass/Scale/projects/1) is to be able to have humans having homes and a workplace,
 using their feet or their cars to go there.  
 
+## Building the project
+
+### Windows/Mac
+I personally use Windows 10 and Mac OS 10.11, and it works by simply compiling the project.
+```bash
+cargo run
+```
+
+### Ubuntu/(Others?)
+There are a few libraries to install which some of my dependencies need:
+
+```
+sudo apt-get install libasound2-dev libudev-dev pkg-config
+cargo build
+```
+
 ## Devblog
 
 I will try to keep a blog of the updates to Scale [here](http://douady.paris/blog/index.html).
