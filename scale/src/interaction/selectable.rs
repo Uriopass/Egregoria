@@ -42,7 +42,7 @@ impl<'a> System<'a> for SelectableSystem {
             let mut min_dist = f32::MAX;
             let mut closest = None;
             for (entity, trans, _) in (&entities, &transforms, &selectables).join() {
-                let dist: f32 = (trans.get_position() - mouse.unprojected).magnitude2();
+                let dist: f32 = (trans.position() - mouse.unprojected).magnitude2();
                 if dist <= min_dist {
                     closest = Some(entity);
                     min_dist = dist;
@@ -62,7 +62,7 @@ impl<'a> System<'a> for SelectableSystem {
         }
 
         if let Some(sel) = selected.0 {
-            let pos = transforms.get(sel).unwrap().get_position();
+            let pos = transforms.get(sel).unwrap().position();
 
             transforms
                 .get_mut(self.aura.unwrap())

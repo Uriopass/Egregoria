@@ -57,7 +57,7 @@ impl<'a> System<'a> for MovableSystem {
                 None => {
                     let mut min_dist = f32::MAX;
                     for (entity, trans, _) in (&entities, &transforms, &movables).join() {
-                        let dist: f32 = (trans.get_position() - mouse.unprojected).magnitude2();
+                        let dist: f32 = (trans.position() - mouse.unprojected).magnitude2();
                         if dist <= min_dist {
                             self.selected = Some(entity);
                             min_dist = dist;
@@ -69,7 +69,7 @@ impl<'a> System<'a> for MovableSystem {
                             kin.velocity = zero();
                             kin.acceleration = zero();
                         }
-                        self.offset = p.get_position() - mouse.unprojected;
+                        self.offset = p.position() - mouse.unprojected;
                     }
                 }
                 Some(e) => {
@@ -86,7 +86,7 @@ impl<'a> System<'a> for MovableSystem {
         } else if let Some(e) = self.selected.take() {
             if let Some(kin) = kinematics.get_mut(e) {
                 let p = transforms.get(e).unwrap();
-                kin.velocity = (mouse.unprojected - (p.get_position() - self.offset)) / delta.0;
+                kin.velocity = (mouse.unprojected - (p.position() - self.offset)) / delta.0;
             }
         }
     }
