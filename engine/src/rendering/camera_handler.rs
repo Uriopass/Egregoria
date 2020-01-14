@@ -61,24 +61,33 @@ impl CameraHandler {
         self.camera.unproject(Vector2::new(haha.x, haha.y))
     }
 
-    pub fn easy_camera_movement(&mut self, ctx: &mut Context, delta: f32) {
+    pub fn easy_camera_movement(
+        &mut self,
+        ctx: &mut Context,
+        delta: f32,
+        mouse_enabled: bool,
+        keyboard_enabled: bool,
+    ) {
         let p = self.unproject_mouse_click(ctx);
-        if input::mouse::button_pressed(ctx, MouseButton::Right) {
+        if mouse_enabled && input::mouse::button_pressed(ctx, MouseButton::Right) {
             self.camera.position.x -= p.x - self.last_pos.x;
             self.camera.position.y -= p.y - self.last_pos.y;
             self.update(ctx);
         }
-        if input::keyboard::is_key_pressed(ctx, KeyCode::Right) {
-            self.camera.position.x += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
-        }
-        if input::keyboard::is_key_pressed(ctx, KeyCode::Left) {
-            self.camera.position.x -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
-        }
-        if input::keyboard::is_key_pressed(ctx, KeyCode::Up) {
-            self.camera.position.y += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
-        }
-        if input::keyboard::is_key_pressed(ctx, KeyCode::Down) {
-            self.camera.position.y -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+
+        if keyboard_enabled {
+            if input::keyboard::is_key_pressed(ctx, KeyCode::Right) {
+                self.camera.position.x += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+            }
+            if input::keyboard::is_key_pressed(ctx, KeyCode::Left) {
+                self.camera.position.x -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+            }
+            if input::keyboard::is_key_pressed(ctx, KeyCode::Up) {
+                self.camera.position.y += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+            }
+            if input::keyboard::is_key_pressed(ctx, KeyCode::Down) {
+                self.camera.position.y -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+            }
         }
 
         self.last_pos = self.unproject_mouse_click(ctx);

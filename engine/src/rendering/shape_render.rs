@@ -51,7 +51,7 @@ impl ShapeRenderer {
     pub fn draw_circle(&mut self, p: Vector2<f32>, r: f32) {
         let pp = Point2::from_vec(p);
 
-        if self.screen_box.contains_within(p, r) {
+        if r > 0.0 && self.screen_box.contains_within(p, r) {
             self.meshbuilder
                 .circle(self.mode, pp, r, 0.3 / self.zoom, self.color);
             self.empty = false;
