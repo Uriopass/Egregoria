@@ -83,7 +83,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
             .write_component::<Transform>()
             .get_mut(self.entity)
         {
-            let mut position = x.get_position();
+            let mut position = x.position();
             <ImCgVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
                 &mut [&mut position],
                 "Pos",

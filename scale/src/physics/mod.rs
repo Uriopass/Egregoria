@@ -21,7 +21,7 @@ where
         .read_component::<Transform>()
         .get(e)
         .unwrap()
-        .get_position();
+        .position();
     let coworld = world.get_mut::<PhysicsWorld>().unwrap();
     let (h, _) = coworld.add(
         nalgebra::Isometry2::new(nalgebra::Vector2::new(pos.x, pos.y), nalgebra::zero()),

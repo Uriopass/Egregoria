@@ -47,7 +47,7 @@ impl Transform {
         Transform { m, rotated: false }
     }
 
-    pub fn get_position(&self) -> Vector2<f32> {
+    pub fn position(&self) -> Vector2<f32> {
         self.m.z.xy()
     }
 
