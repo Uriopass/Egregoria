@@ -6,7 +6,7 @@ use specs::{
 };
 
 use crate::engine_interaction::DeltaTime;
-use crate::interaction::Movable;
+use crate::interaction::{Movable, Selectable};
 use crate::physics::add_shape;
 use crate::physics::physics_components::{Drag, Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRenderComponent};
@@ -81,6 +81,7 @@ pub fn setup(world: &mut World) {
             .with(Human {
                 objective: [SCALE * 5.0 - x, y].into(),
             })
+            .with(Selectable)
             .with(Movable);
 
         let e = eb.build();
