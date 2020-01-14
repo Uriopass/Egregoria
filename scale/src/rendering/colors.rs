@@ -6,6 +6,17 @@ pub struct Color {
     pub a: f32,
 }
 
+impl Color {
+    pub fn gray(level: f32) -> Self {
+        Self {
+            r: level,
+            g: level,
+            b: level,
+            a: 1.0,
+        }
+    }
+}
+
 pub const WHITE: Color = Color {
     r: 1.0,
     g: 1.0,
