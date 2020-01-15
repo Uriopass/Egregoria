@@ -12,7 +12,7 @@ cgmath = {version = "0.17", features = ["mint", "swizzle"]}
 specs = {version = "0.15", features = ["specs-derive", "parallel"]}
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
-ncollide2d = "0.20"
+ncollide2d = "0.20.1"
 nalgebra = "0.18"
 imgui = "0.2.1"
 imgui-gfx-renderer = "0.2"
