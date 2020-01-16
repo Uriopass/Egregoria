@@ -1,6 +1,11 @@
+use crate::gui::{ImCgVec2, ImEntity, ImVec};
 use crate::rendering::colors::*;
 use cgmath::num_traits::zero;
 use cgmath::Vector2;
+use imgui::Ui;
+use imgui_inspect::InspectArgsDefault;
+use imgui_inspect::InspectRenderDefault;
+use imgui_inspect_derive::*;
 use specs::{Component, Entity, VecStorage};
 
 pub enum MeshRenderEnum {
@@ -8,6 +13,59 @@ pub enum MeshRenderEnum {
     Rect(RectRender),
     LineTo(LineToRender),
     Line(LineRender),
+}
+
+impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
+    fn render(data: &[&MeshRenderEnum], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+        unimplemented!()
+    }
+
+    fn render_mut(
+        data: &mut [&mut MeshRenderEnum],
+        label: &'static str,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            return false;
+        }
+        let mre = &mut data[0];
+
+        match mre {
+            MeshRenderEnum::Circle(x) => {
+                <CircleRender as InspectRenderDefault<CircleRender>>::render_mut(
+                    &mut [x],
+                    label,
+                    ui,
+                    args,
+                )
+            }
+            MeshRenderEnum::Rect(x) => {
+                <RectRender as InspectRenderDefault<RectRender>>::render_mut(
+                    &mut [x],
+                    label,
+                    ui,
+                    args,
+                )
+            }
+            MeshRenderEnum::LineTo(x) => {
+                <LineToRender as InspectRenderDefault<LineToRender>>::render_mut(
+                    &mut [x],
+                    label,
+                    ui,
+                    args,
+                )
+            }
+            MeshRenderEnum::Line(x) => {
+                <LineRender as InspectRenderDefault<LineRender>>::render_mut(
+                    &mut [x],
+                    label,
+                    ui,
+                    args,
+                )
+            }
+        }
+    }
 }
 
 impl From<CircleRender> for MeshRenderEnum {
@@ -38,6 +96,42 @@ impl From<LineRender> for MeshRenderEnum {
 #[storage(VecStorage)]
 pub struct MeshRenderComponent {
     pub orders: Vec<MeshRenderEnum>,
+}
+
+impl InspectRenderDefault<MeshRenderComponent> for MeshRenderComponent {
+    fn render(
+        data: &[&MeshRenderComponent],
+        label: &'static str,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) {
+        ui.indent();
+        let mapped: Vec<&Vec<MeshRenderEnum>> = data.iter().map(|x| &x.orders).collect();
+        <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
+            &mapped, label, ui, args,
+        );
+        ui.unindent();
+    }
+
+    fn render_mut(
+        data: &mut [&mut MeshRenderComponent],
+        label: &'static str,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        ui.indent();
+        let mut mapped: Vec<&mut Vec<MeshRenderEnum>> =
+            data.into_iter().map(|x| &mut x.orders).collect();
+        let changed =
+            <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
+                &mut mapped,
+                label,
+                ui,
+                args,
+            );
+        ui.unindent();
+        changed
+    }
 }
 
 impl<T: Into<MeshRenderEnum>> From<T> for MeshRenderComponent {
@@ -81,8 +175,9 @@ impl MeshRenderComponent {
         }
     }
 }
-
+#[derive(Inspect)]
 pub struct CircleRender {
+    #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,
     pub radius: f32,
     pub color: Color,
@@ -100,6 +195,7 @@ impl Default for CircleRender {
     }
 }
 
+#[derive(Inspect)]
 pub struct RectRender {
     pub width: f32,
     pub height: f32,
@@ -118,12 +214,16 @@ impl Default for RectRender {
     }
 }
 
+#[derive(Inspect)]
 pub struct LineToRender {
+    #[inspect(proxy_type = "ImEntity")]
     pub to: Entity,
     pub color: Color,
 }
 
+#[derive(Inspect)]
 pub struct LineRender {
+    #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,
     pub color: Color,
 }
