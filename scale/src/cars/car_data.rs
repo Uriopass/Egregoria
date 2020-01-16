@@ -1,7 +1,7 @@
 use crate::cars::car_data::CarObjective::{Simple, Temporary};
 use crate::cars::car_graph::RoadGraph;
 use crate::graphs::graph::NodeID;
-use crate::gui::inspect::ImCgVec2;
+use crate::gui::ImCgVec2;
 use crate::interaction::{Movable, Selectable};
 use crate::physics::add_shape;
 use crate::physics::physics_components::{Drag, Kinematics, Transform};

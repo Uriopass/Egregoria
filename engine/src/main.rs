@@ -20,7 +20,7 @@ fn main() {
     if cfg!(target_os = "windows") {
         c.window_mode = c.window_mode.dimensions(1600.0, 900.0);
     } else {
-        c.window_mode = c.window_mode.dimensions(800.0, 600.0);
+        c.window_mode = c.window_mode.dimensions(1200.0, 800.0);
     }
     c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Four);
 

@@ -124,7 +124,7 @@ impl<'a> specs::System<'a> for KinematicsApply {
         let delta = delta.0;
 
         for (kin, drag) in (&mut kinematics, &drag).join() {
-            let force = kin.velocity.magnitude2() * drag.0 * (RHO / 2.0) / kin.mass;
+            let force = kin.velocity.magnitude2() * drag.coeff * (RHO / 2.0) / kin.mass;
             if force == 0.0 {
                 continue;
             }

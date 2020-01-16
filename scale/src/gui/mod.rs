@@ -1,4 +1,4 @@
-pub mod inspect;
+mod inspect;
 
 pub use inspect::*;
 

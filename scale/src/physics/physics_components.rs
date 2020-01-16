@@ -1,4 +1,4 @@
-use crate::gui::inspect::ImCgVec2;
+use crate::gui::ImCgVec2;
 use cgmath::num_traits::zero;
 use cgmath::{Matrix3, SquareMatrix, Vector2};
 use imgui_inspect_derive::*;
@@ -9,20 +9,24 @@ use specs::{Component, VecStorage};
 #[storage(VecStorage)]
 pub struct Collider(pub CollisionObjectSlabHandle);
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Inspect)]
 #[storage(VecStorage)]
-pub struct Drag(pub f32);
+pub struct Drag {
+    pub coeff: f32,
+}
 
-const DRAG_COEFF: f32 = 0.1;
+const DEFAULT_DRAG_COEFF: f32 = 0.1;
 
 impl Drag {
     pub fn new(coeff: f32) -> Self {
-        Drag(coeff)
+        Drag { coeff }
     }
 }
 impl Default for Drag {
     fn default() -> Self {
-        Drag(DRAG_COEFF)
+        Drag {
+            coeff: DEFAULT_DRAG_COEFF,
+        }
     }
 }
 
