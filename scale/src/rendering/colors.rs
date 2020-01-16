@@ -1,9 +1,40 @@
+use imgui::{im_str, ColorEdit, EditableColor, ImColor, Ui};
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+
 #[derive(Clone, Copy)]
 pub struct Color {
     pub r: f32,
     pub g: f32,
     pub b: f32,
     pub a: f32,
+}
+
+impl InspectRenderDefault<Color> for Color {
+    fn render(data: &[&Color], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+        unimplemented!()
+    }
+
+    fn render_mut(
+        data: &mut [&mut Color],
+        label: &'static str,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+
+        let c = &mut data[0];
+        let mut color_arr = [c.r, c.g, c.b, c.a];
+        if ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui) {
+            c.r = color_arr[0];
+            c.g = color_arr[1];
+            c.b = color_arr[2];
+            c.a = color_arr[3];
+            return true;
+        }
+        return false;
+    }
 }
 
 impl Color {

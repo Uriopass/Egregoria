@@ -169,11 +169,13 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
     }
 
     fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: f32, y: f32) {
-        if y > 0.0 {
-            self.cam.easy_camera_movement_keys(ctx, KeyCode::Add);
-        }
-        if y < 0.0 {
-            self.cam.easy_camera_movement_keys(ctx, KeyCode::Subtract);
+        if !self.imgui_wrapper.last_mouse_captured {
+            if y > 0.0 {
+                self.cam.easy_camera_movement_keys(ctx, KeyCode::Add);
+            }
+            if y < 0.0 {
+                self.cam.easy_camera_movement_keys(ctx, KeyCode::Subtract);
+            }
         }
         self.imgui_wrapper.update_wheel(y);
     }
