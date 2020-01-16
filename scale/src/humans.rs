@@ -9,7 +9,7 @@ use crate::engine_interaction::DeltaTime;
 use crate::interaction::{Movable, Selectable};
 use crate::physics::add_shape;
 use crate::physics::physics_components::{Drag, Kinematics, Transform};
-use crate::rendering::meshrender_component::{CircleRender, MeshRenderComponent};
+use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use cgmath::num_traits::zero;
 use ncollide2d::shape::Ball;
 use specs::prelude::ParallelIterator;
@@ -71,7 +71,7 @@ pub fn setup(world: &mut World) {
 
         let eb = world
             .create_entity()
-            .with(MeshRenderComponent::from(CircleRender {
+            .with(MeshRender::from(CircleRender {
                 radius: size,
                 ..Default::default()
             }))

@@ -1,7 +1,7 @@
 use crate::empty_struct_inspect_impl;
 use crate::engine_interaction::{MouseButton, MouseInfo};
 use crate::physics::physics_components::Transform;
-use crate::rendering::meshrender_component::{CircleRender, MeshRenderComponent, MeshRenderEnum};
+use crate::rendering::meshrender_component::{CircleRender, MeshRender, MeshRenderEnum};
 use crate::rendering::Color;
 use cgmath::InnerSpace;
 use imgui::Ui;
@@ -31,7 +31,7 @@ impl<'a> System<'a> for SelectableSystem {
         Write<'a, SelectedEntity>,
         WriteStorage<'a, Transform>,
         ReadStorage<'a, Selectable>,
-        WriteStorage<'a, MeshRenderComponent>,
+        WriteStorage<'a, MeshRender>,
     );
 
     fn run(
@@ -77,7 +77,7 @@ impl<'a> System<'a> for SelectableSystem {
             world
                 .create_entity()
                 .with(Transform::zero())
-                .with(MeshRenderComponent::from(CircleRender {
+                .with(MeshRender::from(CircleRender {
                     offset: [0.0, 0.0].into(),
                     filled: false,
                     color: Color::gray(0.7),

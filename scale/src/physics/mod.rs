@@ -1,6 +1,6 @@
 use crate::interaction::Movable;
 use crate::physics::physics_components::{Collider, Transform};
-use crate::rendering::meshrender_component::{LineRender, MeshRenderComponent};
+use crate::rendering::meshrender_component::{LineRender, MeshRender};
 use crate::rendering::GREEN;
 use cgmath::Vector2;
 use ncollide2d::pipeline::{CollisionGroups, GeometricQueryType};
@@ -41,7 +41,7 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, offset: Vector
     let e = world
         .create_entity()
         .with(Transform::new(start))
-        .with(MeshRenderComponent::simple(LineRender {
+        .with(MeshRender::simple(LineRender {
             offset,
             color: GREEN,
         }))

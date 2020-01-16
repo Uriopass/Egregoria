@@ -16,7 +16,12 @@ pub enum MeshRenderEnum {
 }
 
 impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
-    fn render(data: &[&MeshRenderEnum], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+    fn render(
+        _data: &[&MeshRenderEnum],
+        _label: &'static str,
+        _ui: &Ui,
+        _args: &InspectArgsDefault,
+    ) {
         unimplemented!()
     }
 
@@ -94,17 +99,12 @@ impl From<LineRender> for MeshRenderEnum {
 
 #[derive(Component)]
 #[storage(VecStorage)]
-pub struct MeshRenderComponent {
+pub struct MeshRender {
     pub orders: Vec<MeshRenderEnum>,
 }
 
-impl InspectRenderDefault<MeshRenderComponent> for MeshRenderComponent {
-    fn render(
-        data: &[&MeshRenderComponent],
-        label: &'static str,
-        ui: &Ui,
-        args: &InspectArgsDefault,
-    ) {
+impl InspectRenderDefault<MeshRender> for MeshRender {
+    fn render(data: &[&MeshRender], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
         ui.indent();
         let mapped: Vec<&Vec<MeshRenderEnum>> = data.iter().map(|x| &x.orders).collect();
         <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
@@ -114,7 +114,7 @@ impl InspectRenderDefault<MeshRenderComponent> for MeshRenderComponent {
     }
 
     fn render_mut(
-        data: &mut [&mut MeshRenderComponent],
+        data: &mut [&mut MeshRender],
         label: &'static str,
         ui: &Ui,
         args: &InspectArgsDefault,
@@ -134,34 +134,34 @@ impl InspectRenderDefault<MeshRenderComponent> for MeshRenderComponent {
     }
 }
 
-impl<T: Into<MeshRenderEnum>> From<T> for MeshRenderComponent {
+impl<T: Into<MeshRenderEnum>> From<T> for MeshRender {
     fn from(x: T) -> Self {
-        MeshRenderComponent::simple(x)
+        MeshRender::simple(x)
     }
 }
 
-impl<T: Into<MeshRenderEnum>, U: Into<MeshRenderEnum>> From<(T, U)> for MeshRenderComponent {
+impl<T: Into<MeshRenderEnum>, U: Into<MeshRenderEnum>> From<(T, U)> for MeshRender {
     fn from((x, y): (T, U)) -> Self {
-        let mut m = MeshRenderComponent::simple(x);
+        let mut m = MeshRender::simple(x);
         m.add(y);
         m
     }
 }
 
 impl<T: Into<MeshRenderEnum>, U: Into<MeshRenderEnum>, V: Into<MeshRenderEnum>> From<(T, U, V)>
-    for MeshRenderComponent
+    for MeshRender
 {
     fn from((x, y, z): (T, U, V)) -> Self {
-        let mut m = MeshRenderComponent::simple(x);
+        let mut m = MeshRender::simple(x);
         m.add(y).add(z);
         m
     }
 }
 
 #[allow(dead_code)]
-impl MeshRenderComponent {
+impl MeshRender {
     pub fn empty() -> Self {
-        MeshRenderComponent { orders: vec![] }
+        MeshRender { orders: vec![] }
     }
 
     pub fn add<T: Into<MeshRenderEnum>>(&mut self, x: T) -> &mut Self {
@@ -170,7 +170,7 @@ impl MeshRenderComponent {
     }
 
     pub fn simple<T: Into<MeshRenderEnum>>(x: T) -> Self {
-        MeshRenderComponent {
+        MeshRender {
             orders: vec![x.into()],
         }
     }

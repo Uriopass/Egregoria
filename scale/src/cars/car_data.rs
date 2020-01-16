@@ -5,14 +5,14 @@ use crate::gui::ImCgVec2;
 use crate::interaction::{Movable, Selectable};
 use crate::physics::add_shape;
 use crate::physics::physics_components::{Drag, Kinematics, Transform};
-use crate::rendering::meshrender_component::{CircleRender, MeshRenderComponent, RectRender};
+use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::RED;
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, MetricSpace, Vector2};
 use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
 use imgui::{im_str, Ui};
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault, InspectRenderStruct};
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
 use nalgebra::Isometry2;
 use ncollide2d::shape::Cuboid;
@@ -27,13 +27,14 @@ pub enum CarObjective {
 }
 
 impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
-    fn render(data: &[&CarObjective], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {}
+    fn render(_data: &[&CarObjective], _label: &'static str, _ui: &Ui, _args: &InspectArgsDefault) {
+    }
 
     fn render_mut(
         data: &mut [&mut CarObjective],
         label: &'static str,
         ui: &Ui,
-        args: &InspectArgsDefault,
+        _args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
             return false;
@@ -150,7 +151,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>) {
 
     let e = world
         .create_entity()
-        .with(MeshRenderComponent::from((
+        .with(MeshRender::from((
             RectRender {
                 width: car_width,
                 height: car_height,
