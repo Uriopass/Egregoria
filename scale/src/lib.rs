@@ -11,7 +11,7 @@ use crate::interaction::{MovableSystem, SelectableSystem, SelectedEntity};
 use crate::physics::physics_components::Collider;
 use crate::physics::physics_system::{KinematicsApply, PhysicsUpdate};
 use crate::physics::PhysicsWorld;
-use crate::rendering::meshrender_component::MeshRenderComponent;
+use crate::rendering::meshrender_component::MeshRender;
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 
 mod cars;
@@ -48,7 +48,7 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.insert(TestGui);
     world.insert(SelectedEntity::default());
 
-    world.register::<MeshRenderComponent>();
+    world.register::<MeshRender>();
     world.register::<Collider>();
 
     dispatcher.setup(world);

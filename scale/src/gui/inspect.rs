@@ -5,8 +5,8 @@ use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
-use crate::cars::car_data::{CarComponent, CarObjective};
-use crate::rendering::meshrender_component::MeshRenderComponent;
+use crate::cars::car_data::CarComponent;
+use crate::rendering::meshrender_component::MeshRender;
 use specs::prelude::*;
 use std::marker::PhantomData;
 
@@ -43,7 +43,7 @@ impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
 
 pub struct ImEntity;
 impl InspectRenderDefault<Entity> for ImEntity {
-    fn render(data: &[&Entity], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+    fn render(data: &[&Entity], label: &'static str, ui: &Ui, _args: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -68,7 +68,7 @@ pub struct ImVec<T> {
     _phantom: PhantomData<T>,
 }
 impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for ImVec<T> {
-    fn render(data: &[&Vec<T>], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+    fn render(_data: &[&Vec<T>], _label: &'static str, _ui: &Ui, _args: &InspectArgsDefault) {
         unimplemented!()
     }
 
@@ -152,7 +152,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         }
 
         self.inspect_component::<CarComponent>();
-        self.inspect_component::<MeshRenderComponent>();
+        self.inspect_component::<MeshRender>();
         self.inspect_component::<Kinematics>();
         self.inspect_component::<Drag>();
         self.inspect_component::<Movable>();

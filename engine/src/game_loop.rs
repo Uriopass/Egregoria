@@ -11,7 +11,7 @@ use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::engine_interaction;
 use scale::engine_interaction::{DeltaTime, KeyboardInfo, MouseInfo, Transform};
 use scale::gui::TestGui;
-use scale::rendering::meshrender_component::MeshRenderComponent;
+use scale::rendering::meshrender_component::MeshRender;
 use specs::{Dispatcher, Join, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
@@ -130,7 +130,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         // Render entities
         {
             let transforms = self.world.read_component::<Transform>();
-            let mesh_render = self.world.read_component::<MeshRenderComponent>();
+            let mesh_render = self.world.read_component::<MeshRender>();
 
             if self.render_enabled {
                 for (trans, mr) in (&transforms, &mesh_render).join() {

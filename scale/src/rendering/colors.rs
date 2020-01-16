@@ -1,4 +1,4 @@
-use imgui::{im_str, ColorEdit, EditableColor, ImColor, Ui};
+use imgui::{im_str, ColorEdit, EditableColor, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
 #[derive(Clone, Copy)]
@@ -10,7 +10,7 @@ pub struct Color {
 }
 
 impl InspectRenderDefault<Color> for Color {
-    fn render(data: &[&Color], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+    fn render(_data: &[&Color], _label: &'static str, _ui: &Ui, _args: &InspectArgsDefault) {
         unimplemented!()
     }
 
@@ -18,7 +18,7 @@ impl InspectRenderDefault<Color> for Color {
         data: &mut [&mut Color],
         label: &'static str,
         ui: &Ui,
-        args: &InspectArgsDefault,
+        _args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
             unimplemented!();

@@ -5,7 +5,7 @@ use specs::{Builder, Entity, Read, ReadStorage, System, SystemData, World, World
 
 use crate::interaction::{Movable, MovedEvent};
 use crate::physics::physics_components::Transform;
-use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRenderComponent};
+use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
 use crate::rendering::{GREEN, WHITE};
 use cgmath::MetricSpace;
 use specs::shred::PanicHandler;
@@ -88,12 +88,12 @@ impl RoadGraph {
             );
         }
 
-        let mut meshrenders = world.write_component::<MeshRenderComponent>();
+        let mut meshrenders = world.write_component::<MeshRender>();
 
         for n in g.ids() {
             let e = e_map[n];
 
-            let mut meshb = MeshRenderComponent::from(CircleRender {
+            let mut meshb = MeshRender::from(CircleRender {
                 radius: 1.0,
                 color: GREEN,
                 filled: true,
