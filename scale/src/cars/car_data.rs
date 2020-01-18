@@ -18,7 +18,7 @@ use nalgebra::Isometry2;
 use ncollide2d::shape::Cuboid;
 
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CarObjective {
     None,
     Simple(NodeID),
@@ -27,32 +27,37 @@ pub enum CarObjective {
 }
 
 impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
-    fn render(_data: &[&CarObjective], _label: &'static str, _ui: &Ui, _args: &InspectArgsDefault) {
+    fn render(_: &[&CarObjective], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
     }
 
     fn render_mut(
         data: &mut [&mut CarObjective],
         label: &'static str,
+        world: &mut World,
         ui: &Ui,
-        _args: &InspectArgsDefault,
+        args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
             return false;
         }
 
-        let (str, vec) = match &data[0] {
-            CarObjective::None => ("None", None),
-            Simple(x) => ("Simple", Some(x)),
-            Temporary(x) => ("Temporary", Some(x)),
-            CarObjective::Route(v) => ("Route", v.get(0)),
+        let pos: Option<Vector2<f32>>;
+        {
+            let rg = world.read_resource::<RoadGraph>();
+            pos = data[0].to_pos(&*rg);
+        }
+        match pos {
+            Some(x) => {
+                <ImCgVec2 as InspectRenderDefault<Vector2<f32>>>::render(
+                    &[&x],
+                    label,
+                    world,
+                    ui,
+                    args,
+                );
+            }
+            None => ui.text(im_str!("No objective {}", label)),
         };
-
-        ui.text(im_str!(
-            "{} {} {}",
-            str,
-            &vec.map_or("None".to_string(), |x| format!("{:?}", x)),
-            label
-        ));
         false
     }
 }
@@ -66,7 +71,7 @@ impl CarObjective {
         }
     }
 }
-#[derive(Component, Debug, Inspect)]
+#[derive(Component, Debug, Inspect, Clone)]
 pub struct CarComponent {
     #[inspect(proxy_type = "ImCgVec2")]
     pub direction: Vector2<f32>,

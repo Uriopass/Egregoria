@@ -1,20 +1,17 @@
-use crate::empty_struct_inspect_impl;
 use crate::engine_interaction::{DeltaTime, MouseButton, MouseInfo};
 use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2, Zero};
-use imgui::Ui;
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use imgui_inspect_derive::*;
 use specs::prelude::*;
 use specs::shrev::EventChannel;
 use specs::Component;
 use std::f32;
 use std::ops::Deref;
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Inspect, Clone)]
 #[storage(NullStorage)]
 pub struct Movable;
-empty_struct_inspect_impl!(Movable);
 
 #[derive(Debug)]
 pub struct MovedEvent {

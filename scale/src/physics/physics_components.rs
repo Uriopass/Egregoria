@@ -9,7 +9,7 @@ use specs::{Component, VecStorage};
 #[storage(VecStorage)]
 pub struct Collider(pub CollisionObjectSlabHandle);
 
-#[derive(Component, Debug, Inspect)]
+#[derive(Component, Debug, Inspect, Clone)]
 #[storage(VecStorage)]
 pub struct Drag {
     pub coeff: f32,
@@ -104,7 +104,7 @@ impl Transform {
     }
 }
 
-#[derive(Component, Debug, Inspect)]
+#[derive(Component, Debug, Inspect, Clone)]
 #[storage(VecStorage)]
 pub struct Kinematics {
     #[inspect(proxy_type = "ImCgVec2")]
