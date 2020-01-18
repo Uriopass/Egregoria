@@ -17,7 +17,7 @@ pub struct PhysicsUpdate {
 impl Default for PhysicsUpdate {
     fn default() -> Self {
         PhysicsUpdate {
-            dynamic_collisions_enabled: true,
+            dynamic_collisions_enabled: false,
         }
     }
 }

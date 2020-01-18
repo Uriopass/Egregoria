@@ -44,7 +44,7 @@ impl ShapeRenderer {
         if filled {
             self.mode = DrawMode::fill()
         } else {
-            self.mode = DrawMode::stroke(0.1);
+            self.mode = DrawMode::stroke(0.2);
         }
     }
 
