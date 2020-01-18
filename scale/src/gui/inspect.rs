@@ -12,17 +12,26 @@ use std::marker::PhantomData;
 
 pub struct ImCgVec2;
 impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
-    // FIXME: Immutable inspecting of vec2
-    fn render(data: &[&Vector2<f32>], _label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
-        let xs: Vec<&f32> = data.iter().map(|x| &x.x).collect();
-        let ys: Vec<&f32> = data.iter().map(|x| &x.y).collect();
-        <f32 as InspectRenderDefault<f32>>::render(xs.as_slice(), "x", ui, args);
-        <f32 as InspectRenderDefault<f32>>::render(ys.as_slice(), "y", ui, args);
+    fn render(
+        data: &[&Vector2<f32>],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        _: &InspectArgsDefault,
+    ) {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = data[0];
+        imgui::InputFloat2::new(ui, &im_str!("{}", label), &mut [x.x, x.y])
+            .always_insert_mode(false)
+            .build();
     }
 
     fn render_mut(
         data: &mut [&mut Vector2<f32>],
         label: &'static str,
+        _: &mut World,
         ui: &Ui,
         _: &InspectArgsDefault,
     ) -> bool {
@@ -43,7 +52,13 @@ impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
 
 pub struct ImEntity;
 impl InspectRenderDefault<Entity> for ImEntity {
-    fn render(data: &[&Entity], label: &'static str, ui: &Ui, _args: &InspectArgsDefault) {
+    fn render(
+        data: &[&Entity],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        _args: &InspectArgsDefault,
+    ) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -53,6 +68,7 @@ impl InspectRenderDefault<Entity> for ImEntity {
     fn render_mut(
         data: &mut [&mut Entity],
         label: &'static str,
+        _: &mut World,
         ui: &Ui,
         _: &InspectArgsDefault,
     ) -> bool {
@@ -68,13 +84,20 @@ pub struct ImVec<T> {
     _phantom: PhantomData<T>,
 }
 impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for ImVec<T> {
-    fn render(_data: &[&Vec<T>], _label: &'static str, _ui: &Ui, _args: &InspectArgsDefault) {
+    fn render(
+        _data: &[&Vec<T>],
+        _label: &'static str,
+        _: &mut World,
+        _ui: &Ui,
+        _args: &InspectArgsDefault,
+    ) {
         unimplemented!()
     }
 
     fn render_mut(
         data: &mut [&mut Vec<T>],
         label: &str,
+        w: &mut World,
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
@@ -85,36 +108,17 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for ImVec<T> {
         let v = &mut data[0];
 
         if ui.collapsing_header(&im_str!("{}", label)).build() {
+            ui.indent();
             for (i, x) in v.into_iter().enumerate() {
                 let id = ui.push_id(i as i32);
-                <T as InspectRenderDefault<T>>::render_mut(&mut [x], "", ui, args);
+                <T as InspectRenderDefault<T>>::render_mut(&mut [x], "", w, ui, args);
                 id.pop(ui);
             }
+            ui.unindent();
         }
 
         false
     }
-}
-
-#[macro_export]
-macro_rules! empty_struct_inspect_impl {
-    ($x : ty) => {
-        impl InspectRenderDefault<$x> for $x {
-            fn render(_: &[&$x], _: &'static str, ui: &Ui, _: &InspectArgsDefault) {
-                ui.text(std::stringify!($x))
-            }
-
-            fn render_mut(
-                _: &mut [&mut $x],
-                _: &'static str,
-                ui: &Ui,
-                _: &InspectArgsDefault,
-            ) -> bool {
-                ui.text(std::stringify!($x));
-                false
-            }
-        }
-    };
 }
 
 pub struct InspectRenderer<'a, 'b> {
@@ -123,33 +127,51 @@ pub struct InspectRenderer<'a, 'b> {
     pub ui: &'b Ui<'b>,
 }
 
+fn clone_and_modify<T: Component + Clone>(
+    world: &mut World,
+    entity: Entity,
+    f: impl FnOnce(&mut World, T) -> T,
+) {
+    let c = world
+        .write_component::<T>()
+        .get_mut(entity)
+        .map(|x: &mut T| x.clone());
+
+    c.map(|x: T| {
+        let m = f(world, x);
+        *world.write_component::<T>().get_mut(entity).unwrap() = m;
+    });
+}
+
 impl<'a, 'b> InspectRenderer<'a, 'b> {
-    fn inspect_component<T: Component + InspectRenderDefault<T>>(&self) {
-        if let Some(x) = self.world.write_component::<T>().get_mut(self.entity) {
+    fn inspect_component<T: Component + Clone + InspectRenderDefault<T>>(&mut self) {
+        let ui = self.ui;
+        clone_and_modify(self.world, self.entity, |world, mut x| {
             <T as InspectRenderDefault<T>>::render_mut(
-                &mut [x],
+                &mut [&mut x],
                 std::any::type_name::<T>().split("::").last().unwrap_or(""),
-                self.ui,
+                world,
+                ui,
                 &InspectArgsDefault::default(),
             );
-        }
+            x
+        });
     }
 
-    pub fn render(self) {
-        if let Some(x) = self
-            .world
-            .write_component::<Transform>()
-            .get_mut(self.entity)
-        {
+    pub fn render(mut self) {
+        let ui = self.ui;
+        clone_and_modify(self.world, self.entity, |world, mut x: Transform| {
             let mut position = x.position();
             <ImCgVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
                 &mut [&mut position],
                 "Pos",
-                self.ui,
+                world,
+                ui,
                 &InspectArgsDefault::default(),
             );
             x.set_position(position);
-        }
+            x
+        });
 
         self.inspect_component::<CarComponent>();
         self.inspect_component::<MeshRender>();

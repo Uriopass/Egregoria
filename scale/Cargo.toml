@@ -12,5 +12,5 @@ ordered-float = "1.0.2"
 ncollide2d = "0.20.1"
 nalgebra = "0.18"
 imgui = "0.2.1"
-imgui-inspect = "0.3.3"
-imgui-inspect-derive = "0.3.0"
+imgui-inspect = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
+imgui-inspect-derive = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
