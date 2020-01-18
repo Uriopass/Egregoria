@@ -6,8 +6,9 @@ use imgui::Ui;
 use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
-use specs::{Component, Entity, VecStorage};
+use specs::{Component, Entity, VecStorage, World};
 
+#[derive(Clone)]
 pub enum MeshRenderEnum {
     Circle(CircleRender),
     Rect(RectRender),
@@ -17,10 +18,11 @@ pub enum MeshRenderEnum {
 
 impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
     fn render(
-        _data: &[&MeshRenderEnum],
-        _label: &'static str,
-        _ui: &Ui,
-        _args: &InspectArgsDefault,
+        _: &[&MeshRenderEnum],
+        _: &'static str,
+        _: &mut World,
+        _: &Ui,
+        _: &InspectArgsDefault,
     ) {
         unimplemented!()
     }
@@ -28,6 +30,7 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
     fn render_mut(
         data: &mut [&mut MeshRenderEnum],
         label: &'static str,
+        world: &mut World,
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
@@ -41,6 +44,7 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
                 <CircleRender as InspectRenderDefault<CircleRender>>::render_mut(
                     &mut [x],
                     label,
+                    world,
                     ui,
                     args,
                 )
@@ -49,6 +53,7 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
                 <RectRender as InspectRenderDefault<RectRender>>::render_mut(
                     &mut [x],
                     label,
+                    world,
                     ui,
                     args,
                 )
@@ -57,6 +62,7 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
                 <LineToRender as InspectRenderDefault<LineToRender>>::render_mut(
                     &mut [x],
                     label,
+                    world,
                     ui,
                     args,
                 )
@@ -65,6 +71,7 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
                 <LineRender as InspectRenderDefault<LineRender>>::render_mut(
                     &mut [x],
                     label,
+                    world,
                     ui,
                     args,
                 )
@@ -97,39 +104,43 @@ impl From<LineRender> for MeshRenderEnum {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 #[storage(VecStorage)]
 pub struct MeshRender {
     pub orders: Vec<MeshRenderEnum>,
 }
 
 impl InspectRenderDefault<MeshRender> for MeshRender {
-    fn render(data: &[&MeshRender], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
-        ui.indent();
+    fn render(
+        data: &[&MeshRender],
+        label: &'static str,
+        world: &mut World,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) {
         let mapped: Vec<&Vec<MeshRenderEnum>> = data.iter().map(|x| &x.orders).collect();
         <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
-            &mapped, label, ui, args,
+            &mapped, label, world, ui, args,
         );
-        ui.unindent();
     }
 
     fn render_mut(
         data: &mut [&mut MeshRender],
         label: &'static str,
+        world: &mut World,
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
-        ui.indent();
         let mut mapped: Vec<&mut Vec<MeshRenderEnum>> =
             data.into_iter().map(|x| &mut x.orders).collect();
         let changed =
             <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
                 &mut mapped,
                 label,
+                world,
                 ui,
                 args,
             );
-        ui.unindent();
         changed
     }
 }
@@ -175,7 +186,7 @@ impl MeshRender {
         }
     }
 }
-#[derive(Inspect)]
+#[derive(Inspect, Clone)]
 pub struct CircleRender {
     #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,
@@ -195,7 +206,7 @@ impl Default for CircleRender {
     }
 }
 
-#[derive(Inspect)]
+#[derive(Inspect, Clone)]
 pub struct RectRender {
     pub width: f32,
     pub height: f32,
@@ -214,14 +225,14 @@ impl Default for RectRender {
     }
 }
 
-#[derive(Inspect)]
+#[derive(Inspect, Clone)]
 pub struct LineToRender {
     #[inspect(proxy_type = "ImEntity")]
     pub to: Entity,
     pub color: Color,
 }
 
-#[derive(Inspect)]
+#[derive(Inspect, Clone)]
 pub struct LineRender {
     #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,

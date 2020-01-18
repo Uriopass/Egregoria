@@ -1,20 +1,17 @@
-use crate::empty_struct_inspect_impl;
 use crate::engine_interaction::{MouseButton, MouseInfo};
 use crate::physics::physics_components::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, MeshRenderEnum};
 use crate::rendering::Color;
 use cgmath::InnerSpace;
-use imgui::Ui;
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use imgui_inspect_derive::*;
 use specs::prelude::*;
 use specs::shred::DynamicSystemData;
 use specs::Component;
 use std::f32;
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Inspect)]
 #[storage(NullStorage)]
 pub struct Selectable;
-empty_struct_inspect_impl!(Selectable);
 
 #[derive(Default, Clone, Copy)]
 pub struct SelectedEntity(pub Option<Entity>);
@@ -49,7 +46,6 @@ impl<'a> System<'a> for SelectableSystem {
                 }
             }
             *selected = SelectedEntity(closest);
-            println!("Selected new entity");
 
             meshrenders
                 .get_mut(self.aura.unwrap())
