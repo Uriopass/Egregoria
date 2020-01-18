@@ -1,5 +1,5 @@
 use crate::cars::car_data::CarObjective::{Simple, Temporary};
-use crate::cars::car_graph::RoadGraph;
+use crate::cars::roads::road_graph::RoadGraph;
 use crate::graphs::graph::NodeID;
 use crate::gui::ImCgVec2;
 use crate::interaction::{Movable, Selectable};
@@ -66,8 +66,10 @@ impl CarObjective {
     pub fn to_pos(&self, rg: &RoadGraph) -> Option<Vector2<f32>> {
         match self {
             CarObjective::None => None,
-            Simple(x) | Temporary(x) => rg.0.nodes.get(x).map(|x| x.pos),
-            CarObjective::Route(l) => l.get(0).and_then(|x| rg.0.nodes.get(x).map(|x| x.pos)),
+            Simple(x) | Temporary(x) => rg.nodes().nodes.get(x).map(|x| x.pos),
+            CarObjective::Route(l) => l
+                .get(0)
+                .and_then(|x| rg.nodes().nodes.get(x).map(|x| x.pos)),
         }
     }
 }
