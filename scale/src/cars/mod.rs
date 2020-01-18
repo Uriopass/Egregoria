@@ -1,46 +1,56 @@
 use crate::cars::car_data::make_car_entity;
 
-use crate::cars::city_generator::{CityGenerator, Intersection};
 use crate::graphs::graph::NodeID;
 use cgmath::Vector2;
+use imgui_inspect_derive::*;
+use roads::road_graph::RoadGraph;
+use roads::Intersection;
 use specs::storage::BTreeStorage;
 use specs::{Component, World};
 
 pub mod car_data;
-pub mod car_graph;
 pub mod car_system;
-pub mod city_generator;
+pub mod roads;
 
 #[allow(dead_code)]
-#[derive(Component)]
+#[derive(Component, Inspect, Clone)]
 #[storage(BTreeStorage)]
 pub struct RoadNodeComponent {
+    #[inspect(skip)]
     id: NodeID,
 }
 
+#[allow(dead_code)]
+#[derive(Component, Inspect, Clone)]
+#[storage(BTreeStorage)]
+pub struct IntersectionComponent {
+    #[inspect(skip)]
+    id: NodeID,
+}
+
+#[rustfmt::skip]
 pub fn setup(world: &mut World) {
-    let mut cb = CityGenerator::new();
-    let center = cb.add_intersection(Intersection::new([0.0, 0.0].into()));
-    let a = cb.add_intersection(Intersection::new([100.0, 0.0].into()));
-    let b = cb.add_intersection(Intersection::new([-100.0, 0.0].into()));
-    let c = cb.add_intersection(Intersection::new([0.0, 100.0].into()));
-    let d = cb.add_intersection(Intersection::new([0.0, -100.0].into()));
+    let mut rg = RoadGraph::new();
+    let center = rg.add_intersection(Intersection::new([0.0, 0.0].into()));
+    let a      = rg.add_intersection(Intersection::new([100.0, 0.0].into()));
+    let b      = rg.add_intersection(Intersection::new([-100.0, 0.0].into()));
+    let c      = rg.add_intersection(Intersection::new([0.0, 100.0].into()));
+    let d      = rg.add_intersection(Intersection::new([0.0, -100.0].into()));
 
-    cb.connect(a, center);
-    cb.connect(b, center);
-    cb.connect(c, center);
-    cb.connect(d, center);
+    rg.connect(a, center);
+    rg.connect(b, center);
+    rg.connect(c, center);
+    rg.connect(d, center);
 
-    cb.connect(a, c);
-    cb.connect(c, b);
-    cb.connect(b, d);
-    cb.connect(d, a);
+    rg.connect(a, c);
+    rg.connect(c, b);
+    rg.connect(b, d);
+    rg.connect(d, a);
 
-    let g = cb.build();
-    g.add_to_world(world);
-    world.insert(g);
+    rg.build_nodes();
+    world.insert(rg);
 
-    for _i in 0..2000 {
+    for _i in 0..10 {
         make_car_entity(
             world,
             200.0 * Vector2::<f32>::new(rand::random::<f32>() - 0.5, rand::random::<f32>() - 0.5),

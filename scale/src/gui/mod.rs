@@ -31,7 +31,7 @@ impl TestGui {
 
         // Menu bar
         ui.main_menu_bar(|| {
-            ui.menu(im_str!("Menu 1"), true, || {
+            ui.menu(im_str!("Physics"), true, || {
                 if imgui::MenuItem::new(im_str!("Item 1.1")).build(&ui) {
                     println!("item 1.1 inside menu bar clicked");
                 }
@@ -44,12 +44,6 @@ impl TestGui {
                         println!("item 1.2.2 inside menu bar clicked");
                     }
                 });
-            });
-
-            ui.menu(im_str!("Menu 2"), true, || {
-                if imgui::MenuItem::new(im_str!("Item 2.1")).build(&ui) {
-                    println!("item 2.1 inside menu bar clicked");
-                }
             });
         });
     }

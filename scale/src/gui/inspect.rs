@@ -1,4 +1,4 @@
-use crate::interaction::Movable;
+use crate::interaction::{Movable, MovedEvent};
 use crate::physics::physics_components::{Drag, Kinematics, Transform};
 use cgmath::Vector2;
 use imgui::im_str;
@@ -6,8 +6,10 @@ use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
 use crate::cars::car_data::CarComponent;
+use crate::cars::{IntersectionComponent, RoadNodeComponent};
 use crate::rendering::meshrender_component::MeshRender;
 use specs::prelude::*;
+use specs::shrev::EventChannel;
 use std::marker::PhantomData;
 
 pub struct ImCgVec2;
@@ -40,13 +42,10 @@ impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
         }
         let x = &mut data[0];
         let mut conv = [x.x, x.y];
-        ui.input_float2(&im_str!("{}", label), &mut conv).build();
-        if conv[0] == x.x && conv[1] == x.y {
-            return false;
-        }
+        let changed = ui.input_float2(&im_str!("{}", label), &mut conv).build();
         x.x = conv[0];
         x.y = conv[1];
-        true
+        changed
     }
 }
 
@@ -160,23 +159,36 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
 
     pub fn render(mut self) {
         let ui = self.ui;
+        let mut event = None;
         clone_and_modify(self.world, self.entity, |world, mut x: Transform| {
             let mut position = x.position();
-            <ImCgVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
+            if <ImCgVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
                 &mut [&mut position],
                 "Pos",
                 world,
                 ui,
                 &InspectArgsDefault::default(),
-            );
+            ) {
+                event = Some(position);
+            }
             x.set_position(position);
             x
         });
 
+        if let Some(new_pos) = event {
+            self.world
+                .write_resource::<EventChannel<MovedEvent>>()
+                .single_write(MovedEvent {
+                    entity: self.entity,
+                    new_pos,
+                });
+        }
         self.inspect_component::<CarComponent>();
         self.inspect_component::<MeshRender>();
         self.inspect_component::<Kinematics>();
         self.inspect_component::<Drag>();
         self.inspect_component::<Movable>();
+        self.inspect_component::<RoadNodeComponent>();
+        self.inspect_component::<IntersectionComponent>();
     }
 }

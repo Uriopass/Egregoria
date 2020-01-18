@@ -1,6 +1,6 @@
 use crate::cars::car_data::CarObjective::{Route, Simple, Temporary};
 use crate::cars::car_data::{CarComponent, CarObjective};
-use crate::cars::car_graph::RoadGraph;
+use crate::cars::roads::road_graph::RoadGraph;
 use crate::engine_interaction::DeltaTime;
 use crate::physics::physics_components::{Kinematics, Transform};
 use crate::physics::PhysicsWorld;
@@ -51,10 +51,13 @@ fn car_objective_update(car: &mut CarComponent, trans: &Transform, graph: &RoadG
             car.objective = Temporary(graph.closest_node(trans.position()));
         }
         CarObjective::Temporary(x) => {
-            let p = graph.0.nodes.get(&x).unwrap().pos;
+            let p = graph.nodes().nodes.get(&x).unwrap().pos;
             if p.distance2(trans.position()) < 25.0 {
-                let neighs = &graph.0.edges[&x];
+                let neighs = graph.nodes().get_neighs(x);
                 let r = rand::random::<f32>() * (neighs.len() as f32);
+                if neighs.len() == 0 {
+                    return;
+                }
                 let new_obj = &neighs[r as usize].to;
                 car.objective = Temporary(*new_obj);
             }

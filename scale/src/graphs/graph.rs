@@ -1,6 +1,7 @@
 use std::collections::hash_map::Keys;
 use std::collections::HashMap;
 
+#[derive(Clone, Copy)]
 pub struct Edge {
     pub to: NodeID,
     pub weight: f32,
@@ -13,8 +14,8 @@ pub struct NodeID(usize);
 
 pub struct Graph<T> {
     pub nodes: HashMap<NodeID, T>,
-    pub edges: HashMap<NodeID, EdgeList>,
-    pub backward_edges: HashMap<NodeID, EdgeList>,
+    edges: HashMap<NodeID, EdgeList>,
+    backward_edges: HashMap<NodeID, EdgeList>,
     uuid: usize,
 }
 
@@ -44,6 +45,14 @@ impl<T> Graph<T> {
         self.backward_edges.insert(uuid, vec![]);
         self.uuid += 1;
         uuid
+    }
+
+    pub fn neighs(&self) -> Vec<(NodeID, Edge)> {
+        self.edges
+            .iter()
+            .map(|(from, el)| el.into_iter().map(move |x| (*from, *x)))
+            .flatten()
+            .collect()
     }
 
     pub fn get_neighs(&self, id: NodeID) -> &EdgeList {
@@ -82,6 +91,13 @@ impl<T> Graph<T> {
         for x in self.edges.remove(&id).expect("Invalid node id") {
             remove_from_list(&mut self.backward_edges, x.to, id);
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.nodes.clear();
+        self.backward_edges.clear();
+        self.edges.clear();
+        self.uuid = 0;
     }
 }
 
