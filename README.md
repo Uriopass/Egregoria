@@ -3,9 +3,9 @@
 # Scale
 
 Scale is a simulation of modern day society, from the bottom-up. 
-Each individual has its own thought model, which means that every action has its importance and influences the environment.  
-Scale is not a video game, as this universe shall be observed, but with no (or little) interactions possible.  
-This means that a lot of power can be invested into making it a unique persistent world,
+Each individual has its own thought model, meaning every action has its importance and influences the environment.  
+Scale is not a video game, more of a zero-player game like the game of life. A little interaction might be present but will be very limited.  
+Thus, lot of power can be invested into making Scale a unique persistent world,
 where attention to detail is achievable. 
 
 ## How ?  
@@ -18,7 +18,7 @@ using their feet or their cars to go there.
 ## Building the project
 
 ### Windows/Mac
-I personally use Windows 10 and Mac OS 10.11, and it works by simply compiling the project.
+I personally use Windows 10 and Mac OS 10.11, and it works by simply compiling the project with the marvelous cargo.
 ```bash
 cargo run
 ```
