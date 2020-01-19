@@ -3,34 +3,33 @@
 # Scale
 
 Scale is a simulation of modern day society, from the bottom-up. 
-Each individual has its own thought model, which means that every action has its importance and influences the environment.  
-Scale is not a video game, as this universe shall be observed, but with no (or little) interactions possible.  
-This means that a lot of power can be invested into making it a unique persistent world,
-where attention to detail is achievable. 
+Each individual has its own thought model, meaning every action has its importance and influences the environment.  
+Scale is not a video game, but rather a live artwork. The world itself won't be generated or created by the user, but is part of the project.  
+That way, the focus is on the world itself and not on the tools to build it. 
 
 ## How ?  
-This is of course very ambitious, so inspired by the WASM project,
-a minimal viable product should be made where features are increasingly added.
+This is of course very ambitious, so a minimal viable product will be made where features are increasingly added.
 
-The first [milestone](https://github.com/Uriopass/Scale/projects/1) is to be able to have humans having homes and a workplace,
-using their feet or their cars to go there.  
+The first [milestone](https://github.com/Uriopass/Scale/projects/1) will introduce humans into the world. They will have their own homes and a workplace, traveling by foot or using the road system.
 
 ## Building the project
 
 ### Windows/Mac
-I personally use Windows 10 and Mac OS 10.11, and it works by simply compiling the project.
+I personally use Windows 10 and Mac OS 10.11 and it compiles fine once the rust toolchain is installed.
 ```bash
 cargo run
 ```
 
 ### Ubuntu/(Others?)
-There are a few libraries to install which some of my dependencies need:
+There are a few libraries to install that some of my dependencies need:
 
 ```
 sudo apt-get install libasound2-dev libudev-dev pkg-config
 cargo run
 ```
 
+A Github Action tests the builds on Ubuntu.
+
 ## Devblog
 
-I will try to keep a blog of the updates to Scale [here](http://douady.paris/blog/index.html).
+I will try to keep a blog about Scale's development [here](http://douady.paris/blog/index.html).
