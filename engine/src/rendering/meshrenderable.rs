@@ -54,7 +54,7 @@ impl MeshRenderable for LineToRender {
         let e = self.to;
         let pos2 = transforms.get(e).unwrap().position();
         rc.sr.color = scale_color(self.color);
-        rc.sr.draw_line(trans.position(), pos2);
+        rc.sr.draw_stroke(trans.position(), pos2, self.thickness);
     }
 }
 
@@ -63,7 +63,7 @@ impl MeshRenderable for LineRender {
         let start = trans.position();
         let end = start + self.offset;
         rc.sr.color = scale_color(self.color);
-        rc.sr.draw_line(start, end);
+        rc.sr.draw_stroke(start, end, self.thickness);
     }
 }
 

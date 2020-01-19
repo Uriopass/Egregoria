@@ -14,7 +14,7 @@ pub struct ShapeRenderer {
     pub empty: bool,
     pub zoom: f32,
 }
-
+const DEFAULT_THICKNESS: f32 = 0.2;
 impl ShapeRenderer {
     pub fn new(screen_box: &Rect, zoom: f32) -> Self {
         ShapeRenderer {
@@ -44,7 +44,7 @@ impl ShapeRenderer {
         if filled {
             self.mode = DrawMode::fill()
         } else {
-            self.mode = DrawMode::stroke(0.2);
+            self.mode = DrawMode::stroke(DEFAULT_THICKNESS);
         }
     }
 
@@ -132,7 +132,7 @@ impl ShapeRenderer {
         }
     }
 
-    pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) {
+    pub fn draw_stroke(&mut self, p1: Vector2<f32>, p2: Vector2<f32>, thickness: f32) {
         let zero_iso: Isometry2<f32> = nalgebra::Isometry2::new(nalgebra::zero(), nalgebra::zero());
 
         let segment = Segment::new(
@@ -145,14 +145,19 @@ impl ShapeRenderer {
             &self.screen_collider.0,
             &zero_iso,
             &segment,
-            0.0,
+            thickness,
         );
 
-        if let Proximity::Intersecting = p {
+        let render_ok = match p {
+            Proximity::WithinMargin | Proximity::Intersecting => true,
+            _ => false,
+        };
+
+        if render_ok {
             self.meshbuilder
                 .line(
                     &[Point2::from_vec(p1), Point2::from_vec(p2)],
-                    0.5 / self.zoom,
+                    thickness,
                     Color {
                         a: (self.zoom * self.zoom * 50.0).min(1.0).max(0.0),
                         ..self.color
@@ -161,5 +166,9 @@ impl ShapeRenderer {
                 .expect("Line error");
             self.empty = false;
         }
+    }
+
+    pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) {
+        self.draw_stroke(p1, p2, 0.5 / self.zoom);
     }
 }

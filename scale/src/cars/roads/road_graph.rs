@@ -7,7 +7,7 @@ use super::{Intersection, RoadNode};
 use crate::interaction::{Movable, MovedEvent, Selectable};
 use crate::physics::physics_components::Transform;
 use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
-use crate::rendering::{GREEN, RED, WHITE};
+use crate::rendering::{Color, GREEN, RED};
 use cgmath::{InnerSpace, MetricSpace};
 use specs::shred::PanicHandler;
 use specs::shrev::{EventChannel, ReaderId};
@@ -71,7 +71,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         if data.rg.dirty {
             data.rg.dirty = false;
             data.rg.populate_entities(
-                &mut data.entities,
+                &data.entities,
                 &mut data.roadnodescomponents,
                 &mut data.intersections,
                 &mut data.transforms,
@@ -88,8 +88,8 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     let e = e.unwrap();
 
                     let mut meshb = MeshRender::from(CircleRender {
-                        radius: 1.0,
-                        color: GREEN,
+                        radius: 3.0,
+                        color: Color::gray(0.5),
                         filled: true,
                         ..Default::default()
                     });
@@ -101,8 +101,9 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                         }
                         let e_nei = e_nei.unwrap();
                         meshb.add(LineToRender {
-                            color: WHITE,
+                            color: Color::gray(0.5),
                             to: e_nei,
+                            thickness: 6.0,
                         });
                     }
 
@@ -136,6 +137,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                         meshb.add(LineToRender {
                             color: RED,
                             to: e_nei,
+                            thickness: 0.1,
                         });
                     }
 
@@ -221,7 +223,7 @@ impl RoadGraph {
 
     pub fn populate_entities<'a>(
         &mut self,
-        entities: &mut Entities<'a>,
+        entities: &Entities<'a>,
         rnc: &mut WriteStorage<'a, RoadNodeComponent>,
         inters: &mut WriteStorage<'a, IntersectionComponent>,
         transforms: &mut WriteStorage<'a, Transform>,

@@ -44,6 +44,7 @@ pub fn add_static_segment(world: &mut World, start: Vector2<f32>, offset: Vector
         .with(MeshRender::simple(LineRender {
             offset,
             color: GREEN,
+            thickness: 0.2,
         }))
         .with(Movable)
         .build();
