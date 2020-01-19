@@ -235,6 +235,7 @@ pub struct LineToRender {
     #[inspect(proxy_type = "ImEntity")]
     pub to: Entity,
     pub color: Color,
+    pub thickness: f32,
 }
 
 #[derive(Inspect, Clone)]
@@ -242,4 +243,5 @@ pub struct LineRender {
     #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,
     pub color: Color,
+    pub thickness: f32,
 }
