@@ -134,6 +134,9 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
             if self.render_enabled {
                 for (trans, mr) in (&transforms, &mesh_render).join() {
+                    if mr.hide {
+                        continue;
+                    }
                     for order in &mr.orders {
                         order.draw(trans, &transforms, &mut rc);
                     }
