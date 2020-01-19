@@ -108,6 +108,7 @@ impl From<LineRender> for MeshRenderEnum {
 #[storage(VecStorage)]
 pub struct MeshRender {
     pub orders: Vec<MeshRenderEnum>,
+    pub hide: bool,
 }
 
 impl InspectRenderDefault<MeshRender> for MeshRender {
@@ -172,7 +173,10 @@ impl<T: Into<MeshRenderEnum>, U: Into<MeshRenderEnum>, V: Into<MeshRenderEnum>> 
 #[allow(dead_code)]
 impl MeshRender {
     pub fn empty() -> Self {
-        MeshRender { orders: vec![] }
+        MeshRender {
+            orders: vec![],
+            hide: false,
+        }
     }
 
     pub fn add<T: Into<MeshRenderEnum>>(&mut self, x: T) -> &mut Self {
@@ -183,6 +187,7 @@ impl MeshRender {
     pub fn simple<T: Into<MeshRenderEnum>>(x: T) -> Self {
         MeshRender {
             orders: vec![x.into()],
+            hide: false,
         }
     }
 }
