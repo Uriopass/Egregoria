@@ -47,14 +47,7 @@ impl<'a> System<'a> for SelectableSystem {
             }
             *selected = SelectedEntity(closest);
 
-            meshrenders
-                .get_mut(self.aura.unwrap())
-                .map(|mr| match &mut mr.orders[0] {
-                    MeshRenderEnum::Circle(x) => {
-                        x.radius = if closest.is_some() { 3.0 } else { 0.0 };
-                    }
-                    _ => (),
-                });
+            meshrenders.get_mut(self.aura.unwrap()).unwrap().hide = false;
         }
 
         if let Some(sel) = selected.0 {
@@ -64,21 +57,25 @@ impl<'a> System<'a> for SelectableSystem {
                 .get_mut(self.aura.unwrap())
                 .unwrap()
                 .set_position(pos)
+        } else {
+            meshrenders.get_mut(self.aura.unwrap()).unwrap().hide = true;
         }
     }
 
     fn setup(&mut self, world: &mut World) {
         <Self::SystemData as DynamicSystemData>::setup(&self.accessor(), world);
+        let mut mr = MeshRender::from(CircleRender {
+            offset: [0.0, 0.0].into(),
+            filled: false,
+            color: Color::gray(0.7),
+            radius: 3.0,
+        });
+        mr.hide = true;
         self.aura = Some(
             world
                 .create_entity()
                 .with(Transform::zero())
-                .with(MeshRender::from(CircleRender {
-                    offset: [0.0, 0.0].into(),
-                    filled: false,
-                    color: Color::gray(0.7),
-                    radius: 0.0,
-                }))
+                .with(mr)
                 .build(),
         );
     }
