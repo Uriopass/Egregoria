@@ -1,3 +1,4 @@
+use crate::engine_interaction::MAX_LAYERS;
 use crate::gui::{ImCgVec2, ImEntity, ImVec};
 use crate::rendering::colors::*;
 use cgmath::num_traits::zero;
@@ -6,9 +7,9 @@ use imgui::Ui;
 use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
-use specs::{Component, Entity, VecStorage, World};
+use specs::{Component, Entity, FlaggedStorage, VecStorage, World};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum MeshRenderEnum {
     Circle(CircleRender),
     Rect(RectRender),
@@ -104,11 +105,15 @@ impl From<LineRender> for MeshRenderEnum {
     }
 }
 
-#[derive(Component, Clone)]
-#[storage(VecStorage)]
+#[derive(Clone)]
 pub struct MeshRender {
     pub orders: Vec<MeshRenderEnum>,
     pub hide: bool,
+    layer: u32,
+}
+
+impl Component for MeshRender {
+    type Storage = FlaggedStorage<Self, VecStorage<Self>>;
 }
 
 impl InspectRenderDefault<MeshRender> for MeshRender {
@@ -146,37 +151,21 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
     }
 }
 
-impl<T: Into<MeshRenderEnum>> From<T> for MeshRender {
-    fn from(x: T) -> Self {
-        MeshRender::simple(x)
-    }
-}
-
-impl<T: Into<MeshRenderEnum>, U: Into<MeshRenderEnum>> From<(T, U)> for MeshRender {
-    fn from((x, y): (T, U)) -> Self {
-        let mut m = MeshRender::simple(x);
-        m.add(y);
-        m
-    }
-}
-
-impl<T: Into<MeshRenderEnum>, U: Into<MeshRenderEnum>, V: Into<MeshRenderEnum>> From<(T, U, V)>
-    for MeshRender
-{
-    fn from((x, y, z): (T, U, V)) -> Self {
-        let mut m = MeshRender::simple(x);
-        m.add(y).add(z);
-        m
-    }
-}
-
 #[allow(dead_code)]
 impl MeshRender {
-    pub fn empty() -> Self {
+    pub fn empty(layer: u32) -> Self {
+        if layer >= MAX_LAYERS {
+            panic!("Invalid layer: {}", layer);
+        }
         MeshRender {
             orders: vec![],
             hide: false,
+            layer,
         }
+    }
+
+    pub fn layer(&self) -> u32 {
+        self.layer
     }
 
     pub fn add<T: Into<MeshRenderEnum>>(&mut self, x: T) -> &mut Self {
@@ -184,14 +173,22 @@ impl MeshRender {
         self
     }
 
-    pub fn simple<T: Into<MeshRenderEnum>>(x: T) -> Self {
+    pub fn simple<T: Into<MeshRenderEnum>>(x: T, layer: u32) -> Self {
+        if layer >= MAX_LAYERS {
+            panic!("Invalid layer: {}", layer);
+        }
         MeshRender {
             orders: vec![x.into()],
             hide: false,
+            layer,
         }
     }
+
+    pub fn build(self) -> Self {
+        self
+    }
 }
-#[derive(Inspect, Clone)]
+#[derive(Debug, Inspect, Clone)]
 pub struct CircleRender {
     #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,
@@ -211,7 +208,7 @@ impl Default for CircleRender {
     }
 }
 
-#[derive(Inspect, Clone)]
+#[derive(Debug, Inspect, Clone)]
 pub struct RectRender {
     pub width: f32,
     pub height: f32,
@@ -230,7 +227,7 @@ impl Default for RectRender {
     }
 }
 
-#[derive(Inspect, Clone)]
+#[derive(Debug, Inspect, Clone)]
 pub struct LineToRender {
     #[inspect(proxy_type = "ImEntity")]
     pub to: Entity,
@@ -238,7 +235,7 @@ pub struct LineToRender {
     pub thickness: f32,
 }
 
-#[derive(Inspect, Clone)]
+#[derive(Debug, Inspect, Clone)]
 pub struct LineRender {
     #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,

@@ -2,17 +2,17 @@ use crate::rendering::camera_handler::CameraHandler;
 use crate::rendering::render_context::RenderContext;
 
 use crate::gui::imgui_wrapper::ImGuiWrapper;
-use crate::rendering::meshrenderable::MeshRenderable;
+
+use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
 
 use ggez::graphics::{Color, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::engine_interaction;
-use scale::engine_interaction::{DeltaTime, KeyboardInfo, MouseInfo, Transform};
+use scale::engine_interaction::{DeltaTime, KeyboardInfo, MouseInfo};
 use scale::gui::TestGui;
-use scale::rendering::meshrender_component::MeshRender;
-use specs::{Dispatcher, Join, RunNow, World, WorldExt};
+use specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
@@ -24,6 +24,7 @@ pub struct EngineState<'a> {
     pub grid: bool,
     pub font: Font,
     pub imgui_wrapper: ImGuiWrapper,
+    pub smr: SortedMeshRenderer,
 }
 
 impl<'a> EngineState<'a> {
@@ -49,6 +50,7 @@ impl<'a> EngineState<'a> {
             render_enabled: true,
             grid: true,
             imgui_wrapper,
+            smr: SortedMeshRenderer::new(),
         })
     }
 }
@@ -129,18 +131,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
         // Render entities
         {
-            let transforms = self.world.read_component::<Transform>();
-            let mesh_render = self.world.read_component::<MeshRender>();
-
             if self.render_enabled {
-                for (trans, mr) in (&transforms, &mesh_render).join() {
-                    if mr.hide {
-                        continue;
-                    }
-                    for order in &mr.orders {
-                        order.draw(trans, &transforms, &mut rc);
-                    }
-                }
+                self.smr.render(&mut self.world, &mut rc);
             }
 
             rc.flush()?;

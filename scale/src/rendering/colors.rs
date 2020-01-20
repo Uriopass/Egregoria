@@ -2,7 +2,7 @@ use imgui::{im_str, ColorEdit, EditableColor, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use specs::World;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Color {
     pub r: f32,
     pub g: f32,

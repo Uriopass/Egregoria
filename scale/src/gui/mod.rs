@@ -2,7 +2,7 @@ mod inspect;
 
 pub use inspect::*;
 
-use crate::engine_interaction::{MouseButton, MouseInfo};
+
 use crate::interaction::SelectedEntity;
 use imgui::im_str;
 use imgui::Ui;

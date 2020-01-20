@@ -1,6 +1,6 @@
 use super::{Intersection, RoadNode};
 use crate::cars::{IntersectionComponent, RoadNodeComponent};
-use crate::graphs::graph::{Edge, Graph, NodeID};
+use crate::graphs::graph::{Graph, NodeID};
 use crate::interaction::{Movable, Selectable};
 use crate::physics::physics_components::Transform;
 use cgmath::Vector2;
@@ -145,7 +145,6 @@ impl RoadGraph {
                         .build_entity()
                         .with(RoadNodeComponent { id: *n }, rnc)
                         .with(Transform::new(rn.pos), transforms)
-                        .with(Movable, movable)
                         .with(Selectable, selectable)
                         .build(),
                 );

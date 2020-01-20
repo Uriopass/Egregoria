@@ -156,21 +156,22 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>) {
     let car_width = 4.5;
     let car_height = 2.0;
 
+    let mut mr = MeshRender::empty(2);
+    mr.add(RectRender {
+        width: car_width,
+        height: car_height,
+        ..Default::default()
+    })
+    .add(CircleRender {
+        radius: 0.3,
+        offset: Vector2::new(car_width / 2.0, 0.0),
+        color: RED,
+        ..Default::default()
+    });
+
     let e = world
         .create_entity()
-        .with(MeshRender::from((
-            RectRender {
-                width: car_width,
-                height: car_height,
-                ..Default::default()
-            },
-            CircleRender {
-                radius: 0.3,
-                offset: Vector2::new(car_width / 2.0, 0.0),
-                color: RED,
-                ..Default::default()
-            },
-        )))
+        .with(mr)
         .with(Transform::new(position))
         .with(Kinematics::from_mass(1000.0))
         .with(CarComponent {
