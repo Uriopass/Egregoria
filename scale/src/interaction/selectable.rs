@@ -57,12 +57,14 @@ impl<'a> System<'a> for SelectableSystem {
         }
 
         if let Some(sel) = selected.0 {
-            let pos = transforms.get(sel).unwrap().position();
-
-            transforms
-                .get_mut(self.aura.unwrap())
-                .unwrap()
-                .set_position(pos)
+            if let Some(pos) = transforms.get(sel).map(|x| x.position()) {
+                transforms
+                    .get_mut(self.aura.unwrap())
+                    .unwrap()
+                    .set_position(pos)
+            } else {
+                *selected = SelectedEntity(None);
+            }
         } else {
             meshrenders.get_mut(self.aura.unwrap()).unwrap().hide = true;
         }

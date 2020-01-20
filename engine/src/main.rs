@@ -23,7 +23,7 @@ fn main() {
         c.window_mode = c.window_mode.dimensions(1200.0, 800.0);
     }
 
-    c.window_setup = c.window_setup.vsync(false).samples(NumSamples::Four);
+    c.window_setup = c.window_setup.vsync(true).samples(NumSamples::Four);
 
     let mut cb = ContextBuilder::new("Sandbox", "Uriopass").conf(c);
 

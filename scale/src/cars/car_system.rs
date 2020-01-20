@@ -51,15 +51,18 @@ fn car_objective_update(car: &mut CarComponent, trans: &Transform, graph: &RoadG
             car.objective = Temporary(graph.closest_node(trans.position()));
         }
         CarObjective::Temporary(x) => {
-            let p = graph.nodes().nodes.get(&x).unwrap().pos;
-            if p.distance2(trans.position()) < 25.0 {
-                let neighs = graph.nodes().get_neighs(x);
-                let r = rand::random::<f32>() * (neighs.len() as f32);
-                if neighs.len() == 0 {
-                    return;
+            if let Some(p) = graph.nodes().nodes.get(&x).map(|x| x.pos) {
+                if p.distance2(trans.position()) < 25.0 {
+                    let neighs = graph.nodes().get_neighs(x);
+                    let r = rand::random::<f32>() * (neighs.len() as f32);
+                    if neighs.len() == 0 {
+                        return;
+                    }
+                    let new_obj = &neighs[r as usize].to;
+                    car.objective = Temporary(*new_obj);
                 }
-                let new_obj = &neighs[r as usize].to;
-                car.objective = Temporary(*new_obj);
+            } else {
+                car.objective = CarObjective::None;
             }
         }
     }

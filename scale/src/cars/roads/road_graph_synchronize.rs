@@ -109,6 +109,15 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             *data.selected = SelectedEntity(data.rg.intersections().nodes[&id].e);
         }
 
+        // Intersection deletion
+        if data.kbinfo.just_pressed.contains(&KeyCode::Backspace) {
+            if let Some(e) = data.selected.0 {
+                if let Some(inter) = data.intersections.get(e) {
+                    data.rg.delete_inter(inter.id, &data.entities);
+                }
+            }
+        }
+
         // Connection handling
         if data.kbinfo.just_pressed.contains(&KeyCode::C) {
             self.connect_state = Unselected;
@@ -126,6 +135,8 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                         if y != x {
                             if !data.rg.intersections().is_neigh(interc.id, interc2.id) {
                                 data.rg.connect(interc.id, interc2.id);
+                            } else {
+                                data.rg.disconnect(interc.id, interc2.id, &data.entities);
                             }
                             self.deactive_connect(&mut data);
                         }
