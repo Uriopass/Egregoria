@@ -78,6 +78,15 @@ impl<T> Graph<T> {
             .push(Edge { to: from, weight });
     }
 
+    pub fn is_neigh(&self, from: NodeID, to: NodeID) -> bool {
+        for x in &self.edges[&from] {
+            if x.to == to {
+                return true;
+            }
+        }
+        return false;
+    }
+
     pub fn remove_neigh(&mut self, from: NodeID, to: NodeID) {
         remove_from_list(&mut self.edges, from, to);
         remove_from_list(&mut self.backward_edges, to, from);
