@@ -24,6 +24,10 @@ mod physics;
 pub mod rendering;
 
 pub fn dispatcher<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
+    world.register::<MeshRender>();
+    let reader = MeshRenderEventReader(world.write_storage::<MeshRender>().register_reader());
+    world.insert(reader);
+
     DispatcherBuilder::new()
         .with(HumanUpdate, "human update", &[])
         .with(CarDecision, "car decision", &[])
@@ -48,9 +52,6 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.insert(TestGui);
     world.insert(SelectedEntity::default());
 
-    world.register::<MeshRender>();
-    let reader = MeshRenderEventReader(world.write_storage::<MeshRender>().register_reader());
-    world.insert(reader);
     world.register::<Collider>();
 
     dispatcher.setup(world);

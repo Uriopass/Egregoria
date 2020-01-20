@@ -40,7 +40,7 @@ impl<'a> EngineState<'a> {
         //       let test: Image = graphics::Image::new(ctx, "/test.png")?;
 
         graphics::set_resizable(ctx, true)?;
-        let (width, height) = graphics::size(ctx);
+        let (width, height) = graphics::drawable_size(ctx);
         let imgui_wrapper = ImGuiWrapper::new(&mut ctx);
         Ok(EngineState {
             font,
