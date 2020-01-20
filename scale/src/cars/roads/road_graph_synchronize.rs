@@ -124,19 +124,19 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     First(y) => {
                         let interc2 = data.intersections.get(y).unwrap();
                         if y != x {
-                            self.connect_state = Inactive;
-                            data.meshrenders.get_mut(self.show_connect).unwrap().hide = true;
                             if !data.rg.intersections().is_neigh(interc.id, interc2.id) {
                                 data.rg.connect(interc.id, interc2.id);
                             }
+                            self.deactive_connect(&mut data);
                         }
                     }
                     _ => (),
                 }
             } else {
-                self.connect_state = Inactive;
-                data.meshrenders.get_mut(self.show_connect).unwrap().hide = true;
+                self.deactive_connect(&mut data);
             }
+        } else {
+            self.deactive_connect(&mut data);
         }
 
         if let First(x) = self.connect_state {
@@ -244,5 +244,12 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 }
             }
         }
+    }
+}
+
+impl RoadGraphSynchronize {
+    fn deactive_connect(&mut self, data: &mut RGSData) {
+        self.connect_state = Inactive;
+        data.meshrenders.get_mut(self.show_connect).unwrap().hide = true;
     }
 }
