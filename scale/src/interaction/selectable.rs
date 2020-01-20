@@ -1,6 +1,6 @@
 use crate::engine_interaction::{MouseButton, MouseInfo};
 use crate::physics::physics_components::Transform;
-use crate::rendering::meshrender_component::{CircleRender, MeshRender, MeshRenderEnum};
+use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::Color;
 use cgmath::InnerSpace;
 use imgui_inspect_derive::*;
@@ -64,12 +64,15 @@ impl<'a> System<'a> for SelectableSystem {
 
     fn setup(&mut self, world: &mut World) {
         <Self::SystemData as DynamicSystemData>::setup(&self.accessor(), world);
-        let mut mr = MeshRender::from(CircleRender {
-            offset: [0.0, 0.0].into(),
-            filled: false,
-            color: Color::gray(0.7),
-            radius: 3.0,
-        });
+        let mut mr = MeshRender::simple(
+            CircleRender {
+                offset: [0.0, 0.0].into(),
+                filled: false,
+                color: Color::gray(0.7),
+                radius: 3.0,
+            },
+            9,
+        );
         mr.hide = true;
         self.aura = Some(
             world

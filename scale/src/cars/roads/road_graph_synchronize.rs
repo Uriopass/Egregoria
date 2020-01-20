@@ -140,12 +140,15 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     }
                     let e = e.unwrap();
 
-                    let mut meshb = MeshRender::from(CircleRender {
-                        radius: 3.0,
-                        color: Color::gray(0.5),
-                        filled: true,
-                        ..Default::default()
-                    });
+                    let mut meshb = MeshRender::simple(
+                        CircleRender {
+                            radius: 3.0,
+                            color: Color::gray(0.5),
+                            filled: true,
+                            ..Default::default()
+                        },
+                        0,
+                    );
 
                     for nei in data.rg.nodes().get_neighs(*n) {
                         let e_nei = data.rg.nodes().nodes[&nei.to].e;
@@ -174,12 +177,15 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     }
                     let e = e.unwrap();
 
-                    let mut meshb = MeshRender::from(CircleRender {
-                        radius: 3.0,
-                        color: RED,
-                        filled: true,
-                        ..Default::default()
-                    });
+                    let mut meshb = MeshRender::simple(
+                        CircleRender {
+                            radius: 2.0,
+                            color: RED,
+                            filled: true,
+                            ..Default::default()
+                        },
+                        1,
+                    );
 
                     for nei in data.rg.intersections().get_neighs(*n) {
                         let e_nei = data.rg.intersections().nodes[&nei.to].e;
