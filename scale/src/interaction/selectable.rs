@@ -1,4 +1,5 @@
-use crate::engine_interaction::{MouseButton, MouseInfo};
+use crate::engine_interaction::KeyCode;
+use crate::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
 use crate::physics::physics_components::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::Color;
@@ -25,6 +26,7 @@ impl<'a> System<'a> for SelectableSystem {
     type SystemData = (
         Entities<'a>,
         Read<'a, MouseInfo>,
+        Read<'a, KeyboardInfo>,
         Write<'a, SelectedEntity>,
         WriteStorage<'a, Transform>,
         ReadStorage<'a, Selectable>,
@@ -33,7 +35,7 @@ impl<'a> System<'a> for SelectableSystem {
 
     fn run(
         &mut self,
-        (entities, mouse, mut selected, mut transforms, selectables, mut meshrenders): Self::SystemData,
+        (entities, mouse, kbinfo, mut selected, mut transforms, selectables, mut meshrenders): Self::SystemData,
     ) {
         if mouse.just_pressed.contains(&MouseButton::Left) {
             let mut min_dist = f32::MAX;
@@ -48,6 +50,10 @@ impl<'a> System<'a> for SelectableSystem {
             *selected = SelectedEntity(closest);
 
             meshrenders.get_mut(self.aura.unwrap()).unwrap().hide = false;
+        }
+
+        if kbinfo.just_pressed.contains(&KeyCode::Escape) {
+            *selected = SelectedEntity(None);
         }
 
         if let Some(sel) = selected.0 {

@@ -95,7 +95,7 @@ impl RoadGraph {
             let center2 = inter2.pos;
 
             let diff = center2 - center;
-            let inter_length = diff.magnitude();
+            let inter_length = diff.magnitude().max(1e-8);
             let dir = (center2 - center) / inter_length;
 
             let inter_length = (inter_length / 2.0).min(25.0);
@@ -186,6 +186,10 @@ impl RoadGraph {
     }
 
     pub fn connect_directional(&mut self, from: NodeID, to: NodeID) {
+        if self.intersections.nodes[&from].pos == self.intersections.nodes[&to].pos {
+            println!("Couldn't connect two intersections because they are at the same place.");
+            return;
+        }
         self.intersections.add_neigh(from, to, 1.0);
 
         let rn_out = RoadNode::new([0.0, 0.0].into());
