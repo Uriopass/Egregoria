@@ -1,6 +1,6 @@
 use super::{Intersection, RoadNode};
 use crate::cars::{IntersectionComponent, RoadNodeComponent};
-use crate::graphs::graph::{Graph, NodeID};
+use crate::graphs::graph::{Edge, Graph, NodeID};
 use crate::interaction::{Movable, Selectable};
 use crate::physics::physics_components::Transform;
 use cgmath::Vector2;
@@ -178,6 +178,53 @@ impl RoadGraph {
             }
         }
         id
+    }
+
+    pub fn delete_inter(&mut self, id: NodeID, entities: &Entities) {
+        for Edge { to, .. } in self.intersections.get_neighs(id).clone() {
+            self.disconnect_directional(id, to, entities);
+        }
+        for Edge { to, .. } in self.intersections.get_backward_neighs(id).clone() {
+            self.disconnect_directional(to, id, entities);
+        }
+        self.intersections.nodes[&id].e.map(|x| entities.delete(x));
+        self.intersections.remove_node(id);
+    }
+
+    pub fn disconnect(&mut self, a: NodeID, b: NodeID, entities: &Entities) {
+        self.disconnect_directional(a, b, entities);
+        self.disconnect_directional(b, a, entities);
+    }
+
+    pub fn disconnect_directional(&mut self, from: NodeID, to: NodeID, entities: &Entities) {
+        self.dirty = true;
+        self.intersections.remove_neigh(from, to);
+        let inter_from_node = &self.intersections.nodes[&from].out_nodes[&to];
+        let inter_to_node = &self.intersections.nodes[&to].in_nodes[&from];
+
+        self.nodes.nodes[&inter_from_node]
+            .e
+            .map(|ent| entities.delete(ent));
+        self.nodes.nodes[&inter_to_node]
+            .e
+            .map(|ent| entities.delete(ent));
+
+        self.nodes.remove_node(*inter_from_node);
+        self.nodes.remove_node(*inter_to_node);
+
+        self.intersections
+            .nodes
+            .get_mut(&from)
+            .unwrap()
+            .out_nodes
+            .remove(&to);
+
+        self.intersections
+            .nodes
+            .get_mut(&to)
+            .unwrap()
+            .in_nodes
+            .remove(&from);
     }
 
     pub fn connect(&mut self, a: NodeID, b: NodeID) {
