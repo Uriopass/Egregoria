@@ -3,7 +3,7 @@
 use ncollide2d::world::CollisionWorld;
 
 use crate::cars::car_system::CarDecision;
-use crate::cars::roads::road_graph::RoadGraphSynchronize;
+use crate::cars::roads::RoadGraphSynchronize;
 use crate::engine_interaction::{DeltaTime, KeyboardInfo};
 use crate::gui::TestGui;
 use crate::humans::HumanUpdate;
