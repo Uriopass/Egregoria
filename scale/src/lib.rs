@@ -4,7 +4,7 @@ use ncollide2d::world::CollisionWorld;
 
 use crate::cars::car_system::CarDecision;
 use crate::cars::roads::RoadGraphSynchronize;
-use crate::engine_interaction::{DeltaTime, KeyboardInfo};
+use crate::engine_interaction::{DeltaTime, KeyboardInfo, MeshRenderEventReader};
 use crate::gui::TestGui;
 use crate::humans::HumanUpdate;
 use crate::interaction::{MovableSystem, SelectableSystem, SelectedEntity};
@@ -49,10 +49,11 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.insert(SelectedEntity::default());
 
     world.register::<MeshRender>();
+    let reader = MeshRenderEventReader(world.write_storage::<MeshRender>().register_reader());
+    world.insert(reader);
     world.register::<Collider>();
 
     dispatcher.setup(world);
-
     humans::setup(world);
     cars::setup(world);
 }

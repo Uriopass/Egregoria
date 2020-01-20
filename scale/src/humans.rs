@@ -71,10 +71,13 @@ pub fn setup(world: &mut World) {
 
         let eb = world
             .create_entity()
-            .with(MeshRender::from(CircleRender {
-                radius: size,
-                ..Default::default()
-            }))
+            .with(MeshRender::simple(
+                CircleRender {
+                    radius: size,
+                    ..Default::default()
+                },
+                2,
+            ))
             .with(Transform::new((x, y)))
             .with(Kinematics::from_mass(70.0))
             .with(Drag::default())

@@ -2,9 +2,14 @@ use cgmath::Vector2;
 use std::collections::HashSet;
 
 pub use crate::physics::physics_components::Transform;
+use specs::prelude::ComponentEvent;
+use specs::ReaderId;
 
 #[derive(Default)]
 pub struct DeltaTime(pub f32);
+
+pub struct MeshRenderEventReader(pub ReaderId<ComponentEvent>);
+pub const MAX_LAYERS: u32 = 20;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum MouseButton {
