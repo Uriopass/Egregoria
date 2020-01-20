@@ -50,8 +50,8 @@ impl RoadGraphSynchronize {
 pub struct RGSData<'a> {
     entities: Entities<'a>,
     rg: Write<'a, RoadGraph, PanicHandler>,
+    selected: Write<'a, SelectedEntity>,
     moved: Read<'a, EventChannel<MovedEvent>>,
-    selected: Read<'a, SelectedEntity>,
     kbinfo: Read<'a, KeyboardInfo>,
     mouseinfo: Read<'a, MouseInfo>,
     roadnodescomponents: WriteStorage<'a, RoadNodeComponent>,
@@ -72,13 +72,29 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             }
             if let Some(rnc) = data.intersections.get(event.entity) {
                 data.rg.set_intersection_position(rnc.id, event.new_pos);
-                data.rg.recalculate_inter(rnc.id, &mut data.transforms);
+                data.rg.calculate_nodes_positions(rnc.id);
+                data.rg.synchronize_positions(rnc.id, &mut data.transforms);
             }
         }
 
         if data.kbinfo.just_pressed.contains(&KeyCode::I) {
-            data.rg
+            let id = data
+                .rg
                 .add_intersection(Intersection::new(data.mouseinfo.unprojected));
+            let intersections = &data.intersections;
+            if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
+                data.rg.connect(id, x.id);
+            }
+            data.rg.populate_entities(
+                &data.entities,
+                &mut data.roadnodescomponents,
+                &mut data.intersections,
+                &mut data.transforms,
+                &mut data.movable,
+                &mut data.selectable,
+            );
+
+            *data.selected = SelectedEntity(data.rg.intersections().nodes[&id].e);
         }
 
         if data.kbinfo.just_pressed.contains(&KeyCode::C) {
@@ -90,13 +106,12 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 match self.connect_state {
                     Unselected => self.connect_state = First(x),
                     First(y) => {
-                        if let Some(interc2) = data.intersections.get(y) {
-                            if y != x {
-                                self.connect_state = Inactive;
+                        let interc2 = data.intersections.get(y).unwrap();
+                        if y != x {
+                            self.connect_state = Inactive;
+                            if !data.rg.intersections().is_neigh(interc.id, interc2.id) {
                                 data.rg.connect(interc.id, interc2.id);
                             }
-                        } else {
-                            self.connect_state = Inactive;
                         }
                     }
                     _ => (),
@@ -107,6 +122,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         }
         if data.rg.dirty {
             data.rg.dirty = false;
+
             data.rg.populate_entities(
                 &data.entities,
                 &mut data.roadnodescomponents,
