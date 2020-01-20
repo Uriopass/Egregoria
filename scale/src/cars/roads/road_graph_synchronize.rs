@@ -5,7 +5,9 @@ use crate::cars::{IntersectionComponent, RoadNodeComponent};
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity};
 use crate::physics::physics_components::Transform;
-use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
+use crate::rendering::meshrender_component::{
+    CircleRender, LineRender, LineToRender, MeshRender, MeshRenderEnum,
+};
 use crate::rendering::{Color, RED};
 use specs::prelude::System;
 use specs::prelude::*;
@@ -36,6 +38,14 @@ impl RoadGraphSynchronize {
         let e = world
             .create_entity()
             .with(Transform::new([0.0, 0.0]))
+            .with(MeshRender::simple(
+                LineRender {
+                    offset: [0.0, 0.0].into(),
+                    color: RED,
+                    thickness: 0.2,
+                },
+                9,
+            ))
             .build();
 
         Self {
@@ -66,6 +76,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
     type SystemData = RGSData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
+        // Moved events
         for event in data.moved.read(&mut self.reader) {
             if let Some(rnc) = data.roadnodescomponents.get(event.entity) {
                 data.rg.set_node_position(rnc.id, event.new_pos);
@@ -77,6 +88,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             }
         }
 
+        // Intersection creation
         if data.kbinfo.just_pressed.contains(&KeyCode::I) {
             let id = data
                 .rg
@@ -97,6 +109,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             *data.selected = SelectedEntity(data.rg.intersections().nodes[&id].e);
         }
 
+        // Connection handling
         if data.kbinfo.just_pressed.contains(&KeyCode::C) {
             self.connect_state = Unselected;
         }
@@ -104,11 +117,15 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         if let Some(x) = data.selected.0 {
             if let Some(interc) = data.intersections.get(x) {
                 match self.connect_state {
-                    Unselected => self.connect_state = First(x),
+                    Unselected => {
+                        self.connect_state = First(x);
+                        data.meshrenders.get_mut(self.show_connect).unwrap().hide = false;
+                    }
                     First(y) => {
                         let interc2 = data.intersections.get(y).unwrap();
                         if y != x {
                             self.connect_state = Inactive;
+                            data.meshrenders.get_mut(self.show_connect).unwrap().hide = true;
                             if !data.rg.intersections().is_neigh(interc.id, interc2.id) {
                                 data.rg.connect(interc.id, interc2.id);
                             }
@@ -118,8 +135,29 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 }
             } else {
                 self.connect_state = Inactive;
+                data.meshrenders.get_mut(self.show_connect).unwrap().hide = true;
             }
         }
+
+        if let First(x) = self.connect_state {
+            let trans = data.transforms.get(x).unwrap().clone();
+            data.transforms
+                .get_mut(self.show_connect)
+                .unwrap()
+                .set_position(trans.position());
+            match data
+                .meshrenders
+                .get_mut(self.show_connect)
+                .and_then(|x| x.orders.get_mut(0))
+            {
+                Some(MeshRenderEnum::Line(x)) => {
+                    x.offset = data.mouseinfo.unprojected - trans.position();
+                }
+                _ => (),
+            }
+        }
+
+        // Population update
         if data.rg.dirty {
             data.rg.dirty = false;
 
