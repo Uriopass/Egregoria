@@ -5,10 +5,10 @@ use crate::interaction::{Movable, Selectable};
 use crate::physics::physics_components::Transform;
 use cgmath::Vector2;
 use imgui_inspect_derive::*;
-use roads::road_graph::RoadGraph;
 use roads::Intersection;
+use roads::RoadGraph;
 use specs::storage::BTreeStorage;
-use specs::{Component, Entities, World, WorldExt};
+use specs::{Component, World, WorldExt};
 
 pub mod car_data;
 pub mod car_system;
@@ -49,7 +49,6 @@ pub fn setup(world: &mut World) {
     rg.connect(b, d);
     rg.connect(d, a);
 
-    rg.build_nodes();
     world.insert(rg);
     
     world.write_resource::<RoadGraph>().populate_entities(

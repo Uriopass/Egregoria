@@ -4,7 +4,11 @@ use cgmath::Vector2;
 use specs::Entity;
 use std::collections::HashMap;
 
-pub mod road_graph;
+mod road_graph;
+mod road_graph_synchronize;
+
+pub use road_graph::RoadGraph;
+pub use road_graph_synchronize::RoadGraphSynchronize;
 
 #[derive(Clone, Copy)]
 pub struct RoadNode {

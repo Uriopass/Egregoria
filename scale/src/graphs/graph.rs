@@ -83,6 +83,20 @@ impl<T> Graph<T> {
         remove_from_list(&mut self.backward_edges, to, from);
     }
 
+    pub fn remove_outbounds(&mut self, id: NodeID) {
+        for Edge { to, .. } in &self.edges[&id] {
+            remove_from_list(&mut self.backward_edges, *to, id);
+        }
+        self.edges.get_mut(&id).unwrap().clear();
+    }
+
+    pub fn remove_inbounds(&mut self, id: NodeID) {
+        for Edge { to, .. } in &self.backward_edges[&id] {
+            remove_from_list(&mut self.edges, *to, id);
+        }
+        self.backward_edges.get_mut(&id).unwrap().clear();
+    }
+
     pub fn remove_node(&mut self, id: NodeID) {
         self.nodes.remove(&id);
         for x in self.backward_edges.remove(&id).expect("Invalid node id") {
