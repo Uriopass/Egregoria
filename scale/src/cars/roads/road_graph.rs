@@ -45,19 +45,14 @@ impl RoadGraph {
         self.intersections.add_node(i)
     }
 
-    pub fn recalculate_inter(&mut self, i: NodeID, transforms: &mut WriteStorage<Transform>) {
+    pub fn synchronize_positions(&mut self, i: NodeID, transforms: &mut WriteStorage<Transform>) {
         let inter = &self.intersections.nodes[&i];
-        let center = inter.pos;
 
         for (to, node_id) in &inter.out_nodes {
             let inter2 = &self.intersections.nodes[to];
-            let center2 = inter2.pos;
 
-            let dir = (center2 - center).normalize();
-            let nor: Vector2<f32> = Vector2::new(-dir.y, dir.x);
             {
                 let rn = self.nodes.nodes.get_mut(node_id).unwrap();
-                rn.pos = center + dir * 25.0 - nor * 4.0;
                 transforms
                     .get_mut(rn.e.unwrap())
                     .unwrap()
@@ -65,7 +60,6 @@ impl RoadGraph {
             }
             {
                 let rn2 = self.nodes.nodes.get_mut(&inter2.in_nodes[&i]).unwrap();
-                rn2.pos = center2 - dir * 25.0 - nor * 4.0;
                 transforms
                     .get_mut(rn2.e.unwrap())
                     .unwrap()
@@ -75,14 +69,8 @@ impl RoadGraph {
 
         for (to, node_id) in &inter.in_nodes {
             let inter2 = &self.intersections.nodes[to];
-            let center2 = inter2.pos;
-
-            let dir = (center2 - center).normalize();
-            let nor: Vector2<f32> = Vector2::new(-dir.y, dir.x);
-
             {
                 let rn = self.nodes.nodes.get_mut(node_id).unwrap();
-                rn.pos = center + dir * 25.0 + nor * 4.0;
                 transforms
                     .get_mut(rn.e.unwrap())
                     .unwrap()
@@ -90,12 +78,54 @@ impl RoadGraph {
             }
             {
                 let rn2 = self.nodes.nodes.get_mut(&inter2.out_nodes[&i]).unwrap();
-                rn2.pos = center2 - dir * 25.0 + nor * 4.0;
                 transforms
                     .get_mut(rn2.e.unwrap())
                     .unwrap()
                     .set_position(rn2.pos);
             }
+        }
+    }
+
+    pub fn calculate_nodes_positions(&mut self, i: NodeID) {
+        let inter = &self.intersections.nodes[&i];
+        let center = inter.pos;
+
+        for (to, node_id) in &inter.out_nodes {
+            let inter2 = &self.intersections.nodes[to];
+            let center2 = inter2.pos;
+
+            let diff = center2 - center;
+            let inter_length = diff.magnitude();
+            let dir = (center2 - center) / inter_length;
+
+            let inter_length = (inter_length / 2.0).min(25.0);
+
+            let nor: Vector2<f32> = Vector2::new(-dir.y, dir.x);
+
+            let rn = self.nodes.nodes.get_mut(node_id).unwrap();
+            rn.pos = center + dir * inter_length - nor * 4.0;
+
+            let rn2 = self.nodes.nodes.get_mut(&inter2.in_nodes[&i]).unwrap();
+            rn2.pos = center2 - dir * inter_length - nor * 4.0;
+        }
+
+        for (to, node_id) in &inter.in_nodes {
+            let inter2 = &self.intersections.nodes[to];
+            let center2 = inter2.pos;
+
+            let diff = center2 - center;
+            let inter_length = diff.magnitude();
+            let dir = (center2 - center) / inter_length;
+
+            let inter_length = (inter_length / 2.0).min(25.0);
+
+            let nor: Vector2<f32> = Vector2::new(-dir.y, dir.x);
+
+            let rn = self.nodes.nodes.get_mut(node_id).unwrap();
+            rn.pos = center + dir * inter_length + nor * 4.0;
+
+            let rn2 = self.nodes.nodes.get_mut(&inter2.out_nodes[&i]).unwrap();
+            rn2.pos = center2 - dir * inter_length + nor * 4.0;
         }
     }
 
@@ -159,17 +189,8 @@ impl RoadGraph {
     pub fn connect_directional(&mut self, from: NodeID, to: NodeID) {
         self.intersections.add_neigh(from, to, 1.0);
 
-        let inter = &self.intersections.nodes[&from];
-        let center = inter.pos;
-
-        let inter2 = &self.intersections.nodes[&to];
-        let center2 = inter2.pos;
-
-        let dir = (center2 - center).normalize();
-        let nor: Vector2<f32> = Vector2::new(-dir.y, dir.x);
-
-        let rn_out = RoadNode::new(center + dir * 25.0 - nor * 4.0);
-        let rn_in = RoadNode::new(center2 - dir * 25.0 - nor * 4.0);
+        let rn_out = RoadNode::new([0.0, 0.0].into());
+        let rn_in = RoadNode::new([0.0, 0.0].into());
 
         let out_id = self.nodes.add_node(rn_out);
         let in_id = self.nodes.add_node(rn_in);
@@ -178,15 +199,23 @@ impl RoadGraph {
 
         let inter = self.intersections.nodes.get_mut(&from).unwrap();
         inter.out_nodes.insert(to, out_id);
-        for (_, in_id) in &inter.in_nodes {
+        for (from_id, in_id) in &inter.in_nodes {
+            if *from_id == to {
+                continue;
+            }
             self.nodes.add_neigh(*in_id, out_id, 1.0); // FIXME: Use actual internal road length
         }
 
         let inter2 = self.intersections.nodes.get_mut(&to).unwrap();
         inter2.in_nodes.insert(from, in_id);
-        for (_, out) in &inter2.out_nodes {
+        for (to_id, out) in &inter2.out_nodes {
+            if *to_id == from {
+                continue;
+            }
             self.nodes.add_neigh(in_id, *out, 1.0);
         }
+
+        self.calculate_nodes_positions(from);
 
         self.dirty = true;
     }
