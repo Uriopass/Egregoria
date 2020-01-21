@@ -1,5 +1,6 @@
 use std::collections::hash_map::Keys;
-use std::collections::HashMap;
+use std::collections::{hash_map, HashMap};
+use std::ops::{Index, IndexMut};
 
 #[derive(Clone, Copy)]
 pub struct Edge {
@@ -13,7 +14,7 @@ type EdgeList = Vec<Edge>;
 pub struct NodeID(usize);
 
 pub struct Graph<T> {
-    pub nodes: HashMap<NodeID, T>,
+    nodes: HashMap<NodeID, T>,
     edges: HashMap<NodeID, EdgeList>,
     backward_edges: HashMap<NodeID, EdgeList>,
     uuid: usize,
@@ -38,9 +39,17 @@ impl<T> Graph<T> {
         self.nodes.keys()
     }
 
-    pub fn add_node(&mut self, data: T) -> NodeID {
+    pub fn get(&self, id: &NodeID) -> Option<&T> {
+        self.nodes.get(id)
+    }
+
+    pub fn get_mut(&mut self, id: &NodeID) -> Option<&mut T> {
+        self.nodes.get_mut(id)
+    }
+
+    pub fn push(&mut self, value: T) -> NodeID {
         let uuid = NodeID(self.uuid);
-        self.nodes.insert(uuid, data);
+        self.nodes.insert(uuid, value);
         self.edges.insert(uuid, vec![]);
         self.backward_edges.insert(uuid, vec![]);
         self.uuid += 1;
@@ -119,6 +128,38 @@ impl<T> Graph<T> {
     }
 }
 
+impl<T> Index<&NodeID> for Graph<T> {
+    type Output = T;
+
+    fn index(&self, index: &NodeID) -> &Self::Output {
+        &self.nodes[index]
+    }
+}
+
+impl<T> IndexMut<&NodeID> for Graph<T> {
+    fn index_mut(&mut self, index: &NodeID) -> &mut Self::Output {
+        self.nodes.get_mut(index).unwrap()
+    }
+}
+
+impl<'a, T: 'a> IntoIterator for &'a mut Graph<T> {
+    type Item = (&'a NodeID, &'a mut T);
+    type IntoIter = hash_map::IterMut<'a, NodeID, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        (&mut self.nodes).into_iter()
+    }
+}
+
+impl<'a, T: 'a> IntoIterator for &'a Graph<T> {
+    type Item = (&'a NodeID, &'a T);
+    type IntoIter = hash_map::Iter<'a, NodeID, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        (&self.nodes).into_iter()
+    }
+}
+
 fn remove_from_list(hash: &mut HashMap<NodeID, EdgeList>, id: &NodeID, elem: &NodeID) {
     hash.get_mut(id)
         .expect("Invalid node id")
@@ -132,9 +173,9 @@ mod tests {
     #[test]
     fn test_graph() {
         let mut g = Graph::new();
-        let a = g.add_node(0);
-        let b = g.add_node(1);
-        let c = g.add_node(2);
+        let a = g.push(0);
+        let b = g.push(1);
+        let c = g.push(2);
 
         g.add_neigh(&a, &b, 1.0);
 

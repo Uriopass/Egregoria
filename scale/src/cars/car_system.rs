@@ -1,7 +1,7 @@
 use crate::cars::car_data::CarObjective::{Route, Simple, Temporary};
 use crate::cars::car_data::{CarComponent, CarObjective};
 use crate::cars::roads::RoadGraph;
-use crate::engine_interaction::DeltaTime;
+use crate::engine_interaction::TimeInfo;
 use crate::physics::physics_components::{Kinematics, Transform};
 use crate::physics::PhysicsWorld;
 use cgmath::MetricSpace;
@@ -23,7 +23,7 @@ const MIN_TURNING_RADIUS: f32 = 8.0;
 impl<'a> System<'a> for CarDecision {
     type SystemData = (
         Read<'a, RoadGraph, PanicHandler>,
-        Read<'a, DeltaTime>,
+        Read<'a, TimeInfo>,
         Read<'a, PhysicsWorld, PanicHandler>,
         WriteStorage<'a, Transform>,
         WriteStorage<'a, Kinematics>,
@@ -32,9 +32,9 @@ impl<'a> System<'a> for CarDecision {
 
     fn run(
         &mut self,
-        (road_graph, delta, coworld, mut transforms, mut kinematics, mut cars): Self::SystemData,
+        (road_graph, time, coworld, mut transforms, mut kinematics, mut cars): Self::SystemData,
     ) {
-        let delta = delta.0;
+        let delta = time.delta;
 
         (&mut transforms, &mut kinematics, &mut cars)
             .par_join()
@@ -51,7 +51,7 @@ fn car_objective_update(car: &mut CarComponent, trans: &Transform, graph: &RoadG
             car.objective = Temporary(graph.closest_node(trans.position()));
         }
         CarObjective::Temporary(x) => {
-            if let Some(p) = graph.nodes().nodes.get(&x).map(|x| x.pos) {
+            if let Some(p) = graph.nodes().get(&x).map(|x| x.pos) {
                 if p.distance2(trans.position()) < 25.0 {
                     let neighs = graph.nodes().get_neighs(&x);
                     let r = rand::random::<f32>() * (neighs.len() as f32);

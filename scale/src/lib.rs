@@ -4,7 +4,7 @@ use ncollide2d::world::CollisionWorld;
 
 use crate::cars::car_system::CarDecision;
 use crate::cars::roads::RoadGraphSynchronize;
-use crate::engine_interaction::{DeltaTime, KeyboardInfo, MeshRenderEventReader};
+use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, TimeInfo};
 use crate::gui::TestGui;
 use crate::humans::HumanUpdate;
 use crate::interaction::{MovableSystem, SelectableAuraSystem, SelectableSystem, SelectedEntity};
@@ -51,7 +51,7 @@ pub fn dispatcher<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
 pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     let collision_world: PhysicsWorld = CollisionWorld::new(2.0);
 
-    world.insert(DeltaTime(0.0));
+    world.insert(TimeInfo::default());
     world.insert(collision_world);
     world.insert(KeyboardInfo::default());
     world.insert(TestGui);

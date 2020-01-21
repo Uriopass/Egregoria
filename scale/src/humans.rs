@@ -1,11 +1,10 @@
 use cgmath::{InnerSpace, Vector2};
 
 use specs::{
-    Builder, Component, Join, ParJoin, Read, ReadStorage, System, VecStorage, World, WorldExt,
+    Builder, Component, Join, ParJoin, ReadStorage, System, VecStorage, World, WorldExt,
     WriteStorage,
 };
 
-use crate::engine_interaction::DeltaTime;
 use crate::interaction::{Movable, Selectable};
 use crate::physics::add_shape;
 use crate::physics::physics_components::{Drag, Kinematics, Transform};
@@ -35,15 +34,12 @@ pub struct HumanUpdate;
 
 impl<'a> System<'a> for HumanUpdate {
     type SystemData = (
-        Read<'a, DeltaTime>,
         ReadStorage<'a, Transform>,
         WriteStorage<'a, Kinematics>,
         ReadStorage<'a, Human>,
     );
 
-    fn run(&mut self, (delta, transforms, mut kinematics, humans): Self::SystemData) {
-        let _delta = delta.0;
-
+    fn run(&mut self, (transforms, mut kinematics, humans): Self::SystemData) {
         let _xx: Vec<(&Transform, &Human)> = (&transforms, &humans).join().collect();
 
         (&transforms, &mut kinematics, &humans)

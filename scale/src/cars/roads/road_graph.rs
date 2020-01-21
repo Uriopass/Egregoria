@@ -4,7 +4,7 @@ use crate::graphs::graph::{Edge, Graph, NodeID};
 use crate::interaction::{Movable, Selectable};
 use crate::physics::physics_components::Transform;
 use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
-use crate::rendering::{Color, RED, WHITE};
+use crate::rendering::{Color, GREEN, RED, WHITE};
 use cgmath::Vector2;
 use cgmath::{InnerSpace, MetricSpace};
 use specs::{Entities, WriteStorage};
@@ -31,37 +31,34 @@ impl RoadGraph {
         &self.intersections
     }
 
-    pub fn set_node_position(&mut self, i: NodeID, pos: Vector2<f32>) {
-        self.nodes.nodes.entry(i).and_modify(|x| x.pos = pos);
+    pub fn set_node_position(&mut self, i: &NodeID, pos: Vector2<f32>) {
+        self.nodes.get_mut(i).map(|x| x.pos = pos);
     }
 
     pub fn set_intersection_position(&mut self, i: &NodeID, pos: Vector2<f32>) {
-        self.intersections
-            .nodes
-            .entry(*i)
-            .and_modify(|x| x.pos = pos);
+        self.intersections.get_mut(i).map(|x| x.pos = pos);
     }
 
     pub fn add_intersection(&mut self, i: Intersection) -> NodeID {
         self.dirty = true;
-        self.intersections.add_node(i)
+        self.intersections.push(i)
     }
 
     pub fn synchronize_positions(&mut self, i: &NodeID, transforms: &mut WriteStorage<Transform>) {
-        let inter = &self.intersections.nodes[i];
+        let inter = &self.intersections[i];
 
         for (to, node_id) in &inter.out_nodes {
-            let inter2 = &self.intersections.nodes[to];
+            let inter2 = &self.intersections[to];
 
             {
-                let rn = self.nodes.nodes.get_mut(node_id).unwrap();
+                let rn = self.nodes.get_mut(node_id).unwrap();
                 transforms
                     .get_mut(rn.e.unwrap())
                     .unwrap()
                     .set_position(rn.pos);
             }
             {
-                let rn2 = self.nodes.nodes.get_mut(&inter2.in_nodes[i]).unwrap();
+                let rn2 = self.nodes.get_mut(&inter2.in_nodes[i]).unwrap();
                 transforms
                     .get_mut(rn2.e.unwrap())
                     .unwrap()
@@ -70,16 +67,16 @@ impl RoadGraph {
         }
 
         for (to, node_id) in &inter.in_nodes {
-            let inter2 = &self.intersections.nodes[to];
+            let inter2 = &self.intersections[to];
             {
-                let rn = self.nodes.nodes.get_mut(node_id).unwrap();
+                let rn = self.nodes.get_mut(node_id).unwrap();
                 transforms
                     .get_mut(rn.e.unwrap())
                     .unwrap()
                     .set_position(rn.pos);
             }
             {
-                let rn2 = self.nodes.nodes.get_mut(&inter2.out_nodes[i]).unwrap();
+                let rn2 = self.nodes.get_mut(&inter2.out_nodes[i]).unwrap();
                 transforms
                     .get_mut(rn2.e.unwrap())
                     .unwrap()
@@ -88,12 +85,16 @@ impl RoadGraph {
         }
     }
 
+    pub fn update_traffic_lights(&mut self, i: &NodeID) {
+        let inter = &self.intersections[i];
+    }
+
     pub fn calculate_nodes_positions(&mut self, i: &NodeID) {
-        let inter = &self.intersections.nodes[i];
+        let inter = &self.intersections[i];
         let center = inter.pos;
 
         for (to, node_id) in &inter.out_nodes {
-            let inter2 = &self.intersections.nodes[to];
+            let inter2 = &self.intersections[to];
             let center2 = inter2.pos;
 
             let diff = center2 - center;
@@ -104,15 +105,15 @@ impl RoadGraph {
 
             let nor: Vector2<f32> = Vector2::new(-dir.y, dir.x);
 
-            let rn = self.nodes.nodes.get_mut(node_id).unwrap();
+            let rn = self.nodes.get_mut(node_id).unwrap();
             rn.pos = center + dir * inter_length - nor * 4.0;
 
-            let rn2 = self.nodes.nodes.get_mut(&inter2.in_nodes[&i]).unwrap();
+            let rn2 = self.nodes.get_mut(&inter2.in_nodes[&i]).unwrap();
             rn2.pos = center2 - dir * inter_length - nor * 4.0;
         }
 
         for (to, node_id) in &inter.in_nodes {
-            let inter2 = &self.intersections.nodes[to];
+            let inter2 = &self.intersections[to];
             let center2 = inter2.pos;
 
             let diff = center2 - center;
@@ -123,10 +124,10 @@ impl RoadGraph {
 
             let nor: Vector2<f32> = Vector2::new(-dir.y, dir.x);
 
-            let rn = self.nodes.nodes.get_mut(node_id).unwrap();
+            let rn = self.nodes.get_mut(node_id).unwrap();
             rn.pos = center + dir * inter_length + nor * 4.0;
 
-            let rn2 = self.nodes.nodes.get_mut(&inter2.out_nodes[&i]).unwrap();
+            let rn2 = self.nodes.get_mut(&inter2.out_nodes[&i]).unwrap();
             rn2.pos = center2 - dir * inter_length + nor * 4.0;
         }
     }
@@ -140,7 +141,7 @@ impl RoadGraph {
         movable: &mut WriteStorage<'a, Movable>,
         selectable: &mut WriteStorage<'a, Selectable>,
     ) {
-        for (n, rn) in &mut self.nodes.nodes {
+        for (n, rn) in &mut self.nodes {
             if rn.e.is_none() {
                 rn.e = Some(
                     entities
@@ -153,7 +154,7 @@ impl RoadGraph {
             }
         }
 
-        for (n, rn) in &mut self.intersections.nodes {
+        for (n, rn) in &mut self.intersections {
             if rn.e.is_none() {
                 rn.e = Some(
                     entities
@@ -170,7 +171,7 @@ impl RoadGraph {
 
     pub fn calculate_meshes(&mut self, meshrenders: &mut WriteStorage<MeshRender>) {
         // For each intersection
-        for (_, r) in &self.intersections().nodes {
+        for (_, r) in &self.intersections {
             let meshb = MeshRender::simple(
                 CircleRender {
                     radius: 2.0,
@@ -186,11 +187,13 @@ impl RoadGraph {
                 .expect("Error inserting mesh for graph");
 
             // All gray on the inside
-            for (_, in_node) in &r.in_nodes {
+            for (from_inter_id, in_node) in &r.in_nodes {
+                let inter = self.intersections[from_inter_id].pos;
+                let dir = r.pos - inter;
                 let mut meshb = MeshRender::empty(1);
 
-                for nei in self.nodes().get_neighs(in_node) {
-                    let e_nei = self.nodes().nodes[&nei.to].e.unwrap();
+                for nei in self.nodes.get_neighs(in_node) {
+                    let e_nei = self.nodes[&nei.to].e.unwrap();
                     meshb.add(LineToRender {
                         color: Color::gray(0.5),
                         to: e_nei,
@@ -204,7 +207,14 @@ impl RoadGraph {
                     ..Default::default()
                 });
 
-                let e_in = self.nodes().nodes.get(in_node).unwrap().e.unwrap();
+                meshb.add(CircleRender {
+                    offset: -dir.normalize(),
+                    radius: 0.5,
+                    color: GREEN,
+                    filled: true,
+                });
+
+                let e_in = self.nodes.get(in_node).unwrap().e.unwrap();
                 meshrenders
                     .insert(e_in, meshb)
                     .expect("Error inserting mesh for graph");
@@ -213,8 +223,8 @@ impl RoadGraph {
             // gray and white between the intersections
             for (_, out_node) in &r.out_nodes {
                 let mut meshb = MeshRender::empty(0);
-                for nei in self.nodes().get_neighs(out_node) {
-                    let e_nei = self.nodes().nodes[&nei.to].e.unwrap();
+                for nei in self.nodes.get_neighs(out_node) {
+                    let e_nei = self.nodes[&nei.to].e.unwrap();
 
                     meshb.add(LineToRender {
                         color: WHITE,
@@ -233,7 +243,7 @@ impl RoadGraph {
                     filled: true,
                     ..Default::default()
                 });
-                let e_out = self.nodes().nodes.get(out_node).unwrap().e.unwrap();
+                let e_out = self.nodes.get(out_node).unwrap().e.unwrap();
                 meshrenders
                     .insert(e_out, meshb)
                     .expect("Error inserting mesh for graph");
@@ -243,9 +253,9 @@ impl RoadGraph {
 
     pub fn closest_node(&self, pos: Vector2<f32>) -> NodeID {
         let mut id: NodeID = *self.nodes.ids().next().unwrap();
-        let mut min_dist = self.nodes.nodes.get(&id).unwrap().pos.distance2(pos);
+        let mut min_dist = self.nodes.get(&id).unwrap().pos.distance2(pos);
 
-        for (key, value) in &self.nodes.nodes {
+        for (key, value) in &self.nodes {
             let dist = pos.distance2(value.pos);
             if dist < min_dist {
                 id = *key;
@@ -262,7 +272,7 @@ impl RoadGraph {
         for Edge { to, .. } in self.intersections.get_backward_neighs(id).clone() {
             self.disconnect_directional(&to, id, entities);
         }
-        self.intersections.nodes[&id].e.map(|x| entities.delete(x));
+        self.intersections[&id].e.map(|x| entities.delete(x));
         self.intersections.remove_node(id);
     }
 
@@ -274,28 +284,24 @@ impl RoadGraph {
     pub fn disconnect_directional(&mut self, from: &NodeID, to: &NodeID, entities: &Entities) {
         self.dirty = true;
         self.intersections.remove_neigh(from, to);
-        let inter_from_node = &self.intersections.nodes[from].out_nodes[to];
-        let inter_to_node = &self.intersections.nodes[to].in_nodes[from];
+        let inter_from_node = &self.intersections[from].out_nodes[to];
+        let inter_to_node = &self.intersections[to].in_nodes[from];
 
-        self.nodes.nodes[inter_from_node]
+        self.nodes[inter_from_node]
             .e
             .map(|ent| entities.delete(ent));
-        self.nodes.nodes[inter_to_node]
-            .e
-            .map(|ent| entities.delete(ent));
+        self.nodes[inter_to_node].e.map(|ent| entities.delete(ent));
 
         self.nodes.remove_node(inter_from_node);
         self.nodes.remove_node(inter_to_node);
 
         self.intersections
-            .nodes
             .get_mut(from)
             .unwrap()
             .out_nodes
             .remove(to);
 
         self.intersections
-            .nodes
             .get_mut(to)
             .unwrap()
             .in_nodes
@@ -308,7 +314,7 @@ impl RoadGraph {
     }
 
     pub fn connect_directional(&mut self, from: &NodeID, to: &NodeID) {
-        if self.intersections.nodes[from].pos == self.intersections.nodes[to].pos {
+        if self.intersections[from].pos == self.intersections[to].pos {
             println!("Couldn't connect two intersections because they are at the same place.");
             return;
         }
@@ -317,12 +323,11 @@ impl RoadGraph {
         let rn_out = RoadNode::new([0.0, 0.0].into());
         let rn_in = RoadNode::new([0.0, 0.0].into());
 
-        let out_id = self.nodes.add_node(rn_out);
-        let in_id = self.nodes.add_node(rn_in);
-        self.nodes
-            .add_neigh(&out_id, &in_id, rn_out.pos.distance(rn_in.pos));
+        let out_id = self.nodes.push(rn_out);
+        let in_id = self.nodes.push(rn_in);
+        self.nodes.add_neigh(&out_id, &in_id, 0.0);
 
-        let inter = self.intersections.nodes.get_mut(&from).unwrap();
+        let inter = self.intersections.get_mut(&from).unwrap();
         inter.out_nodes.insert(*to, out_id);
         for (from_id, in_id) in &inter.in_nodes {
             if from_id == to {
@@ -331,7 +336,7 @@ impl RoadGraph {
             self.nodes.add_neigh(in_id, &out_id, 1.0); // FIXME: Use actual internal road length
         }
 
-        let inter2 = self.intersections.nodes.get_mut(&to).unwrap();
+        let inter2 = self.intersections.get_mut(&to).unwrap();
         inter2.in_nodes.insert(*from, in_id);
         for (to_id, out) in &inter2.out_nodes {
             if to_id == from {

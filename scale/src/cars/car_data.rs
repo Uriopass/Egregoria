@@ -66,10 +66,8 @@ impl CarObjective {
     pub fn to_pos(&self, rg: &RoadGraph) -> Option<Vector2<f32>> {
         match self {
             CarObjective::None => None,
-            Simple(x) | Temporary(x) => rg.nodes().nodes.get(x).map(|x| x.pos),
-            CarObjective::Route(l) => l
-                .get(0)
-                .and_then(|x| rg.nodes().nodes.get(x).map(|x| x.pos)),
+            Simple(x) | Temporary(x) => rg.nodes().get(x).map(|x| x.pos),
+            CarObjective::Route(l) => l.get(0).and_then(|x| rg.nodes().get(x).map(|x| x.pos)),
         }
     }
 }
