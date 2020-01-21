@@ -1,5 +1,5 @@
 use crate::cars::car_data::CarObjective::{Simple, Temporary};
-use crate::cars::roads::RoadGraph;
+use crate::cars::roads::{RoadGraph, TrafficLightColor};
 use crate::graphs::graph::NodeID;
 use crate::gui::ImCgVec2;
 use crate::interaction::{Movable, Selectable};
@@ -95,6 +95,7 @@ impl CarComponent {
         &self,
         rg: &RoadGraph,
         speed: f32,
+        time: f64,
         position: Vector2<f32>,
         neighs: Vec<&Isometry2<f32>>,
     ) -> (f32, Vector2<f32>) {
@@ -138,19 +139,38 @@ impl CarComponent {
         let dist_to_pos = delta_pos.magnitude();
         let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
 
-        let mut speed: f32 = 50.0;
+        let mut desired_speed: f32 = 50.0;
 
+        match self.objective {
+            Temporary(n_id) => match rg.nodes()[&n_id].light.get_color(time as u64) {
+                TrafficLightColor::RED => {
+                    if dist_to_pos < 5.0 + speed {
+                        desired_speed = 0.0;
+                    }
+                }
+                TrafficLightColor::ORANGE => {
+                    if dist_to_pos > speed && dist_to_pos < 2.0 * speed {
+                        desired_speed = desired_speed.min(10.0);
+                    }
+                }
+                _ => {}
+            },
+            _ => {}
+        }
         if is_terminal {
-            speed = dist_to_pos;
+            desired_speed = desired_speed.min(dist_to_pos);
         }
         if dir_to_pos.dot(self.direction) < 0.8 {
-            speed = 7.0;
+            desired_speed = desired_speed.min(7.0);
         }
-        (speed.min(min_dist2.sqrt() - 8.0).max(0.0), dir_to_pos)
+        (
+            desired_speed.min(min_dist2.sqrt() - 8.0).max(0.0),
+            dir_to_pos,
+        )
     }
 }
 
-pub fn make_car_entity(world: &mut World, position: Vector2<f32>) {
+pub fn make_car_entity(world: &mut World, position: Vector2<f32>, direction: Vector2<f32>) {
     let car_width = 4.5;
     let car_height = 2.0;
 
@@ -173,7 +193,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>) {
         .with(Transform::new(position))
         .with(Kinematics::from_mass(1000.0))
         .with(CarComponent {
-            direction: Vector2::new(1.0, 0.0),
+            direction,
             objective: CarObjective::None,
         })
         .with(Drag::new(0.3))

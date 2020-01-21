@@ -11,7 +11,7 @@ use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::engine_interaction;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo};
-use scale::gui::TestGui;
+use scale::gui::Gui;
 use specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
@@ -154,8 +154,10 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
         rc.finish()?;
 
-        let gui: TestGui = (*self.world.read_resource::<TestGui>()).clone();
-        self.imgui_wrapper.render(ctx, &mut self.world, gui, 1.0);
+        let mut gui: Gui = (*self.world.read_resource::<Gui>()).clone();
+        self.imgui_wrapper
+            .render(ctx, &mut self.world, &mut gui, 1.0);
+        *self.world.write_resource::<Gui>() = gui;
 
         graphics::present(ctx)
     }

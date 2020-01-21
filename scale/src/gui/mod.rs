@@ -2,18 +2,20 @@ mod inspect;
 
 pub use inspect::*;
 
-
+use crate::cars::spawn_new_car;
 use crate::interaction::SelectedEntity;
 use imgui::im_str;
 use imgui::Ui;
 use specs::world::World;
 use specs::WorldExt;
 
-#[derive(Clone)]
-pub struct TestGui;
+#[derive(Clone, Default)]
+pub struct Gui {
+    show_car_ui: bool,
+}
 
-impl TestGui {
-    pub fn render(&self, ui: &Ui, world: &mut World) {
+impl Gui {
+    pub fn render(&mut self, ui: &Ui, world: &mut World) {
         let selected = *world.read_resource::<SelectedEntity>();
         // Window
         if let Some(e) = selected.0 {
@@ -39,20 +41,31 @@ impl TestGui {
 
         // Menu bar
         ui.main_menu_bar(|| {
-            ui.menu(im_str!("Physics"), true, || {
-                if imgui::MenuItem::new(im_str!("Item 1.1")).build(&ui) {
-                    println!("item 1.1 inside menu bar clicked");
+            ui.menu(im_str!("Infos"), true, || {
+                if imgui::MenuItem::new(im_str!("Cars")).build(&ui) {
+                    self.show_car_ui = true;
                 }
-
-                ui.menu(im_str!("Item 1.2"), true, || {
-                    if imgui::MenuItem::new(im_str!("Item 1.2.1")).build(&ui) {
-                        println!("item 1.2.1 inside menu bar clicked");
-                    }
-                    if imgui::MenuItem::new(im_str!("Item 1.2.2")).build(&ui) {
-                        println!("item 1.2.2 inside menu bar clicked");
-                    }
-                });
             });
         });
+
+        if self.show_car_ui {
+            imgui::Window::new(im_str!("Cars"))
+                .size([200.0, 300.0], imgui::Condition::FirstUseEver)
+                .position([30.0, 330.0], imgui::Condition::FirstUseEver)
+                .opened(&mut true)
+                .build(&ui, || {
+                    if ui.small_button(im_str!("spawn car")) {
+                        spawn_new_car(world);
+                    }
+
+                    if ui.small_button(im_str!("spawn 10 cars")) {
+                        (0..10).into_iter().for_each(|_| spawn_new_car(world));
+                    }
+
+                    if ui.small_button(im_str!("spawn 100 cars")) {
+                        (0..100).into_iter().for_each(|_| spawn_new_car(world));
+                    }
+                });
+        }
     }
 }
