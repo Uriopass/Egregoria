@@ -1,4 +1,4 @@
-use crate::engine_interaction::{DeltaTime, MouseButton, MouseInfo};
+use crate::engine_interaction::{MouseButton, MouseInfo, TimeInfo};
 use crate::interaction::SelectedEntity;
 use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::num_traits::zero;
@@ -37,7 +37,7 @@ impl<'a> System<'a> for MovableSystem {
         Write<'a, EventChannel<MovedEvent>>,
         ReadStorage<'a, Movable>,
         Read<'a, SelectedEntity>,
-        Read<'a, DeltaTime>,
+        Read<'a, TimeInfo>,
     );
 
     fn run(
@@ -49,7 +49,7 @@ impl<'a> System<'a> for MovableSystem {
             mut movedevents,
             movables,
             selected,
-            delta,
+            time,
         ): Self::SystemData,
     ) {
         if mouse.buttons.contains(&MouseButton::Left)
@@ -80,7 +80,7 @@ impl<'a> System<'a> for MovableSystem {
             if let Some(e) = selected.0 {
                 if let Some(kin) = kinematics.get_mut(e) {
                     let p = transforms.get(e).unwrap();
-                    kin.velocity = (mouse.unprojected - (p.position() - off)) / delta.0;
+                    kin.velocity = (mouse.unprojected - (p.position() - off)) / time.delta;
                 }
             }
         }

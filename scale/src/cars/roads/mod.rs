@@ -6,19 +6,82 @@ use std::collections::HashMap;
 
 mod road_graph;
 mod road_graph_synchronize;
+mod traffic_lights_render;
 
+use crate::rendering::{Color, GREEN, ORANGE, RED};
 pub use road_graph::RoadGraph;
 pub use road_graph_synchronize::RoadGraphSynchronize;
 
 #[derive(Clone, Copy)]
+pub enum TrafficLightColor {
+    RED,
+    ORANGE,
+    GREEN,
+}
+
+impl TrafficLightColor {
+    pub fn as_render_color(&self) -> Color {
+        match self {
+            TrafficLightColor::RED => RED,
+            TrafficLightColor::ORANGE => ORANGE,
+            TrafficLightColor::GREEN => GREEN,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct TrafficLightSchedule {
+    period: u64,
+    lights: Vec<TrafficLightColor>,
+}
+
+impl TrafficLightSchedule {
+    pub fn from_basic(green: usize, orange: usize, red: usize, offset: usize) -> Self {
+        let period = (green + orange + red) as u64;
+        let mut lights = std::iter::repeat(TrafficLightColor::GREEN)
+            .take(green)
+            .chain(std::iter::repeat(TrafficLightColor::ORANGE).take(orange))
+            .chain(std::iter::repeat(TrafficLightColor::RED).take(red))
+            .collect::<Vec<TrafficLightColor>>();
+        lights.rotate_right(offset);
+        assert_eq!(lights.len(), period as usize);
+
+        Self { lights, period }
+    }
+}
+
+#[derive(Clone)]
+pub enum TrafficLight {
+    Always,
+    Periodic(TrafficLightSchedule),
+}
+
+impl TrafficLight {
+    pub fn get_color(&self, time_seconds: u64) -> TrafficLightColor {
+        match self {
+            TrafficLight::Always => TrafficLightColor::GREEN,
+            TrafficLight::Periodic(schedule) => {
+                let remainder = (time_seconds % schedule.period) as usize;
+                schedule.lights[remainder]
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct RoadNode {
     pub pos: Vector2<f32>,
     pub e: Option<Entity>,
+    pub light: TrafficLight,
 }
 
 impl RoadNode {
     pub fn new(pos: Vector2<f32>) -> Self {
-        RoadNode { pos, e: None }
+        RoadNode {
+            pos,
+            e: None,
+            light: TrafficLight::Always,
+        }
     }
 }
 

@@ -6,7 +6,10 @@ use specs::prelude::ComponentEvent;
 use specs::ReaderId;
 
 #[derive(Default)]
-pub struct DeltaTime(pub f32);
+pub struct TimeInfo {
+    pub delta: f32,
+    pub time: f64,
+}
 
 pub struct MeshRenderEventReader(pub ReaderId<ComponentEvent>);
 pub const MAX_LAYERS: u32 = 20;
