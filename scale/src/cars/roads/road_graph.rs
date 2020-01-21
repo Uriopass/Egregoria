@@ -3,6 +3,8 @@ use crate::cars::{IntersectionComponent, RoadNodeComponent};
 use crate::graphs::graph::{Edge, Graph, NodeID};
 use crate::interaction::{Movable, Selectable};
 use crate::physics::physics_components::Transform;
+use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
+use crate::rendering::{Color, RED, WHITE};
 use cgmath::Vector2;
 use cgmath::{InnerSpace, MetricSpace};
 use specs::{Entities, WriteStorage};
@@ -162,6 +164,79 @@ impl RoadGraph {
                         .with(Selectable, selectable)
                         .build(),
                 );
+            }
+        }
+    }
+
+    pub fn calculate_meshes(&mut self, meshrenders: &mut WriteStorage<MeshRender>) {
+        // For each intersection
+        for (_, r) in &self.intersections().nodes {
+            let meshb = MeshRender::simple(
+                CircleRender {
+                    radius: 2.0,
+                    color: RED,
+                    filled: true,
+                    ..Default::default()
+                },
+                1,
+            );
+            let e = r.e.expect("Intersection has no entity");
+            meshrenders
+                .insert(e, meshb)
+                .expect("Error inserting mesh for graph");
+
+            // All gray on the inside
+            for (_, in_node) in &r.in_nodes {
+                let mut meshb = MeshRender::empty(1);
+
+                for nei in self.nodes().get_neighs(*in_node) {
+                    let e_nei = self.nodes().nodes[&nei.to].e.unwrap();
+                    meshb.add(LineToRender {
+                        color: Color::gray(0.5),
+                        to: e_nei,
+                        thickness: 8.0,
+                    });
+                }
+                meshb.add(CircleRender {
+                    radius: 4.0,
+                    color: Color::gray(0.5),
+                    filled: true,
+                    ..Default::default()
+                });
+
+                let e_in = self.nodes().nodes.get(in_node).unwrap().e.unwrap();
+                meshrenders
+                    .insert(e_in, meshb)
+                    .expect("Error inserting mesh for graph");
+            }
+
+            // gray and white between the intersections
+            for (_, out_node) in &r.out_nodes {
+                let mut meshb = MeshRender::empty(0);
+                for nei in self.nodes().get_neighs(*out_node) {
+                    let e_nei = self.nodes().nodes[&nei.to].e.unwrap();
+
+                    meshb.add(LineToRender {
+                        color: WHITE,
+                        to: e_nei,
+                        thickness: 8.5,
+                    });
+                    meshb.add(LineToRender {
+                        color: Color::gray(0.5),
+                        to: e_nei,
+                        thickness: 7.5,
+                    });
+                }
+                meshb.add(CircleRender {
+                    radius: 4.0,
+                    color: Color::gray(0.5),
+                    filled: true,
+                    ..Default::default()
+                });
+                let e_out = self.nodes().nodes.get(out_node).unwrap().e.unwrap();
+                meshrenders
+                    .insert(e_out, meshb)
+                    .expect("Error inserting mesh for graph");
             }
         }
     }
