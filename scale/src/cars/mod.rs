@@ -39,15 +39,15 @@ pub fn setup(world: &mut World) {
     let c      = rg.add_intersection(Intersection::new([0.0, 100.0].into()));
     let d      = rg.add_intersection(Intersection::new([0.0, -100.0].into()));
 
-    rg.connect(a, center);
-    rg.connect(b, center);
-    rg.connect(c, center);
-    rg.connect(d, center);
+    rg.connect(&a, &center);
+    rg.connect(&b, &center);
+    rg.connect(&c, &center);
+    rg.connect(&d, &center);
 
-    rg.connect(a, c);
-    rg.connect(c, b);
-    rg.connect(b, d);
-    rg.connect(d, a);
+    rg.connect(&a, &c);
+    rg.connect(&c, &b);
+    rg.connect(&b, &d);
+    rg.connect(&d, &a);
 
     world.insert(rg);
     

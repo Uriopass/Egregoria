@@ -35,10 +35,10 @@ impl RoadGraph {
         self.nodes.nodes.entry(i).and_modify(|x| x.pos = pos);
     }
 
-    pub fn set_intersection_position(&mut self, i: NodeID, pos: Vector2<f32>) {
+    pub fn set_intersection_position(&mut self, i: &NodeID, pos: Vector2<f32>) {
         self.intersections
             .nodes
-            .entry(i)
+            .entry(*i)
             .and_modify(|x| x.pos = pos);
     }
 
@@ -47,8 +47,8 @@ impl RoadGraph {
         self.intersections.add_node(i)
     }
 
-    pub fn synchronize_positions(&mut self, i: NodeID, transforms: &mut WriteStorage<Transform>) {
-        let inter = &self.intersections.nodes[&i];
+    pub fn synchronize_positions(&mut self, i: &NodeID, transforms: &mut WriteStorage<Transform>) {
+        let inter = &self.intersections.nodes[i];
 
         for (to, node_id) in &inter.out_nodes {
             let inter2 = &self.intersections.nodes[to];
@@ -61,7 +61,7 @@ impl RoadGraph {
                     .set_position(rn.pos);
             }
             {
-                let rn2 = self.nodes.nodes.get_mut(&inter2.in_nodes[&i]).unwrap();
+                let rn2 = self.nodes.nodes.get_mut(&inter2.in_nodes[i]).unwrap();
                 transforms
                     .get_mut(rn2.e.unwrap())
                     .unwrap()
@@ -79,7 +79,7 @@ impl RoadGraph {
                     .set_position(rn.pos);
             }
             {
-                let rn2 = self.nodes.nodes.get_mut(&inter2.out_nodes[&i]).unwrap();
+                let rn2 = self.nodes.nodes.get_mut(&inter2.out_nodes[i]).unwrap();
                 transforms
                     .get_mut(rn2.e.unwrap())
                     .unwrap()
@@ -88,8 +88,8 @@ impl RoadGraph {
         }
     }
 
-    pub fn calculate_nodes_positions(&mut self, i: NodeID) {
-        let inter = &self.intersections.nodes[&i];
+    pub fn calculate_nodes_positions(&mut self, i: &NodeID) {
+        let inter = &self.intersections.nodes[i];
         let center = inter.pos;
 
         for (to, node_id) in &inter.out_nodes {
@@ -178,7 +178,7 @@ impl RoadGraph {
                     filled: true,
                     ..Default::default()
                 },
-                1,
+                2,
             );
             let e = r.e.expect("Intersection has no entity");
             meshrenders
@@ -189,7 +189,7 @@ impl RoadGraph {
             for (_, in_node) in &r.in_nodes {
                 let mut meshb = MeshRender::empty(1);
 
-                for nei in self.nodes().get_neighs(*in_node) {
+                for nei in self.nodes().get_neighs(in_node) {
                     let e_nei = self.nodes().nodes[&nei.to].e.unwrap();
                     meshb.add(LineToRender {
                         color: Color::gray(0.5),
@@ -213,7 +213,7 @@ impl RoadGraph {
             // gray and white between the intersections
             for (_, out_node) in &r.out_nodes {
                 let mut meshb = MeshRender::empty(0);
-                for nei in self.nodes().get_neighs(*out_node) {
+                for nei in self.nodes().get_neighs(out_node) {
                     let e_nei = self.nodes().nodes[&nei.to].e.unwrap();
 
                     meshb.add(LineToRender {
@@ -255,60 +255,60 @@ impl RoadGraph {
         id
     }
 
-    pub fn delete_inter(&mut self, id: NodeID, entities: &Entities) {
+    pub fn delete_inter(&mut self, id: &NodeID, entities: &Entities) {
         for Edge { to, .. } in self.intersections.get_neighs(id).clone() {
-            self.disconnect_directional(id, to, entities);
+            self.disconnect_directional(id, &to, entities);
         }
         for Edge { to, .. } in self.intersections.get_backward_neighs(id).clone() {
-            self.disconnect_directional(to, id, entities);
+            self.disconnect_directional(&to, id, entities);
         }
         self.intersections.nodes[&id].e.map(|x| entities.delete(x));
         self.intersections.remove_node(id);
     }
 
-    pub fn disconnect(&mut self, a: NodeID, b: NodeID, entities: &Entities) {
+    pub fn disconnect(&mut self, a: &NodeID, b: &NodeID, entities: &Entities) {
         self.disconnect_directional(a, b, entities);
         self.disconnect_directional(b, a, entities);
     }
 
-    pub fn disconnect_directional(&mut self, from: NodeID, to: NodeID, entities: &Entities) {
+    pub fn disconnect_directional(&mut self, from: &NodeID, to: &NodeID, entities: &Entities) {
         self.dirty = true;
         self.intersections.remove_neigh(from, to);
-        let inter_from_node = &self.intersections.nodes[&from].out_nodes[&to];
-        let inter_to_node = &self.intersections.nodes[&to].in_nodes[&from];
+        let inter_from_node = &self.intersections.nodes[from].out_nodes[to];
+        let inter_to_node = &self.intersections.nodes[to].in_nodes[from];
 
-        self.nodes.nodes[&inter_from_node]
+        self.nodes.nodes[inter_from_node]
             .e
             .map(|ent| entities.delete(ent));
-        self.nodes.nodes[&inter_to_node]
+        self.nodes.nodes[inter_to_node]
             .e
             .map(|ent| entities.delete(ent));
 
-        self.nodes.remove_node(*inter_from_node);
-        self.nodes.remove_node(*inter_to_node);
+        self.nodes.remove_node(inter_from_node);
+        self.nodes.remove_node(inter_to_node);
 
         self.intersections
             .nodes
-            .get_mut(&from)
+            .get_mut(from)
             .unwrap()
             .out_nodes
-            .remove(&to);
+            .remove(to);
 
         self.intersections
             .nodes
-            .get_mut(&to)
+            .get_mut(to)
             .unwrap()
             .in_nodes
-            .remove(&from);
+            .remove(from);
     }
 
-    pub fn connect(&mut self, a: NodeID, b: NodeID) {
+    pub fn connect(&mut self, a: &NodeID, b: &NodeID) {
         self.connect_directional(a, b);
         self.connect_directional(b, a);
     }
 
-    pub fn connect_directional(&mut self, from: NodeID, to: NodeID) {
-        if self.intersections.nodes[&from].pos == self.intersections.nodes[&to].pos {
+    pub fn connect_directional(&mut self, from: &NodeID, to: &NodeID) {
+        if self.intersections.nodes[from].pos == self.intersections.nodes[to].pos {
             println!("Couldn't connect two intersections because they are at the same place.");
             return;
         }
@@ -320,24 +320,24 @@ impl RoadGraph {
         let out_id = self.nodes.add_node(rn_out);
         let in_id = self.nodes.add_node(rn_in);
         self.nodes
-            .add_neigh(out_id, in_id, rn_out.pos.distance(rn_in.pos));
+            .add_neigh(&out_id, &in_id, rn_out.pos.distance(rn_in.pos));
 
         let inter = self.intersections.nodes.get_mut(&from).unwrap();
-        inter.out_nodes.insert(to, out_id);
+        inter.out_nodes.insert(*to, out_id);
         for (from_id, in_id) in &inter.in_nodes {
-            if *from_id == to {
+            if from_id == to {
                 continue;
             }
-            self.nodes.add_neigh(*in_id, out_id, 1.0); // FIXME: Use actual internal road length
+            self.nodes.add_neigh(in_id, &out_id, 1.0); // FIXME: Use actual internal road length
         }
 
         let inter2 = self.intersections.nodes.get_mut(&to).unwrap();
-        inter2.in_nodes.insert(from, in_id);
+        inter2.in_nodes.insert(*from, in_id);
         for (to_id, out) in &inter2.out_nodes {
-            if *to_id == from {
+            if to_id == from {
                 continue;
             }
-            self.nodes.add_neigh(in_id, *out, 1.0);
+            self.nodes.add_neigh(&in_id, out, 1.0);
         }
 
         self.calculate_nodes_positions(from);

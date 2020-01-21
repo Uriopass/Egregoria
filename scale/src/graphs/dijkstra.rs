@@ -50,7 +50,7 @@ pub fn dijsktra<T>(graph: &Graph<T>, start: NodeID) -> HashMap<NodeID, f32> {
             continue;
         }
 
-        for nei in graph.get_neighs(position) {
+        for nei in graph.get_neighs(&position) {
             let v = dist[&position] + nei.weight;
             if v < dist[&nei.to] {
                 dist.insert(nei.to, v);
@@ -78,27 +78,27 @@ mod tests {
         let id3 = g.add_node(2);
 
         g.set_neighs(
-            id,
+            *id,
             vec![
                 Edge {
-                    to: id2,
+                    to: *id2,
                     weight: 1.0,
                 },
                 Edge {
-                    to: id3,
+                    to: *id3,
                     weight: 3.0,
                 },
             ],
         );
         g.set_neighs(
-            id2,
+            *id2,
             vec![Edge {
-                to: id3,
+                to: *id3,
                 weight: 5.0,
             }],
         );
 
-        let dists = dijsktra(&g, id);
+        let dists = dijsktra(&g, *id);
         assert_eq!(dists[&id], 0.0);
         assert_eq!(dists[&id2], 1.0);
         assert_eq!(dists[&id3], 3.0);

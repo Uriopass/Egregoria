@@ -156,7 +156,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>) {
     let car_width = 4.5;
     let car_height = 2.0;
 
-    let mut mr = MeshRender::empty(2);
+    let mut mr = MeshRender::empty(3);
     mr.add(RectRender {
         width: car_width,
         height: car_height,

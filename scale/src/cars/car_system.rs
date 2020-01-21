@@ -53,7 +53,7 @@ fn car_objective_update(car: &mut CarComponent, trans: &Transform, graph: &RoadG
         CarObjective::Temporary(x) => {
             if let Some(p) = graph.nodes().nodes.get(&x).map(|x| x.pos) {
                 if p.distance2(trans.position()) < 25.0 {
-                    let neighs = graph.nodes().get_neighs(x);
+                    let neighs = graph.nodes().get_neighs(&x);
                     let r = rand::random::<f32>() * (neighs.len() as f32);
                     if neighs.len() == 0 {
                         return;
