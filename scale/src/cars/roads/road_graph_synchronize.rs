@@ -5,10 +5,8 @@ use crate::cars::{IntersectionComponent, RoadNodeComponent};
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity};
 use crate::physics::physics_components::Transform;
-use crate::rendering::meshrender_component::{
-    CircleRender, LineRender, LineToRender, MeshRender, MeshRenderEnum,
-};
-use crate::rendering::{Color, RED};
+use crate::rendering::meshrender_component::{LineRender, MeshRender, MeshRenderEnum};
+use crate::rendering::RED;
 use specs::prelude::System;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -181,79 +179,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 &mut data.selectable,
             );
 
-            {
-                for (n, r) in &data.rg.nodes().nodes {
-                    let e = r.e;
-                    if e.is_none() {
-                        continue;
-                    }
-                    let e = e.unwrap();
-
-                    let mut meshb = MeshRender::simple(
-                        CircleRender {
-                            radius: 3.0,
-                            color: Color::gray(0.5),
-                            filled: true,
-                            ..Default::default()
-                        },
-                        0,
-                    );
-
-                    for nei in data.rg.nodes().get_neighs(*n) {
-                        let e_nei = data.rg.nodes().nodes[&nei.to].e;
-                        if e_nei.is_none() {
-                            continue;
-                        }
-                        let e_nei = e_nei.unwrap();
-                        meshb.add(LineToRender {
-                            color: Color::gray(0.5),
-                            to: e_nei,
-                            thickness: 6.0,
-                        });
-                    }
-
-                    data.meshrenders
-                        .insert(e, meshb)
-                        .expect("Error inserting mesh for graph");
-                }
-            }
-
-            {
-                for (n, r) in &data.rg.intersections().nodes {
-                    let e = r.e;
-                    if e.is_none() {
-                        continue;
-                    }
-                    let e = e.unwrap();
-
-                    let mut meshb = MeshRender::simple(
-                        CircleRender {
-                            radius: 2.0,
-                            color: RED,
-                            filled: true,
-                            ..Default::default()
-                        },
-                        1,
-                    );
-
-                    for nei in data.rg.intersections().get_neighs(*n) {
-                        let e_nei = data.rg.intersections().nodes[&nei.to].e;
-                        if e_nei.is_none() {
-                            continue;
-                        }
-                        let e_nei = e_nei.unwrap();
-                        meshb.add(LineToRender {
-                            color: RED,
-                            to: e_nei,
-                            thickness: 0.1,
-                        });
-                    }
-
-                    data.meshrenders
-                        .insert(e, meshb)
-                        .expect("Error inserting mesh for graph");
-                }
-            }
+            data.rg.calculate_meshes(&mut data.meshrenders);
         }
     }
 }
