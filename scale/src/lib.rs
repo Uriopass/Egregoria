@@ -3,9 +3,9 @@
 use ncollide2d::world::CollisionWorld;
 
 use crate::cars::car_system::CarDecision;
-use crate::cars::roads::RoadGraphSynchronize;
+use crate::cars::roads::{RoadGraphSynchronize, TrafficLightRender};
 use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, TimeInfo};
-use crate::gui::TestGui;
+use crate::gui::Gui;
 use crate::humans::HumanUpdate;
 use crate::interaction::{MovableSystem, SelectableAuraSystem, SelectableSystem, SelectedEntity};
 use crate::physics::physics_components::Collider;
@@ -38,6 +38,7 @@ pub fn dispatcher<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
             &["human update", "car decision", "selectable"],
         )
         .with(RoadGraphSynchronize::new(world), "rgs", &["movable"])
+        .with(TrafficLightRender, "traffic light render", &["rgs"])
         .with(KinematicsApply, "speed apply", &["movable"])
         .with(PhysicsUpdate::default(), "physics", &["speed apply"])
         .with(
@@ -54,7 +55,7 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.insert(TimeInfo::default());
     world.insert(collision_world);
     world.insert(KeyboardInfo::default());
-    world.insert(TestGui);
+    world.insert(Gui::default());
     world.insert(SelectedEntity::default());
 
     world.register::<Collider>();

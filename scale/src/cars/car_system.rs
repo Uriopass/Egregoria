@@ -39,20 +39,27 @@ impl<'a> System<'a> for CarDecision {
         (&mut transforms, &mut kinematics, &mut cars)
             .par_join()
             .for_each(|(trans, kin, car)| {
-                car_objective_update(car, trans, &road_graph);
-                car_physics(&coworld, &road_graph, delta, trans, kin, car);
+                car_objective_update(car, &time, trans, &road_graph);
+                car_physics(&coworld, &road_graph, delta, time.time, trans, kin, car);
             });
     }
 }
 
-fn car_objective_update(car: &mut CarComponent, trans: &Transform, graph: &RoadGraph) {
+fn car_objective_update(
+    car: &mut CarComponent,
+    time: &TimeInfo,
+    trans: &Transform,
+    graph: &RoadGraph,
+) {
     match car.objective {
         CarObjective::None | Simple(_) | Route(_) => {
             car.objective = Temporary(graph.closest_node(trans.position()));
         }
         CarObjective::Temporary(x) => {
             if let Some(p) = graph.nodes().get(&x).map(|x| x.pos) {
-                if p.distance2(trans.position()) < 25.0 {
+                if p.distance2(trans.position()) < 25.0
+                    && !graph.nodes()[&x].light.get_color(time.time as u64).is_red()
+                {
                     let neighs = graph.nodes().get_neighs(&x);
                     let r = rand::random::<f32>() * (neighs.len() as f32);
                     if neighs.len() == 0 {
@@ -72,6 +79,7 @@ fn car_physics(
     coworld: &PhysicsWorld,
     rg: &RoadGraph,
     delta: f32,
+    time: f64,
     trans: &mut Transform,
     kin: &mut Kinematics,
     car: &mut CarComponent,
@@ -98,7 +106,7 @@ fn car_physics(
 
     let objs: Vec<&Isometry2<f32>> = neighbors.map(|(_, y)| y.position()).collect();
 
-    let (desired_speed, desired_direction) = car.calc_decision(rg, speed, pos, objs);
+    let (desired_speed, desired_direction) = car.calc_decision(rg, speed, time, pos, objs);
 
     let speed = speed
         + ((desired_speed - speed)
