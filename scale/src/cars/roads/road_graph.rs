@@ -1,4 +1,6 @@
 use super::{Intersection, RoadNode};
+use crate::cars::roads::TrafficLight::Always;
+use crate::cars::roads::{TrafficLight, TrafficLightSchedule};
 use crate::cars::{IntersectionComponent, RoadNodeComponent};
 use crate::graphs::graph::{Edge, Graph, NodeID};
 use crate::interaction::{Movable, Selectable};
@@ -87,6 +89,21 @@ impl RoadGraph {
 
     pub fn update_traffic_lights(&mut self, i: &NodeID) {
         let inter = &self.intersections[i];
+        if inter.in_nodes.len() <= 2 {
+            for (_, id) in inter.in_nodes.iter() {
+                self.nodes[id].light = Always;
+            }
+            return;
+        }
+        let cycle_size = 10;
+        for (i, (_, id)) in inter.in_nodes.iter().enumerate() {
+            self.nodes[id].light = TrafficLight::Periodic(TrafficLightSchedule::from_basic(
+                cycle_size,
+                3,
+                cycle_size + 3,
+                if i % 2 == 0 { cycle_size + 3 } else { 0 },
+            ));
+        }
     }
 
     pub fn calculate_nodes_positions(&mut self, i: &NodeID) {
@@ -188,8 +205,6 @@ impl RoadGraph {
 
             // All gray on the inside
             for (from_inter_id, in_node) in &r.in_nodes {
-                let inter = self.intersections[from_inter_id].pos;
-                let dir = r.pos - inter;
                 let mut meshb = MeshRender::empty(1);
 
                 for nei in self.nodes.get_neighs(in_node) {
@@ -207,8 +222,13 @@ impl RoadGraph {
                     ..Default::default()
                 });
 
+                let inter = self.intersections[from_inter_id].pos;
+                let dir = (r.pos - inter).normalize();
+                let nordir: Vector2<f32> = [-dir.y, dir.x].into();
+
+                // Traffic light
                 meshb.add(CircleRender {
-                    offset: -dir.normalize(),
+                    offset: -dir - nordir * 4.5,
                     radius: 0.5,
                     color: GREEN,
                     filled: true,
@@ -242,6 +262,12 @@ impl RoadGraph {
                     color: Color::gray(0.5),
                     filled: true,
                     ..Default::default()
+                });
+                meshb.add(CircleRender {
+                    offset: [0.0, 0.0].into(),
+                    radius: 0.0,
+                    color: GREEN,
+                    filled: true,
                 });
                 let e_out = self.nodes.get(out_node).unwrap().e.unwrap();
                 meshrenders
@@ -306,6 +332,7 @@ impl RoadGraph {
             .unwrap()
             .in_nodes
             .remove(from);
+        self.update_traffic_lights(to);
     }
 
     pub fn connect(&mut self, a: &NodeID, b: &NodeID) {
@@ -346,6 +373,7 @@ impl RoadGraph {
         }
 
         self.calculate_nodes_positions(from);
+        self.update_traffic_lights(to);
 
         self.dirty = true;
     }

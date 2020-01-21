@@ -7,7 +7,7 @@ use gfx_device_gl;
 use imgui::*;
 use imgui_gfx_renderer::*;
 
-use scale::gui::TestGui;
+use scale::gui::Gui;
 use specs::World;
 use std::time::Instant;
 
@@ -65,7 +65,7 @@ impl ImGuiWrapper {
         &mut self,
         ctx: &mut Context,
         world: &mut World,
-        gui: TestGui,
+        gui: &mut Gui,
         hidpi_factor: f32,
     ) {
         // Create new frame

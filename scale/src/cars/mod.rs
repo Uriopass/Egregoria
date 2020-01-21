@@ -3,8 +3,10 @@ use crate::cars::car_data::make_car_entity;
 use crate::graphs::graph::NodeID;
 use crate::interaction::{Movable, Selectable};
 use crate::physics::physics_components::Transform;
+use cgmath::InnerSpace;
 use cgmath::Vector2;
 use imgui_inspect_derive::*;
+use rand::random;
 use roads::Intersection;
 use roads::RoadGraph;
 use specs::storage::BTreeStorage;
@@ -30,6 +32,23 @@ pub struct IntersectionComponent {
     id: NodeID,
 }
 
+pub fn spawn_new_car(world: &mut World) {
+    let node_pos = {
+        let rg = world.read_resource::<RoadGraph>();
+        let l = rg.nodes().len();
+        let r = (rand::random::<f32>() * l as f32) as usize;
+
+        rg.nodes().into_iter().skip(r).next().unwrap().1.pos
+    };
+    let pos = node_pos
+        + Vector2::new(
+            10.0 * (random::<f32>() - 0.5),
+            10.0 * (random::<f32>() - 0.5),
+        );
+
+    make_car_entity(world, pos, (node_pos - pos).normalize());
+}
+
 #[rustfmt::skip]
 pub fn setup(world: &mut World) {
     let mut rg = RoadGraph::new();
@@ -50,7 +69,7 @@ pub fn setup(world: &mut World) {
     rg.connect(&d, &a);
 
     world.insert(rg);
-    
+
     world.write_resource::<RoadGraph>().populate_entities(
         &world.entities(),
         &mut world.write_component::<RoadNodeComponent>(),
@@ -61,9 +80,6 @@ pub fn setup(world: &mut World) {
     );
 
     for _i in 0..10 {
-        make_car_entity(
-            world,
-            200.0 * Vector2::<f32>::new(rand::random::<f32>() - 0.5, rand::random::<f32>() - 0.5),
-        );
+        spawn_new_car(world);
     }
 }

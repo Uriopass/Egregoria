@@ -11,6 +11,7 @@ mod traffic_lights_render;
 use crate::rendering::{Color, GREEN, ORANGE, RED};
 pub use road_graph::RoadGraph;
 pub use road_graph_synchronize::RoadGraphSynchronize;
+pub use traffic_lights_render::TrafficLightRender;
 
 #[derive(Clone, Copy)]
 pub enum TrafficLightColor {
@@ -25,6 +26,13 @@ impl TrafficLightColor {
             TrafficLightColor::RED => RED,
             TrafficLightColor::ORANGE => ORANGE,
             TrafficLightColor::GREEN => GREEN,
+        }
+    }
+
+    pub fn is_red(&self) -> bool {
+        match self {
+            TrafficLightColor::RED => true,
+            _ => false,
         }
     }
 }
@@ -57,6 +65,13 @@ pub enum TrafficLight {
 }
 
 impl TrafficLight {
+    pub fn is_always(&self) -> bool {
+        match self {
+            TrafficLight::Always => true,
+            _ => false,
+        }
+    }
+
     pub fn get_color(&self, time_seconds: u64) -> TrafficLightColor {
         match self {
             TrafficLight::Always => TrafficLightColor::GREEN,
