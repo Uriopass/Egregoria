@@ -7,7 +7,7 @@ use crate::cars::roads::RoadGraphSynchronize;
 use crate::engine_interaction::{DeltaTime, KeyboardInfo, MeshRenderEventReader};
 use crate::gui::TestGui;
 use crate::humans::HumanUpdate;
-use crate::interaction::{MovableSystem, SelectableSystem, SelectedEntity};
+use crate::interaction::{MovableSystem, SelectableAuraSystem, SelectableSystem, SelectedEntity};
 use crate::physics::physics_components::Collider;
 use crate::physics::physics_system::{KinematicsApply, PhysicsUpdate};
 use crate::physics::PhysicsWorld;
@@ -31,15 +31,20 @@ pub fn dispatcher<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     DispatcherBuilder::new()
         .with(HumanUpdate, "human update", &[])
         .with(CarDecision, "car decision", &[])
+        .with(SelectableSystem, "selectable", &[])
         .with(
             MovableSystem::default(),
             "movable",
-            &["human update", "car decision"],
+            &["human update", "car decision", "selectable"],
         )
         .with(RoadGraphSynchronize::new(world), "rgs", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
         .with(PhysicsUpdate::default(), "physics", &["speed apply"])
-        .with(SelectableSystem::default(), "selectable", &[])
+        .with(
+            SelectableAuraSystem::default(),
+            "selectable aura",
+            &["movable"],
+        )
         .build()
 }
 
