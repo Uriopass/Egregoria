@@ -2,7 +2,7 @@ use crate::PhysicsWorld;
 
 use nalgebra as na;
 
-use crate::engine_interaction::{DeltaTime, KeyCode, KeyboardInfo};
+use crate::engine_interaction::{KeyCode, KeyboardInfo, TimeInfo};
 use crate::physics::physics_components::{Collider, Drag, Kinematics, Transform};
 use cgmath::{InnerSpace, Vector2, Zero};
 use nalgebra::Isometry2;
@@ -114,14 +114,14 @@ impl<'a> specs::System<'a> for KinematicsApply {
         WriteStorage<'a, Kinematics>,
         ReadStorage<'a, Drag>,
         Write<'a, PhysicsWorld, specs::shred::PanicHandler>,
-        Read<'a, DeltaTime>,
+        Read<'a, TimeInfo>,
     );
 
     fn run(
         &mut self,
-        (mut collider, mut transforms, mut kinematics, drag, mut ncollide_world, delta): Self::SystemData,
+        (mut collider, mut transforms, mut kinematics, drag, mut ncollide_world, time): Self::SystemData,
     ) {
-        let delta = delta.0;
+        let delta = time.delta;
 
         for (kin, drag) in (&mut kinematics, &drag).join() {
             let force = kin.velocity.magnitude2() * drag.coeff * (RHO / 2.0) / kin.mass;

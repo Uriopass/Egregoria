@@ -10,7 +10,7 @@ use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::engine_interaction;
-use scale::engine_interaction::{DeltaTime, KeyboardInfo, MouseInfo};
+use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo};
 use scale::gui::TestGui;
 use specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
@@ -58,6 +58,7 @@ impl<'a> EngineState<'a> {
 impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let delta = timer::delta(ctx).as_secs_f32().min(1.0 / 100.0);
+        let time = timer::time_since_start(ctx).as_secs_f64();
 
         let pressed: Vec<engine_interaction::MouseButton> =
             if !self.imgui_wrapper.last_mouse_captured {
@@ -93,7 +94,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             ),
         };
 
-        *self.world.write_resource() = DeltaTime(delta);
+        *self.world.write_resource() = TimeInfo { delta, time };
 
         self.dispatch.run_now(&self.world);
         self.world.maintain();

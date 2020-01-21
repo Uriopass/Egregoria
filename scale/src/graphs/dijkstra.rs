@@ -73,9 +73,9 @@ mod tests {
     fn test_dijkstra() {
         let mut g: Graph<usize> = Graph::new();
 
-        let id = g.add_node(0);
-        let id2 = g.add_node(1);
-        let id3 = g.add_node(2);
+        let id = g.push(0);
+        let id2 = g.push(1);
+        let id3 = g.push(2);
 
         g.set_neighs(
             *id,

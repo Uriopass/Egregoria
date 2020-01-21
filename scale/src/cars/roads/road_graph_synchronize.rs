@@ -77,7 +77,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         // Moved events
         for event in data.moved.read(&mut self.reader) {
             if let Some(rnc) = data.roadnodescomponents.get(event.entity) {
-                data.rg.set_node_position(rnc.id, event.new_pos);
+                data.rg.set_node_position(&rnc.id, event.new_pos);
             }
             if let Some(rnc) = data.intersections.get(event.entity) {
                 data.rg.set_intersection_position(&rnc.id, event.new_pos);
@@ -104,7 +104,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 &mut data.selectable,
             );
 
-            *data.selected = SelectedEntity(data.rg.intersections().nodes[&id].e);
+            *data.selected = SelectedEntity(data.rg.intersections()[&id].e);
         }
 
         // Intersection deletion
