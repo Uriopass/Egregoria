@@ -57,11 +57,11 @@ impl Gui {
                     }
 
                     if ui.small_button(im_str!("spawn 10 cars")) {
-                        (0..10).into_iter().for_each(|_| spawn_new_car(world));
+                        (0..10).for_each(|_| spawn_new_car(world));
                     }
 
                     if ui.small_button(im_str!("spawn 100 cars")) {
-                        (0..100).into_iter().for_each(|_| spawn_new_car(world));
+                        (0..100).for_each(|_| spawn_new_car(world));
                     }
                 });
         }

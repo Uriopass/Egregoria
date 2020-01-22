@@ -137,16 +137,14 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
         args: &InspectArgsDefault,
     ) -> bool {
         let mut mapped: Vec<&mut Vec<MeshRenderEnum>> =
-            data.into_iter().map(|x| &mut x.orders).collect();
-        let changed =
-            <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
-                &mut mapped,
-                label,
-                world,
-                ui,
-                args,
-            );
-        changed
+            data.iter_mut().map(|x| &mut x.orders).collect();
+        <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
+            &mut mapped,
+            label,
+            world,
+            ui,
+            args,
+        )
     }
 }
 

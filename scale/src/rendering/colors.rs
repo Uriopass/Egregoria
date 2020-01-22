@@ -35,7 +35,7 @@ impl InspectRenderDefault<Color> for Color {
             c.a = color_arr[3];
             return true;
         }
-        return false;
+        false
     }
 }
 

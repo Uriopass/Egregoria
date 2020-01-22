@@ -76,8 +76,8 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         // Moved events
         for event in data.moved.read(&mut self.reader) {
             if let Some(rnc) = data.intersections.get(event.entity) {
-                data.rg.set_intersection_position(&rnc.id, event.new_pos);
-                data.rg.calculate_nodes_positions(&rnc.id);
+                data.rg.set_intersection_position(rnc.id, event.new_pos);
+                data.rg.calculate_nodes_positions(rnc.id);
             }
         }
 
@@ -88,10 +88,10 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 .add_intersection(Intersection::new(data.mouseinfo.unprojected));
             let intersections = &data.intersections;
             if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
-                data.rg.connect(&id, &x.id);
+                data.rg.connect(id, x.id);
             }
             data.rg.make_entity(
-                &id,
+                id,
                 &data.entities,
                 &mut data.intersections,
                 &mut data.meshrenders,
@@ -107,7 +107,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         if data.kbinfo.just_pressed.contains(&KeyCode::Backspace) {
             if let Some(e) = data.selected.0 {
                 if let Some(inter) = data.intersections.get(e) {
-                    data.rg.delete_inter(&inter.id, &data.entities);
+                    data.rg.delete_inter(inter.id, &data.entities);
                 }
             }
         }
@@ -127,10 +127,10 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     First(y) => {
                         let interc2 = data.intersections.get(y).unwrap();
                         if y != x {
-                            if !data.rg.intersections().is_neigh(&interc.id, &interc2.id) {
-                                data.rg.connect(&interc.id, &interc2.id);
+                            if !data.rg.intersections().is_neigh(interc.id, interc2.id) {
+                                data.rg.connect(interc.id, interc2.id);
                             } else {
-                                data.rg.disconnect(&interc.id, &interc2.id);
+                                data.rg.disconnect(interc.id, interc2.id);
                             }
                             self.deactive_connect(&mut data);
                         }
@@ -150,15 +150,12 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 .get_mut(self.show_connect)
                 .unwrap()
                 .set_position(trans.position());
-            match data
+            if let Some(MeshRenderEnum::Line(x)) = data
                 .meshrenders
                 .get_mut(self.show_connect)
                 .and_then(|x| x.orders.get_mut(0))
             {
-                Some(MeshRenderEnum::Line(x)) => {
-                    x.offset = data.mouseinfo.unprojected - trans.position();
-                }
-                _ => (),
+                x.offset = data.mouseinfo.unprojected - trans.position();
             }
         }
     }
