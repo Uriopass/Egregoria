@@ -10,7 +10,7 @@ use ggez::graphics::{Color, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
-use scale::cars::roads::RoadGraph;
+use scale::cars::map::RoadGraph;
 use scale::engine_interaction;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo};
 use scale::gui::Gui;

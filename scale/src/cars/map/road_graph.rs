@@ -1,6 +1,6 @@
 use super::{Intersection, RoadNode};
-use crate::cars::roads::TrafficLight::Always;
-use crate::cars::roads::{TrafficLight, TrafficLightSchedule};
+use crate::cars::map::TrafficLight::Always;
+use crate::cars::map::{TrafficLight, TrafficLightSchedule};
 use crate::cars::IntersectionComponent;
 use crate::graphs::graph::{Edge, Graph, NodeID};
 use crate::interaction::{Movable, Selectable};
@@ -9,7 +9,9 @@ use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::RED;
 use cgmath::Vector2;
 use cgmath::{InnerSpace, MetricSpace};
+use ordered_float::OrderedFloat;
 use specs::{Entities, WriteStorage};
+use std::ops::Sub;
 
 pub struct RoadGraph {
     nodes: Graph<RoadNode>,
@@ -43,6 +45,19 @@ impl RoadGraph {
         self.intersections.push(i)
     }
 
+    fn pseudo_angle(v: Vector2<f32>) -> f32 {
+        debug_assert!(v.magnitude2().sub(1.0).abs() <= 1e-5);
+        let dx = v.x;
+        let dy = v.y;
+        let p = dx / (dx.abs() + dy.abs());
+
+        if dy < 0.0 {
+            p - 1.0
+        } else {
+            1.0 - p
+        }
+    }
+
     pub fn update_traffic_lights(&mut self, i: &NodeID) {
         let inter = &self.intersections[i];
         if inter.in_nodes.len() <= 2 {
@@ -51,13 +66,32 @@ impl RoadGraph {
             }
             return;
         }
+        let mut in_nodes: Vec<&NodeID> = inter.in_nodes.values().collect();
+        in_nodes.sort_by_key(|x| {
+            OrderedFloat(Self::pseudo_angle(
+                (self.nodes[x].pos - inter.pos).normalize(),
+            ));
+        });
+
+        println!("inter: {:?}", inter.pos);
+
         let cycle_size = 10;
-        for (i, (_, id)) in inter.in_nodes.iter().enumerate() {
+        let orange_length = 5;
+        for (i, id) in in_nodes.into_iter().enumerate() {
+            println!(
+                "| {:?} {:?}",
+                self.nodes[id].pos,
+                Self::pseudo_angle((self.nodes[id].pos - inter.pos).normalize())
+            );
             self.nodes[id].light = TrafficLight::Periodic(TrafficLightSchedule::from_basic(
                 cycle_size,
-                3,
-                cycle_size + 3,
-                if i % 2 == 0 { cycle_size + 3 } else { 0 },
+                orange_length,
+                cycle_size + orange_length,
+                if i % 2 == 0 {
+                    cycle_size + orange_length
+                } else {
+                    0
+                },
             ));
         }
     }
