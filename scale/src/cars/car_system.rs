@@ -1,6 +1,6 @@
 use crate::cars::car_data::CarObjective::{Route, Simple, Temporary};
 use crate::cars::car_data::{CarComponent, CarObjective};
-use crate::cars::roads::RoadGraph;
+use crate::cars::map::RoadGraph;
 use crate::engine_interaction::TimeInfo;
 use crate::physics::physics_components::{Kinematics, Transform};
 use crate::physics::PhysicsWorld;
@@ -18,7 +18,7 @@ pub struct CarDecision;
 
 const CAR_ACCELERATION: f32 = 3.0;
 const CAR_DECELERATION: f32 = 3.0;
-const MIN_TURNING_RADIUS: f32 = 8.0;
+const MIN_TURNING_RADIUS: f32 = 5.0;
 
 impl<'a> System<'a> for CarDecision {
     type SystemData = (
@@ -124,7 +124,7 @@ fn car_physics(
             .min(delta * CAR_ACCELERATION)
             .max(-delta * CAR_DECELERATION * speed.max(3.0)));
 
-    let ang_acc = (speed / MIN_TURNING_RADIUS).min(1.0);
+    let ang_acc = (speed / MIN_TURNING_RADIUS).min(2.0);
 
     let delta_ang = car.direction.angle(desired_direction);
     let mut ang = Vector2::unit_x().angle(car.direction);
