@@ -1,4 +1,5 @@
 use crate::gui::ImCgVec2;
+use crate::gui::ImDragf32;
 use cgmath::num_traits::zero;
 use cgmath::{Matrix3, SquareMatrix, Vector2};
 use imgui_inspect_derive::*;
@@ -12,6 +13,7 @@ pub struct Collider(pub CollisionObjectSlabHandle);
 #[derive(Component, Debug, Inspect, Clone)]
 #[storage(VecStorage)]
 pub struct Drag {
+    #[inspect(proxy_type = "ImDragf32")]
     pub coeff: f32,
 }
 
