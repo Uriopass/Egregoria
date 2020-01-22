@@ -95,7 +95,7 @@ impl CarComponent {
         &self,
         rg: &RoadGraph,
         speed: f32,
-        time: f64,
+        time: u64,
         position: Vector2<f32>,
         neighs: Vec<&Isometry2<f32>>,
     ) -> (f32, Vector2<f32>) {
@@ -142,7 +142,7 @@ impl CarComponent {
         let mut desired_speed: f32 = 50.0;
 
         match self.objective {
-            Temporary(n_id) => match rg.nodes()[&n_id].light.get_color(time as u64) {
+            Temporary(n_id) => match rg.nodes()[&n_id].light.get_color(time) {
                 TrafficLightColor::RED => {
                     if dist_to_pos < 5.0 + speed {
                         desired_speed = 0.0;

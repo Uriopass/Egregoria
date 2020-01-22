@@ -1,7 +1,7 @@
 use super::RoadGraph;
 use crate::cars::roads::road_graph_synchronize::ConnectState::{First, Inactive, Unselected};
 use crate::cars::roads::Intersection;
-use crate::cars::{IntersectionComponent, RoadNodeComponent};
+use crate::cars::IntersectionComponent;
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity};
 use crate::physics::physics_components::Transform;
@@ -62,7 +62,6 @@ pub struct RGSData<'a> {
     moved: Read<'a, EventChannel<MovedEvent>>,
     kbinfo: Read<'a, KeyboardInfo>,
     mouseinfo: Read<'a, MouseInfo>,
-    roadnodescomponents: WriteStorage<'a, RoadNodeComponent>,
     intersections: WriteStorage<'a, IntersectionComponent>,
     meshrenders: WriteStorage<'a, MeshRender>,
     transforms: WriteStorage<'a, Transform>,
@@ -76,13 +75,9 @@ impl<'a> System<'a> for RoadGraphSynchronize {
     fn run(&mut self, mut data: Self::SystemData) {
         // Moved events
         for event in data.moved.read(&mut self.reader) {
-            if let Some(rnc) = data.roadnodescomponents.get(event.entity) {
-                data.rg.set_node_position(&rnc.id, event.new_pos);
-            }
             if let Some(rnc) = data.intersections.get(event.entity) {
                 data.rg.set_intersection_position(&rnc.id, event.new_pos);
                 data.rg.calculate_nodes_positions(&rnc.id);
-                data.rg.synchronize_positions(&rnc.id, &mut data.transforms);
             }
         }
 
@@ -95,10 +90,11 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
                 data.rg.connect(&id, &x.id);
             }
-            data.rg.populate_entities(
+            data.rg.make_entity(
+                &id,
                 &data.entities,
-                &mut data.roadnodescomponents,
                 &mut data.intersections,
+                &mut data.meshrenders,
                 &mut data.transforms,
                 &mut data.movable,
                 &mut data.selectable,
@@ -134,7 +130,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                             if !data.rg.intersections().is_neigh(&interc.id, &interc2.id) {
                                 data.rg.connect(&interc.id, &interc2.id);
                             } else {
-                                data.rg.disconnect(&interc.id, &interc2.id, &data.entities);
+                                data.rg.disconnect(&interc.id, &interc2.id);
                             }
                             self.deactive_connect(&mut data);
                         }
@@ -164,22 +160,6 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 }
                 _ => (),
             }
-        }
-
-        // Population update
-        if data.rg.dirty {
-            data.rg.dirty = false;
-
-            data.rg.populate_entities(
-                &data.entities,
-                &mut data.roadnodescomponents,
-                &mut data.intersections,
-                &mut data.transforms,
-                &mut data.movable,
-                &mut data.selectable,
-            );
-
-            data.rg.calculate_meshes(&mut data.meshrenders);
         }
     }
 }

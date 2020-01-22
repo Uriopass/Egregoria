@@ -1,12 +1,12 @@
 use super::{Intersection, RoadNode};
 use crate::cars::roads::TrafficLight::Always;
 use crate::cars::roads::{TrafficLight, TrafficLightSchedule};
-use crate::cars::{IntersectionComponent, RoadNodeComponent};
+use crate::cars::IntersectionComponent;
 use crate::graphs::graph::{Edge, Graph, NodeID};
 use crate::interaction::{Movable, Selectable};
 use crate::physics::physics_components::Transform;
-use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
-use crate::rendering::{Color, GREEN, RED, WHITE};
+use crate::rendering::meshrender_component::{CircleRender, MeshRender};
+use crate::rendering::RED;
 use cgmath::Vector2;
 use cgmath::{InnerSpace, MetricSpace};
 use specs::{Entities, WriteStorage};
@@ -14,7 +14,6 @@ use specs::{Entities, WriteStorage};
 pub struct RoadGraph {
     nodes: Graph<RoadNode>,
     intersections: Graph<Intersection>,
-    pub dirty: bool,
 }
 
 impl RoadGraph {
@@ -22,7 +21,6 @@ impl RoadGraph {
         RoadGraph {
             intersections: Graph::new(),
             nodes: Graph::new(),
-            dirty: true,
         }
     }
 
@@ -42,49 +40,7 @@ impl RoadGraph {
     }
 
     pub fn add_intersection(&mut self, i: Intersection) -> NodeID {
-        self.dirty = true;
         self.intersections.push(i)
-    }
-
-    pub fn synchronize_positions(&mut self, i: &NodeID, transforms: &mut WriteStorage<Transform>) {
-        let inter = &self.intersections[i];
-
-        for (to, node_id) in &inter.out_nodes {
-            let inter2 = &self.intersections[to];
-
-            {
-                let rn = self.nodes.get_mut(node_id).unwrap();
-                transforms
-                    .get_mut(rn.e.unwrap())
-                    .unwrap()
-                    .set_position(rn.pos);
-            }
-            {
-                let rn2 = self.nodes.get_mut(&inter2.in_nodes[i]).unwrap();
-                transforms
-                    .get_mut(rn2.e.unwrap())
-                    .unwrap()
-                    .set_position(rn2.pos);
-            }
-        }
-
-        for (to, node_id) in &inter.in_nodes {
-            let inter2 = &self.intersections[to];
-            {
-                let rn = self.nodes.get_mut(node_id).unwrap();
-                transforms
-                    .get_mut(rn.e.unwrap())
-                    .unwrap()
-                    .set_position(rn.pos);
-            }
-            {
-                let rn2 = self.nodes.get_mut(&inter2.out_nodes[i]).unwrap();
-                transforms
-                    .get_mut(rn2.e.unwrap())
-                    .unwrap()
-                    .set_position(rn2.pos);
-            }
-        }
     }
 
     pub fn update_traffic_lights(&mut self, i: &NodeID) {
@@ -149,132 +105,38 @@ impl RoadGraph {
         }
     }
 
-    pub fn populate_entities<'a>(
+    pub fn make_entity<'a>(
         &mut self,
+        inter_id: &NodeID,
         entities: &Entities<'a>,
-        rnc: &mut WriteStorage<'a, RoadNodeComponent>,
         inters: &mut WriteStorage<'a, IntersectionComponent>,
+        meshr: &mut WriteStorage<'a, MeshRender>,
         transforms: &mut WriteStorage<'a, Transform>,
         movable: &mut WriteStorage<'a, Movable>,
         selectable: &mut WriteStorage<'a, Selectable>,
     ) {
-        for (n, rn) in &mut self.nodes {
-            if rn.e.is_none() {
-                rn.e = Some(
-                    entities
-                        .build_entity()
-                        .with(RoadNodeComponent { id: *n }, rnc)
-                        .with(Transform::new(rn.pos), transforms)
-                        .with(Selectable, selectable)
-                        .build(),
-                );
-            }
-        }
-
-        for (n, rn) in &mut self.intersections {
-            if rn.e.is_none() {
-                rn.e = Some(
-                    entities
-                        .build_entity()
-                        .with(IntersectionComponent { id: *n }, inters)
-                        .with(Transform::new(rn.pos), transforms)
-                        .with(Movable, movable)
-                        .with(Selectable, selectable)
-                        .build(),
-                );
-            }
-        }
-    }
-
-    pub fn calculate_meshes(&mut self, meshrenders: &mut WriteStorage<MeshRender>) {
-        // For each intersection
-        for (_, r) in &self.intersections {
-            let meshb = MeshRender::simple(
-                CircleRender {
-                    radius: 2.0,
-                    color: RED,
-                    filled: true,
-                    ..Default::default()
-                },
-                2,
-            );
-            let e = r.e.expect("Intersection has no entity");
-            meshrenders
-                .insert(e, meshb)
-                .expect("Error inserting mesh for graph");
-
-            // All gray on the inside
-            for (from_inter_id, in_node) in &r.in_nodes {
-                let mut meshb = MeshRender::empty(1);
-
-                for nei in self.nodes.get_neighs(in_node) {
-                    let e_nei = self.nodes[&nei.to].e.unwrap();
-                    meshb.add(LineToRender {
-                        color: Color::gray(0.5),
-                        to: e_nei,
-                        thickness: 8.0,
-                    });
-                }
-                meshb.add(CircleRender {
-                    radius: 4.0,
-                    color: Color::gray(0.5),
-                    filled: true,
-                    ..Default::default()
-                });
-
-                let inter = self.intersections[from_inter_id].pos;
-                let dir = (r.pos - inter).normalize();
-                let nordir: Vector2<f32> = [-dir.y, dir.x].into();
-
-                // Traffic light
-                meshb.add(CircleRender {
-                    offset: -dir - nordir * 4.5,
-                    radius: 0.5,
-                    color: GREEN,
-                    filled: true,
-                });
-
-                let e_in = self.nodes.get(in_node).unwrap().e.unwrap();
-                meshrenders
-                    .insert(e_in, meshb)
-                    .expect("Error inserting mesh for graph");
-            }
-
-            // gray and white between the intersections
-            for (_, out_node) in &r.out_nodes {
-                let mut meshb = MeshRender::empty(0);
-                for nei in self.nodes.get_neighs(out_node) {
-                    let e_nei = self.nodes[&nei.to].e.unwrap();
-
-                    meshb.add(LineToRender {
-                        color: WHITE,
-                        to: e_nei,
-                        thickness: 8.5,
-                    });
-                    meshb.add(LineToRender {
-                        color: Color::gray(0.5),
-                        to: e_nei,
-                        thickness: 7.5,
-                    });
-                }
-                meshb.add(CircleRender {
-                    radius: 4.0,
-                    color: Color::gray(0.5),
-                    filled: true,
-                    ..Default::default()
-                });
-                meshb.add(CircleRender {
-                    offset: [0.0, 0.0].into(),
-                    radius: 0.0,
-                    color: GREEN,
-                    filled: true,
-                });
-                let e_out = self.nodes.get(out_node).unwrap().e.unwrap();
-                meshrenders
-                    .insert(e_out, meshb)
-                    .expect("Error inserting mesh for graph");
-            }
-        }
+        let inter: &mut Intersection = &mut self.intersections[inter_id];
+        inter.e = Some(
+            entities
+                .build_entity()
+                .with(IntersectionComponent { id: *inter_id }, inters)
+                .with(
+                    MeshRender::simple(
+                        CircleRender {
+                            radius: 2.0,
+                            color: RED,
+                            filled: true,
+                            ..CircleRender::default()
+                        },
+                        2,
+                    ),
+                    meshr,
+                )
+                .with(Transform::new(inter.pos), transforms)
+                .with(Movable, movable)
+                .with(Selectable, selectable)
+                .build(),
+        );
     }
 
     pub fn closest_node(&self, pos: Vector2<f32>) -> NodeID {
@@ -293,30 +155,24 @@ impl RoadGraph {
 
     pub fn delete_inter(&mut self, id: &NodeID, entities: &Entities) {
         for Edge { to, .. } in self.intersections.get_neighs(id).clone() {
-            self.disconnect_directional(id, &to, entities);
+            self.disconnect_directional(id, &to);
         }
         for Edge { to, .. } in self.intersections.get_backward_neighs(id).clone() {
-            self.disconnect_directional(&to, id, entities);
+            self.disconnect_directional(&to, id);
         }
         self.intersections[&id].e.map(|x| entities.delete(x));
         self.intersections.remove_node(id);
     }
 
-    pub fn disconnect(&mut self, a: &NodeID, b: &NodeID, entities: &Entities) {
-        self.disconnect_directional(a, b, entities);
-        self.disconnect_directional(b, a, entities);
+    pub fn disconnect(&mut self, a: &NodeID, b: &NodeID) {
+        self.disconnect_directional(a, b);
+        self.disconnect_directional(b, a);
     }
 
-    pub fn disconnect_directional(&mut self, from: &NodeID, to: &NodeID, entities: &Entities) {
-        self.dirty = true;
+    pub fn disconnect_directional(&mut self, from: &NodeID, to: &NodeID) {
         self.intersections.remove_neigh(from, to);
         let inter_from_node = &self.intersections[from].out_nodes[to];
         let inter_to_node = &self.intersections[to].in_nodes[from];
-
-        self.nodes[inter_from_node]
-            .e
-            .map(|ent| entities.delete(ent));
-        self.nodes[inter_to_node].e.map(|ent| entities.delete(ent));
 
         self.nodes.remove_node(inter_from_node);
         self.nodes.remove_node(inter_to_node);
@@ -374,7 +230,5 @@ impl RoadGraph {
 
         self.calculate_nodes_positions(from);
         self.update_traffic_lights(to);
-
-        self.dirty = true;
     }
 }
