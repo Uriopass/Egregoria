@@ -5,10 +5,12 @@ use crate::gui::imgui_wrapper::ImGuiWrapper;
 
 use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
 
+use crate::rendering::road_rendering::RoadRenderer;
 use ggez::graphics::{Color, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
+use scale::cars::roads::RoadGraph;
 use scale::engine_interaction;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo};
 use scale::gui::Gui;
@@ -25,6 +27,7 @@ pub struct EngineState<'a> {
     pub font: Font,
     pub imgui_wrapper: ImGuiWrapper,
     pub smr: SortedMeshRenderer,
+    pub road_render: RoadRenderer,
 }
 
 impl<'a> EngineState<'a> {
@@ -51,6 +54,7 @@ impl<'a> EngineState<'a> {
             grid: true,
             imgui_wrapper,
             smr: SortedMeshRenderer::new(),
+            road_render: RoadRenderer::new(),
         })
     }
 }
@@ -94,7 +98,11 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             ),
         };
 
-        *self.world.write_resource() = TimeInfo { delta, time };
+        *self.world.write_resource() = TimeInfo {
+            delta,
+            time,
+            time_seconds: time as u64,
+        };
 
         self.dispatch.run_now(&self.world);
         self.world.maintain();
@@ -132,7 +140,13 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
         // Render entities
         {
+            let time = self.world.read_resource::<TimeInfo>().time_seconds;
             if self.render_enabled {
+                self.road_render.render(
+                    &mut self.world.read_resource::<RoadGraph>(),
+                    time,
+                    &mut rc,
+                );
                 self.smr.render(&mut self.world, &mut rc);
             }
 
