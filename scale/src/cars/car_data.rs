@@ -1,5 +1,5 @@
 use crate::cars::car_data::CarObjective::{Simple, Temporary};
-use crate::cars::roads::{RoadGraph, TrafficLightColor};
+use crate::cars::map::{RoadGraph, TrafficLightColor};
 use crate::graphs::graph::NodeID;
 use crate::gui::ImCgVec2;
 use crate::interaction::{Movable, Selectable};
@@ -161,10 +161,10 @@ impl CarComponent {
             desired_speed = desired_speed.min(dist_to_pos);
         }
         if dir_to_pos.dot(self.direction) < 0.8 {
-            desired_speed = desired_speed.min(7.0);
+            desired_speed = desired_speed.min(10.0);
         }
         (
-            desired_speed.min(min_dist2.sqrt() - 8.0).max(0.0),
+            desired_speed.min(min_dist2.sqrt() - 5.0).max(0.0),
             dir_to_pos,
         )
     }

@@ -1,6 +1,6 @@
 use super::RoadGraph;
-use crate::cars::roads::road_graph_synchronize::ConnectState::{First, Inactive, Unselected};
-use crate::cars::roads::Intersection;
+use crate::cars::map::road_graph_synchronize::ConnectState::{First, Inactive, Unselected};
+use crate::cars::map::Intersection;
 use crate::cars::IntersectionComponent;
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity};

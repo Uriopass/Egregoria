@@ -8,14 +8,14 @@ use cgmath::InnerSpace;
 use cgmath::Vector2;
 use imgui_inspect_derive::*;
 use rand::random;
-use roads::Intersection;
-use roads::RoadGraph;
+use map::Intersection;
+use map::RoadGraph;
 use specs::storage::BTreeStorage;
 use specs::{Component, World, WorldExt};
 
 pub mod car_data;
 pub mod car_system;
-pub mod roads;
+pub mod map;
 
 #[allow(dead_code)]
 #[derive(Component, Inspect, Clone)]
