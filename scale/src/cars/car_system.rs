@@ -40,7 +40,15 @@ impl<'a> System<'a> for CarDecision {
             .par_join()
             .for_each(|(trans, kin, car)| {
                 car_objective_update(car, &time, trans, &road_graph);
-                car_physics(&coworld, &road_graph, delta, time.time, trans, kin, car);
+                car_physics(
+                    &coworld,
+                    &road_graph,
+                    delta,
+                    time.time_seconds,
+                    trans,
+                    kin,
+                    car,
+                );
             });
     }
 }
@@ -58,7 +66,10 @@ fn car_objective_update(
         CarObjective::Temporary(x) => {
             if let Some(p) = graph.nodes().get(&x).map(|x| x.pos) {
                 if p.distance2(trans.position()) < 25.0
-                    && !graph.nodes()[&x].light.get_color(time.time as u64).is_red()
+                    && !graph.nodes()[&x]
+                        .light
+                        .get_color(time.time_seconds)
+                        .is_red()
                 {
                     let neighs = graph.nodes().get_neighs(&x);
                     let r = rand::random::<f32>() * (neighs.len() as f32);
@@ -79,7 +90,7 @@ fn car_physics(
     coworld: &PhysicsWorld,
     rg: &RoadGraph,
     delta: f32,
-    time: f64,
+    time: u64,
     trans: &mut Transform,
     kin: &mut Kinematics,
     car: &mut CarComponent,

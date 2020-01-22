@@ -67,7 +67,7 @@ impl MeshRenderable for LineRender {
     }
 }
 
-fn scale_color(color: scale::rendering::Color) -> Color {
+pub fn scale_color(color: scale::rendering::Color) -> Color {
     Color {
         r: color.r,
         g: color.g,

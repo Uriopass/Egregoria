@@ -3,7 +3,7 @@
 use ncollide2d::world::CollisionWorld;
 
 use crate::cars::car_system::CarDecision;
-use crate::cars::roads::{RoadGraphSynchronize, TrafficLightRender};
+use crate::cars::roads::RoadGraphSynchronize;
 use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, TimeInfo};
 use crate::gui::Gui;
 use crate::humans::HumanUpdate;
@@ -14,7 +14,7 @@ use crate::physics::PhysicsWorld;
 use crate::rendering::meshrender_component::MeshRender;
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 
-mod cars;
+pub mod cars;
 pub mod engine_interaction;
 mod graphs;
 pub mod gui;
@@ -38,7 +38,6 @@ pub fn dispatcher<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
             &["human update", "car decision", "selectable"],
         )
         .with(RoadGraphSynchronize::new(world), "rgs", &["movable"])
-        .with(TrafficLightRender, "traffic light render", &["rgs"])
         .with(KinematicsApply, "speed apply", &["movable"])
         .with(PhysicsUpdate::default(), "physics", &["speed apply"])
         .with(

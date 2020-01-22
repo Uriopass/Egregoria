@@ -9,6 +9,7 @@ use specs::ReaderId;
 pub struct TimeInfo {
     pub delta: f32,
     pub time: f64,
+    pub time_seconds: u64,
 }
 
 pub struct MeshRenderEventReader(pub ReaderId<ComponentEvent>);

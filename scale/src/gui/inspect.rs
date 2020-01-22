@@ -6,7 +6,7 @@ use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
 use crate::cars::car_data::CarComponent;
-use crate::cars::{IntersectionComponent, RoadNodeComponent};
+use crate::cars::IntersectionComponent;
 use crate::rendering::meshrender_component::MeshRender;
 use specs::prelude::*;
 use specs::shrev::EventChannel;
@@ -188,7 +188,6 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         self.inspect_component::<Kinematics>();
         self.inspect_component::<Drag>();
         self.inspect_component::<Movable>();
-        self.inspect_component::<RoadNodeComponent>();
         self.inspect_component::<IntersectionComponent>();
     }
 }

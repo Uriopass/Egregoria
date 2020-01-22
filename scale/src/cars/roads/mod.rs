@@ -6,12 +6,10 @@ use std::collections::HashMap;
 
 mod road_graph;
 mod road_graph_synchronize;
-mod traffic_lights_render;
 
 use crate::rendering::{Color, GREEN, ORANGE, RED};
 pub use road_graph::RoadGraph;
 pub use road_graph_synchronize::RoadGraphSynchronize;
-pub use traffic_lights_render::TrafficLightRender;
 
 #[derive(Clone, Copy)]
 pub enum TrafficLightColor {
@@ -86,7 +84,6 @@ impl TrafficLight {
 #[derive(Clone)]
 pub struct RoadNode {
     pub pos: Vector2<f32>,
-    pub e: Option<Entity>,
     pub light: TrafficLight,
 }
 
@@ -94,7 +91,6 @@ impl RoadNode {
     pub fn new(pos: Vector2<f32>) -> Self {
         RoadNode {
             pos,
-            e: None,
             light: TrafficLight::Always,
         }
     }
