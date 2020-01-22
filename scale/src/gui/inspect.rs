@@ -145,7 +145,7 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for ImVec<T> {
 
         if ui.collapsing_header(&im_str!("{}", label)).build() {
             ui.indent();
-            for (i, x) in v.into_iter().enumerate() {
+            for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
                 <T as InspectRenderDefault<T>>::render_mut(&mut [x], "", w, ui, args);
                 id.pop(ui);
@@ -168,15 +168,12 @@ fn clone_and_modify<T: Component + Clone>(
     entity: Entity,
     f: impl FnOnce(&mut World, T) -> T,
 ) {
-    let c = world
-        .write_component::<T>()
-        .get_mut(entity)
-        .map(|x: &mut T| x.clone());
+    let c = world.write_component::<T>().get_mut(entity).cloned();
 
-    c.map(|x: T| {
+    if let Some(x) = c {
         let m = f(world, x);
         *world.write_component::<T>().get_mut(entity).unwrap() = m;
-    });
+    }
 }
 
 impl<'a, 'b> InspectRenderer<'a, 'b> {

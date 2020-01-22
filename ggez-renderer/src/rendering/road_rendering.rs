@@ -19,8 +19,8 @@ impl RoadRenderer {
         for (id, n) in rg.nodes() {
             rc.sr.color = WHITE;
             rc.sr.draw_circle(n.pos, 4.25);
-            for e in rg.nodes().get_neighs(id) {
-                let p2 = rg.nodes().get(&e.to).unwrap().pos;
+            for e in rg.nodes().get_neighs(*id) {
+                let p2 = rg.nodes().get(e.to).unwrap().pos;
                 rc.sr.draw_stroke(n.pos, p2, 8.5);
             }
         }
@@ -29,8 +29,8 @@ impl RoadRenderer {
             rc.sr.color = MID_GRAY;
             rc.sr.draw_circle(n.pos, 3.75);
 
-            for e in rg.nodes().get_neighs(id) {
-                let p2 = rg.nodes().get(&e.to).unwrap().pos;
+            for e in rg.nodes().get_neighs(*id) {
+                let p2 = rg.nodes().get(e.to).unwrap().pos;
                 rc.sr.draw_stroke(n.pos, p2, 7.5);
             }
         }

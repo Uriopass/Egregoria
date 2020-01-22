@@ -50,7 +50,7 @@ pub fn dijsktra<T>(graph: &Graph<T>, start: NodeID) -> HashMap<NodeID, f32> {
             continue;
         }
 
-        for nei in graph.get_neighs(&position) {
+        for nei in graph.get_neighs(position) {
             let v = dist[&position] + nei.weight;
             if v < dist[&nei.to] {
                 dist.insert(nei.to, v);
@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn test_dijkstra() {
-        let mut g: Graph<usize> = Graph::new();
+        let mut g: Graph<usize> = Graph::empty();
 
         let id = g.push(0);
         let id2 = g.push(1);

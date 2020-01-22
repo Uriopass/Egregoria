@@ -142,11 +142,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         {
             let time = self.world.read_resource::<TimeInfo>().time_seconds;
             if self.render_enabled {
-                self.road_render.render(
-                    &mut self.world.read_resource::<RoadGraph>(),
-                    time,
-                    &mut rc,
-                );
+                self.road_render
+                    .render(&self.world.read_resource::<RoadGraph>(), time, &mut rc);
                 self.smr.render(&mut self.world, &mut rc);
             }
 

@@ -8,7 +8,7 @@ pub enum TrafficLightColor {
 }
 
 impl TrafficLightColor {
-    pub fn as_render_color(&self) -> Color {
+    pub fn as_render_color(self) -> Color {
         match self {
             TrafficLightColor::RED => RED,
             TrafficLightColor::ORANGE => ORANGE,
@@ -16,7 +16,7 @@ impl TrafficLightColor {
         }
     }
 
-    pub fn is_red(&self) -> bool {
+    pub fn is_red(self) -> bool {
         match self {
             TrafficLightColor::RED => true,
             _ => false,
