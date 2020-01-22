@@ -78,27 +78,27 @@ mod tests {
         let id3 = g.push(2);
 
         g.set_neighs(
-            *id,
+            id,
             vec![
                 Edge {
-                    to: *id2,
+                    to: id2,
                     weight: 1.0,
                 },
                 Edge {
-                    to: *id3,
+                    to: id3,
                     weight: 3.0,
                 },
             ],
         );
         g.set_neighs(
-            *id2,
+            id2,
             vec![Edge {
-                to: *id3,
+                to: id3,
                 weight: 5.0,
             }],
         );
 
-        let dists = dijsktra(&g, *id);
+        let dists = dijsktra(&g, id);
         assert_eq!(dists[&id], 0.0);
         assert_eq!(dists[&id2], 1.0);
         assert_eq!(dists[&id3], 3.0);
