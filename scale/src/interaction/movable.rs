@@ -78,9 +78,12 @@ impl<'a> System<'a> for MovableSystem {
                         kin.velocity = zero();
                         kin.acceleration = zero();
                     }
+                    let old_pos = p.position();
                     let new_pos = off + mouse.unprojected;
-                    p.set_position(new_pos);
-                    movedevents.single_write(MovedEvent { entity: e, new_pos });
+                    if new_pos != old_pos {
+                        p.set_position(new_pos);
+                        movedevents.single_write(MovedEvent { entity: e, new_pos });
+                    }
                 }
             }
         } else if let Some(off) = self.offset.take() {
