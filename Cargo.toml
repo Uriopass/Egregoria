@@ -1,7 +1,7 @@
 [workspace]
 members = [
     "scale",
-    "engine"
+    "ggez-renderer"
 ]
 
 # TODO Do this when Rust 1.41 is released on Jan 30
