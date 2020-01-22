@@ -3,15 +3,22 @@ use crate::interaction::SelectedEntity;
 use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::num_traits::zero;
 use cgmath::Vector2;
-use imgui_inspect_derive::*;
+use imgui::{im_str, Ui};
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use specs::prelude::*;
 use specs::shrev::EventChannel;
 use specs::Component;
 use std::f32;
 
-#[derive(Component, Default, Inspect, Clone)]
+#[derive(Component, Default, Clone)]
 #[storage(NullStorage)]
 pub struct Movable;
+
+#[rustfmt::skip]
+impl InspectRenderDefault<Movable> for Movable {
+    fn render(_: &[&Movable], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) { ui.text(&im_str!("{}", label)) }
+    fn render_mut(_: &mut [&mut Movable], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) -> bool { ui.text(&im_str!("{}", label)); false }
+}
 
 #[derive(Debug)]
 pub struct MovedEvent {

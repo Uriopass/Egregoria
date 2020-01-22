@@ -37,8 +37,6 @@ impl Gui {
             }
         }
 
-        //if world.read_resource::<MouseInfo>().just_pressed.contains(MouseButton::Right)
-
         // Menu bar
         ui.main_menu_bar(|| {
             ui.menu(im_str!("Infos"), true, || {

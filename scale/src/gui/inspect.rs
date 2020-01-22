@@ -12,6 +12,40 @@ use specs::prelude::*;
 use specs::shrev::EventChannel;
 use std::marker::PhantomData;
 
+pub struct ImDragf32;
+impl InspectRenderDefault<f32> for ImDragf32 {
+    fn render(
+        data: &[&f32],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let mut cp = *data[0];
+        ui.drag_float(&im_str!("{}", label), &mut cp)
+            .speed(args.step.unwrap_or(0.1))
+            .build();
+    }
+
+    fn render_mut(
+        data: &mut [&mut f32],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        ui.drag_float(&im_str!("{}", label), data[0])
+            .speed(args.step.unwrap_or(0.1))
+            .build()
+    }
+}
+
 pub struct ImCgVec2;
 impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
     fn render(
@@ -35,14 +69,17 @@ impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
         label: &'static str,
         _: &mut World,
         ui: &Ui,
-        _: &InspectArgsDefault,
+        args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
             unimplemented!();
         }
         let x = &mut data[0];
         let mut conv = [x.x, x.y];
-        let changed = ui.input_float2(&im_str!("{}", label), &mut conv).build();
+        let changed = ui
+            .drag_float2(&im_str!("{}", label), &mut conv)
+            .speed(args.step.unwrap_or(0.1))
+            .build();
         x.x = conv[0];
         x.y = conv[1];
         changed

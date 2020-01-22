@@ -1,5 +1,5 @@
 use crate::engine_interaction::MAX_LAYERS;
-use crate::gui::{ImCgVec2, ImEntity, ImVec};
+use crate::gui::{ImCgVec2, ImDragf32, ImEntity, ImVec};
 use crate::rendering::colors::*;
 use cgmath::num_traits::zero;
 use cgmath::Vector2;
@@ -8,7 +8,6 @@ use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
 use specs::{Component, Entity, FlaggedStorage, VecStorage, World};
-
 #[derive(Debug, Clone)]
 pub enum MeshRenderEnum {
     Circle(CircleRender),
@@ -192,6 +191,7 @@ impl MeshRender {
 pub struct CircleRender {
     #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,
+    #[inspect(proxy_type = "ImDragf32")]
     pub radius: f32,
     pub color: Color,
     pub filled: bool,
@@ -210,7 +210,9 @@ impl Default for CircleRender {
 
 #[derive(Debug, Inspect, Clone)]
 pub struct RectRender {
+    #[inspect(proxy_type = "ImDragf32")]
     pub width: f32,
+    #[inspect(proxy_type = "ImDragf32")]
     pub height: f32,
     pub color: Color,
     pub filled: bool,
@@ -232,6 +234,7 @@ pub struct LineToRender {
     #[inspect(proxy_type = "ImEntity")]
     pub to: Entity,
     pub color: Color,
+    #[inspect(proxy_type = "ImDragf32")]
     pub thickness: f32,
 }
 
@@ -240,5 +243,6 @@ pub struct LineRender {
     #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,
     pub color: Color,
+    #[inspect(proxy_type = "ImDragf32")]
     pub thickness: f32,
 }
