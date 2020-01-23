@@ -1,9 +1,7 @@
 use cgmath::Vector2;
-use std::collections::HashSet;
-
-pub use crate::physics::physics_components::Transform;
 use specs::prelude::ComponentEvent;
 use specs::ReaderId;
+use std::collections::HashSet;
 
 #[derive(Default)]
 pub struct TimeInfo {

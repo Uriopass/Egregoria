@@ -1,17 +1,15 @@
-use cgmath::{InnerSpace, Vector2};
-
-use specs::{
-    Builder, Component, Join, ParJoin, ReadStorage, System, VecStorage, World, WorldExt,
-    WriteStorage,
-};
-
 use crate::interaction::{Movable, Selectable};
 use crate::physics::add_shape;
 use crate::physics::physics_components::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use cgmath::num_traits::zero;
+use cgmath::{InnerSpace, Vector2};
 use ncollide2d::shape::Ball;
 use specs::prelude::ParallelIterator;
+use specs::{
+    Builder, Component, Join, ParJoin, ReadStorage, System, VecStorage, World, WorldExt,
+    WriteStorage,
+};
 
 #[derive(Component)]
 #[storage(VecStorage)]

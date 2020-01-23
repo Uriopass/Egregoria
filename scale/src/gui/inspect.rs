@@ -1,13 +1,12 @@
+use crate::cars::car_data::CarComponent;
+use crate::cars::IntersectionComponent;
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
 use crate::physics::physics_components::{Kinematics, Transform};
+use crate::rendering::meshrender_component::MeshRender;
 use cgmath::Vector2;
 use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
-
-use crate::cars::car_data::CarComponent;
-use crate::cars::IntersectionComponent;
-use crate::rendering::meshrender_component::MeshRender;
 use specs::prelude::*;
 use specs::shrev::EventChannel;
 use std::marker::PhantomData;

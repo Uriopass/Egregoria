@@ -1,7 +1,5 @@
 #![windows_subsystem = "windows"]
 
-use ncollide2d::world::CollisionWorld;
-
 use crate::cars::car_system::CarDecision;
 use crate::cars::map::RoadGraphSynchronize;
 use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, TimeInfo};
@@ -14,15 +12,16 @@ use crate::physics::physics_components::Collider;
 use crate::physics::physics_system::{KinematicsApply, PhysicsUpdate};
 use crate::physics::PhysicsWorld;
 use crate::rendering::meshrender_component::MeshRender;
+use ncollide2d::world::CollisionWorld;
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 
 pub mod cars;
 pub mod engine_interaction;
-mod graphs;
+pub mod graphs;
 pub mod gui;
-mod humans;
+pub mod humans;
 pub mod interaction;
-mod physics;
+pub mod physics;
 pub mod rendering;
 
 pub fn dispatcher<'a>(world: &mut World) -> Dispatcher<'a, 'a> {

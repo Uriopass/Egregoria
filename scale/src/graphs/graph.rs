@@ -37,6 +37,10 @@ impl<T> Graph<T> {
         self.nodes.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
+    }
+
     pub fn ids(&self) -> Keys<NodeID, T> {
         self.nodes.keys()
     }

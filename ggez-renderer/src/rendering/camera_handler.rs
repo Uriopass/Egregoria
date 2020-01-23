@@ -1,13 +1,11 @@
+use crate::geometry::rect::Rect;
+use crate::rendering::camera::Camera;
+use cgmath::Vector2;
+use ggez::graphics;
 use ggez::input;
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::MouseButton;
-
-use crate::geometry::rect::Rect;
-use ggez::graphics;
 use ggez::Context;
-
-use crate::rendering::camera::Camera;
-use cgmath::Vector2;
 
 #[allow(dead_code)]
 pub struct CameraHandler {

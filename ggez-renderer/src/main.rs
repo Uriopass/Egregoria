@@ -1,11 +1,10 @@
-use std::env;
-use std::path;
-
+use crate::game_loop::EngineState;
 use ggez::conf::NumSamples;
 use ggez::{conf, event, ContextBuilder};
 use specs::{World, WorldExt};
+use std::env;
+use std::path;
 
-use crate::game_loop::EngineState;
 mod game_loop;
 mod geometry;
 mod gui;
