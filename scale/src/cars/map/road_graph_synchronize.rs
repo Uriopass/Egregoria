@@ -81,6 +81,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             if let Some(rnc) = data.intersections.get(event.entity) {
                 data.rg.set_intersection_position(rnc.id, event.new_pos);
                 data.rg.calculate_nodes_positions(rnc.id);
+                data.rg.save("graph.bc");
             }
         }
         // Intersection creation
@@ -94,6 +95,8 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             }
             let e = make_inter_entity(id, data.mouseinfo.unprojected, &mut data);
             *data.selected = SelectedEntity(Some(e));
+
+            data.rg.save("graph.bc");
         }
 
         // Intersection deletion
@@ -104,6 +107,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     data.entities.delete(e).unwrap();
                 }
             }
+            data.rg.save("graph.bc");
         }
 
         // Connection handling
@@ -126,6 +130,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                             } else {
                                 data.rg.disconnect(interc.id, interc2.id);
                             }
+                            data.rg.save("graph.bc");
                             self.deactive_connect(&mut data);
                         }
                     }

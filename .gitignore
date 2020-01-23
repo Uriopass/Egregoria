@@ -2,4 +2,5 @@
 .idea
 /target
 **/*.rs.bk
-imgui.ini
+*.ini
+*.bc
