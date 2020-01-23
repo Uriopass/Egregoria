@@ -6,6 +6,8 @@ use cgmath::Vector2;
 use cgmath::{InnerSpace, MetricSpace};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::{Read, Write};
 use std::ops::Sub;
 
 #[derive(Serialize, Deserialize)]
@@ -73,16 +75,9 @@ impl RoadGraph {
             ))
         });
 
-        println!("inter: {:?}", inter.pos);
-
         let cycle_size = 10;
         let orange_length = 5;
         for (i, id) in in_nodes.into_iter().enumerate() {
-            println!(
-                "| {:?} {:?}",
-                self.nodes[id].pos,
-                Self::pseudo_angle((self.nodes[id].pos - inter.pos).normalize())
-            );
             self.nodes[id].light = TrafficLight::Periodic(TrafficLightSchedule::from_basic(
                 cycle_size,
                 orange_length,
@@ -229,5 +224,26 @@ impl RoadGraph {
 
         self.calculate_nodes_positions(from);
         self.update_traffic_lights(to);
+    }
+
+    pub fn from_file(filename: &'static str) -> RoadGraph {
+        let mut f = File::open(filename).expect("Could not open file for saving road graph");
+        let mut buffer = Vec::new();
+        // read the whole file
+        f.read_to_end(&mut buffer).unwrap();
+
+        bincode::deserialize(&buffer).unwrap()
+    }
+
+    pub fn save(&self, filename: &'static str) {
+        let res = bincode::serialize(self).unwrap();
+
+        let mut pos = 0;
+        let mut buffer = File::create(filename).expect("Could not open file for saving road graph");
+
+        while pos < res.len() {
+            let bytes_written = buffer.write(&res[pos..]).expect("Error writing to file");
+            pos += bytes_written;
+        }
     }
 }

@@ -1,5 +1,5 @@
 use crate::cars::car_data::make_car_entity;
-use crate::cars::map::{make_inter_entity, RGSData};
+use crate::cars::map::{make_inter_entity, RGSData, RoadNode};
 use crate::graphs::graph::NodeID;
 use cgmath::InnerSpace;
 use cgmath::Vector2;
@@ -41,33 +41,17 @@ pub fn spawn_new_car(world: &mut World) {
 
 #[rustfmt::skip]
 pub fn setup(world: &mut World) {
-    let mut rg = RoadGraph::empty();
-    let center = rg.add_intersection(Intersection::new([0.0, 0.0].into()));
-    let a      = rg.add_intersection(Intersection::new([100.0, 0.0].into()));
-    let b      = rg.add_intersection(Intersection::new([-100.0, 0.0].into()));
-    let c      = rg.add_intersection(Intersection::new([0.0, 100.0].into()));
-    let d      = rg.add_intersection(Intersection::new([0.0, -100.0].into()));
-
-    rg.connect(a, center);
-    rg.connect(b, center);
-    rg.connect(c, center);
-    rg.connect(d, center);
-
-    rg.connect(a, c);
-    rg.connect(c, b);
-    rg.connect(b, d);
-    rg.connect(d, a);
-
+    let rg = RoadGraph::from_file("graph.bc");
+    
     world.insert(rg);
 
-    for x in &[a, b, c, d, center] {
-        let inter = {
-            world.read_resource::<RoadGraph>().intersections()[x].pos
-        };
+    let nudes: Vec<NodeID> = world.read_resource::<RoadGraph>().intersections().into_iter().map(|(a, _)| *a).collect();
+    for id in nudes {
+        let inter = world.read_resource::<RoadGraph>().intersections()[id].pos;
         
         let mut data = world.system_data::<RGSData>();
         make_inter_entity(
-            *x,
+            id,
             inter,
             &mut data
         );
