@@ -3,10 +3,14 @@ use crate::cars::map::road_graph_synchronize::ConnectState::{First, Inactive, Un
 use crate::cars::map::Intersection;
 use crate::cars::IntersectionComponent;
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
+use crate::graphs::graph::NodeID;
 use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity};
 use crate::physics::physics_components::Transform;
-use crate::rendering::meshrender_component::{LineRender, MeshRender, MeshRenderEnum};
+use crate::rendering::meshrender_component::{
+    CircleRender, LineRender, MeshRender, MeshRenderEnum,
+};
 use crate::rendering::RED;
+use cgmath::Vector2;
 use specs::prelude::System;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -80,7 +84,6 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 data.rg.calculate_nodes_positions(rnc.id);
             }
         }
-
         // Intersection creation
         if data.kbinfo.just_pressed.contains(&KeyCode::I) {
             let id = data
@@ -90,24 +93,16 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
                 data.rg.connect(id, x.id);
             }
-            data.rg.make_entity(
-                id,
-                &data.entities,
-                &mut data.intersections,
-                &mut data.meshrenders,
-                &mut data.transforms,
-                &mut data.movable,
-                &mut data.selectable,
-            );
-
-            *data.selected = SelectedEntity(data.rg.intersections()[&id].e);
+            let e = make_inter_entity(id, data.mouseinfo.unprojected, &mut data);
+            *data.selected = SelectedEntity(Some(e));
         }
 
         // Intersection deletion
         if data.kbinfo.just_pressed.contains(&KeyCode::Backspace) {
             if let Some(e) = data.selected.0 {
                 if let Some(inter) = data.intersections.get(e) {
-                    data.rg.delete_inter(inter.id, &data.entities);
+                    data.rg.delete_inter(inter.id);
+                    data.entities.delete(e).unwrap();
                 }
             }
         }
@@ -159,6 +154,31 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             }
         }
     }
+}
+
+pub fn make_inter_entity(inter_id: NodeID, inter_pos: Vector2<f32>, data: &mut RGSData) -> Entity {
+    data.entities
+        .build_entity()
+        .with(
+            IntersectionComponent { id: inter_id },
+            &mut data.intersections,
+        )
+        .with(
+            MeshRender::simple(
+                CircleRender {
+                    radius: 2.0,
+                    color: RED,
+                    filled: true,
+                    ..CircleRender::default()
+                },
+                2,
+            ),
+            &mut data.meshrenders,
+        )
+        .with(Transform::new(inter_pos), &mut data.transforms)
+        .with(Movable, &mut data.movable)
+        .with(Selectable, &mut data.selectable)
+        .build()
 }
 
 impl RoadGraphSynchronize {

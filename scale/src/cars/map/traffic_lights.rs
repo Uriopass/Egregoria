@@ -1,6 +1,7 @@
 use crate::rendering::{Color, GREEN, ORANGE, RED};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum TrafficLightColor {
     RED,
     ORANGE,
@@ -24,7 +25,7 @@ impl TrafficLightColor {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TrafficLightSchedule {
     period: u64,
     lights: Vec<TrafficLightColor>,
@@ -45,7 +46,7 @@ impl TrafficLightSchedule {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum TrafficLight {
     Always,
     Periodic(TrafficLightSchedule),
