@@ -1,10 +1,9 @@
 use crate::cars::car_data::make_car_entity;
-use crate::cars::map::{make_inter_entity, RGSData, RoadNode};
+use crate::cars::map::{make_inter_entity, RGSData};
 use crate::graphs::graph::NodeID;
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use imgui_inspect_derive::*;
-use map::Intersection;
 use map::RoadGraph;
 use rand::random;
 use specs::storage::BTreeStorage;
@@ -23,12 +22,15 @@ pub struct IntersectionComponent {
 }
 
 pub fn spawn_new_car(world: &mut World) {
-    let node_pos = {
+    let node_pos: Vector2<f32> = {
         let rg = world.read_resource::<RoadGraph>();
         let l = rg.nodes().len();
-        let r = (rand::random::<f32>() * l as f32) as usize;
-
-        rg.nodes().into_iter().nth(r).unwrap().1.pos
+        if l == 0 {
+            [0.0, 0.0].into()
+        } else {
+            let r = (rand::random::<f32>() * l as f32) as usize;
+            rg.nodes().into_iter().nth(r).unwrap().1.pos
+        }
     };
     let pos = node_pos
         + Vector2::new(

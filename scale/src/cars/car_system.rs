@@ -54,7 +54,9 @@ fn car_objective_update(
 ) {
     match car.objective {
         CarObjective::None | Simple(_) | Route(_) => {
-            car.objective = Temporary(graph.closest_node(trans.position()));
+            car.objective = graph
+                .closest_node(trans.position())
+                .map_or(CarObjective::None, Temporary);
         }
         CarObjective::Temporary(x) => {
             if let Some(p) = graph.nodes().get(x).map(|x| x.pos) {
