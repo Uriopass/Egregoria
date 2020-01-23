@@ -12,8 +12,9 @@ use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::cars::map::RoadGraph;
 use scale::engine_interaction;
-use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo};
+use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo, Transform};
 use scale::gui::Gui;
+use scale::interaction::FollowEntity;
 use specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
@@ -113,6 +114,26 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             !self.imgui_wrapper.last_mouse_captured,
             !self.imgui_wrapper.last_kb_captured,
         );
+
+        if !self
+            .world
+            .read_resource::<MouseInfo>()
+            .just_pressed
+            .is_empty()
+        {
+            self.world.write_resource::<FollowEntity>().0.take();
+        }
+
+        if let Some(e) = self.world.read_resource::<FollowEntity>().0 {
+            if let Some(pos) = self
+                .world
+                .read_component::<Transform>()
+                .get(e)
+                .map(|x| x.position())
+            {
+                self.cam.camera.position = pos;
+            }
+        }
         self.cam.update(ctx);
 
         self.world

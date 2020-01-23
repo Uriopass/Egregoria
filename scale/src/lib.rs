@@ -7,7 +7,9 @@ use crate::cars::map::RoadGraphSynchronize;
 use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, TimeInfo};
 use crate::gui::Gui;
 use crate::humans::HumanUpdate;
-use crate::interaction::{MovableSystem, SelectableAuraSystem, SelectableSystem, SelectedEntity};
+use crate::interaction::{
+    FollowEntity, MovableSystem, SelectableAuraSystem, SelectableSystem, SelectedEntity,
+};
 use crate::physics::physics_components::Collider;
 use crate::physics::physics_system::{KinematicsApply, PhysicsUpdate};
 use crate::physics::PhysicsWorld;
@@ -19,7 +21,7 @@ pub mod engine_interaction;
 mod graphs;
 pub mod gui;
 mod humans;
-mod interaction;
+pub mod interaction;
 mod physics;
 pub mod rendering;
 
@@ -56,6 +58,7 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.insert(KeyboardInfo::default());
     world.insert(Gui::default());
     world.insert(SelectedEntity::default());
+    world.insert(FollowEntity::default());
 
     world.register::<Collider>();
 

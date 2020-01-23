@@ -1,4 +1,4 @@
-use crate::interaction::{Movable, MovedEvent};
+use crate::interaction::{FollowEntity, Movable, MovedEvent};
 use crate::physics::physics_components::{Drag, Kinematics, Transform};
 use cgmath::Vector2;
 use imgui::im_str;
@@ -223,5 +223,14 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         self.inspect_component::<Drag>();
         self.inspect_component::<Movable>();
         self.inspect_component::<IntersectionComponent>();
+
+        let follow = &mut self.world.write_resource::<FollowEntity>().0;
+        if follow.is_none() {
+            if ui.small_button(im_str!("Follow")) {
+                follow.replace(self.entity);
+            }
+        } else if ui.small_button(im_str!("Unfollow")) {
+            follow.take();
+        }
     }
 }
