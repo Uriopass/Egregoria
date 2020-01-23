@@ -1,18 +1,14 @@
 use super::{Intersection, RoadNode};
 use crate::cars::map::TrafficLight::Always;
 use crate::cars::map::{TrafficLight, TrafficLightSchedule};
-use crate::cars::IntersectionComponent;
 use crate::graphs::graph::{Edge, Graph, NodeID};
-use crate::interaction::{Movable, Selectable};
-use crate::physics::physics_components::Transform;
-use crate::rendering::meshrender_component::{CircleRender, MeshRender};
-use crate::rendering::RED;
 use cgmath::Vector2;
 use cgmath::{InnerSpace, MetricSpace};
 use ordered_float::OrderedFloat;
-use specs::{Entities, WriteStorage};
+use serde::{Deserialize, Serialize};
 use std::ops::Sub;
 
+#[derive(Serialize, Deserialize)]
 pub struct RoadGraph {
     nodes: Graph<RoadNode>,
     intersections: Graph<Intersection>,
@@ -143,40 +139,6 @@ impl RoadGraph {
         }
     }
 
-    pub fn make_entity<'a>(
-        &mut self,
-        inter_id: NodeID,
-        entities: &Entities<'a>,
-        inters: &mut WriteStorage<'a, IntersectionComponent>,
-        meshr: &mut WriteStorage<'a, MeshRender>,
-        transforms: &mut WriteStorage<'a, Transform>,
-        movable: &mut WriteStorage<'a, Movable>,
-        selectable: &mut WriteStorage<'a, Selectable>,
-    ) {
-        let inter: &mut Intersection = &mut self.intersections[inter_id];
-        inter.e = Some(
-            entities
-                .build_entity()
-                .with(IntersectionComponent { id: inter_id }, inters)
-                .with(
-                    MeshRender::simple(
-                        CircleRender {
-                            radius: 2.0,
-                            color: RED,
-                            filled: true,
-                            ..CircleRender::default()
-                        },
-                        2,
-                    ),
-                    meshr,
-                )
-                .with(Transform::new(inter.pos), transforms)
-                .with(Movable, movable)
-                .with(Selectable, selectable)
-                .build(),
-        );
-    }
-
     pub fn closest_node(&self, pos: Vector2<f32>) -> NodeID {
         let mut id: NodeID = *self.nodes.ids().next().unwrap();
         let mut min_dist = self.nodes.get(id).unwrap().pos.distance2(pos);
@@ -191,14 +153,13 @@ impl RoadGraph {
         id
     }
 
-    pub fn delete_inter(&mut self, id: NodeID, entities: &Entities) {
+    pub fn delete_inter(&mut self, id: NodeID) {
         for Edge { to, .. } in self.intersections.get_neighs(id).clone() {
             self.disconnect_directional(id, to);
         }
         for Edge { to, .. } in self.intersections.get_backward_neighs(id).clone() {
             self.disconnect_directional(to, id);
         }
-        self.intersections[&id].e.map(|x| entities.delete(x));
         self.intersections.remove_node(id);
     }
 

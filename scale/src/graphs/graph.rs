@@ -1,8 +1,9 @@
+use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Keys;
 use std::collections::{hash_map, HashMap};
 use std::ops::{Index, IndexMut};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Edge {
     pub to: NodeID,
     pub weight: f32,
@@ -10,9 +11,10 @@ pub struct Edge {
 
 type EdgeList = Vec<Edge>;
 
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Copy, Clone, Serialize, Deserialize)]
 pub struct NodeID(usize);
 
+#[derive(Serialize, Deserialize)]
 pub struct Graph<T> {
     nodes: HashMap<NodeID, T>,
     edges: HashMap<NodeID, EdgeList>,
