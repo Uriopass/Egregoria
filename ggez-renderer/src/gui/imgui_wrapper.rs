@@ -1,12 +1,9 @@
-use ggez::graphics;
-use ggez::Context;
-
 use gfx_core::{handle::RenderTargetView, memory::Typed};
 use gfx_device_gl;
-
+use ggez::graphics;
+use ggez::Context;
 use imgui::*;
 use imgui_gfx_renderer::*;
-
 use scale::gui::Gui;
 use specs::World;
 use std::time::Instant;

@@ -1,12 +1,11 @@
-use crate::PhysicsWorld;
-
-use nalgebra as na;
-
 use crate::engine_interaction::{KeyCode, KeyboardInfo, TimeInfo};
 use crate::physics::physics_components::{Collider, Kinematics, Transform};
+use crate::PhysicsWorld;
 use cgmath::{InnerSpace, Vector2, Zero};
 use nalgebra::Isometry2;
 use specs::{Join, Read, Write, WriteStorage};
+
+use nalgebra as na;
 
 pub struct KinematicsApply;
 

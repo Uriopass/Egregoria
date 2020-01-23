@@ -1,10 +1,9 @@
 use crate::rendering::render_context::RenderContext;
 use ggez::graphics::Color;
-use scale::engine_interaction::Transform;
+use scale::physics::physics_components::Transform;
 use scale::rendering::meshrender_component::{
     CircleRender, LineRender, LineToRender, MeshRenderEnum, RectRender,
 };
-
 use specs::ReadStorage;
 
 pub trait MeshRenderable: Send + Sync {

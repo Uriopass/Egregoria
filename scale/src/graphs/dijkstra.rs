@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-
 use crate::graphs::graph::{Graph, NodeID};
 use ordered_float::NotNan;
 use rand::distributions::weighted::alias_method::Weight;

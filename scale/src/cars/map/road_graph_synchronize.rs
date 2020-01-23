@@ -11,7 +11,6 @@ use crate::rendering::meshrender_component::{
 };
 use crate::rendering::RED;
 use cgmath::Vector2;
-use specs::prelude::System;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use specs::shrev::{EventChannel, ReaderId};

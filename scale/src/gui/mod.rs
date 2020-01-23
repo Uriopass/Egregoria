@@ -1,13 +1,13 @@
-mod inspect;
-
-pub use inspect::*;
-
 use crate::cars::spawn_new_car;
 use crate::interaction::SelectedEntity;
 use imgui::im_str;
 use imgui::Ui;
 use specs::world::World;
 use specs::WorldExt;
+
+pub use inspect::*;
+
+mod inspect;
 
 #[derive(Clone, Default)]
 pub struct Gui {

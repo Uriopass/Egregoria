@@ -1,6 +1,7 @@
 use crate::rendering::meshrenderable::MeshRenderable;
 use crate::rendering::render_context::RenderContext;
-use scale::engine_interaction::{MeshRenderEventReader, Transform, MAX_LAYERS};
+use scale::engine_interaction::{MeshRenderEventReader, MAX_LAYERS};
+use scale::physics::physics_components::Transform;
 use scale::rendering::meshrender_component::MeshRender;
 use specs::storage::ComponentEvent;
 use specs::{BitSet, Join, World, WorldExt};
