@@ -7,7 +7,7 @@ use specs::{
 
 use crate::interaction::{Movable, Selectable};
 use crate::physics::add_shape;
-use crate::physics::physics_components::{Drag, Kinematics, Transform};
+use crate::physics::physics_components::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use cgmath::num_traits::zero;
 use ncollide2d::shape::Ball;
@@ -76,7 +76,6 @@ pub fn setup(world: &mut World) {
             ))
             .with(Transform::new((x, y)))
             .with(Kinematics::from_mass(70.0))
-            .with(Drag::default())
             .with(Human {
                 objective: [SCALE * 5.0 - x, y].into(),
             })

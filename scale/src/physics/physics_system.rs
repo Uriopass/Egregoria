@@ -3,10 +3,10 @@ use crate::PhysicsWorld;
 use nalgebra as na;
 
 use crate::engine_interaction::{KeyCode, KeyboardInfo, TimeInfo};
-use crate::physics::physics_components::{Collider, Drag, Kinematics, Transform};
+use crate::physics::physics_components::{Collider, Kinematics, Transform};
 use cgmath::{InnerSpace, Vector2, Zero};
 use nalgebra::Isometry2;
-use specs::{Join, Read, ReadStorage, Write, WriteStorage};
+use specs::{Join, Read, Write, WriteStorage};
 
 pub struct KinematicsApply;
 
@@ -105,32 +105,20 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
     }
 }
 
-const RHO: f32 = 1.2;
-
 impl<'a> specs::System<'a> for KinematicsApply {
     type SystemData = (
         WriteStorage<'a, Collider>,
         WriteStorage<'a, Transform>,
         WriteStorage<'a, Kinematics>,
-        ReadStorage<'a, Drag>,
         Write<'a, PhysicsWorld, specs::shred::PanicHandler>,
         Read<'a, TimeInfo>,
     );
 
     fn run(
         &mut self,
-        (mut collider, mut transforms, mut kinematics, drag, mut ncollide_world, time): Self::SystemData,
+        (mut collider, mut transforms, mut kinematics, mut ncollide_world, time): Self::SystemData,
     ) {
         let delta = time.delta;
-
-        for (kin, drag) in (&mut kinematics, &drag).join() {
-            let force = kin.velocity.magnitude2() * drag.coeff * (RHO / 2.0) / kin.mass;
-            if force == 0.0 {
-                continue;
-            }
-
-            kin.acceleration += kin.velocity.normalize_to(-force);
-        }
 
         for (transform, kin) in (&mut transforms, &mut kinematics).join() {
             kin.velocity += kin.acceleration * delta;
