@@ -9,13 +9,12 @@ use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRende
 use crate::rendering::RED;
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, MetricSpace, Vector2};
-use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
-
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
 use nalgebra::Isometry2;
 use ncollide2d::shape::Cuboid;
+use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]

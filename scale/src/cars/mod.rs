@@ -1,5 +1,4 @@
 use crate::cars::car_data::make_car_entity;
-
 use crate::cars::map::{make_inter_entity, RGSData};
 use crate::graphs::graph::NodeID;
 use cgmath::InnerSpace;

@@ -8,6 +8,7 @@ use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
 use specs::{Component, Entity, FlaggedStorage, VecStorage, World};
+
 #[derive(Debug, Clone)]
 pub enum MeshRenderEnum {
     Circle(CircleRender),

@@ -1,20 +1,18 @@
+use crate::gui::imgui_wrapper::ImGuiWrapper;
 use crate::rendering::camera_handler::CameraHandler;
 use crate::rendering::render_context::RenderContext;
-
-use crate::gui::imgui_wrapper::ImGuiWrapper;
-
-use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
-
 use crate::rendering::road_rendering::RoadRenderer;
+use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
 use ggez::graphics::{Color, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::cars::map::RoadGraph;
 use scale::engine_interaction;
-use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo, Transform};
+use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo};
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
+use scale::physics::physics_components::Transform;
 use specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;

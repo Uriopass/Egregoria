@@ -1,8 +1,4 @@
-
 use crate::physics::physics_components::{Collider, Transform};
-
-
-
 use ncollide2d::pipeline::{CollisionGroups, GeometricQueryType};
 use ncollide2d::shape::{Shape, ShapeHandle};
 use ncollide2d::world::CollisionWorld;
