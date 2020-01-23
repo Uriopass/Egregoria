@@ -13,5 +13,6 @@ ncollide2d = "0.20.1"
 nalgebra = "0.18"
 imgui = "0.2.1"
 serde = "1.0.104"
+bincode = "1.2.1"
 imgui-inspect = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
 imgui-inspect-derive = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
