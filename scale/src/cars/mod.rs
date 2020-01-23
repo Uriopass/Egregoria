@@ -1,9 +1,7 @@
 use crate::cars::car_data::make_car_entity;
 
+use crate::cars::map::{make_inter_entity, RGSData};
 use crate::graphs::graph::NodeID;
-use crate::interaction::{Movable, Selectable};
-use crate::physics::physics_components::Transform;
-use crate::rendering::meshrender_component::MeshRender;
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use imgui_inspect_derive::*;
@@ -64,14 +62,15 @@ pub fn setup(world: &mut World) {
     world.insert(rg);
 
     for x in &[a, b, c, d, center] {
-        world.write_resource::<RoadGraph>().make_entity(
+        let inter = {
+            world.read_resource::<RoadGraph>().intersections()[x].pos
+        };
+        
+        let mut data = world.system_data::<RGSData>();
+        make_inter_entity(
             *x,
-            &world.entities(),
-            &mut world.write_component::<IntersectionComponent>(),
-            &mut world.write_component::<MeshRender>(),
-            &mut world.write_component::<Transform>(),
-            &mut world.write_component::<Movable>(),
-            &mut world.write_component::<Selectable>(),
+            inter,
+            &mut data
         );
     }
 
