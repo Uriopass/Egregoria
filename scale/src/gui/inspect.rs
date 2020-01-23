@@ -1,5 +1,5 @@
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
-use crate::physics::physics_components::{Drag, Kinematics, Transform};
+use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::Vector2;
 use imgui::im_str;
 use imgui::Ui;
@@ -220,7 +220,6 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         self.inspect_component::<CarComponent>();
         self.inspect_component::<MeshRender>();
         self.inspect_component::<Kinematics>();
-        self.inspect_component::<Drag>();
         self.inspect_component::<Movable>();
         self.inspect_component::<IntersectionComponent>();
 
