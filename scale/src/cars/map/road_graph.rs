@@ -134,8 +134,8 @@ impl RoadGraph {
         }
     }
 
-    pub fn closest_node(&self, pos: Vector2<f32>) -> NodeID {
-        let mut id: NodeID = *self.nodes.ids().next().unwrap();
+    pub fn closest_node(&self, pos: Vector2<f32>) -> Option<NodeID> {
+        let mut id: NodeID = *self.nodes.ids().next()?;
         let mut min_dist = self.nodes.get(id).unwrap().pos.distance2(pos);
 
         for (key, value) in &self.nodes {
@@ -145,7 +145,7 @@ impl RoadGraph {
                 min_dist = dist;
             }
         }
-        id
+        Some(id)
     }
 
     pub fn delete_inter(&mut self, id: NodeID) {
