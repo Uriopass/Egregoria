@@ -4,7 +4,7 @@ use crate::graphs::graph::NodeID;
 use crate::gui::ImCgVec2;
 use crate::interaction::{Movable, Selectable};
 use crate::physics::add_shape;
-use crate::physics::physics_components::{Drag, Kinematics, Transform};
+use crate::physics::physics_components::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::RED;
 use cgmath::num_traits::zero;
@@ -195,7 +195,6 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, direction: Vec
             direction,
             objective: CarObjective::None,
         })
-        .with(Drag::new(0.3))
         .with(Movable)
         .with(Selectable)
         .build();
