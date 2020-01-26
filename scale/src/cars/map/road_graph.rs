@@ -226,13 +226,13 @@ impl RoadGraph {
         self.update_traffic_lights(to);
     }
 
-    pub fn from_file(filename: &'static str) -> RoadGraph {
-        let mut f = File::open(filename).expect("Could not open file for saving road graph");
+    pub fn from_file(filename: &'static str) -> Option<RoadGraph> {
+        let mut f = File::open(filename).ok()?;
         let mut buffer = Vec::new();
         // read the whole file
-        f.read_to_end(&mut buffer).unwrap();
+        f.read_to_end(&mut buffer).ok()?;
 
-        bincode::deserialize(&buffer).unwrap()
+        bincode::deserialize(&buffer).ok()
     }
 
     pub fn save(&self, filename: &'static str) {

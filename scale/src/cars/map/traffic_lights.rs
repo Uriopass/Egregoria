@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum TrafficLightColor {
     RED,
-    ORANGE,
+    ORANGE(f32),
     GREEN,
 }
 
@@ -12,7 +12,7 @@ impl TrafficLightColor {
     pub fn as_render_color(self) -> Color {
         match self {
             TrafficLightColor::RED => RED,
-            TrafficLightColor::ORANGE => ORANGE,
+            TrafficLightColor::ORANGE(_) => ORANGE,
             TrafficLightColor::GREEN => GREEN,
         }
     }
@@ -34,9 +34,16 @@ pub struct TrafficLightSchedule {
 impl TrafficLightSchedule {
     pub fn from_basic(green: usize, orange: usize, red: usize, offset: usize) -> Self {
         let period = (green + orange + red) as u64;
+        let mut i = orange;
         let mut lights = std::iter::repeat(TrafficLightColor::GREEN)
             .take(green)
-            .chain(std::iter::repeat(TrafficLightColor::ORANGE).take(orange))
+            .chain(
+                std::iter::repeat_with(|| {
+                    i -= 1;
+                    TrafficLightColor::ORANGE(i as f32)
+                })
+                .take(orange),
+            )
             .chain(std::iter::repeat(TrafficLightColor::RED).take(red))
             .collect::<Vec<TrafficLightColor>>();
         lights.rotate_right(offset);
