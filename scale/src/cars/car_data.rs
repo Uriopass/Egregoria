@@ -1,13 +1,14 @@
 use crate::cars::car_data::CarObjective::{Simple, Temporary};
+use crate::cars::car_system::CAR_DECELERATION;
 use crate::cars::map::{RoadGraph, TrafficLightColor};
+use crate::engine_interaction::TimeInfo;
 use crate::graphs::graph::NodeID;
-use crate::gui::ImCgVec2;
+use crate::gui::{ImCgVec2, ImDragf};
 use crate::interaction::{Movable, Selectable};
 use crate::physics::add_shape;
 use crate::physics::physics_components::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::RED;
-use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, MetricSpace, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -75,14 +76,23 @@ pub struct CarComponent {
     #[inspect(proxy_type = "ImCgVec2")]
     pub direction: Vector2<f32>,
     pub objective: CarObjective,
+    #[inspect(proxy_type = "ImDragf")]
+    pub desired_speed: f32,
+    #[inspect(proxy_type = "ImCgVec2")]
+    pub desired_dir: Vector2<f32>,
+    #[inspect(proxy_type = "ImDragf")]
+    pub wait_time: f32,
 }
 
 #[allow(dead_code)]
 impl CarComponent {
-    pub fn new(angle: f32) -> CarComponent {
+    pub fn new(direction: Vector2<f32>) -> CarComponent {
         CarComponent {
-            direction: Vector2::new(angle.cos(), angle.sin()),
+            direction,
             objective: CarObjective::None,
+            desired_speed: 0.0,
+            desired_dir: Vector2::<f32>::new(0.0, 0.0),
+            wait_time: 0.0,
         }
     }
 
@@ -91,28 +101,33 @@ impl CarComponent {
     }
 
     pub fn calc_decision(
-        &self,
+        &mut self,
         rg: &RoadGraph,
         speed: f32,
-        time: u64,
+        time: &TimeInfo,
         position: Vector2<f32>,
         neighs: Vec<&Isometry2<f32>>,
-    ) -> (f32, Vector2<f32>) {
+    ) {
+        if self.wait_time > 0.0 {
+            self.wait_time -= time.delta;
+            return;
+        }
         let objective: Vector2<f32> = match self.objective.to_pos(rg) {
             Some(x) => x,
             None => {
-                return (0.0, self.direction);
+                return;
             }
         };
 
         let is_terminal = match &self.objective {
-            CarObjective::None => return (zero(), self.direction),
+            CarObjective::None => return,
             CarObjective::Simple(_x) => true,
             CarObjective::Temporary(_x) => false,
             CarObjective::Route(x) => x.len() == 1,
         };
 
         let mut min_dist2: f32 = 50.0 * 50.0;
+        let mut min_front2: f32 = 50.0 * 50.0;
 
         // Collision avoidance
         for x in neighs {
@@ -128,43 +143,60 @@ impl CarComponent {
                 continue;
             }
 
-            let e_direction = Vector2::new(x.rotation.re, x.rotation.im);
-            if e_direction.dot(self.direction) > 0.0 {
-                min_dist2 = min_dist2.min(e_diff.magnitude2());
+            let same_direction =
+                Vector2::new(x.rotation.re, x.rotation.im).dot(self.direction) > 0.0;
+            if !same_direction && dist2 < 6.0 * 6.0 {
+                /*self.desired_speed = -5.0;
+                self.desired_dir = [self.direction.y, -self.direction.x].into();*/
+                self.wait_time = rand::random::<f32>() * 1.0;
+                return;
             }
+            if same_direction {
+                min_front2 = min_front2.min(e_diff.magnitude2());
+            }
+            min_dist2 = min_dist2.min(e_diff.magnitude2());
+        }
+
+        if speed.abs() < 0.2 && min_front2 < 7.0 * 7.0 {
+            self.wait_time = rand::random::<f32>() * 0.5;
+            return;
         }
 
         let delta_pos = objective - position;
         let dist_to_pos = delta_pos.magnitude();
         let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
-
-        let mut desired_speed: f32 = 50.0;
+        self.desired_dir = dir_to_pos;
+        self.desired_speed = 15.0;
+        let time_to_stop = speed / CAR_DECELERATION;
+        let stop_dist = time_to_stop * speed / 2.0;
 
         if let Temporary(n_id) = self.objective {
-            match rg.nodes()[&n_id].light.get_color(time) {
+            match rg.nodes()[&n_id].light.get_color(time.time_seconds) {
                 TrafficLightColor::RED => {
-                    if dist_to_pos < 5.0 + speed {
-                        desired_speed = 0.0;
+                    if dist_to_pos < 5.0 + stop_dist {
+                        self.desired_speed = 0.0;
                     }
                 }
-                TrafficLightColor::ORANGE => {
-                    if dist_to_pos > speed && dist_to_pos < 2.0 * speed {
-                        desired_speed = desired_speed.min(10.0);
+                TrafficLightColor::ORANGE(time_left) => {
+                    if speed * time_left <= dist_to_pos  // if 
+                        && dist_to_pos < 5.0 + stop_dist
+                    // if I have time to stop
+                    {
+                        self.desired_speed = self.desired_speed.min(0.0);
                     }
                 }
                 _ => {}
             }
         }
         if is_terminal {
-            desired_speed = desired_speed.min(dist_to_pos);
+            self.desired_speed = self.desired_speed.min(dist_to_pos);
         }
         if dir_to_pos.dot(self.direction) < 0.8 {
-            desired_speed = desired_speed.min(10.0);
+            self.desired_speed = self.desired_speed.min(10.0);
         }
-        (
-            desired_speed.min(min_dist2.sqrt() - 5.0).max(0.0),
-            dir_to_pos,
-        )
+        if min_dist2.sqrt() < 6.0 + stop_dist {
+            self.desired_speed = 0.0;
+        }
     }
 }
 
@@ -190,10 +222,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, direction: Vec
         .with(mr)
         .with(Transform::new(position))
         .with(Kinematics::from_mass(1000.0))
-        .with(CarComponent {
-            direction,
-            objective: CarObjective::None,
-        })
+        .with(CarComponent::new(direction))
         .with(Movable)
         .with(Selectable)
         .build();

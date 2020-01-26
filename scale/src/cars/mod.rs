@@ -43,7 +43,7 @@ pub fn spawn_new_car(world: &mut World) {
 
 #[rustfmt::skip]
 pub fn setup(world: &mut World) {
-    let rg = RoadGraph::from_file("graph.bc");
+    let rg = RoadGraph::from_file("graph.bc").unwrap_or(RoadGraph::empty());
     
     world.insert(rg);
 
