@@ -15,9 +15,9 @@ use specs::shred::PanicHandler;
 #[derive(Default)]
 pub struct CarDecision;
 
-const CAR_ACCELERATION: f32 = 3.0;
-const CAR_DECELERATION: f32 = 3.0;
-const MIN_TURNING_RADIUS: f32 = 5.0;
+pub const CAR_ACCELERATION: f32 = 3.0;
+pub const CAR_DECELERATION: f32 = 9.0;
+pub const MIN_TURNING_RADIUS: f32 = 6.0;
 
 #[derive(SystemData)]
 pub struct CarDecisionSystemData<'a> {
@@ -89,10 +89,10 @@ fn car_physics(
     kin: &mut Kinematics,
     car: &mut CarComponent,
 ) {
-    let speed: f32 = kin.velocity.magnitude();
+    let speed: f32 = kin.velocity.magnitude() * kin.velocity.dot(car.direction).signum();
     let dot = (kin.velocity / speed).dot(car.direction);
 
-    if speed > 1.0 && dot < 0.9 {
+    if speed > 1.0 && dot.abs() < 0.9 {
         let coeff = speed.max(1.0).min(9.0) / 9.0;
         kin.acceleration -= kin.velocity / coeff;
         return;
@@ -100,9 +100,11 @@ fn car_physics(
 
     let pos = trans.position();
 
+    let danger_length = (speed * speed / (2.0 * CAR_DECELERATION)).max(10.0);
+
     let around = AABB::new(
-        Point2::new(pos.x - 50.0, pos.y - 50.0),
-        Point2::new(pos.x + 50.0, pos.y + 50.0),
+        Point2::new(pos.x - danger_length, pos.y - danger_length),
+        Point2::new(pos.x + danger_length, pos.y + danger_length),
     );
 
     let all = CollisionGroups::new();
@@ -111,17 +113,16 @@ fn car_physics(
 
     let objs: Vec<&Isometry2<f32>> = neighbors.map(|(_, y)| y.position()).collect();
 
-    let (desired_speed, desired_direction) =
-        car.calc_decision(rg, speed, time.time_seconds, pos, objs);
+    car.calc_decision(rg, speed, time, pos, objs);
 
     let speed = speed
-        + ((desired_speed - speed)
+        + ((car.desired_speed - speed)
             .min(time.delta * CAR_ACCELERATION)
-            .max(-time.delta * CAR_DECELERATION * speed.max(3.0)));
+            .max(-time.delta * CAR_DECELERATION));
 
-    let ang_acc = (speed / MIN_TURNING_RADIUS).min(2.0);
+    let ang_acc = (speed.abs() / MIN_TURNING_RADIUS).min(2.0);
 
-    let delta_ang = car.direction.angle(desired_direction);
+    let delta_ang = car.direction.angle(car.desired_dir);
     let mut ang = Vector2::unit_x().angle(car.direction);
 
     ang.0 += delta_ang

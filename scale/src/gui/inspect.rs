@@ -11,8 +11,8 @@ use specs::prelude::*;
 use specs::shrev::EventChannel;
 use std::marker::PhantomData;
 
-pub struct ImDragf32;
-impl InspectRenderDefault<f32> for ImDragf32 {
+pub struct ImDragf;
+impl InspectRenderDefault<f32> for ImDragf {
     fn render(
         data: &[&f32],
         label: &'static str,
@@ -42,6 +42,43 @@ impl InspectRenderDefault<f32> for ImDragf32 {
         ui.drag_float(&im_str!("{}", label), data[0])
             .speed(args.step.unwrap_or(0.1))
             .build()
+    }
+}
+
+impl InspectRenderDefault<f64> for ImDragf {
+    fn render(
+        data: &[&f64],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let mut cp = *data[0] as f32;
+        ui.drag_float(&im_str!("{}", label), &mut cp)
+            .speed(args.step.unwrap_or(0.1))
+            .build();
+    }
+
+    fn render_mut(
+        data: &mut [&mut f64],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let mut cp = *data[0] as f32;
+        let changed = ui
+            .drag_float(&im_str!("{}", label), &mut cp)
+            .speed(args.step.unwrap_or(0.1))
+            .build();
+        *data[0] = cp as f64;
+        changed
     }
 }
 

@@ -9,9 +9,15 @@ pub use inspect::*;
 
 mod inspect;
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Gui {
     show_car_ui: bool,
+}
+
+impl Default for Gui {
+    fn default() -> Self {
+        Self { show_car_ui: true }
+    }
 }
 
 impl Gui {
@@ -50,7 +56,7 @@ impl Gui {
             imgui::Window::new(im_str!("Cars"))
                 .size([200.0, 300.0], imgui::Condition::FirstUseEver)
                 .position([30.0, 330.0], imgui::Condition::FirstUseEver)
-                .opened(&mut true)
+                .opened(&mut self.show_car_ui)
                 .build(&ui, || {
                     if ui.small_button(im_str!("spawn car")) {
                         spawn_new_car(world);

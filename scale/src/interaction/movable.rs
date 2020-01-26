@@ -74,13 +74,13 @@ impl<'a> System<'a> for MovableSystem {
                 }
                 Some(off) => {
                     let p = transforms.get_mut(e).unwrap();
-                    if let Some(kin) = kinematics.get_mut(e) {
-                        kin.velocity = zero();
-                        kin.acceleration = zero();
-                    }
                     let old_pos = p.position();
                     let new_pos = off + mouse.unprojected;
                     if new_pos != old_pos {
+                        if let Some(kin) = kinematics.get_mut(e) {
+                            kin.velocity = zero();
+                            kin.acceleration = zero();
+                        }
                         p.set_position(new_pos);
                         movedevents.single_write(MovedEvent { entity: e, new_pos });
                     }
