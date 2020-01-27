@@ -7,6 +7,7 @@ use specs::WorldExt;
 
 pub use inspect::*;
 
+#[macro_use]
 mod inspect;
 
 #[derive(Clone)]

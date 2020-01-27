@@ -2,12 +2,11 @@ use crate::engine_interaction::KeyCode;
 use crate::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
 use crate::physics::physics_components::Transform;
 use cgmath::InnerSpace;
-use imgui_inspect_derive::*;
 use specs::prelude::*;
 use specs::Component;
 use std::f32;
 
-#[derive(Component, Default, Inspect)]
+#[derive(Component, Default)]
 #[storage(NullStorage)]
 pub struct Selectable;
 
