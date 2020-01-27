@@ -1,7 +1,6 @@
 #![windows_subsystem = "windows"]
 
 use crate::cars::car_system::CarDecision;
-use crate::cars::map::RoadGraphSynchronize;
 use crate::cars::CarMarker;
 use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, TimeInfo};
 use crate::gui::Gui;
@@ -9,6 +8,7 @@ use crate::humans::HumanUpdate;
 use crate::interaction::{
     FollowEntity, MovableSystem, SelectableAuraSystem, SelectableSystem, SelectedEntity,
 };
+use crate::map::RoadGraphSynchronize;
 use crate::physics::physics_components::Collider;
 use crate::physics::physics_system::{KinematicsApply, PhysicsUpdate};
 use crate::physics::PhysicsWorld;
@@ -23,6 +23,7 @@ pub mod graphs;
 pub mod gui;
 pub mod humans;
 pub mod interaction;
+pub mod map;
 pub mod physics;
 pub mod rendering;
 

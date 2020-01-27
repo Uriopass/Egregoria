@@ -1,7 +1,7 @@
 use super::{Intersection, RoadNode};
-use crate::cars::map::TrafficLight::Always;
-use crate::cars::map::{TrafficLight, TrafficLightSchedule};
 use crate::graphs::graph::{Edge, Graph, NodeID};
+use crate::map::TrafficLight::Always;
+use crate::map::{TrafficLight, TrafficLightSchedule};
 use cgmath::Vector2;
 use cgmath::{InnerSpace, MetricSpace};
 use ordered_float::OrderedFloat;
