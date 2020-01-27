@@ -227,19 +227,20 @@ impl RoadGraph {
     }
 
     pub fn from_file(filename: &'static str) -> Option<RoadGraph> {
-        let mut f = File::open(filename).ok()?;
+        let mut f = File::open(filename.to_string() + ".json").ok()?;
         let mut buffer = Vec::new();
         // read the whole file
         f.read_to_end(&mut buffer).ok()?;
 
-        bincode::deserialize(&buffer).ok()
+        serde_json::from_slice(&buffer).ok()
     }
 
     pub fn save(&self, filename: &'static str) {
-        let res = bincode::serialize(self).unwrap();
+        let res = serde_json::to_vec_pretty(self).unwrap();
 
         let mut pos = 0;
-        let mut buffer = File::create(filename).expect("Could not open file for saving road graph");
+        let mut buffer = File::create(filename.to_string() + ".json")
+            .expect("Could not open file for saving road graph");
 
         while pos < res.len() {
             let bytes_written = buffer.write(&res[pos..]).expect("Error writing to file");

@@ -3,13 +3,14 @@ use cgmath::num_traits::zero;
 use cgmath::{Matrix3, SquareMatrix, Vector2};
 use imgui_inspect_derive::*;
 use ncollide2d::pipeline::CollisionObjectSlabHandle;
+use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Collider(pub CollisionObjectSlabHandle);
 
-#[derive(Component, Debug, PartialEq, Clone)]
+#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[storage(VecStorage)]
 pub struct Transform {
     m: Matrix3<f32>,
@@ -83,7 +84,7 @@ impl Transform {
     }
 }
 
-#[derive(Component, Debug, Inspect, Clone)]
+#[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
 #[storage(VecStorage)]
 pub struct Kinematics {
     #[inspect(proxy_type = "ImCgVec2")]

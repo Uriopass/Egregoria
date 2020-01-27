@@ -7,12 +7,14 @@ use imgui::Ui;
 use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
+use serde::{Deserialize, Serialize};
 use specs::{Component, Entity, FlaggedStorage, VecStorage, World};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MeshRenderEnum {
     Circle(CircleRender),
     Rect(RectRender),
+    #[serde(skip)]
     LineTo(LineToRender),
     Line(LineRender),
 }
@@ -105,7 +107,7 @@ impl From<LineRender> for MeshRenderEnum {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MeshRender {
     pub orders: Vec<MeshRenderEnum>,
     pub hide: bool,
@@ -186,7 +188,7 @@ impl MeshRender {
         self
     }
 }
-#[derive(Debug, Inspect, Clone)]
+#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct CircleRender {
     #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,
@@ -207,7 +209,7 @@ impl Default for CircleRender {
     }
 }
 
-#[derive(Debug, Inspect, Clone)]
+#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct RectRender {
     #[inspect(proxy_type = "ImDragf")]
     pub width: f32,
@@ -237,7 +239,7 @@ pub struct LineToRender {
     pub thickness: f32,
 }
 
-#[derive(Debug, Inspect, Clone)]
+#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct LineRender {
     #[inspect(proxy_type = "ImCgVec2")]
     pub offset: Vector2<f32>,
