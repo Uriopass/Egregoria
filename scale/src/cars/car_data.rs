@@ -126,38 +126,34 @@ impl CarComponent {
             CarObjective::Route(x) => x.len() == 1,
         };
 
-        let mut min_dist2: f32 = 50.0 * 50.0;
-        let mut min_front2: f32 = 50.0 * 50.0;
+        let mut min_dist: f32 = 50.0;
+        let mut min_front: f32 = 50.0;
 
         // Collision avoidance
         for x in neighs {
             let e_pos = Vector2::new(x.translation.x, x.translation.y);
 
-            let dist2 = e_pos.distance2(position);
-            if dist2 <= 0.0 || dist2 >= 15.0 * 15.0 + speed * speed {
+            let e_diff = e_pos - position;
+            let e_dist = e_diff.magnitude();
+            if e_dist < 1e-5 {
+                // dont check self
                 continue;
             }
 
-            let e_diff = e_pos - position;
-            if e_diff.normalize().dot(self.direction) < 0.75 {
+            if (e_diff / e_dist).dot(self.direction) < 0.75 {
                 continue;
             }
 
             let same_direction =
                 Vector2::new(x.rotation.re, x.rotation.im).dot(self.direction) > 0.0;
-            if !same_direction && dist2 < 6.0 * 6.0 {
-                /*self.desired_speed = -5.0;
-                self.desired_dir = [self.direction.y, -self.direction.x].into();*/
-                self.wait_time = rand::random::<f32>() * 1.0;
-                return;
-            }
+
             if same_direction {
-                min_front2 = min_front2.min(e_diff.magnitude2());
+                min_front = min_front.min(e_dist);
             }
-            min_dist2 = min_dist2.min(e_diff.magnitude2());
+            min_dist = min_dist.min(e_dist);
         }
 
-        if speed.abs() < 0.2 && min_front2 < 7.0 * 7.0 {
+        if speed.abs() < 0.2 && min_front < 7.0 {
             self.wait_time = rand::random::<f32>() * 0.5;
             return;
         }
@@ -194,7 +190,7 @@ impl CarComponent {
         if dir_to_pos.dot(self.direction) < 0.8 {
             self.desired_speed = self.desired_speed.min(10.0);
         }
-        if min_dist2.sqrt() < 6.0 + stop_dist {
+        if min_front < 6.0 + stop_dist {
             self.desired_speed = 0.0;
         }
     }

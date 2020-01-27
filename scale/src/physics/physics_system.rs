@@ -10,13 +10,13 @@ use nalgebra as na;
 pub struct KinematicsApply;
 
 pub struct PhysicsUpdate {
-    dynamic_collisions_enabled: bool,
+    collisions_enabled: bool,
 }
 
 impl Default for PhysicsUpdate {
     fn default() -> Self {
         PhysicsUpdate {
-            dynamic_collisions_enabled: false,
+            collisions_enabled: false,
         }
     }
 }
@@ -31,11 +31,16 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
     );
 
     fn run(&mut self, (kb, mut transforms, mut kinematics, mut coworld): Self::SystemData) {
+        if kb.just_pressed.contains(&KeyCode::P) {
+            self.collisions_enabled = !self.collisions_enabled;
+        }
+
         coworld.update();
 
-        if kb.just_pressed.contains(&KeyCode::P) {
-            self.dynamic_collisions_enabled = !self.dynamic_collisions_enabled;
+        if !self.collisions_enabled {
+            return;
         }
+
         for (h1, h2, _alg, manifold) in coworld.contact_pairs(true) {
             let ent_1 = coworld.collision_object(h1).unwrap().data();
             let ent_2 = coworld.collision_object(h2).unwrap().data();
@@ -51,9 +56,6 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
             let is_dynamic_2 = kinematics.get(*ent_2).is_some();
 
             if is_dynamic_1 && is_dynamic_2 {
-                if !self.dynamic_collisions_enabled {
-                    continue;
-                }
                 let m_1 = kinematics.get(*ent_1).unwrap().mass;
                 let m_2 = kinematics.get(*ent_2).unwrap().mass;
 
