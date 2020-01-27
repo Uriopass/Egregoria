@@ -17,10 +17,12 @@ use ncollide2d::world::CollisionWorld;
 use specs::saveload::{SimpleMarker, SimpleMarkerAllocator};
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 
+#[macro_use]
+pub mod gui;
+
 pub mod cars;
 pub mod engine_interaction;
 pub mod graphs;
-pub mod gui;
 pub mod humans;
 pub mod interaction;
 pub mod map;

@@ -193,6 +193,22 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for ImVec<T> {
     }
 }
 
+#[rustfmt::skip]
+macro_rules! empty_inspect_impl {
+    ($x : ty) => {
+        impl imgui_inspect::InspectRenderDefault<$x> for $x {
+            fn render(_: &[&$x], _: &'static str, _: &mut specs::World, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault) {
+                ui.text(std::stringify!($x))
+            }
+
+            fn render_mut(_: &mut [&mut $x], _: &'static str, _: &mut specs::World, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault) -> bool {
+                ui.text(std::stringify!($x));
+                false
+            }
+        }
+    };
+}
+
 pub struct InspectRenderer<'a, 'b> {
     pub world: &'a mut World,
     pub entity: Entity,
