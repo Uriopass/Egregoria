@@ -1,4 +1,4 @@
-use crate::cars::car_data::{make_car_entity, CarComponent};
+use crate::cars::data::{make_car_entity, CarComponent};
 use crate::graphs::graph::NodeID;
 use crate::map::{make_inter_entity, RGSData, RoadGraph};
 use crate::physics::physics_components::{Kinematics, Transform};
@@ -7,19 +7,11 @@ use cgmath::Vector2;
 use rand::random;
 use specs::error::NoError;
 use specs::saveload::SimpleMarker;
-use specs::storage::BTreeStorage;
-use specs::{Component, World, WorldExt, WriteStorage};
+use specs::{World, WorldExt, WriteStorage};
 use std::fs::File;
 
-pub mod car_data;
-pub mod car_system;
-
-#[derive(Component, Clone)]
-#[storage(BTreeStorage)]
-pub struct IntersectionComponent {
-    pub id: NodeID,
-}
-empty_inspect_impl!(IntersectionComponent);
+pub mod data;
+pub mod systems;
 
 pub fn spawn_new_car(world: &mut World) {
     let node_pos: Vector2<f32> = {

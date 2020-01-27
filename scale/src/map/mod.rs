@@ -2,6 +2,8 @@ use crate::graphs::graph::NodeID;
 use crate::map::traffic_lights::TrafficLight;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
+use specs::storage::BTreeStorage;
+use specs::Component;
 use std::collections::HashMap;
 
 mod road_graph;
@@ -43,3 +45,10 @@ impl Intersection {
         }
     }
 }
+
+#[derive(Component, Clone)]
+#[storage(BTreeStorage)]
+pub struct IntersectionComponent {
+    pub id: NodeID,
+}
+empty_inspect_impl!(IntersectionComponent);

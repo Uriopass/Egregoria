@@ -1,5 +1,5 @@
-use crate::cars::car_data::CarObjective::{Route, Simple, Temporary};
-use crate::cars::car_data::{CarComponent, CarObjective};
+use crate::cars::data::CarObjective::{Route, Simple, Temporary};
+use crate::cars::data::{CarComponent, CarObjective};
 use crate::engine_interaction::TimeInfo;
 use crate::map::RoadGraph;
 use crate::physics::physics_components::{Kinematics, Transform};
