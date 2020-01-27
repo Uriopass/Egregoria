@@ -1,11 +1,10 @@
 use crate::cars::car_data::{make_car_entity, CarComponent};
-use crate::cars::map::{make_inter_entity, RGSData};
 use crate::graphs::graph::NodeID;
+use crate::map::{make_inter_entity, RGSData, RoadGraph};
 use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use imgui_inspect_derive::*;
-use map::RoadGraph;
 use rand::random;
 use specs::error::NoError;
 use specs::saveload::SimpleMarker;
@@ -15,14 +14,13 @@ use std::fs::File;
 
 pub mod car_data;
 pub mod car_system;
-pub mod map;
 
 #[allow(dead_code)]
 #[derive(Component, Inspect, Clone)]
 #[storage(BTreeStorage)]
 pub struct IntersectionComponent {
     #[inspect(skip)]
-    id: NodeID,
+    pub id: NodeID,
 }
 
 pub fn spawn_new_car(world: &mut World) {

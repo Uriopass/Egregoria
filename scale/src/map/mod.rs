@@ -1,5 +1,5 @@
-use crate::cars::map::traffic_lights::TrafficLight;
 use crate::graphs::graph::NodeID;
+use crate::map::traffic_lights::TrafficLight;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
