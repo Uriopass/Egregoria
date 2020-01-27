@@ -4,7 +4,6 @@ use crate::map::{make_inter_entity, RGSData, RoadGraph};
 use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::InnerSpace;
 use cgmath::Vector2;
-use imgui_inspect_derive::*;
 use rand::random;
 use specs::error::NoError;
 use specs::saveload::SimpleMarker;
@@ -15,13 +14,12 @@ use std::fs::File;
 pub mod car_data;
 pub mod car_system;
 
-#[allow(dead_code)]
-#[derive(Component, Inspect, Clone)]
+#[derive(Component, Clone)]
 #[storage(BTreeStorage)]
 pub struct IntersectionComponent {
-    #[inspect(skip)]
     pub id: NodeID,
 }
+empty_inspect_impl!(IntersectionComponent);
 
 pub fn spawn_new_car(world: &mut World) {
     let node_pos: Vector2<f32> = {
@@ -54,7 +52,7 @@ pub struct CarMarker;
 
 #[rustfmt::skip]
 pub fn setup(world: &mut World) {
-    let rg = RoadGraph::from_file("graph").unwrap_or(RoadGraph::empty());
+    let rg = RoadGraph::from_file("graph").unwrap_or_else(RoadGraph::empty);
 
     world.insert(rg);
 
