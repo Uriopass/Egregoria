@@ -1,8 +1,9 @@
 use imgui::{im_str, ColorEdit, EditableColor, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use serde::{Deserialize, Serialize};
 use specs::World;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Color {
     pub r: f32,
     pub g: f32,

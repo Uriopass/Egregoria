@@ -2,6 +2,7 @@
 
 use crate::cars::car_system::CarDecision;
 use crate::cars::map::RoadGraphSynchronize;
+use crate::cars::CarMarker;
 use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, TimeInfo};
 use crate::gui::Gui;
 use crate::humans::HumanUpdate;
@@ -13,6 +14,7 @@ use crate::physics::physics_system::{KinematicsApply, PhysicsUpdate};
 use crate::physics::PhysicsWorld;
 use crate::rendering::meshrender_component::MeshRender;
 use ncollide2d::world::CollisionWorld;
+use specs::saveload::{SimpleMarker, SimpleMarkerAllocator};
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 
 pub mod cars;
@@ -60,6 +62,9 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.insert(FollowEntity::default());
 
     world.register::<Collider>();
+    world.register::<SimpleMarker<CarMarker>>();
+
+    world.insert(SimpleMarkerAllocator::<CarMarker>::default());
 
     dispatcher.setup(world);
     humans::setup(world);
