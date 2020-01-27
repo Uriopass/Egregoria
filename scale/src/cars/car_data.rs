@@ -1,6 +1,7 @@
 use crate::cars::car_data::CarObjective::{Simple, Temporary};
 use crate::cars::car_system::CAR_DECELERATION;
 use crate::cars::map::{RoadGraph, TrafficLightColor};
+use crate::cars::CarMarker;
 use crate::engine_interaction::TimeInfo;
 use crate::graphs::graph::NodeID;
 use crate::gui::{ImCgVec2, ImDragf};
@@ -9,16 +10,18 @@ use crate::physics::add_shape;
 use crate::physics::physics_components::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::RED;
-use cgmath::{InnerSpace, MetricSpace, Vector2};
+use cgmath::{InnerSpace, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
 use nalgebra::Isometry2;
 use ncollide2d::shape::Cuboid;
+use serde::{Deserialize, Serialize};
+use specs::saveload::{MarkedBuilder, SimpleMarker};
 use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CarObjective {
     None,
     Simple(NodeID),
@@ -71,7 +74,7 @@ impl CarObjective {
         }
     }
 }
-#[derive(Component, Debug, Inspect, Clone)]
+#[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct CarComponent {
     #[inspect(proxy_type = "ImCgVec2")]
     pub direction: Vector2<f32>,
@@ -221,6 +224,7 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, direction: Vec
         .with(CarComponent::new(direction))
         .with(Movable)
         .with(Selectable)
+        .marked::<SimpleMarker<CarMarker>>()
         .build();
 
     add_shape(

@@ -4,3 +4,4 @@
 **/*.rs.bk
 *.ini
 *.bc
+*.json
