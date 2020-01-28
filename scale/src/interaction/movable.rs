@@ -3,12 +3,13 @@ use crate::interaction::SelectedEntity;
 use crate::physics::physics_components::{Kinematics, Transform};
 use cgmath::num_traits::zero;
 use cgmath::Vector2;
+use serde::{Deserialize, Serialize};
 use specs::prelude::*;
 use specs::shrev::EventChannel;
 use specs::Component;
 use std::f32;
 
-#[derive(Component, Default, Clone)]
+#[derive(Component, Default, Clone, Serialize, Deserialize)]
 #[storage(NullStorage)]
 pub struct Movable;
 empty_inspect_impl!(Movable);

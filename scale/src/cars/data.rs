@@ -1,6 +1,5 @@
 use crate::cars::data::CarObjective::{Simple, Temporary};
 use crate::cars::systems::CAR_DECELERATION;
-use crate::cars::CarMarker;
 use crate::engine_interaction::TimeInfo;
 use crate::graphs::graph::NodeID;
 use crate::gui::{ImCgVec2, ImDragf};
@@ -17,7 +16,6 @@ use imgui_inspect_derive::*;
 use nalgebra::Isometry2;
 use ncollide2d::shape::Cuboid;
 use serde::{Deserialize, Serialize};
-use specs::saveload::{MarkedBuilder, SimpleMarker};
 use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
 
 #[allow(dead_code)]
@@ -199,7 +197,7 @@ impl CarComponent {
     }
 }
 
-pub fn make_car_entity(world: &mut World, position: Vector2<f32>, direction: Vector2<f32>) {
+pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) {
     let car_width = 4.5;
     let car_height = 2.0;
 
@@ -219,12 +217,11 @@ pub fn make_car_entity(world: &mut World, position: Vector2<f32>, direction: Vec
     let e = world
         .create_entity()
         .with(mr)
-        .with(Transform::new(position))
+        .with(trans)
         .with(Kinematics::from_mass(1000.0))
-        .with(CarComponent::new(direction))
+        .with(car)
         .with(Movable)
         .with(Selectable)
-        .marked::<SimpleMarker<CarMarker>>()
         .build();
 
     add_shape(

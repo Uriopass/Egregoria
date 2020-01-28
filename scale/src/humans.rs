@@ -1,15 +1,8 @@
-use crate::interaction::{Movable, Selectable};
-use crate::physics::add_shape;
 use crate::physics::physics_components::{Kinematics, Transform};
-use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2};
-use ncollide2d::shape::Ball;
 use specs::prelude::ParallelIterator;
-use specs::{
-    Builder, Component, Join, ParJoin, ReadStorage, System, VecStorage, World, WorldExt,
-    WriteStorage,
-};
+use specs::{Component, Join, ParJoin, ReadStorage, System, VecStorage, WriteStorage};
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -51,39 +44,5 @@ impl<'a> System<'a> for HumanUpdate {
                 let acc = h.calc_acceleration(&k);
                 k.acceleration += acc;
             })
-    }
-}
-
-pub fn setup(world: &mut World) {
-    const SCALE: f32 = 100.0;
-
-    for _ in 0..1 {
-        let size = 1.0;
-
-        let x: f32 = rand::random::<f32>() * SCALE;
-        let y: f32 = rand::random::<f32>() * SCALE;
-
-        let eb = world
-            .create_entity()
-            .with(MeshRender::simple(
-                CircleRender {
-                    radius: size,
-                    ..Default::default()
-                },
-                2,
-            ))
-            .with(Transform::new((x, y)))
-            .with(Kinematics::from_mass(70.0))
-            .with(Human {
-                objective: [SCALE * 5.0 - x, y].into(),
-            })
-            .with(Selectable)
-            .with(Movable);
-
-        let e = eb.build();
-        //let shape = Ball::new(size);
-        let shape = Ball::new(size);
-
-        add_shape(world, e, shape);
     }
 }

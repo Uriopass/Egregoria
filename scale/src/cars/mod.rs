@@ -1,13 +1,11 @@
 use crate::cars::data::{make_car_entity, CarComponent};
-use crate::graphs::graph::NodeID;
-use crate::map::{make_inter_entity, RGSData, RoadGraph};
-use crate::physics::physics_components::{Kinematics, Transform};
+use crate::map::{make_inter_entity, RoadGraph};
+use crate::physics::physics_components::Transform;
+
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use rand::random;
-use specs::error::NoError;
-use specs::saveload::SimpleMarker;
-use specs::{World, WorldExt, WriteStorage};
+use specs::{Join, LazyUpdate, World, WorldExt};
 use std::fs::File;
 
 pub mod data;
@@ -30,43 +28,60 @@ pub fn spawn_new_car(world: &mut World) {
             10.0 * (random::<f32>() - 0.5),
         );
 
-    make_car_entity(world, pos, (node_pos - pos).normalize());
+    let car = CarComponent::new((node_pos - pos).normalize());
+
+    make_car_entity(world, Transform::new(pos), car);
 }
 
-type CarLoadComponents<'a> = (
-    WriteStorage<'a, Transform>,
-    WriteStorage<'a, Kinematics>,
-    WriteStorage<'a, CarComponent>,
-);
+const CAR_FILENAME: &str = "world/cars";
+const GRAPH_FILENAME: &str = "world/graph";
 
-#[derive(Clone, Copy)]
-pub struct CarMarker;
+pub fn save(world: &mut World) {
+    world.read_resource::<RoadGraph>().save(GRAPH_FILENAME);
+
+    let file = File::create(CAR_FILENAME.to_string() + ".json").unwrap();
+
+    let car_trans: Vec<(Transform, CarComponent)> = (
+        &world.read_component::<Transform>(),
+        &world.read_component::<CarComponent>(),
+    )
+        .join()
+        .map(|(trans, car)| (trans.clone(), car.clone()))
+        .collect();
+
+    serde_json::to_writer_pretty(file, &car_trans).unwrap();
+}
+
+pub fn load(world: &mut World) {
+    {
+        let rg = RoadGraph::from_file(GRAPH_FILENAME).unwrap_or_else(RoadGraph::empty);
+        for (inter_id, inter) in rg.intersections() {
+            make_inter_entity(
+                *inter_id,
+                inter.pos,
+                &world.read_resource::<LazyUpdate>(),
+                &world.entities(),
+            );
+        }
+        world.insert(rg);
+    }
+
+    let file = File::open(CAR_FILENAME.to_string() + ".json");
+    if let Err(e) = file {
+        println!("error while trying to load entities: {}", e);
+        return;
+    }
+
+    let des = serde_json::from_reader(file.unwrap());
+
+    let ok: Vec<(Transform, CarComponent)> = des.unwrap_or_default();
+
+    for (trans, car) in ok {
+        make_car_entity(world, trans, car);
+    }
+}
 
 #[rustfmt::skip]
 pub fn setup(world: &mut World) {
-    let rg = RoadGraph::from_file("graph").unwrap_or_else(RoadGraph::empty);
-
-    world.insert(rg);
-
-    let nudes: Vec<NodeID> = world.read_resource::<RoadGraph>().intersections().into_iter().map(|(a, _)| *a).collect();
-    for id in nudes {
-        let inter = world.read_resource::<RoadGraph>().intersections()[id].pos;
-        
-        let mut data = world.system_data::<RGSData>();
-        make_inter_entity(
-            id,
-            inter,
-            &mut data
-        );
-    }
-
-    for _i in 0..10 {
-        spawn_new_car(world);
-    }
-    
-    let entities = world.entities();
-    let file = File::create("cars.json").unwrap();
-    let mut ser = serde_json::Serializer::new(file);
-
-    specs::saveload::SerializeComponents::<NoError, SimpleMarker<CarMarker>>::serialize(&world.system_data::<CarLoadComponents>(), &entities, &world.read_component::<SimpleMarker<CarMarker>>(), &mut ser).unwrap();
+    load(world);
 }
