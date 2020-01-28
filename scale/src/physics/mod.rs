@@ -1,20 +1,27 @@
-use crate::physics::physics_components::{Collider, Transform};
-use ncollide2d::pipeline::{CollisionGroups, GeometricQueryType};
+use ncollide2d::pipeline::{CollisionGroups, CollisionObjectSlabHandle, GeometricQueryType};
 use ncollide2d::shape::{Shape, ShapeHandle};
 use ncollide2d::world::CollisionWorld;
-use specs::{Entity, World, WorldExt};
+use specs::{Component, Entity, VecStorage, World, WorldExt};
+pub mod systems;
 
-pub mod physics_components;
-pub mod physics_system;
+mod kinematics;
+mod transform;
+
+pub use kinematics::*;
+pub use transform::*;
 
 pub type PhysicsWorld = CollisionWorld<f32, Entity>;
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Collider(pub CollisionObjectSlabHandle);
 
 pub fn add_shape<T>(world: &mut World, e: Entity, shape: T)
 where
     T: Shape<f32>,
 {
     let pos = world
-        .read_component::<Transform>()
+        .read_component::<transform::Transform>()
         .get(e)
         .unwrap()
         .position();

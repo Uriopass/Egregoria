@@ -1,6 +1,6 @@
 use crate::rendering::render_context::RenderContext;
 use ggez::graphics::Color;
-use scale::physics::physics_components::Transform;
+use scale::physics::Transform;
 use scale::rendering::meshrender_component::{
     CircleRender, LineRender, LineToRender, MeshRenderEnum, RectRender,
 };

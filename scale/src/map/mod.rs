@@ -1,9 +1,13 @@
 use crate::graphs::graph::NodeID;
+use crate::interaction::{Movable, Selectable};
 use crate::map::traffic_lights::TrafficLight;
+use crate::physics::Transform;
+use crate::rendering::meshrender_component::{CircleRender, MeshRender};
+use crate::rendering::RED;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
 use specs::storage::BTreeStorage;
-use specs::{Component, LazyUpdate, World, WorldExt};
+use specs::{Builder, Component, Entities, Entity, LazyUpdate, World, WorldExt};
 use std::collections::HashMap;
 
 mod road_graph;
@@ -75,3 +79,26 @@ pub struct IntersectionComponent {
     pub id: NodeID,
 }
 empty_inspect_impl!(IntersectionComponent);
+
+pub fn make_inter_entity<'a>(
+    inter_id: NodeID,
+    inter_pos: Vector2<f32>,
+    lazy: &LazyUpdate,
+    entities: &Entities<'a>,
+) -> Entity {
+    lazy.create_entity(entities)
+        .with(IntersectionComponent { id: inter_id })
+        .with(MeshRender::simple(
+            CircleRender {
+                radius: 2.0,
+                color: RED,
+                filled: true,
+                ..CircleRender::default()
+            },
+            2,
+        ))
+        .with(Transform::new(inter_pos))
+        .with(Movable)
+        .with(Selectable)
+        .build()
+}

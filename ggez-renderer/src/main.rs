@@ -12,7 +12,7 @@ mod rendering;
 
 fn main() {
     let mut world = World::new();
-    let mut schedule = scale::dispatcher(&mut world);
+    let mut schedule = scale::dispatcher();
     scale::setup(&mut world, &mut schedule);
 
     let mut c = conf::Conf::new();
