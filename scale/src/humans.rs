@@ -1,4 +1,4 @@
-use crate::physics::physics_components::{Kinematics, Transform};
+use crate::physics::{Kinematics, Transform};
 use cgmath::num_traits::zero;
 use cgmath::{InnerSpace, Vector2};
 use specs::prelude::ParallelIterator;

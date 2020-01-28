@@ -22,7 +22,6 @@ pub struct Graph<T> {
     uuid: usize,
 }
 
-#[allow(dead_code)]
 impl<T> Graph<T> {
     pub fn empty() -> Self {
         Graph {

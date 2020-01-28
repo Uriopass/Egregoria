@@ -1,18 +1,14 @@
 use super::RoadGraph;
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
-use crate::graphs::graph::NodeID;
-use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity};
+use crate::interaction::{MovedEvent, SelectedEntity};
 use crate::map::road_graph_synchronize::ConnectState::{First, Inactive, Unselected};
-use crate::map::Intersection;
 use crate::map::IntersectionComponent;
-use crate::physics::physics_components::Transform;
-use crate::rendering::meshrender_component::{
-    CircleRender, LineRender, MeshRender, MeshRenderEnum,
-};
+use crate::map::{make_inter_entity, Intersection};
+use crate::physics::Transform;
+use crate::rendering::meshrender_component::{LineRender, MeshRender, MeshRenderEnum};
 use crate::rendering::RED;
-use cgmath::Vector2;
 use specs::prelude::*;
-use specs::shred::PanicHandler;
+use specs::shred::{DynamicSystemData, PanicHandler};
 use specs::shrev::{EventChannel, ReaderId};
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -22,16 +18,16 @@ enum ConnectState {
     First(Entity),
 }
 
-pub struct RoadGraphSynchronize {
+pub struct RoadGraphSynchronize;
+
+pub struct RoadGraphSynchronizeState {
     reader: ReaderId<MovedEvent>,
     connect_state: ConnectState,
     show_connect: Entity,
 }
 
-impl RoadGraphSynchronize {
+impl RoadGraphSynchronizeState {
     pub fn new(world: &mut World) -> Self {
-        <Self as System<'_>>::SystemData::setup(world);
-
         let reader = world
             .write_resource::<EventChannel<MovedEvent>>()
             .register_reader();
@@ -48,7 +44,6 @@ impl RoadGraphSynchronize {
                 9,
             ))
             .build();
-
         Self {
             reader,
             connect_state: Inactive,
@@ -61,6 +56,7 @@ impl RoadGraphSynchronize {
 pub struct RGSData<'a> {
     entities: Entities<'a>,
     lazy: Read<'a, LazyUpdate>,
+    self_state: Write<'a, RoadGraphSynchronizeState, PanicHandler>,
     rg: Write<'a, RoadGraph, PanicHandler>,
     selected: Write<'a, SelectedEntity>,
     moved: Read<'a, EventChannel<MovedEvent>>,
@@ -76,7 +72,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
 
     fn run(&mut self, mut data: Self::SystemData) {
         // Moved events
-        for event in data.moved.read(&mut self.reader) {
+        for event in data.moved.read(&mut data.self_state.reader) {
             if let Some(rnc) = data.intersections.get(event.entity) {
                 data.rg.set_intersection_position(rnc.id, event.new_pos);
                 data.rg.calculate_nodes_positions(rnc.id);
@@ -107,15 +103,18 @@ impl<'a> System<'a> for RoadGraphSynchronize {
 
         // Connection handling
         if data.kbinfo.just_pressed.contains(&KeyCode::C) {
-            self.connect_state = Unselected;
+            data.self_state.connect_state = Unselected;
         }
 
         if let Some(x) = data.selected.0 {
             if let Some(interc) = data.intersections.get(x) {
-                match self.connect_state {
+                match data.self_state.connect_state {
                     Unselected => {
-                        self.connect_state = First(x);
-                        data.meshrenders.get_mut(self.show_connect).unwrap().hide = false;
+                        data.self_state.connect_state = First(x);
+                        data.meshrenders
+                            .get_mut(data.self_state.show_connect)
+                            .unwrap()
+                            .hide = false;
                     }
                     First(y) => {
                         let interc2 = data.intersections.get(y).unwrap();
@@ -125,61 +124,44 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                             } else {
                                 data.rg.disconnect(interc.id, interc2.id);
                             }
-                            self.deactive_connect(&mut data);
+                            data.self_state.deactive_connect(&mut data.meshrenders);
                         }
                     }
                     _ => (),
                 }
             } else {
-                self.deactive_connect(&mut data);
+                data.self_state.deactive_connect(&mut data.meshrenders);
             }
         } else {
-            self.deactive_connect(&mut data);
+            data.self_state.deactive_connect(&mut data.meshrenders);
         }
 
-        if let First(x) = self.connect_state {
+        if let First(x) = data.self_state.connect_state {
             let trans = data.transforms.get(x).unwrap().clone();
             data.transforms
-                .get_mut(self.show_connect)
+                .get_mut(data.self_state.show_connect)
                 .unwrap()
                 .set_position(trans.position());
             if let Some(MeshRenderEnum::Line(x)) = data
                 .meshrenders
-                .get_mut(self.show_connect)
+                .get_mut(data.self_state.show_connect)
                 .and_then(|x| x.orders.get_mut(0))
             {
                 x.offset = data.mouseinfo.unprojected - trans.position();
             }
         }
     }
+
+    fn setup(&mut self, world: &mut World) {
+        <Self::SystemData as DynamicSystemData>::setup(&self.accessor(), world);
+        let state = RoadGraphSynchronizeState::new(world);
+        world.insert(state);
+    }
 }
 
-pub fn make_inter_entity<'a>(
-    inter_id: NodeID,
-    inter_pos: Vector2<f32>,
-    lazy: &LazyUpdate,
-    entities: &Entities<'a>,
-) -> Entity {
-    lazy.create_entity(entities)
-        .with(IntersectionComponent { id: inter_id })
-        .with(MeshRender::simple(
-            CircleRender {
-                radius: 2.0,
-                color: RED,
-                filled: true,
-                ..CircleRender::default()
-            },
-            2,
-        ))
-        .with(Transform::new(inter_pos))
-        .with(Movable)
-        .with(Selectable)
-        .build()
-}
-
-impl RoadGraphSynchronize {
-    fn deactive_connect(&mut self, data: &mut RGSData) {
+impl RoadGraphSynchronizeState {
+    fn deactive_connect(&mut self, meshrenders: &mut WriteStorage<MeshRender>) {
         self.connect_state = Inactive;
-        data.meshrenders.get_mut(self.show_connect).unwrap().hide = true;
+        meshrenders.get_mut(self.show_connect).unwrap().hide = true;
     }
 }

@@ -114,43 +114,6 @@ pub struct MeshRender {
     layer: u32,
 }
 
-impl Component for MeshRender {
-    type Storage = FlaggedStorage<Self, VecStorage<Self>>;
-}
-
-impl InspectRenderDefault<MeshRender> for MeshRender {
-    fn render(
-        data: &[&MeshRender],
-        label: &'static str,
-        world: &mut World,
-        ui: &Ui,
-        args: &InspectArgsDefault,
-    ) {
-        let mapped: Vec<&Vec<MeshRenderEnum>> = data.iter().map(|x| &x.orders).collect();
-        <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
-            &mapped, label, world, ui, args,
-        );
-    }
-
-    fn render_mut(
-        data: &mut [&mut MeshRender],
-        label: &'static str,
-        world: &mut World,
-        ui: &Ui,
-        args: &InspectArgsDefault,
-    ) -> bool {
-        let mut mapped: Vec<&mut Vec<MeshRenderEnum>> =
-            data.iter_mut().map(|x| &mut x.orders).collect();
-        <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
-            &mut mapped,
-            label,
-            world,
-            ui,
-            args,
-        )
-    }
-}
-
 #[allow(dead_code)]
 impl MeshRender {
     pub fn empty(layer: u32) -> Self {
@@ -188,6 +151,44 @@ impl MeshRender {
         self
     }
 }
+
+impl Component for MeshRender {
+    type Storage = FlaggedStorage<Self, VecStorage<Self>>;
+}
+
+impl InspectRenderDefault<MeshRender> for MeshRender {
+    fn render(
+        data: &[&MeshRender],
+        label: &'static str,
+        world: &mut World,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) {
+        let mapped: Vec<&Vec<MeshRenderEnum>> = data.iter().map(|x| &x.orders).collect();
+        <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
+            &mapped, label, world, ui, args,
+        );
+    }
+
+    fn render_mut(
+        data: &mut [&mut MeshRender],
+        label: &'static str,
+        world: &mut World,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        let mut mapped: Vec<&mut Vec<MeshRenderEnum>> =
+            data.iter_mut().map(|x| &mut x.orders).collect();
+        <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
+            &mut mapped,
+            label,
+            world,
+            ui,
+            args,
+        )
+    }
+}
+
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct CircleRender {
     #[inspect(proxy_type = "ImCgVec2")]

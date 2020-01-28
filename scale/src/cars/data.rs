@@ -6,7 +6,7 @@ use crate::gui::{ImCgVec2, ImDragf};
 use crate::interaction::{Movable, Selectable};
 use crate::map::{RoadGraph, TrafficLightColor};
 use crate::physics::add_shape;
-use crate::physics::physics_components::{Kinematics, Transform};
+use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::RED;
 use cgmath::{InnerSpace, Vector2};
@@ -16,7 +16,7 @@ use imgui_inspect_derive::*;
 use nalgebra::Isometry2;
 use ncollide2d::shape::Cuboid;
 use serde::{Deserialize, Serialize};
-use specs::{Builder, Component, DenseVecStorage, World, WorldExt};
+use specs::{Builder, Component, DenseVecStorage, Entity, World, WorldExt};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,6 +29,7 @@ pub enum CarObjective {
 
 impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
     fn render(_: &[&CarObjective], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
+        unimplemented!();
     }
 
     fn render_mut(
@@ -42,6 +43,7 @@ impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
             return false;
         }
 
+        // TODO: Handle Route
         let pos: Option<Vector2<f32>>;
         {
             let rg = world.read_resource::<RoadGraph>();
@@ -72,6 +74,7 @@ impl CarObjective {
         }
     }
 }
+
 #[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct CarComponent {
     #[inspect(proxy_type = "ImCgVec2")]
@@ -122,13 +125,12 @@ impl CarComponent {
 
         let is_terminal = match &self.objective {
             CarObjective::None => return,
-            CarObjective::Simple(_x) => true,
-            CarObjective::Temporary(_x) => false,
+            CarObjective::Simple(_) => true,
+            CarObjective::Temporary(_) => false,
             CarObjective::Route(x) => x.len() == 1,
         };
 
-        let mut min_dist: f32 = 50.0;
-        let mut min_front: f32 = 50.0;
+        let mut min_front_dist: f32 = 50.0;
 
         // Collision avoidance
         for x in neighs {
@@ -146,15 +148,14 @@ impl CarComponent {
             }
 
             let same_direction =
-                Vector2::new(x.rotation.re, x.rotation.im).dot(self.direction) > 0.0;
+                Vector2::new(x.rotation.re, x.rotation.im).dot(self.direction) > 0.0; // Avoid traffic jams by only considering same direction cars
 
             if same_direction {
-                min_front = min_front.min(e_dist);
+                min_front_dist = min_front_dist.min(e_dist);
             }
-            min_dist = min_dist.min(e_dist);
         }
 
-        if speed.abs() < 0.2 && min_front < 7.0 {
+        if speed.abs() < 0.2 && min_front_dist < 7.0 {
             self.wait_time = rand::random::<f32>() * 0.5;
             return;
         }
@@ -175,29 +176,35 @@ impl CarComponent {
                     }
                 }
                 TrafficLightColor::ORANGE(time_left) => {
-                    if speed * time_left <= dist_to_pos  // if 
+                    if speed * time_left <= dist_to_pos  // if I don't to have the time to go through by keeping my speed
                         && dist_to_pos < 5.0 + stop_dist
-                    // if I have time to stop
+                    // and I should slow down to stop
                     {
-                        self.desired_speed = self.desired_speed.min(0.0);
+                        self.desired_speed = 0.0; // stop
                     }
                 }
                 _ => {}
             }
         }
-        if is_terminal {
-            self.desired_speed = self.desired_speed.min(dist_to_pos);
+
+        if is_terminal && dist_to_pos < 1.0 + stop_dist {
+            // Close to terminal objective
+            self.desired_speed = 0.0;
         }
+
         if dir_to_pos.dot(self.direction) < 0.8 {
+            // Not facing the objective
             self.desired_speed = self.desired_speed.min(10.0);
         }
-        if min_front < 6.0 + stop_dist {
+
+        if min_front_dist < 6.0 + stop_dist {
+            // Car in front of us
             self.desired_speed = 0.0;
         }
     }
 }
 
-pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) {
+pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -> Entity {
     let car_width = 4.5;
     let car_height = 2.0;
 
@@ -228,5 +235,6 @@ pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) {
         world,
         e,
         Cuboid::new([car_width / 2.0, car_height / 2.0].into()),
-    )
+    );
+    e
 }
