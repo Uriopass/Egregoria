@@ -1,5 +1,5 @@
 use crate::interaction::SelectedEntity;
-use crate::physics::physics_components::Transform;
+use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::Color;
 use specs::prelude::*;

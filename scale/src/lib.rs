@@ -8,8 +8,8 @@ use crate::interaction::{
     FollowEntity, MovableSystem, SelectableAuraSystem, SelectableSystem, SelectedEntity,
 };
 use crate::map::RoadGraphSynchronize;
-use crate::physics::physics_components::Collider;
-use crate::physics::physics_system::{KinematicsApply, PhysicsUpdate};
+use crate::physics::systems::{KinematicsApply, PhysicsUpdate};
+use crate::physics::Collider;
 use crate::physics::PhysicsWorld;
 use crate::rendering::meshrender_component::MeshRender;
 use ncollide2d::world::CollisionWorld;
@@ -27,11 +27,7 @@ pub mod map;
 pub mod physics;
 pub mod rendering;
 
-pub fn dispatcher<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
-    world.register::<MeshRender>();
-    let reader = MeshRenderEventReader(world.write_storage::<MeshRender>().register_reader());
-    world.insert(reader);
-
+pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
     DispatcherBuilder::new()
         .with(HumanUpdate, "human update", &[])
         .with(CarDecision, "car decision", &[])
@@ -41,7 +37,7 @@ pub fn dispatcher<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
             "movable",
             &["human update", "car decision", "selectable"],
         )
-        .with(RoadGraphSynchronize::new(world), "rgs", &["movable"])
+        .with(RoadGraphSynchronize, "rgs", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
         .with(PhysicsUpdate::default(), "physics", &["speed apply"])
         .with(
@@ -63,6 +59,10 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.insert(FollowEntity::default());
 
     world.register::<Collider>();
+    world.register::<MeshRender>();
+
+    let reader = MeshRenderEventReader(world.write_storage::<MeshRender>().register_reader());
+    world.insert(reader);
 
     dispatcher.setup(world);
     map::setup(world);

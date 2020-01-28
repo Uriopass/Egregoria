@@ -1,6 +1,6 @@
 use crate::engine_interaction::KeyCode;
 use crate::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
-use crate::physics::physics_components::Transform;
+use crate::physics::Transform;
 use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
 use specs::prelude::*;
@@ -16,6 +16,7 @@ pub struct SelectedEntity(pub Option<Entity>);
 
 pub struct SelectableSystem;
 impl<'a> System<'a> for SelectableSystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         Entities<'a>,
         Read<'a, MouseInfo>,

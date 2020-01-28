@@ -12,7 +12,7 @@ use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo};
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
 use scale::map::RoadGraph;
-use scale::physics::physics_components::Transform;
+use scale::physics::Transform;
 use specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;

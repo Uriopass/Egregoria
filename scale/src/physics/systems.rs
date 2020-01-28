@@ -1,11 +1,11 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, TimeInfo};
-use crate::physics::physics_components::{Collider, Kinematics, Transform};
+use crate::physics::{Collider, Kinematics, Transform};
 use crate::PhysicsWorld;
 use cgmath::{InnerSpace, Vector2, Zero};
-use nalgebra::Isometry2;
-use specs::{Join, Read, Write, WriteStorage};
-
 use nalgebra as na;
+use nalgebra::Isometry2;
+use specs::prelude::ResourceId;
+use specs::{Join, Read, ReadStorage, System, SystemData, World, Write, WriteStorage};
 
 pub struct KinematicsApply;
 
@@ -22,7 +22,7 @@ impl Default for PhysicsUpdate {
 }
 
 const C_R: f32 = 0.2; // 0 for inelastic, 1 for elastic
-impl<'a> specs::System<'a> for PhysicsUpdate {
+impl<'a> System<'a> for PhysicsUpdate {
     type SystemData = (
         Read<'a, KeyboardInfo>,
         WriteStorage<'a, Transform>,
@@ -106,29 +106,30 @@ impl<'a> specs::System<'a> for PhysicsUpdate {
     }
 }
 
-impl<'a> specs::System<'a> for KinematicsApply {
-    type SystemData = (
-        WriteStorage<'a, Collider>,
-        WriteStorage<'a, Transform>,
-        WriteStorage<'a, Kinematics>,
-        Write<'a, PhysicsWorld, specs::shred::PanicHandler>,
-        Read<'a, TimeInfo>,
-    );
+#[derive(SystemData)]
+pub struct KinematicsApplyData<'a> {
+    time: Read<'a, TimeInfo>,
+    colliders: ReadStorage<'a, Collider>,
+    transforms: WriteStorage<'a, Transform>,
+    kinematics: WriteStorage<'a, Kinematics>,
+    coworld: Write<'a, PhysicsWorld, specs::shred::PanicHandler>,
+}
 
-    fn run(
-        &mut self,
-        (mut collider, mut transforms, mut kinematics, mut ncollide_world, time): Self::SystemData,
-    ) {
-        let delta = time.delta;
+impl<'a> System<'a> for KinematicsApply {
+    type SystemData = KinematicsApplyData<'a>;
 
-        for (transform, kin) in (&mut transforms, &mut kinematics).join() {
+    fn run(&mut self, mut data: Self::SystemData) {
+        let delta = data.time.delta;
+
+        for (transform, kin) in (&mut data.transforms, &mut data.kinematics).join() {
             kin.velocity += kin.acceleration * delta;
             transform.translate(kin.velocity * delta);
             kin.acceleration.set_zero();
         }
 
-        for (transform, collider) in (&mut transforms, &mut collider).join() {
-            let collision_obj = ncollide_world
+        for (transform, collider) in (&data.transforms, &data.colliders).join() {
+            let collision_obj = data
+                .coworld
                 .get_mut(collider.0)
                 .expect("Invalid collision object; was it removed from ncollide but not specs?");
             let p = transform.position();
