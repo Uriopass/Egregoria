@@ -65,5 +65,6 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.register::<Collider>();
 
     dispatcher.setup(world);
+    map::setup(world);
     cars::setup(world);
 }
