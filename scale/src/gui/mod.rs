@@ -53,6 +53,7 @@ impl Gui {
             });
             if ui.small_button(im_str!("Save")) {
                 crate::cars::save(world);
+                crate::map::save(world);
             }
         });
 

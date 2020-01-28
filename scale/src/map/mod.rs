@@ -3,7 +3,7 @@ use crate::map::traffic_lights::TrafficLight;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
 use specs::storage::BTreeStorage;
-use specs::Component;
+use specs::{Component, LazyUpdate, World, WorldExt};
 use std::collections::HashMap;
 
 mod road_graph;
@@ -27,6 +27,29 @@ impl RoadNode {
             light: TrafficLight::Always,
         }
     }
+}
+
+const GRAPH_FILENAME: &str = "world/graph";
+
+pub fn save(world: &mut World) {
+    world.read_resource::<RoadGraph>().save(GRAPH_FILENAME);
+}
+
+pub fn load(world: &mut World) {
+    let rg = RoadGraph::from_file(GRAPH_FILENAME).unwrap_or_else(RoadGraph::empty);
+    for (inter_id, inter) in rg.intersections() {
+        make_inter_entity(
+            *inter_id,
+            inter.pos,
+            &world.read_resource::<LazyUpdate>(),
+            &world.entities(),
+        );
+    }
+    world.insert(rg);
+}
+
+pub fn setup(world: &mut World) {
+    load(world);
 }
 
 #[derive(Serialize, Deserialize)]

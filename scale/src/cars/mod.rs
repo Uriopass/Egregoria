@@ -1,11 +1,10 @@
 use crate::cars::data::{make_car_entity, CarComponent};
-use crate::map::{make_inter_entity, RoadGraph};
+use crate::map::RoadGraph;
 use crate::physics::physics_components::Transform;
-
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use rand::random;
-use specs::{Join, LazyUpdate, World, WorldExt};
+use specs::{Join, World, WorldExt};
 use std::fs::File;
 
 pub mod data;
@@ -34,12 +33,9 @@ pub fn spawn_new_car(world: &mut World) {
 }
 
 const CAR_FILENAME: &str = "world/cars";
-const GRAPH_FILENAME: &str = "world/graph";
 
 pub fn save(world: &mut World) {
-    world.read_resource::<RoadGraph>().save(GRAPH_FILENAME);
-
-    let file = File::create(CAR_FILENAME.to_string() + ".json").unwrap();
+    let file = File::create(CAR_FILENAME.to_string() + ".bc").unwrap();
 
     let car_trans: Vec<(Transform, CarComponent)> = (
         &world.read_component::<Transform>(),
@@ -49,30 +45,17 @@ pub fn save(world: &mut World) {
         .map(|(trans, car)| (trans.clone(), car.clone()))
         .collect();
 
-    serde_json::to_writer_pretty(file, &car_trans).unwrap();
+    bincode::serialize_into(file, &car_trans).unwrap();
 }
 
 pub fn load(world: &mut World) {
-    {
-        let rg = RoadGraph::from_file(GRAPH_FILENAME).unwrap_or_else(RoadGraph::empty);
-        for (inter_id, inter) in rg.intersections() {
-            make_inter_entity(
-                *inter_id,
-                inter.pos,
-                &world.read_resource::<LazyUpdate>(),
-                &world.entities(),
-            );
-        }
-        world.insert(rg);
-    }
-
-    let file = File::open(CAR_FILENAME.to_string() + ".json");
+    let file = File::open(CAR_FILENAME.to_string() + ".bc");
     if let Err(e) = file {
         println!("error while trying to load entities: {}", e);
         return;
     }
 
-    let des = serde_json::from_reader(file.unwrap());
+    let des = bincode::deserialize_from(file.unwrap());
 
     let ok: Vec<(Transform, CarComponent)> = des.unwrap_or_default();
 
@@ -81,7 +64,6 @@ pub fn load(world: &mut World) {
     }
 }
 
-#[rustfmt::skip]
 pub fn setup(world: &mut World) {
     load(world);
 }
