@@ -51,6 +51,9 @@ impl Gui {
                     self.show_car_ui = true;
                 }
             });
+            if ui.small_button(im_str!("Save")) {
+                crate::cars::save(world);
+            }
         });
 
         if self.show_car_ui {

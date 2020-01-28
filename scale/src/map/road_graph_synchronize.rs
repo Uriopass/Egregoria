@@ -60,6 +60,7 @@ impl RoadGraphSynchronize {
 #[derive(SystemData)]
 pub struct RGSData<'a> {
     entities: Entities<'a>,
+    lazy: Read<'a, LazyUpdate>,
     rg: Write<'a, RoadGraph, PanicHandler>,
     selected: Write<'a, SelectedEntity>,
     moved: Read<'a, EventChannel<MovedEvent>>,
@@ -68,8 +69,6 @@ pub struct RGSData<'a> {
     intersections: WriteStorage<'a, IntersectionComponent>,
     meshrenders: WriteStorage<'a, MeshRender>,
     transforms: WriteStorage<'a, Transform>,
-    movable: WriteStorage<'a, Movable>,
-    selectable: WriteStorage<'a, Selectable>,
 }
 
 impl<'a> System<'a> for RoadGraphSynchronize {
@@ -81,7 +80,6 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             if let Some(rnc) = data.intersections.get(event.entity) {
                 data.rg.set_intersection_position(rnc.id, event.new_pos);
                 data.rg.calculate_nodes_positions(rnc.id);
-                data.rg.save("graph");
             }
         }
         // Intersection creation
@@ -93,10 +91,8 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
                 data.rg.connect(id, x.id);
             }
-            let e = make_inter_entity(id, data.mouseinfo.unprojected, &mut data);
+            let e = make_inter_entity(id, data.mouseinfo.unprojected, &data.lazy, &data.entities);
             *data.selected = SelectedEntity(Some(e));
-
-            data.rg.save("graph");
         }
 
         // Intersection deletion
@@ -107,7 +103,6 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     data.entities.delete(e).unwrap();
                 }
             }
-            data.rg.save("graph");
         }
 
         // Connection handling
@@ -130,7 +125,6 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                             } else {
                                 data.rg.disconnect(interc.id, interc2.id);
                             }
-                            data.rg.save("graph");
                             self.deactive_connect(&mut data);
                         }
                     }
@@ -160,28 +154,26 @@ impl<'a> System<'a> for RoadGraphSynchronize {
     }
 }
 
-pub fn make_inter_entity(inter_id: NodeID, inter_pos: Vector2<f32>, data: &mut RGSData) -> Entity {
-    data.entities
-        .build_entity()
-        .with(
-            IntersectionComponent { id: inter_id },
-            &mut data.intersections,
-        )
-        .with(
-            MeshRender::simple(
-                CircleRender {
-                    radius: 2.0,
-                    color: RED,
-                    filled: true,
-                    ..CircleRender::default()
-                },
-                2,
-            ),
-            &mut data.meshrenders,
-        )
-        .with(Transform::new(inter_pos), &mut data.transforms)
-        .with(Movable, &mut data.movable)
-        .with(Selectable, &mut data.selectable)
+pub fn make_inter_entity<'a>(
+    inter_id: NodeID,
+    inter_pos: Vector2<f32>,
+    lazy: &LazyUpdate,
+    entities: &Entities<'a>,
+) -> Entity {
+    lazy.create_entity(entities)
+        .with(IntersectionComponent { id: inter_id })
+        .with(MeshRender::simple(
+            CircleRender {
+                radius: 2.0,
+                color: RED,
+                filled: true,
+                ..CircleRender::default()
+            },
+            2,
+        ))
+        .with(Transform::new(inter_pos))
+        .with(Movable)
+        .with(Selectable)
         .build()
 }
 

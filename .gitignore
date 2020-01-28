@@ -3,5 +3,5 @@
 /target
 **/*.rs.bk
 *.ini
-*.bc
-*.json
+world/*
+world
