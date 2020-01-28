@@ -46,7 +46,7 @@ impl Intersection {
     }
 }
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Serialize, Deserialize)]
 #[storage(BTreeStorage)]
 pub struct IntersectionComponent {
     pub id: NodeID,
