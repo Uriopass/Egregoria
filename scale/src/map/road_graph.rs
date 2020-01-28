@@ -7,7 +7,6 @@ use cgmath::{InnerSpace, MetricSpace};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::io::{Read, Write};
 use std::ops::Sub;
 
 #[derive(Serialize, Deserialize)]
@@ -227,24 +226,13 @@ impl RoadGraph {
     }
 
     pub fn from_file(filename: &'static str) -> Option<RoadGraph> {
-        let mut f = File::open(filename.to_string() + ".json").ok()?;
-        let mut buffer = Vec::new();
-        // read the whole file
-        f.read_to_end(&mut buffer).ok()?;
-
-        serde_json::from_slice(&buffer).ok()
+        let f = File::open(filename.to_string() + ".bc").ok()?;
+        bincode::deserialize_from(f).ok()
     }
 
     pub fn save(&self, filename: &'static str) {
-        let res = serde_json::to_vec_pretty(self).unwrap();
-
-        let mut pos = 0;
-        let mut buffer = File::create(filename.to_string() + ".json")
+        let file = File::create(filename.to_string() + ".bc")
             .expect("Could not open file for saving road graph");
-
-        while pos < res.len() {
-            let bytes_written = buffer.write(&res[pos..]).expect("Error writing to file");
-            pos += bytes_written;
-        }
+        bincode::serialize_into(file, self).unwrap();
     }
 }
