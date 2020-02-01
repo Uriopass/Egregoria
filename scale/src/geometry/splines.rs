@@ -8,6 +8,17 @@ pub struct Spline {
     pub to_derivative: Vector2<f32>,
 }
 
+impl Default for Spline {
+    fn default() -> Self {
+        Self {
+            from: [0.0, 0.0].into(),
+            to: [0.0, 0.0].into(),
+            from_derivative: [0.0, 0.0].into(),
+            to_derivative: [0.0, 0.0].into(),
+        }
+    }
+}
+
 impl Spline {
     pub fn get(&self, t: f32) -> Vector2<f32> {
         (1.0 - t).pow(3) * self.from
