@@ -1,7 +1,8 @@
-use super::{Intersection, RoadNode};
-use crate::graphs::graph::{Edge, Graph, NodeID};
+use crate::graphs::graph::{Edge, Graph};
 use crate::map::TrafficLight::Always;
-use crate::map::{TrafficLight, TrafficLightSchedule};
+use crate::map::{
+    Intersection, IntersectionID, RoadNode, RoadNodeID, TrafficLight, TrafficLightSchedule,
+};
 use cgmath::Vector2;
 use cgmath::{InnerSpace, MetricSpace};
 use ordered_float::OrderedFloat;
@@ -11,8 +12,8 @@ use std::ops::Sub;
 
 #[derive(Serialize, Deserialize)]
 pub struct RoadGraph {
-    nodes: Graph<RoadNode>,
-    intersections: Graph<Intersection>,
+    nodes: Graph<RoadNodeID, RoadNode>,
+    intersections: Graph<IntersectionID, Intersection>,
 }
 
 impl RoadGraph {
@@ -23,26 +24,26 @@ impl RoadGraph {
         }
     }
 
-    pub fn nodes(&self) -> &Graph<RoadNode> {
+    pub fn nodes(&self) -> &Graph<RoadNodeID, RoadNode> {
         &self.nodes
     }
-    pub fn intersections(&self) -> &Graph<Intersection> {
+    pub fn intersections(&self) -> &Graph<IntersectionID, Intersection> {
         &self.intersections
     }
 
-    pub fn set_node_position(&mut self, i: NodeID, pos: Vector2<f32>) {
+    pub fn set_node_position(&mut self, i: RoadNodeID, pos: Vector2<f32>) {
         if let Some(x) = self.nodes.get_mut(i) {
             x.pos = pos
         }
     }
 
-    pub fn set_intersection_position(&mut self, i: NodeID, pos: Vector2<f32>) {
+    pub fn set_intersection_position(&mut self, i: IntersectionID, pos: Vector2<f32>) {
         if let Some(x) = self.intersections.get_mut(i) {
             x.pos = pos
         }
     }
 
-    pub fn add_intersection(&mut self, i: Intersection) -> NodeID {
+    pub fn add_intersection(&mut self, i: Intersection) -> IntersectionID {
         self.intersections.push(i)
     }
 
@@ -59,7 +60,7 @@ impl RoadGraph {
         }
     }
 
-    pub fn update_traffic_lights(&mut self, i: NodeID) {
+    pub fn update_traffic_lights(&mut self, i: IntersectionID) {
         let inter = &self.intersections[&i];
         if inter.in_nodes.len() <= 2 {
             for (_, id) in inter.in_nodes.iter() {
@@ -67,7 +68,7 @@ impl RoadGraph {
             }
             return;
         }
-        let mut in_nodes: Vec<&NodeID> = inter.in_nodes.values().collect();
+        let mut in_nodes: Vec<&RoadNodeID> = inter.in_nodes.values().collect();
         in_nodes.sort_by_key(|x| {
             OrderedFloat(Self::pseudo_angle(
                 (self.nodes[*x].pos - inter.pos).normalize(),
@@ -90,7 +91,7 @@ impl RoadGraph {
         }
     }
 
-    pub fn calculate_nodes_positions(&mut self, i: NodeID) {
+    pub fn calculate_nodes_positions(&mut self, i: IntersectionID) {
         let inter = &self.intersections[i];
         let center = inter.pos;
 
@@ -133,8 +134,8 @@ impl RoadGraph {
         }
     }
 
-    pub fn closest_node(&self, pos: Vector2<f32>) -> Option<NodeID> {
-        let mut id: NodeID = *self.nodes.ids().next()?;
+    pub fn closest_node(&self, pos: Vector2<f32>) -> Option<RoadNodeID> {
+        let mut id: RoadNodeID = *self.nodes.ids().next()?;
         let mut min_dist = self.nodes.get(id).unwrap().pos.distance2(pos);
 
         for (key, value) in &self.nodes {
@@ -147,7 +148,7 @@ impl RoadGraph {
         Some(id)
     }
 
-    pub fn delete_inter(&mut self, id: NodeID) {
+    pub fn delete_inter(&mut self, id: IntersectionID) {
         for Edge { to, .. } in self.intersections.get_neighs(id).clone() {
             self.disconnect_directional(id, to);
         }
@@ -157,12 +158,12 @@ impl RoadGraph {
         self.intersections.remove_node(id);
     }
 
-    pub fn disconnect(&mut self, a: NodeID, b: NodeID) {
+    pub fn disconnect(&mut self, a: IntersectionID, b: IntersectionID) {
         self.disconnect_directional(a, b);
         self.disconnect_directional(b, a);
     }
 
-    pub fn disconnect_directional(&mut self, from: NodeID, to: NodeID) {
+    pub fn disconnect_directional(&mut self, from: IntersectionID, to: IntersectionID) {
         self.intersections.remove_neigh(from, to);
         let inter_from_node = &self.intersections[&from].out_nodes[&to];
         let inter_to_node = &self.intersections[&to].in_nodes[&from];
@@ -184,12 +185,12 @@ impl RoadGraph {
         self.update_traffic_lights(to);
     }
 
-    pub fn connect(&mut self, a: NodeID, b: NodeID) {
+    pub fn connect(&mut self, a: IntersectionID, b: IntersectionID) {
         self.connect_directional(a, b);
         self.connect_directional(b, a);
     }
 
-    pub fn connect_directional(&mut self, from: NodeID, to: NodeID) {
+    pub fn connect_directional(&mut self, from: IntersectionID, to: IntersectionID) {
         if self.intersections[from].pos == self.intersections[to].pos {
             println!("Couldn't connect two intersections because they are at the same place.");
             return;

@@ -1,4 +1,3 @@
-use crate::graphs::graph::NodeID;
 use crate::interaction::{Movable, Selectable};
 use crate::map::traffic_lights::TrafficLight;
 use crate::physics::Transform;
@@ -17,6 +16,22 @@ mod traffic_lights;
 pub use road_graph::RoadGraph;
 pub use road_graph_synchronize::*;
 pub use traffic_lights::*;
+
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RoadNodeID(pub usize);
+impl From<usize> for RoadNodeID {
+    fn from(x: usize) -> Self {
+        Self(x)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IntersectionID(pub usize);
+impl From<usize> for IntersectionID {
+    fn from(x: usize) -> Self {
+        Self(x)
+    }
+}
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct RoadNode {
@@ -59,8 +74,8 @@ pub fn setup(world: &mut World) {
 #[derive(Serialize, Deserialize)]
 pub struct Intersection {
     pub pos: Vector2<f32>,
-    pub out_nodes: HashMap<NodeID, NodeID>,
-    pub in_nodes: HashMap<NodeID, NodeID>,
+    pub out_nodes: HashMap<IntersectionID, RoadNodeID>,
+    pub in_nodes: HashMap<IntersectionID, RoadNodeID>,
 }
 
 impl Intersection {
@@ -76,12 +91,12 @@ impl Intersection {
 #[derive(Component, Clone, Serialize, Deserialize)]
 #[storage(BTreeStorage)]
 pub struct IntersectionComponent {
-    pub id: NodeID,
+    pub id: IntersectionID,
 }
 empty_inspect_impl!(IntersectionComponent);
 
 pub fn make_inter_entity<'a>(
-    inter_id: NodeID,
+    inter_id: IntersectionID,
     inter_pos: Vector2<f32>,
     lazy: &LazyUpdate,
     entities: &Entities<'a>,

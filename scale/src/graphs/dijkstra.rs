@@ -1,35 +1,35 @@
 #![allow(dead_code)]
-use crate::graphs::graph::{Graph, NodeID};
+use crate::graphs::graph::Graph;
 use ordered_float::NotNan;
 use rand::distributions::weighted::alias_method::Weight;
 use std::cmp::Ordering;
 use std::cmp::Ordering::Equal;
 use std::collections::hash_map::RandomState;
 use std::collections::{BinaryHeap, HashMap};
+use std::hash::Hash;
 
 #[derive(Copy, Eq, Clone, PartialEq)]
-struct State {
+struct State<N> {
     cost: NotNan<f32>,
-    position: NodeID,
+    position: N,
 }
 
-impl Ord for State {
+impl<N: Ord> Ord for State<N> {
     fn cmp(&self, other: &Self) -> Ordering {
-        other
-            .cost
-            .partial_cmp(&self.cost)
-            .unwrap_or(Equal)
-            .then_with(|| self.position.cmp(&other.position))
+        other.cost.partial_cmp(&self.cost).unwrap_or(Equal)
     }
 }
 
-impl PartialOrd for State {
+impl<N: Ord> PartialOrd for State<N> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-pub fn dijsktra<T>(graph: &Graph<T>, start: NodeID) -> HashMap<NodeID, f32> {
+pub fn dijsktra<N: Copy + Ord + Hash + From<usize>, T>(
+    graph: &Graph<N, T>,
+    start: N,
+) -> HashMap<N, f32> {
     let mut heap = BinaryHeap::new();
 
     heap.push(State {
@@ -37,7 +37,7 @@ pub fn dijsktra<T>(graph: &Graph<T>, start: NodeID) -> HashMap<NodeID, f32> {
         cost: NotNan::from(0.0),
     });
 
-    let mut dist: HashMap<NodeID, f32, RandomState> = HashMap::with_capacity(graph.len());
+    let mut dist: HashMap<N, f32, RandomState> = HashMap::with_capacity(graph.len());
 
     for id in graph.ids() {
         dist.insert(*id, f32::MAX);
@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn test_dijkstra() {
-        let mut g: Graph<usize> = Graph::empty();
+        let mut g: Graph<usize, usize> = Graph::empty();
 
         let id = g.push(0);
         let id2 = g.push(1);

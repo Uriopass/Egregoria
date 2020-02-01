@@ -1,10 +1,9 @@
 use crate::cars::data::CarObjective::{Simple, Temporary};
 use crate::cars::systems::CAR_DECELERATION;
 use crate::engine_interaction::TimeInfo;
-use crate::graphs::graph::NodeID;
 use crate::gui::{ImCgVec2, ImDragf};
 use crate::interaction::{Movable, Selectable};
-use crate::map::{RoadGraph, TrafficLightColor};
+use crate::map::{RoadGraph, RoadNodeID, TrafficLightColor};
 use crate::physics::add_shape;
 use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
@@ -22,9 +21,9 @@ use specs::{Builder, Component, DenseVecStorage, Entity, World, WorldExt};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CarObjective {
     None,
-    Simple(NodeID),
-    Temporary(NodeID),
-    Route(Vec<NodeID>),
+    Simple(RoadNodeID),
+    Temporary(RoadNodeID),
+    Route(Vec<RoadNodeID>),
 }
 
 impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
