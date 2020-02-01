@@ -4,15 +4,16 @@ members = [
     "ggez-renderer"
 ]
 
-# TODO Do this when Rust 1.41 is released on Jan 30
-#[profile.dev.overrides."*"]
-#opt-level = 2
-#
-#[profile.dev]
-#opt-level = 0
+
+[profile.dev.overrides."*"]
+opt-level = 3
+
+# Set the settings for build scripts and proc-macros.
+[profile.dev.build-override]
+opt-level = 0
 
 [profile.dev]
-opt-level = 2
+opt-level = 1
 
 [profile.release]
 debug = true
