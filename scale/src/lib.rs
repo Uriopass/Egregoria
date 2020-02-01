@@ -20,6 +20,7 @@ pub mod gui;
 
 pub mod cars;
 pub mod engine_interaction;
+pub mod geometry;
 pub mod graphs;
 pub mod humans;
 pub mod interaction;
