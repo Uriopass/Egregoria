@@ -1,4 +1,5 @@
 use crate::rendering::render_context::RenderContext;
+use cgmath::Vector2;
 use ggez::graphics::Color;
 use scale::physics::Transform;
 use scale::rendering::meshrender_component::{
@@ -30,19 +31,24 @@ impl MeshRenderable for CircleRender {
 }
 
 impl MeshRenderable for RectRender {
-    fn draw(&self, pos: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
+    fn draw(&self, trans: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
         rc.sr.color = scale_color(self.color);
         rc.sr.set_filled(self.filled);
-        if pos.is_angle_zero() {
+        if trans.is_angle_zero() {
             rc.sr
-                .draw_rect_centered(pos.position(), self.width, self.height)
+                .draw_rect_centered(trans.position(), self.width, self.height)
         } else {
+            let rect_pos = trans.position()
+                + Vector2::<f32>::new(
+                    self.offset.x * trans.get_cos() + self.offset.y * trans.get_sin(),
+                    self.offset.x * trans.get_sin() - self.offset.y * trans.get_cos(),
+                );
             rc.sr.draw_rect_cos_sin(
-                pos.position(),
+                rect_pos,
                 self.width,
                 self.height,
-                pos.get_cos(),
-                pos.get_sin(),
+                trans.get_cos(),
+                trans.get_sin(),
             )
         }
     }

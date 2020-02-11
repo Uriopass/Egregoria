@@ -212,6 +212,8 @@ impl Default for CircleRender {
 
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct RectRender {
+    #[inspect(proxy_type = "ImCgVec2")]
+    pub offset: Vector2<f32>,
     #[inspect(proxy_type = "ImDragf")]
     pub width: f32,
     #[inspect(proxy_type = "ImDragf")]
@@ -223,6 +225,7 @@ pub struct RectRender {
 impl Default for RectRender {
     fn default() -> Self {
         RectRender {
+            offset: [0.0, 0.0].into(),
             width: 0.0,
             height: 0.0,
             color: WHITE,

@@ -41,11 +41,20 @@ impl InspectRenderDefault<Color> for Color {
 }
 
 impl Color {
-    pub fn gray(level: f32) -> Self {
+    pub const fn gray(level: f32) -> Self {
         Self {
             r: level,
             g: level,
             b: level,
+            a: 1.0,
+        }
+    }
+
+    pub fn from_hex(hex: u64) -> Self {
+        Self {
+            r: ((hex >> 16) & 0xFF) as f32 / 255.0,
+            g: ((hex >> 8) & 0xFF) as f32 / 255.0,
+            b: ((hex >> 0) & 0xFF) as f32 / 255.0,
             a: 1.0,
         }
     }
