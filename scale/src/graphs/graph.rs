@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_graph() {
-        let mut g = Graph::empty();
+        let mut g: Graph<usize, i32> = Graph::empty();
         let a = g.push(0);
         let b = g.push(1);
         let c = g.push(2);
