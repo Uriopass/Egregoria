@@ -37,12 +37,19 @@ impl<'a> System<'a> for CarDecision {
         let rg = data.rg;
         let time = data.time;
 
+        let x = std::time::Instant::now();
+
         (&mut data.transforms, &mut data.kinematics, &mut data.cars)
             .par_join()
             .for_each(|(trans, kin, car)| {
                 car_objective_update(car, &time, trans, &rg);
                 car_physics(&cow, &rg, &time, trans, kin, car);
             });
+
+        println!(
+            "Updating cars took {}",
+            (std::time::Instant::now() - x).as_secs_f32() * 1000.0
+        );
     }
 }
 
