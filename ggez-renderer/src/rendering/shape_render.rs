@@ -38,6 +38,15 @@ impl ShapeRenderer {
     }
 }
 
+fn from_srgb(component: f32) -> f32 {
+    let a = 0.055;
+    if component <= 0.04045 {
+        component / 12.92
+    } else {
+        ((component + a) / (1.0 + a)).powf(2.4)
+    }
+}
+
 #[allow(dead_code)]
 impl ShapeRenderer {
     pub fn set_filled(&mut self, filled: bool) {
@@ -98,28 +107,34 @@ impl ShapeRenderer {
             a.mul_element_wise(-1.0) + b + p,
         ];
 
+        let col = Color::new(
+            from_srgb(self.color.r),
+            from_srgb(self.color.g),
+            from_srgb(self.color.b),
+            1.0,
+        );
         match self.mode {
             DrawMode::Fill(_) => {
                 let verts: [Vertex; 4] = [
                     Vertex {
                         pos: [points[0].x, points[0].y],
                         uv: [0.0, 0.0],
-                        color: [self.color.r, self.color.g, self.color.b, self.color.a],
+                        color: [col.r, col.g, col.b, col.a],
                     },
                     Vertex {
                         pos: [points[1].x, points[1].y],
                         uv: [1.0, 0.0],
-                        color: [self.color.r, self.color.g, self.color.b, self.color.a],
+                        color: [col.r, col.g, col.b, col.a],
                     },
                     Vertex {
                         pos: [points[2].x, points[2].y],
                         uv: [1.0, 1.0],
-                        color: [self.color.r, self.color.g, self.color.b, self.color.a],
+                        color: [col.r, col.g, col.b, col.a],
                     },
                     Vertex {
                         pos: [points[3].x, points[3].y],
                         uv: [0.0, 1.0],
-                        color: [self.color.r, self.color.g, self.color.b, self.color.a],
+                        color: [col.r, col.g, col.b, col.a],
                     },
                 ];
                 self.meshbuilder.raw(&verts, &[0, 1, 2, 0, 2, 3], None);
