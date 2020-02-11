@@ -7,7 +7,7 @@ use crate::map::{RoadGraph, RoadNodeID, TrafficLightColor};
 use crate::physics::add_shape;
 use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
-use crate::rendering::RED;
+use crate::rendering::{Color, GREEN, RED};
 use cgmath::{InnerSpace, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -203,22 +203,62 @@ impl CarComponent {
     }
 }
 
+pub fn get_random_car_color() -> Color {
+    let car_colors: [Color; 6] = [
+        Color::from_hex(0xff_64_fa), // Rose
+        Color::from_hex(0x00_00_00), // Noir
+        Color::from_hex(0xff_fc_00), // Jaune
+        Color::from_hex(0x53_c6_49), // Kaki
+        Color::from_hex(0xff_ff_ff), // Blanc
+        Color::from_hex(0xb7_72_5d), // Brun
+    ];
+
+    let r = (rand::random::<f32>() * car_colors.len() as f32) as usize;
+    car_colors[r]
+}
+
 pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -> Entity {
     let car_width = 4.5;
     let car_height = 2.0;
 
+    let is_tank = rand::random::<bool>();
     let mut mr = MeshRender::empty(3);
-    mr.add(RectRender {
-        width: car_width,
-        height: car_height,
-        ..Default::default()
-    })
-    .add(CircleRender {
-        radius: 0.3,
-        offset: Vector2::new(car_width / 2.0, 0.0),
-        color: RED,
-        ..Default::default()
-    });
+
+    let c = Color::from_hex(0x25_66_29);
+    if is_tank {
+        mr.add(RectRender {
+            width: 5.0,
+            height: 3.0,
+            color: GREEN,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 4.0,
+            height: 1.0,
+            offset: [2.0, 0.0].into(),
+            color: c,
+            ..Default::default()
+        })
+        .add(CircleRender {
+            radius: 0.5,
+            offset: Vector2::new(4.0, 0.0),
+            color: c,
+            ..Default::default()
+        });
+    } else {
+        mr.add(RectRender {
+            width: car_width,
+            height: car_height,
+            color: get_random_car_color(),
+            ..Default::default()
+        })
+        .add(CircleRender {
+            radius: 0.3,
+            offset: Vector2::new(car_width / 2.0, 0.0),
+            color: RED,
+            ..Default::default()
+        });
+    }
 
     let e = world
         .create_entity()
