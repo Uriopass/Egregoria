@@ -5,6 +5,7 @@ use imgui::Ui;
 use specs::world::World;
 use specs::WorldExt;
 
+use crate::engine_interaction::RenderStats;
 pub use inspect::*;
 
 #[macro_use]
@@ -13,11 +14,15 @@ mod inspect;
 #[derive(Clone)]
 pub struct Gui {
     show_car_ui: bool,
+    show_stats: bool,
 }
 
 impl Default for Gui {
     fn default() -> Self {
-        Self { show_car_ui: true }
+        Self {
+            show_car_ui: true,
+            show_stats: true,
+        }
     }
 }
 
@@ -74,6 +79,18 @@ impl Gui {
                     if ui.small_button(im_str!("spawn 100 cars")) {
                         (0..100).for_each(|_| spawn_new_car(world));
                     }
+                });
+        }
+
+        if self.show_stats {
+            let stats = world.read_resource::<RenderStats>();
+            imgui::Window::new(im_str!("Stats"))
+                .size([200.0, 100.0], imgui::Condition::FirstUseEver)
+                .position([30.0, 50.0], imgui::Condition::FirstUseEver)
+                .opened(&mut self.show_stats)
+                .build(&ui, || {
+                    ui.text(im_str!("Update time: {:.1}ms", stats.update_time * 1000.0));
+                    ui.text(im_str!("Render time: {:.1}ms", stats.render_time * 1000.0));
                 });
         }
     }
