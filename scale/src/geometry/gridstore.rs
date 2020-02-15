@@ -33,7 +33,7 @@ struct StoreObject<O> {
 }
 
 #[derive(Default)]
-struct GridStoreCell {
+pub struct GridStoreCell {
     objs: Vec<CellObject>,
     dirty: bool,
 }
@@ -84,15 +84,18 @@ impl<O> GridStore<O> {
     }
 
     pub fn set_position(&mut self, handle: GridStoreHandle, pos: Vector2<f32>) {
-        let cell_id = self.get_cell_id(pos);
-        self.get_cell_mut(cell_id).dirty = true;
+        self.check_resize(pos);
+        let new_cell_id = self.get_cell_id(pos);
         let obj = self
             .objects
             .get_mut(&handle)
             .expect("Object not in grid anymore");
-        obj.cell_id = cell_id;
+        let old_id = obj.cell_id;
+        obj.cell_id = new_cell_id;
         obj.pos = pos;
         obj.state = ObjectState::NewPos;
+
+        self.get_cell_mut(old_id).dirty = true;
     }
 
     pub fn remove(&mut self, handle: GridStoreHandle) {
@@ -203,32 +206,33 @@ impl<O> GridStore<O> {
 
     fn check_resize(&mut self, pos: Vector2<f32>) {
         let mut reallocate = false;
-        while (pos.x as i32) < self.start_x {
+        while (pos.x as i32) <= self.start_x {
             self.start_x -= self.cell_size;
             self.width += 1;
             reallocate = true;
         }
 
-        while (pos.y as i32) < self.start_y {
+        while (pos.y as i32) <= self.start_y {
             self.start_y -= self.cell_size;
             self.height += 1;
             reallocate = true;
         }
 
-        while (pos.x as i32) > self.start_x + self.width as i32 * self.cell_size {
+        while (pos.x as i32) >= self.start_x + self.width as i32 * self.cell_size {
             self.width += 1;
             reallocate = true;
         }
 
-        while (pos.y as i32) > self.start_y + self.height as i32 * self.cell_size {
+        while (pos.y as i32) >= self.start_y + self.height as i32 * self.cell_size {
             self.height += 1;
             self.cells
                 .resize_with((self.width * self.height) as usize, GridStoreCell::default);
+            println!("Resizing only");
         }
 
         if reallocate {
             println!(
-                "Resizing coworld to x: {} y: {} w: {} h: {}",
+                "Reallocating coworld to x: {} y: {} w: {} h: {}",
                 self.start_x,
                 self.start_y,
                 self.width as i32 * self.cell_size,
