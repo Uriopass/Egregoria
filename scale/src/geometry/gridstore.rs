@@ -34,8 +34,8 @@ struct StoreObject<O> {
 
 #[derive(Default)]
 pub struct GridStoreCell {
-    objs: Vec<CellObject>,
-    dirty: bool,
+    pub objs: Vec<CellObject>,
+    pub dirty: bool,
 }
 
 pub struct GridStore<O> {
@@ -264,6 +264,10 @@ impl<O> GridStore<O> {
                     .push(CellObject::new(*id, obj.pos));
             }
         }
+    }
+
+    pub fn cells(&self) -> &Vec<GridStoreCell> {
+        &self.cells
     }
 
     fn get_cell_box(&self, id: i32) -> (i32, i32) {

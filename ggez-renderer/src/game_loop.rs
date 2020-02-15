@@ -13,7 +13,7 @@ use scale::geometry::gridstore::GridStore;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
 use scale::map::RoadGraph;
-use scale::physics::{PhysicsWorld, Transform};
+use scale::physics::Transform;
 use specs::{Dispatcher, Entity, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
@@ -268,7 +268,7 @@ fn debug_coworld(rc: &mut RenderContext, lol: &GridStore<Entity>) -> GameResult<
     rc.flush()?;
     rc.sr.mode = DrawMode::stroke(0.1);
     rc.sr.color = Color::new(0.8, 0.8, 0.9, 0.5);
-    for x in &lol.cells {
+    for x in lol.cells() {
         for y in &x.objs {
             rc.sr.draw_circle(y.pos, 10.0);
             rc.draw_text(
