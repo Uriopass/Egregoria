@@ -4,6 +4,12 @@ use specs::ReaderId;
 use std::collections::HashSet;
 
 #[derive(Default)]
+pub struct RenderStats {
+    pub update_time: f32,
+    pub render_time: f32,
+}
+
+#[derive(Default)]
 pub struct TimeInfo {
     pub delta: f32,
     pub time: f64,
