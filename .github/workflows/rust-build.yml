@@ -13,6 +13,10 @@ jobs:
       run: sudo apt-get update
     - name: install libs
       run: sudo apt-get install libasound2-dev libudev-dev pkg-config
+    - name: Install Rust
+      uses: hecrj/setup-rust-action@v1
+      with:
+       rust-version: 'stable'
     - name: Build
       run: cargo build --verbose
     - name: Run tests
