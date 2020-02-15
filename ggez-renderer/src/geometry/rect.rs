@@ -98,6 +98,45 @@ impl Rect {
             && self.bottom() >= other.top()
     }
 
+    pub fn intersects_line(&self, p1: Vector2<f32>, p2: Vector2<f32>) -> bool {
+        let outcode0 = self.compute_code(p1);
+        let outcode1 = self.compute_code(p2);
+        if outcode0 == 0 || outcode1 == 0 {
+            return true;
+        }
+        if outcode0 & outcode1 != 0 {
+            return false;
+        }
+        true
+    }
+
+    fn compute_code(&self, p: Vector2<f32>) -> u8 {
+        const INSIDE: u8 = 0; // 0000
+        const LEFT: u8 = 1; // 0001
+        const RIGHT: u8 = 2; // 0010
+        const BOTTOM: u8 = 4; // 0100
+        const TOP: u8 = 8; // 1000
+        let mut code = INSIDE; // initialised as being inside of [[clip window]]
+        let x = p.x;
+        let y = p.y;
+
+        if x < self.x {
+            // to the left of clip window
+            code |= LEFT;
+        } else if x > self.x + self.w {
+            // to the right of clip window
+            code |= RIGHT;
+        }
+
+        if y < self.y {
+            // below the clip window
+            code |= BOTTOM;
+        } else if y > self.y + self.h {
+            // above the clip window
+            code |= TOP;
+        }
+        code
+    }
     /// Translates the `Rect` by an offset of (x, y)
     pub fn translate(&mut self, offset: Vector2<f32>) {
         self.x += offset.x;
