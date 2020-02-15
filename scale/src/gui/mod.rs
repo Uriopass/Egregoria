@@ -109,6 +109,7 @@ impl Gui {
                 .opened(&mut self.show_tips)
                 .build(&ui, || {
                     ui.text(im_str!("Select: Left click"));
+                    ui.text(im_str!("Move: Left drag"));
                     ui.text(im_str!("Deselect: Escape"));
                     ui.text(im_str!("Pan: Right click or Arrow keys"));
                     ui.separator();
