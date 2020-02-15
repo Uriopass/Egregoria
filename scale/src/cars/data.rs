@@ -7,7 +7,7 @@ use crate::map::{RoadGraph, RoadNodeID, TrafficLightColor};
 use crate::physics::add_to_coworld;
 use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
-use crate::rendering::{Color, GREEN, RED};
+use crate::rendering::{Color, BLACK, GREEN};
 use cgmath::{InnerSpace, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -197,17 +197,29 @@ impl CarComponent {
 }
 
 pub fn get_random_car_color() -> Color {
-    let car_colors: [Color; 6] = [
-        Color::from_hex(0xff_64_fa), // Rose
-        Color::from_hex(0x00_00_00), // Noir
-        Color::from_hex(0xff_fc_00), // Jaune
-        Color::from_hex(0x53_c6_49), // Kaki
-        Color::from_hex(0xff_ff_ff), // Blanc
-        Color::from_hex(0xb7_72_5d), // Brun
+    let car_colors: [(Color, f32); 9] = [
+        (Color::from_hex(0x22_22_22), 0.22),  // "Noir"
+        (Color::from_hex(0xff_ff_ff), 0.19),  // Blanc
+        (Color::from_hex(0x66_66_66), 0.17),  // Gris plus clair
+        (Color::from_hex(0xb8_b8_b8), 0.14),  // Argenté
+        (Color::from_hex(0x1a_3c_70), 0.1),   // Bleu
+        (Color::from_hex(0xd8_22_00), 0.1),   // Rouge
+        (Color::from_hex(0x7_c4_b24), 0.02),  // Marron
+        (Color::from_hex(0xd4_c6_78), 0.015), // Or
+        (Color::from_hex(0x72_cb_19), 0.015), // Vert
     ];
 
-    let r = (rand::random::<f32>() * car_colors.len() as f32) as usize;
-    car_colors[r]
+    let total: f32 = car_colors.iter().map(|x| x.1).sum();
+
+    let r = rand::random::<f32>() * total;
+    let mut partial = 0.0;
+    for (col, freq) in &car_colors {
+        partial += freq;
+        if partial >= r {
+            return *col;
+        }
+    }
+    unreachable!();
 }
 
 pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -> Entity {
@@ -245,10 +257,46 @@ pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -
             color: get_random_car_color(),
             ..Default::default()
         })
-        .add(CircleRender {
-            radius: 0.3,
-            offset: Vector2::new(car_width / 2.0, 0.0),
-            color: RED,
+        .add(RectRender {
+            width: 0.4,
+            height: 1.8,
+            offset: [-1.7, 0.0].into(),
+            color: BLACK,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 1.0,
+            height: 1.6,
+            offset: [0.8, 0.0].into(),
+            color: BLACK,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 2.7,
+            height: 0.15,
+            offset: [-0.4, 0.85].into(),
+            color: BLACK,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 2.7,
+            height: 0.15,
+            offset: [-0.4, -0.85].into(),
+            color: BLACK,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 0.4,
+            height: 0.15,
+            offset: [2.1, -0.7].into(),
+            color: BLACK,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 0.4,
+            height: 0.15,
+            offset: [2.1, 0.7].into(),
+            color: BLACK,
             ..Default::default()
         });
     }
