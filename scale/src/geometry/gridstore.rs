@@ -227,6 +227,13 @@ impl<O> GridStore<O> {
         }
 
         if reallocate {
+            println!(
+                "Resizing coworld to x: {} y: {} w: {} h: {}",
+                self.start_x,
+                self.start_y,
+                self.width as i32 * self.cell_size,
+                self.height as i32 * self.cell_size
+            );
             self.cells
                 .resize_with((self.width * self.height) as usize, GridStoreCell::default);
 
