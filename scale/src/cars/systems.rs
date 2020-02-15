@@ -34,19 +34,12 @@ impl<'a> System<'a> for CarDecision {
         let rg = data.rg;
         let time = data.time;
 
-        let x = std::time::Instant::now();
-
         (&mut data.transforms, &mut data.kinematics, &mut data.cars)
             .par_join()
             .for_each(|(trans, kin, car)| {
                 car_objective_update(car, &time, trans, &rg);
                 car_physics(&cow, &rg, &time, trans, kin, car);
             });
-
-        println!(
-            "Updating cars took {}",
-            (std::time::Instant::now() - x).as_secs_f32() * 1000.0
-        );
     }
 }
 
@@ -104,7 +97,9 @@ fn car_physics(
 
     let pos = trans.position();
 
-    let danger_length = (speed * speed / (2.0 * CAR_DECELERATION)).max(10.0);
+    let danger_length = (speed * speed / (2.0 * CAR_DECELERATION))
+        .max(10.0)
+        .min(50.0);
 
     let neighbors = coworld.query_around(pos, danger_length);
 

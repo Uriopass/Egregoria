@@ -1,9 +1,10 @@
+cargo-features = ["profile-overrides"]
+
 [workspace]
 members = [
     "scale",
     "ggez-renderer"
 ]
-
 
 [profile.dev.overrides."*"]
 opt-level = 3

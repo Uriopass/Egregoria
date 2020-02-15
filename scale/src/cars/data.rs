@@ -138,7 +138,9 @@ impl CarComponent {
                 continue;
             }
 
-            if (e_diff / e_dist).dot(self.direction) < 0.75 {
+            let dir_to_him = e_diff / e_dist;
+
+            if dir_to_him.dot(self.direction) < 0.75 {
                 continue;
             }
 
@@ -212,7 +214,7 @@ pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -
     let car_width = 4.5;
     let car_height = 2.0;
 
-    let is_tank = rand::random::<bool>();
+    let is_tank = false;
     let mut mr = MeshRender::empty(3);
 
     let c = Color::from_hex(0x25_66_29);

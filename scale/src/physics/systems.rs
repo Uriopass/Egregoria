@@ -30,5 +30,7 @@ impl<'a> System<'a> for KinematicsApply {
             kin.acceleration.set_zero();
             data.coworld.set_position(collider.0, transform.position());
         }
+
+        data.coworld.maintain();
     }
 }
