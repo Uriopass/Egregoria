@@ -97,11 +97,9 @@ fn car_physics(
 
     let pos = trans.position();
 
-    let danger_length = (speed * speed / (2.0 * CAR_DECELERATION))
-        .max(10.0)
-        .min(50.0);
+    let danger_length = (speed * speed / (2.0 * CAR_DECELERATION)).min(40.0);
 
-    let neighbors = coworld.query_around(pos, 5.0 + danger_length);
+    let neighbors = coworld.query_around(pos, 10.0 + danger_length);
 
     let objs: Vec<&Vector2<f32>> = neighbors.into_iter().map(|obj| &obj.pos).collect();
 
