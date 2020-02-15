@@ -54,7 +54,7 @@ impl Color {
         Self {
             r: ((hex >> 16) & 0xFF) as f32 / 255.0,
             g: ((hex >> 8) & 0xFF) as f32 / 255.0,
-            b: ((hex >> 0) & 0xFF) as f32 / 255.0,
+            b: (hex & 0xFF) as f32 / 255.0,
             a: 1.0,
         }
     }
