@@ -8,7 +8,7 @@ use crate::interaction::{
     FollowEntity, MovableSystem, SelectableAuraSystem, SelectableSystem, SelectedEntity,
 };
 use crate::map::RoadGraphSynchronize;
-use crate::physics::systems::{KinematicsApply, PhysicsUpdate};
+use crate::physics::systems::KinematicsApply;
 use crate::physics::Collider;
 use crate::physics::PhysicsWorld;
 use crate::rendering::meshrender_component::MeshRender;
@@ -40,7 +40,6 @@ pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
         )
         .with(RoadGraphSynchronize, "rgs", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
-        .with(PhysicsUpdate::default(), "physics", &["speed apply"])
         .with(
             SelectableAuraSystem::default(),
             "selectable aura",
