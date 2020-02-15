@@ -134,7 +134,10 @@ impl ShapeRenderer {
     }
 
     pub fn draw_stroke(&mut self, p1: Vector2<f32>, p2: Vector2<f32>, thickness: f32) {
-        if self.screen_box.intersects_line(p1, p2) {
+        if self
+            .screen_box
+            .intersects_line_within(p1, p2, thickness / 2.0)
+        {
             self.meshbuilder
                 .line(
                     &[Point2::from_vec(p1), Point2::from_vec(p2)],
