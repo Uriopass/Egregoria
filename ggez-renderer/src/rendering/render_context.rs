@@ -92,11 +92,7 @@ impl<'a> RenderContext<'a> {
         Ok(())
     }
 
-    pub fn finish(self) -> GameResult<()> {
-        if !self.sr.empty {
-            let mesh = self.sr.meshbuilder.build(self.ctx)?;
-            graphics::draw(self.ctx, &mesh, DrawParam::new().dest([0.0, 0.0]))?
-        }
-        Ok(())
+    pub fn finish(mut self) -> GameResult<()> {
+        self.flush()
     }
 }
