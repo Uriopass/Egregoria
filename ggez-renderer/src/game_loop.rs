@@ -8,7 +8,7 @@ use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::engine_interaction;
-use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo};
+use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::geometry::gridstore::GridStore;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
@@ -61,6 +61,7 @@ impl<'a> EngineState<'a> {
 
 impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let start_update = std::time::Instant::now();
         let delta = timer::delta(ctx).as_secs_f64().min(1.0 / 100.0);
 
         let pressed: Vec<engine_interaction::MouseButton> =
@@ -140,10 +141,14 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             .just_pressed
             .clear();
 
+        self.world.write_resource::<RenderStats>().update_time =
+            (std::time::Instant::now() - start_update).as_secs_f32();
+
         Ok(())
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let start_draw = std::time::Instant::now();
         let mut rc = RenderContext::new(&mut self.cam, ctx, self.font);
         rc.clear();
 
@@ -189,6 +194,9 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         self.imgui_wrapper
             .render(ctx, &mut self.world, &mut gui, 1.0);
         *self.world.write_resource::<Gui>() = gui;
+
+        self.world.write_resource::<RenderStats>().render_time =
+            (std::time::Instant::now() - start_draw).as_secs_f32();
 
         graphics::present(ctx)
     }

@@ -1,7 +1,7 @@
 #![windows_subsystem = "windows"]
 
 use crate::cars::systems::CarDecision;
-use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, TimeInfo};
+use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, RenderStats, TimeInfo};
 use crate::geometry::gridstore::GridStore;
 use crate::gui::Gui;
 use crate::humans::HumanUpdate;
@@ -57,6 +57,7 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.insert(Gui::default());
     world.insert(SelectedEntity::default());
     world.insert(FollowEntity::default());
+    world.insert(RenderStats::default());
 
     world.register::<Collider>();
     world.register::<MeshRender>();
