@@ -3,17 +3,18 @@ use crate::rendering::camera_handler::CameraHandler;
 use crate::rendering::render_context::RenderContext;
 use crate::rendering::road_rendering::RoadRenderer;
 use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
-use ggez::graphics::{Color, Font};
+use ggez::graphics::{Color, DrawMode, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::engine_interaction;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, TimeInfo};
+use scale::geometry::gridstore::GridStore;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
 use scale::map::RoadGraph;
-use scale::physics::Transform;
-use specs::{Dispatcher, RunNow, World, WorldExt};
+use scale::physics::{PhysicsWorld, Transform};
+use specs::{Dispatcher, Entity, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
@@ -60,8 +61,7 @@ impl<'a> EngineState<'a> {
 
 impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        let delta = timer::delta(ctx).as_secs_f32().min(1.0 / 100.0);
-        let time = timer::time_since_start(ctx).as_secs_f64();
+        let delta = timer::delta(ctx).as_secs_f64().min(1.0 / 100.0);
 
         let pressed: Vec<engine_interaction::MouseButton> =
             if !self.imgui_wrapper.last_mouse_captured {
@@ -97,11 +97,12 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             ),
         };
 
-        *self.world.write_resource() = TimeInfo {
-            delta,
-            time,
-            time_seconds: time as u64,
-        };
+        {
+            let mut time = self.world.write_resource::<TimeInfo>();
+            time.delta = delta as f32;
+            time.time += delta;
+            time.time_seconds = time.time as u64;
+        }
 
         self.dispatch.run_now(&self.world);
         self.world.maintain();
@@ -259,6 +260,26 @@ fn scale_mb(x: MouseButton) -> scale::engine_interaction::MouseButton {
         MouseButton::Middle => scale::engine_interaction::MouseButton::Middle,
         MouseButton::Other(x) => scale::engine_interaction::MouseButton::Other(x),
     }
+}
+
+#[allow(dead_code)]
+fn debug_coworld(rc: &mut RenderContext, lol: &GridStore<Entity>) -> GameResult<()> {
+    rc.draw_grid(50.0, Color::new(0.0, 0.0, 1.0, 1.0));
+    rc.flush()?;
+    rc.sr.mode = DrawMode::stroke(0.1);
+    rc.sr.color = Color::new(0.8, 0.8, 0.9, 0.5);
+    for x in &lol.cells {
+        for y in &x.objs {
+            rc.sr.draw_circle(y.pos, 10.0);
+            rc.draw_text(
+                &format!("{}", lol.query_around(y.pos, 10.0).len()),
+                y.pos,
+                5.0,
+                Color::new(1.0, 1.0, 1.0, 1.0),
+            )?;
+        }
+    }
+    Ok(())
 }
 
 // Thanks multi cursor
