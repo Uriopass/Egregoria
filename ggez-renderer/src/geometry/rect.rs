@@ -98,9 +98,14 @@ impl Rect {
             && self.bottom() >= other.top()
     }
 
-    pub fn intersects_line(&self, p1: Vector2<f32>, p2: Vector2<f32>) -> bool {
-        let outcode0 = self.compute_code(p1);
-        let outcode1 = self.compute_code(p2);
+    pub fn intersects_line_within(
+        &self,
+        p1: Vector2<f32>,
+        p2: Vector2<f32>,
+        tolerance: f32,
+    ) -> bool {
+        let outcode0 = self.compute_code(p1, tolerance);
+        let outcode1 = self.compute_code(p2, tolerance);
         if outcode0 == 0 || outcode1 == 0 {
             return true;
         }
@@ -110,7 +115,7 @@ impl Rect {
         true
     }
 
-    fn compute_code(&self, p: Vector2<f32>) -> u8 {
+    fn compute_code(&self, p: Vector2<f32>, tolerance: f32) -> u8 {
         const INSIDE: u8 = 0; // 0000
         const LEFT: u8 = 1; // 0001
         const RIGHT: u8 = 2; // 0010
@@ -120,18 +125,18 @@ impl Rect {
         let x = p.x;
         let y = p.y;
 
-        if x < self.x {
+        if x < self.x - tolerance {
             // to the left of clip window
             code |= LEFT;
-        } else if x > self.x + self.w {
+        } else if x > self.x + self.w + tolerance {
             // to the right of clip window
             code |= RIGHT;
         }
 
-        if y < self.y {
+        if y < self.y - tolerance {
             // below the clip window
             code |= BOTTOM;
-        } else if y > self.y + self.h {
+        } else if y > self.y + self.h + tolerance {
             // above the clip window
             code |= TOP;
         }
