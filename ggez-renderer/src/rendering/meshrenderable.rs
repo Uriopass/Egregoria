@@ -5,7 +5,7 @@ use scale::physics::Transform;
 use scale::rendering::meshrender_component::{
     CircleRender, LineRender, LineToRender, MeshRenderEnum, RectRender,
 };
-use specs::ReadStorage;
+use scale::specs::ReadStorage;
 
 pub trait MeshRenderable: Send + Sync {
     fn draw(&self, trans: &Transform, transforms: &ReadStorage<Transform>, rc: &mut RenderContext);

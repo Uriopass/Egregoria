@@ -1,7 +1,7 @@
 use crate::game_loop::EngineState;
 use ggez::conf::NumSamples;
 use ggez::{conf, event, ContextBuilder};
-use specs::{World, WorldExt};
+use scale::specs::{World, WorldExt};
 use std::env;
 use std::path;
 
