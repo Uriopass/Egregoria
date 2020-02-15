@@ -134,19 +134,19 @@ impl ShapeRenderer {
     }
 
     pub fn draw_stroke(&mut self, p1: Vector2<f32>, p2: Vector2<f32>, thickness: f32) {
-        //TODO only draw strokes on screen
-
-        self.meshbuilder
-            .line(
-                &[Point2::from_vec(p1), Point2::from_vec(p2)],
-                thickness,
-                Color {
-                    a: (self.zoom * self.zoom * 50.0).min(1.0).max(0.0),
-                    ..self.color
-                },
-            )
-            .expect("Line error");
-        self.empty = false;
+        if self.screen_box.intersects_line(p1, p2) {
+            self.meshbuilder
+                .line(
+                    &[Point2::from_vec(p1), Point2::from_vec(p2)],
+                    thickness,
+                    Color {
+                        a: (self.zoom * self.zoom * 50.0).min(1.0).max(0.0),
+                        ..self.color
+                    },
+                )
+                .expect("Line error");
+            self.empty = false;
+        }
     }
 
     pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) {
