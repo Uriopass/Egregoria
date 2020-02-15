@@ -9,8 +9,6 @@ rand = {version = "0.7.2", features = ["small_rng"]}
 cgmath = {version = "0.17", features = ["mint", "swizzle","serde"]}
 specs = {version = "0.15", features = ["shred-derive", "specs-derive", "parallel", "serde"]}
 ordered-float = "1.0.2"
-ncollide2d = "0.20.1"
-nalgebra = "0.18"
 imgui = "0.2.1"
 serde = "1.0.104"
 bincode = "1.2.1"

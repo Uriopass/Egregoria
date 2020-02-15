@@ -1,40 +1,27 @@
-use ncollide2d::pipeline::{CollisionGroups, CollisionObjectSlabHandle, GeometricQueryType};
-use ncollide2d::shape::{Shape, ShapeHandle};
-use ncollide2d::world::CollisionWorld;
 use specs::{Component, Entity, VecStorage, World, WorldExt};
 pub mod systems;
 
 mod kinematics;
 mod transform;
 
+use crate::geometry::gridstore::{GridStore, GridStoreHandle};
 pub use kinematics::*;
 pub use transform::*;
 
-pub type PhysicsWorld = CollisionWorld<f32, Entity>;
+pub type PhysicsWorld = GridStore<Entity>;
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
-pub struct Collider(pub CollisionObjectSlabHandle);
+pub struct Collider(pub GridStoreHandle);
 
-pub fn add_shape<T>(world: &mut World, e: Entity, shape: T)
-where
-    T: Shape<f32>,
-{
+pub fn add_to_coworld(world: &mut World, e: Entity) {
     let pos = world
         .read_component::<transform::Transform>()
         .get(e)
         .unwrap()
         .position();
     let coworld = world.get_mut::<PhysicsWorld>().unwrap();
-    let (h, _) = coworld.add(
-        nalgebra::Isometry2::new(nalgebra::Vector2::new(pos.x, pos.y), nalgebra::zero()),
-        ShapeHandle::new(shape),
-        CollisionGroups::new()
-            .with_membership(&[1])
-            .with_whitelist(&[1]),
-        GeometricQueryType::Contacts(0.0, 0.0),
-        e,
-    );
+    let h = coworld.insert(pos, e);
 
     let mut collider_comp = world.write_component::<Collider>();
     collider_comp.insert(e, Collider(h)).unwrap();

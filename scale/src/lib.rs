@@ -2,6 +2,7 @@
 
 use crate::cars::systems::CarDecision;
 use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, TimeInfo};
+use crate::geometry::gridstore::GridStore;
 use crate::gui::Gui;
 use crate::humans::HumanUpdate;
 use crate::interaction::{
@@ -12,7 +13,6 @@ use crate::physics::systems::KinematicsApply;
 use crate::physics::Collider;
 use crate::physics::PhysicsWorld;
 use crate::rendering::meshrender_component::MeshRender;
-use ncollide2d::world::CollisionWorld;
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 
 #[macro_use]
@@ -49,7 +49,7 @@ pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
 }
 
 pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
-    let collision_world: PhysicsWorld = CollisionWorld::new(2.0);
+    let collision_world: PhysicsWorld = GridStore::new(50);
 
     world.insert(TimeInfo::default());
     world.insert(collision_world);
