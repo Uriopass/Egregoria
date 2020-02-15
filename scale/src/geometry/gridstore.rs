@@ -3,7 +3,7 @@ use crate::geometry::rect::Rect;
 use cgmath::{MetricSpace, Vector2};
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct GridStoreHandle(usize);
 
 #[derive(PartialEq, Eq)]

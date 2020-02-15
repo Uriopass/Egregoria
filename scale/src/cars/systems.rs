@@ -6,9 +6,6 @@ use crate::physics::PhysicsWorld;
 use crate::physics::{Kinematics, Transform};
 use cgmath::MetricSpace;
 use cgmath::{Angle, InnerSpace, Vector2};
-use nalgebra::{Isometry2, Point2};
-use ncollide2d::bounding_volume::AABB;
-use ncollide2d::pipeline::CollisionGroups;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 
@@ -109,16 +106,9 @@ fn car_physics(
 
     let danger_length = (speed * speed / (2.0 * CAR_DECELERATION)).max(10.0);
 
-    let around = AABB::new(
-        Point2::new(pos.x - danger_length, pos.y - danger_length),
-        Point2::new(pos.x + danger_length, pos.y + danger_length),
-    );
+    let neighbors = coworld.query_around(pos, danger_length);
 
-    let all = CollisionGroups::new();
-
-    let neighbors = coworld.interferences_with_aabb(&around, &all);
-
-    let objs: Vec<&Isometry2<f32>> = neighbors.map(|(_, y)| y.position()).collect();
+    let objs: Vec<&Vector2<f32>> = neighbors.into_iter().map(|obj| &obj.pos).collect();
 
     car.calc_decision(rg, speed, time, pos, objs);
 

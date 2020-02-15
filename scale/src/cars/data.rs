@@ -4,7 +4,7 @@ use crate::engine_interaction::TimeInfo;
 use crate::gui::{ImCgVec2, ImDragf};
 use crate::interaction::{Movable, Selectable};
 use crate::map::{RoadGraph, RoadNodeID, TrafficLightColor};
-use crate::physics::add_shape;
+use crate::physics::add_to_coworld;
 use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::{Color, GREEN, RED};
@@ -12,8 +12,6 @@ use cgmath::{InnerSpace, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
-use nalgebra::Isometry2;
-use ncollide2d::shape::Cuboid;
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Component, DenseVecStorage, Entity, World, WorldExt};
 
@@ -109,7 +107,7 @@ impl CarComponent {
         speed: f32,
         time: &TimeInfo,
         position: Vector2<f32>,
-        neighs: Vec<&Isometry2<f32>>,
+        neighs: Vec<&Vector2<f32>>,
     ) {
         if self.wait_time > 0.0 {
             self.wait_time -= time.delta;
@@ -132,9 +130,7 @@ impl CarComponent {
         let mut min_front_dist: f32 = 50.0;
 
         // Collision avoidance
-        for x in neighs {
-            let e_pos = Vector2::new(x.translation.x, x.translation.y);
-
+        for e_pos in neighs {
             let e_diff = e_pos - position;
             let e_dist = e_diff.magnitude();
             if e_dist < 1e-5 {
@@ -146,12 +142,7 @@ impl CarComponent {
                 continue;
             }
 
-            let same_direction =
-                Vector2::new(x.rotation.re, x.rotation.im).dot(self.direction) > 0.0; // Avoid traffic jams by only considering same direction cars
-
-            if same_direction {
-                min_front_dist = min_front_dist.min(e_dist);
-            }
+            min_front_dist = min_front_dist.min(e_dist); // supposing always same direction ?
         }
 
         if speed.abs() < 0.2 && min_front_dist < 7.0 {
@@ -270,10 +261,6 @@ pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -
         .with(Selectable)
         .build();
 
-    add_shape(
-        world,
-        e,
-        Cuboid::new([car_width / 2.0, car_height / 2.0].into()),
-    );
+    add_to_coworld(world, e);
     e
 }
