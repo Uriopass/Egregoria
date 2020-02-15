@@ -14,7 +14,7 @@ use scale::gui::Gui;
 use scale::interaction::FollowEntity;
 use scale::map::RoadGraph;
 use scale::physics::Transform;
-use specs::{Dispatcher, Entity, RunNow, World, WorldExt};
+use scale::specs::{Dispatcher, Entity, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
 

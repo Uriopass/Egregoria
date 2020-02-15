@@ -7,11 +7,10 @@ edition = "2018"
 [dependencies]
 rand = {version = "0.7.2", features = ["small_rng"]}
 cgmath = {version = "0.17", features = ["mint", "swizzle","serde"]}
-specs = {version = "0.15", features = ["shred-derive", "specs-derive", "parallel", "serde"]}
+specs = {version = "0.16", features = ["shred-derive", "specs-derive", "parallel", "serde"]}
 ordered-float = "1.0.2"
 imgui = "0.2.1"
-serde = "1.0.104"
+serde = "1.0"
 bincode = "1.2.1"
-serde_json = "1.0.45"
 imgui-inspect = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
 imgui-inspect-derive = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }

@@ -7,8 +7,8 @@ use cgmath::Vector2;
 use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
-use specs::prelude::*;
 use specs::shrev::EventChannel;
+use specs::{Component, Entity, World, WorldExt};
 use std::marker::PhantomData;
 
 pub struct ImDragf;

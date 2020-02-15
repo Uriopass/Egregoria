@@ -9,7 +9,6 @@ edition = "2018"
 [dependencies]
 ggez = "0.5"
 cgmath = {version = "0.17", features = ["mint", "swizzle"]}
-specs = {version = "0.15", features = ["specs-derive", "parallel"]}
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
 imgui = "0.2.1"

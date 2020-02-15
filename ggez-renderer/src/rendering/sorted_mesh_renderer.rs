@@ -3,8 +3,8 @@ use crate::rendering::render_context::RenderContext;
 use scale::engine_interaction::{MeshRenderEventReader, MAX_LAYERS};
 use scale::physics::Transform;
 use scale::rendering::meshrender_component::MeshRender;
-use specs::storage::ComponentEvent;
-use specs::{BitSet, Join, World, WorldExt};
+use scale::specs::storage::ComponentEvent;
+use scale::specs::{BitSet, Join, World, WorldExt};
 
 pub struct SortedMeshRenderer {
     inserted: BitSet,

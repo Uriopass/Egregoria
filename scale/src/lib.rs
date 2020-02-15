@@ -28,6 +28,8 @@ pub mod map;
 pub mod physics;
 pub mod rendering;
 
+pub use specs;
+
 pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
     DispatcherBuilder::new()
         .with(HumanUpdate, "human update", &[])
