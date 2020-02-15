@@ -39,7 +39,7 @@ impl RoadGraphSynchronizeState {
                 LineRender {
                     offset: [0.0, 0.0].into(),
                     color: RED,
-                    thickness: 0.2,
+                    thickness: 1.0,
                 },
                 9,
             ))
@@ -99,11 +99,15 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     data.entities.delete(e).unwrap();
                 }
             }
+            data.self_state.deactive_connect(&mut data.meshrenders);
         }
 
         // Connection handling
         if data.kbinfo.just_pressed.contains(&KeyCode::C) {
-            data.self_state.connect_state = Unselected;
+            match data.self_state.connect_state {
+                First(_) => data.self_state.deactive_connect(&mut data.meshrenders),
+                _ => data.self_state.connect_state = Unselected,
+            }
         }
 
         if let Some(x) = data.selected.0 {
@@ -132,8 +136,6 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             } else {
                 data.self_state.deactive_connect(&mut data.meshrenders);
             }
-        } else {
-            data.self_state.deactive_connect(&mut data.meshrenders);
         }
 
         if let First(x) = data.self_state.connect_state {
