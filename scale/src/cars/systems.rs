@@ -101,7 +101,7 @@ fn car_physics(
         .max(10.0)
         .min(50.0);
 
-    let neighbors = coworld.query_around(pos, danger_length);
+    let neighbors = coworld.query_around(pos, 5.0 + danger_length);
 
     let objs: Vec<&Vector2<f32>> = neighbors.into_iter().map(|obj| &obj.pos).collect();
 
