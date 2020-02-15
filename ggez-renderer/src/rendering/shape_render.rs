@@ -1,16 +1,12 @@
 use crate::geometry::rect::Rect;
 use cgmath::{ElementWise, EuclideanSpace, Point2, Vector2};
 use ggez::graphics::{Color, DrawMode, MeshBuilder, Vertex, WHITE};
-use nalgebra::Isometry2;
-use ncollide2d::query::Proximity;
-use ncollide2d::shape::{Cuboid, Segment};
 
 pub struct ShapeRenderer {
     pub color: Color,
     pub mode: DrawMode,
     pub meshbuilder: MeshBuilder,
     pub screen_box: Rect,
-    pub screen_collider: (Cuboid<f32>, Isometry2<f32>),
     pub empty: bool,
     pub zoom: f32,
 }
@@ -22,16 +18,6 @@ impl ShapeRenderer {
             mode: DrawMode::fill(),
             meshbuilder: MeshBuilder::new(),
             screen_box: screen_box.clone(),
-            screen_collider: (
-                Cuboid::new([screen_box.w / 2.0, screen_box.h / 2.0].into()),
-                Isometry2::new(
-                    nalgebra::Vector2::new(
-                        screen_box.x + screen_box.w / 2.0,
-                        screen_box.y + screen_box.h / 2.0,
-                    ),
-                    nalgebra::zero(),
-                ),
-            ),
             empty: true,
             zoom,
         }
@@ -148,39 +134,19 @@ impl ShapeRenderer {
     }
 
     pub fn draw_stroke(&mut self, p1: Vector2<f32>, p2: Vector2<f32>, thickness: f32) {
-        let zero_iso: Isometry2<f32> = nalgebra::Isometry2::new(nalgebra::zero(), nalgebra::zero());
+        //TODO only draw strokes on screen
 
-        let segment = Segment::new(
-            nalgebra::Point2::new(p1.x, p1.y),
-            nalgebra::Point2::new(p2.x, p2.y),
-        );
-
-        let p = ncollide2d::query::proximity(
-            &self.screen_collider.1,
-            &self.screen_collider.0,
-            &zero_iso,
-            &segment,
-            thickness,
-        );
-
-        let render_ok = match p {
-            Proximity::WithinMargin | Proximity::Intersecting => true,
-            _ => false,
-        };
-
-        if render_ok {
-            self.meshbuilder
-                .line(
-                    &[Point2::from_vec(p1), Point2::from_vec(p2)],
-                    thickness,
-                    Color {
-                        a: (self.zoom * self.zoom * 50.0).min(1.0).max(0.0),
-                        ..self.color
-                    },
-                )
-                .expect("Line error");
-            self.empty = false;
-        }
+        self.meshbuilder
+            .line(
+                &[Point2::from_vec(p1), Point2::from_vec(p2)],
+                thickness,
+                Color {
+                    a: (self.zoom * self.zoom * 50.0).min(1.0).max(0.0),
+                    ..self.color
+                },
+            )
+            .expect("Line error");
+        self.empty = false;
     }
 
     pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) {
