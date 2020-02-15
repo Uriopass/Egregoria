@@ -5,7 +5,7 @@ use ggez::Context;
 use imgui::*;
 use imgui_gfx_renderer::*;
 use scale::gui::Gui;
-use specs::World;
+use scale::specs::World;
 use std::time::Instant;
 
 pub struct ImGuiWrapper {
