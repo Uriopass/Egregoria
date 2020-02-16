@@ -124,32 +124,39 @@ impl ShapeRenderer {
                     },
                 ];
                 self.meshbuilder.raw(&verts, &[0, 1, 2, 0, 2, 3], None);
+                self.empty = false;
             }
             DrawMode::Stroke(_) => {
                 self.meshbuilder
                     .polygon(self.mode, &points, self.color)
                     .expect("Error building rect");
+                self.empty = false;
             }
         }
     }
 
     pub fn draw_stroke(&mut self, p1: Vector2<f32>, p2: Vector2<f32>, thickness: f32) {
-        if self
+        if !self
             .screen_box
             .intersects_line_within(p1, p2, thickness / 2.0)
         {
-            self.meshbuilder
-                .line(
-                    &[Point2::from_vec(p1), Point2::from_vec(p2)],
-                    thickness,
-                    Color {
-                        a: (self.zoom * self.zoom * 50.0).min(1.0).max(0.0),
-                        ..self.color
-                    },
-                )
-                .expect("Line error");
-            self.empty = false;
+            return;
         }
+
+        if p1 == p2 {
+            return;
+        }
+        self.meshbuilder
+            .line(
+                &[Point2::from_vec(p1), Point2::from_vec(p2)],
+                thickness,
+                Color {
+                    a: (self.zoom * self.zoom * 50.0).min(1.0).max(0.0),
+                    ..self.color
+                },
+            )
+            .expect("Line error");
+        self.empty = false;
     }
 
     pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) {

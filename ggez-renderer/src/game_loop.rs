@@ -171,21 +171,6 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
                     .render(&self.world.read_resource::<RoadGraph>(), time, &mut rc);
                 self.smr.render(&mut self.world, &mut rc);
             }
-
-            rc.flush()?;
-
-            /*
-            for (trans, kin) in (&transforms, &kinematics).join() {
-                let v = kin.velocity.magnitude();
-                let pos = trans.get_position();
-                rc.draw_text(
-                    &format!("{:.2} m/s", v),
-                    pos,
-                    0.5,
-                    Color::new(0.0, 0.0, 1.0, 1.0),
-                )?;
-            }
-            */
         }
 
         rc.finish()?;
