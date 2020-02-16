@@ -1,5 +1,5 @@
 use crate::cars::data::{make_car_entity, CarComponent};
-use crate::map::RoadGraph;
+use crate::map_model::RoadGraph;
 use crate::physics::Transform;
 use cgmath::InnerSpace;
 use cgmath::Vector2;

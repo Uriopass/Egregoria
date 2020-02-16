@@ -12,7 +12,7 @@ use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::geometry::gridstore::GridStore;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
-use scale::map::RoadGraph;
+use scale::map_model::RoadGraph;
 use scale::physics::Transform;
 use scale::specs::{Dispatcher, Entity, RunNow, World, WorldExt};
 use std::collections::HashSet;

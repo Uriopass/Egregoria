@@ -1,4 +1,4 @@
-use crate::map::{make_inter_entity, RoadGraph};
+use crate::map_model::{make_inter_entity, RoadGraph};
 use specs::{LazyUpdate, World, WorldExt};
 
 const GRAPH_FILENAME: &str = "world/graph";

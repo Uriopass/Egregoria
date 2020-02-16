@@ -3,7 +3,7 @@ use crate::cars::systems::CAR_DECELERATION;
 use crate::engine_interaction::TimeInfo;
 use crate::gui::{ImCgVec2, ImDragf};
 use crate::interaction::{Movable, Selectable};
-use crate::map::{RoadGraph, RoadNodeID, TrafficLightColor};
+use crate::map_model::{RoadGraph, RoadNodeID, TrafficLightColor};
 use crate::physics::add_to_coworld;
 use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};

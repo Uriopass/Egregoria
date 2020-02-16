@@ -1,5 +1,5 @@
 use crate::interaction::{Movable, Selectable};
-use crate::map::RoadNodeID;
+use crate::map_model::RoadNodeID;
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::RED;
@@ -19,6 +19,7 @@ impl From<usize> for IntersectionID {
 
 #[derive(Serialize, Deserialize)]
 pub struct Intersection {
+    pub id: IntersectionID,
     pub pos: Vector2<f32>,
     pub out_nodes: HashMap<IntersectionID, RoadNodeID>,
     pub in_nodes: HashMap<IntersectionID, RoadNodeID>,
@@ -27,6 +28,7 @@ pub struct Intersection {
 impl Intersection {
     pub fn new(pos: Vector2<f32>) -> Self {
         Intersection {
+            id: 0,
             pos,
             out_nodes: HashMap::new(),
             in_nodes: HashMap::new(),

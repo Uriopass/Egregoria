@@ -1,7 +1,7 @@
 use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
 use ggez::graphics::{Color, WHITE};
-use scale::map::RoadGraph;
+use scale::map_model::RoadGraph;
 
 pub struct RoadRenderer;
 const MID_GRAY: Color = Color {

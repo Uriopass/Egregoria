@@ -1,6 +1,6 @@
 use crate::cars::data::CarComponent;
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
-use crate::map::IntersectionComponent;
+use crate::map_model::IntersectionComponent;
 use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use cgmath::Vector2;
