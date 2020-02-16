@@ -1,14 +1,35 @@
 use crate::graphs::graph::{Edge, Graph};
 use crate::map_model::TrafficLight::Always;
-use crate::map_model::{
-    Intersection, IntersectionID, RoadNode, RoadNodeID, TrafficLight, TrafficLightSchedule,
-};
+use crate::map_model::{Intersection, IntersectionID, TrafficLight, TrafficLightSchedule};
 use cgmath::Vector2;
 use cgmath::{InnerSpace, MetricSpace};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::ops::Sub;
+
+#[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RoadNodeID(pub usize);
+impl From<usize> for RoadNodeID {
+    fn from(x: usize) -> Self {
+        Self(x)
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct RoadNode {
+    pub pos: Vector2<f32>,
+    pub light: TrafficLight,
+}
+
+impl RoadNode {
+    pub fn new(pos: Vector2<f32>) -> Self {
+        RoadNode {
+            pos,
+            light: TrafficLight::Always,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct RoadGraph {

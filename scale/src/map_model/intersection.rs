@@ -1,5 +1,5 @@
 use crate::interaction::{Movable, Selectable};
-use crate::map_model::RoadNodeID;
+use crate::map_model::road_graph::RoadNodeID;
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::RED;
@@ -28,7 +28,7 @@ pub struct Intersection {
 impl Intersection {
     pub fn new(pos: Vector2<f32>) -> Self {
         Intersection {
-            id: 0,
+            id: todo!(),
             pos,
             out_nodes: HashMap::new(),
             in_nodes: HashMap::new(),
