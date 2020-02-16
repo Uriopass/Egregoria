@@ -4,41 +4,24 @@ use serde::{Deserialize, Serialize};
 use specs::World;
 
 mod intersection;
+mod lane;
 mod map;
+mod road;
 mod road_graph;
 mod road_graph_synchronize;
 mod saveload;
 mod traffic_lights;
+mod turn;
 
 pub use intersection::*;
+pub use lane::*;
 pub use map::*;
-pub use road_graph::RoadGraph;
+pub use road::*;
+pub use road_graph::*;
 pub use road_graph_synchronize::*;
 pub use saveload::*;
 pub use traffic_lights::*;
-
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RoadNodeID(pub usize);
-impl From<usize> for RoadNodeID {
-    fn from(x: usize) -> Self {
-        Self(x)
-    }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct RoadNode {
-    pub pos: Vector2<f32>,
-    pub light: TrafficLight,
-}
-
-impl RoadNode {
-    pub fn new(pos: Vector2<f32>) -> Self {
-        RoadNode {
-            pos,
-            light: TrafficLight::Always,
-        }
-    }
-}
+pub use turn::*;
 
 pub fn setup(world: &mut World) {
     load(world);
