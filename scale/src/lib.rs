@@ -8,7 +8,7 @@ use crate::humans::HumanUpdate;
 use crate::interaction::{
     FollowEntity, MovableSystem, SelectableAuraSystem, SelectableSystem, SelectedEntity,
 };
-use crate::map::RoadGraphSynchronize;
+use crate::map_model::RoadGraphSynchronize;
 use crate::physics::systems::KinematicsApply;
 use crate::physics::Collider;
 use crate::physics::PhysicsWorld;
@@ -24,7 +24,7 @@ pub mod geometry;
 pub mod graphs;
 pub mod humans;
 pub mod interaction;
-pub mod map;
+pub mod map_model;
 pub mod physics;
 pub mod rendering;
 
@@ -68,6 +68,6 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.insert(reader);
 
     dispatcher.setup(world);
-    map::setup(world);
+    map_model::setup(world);
     cars::setup(world);
 }

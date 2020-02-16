@@ -1,6 +1,6 @@
 use crate::graphs::graph::{Edge, Graph};
-use crate::map::TrafficLight::Always;
-use crate::map::{
+use crate::map_model::TrafficLight::Always;
+use crate::map_model::{
     Intersection, IntersectionID, RoadNode, RoadNodeID, TrafficLight, TrafficLightSchedule,
 };
 use cgmath::Vector2;

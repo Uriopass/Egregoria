@@ -1,9 +1,9 @@
 use super::RoadGraph;
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::interaction::{MovedEvent, SelectedEntity};
-use crate::map::road_graph_synchronize::ConnectState::{First, Inactive, Unselected};
-use crate::map::IntersectionComponent;
-use crate::map::{make_inter_entity, Intersection};
+use crate::map_model::road_graph_synchronize::ConnectState::{First, Inactive, Unselected};
+use crate::map_model::IntersectionComponent;
+use crate::map_model::{make_inter_entity, Intersection};
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{LineRender, MeshRender, MeshRenderEnum};
 use crate::rendering::RED;
