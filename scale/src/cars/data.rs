@@ -3,7 +3,7 @@ use crate::cars::systems::CAR_DECELERATION;
 use crate::engine_interaction::TimeInfo;
 use crate::gui::{ImCgVec2, ImDragf};
 use crate::interaction::{Movable, Selectable};
-use crate::map_model::{RoadGraph, RoadNodeID, TrafficLightColor};
+use crate::map_model::{NavMesh, NavNodeID, TrafficLightColor};
 use crate::physics::add_to_coworld;
 use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
@@ -19,9 +19,9 @@ use specs::{Builder, Component, DenseVecStorage, Entity, World, WorldExt};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CarObjective {
     None,
-    Simple(RoadNodeID),
-    Temporary(RoadNodeID),
-    Route(Vec<RoadNodeID>),
+    Simple(NavNodeID),
+    Temporary(NavNodeID),
+    Route(Vec<NavNodeID>),
 }
 
 impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
@@ -43,8 +43,8 @@ impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
         // TODO: Handle Route
         let pos: Option<Vector2<f32>>;
         {
-            let rg = world.read_resource::<RoadGraph>();
-            pos = data[0].to_pos(&*rg);
+            let navmesh = world.read_resource::<NavMesh>();
+            pos = data[0].to_pos(&*navmesh);
         }
         match pos {
             Some(x) => {
@@ -63,11 +63,11 @@ impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
 }
 
 impl CarObjective {
-    pub fn to_pos(&self, rg: &RoadGraph) -> Option<Vector2<f32>> {
+    pub fn to_pos(&self, navmesh: &NavMesh) -> Option<Vector2<f32>> {
         match self {
             CarObjective::None => None,
-            Simple(x) | Temporary(x) => rg.nodes().get(*x).map(|x| x.pos),
-            CarObjective::Route(l) => l.get(0).and_then(|x| rg.nodes().get(*x).map(|x| x.pos)),
+            Simple(x) | Temporary(x) => navmesh.get(*x).map(|x| x.pos),
+            CarObjective::Route(l) => l.get(0).and_then(|x| navmesh.get(*x).map(|x| x.pos)),
         }
     }
 }
@@ -103,7 +103,7 @@ impl CarComponent {
 
     pub fn calc_decision(
         &mut self,
-        rg: &RoadGraph,
+        navmesh: &NavMesh,
         speed: f32,
         time: &TimeInfo,
         position: Vector2<f32>,
@@ -113,7 +113,7 @@ impl CarComponent {
             self.wait_time -= time.delta;
             return;
         }
-        let objective: Vector2<f32> = match self.objective.to_pos(rg) {
+        let objective: Vector2<f32> = match self.objective.to_pos(navmesh) {
             Some(x) => x,
             None => {
                 return;
@@ -161,7 +161,7 @@ impl CarComponent {
         let stop_dist = time_to_stop * speed / 2.0;
 
         if let Temporary(n_id) = self.objective {
-            match rg.nodes()[&n_id].light.get_color(time.time_seconds) {
+            match navmesh[&n_id].light.get_color(time.time_seconds) {
                 TrafficLightColor::RED => {
                     if dist_to_pos < 5.0 + stop_dist {
                         self.desired_speed = 0.0;

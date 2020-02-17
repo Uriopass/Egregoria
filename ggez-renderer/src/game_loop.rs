@@ -12,7 +12,7 @@ use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::geometry::gridstore::GridStore;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
-use scale::map_model::RoadGraph;
+use scale::map_model::NavMesh;
 use scale::physics::Transform;
 use scale::specs::{Dispatcher, Entity, RunNow, World, WorldExt};
 use std::collections::HashSet;
@@ -168,7 +168,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             let time = self.world.read_resource::<TimeInfo>().time_seconds;
             if self.render_enabled {
                 self.road_render
-                    .render(&self.world.read_resource::<RoadGraph>(), time, &mut rc);
+                    .render(&self.world.read_resource::<NavMesh>(), time, &mut rc);
                 self.smr.render(&mut self.world, &mut rc);
             }
         }

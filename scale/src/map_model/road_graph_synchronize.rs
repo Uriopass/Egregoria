@@ -1,11 +1,9 @@
-use super::RoadGraph;
-use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
+use crate::engine_interaction::{KeyboardInfo, MouseInfo};
 use crate::interaction::{MovedEvent, SelectedEntity};
 use crate::map_model::road_graph_synchronize::ConnectState::{First, Inactive, Unselected};
-use crate::map_model::IntersectionComponent;
-use crate::map_model::{make_inter_entity, Intersection};
+use crate::map_model::{IntersectionComponent, Map};
 use crate::physics::Transform;
-use crate::rendering::meshrender_component::{LineRender, MeshRender, MeshRenderEnum};
+use crate::rendering::meshrender_component::{LineRender, MeshRender};
 use crate::rendering::RED;
 use specs::prelude::*;
 use specs::shred::{DynamicSystemData, PanicHandler};
@@ -57,7 +55,7 @@ pub struct RGSData<'a> {
     entities: Entities<'a>,
     lazy: Read<'a, LazyUpdate>,
     self_state: Write<'a, RoadGraphSynchronizeState, PanicHandler>,
-    rg: Write<'a, RoadGraph, PanicHandler>,
+    map: Write<'a, Map, PanicHandler>,
     selected: Write<'a, SelectedEntity>,
     moved: Read<'a, EventChannel<MovedEvent>>,
     kbinfo: Read<'a, KeyboardInfo>,
@@ -70,22 +68,23 @@ pub struct RGSData<'a> {
 impl<'a> System<'a> for RoadGraphSynchronize {
     type SystemData = RGSData<'a>;
 
-    fn run(&mut self, mut data: Self::SystemData) {
+    fn run(&mut self, _data: Self::SystemData) {
+        /*
         // Moved events
         for event in data.moved.read(&mut data.self_state.reader) {
             if let Some(rnc) = data.intersections.get(event.entity) {
-                data.rg.set_intersection_position(rnc.id, event.new_pos);
-                data.rg.calculate_nodes_positions(rnc.id);
+                data.map.set_intersection_position(rnc.id, event.new_pos);
+                data.map.calculate_nodes_positions(rnc.id);
             }
         }
         // Intersection creation
         if data.kbinfo.just_pressed.contains(&KeyCode::I) {
             let id = data
-                .rg
-                .add_intersection(Intersection::new(data.mouseinfo.unprojected));
+                .map
+                .add_intersection(Intersection::empty(data.mouseinfo.unprojected));
             let intersections = &data.intersections;
             if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
-                data.rg.connect(id, x.id);
+                data.map.connect(id, x.id);
             }
             let e = make_inter_entity(id, data.mouseinfo.unprojected, &data.lazy, &data.entities);
             *data.selected = SelectedEntity(Some(e));
@@ -95,7 +94,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         if data.kbinfo.just_pressed.contains(&KeyCode::Backspace) {
             if let Some(e) = data.selected.0 {
                 if let Some(inter) = data.intersections.get(e) {
-                    data.rg.delete_inter(inter.id);
+                    data.map.delete_inter(inter.id);
                     data.entities.delete(e).unwrap();
                 }
             }
@@ -123,10 +122,10 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     First(y) => {
                         let interc2 = data.intersections.get(y).unwrap();
                         if y != x {
-                            if !data.rg.intersections().is_neigh(interc.id, interc2.id) {
-                                data.rg.connect(interc.id, interc2.id);
+                            if !data.map.is_neigh(interc.id, interc2.id) {
+                                data.map.connect(interc.id, interc2.id);
                             } else {
-                                data.rg.disconnect(interc.id, interc2.id);
+                                data.map.disconnect(interc.id, interc2.id);
                             }
                             data.self_state.deactive_connect(&mut data.meshrenders);
                         }
@@ -152,6 +151,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 x.offset = data.mouseinfo.unprojected - trans.position();
             }
         }
+        */
     }
 
     fn setup(&mut self, world: &mut World) {

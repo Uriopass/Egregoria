@@ -1,15 +1,19 @@
-use crate::map_model::{make_inter_entity, RoadGraph};
+use crate::map_model::Map;
 use specs::{LazyUpdate, World, WorldExt};
 
 const GRAPH_FILENAME: &str = "world/graph";
 
-pub fn save(world: &mut World) {
-    world.read_resource::<RoadGraph>().save(GRAPH_FILENAME);
+pub fn save(_world: &mut World) {
+    //world.read_resource::<NavMesh>().save(GRAPH_FILENAME);
 }
 
 pub fn load(world: &mut World) {
-    let rg = RoadGraph::from_file(GRAPH_FILENAME).unwrap_or_else(RoadGraph::empty);
-    for (inter_id, inter) in rg.intersections() {
+    let map = Map::empty();
+    world.insert(map);
+    /*
+    let navmesh = NavMesh::from_file(GRAPH_FILENAME).unwrap_or_else(NavMesh::empty);
+
+        for (inter_id, inter) in navmesh.intersections() {
         make_inter_entity(
             *inter_id,
             inter.pos,
@@ -17,5 +21,6 @@ pub fn load(world: &mut World) {
             &world.entities(),
         );
     }
-    world.insert(rg);
+    world.insert(navmesh);
+    */
 }

@@ -1,7 +1,7 @@
 use crate::cars::data::CarObjective::{Route, Simple, Temporary};
 use crate::cars::data::{CarComponent, CarObjective};
 use crate::engine_interaction::TimeInfo;
-use crate::map_model::RoadGraph;
+use crate::map_model::NavMesh;
 use crate::physics::PhysicsWorld;
 use crate::physics::{Kinematics, Transform};
 use cgmath::MetricSpace;
@@ -18,7 +18,7 @@ pub const MIN_TURNING_RADIUS: f32 = 6.0;
 
 #[derive(SystemData)]
 pub struct CarDecisionSystemData<'a> {
-    rg: Read<'a, RoadGraph, PanicHandler>,
+    navmesh: Read<'a, NavMesh, PanicHandler>,
     time: Read<'a, TimeInfo>,
     coworld: Read<'a, PhysicsWorld, PanicHandler>,
     transforms: WriteStorage<'a, Transform>,
@@ -31,14 +31,14 @@ impl<'a> System<'a> for CarDecision {
 
     fn run(&mut self, mut data: Self::SystemData) {
         let cow = data.coworld;
-        let rg = data.rg;
+        let navmesh = data.navmesh;
         let time = data.time;
 
         (&mut data.transforms, &mut data.kinematics, &mut data.cars)
             .par_join()
             .for_each(|(trans, kin, car)| {
-                car_objective_update(car, &time, trans, &rg);
-                car_physics(&cow, &rg, &time, trans, kin, car);
+                car_objective_update(car, &time, trans, &navmesh);
+                car_physics(&cow, &navmesh, &time, trans, kin, car);
             });
     }
 }
@@ -47,23 +47,20 @@ fn car_objective_update(
     car: &mut CarComponent,
     time: &TimeInfo,
     trans: &Transform,
-    graph: &RoadGraph,
+    navmesh: &NavMesh,
 ) {
     match car.objective {
         CarObjective::None | Simple(_) | Route(_) => {
-            car.objective = graph
+            car.objective = navmesh
                 .closest_node(trans.position())
                 .map_or(CarObjective::None, Temporary);
         }
         CarObjective::Temporary(x) => {
-            if let Some(p) = graph.nodes().get(x).map(|x| x.pos) {
+            if let Some(p) = navmesh.get(x).map(|x| x.pos) {
                 if p.distance2(trans.position()) < 25.0
-                    && !graph.nodes()[&x]
-                        .light
-                        .get_color(time.time_seconds)
-                        .is_red()
+                    && !navmesh[&x].light.get_color(time.time_seconds).is_red()
                 {
-                    let neighs = graph.nodes().get_neighs(x);
+                    let neighs = navmesh.get_neighs(x);
                     let r = rand::random::<f32>() * (neighs.len() as f32);
                     if neighs.is_empty() {
                         return;
@@ -80,7 +77,7 @@ fn car_objective_update(
 
 fn car_physics(
     coworld: &PhysicsWorld,
-    rg: &RoadGraph,
+    navmesh: &NavMesh,
     time: &TimeInfo,
     trans: &mut Transform,
     kin: &mut Kinematics,
@@ -103,7 +100,7 @@ fn car_physics(
 
     let objs: Vec<&Vector2<f32>> = neighbors.into_iter().map(|obj| &obj.pos).collect();
 
-    car.calc_decision(rg, speed, time, pos, objs);
+    car.calc_decision(navmesh, speed, time, pos, objs);
 
     let speed = speed
         + ((car.desired_speed - speed)

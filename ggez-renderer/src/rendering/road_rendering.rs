@@ -1,7 +1,7 @@
 use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
 use ggez::graphics::{Color, WHITE};
-use scale::map_model::RoadGraph;
+use scale::map_model::NavMesh;
 
 pub struct RoadRenderer;
 const MID_GRAY: Color = Color {
@@ -15,27 +15,27 @@ impl RoadRenderer {
     pub fn new() -> Self {
         RoadRenderer
     }
-    pub fn render(&mut self, rg: &RoadGraph, time: u64, rc: &mut RenderContext) {
-        for (id, n) in rg.nodes() {
+    pub fn render(&mut self, navmesh: &NavMesh, time: u64, rc: &mut RenderContext) {
+        for (id, n) in navmesh {
             rc.sr.color = WHITE;
             rc.sr.draw_circle(n.pos, 4.25);
-            for e in rg.nodes().get_neighs(*id) {
-                let p2 = rg.nodes().get(e.to).unwrap().pos;
+            for e in navmesh.get_neighs(*id) {
+                let p2 = navmesh.get(e.to).unwrap().pos;
                 rc.sr.draw_stroke(n.pos, p2, 8.5);
             }
         }
 
-        for (id, n) in rg.nodes() {
+        for (id, n) in navmesh {
             rc.sr.color = MID_GRAY;
             rc.sr.draw_circle(n.pos, 3.75);
 
-            for e in rg.nodes().get_neighs(*id) {
-                let p2 = rg.nodes().get(e.to).unwrap().pos;
+            for e in navmesh.get_neighs(*id) {
+                let p2 = navmesh.get(e.to).unwrap().pos;
                 rc.sr.draw_stroke(n.pos, p2, 7.5);
             }
         }
 
-        for (_, n) in rg.nodes() {
+        for (_, n) in navmesh {
             if n.light.is_always() {
                 continue;
             }
