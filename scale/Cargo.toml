@@ -5,12 +5,13 @@ authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
 edition = "2018"
 
 [dependencies]
-rand = {version = "0.7.2", features = ["small_rng"]}
-cgmath = {version = "0.17", features = ["mint", "swizzle","serde"]}
-specs = {version = "0.16", features = ["shred-derive", "specs-derive", "parallel", "serde"]}
 ordered-float = "1.0.2"
-imgui = "0.2.1"
-serde = "1.0"
-bincode = "1.2.1"
+rand = {version = "0.7.2", features = ["small_rng"]}
+slab = "0.4.2"
 imgui-inspect = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
 imgui-inspect-derive = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
+bincode = "1.2.1"
+serde = "1.0"
+imgui = "0.2.1"
+cgmath = {version = "0.17", features = ["mint", "swizzle","serde"]}
+specs = {version = "0.16", features = ["shred-derive", "specs-derive", "parallel", "serde"]}

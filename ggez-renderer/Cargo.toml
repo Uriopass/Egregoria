@@ -7,10 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ggez = "0.5"
-cgmath = {version = "0.17", features = ["mint", "swizzle"]}
+scale = { path = "../scale" }
+imgui-gfx-renderer = "0.2"
+imgui = "0.2.1"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
-imgui = "0.2.1"
-imgui-gfx-renderer = "0.2"
-scale = { path = "../scale" }
+cgmath = {version = "0.17", features = ["mint", "swizzle"]}
+ggez = "0.5"
