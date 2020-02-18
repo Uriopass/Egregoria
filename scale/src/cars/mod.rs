@@ -4,6 +4,7 @@ use crate::physics::Transform;
 use cgmath::InnerSpace;
 use specs::{Join, World, WorldExt};
 use std::fs::File;
+use std::path::Path;
 
 pub mod data;
 pub mod systems;
@@ -51,7 +52,10 @@ pub fn spawn_new_car(world: &mut World) {
 }
 
 pub fn save(world: &mut World) {
-    let file = File::create(CAR_FILENAME.to_string() + ".bc").unwrap();
+    let _ = std::fs::create_dir("world");
+
+    let path = CAR_FILENAME.to_string() + ".bc";
+    let file = File::create(path).unwrap();
 
     let car_trans: Vec<(Transform, CarComponent)> = (
         &world.read_component::<Transform>(),
