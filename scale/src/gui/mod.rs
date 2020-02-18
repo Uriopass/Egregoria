@@ -16,6 +16,7 @@ pub struct Gui {
     show_car_ui: bool,
     show_stats: bool,
     show_tips: bool,
+    n_cars: i32,
 }
 
 impl Default for Gui {
@@ -24,6 +25,7 @@ impl Default for Gui {
             show_car_ui: true,
             show_stats: false,
             show_tips: true,
+            n_cars: 1,
         }
     }
 }
@@ -71,23 +73,26 @@ impl Gui {
         });
 
         if self.show_car_ui {
-            imgui::Window::new(im_str!("Cars"))
+            let mut opened = self.show_car_ui;
+            imgui::Window::new(im_str!("Traffic"))
                 .size([200.0, 120.0], imgui::Condition::FirstUseEver)
                 .position([30.0, 30.0], imgui::Condition::FirstUseEver)
-                .opened(&mut self.show_car_ui)
+                .opened(&mut opened)
                 .build(&ui, || {
+                    ui.set_next_item_width(70.0);
+                    imgui::DragInt::new(&ui, im_str!("n_cars"), &mut self.n_cars)
+                        .min(1)
+                        .max(1000)
+                        .build();
+
+                    ui.same_line(0.0);
                     if ui.small_button(im_str!("spawn car")) {
-                        spawn_new_car(world);
-                    }
-
-                    if ui.small_button(im_str!("spawn 10 cars")) {
-                        (0..10).for_each(|_| spawn_new_car(world));
-                    }
-
-                    if ui.small_button(im_str!("spawn 100 cars")) {
-                        (0..100).for_each(|_| spawn_new_car(world));
+                        for _ in 0..self.n_cars {
+                            spawn_new_car(world);
+                        }
                     }
                 });
+            self.show_car_ui = opened;
         }
 
         if self.show_stats {
