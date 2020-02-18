@@ -87,10 +87,10 @@ pub struct CarComponent {
 
 #[allow(dead_code)]
 impl CarComponent {
-    pub fn new(direction: Vector2<f32>) -> CarComponent {
+    pub fn new(direction: Vector2<f32>, objective: CarObjective) -> CarComponent {
         CarComponent {
             direction,
-            objective: CarObjective::None,
+            objective,
             desired_speed: 0.0,
             desired_dir: Vector2::<f32>::new(0.0, 0.0),
             wait_time: 0.0,
