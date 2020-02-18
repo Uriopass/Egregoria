@@ -124,13 +124,22 @@ impl Intersection {
     }
 
     fn fill_lanes(&mut self, incoming: Vec<LaneID>, outgoing: Vec<LaneID>) {
-        for lane_src in self.incoming_lanes.clone() {
-            for lane_dst in &outgoing {
+        if self.roads.len() >= 3 {
+            for lane_src in self.incoming_lanes.clone() {
+                for lane_dst in &outgoing {
+                    self.add_turn(lane_src, *lane_dst);
+                }
+            }
+            for lane_dst in self.outgoing_lanes.clone() {
+                for lane_src in &incoming {
+                    self.add_turn(*lane_src, lane_dst);
+                }
+            }
+        } else if self.roads.len() == 2 {
+            for (lane_src, lane_dst) in self.incoming_lanes.clone().into_iter().zip(&outgoing) {
                 self.add_turn(lane_src, *lane_dst);
             }
-        }
-        for lane_dst in self.outgoing_lanes.clone() {
-            for lane_src in &incoming {
+            for (lane_dst, lane_src) in self.outgoing_lanes.clone().into_iter().zip(&incoming) {
                 self.add_turn(*lane_src, lane_dst);
             }
         }
