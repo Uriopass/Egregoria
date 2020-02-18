@@ -21,7 +21,7 @@ impl Turn {
             panic!("Turn already generated !");
         }
 
-        const N_SPLINE: usize = 5;
+        const N_SPLINE: usize = 7;
 
         let src_lane = &lanes[self.src];
         let dst_lane = &lanes[self.dst];

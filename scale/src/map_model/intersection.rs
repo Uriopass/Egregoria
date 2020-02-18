@@ -1,3 +1,4 @@
+use crate::gui::ImDragf;
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::navmesh::NavNodeID;
 use crate::map_model::TrafficLight::Always;
@@ -9,6 +10,7 @@ use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::RED;
 use cgmath::{InnerSpace, Vector2};
+use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -19,6 +21,15 @@ use std::ops::Sub;
 
 new_key_type! {
     pub struct IntersectionID;
+}
+
+#[derive(Component, Clone, Serialize, Deserialize, Inspect)]
+#[storage(BTreeStorage)]
+pub struct IntersectionComponent {
+    #[inspect(skip = true)]
+    pub id: IntersectionID,
+    #[inspect(proxy_type = "ImDragf")]
+    pub radius: f32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -34,6 +45,7 @@ pub struct Intersection {
 
     pub out_nodes: HashMap<LaneID, NavNodeID>,
     pub in_nodes: HashMap<LaneID, NavNodeID>,
+    pub interface_radius: f32,
 }
 
 impl Intersection {
@@ -47,6 +59,7 @@ impl Intersection {
             roads: vec![],
             out_nodes: HashMap::new(),
             in_nodes: HashMap::new(),
+            interface_radius: 15.0,
         })
     }
 
@@ -68,7 +81,9 @@ impl Intersection {
             [dir.y, -dir.x].into()
         };
 
-        self.pos + dir * 15.0 + dir_normal * lane_dist as f32 * 8.0
+        let mindist = road.length() / 2.0 - 1.0;
+
+        self.pos + dir * self.interface_radius.min(mindist) + dir_normal * lane_dist as f32 * 8.0
     }
 
     pub fn gen_interface_navmesh(
@@ -238,21 +253,17 @@ impl Intersection {
     }
 }
 
-#[derive(Component, Clone, Serialize, Deserialize)]
-#[storage(BTreeStorage)]
-pub struct IntersectionComponent {
-    pub id: IntersectionID,
-}
-empty_inspect_impl!(IntersectionComponent);
-
 pub fn make_inter_entity<'a>(
-    inter_id: IntersectionID,
+    inter: &Intersection,
     inter_pos: Vector2<f32>,
     lazy: &LazyUpdate,
     entities: &Entities<'a>,
 ) -> Entity {
     lazy.create_entity(entities)
-        .with(IntersectionComponent { id: inter_id })
+        .with(IntersectionComponent {
+            id: inter.id,
+            radius: inter.interface_radius,
+        })
         .with(MeshRender::simple(
             CircleRender {
                 radius: 2.0,
