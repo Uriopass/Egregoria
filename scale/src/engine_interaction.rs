@@ -9,11 +9,22 @@ pub struct RenderStats {
     pub render_time: f32,
 }
 
-#[derive(Default)]
 pub struct TimeInfo {
     pub delta: f32,
     pub time: f64,
     pub time_seconds: u64,
+    pub time_speed: f32,
+}
+
+impl Default for TimeInfo {
+    fn default() -> Self {
+        Self {
+            delta: 0.0,
+            time: 0.0,
+            time_seconds: 0,
+            time_speed: 1.0,
+        }
+    }
 }
 
 pub struct MeshRenderEventReader(pub ReaderId<ComponentEvent>);
