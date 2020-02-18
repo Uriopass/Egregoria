@@ -4,7 +4,6 @@ use crate::physics::Transform;
 use cgmath::InnerSpace;
 use specs::{Join, World, WorldExt};
 use std::fs::File;
-use std::path::Path;
 
 pub mod data;
 pub mod systems;
