@@ -2,7 +2,8 @@ use crate::interaction::{Movable, Selectable};
 use crate::map_model::navmesh::NavNodeID;
 use crate::map_model::TrafficLight::Always;
 use crate::map_model::{
-    Lane, LaneID, NavMesh, NavNode, Road, RoadID, TrafficLight, TrafficLightSchedule, Turn,
+    Intersections, LaneID, Lanes, NavMesh, NavNode, Road, RoadID, Roads, TrafficLight,
+    TrafficLightSchedule, Turn,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
@@ -10,18 +11,14 @@ use crate::rendering::RED;
 use cgmath::{InnerSpace, Vector2};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use slab::Slab;
+use slotmap::new_key_type;
 use specs::storage::BTreeStorage;
 use specs::{Builder, Component, Entities, Entity, LazyUpdate};
 use std::collections::HashMap;
 use std::ops::Sub;
 
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub struct IntersectionID(pub usize);
-impl From<usize> for IntersectionID {
-    fn from(x: usize) -> Self {
-        Self(x)
-    }
+new_key_type! {
+    pub struct IntersectionID;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -40,10 +37,8 @@ pub struct Intersection {
 }
 
 impl Intersection {
-    pub fn make(store: &mut Slab<Intersection>, pos: Vector2<f32>) -> &mut Intersection {
-        let entry = store.vacant_entry();
-        let id = IntersectionID(entry.key());
-        entry.insert(Intersection {
+    pub fn make(store: &mut Intersections, pos: Vector2<f32>) -> IntersectionID {
+        store.insert_with_key(|id| Intersection {
             id,
             pos,
             turns: vec![],
@@ -59,11 +54,11 @@ impl Intersection {
         &self,
         lane_id: LaneID,
         incoming: bool,
-        lanes: &Slab<Lane>,
-        roads: &Slab<Road>,
+        lanes: &Lanes,
+        roads: &Roads,
     ) -> Vector2<f32> {
-        let lane = &lanes[lane_id.0];
-        let road = &roads[lane.parent.0];
+        let lane = &lanes[lane_id];
+        let road = &roads[lane.parent];
 
         let lane_dist = road.idx_unchecked(lane_id);
         let dir = road.dir_from(self);
@@ -78,8 +73,8 @@ impl Intersection {
 
     pub fn gen_interface_navmesh(
         &mut self,
-        lanes: &mut Slab<Lane>,
-        roads: &Slab<Road>,
+        lanes: &mut Lanes,
+        roads: &Roads,
         navmesh: &mut NavMesh,
     ) {
         for lane_id in &self.incoming_lanes {
@@ -99,7 +94,7 @@ impl Intersection {
         }
     }
 
-    pub fn gen_turns(&mut self, lanes: &Slab<Lane>, navmesh: &mut NavMesh) {
+    pub fn gen_turns(&mut self, lanes: &Lanes, navmesh: &mut NavMesh) {
         for turn in &mut self.turns {
             if turn.easing_nodes.is_empty() {
                 turn.gen_navmesh(lanes, navmesh);

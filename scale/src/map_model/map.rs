@@ -1,81 +1,95 @@
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneDirection, LaneType, NavMesh, Road, RoadID,
+    Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneType, NavMesh, Road, RoadID,
 };
 use cgmath::Vector2;
-use slab::Slab;
+use slotmap::DenseSlotMap;
+
+pub type Roads = DenseSlotMap<RoadID, Road>;
+pub type Lanes = DenseSlotMap<LaneID, Lane>;
+pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 
 pub struct Map {
-    pub roads: Slab<Road>,
-    pub lanes: Slab<Lane>,
-    pub intersections: Slab<Intersection>,
+    pub roads: Roads,
+    pub lanes: Lanes,
+    pub intersections: Intersections,
     pub navmesh: NavMesh,
 }
 
 impl Map {
     pub fn empty() -> Self {
         Self {
-            roads: Slab::new(),
-            lanes: Slab::new(),
-            intersections: Slab::new(),
+            roads: Roads::with_key(),
+            lanes: Lanes::with_key(),
+            intersections: Intersections::with_key(),
             navmesh: NavMesh::empty(),
         }
     }
 
     pub fn add_intersection(&mut self, pos: Vector2<f32>) -> IntersectionID {
-        Intersection::make(&mut self.intersections, pos).id
+        Intersection::make(&mut self.intersections, pos)
+    }
+
+    pub fn remove_intersection(&mut self, id: IntersectionID) {
+        let inter = &mut self.intersections[id];
+        for turn in &mut inter.turns {
+            turn.clean(&mut self.navmesh);
+        }
+
+        todo!()
     }
 
     pub fn move_intersection(&mut self, id: IntersectionID, pos: Vector2<f32>) {
-        self.intersections[id.0].pos = pos;
+        self.intersections[id].pos = pos;
 
-        let inter = &self.intersections[id.0];
+        let inter = &self.intersections[id];
 
         let mut to_update = vec![inter.id];
 
         for x in &inter.roads {
-            let other = self.roads[x.0].other_end(inter.id);
+            let other = self.roads[*x].other_end(inter.id);
             to_update.push(other);
 
-            self.roads[x.0].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
+            self.roads[*x].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
         }
 
         for id in to_update {
-            let inter = &mut self.intersections[id.0];
+            let inter = &mut self.intersections[id];
             inter.gen_interface_navmesh(&mut self.lanes, &self.roads, &mut self.navmesh);
             inter.gen_turns(&self.lanes, &mut self.navmesh);
         }
     }
 
     pub fn connect(&mut self, a: IntersectionID, b: IntersectionID) -> RoadID {
-        let road = Road::make(&mut self.roads, &self.intersections, a, b);
+        let road_id = Road::make(&mut self.roads, &self.intersections, a, b);
 
+        let road = &mut self.roads[road_id];
         road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Forward);
         road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Forward);
 
         road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Backward);
         road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Backward);
 
-        self.intersections[a.0].add_road(road);
-        self.intersections[b.0].add_road(road);
+        self.intersections[a].add_road(road);
+        self.intersections[b].add_road(road);
 
         let road = road.id;
 
-        self.intersections[a.0].gen_interface_navmesh(
+        self.intersections[a].gen_interface_navmesh(
             &mut self.lanes,
             &self.roads,
             &mut self.navmesh,
         );
 
-        self.intersections[b.0].gen_interface_navmesh(
+        self.intersections[b].gen_interface_navmesh(
             &mut self.lanes,
             &self.roads,
             &mut self.navmesh,
         );
 
-        self.roads[road.0].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
+        self.roads[road].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
 
-        self.intersections[a.0].gen_turns(&self.lanes, &mut self.navmesh);
-        self.intersections[b.0].gen_turns(&self.lanes, &mut self.navmesh);
+        self.intersections[a].gen_turns(&self.lanes, &mut self.navmesh);
+        self.intersections[b].gen_turns(&self.lanes, &mut self.navmesh);
         road
     }
 
