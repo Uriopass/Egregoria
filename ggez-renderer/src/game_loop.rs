@@ -100,8 +100,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
         {
             let mut time = self.world.write_resource::<TimeInfo>();
-            time.delta = delta as f32;
-            time.time += delta;
+            time.delta = delta as f32 * time.time_speed;
+            time.time += delta * time.time_speed as f64;
             time.time_seconds = time.time as u64;
         }
 

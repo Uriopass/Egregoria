@@ -1,4 +1,4 @@
-use crate::map_model::{Intersection, Map};
+use crate::map_model::Map;
 use specs::World;
 
 //const GRAPH_FILENAME: &str = "world/graph";
