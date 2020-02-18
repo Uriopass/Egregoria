@@ -1,4 +1,6 @@
-use crate::map_model::{Intersection, IntersectionID, Lane, LaneType, NavMesh, Road, RoadID};
+use crate::map_model::{
+    Intersection, IntersectionID, Lane, LaneDirection, LaneType, NavMesh, Road, RoadID,
+};
 use cgmath::Vector2;
 use slab::Slab;
 
@@ -47,11 +49,11 @@ impl Map {
     pub fn connect(&mut self, a: IntersectionID, b: IntersectionID) -> RoadID {
         let road = Road::make(&mut self.roads, &self.intersections, a, b);
 
-        Lane::make_forward(&mut self.lanes, road, LaneType::Driving);
-        Lane::make_forward(&mut self.lanes, road, LaneType::Driving);
+        road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Forward);
+        road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Forward);
 
-        Lane::make_backward(&mut self.lanes, road, LaneType::Driving);
-        Lane::make_backward(&mut self.lanes, road, LaneType::Driving);
+        road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Backward);
+        road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Backward);
 
         self.intersections[a.0].add_road(road);
         self.intersections[b.0].add_road(road);

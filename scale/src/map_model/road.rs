@@ -1,4 +1,6 @@
-use crate::map_model::{Intersection, IntersectionID, Lane, LaneID, NavMesh};
+use crate::map_model::{
+    Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneType, NavMesh,
+};
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
@@ -39,6 +41,30 @@ impl Road {
             lanes_forward: vec![],
             lanes_backward: vec![],
         })
+    }
+
+    pub fn add_lane(
+        &mut self,
+        store: &mut Slab<Lane>,
+        lane_type: LaneType,
+        direction: LaneDirection,
+    ) {
+        let entry = store.vacant_entry();
+        let id = LaneID(entry.key());
+        entry.insert(Lane {
+            id,
+            parent: self.id,
+            src_i: self.src,
+            dst_i: self.dst,
+            lane_type,
+            src_node: None,
+            dst_node: None,
+            direction,
+        });
+        match direction {
+            LaneDirection::Forward => self.lanes_forward.push(id),
+            LaneDirection::Backward => self.lanes_backward.push(id),
+        }
     }
 
     pub fn gen_navmesh(
