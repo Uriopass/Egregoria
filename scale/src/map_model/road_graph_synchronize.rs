@@ -1,7 +1,7 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::interaction::{MovedEvent, SelectedEntity};
 use crate::map_model::road_graph_synchronize::ConnectState::{First, Inactive, Unselected};
-use crate::map_model::{make_inter_entity, IntersectionComponent, Map, NavMesh};
+use crate::map_model::{make_inter_entity, IntersectionComponent, Map};
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{LineRender, MeshRender, MeshRenderEnum};
 use crate::rendering::RED;
