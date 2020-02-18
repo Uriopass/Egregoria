@@ -46,6 +46,12 @@ impl Turn {
         self.reposition_nodes(lanes, navmesh);
     }
 
+    pub fn clean(&mut self, navmesh: &mut NavMesh) {
+        for x in self.easing_nodes.drain(0..) {
+            navmesh.remove_node(x);
+        }
+    }
+
     pub fn reposition_nodes(&mut self, lanes: &Slab<Lane>, navmesh: &mut NavMesh) {
         let src_lane = &lanes[self.src.0];
         let dst_lane = &lanes[self.dst.0];
