@@ -1,13 +1,15 @@
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneType, NavMesh,
+    Intersection, IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneType, Lanes,
+    NavMesh, Roads,
 };
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
-use slab::Slab;
+use slotmap::new_key_type;
 
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RoadID(pub usize);
+new_key_type! {
+    pub struct RoadID;
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct Road {
@@ -22,18 +24,16 @@ pub struct Road {
 }
 
 impl Road {
-    pub fn make<'a>(
-        store: &'a mut Slab<Road>,
-        intersections: &Slab<Intersection>,
+    pub fn make(
+        store: &mut Roads,
+        intersections: &Intersections,
         src: IntersectionID,
         dst: IntersectionID,
-    ) -> &'a mut Self {
-        let pos_src = intersections[src.0].pos;
-        let pos_dst = intersections[dst.0].pos;
+    ) -> RoadID {
+        let pos_src = intersections[src].pos;
+        let pos_dst = intersections[dst].pos;
 
-        let entry = store.vacant_entry();
-        let id = RoadID(entry.key());
-        entry.insert(Self {
+        store.insert_with_key(|id| Self {
             id,
             src,
             dst,
@@ -45,13 +45,11 @@ impl Road {
 
     pub fn add_lane(
         &mut self,
-        store: &mut Slab<Lane>,
+        store: &mut Lanes,
         lane_type: LaneType,
         direction: LaneDirection,
-    ) {
-        let entry = store.vacant_entry();
-        let id = LaneID(entry.key());
-        entry.insert(Lane {
+    ) -> LaneID {
+        let id = store.insert_with_key(|id| Lane {
             id,
             parent: self.id,
             src_i: self.src,
@@ -64,40 +62,41 @@ impl Road {
         match direction {
             LaneDirection::Forward => self.lanes_forward.push(id),
             LaneDirection::Backward => self.lanes_backward.push(id),
-        }
+        };
+        id
     }
 
     pub fn gen_navmesh(
         &mut self,
-        intersections: &Slab<Intersection>,
-        lanes: &mut Slab<Lane>,
+        intersections: &Intersections,
+        lanes: &mut Lanes,
         navmesh: &mut NavMesh,
     ) {
         for lane in &self.lanes_forward {
-            let lane = &mut lanes[lane.0];
+            let lane = &mut lanes[*lane];
             if lane.src_node.is_some() {
                 continue;
             }
-            lane.src_node = Some(intersections[lane.src_i.0].out_nodes[&lane.id]);
-            lane.dst_node = Some(intersections[lane.dst_i.0].in_nodes[&lane.id]);
+            lane.src_node = Some(intersections[lane.src_i].out_nodes[&lane.id]);
+            lane.dst_node = Some(intersections[lane.dst_i].in_nodes[&lane.id]);
 
             navmesh.add_neigh(lane.src_node.unwrap(), lane.dst_node.unwrap(), 1.0);
         }
 
         for lane in &self.lanes_backward {
-            let lane = &mut lanes[lane.0];
+            let lane = &mut lanes[*lane];
             if lane.src_node.is_some() {
                 continue;
             }
-            lane.src_node = Some(intersections[lane.src_i.0].in_nodes[&lane.id]);
-            lane.dst_node = Some(intersections[lane.dst_i.0].out_nodes[&lane.id]);
+            lane.src_node = Some(intersections[lane.src_i].in_nodes[&lane.id]);
+            lane.dst_node = Some(intersections[lane.dst_i].out_nodes[&lane.id]);
 
             navmesh.add_neigh(lane.dst_node.unwrap(), lane.src_node.unwrap(), 1.0);
         }
 
-        self.interpolation_points[0] = intersections[self.src.0].pos;
+        self.interpolation_points[0] = intersections[self.src].pos;
         let l = self.interpolation_points.len();
-        self.interpolation_points[l - 1] = intersections[self.dst.0].pos;
+        self.interpolation_points[l - 1] = intersections[self.dst].pos;
     }
 
     pub fn dir_from(&self, i: &Intersection) -> Vector2<f32> {

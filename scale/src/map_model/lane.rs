@@ -1,11 +1,12 @@
-use crate::map_model::{IntersectionID, NavMesh, NavNodeID, Road, RoadID};
+use crate::map_model::{IntersectionID, NavMesh, NavNodeID, RoadID};
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
-use slab::Slab;
+use slotmap::new_key_type;
 
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub struct LaneID(pub usize);
+new_key_type! {
+    pub struct LaneID;
+}
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum LaneType {

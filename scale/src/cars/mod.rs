@@ -29,7 +29,7 @@ pub fn spawn_new_car(world: &mut World) {
                 }
                 let r2 = (rand::random::<f32>() * l2 as f32) as usize;
 
-                let backnode = &navmesh[back.into_iter().nth(r2).unwrap().to];
+                let backnode = &navmesh[back.get(r2).unwrap().to];
 
                 let diff = nav.pos - backnode.pos;
 

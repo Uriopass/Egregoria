@@ -1,8 +1,7 @@
 use crate::geometry::splines::Spline;
-use crate::map_model::{IntersectionID, Lane, LaneID, NavMesh, NavNode, NavNodeID};
+use crate::map_model::{IntersectionID, LaneID, Lanes, NavMesh, NavNode, NavNodeID};
 use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
-use slab::Slab;
 
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TurnID(pub usize);
@@ -17,15 +16,15 @@ pub struct Turn {
 }
 
 impl Turn {
-    pub fn gen_navmesh(&mut self, lanes: &Slab<Lane>, navmesh: &mut NavMesh) {
+    pub fn gen_navmesh(&mut self, lanes: &Lanes, navmesh: &mut NavMesh) {
         if !self.easing_nodes.is_empty() {
             panic!("Turn already generated !");
         }
 
         const N_SPLINE: usize = 5;
 
-        let src_lane = &lanes[self.src.0];
-        let dst_lane = &lanes[self.dst.0];
+        let src_lane = &lanes[self.src];
+        let dst_lane = &lanes[self.dst];
 
         let node_src = src_lane.get_inter_node(self.parent);
         let node_dst = dst_lane.get_inter_node(self.parent);
@@ -52,9 +51,9 @@ impl Turn {
         }
     }
 
-    pub fn reposition_nodes(&mut self, lanes: &Slab<Lane>, navmesh: &mut NavMesh) {
-        let src_lane = &lanes[self.src.0];
-        let dst_lane = &lanes[self.dst.0];
+    pub fn reposition_nodes(&mut self, lanes: &Lanes, navmesh: &mut NavMesh) {
+        let src_lane = &lanes[self.src];
+        let dst_lane = &lanes[self.dst];
 
         let node_src = src_lane.get_inter_node(self.parent);
         let node_dst = dst_lane.get_inter_node(self.parent);

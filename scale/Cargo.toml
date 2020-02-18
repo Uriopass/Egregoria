@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 ordered-float = "1.0.2"
 rand = {version = "0.7.2", features = ["small_rng"]}
-slab = "0.4.2"
+slotmap = {version = "0.4", features = ["serde"]}
 imgui-inspect = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
 imgui-inspect-derive = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
 bincode = "1.2.1"
