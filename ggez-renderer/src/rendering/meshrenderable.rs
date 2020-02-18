@@ -36,7 +36,7 @@ impl MeshRenderable for RectRender {
         rc.sr.set_filled(self.filled);
         if trans.is_angle_zero() {
             rc.sr
-                .draw_rect_centered(trans.position(), self.width, self.height)
+                .draw_rect_centered(trans.position() + self.offset, self.width, self.height)
         } else {
             let rect_pos = trans.position()
                 + Vector2::<f32>::new(
