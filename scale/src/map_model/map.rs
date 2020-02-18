@@ -66,15 +66,15 @@ impl Map {
         }
     }
 
-    pub fn connect(&mut self, a: IntersectionID, b: IntersectionID) -> RoadID {
+    pub fn connect(&mut self, a: IntersectionID, b: IntersectionID, n_lanes: i32) -> RoadID {
         let road_id = Road::make(&mut self.roads, &self.intersections, a, b);
 
         let road = &mut self.roads[road_id];
-        road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Forward);
-        road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Forward);
 
-        road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Backward);
-        road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Backward);
+        for _ in 0..n_lanes {
+            road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Forward);
+            road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Backward);
+        }
 
         self.intersections[a].add_road(road);
         self.intersections[b].add_road(road);
