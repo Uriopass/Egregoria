@@ -68,36 +68,4 @@ impl Lane {
             LaneDirection::Backward => -vec,
         }
     }
-
-    pub fn make_forward(store: &mut Slab<Lane>, owner: &mut Road, lane_type: LaneType) {
-        let entry = store.vacant_entry();
-        let id = LaneID(entry.key());
-        entry.insert(Lane {
-            id,
-            parent: owner.id,
-            src_i: owner.src,
-            dst_i: owner.dst,
-            lane_type,
-            src_node: None,
-            dst_node: None,
-            direction: LaneDirection::Forward,
-        });
-        owner.lanes_forward.push(id)
-    }
-
-    pub fn make_backward(store: &mut Slab<Lane>, owner: &mut Road, lane_type: LaneType) {
-        let entry = store.vacant_entry();
-        let id = LaneID(entry.key());
-        entry.insert(Lane {
-            id,
-            parent: owner.id,
-            src_i: owner.src,
-            dst_i: owner.dst,
-            lane_type,
-            src_node: None,
-            dst_node: None,
-            direction: LaneDirection::Backward,
-        });
-        owner.lanes_backward.push(id)
-    }
 }
