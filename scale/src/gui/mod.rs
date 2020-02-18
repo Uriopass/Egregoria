@@ -5,7 +5,7 @@ use imgui::Ui;
 use specs::world::World;
 use specs::WorldExt;
 
-use crate::engine_interaction::RenderStats;
+use crate::engine_interaction::{RenderStats, TimeInfo};
 pub use inspect::*;
 
 #[macro_use]
@@ -119,5 +119,19 @@ impl Gui {
                     ui.text(im_str!("Delete intersection: Backspace"));
                 });
         }
+
+        let time_info = world.get_mut::<TimeInfo>().unwrap();
+        let [w, h] = ui.io().display_size;
+        imgui::Window::new(im_str!("Time controls"))
+            .size([200.0, 40.0], imgui::Condition::Always)
+            .position([w / 2.0 - 100.0, h - 30.0], imgui::Condition::Always)
+            .no_decoration()
+            .collapsible(false)
+            .resizable(false)
+            .build(&ui, || {
+                imgui::Slider::new(im_str!("speed"), std::ops::RangeInclusive::new(0.0, 3.0))
+                    .display_format(im_str!("%.1f"))
+                    .build(&ui, &mut time_info.time_speed);
+            });
     }
 }

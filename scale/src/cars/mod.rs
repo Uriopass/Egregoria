@@ -2,7 +2,6 @@ use crate::cars::data::{make_car_entity, CarComponent, CarObjective};
 use crate::map_model::Map;
 use crate::physics::Transform;
 use cgmath::InnerSpace;
-use cgmath::Vector2;
 use specs::{Join, World, WorldExt};
 use std::fs::File;
 
