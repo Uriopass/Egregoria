@@ -1,9 +1,8 @@
-use crate::cars::data::{make_car_entity, CarComponent};
+use crate::cars::data::{make_car_entity, CarComponent, CarObjective};
 use crate::map_model::Map;
 use crate::physics::Transform;
 use cgmath::InnerSpace;
 use cgmath::Vector2;
-use rand::random;
 use specs::{Join, World, WorldExt};
 use std::fs::File;
 
@@ -13,23 +12,41 @@ pub mod systems;
 const CAR_FILENAME: &str = "world/cars";
 
 pub fn spawn_new_car(world: &mut World) {
-    let node_pos: Vector2<f32> = {
+    let mut pos = [0.0, 0.0].into();
+    let mut dir = [1.0, 0.0].into();
+    let mut obj = CarObjective::None;
+
+    {
         let navmesh = &world.read_resource::<Map>().navmesh;
         let l = navmesh.len();
-        if l == 0 {
-            [0.0, 0.0].into()
-        } else {
-            let r = (rand::random::<f32>() * l as f32) as usize;
-            navmesh.into_iter().nth(r).unwrap().1.pos
-        }
-    };
-    let pos = node_pos
-        + Vector2::new(
-            10.0 * (random::<f32>() - 0.5),
-            10.0 * (random::<f32>() - 0.5),
-        );
+        if l > 0 {
+            loop {
+                let r = (rand::random::<f32>() * l as f32) as usize;
+                let (nav_id, nav) = navmesh.into_iter().nth(r).unwrap();
+                let back = navmesh.get_backward_neighs(*nav_id);
+                let l2 = back.len();
+                if l2 == 0 {
+                    continue;
+                }
+                let r2 = (rand::random::<f32>() * l2 as f32) as usize;
 
-    let car = CarComponent::new((node_pos - pos).normalize());
+                let backnode = &navmesh[back.into_iter().nth(r2).unwrap().to];
+
+                let diff = nav.pos - backnode.pos;
+
+                if diff.magnitude() < 10.0 {
+                    continue;
+                }
+
+                pos = backnode.pos + rand::random::<f32>() * diff;
+                dir = diff.normalize();
+                obj = CarObjective::Temporary(*nav_id);
+                break;
+            }
+        }
+    }
+
+    let car = CarComponent::new(dir, obj);
 
     make_car_entity(world, Transform::new(pos), car);
 }
