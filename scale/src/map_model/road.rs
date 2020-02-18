@@ -109,6 +109,13 @@ impl Road {
         }
     }
 
+    pub fn length(&self) -> f32 {
+        self.interpolation_points
+            .windows(2)
+            .map(|x| (x[0] - x[1]).magnitude())
+            .sum()
+    }
+
     pub fn other_end(&self, my_end: IntersectionID) -> IntersectionID {
         if self.src == my_end {
             return self.dst;

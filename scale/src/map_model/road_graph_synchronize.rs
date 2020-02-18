@@ -75,6 +75,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 data.map.move_intersection(rnc.id, event.new_pos);
             }
         }
+
         // Intersection creation
         if data.kbinfo.just_pressed.contains(&KeyCode::I) {
             let id = data.map.add_intersection(data.mouseinfo.unprojected);
@@ -82,7 +83,12 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
                 data.map.connect(id, x.id);
             }
-            let e = make_inter_entity(id, data.mouseinfo.unprojected, &data.lazy, &data.entities);
+            let e = make_inter_entity(
+                &data.map.intersections[id],
+                data.mouseinfo.unprojected,
+                &data.lazy,
+                &data.entities,
+            );
             *data.selected = SelectedEntity(Some(e));
         }
 
@@ -109,6 +115,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
 
         if let Some(x) = data.selected.0 {
             if let Some(interc) = data.intersections.get(x) {
+                data.map.set_intersection_radius(interc.id, interc.radius);
                 match data.self_state.connect_state {
                     Unselected => {
                         data.self_state.connect_state = First(x);
