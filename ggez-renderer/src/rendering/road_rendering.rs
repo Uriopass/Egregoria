@@ -17,6 +17,7 @@ impl RoadRenderer {
     }
     pub fn render(&mut self, map: &Map, time: u64, rc: &mut RenderContext) {
         let navmesh = &map.navmesh;
+
         for (id, n) in navmesh {
             rc.sr.color = WHITE;
             rc.sr.draw_circle(n.pos, 4.25);
