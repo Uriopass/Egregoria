@@ -46,14 +46,14 @@ pub fn load_parismap(world: &mut World) {
 
     let n = scanner.next::<i32>();
     let m = scanner.next::<i32>();
-    let _t = scanner.next::<i32>();
-    let _c = scanner.next::<i32>();
-    let _s = scanner.next::<i32>();
+    let _ = scanner.next::<i32>();
+    let _ = scanner.next::<i32>();
+    let _ = scanner.next::<i32>();
 
     let mut ids = vec![];
 
-    const CENTER_A: f64 = 2.3019666000000003;
-    const CENTER_B: f64 = 48.8557828;
+    const CENTER_A: f64 = 2.301_966_6;
+    const CENTER_B: f64 = 48.855_782_8;
 
     //Scale nodes
     let scale: f64 = 60000.0;
@@ -70,13 +70,13 @@ pub fn load_parismap(world: &mut World) {
 
     //Parse junctions
     for _ in 0..m {
-        let a = scanner.next::<usize>();
-        let b = scanner.next::<usize>();
-        let d = scanner.next::<usize>();
-        let _c = scanner.next::<usize>();
-        let _l = scanner.next::<usize>();
+        let src = scanner.next::<usize>();
+        let dst = scanner.next::<usize>();
+        let n_lanes = scanner.next::<usize>();
+        let _ = scanner.next::<usize>();
+        let _ = scanner.next::<usize>();
 
-        map.connect(ids[a], ids[b], 1, d == 1);
+        map.connect(ids[src], ids[dst], 1, n_lanes == 1);
     }
 
     world.insert(map);

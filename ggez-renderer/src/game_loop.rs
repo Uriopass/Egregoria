@@ -9,12 +9,11 @@ use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::engine_interaction;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
-use scale::geometry::gridstore::GridStore;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
 use scale::map_model::Map;
-use scale::physics::Transform;
-use scale::specs::{Dispatcher, Entity, RunNow, World, WorldExt};
+use scale::physics::{PhysicsWorld, Transform};
+use scale::specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
@@ -256,7 +255,8 @@ fn scale_mb(x: MouseButton) -> scale::engine_interaction::MouseButton {
 }
 
 #[allow(dead_code)]
-fn debug_coworld(rc: &mut RenderContext, lol: &GridStore<Entity>) -> GameResult<()> {
+fn debug_coworld(rc: &mut RenderContext, world: &World) -> GameResult<()> {
+    let lol = world.read_resource::<PhysicsWorld>();
     rc.draw_grid(50.0, Color::new(0.0, 0.0, 1.0, 1.0));
     rc.flush()?;
     rc.sr.mode = DrawMode::stroke(0.1);
@@ -265,7 +265,7 @@ fn debug_coworld(rc: &mut RenderContext, lol: &GridStore<Entity>) -> GameResult<
         for y in &x.objs {
             rc.sr.draw_circle(y.pos, 10.0);
             rc.draw_text(
-                &format!("{}", lol.query_around(y.pos, 10.0).len()),
+                &format!("{}", lol.query_around(y.pos, 10.0).count()),
                 y.pos,
                 5.0,
                 Color::new(1.0, 1.0, 1.0, 1.0),

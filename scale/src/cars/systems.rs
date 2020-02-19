@@ -98,7 +98,7 @@ fn car_physics(
 
     let neighbors = coworld.query_around(pos, 10.0 + danger_length);
 
-    let objs: Vec<&Vector2<f32>> = neighbors.into_iter().map(|obj| &obj.pos).collect();
+    let objs = neighbors.map(|obj| &obj.pos);
 
     car.calc_decision(navmesh, speed, time, pos, objs);
 
