@@ -1,2 +1,3 @@
-pub mod dijkstra;
-pub mod graph;
+mod graph;
+
+pub use graph::*;
