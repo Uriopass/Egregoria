@@ -52,29 +52,20 @@ pub fn load_parismap(world: &mut World) {
 
     let mut ids = vec![];
 
-    let mut min_a = 1000.0;
-    let mut min_b = 1000.0;
-    let mut max_a = -1000.0;
-
-    for _ in 0..n {
-        let long = scanner.next::<f32>();
-        let lat = scanner.next::<f32>();
-        min_a = f32::min(min_a, lat);
-        min_b = f32::min(min_b, long);
-
-        max_a = f32::max(max_a, lat);
-
-        ids.push(map.add_intersection(Vector2::new(lat, long)));
-    }
+    const CENTER_A: f64 = 2.3019666000000003;
+    const CENTER_B: f64 = 48.8557828;
 
     //Scale nodes
-    let scale = 30000.0 / (max_a - min_a);
+    let scale: f64 = 60000.0;
 
-    let mut max_y = 0.0;
-    for (_, inter) in &mut map.intersections {
-        inter.pos.x = (inter.pos.x - min_a) * scale;
-        inter.pos.y = (inter.pos.y - min_b) * scale / f32::cos(min_b / 180.0 * f32::PI());
-        max_y = f32::max(inter.pos.y, max_y);
+    for _ in 0..n {
+        let mut long = scanner.next::<f64>();
+        let mut lat = scanner.next::<f64>();
+
+        long = (long - CENTER_B) * scale / f64::cos(long / 180.0 * f64::PI());
+        lat = (lat - CENTER_A) * scale;
+
+        ids.push(map.add_intersection(Vector2::new(lat as f32, long as f32)));
     }
 
     //Parse junctions
@@ -85,10 +76,7 @@ pub fn load_parismap(world: &mut World) {
         let _c = scanner.next::<usize>();
         let _l = scanner.next::<usize>();
 
-        map.connect(ids[a], ids[b], 1);
-        if d == 2 {
-            // two way ?
-        }
+        map.connect(ids[a], ids[b], 1, d == 1);
     }
 
     world.insert(map);

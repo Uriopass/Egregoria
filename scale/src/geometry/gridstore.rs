@@ -206,6 +206,8 @@ impl<O> GridStore<O> {
 
     fn check_resize(&mut self, pos: Vector2<f32>) {
         let mut reallocate = false;
+        assert!(pos.x.is_finite(), pos.y.is_finite());
+
         while (pos.x as i32) <= self.start_x {
             self.start_x -= self.cell_size;
             self.width += 1;

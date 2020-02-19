@@ -63,6 +63,8 @@ impl Lane {
         let src = mesh[self.src_node.unwrap()].pos;
         let dst = mesh[self.dst_node.unwrap()].pos;
 
+        assert_ne!(dst, src);
+
         let vec = (dst - src).normalize();
         match self.direction {
             LaneDirection::Forward => vec,
