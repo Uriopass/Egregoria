@@ -66,28 +66,36 @@ impl Map {
         }
     }
 
-    pub fn connect(&mut self, a: IntersectionID, b: IntersectionID, n_lanes: i32) -> RoadID {
-        let road_id = Road::make(&mut self.roads, &self.intersections, a, b);
+    pub fn connect(
+        &mut self,
+        src: IntersectionID,
+        dst: IntersectionID,
+        n_lanes: i32,
+        one_way: bool,
+    ) -> RoadID {
+        let road_id = Road::make(&mut self.roads, &self.intersections, src, dst);
 
         let road = &mut self.roads[road_id];
 
         for _ in 0..n_lanes {
             road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Forward);
-            road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Backward);
+            if !one_way {
+                road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Backward);
+            }
         }
 
-        self.intersections[a].add_road(road);
-        self.intersections[b].add_road(road);
+        self.intersections[src].add_road(road);
+        self.intersections[dst].add_road(road);
 
         let road = road.id;
 
-        self.intersections[a].gen_interface_navmesh(
+        self.intersections[src].gen_interface_navmesh(
             &mut self.lanes,
             &self.roads,
             &mut self.navmesh,
         );
 
-        self.intersections[b].gen_interface_navmesh(
+        self.intersections[dst].gen_interface_navmesh(
             &mut self.lanes,
             &self.roads,
             &mut self.navmesh,
@@ -95,8 +103,8 @@ impl Map {
 
         self.roads[road].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
 
-        self.intersections[a].gen_turns(&self.lanes, &mut self.navmesh);
-        self.intersections[b].gen_turns(&self.lanes, &mut self.navmesh);
+        self.intersections[src].gen_turns(&self.lanes, &mut self.navmesh);
+        self.intersections[dst].gen_turns(&self.lanes, &mut self.navmesh);
         road
     }
 

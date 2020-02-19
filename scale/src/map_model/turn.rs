@@ -1,6 +1,6 @@
 use crate::geometry::splines::Spline;
 use crate::map_model::{IntersectionID, LaneID, Lanes, NavMesh, NavNode, NavNodeID};
-use cgmath::InnerSpace;
+use cgmath::{Array, InnerSpace};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, PartialEq, Eq, Serialize, Deserialize)]
@@ -12,16 +12,27 @@ pub struct Turn {
     pub src: LaneID,
     pub dst: LaneID,
 
-    pub easing_nodes: Vec<NavNodeID>,
+    easing_nodes: Vec<NavNodeID>,
+    generated: bool,
 }
 
 impl Turn {
+    pub fn new(parent: IntersectionID, src: LaneID, dst: LaneID) -> Self {
+        Self {
+            parent,
+            src,
+            dst,
+            easing_nodes: vec![],
+            generated: false,
+        }
+    }
+
     pub fn gen_navmesh(&mut self, lanes: &Lanes, navmesh: &mut NavMesh) {
-        if !self.easing_nodes.is_empty() {
+        if self.is_generated() {
             panic!("Turn already generated !");
         }
 
-        const N_SPLINE: usize = 7;
+        const N_SPLINE: usize = 1;
 
         let src_lane = &lanes[self.src];
         let dst_lane = &lanes[self.dst];
@@ -42,7 +53,13 @@ impl Turn {
             navmesh.add_neigh(x[0], x[1], 1.0);
         }
 
+        self.generated = true;
+
         self.reposition_nodes(lanes, navmesh);
+    }
+
+    pub fn is_generated(&self) -> bool {
+        self.generated
     }
 
     pub fn clean(&mut self, navmesh: &mut NavMesh) {
@@ -77,6 +94,8 @@ impl Turn {
         for (i, node) in self.easing_nodes.iter().enumerate() {
             let c = (i + 1) as f32 / (len + 1) as f32;
 
+            let pos = spline.get(c);
+            assert!(pos.is_finite());
             navmesh.get_mut(*node).unwrap().pos = spline.get(c);
         }
     }

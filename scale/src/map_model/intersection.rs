@@ -111,7 +111,7 @@ impl Intersection {
 
     pub fn gen_turns(&mut self, lanes: &Lanes, navmesh: &mut NavMesh) {
         for turn in &mut self.turns {
-            if turn.easing_nodes.is_empty() {
+            if !turn.is_generated() {
                 turn.gen_navmesh(lanes, navmesh);
             } else {
                 turn.reposition_nodes(lanes, navmesh);
@@ -159,12 +159,7 @@ impl Intersection {
     }
 
     pub fn add_turn(&mut self, src: LaneID, dst: LaneID) {
-        self.turns.push(Turn {
-            parent: self.id,
-            src,
-            dst,
-            easing_nodes: vec![],
-        });
+        self.turns.push(Turn::new(self.id, src, dst));
     }
 
     fn pseudo_angle(v: Vector2<f32>) -> f32 {

@@ -33,6 +33,7 @@ impl Road {
         let pos_src = intersections[src].pos;
         let pos_dst = intersections[dst].pos;
 
+        debug_assert_ne!(pos_src, pos_dst);
         store.insert_with_key(|id| Self {
             id,
             src,
