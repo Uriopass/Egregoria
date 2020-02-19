@@ -28,8 +28,8 @@ impl Map {
     pub fn set_intersection_radius(&mut self, id: IntersectionID, radius: f32) {
         let inter = &mut self.intersections[id];
         inter.interface_radius = radius;
-        inter.gen_interface_navmesh(&mut self.lanes, &mut self.roads, &mut self.navmesh);
-        inter.gen_turns(&mut self.lanes, &mut self.navmesh);
+        inter.gen_interface_navmesh(&mut self.lanes, &self.roads, &mut self.navmesh);
+        inter.gen_turns(&self.lanes, &mut self.navmesh);
     }
 
     pub fn add_intersection(&mut self, pos: Vector2<f32>) -> IntersectionID {

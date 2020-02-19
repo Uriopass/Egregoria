@@ -101,13 +101,13 @@ impl CarComponent {
         Vector2::new(-self.direction.y, self.direction.x)
     }
 
-    pub fn calc_decision(
-        &mut self,
-        navmesh: &NavMesh,
+    pub fn calc_decision<'a>(
+        &'a mut self,
+        navmesh: &'a NavMesh,
         speed: f32,
-        time: &TimeInfo,
+        time: &'a TimeInfo,
         position: Vector2<f32>,
-        neighs: Vec<&Vector2<f32>>,
+        neighs: impl Iterator<Item = &'a Vector2<f32>>,
     ) {
         if self.wait_time > 0.0 {
             self.wait_time -= time.delta;
@@ -127,20 +127,34 @@ impl CarComponent {
             CarObjective::Route(x) => x.len() == 1,
         };
 
+        let delta_pos = objective - position;
+        let dist_to_pos = delta_pos.magnitude();
+        let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
+        let time_to_stop = speed / CAR_DECELERATION;
+        let stop_dist = time_to_stop * speed / 2.0;
+
         let mut min_front_dist: f32 = 50.0;
+
+        let dir_normal: Vector2<f32> = [-self.direction.y, self.direction.x].into();
 
         // Collision avoidance
         for e_pos in neighs {
             let e_diff = e_pos - position;
-            let e_dist = e_diff.magnitude();
-            if e_dist < 1e-5 {
-                // dont check self
+
+            let magn2 = e_diff.magnitude2();
+
+            if magn2 > (6.0 + stop_dist) * (6.0 + stop_dist) || magn2 < 1e-5 {
                 continue;
             }
 
+            let e_dist = magn2.sqrt();
+
             let dir_to_him = e_diff / e_dist;
 
-            if dir_to_him.dot(self.direction) < 0.75 {
+            let dir_dot = dir_to_him.dot(self.direction);
+            let pos_dot = e_diff.dot(dir_normal);
+
+            if !(dir_dot > 0.75 || (dir_dot > 0.0 && pos_dot.abs() < 1.5)) {
                 continue;
             }
 
@@ -152,13 +166,8 @@ impl CarComponent {
             return;
         }
 
-        let delta_pos = objective - position;
-        let dist_to_pos = delta_pos.magnitude();
-        let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
         self.desired_dir = dir_to_pos;
         self.desired_speed = 15.0;
-        let time_to_stop = speed / CAR_DECELERATION;
-        let stop_dist = time_to_stop * speed / 2.0;
 
         if let Temporary(n_id) = self.objective {
             match navmesh[&n_id].light.get_color(time.time_seconds) {

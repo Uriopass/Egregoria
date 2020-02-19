@@ -1,6 +1,5 @@
 use crate::geometry::gridstore::ObjectState::{NewPos, Removed, Unchanged};
-use crate::geometry::rect::Rect;
-use cgmath::{MetricSpace, Vector2};
+use cgmath::Vector2;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -156,52 +155,64 @@ impl<O> GridStore<O> {
     }
 
     #[rustfmt::skip]
-    pub fn query_around(&self, pos: Vector2<f32>, radius: f32) -> Vec<&CellObject> {
+    pub fn query_around(&self, pos: Vector2<f32>, radius: f32) -> impl Iterator<Item = &CellObject> {
         if radius > self.cell_size as f32 {
             println!(
                 "asked radius ({}) bigger than cell_size ({}): might omit some results",
                 radius, self.cell_size
             );
         }
-        let mut objs = vec![];
 
-        let radius2 = radius * radius;
+        let cell = self.get_cell_id(pos);
+        let mut objs: Vec<&GridStoreCell> = Vec::with_capacity(4);
 
-        let cell = self.get_cell_id(pos) as i32;
+        objs.push(&self.cells[cell as usize]);
 
-        self.populate_objs(cell, pos, radius, radius2, &mut objs);
-        self.populate_objs(cell + 1, pos, radius, radius2, &mut objs);
-        self.populate_objs(cell - 1, pos, radius, radius2, &mut objs);
-        self.populate_objs(cell + self.width as i32, pos, radius, radius2, &mut objs);
-        self.populate_objs(cell - self.width as i32, pos, radius, radius2, &mut objs);
-        self.populate_objs(cell + self.width as i32 + 1, pos, radius, radius2, &mut objs);
-        self.populate_objs(cell + self.width as i32 - 1, pos, radius, radius2, &mut objs);
-        self.populate_objs(cell - self.width as i32 - 1, pos, radius, radius2, &mut objs);
-        self.populate_objs(cell - self.width as i32 - 1, pos, radius, radius2, &mut objs);
+        let cell = cell as i32;
 
-        objs
+        let (w, h) = (self.width as i32, self.height as i32);
+        let (x, y) = (cell % w, cell / w);
+
+        let left:   bool = x > 0   && ((pos.x - radius) as i32) < self.start_x + x     * self.cell_size;
+        let bottom: bool = y > 0   && ((pos.y - radius) as i32) < self.start_y + y     * self.cell_size;
+
+        let right:  bool = x < w-1 && ((pos.x + radius) as i32) > self.start_x + (x+1) * self.cell_size;
+        let top:    bool = y < h-1 && ((pos.y + radius) as i32) > self.start_y + (y+1) * self.cell_size;
+
+        if right {
+            self.populate_objs(cell + 1, &mut objs);
+            if top {
+                self.populate_objs(cell + w + 1, &mut objs);
+            }
+            if bottom {
+                self.populate_objs(cell - w + 1, &mut objs);
+            }
+        }
+
+        if left {
+            self.populate_objs(cell - 1, &mut objs);
+            if top {
+                self.populate_objs(cell + w - 1, &mut objs);
+            }
+            if bottom {
+                self.populate_objs(cell - w - 1, &mut objs);
+            }
+        }
+
+        if top {
+            self.populate_objs(cell + w, &mut objs);
+        }
+
+        if bottom {
+            self.populate_objs(cell - w, &mut objs);
+        }
+
+        objs.into_iter().map(|x| x.objs.iter()).flatten()
     }
 
     #[inline(always)]
-    fn populate_objs<'a>(
-        &'a self,
-        cell_id: i32,
-        pos: Vector2<f32>,
-        radius: f32,
-        radius2: f32,
-        objs: &mut Vec<&'a CellObject>,
-    ) {
-        if cell_id < 0 || cell_id >= (self.width * self.height) as i32 {
-            return;
-        }
-        let (x, y) = self.get_cell_box(cell_id);
-        if Rect::new_i32(x, y, self.cell_size, self.cell_size).contains_within(pos, radius) {
-            for x in &self.get_cell(cell_id as usize).objs {
-                if x.pos.distance2(pos) < radius2 {
-                    objs.push(x);
-                }
-            }
-        }
+    fn populate_objs<'a>(&'a self, cell_id: i32, objs: &mut Vec<&'a GridStoreCell>) {
+        objs.push(&self.get_cell(cell_id as usize));
     }
 
     fn check_resize(&mut self, pos: Vector2<f32>) {
@@ -225,11 +236,23 @@ impl<O> GridStore<O> {
             reallocate = true;
         }
 
+        let mut resized_but_not_allocated = false;
+
         while (pos.y as i32) >= self.start_y + self.height as i32 * self.cell_size {
+            resized_but_not_allocated = true;
             self.height += 1;
             self.cells
                 .resize_with((self.width * self.height) as usize, GridStoreCell::default);
-            println!("Resizing only");
+        }
+
+        if resized_but_not_allocated {
+            println!(
+                "Resized only to x: {} y: {} w: {} h: {}",
+                self.start_x,
+                self.start_y,
+                self.width as i32 * self.cell_size,
+                self.height as i32 * self.cell_size
+            );
         }
 
         if reallocate {
@@ -270,13 +293,6 @@ impl<O> GridStore<O> {
 
     pub fn cells(&self) -> &Vec<GridStoreCell> {
         &self.cells
-    }
-
-    fn get_cell_box(&self, id: i32) -> (i32, i32) {
-        (
-            self.start_x + (id % self.width as i32) * self.cell_size,
-            self.start_y + (id / self.width as i32) * self.cell_size,
-        )
     }
 
     fn get_cell(&self, id: usize) -> &GridStoreCell {
