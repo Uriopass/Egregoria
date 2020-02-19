@@ -25,35 +25,28 @@ impl TrafficLightColor {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct TrafficLightSchedule {
-    period: u64,
-    lights: Vec<TrafficLightColor>,
+    period: usize,
+    green: usize,
+    orange: usize,
+    red: usize,
+    offset: usize,
 }
 
 impl TrafficLightSchedule {
     pub fn from_basic(green: usize, orange: usize, red: usize, offset: usize) -> Self {
-        let period = (green + orange + red) as u64;
-        let mut i = orange;
-        let mut lights = std::iter::repeat(TrafficLightColor::GREEN)
-            .take(green)
-            .chain(
-                std::iter::repeat_with(|| {
-                    i -= 1;
-                    TrafficLightColor::ORANGE(i as f32)
-                })
-                .take(orange),
-            )
-            .chain(std::iter::repeat(TrafficLightColor::RED).take(red))
-            .collect::<Vec<TrafficLightColor>>();
-        lights.rotate_right(offset);
-        assert_eq!(lights.len(), period as usize);
-
-        Self { lights, period }
+        Self {
+            period: green + orange + red,
+            green,
+            orange,
+            red,
+            offset,
+        }
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum TrafficLight {
     Always,
     Periodic(TrafficLightSchedule),
@@ -71,8 +64,14 @@ impl TrafficLight {
         match self {
             TrafficLight::Always => TrafficLightColor::GREEN,
             TrafficLight::Periodic(schedule) => {
-                let remainder = (time_seconds % schedule.period) as usize;
-                schedule.lights[remainder]
+                let remainder = (time_seconds as usize + schedule.offset) % schedule.period;
+                if remainder < schedule.green {
+                    TrafficLightColor::GREEN
+                } else if remainder < schedule.green + schedule.orange {
+                    TrafficLightColor::ORANGE((schedule.green + schedule.orange - remainder) as f32)
+                } else {
+                    TrafficLightColor::RED
+                }
             }
         }
     }
