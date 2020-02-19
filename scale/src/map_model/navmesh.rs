@@ -1,18 +1,15 @@
-use crate::graphs::graph::Graph;
+use crate::graphs::Graph;
 use crate::map_model::TrafficLight;
 use cgmath::MetricSpace;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
+use slotmap::new_key_type;
 
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, Hash, PartialEq, Eq, Serialize, Deserialize)]
-pub struct NavNodeID(pub usize);
-impl From<usize> for NavNodeID {
-    fn from(x: usize) -> Self {
-        Self(x)
-    }
+new_key_type! {
+    pub struct NavNodeID;
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct NavNode {
     pub pos: Vector2<f32>,
     pub light: TrafficLight,
@@ -35,13 +32,13 @@ pub type NavMesh = Graph<NavNodeID, NavNode>;
 
 impl NavMesh {
     pub fn closest_node(&self, pos: Vector2<f32>) -> Option<NavNodeID> {
-        let mut id: NavNodeID = *self.ids().next()?;
+        let mut id: NavNodeID = self.ids().next()?;
         let mut min_dist = self.get(id).unwrap().pos.distance2(pos);
 
         for (key, value) in self {
             let dist = pos.distance2(value.pos);
             if dist < min_dist {
-                id = *key;
+                id = key;
                 min_dist = dist;
             }
         }

@@ -22,7 +22,7 @@ pub fn spawn_new_car(world: &mut World) {
             loop {
                 let r = (rand::random::<f32>() * l as f32) as usize;
                 let (nav_id, nav) = navmesh.into_iter().nth(r).unwrap();
-                let back = navmesh.get_backward_neighs(*nav_id);
+                let back = navmesh.get_backward_neighs(nav_id);
                 let l2 = back.len();
                 if l2 == 0 {
                     continue;
@@ -39,7 +39,7 @@ pub fn spawn_new_car(world: &mut World) {
 
                 pos = backnode.pos + rand::random::<f32>() * diff;
                 dir = diff.normalize();
-                obj = CarObjective::Temporary(*nav_id);
+                obj = CarObjective::Temporary(nav_id);
                 break;
             }
         }

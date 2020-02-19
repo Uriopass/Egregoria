@@ -20,7 +20,7 @@ impl RoadRenderer {
         for (id, n) in navmesh {
             rc.sr.color = WHITE;
             rc.sr.draw_circle(n.pos, 4.25);
-            for e in navmesh.get_neighs(*id) {
+            for e in navmesh.get_neighs(id) {
                 let p2 = navmesh.get(e.to).unwrap().pos;
                 rc.sr.draw_stroke(n.pos, p2, 8.5);
             }
@@ -30,7 +30,7 @@ impl RoadRenderer {
             rc.sr.color = MID_GRAY;
             rc.sr.draw_circle(n.pos, 3.75);
 
-            for e in navmesh.get_neighs(*id) {
+            for e in navmesh.get_neighs(id) {
                 let p2 = navmesh.get(e.to).unwrap().pos;
                 rc.sr.draw_stroke(n.pos, p2, 7.5);
             }

@@ -3,7 +3,7 @@ use cgmath::num_traits::FloatConst;
 use cgmath::Vector2;
 use specs::{LazyUpdate, World, WorldExt};
 use std::fs::File;
-use std::io::{BufRead, BufReader, Cursor};
+use std::io::{BufRead, BufReader};
 
 //const GRAPH_FILENAME: &str = "world/graph";
 
