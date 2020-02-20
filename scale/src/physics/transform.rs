@@ -24,7 +24,7 @@ impl Transform {
     }
 
     pub fn position(&self) -> Vector2<f32> {
-        self.m.z.xy()
+        Vector2::new(self.m.z.x, self.m.z.y)
     }
 
     pub fn set_position(&mut self, position: Vector2<f32>) {
@@ -72,7 +72,8 @@ impl Transform {
     }
 
     pub fn project(&self, point: Vector2<f32>) -> Vector2<f32> {
-        (self.m * point.extend(1.0)).xy()
+        let p = self.m * point.extend(1.0);
+        Vector2::new(p.x, p.y)
     }
 }
 
