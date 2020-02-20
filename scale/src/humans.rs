@@ -1,8 +1,8 @@
 use crate::physics::{Kinematics, Transform};
 use cgmath::num_traits::zero;
-use cgmath::{InnerSpace, Vector2};
-use specs::prelude::ParallelIterator;
-use specs::{Component, Join, ParJoin, ReadStorage, System, VecStorage, WriteStorage};
+use cgmath::InnerSpace;
+use cgmath::Vector2;
+use specs::{Component, Join, ReadStorage, System, VecStorage, WriteStorage};
 
 #[derive(Component)]
 #[storage(VecStorage)]
@@ -34,7 +34,7 @@ impl<'a> System<'a> for HumanUpdate {
         let _xx: Vec<(&Transform, &Human)> = (&transforms, &humans).join().collect();
 
         (&transforms, &mut kinematics, &humans)
-            .par_join()
+            .join()
             .for_each(|(t, k, h)| {
                 if (h.objective - t.position()).magnitude2() < 1.0 {
                     k.velocity = [0.0, 0.0].into();
