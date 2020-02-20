@@ -12,5 +12,5 @@ imgui-gfx-renderer = "0.2"
 imgui = "0.2.1"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
-cgmath = {version = "0.17", features = ["mint", "swizzle"]}
+cgmath = {version = "0.17", features = ["mint"]}
 ggez = "0.5"

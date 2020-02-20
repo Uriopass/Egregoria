@@ -13,5 +13,5 @@ imgui-inspect-derive = { git = "https://github.com/Uriopass/imgui-inspect-specs/
 bincode = "1.2.1"
 serde = "1.0"
 imgui = "0.2.1"
-cgmath = {version = "0.17", features = ["mint", "swizzle","serde"]}
+cgmath = {version = "0.17", features = ["serde"]}
 specs = {version = "0.16", features = ["shred-derive", "specs-derive", "parallel", "serde"]}
