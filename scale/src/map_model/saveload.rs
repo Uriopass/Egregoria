@@ -115,8 +115,8 @@ pub fn load_doublecircle() -> Map {
 }
 
 pub fn load(world: &mut World) {
-    let map = load_doublecircle();
-
+    //let map = load_doublecircle();
+    let map = load_parismap();
     world.insert(map);
     let map = world.read_resource::<Map>();
 
