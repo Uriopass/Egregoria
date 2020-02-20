@@ -217,7 +217,6 @@ impl<O> GridStore<O> {
 
     fn check_resize(&mut self, pos: Vector2<f32>) {
         let mut reallocate = false;
-        assert!(pos.x.is_finite(), pos.y.is_finite());
 
         while (pos.x as i32) <= self.start_x {
             self.start_x -= self.cell_size;
@@ -236,23 +235,10 @@ impl<O> GridStore<O> {
             reallocate = true;
         }
 
-        let mut resized_but_not_allocated = false;
-
         while (pos.y as i32) >= self.start_y + self.height as i32 * self.cell_size {
-            resized_but_not_allocated = true;
             self.height += 1;
             self.cells
                 .resize_with((self.width * self.height) as usize, GridStoreCell::default);
-        }
-
-        if resized_but_not_allocated {
-            println!(
-                "Resized only to x: {} y: {} w: {} h: {}",
-                self.start_x,
-                self.start_y,
-                self.width as i32 * self.cell_size,
-                self.height as i32 * self.cell_size
-            );
         }
 
         if reallocate {
