@@ -88,8 +88,9 @@ pub fn load_doublecircle() -> Map {
     let mut first_circle = vec![];
     let mut second_circle = vec![];
 
-    for i in 0..20 {
-        let angle = (i as f32 / 30.0) * 2.0 * std::f32::consts::PI;
+    const N_POINTS: usize = 20;
+    for i in 0..N_POINTS {
+        let angle = (i as f32 / N_POINTS as f32) * 2.0 * std::f32::consts::PI;
 
         let v: Vector2<f32> = [angle.cos(), angle.sin()].into();
         first_circle.push(m.add_intersection(v * 100.0));
