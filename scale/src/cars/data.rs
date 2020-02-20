@@ -135,15 +135,20 @@ impl CarComponent {
 
         let mut min_front_dist: f32 = 50.0;
 
-        let dir_normal: Vector2<f32> = [-self.direction.y, self.direction.x].into();
+        // [1, 2] -> [2, -1]
+        let dir_normal_right: Vector2<f32> = [self.direction.y, -self.direction.x].into();
 
         // Collision avoidance
         for e_pos in neighs {
+            if *e_pos == position {
+                continue;
+            }
+
             let e_diff = e_pos - position;
 
             let magn2 = e_diff.magnitude2();
 
-            if magn2 > (6.0 + stop_dist) * (6.0 + stop_dist) || magn2 < 1e-5 {
+            if magn2 > (6.0 + stop_dist) * (6.0 + stop_dist) {
                 continue;
             }
 
@@ -152,13 +157,22 @@ impl CarComponent {
             let dir_to_him = e_diff / e_dist;
 
             let dir_dot = dir_to_him.dot(self.direction);
-            let pos_dot = e_diff.dot(dir_normal);
+            let pos_dot = e_diff.dot(dir_normal_right);
 
-            if !(dir_dot > 0.75 || (dir_dot > 0.0 && pos_dot.abs() < 1.5)) {
+            if !(dir_dot > 0.75 // front cone
+                || (
+                    // right car beam
+                    dir_dot > 0.0 && pos_dot > 0.0 && pos_dot < 3.0
+                )
+                || (
+                    // stopped right priority cone
+                    dir_dot > 0.3 && pos_dot > 0.0
+                ))
+            {
                 continue;
             }
 
-            min_front_dist = min_front_dist.min(e_dist); // supposing always same direction ?
+            min_front_dist = min_front_dist.min(e_dist);
         }
 
         if speed.abs() < 0.2 && min_front_dist < 7.0 {
