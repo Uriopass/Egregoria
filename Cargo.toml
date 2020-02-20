@@ -11,7 +11,7 @@ opt-level = 3
 
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]
-opt-level = 0
+opt-level = 1
 
 [profile.dev]
 opt-level = 1

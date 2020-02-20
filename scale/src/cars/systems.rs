@@ -35,7 +35,7 @@ impl<'a> System<'a> for CarDecision {
         let time = data.time;
 
         (&mut data.transforms, &mut data.kinematics, &mut data.cars)
-            .par_join()
+            .join()
             .for_each(|(trans, kin, car)| {
                 car_objective_update(car, &time, trans, &navmesh);
                 car_physics(&cow, &navmesh, &time, trans, kin, car);

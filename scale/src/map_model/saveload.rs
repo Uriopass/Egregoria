@@ -38,7 +38,7 @@ impl Scanner {
     }
 }
 
-pub fn load_parismap(world: &mut World) {
+pub fn load_parismap() -> Map {
     let file = File::open("resources/paris_54000.txt").unwrap();
     let mut scanner = Scanner::new(BufReader::new(file));
 
@@ -79,12 +79,44 @@ pub fn load_parismap(world: &mut World) {
         map.connect(ids[src], ids[dst], 1, n_lanes == 1);
     }
 
-    world.insert(map);
+    map
+}
+
+pub fn load_doublecircle() -> Map {
+    let mut m = Map::empty();
+
+    let mut first_circle = vec![];
+    let mut second_circle = vec![];
+
+    for i in 0..20 {
+        let angle = (i as f32 / 30.0) * 2.0 * std::f32::consts::PI;
+
+        let v: Vector2<f32> = [angle.cos(), angle.sin()].into();
+        first_circle.push(m.add_intersection(v * 100.0));
+        second_circle.push(m.add_intersection(v * 200.0));
+    }
+
+    for x in first_circle.windows(2) {
+        m.connect(x[0], x[1], 1, true);
+    }
+    m.connect(*first_circle.last().unwrap(), first_circle[0], 1, true);
+
+    for x in second_circle.windows(2) {
+        m.connect(x[0], x[1], 1, true);
+    }
+    m.connect(*second_circle.last().unwrap(), second_circle[0], 1, true);
+
+    for (a, b) in first_circle.into_iter().zip(second_circle) {
+        m.connect(a, b, 1, false);
+    }
+
+    m
 }
 
 pub fn load(world: &mut World) {
-    load_parismap(world);
+    let map = load_doublecircle();
 
+    world.insert(map);
     let map = world.read_resource::<Map>();
 
     for (_, inter) in &map.intersections {
