@@ -9,6 +9,7 @@ pub struct RenderStats {
     pub render_time: f32,
 }
 
+#[derive(Clone, Copy)]
 pub struct TimeInfo {
     pub delta: f32,
     pub time: f64,
