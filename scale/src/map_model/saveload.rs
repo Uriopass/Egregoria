@@ -1,4 +1,4 @@
-use crate::map_model::{make_inter_entity, Map};
+use crate::map_model::{make_inter_entity, IntersectionID, Map};
 use cgmath::num_traits::FloatConst;
 use cgmath::Vector2;
 use specs::{LazyUpdate, World, WorldExt};
@@ -82,9 +82,7 @@ pub fn load_parismap() -> Map {
     map
 }
 
-pub fn load_doublecircle() -> Map {
-    let mut m = Map::empty();
-
+pub fn add_doublecircle(pos: Vector2<f32>, m: &mut Map) {
     let mut first_circle = vec![];
     let mut second_circle = vec![];
 
@@ -93,8 +91,8 @@ pub fn load_doublecircle() -> Map {
         let angle = (i as f32 / N_POINTS as f32) * 2.0 * std::f32::consts::PI;
 
         let v: Vector2<f32> = [angle.cos(), angle.sin()].into();
-        first_circle.push(m.add_intersection(v * 100.0));
-        second_circle.push(m.add_intersection(v * 200.0));
+        first_circle.push(m.add_intersection(pos + v * 100.0));
+        second_circle.push(m.add_intersection(pos + v * 200.0));
     }
 
     for x in first_circle.windows(2) {
@@ -110,13 +108,35 @@ pub fn load_doublecircle() -> Map {
     for (a, b) in first_circle.into_iter().zip(second_circle) {
         m.connect(a, b, 1, false);
     }
+}
 
-    m
+pub fn add_grid(pos: Vector2<f32>, m: &mut Map) {
+    let mut grid: [[Option<IntersectionID>; 10]; 10] = [[None; 10]; 10];
+    for y in 0..10 {
+        for x in 0..10 {
+            grid[y][x] =
+                Some(m.add_intersection(pos + Vector2::new(x as f32 * 50.0, y as f32 * 50.0)));
+        }
+    }
+
+    for x in 0..9 {
+        m.connect(grid[9][x].unwrap(), grid[9][x + 1].unwrap(), 1, false);
+        m.connect(grid[x][9].unwrap(), grid[x + 1][9].unwrap(), 1, false);
+
+        for y in 0..9 {
+            m.connect(grid[y][x].unwrap(), grid[y][x + 1].unwrap(), 1, false);
+            m.connect(grid[y][x].unwrap(), grid[y + 1][x].unwrap(), 1, false);
+        }
+    }
 }
 
 pub fn load(world: &mut World) {
-    //let map = load_doublecircle();
-    let map = load_parismap();
+    let mut map = Map::empty();
+
+    add_doublecircle([0.0, 0.0].into(), &mut map);
+    add_grid([0.0, 250.0].into(), &mut map);
+
+    //let map = load_parismap();
     world.insert(map);
     let map = world.read_resource::<Map>();
 
