@@ -116,7 +116,7 @@ pub fn add_grid(pos: Vector2<f32>, m: &mut Map) {
     for y in 0..10 {
         for x in 0..10 {
             grid[y][x] =
-                Some(m.add_intersection(pos + Vector2::new(x as f32 * 50.0, y as f32 * 50.0)));
+                Some(m.add_intersection(pos + Vector2::new(x as f32 * 70.0, y as f32 * 70.0)));
         }
     }
 
