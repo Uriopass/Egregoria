@@ -1,3 +1,4 @@
+use crate::cars::spawn_new_car;
 use crate::map_model::{make_inter_entity, IntersectionID, Map};
 use cgmath::num_traits::FloatConst;
 use cgmath::Vector2;
@@ -138,6 +139,11 @@ pub fn load(world: &mut World) {
 
     //let map = load_parismap();
     world.insert(map);
+
+    for _ in 0..300 {
+        spawn_new_car(world);
+    }
+
     let map = world.read_resource::<Map>();
 
     for (_, inter) in &map.intersections {

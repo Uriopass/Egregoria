@@ -24,7 +24,7 @@ pub fn intersection_point(r1: Ray, r2: Ray) -> Option<Vector2<f32>> {
     }
 }
 
-pub fn dist_to_inter(r1: Ray, r2: Ray) -> Option<f32> {
+pub fn both_dist_to_inter(r1: Ray, r2: Ray) -> Option<(f32, f32)> {
     let r2dir_nor = Vector2::new(-r2.dir.y, r2.dir.x);
     let r1dir_nor = Vector2::new(-r1.dir.y, r1.dir.x);
 
@@ -36,7 +36,7 @@ pub fn dist_to_inter(r1: Ray, r2: Ray) -> Option<f32> {
     let s = r1dir_nor.dot(p_diff);
 
     if t * div > 0.0 && s * div > 0.0 {
-        Some(t / div)
+        Some((t / div, s / div))
     } else {
         None
     }

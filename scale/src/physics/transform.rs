@@ -47,7 +47,7 @@ impl Transform {
         self.rotated = angle != 0.0;
     }
 
-    pub fn set_angle_cos_sin(&mut self, cos: f32, sin: f32) {
+    pub fn set_cos_sin(&mut self, cos: f32, sin: f32) {
         self.m.x.x = cos;
         self.m.x.y = sin;
         self.m.y.x = -sin;
@@ -55,16 +55,31 @@ impl Transform {
         self.rotated = sin != 0.0;
     }
 
-    pub fn get_cos(&self) -> f32 {
+    pub fn set_direction(&mut self, dir: Vector2<f32>) {
+        self.set_cos_sin(dir.x, dir.y);
+    }
+
+    pub fn cos(&self) -> f32 {
         self.m.x.x
     }
 
-    pub fn get_sin(&self) -> f32 {
+    pub fn sin(&self) -> f32 {
         self.m.x.y
     }
 
-    pub fn get_angle(&self) -> f32 {
-        f32::atan2(self.get_sin(), self.get_cos())
+    pub fn angle(&self) -> f32 {
+        f32::atan2(self.sin(), self.cos())
+    }
+
+    pub fn direction(&self) -> Vector2<f32> {
+        Vector2::new(self.cos(), self.sin())
+    }
+
+    pub fn apply_rotation(&self, vec: Vector2<f32>) -> Vector2<f32> {
+        Vector2::<f32>::new(
+            vec.x * self.cos() + vec.y * self.sin(),
+            vec.x * self.sin() - vec.y * self.cos(),
+        )
     }
 
     pub fn is_angle_zero(&self) -> bool {
@@ -85,15 +100,15 @@ mod tests {
     pub fn angle_test() {
         let mut x = Transform::new(Vector2::new(0.0, 0.0));
         x.set_angle(0.5);
-        assert!((x.get_angle() - 0.5).abs() < 0.001);
+        assert!((x.angle() - 0.5).abs() < 0.001);
 
         x.set_angle(0.2);
-        assert!((x.get_angle() - 0.2).abs() < 0.001);
+        assert!((x.angle() - 0.2).abs() < 0.001);
 
         x.set_angle(-0.2);
-        assert!((x.get_angle() + 0.2).abs() < 0.001);
+        assert!((x.angle() + 0.2).abs() < 0.001);
 
         x.set_angle(3.0);
-        assert!((x.get_angle() - 3.0).abs() < 0.001);
+        assert!((x.angle() - 3.0).abs() < 0.001);
     }
 }
