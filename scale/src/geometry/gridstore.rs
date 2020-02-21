@@ -1,11 +1,13 @@
 use crate::geometry::gridstore::ObjectState::{NewPos, Removed, Unchanged};
 use cgmath::Vector2;
-use std::collections::HashMap;
+use slotmap::new_key_type;
+use slotmap::SlotMap;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct GridStoreHandle(usize);
+new_key_type! {
+    pub struct GridStoreHandle;
+}
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum ObjectState {
     Unchanged,
     NewPos,
@@ -24,7 +26,8 @@ impl CellObject {
     }
 }
 
-struct StoreObject<O> {
+#[derive(Clone, Copy)]
+struct StoreObject<O: Copy> {
     obj: O,
     state: ObjectState,
     pos: Vector2<f32>,
@@ -37,18 +40,17 @@ pub struct GridStoreCell {
     pub dirty: bool,
 }
 
-pub struct GridStore<O> {
+pub struct GridStore<O: Copy> {
     start_x: i32,
     start_y: i32,
     cell_size: i32,
     width: u32,
     height: u32,
     cells: Vec<GridStoreCell>,
-    objects: HashMap<GridStoreHandle, StoreObject<O>>, // FIXME: Optimize using a slab
-    id: usize,
+    objects: SlotMap<GridStoreHandle, StoreObject<O>>,
 }
 
-impl<O> GridStore<O> {
+impl<O: Copy> GridStore<O> {
     pub fn new(cell_size: i32) -> Self {
         Self {
             start_x: -10 * cell_size,
@@ -57,25 +59,19 @@ impl<O> GridStore<O> {
             width: 20,
             height: 20,
             cells: (0..20 * 20).map(|_| GridStoreCell::default()).collect(),
-            objects: HashMap::new(),
-            id: 0,
+            objects: SlotMap::with_key(),
         }
     }
 
     pub fn insert(&mut self, pos: Vector2<f32>, obj: O) -> GridStoreHandle {
         self.check_resize(pos);
-        self.id += 1;
-        let handle = GridStoreHandle(self.id);
         let cell_id = self.get_cell_id(pos);
-        self.objects.insert(
-            handle,
-            StoreObject {
-                obj,
-                state: ObjectState::Unchanged,
-                pos,
-                cell_id,
-            },
-        );
+        let handle = self.objects.insert(StoreObject {
+            obj,
+            state: ObjectState::Unchanged,
+            pos,
+            cell_id,
+        });
         self.get_cell_mut(cell_id)
             .objs
             .push(CellObject::new(handle, pos));
@@ -87,7 +83,7 @@ impl<O> GridStore<O> {
         let new_cell_id = self.get_cell_id(pos);
         let obj = self
             .objects
-            .get_mut(&handle)
+            .get_mut(handle)
             .expect("Object not in grid anymore");
         let old_id = obj.cell_id;
         obj.cell_id = new_cell_id;
@@ -100,7 +96,7 @@ impl<O> GridStore<O> {
     pub fn remove(&mut self, handle: GridStoreHandle) {
         let st = self
             .objects
-            .get_mut(&handle)
+            .get_mut(handle)
             .expect("Object not in grid anymore");
         match st.state {
             NewPos => {
@@ -118,31 +114,30 @@ impl<O> GridStore<O> {
 
     pub fn maintain(&mut self) {
         let mut to_add = vec![];
-        const DELETE_ID: usize = 100_000_000;
 
         for (id, cell) in self.cells.iter_mut().filter(|x| x.dirty).enumerate() {
             cell.dirty = false;
 
             for cellobj in cell.objs.iter_mut() {
-                let store_obj = self.objects.get_mut(&cellobj.id).unwrap();
+                let store_obj = self.objects.get_mut(cellobj.id).unwrap();
                 match store_obj.state {
                     ObjectState::NewPos => {
                         cellobj.pos = store_obj.pos;
                         if store_obj.cell_id != id {
                             to_add.push((store_obj.cell_id, cellobj.clone()));
-                            cellobj.id = GridStoreHandle(DELETE_ID);
+                            cellobj.pos.x = std::f32::INFINITY; // Mark object for deletion
                         }
                     }
 
                     ObjectState::Removed => {
-                        cellobj.id = GridStoreHandle(DELETE_ID);
+                        cellobj.pos.x = std::f32::INFINITY; // Mark object for deletion from cell
                     }
                     ObjectState::Unchanged => {}
                 }
                 store_obj.state = Unchanged;
             }
 
-            cell.objs.retain(|x| x.id.0 != DELETE_ID);
+            cell.objs.retain(|x| x.pos.x.is_finite());
         }
 
         for (cell_id, obj) in to_add {
@@ -151,7 +146,7 @@ impl<O> GridStore<O> {
     }
 
     pub fn get_obj(&self, id: GridStoreHandle) -> &O {
-        &self.objects.get(&id).unwrap().obj
+        &self.objects.get(id).unwrap().obj
     }
 
     #[rustfmt::skip]
@@ -272,7 +267,7 @@ impl<O> GridStore<O> {
                     .get_mut(cell_id)
                     .unwrap()
                     .objs
-                    .push(CellObject::new(*id, obj.pos));
+                    .push(CellObject::new(id, obj.pos));
             }
         }
     }
