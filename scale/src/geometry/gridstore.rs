@@ -1,12 +1,15 @@
 use crate::geometry::gridstore::ObjectState::{NewPos, Removed, Unchanged};
+use cgmath::InnerSpace;
 use cgmath::Vector2;
 use slotmap::new_key_type;
 use slotmap::SlotMap;
 
 new_key_type! {
+    /// This handle is used to modify the store object or to update the position
     pub struct GridStoreHandle;
 }
 
+/// State of an object, maintain() updates the internals of the gridstore and resets this to Unchanged
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum ObjectState {
     Unchanged,
@@ -14,6 +17,7 @@ enum ObjectState {
     Removed,
 }
 
+/// The object stored in cells
 #[derive(Clone)]
 pub struct CellObject {
     pub id: GridStoreHandle,
@@ -26,20 +30,30 @@ impl CellObject {
     }
 }
 
+/// The actual object stored in the store
 #[derive(Clone, Copy)]
 struct StoreObject<O: Copy> {
+    /// User-defined object to be associated with a value
     obj: O,
     state: ObjectState,
     pos: Vector2<f32>,
     cell_id: usize,
 }
 
+/// A single cell of the store, can be empty
 #[derive(Default)]
 pub struct GridStoreCell {
     pub objs: Vec<CellObject>,
     pub dirty: bool,
 }
 
+/// A gridstore contains object in a dense array of cells that are lists
+/// The objective is to be able to perform range queries very fast without the log cost of a quadtree.
+/// The gridstore is dynamic and will be resized if an object is added outside its range.
+/// All methods except query_around and maintain are O(1)
+///
+/// A SlotMap is used for objects so that removal doesn't alter handles given to the user, while still having constant time access.
+/// However it requires O to be copy, but SlotMap's author stated that he was working on a similar map where Copy isn't required.
 pub struct GridStore<O: Copy> {
     start_x: i32,
     start_y: i32,
@@ -51,6 +65,7 @@ pub struct GridStore<O: Copy> {
 }
 
 impl<O: Copy> GridStore<O> {
+    /// Creates a new store centered on zero with width 20 and height 20
     pub fn new(cell_size: i32) -> Self {
         Self {
             start_x: -10 * cell_size,
@@ -63,6 +78,8 @@ impl<O: Copy> GridStore<O> {
         }
     }
 
+    /// Inserts a new object with a position and an associated object
+    /// Returns the handle
     pub fn insert(&mut self, pos: Vector2<f32>, obj: O) -> GridStoreHandle {
         self.check_resize(pos);
         let cell_id = self.get_cell_id(pos);
@@ -78,6 +95,7 @@ impl<O: Copy> GridStore<O> {
         handle
     }
 
+    /// Sets the position of an object. Note that this won't be taken into account until maintain() is called
     pub fn set_position(&mut self, handle: GridStoreHandle, pos: Vector2<f32>) {
         self.check_resize(pos);
         let new_cell_id = self.get_cell_id(pos);
@@ -93,6 +111,7 @@ impl<O: Copy> GridStore<O> {
         self.get_cell_mut(old_id).dirty = true;
     }
 
+    /// Removes an object from the store. Note that this won't be taken into account until maintain() is called
     pub fn remove(&mut self, handle: GridStoreHandle) {
         let st = self
             .objects
@@ -112,6 +131,7 @@ impl<O: Copy> GridStore<O> {
         }
     }
 
+    /// Maintains the world, updating all the positions (and moving them to corresponding cells) and removing necessary objects.
     pub fn maintain(&mut self) {
         let mut to_add = vec![];
 
@@ -153,14 +173,10 @@ impl<O: Copy> GridStore<O> {
         &mut self.objects.get_mut(id).unwrap().obj
     }
 
+    /// Queries for all objects around a position within a certain radius.
+    /// Note that if the radius is bigger than the cell size, query_around might omit some results
     #[rustfmt::skip]
     pub fn query_around(&self, pos: Vector2<f32>, radius: f32) -> impl Iterator<Item = &CellObject> {
-        if radius > self.cell_size as f32 {
-            println!(
-                "asked radius ({}) bigger than cell_size ({}): might omit some results",
-                radius, self.cell_size
-            );
-        }
 
         let cell = self.get_cell_id(pos);
         let mut objs: Vec<&GridStoreCell> = Vec::with_capacity(4);
@@ -206,7 +222,12 @@ impl<O: Copy> GridStore<O> {
             self.populate_objs(cell - w, &mut objs);
         }
 
-        objs.into_iter().map(|x| x.objs.iter()).flatten()
+        let radius2 = radius*radius;
+        objs.into_iter().map(move |x| {
+            x.objs.iter().filter(move |x| {
+                (x.pos - pos).magnitude2() < radius2
+            })
+        }).flatten()
     }
 
     #[inline(always)]
@@ -276,6 +297,7 @@ impl<O: Copy> GridStore<O> {
         }
     }
 
+    /// Get read access to the cells
     pub fn cells(&self) -> &Vec<GridStoreCell> {
         &self.cells
     }
