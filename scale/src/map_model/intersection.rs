@@ -175,22 +175,25 @@ impl Intersection {
         }
     }
 
-    pub fn update_traffic_lights(&mut self, mesh: &mut NavMesh) {
-        if self.in_nodes.len() <= 2 {
+    pub fn update_traffic_lights(&mut self, roads: &Roads, lanes: &Lanes, mesh: &mut NavMesh) {
+        let mut in_roads: Vec<&RoadID> = self
+            .roads
+            .iter()
+            .filter(|x| roads[**x].incoming_lanes_from(self.id).len() > 0)
+            .collect();
+
+        if in_roads.len() <= 2 {
             for (_, id) in self.in_nodes.iter() {
                 mesh[id].light = Always;
             }
             return;
         }
-        let mut in_nodes: Vec<&NavNodeID> = self.in_nodes.values().collect();
-        in_nodes.sort_by_key(|x| {
-            OrderedFloat(Self::pseudo_angle((mesh[*x].pos - self.pos).normalize()))
-        });
+        in_roads.sort_by_key(|x| OrderedFloat(Self::pseudo_angle(roads[**x].dir_from(self))));
 
         let cycle_size = 10;
         let orange_length = 5;
-        for (i, id) in in_nodes.into_iter().enumerate() {
-            mesh[id].light = TrafficLight::Periodic(TrafficLightSchedule::from_basic(
+        for (i, id) in in_roads.into_iter().enumerate() {
+            let light = TrafficLight::Periodic(TrafficLightSchedule::from_basic(
                 cycle_size,
                 orange_length,
                 cycle_size + orange_length,
@@ -200,51 +203,12 @@ impl Intersection {
                     0
                 },
             ));
+
+            for lane in roads[*id].incoming_lanes_from(self.id) {
+                let node = lanes[*lane].get_inter_node(self.id);
+                mesh[node].light = light;
+            }
         }
-    }
-
-    pub fn calculate_nodes_positions(&mut self, _navmesh: &mut NavMesh) {
-        let inter = self;
-        let _center = inter.pos;
-        /*
-        for (to, node_id) in &inter.out_nodes {
-            let inter2 = &self.intersections[to];
-            let center2 = inter2.pos;
-
-            let diff = center2 - center;
-            let inter_length = diff.magnitude().max(1e-8);
-            let dir = (center2 - center) / inter_length;
-
-            let inter_length = (inter_length / 2.0).min(25.0);
-
-            let nor: Vector2<f32> = Vector2::new(-dir.y, dir.x);
-
-            let rn =navmesh .get_mut(*node_id).unwrap();
-            rn.pos = center + dir * inter_length - nor * 4.0;
-
-            let rn2 =navmesh .get_mut(inter2.in_nodes[&i]).unwrap();
-            rn2.pos = center2 - dir * inter_length - nor * 4.0;
-        }
-
-        for (to, node_id) in &inter.in_nodes {
-            let inter2 = &self.intersections[to];
-            let center2 = inter2.pos;
-
-            let diff = center2 - center;
-            let inter_length = diff.magnitude();
-            let dir = (center2 - center) / inter_length;
-
-            let inter_length = (inter_length / 2.0).min(25.0);
-
-            let nor: Vector2<f32> = Vector2::new(-dir.y, dir.x);
-
-            let rn = self.nodes.get_mut(*node_id).unwrap();
-            rn.pos = center + dir * inter_length + nor * 4.0;
-
-            let rn2 = self.nodes.get_mut(inter2.out_nodes[&i]).unwrap();
-            rn2.pos = center2 - dir * inter_length + nor * 4.0;
-        }
-            */
     }
 }
 

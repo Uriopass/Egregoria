@@ -105,6 +105,9 @@ impl Map {
 
         self.intersections[src].gen_turns(&self.lanes, &mut self.navmesh);
         self.intersections[dst].gen_turns(&self.lanes, &mut self.navmesh);
+
+        self.intersections[src].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
+        self.intersections[dst].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
         road
     }
 

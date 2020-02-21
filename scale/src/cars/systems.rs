@@ -57,7 +57,7 @@ fn car_objective_update(
         }
         CarObjective::Temporary(x) => {
             if let Some(p) = navmesh.get(x).map(|x| x.pos) {
-                if p.distance2(trans.position()) < 25.0
+                if p.distance2(trans.position()) < 16.0
                     && !navmesh[&x].light.get_color(time.time_seconds).is_red()
                 {
                     let neighs = navmesh.get_neighs(x);

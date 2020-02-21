@@ -110,6 +110,16 @@ impl Road {
         }
     }
 
+    pub fn incoming_lanes_from(&self, id: IntersectionID) -> &Vec<LaneID> {
+        if id == self.src {
+            &self.lanes_backward
+        } else if id == self.dst {
+            &self.lanes_forward
+        } else {
+            panic!("Asking incoming lanes from from an intersection not conected to the road");
+        }
+    }
+
     pub fn length(&self) -> f32 {
         self.interpolation_points
             .windows(2)
