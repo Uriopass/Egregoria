@@ -29,6 +29,7 @@ impl<'a> System<'a> for KinematicsApply {
             transform.translate(kin.velocity * delta);
             kin.acceleration.set_zero();
             data.coworld.set_position(collider.0, transform.position());
+            data.coworld.get_obj_mut(collider.0).dir = transform.direction();
         }
 
         data.coworld.maintain();
