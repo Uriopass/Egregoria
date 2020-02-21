@@ -3,12 +3,14 @@ use crate::rendering::camera_handler::CameraHandler;
 use crate::rendering::render_context::RenderContext;
 use crate::rendering::road_rendering::RoadRenderer;
 use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
+use cgmath::Vector2;
 use ggez::graphics::{Color, DrawMode, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
 use scale::engine_interaction;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
+use scale::geometry::intersections::intersection_point;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
 use scale::map_model::Map;
@@ -148,6 +150,9 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
         let start_draw = std::time::Instant::now();
+
+        let time: TimeInfo = *self.world.read_resource::<TimeInfo>();
+
         let mut rc = RenderContext::new(&mut self.cam, ctx, self.font);
         rc.clear();
 
@@ -164,10 +169,12 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
         // Render entities
         {
-            let time = self.world.read_resource::<TimeInfo>().time_seconds;
             if self.render_enabled {
-                self.road_render
-                    .render(&self.world.read_resource::<Map>(), time, &mut rc);
+                self.road_render.render(
+                    &self.world.read_resource::<Map>(),
+                    time.time_seconds,
+                    &mut rc,
+                );
                 self.smr.render(&mut self.world, &mut rc);
             }
         }
@@ -273,6 +280,39 @@ fn debug_coworld(rc: &mut RenderContext, world: &World) -> GameResult<()> {
         }
     }
     Ok(())
+}
+
+#[allow(dead_code)]
+fn debug_rays(rc: &mut RenderContext, time: TimeInfo) {
+    let c = time.time.cos() as f32;
+    let s = time.time.sin() as f32;
+
+    let r = scale::geometry::intersections::Ray {
+        from: 10.0 * Vector2::new(c, s),
+        dir: Vector2::new(
+            (time.time * 2.3 + 1.0).cos() as f32,
+            (time.time * 2.3 + 1.0).sin() as f32,
+        ),
+    };
+
+    let r2 = scale::geometry::intersections::Ray {
+        from: 10.0 * Vector2::new((time.time as f32 * 1.5 + 3.0).cos(), s * 2.0),
+        dir: Vector2::new(c, -s),
+    };
+
+    let inter = intersection_point(r, r2);
+
+    rc.sr.color = ggez::graphics::WHITE;
+    rc.sr.draw_line(r.from, r.from + r.dir * 50.0);
+    rc.sr.draw_line(r2.from, r2.from + r2.dir * 50.0);
+
+    if let Some(v) = inter {
+        rc.sr.color.r = 1.0;
+        rc.sr.color.g = 0.0;
+        rc.sr.color.b = 0.0;
+
+        rc.sr.draw_circle(v, 2.0);
+    }
 }
 
 // Thanks multi cursor
