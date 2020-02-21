@@ -146,7 +146,11 @@ impl<O: Copy> GridStore<O> {
     }
 
     pub fn get_obj(&self, id: GridStoreHandle) -> &O {
-        &self.objects.get(id).unwrap().obj
+        &self.objects[id].obj
+    }
+
+    pub fn get_obj_mut(&mut self, id: GridStoreHandle) -> &mut O {
+        &mut self.objects.get_mut(id).unwrap().obj
     }
 
     #[rustfmt::skip]

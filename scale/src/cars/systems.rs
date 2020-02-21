@@ -98,7 +98,7 @@ fn car_physics(
 
     let neighbors = coworld.query_around(pos, 10.0 + danger_length);
 
-    let objs = neighbors.map(|obj| &obj.pos);
+    let objs = neighbors.map(|obj| (obj.pos, coworld.get_obj(obj.id)));
 
     car.calc_decision(navmesh, speed, time, pos, objs);
 
@@ -117,7 +117,7 @@ fn car_physics(
         .min(ang_acc * time.delta)
         .max(-ang_acc * time.delta);
     car.direction = Vector2::new(ang.cos(), ang.sin());
-    trans.set_angle_cos_sin(car.direction.x, car.direction.y);
+    trans.set_direction(car.direction);
 
     kin.velocity = car.direction * speed;
 }

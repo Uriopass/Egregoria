@@ -1,20 +1,19 @@
 use crate::cars::data::CarObjective::{Simple, Temporary};
 use crate::cars::systems::CAR_DECELERATION;
 use crate::engine_interaction::TimeInfo;
+use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::gui::{ImCgVec2, ImDragf};
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{Map, NavMesh, NavNodeID, TrafficLightColor};
-use crate::physics::add_to_coworld;
-use crate::physics::{Kinematics, Transform};
+use crate::physics::{add_to_coworld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::{Color, BLACK, GREEN};
-use cgmath::{InnerSpace, Vector2};
+use cgmath::{vec2, InnerSpace, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Component, DenseVecStorage, Entity, World, WorldExt};
-
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CarObjective {
@@ -83,6 +82,8 @@ pub struct CarComponent {
     pub desired_dir: Vector2<f32>,
     #[inspect(proxy_type = "ImDragf")]
     pub wait_time: f32,
+
+    pub not_moving_reason: String,
 }
 
 #[allow(dead_code)]
@@ -94,6 +95,7 @@ impl CarComponent {
             desired_speed: 0.0,
             desired_dir: Vector2::<f32>::new(0.0, 0.0),
             wait_time: 0.0,
+            not_moving_reason: "lol".to_string(),
         }
     }
 
@@ -107,7 +109,7 @@ impl CarComponent {
         speed: f32,
         time: &'a TimeInfo,
         position: Vector2<f32>,
-        neighs: impl Iterator<Item = &'a Vector2<f32>>,
+        neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
     ) {
         if self.wait_time > 0.0 {
             self.wait_time -= time.delta;
@@ -136,43 +138,67 @@ impl CarComponent {
         let mut min_front_dist: f32 = 50.0;
 
         // [1, 2] -> [2, -1]
-        let dir_normal_right: Vector2<f32> = [self.direction.y, -self.direction.x].into();
+        // let dir_normal_right: Vector2<f32> = [self.direction.y, -self.direction.x].into();
 
+        let my_ray = Ray {
+            from: position - self.direction * CAR_WIDTH / 2.0,
+            dir: self.direction,
+        };
         // Collision avoidance
-        for e_pos in neighs {
-            if *e_pos == position {
+        for nei in neighs {
+            if nei.0 == position {
                 continue;
             }
 
-            let e_diff = e_pos - position;
+            let his_pos = nei.0;
 
-            let magn2 = e_diff.magnitude2();
+            let towards_vec = his_pos - position;
 
-            if magn2 > (6.0 + stop_dist) * (6.0 + stop_dist) {
+            let dist2 = towards_vec.magnitude2();
+
+            if dist2 > (6.0 + stop_dist) * (6.0 + stop_dist) {
                 continue;
             }
 
-            let e_dist = magn2.sqrt();
+            let dist = dist2.sqrt();
+            let towards_dir = towards_vec / dist;
 
-            let dir_to_him = e_diff / e_dist;
+            let dir_dot = towards_dir.dot(self.direction);
+            let his_direction = nei.1.dir;
 
-            let dir_dot = dir_to_him.dot(self.direction);
-            let pos_dot = e_diff.dot(dir_normal_right);
+            // let pos_dot = towards_vec.dot(dir_normal_right);
 
-            if !(dir_dot > 0.75 // front cone
-                || (
-                    // right car beam
-                    dir_dot > 0.0 && pos_dot > 0.0 && pos_dot < 3.0
-                )
-                || (
-                    // stopped right priority cone
-                    dir_dot > 0.3 && pos_dot > 0.0
-                ))
-            {
+            // front cone
+            if dir_dot > 0.7 && his_direction.dot(self.direction) > 0.0 {
+                min_front_dist = min_front_dist.min(dist);
+                self.not_moving_reason = "Guy just in front boi".to_string();
                 continue;
             }
 
-            min_front_dist = min_front_dist.min(e_dist);
+            if dir_dot < 0.0 {
+                continue;
+            }
+
+            // closest win
+
+            let his_ray = Ray {
+                from: his_pos - CAR_WIDTH / 2.0 * his_direction,
+                dir: his_direction,
+            };
+
+            let inter = both_dist_to_inter(my_ray, his_ray);
+
+            match inter {
+                Some((my_dist, his_dist)) => {
+                    if my_dist < his_dist {
+                        continue;
+                    }
+                }
+                None => continue,
+            }
+
+            self.not_moving_reason = "Guy around but rays losin' intersectin'".to_string();
+            min_front_dist = min_front_dist.min(dist);
         }
 
         if speed.abs() < 0.2 && min_front_dist < 7.0 {
@@ -245,10 +271,10 @@ pub fn get_random_car_color() -> Color {
     unreachable!();
 }
 
-pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -> Entity {
-    let car_width = 4.5;
-    let car_height = 2.0;
+const CAR_WIDTH: f32 = 4.5;
+const CAR_HEIGHT: f32 = 2.0;
 
+pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -> Entity {
     let is_tank = false;
     let mut mr = MeshRender::empty(3);
 
@@ -269,14 +295,14 @@ pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -
         })
         .add(CircleRender {
             radius: 0.5,
-            offset: Vector2::new(4.0, 0.0),
+            offset: vec2(4.0, 0.0),
             color: c,
             ..Default::default()
         });
     } else {
         mr.add(RectRender {
-            width: car_width,
-            height: car_height,
+            width: CAR_WIDTH,
+            height: CAR_HEIGHT,
             color: get_random_car_color(),
             ..Default::default()
         })
