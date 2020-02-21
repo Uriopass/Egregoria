@@ -211,17 +211,9 @@ impl CarComponent {
 
         if let Temporary(n_id) = self.objective {
             match navmesh[&n_id].light.get_color(time.time_seconds) {
-                TrafficLightColor::RED => {
+                TrafficLightColor::RED | TrafficLightColor::ORANGE(_) => {
                     if dist_to_pos < 5.0 + stop_dist {
                         self.desired_speed = 0.0;
-                    }
-                }
-                TrafficLightColor::ORANGE(time_left) => {
-                    if speed * time_left <= dist_to_pos  // if I don't to have the time to go through by keeping my speed
-                        && dist_to_pos < 5.0 + stop_dist
-                    // and I should slow down to stop
-                    {
-                        self.desired_speed = 0.0; // stop
                     }
                 }
                 _ => {}
