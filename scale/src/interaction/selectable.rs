@@ -43,6 +43,11 @@ impl<'a> System<'a> for SelectableSystem {
             *selected = SelectedEntity(closest);
         }
 
+        if let Some(x) = selected.0 {
+            if !entities.is_alive(x) {
+                *selected = SelectedEntity(None);
+            }
+        }
         if kbinfo.just_pressed.contains(&KeyCode::Escape) {
             *selected = SelectedEntity(None);
         }

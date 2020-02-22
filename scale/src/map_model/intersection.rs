@@ -1,10 +1,9 @@
 use crate::gui::ImDragf;
 use crate::interaction::{Movable, Selectable};
-use crate::map_model::navmesh::NavNodeID;
 use crate::map_model::TrafficLight::Always;
 use crate::map_model::{
-    Intersections, LaneID, Lanes, NavMesh, NavNode, Road, RoadID, Roads, TrafficLight,
-    TrafficLightSchedule, Turn,
+    Intersections, LaneID, Lanes, NavMesh, Road, RoadID, Roads, TrafficLight, TrafficLightSchedule,
+    Turn,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
@@ -16,7 +15,6 @@ use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use specs::storage::BTreeStorage;
 use specs::{Builder, Component, Entities, Entity, LazyUpdate};
-use std::collections::HashMap;
 use std::ops::Sub;
 
 new_key_type! {
@@ -42,9 +40,6 @@ pub struct Intersection {
     pub outgoing_lanes: Vec<LaneID>,
 
     pub roads: Vec<RoadID>,
-
-    pub out_nodes: HashMap<LaneID, NavNodeID>,
-    pub in_nodes: HashMap<LaneID, NavNodeID>,
     pub interface_radius: f32,
 }
 
@@ -57,56 +52,22 @@ impl Intersection {
             incoming_lanes: vec![],
             outgoing_lanes: vec![],
             roads: vec![],
-            out_nodes: HashMap::new(),
-            in_nodes: HashMap::new(),
             interface_radius: 15.0,
         })
     }
 
-    fn get_node_pos(
-        &self,
-        lane_id: LaneID,
-        incoming: bool,
-        lanes: &Lanes,
-        roads: &Roads,
-    ) -> Vector2<f32> {
-        let lane = &lanes[lane_id];
-        let road = &roads[lane.parent];
+    pub fn clean(&mut self, lanes: &Lanes, roads: &Roads, mesh: &mut NavMesh) {
+        self.incoming_lanes.retain(|x| lanes.contains_key(*x));
+        self.outgoing_lanes.retain(|x| lanes.contains_key(*x));
 
-        let lane_dist = road.idx_unchecked(lane_id);
-        let dir = road.dir_from(self);
-        let dir_normal: Vector2<f32> = if incoming {
-            [-dir.y, dir.x].into()
-        } else {
-            [dir.y, -dir.x].into()
-        };
-
-        let mindist = road.length() / 2.0 - 1.0;
-
-        self.pos + dir * self.interface_radius.min(mindist) + dir_normal * lane_dist as f32 * 8.0
-    }
-
-    pub fn gen_interface_navmesh(
-        &mut self,
-        lanes: &mut Lanes,
-        roads: &Roads,
-        navmesh: &mut NavMesh,
-    ) {
-        for lane_id in &self.incoming_lanes {
-            let pos = self.get_node_pos(*lane_id, true, lanes, roads);
-            self.in_nodes
-                .entry(*lane_id)
-                .and_modify(|x| navmesh.get_mut(*x).unwrap().pos = pos)
-                .or_insert_with(|| navmesh.push(NavNode::new(pos)));
+        for turn in &mut self.turns {
+            if !lanes.contains_key(turn.src) || !lanes.contains_key(turn.dst) {
+                turn.clean(mesh);
+            }
         }
 
-        for lane_id in &self.outgoing_lanes {
-            let pos = self.get_node_pos(*lane_id, false, lanes, roads);
-            self.out_nodes
-                .entry(*lane_id)
-                .and_modify(|x| navmesh.get_mut(*x).unwrap().pos = pos)
-                .or_insert_with(|| navmesh.push(NavNode::new(pos)));
-        }
+        self.turns.retain(|x| x.is_generated());
+        self.roads.retain(|x| roads.contains_key(*x));
     }
 
     pub fn gen_turns(&mut self, lanes: &Lanes, navmesh: &mut NavMesh) {
@@ -176,23 +137,31 @@ impl Intersection {
     }
 
     pub fn update_traffic_lights(&mut self, roads: &Roads, lanes: &Lanes, mesh: &mut NavMesh) {
-        let mut in_roads: Vec<&RoadID> = self
+        let mut in_road_lanes: Vec<&Vec<LaneID>> = self
             .roads
             .iter()
-            .filter(|x| roads[**x].incoming_lanes_from(self.id).len() > 0)
+            .map(|x| roads[*x].incoming_lanes_from(self.id))
+            .filter(|v| v.len() > 0)
             .collect();
 
-        if in_roads.len() <= 2 {
-            for (_, id) in self.in_nodes.iter() {
-                mesh[id].light = Always;
+        if in_road_lanes.len() <= 2 {
+            for incoming_lanes in in_road_lanes {
+                for lane in incoming_lanes {
+                    mesh[lanes[*lane].get_inter_node(self.id)].light = Always;
+                }
             }
             return;
         }
-        in_roads.sort_by_key(|x| OrderedFloat(Self::pseudo_angle(roads[**x].dir_from(self))));
+
+        in_road_lanes.sort_by_key(|x| {
+            OrderedFloat(Self::pseudo_angle(
+                roads[lanes[*x.first().unwrap()].parent].dir_from(self),
+            ))
+        });
 
         let cycle_size = 10;
         let orange_length = 5;
-        for (i, id) in in_roads.into_iter().enumerate() {
+        for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
             let light = TrafficLight::Periodic(TrafficLightSchedule::from_basic(
                 cycle_size,
                 orange_length,
@@ -204,7 +173,7 @@ impl Intersection {
                 },
             ));
 
-            for lane in roads[*id].incoming_lanes_from(self.id) {
+            for lane in incoming_lanes {
                 let node = lanes[*lane].get_inter_node(self.id);
                 mesh[node].light = light;
             }
