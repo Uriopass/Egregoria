@@ -1,5 +1,5 @@
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneType, NavMesh, Road, RoadID,
+    Intersection, IntersectionID, Lane, LaneID, LanePattern, NavMesh, Road, RoadID,
 };
 use cgmath::Vector2;
 use slotmap::DenseSlotMap;
@@ -60,19 +60,18 @@ impl Map {
         &mut self,
         src: IntersectionID,
         dst: IntersectionID,
-        n_lanes: i32,
-        one_way: bool,
+        pattern: &LanePattern,
     ) -> RoadID {
-        let road_id = Road::make(&mut self.roads, &self.intersections, src, dst);
+        let road_id = Road::make(
+            &mut self.roads,
+            &self.intersections,
+            src,
+            dst,
+            &mut self.lanes,
+            &pattern,
+        );
 
         let road = &mut self.roads[road_id];
-
-        for _ in 0..n_lanes {
-            road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Forward);
-            if !one_way {
-                road.add_lane(&mut self.lanes, LaneType::Driving, LaneDirection::Backward);
-            }
-        }
 
         road.gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
 

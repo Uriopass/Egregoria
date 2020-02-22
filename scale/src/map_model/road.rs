@@ -1,6 +1,6 @@
 use crate::map_model::{
-    Intersection, IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneType, Lanes,
-    NavMesh, Roads,
+    Intersection, IntersectionID, Intersections, Lane, LaneDirection, LaneID, LanePattern,
+    LaneType, Lanes, NavMesh, Roads,
 };
 use cgmath::InnerSpace;
 use cgmath::Vector2;
@@ -29,19 +29,37 @@ impl Road {
         intersections: &Intersections,
         src: IntersectionID,
         dst: IntersectionID,
+        lanes: &mut Lanes,
+        lane_pattern: &LanePattern,
     ) -> RoadID {
         let pos_src = intersections[src].pos;
         let pos_dst = intersections[dst].pos;
 
         debug_assert_ne!(pos_src, pos_dst);
-        store.insert_with_key(|id| Self {
+        let id = store.insert_with_key(|id| Self {
             id,
             src,
             dst,
             interpolation_points: vec![pos_src, pos_dst],
             lanes_forward: vec![],
             lanes_backward: vec![],
-        })
+        });
+        let road = &mut store[id];
+        for lane in &lane_pattern.lanes_forward {
+            road.add_lane(lanes, *lane, LaneDirection::Forward);
+        }
+        for lane in &lane_pattern.lanes_backward {
+            road.add_lane(lanes, *lane, LaneDirection::Backward);
+        }
+        id
+    }
+
+    pub fn is_one_way(&self) -> bool {
+        (self.lanes_forward.len() == 0) || (self.lanes_backward.len() == 0)
+    }
+
+    pub fn n_lanes(&self) -> usize {
+        self.lanes_backward.len() + self.lanes_forward.len()
     }
 
     pub fn add_lane(

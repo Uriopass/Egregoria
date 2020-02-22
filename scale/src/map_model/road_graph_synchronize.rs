@@ -1,7 +1,7 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::interaction::{MovedEvent, SelectedEntity};
 use crate::map_model::road_graph_synchronize::ConnectState::{First, Inactive, Unselected};
-use crate::map_model::{make_inter_entity, IntersectionComponent, Map};
+use crate::map_model::{make_inter_entity, IntersectionComponent, LanePattern, Map};
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{LineRender, MeshRender, MeshRenderEnum};
 use crate::rendering::RED;
@@ -10,7 +10,7 @@ use specs::shred::{DynamicSystemData, PanicHandler};
 use specs::shrev::{EventChannel, ReaderId};
 
 #[derive(PartialEq, Eq, Clone, Copy)]
-enum ConnectState {
+pub enum ConnectState {
     Inactive,
     Unselected,
     First(Entity),
@@ -20,9 +20,9 @@ pub struct RoadGraphSynchronize;
 
 pub struct RoadGraphSynchronizeState {
     reader: ReaderId<MovedEvent>,
-    connect_state: ConnectState,
-    show_connect: Entity,
-    n_lanes: i32,
+    pub connect_state: ConnectState,
+    pub show_connect: Entity,
+    pub pattern: LanePattern,
 }
 
 impl RoadGraphSynchronizeState {
@@ -47,7 +47,7 @@ impl RoadGraphSynchronizeState {
             reader,
             connect_state: Inactive,
             show_connect: e,
-            n_lanes: 1,
+            pattern: LanePattern::two_way(1),
         }
     }
 }
@@ -83,7 +83,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             let id = data.map.add_intersection(data.mouseinfo.unprojected);
             let intersections = &data.intersections;
             if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
-                data.map.connect(id, x.id, data.self_state.n_lanes, false);
+                data.map.connect(id, x.id, &data.self_state.pattern);
             }
             let e = make_inter_entity(
                 &data.map.intersections[id],
@@ -129,12 +129,8 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                         let interc2 = data.intersections.get(y).unwrap();
                         if y != x {
                             if !data.map.is_neigh(interc.id, interc2.id) {
-                                data.map.connect(
-                                    interc.id,
-                                    interc2.id,
-                                    data.self_state.n_lanes,
-                                    false,
-                                );
+                                data.map
+                                    .connect(interc.id, interc2.id, &data.self_state.pattern);
                             } else {
                                 data.map.disconnect(interc.id, interc2.id);
                             }
