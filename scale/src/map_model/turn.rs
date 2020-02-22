@@ -66,6 +66,7 @@ impl Turn {
         for x in self.easing_nodes.drain(0..) {
             navmesh.remove_node(x);
         }
+        self.generated = false;
     }
 
     pub fn reposition_nodes(&mut self, lanes: &Lanes, navmesh: &mut NavMesh) {

@@ -94,18 +94,17 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             *data.selected = SelectedEntity(Some(e));
         }
 
-        /*
         // Intersection deletion
         if data.kbinfo.just_pressed.contains(&KeyCode::Backspace) {
             if let Some(e) = data.selected.0 {
                 if let Some(inter) = data.intersections.get(e) {
-                    data.map.delete_inter(inter.id);
+                    data.map.remove_intersection(inter.id);
+                    data.intersections.remove(e);
                     data.entities.delete(e).unwrap();
                 }
             }
             data.self_state.deactive_connect(&mut data.meshrenders);
         }
-        */
 
         // Connection handling
         if data.kbinfo.just_pressed.contains(&KeyCode::C) {
@@ -129,12 +128,16 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     First(y) => {
                         let interc2 = data.intersections.get(y).unwrap();
                         if y != x {
-                            //if !data.map.is_neigh(interc.id, interc2.id) {
-                            data.map
-                                .connect(interc.id, interc2.id, data.self_state.n_lanes, false);
-                            //} else {
-                            //    data.map.disconnect(interc.id, interc2.id);
-                            //}
+                            if !data.map.is_neigh(interc.id, interc2.id) {
+                                data.map.connect(
+                                    interc.id,
+                                    interc2.id,
+                                    data.self_state.n_lanes,
+                                    false,
+                                );
+                            } else {
+                                data.map.disconnect(interc.id, interc2.id);
+                            }
                             data.self_state.deactive_connect(&mut data.meshrenders);
                         }
                     }

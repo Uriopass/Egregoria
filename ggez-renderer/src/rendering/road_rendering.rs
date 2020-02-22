@@ -43,9 +43,15 @@ impl RoadRenderer {
             if n.light.is_always() {
                 continue;
             }
-
-            let dir = (navmesh[navmesh.get_backward_neighs(id).first().unwrap().to].pos - n.pos)
-                .normalize();
+            let id = navmesh.get_backward_neighs(id).first().map(|x| x.to);
+            if id.is_none() {
+                rc.sr.color = scale_color(scale::rendering::RED);
+                rc.sr.color.a = 0.5;
+                rc.sr.draw_rect_centered(n.pos, 20.0, 20.0);
+                continue;
+            }
+            let id = id.unwrap();
+            let dir = (navmesh[id].pos - n.pos).normalize();
 
             let dir_nor: Vector2<f32> = [-dir.y, dir.x].into();
 
