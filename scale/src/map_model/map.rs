@@ -40,9 +40,10 @@ impl Map {
     pub fn move_intersection(&mut self, id: IntersectionID, pos: Vector2<f32>) {
         self.intersections[id].pos = pos;
 
-        let inter = &self.intersections[id];
-        for x in &inter.roads {
-            self.roads[*x].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
+        for x in self.intersections[id].roads.clone() {
+            self.roads[x].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
+            self.intersections[self.roads[x].other_end(id)]
+                .gen_turns(&self.lanes, &mut self.navmesh);
         }
 
         self.intersections[id].gen_turns(&self.lanes, &mut self.navmesh);

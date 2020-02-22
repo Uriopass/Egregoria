@@ -93,32 +93,27 @@ impl Gui {
                         }
                     }
 
+                    let pattern = &mut world
+                        .get_mut::<RoadGraphSynchronizeState>()
+                        .unwrap()
+                        .pattern;
+
+                    ui.text(im_str!("Current selection: {}", pattern.name));
+
                     if ui.small_button(im_str!("One way")) {
-                        world
-                            .get_mut::<RoadGraphSynchronizeState>()
-                            .unwrap()
-                            .pattern = LanePattern::one_way(1);
+                        *pattern = LanePattern::one_way(1);
                     }
 
                     if ui.small_button(im_str!("One way two lanes")) {
-                        world
-                            .get_mut::<RoadGraphSynchronizeState>()
-                            .unwrap()
-                            .pattern = LanePattern::one_way(2);
+                        *pattern = LanePattern::one_way(2);
                     }
 
                     if ui.small_button(im_str!("Two way")) {
-                        world
-                            .get_mut::<RoadGraphSynchronizeState>()
-                            .unwrap()
-                            .pattern = LanePattern::two_way(1);
+                        *pattern = LanePattern::two_way(1);
                     }
 
                     if ui.small_button(im_str!("Two way two lanes")) {
-                        world
-                            .get_mut::<RoadGraphSynchronizeState>()
-                            .unwrap()
-                            .pattern = LanePattern::two_way(2);
+                        *pattern = LanePattern::two_way(2);
                     }
                 });
             self.show_car_ui = opened;

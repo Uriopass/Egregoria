@@ -31,16 +31,16 @@ impl<'a> System<'a> for SelectableSystem {
         (entities, mouse, kbinfo, mut selected, transforms, selectables): Self::SystemData,
     ) {
         if mouse.just_pressed.contains(&MouseButton::Left) {
-            let mut min_dist = f32::MAX;
+            let mut min_dist2 = f32::MAX;
             let mut closest = None;
             for (entity, trans, _) in (&entities, &transforms, &selectables).join() {
-                let dist: f32 = (trans.position() - mouse.unprojected).magnitude2();
-                if dist <= min_dist {
+                let dist2: f32 = (trans.position() - mouse.unprojected).magnitude2();
+                if dist2 <= min_dist2 {
                     closest = Some(entity);
-                    min_dist = dist;
+                    min_dist2 = dist2;
                 }
             }
-            *selected = SelectedEntity(closest);
+            *selected = SelectedEntity(if min_dist2 < 5.0 * 5.0 { closest } else { None });
         }
 
         if let Some(x) = selected.0 {
