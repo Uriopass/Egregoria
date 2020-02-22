@@ -26,44 +26,34 @@ impl Map {
     }
 
     pub fn set_intersection_radius(&mut self, id: IntersectionID, radius: f32) {
-        let inter = &mut self.intersections[id];
-        inter.interface_radius = radius;
-        inter.gen_interface_navmesh(&mut self.lanes, &self.roads, &mut self.navmesh);
-        inter.gen_turns(&self.lanes, &mut self.navmesh);
+        self.intersections[id].interface_radius = radius;
+        for x in &self.intersections[id].roads {
+            self.roads[*x].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
+        }
+        self.intersections[id].gen_turns(&self.lanes, &mut self.navmesh);
     }
 
     pub fn add_intersection(&mut self, pos: Vector2<f32>) -> IntersectionID {
         Intersection::make(&mut self.intersections, pos)
     }
 
-    pub fn remove_intersection(&mut self, id: IntersectionID) {
-        let inter = &mut self.intersections[id];
-        for turn in &mut inter.turns {
-            turn.clean(&mut self.navmesh);
-        }
-
-        todo!()
-    }
-
     pub fn move_intersection(&mut self, id: IntersectionID, pos: Vector2<f32>) {
         self.intersections[id].pos = pos;
 
         let inter = &self.intersections[id];
-
-        let mut to_update = vec![inter.id];
-
         for x in &inter.roads {
-            let other = self.roads[*x].other_end(inter.id);
-            to_update.push(other);
-
             self.roads[*x].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
         }
 
-        for id in to_update {
-            let inter = &mut self.intersections[id];
-            inter.gen_interface_navmesh(&mut self.lanes, &self.roads, &mut self.navmesh);
-            inter.gen_turns(&self.lanes, &mut self.navmesh);
+        self.intersections[id].gen_turns(&self.lanes, &mut self.navmesh);
+    }
+
+    pub fn remove_intersection(&mut self, src: IntersectionID) {
+        for road in self.intersections[src].roads.clone() {
+            self.remove_road(road);
         }
+
+        self.intersections.remove(src);
     }
 
     pub fn connect(
@@ -84,31 +74,57 @@ impl Map {
             }
         }
 
+        road.gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
+
         self.intersections[src].add_road(road);
         self.intersections[dst].add_road(road);
-
-        let road = road.id;
-
-        self.intersections[src].gen_interface_navmesh(
-            &mut self.lanes,
-            &self.roads,
-            &mut self.navmesh,
-        );
-
-        self.intersections[dst].gen_interface_navmesh(
-            &mut self.lanes,
-            &self.roads,
-            &mut self.navmesh,
-        );
-
-        self.roads[road].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
 
         self.intersections[src].gen_turns(&self.lanes, &mut self.navmesh);
         self.intersections[dst].gen_turns(&self.lanes, &mut self.navmesh);
 
+        let id = road.id;
         self.intersections[src].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
         self.intersections[dst].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
-        road
+        id
+    }
+
+    pub fn disconnect(&mut self, src: IntersectionID, dst: IntersectionID) {
+        let r = self.find_road(src, dst);
+        let road_id = match r {
+            None => return,
+            Some(x) => x,
+        };
+
+        self.remove_road(road_id);
+    }
+
+    fn remove_road(&mut self, road_id: RoadID) {
+        let road = self.roads.remove(road_id).unwrap();
+        for lane_id in road
+            .lanes_forward
+            .into_iter()
+            .chain(road.lanes_backward.into_iter())
+        {
+            let mut lane = self.lanes.remove(lane_id).unwrap();
+            lane.clean(&mut self.navmesh);
+        }
+
+        self.intersections[road.src].clean(&self.lanes, &self.roads, &mut self.navmesh);
+        self.intersections[road.dst].clean(&self.lanes, &self.roads, &mut self.navmesh);
+    }
+
+    pub fn find_road(&self, a: IntersectionID, b: IntersectionID) -> Option<RoadID> {
+        for r in &self.intersections[a].roads {
+            let road = &self.roads[*r];
+            if road.src == a && road.dst == b || (road.dst == a && road.src == b) {
+                return Some(road.id);
+            }
+        }
+        None
+    }
+
+    pub fn is_neigh(&self, src: IntersectionID, dst: IntersectionID) -> bool {
+        self.find_road(src, dst).is_some()
     }
 
     /*

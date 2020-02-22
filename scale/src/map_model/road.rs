@@ -73,31 +73,19 @@ impl Road {
         lanes: &mut Lanes,
         navmesh: &mut NavMesh,
     ) {
+        self.interpolation_points[0] = intersections[self.src].pos;
+        let l = self.interpolation_points.len();
+        self.interpolation_points[l - 1] = intersections[self.dst].pos;
+
         for lane in &self.lanes_forward {
             let lane = &mut lanes[*lane];
-            if lane.src_node.is_some() {
-                continue;
-            }
-            lane.src_node = Some(intersections[lane.src_i].out_nodes[&lane.id]);
-            lane.dst_node = Some(intersections[lane.dst_i].in_nodes[&lane.id]);
-
-            navmesh.add_neigh(lane.src_node.unwrap(), lane.dst_node.unwrap(), 1.0);
+            lane.gen_navmesh(intersections, self, navmesh);
         }
 
         for lane in &self.lanes_backward {
             let lane = &mut lanes[*lane];
-            if lane.src_node.is_some() {
-                continue;
-            }
-            lane.src_node = Some(intersections[lane.src_i].in_nodes[&lane.id]);
-            lane.dst_node = Some(intersections[lane.dst_i].out_nodes[&lane.id]);
-
-            navmesh.add_neigh(lane.dst_node.unwrap(), lane.src_node.unwrap(), 1.0);
+            lane.gen_navmesh(intersections, self, navmesh);
         }
-
-        self.interpolation_points[0] = intersections[self.src].pos;
-        let l = self.interpolation_points.len();
-        self.interpolation_points[l - 1] = intersections[self.dst].pos;
     }
 
     pub fn dir_from(&self, i: &Intersection) -> Vector2<f32> {
