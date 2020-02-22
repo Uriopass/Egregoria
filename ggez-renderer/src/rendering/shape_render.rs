@@ -151,7 +151,7 @@ impl ShapeRenderer {
                 &[Point2::from_vec(p1), Point2::from_vec(p2)],
                 thickness,
                 Color {
-                    a: (self.zoom * self.zoom * 50.0).min(1.0).max(0.0),
+                    a: (self.zoom * self.zoom * 50.0).min(self.color.a).max(0.0),
                     ..self.color
                 },
             )
