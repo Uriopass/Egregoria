@@ -4,7 +4,7 @@ use crate::map_model::road_graph_synchronize::ConnectState::{First, Inactive, Un
 use crate::map_model::{make_inter_entity, IntersectionComponent, LanePattern, Map};
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{LineRender, MeshRender, MeshRenderEnum};
-use crate::rendering::RED;
+use crate::rendering::{Color, BLUE};
 use specs::prelude::*;
 use specs::shred::{DynamicSystemData, PanicHandler};
 use specs::shrev::{EventChannel, ReaderId};
@@ -14,6 +14,15 @@ pub enum ConnectState {
     Inactive,
     Unselected,
     First(Entity),
+}
+
+impl ConnectState {
+    pub fn is_first(&self) -> bool {
+        match self {
+            First(_) => true,
+            _ => false,
+        }
+    }
 }
 
 pub struct RoadGraphSynchronize;
@@ -31,14 +40,15 @@ impl RoadGraphSynchronizeState {
             .write_resource::<EventChannel<MovedEvent>>()
             .register_reader();
 
+        let color = Color { a: 0.5, ..BLUE };
         let e = world
             .create_entity()
             .with(Transform::new([0.0, 0.0]))
             .with(MeshRender::simple(
                 LineRender {
                     offset: [0.0, 0.0].into(),
-                    color: RED,
-                    thickness: 1.0,
+                    color,
+                    thickness: 4.0,
                 },
                 9,
             ))
@@ -83,7 +93,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             let id = data.map.add_intersection(data.mouseinfo.unprojected);
             let intersections = &data.intersections;
             if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
-                data.map.connect(id, x.id, &data.self_state.pattern);
+                data.map.connect(x.id, id, &data.self_state.pattern);
             }
             let e = make_inter_entity(
                 &data.map.intersections[id],
@@ -106,19 +116,15 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             data.self_state.deactive_connect(&mut data.meshrenders);
         }
 
-        // Connection handling
-        if data.kbinfo.just_pressed.contains(&KeyCode::C) {
-            match data.self_state.connect_state {
-                First(_) => data.self_state.deactive_connect(&mut data.meshrenders),
-                _ => data.self_state.connect_state = Unselected,
-            }
+        if data.kbinfo.just_pressed.contains(&KeyCode::Escape) {
+            data.self_state.deactive_connect(&mut data.meshrenders);
         }
 
         if let Some(x) = data.selected.0 {
             if let Some(interc) = data.intersections.get(x) {
                 data.map.set_intersection_radius(interc.id, interc.radius);
                 match data.self_state.connect_state {
-                    Unselected => {
+                    Unselected | Inactive => {
                         data.self_state.connect_state = First(x);
                         data.meshrenders
                             .get_mut(data.self_state.show_connect)
@@ -130,18 +136,31 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                         if y != x {
                             if !data.map.is_neigh(interc.id, interc2.id) {
                                 data.map
-                                    .connect(interc.id, interc2.id, &data.self_state.pattern);
+                                    .connect(interc2.id, interc.id, &data.self_state.pattern);
                             } else {
                                 data.map.disconnect(interc.id, interc2.id);
                             }
                             data.self_state.deactive_connect(&mut data.meshrenders);
                         }
                     }
-                    _ => (),
                 }
             } else {
                 data.self_state.deactive_connect(&mut data.meshrenders);
             }
+        } else if let First(x) = data.self_state.connect_state {
+            data.self_state.deactive_connect(&mut data.meshrenders);
+
+            let id = data.map.add_intersection(data.mouseinfo.unprojected);
+            let intersections = &data.intersections;
+            let lol = intersections.get(x).unwrap();
+            data.map.connect(lol.id, id, &data.self_state.pattern);
+            let e = make_inter_entity(
+                &data.map.intersections[id],
+                data.mouseinfo.unprojected,
+                &data.lazy,
+                &data.entities,
+            );
+            *data.selected = SelectedEntity(Some(e));
         }
 
         if let First(x) = data.self_state.connect_state {
