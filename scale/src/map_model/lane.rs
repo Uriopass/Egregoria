@@ -37,6 +37,41 @@ pub struct Lane {
     pub direction: LaneDirection,
 }
 
+#[derive(Clone)]
+pub struct LanePattern {
+    pub name: String,
+    pub lanes_forward: Vec<LaneType>,
+    pub lanes_backward: Vec<LaneType>,
+}
+
+impl LanePattern {
+    pub fn one_way(n_lanes: usize) -> Self {
+        assert!(n_lanes > 0);
+        LanePattern {
+            lanes_backward: vec![],
+            lanes_forward: (0..n_lanes).map(|_| LaneType::Driving).collect(),
+            name: if n_lanes == 1 {
+                "One way".to_owned()
+            } else {
+                format!("One way {} lanes", n_lanes)
+            },
+        }
+    }
+
+    pub fn two_way(n_lanes: usize) -> Self {
+        assert!(n_lanes > 0);
+        LanePattern {
+            lanes_backward: (0..n_lanes).map(|_| LaneType::Driving).collect(),
+            lanes_forward: (0..n_lanes).map(|_| LaneType::Driving).collect(),
+            name: if n_lanes == 1 {
+                "Two way".to_owned()
+            } else {
+                format!("Two way {} lanes", n_lanes)
+            },
+        }
+    }
+}
+
 impl Lane {
     pub fn get_inter_node(&self, id: IntersectionID) -> NavNodeID {
         if id == self.src_i {
@@ -58,13 +93,17 @@ impl Lane {
     ) -> Vector2<f32> {
         let inter = &inters[inter_id];
 
-        let lane_dist = parent_road.idx_unchecked(self.id);
+        let mut lane_dist = parent_road.idx_unchecked(self.id) as f32;
         let dir = parent_road.dir_from(inter);
         let dir_normal: Vector2<f32> = if incoming {
             [-dir.y, dir.x].into()
         } else {
             [dir.y, -dir.x].into()
         };
+
+        if parent_road.is_one_way() {
+            lane_dist -= 0.5 + parent_road.n_lanes() as f32 / 2.0;
+        }
 
         let mindist = parent_road.length() / 2.0 - 1.0;
 

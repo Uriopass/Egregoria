@@ -1,5 +1,5 @@
 use crate::cars::spawn_new_car;
-use crate::map_model::{make_inter_entity, IntersectionID, Map};
+use crate::map_model::{make_inter_entity, IntersectionID, LanePattern, Map};
 use cgmath::num_traits::FloatConst;
 use cgmath::Vector2;
 use specs::{LazyUpdate, World, WorldExt};
@@ -77,7 +77,15 @@ pub fn load_parismap() -> Map {
         let _ = scanner.next::<usize>();
         let _ = scanner.next::<usize>();
 
-        map.connect(ids[src], ids[dst], 1, n_lanes == 1);
+        map.connect(
+            ids[src],
+            ids[dst],
+            &if n_lanes == 1 {
+                LanePattern::one_way(1)
+            } else {
+                LanePattern::two_way(1)
+            },
+        );
     }
 
     map
@@ -97,17 +105,25 @@ pub fn add_doublecircle(pos: Vector2<f32>, m: &mut Map) {
     }
 
     for x in first_circle.windows(2) {
-        m.connect(x[0], x[1], 1, true);
+        m.connect(x[0], x[1], &LanePattern::one_way(1));
     }
-    m.connect(*first_circle.last().unwrap(), first_circle[0], 1, true);
+    m.connect(
+        *first_circle.last().unwrap(),
+        first_circle[0],
+        &LanePattern::one_way(1),
+    );
 
     for x in second_circle.windows(2) {
-        m.connect(x[0], x[1], 1, true);
+        m.connect(x[0], x[1], &LanePattern::one_way(1));
     }
-    m.connect(*second_circle.last().unwrap(), second_circle[0], 1, true);
+    m.connect(
+        *second_circle.last().unwrap(),
+        second_circle[0],
+        &LanePattern::one_way(1),
+    );
 
     for (a, b) in first_circle.into_iter().zip(second_circle) {
-        m.connect(a, b, 1, false);
+        m.connect(a, b, &LanePattern::two_way(1));
     }
 }
 
@@ -121,12 +137,28 @@ pub fn add_grid(pos: Vector2<f32>, m: &mut Map) {
     }
 
     for x in 0..9 {
-        m.connect(grid[9][x].unwrap(), grid[9][x + 1].unwrap(), 1, false);
-        m.connect(grid[x][9].unwrap(), grid[x + 1][9].unwrap(), 1, false);
+        m.connect(
+            grid[9][x].unwrap(),
+            grid[9][x + 1].unwrap(),
+            &LanePattern::two_way(1),
+        );
+        m.connect(
+            grid[x][9].unwrap(),
+            grid[x + 1][9].unwrap(),
+            &LanePattern::two_way(1),
+        );
 
         for y in 0..9 {
-            m.connect(grid[y][x].unwrap(), grid[y][x + 1].unwrap(), 1, false);
-            m.connect(grid[y][x].unwrap(), grid[y + 1][x].unwrap(), 1, false);
+            m.connect(
+                grid[y][x].unwrap(),
+                grid[y][x + 1].unwrap(),
+                &LanePattern::two_way(1),
+            );
+            m.connect(
+                grid[y][x].unwrap(),
+                grid[y + 1][x].unwrap(),
+                &LanePattern::two_way(1),
+            );
         }
     }
 }

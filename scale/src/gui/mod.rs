@@ -6,6 +6,7 @@ use specs::world::World;
 use specs::WorldExt;
 
 use crate::engine_interaction::{RenderStats, TimeInfo};
+use crate::map_model::{LanePattern, RoadGraphSynchronizeState};
 pub use inspect::*;
 
 #[macro_use]
@@ -23,8 +24,8 @@ impl Default for Gui {
     fn default() -> Self {
         Self {
             show_car_ui: true,
-            show_stats: false,
-            show_tips: true,
+            show_stats: true,
+            show_tips: false,
             n_cars: 1,
         }
     }
@@ -75,7 +76,7 @@ impl Gui {
         if self.show_car_ui {
             let mut opened = self.show_car_ui;
             imgui::Window::new(im_str!("Traffic"))
-                .size([200.0, 120.0], imgui::Condition::FirstUseEver)
+                .size([200.0, 140.0], imgui::Condition::FirstUseEver)
                 .position([30.0, 30.0], imgui::Condition::FirstUseEver)
                 .opened(&mut opened)
                 .build(&ui, || {
@@ -90,6 +91,34 @@ impl Gui {
                         for _ in 0..self.n_cars {
                             spawn_new_car(world);
                         }
+                    }
+
+                    if ui.small_button(im_str!("One way")) {
+                        world
+                            .get_mut::<RoadGraphSynchronizeState>()
+                            .unwrap()
+                            .pattern = LanePattern::one_way(1);
+                    }
+
+                    if ui.small_button(im_str!("One way two lanes")) {
+                        world
+                            .get_mut::<RoadGraphSynchronizeState>()
+                            .unwrap()
+                            .pattern = LanePattern::one_way(2);
+                    }
+
+                    if ui.small_button(im_str!("Two way")) {
+                        world
+                            .get_mut::<RoadGraphSynchronizeState>()
+                            .unwrap()
+                            .pattern = LanePattern::two_way(1);
+                    }
+
+                    if ui.small_button(im_str!("Two way two lanes")) {
+                        world
+                            .get_mut::<RoadGraphSynchronizeState>()
+                            .unwrap()
+                            .pattern = LanePattern::two_way(2);
                     }
                 });
             self.show_car_ui = opened;
