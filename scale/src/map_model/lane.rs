@@ -81,7 +81,11 @@ impl Lane {
         } else {
             panic!("Trying to get node to not corresponding intersection");
         }
-        .expect(&format!("Lane {:?} not generated yet", self.id))
+        .unwrap_or_else(|| {
+            let v: &'static String =
+                Box::leak(Box::new(format!("Lane {:?} not generated yet", self.id)));
+            panic!(v)
+        })
     }
 
     fn get_node_pos(
