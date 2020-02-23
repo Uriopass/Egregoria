@@ -55,7 +55,7 @@ impl Road {
     }
 
     pub fn is_one_way(&self) -> bool {
-        (self.lanes_forward.len() == 0) || (self.lanes_backward.len() == 0)
+        self.lanes_forward.is_empty() || self.lanes_backward.is_empty()
     }
 
     pub fn n_lanes(&self) -> usize {

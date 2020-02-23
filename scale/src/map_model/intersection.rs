@@ -141,7 +141,7 @@ impl Intersection {
             .roads
             .iter()
             .map(|x| roads[*x].incoming_lanes_from(self.id))
-            .filter(|v| v.len() > 0)
+            .filter(|v| !v.is_empty())
             .collect();
 
         if in_road_lanes.len() <= 2 {
