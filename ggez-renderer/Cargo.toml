@@ -8,8 +8,8 @@ edition = "2018"
 
 [dependencies]
 scale = { path = "../scale" }
-imgui-gfx-renderer = "0.2"
-imgui = "0.2.1"
+imgui-gfx-renderer = "0.3"
+imgui = "0.3"
 gfx_core = "0.9"
 gfx_device_gl = "0.16"
 cgmath = {version = "0.17", features = ["mint"]}
