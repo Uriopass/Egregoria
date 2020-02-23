@@ -123,6 +123,9 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         if let Some(x) = data.selected.0 {
             if let Some(interc) = data.intersections.get(x) {
                 data.map.set_intersection_radius(interc.id, interc.radius);
+                data.map
+                    .set_intersection_turn_policy(interc.id, interc.policy);
+
                 match data.self_state.connect_state {
                     Unselected | Inactive => {
                         data.self_state.connect_state = First(x);
@@ -134,12 +137,28 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     First(y) => {
                         let interc2 = data.intersections.get(y).unwrap();
                         if y != x {
-                            if !data.map.is_neigh(interc.id, interc2.id) {
-                                data.map
-                                    .connect(interc2.id, interc.id, &data.self_state.pattern);
-                            } else {
-                                data.map.disconnect(interc.id, interc2.id);
+                            let road = data.map.find_road(interc.id, interc2.id);
+
+                            match road {
+                                None => {
+                                    data.map.connect(
+                                        interc2.id,
+                                        interc.id,
+                                        &data.self_state.pattern,
+                                    );
+                                }
+                                Some(_) => {
+                                    let old_road = data.map.disconnect(interc.id, interc2.id);
+                                    if data.self_state.pattern != old_road.unwrap().pattern {
+                                        data.map.connect(
+                                            interc2.id,
+                                            interc.id,
+                                            &data.self_state.pattern,
+                                        );
+                                    }
+                                }
                             }
+
                             data.self_state.deactive_connect(&mut data.meshrenders);
                         }
                     }

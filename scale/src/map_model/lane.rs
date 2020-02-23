@@ -37,12 +37,18 @@ pub struct Lane {
     pub direction: LaneDirection,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct LanePattern {
     pub name: String,
     pub lanes_forward: Vec<LaneType>,
     pub lanes_backward: Vec<LaneType>,
 }
+impl PartialEq for LanePattern {
+    fn eq(&self, other: &Self) -> bool {
+        self.lanes_forward == other.lanes_forward && self.lanes_backward == other.lanes_backward
+    }
+}
+impl Eq for LanePattern {}
 
 impl LanePattern {
     pub fn one_way(n_lanes: usize) -> Self {

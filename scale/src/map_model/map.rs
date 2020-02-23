@@ -1,5 +1,5 @@
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneID, LanePattern, NavMesh, Road, RoadID,
+    Intersection, IntersectionID, Lane, LaneID, LanePattern, NavMesh, Road, RoadID, TurnPolicy,
 };
 use cgmath::Vector2;
 use slotmap::DenseSlotMap;
@@ -26,11 +26,23 @@ impl Map {
     }
 
     pub fn set_intersection_radius(&mut self, id: IntersectionID, radius: f32) {
+        if self.intersections[id].interface_radius == radius {
+            return;
+        }
         self.intersections[id].interface_radius = radius;
         for x in &self.intersections[id].roads {
             self.roads[*x].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
         }
-        self.intersections[id].gen_turns(&self.lanes, &mut self.navmesh);
+        self.intersections[id].gen_turns(&self.lanes, &self.roads, &mut self.navmesh);
+    }
+
+    pub fn set_intersection_turn_policy(&mut self, id: IntersectionID, policy: TurnPolicy) {
+        if self.intersections[id].policy == policy {
+            return;
+        }
+
+        self.intersections[id].policy = policy;
+        self.intersections[id].gen_turns(&self.lanes, &self.roads, &mut self.navmesh);
     }
 
     pub fn add_intersection(&mut self, pos: Vector2<f32>) -> IntersectionID {
@@ -42,11 +54,14 @@ impl Map {
 
         for x in self.intersections[id].roads.clone() {
             self.roads[x].gen_navmesh(&self.intersections, &mut self.lanes, &mut self.navmesh);
-            self.intersections[self.roads[x].other_end(id)]
-                .gen_turns(&self.lanes, &mut self.navmesh);
+            self.intersections[self.roads[x].other_end(id)].gen_turns(
+                &self.lanes,
+                &self.roads,
+                &mut self.navmesh,
+            );
         }
 
-        self.intersections[id].gen_turns(&self.lanes, &mut self.navmesh);
+        self.intersections[id].gen_turns(&self.lanes, &self.roads, &mut self.navmesh);
     }
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
@@ -79,38 +94,33 @@ impl Map {
         self.intersections[src].add_road(road);
         self.intersections[dst].add_road(road);
 
-        self.intersections[src].gen_turns(&self.lanes, &mut self.navmesh);
-        self.intersections[dst].gen_turns(&self.lanes, &mut self.navmesh);
-
         let id = road.id;
+
+        self.intersections[src].gen_turns(&self.lanes, &self.roads, &mut self.navmesh);
+        self.intersections[dst].gen_turns(&self.lanes, &self.roads, &mut self.navmesh);
+
         self.intersections[src].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
         self.intersections[dst].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
         id
     }
 
-    pub fn disconnect(&mut self, src: IntersectionID, dst: IntersectionID) {
+    pub fn disconnect(&mut self, src: IntersectionID, dst: IntersectionID) -> Option<Road> {
         let r = self.find_road(src, dst);
-        let road_id = match r {
-            None => return,
-            Some(x) => x,
-        };
-
-        self.remove_road(road_id);
+        let road_id = r?;
+        Some(self.remove_road(road_id))
     }
 
-    fn remove_road(&mut self, road_id: RoadID) {
+    fn remove_road(&mut self, road_id: RoadID) -> Road {
         let road = self.roads.remove(road_id).unwrap();
-        for lane_id in road
-            .lanes_forward
-            .into_iter()
-            .chain(road.lanes_backward.into_iter())
-        {
-            let mut lane = self.lanes.remove(lane_id).unwrap();
+        for lane_id in road.lanes_forward.iter().chain(road.lanes_backward.iter()) {
+            let mut lane = self.lanes.remove(*lane_id).unwrap();
             lane.clean(&mut self.navmesh);
         }
 
         self.intersections[road.src].clean(&self.lanes, &self.roads, &mut self.navmesh);
         self.intersections[road.dst].clean(&self.lanes, &self.roads, &mut self.navmesh);
+
+        road
     }
 
     pub fn find_road(&self, a: IntersectionID, b: IntersectionID) -> Option<RoadID> {

@@ -3,7 +3,7 @@ use crate::interaction::{Movable, Selectable};
 use crate::map_model::TrafficLight::Always;
 use crate::map_model::{
     Intersections, LaneID, Lanes, NavMesh, Road, RoadID, Roads, TrafficLight, TrafficLightSchedule,
-    Turn,
+    Turn, TurnPolicy,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
@@ -28,13 +28,16 @@ pub struct IntersectionComponent {
     pub id: IntersectionID,
     #[inspect(proxy_type = "ImDragf")]
     pub radius: f32,
+    pub policy: TurnPolicy,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Intersection {
     pub id: IntersectionID,
     pub pos: Vector2<f32>,
+
     pub turns: Vec<Turn>,
+    pub policy: TurnPolicy,
 
     pub incoming_lanes: Vec<LaneID>,
     pub outgoing_lanes: Vec<LaneID>,
@@ -49,6 +52,7 @@ impl Intersection {
             id,
             pos,
             turns: vec![],
+            policy: TurnPolicy::All,
             incoming_lanes: vec![],
             outgoing_lanes: vec![],
             roads: vec![],
@@ -60,17 +64,28 @@ impl Intersection {
         self.incoming_lanes.retain(|x| lanes.contains_key(*x));
         self.outgoing_lanes.retain(|x| lanes.contains_key(*x));
 
-        for turn in &mut self.turns {
-            if !lanes.contains_key(turn.src) || !lanes.contains_key(turn.dst) {
-                turn.clean(mesh);
+        self.roads.retain(|x| roads.contains_key(*x));
+
+        self.gen_turns(lanes, roads, mesh);
+    }
+
+    pub fn gen_turns(&mut self, lanes: &Lanes, roads: &Roads, navmesh: &mut NavMesh) {
+        let turns = self.policy.generate_turns(self, lanes, roads, navmesh);
+
+        for x in &mut self.turns {
+            if !turns.contains(&x.id) {
+                x.clean(navmesh);
             }
         }
 
-        self.turns.retain(|x| x.is_generated());
-        self.roads.retain(|x| roads.contains_key(*x));
-    }
+        self.turns.retain(|x| turns.contains(&x.id));
 
-    pub fn gen_turns(&mut self, lanes: &Lanes, navmesh: &mut NavMesh) {
+        for turn in turns {
+            if !self.turns.iter().any(|x| x.id == turn) {
+                self.turns.push(Turn::new(turn));
+            }
+        }
+
         for turn in &mut self.turns {
             if !turn.is_generated() {
                 turn.gen_navmesh(lanes, navmesh);
@@ -95,32 +110,8 @@ impl Intersection {
     }
 
     fn fill_lanes(&mut self, incoming: Vec<LaneID>, outgoing: Vec<LaneID>) {
-        if self.roads.len() >= 3 {
-            for lane_src in self.incoming_lanes.clone() {
-                for lane_dst in &outgoing {
-                    self.add_turn(lane_src, *lane_dst);
-                }
-            }
-            for lane_dst in self.outgoing_lanes.clone() {
-                for lane_src in &incoming {
-                    self.add_turn(*lane_src, lane_dst);
-                }
-            }
-        } else if self.roads.len() == 2 {
-            for (lane_src, lane_dst) in self.incoming_lanes.clone().into_iter().zip(&outgoing) {
-                self.add_turn(lane_src, *lane_dst);
-            }
-            for (lane_dst, lane_src) in self.outgoing_lanes.clone().into_iter().zip(&incoming) {
-                self.add_turn(*lane_src, lane_dst);
-            }
-        }
-
         self.outgoing_lanes.extend(outgoing);
         self.incoming_lanes.extend(incoming);
-    }
-
-    pub fn add_turn(&mut self, src: LaneID, dst: LaneID) {
-        self.turns.push(Turn::new(self.id, src, dst));
     }
 
     fn pseudo_angle(v: Vector2<f32>) -> f32 {
@@ -191,6 +182,7 @@ pub fn make_inter_entity<'a>(
         .with(IntersectionComponent {
             id: inter.id,
             radius: inter.interface_radius,
+            policy: inter.policy,
         })
         .with(MeshRender::simple(
             CircleRender {
