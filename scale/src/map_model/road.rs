@@ -21,6 +21,8 @@ pub struct Road {
 
     pub lanes_forward: Vec<LaneID>,
     pub lanes_backward: Vec<LaneID>,
+
+    pub pattern: LanePattern,
 }
 
 impl Road {
@@ -43,6 +45,7 @@ impl Road {
             interpolation_points: vec![pos_src, pos_dst],
             lanes_forward: vec![],
             lanes_backward: vec![],
+            pattern: lane_pattern.clone(),
         });
         let road = &mut store[id];
         for lane in &lane_pattern.lanes_forward {
@@ -123,6 +126,16 @@ impl Road {
             &self.lanes_forward
         } else {
             panic!("Asking incoming lanes from from an intersection not conected to the road");
+        }
+    }
+
+    pub fn outgoing_lanes_from(&self, id: IntersectionID) -> &Vec<LaneID> {
+        if id == self.src {
+            &self.lanes_forward
+        } else if id == self.dst {
+            &self.lanes_backward
+        } else {
+            panic!("Asking outgoing lanes from from an intersection not conected to the road");
         }
     }
 
