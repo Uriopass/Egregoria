@@ -1,4 +1,3 @@
-use crate::geometry::gridstore::ObjectState::{NewPos, Removed, Unchanged};
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use slotmap::new_key_type;
@@ -106,7 +105,10 @@ impl<O: Copy> GridStore<O> {
         let old_id = obj.cell_id;
         obj.cell_id = new_cell_id;
         obj.pos = pos;
-        obj.state = ObjectState::NewPos;
+        match obj.state {
+            ObjectState::Removed => {}
+            _ => obj.state = ObjectState::NewPos,
+        }
 
         self.get_cell_mut(old_id).dirty = true;
     }
@@ -117,18 +119,10 @@ impl<O: Copy> GridStore<O> {
             .objects
             .get_mut(handle)
             .expect("Object not in grid anymore");
-        match st.state {
-            NewPos => {
-                panic!("Cannot remove moved object");
-            }
-            Unchanged => {
-                st.state = Removed;
-                let p = st.pos;
-                let cell_id = self.get_cell_id(p);
-                self.get_cell_mut(cell_id).dirty = true;
-            }
-            Removed => {}
-        }
+
+        st.state = ObjectState::Removed;
+        let id = st.cell_id;
+        self.get_cell_mut(id).dirty = true;
     }
 
     /// Maintains the world, updating all the positions (and moving them to corresponding cells) and removing necessary objects.
@@ -147,14 +141,14 @@ impl<O: Copy> GridStore<O> {
                             to_add.push((store_obj.cell_id, cellobj.clone()));
                             cellobj.pos.x = std::f32::INFINITY; // Mark object for deletion
                         }
+                        store_obj.state = ObjectState::Unchanged;
                     }
-
                     ObjectState::Removed => {
                         cellobj.pos.x = std::f32::INFINITY; // Mark object for deletion from cell
+                        self.objects.remove(cellobj.id);
                     }
-                    ObjectState::Unchanged => {}
+                    _ => {}
                 }
-                store_obj.state = Unchanged;
             }
 
             cell.objs.retain(|x| x.pos.x.is_finite());
@@ -286,7 +280,7 @@ impl<O: Copy> GridStore<O> {
                     obj.pos,
                 );
                 obj.cell_id = cell_id;
-                obj.state = Unchanged;
+                obj.state = ObjectState::Unchanged;
 
                 self.cells
                     .get_mut(cell_id)
