@@ -3,10 +3,8 @@ use crate::map_model::{
     Intersection, IntersectionID, LaneID, Lanes, NavMesh, NavNode, NavNodeID, Roads,
 };
 use cgmath::{vec2, Array, InnerSpace};
-use imgui::{im_str, ImStr, Ui};
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
-use specs::World;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 pub struct TurnID {
@@ -28,11 +26,19 @@ pub struct Turn {
     generated: bool,
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[repr(usize)]
-pub enum TurnPolicy {
-    All = 0,
-    NoLeftTurns,
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Inspect)]
+pub struct TurnPolicy {
+    back_turns: bool,
+    left_turns: bool,
+}
+
+impl Default for TurnPolicy {
+    fn default() -> Self {
+        Self {
+            back_turns: false,
+            left_turns: true,
+        }
+    }
 }
 
 impl Turn {
@@ -204,7 +210,7 @@ impl TurnPolicy {
 
         for incoming in &inter.incoming_lanes {
             for outgoing in &inter.outgoing_lanes {
-                if lanes[*incoming].parent == lanes[*outgoing].parent {
+                if lanes[*incoming].parent == lanes[*outgoing].parent && !self.back_turns {
                     continue;
                 }
                 let incoming_dir = lanes[*incoming].get_orientation_vec(mesh);
@@ -213,56 +219,14 @@ impl TurnPolicy {
                 let incoming_right = vec2(incoming_dir.y, -incoming_dir.x);
                 let id = TurnID::new(inter.id, *incoming, *outgoing);
 
-                match self {
-                    TurnPolicy::All => {
-                        turns.push(id);
-                    }
-                    TurnPolicy::NoLeftTurns => {
-                        if incoming_right.dot(outgoing_dir) >= -0.3 {
-                            turns.push(id);
-                        }
-                    }
+                if self.left_turns {
+                    turns.push(id);
+                } else if incoming_right.dot(outgoing_dir) >= -0.3 {
+                    turns.push(id);
                 }
             }
         }
 
         turns
-    }
-}
-
-impl InspectRenderDefault<TurnPolicy> for TurnPolicy {
-    fn render(_: &[&TurnPolicy], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
-        unimplemented!()
-    }
-
-    fn render_mut(
-        data: &mut [&mut TurnPolicy],
-        _: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        _: &InspectArgsDefault,
-    ) -> bool {
-        if data.len() != 1 {
-            unimplemented!()
-        }
-
-        let turn_policy_names: [&ImStr; 2] = [im_str!("All"), im_str!("No left turns")];
-
-        let first = &mut data[0];
-        let mut v = **first as usize;
-
-        if imgui::ComboBox::new(im_str!("Turn Policy")).build_simple_string(
-            ui,
-            &mut v,
-            &turn_policy_names,
-        ) {
-            match v {
-                0 => **first = TurnPolicy::All,
-                1 => **first = TurnPolicy::NoLeftTurns,
-                _ => {}
-            }
-            return true;
-        }
-        false
     }
 }

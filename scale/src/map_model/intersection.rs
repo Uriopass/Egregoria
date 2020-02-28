@@ -52,7 +52,7 @@ impl Intersection {
             id,
             pos,
             turns: vec![],
-            policy: TurnPolicy::All,
+            policy: TurnPolicy::default(),
             incoming_lanes: vec![],
             outgoing_lanes: vec![],
             roads: vec![],

@@ -26,7 +26,7 @@ fn load_from_file() -> Map {
     }
 
     let des = bincode::deserialize_from(file.unwrap());
-    des.unwrap()
+    des.unwrap_or_else(|_| Map::empty())
 }
 
 struct Scanner {
