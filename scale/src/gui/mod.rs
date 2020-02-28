@@ -3,8 +3,9 @@ use crate::interaction::SelectedEntity;
 use imgui::im_str;
 use imgui::Ui;
 use specs::world::World;
-use specs::WorldExt;
+use specs::{Entity, Join, WorldExt};
 
+use crate::cars::data::{delete_car_entity, CarComponent};
 use crate::engine_interaction::{RenderStats, TimeInfo};
 use crate::map_model::{LanePattern, RoadGraphSynchronizeState};
 pub use inspect::*;
@@ -90,6 +91,18 @@ impl Gui {
                     if ui.small_button(im_str!("spawn car")) {
                         for _ in 0..self.n_cars {
                             spawn_new_car(world);
+                        }
+                    }
+
+                    if ui.small_button(im_str!("delete all cars")) {
+                        let to_delete: Vec<Entity> =
+                            (&world.entities(), &world.read_component::<CarComponent>())
+                                .join()
+                                .map(|(e, _)| e)
+                                .collect();
+
+                        for e in to_delete {
+                            delete_car_entity(world, e);
                         }
                     }
 
