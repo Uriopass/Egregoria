@@ -5,7 +5,9 @@ use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::gui::{ImCgVec2, ImDragf};
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{Map, NavMesh, NavNodeID, TrafficLightColor};
-use crate::physics::{add_to_coworld, Kinematics, PhysicsObject, Transform};
+use crate::physics::{
+    add_to_coworld, Collider, Kinematics, PhysicsObject, PhysicsWorld, Transform,
+};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::{Color, BLACK, GREEN};
 use cgmath::{vec2, InnerSpace, Vector2};
@@ -14,6 +16,7 @@ use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Component, DenseVecStorage, Entity, World, WorldExt};
+
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CarObjective {
@@ -354,4 +357,13 @@ pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -
 
     add_to_coworld(world, e);
     e
+}
+
+pub fn delete_car_entity(world: &mut World, e: Entity) {
+    {
+        let handle = world.read_component::<Collider>().get(e).unwrap().0;
+        let mut coworld = world.write_resource::<PhysicsWorld>();
+        coworld.remove(handle);
+    }
+    world.delete_entity(e).unwrap();
 }
