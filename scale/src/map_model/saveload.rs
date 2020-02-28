@@ -1,15 +1,32 @@
-use crate::cars::spawn_new_car;
 use crate::map_model::{make_inter_entity, IntersectionID, LanePattern, Map};
 use cgmath::num_traits::FloatConst;
 use cgmath::Vector2;
 use specs::{LazyUpdate, World, WorldExt};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::ops::Deref;
 
-//const GRAPH_FILENAME: &str = "world/graph";
+const FILENAME: &str = "world/map.bc";
 
-pub fn save(_world: &mut World) {
-    //world.read_resource::<NavMesh>().save(GRAPH_FILENAME);
+pub fn save(world: &mut World) {
+    let _ = std::fs::create_dir("world");
+
+    let map = world.read_resource::<Map>();
+
+    let file = File::create(FILENAME).unwrap();
+
+    bincode::serialize_into(file, map.deref()).unwrap();
+}
+
+fn load_from_file() -> Map {
+    let file = File::open(FILENAME);
+    if let Err(e) = file {
+        println!("error while trying to load map: {}", e);
+        return Map::empty();
+    }
+
+    let des = bincode::deserialize_from(file.unwrap());
+    des.unwrap()
 }
 
 struct Scanner {
@@ -163,17 +180,13 @@ pub fn add_grid(pos: Vector2<f32>, m: &mut Map) {
 }
 
 pub fn load(world: &mut World) {
-    let mut map = Map::empty();
+    let map = load_from_file();
 
-    add_doublecircle([0.0, 0.0].into(), &mut map);
-    add_grid([0.0, 250.0].into(), &mut map);
+    //add_doublecircle([0.0, 0.0].into(), &mut map);
+    //add_grid([0.0, 250.0].into(), &mut map);
 
     //let map = load_parismap();
     world.insert(map);
-
-    for _ in 0..300 {
-        spawn_new_car(world);
-    }
 
     let map = world.read_resource::<Map>();
 

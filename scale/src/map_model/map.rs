@@ -2,12 +2,14 @@ use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LanePattern, NavMesh, Road, RoadID, TurnPolicy,
 };
 use cgmath::Vector2;
+use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 
 pub type Roads = DenseSlotMap<RoadID, Road>;
 pub type Lanes = DenseSlotMap<LaneID, Lane>;
 pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 
+#[derive(Serialize, Deserialize)]
 pub struct Map {
     pub roads: Roads,
     pub lanes: Lanes,
@@ -107,7 +109,12 @@ impl Map {
     pub fn disconnect(&mut self, src: IntersectionID, dst: IntersectionID) -> Option<Road> {
         let r = self.find_road(src, dst);
         let road_id = r?;
-        Some(self.remove_road(road_id))
+        let r = self.remove_road(road_id);
+
+        self.intersections[src].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
+        self.intersections[dst].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
+
+        Some(r)
     }
 
     fn remove_road(&mut self, road_id: RoadID) -> Road {
