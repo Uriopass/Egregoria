@@ -1,5 +1,5 @@
 use crate::graphs::Graph;
-use crate::map_model::TrafficLight;
+use crate::map_model::TrafficControl;
 use cgmath::MetricSpace;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
@@ -12,14 +12,14 @@ new_key_type! {
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct NavNode {
     pub pos: Vector2<f32>,
-    pub light: TrafficLight,
+    pub control: TrafficControl,
 }
 
 impl NavNode {
     pub fn new(pos: Vector2<f32>) -> Self {
         NavNode {
             pos,
-            light: TrafficLight::Always,
+            control: TrafficControl::Always,
         }
     }
 
