@@ -2,24 +2,25 @@ use crate::rendering::{Color, GREEN, ORANGE, RED};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
-pub enum TrafficLightColor {
+pub enum TrafficBehavior {
     RED,
-    ORANGE(f32),
+    ORANGE,
     GREEN,
+    STOP,
 }
 
-impl TrafficLightColor {
+impl TrafficBehavior {
     pub fn as_render_color(self) -> Color {
         match self {
-            TrafficLightColor::RED => RED,
-            TrafficLightColor::ORANGE(_) => ORANGE,
-            TrafficLightColor::GREEN => GREEN,
+            TrafficBehavior::RED | TrafficBehavior::STOP => RED,
+            TrafficBehavior::ORANGE => ORANGE,
+            TrafficBehavior::GREEN => GREEN,
         }
     }
 
     pub fn is_red(self) -> bool {
         match self {
-            TrafficLightColor::RED => true,
+            TrafficBehavior::RED => true,
             _ => false,
         }
     }
@@ -47,32 +48,41 @@ impl TrafficLightSchedule {
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
-pub enum TrafficLight {
+pub enum TrafficControl {
     Always,
     Periodic(TrafficLightSchedule),
+    StopSign,
 }
 
-impl TrafficLight {
+impl TrafficControl {
     pub fn is_always(&self) -> bool {
         match self {
-            TrafficLight::Always => true,
+            TrafficControl::Always => true,
             _ => false,
         }
     }
 
-    pub fn get_color(&self, time_seconds: u64) -> TrafficLightColor {
+    pub fn is_stop(&self) -> bool {
         match self {
-            TrafficLight::Always => TrafficLightColor::GREEN,
-            TrafficLight::Periodic(schedule) => {
+            TrafficControl::StopSign => true,
+            _ => false,
+        }
+    }
+
+    pub fn get_behavior(&self, time_seconds: u64) -> TrafficBehavior {
+        match self {
+            TrafficControl::Always => TrafficBehavior::GREEN,
+            TrafficControl::Periodic(schedule) => {
                 let remainder = (time_seconds as usize + schedule.offset) % schedule.period;
                 if remainder < schedule.green {
-                    TrafficLightColor::GREEN
+                    TrafficBehavior::GREEN
                 } else if remainder < schedule.green + schedule.orange {
-                    TrafficLightColor::ORANGE((schedule.green + schedule.orange - remainder) as f32)
+                    TrafficBehavior::ORANGE
                 } else {
-                    TrafficLightColor::RED
+                    TrafficBehavior::RED
                 }
             }
+            TrafficControl::StopSign => TrafficBehavior::STOP,
         }
     }
 }

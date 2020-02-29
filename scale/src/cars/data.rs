@@ -1,10 +1,10 @@
 use crate::cars::data::CarObjective::{Simple, Temporary};
-use crate::cars::systems::CAR_DECELERATION;
+use crate::cars::systems::{CAR_DECELERATION, OBJECTIVE_OK_DIST};
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::gui::{ImCgVec2, ImDragf};
 use crate::interaction::{Movable, Selectable};
-use crate::map_model::{Map, NavMesh, NavNodeID, TrafficLightColor};
+use crate::map_model::{Map, NavMesh, NavNodeID, TrafficBehavior};
 use crate::physics::{
     add_to_coworld, Collider, Kinematics, PhysicsObject, PhysicsWorld, Transform,
 };
@@ -213,9 +213,14 @@ impl CarComponent {
         self.desired_speed = 15.0;
 
         if let Temporary(n_id) = self.objective {
-            match navmesh[&n_id].light.get_color(time.time_seconds) {
-                TrafficLightColor::RED | TrafficLightColor::ORANGE(_) => {
-                    if dist_to_pos < 5.0 + stop_dist {
+            match navmesh[&n_id].control.get_behavior(time.time_seconds) {
+                TrafficBehavior::RED | TrafficBehavior::ORANGE => {
+                    if dist_to_pos < OBJECTIVE_OK_DIST * 1.05 + stop_dist {
+                        self.desired_speed = 0.0;
+                    }
+                }
+                TrafficBehavior::STOP => {
+                    if dist_to_pos < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
                         self.desired_speed = 0.0;
                     }
                 }

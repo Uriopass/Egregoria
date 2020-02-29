@@ -1,9 +1,9 @@
 use crate::gui::ImDragf;
 use crate::interaction::{Movable, Selectable};
-use crate::map_model::TrafficLight::Always;
+use crate::map_model::TrafficControl::Always;
 use crate::map_model::{
-    Intersections, LaneID, Lanes, NavMesh, Road, RoadID, Roads, TrafficLight, TrafficLightSchedule,
-    Turn, TurnPolicy,
+    Intersections, LaneID, Lanes, NavMesh, Road, RoadID, Roads, TrafficControl,
+    TrafficLightSchedule, Turn, TurnPolicy,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
@@ -127,7 +127,7 @@ impl Intersection {
         }
     }
 
-    pub fn update_traffic_lights(&mut self, roads: &Roads, lanes: &Lanes, mesh: &mut NavMesh) {
+    pub fn update_traffic_control(&mut self, roads: &Roads, lanes: &Lanes, mesh: &mut NavMesh) {
         let mut in_road_lanes: Vec<&Vec<LaneID>> = self
             .roads
             .iter()
@@ -138,7 +138,7 @@ impl Intersection {
         if in_road_lanes.len() <= 2 {
             for incoming_lanes in in_road_lanes {
                 for lane in incoming_lanes {
-                    mesh[lanes[*lane].get_inter_node(self.id)].light = Always;
+                    mesh[lanes[*lane].get_inter_node(self.id)].control = Always;
                 }
             }
             return;
@@ -153,7 +153,7 @@ impl Intersection {
         let cycle_size = 10;
         let orange_length = 5;
         for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
-            let light = TrafficLight::Periodic(TrafficLightSchedule::from_basic(
+            let light = TrafficControl::Periodic(TrafficLightSchedule::from_basic(
                 cycle_size,
                 orange_length,
                 cycle_size + orange_length,
@@ -166,7 +166,8 @@ impl Intersection {
 
             for lane in incoming_lanes {
                 let node = lanes[*lane].get_inter_node(self.id);
-                mesh[node].light = light;
+                mesh[node].control = light;
+                mesh[node].control = TrafficControl::StopSign;
             }
         }
     }
