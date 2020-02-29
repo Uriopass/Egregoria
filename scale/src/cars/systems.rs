@@ -15,6 +15,7 @@ pub struct CarDecision;
 pub const CAR_ACCELERATION: f32 = 3.0;
 pub const CAR_DECELERATION: f32 = 9.0;
 pub const MIN_TURNING_RADIUS: f32 = 6.0;
+pub const OBJECTIVE_OK_DIST: f32 = 4.0;
 
 #[derive(SystemData)]
 pub struct CarDecisionSystemData<'a> {
@@ -57,8 +58,8 @@ fn car_objective_update(
         }
         CarObjective::Temporary(x) => {
             if let Some(p) = navmesh.get(x).map(|x| x.pos) {
-                if p.distance2(trans.position()) < 16.0
-                    && !navmesh[&x].light.get_color(time.time_seconds).is_red()
+                if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST
+                    && !navmesh[&x].control.get_behavior(time.time_seconds).is_red()
                 {
                     let neighs = navmesh.get_neighs(x);
                     let r = rand::random::<f32>() * (neighs.len() as f32);

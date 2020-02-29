@@ -101,8 +101,8 @@ impl Map {
         self.intersections[src].gen_turns(&self.lanes, &self.roads, &mut self.navmesh);
         self.intersections[dst].gen_turns(&self.lanes, &self.roads, &mut self.navmesh);
 
-        self.intersections[src].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
-        self.intersections[dst].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
+        self.intersections[src].update_traffic_control(&self.roads, &self.lanes, &mut self.navmesh);
+        self.intersections[dst].update_traffic_control(&self.roads, &self.lanes, &mut self.navmesh);
         id
     }
 
@@ -111,8 +111,8 @@ impl Map {
         let road_id = r?;
         let r = self.remove_road(road_id);
 
-        self.intersections[src].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
-        self.intersections[dst].update_traffic_lights(&self.roads, &self.lanes, &mut self.navmesh);
+        self.intersections[src].update_traffic_control(&self.roads, &self.lanes, &mut self.navmesh);
+        self.intersections[dst].update_traffic_control(&self.roads, &self.lanes, &mut self.navmesh);
 
         Some(r)
     }
