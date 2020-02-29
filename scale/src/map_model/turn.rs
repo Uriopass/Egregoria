@@ -126,28 +126,20 @@ impl Turn {
 }
 
 impl TurnPolicy {
-    fn zip(
-        inter_id: IntersectionID,
-        incoming: &Vec<LaneID>,
-        outgoing: &Vec<LaneID>,
-    ) -> Vec<TurnID> {
+    fn zip(inter_id: IntersectionID, incoming: &[LaneID], outgoing: &[LaneID]) -> Vec<TurnID> {
         incoming
-            .into_iter()
+            .iter()
             .zip(outgoing)
             .map(|(lane_src, lane_dst)| TurnID::new(inter_id, *lane_src, *lane_dst))
             .collect()
     }
 
-    fn all(
-        inter_id: IntersectionID,
-        incoming: &Vec<LaneID>,
-        outgoing: &Vec<LaneID>,
-    ) -> Vec<TurnID> {
+    fn all(inter_id: IntersectionID, incoming: &[LaneID], outgoing: &[LaneID]) -> Vec<TurnID> {
         incoming
-            .into_iter()
+            .iter()
             .map(|lane_src| {
                 outgoing
-                    .into_iter()
+                    .iter()
                     .map(move |lane_dst| TurnID::new(inter_id, *lane_src, *lane_dst))
             })
             .flatten()
@@ -156,8 +148,8 @@ impl TurnPolicy {
 
     fn zip_on_same_length(
         inter_id: IntersectionID,
-        incoming: &Vec<LaneID>,
-        outgoing: &Vec<LaneID>,
+        incoming: &[LaneID],
+        outgoing: &[LaneID],
     ) -> Vec<TurnID> {
         if incoming.len() == outgoing.len() {
             Self::zip(inter_id, incoming, outgoing)
@@ -167,7 +159,7 @@ impl TurnPolicy {
     }
 
     pub fn generate_turns(
-        &self,
+        self,
         inter: &Intersection,
         lanes: &Lanes,
         roads: &Roads,
@@ -219,9 +211,7 @@ impl TurnPolicy {
                 let incoming_right = vec2(incoming_dir.y, -incoming_dir.x);
                 let id = TurnID::new(inter.id, *incoming, *outgoing);
 
-                if self.left_turns {
-                    turns.push(id);
-                } else if incoming_right.dot(outgoing_dir) >= -0.3 {
+                if self.left_turns || incoming_right.dot(outgoing_dir) >= -0.3 {
                     turns.push(id);
                 }
             }

@@ -28,7 +28,7 @@ impl Map {
     }
 
     pub fn set_intersection_radius(&mut self, id: IntersectionID, radius: f32) {
-        if self.intersections[id].interface_radius == radius {
+        if (self.intersections[id].interface_radius - radius).abs() < 0.001 {
             return;
         }
         self.intersections[id].interface_radius = radius;
