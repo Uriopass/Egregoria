@@ -147,7 +147,7 @@ pub fn add_doublecircle(pos: Vector2<f32>, m: &mut Map) {
 pub fn add_grid(pos: Vector2<f32>, m: &mut Map) {
     let mut grid: [[Option<IntersectionID>; 10]; 10] = [[None; 10]; 10];
     for (y, l) in grid.iter_mut().enumerate() {
-        for (x, v) in l.into_iter().enumerate() {
+        for (x, v) in l.iter_mut().enumerate() {
             *v = Some(m.add_intersection(pos + Vector2::new(x as f32 * 70.0, y as f32 * 70.0)));
         }
     }
