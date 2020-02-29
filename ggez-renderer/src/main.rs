@@ -28,7 +28,7 @@ fn main() {
 
     if let Ok(manifest_dir) = env::var("CARGO_MANIFEST_DIR") {
         let mut path = path::PathBuf::from(manifest_dir);
-        path.push("resources");
+        path.push("../resources");
         println!("Adding path {:?}", path);
         cb = cb.add_resource_path(path);
     }
