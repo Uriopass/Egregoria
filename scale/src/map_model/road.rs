@@ -165,7 +165,7 @@ impl Road {
             .enumerate()
             .find(|(_, x)| **x == lane)
         {
-            return x + 1;
+            return x;
         }
         if let Some((x, _)) = self
             .lanes_forward
@@ -173,7 +173,7 @@ impl Road {
             .enumerate()
             .find(|(_, x)| **x == lane)
         {
-            return x + 1;
+            return x;
         }
         0
     }
