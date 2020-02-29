@@ -159,6 +159,30 @@ impl ShapeRenderer {
         self.empty = false;
     }
 
+    pub fn draw_polyline(&mut self, points: &[Vector2<f32>], thickness: f32) {
+        if !self
+            .screen_box
+            .intersects_line_within(points[0], points[1], thickness)
+        {
+            return;
+        }
+
+        self.meshbuilder
+            .polyline(
+                DrawMode::stroke(thickness),
+                &points
+                    .iter()
+                    .map(|x| Point2::new(x.x, x.y))
+                    .collect::<Vec<Point2<f32>>>(),
+                Color {
+                    a: (self.zoom * self.zoom * 50.0).min(self.color.a).max(0.0),
+                    ..self.color
+                },
+            )
+            .expect("Line error");
+        self.empty = false;
+    }
+
     pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) {
         self.draw_stroke(p1, p2, 0.5 / self.zoom);
     }
