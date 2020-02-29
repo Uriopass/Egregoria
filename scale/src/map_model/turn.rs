@@ -22,7 +22,7 @@ impl TurnID {
 #[derive(Serialize, Deserialize)]
 pub struct Turn {
     pub id: TurnID,
-    easing_nodes: Vec<NavNodeID>,
+    pub easing_nodes: Vec<NavNodeID>,
     generated: bool,
 }
 
