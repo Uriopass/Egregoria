@@ -103,7 +103,7 @@ impl Lane {
     ) -> Vector2<f32> {
         let inter = &inters[inter_id];
 
-        let mut lane_dist = parent_road.idx_unchecked(self.id) as f32;
+        let mut lane_dist = 0.5 + parent_road.idx_unchecked(self.id) as f32;
         let dir = parent_road.dir_from(inter);
         let dir_normal: Vector2<f32> = if incoming {
             [-dir.y, dir.x].into()
@@ -112,7 +112,7 @@ impl Lane {
         };
 
         if parent_road.is_one_way() {
-            lane_dist -= 0.5 + parent_road.n_lanes() as f32 / 2.0;
+            lane_dist -= parent_road.n_lanes() as f32 / 2.0;
         }
 
         let mindist = parent_road.length() / 2.0 - 1.0;
