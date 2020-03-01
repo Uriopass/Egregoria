@@ -86,7 +86,7 @@ pub struct CarComponent {
     #[inspect(proxy_type = "ImDragf")]
     pub wait_time: f32,
 
-    pub not_moving_reason: String,
+    pub ang_velocity: f32,
 }
 
 #[allow(dead_code)]
@@ -98,7 +98,7 @@ impl CarComponent {
             desired_speed: 0.0,
             desired_dir: Vector2::<f32>::new(0.0, 0.0),
             wait_time: 0.0,
-            not_moving_reason: "lol".to_string(),
+            ang_velocity: 0.0,
         }
     }
 
@@ -174,7 +174,6 @@ impl CarComponent {
             // front cone
             if dir_dot > 0.7 && his_direction.dot(self.direction) > 0.0 {
                 min_front_dist = min_front_dist.min(dist);
-                self.not_moving_reason = "Guy just in front boi".to_string();
                 continue;
             }
 
@@ -199,8 +198,6 @@ impl CarComponent {
                 }
                 None => continue,
             }
-
-            self.not_moving_reason = "Guy around but rays losin' intersectin'".to_string();
             min_front_dist = min_front_dist.min(dist);
         }
 

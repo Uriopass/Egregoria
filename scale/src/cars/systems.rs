@@ -14,8 +14,9 @@ pub struct CarDecision;
 
 pub const CAR_ACCELERATION: f32 = 3.0;
 pub const CAR_DECELERATION: f32 = 9.0;
-pub const MIN_TURNING_RADIUS: f32 = 6.0;
+pub const MIN_TURNING_RADIUS: f32 = 3.0;
 pub const OBJECTIVE_OK_DIST: f32 = 4.0;
+pub const ANG_ACC: f32 = 1.0;
 
 #[derive(SystemData)]
 pub struct CarDecisionSystemData<'a> {
@@ -108,15 +109,21 @@ fn car_physics(
             .min(time.delta * CAR_ACCELERATION)
             .max(-time.delta * CAR_DECELERATION));
 
-    let ang_acc = (speed.abs() / MIN_TURNING_RADIUS).min(2.0);
+    let max_ang_vel = (speed.abs() / MIN_TURNING_RADIUS).min(2.0);
 
     let delta_ang = car.direction.angle(car.desired_dir);
     let mut ang = Vector2::unit_x().angle(car.direction);
 
+    car.ang_velocity += time.delta * ANG_ACC;
+    car.ang_velocity = car
+        .ang_velocity
+        .min(max_ang_vel)
+        .min(3.0 * delta_ang.0.abs());
+
     ang.0 += delta_ang
         .0
-        .min(ang_acc * time.delta)
-        .max(-ang_acc * time.delta);
+        .min(car.ang_velocity * time.delta)
+        .max(-car.ang_velocity * time.delta);
     car.direction = Vector2::new(ang.cos(), ang.sin());
     trans.set_direction(car.direction);
 
