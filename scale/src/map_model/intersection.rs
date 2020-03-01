@@ -11,11 +11,11 @@ use crate::rendering::{Color, BLUE};
 use cgmath::{InnerSpace, Vector2};
 use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
+use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use specs::storage::BTreeStorage;
 use specs::{Builder, Component, Entities, Entity, LazyUpdate};
-use std::ops::Sub;
 
 new_key_type! {
     pub struct IntersectionID;
@@ -115,7 +115,7 @@ impl Intersection {
     }
 
     fn pseudo_angle(v: Vector2<f32>) -> f32 {
-        debug_assert!(v.magnitude2().sub(1.0).abs() <= 1e-5);
+        debug_assert!((v.magnitude2() - 1.0).abs() <= 1e-5);
         let dx = v.x;
         let dy = v.y;
         let p = dx / (dx.abs() + dy.abs());
@@ -152,22 +152,26 @@ impl Intersection {
 
         let cycle_size = 10;
         let orange_length = 5;
+        let offset = self.id.0.as_ffi() as u32;
+        let offset: usize =
+            rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0, cycle_size);
+
         for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
             let light = TrafficControl::Periodic(TrafficLightSchedule::from_basic(
                 cycle_size,
                 orange_length,
                 cycle_size + orange_length,
                 if i % 2 == 0 {
-                    cycle_size + orange_length
+                    cycle_size + orange_length + offset
                 } else {
-                    0
+                    offset
                 },
             ));
 
             for lane in incoming_lanes {
                 let node = lanes[*lane].get_inter_node(self.id);
                 mesh[node].control = light;
-                mesh[node].control = TrafficControl::StopSign;
+                //mesh[node].control = TrafficControl::StopSign;
             }
         }
     }
