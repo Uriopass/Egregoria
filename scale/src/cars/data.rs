@@ -232,7 +232,7 @@ impl CarComponent {
 
         if dir_to_pos.dot(self.direction) < 0.8 {
             // Not facing the objective
-            self.desired_speed = self.desired_speed.min(10.0);
+            self.desired_speed = self.desired_speed.min(6.0);
         }
 
         if min_front_dist < 6.0 + stop_dist {
