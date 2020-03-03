@@ -43,13 +43,16 @@ impl ShapeRenderer {
         }
     }
 
-    pub fn draw_circle(&mut self, p: Vector2<f32>, r: f32) {
+    pub fn draw_circle(&mut self, p: Vector2<f32>, r: f32) -> bool {
         let pp = Point2::from_vec(p);
 
         if r > 0.0 && self.screen_box.contains_within(p, r) {
             self.meshbuilder
                 .circle(self.mode, pp, r, 0.3 / self.zoom, self.color);
             self.empty = false;
+            true
+        } else {
+            false
         }
     }
 
@@ -60,9 +63,9 @@ impl ShapeRenderer {
         self.mode = DrawMode::fill();
     }
 
-    pub fn draw_rect_centered(&mut self, p: Vector2<f32>, width: f32, height: f32) {
+    pub fn draw_rect_centered(&mut self, p: Vector2<f32>, width: f32, height: f32) -> bool {
         if !self.screen_box.contains_within(p, width.max(height)) {
-            return;
+            return false;
         }
         self.meshbuilder.rectangle(
             self.mode,
@@ -70,6 +73,7 @@ impl ShapeRenderer {
             self.color,
         );
         self.empty = false;
+        true
     }
 
     pub fn draw_rect_cos_sin(
@@ -79,9 +83,9 @@ impl ShapeRenderer {
         height: f32,
         cos: f32,
         sin: f32,
-    ) {
+    ) -> bool {
         if !self.screen_box.contains_within(p, width.max(height)) {
-            return;
+            return false;
         }
 
         let a = Point2::new(width / 2.0 * cos, width / 2.0 * sin);
@@ -124,27 +128,27 @@ impl ShapeRenderer {
                     },
                 ];
                 self.meshbuilder.raw(&verts, &[0, 1, 2, 0, 2, 3], None);
-                self.empty = false;
             }
             DrawMode::Stroke(_) => {
                 self.meshbuilder
                     .polygon(self.mode, &points, self.color)
                     .expect("Error building rect");
-                self.empty = false;
             }
         }
+        self.empty = false;
+        true
     }
 
-    pub fn draw_stroke(&mut self, p1: Vector2<f32>, p2: Vector2<f32>, thickness: f32) {
+    pub fn draw_stroke(&mut self, p1: Vector2<f32>, p2: Vector2<f32>, thickness: f32) -> bool {
         if !self
             .screen_box
             .intersects_line_within(p1, p2, thickness / 2.0)
         {
-            return;
+            return false;
         }
 
         if p1 == p2 {
-            return;
+            return false;
         }
         self.meshbuilder
             .line(
@@ -157,14 +161,15 @@ impl ShapeRenderer {
             )
             .expect("Line error");
         self.empty = false;
+        true
     }
 
-    pub fn draw_polyline(&mut self, points: &[Vector2<f32>], thickness: f32) {
+    pub fn draw_polyline(&mut self, points: &[Vector2<f32>], thickness: f32) -> bool {
         if !self
             .screen_box
             .intersects_line_within(points[0], points[1], thickness)
         {
-            return;
+            return false;
         }
 
         self.meshbuilder
@@ -181,9 +186,10 @@ impl ShapeRenderer {
             )
             .expect("Line error");
         self.empty = false;
+        true
     }
 
-    pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) {
-        self.draw_stroke(p1, p2, 0.5 / self.zoom);
+    pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>) -> bool {
+        self.draw_stroke(p1, p2, 0.5 / self.zoom)
     }
 }
