@@ -16,30 +16,38 @@ impl RoadRenderer {
     pub fn new() -> Self {
         RoadRenderer
     }
-    pub fn render(&mut self, map: &Map, time: u64, rc: &mut RenderContext) {
+
+    pub fn near_render(&mut self, map: &Map, time: u64, rc: &mut RenderContext) {
         let navmesh = map.navmesh();
 
         rc.sr.color = WHITE;
+        let mut to_iter = vec![];
+
         for (id, n) in navmesh {
-            rc.sr.draw_circle(n.pos, 4.25);
+            let mut to_push = rc.sr.draw_circle(n.pos, 4.25);
+
             for e in navmesh.get_neighs(id) {
                 let p2 = navmesh.get(e.to).unwrap().pos;
-                rc.sr.draw_stroke(n.pos, p2, 8.5);
+                to_push |= rc.sr.draw_stroke(n.pos, p2, 8.5);
+            }
+
+            if to_push {
+                to_iter.push((id, n));
             }
         }
 
         rc.sr.color = MID_GRAY;
-        for (id, n) in navmesh {
+        for (id, n) in &to_iter {
             rc.sr.draw_circle(n.pos, 3.75);
 
-            for e in navmesh.get_neighs(id) {
+            for e in navmesh.get_neighs(*id) {
                 let p2 = navmesh.get(e.to).unwrap().pos;
                 rc.sr.draw_stroke(n.pos, p2, 7.5);
             }
         }
 
         // draw traffic lights
-        for (id, n) in navmesh {
+        for (id, n) in to_iter {
             if n.control.is_always() {
                 continue;
             }
@@ -87,6 +95,30 @@ impl RoadRenderer {
             };
 
             rc.sr.draw_circle(r_center + offset * dir_nor, 0.5);
+        }
+    }
+
+    pub fn far_render(&mut self, map: &Map, _time: u64, rc: &mut RenderContext) {
+        let inters = map.intersections();
+
+        rc.sr.color = MID_GRAY;
+        for (_, n) in inters {
+            rc.sr.draw_circle(n.pos, 8.0);
+        }
+
+        for (_, n) in map.roads() {
+            let pos1 = inters[n.src].pos;
+            let pos2 = inters[n.dst].pos;
+
+            rc.sr.draw_stroke(pos1, pos2, n.n_lanes() as f32 * 8.0);
+        }
+    }
+
+    pub fn render(&mut self, map: &Map, time: u64, rc: &mut RenderContext) {
+        if rc.cam.camera.zoom < 1.5 && map.roads().len() > 1000 {
+            self.far_render(map, time, rc);
+        } else {
+            self.near_render(map, time, rc);
         }
     }
 }
