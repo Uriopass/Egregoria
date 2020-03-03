@@ -190,7 +190,7 @@ pub fn load(world: &mut World) {
 
     let map = world.read_resource::<Map>();
 
-    for (_, inter) in &map.intersections {
+    for (_, inter) in map.intersections() {
         make_inter_entity(
             inter,
             inter.pos,

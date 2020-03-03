@@ -11,10 +11,10 @@ pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 
 #[derive(Serialize, Deserialize)]
 pub struct Map {
-    pub roads: Roads,
-    pub lanes: Lanes,
-    pub intersections: Intersections,
-    pub navmesh: NavMesh,
+    roads: Roads,
+    lanes: Lanes,
+    intersections: Intersections,
+    navmesh: NavMesh,
 }
 
 impl Map {
@@ -25,6 +25,19 @@ impl Map {
             intersections: Intersections::with_key(),
             navmesh: NavMesh::empty(),
         }
+    }
+
+    pub fn roads(&self) -> &Roads {
+        &self.roads
+    }
+    pub fn lanes(&self) -> &Lanes {
+        &self.lanes
+    }
+    pub fn intersections(&self) -> &Intersections {
+        &self.intersections
+    }
+    pub fn navmesh(&self) -> &NavMesh {
+        &self.navmesh
     }
 
     pub fn set_intersection_radius(&mut self, id: IntersectionID, radius: f32) {
@@ -143,17 +156,4 @@ impl Map {
     pub fn is_neigh(&self, src: IntersectionID, dst: IntersectionID) -> bool {
         self.find_road(src, dst).is_some()
     }
-
-    /*
-    pub fn from_file(filename: &'static str) -> Option<NavMesh> {
-        let f = File::open(filename.to_string() + ".bc").ok()?;
-        bincode::deserialize_from(f).ok()
-    }
-
-    pub fn save(&self, filename: &'static str) {
-        let file =
-            File::create(filename.to_string() + ".bc").expect("Could not open file for saving map");
-        bincode::serialize_into(file, self).unwrap();
-    }
-    */
 }

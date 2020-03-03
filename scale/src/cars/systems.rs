@@ -33,7 +33,7 @@ impl<'a> System<'a> for CarDecision {
 
     fn run(&mut self, mut data: Self::SystemData) {
         let cow = data.coworld;
-        let navmesh = &data.map.navmesh;
+        let navmesh = data.map.navmesh();
         let time = data.time;
 
         (&mut data.transforms, &mut data.kinematics, &mut data.cars)

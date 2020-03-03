@@ -17,7 +17,7 @@ impl RoadRenderer {
         RoadRenderer
     }
     pub fn render(&mut self, map: &Map, time: u64, rc: &mut RenderContext) {
-        let navmesh = &map.navmesh;
+        let navmesh = map.navmesh();
 
         rc.sr.color = WHITE;
         for (id, n) in navmesh {

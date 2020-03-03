@@ -16,7 +16,8 @@ pub fn spawn_new_car(world: &mut World) {
     let mut obj = CarObjective::None;
 
     {
-        let navmesh = &world.read_resource::<Map>().navmesh;
+        let m = world.read_resource::<Map>();
+        let navmesh = m.navmesh();
         let l = navmesh.len();
         if l > 0 {
             loop {

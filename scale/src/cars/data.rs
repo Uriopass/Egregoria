@@ -43,11 +43,7 @@ impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
         }
 
         // TODO: Handle Route
-        let pos: Option<Vector2<f32>>;
-        {
-            let navmesh = &world.read_resource::<Map>().navmesh;
-            pos = data[0].to_pos(navmesh);
-        }
+        let pos: Option<Vector2<f32>> = data[0].to_pos(&world.read_resource::<Map>().navmesh());
         match pos {
             Some(x) => {
                 <ImCgVec2 as InspectRenderDefault<Vector2<f32>>>::render(
