@@ -96,7 +96,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                 data.map.connect(x.id, id, &data.self_state.pattern);
             }
             let e = make_inter_entity(
-                &data.map.intersections[id],
+                &data.map.intersections()[id],
                 data.mouseinfo.unprojected,
                 &data.lazy,
                 &data.entities,
@@ -174,7 +174,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
             let lol = intersections.get(x).unwrap();
             data.map.connect(lol.id, id, &data.self_state.pattern);
             let e = make_inter_entity(
-                &data.map.intersections[id],
+                &data.map.intersections()[id],
                 data.mouseinfo.unprojected,
                 &data.lazy,
                 &data.entities,
