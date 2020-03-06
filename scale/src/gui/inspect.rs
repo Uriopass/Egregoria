@@ -11,8 +11,8 @@ use specs::shrev::EventChannel;
 use specs::{Component, Entity, World, WorldExt};
 use std::marker::PhantomData;
 
-pub struct ImDragf;
-impl InspectRenderDefault<f32> for ImDragf {
+pub struct InspectDragf;
+impl InspectRenderDefault<f32> for InspectDragf {
     fn render(
         data: &[&f32],
         label: &'static str,
@@ -45,7 +45,7 @@ impl InspectRenderDefault<f32> for ImDragf {
     }
 }
 
-impl InspectRenderDefault<f64> for ImDragf {
+impl InspectRenderDefault<f64> for InspectDragf {
     fn render(
         data: &[&f64],
         label: &'static str,
@@ -82,8 +82,8 @@ impl InspectRenderDefault<f64> for ImDragf {
     }
 }
 
-pub struct ImCgVec2;
-impl InspectRenderDefault<Vector2<f32>> for ImCgVec2 {
+pub struct InspectVec2;
+impl InspectRenderDefault<Vector2<f32>> for InspectVec2 {
     fn render(
         data: &[&Vector2<f32>],
         label: &'static str,
@@ -152,10 +152,11 @@ impl InspectRenderDefault<Entity> for ImEntity {
     }
 }
 
-pub struct ImVec<T> {
+pub struct InspectVec<T> {
     _phantom: PhantomData<T>,
 }
-impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for ImVec<T> {
+
+impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for InspectVec<T> {
     fn render(
         _data: &[&Vec<T>],
         _label: &'static str,
@@ -248,7 +249,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         let mut event = None;
         clone_and_modify(self.world, self.entity, |world, mut x: Transform| {
             let mut position = x.position();
-            if <ImCgVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
+            if <InspectVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
                 &mut [&mut position],
                 "Pos",
                 world,
