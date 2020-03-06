@@ -3,7 +3,7 @@ use crate::interaction::{FollowEntity, Movable, MovedEvent};
 use crate::map_model::IntersectionComponent;
 use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::MeshRender;
-use cgmath::Vector2;
+use cgmath::{vec2, InnerSpace, Vector2};
 use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -118,6 +118,46 @@ impl InspectRenderDefault<Vector2<f32>> for InspectVec2 {
             .build();
         x.x = conv[0];
         x.y = conv[1];
+        changed
+    }
+}
+
+pub struct InspectVec2Rotation;
+impl InspectRenderDefault<Vector2<f32>> for InspectVec2Rotation {
+    fn render(
+        data: &[&Vector2<f32>],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        _: &InspectArgsDefault,
+    ) {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = data[0];
+        let ang = x.angle(vec2(0.0, 1.0));
+        ui.text(&im_str!("{} {}", label, ang.0));
+    }
+
+    fn render_mut(
+        data: &mut [&mut Vector2<f32>],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = &mut data[0];
+        let mut ang = f32::atan2(x.y, x.x);
+
+        let changed = ui
+            .drag_float(&im_str!("{}", label), &mut ang)
+            .speed(-args.step.unwrap_or(0.1))
+            .build();
+        x.x = ang.cos();
+        x.y = ang.sin();
         changed
     }
 }
