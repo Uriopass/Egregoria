@@ -1,8 +1,8 @@
 use crate::cars::data::CarObjective::{Simple, Temporary};
-use crate::cars::systems::{CAR_ACCELERATION, CAR_DECELERATION, OBJECTIVE_OK_DIST};
+use crate::cars::systems::{CAR_DECELERATION, OBJECTIVE_OK_DIST};
 use crate::engine_interaction::TimeInfo;
-use crate::geometry::intersections::{both_dist_to_inter, time_to_hit, Ray};
-use crate::gui::{ImCgVec2, ImDragf};
+use crate::geometry::intersections::{both_dist_to_inter, Ray};
+use crate::gui::{InspectDragf, InspectVec2};
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{Map, NavMesh, NavNodeID, TrafficBehavior};
 use crate::physics::{
@@ -46,7 +46,7 @@ impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
         let pos: Option<Vector2<f32>> = data[0].to_pos(&world.read_resource::<Map>().navmesh());
         match pos {
             Some(x) => {
-                <ImCgVec2 as InspectRenderDefault<Vector2<f32>>>::render(
+                <InspectVec2 as InspectRenderDefault<Vector2<f32>>>::render(
                     &[&x],
                     label,
                     world,
@@ -72,16 +72,16 @@ impl CarObjective {
 
 #[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct CarComponent {
-    #[inspect(proxy_type = "ImCgVec2")]
+    #[inspect(proxy_type = "InspectVec2")]
     pub direction: Vector2<f32>,
     pub objective: CarObjective,
-    #[inspect(proxy_type = "ImDragf")]
+    #[inspect(proxy_type = "InspectDragf")]
     pub desired_speed: f32,
-    #[inspect(proxy_type = "ImCgVec2")]
+    #[inspect(proxy_type = "InspectVec2")]
     pub desired_dir: Vector2<f32>,
-    #[inspect(proxy_type = "ImDragf")]
+    #[inspect(proxy_type = "InspectDragf")]
     pub wait_time: f32,
-    #[inspect(proxy_type = "ImDragf")]
+    #[inspect(proxy_type = "InspectDragf")]
     pub ang_velocity: f32,
 }
 

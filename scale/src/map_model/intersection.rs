@@ -1,4 +1,4 @@
-use crate::gui::ImDragf;
+use crate::gui::InspectDragf;
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::TrafficControl::Always;
 use crate::map_model::{
@@ -26,7 +26,7 @@ new_key_type! {
 pub struct IntersectionComponent {
     #[inspect(skip = true)]
     pub id: IntersectionID,
-    #[inspect(proxy_type = "ImDragf")]
+    #[inspect(proxy_type = "InspectDragf")]
     pub radius: f32,
     pub policy: TurnPolicy,
 }
