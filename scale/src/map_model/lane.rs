@@ -149,9 +149,9 @@ impl Lane {
             None => {
                 self.dst_node = Some(mesh.push(NavNode::new(pos)));
                 if self.direction == LaneDirection::Forward {
-                    mesh.add_neigh(self.src_node.unwrap(), self.dst_node.unwrap(), 1.0);
+                    mesh.add_neigh(self.src_node.unwrap(), self.dst_node.unwrap(), ());
                 } else {
-                    mesh.add_neigh(self.dst_node.unwrap(), self.src_node.unwrap(), 1.0);
+                    mesh.add_neigh(self.dst_node.unwrap(), self.src_node.unwrap(), ());
                 }
             }
             Some(id) => mesh[id].pos = pos,

@@ -3,21 +3,21 @@ use slotmap::{Key, Keys, SecondaryMap, SlotMap};
 use std::ops::{Index, IndexMut};
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
-pub struct Edge<N> {
+pub struct Edge<N, W> {
     pub to: N,
-    pub weight: f32,
+    pub weight: W,
 }
 
-type EdgeList<N> = Vec<Edge<N>>;
+type EdgeList<N, W> = Vec<Edge<N, W>>;
 
 #[derive(Serialize, Deserialize)]
-pub struct Graph<N: Key, T: Copy> {
+pub struct Graph<N: Key, T: Copy, W> {
     nodes: SlotMap<N, T>,
-    edges: SecondaryMap<N, EdgeList<N>>,
-    backward_edges: SecondaryMap<N, EdgeList<N>>,
+    edges: SecondaryMap<N, EdgeList<N, W>>,
+    backward_edges: SecondaryMap<N, EdgeList<N, W>>,
 }
 
-impl<N: Key + Copy + Eq, T: Copy> Graph<N, T> {
+impl<N: Key + Copy + Eq, T: Copy, W: Clone> Graph<N, T, W> {
     pub fn empty() -> Self {
         Graph {
             nodes: SlotMap::with_key(),
@@ -53,7 +53,7 @@ impl<N: Key + Copy + Eq, T: Copy> Graph<N, T> {
         uuid
     }
 
-    pub fn neighs(&self) -> Vec<(N, &Edge<N>)> {
+    pub fn neighs(&self) -> Vec<(N, &Edge<N, W>)> {
         self.edges
             .iter()
             .map(|(from, el)| el.iter().map(move |x| (from, x)))
@@ -61,20 +61,23 @@ impl<N: Key + Copy + Eq, T: Copy> Graph<N, T> {
             .collect()
     }
 
-    pub fn get_neighs(&self, id: N) -> &EdgeList<N> {
+    pub fn get_neighs(&self, id: N) -> &EdgeList<N, W> {
         &self.edges[id]
     }
 
-    pub fn get_backward_neighs(&self, id: N) -> &EdgeList<N> {
+    pub fn get_backward_neighs(&self, id: N) -> &EdgeList<N, W> {
         &self.backward_edges[id]
     }
 
-    pub fn set_neighs(&mut self, id: N, neighs: EdgeList<N>) {
+    pub fn set_neighs(&mut self, id: N, neighs: EdgeList<N, W>) {
         self.edges.insert(id, neighs);
     }
 
-    pub fn add_neigh(&mut self, from: N, to: N, weight: f32) {
-        self.edges[from].push(Edge { to, weight });
+    pub fn add_neigh(&mut self, from: N, to: N, weight: W) {
+        self.edges[from].push(Edge {
+            to,
+            weight: weight.clone(),
+        });
         self.backward_edges[to].push(Edge { to: from, weight });
     }
 
@@ -118,7 +121,7 @@ impl<N: Key + Copy + Eq, T: Copy> Graph<N, T> {
     }
 }
 
-impl<T: Copy, N: Key> Index<N> for Graph<N, T> {
+impl<T: Copy, N: Key, W> Index<N> for Graph<N, T, W> {
     type Output = T;
 
     fn index(&self, index: N) -> &Self::Output {
@@ -126,13 +129,13 @@ impl<T: Copy, N: Key> Index<N> for Graph<N, T> {
     }
 }
 
-impl<T: Copy, N: Key> IndexMut<N> for Graph<N, T> {
+impl<T: Copy, N: Key, W> IndexMut<N> for Graph<N, T, W> {
     fn index_mut(&mut self, index: N) -> &mut Self::Output {
         self.nodes.get_mut(index).unwrap()
     }
 }
 
-impl<T: Copy, N: Key> Index<&N> for Graph<N, T> {
+impl<T: Copy, N: Key, W> Index<&N> for Graph<N, T, W> {
     type Output = T;
 
     fn index(&self, index: &N) -> &Self::Output {
@@ -140,13 +143,13 @@ impl<T: Copy, N: Key> Index<&N> for Graph<N, T> {
     }
 }
 
-impl<T: Copy, N: Key> IndexMut<&N> for Graph<N, T> {
+impl<T: Copy, N: Key, W> IndexMut<&N> for Graph<N, T, W> {
     fn index_mut(&mut self, index: &N) -> &mut Self::Output {
         self.nodes.get_mut(index.clone()).unwrap()
     }
 }
 
-impl<'a, T: 'a + Copy, N: Key> IntoIterator for &'a mut Graph<N, T> {
+impl<'a, T: 'a + Copy, N: Key, W> IntoIterator for &'a mut Graph<N, T, W> {
     type Item = (N, &'a mut T);
     type IntoIter = slotmap::IterMut<'a, N, T>;
 
@@ -155,7 +158,7 @@ impl<'a, T: 'a + Copy, N: Key> IntoIterator for &'a mut Graph<N, T> {
     }
 }
 
-impl<'a, T: 'a + Copy, N: Key> IntoIterator for &'a Graph<N, T> {
+impl<'a, T: 'a + Copy, N: Key, W> IntoIterator for &'a Graph<N, T, W> {
     type Item = (N, &'a T);
     type IntoIter = slotmap::Iter<'a, N, T>;
 
@@ -164,7 +167,7 @@ impl<'a, T: 'a + Copy, N: Key> IntoIterator for &'a Graph<N, T> {
     }
 }
 
-fn remove_from_list<N: Key + Eq>(hash: &mut SecondaryMap<N, EdgeList<N>>, id: N, elem: N) {
+fn remove_from_list<N: Key + Eq, W>(hash: &mut SecondaryMap<N, EdgeList<N, W>>, id: N, elem: N) {
     hash.get_mut(id)
         .expect("Invalid node id")
         .retain(|e| e.to != elem);
@@ -181,17 +184,17 @@ mod tests {
 
     #[test]
     fn test_graph() {
-        let mut g: Graph<NodeID, i32> = Graph::empty();
+        let mut g: Graph<NodeID, i32, ()> = Graph::empty();
         let a = g.push(0);
         let b = g.push(1);
         let c = g.push(2);
 
-        g.add_neigh(a, b, 1.0);
+        g.add_neigh(a, b, ());
 
         assert_eq!(g.get_neighs(a).len(), 1);
         assert_eq!(g.get_backward_neighs(b).get(0).unwrap().to, a);
 
-        g.add_neigh(b, c, 1.0);
+        g.add_neigh(b, c, ());
 
         g.remove_node(b);
 
@@ -201,7 +204,7 @@ mod tests {
         assert_eq!(g.get_neighs(a).len(), 0);
         assert_eq!(g.get_backward_neighs(c).len(), 0);
 
-        g.add_neigh(a, c, 1.0);
+        g.add_neigh(a, c, ());
         g.remove_neigh(a, c);
 
         assert_eq!(g.get_neighs(a).len(), 0);

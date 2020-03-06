@@ -28,7 +28,7 @@ impl NavNode {
     }
 }
 
-pub type NavMesh = Graph<NavNodeID, NavNode>;
+pub type NavMesh = Graph<NavNodeID, NavNode, ()>;
 
 impl NavMesh {
     pub fn closest_node(&self, pos: Vector2<f32>) -> Option<NavNodeID> {
