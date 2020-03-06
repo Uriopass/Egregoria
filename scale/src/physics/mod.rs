@@ -12,6 +12,7 @@ pub use transform::*;
 #[derive(Clone, Copy)]
 pub struct PhysicsObject {
     pub dir: Vector2<f32>,
+    pub speed: f32,
     // e: Entity, // Maybe I'll need this someday
 }
 
@@ -32,6 +33,7 @@ pub fn add_to_coworld(world: &mut World, e: Entity) {
         trans.position(),
         PhysicsObject {
             dir: trans.direction(),
+            speed: 0.0,
         },
     );
 
