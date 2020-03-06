@@ -81,7 +81,7 @@ pub struct CarComponent {
     pub desired_dir: Vector2<f32>,
     #[inspect(proxy_type = "ImDragf")]
     pub wait_time: f32,
-
+    #[inspect(proxy_type = "ImDragf")]
     pub ang_velocity: f32,
 }
 
