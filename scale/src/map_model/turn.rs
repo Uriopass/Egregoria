@@ -73,7 +73,7 @@ impl Turn {
         v.push(node_dst);
 
         for x in v.windows(2) {
-            navmesh.add_neigh(x[0], x[1], 1.0);
+            navmesh.add_neigh(x[0], x[1], ());
         }
 
         self.generated = true;
