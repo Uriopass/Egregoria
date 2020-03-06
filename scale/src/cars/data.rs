@@ -1,7 +1,7 @@
 use crate::cars::data::CarObjective::{Simple, Temporary};
-use crate::cars::systems::{CAR_DECELERATION, OBJECTIVE_OK_DIST};
+use crate::cars::systems::{CAR_ACCELERATION, CAR_DECELERATION, OBJECTIVE_OK_DIST};
 use crate::engine_interaction::TimeInfo;
-use crate::geometry::intersections::{both_dist_to_inter, Ray};
+use crate::geometry::intersections::{both_dist_to_inter, time_to_hit, Ray};
 use crate::gui::{ImCgVec2, ImDragf};
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{Map, NavMesh, NavNodeID, TrafficBehavior};
@@ -85,7 +85,6 @@ pub struct CarComponent {
     pub ang_velocity: f32,
 }
 
-#[allow(dead_code)]
 impl CarComponent {
     pub fn new(direction: Vector2<f32>, objective: CarObjective) -> CarComponent {
         CarComponent {
@@ -96,10 +95,6 @@ impl CarComponent {
             wait_time: 0.0,
             ang_velocity: 0.0,
         }
-    }
-
-    pub fn normal(&self) -> Vector2<f32> {
-        Vector2::new(-self.direction.y, self.direction.x)
     }
 
     pub fn calc_decision<'a>(
@@ -136,13 +131,11 @@ impl CarComponent {
 
         let mut min_front_dist: f32 = 50.0;
 
-        // [1, 2] -> [2, -1]
-        // let dir_normal_right: Vector2<f32> = [self.direction.y, -self.direction.x].into();
-
         let my_ray = Ray {
             from: position - self.direction * CAR_WIDTH / 2.0,
             dir: self.direction,
         };
+
         // Collision avoidance
         for nei in neighs {
             if nei.0 == position {
@@ -159,11 +152,13 @@ impl CarComponent {
                 continue;
             }
 
+            let nei_physics_obj = nei.1;
+
             let dist = dist2.sqrt();
             let towards_dir = towards_vec / dist;
 
             let dir_dot = towards_dir.dot(self.direction);
-            let his_direction = nei.1.dir;
+            let his_direction = nei_physics_obj.dir;
 
             // let pos_dot = towards_vec.dot(dir_normal_right);
 
@@ -188,7 +183,7 @@ impl CarComponent {
 
             match inter {
                 Some((my_dist, his_dist)) => {
-                    if my_dist < his_dist {
+                    if my_dist - speed.min(1.0) < his_dist - nei_physics_obj.speed.min(1.0) {
                         continue;
                     }
                 }

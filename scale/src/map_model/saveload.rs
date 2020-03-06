@@ -180,12 +180,14 @@ pub fn add_grid(pos: Vector2<f32>, m: &mut Map) {
 }
 
 pub fn load(world: &mut World) {
-    //let map = load_from_file();
+    let mut map = load_from_file();
 
-    //add_doublecircle([0.0, 0.0].into(), &mut map);
-    //add_grid([0.0, 250.0].into(), &mut map);
+    if map.is_empty() {
+        add_doublecircle([0.0, 0.0].into(), &mut map);
+        add_grid([0.0, 250.0].into(), &mut map);
+    }
 
-    let map = load_parismap();
+    // let map = load_parismap();
     world.insert(map);
 
     let map = world.read_resource::<Map>();

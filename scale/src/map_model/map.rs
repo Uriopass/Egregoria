@@ -27,6 +27,13 @@ impl Map {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.roads.is_empty()
+            && self.lanes.is_empty()
+            && self.intersections.is_empty()
+            && self.navmesh.is_empty()
+    }
+
     pub fn roads(&self) -> &Roads {
         &self.roads
     }

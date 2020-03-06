@@ -1,7 +1,7 @@
 use crate::engine_interaction::TimeInfo;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::PhysicsWorld;
-use cgmath::Zero;
+use cgmath::{InnerSpace, Zero};
 use specs::prelude::ResourceId;
 use specs::{Join, Read, ReadStorage, System, SystemData, World, Write, WriteStorage};
 
@@ -28,8 +28,11 @@ impl<'a> System<'a> for KinematicsApply {
             kin.velocity += kin.acceleration * delta;
             transform.translate(kin.velocity * delta);
             kin.acceleration.set_zero();
+
             data.coworld.set_position(collider.0, transform.position());
-            data.coworld.get_obj_mut(collider.0).dir = transform.direction();
+            let po = data.coworld.get_obj_mut(collider.0);
+            po.dir = transform.direction();
+            po.speed = kin.velocity.magnitude();
         }
 
         data.coworld.maintain();
