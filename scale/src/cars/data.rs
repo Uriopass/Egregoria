@@ -2,7 +2,7 @@ use crate::cars::data::CarObjective::{Simple, Temporary};
 use crate::cars::systems::{CAR_DECELERATION, OBJECTIVE_OK_DIST};
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
-use crate::gui::{InspectDragf, InspectVec2};
+use crate::gui::{InspectDragf, InspectVec2, InspectVec2Rotation};
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{Map, NavMesh, NavNodeID, TrafficBehavior};
 use crate::physics::{
@@ -72,7 +72,7 @@ impl CarObjective {
 
 #[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct CarComponent {
-    #[inspect(proxy_type = "InspectVec2")]
+    #[inspect(proxy_type = "InspectVec2Rotation", step = 0.01)]
     pub direction: Vector2<f32>,
     pub objective: CarObjective,
     #[inspect(proxy_type = "InspectDragf")]
