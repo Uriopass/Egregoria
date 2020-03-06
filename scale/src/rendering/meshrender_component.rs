@@ -1,5 +1,5 @@
 use crate::engine_interaction::MAX_LAYERS;
-use crate::gui::{ImCgVec2, ImDragf, ImEntity, ImVec};
+use crate::gui::{ImEntity, InspectDragf, InspectVec, InspectVec2};
 use crate::rendering::colors::*;
 use cgmath::num_traits::zero;
 use cgmath::Vector2;
@@ -165,7 +165,7 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
         args: &InspectArgsDefault,
     ) {
         let mapped: Vec<&Vec<MeshRenderEnum>> = data.iter().map(|x| &x.orders).collect();
-        <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
+        <InspectVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
             &mapped, label, world, ui, args,
         );
     }
@@ -179,7 +179,7 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
     ) -> bool {
         let mut mapped: Vec<&mut Vec<MeshRenderEnum>> =
             data.iter_mut().map(|x| &mut x.orders).collect();
-        <ImVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
+        <InspectVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
             &mut mapped,
             label,
             world,
@@ -191,9 +191,9 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
 
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct CircleRender {
-    #[inspect(proxy_type = "ImCgVec2")]
+    #[inspect(proxy_type = "InspectVec2")]
     pub offset: Vector2<f32>,
-    #[inspect(proxy_type = "ImDragf")]
+    #[inspect(proxy_type = "InspectDragf")]
     pub radius: f32,
     pub color: Color,
     pub filled: bool,
@@ -212,11 +212,11 @@ impl Default for CircleRender {
 
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct RectRender {
-    #[inspect(proxy_type = "ImCgVec2")]
+    #[inspect(proxy_type = "InspectVec2")]
     pub offset: Vector2<f32>,
-    #[inspect(proxy_type = "ImDragf")]
+    #[inspect(proxy_type = "InspectDragf")]
     pub width: f32,
-    #[inspect(proxy_type = "ImDragf")]
+    #[inspect(proxy_type = "InspectDragf")]
     pub height: f32,
     pub color: Color,
     pub filled: bool,
@@ -239,15 +239,15 @@ pub struct LineToRender {
     #[inspect(proxy_type = "ImEntity")]
     pub to: Entity,
     pub color: Color,
-    #[inspect(proxy_type = "ImDragf")]
+    #[inspect(proxy_type = "InspectDragf")]
     pub thickness: f32,
 }
 
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct LineRender {
-    #[inspect(proxy_type = "ImCgVec2")]
+    #[inspect(proxy_type = "InspectVec2")]
     pub offset: Vector2<f32>,
     pub color: Color,
-    #[inspect(proxy_type = "ImDragf")]
+    #[inspect(proxy_type = "InspectDragf")]
     pub thickness: f32,
 }
