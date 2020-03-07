@@ -56,7 +56,7 @@ impl Intersection {
             incoming_lanes: vec![],
             outgoing_lanes: vec![],
             roads: vec![],
-            interface_radius: 15.0,
+            interface_radius: 20.0,
         })
     }
 
