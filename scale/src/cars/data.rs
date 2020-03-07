@@ -183,7 +183,7 @@ impl CarComponent {
 
             match inter {
                 Some((my_dist, his_dist)) => {
-                    if my_dist - speed.min(1.0) < his_dist - nei_physics_obj.speed.min(1.0) {
+                    if my_dist - speed.min(2.5) < his_dist - nei_physics_obj.speed.min(2.5) {
                         continue;
                     }
                 }
@@ -344,7 +344,7 @@ pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -
         .with(trans)
         .with(Kinematics::from_mass(1000.0))
         .with(car)
-        .with(Movable)
+        //.with(Movable)
         .with(Selectable)
         .build();
 
