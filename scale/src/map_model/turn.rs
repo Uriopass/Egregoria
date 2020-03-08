@@ -2,11 +2,11 @@ use crate::geometry::splines::Spline;
 use crate::map_model::{
     Intersection, IntersectionID, LaneID, Lanes, NavMesh, NavNode, NavNodeID, Roads,
 };
-use cgmath::{vec2, Array, InnerSpace};
+use cgmath::{vec2, Array, InnerSpace, Vector2};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, PartialOrd, Ord, Deserialize, PartialEq, Eq)]
 pub struct TurnID {
     pub parent: IntersectionID,
     pub src: LaneID,
@@ -23,6 +23,7 @@ impl TurnID {
 pub struct Turn {
     pub id: TurnID,
     pub easing_nodes: Vec<NavNodeID>,
+    pub points: Vec<Vector2<f32>>,
     generated: bool,
 }
 
@@ -46,6 +47,7 @@ impl Turn {
         Self {
             id,
             easing_nodes: vec![],
+            points: vec![],
             generated: false,
         }
     }
@@ -115,12 +117,14 @@ impl Turn {
         };
 
         let len = self.easing_nodes.len();
+        self.points.clear();
         for (i, node) in self.easing_nodes.iter().enumerate() {
             let c = (i + 1) as f32 / (len + 1) as f32;
 
             let pos = spline.get(c);
             assert!(pos.is_finite());
-            navmesh.get_mut(*node).unwrap().pos = spline.get(c);
+            navmesh.get_mut(*node).unwrap().pos = pos;
+            self.points.push(pos);
         }
     }
 }

@@ -160,6 +160,20 @@ impl Map {
         None
     }
 
+    pub fn closest_lane(&self, p: Vector2<f32>) -> Option<LaneID> {
+        let mut min_dist = std::f32::MAX;
+        let mut closest = None;
+
+        for (id, lane) in &self.lanes {
+            let dist = lane.dist_to(p);
+            if dist < min_dist {
+                min_dist = dist;
+                closest = Some(id);
+            }
+        }
+        closest
+    }
+
     pub fn is_neigh(&self, src: IntersectionID, dst: IntersectionID) -> bool {
         self.find_road(src, dst).is_some()
     }
