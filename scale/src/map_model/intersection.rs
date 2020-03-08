@@ -1,9 +1,8 @@
 use crate::gui::InspectDragf;
 use crate::interaction::{Movable, Selectable};
-use crate::map_model::TrafficControl::Always;
 use crate::map_model::{
-    Intersections, LaneID, Lanes, NavMesh, Road, RoadID, Roads, TrafficControl,
-    TrafficLightSchedule, Turn, TurnID, TurnPolicy,
+    Intersections, LaneID, Lanes, Road, RoadID, Roads, TrafficControl, TrafficLightSchedule, Turn,
+    TurnID, TurnPolicy,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
@@ -61,26 +60,23 @@ impl Intersection {
         })
     }
 
-    pub fn clean(&mut self, lanes: &Lanes, roads: &Roads, mesh: &mut NavMesh) {
+    pub fn clean(&mut self, lanes: &Lanes, roads: &Roads) {
         self.incoming_lanes.retain(|x| lanes.contains_key(*x));
         self.outgoing_lanes.retain(|x| lanes.contains_key(*x));
 
         self.roads.retain(|x| roads.contains_key(*x));
 
-        self.gen_turns(lanes, roads, mesh);
+        self.gen_turns(lanes, roads);
     }
 
-    pub fn gen_turns(&mut self, lanes: &Lanes, roads: &Roads, navmesh: &mut NavMesh) {
-        let turns = self.policy.generate_turns(self, lanes, roads, navmesh);
+    pub fn gen_turns(&mut self, lanes: &Lanes, roads: &Roads) {
+        let turns = self.policy.generate_turns(self, lanes, roads);
 
         let to_remove: Vec<TurnID> = self
             .turns
             .iter_mut()
             .filter(|(id, _)| !turns.contains(id))
-            .map(|(id, x)| {
-                x.clean(navmesh);
-                *id
-            })
+            .map(|(id, _)| *id)
             .collect();
 
         for id in to_remove {
@@ -92,11 +88,7 @@ impl Intersection {
         }
 
         for turn in self.turns.values_mut() {
-            if !turn.is_generated() {
-                turn.gen_navmesh(lanes, navmesh);
-            } else {
-                turn.reposition_nodes(lanes, navmesh);
-            }
+            turn.make_points(lanes);
         }
     }
 
@@ -132,7 +124,7 @@ impl Intersection {
         }
     }
 
-    pub fn update_traffic_control(&mut self, roads: &Roads, lanes: &Lanes, mesh: &mut NavMesh) {
+    pub fn update_traffic_control(&mut self, roads: &Roads, lanes: &Lanes) {
         let mut in_road_lanes: Vec<&Vec<LaneID>> = self
             .roads
             .iter()
@@ -142,9 +134,7 @@ impl Intersection {
 
         if in_road_lanes.len() <= 2 {
             for incoming_lanes in in_road_lanes {
-                for lane in incoming_lanes {
-                    mesh[lanes[*lane].get_inter_node(self.id)].control = Always;
-                }
+                for lane in incoming_lanes {}
             }
             return;
         }
@@ -173,11 +163,7 @@ impl Intersection {
                 },
             ));
 
-            for lane in incoming_lanes {
-                let node = lanes[*lane].get_inter_node(self.id);
-                mesh[node].control = light;
-                //mesh[node].control = TrafficControl::StopSign;
-            }
+            for lane in incoming_lanes {}
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::map_model::{
     Intersection, IntersectionID, Intersections, Lane, LaneDirection, LaneID, LanePattern,
-    LaneType, Lanes, NavMesh, Roads,
+    LaneType, Lanes, Roads,
 };
 use cgmath::InnerSpace;
 use cgmath::Vector2;
@@ -77,8 +77,6 @@ impl Road {
             src_i: self.src,
             dst_i: self.dst,
             lane_type,
-            src_node: None,
-            dst_node: None,
             points: vec![],
             direction,
         });
@@ -89,24 +87,13 @@ impl Road {
         id
     }
 
-    pub fn gen_navmesh(
-        &mut self,
-        intersections: &Intersections,
-        lanes: &mut Lanes,
-        navmesh: &mut NavMesh,
-    ) {
+    pub fn gen_pos(&mut self, intersections: &Intersections, lanes: &mut Lanes) {
         self.interpolation_points[0] = intersections[self.src].pos;
         let l = self.interpolation_points.len();
         self.interpolation_points[l - 1] = intersections[self.dst].pos;
 
-        for lane in &self.lanes_forward {
-            let lane = &mut lanes[*lane];
-            lane.gen_navmesh(intersections, self, navmesh);
-        }
-
-        for lane in &self.lanes_backward {
-            let lane = &mut lanes[*lane];
-            lane.gen_navmesh(intersections, self, navmesh);
+        for id in self.lanes_forward.iter().chain(self.lanes_backward.iter()) {
+            lanes[*id].gen_pos(intersections, self);
         }
     }
 

@@ -1,6 +1,4 @@
-use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
-use cgmath::{InnerSpace, Vector2};
 use ggez::graphics::{Color, WHITE};
 use scale::map_model::{Map, TrafficBehavior};
 
@@ -18,35 +16,48 @@ impl RoadRenderer {
     }
 
     pub fn near_render(&mut self, map: &Map, time: u64, rc: &mut RenderContext) {
-        let navmesh = map.navmesh();
+        let inters = map.intersections();
+        let lanes = map.lanes();
 
         rc.sr.color = WHITE;
-        let mut to_iter = vec![];
 
-        for (id, n) in navmesh {
-            let mut to_push = rc.sr.draw_circle(n.pos, 4.25);
+        for (inter_id, inter) in inters {
+            for (id, turn) in &inter.turns {
+                let mut p = Vec::with_capacity(2 + turn.points.len());
+                p.push(lanes[id.src].get_inter_node_pos(inter_id));
+                p.extend_from_slice(&turn.points);
+                p.push(lanes[id.dst].get_inter_node_pos(inter_id));
 
-            for e in navmesh.get_neighs(id) {
-                let p2 = navmesh.get(e.to).unwrap().pos;
-                to_push |= rc.sr.draw_stroke(n.pos, p2, 8.5);
+                rc.sr.draw_polyline(&p, 8.5);
             }
+        }
 
-            if to_push {
-                to_iter.push((id, n));
-            }
+        for (_, n) in lanes {
+            rc.sr.draw_polyline(&n.points, 8.5);
+            rc.sr.draw_circle(*n.points.first().unwrap(), 4.25);
+            rc.sr.draw_circle(*n.points.last().unwrap(), 4.25);
         }
 
         rc.sr.color = MID_GRAY;
-        for (id, n) in &to_iter {
-            rc.sr.draw_circle(n.pos, 3.75);
+        for (inter_id, inter) in inters {
+            for (id, turn) in &inter.turns {
+                let mut p = Vec::with_capacity(2 + turn.points.len());
+                p.push(lanes[id.src].get_inter_node_pos(inter_id));
+                p.extend_from_slice(&turn.points);
+                p.push(lanes[id.dst].get_inter_node_pos(inter_id));
 
-            for e in navmesh.get_neighs(*id) {
-                let p2 = navmesh.get(e.to).unwrap().pos;
-                rc.sr.draw_stroke(n.pos, p2, 7.5);
+                rc.sr.draw_polyline(&p, 7.5);
             }
         }
 
+        for (_, n) in lanes {
+            rc.sr.draw_polyline(&n.points, 7.5);
+            rc.sr.draw_circle(*n.points.first().unwrap(), 3.75);
+            rc.sr.draw_circle(*n.points.last().unwrap(), 3.75);
+        }
+
         // draw traffic lights
+        /*
         for (id, n) in to_iter {
             if n.control.is_always() {
                 continue;
@@ -95,7 +106,7 @@ impl RoadRenderer {
             };
 
             rc.sr.draw_circle(r_center + offset * dir_nor, 0.5);
-        }
+        }*/
     }
 
     pub fn far_render(&mut self, map: &Map, _time: u64, rc: &mut RenderContext) {
