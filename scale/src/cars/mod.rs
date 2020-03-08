@@ -1,7 +1,7 @@
 use crate::cars::data::{make_car_entity, CarComponent, CarObjective};
 use crate::map_model::{Lane, LaneID, Map, Traversable};
 use crate::physics::Transform;
-use cgmath::InnerSpace;
+use cgmath::{vec2, InnerSpace};
 use specs::{Join, World, WorldExt};
 use std::fs::File;
 
@@ -11,8 +11,7 @@ pub mod systems;
 const CAR_FILENAME: &str = "world/cars";
 
 pub fn spawn_new_car(world: &mut World) {
-    let mut pos = [0.0, 0.0].into();
-    let mut dir = [1.0, 0.0].into();
+    let mut pos = Transform::new(vec2(0.0, 0.0));
     let mut obj = CarObjective::None;
 
     {
@@ -38,16 +37,16 @@ pub fn spawn_new_car(world: &mut World) {
                 let b = lane.points.last().unwrap();
 
                 let diff = b - a;
-                pos = a + rand::random::<f32>() * diff;
-                dir = diff.normalize();
+                pos.set_position(a + rand::random::<f32>() * diff);
+                pos.set_direction(diff.normalize());
                 obj = CarObjective::Temporary(Traversable::Lane(lane.id));
             }
         }
     }
 
-    let car = CarComponent::new(dir, obj);
+    let car = CarComponent::new(obj);
 
-    make_car_entity(world, Transform::new(pos), car);
+    make_car_entity(world, pos, car);
 }
 
 pub fn save(world: &mut World) {
