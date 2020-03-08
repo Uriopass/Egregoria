@@ -1,5 +1,5 @@
 use crate::geometry::segment::Segment;
-use crate::map_model::{IntersectionID, Intersections, NavMesh, NavNode, NavNodeID, Road, RoadID};
+use crate::map_model::{IntersectionID, Intersections, Road, RoadID};
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
@@ -32,11 +32,8 @@ pub struct Lane {
     pub src_i: IntersectionID,
     pub dst_i: IntersectionID,
 
-    pub src_node: Option<NavNodeID>,
-    pub dst_node: Option<NavNodeID>,
-
+    // Always from start to finish. (depends on direction)
     pub points: Vec<Vector2<f32>>,
-
     pub direction: LaneDirection,
 }
 
@@ -82,19 +79,14 @@ impl LanePattern {
 }
 
 impl Lane {
-    pub fn get_inter_node(&self, id: IntersectionID) -> NavNodeID {
-        if id == self.src_i {
-            self.src_node
-        } else if id == self.dst_i {
-            self.dst_node
-        } else {
-            panic!("Trying to get node to not corresponding intersection");
+    pub fn get_inter_node_pos(&self, id: IntersectionID) -> Vector2<f32> {
+        match (self.direction, id) {
+            (LaneDirection::Forward, x) if x == self.src_i => self.points[0],
+            (LaneDirection::Forward, x) if x == self.dst_i => *self.points.last().unwrap(),
+            (LaneDirection::Backward, x) if x == self.src_i => *self.points.last().unwrap(),
+            (LaneDirection::Backward, x) if x == self.dst_i => self.points[0],
+            _ => panic!("Oh no"),
         }
-        .unwrap_or_else(|| {
-            let v: &'static String =
-                Box::leak(Box::new(format!("Lane {:?} not generated yet", self.id)));
-            panic!(v)
-        })
     }
 
     fn get_node_pos(
@@ -123,24 +115,13 @@ impl Lane {
         inter.pos + dir * inter.interface_radius.min(mindist) + dir_normal * lane_dist as f32 * 8.0
     }
 
-    pub fn gen_navmesh(
-        &mut self,
-        intersections: &Intersections,
-        parent_road: &Road,
-        mesh: &mut NavMesh,
-    ) {
+    pub fn gen_pos(&mut self, intersections: &Intersections, parent_road: &Road) {
         let pos_src = self.get_node_pos(
             self.src_i,
             self.direction == LaneDirection::Backward,
             intersections,
             parent_road,
         );
-        match self.src_node {
-            None => {
-                self.src_node = Some(mesh.push(NavNode::new(pos_src)));
-            }
-            Some(id) => mesh[id].pos = pos_src,
-        }
 
         let pos_dst = self.get_node_pos(
             self.dst_i,
@@ -148,17 +129,6 @@ impl Lane {
             intersections,
             parent_road,
         );
-        match self.dst_node {
-            None => {
-                self.dst_node = Some(mesh.push(NavNode::new(pos_dst)));
-                if self.direction == LaneDirection::Forward {
-                    mesh.add_neigh(self.src_node.unwrap(), self.dst_node.unwrap(), ());
-                } else {
-                    mesh.add_neigh(self.dst_node.unwrap(), self.src_node.unwrap(), ());
-                }
-            }
-            Some(id) => mesh[id].pos = pos_dst,
-        }
 
         self.points.clear();
         match self.direction {
@@ -173,27 +143,18 @@ impl Lane {
         }
     }
 
-    pub fn clean(&mut self, mesh: &mut NavMesh) {
-        mesh.remove_node(self.src_node.take().expect("Lane not generated"));
-        mesh.remove_node(self.dst_node.take().expect("Lane not generated"));
-    }
-
     pub fn dist_to(&self, p: Vector2<f32>) -> f32 {
         let segm = Segment::new(self.points[0], self.points[1]);
         (segm.project(p) - p).magnitude()
     }
 
-    pub fn get_orientation_vec(&self, mesh: &NavMesh) -> Vector2<f32> {
-        let src = mesh[self.src_node.unwrap()].pos;
-        let dst = mesh[self.dst_node.unwrap()].pos;
+    pub fn get_orientation_vec(&self) -> Vector2<f32> {
+        let src = self.points[0];
+        let dst = self.points[1];
 
         assert_ne!(dst, src);
 
-        let vec = (dst - src).normalize();
-        match self.direction {
-            LaneDirection::Forward => vec,
-            LaneDirection::Backward => -vec,
-        }
+        (dst - src).normalize()
     }
 
     pub fn forward_dst_inter(&self) -> IntersectionID {
