@@ -2,7 +2,7 @@ use crate::cars::data::CarObjective::Temporary;
 use crate::cars::systems::{CAR_DECELERATION, OBJECTIVE_OK_DIST};
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
-use crate::gui::{InspectDragf, InspectVec2, InspectVec2Rotation, InspectVecVector};
+use crate::gui::{InspectDragf, InspectVec2, InspectVecVector};
 use crate::interaction::Selectable;
 use crate::map_model::{Map, TrafficBehavior, Traversable, Turn, TurnID};
 use crate::physics::{
@@ -52,8 +52,6 @@ impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
 
 #[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct CarComponent {
-    #[inspect(proxy_type = "InspectVec2Rotation", step = 0.01)]
-    pub direction: Vector2<f32>,
     pub objective: CarObjective,
     #[inspect(proxy_type = "InspectDragf")]
     pub desired_speed: f32,
@@ -68,9 +66,8 @@ pub struct CarComponent {
 }
 
 impl CarComponent {
-    pub fn new(direction: Vector2<f32>, objective: CarObjective) -> CarComponent {
+    pub fn new(objective: CarObjective) -> CarComponent {
         CarComponent {
-            direction,
             objective,
             desired_speed: 0.0,
             desired_dir: Vector2::<f32>::new(0.0, 0.0),
@@ -141,7 +138,7 @@ impl CarComponent {
         map: &'a Map,
         speed: f32,
         time: &'a TimeInfo,
-        position: Vector2<f32>,
+        trans: &Transform,
         neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
     ) {
         if self.wait_time > 0.0 {
@@ -160,6 +157,9 @@ impl CarComponent {
             CarObjective::Temporary(_) => false,
         };
 
+        let position = trans.position();
+        let direction = trans.direction();
+
         let delta_pos = objective - position;
         let dist_to_pos = delta_pos.magnitude();
         let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
@@ -169,8 +169,8 @@ impl CarComponent {
         let mut min_front_dist: f32 = 50.0;
 
         let my_ray = Ray {
-            from: position - self.direction * CAR_WIDTH / 2.0,
-            dir: self.direction,
+            from: position - direction * CAR_WIDTH / 2.0,
+            dir: direction,
         };
 
         // Collision avoidance
@@ -194,13 +194,13 @@ impl CarComponent {
             let dist = dist2.sqrt();
             let towards_dir = towards_vec / dist;
 
-            let dir_dot = towards_dir.dot(self.direction);
+            let dir_dot = towards_dir.dot(direction);
             let his_direction = nei_physics_obj.dir;
 
             // let pos_dot = towards_vec.dot(dir_normal_right);
 
             // front cone
-            if dir_dot > 0.7 && his_direction.dot(self.direction) > 0.0 {
+            if dir_dot > 0.7 && his_direction.dot(direction) > 0.0 {
                 min_front_dist = min_front_dist.min(dist);
                 continue;
             }
@@ -262,7 +262,7 @@ impl CarComponent {
             self.desired_speed = 0.0;
         }
 
-        if dir_to_pos.dot(self.direction) < 0.8 {
+        if dir_to_pos.dot(direction) < 0.8 {
             // Not facing the objective
             self.desired_speed = self.desired_speed.min(6.0);
         }

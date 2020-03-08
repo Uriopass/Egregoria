@@ -3,7 +3,7 @@ use crate::engine_interaction::TimeInfo;
 use crate::map_model::Map;
 use crate::physics::PhysicsWorld;
 use crate::physics::{Kinematics, Transform};
-use cgmath::{Angle, InnerSpace, Vector2};
+use cgmath::{vec2, Angle, InnerSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 
@@ -51,8 +51,9 @@ fn car_physics(
     kin: &mut Kinematics,
     car: &mut CarComponent,
 ) {
-    let speed: f32 = kin.velocity.magnitude() * kin.velocity.dot(car.direction).signum();
-    let dot = (kin.velocity / speed).dot(car.direction);
+    let direction = trans.direction();
+    let speed: f32 = kin.velocity.magnitude() * kin.velocity.dot(direction).signum();
+    let dot = (kin.velocity / speed).dot(direction);
 
     if speed > 1.0 && dot.abs() < 0.9 {
         let coeff = speed.max(1.0).min(9.0) / 9.0;
@@ -68,7 +69,7 @@ fn car_physics(
 
     let objs = neighbors.map(|obj| (obj.pos, coworld.get_obj(obj.id)));
 
-    car.calc_decision(map, speed, time, pos, objs);
+    car.calc_decision(map, speed, time, trans, objs);
 
     let speed = speed
         + ((car.desired_speed - speed)
@@ -77,8 +78,8 @@ fn car_physics(
 
     let max_ang_vel = (speed.abs() / MIN_TURNING_RADIUS).min(2.0);
 
-    let delta_ang = car.direction.angle(car.desired_dir);
-    let mut ang = Vector2::unit_x().angle(car.direction);
+    let delta_ang = direction.angle(car.desired_dir);
+    let mut ang = Vector2::unit_x().angle(direction);
 
     car.ang_velocity += time.delta * ANG_ACC;
     car.ang_velocity = car
@@ -90,8 +91,7 @@ fn car_physics(
         .0
         .min(car.ang_velocity * time.delta)
         .max(-car.ang_velocity * time.delta);
-    car.direction = Vector2::new(ang.cos(), ang.sin());
-    trans.set_direction(car.direction);
-
-    kin.velocity = car.direction * speed;
+    let direction = vec2(ang.cos(), ang.sin());
+    trans.set_direction(direction);
+    kin.velocity = direction * speed;
 }

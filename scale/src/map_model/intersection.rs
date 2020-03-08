@@ -148,7 +148,7 @@ impl Intersection {
         });
 
         let cycle_size = 10;
-        let orange_length = 5;
+        let orange_length = 4;
         let offset = self.id.0.as_ffi() as u32;
         let offset: usize =
             rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0, cycle_size);
