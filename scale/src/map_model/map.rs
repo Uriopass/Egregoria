@@ -109,8 +109,8 @@ impl Map {
         self.intersections[src].gen_turns(&self.lanes, &self.roads);
         self.intersections[dst].gen_turns(&self.lanes, &self.roads);
 
-        self.intersections[src].update_traffic_control(&self.roads, &self.lanes);
-        self.intersections[dst].update_traffic_control(&self.roads, &self.lanes);
+        self.intersections[src].update_traffic_control(&self.roads, &mut self.lanes);
+        self.intersections[dst].update_traffic_control(&self.roads, &mut self.lanes);
         id
     }
 
@@ -119,8 +119,8 @@ impl Map {
         let road_id = r?;
         let r = self.remove_road(road_id);
 
-        self.intersections[src].update_traffic_control(&self.roads, &self.lanes);
-        self.intersections[dst].update_traffic_control(&self.roads, &self.lanes);
+        self.intersections[src].update_traffic_control(&self.roads, &mut self.lanes);
+        self.intersections[dst].update_traffic_control(&self.roads, &mut self.lanes);
 
         Some(r)
     }

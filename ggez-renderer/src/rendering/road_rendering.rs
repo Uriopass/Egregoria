@@ -1,4 +1,6 @@
+use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
+use cgmath::vec2;
 use ggez::graphics::{Color, WHITE};
 use scale::map_model::{Map, TrafficBehavior};
 
@@ -32,7 +34,7 @@ impl RoadRenderer {
             }
         }
 
-        for (_, n) in lanes {
+        for n in lanes.values() {
             rc.sr.draw_polyline(&n.points, 8.5);
             rc.sr.draw_circle(*n.points.first().unwrap(), 4.25);
             rc.sr.draw_circle(*n.points.last().unwrap(), 4.25);
@@ -50,32 +52,24 @@ impl RoadRenderer {
             }
         }
 
-        for (_, n) in lanes {
+        for n in lanes.values() {
             rc.sr.draw_polyline(&n.points, 7.5);
             rc.sr.draw_circle(*n.points.first().unwrap(), 3.75);
             rc.sr.draw_circle(*n.points.last().unwrap(), 3.75);
         }
 
         // draw traffic lights
-        /*
-        for (id, n) in to_iter {
+
+        for n in lanes.values() {
             if n.control.is_always() {
                 continue;
             }
 
-            let id = navmesh.get_backward_neighs(id).first().map(|x| x.to);
-            if id.is_none() {
-                rc.sr.color = scale_color(scale::rendering::RED);
-                rc.sr.color.a = 0.5;
-                rc.sr.draw_rect_centered(n.pos, 20.0, 20.0);
-                continue;
-            }
-            let id = id.unwrap();
-            let dir = (navmesh[id].pos - n.pos).normalize();
+            let dir = n.get_orientation_vec();
 
-            let dir_nor: Vector2<f32> = [-dir.y, dir.x].into();
+            let dir_nor = vec2(-dir.y, dir.x);
 
-            let r_center = n.pos + dir_nor * 2.0;
+            let r_center = n.points.last().unwrap() + dir_nor * 2.0;
 
             if n.control.is_stop() {
                 rc.sr.color = scale_color(scale::rendering::RED);
@@ -106,18 +100,18 @@ impl RoadRenderer {
             };
 
             rc.sr.draw_circle(r_center + offset * dir_nor, 0.5);
-        }*/
+        }
     }
 
     pub fn far_render(&mut self, map: &Map, _time: u64, rc: &mut RenderContext) {
         let inters = map.intersections();
 
         rc.sr.color = MID_GRAY;
-        for (_, n) in inters {
+        for n in inters.values() {
             rc.sr.draw_circle(n.pos, 8.0);
         }
 
-        for (_, n) in map.roads() {
+        for n in map.roads().values() {
             let pos1 = inters[n.src].pos;
             let pos2 = inters[n.dst].pos;
 

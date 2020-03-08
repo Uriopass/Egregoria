@@ -1,4 +1,4 @@
-use crate::map_model::{LaneID, Map, TurnID};
+use crate::map_model::{LaneID, Lanes, Map, TurnID};
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +13,13 @@ impl Traversable {
         match *self {
             Traversable::Lane(id) => &m.lanes()[id].points,
             Traversable::Turn(id) => &m.intersections()[id.parent].turns[&id].points,
+        }
+    }
+
+    pub fn can_pass(&self, time: u64, lanes: &Lanes) -> bool {
+        match self {
+            Traversable::Lane(id) => !lanes[*id].control.get_behavior(time).is_red(),
+            Traversable::Turn(_) => true,
         }
     }
 
