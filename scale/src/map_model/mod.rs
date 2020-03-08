@@ -9,6 +9,7 @@ mod road;
 mod road_graph_synchronize;
 mod saveload;
 mod traffic_control;
+mod traversable;
 mod turn;
 
 pub use intersection::*;
@@ -19,6 +20,7 @@ pub use road::*;
 pub use road_graph_synchronize::*;
 pub use saveload::*;
 pub use traffic_control::*;
+pub use traversable::*;
 pub use turn::*;
 
 pub fn setup(world: &mut World) {

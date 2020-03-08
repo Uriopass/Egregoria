@@ -1,3 +1,4 @@
+use crate::geometry::segment::Segment;
 use crate::map_model::{IntersectionID, Intersections, NavMesh, NavNode, NavNodeID, Road, RoadID};
 use cgmath::InnerSpace;
 use cgmath::Vector2;
@@ -33,6 +34,8 @@ pub struct Lane {
 
     pub src_node: Option<NavNodeID>,
     pub dst_node: Option<NavNodeID>,
+
+    pub points: Vec<Vector2<f32>>,
 
     pub direction: LaneDirection,
 }
@@ -126,7 +129,7 @@ impl Lane {
         parent_road: &Road,
         mesh: &mut NavMesh,
     ) {
-        let pos = self.get_node_pos(
+        let pos_src = self.get_node_pos(
             self.src_i,
             self.direction == LaneDirection::Backward,
             intersections,
@@ -134,12 +137,12 @@ impl Lane {
         );
         match self.src_node {
             None => {
-                self.src_node = Some(mesh.push(NavNode::new(pos)));
+                self.src_node = Some(mesh.push(NavNode::new(pos_src)));
             }
-            Some(id) => mesh[id].pos = pos,
+            Some(id) => mesh[id].pos = pos_src,
         }
 
-        let pos = self.get_node_pos(
+        let pos_dst = self.get_node_pos(
             self.dst_i,
             self.direction == LaneDirection::Forward,
             intersections,
@@ -147,20 +150,37 @@ impl Lane {
         );
         match self.dst_node {
             None => {
-                self.dst_node = Some(mesh.push(NavNode::new(pos)));
+                self.dst_node = Some(mesh.push(NavNode::new(pos_dst)));
                 if self.direction == LaneDirection::Forward {
                     mesh.add_neigh(self.src_node.unwrap(), self.dst_node.unwrap(), ());
                 } else {
                     mesh.add_neigh(self.dst_node.unwrap(), self.src_node.unwrap(), ());
                 }
             }
-            Some(id) => mesh[id].pos = pos,
+            Some(id) => mesh[id].pos = pos_dst,
+        }
+
+        self.points.clear();
+        match self.direction {
+            LaneDirection::Forward => {
+                self.points.push(pos_src);
+                self.points.push(pos_dst);
+            }
+            LaneDirection::Backward => {
+                self.points.push(pos_dst);
+                self.points.push(pos_src);
+            }
         }
     }
 
     pub fn clean(&mut self, mesh: &mut NavMesh) {
         mesh.remove_node(self.src_node.take().expect("Lane not generated"));
         mesh.remove_node(self.dst_node.take().expect("Lane not generated"));
+    }
+
+    pub fn dist_to(&self, p: Vector2<f32>) -> f32 {
+        let segm = Segment::new(self.points[0], self.points[1]);
+        (segm.project(p) - p).magnitude()
     }
 
     pub fn get_orientation_vec(&self, mesh: &NavMesh) -> Vector2<f32> {
@@ -173,6 +193,13 @@ impl Lane {
         match self.direction {
             LaneDirection::Forward => vec,
             LaneDirection::Backward => -vec,
+        }
+    }
+
+    pub fn forward_dst_inter(&self) -> IntersectionID {
+        match self.direction {
+            LaneDirection::Forward => self.dst_i,
+            LaneDirection::Backward => self.src_i,
         }
     }
 }

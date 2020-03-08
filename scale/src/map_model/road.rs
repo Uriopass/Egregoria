@@ -79,6 +79,7 @@ impl Road {
             lane_type,
             src_node: None,
             dst_node: None,
+            points: vec![],
             direction,
         });
         match direction {

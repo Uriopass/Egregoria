@@ -1,16 +1,16 @@
-use crate::cars::data::CarObjective::{Simple, Temporary};
+use crate::cars::data::CarObjective::Temporary;
 use crate::cars::systems::{CAR_DECELERATION, OBJECTIVE_OK_DIST};
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::gui::{InspectDragf, InspectVec2, InspectVec2Rotation};
-use crate::interaction::{Movable, Selectable};
-use crate::map_model::{Map, NavMesh, NavNodeID, TrafficBehavior};
+use crate::interaction::Selectable;
+use crate::map_model::{Map, Traversable, Turn, TurnID};
 use crate::physics::{
     add_to_coworld, Collider, Kinematics, PhysicsObject, PhysicsWorld, Transform,
 };
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::{Color, BLACK, GREEN};
-use cgmath::{vec2, InnerSpace, Vector2};
+use cgmath::{vec2, InnerSpace, MetricSpace, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
@@ -21,9 +21,7 @@ use specs::{Builder, Component, DenseVecStorage, Entity, World, WorldExt};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CarObjective {
     None,
-    Simple(NavNodeID),
-    Temporary(NavNodeID),
-    Route(Vec<NavNodeID>),
+    Temporary(Traversable),
 }
 
 impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
@@ -34,39 +32,21 @@ impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
     fn render_mut(
         data: &mut [&mut CarObjective],
         label: &'static str,
-        world: &mut World,
+        _: &mut World,
         ui: &Ui,
-        args: &InspectArgsDefault,
+        _: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
             return false;
         }
 
-        // TODO: Handle Route
-        let pos: Option<Vector2<f32>> = data[0].to_pos(&world.read_resource::<Map>().navmesh());
-        match pos {
-            Some(x) => {
-                <InspectVec2 as InspectRenderDefault<Vector2<f32>>>::render(
-                    &[&x],
-                    label,
-                    world,
-                    ui,
-                    args,
-                );
-            }
-            None => ui.text(im_str!("No objective {}", label)),
-        };
-        false
-    }
-}
-
-impl CarObjective {
-    pub fn to_pos(&self, navmesh: &NavMesh) -> Option<Vector2<f32>> {
-        match self {
-            CarObjective::None => None,
-            Simple(x) | Temporary(x) => navmesh.get(*x).map(|x| x.pos),
-            CarObjective::Route(l) => l.get(0).and_then(|x| navmesh.get(*x).map(|x| x.pos)),
+        let obj = &data[0];
+        match obj {
+            CarObjective::None => ui.text(im_str!("None {}", label)),
+            CarObjective::Temporary(x) => ui.text(im_str!("{:?} {}", x, label)),
         }
+
+        false
     }
 }
 
@@ -83,6 +63,9 @@ pub struct CarComponent {
     pub wait_time: f32,
     #[inspect(proxy_type = "InspectDragf")]
     pub ang_velocity: f32,
+
+    #[inspect(skip = true)]
+    pub pos_objective: Vec<Vector2<f32>>,
 }
 
 impl CarComponent {
@@ -94,12 +77,62 @@ impl CarComponent {
             desired_dir: Vector2::<f32>::new(0.0, 0.0),
             wait_time: 0.0,
             ang_velocity: 0.0,
+            pos_objective: Vec::with_capacity(7),
+        }
+    }
+
+    fn set_travers_objective(&mut self, travers: Traversable, map: &Map) {
+        self.objective = Temporary(travers);
+        let p = travers.points(map);
+        self.pos_objective.extend(p.iter().rev());
+    }
+
+    pub fn objective_update(&mut self, time: &TimeInfo, trans: &Transform, map: &Map) {
+        match self.pos_objective.last() {
+            Some(p) => {
+                if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST
+                //&& !navmesh[&x].control.get_behavior(time.time_seconds).is_red()
+                {
+                    self.pos_objective.pop();
+                }
+            }
+            None => match self.objective {
+                CarObjective::None => {
+                    let lane = map.closest_lane(trans.position());
+                    if let Some(id) = lane {
+                        self.set_travers_objective(Traversable::Lane(id), map);
+                    }
+                }
+                CarObjective::Temporary(x) => match x {
+                    Traversable::Turn(id) => {
+                        self.set_travers_objective(Traversable::Lane(id.dst), map);
+                    }
+                    Traversable::Lane(id) => {
+                        let lane = &map.lanes()[id];
+
+                        let neighs = map.intersections()[lane.forward_dst_inter()]
+                            .turns
+                            .iter()
+                            .filter(|(_, x)| x.id.src == id)
+                            .collect::<Vec<(&TurnID, &Turn)>>();
+
+                        if neighs.is_empty() {
+                            return;
+                        }
+
+                        let r = rand::random::<f32>() * (neighs.len() as f32);
+                        let (turn_id, _) = neighs[r as usize];
+
+                        self.set_travers_objective(Traversable::Turn(*turn_id), map);
+                    }
+                },
+            },
         }
     }
 
     pub fn calc_decision<'a>(
         &'a mut self,
-        navmesh: &'a NavMesh,
+        map: &'a Map,
         speed: f32,
         time: &'a TimeInfo,
         position: Vector2<f32>,
@@ -109,7 +142,7 @@ impl CarComponent {
             self.wait_time -= time.delta;
             return;
         }
-        let objective: Vector2<f32> = match self.objective.to_pos(navmesh) {
+        let objective: Vector2<f32> = *match self.pos_objective.last() {
             Some(x) => x,
             None => {
                 return;
@@ -118,9 +151,7 @@ impl CarComponent {
 
         let is_terminal = match &self.objective {
             CarObjective::None => return,
-            CarObjective::Simple(_) => true,
             CarObjective::Temporary(_) => false,
-            CarObjective::Route(x) => x.len() == 1,
         };
 
         let delta_pos = objective - position;
@@ -200,6 +231,7 @@ impl CarComponent {
         self.desired_dir = dir_to_pos;
         self.desired_speed = 15.0;
 
+        /*
         if let Temporary(n_id) = self.objective {
             match navmesh[&n_id].control.get_behavior(time.time_seconds) {
                 TrafficBehavior::RED | TrafficBehavior::ORANGE => {
@@ -215,6 +247,7 @@ impl CarComponent {
                 _ => {}
             }
         }
+        */
 
         if is_terminal && dist_to_pos < 1.0 + stop_dist {
             // Close to terminal objective
