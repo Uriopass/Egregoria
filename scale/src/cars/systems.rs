@@ -1,10 +1,8 @@
-use crate::cars::data::CarObjective::{Route, Simple, Temporary};
-use crate::cars::data::{CarComponent, CarObjective};
+use crate::cars::data::CarComponent;
 use crate::engine_interaction::TimeInfo;
-use crate::map_model::{Map, NavMesh};
+use crate::map_model::Map;
 use crate::physics::PhysicsWorld;
 use crate::physics::{Kinematics, Transform};
-use cgmath::MetricSpace;
 use cgmath::{Angle, InnerSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -33,53 +31,21 @@ impl<'a> System<'a> for CarDecision {
 
     fn run(&mut self, mut data: Self::SystemData) {
         let cow = data.coworld;
-        let navmesh = data.map.navmesh();
+        let map = &*data.map;
         let time = data.time;
 
         (&mut data.transforms, &mut data.kinematics, &mut data.cars)
             .join()
             .for_each(|(trans, kin, car)| {
-                car_objective_update(car, &time, trans, &navmesh);
-                car_physics(&cow, &navmesh, &time, trans, kin, car);
+                car.objective_update(&time, trans, &map);
+                car_physics(&cow, &map, &time, trans, kin, car);
             });
-    }
-}
-
-fn car_objective_update(
-    car: &mut CarComponent,
-    time: &TimeInfo,
-    trans: &Transform,
-    navmesh: &NavMesh,
-) {
-    match car.objective {
-        CarObjective::None | Simple(_) | Route(_) => {
-            car.objective = navmesh
-                .closest_node(trans.position())
-                .map_or(CarObjective::None, Temporary);
-        }
-        CarObjective::Temporary(x) => {
-            if let Some(p) = navmesh.get(x).map(|x| x.pos) {
-                if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST
-                    && !navmesh[&x].control.get_behavior(time.time_seconds).is_red()
-                {
-                    let neighs = navmesh.get_neighs(x);
-                    let r = rand::random::<f32>() * (neighs.len() as f32);
-                    if neighs.is_empty() {
-                        return;
-                    }
-                    let new_obj = &neighs[r as usize].to;
-                    car.objective = Temporary(*new_obj);
-                }
-            } else {
-                car.objective = CarObjective::None;
-            }
-        }
     }
 }
 
 fn car_physics(
     coworld: &PhysicsWorld,
-    navmesh: &NavMesh,
+    map: &Map,
     time: &TimeInfo,
     trans: &mut Transform,
     kin: &mut Kinematics,
@@ -102,7 +68,7 @@ fn car_physics(
 
     let objs = neighbors.map(|obj| (obj.pos, coworld.get_obj(obj.id)));
 
-    car.calc_decision(navmesh, speed, time, pos, objs);
+    car.calc_decision(map, speed, time, pos, objs);
 
     let speed = speed
         + ((car.desired_speed - speed)

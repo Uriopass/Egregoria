@@ -3,7 +3,7 @@ use crate::interaction::{Movable, Selectable};
 use crate::map_model::TrafficControl::Always;
 use crate::map_model::{
     Intersections, LaneID, Lanes, NavMesh, Road, RoadID, Roads, TrafficControl,
-    TrafficLightSchedule, Turn, TurnPolicy,
+    TrafficLightSchedule, Turn, TurnID, TurnPolicy,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use specs::storage::BTreeStorage;
 use specs::{Builder, Component, Entities, Entity, LazyUpdate};
+use std::collections::BTreeMap;
 
 new_key_type! {
     pub struct IntersectionID;
@@ -36,7 +37,7 @@ pub struct Intersection {
     pub id: IntersectionID,
     pub pos: Vector2<f32>,
 
-    pub turns: Vec<Turn>,
+    pub turns: BTreeMap<TurnID, Turn>,
     pub policy: TurnPolicy,
 
     pub incoming_lanes: Vec<LaneID>,
@@ -51,7 +52,7 @@ impl Intersection {
         store.insert_with_key(|id| Intersection {
             id,
             pos,
-            turns: vec![],
+            turns: BTreeMap::new(),
             policy: TurnPolicy::default(),
             incoming_lanes: vec![],
             outgoing_lanes: vec![],
@@ -72,21 +73,25 @@ impl Intersection {
     pub fn gen_turns(&mut self, lanes: &Lanes, roads: &Roads, navmesh: &mut NavMesh) {
         let turns = self.policy.generate_turns(self, lanes, roads, navmesh);
 
-        for x in &mut self.turns {
-            if !turns.contains(&x.id) {
+        let to_remove: Vec<TurnID> = self
+            .turns
+            .iter_mut()
+            .filter(|(id, _)| !turns.contains(id))
+            .map(|(id, x)| {
                 x.clean(navmesh);
-            }
-        }
+                *id
+            })
+            .collect();
 
-        self.turns.retain(|x| turns.contains(&x.id));
+        for id in to_remove {
+            self.turns.remove(&id);
+        }
 
         for turn in turns {
-            if !self.turns.iter().any(|x| x.id == turn) {
-                self.turns.push(Turn::new(turn));
-            }
+            self.turns.entry(turn).or_insert_with(|| Turn::new(turn));
         }
 
-        for turn in &mut self.turns {
+        for turn in self.turns.values_mut() {
             if !turn.is_generated() {
                 turn.gen_navmesh(lanes, navmesh);
             } else {

@@ -1,5 +1,5 @@
 use crate::cars::data::{make_car_entity, CarComponent, CarObjective};
-use crate::map_model::Map;
+use crate::map_model::{Lane, LaneID, Map, Traversable};
 use crate::physics::Transform;
 use cgmath::InnerSpace;
 use specs::{Join, World, WorldExt};
@@ -16,32 +16,31 @@ pub fn spawn_new_car(world: &mut World) {
     let mut obj = CarObjective::None;
 
     {
-        let m = world.read_resource::<Map>();
-        let navmesh = m.navmesh();
-        let l = navmesh.len();
+        let map = world.read_resource::<Map>();
+        let roads = map.roads();
+        let l = roads.len();
         if l > 0 {
-            loop {
-                let r = (rand::random::<f32>() * l as f32) as usize;
-                let (nav_id, nav) = navmesh.into_iter().nth(r).unwrap();
-                let back = navmesh.get_backward_neighs(nav_id);
-                let l2 = back.len();
-                if l2 == 0 {
-                    continue;
-                }
-                let r2 = (rand::random::<f32>() * l2 as f32) as usize;
+            let r = (rand::random::<f32>() * l as f32) as usize;
 
-                let backnode = &navmesh[back.get(r2).unwrap().to];
+            let (_, road) = roads.into_iter().nth(r).unwrap();
+            let lanes = road
+                .lanes_forward
+                .iter()
+                .chain(road.lanes_backward.iter())
+                .collect::<Vec<&LaneID>>();
 
-                let diff = nav.pos - backnode.pos;
+            if !lanes.is_empty() {
+                let r = (rand::random::<f32>() * lanes.len() as f32) as usize;
 
-                if diff.magnitude() < 10.0 {
-                    continue;
-                }
+                let lane: &Lane = &map.lanes()[*lanes[r]];
 
-                pos = backnode.pos + rand::random::<f32>() * diff;
+                let a = lane.points.first().unwrap();
+                let b = lane.points.last().unwrap();
+
+                let diff = b - a;
+                pos = a + rand::random::<f32>() * diff;
                 dir = diff.normalize();
-                obj = CarObjective::Temporary(nav_id);
-                break;
+                obj = CarObjective::Temporary(Traversable::Lane(lane.id));
             }
         }
     }
