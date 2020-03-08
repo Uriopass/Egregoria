@@ -1,5 +1,5 @@
 use crate::geometry::segment::Segment;
-use crate::map_model::{IntersectionID, Intersections, Road, RoadID};
+use crate::map_model::{IntersectionID, Intersections, Road, RoadID, TrafficControl};
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
@@ -28,6 +28,8 @@ pub struct Lane {
     pub id: LaneID,
     pub parent: RoadID,
     pub lane_type: LaneType,
+
+    pub control: TrafficControl,
 
     pub src_i: IntersectionID,
     pub dst_i: IntersectionID,

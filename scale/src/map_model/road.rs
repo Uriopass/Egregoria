@@ -1,6 +1,6 @@
 use crate::map_model::{
     Intersection, IntersectionID, Intersections, Lane, LaneDirection, LaneID, LanePattern,
-    LaneType, Lanes, Roads,
+    LaneType, Lanes, Roads, TrafficControl,
 };
 use cgmath::InnerSpace;
 use cgmath::Vector2;
@@ -76,6 +76,7 @@ impl Road {
             parent: self.id,
             src_i: self.src,
             dst_i: self.dst,
+            control: TrafficControl::Always,
             lane_type,
             points: vec![],
             direction,

@@ -124,7 +124,7 @@ impl Intersection {
         }
     }
 
-    pub fn update_traffic_control(&mut self, roads: &Roads, lanes: &Lanes) {
+    pub fn update_traffic_control(&self, roads: &Roads, lanes: &mut Lanes) {
         let mut in_road_lanes: Vec<&Vec<LaneID>> = self
             .roads
             .iter()
@@ -134,7 +134,9 @@ impl Intersection {
 
         if in_road_lanes.len() <= 2 {
             for incoming_lanes in in_road_lanes {
-                for lane in incoming_lanes {}
+                for lane in incoming_lanes {
+                    lanes[*lane].control = TrafficControl::Always;
+                }
             }
             return;
         }
@@ -163,7 +165,9 @@ impl Intersection {
                 },
             ));
 
-            for lane in incoming_lanes {}
+            for lane in incoming_lanes {
+                lanes[*lane].control = light;
+            }
         }
     }
 }
