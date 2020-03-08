@@ -1,7 +1,5 @@
 use crate::geometry::splines::Spline;
-use crate::map_model::{
-    Intersection, IntersectionID, LaneID, Lanes, NavMesh, NavNode, NavNodeID, Roads,
-};
+use crate::map_model::{Intersection, IntersectionID, LaneID, Lanes, Roads};
 use cgmath::{vec2, Array, InnerSpace, Vector2};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
@@ -22,9 +20,7 @@ impl TurnID {
 #[derive(Serialize, Deserialize)]
 pub struct Turn {
     pub id: TurnID,
-    pub easing_nodes: Vec<NavNodeID>,
     pub points: Vec<Vector2<f32>>,
-    generated: bool,
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Inspect)]
@@ -44,70 +40,22 @@ impl Default for TurnPolicy {
 
 impl Turn {
     pub fn new(id: TurnID) -> Self {
-        Self {
-            id,
-            easing_nodes: vec![],
-            points: vec![],
-            generated: false,
-        }
+        Self { id, points: vec![] }
     }
 
-    pub fn gen_navmesh(&mut self, lanes: &Lanes, navmesh: &mut NavMesh) {
-        if self.is_generated() {
-            panic!("Turn already generated !");
-        }
-
-        const N_SPLINE: usize = 3;
+    pub(crate) fn make_points(&mut self, lanes: &Lanes) {
+        const N_SPLINE: usize = 4;
 
         let src_lane = &lanes[self.id.src];
         let dst_lane = &lanes[self.id.dst];
 
-        let node_src = src_lane.get_inter_node(self.id.parent);
-        let node_dst = dst_lane.get_inter_node(self.id.parent);
-
-        for _ in 0..N_SPLINE {
-            self.easing_nodes
-                .push(navmesh.push(NavNode::new([0.0, 0.0].into())))
-        }
-
-        let mut v = vec![node_src];
-        v.extend(&self.easing_nodes);
-        v.push(node_dst);
-
-        for x in v.windows(2) {
-            navmesh.add_neigh(x[0], x[1], ());
-        }
-
-        self.generated = true;
-
-        self.reposition_nodes(lanes, navmesh);
-    }
-
-    pub fn is_generated(&self) -> bool {
-        self.generated
-    }
-
-    pub fn clean(&mut self, navmesh: &mut NavMesh) {
-        for x in self.easing_nodes.drain(0..) {
-            navmesh.remove_node(x);
-        }
-        self.generated = false;
-    }
-
-    pub fn reposition_nodes(&mut self, lanes: &Lanes, navmesh: &mut NavMesh) {
-        let src_lane = &lanes[self.id.src];
-        let dst_lane = &lanes[self.id.dst];
-
-        let node_src = src_lane.get_inter_node(self.id.parent);
-        let node_dst = dst_lane.get_inter_node(self.id.parent);
-
-        let pos_src = navmesh[node_src].pos;
-        let pos_dst = navmesh[node_dst].pos;
+        let pos_src = src_lane.get_inter_node_pos(self.id.parent);
+        let pos_dst = dst_lane.get_inter_node_pos(self.id.parent);
 
         let dist = (pos_dst - pos_src).magnitude() / 2.0;
 
-        let derivative_src = src_lane.get_orientation_vec(navmesh) * dist;
-        let derivative_dst = dst_lane.get_orientation_vec(navmesh) * dist;
+        let derivative_src = src_lane.get_orientation_vec() * dist;
+        let derivative_dst = dst_lane.get_orientation_vec() * dist;
 
         let spline = Spline {
             from: pos_src,
@@ -116,14 +64,12 @@ impl Turn {
             to_derivative: derivative_dst,
         };
 
-        let len = self.easing_nodes.len();
         self.points.clear();
-        for (i, node) in self.easing_nodes.iter().enumerate() {
-            let c = (i + 1) as f32 / (len + 1) as f32;
+        for i in 0..N_SPLINE {
+            let c = (i + 1) as f32 / (N_SPLINE + 1) as f32;
 
             let pos = spline.get(c);
-            assert!(pos.is_finite());
-            navmesh.get_mut(*node).unwrap().pos = pos;
+            debug_assert!(pos.is_finite());
             self.points.push(pos);
         }
     }
@@ -162,13 +108,7 @@ impl TurnPolicy {
         }
     }
 
-    pub fn generate_turns(
-        self,
-        inter: &Intersection,
-        lanes: &Lanes,
-        roads: &Roads,
-        mesh: &NavMesh,
-    ) -> Vec<TurnID> {
+    pub fn generate_turns(self, inter: &Intersection, lanes: &Lanes, roads: &Roads) -> Vec<TurnID> {
         if inter.roads.len() == 1 {
             return Self::zip_on_same_length(
                 inter.id,
@@ -209,8 +149,8 @@ impl TurnPolicy {
                 if lanes[*incoming].parent == lanes[*outgoing].parent && !self.back_turns {
                     continue;
                 }
-                let incoming_dir = lanes[*incoming].get_orientation_vec(mesh);
-                let outgoing_dir = lanes[*outgoing].get_orientation_vec(mesh);
+                let incoming_dir = lanes[*incoming].get_orientation_vec();
+                let outgoing_dir = lanes[*outgoing].get_orientation_vec();
 
                 let incoming_right = vec2(incoming_dir.y, -incoming_dir.x);
                 let id = TurnID::new(inter.id, *incoming, *outgoing);

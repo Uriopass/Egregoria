@@ -165,10 +165,10 @@ impl ShapeRenderer {
     }
 
     pub fn draw_polyline(&mut self, points: &[Vector2<f32>], thickness: f32) -> bool {
-        if !self
-            .screen_box
-            .intersects_line_within(points[0], points[1], thickness)
-        {
+        if !points.windows(2).any(|x| {
+            self.screen_box
+                .intersects_line_within(x[0], x[1], thickness)
+        }) {
             return false;
         }
 
