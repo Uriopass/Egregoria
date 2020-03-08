@@ -2,9 +2,9 @@ use crate::cars::data::CarObjective::Temporary;
 use crate::cars::systems::{CAR_DECELERATION, OBJECTIVE_OK_DIST};
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
-use crate::gui::{InspectDragf, InspectVec2, InspectVec2Rotation};
+use crate::gui::{InspectDragf, InspectVec2, InspectVec2Rotation, InspectVecVector};
 use crate::interaction::Selectable;
-use crate::map_model::{Map, Traversable, Turn, TurnID};
+use crate::map_model::{Map, TrafficBehavior, Traversable, Turn, TurnID};
 use crate::physics::{
     add_to_coworld, Collider, Kinematics, PhysicsObject, PhysicsWorld, Transform,
 };
@@ -63,8 +63,7 @@ pub struct CarComponent {
     pub wait_time: f32,
     #[inspect(proxy_type = "InspectDragf")]
     pub ang_velocity: f32,
-
-    #[inspect(skip = true)]
+    #[inspect(proxy_type = "InspectVecVector")]
     pub pos_objective: Vec<Vector2<f32>>,
 }
 
@@ -90,10 +89,17 @@ impl CarComponent {
     pub fn objective_update(&mut self, time: &TimeInfo, trans: &Transform, map: &Map) {
         match self.pos_objective.last() {
             Some(p) => {
-                if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST
-                //&& !navmesh[&x].control.get_behavior(time.time_seconds).is_red()
-                {
-                    self.pos_objective.pop();
+                if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
+                    match self.objective {
+                        CarObjective::Temporary(x) if self.pos_objective.len() == 1 => {
+                            if x.can_pass(time.time_seconds, map.lanes()) {
+                                self.pos_objective.pop();
+                            }
+                        }
+                        _ => {
+                            self.pos_objective.pop();
+                        }
+                    }
                 }
             }
             None => match self.objective {
@@ -231,23 +237,25 @@ impl CarComponent {
         self.desired_dir = dir_to_pos;
         self.desired_speed = 15.0;
 
-        /*
-        if let Temporary(n_id) = self.objective {
-            match navmesh[&n_id].control.get_behavior(time.time_seconds) {
-                TrafficBehavior::RED | TrafficBehavior::ORANGE => {
-                    if dist_to_pos < OBJECTIVE_OK_DIST * 1.05 + stop_dist {
-                        self.desired_speed = 0.0;
+        if self.pos_objective.len() == 1 {
+            if let Temporary(trans) = self.objective {
+                if let Traversable::Lane(l_id) = trans {
+                    match map.lanes()[l_id].control.get_behavior(time.time_seconds) {
+                        TrafficBehavior::RED | TrafficBehavior::ORANGE => {
+                            if dist_to_pos < OBJECTIVE_OK_DIST * 1.05 + stop_dist {
+                                self.desired_speed = 0.0;
+                            }
+                        }
+                        TrafficBehavior::STOP => {
+                            if dist_to_pos < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
+                                self.desired_speed = 0.0;
+                            }
+                        }
+                        _ => {}
                     }
                 }
-                TrafficBehavior::STOP => {
-                    if dist_to_pos < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
-                        self.desired_speed = 0.0;
-                    }
-                }
-                _ => {}
             }
         }
-        */
 
         if is_terminal && dist_to_pos < 1.0 + stop_dist {
             // Close to terminal objective

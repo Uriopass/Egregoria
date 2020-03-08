@@ -234,6 +234,52 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for InspectVec<T> 
     }
 }
 
+pub struct InspectVecVector;
+
+impl InspectRenderDefault<Vec<Vector2<f32>>> for InspectVecVector {
+    fn render(
+        _data: &[&Vec<Vector2<f32>>],
+        _label: &'static str,
+        _: &mut World,
+        _ui: &Ui,
+        _args: &InspectArgsDefault,
+    ) {
+        unimplemented!()
+    }
+
+    fn render_mut(
+        data: &mut [&mut Vec<Vector2<f32>>],
+        label: &str,
+        w: &mut World,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+
+        let v = &mut data[0];
+
+        if ui.collapsing_header(&im_str!("{}", label)).build() {
+            ui.indent();
+            for (i, x) in v.iter_mut().enumerate() {
+                let id = ui.push_id(i as i32);
+                <InspectVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
+                    &mut [x],
+                    "",
+                    w,
+                    ui,
+                    args,
+                );
+                id.pop(ui);
+            }
+            ui.unindent();
+        }
+
+        false
+    }
+}
+
 #[rustfmt::skip]
 macro_rules! empty_inspect_impl {
     ($x : ty) => {
