@@ -1,8 +1,8 @@
-use crate::cars::data::CarComponent;
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
 use crate::map_model::IntersectionComponent;
 use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::MeshRender;
+use crate::transportation::data::TransportComponent;
 use cgmath::{vec2, InnerSpace, Vector2};
 use imgui::im_str;
 use imgui::Ui;
@@ -365,7 +365,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
                     new_pos,
                 });
         }
-        self.inspect_component::<CarComponent>();
+        self.inspect_component::<TransportComponent>();
         self.inspect_component::<MeshRender>();
         self.inspect_component::<Kinematics>();
         self.inspect_component::<Movable>();

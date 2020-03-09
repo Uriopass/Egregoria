@@ -1,6 +1,5 @@
 #![windows_subsystem = "windows"]
 
-use crate::cars::systems::CarDecision;
 use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, RenderStats, TimeInfo};
 use crate::geometry::gridstore::GridStore;
 use crate::gui::Gui;
@@ -13,12 +12,12 @@ use crate::physics::systems::KinematicsApply;
 use crate::physics::Collider;
 use crate::physics::PhysicsWorld;
 use crate::rendering::meshrender_component::MeshRender;
+use crate::transportation::systems::TransportDecision;
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 
 #[macro_use]
 pub mod gui;
 
-pub mod cars;
 pub mod engine_interaction;
 pub mod geometry;
 pub mod graphs;
@@ -27,13 +26,14 @@ pub mod interaction;
 pub mod map_model;
 pub mod physics;
 pub mod rendering;
+pub mod transportation;
 
 pub use specs;
 
 pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
     DispatcherBuilder::new()
         .with(HumanUpdate, "human update", &[])
-        .with(CarDecision, "car decision", &[])
+        .with(TransportDecision, "car decision", &[])
         .with(SelectableSystem, "selectable", &[])
         .with(
             MovableSystem::default(),
@@ -69,5 +69,5 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
 
     dispatcher.setup(world);
     map_model::setup(world);
-    cars::setup(world);
+    transportation::setup(world);
 }
