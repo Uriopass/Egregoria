@@ -2,7 +2,7 @@ use crate::engine_interaction::TimeInfo;
 use crate::map_model::Map;
 use crate::physics::PhysicsWorld;
 use crate::physics::{Kinematics, Transform};
-use crate::transportation::data::TransportComponent;
+use crate::transportation::transport_component::TransportComponent;
 use cgmath::{vec2, Angle, InnerSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
