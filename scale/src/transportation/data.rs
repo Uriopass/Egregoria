@@ -1,5 +1,3 @@
-use crate::cars::data::CarObjective::Temporary;
-use crate::cars::systems::{CAR_DECELERATION, OBJECTIVE_OK_DIST};
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::gui::{InspectDragf, InspectVec2, InspectVecVector};
@@ -10,6 +8,8 @@ use crate::physics::{
 };
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::{Color, BLACK, GREEN};
+use crate::transportation::data::TransportObjective::Temporary;
+use crate::transportation::systems::{CAR_DECELERATION, OBJECTIVE_OK_DIST};
 use cgmath::{vec2, InnerSpace, MetricSpace, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -19,18 +19,18 @@ use specs::{Builder, Component, DenseVecStorage, Entity, World, WorldExt};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum CarObjective {
+pub enum TransportObjective {
     None,
     Temporary(Traversable),
 }
 
-impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
-    fn render(_: &[&CarObjective], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
+impl<'a> InspectRenderDefault<TransportObjective> for TransportObjective {
+    fn render(_: &[&TransportObjective], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
         unimplemented!();
     }
 
     fn render_mut(
-        data: &mut [&mut CarObjective],
+        data: &mut [&mut TransportObjective],
         label: &'static str,
         _: &mut World,
         ui: &Ui,
@@ -42,8 +42,8 @@ impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
 
         let obj = &data[0];
         match obj {
-            CarObjective::None => ui.text(im_str!("None {}", label)),
-            CarObjective::Temporary(x) => ui.text(im_str!("{:?} {}", x, label)),
+            TransportObjective::None => ui.text(im_str!("None {}", label)),
+            TransportObjective::Temporary(x) => ui.text(im_str!("{:?} {}", x, label)),
         }
 
         false
@@ -51,8 +51,8 @@ impl<'a> InspectRenderDefault<CarObjective> for CarObjective {
 }
 
 #[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
-pub struct CarComponent {
-    pub objective: CarObjective,
+pub struct TransportComponent {
+    pub objective: TransportObjective,
     #[inspect(proxy_type = "InspectVecVector")]
     pub pos_objective: Vec<Vector2<f32>>,
     #[inspect(proxy_type = "InspectDragf")]
@@ -65,9 +65,9 @@ pub struct CarComponent {
     pub wait_time: f32,
 }
 
-impl CarComponent {
-    pub fn new(objective: CarObjective) -> CarComponent {
-        CarComponent {
+impl TransportComponent {
+    pub fn new(objective: TransportObjective) -> TransportComponent {
+        TransportComponent {
             objective,
             desired_speed: 0.0,
             desired_dir: Vector2::<f32>::new(0.0, 0.0),
@@ -88,7 +88,7 @@ impl CarComponent {
             Some(p) => {
                 if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
                     match self.objective {
-                        CarObjective::Temporary(x) if self.pos_objective.len() == 1 => {
+                        TransportObjective::Temporary(x) if self.pos_objective.len() == 1 => {
                             if x.can_pass(time.time_seconds, map.lanes()) {
                                 self.pos_objective.pop();
                             }
@@ -100,13 +100,13 @@ impl CarComponent {
                 }
             }
             None => match self.objective {
-                CarObjective::None => {
+                TransportObjective::None => {
                     let lane = map.closest_lane(trans.position());
                     if let Some(id) = lane {
                         self.set_travers_objective(Traversable::Lane(id), map);
                     }
                 }
-                CarObjective::Temporary(x) => match x {
+                TransportObjective::Temporary(x) => match x {
                     Traversable::Turn(id) => {
                         self.set_travers_objective(Traversable::Lane(id.dst), map);
                     }
@@ -153,8 +153,8 @@ impl CarComponent {
         };
 
         let is_terminal = match &self.objective {
-            CarObjective::None => return,
-            CarObjective::Temporary(_) => false,
+            TransportObjective::None => return,
+            TransportObjective::Temporary(_) => false,
         };
 
         let position = trans.position();
@@ -303,7 +303,7 @@ pub fn get_random_car_color() -> Color {
 const CAR_WIDTH: f32 = 4.5;
 const CAR_HEIGHT: f32 = 2.0;
 
-pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -> Entity {
+pub fn make_transport_entity(world: &mut World, trans: Transform, transport: TransportComponent) -> Entity {
     let is_tank = false;
     let mut mr = MeshRender::empty(3);
 
@@ -384,7 +384,7 @@ pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -
         .with(mr)
         .with(trans)
         .with(Kinematics::from_mass(1000.0))
-        .with(car)
+        .with(transport)
         //.with(Movable)
         .with(Selectable)
         .build();
@@ -393,7 +393,7 @@ pub fn make_car_entity(world: &mut World, trans: Transform, car: CarComponent) -
     e
 }
 
-pub fn delete_car_entity(world: &mut World, e: Entity) {
+pub fn delete_transport_entity(world: &mut World, e: Entity) {
     {
         let handle = world.read_component::<Collider>().get(e).unwrap().0;
         let mut coworld = world.write_resource::<PhysicsWorld>();
