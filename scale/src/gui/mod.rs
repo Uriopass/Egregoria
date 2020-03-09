@@ -27,7 +27,7 @@ impl Default for Gui {
             show_car_ui: true,
             show_stats: true,
             show_tips: false,
-            n_cars: 1,
+            n_cars: 100,
         }
     }
 }

@@ -335,15 +335,24 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         let mut event = None;
         clone_and_modify(self.world, self.entity, |world, mut x: Transform| {
             let mut position = x.position();
+            let mut direction = x.direction();
             if <InspectVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
                 &mut [&mut position],
-                "Pos",
+                "position",
                 world,
                 ui,
                 &InspectArgsDefault::default(),
             ) {
                 event = Some(position);
             }
+            <InspectVec2Rotation as InspectRenderDefault<Vector2<f32>>>::render_mut(
+                &mut [&mut direction],
+                "direction",
+                world,
+                ui,
+                &InspectArgsDefault::default(),
+            );
+            x.set_direction(direction);
             x.set_position(position);
             x
         });
