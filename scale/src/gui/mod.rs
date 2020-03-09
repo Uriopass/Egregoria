@@ -1,14 +1,12 @@
+use crate::engine_interaction::{RenderStats, TimeInfo};
 use crate::interaction::SelectedEntity;
-use crate::transportation::spawn_new_car;
+use crate::map_model::{LanePattern, RoadGraphSynchronizeState};
+use crate::transportation::{delete_transport_entity, spawn_new_car, TransportComponent};
 use imgui::im_str;
 use imgui::Ui;
+pub use inspect::*;
 use specs::world::World;
 use specs::{Entity, Join, WorldExt};
-
-use crate::engine_interaction::{RenderStats, TimeInfo};
-use crate::map_model::{LanePattern, RoadGraphSynchronizeState};
-use crate::transportation::data::{delete_transport_entity, TransportComponent};
-pub use inspect::*;
 
 #[macro_use]
 mod inspect;
@@ -95,11 +93,13 @@ impl Gui {
                     }
 
                     if ui.small_button(im_str!("delete all cars")) {
-                        let to_delete: Vec<Entity> =
-                            (&world.entities(), &world.read_component::<TransportComponent>())
-                                .join()
-                                .map(|(e, _)| e)
-                                .collect();
+                        let to_delete: Vec<Entity> = (
+                            &world.entities(),
+                            &world.read_component::<TransportComponent>(),
+                        )
+                            .join()
+                            .map(|(e, _)| e)
+                            .collect();
 
                         for e in to_delete {
                             delete_transport_entity(world, e);

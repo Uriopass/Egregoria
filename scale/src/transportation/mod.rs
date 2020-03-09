@@ -1,14 +1,19 @@
+use crate::interaction::Selectable;
 use crate::map_model::{Lane, LaneID, Map, Traversable};
-use crate::physics::Transform;
-use crate::transportation::data::{make_transport_entity, TransportComponent, TransportObjective};
+use crate::physics::{add_to_coworld, Collider, Kinematics, PhysicsWorld, Transform};
+use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
+use crate::rendering::{Color, BLACK, GREEN};
 use cgmath::{vec2, InnerSpace};
-use specs::{Join, World, WorldExt};
-use std::fs::File;
+use specs::{Builder, Entity, World, WorldExt};
 
-pub mod data;
+mod data;
+mod saveload;
 pub mod systems;
+mod transport_component;
 
-const TRANSPORT_FILENAME: &str = "world/transport";
+pub use data::*;
+pub use saveload::*;
+pub use transport_component::*;
 
 pub fn spawn_new_car(world: &mut World) {
     let mut pos = Transform::new(vec2(0.0, 0.0));
@@ -49,37 +54,107 @@ pub fn spawn_new_car(world: &mut World) {
     make_transport_entity(world, pos, car);
 }
 
-pub fn save(world: &mut World) {
-    let _ = std::fs::create_dir("world");
+pub fn make_transport_entity(
+    world: &mut World,
+    trans: Transform,
+    transport: TransportComponent,
+) -> Entity {
+    let is_tank = false;
+    let mut mr = MeshRender::empty(3);
 
-    let path = TRANSPORT_FILENAME.to_string() + ".bc";
-    let file = File::create(path).unwrap();
+    let c = Color::from_hex(0x25_66_29);
+    if is_tank {
+        mr.add(RectRender {
+            width: 5.0,
+            height: 3.0,
+            color: GREEN,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 4.0,
+            height: 1.0,
+            offset: [2.0, 0.0].into(),
+            color: c,
+            ..Default::default()
+        })
+        .add(CircleRender {
+            radius: 0.5,
+            offset: vec2(4.0, 0.0),
+            color: c,
+            ..Default::default()
+        });
+    } else {
+        mr.add(RectRender {
+            width: CAR_WIDTH,
+            height: CAR_HEIGHT,
+            color: get_random_car_color(),
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 0.4,
+            height: 1.8,
+            offset: [-1.7, 0.0].into(),
+            color: BLACK,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 1.0,
+            height: 1.6,
+            offset: [0.8, 0.0].into(),
+            color: BLACK,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 2.7,
+            height: 0.15,
+            offset: [-0.4, 0.85].into(),
+            color: BLACK,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 2.7,
+            height: 0.15,
+            offset: [-0.4, -0.85].into(),
+            color: BLACK,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 0.4,
+            height: 0.15,
+            offset: [2.1, -0.7].into(),
+            color: BLACK,
+            ..Default::default()
+        })
+        .add(RectRender {
+            width: 0.4,
+            height: 0.15,
+            offset: [2.1, 0.7].into(),
+            color: BLACK,
+            ..Default::default()
+        });
+    }
 
-    let comps: Vec<(Transform, TransportComponent)> = (
-        &world.read_component::<Transform>(),
-        &world.read_component::<TransportComponent>(),
-    )
-        .join()
-        .map(|(trans, car)| (trans.clone(), car.clone()))
-        .collect();
+    let e = world
+        .create_entity()
+        .with(mr)
+        .with(trans)
+        .with(Kinematics::from_mass(1000.0))
+        .with(transport)
+        //.with(Movable)
+        .with(Selectable)
+        .build();
 
-    bincode::serialize_into(file, &comps).unwrap();
+    add_to_coworld(world, e);
+    e
 }
 
-pub fn load(world: &mut World) {
-    let file = File::open(TRANSPORT_FILENAME.to_string() + ".bc");
-    if let Err(e) = file {
-        println!("error while trying to load entities: {}", e);
-        return;
+pub fn delete_transport_entity(world: &mut World, e: Entity) {
+    {
+        let handle = world.read_component::<Collider>().get(e).unwrap().0;
+        let mut coworld = world.write_resource::<PhysicsWorld>();
+        coworld.remove(handle);
     }
-
-    let des = bincode::deserialize_from(file.unwrap());
-
-    let comps: Vec<(Transform, TransportComponent)> = des.unwrap_or_default();
-
-    for (trans, car) in comps {
-        make_transport_entity(world, trans, car);
-    }
+    world.delete_entity(e).unwrap();
 }
 
 pub fn setup(world: &mut World) {
