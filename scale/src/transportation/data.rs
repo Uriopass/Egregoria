@@ -1,7 +1,128 @@
-use crate::rendering::Color;
+use crate::rendering::meshrender_component::{MeshRender, RectRender};
+use crate::rendering::{Color, BLACK, ORANGE};
+use imgui::{im_str, Ui};
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use serde::{Deserialize, Serialize};
+use specs::World;
 
-pub const CAR_WIDTH: f32 = 4.5;
-pub const CAR_HEIGHT: f32 = 2.0;
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum TransportKind {
+    Car,
+    Bus,
+}
+impl TransportKind {
+    pub fn width(self) -> f32 {
+        match self {
+            TransportKind::Car => 4.5,
+            TransportKind::Bus => 9.0,
+        }
+    }
+
+    pub fn height(self) -> f32 {
+        match self {
+            TransportKind::Car => 2.0,
+            TransportKind::Bus => 2.0,
+        }
+    }
+
+    pub fn acceleration(self) -> f32 {
+        match self {
+            TransportKind::Car => 3.0,
+            TransportKind::Bus => 2.0,
+        }
+    }
+
+    pub fn deceleration(self) -> f32 {
+        match self {
+            TransportKind::Car => 9.0,
+            TransportKind::Bus => 9.0,
+        }
+    }
+
+    pub fn min_turning_radius(self) -> f32 {
+        match self {
+            TransportKind::Car => 3.0,
+            TransportKind::Bus => 5.0,
+        }
+    }
+
+    pub fn cruising_speed(self) -> f32 {
+        match self {
+            TransportKind::Car => 15.0,
+            TransportKind::Bus => 10.0,
+        }
+    }
+
+    pub fn ang_acc(self) -> f32 {
+        match self {
+            TransportKind::Car => 1.0,
+            TransportKind::Bus => 0.8,
+        }
+    }
+
+    pub fn build_mr(self, mr: &mut MeshRender) {
+        match self {
+            TransportKind::Car => {
+                mr.add(RectRender {
+                    width: self.width(),
+                    height: self.height(),
+                    color: get_random_car_color(),
+                    ..Default::default()
+                })
+                .add(RectRender {
+                    width: 0.4,
+                    height: 1.8,
+                    offset: [-1.7, 0.0].into(),
+                    color: BLACK,
+                    ..Default::default()
+                })
+                .add(RectRender {
+                    width: 1.0,
+                    height: 1.6,
+                    offset: [0.8, 0.0].into(),
+                    color: BLACK,
+                    ..Default::default()
+                })
+                .add(RectRender {
+                    width: 2.7,
+                    height: 0.15,
+                    offset: [-0.4, 0.85].into(),
+                    color: BLACK,
+                    ..Default::default()
+                })
+                .add(RectRender {
+                    width: 2.7,
+                    height: 0.15,
+                    offset: [-0.4, -0.85].into(),
+                    color: BLACK,
+                    ..Default::default()
+                })
+                .add(RectRender {
+                    width: 0.4,
+                    height: 0.15,
+                    offset: [2.1, -0.7].into(),
+                    color: BLACK,
+                    ..Default::default()
+                })
+                .add(RectRender {
+                    width: 0.4,
+                    height: 0.15,
+                    offset: [2.1, 0.7].into(),
+                    color: BLACK,
+                    ..Default::default()
+                });
+            }
+            TransportKind::Bus => {
+                mr.add(RectRender {
+                    width: self.width(),
+                    height: self.height(),
+                    color: ORANGE,
+                    ..Default::default()
+                });
+            }
+        }
+    }
+}
 
 pub fn get_random_car_color() -> Color {
     let car_colors: [(Color, f32); 9] = [
@@ -27,4 +148,46 @@ pub fn get_random_car_color() -> Color {
         }
     }
     unreachable!();
+}
+
+impl InspectRenderDefault<TransportKind> for TransportKind {
+    fn render(
+        _: &[&TransportKind],
+        _: &'static str,
+        _: &mut World,
+        _: &Ui,
+        _: &InspectArgsDefault,
+    ) {
+        unimplemented!()
+    }
+
+    fn render_mut(
+        data: &mut [&mut TransportKind],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        _: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!()
+        }
+        let d = &mut data[0];
+        let mut id = match d {
+            TransportKind::Car => 0,
+            TransportKind::Bus => 1,
+        };
+
+        let changed = imgui::ComboBox::new(&im_str!("{}", label)).build_simple_string(
+            ui,
+            &mut id,
+            &[im_str!("Car"), im_str!("Bike")],
+        );
+
+        match id {
+            0 => **d = TransportKind::Car,
+            1 => **d = TransportKind::Bus,
+            _ => {}
+        }
+        changed
+    }
 }
