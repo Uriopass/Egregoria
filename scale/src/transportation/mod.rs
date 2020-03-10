@@ -8,11 +8,9 @@ use specs::{Builder, Entity, World, WorldExt};
 mod data;
 mod saveload;
 pub mod systems;
-mod transport_component;
 
 pub use data::*;
 pub use saveload::*;
-pub use transport_component::*;
 
 pub fn spawn_new_transport(world: &mut World) {
     let mut pos = Transform::new(vec2(0.0, 0.0));
