@@ -10,7 +10,7 @@ use crate::interaction::{
 use crate::map_model::RoadGraphSynchronize;
 use crate::physics::systems::KinematicsApply;
 use crate::physics::Collider;
-use crate::physics::PhysicsWorld;
+use crate::physics::CollisionWorld;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::transportation::systems::TransportDecision;
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
@@ -51,7 +51,7 @@ pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
 }
 
 pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
-    let collision_world: PhysicsWorld = GridStore::new(50);
+    let collision_world: CollisionWorld = GridStore::new(50);
 
     world.insert(TimeInfo::default());
     world.insert(collision_world);

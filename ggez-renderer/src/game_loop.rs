@@ -14,7 +14,7 @@ use scale::geometry::intersections::intersection_point;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
 use scale::map_model::Map;
-use scale::physics::{PhysicsWorld, Transform};
+use scale::physics::{CollisionWorld, Transform};
 use scale::specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
@@ -273,7 +273,7 @@ fn scale_mb(x: MouseButton) -> scale::engine_interaction::MouseButton {
 
 #[allow(dead_code)]
 fn debug_coworld(rc: &mut RenderContext, world: &World) -> GameResult<()> {
-    let lol = world.read_resource::<PhysicsWorld>();
+    let lol = world.read_resource::<CollisionWorld>();
     rc.draw_grid(50.0, Color::new(0.0, 0.0, 1.0, 1.0));
     rc.flush()?;
     rc.sr.mode = DrawMode::stroke(0.1);

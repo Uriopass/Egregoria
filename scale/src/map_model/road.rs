@@ -1,6 +1,6 @@
 use crate::map_model::{
-    Intersection, IntersectionID, Intersections, Lane, LaneDirection, LaneID, LanePattern,
-    LaneType, Lanes, Roads, TrafficControl,
+    Intersection, IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind,
+    LanePattern, Lanes, Roads, TrafficControl,
 };
 use cgmath::InnerSpace;
 use cgmath::Vector2;
@@ -68,7 +68,7 @@ impl Road {
     pub fn add_lane(
         &mut self,
         store: &mut Lanes,
-        lane_type: LaneType,
+        lane_type: LaneKind,
         direction: LaneDirection,
     ) -> LaneID {
         let id = store.insert_with_key(|id| Lane {
@@ -77,7 +77,7 @@ impl Road {
             src_i: self.src,
             dst_i: self.dst,
             control: TrafficControl::Always,
-            lane_type,
+            kind: lane_type,
             points: vec![],
             direction,
         });
