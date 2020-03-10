@@ -1,6 +1,6 @@
 use crate::engine_interaction::TimeInfo;
 use crate::physics::{Collider, Kinematics, Transform};
-use crate::PhysicsWorld;
+use crate::CollisionWorld;
 use cgmath::{InnerSpace, Zero};
 use specs::prelude::ResourceId;
 use specs::{Join, Read, ReadStorage, System, SystemData, World, Write, WriteStorage};
@@ -13,7 +13,7 @@ pub struct KinematicsApplyData<'a> {
     colliders: ReadStorage<'a, Collider>,
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
-    coworld: Write<'a, PhysicsWorld, specs::shred::PanicHandler>,
+    coworld: Write<'a, CollisionWorld, specs::shred::PanicHandler>,
 }
 
 impl<'a> System<'a> for KinematicsApply {

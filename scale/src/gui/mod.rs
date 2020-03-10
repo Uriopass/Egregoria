@@ -1,7 +1,7 @@
 use crate::engine_interaction::{RenderStats, TimeInfo};
 use crate::interaction::SelectedEntity;
 use crate::map_model::{LanePattern, RoadGraphSynchronizeState};
-use crate::transportation::{delete_transport_entity, spawn_new_car, TransportComponent};
+use crate::transportation::{delete_transport_entity, spawn_new_transport, TransportComponent};
 use imgui::im_str;
 use imgui::Ui;
 pub use inspect::*;
@@ -88,7 +88,7 @@ impl Gui {
                     ui.same_line(0.0);
                     if ui.small_button(im_str!("spawn car")) {
                         for _ in 0..self.n_cars {
-                            spawn_new_car(world);
+                            spawn_new_transport(world);
                         }
                     }
 

@@ -3,17 +3,16 @@ use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::gui::{InspectDragf, InspectVec2, InspectVecVector};
 use crate::map_model::{Map, TrafficBehavior, Traversable, Turn, TurnID};
 use crate::physics::{PhysicsObject, Transform};
-use crate::transportation::systems::{CAR_DECELERATION, OBJECTIVE_OK_DIST};
+use crate::transportation::systems::OBJECTIVE_OK_DIST;
 use crate::transportation::transport_component::TransportObjective::Temporary;
-use crate::transportation::CAR_WIDTH;
-use cgmath::{InnerSpace, MetricSpace, Vector2};
+use crate::transportation::TransportKind;
+use cgmath::{vec2, InnerSpace, MetricSpace, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Component, DenseVecStorage, World};
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TransportObjective {
     None,
@@ -65,17 +64,30 @@ pub struct TransportComponent {
     pub ang_velocity: f32,
     #[inspect(proxy_type = "InspectDragf")]
     pub wait_time: f32,
+
+    pub kind: TransportKind,
 }
 
-impl TransportComponent {
-    pub fn new(objective: TransportObjective) -> TransportComponent {
-        TransportComponent {
-            objective,
+impl Default for TransportComponent {
+    fn default() -> Self {
+        Self {
+            objective: TransportObjective::None,
             desired_speed: 0.0,
-            desired_dir: Vector2::<f32>::new(0.0, 0.0),
+            desired_dir: vec2(0.0, 0.0),
             wait_time: 0.0,
             ang_velocity: 0.0,
             pos_objective: Vec::with_capacity(7),
+            kind: TransportKind::Car,
+        }
+    }
+}
+
+impl TransportComponent {
+    pub fn new(objective: TransportObjective, kind: TransportKind) -> TransportComponent {
+        Self {
+            objective,
+            kind,
+            ..Default::default()
         }
     }
 
@@ -165,13 +177,13 @@ impl TransportComponent {
         let delta_pos = objective - position;
         let dist_to_pos = delta_pos.magnitude();
         let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
-        let time_to_stop = speed / CAR_DECELERATION;
+        let time_to_stop = speed / self.kind.deceleration();
         let stop_dist = time_to_stop * speed / 2.0;
 
         let mut min_front_dist: f32 = 50.0;
 
         let my_ray = Ray {
-            from: position - direction * CAR_WIDTH / 2.0,
+            from: position - direction * self.kind.width() / 2.0,
             dir: direction,
         };
 
@@ -187,10 +199,6 @@ impl TransportComponent {
 
             let dist2 = towards_vec.magnitude2();
 
-            if dist2 > (6.0 + stop_dist) * (6.0 + stop_dist) {
-                continue;
-            }
-
             let nei_physics_obj = nei.1;
 
             let dist = dist2.sqrt();
@@ -203,7 +211,8 @@ impl TransportComponent {
 
             // front cone
             if dir_dot > 0.7 && his_direction.dot(direction) > 0.0 {
-                min_front_dist = min_front_dist.min(dist);
+                min_front_dist =
+                    min_front_dist.min(dist - self.kind.width() / 2.0 - nei.1.kind.width() / 2.0);
                 continue;
             }
 
@@ -214,7 +223,7 @@ impl TransportComponent {
             // closest win
 
             let his_ray = Ray {
-                from: his_pos - CAR_WIDTH / 2.0 * his_direction,
+                from: his_pos - nei.1.kind.width() / 2.0 * his_direction,
                 dir: his_direction,
             };
 
@@ -228,23 +237,27 @@ impl TransportComponent {
                 }
                 None => continue,
             }
-            min_front_dist = min_front_dist.min(dist);
+            min_front_dist = min_front_dist.min(dist - self.kind.width() / 2.0);
         }
 
-        if speed.abs() < 0.2 && min_front_dist < 7.0 {
+        if speed.abs() < 0.2 && min_front_dist < 1.5 {
             self.wait_time = rand::random::<f32>() * 0.5;
             return;
         }
 
         self.desired_dir = dir_to_pos;
-        self.desired_speed = 15.0;
+        self.desired_speed = self.kind.cruising_speed();
 
         if self.pos_objective.len() == 1 {
             if let Temporary(trans) = self.objective {
                 if let Traversable::Lane(l_id) = trans {
                     match map.lanes()[l_id].control.get_behavior(time.time_seconds) {
                         TrafficBehavior::RED | TrafficBehavior::ORANGE => {
-                            if dist_to_pos < OBJECTIVE_OK_DIST * 1.05 + stop_dist {
+                            if dist_to_pos
+                                < OBJECTIVE_OK_DIST * 1.05
+                                    + stop_dist
+                                    + (self.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
+                            {
                                 self.desired_speed = 0.0;
                             }
                         }
@@ -269,7 +282,7 @@ impl TransportComponent {
             self.desired_speed = self.desired_speed.min(6.0);
         }
 
-        if min_front_dist < 6.0 + stop_dist {
+        if min_front_dist < 1.0 + stop_dist {
             // Car in front of us
             self.desired_speed = 0.0;
         }

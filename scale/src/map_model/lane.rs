@@ -10,7 +10,7 @@ new_key_type! {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum LaneType {
+pub enum LaneKind {
     Driving,
     Biking,
     Bus,
@@ -27,7 +27,7 @@ pub enum LaneDirection {
 pub struct Lane {
     pub id: LaneID,
     pub parent: RoadID,
-    pub lane_type: LaneType,
+    pub kind: LaneKind,
 
     pub control: TrafficControl,
 
@@ -42,8 +42,8 @@ pub struct Lane {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct LanePattern {
     pub name: String,
-    pub lanes_forward: Vec<LaneType>,
-    pub lanes_backward: Vec<LaneType>,
+    pub lanes_forward: Vec<LaneKind>,
+    pub lanes_backward: Vec<LaneKind>,
 }
 impl PartialEq for LanePattern {
     fn eq(&self, other: &Self) -> bool {
@@ -57,7 +57,7 @@ impl LanePattern {
         assert!(n_lanes > 0);
         LanePattern {
             lanes_backward: vec![],
-            lanes_forward: (0..n_lanes).map(|_| LaneType::Driving).collect(),
+            lanes_forward: (0..n_lanes).map(|_| LaneKind::Driving).collect(),
             name: if n_lanes == 1 {
                 "One way".to_owned()
             } else {
@@ -69,8 +69,8 @@ impl LanePattern {
     pub fn two_way(n_lanes: usize) -> Self {
         assert!(n_lanes > 0);
         LanePattern {
-            lanes_backward: (0..n_lanes).map(|_| LaneType::Driving).collect(),
-            lanes_forward: (0..n_lanes).map(|_| LaneType::Driving).collect(),
+            lanes_backward: (0..n_lanes).map(|_| LaneKind::Driving).collect(),
+            lanes_forward: (0..n_lanes).map(|_| LaneKind::Driving).collect(),
             name: if n_lanes == 1 {
                 "Two way".to_owned()
             } else {

@@ -1,8 +1,7 @@
 use crate::interaction::Selectable;
 use crate::map_model::{Lane, LaneID, Map, Traversable};
-use crate::physics::{add_to_coworld, Collider, Kinematics, PhysicsWorld, Transform};
-use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
-use crate::rendering::{Color, BLACK, GREEN};
+use crate::physics::{add_transport_to_coworld, Collider, CollisionWorld, Kinematics, Transform};
+use crate::rendering::meshrender_component::MeshRender;
 use cgmath::{vec2, InnerSpace};
 use specs::{Builder, Entity, World, WorldExt};
 
@@ -15,9 +14,15 @@ pub use data::*;
 pub use saveload::*;
 pub use transport_component::*;
 
-pub fn spawn_new_car(world: &mut World) {
+pub fn spawn_new_transport(world: &mut World) {
     let mut pos = Transform::new(vec2(0.0, 0.0));
     let mut obj = TransportObjective::None;
+
+    let kind = if rand::random::<bool>() {
+        TransportKind::Car
+    } else {
+        TransportKind::Bus
+    };
 
     {
         let map = world.read_resource::<Map>();
@@ -49,9 +54,7 @@ pub fn spawn_new_car(world: &mut World) {
         }
     }
 
-    let car = TransportComponent::new(obj);
-
-    make_transport_entity(world, pos, car);
+    make_transport_entity(world, pos, TransportComponent::new(obj, kind));
 }
 
 pub fn make_transport_entity(
@@ -59,80 +62,9 @@ pub fn make_transport_entity(
     trans: Transform,
     transport: TransportComponent,
 ) -> Entity {
-    let is_tank = false;
     let mut mr = MeshRender::empty(3);
 
-    let c = Color::from_hex(0x25_66_29);
-    if is_tank {
-        mr.add(RectRender {
-            width: 5.0,
-            height: 3.0,
-            color: GREEN,
-            ..Default::default()
-        })
-        .add(RectRender {
-            width: 4.0,
-            height: 1.0,
-            offset: [2.0, 0.0].into(),
-            color: c,
-            ..Default::default()
-        })
-        .add(CircleRender {
-            radius: 0.5,
-            offset: vec2(4.0, 0.0),
-            color: c,
-            ..Default::default()
-        });
-    } else {
-        mr.add(RectRender {
-            width: CAR_WIDTH,
-            height: CAR_HEIGHT,
-            color: get_random_car_color(),
-            ..Default::default()
-        })
-        .add(RectRender {
-            width: 0.4,
-            height: 1.8,
-            offset: [-1.7, 0.0].into(),
-            color: BLACK,
-            ..Default::default()
-        })
-        .add(RectRender {
-            width: 1.0,
-            height: 1.6,
-            offset: [0.8, 0.0].into(),
-            color: BLACK,
-            ..Default::default()
-        })
-        .add(RectRender {
-            width: 2.7,
-            height: 0.15,
-            offset: [-0.4, 0.85].into(),
-            color: BLACK,
-            ..Default::default()
-        })
-        .add(RectRender {
-            width: 2.7,
-            height: 0.15,
-            offset: [-0.4, -0.85].into(),
-            color: BLACK,
-            ..Default::default()
-        })
-        .add(RectRender {
-            width: 0.4,
-            height: 0.15,
-            offset: [2.1, -0.7].into(),
-            color: BLACK,
-            ..Default::default()
-        })
-        .add(RectRender {
-            width: 0.4,
-            height: 0.15,
-            offset: [2.1, 0.7].into(),
-            color: BLACK,
-            ..Default::default()
-        });
-    }
+    transport.kind.build_mr(&mut mr);
 
     let e = world
         .create_entity()
@@ -144,14 +76,14 @@ pub fn make_transport_entity(
         .with(Selectable)
         .build();
 
-    add_to_coworld(world, e);
+    add_transport_to_coworld(world, e);
     e
 }
 
 pub fn delete_transport_entity(world: &mut World, e: Entity) {
     {
         let handle = world.read_component::<Collider>().get(e).unwrap().0;
-        let mut coworld = world.write_resource::<PhysicsWorld>();
+        let mut coworld = world.write_resource::<CollisionWorld>();
         coworld.remove(handle);
     }
     world.delete_entity(e).unwrap();
