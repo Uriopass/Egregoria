@@ -1,6 +1,6 @@
 use crate::physics::Transform;
 use crate::transportation::make_transport_entity;
-use crate::transportation::transport_component::TransportComponent;
+use crate::transportation::TransportComponent;
 use specs::{Join, World, WorldExt};
 use std::fs::File;
 

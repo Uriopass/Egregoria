@@ -1,15 +1,43 @@
+use crate::gui::{InspectDragf, InspectVec2, InspectVecVector};
+use crate::map_model::{Map, Traversable};
 use crate::rendering::meshrender_component::{MeshRender, RectRender};
 use crate::rendering::{Color, BLACK, ORANGE};
+use cgmath::{vec2, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
-use specs::World;
+use specs::{Component, DenseVecStorage, World};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum TransportKind {
     Car,
     Bus,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TransportObjective {
+    None,
+    Temporary(Traversable),
+}
+
+#[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
+pub struct TransportComponent {
+    pub objective: TransportObjective,
+    #[inspect(proxy_type = "InspectVecVector")]
+    pub pos_objective: Vec<Vector2<f32>>,
+    #[inspect(proxy_type = "InspectDragf")]
+    pub desired_speed: f32,
+    #[inspect(proxy_type = "InspectVec2")]
+    pub desired_dir: Vector2<f32>,
+    #[inspect(proxy_type = "InspectDragf")]
+    pub ang_velocity: f32,
+    #[inspect(proxy_type = "InspectDragf")]
+    pub wait_time: f32,
+
+    pub kind: TransportKind,
+}
+
 impl TransportKind {
     pub fn width(self) -> f32 {
         match self {
@@ -148,6 +176,68 @@ pub fn get_random_car_color() -> Color {
         }
     }
     unreachable!();
+}
+
+impl Default for TransportComponent {
+    fn default() -> Self {
+        Self {
+            objective: TransportObjective::None,
+            desired_speed: 0.0,
+            desired_dir: vec2(0.0, 0.0),
+            wait_time: 0.0,
+            ang_velocity: 0.0,
+            pos_objective: Vec::with_capacity(7),
+            kind: TransportKind::Car,
+        }
+    }
+}
+
+impl TransportComponent {
+    pub fn new(objective: TransportObjective, kind: TransportKind) -> TransportComponent {
+        Self {
+            objective,
+            kind,
+            ..Default::default()
+        }
+    }
+
+    pub fn set_travers_objective(&mut self, travers: Traversable, map: &Map) {
+        self.objective = TransportObjective::Temporary(travers);
+        let p = travers.points(map);
+        self.pos_objective.extend(p.iter().rev());
+    }
+}
+
+impl<'a> InspectRenderDefault<TransportObjective> for TransportObjective {
+    fn render(
+        _: &[&TransportObjective],
+        _: &'static str,
+        _: &mut World,
+        _: &Ui,
+        _: &InspectArgsDefault,
+    ) {
+        unimplemented!();
+    }
+
+    fn render_mut(
+        data: &mut [&mut TransportObjective],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        _: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            return false;
+        }
+
+        let obj = &data[0];
+        match obj {
+            TransportObjective::None => ui.text(im_str!("None {}", label)),
+            TransportObjective::Temporary(x) => ui.text(im_str!("{:?} {}", x, label)),
+        }
+
+        false
+    }
 }
 
 impl InspectRenderDefault<TransportKind> for TransportKind {
