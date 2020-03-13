@@ -16,11 +16,7 @@ pub fn spawn_new_transport(world: &mut World) {
     let mut pos = Transform::new(vec2(0.0, 0.0));
     let mut obj = TransportObjective::None;
 
-    let kind = if rand::random::<bool>() {
-        TransportKind::Car
-    } else {
-        TransportKind::Bus
-    };
+    let kind = TransportKind::Car;
 
     {
         let map = world.read_resource::<Map>();

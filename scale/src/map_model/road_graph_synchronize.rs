@@ -137,27 +137,12 @@ impl<'a> System<'a> for RoadGraphSynchronize {
                     First(y) => {
                         let interc2 = data.intersections.get(y).unwrap();
                         if y != x {
-                            let road = data.map.find_road(interc.id, interc2.id);
-
-                            match road {
-                                None => {
-                                    data.map.connect(
-                                        interc2.id,
-                                        interc.id,
-                                        &data.self_state.pattern,
-                                    );
-                                }
-                                Some(_) => {
-                                    let old_road = data.map.disconnect(interc.id, interc2.id);
-                                    if data.self_state.pattern != old_road.unwrap().pattern {
-                                        data.map.connect(
-                                            interc2.id,
-                                            interc.id,
-                                            &data.self_state.pattern,
-                                        );
-                                    }
-                                }
+                            if data.map.find_road(interc.id, interc2.id).is_some() {
+                                data.map.disconnect(interc.id, interc2.id);
                             }
+
+                            data.map
+                                .connect(interc2.id, interc.id, &data.self_state.pattern);
 
                             data.self_state.deactive_connect(&mut data.meshrenders);
                         }

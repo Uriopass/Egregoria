@@ -6,14 +6,17 @@ members = [
     "ggez-renderer"
 ]
 
-[profile.dev.overrides."*"]
-opt-level = 3
-
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]
 opt-level = 1
 
-[profile.dev]
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev.package.scale]
+opt-level = 1
+
+[profile.dev.package.ggez-renderer]
 opt-level = 1
 
 [profile.release]

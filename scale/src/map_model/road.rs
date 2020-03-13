@@ -21,8 +21,6 @@ pub struct Road {
 
     pub lanes_forward: Vec<LaneID>,
     pub lanes_backward: Vec<LaneID>,
-
-    pub pattern: LanePattern,
 }
 
 impl Road {
@@ -45,7 +43,6 @@ impl Road {
             interpolation_points: vec![pos_src, pos_dst],
             lanes_forward: vec![],
             lanes_backward: vec![],
-            pattern: lane_pattern.clone(),
         });
         let road = &mut store[id];
         for lane in &lane_pattern.lanes_forward {
@@ -71,15 +68,18 @@ impl Road {
         lane_type: LaneKind,
         direction: LaneDirection,
     ) -> LaneID {
+        let (src, dst) = match direction {
+            LaneDirection::Forward => (self.src, self.dst),
+            LaneDirection::Backward => (self.dst, self.src),
+        };
         let id = store.insert_with_key(|id| Lane {
             id,
             parent: self.id,
-            src_i: self.src,
-            dst_i: self.dst,
+            src,
+            dst,
             control: TrafficControl::Always,
             kind: lane_type,
             points: vec![],
-            direction,
         });
         match direction {
             LaneDirection::Forward => self.lanes_forward.push(id),
