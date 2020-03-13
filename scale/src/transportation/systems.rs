@@ -135,7 +135,7 @@ pub fn objective_update(
                 Traversable::Lane(id) => {
                     let lane = &map.lanes()[id];
 
-                    let neighs = map.intersections()[lane.forward_dst_inter()]
+                    let neighs = map.intersections()[lane.dst]
                         .turns
                         .iter()
                         .filter(|(_, x)| x.id.src == id)
