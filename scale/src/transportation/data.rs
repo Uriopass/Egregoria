@@ -270,7 +270,7 @@ impl InspectRenderDefault<TransportKind> for TransportKind {
         let changed = imgui::ComboBox::new(&im_str!("{}", label)).build_simple_string(
             ui,
             &mut id,
-            &[im_str!("Car"), im_str!("Bike")],
+            &[im_str!("Car"), im_str!("Bus")],
         );
 
         match id {
