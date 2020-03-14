@@ -15,4 +15,3 @@ serde = "1.0"
 imgui = "0.3"
 cgmath = {version = "0.17", features = ["serde"]}
 specs = {version = "0.16", default-features = false, features = ["shred-derive", "specs-derive", "serde"]}
-rlua = "0.17.0"
