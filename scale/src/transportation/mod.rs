@@ -67,7 +67,7 @@ pub fn make_transport_entity(
         .with(Kinematics::from_mass(1000.0))
         .with(transport)
         //.with(Movable)
-        .with(Selectable)
+        .with(Selectable::default())
         .build();
 
     add_transport_to_coworld(world, e);

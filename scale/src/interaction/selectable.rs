@@ -7,9 +7,22 @@ use specs::prelude::*;
 use specs::Component;
 use std::f32;
 
-#[derive(Component, Default, Clone, Serialize, Deserialize)]
-#[storage(NullStorage)]
-pub struct Selectable;
+#[derive(Component, Clone, Serialize, Deserialize)]
+pub struct Selectable {
+    pub radius: f32,
+}
+
+impl Selectable {
+    pub fn new(radius: f32) -> Self {
+        Self { radius }
+    }
+}
+
+impl Default for Selectable {
+    fn default() -> Self {
+        Self { radius: 5.0 }
+    }
+}
 
 #[derive(Default, Clone, Copy)]
 pub struct SelectedEntity(pub Option<Entity>);
@@ -33,14 +46,14 @@ impl<'a> System<'a> for SelectableSystem {
         if mouse.just_pressed.contains(&MouseButton::Left) {
             let mut min_dist2 = f32::MAX;
             let mut closest = None;
-            for (entity, trans, _) in (&entities, &transforms, &selectables).join() {
+            for (entity, trans, select) in (&entities, &transforms, &selectables).join() {
                 let dist2: f32 = (trans.position() - mouse.unprojected).magnitude2();
-                if dist2 <= min_dist2 {
+                if dist2 <= min_dist2 && dist2 <= select.radius * select.radius {
                     closest = Some(entity);
                     min_dist2 = dist2;
                 }
             }
-            *selected = SelectedEntity(if min_dist2 < 5.0 * 5.0 { closest } else { None });
+            *selected = SelectedEntity(closest);
         }
 
         if let Some(x) = selected.0 {
