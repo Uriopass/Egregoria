@@ -27,7 +27,6 @@ pub mod map_model;
 pub mod physics;
 pub mod rendering;
 pub mod transportation;
-
 pub use specs;
 
 pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
