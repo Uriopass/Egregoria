@@ -1,35 +1,19 @@
-use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
+use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use crate::interaction::{MovedEvent, SelectedEntity};
 use crate::map_model::{make_inter_entity, IntersectionComponent, LanePattern, Map};
 use crate::physics::Transform;
-use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
+use crate::rendering::meshrender_component::{LineToRender, MeshRender};
 use crate::rendering::{Color, BLUE};
-use cgmath::vec2;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use specs::shrev::{EventChannel, ReaderId};
 use specs::world::EntitiesRes;
 
-#[derive(PartialEq, Eq, Clone, Copy)]
-pub enum ConnectState {
-    Inactive,
-    First(Entity),
-}
-
-impl ConnectState {
-    pub fn is_first(self) -> bool {
-        match self {
-            ConnectState::First(_) => true,
-            _ => false,
-        }
-    }
-}
-
 pub struct MapUISystem;
 
 pub struct MapUIState {
     reader: ReaderId<MovedEvent>,
-    pub connect_state: ConnectState,
+    pub selected_inter: Option<Entity>,
     pub entities: Vec<Entity>,
     pub pattern: LanePattern,
 }
@@ -42,7 +26,7 @@ impl MapUIState {
 
         Self {
             reader,
-            connect_state: ConnectState::Inactive,
+            selected_inter: None,
             entities: vec![],
             pattern: LanePattern::two_way(1),
         }
@@ -103,10 +87,6 @@ impl<'a> System<'a> for MapUISystem {
             state.deactive_connect(&data.entities);
         }
 
-        if data.kbinfo.just_pressed.contains(&KeyCode::Escape) {
-            state.deactive_connect(&data.entities);
-        }
-
         if let Some(x) = data.selected.0 {
             if data.intersections.contains(x) {
                 state.on_inter_select(
@@ -120,23 +100,26 @@ impl<'a> System<'a> for MapUISystem {
             } else {
                 state.deactive_connect(&data.entities);
             }
-        } else if let ConnectState::First(x) = state.connect_state {
+        } else if let Some(x) = state.selected_inter {
             state.deactive_connect(&data.entities);
 
-            let id = data.map.add_intersection(data.mouseinfo.unprojected);
-            let intersections = &data.intersections;
-            let lol = intersections.get(x).unwrap();
-            data.map.connect(lol.id, id, &state.pattern);
-            let e = make_inter_entity(
-                &data.map.intersections()[id],
-                data.mouseinfo.unprojected,
-                &data.lazy,
-                &data.entities,
-            );
-            *data.selected = SelectedEntity(Some(e));
+            if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
+                // Unselected with click in empty space
+                let id = data.map.add_intersection(data.mouseinfo.unprojected);
+                let intersections = &data.intersections;
+                let lol = intersections.get(x).unwrap();
+                data.map.connect(lol.id, id, &state.pattern);
+                let e = make_inter_entity(
+                    &data.map.intersections()[id],
+                    data.mouseinfo.unprojected,
+                    &data.lazy,
+                    &data.entities,
+                );
+                *data.selected = SelectedEntity(Some(e));
+            }
         }
 
-        if state.connect_state.is_first() {
+        if state.selected_inter.is_some() {
             let line = state.entities[0];
             let mouse_pos = data.mouseinfo.unprojected;
             if let Some(x) = data.transforms.get_mut(line) {
@@ -148,7 +131,7 @@ impl<'a> System<'a> for MapUISystem {
 
 impl MapUIState {
     fn deactive_connect(&mut self, entities: &EntitiesRes) {
-        self.connect_state = ConnectState::Inactive;
+        self.selected_inter = None;
         self.entities
             .drain(..)
             .for_each(|e| entities.delete(e).unwrap());
@@ -165,10 +148,10 @@ impl MapUIState {
     ) {
         let selected_interc = intersections.get(selected).unwrap();
         map.set_intersection_radius(selected_interc.id, selected_interc.radius);
-        map.set_intersection_turn_policy(selected_interc.id, selected_interc.policy);
+        map.set_intersection_turn_policy(selected_interc.id, selected_interc.turn_policy);
 
-        match self.connect_state {
-            ConnectState::Inactive => {
+        match self.selected_inter {
+            None => {
                 let color = Color { a: 0.5, ..BLUE };
                 self.entities.push(
                     lazy.create_entity(entities)
@@ -184,23 +167,9 @@ impl MapUIState {
                         .build(),
                 );
 
-                self.entities.push(
-                    lazy.create_entity(entities)
-                        .with(Transform::new(vec2(0.0, 0.0)))
-                        .with(MeshRender::simple(
-                            CircleRender {
-                                radius: 10.0,
-                                color,
-                                ..Default::default()
-                            },
-                            9,
-                        ))
-                        .build(),
-                );
-
-                self.connect_state = ConnectState::First(selected);
+                self.selected_inter = Some(selected);
             }
-            ConnectState::First(y) => {
+            Some(y) => {
                 // Already selected, connect the two
                 let interc2 = intersections.get(y).unwrap();
                 if y != selected {
