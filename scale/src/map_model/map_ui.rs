@@ -9,13 +9,6 @@ use specs::prelude::*;
 use specs::shred::PanicHandler;
 use specs::shrev::{EventChannel, ReaderId};
 use specs::world::EntitiesRes;
-use specs::Component;
-
-#[derive(Component)]
-pub struct LogicComponent {
-    pub radius: f32,
-    pub on_click: Box<dyn Fn(&World) -> ()>,
-}
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum ConnectState {
@@ -32,16 +25,16 @@ impl ConnectState {
     }
 }
 
-pub struct RoadGraphSynchronize;
+pub struct MapUISystem;
 
-pub struct RoadGraphSynchronizeState {
+pub struct MapUIState {
     reader: ReaderId<MovedEvent>,
     pub connect_state: ConnectState,
-    pub rgs_ui: Vec<Entity>,
+    pub entities: Vec<Entity>,
     pub pattern: LanePattern,
 }
 
-impl RoadGraphSynchronizeState {
+impl MapUIState {
     pub fn new(world: &mut World) -> Self {
         let reader = world
             .write_resource::<EventChannel<MovedEvent>>()
@@ -50,17 +43,17 @@ impl RoadGraphSynchronizeState {
         Self {
             reader,
             connect_state: ConnectState::Inactive,
-            rgs_ui: vec![],
+            entities: vec![],
             pattern: LanePattern::two_way(1),
         }
     }
 }
 
 #[derive(SystemData)]
-pub struct RGSData<'a> {
+pub struct MapUIData<'a> {
     entities: Entities<'a>,
     lazy: Read<'a, LazyUpdate>,
-    self_state: Write<'a, RoadGraphSynchronizeState, PanicHandler>,
+    self_state: Write<'a, MapUIState, PanicHandler>,
     map: Write<'a, Map, PanicHandler>,
     selected: Write<'a, SelectedEntity>,
     moved: Read<'a, EventChannel<MovedEvent>>,
@@ -70,8 +63,8 @@ pub struct RGSData<'a> {
     transforms: WriteStorage<'a, Transform>,
 }
 
-impl<'a> System<'a> for RoadGraphSynchronize {
-    type SystemData = RGSData<'a>;
+impl<'a> System<'a> for MapUISystem {
+    type SystemData = MapUIData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
         let state = &mut data.self_state;
@@ -144,7 +137,7 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         }
 
         if state.connect_state.is_first() {
-            let line = state.rgs_ui[0];
+            let line = state.entities[0];
             let mouse_pos = data.mouseinfo.unprojected;
             if let Some(x) = data.transforms.get_mut(line) {
                 x.set_position(mouse_pos);
@@ -153,10 +146,10 @@ impl<'a> System<'a> for RoadGraphSynchronize {
     }
 }
 
-impl RoadGraphSynchronizeState {
+impl MapUIState {
     fn deactive_connect(&mut self, entities: &EntitiesRes) {
         self.connect_state = ConnectState::Inactive;
-        self.rgs_ui
+        self.entities
             .drain(..)
             .for_each(|e| entities.delete(e).unwrap());
     }
@@ -177,7 +170,7 @@ impl RoadGraphSynchronizeState {
         match self.connect_state {
             ConnectState::Inactive => {
                 let color = Color { a: 0.5, ..BLUE };
-                self.rgs_ui.push(
+                self.entities.push(
                     lazy.create_entity(entities)
                         .with(Transform::new(mouse.unprojected))
                         .with(MeshRender::simple(
@@ -191,7 +184,7 @@ impl RoadGraphSynchronizeState {
                         .build(),
                 );
 
-                self.rgs_ui.push(
+                self.entities.push(
                     lazy.create_entity(entities)
                         .with(Transform::new(vec2(0.0, 0.0)))
                         .with(MeshRender::simple(
@@ -202,14 +195,6 @@ impl RoadGraphSynchronizeState {
                             },
                             9,
                         ))
-                        .with(LogicComponent {
-                            radius: 5.0,
-                            on_click: Box::new(|w| {
-                                let lol = w.system_data::<Read<LazyUpdate>>();
-                                lol.create_entity(&w.entities()).build();
-                                println!("{} Ok boomer", w.read_resource::<Map>().lanes().len())
-                            }),
-                        })
                         .build(),
                 );
 

@@ -1,6 +1,6 @@
 use crate::engine_interaction::{RenderStats, TimeInfo};
 use crate::interaction::SelectedEntity;
-use crate::map_model::{LanePattern, RoadGraphSynchronizeState};
+use crate::map_model::{LanePattern, MapUIState};
 use crate::transportation::{delete_transport_entity, spawn_new_transport, TransportComponent};
 use imgui::im_str;
 use imgui::Ui;
@@ -106,10 +106,7 @@ impl Gui {
                         }
                     }
 
-                    let pattern = &mut world
-                        .get_mut::<RoadGraphSynchronizeState>()
-                        .unwrap()
-                        .pattern;
+                    let pattern = &mut world.get_mut::<MapUIState>().unwrap().pattern;
 
                     ui.text(im_str!("Current selection: {}", pattern.name));
 
