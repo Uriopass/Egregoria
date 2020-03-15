@@ -1,16 +1,13 @@
 use crate::gui::InspectDragf;
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{
-    Intersections, LaneID, Lanes, Road, RoadID, Roads, TrafficControl, TrafficLightSchedule, Turn,
-    TurnID, TurnPolicy,
+    Intersections, LaneID, Lanes, LightPolicy, Road, RoadID, Roads, Turn, TurnID, TurnPolicy,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::{Color, BLUE};
-use cgmath::{InnerSpace, Vector2};
+use cgmath::Vector2;
 use imgui_inspect_derive::*;
-use ordered_float::OrderedFloat;
-use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use specs::storage::BTreeStorage;
@@ -21,6 +18,12 @@ new_key_type! {
     pub struct IntersectionID;
 }
 
+impl IntersectionID {
+    pub fn as_ffi(self) -> u64 {
+        self.0.as_ffi()
+    }
+}
+
 #[derive(Component, Clone, Serialize, Deserialize, Inspect)]
 #[storage(BTreeStorage)]
 pub struct IntersectionComponent {
@@ -28,7 +31,8 @@ pub struct IntersectionComponent {
     pub id: IntersectionID,
     #[inspect(proxy_type = "InspectDragf")]
     pub radius: f32,
-    pub policy: TurnPolicy,
+    pub turn_policy: TurnPolicy,
+    pub light_policy: LightPolicy,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -37,13 +41,15 @@ pub struct Intersection {
     pub pos: Vector2<f32>,
 
     pub turns: BTreeMap<TurnID, Turn>,
-    pub policy: TurnPolicy,
 
     pub incoming_lanes: Vec<LaneID>,
     pub outgoing_lanes: Vec<LaneID>,
 
     pub roads: Vec<RoadID>,
+
     pub interface_radius: f32,
+    pub turn_policy: TurnPolicy,
+    pub light_policy: LightPolicy,
 }
 
 impl Intersection {
@@ -52,11 +58,12 @@ impl Intersection {
             id,
             pos,
             turns: BTreeMap::new(),
-            policy: TurnPolicy::default(),
             incoming_lanes: vec![],
             outgoing_lanes: vec![],
             roads: vec![],
             interface_radius: 20.0,
+            turn_policy: TurnPolicy::default(),
+            light_policy: LightPolicy::default(),
         })
     }
 
@@ -70,7 +77,7 @@ impl Intersection {
     }
 
     pub fn gen_turns(&mut self, lanes: &Lanes, roads: &Roads) {
-        let turns = self.policy.generate_turns(self, lanes, roads);
+        let turns = self.turn_policy.generate_turns(self, lanes, roads);
 
         let to_remove: Vec<TurnID> = self
             .turns
@@ -111,64 +118,8 @@ impl Intersection {
         self.incoming_lanes.extend(incoming);
     }
 
-    fn pseudo_angle(v: Vector2<f32>) -> f32 {
-        debug_assert!((v.magnitude2() - 1.0).abs() <= 1e-5);
-        let dx = v.x;
-        let dy = v.y;
-        let p = dx / (dx.abs() + dy.abs());
-
-        if dy < 0.0 {
-            p - 1.0
-        } else {
-            1.0 - p
-        }
-    }
-
     pub fn update_traffic_control(&self, roads: &Roads, lanes: &mut Lanes) {
-        let mut in_road_lanes: Vec<&Vec<LaneID>> = self
-            .roads
-            .iter()
-            .map(|x| roads[*x].incoming_lanes_from(self.id))
-            .filter(|v| !v.is_empty())
-            .collect();
-
-        if in_road_lanes.len() <= 2 {
-            for incoming_lanes in in_road_lanes {
-                for lane in incoming_lanes {
-                    lanes[*lane].control = TrafficControl::Always;
-                }
-            }
-            return;
-        }
-
-        in_road_lanes.sort_by_key(|x| {
-            OrderedFloat(Self::pseudo_angle(
-                roads[lanes[*x.first().unwrap()].parent].dir_from(self),
-            ))
-        });
-
-        let cycle_size = 10;
-        let orange_length = 4;
-        let offset = self.id.0.as_ffi() as u32;
-        let offset: usize =
-            rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0, cycle_size);
-
-        for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
-            let light = TrafficControl::Periodic(TrafficLightSchedule::from_basic(
-                cycle_size,
-                orange_length,
-                cycle_size + orange_length,
-                if i % 2 == 0 {
-                    cycle_size + orange_length + offset
-                } else {
-                    offset
-                },
-            ));
-
-            for lane in incoming_lanes {
-                lanes[*lane].control = light;
-            }
-        }
+        self.light_policy.apply(self, roads, lanes);
     }
 }
 
@@ -182,7 +133,8 @@ pub fn make_inter_entity<'a>(
         .with(IntersectionComponent {
             id: inter.id,
             radius: inter.interface_radius,
-            policy: inter.policy,
+            turn_policy: inter.turn_policy,
+            light_policy: inter.light_policy,
         })
         .with(MeshRender::simple(
             CircleRender {

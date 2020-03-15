@@ -51,11 +51,11 @@ impl Map {
     }
 
     pub fn set_intersection_turn_policy(&mut self, id: IntersectionID, policy: TurnPolicy) {
-        if self.intersections[id].policy == policy {
+        if self.intersections[id].turn_policy == policy {
             return;
         }
 
-        self.intersections[id].policy = policy;
+        self.intersections[id].turn_policy = policy;
         self.intersections[id].gen_turns(&self.lanes, &self.roads);
     }
 
@@ -119,9 +119,6 @@ impl Map {
         let road_id = r?;
         let r = self.remove_road(road_id);
 
-        self.intersections[src].update_traffic_control(&self.roads, &mut self.lanes);
-        self.intersections[dst].update_traffic_control(&self.roads, &mut self.lanes);
-
         Some(r)
     }
 
@@ -133,6 +130,9 @@ impl Map {
 
         self.intersections[road.src].clean(&self.lanes, &self.roads);
         self.intersections[road.dst].clean(&self.lanes, &self.roads);
+
+        self.intersections[road.src].update_traffic_control(&self.roads, &mut self.lanes);
+        self.intersections[road.dst].update_traffic_control(&self.roads, &mut self.lanes);
 
         road
     }
