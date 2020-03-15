@@ -1,22 +1,19 @@
 #![windows_subsystem = "windows"]
 
-use crate::engine_interaction::{
-    KeyboardInfo, MeshRenderEventReader, MouseButton, MouseInfo, RenderStats, TimeInfo,
-};
+use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, RenderStats, TimeInfo};
 use crate::geometry::gridstore::GridStore;
 use crate::gui::Gui;
 use crate::humans::HumanUpdate;
 use crate::interaction::{
     FollowEntity, MovableSystem, MovedEvent, SelectableAuraSystem, SelectableSystem, SelectedEntity,
 };
-use crate::map_model::{LogicComponent, RoadGraphSynchronize, RoadGraphSynchronizeState};
+use crate::map_model::{MapUIState, MapUISystem};
 use crate::physics::systems::KinematicsApply;
+use crate::physics::Collider;
 use crate::physics::CollisionWorld;
-use crate::physics::{Collider, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::transportation::systems::TransportDecision;
-use cgmath::InnerSpace;
-use specs::{Dispatcher, DispatcherBuilder, Join, World, WorldExt};
+use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 
 #[macro_use]
 pub mod gui;
@@ -43,7 +40,7 @@ pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
             "movable",
             &["human update", "car decision", "selectable"],
         )
-        .with(RoadGraphSynchronize, "rgs", &["movable"])
+        .with(MapUISystem, "rgs", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
         .with(
             SelectableAuraSystem::default(),
@@ -51,21 +48,6 @@ pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
             &["movable"],
         )
         .build()
-}
-
-pub fn ad_hoc_systems(world: &mut World) {
-    let logic = world.read_component::<LogicComponent>();
-    let trans = world.read_component::<Transform>();
-    let mouse: &MouseInfo = &world.read_resource::<MouseInfo>();
-
-    if mouse.just_pressed.contains(&MouseButton::Left) {
-        for (t, l) in (&trans, &logic).join() {
-            if (mouse.unprojected - t.position()).magnitude() < l.radius {
-                let v = &l.on_click;
-                v(world);
-            }
-        }
-    }
 }
 
 pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
@@ -82,7 +64,6 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
 
     world.register::<Collider>();
     world.register::<MeshRender>();
-    world.register::<LogicComponent>();
 
     // Event channels init
     let reader = MeshRenderEventReader(world.write_storage::<MeshRender>().register_reader());
@@ -91,7 +72,7 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     world.insert(EventChannel::<MovedEvent>::new());
 
     // Systems state init
-    let s = RoadGraphSynchronizeState::new(world);
+    let s = MapUIState::new(world);
     world.insert(s);
 
     dispatcher.setup(world);
