@@ -107,6 +107,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         }
 
         self.dispatch.run_now(&self.world);
+        scale::ad_hoc_systems(&mut self.world);
+
         self.world.maintain();
 
         self.cam.easy_camera_movement(

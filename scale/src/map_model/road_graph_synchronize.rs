@@ -2,12 +2,20 @@ use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::interaction::{MovedEvent, SelectedEntity};
 use crate::map_model::{make_inter_entity, IntersectionComponent, LanePattern, Map};
 use crate::physics::Transform;
-use crate::rendering::meshrender_component::{LineToRender, MeshRender};
+use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
 use crate::rendering::{Color, BLUE};
+use cgmath::vec2;
 use specs::prelude::*;
-use specs::shred::{DynamicSystemData, PanicHandler};
+use specs::shred::PanicHandler;
 use specs::shrev::{EventChannel, ReaderId};
 use specs::world::EntitiesRes;
+use specs::Component;
+
+#[derive(Component)]
+pub struct LogicComponent {
+    pub radius: f32,
+    pub on_click: Box<dyn Fn(&World) -> ()>,
+}
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum ConnectState {
@@ -107,10 +115,9 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         }
 
         if let Some(x) = data.selected.0 {
-            if let Some(interc) = data.intersections.get(x) {
+            if data.intersections.contains(x) {
                 state.on_inter_select(
                     x,
-                    interc,
                     &data.mouseinfo,
                     &mut data.map,
                     &data.intersections,
@@ -139,16 +146,10 @@ impl<'a> System<'a> for RoadGraphSynchronize {
         if state.connect_state.is_first() {
             let line = state.rgs_ui[0];
             let mouse_pos = data.mouseinfo.unprojected;
-            data.transforms
-                .get_mut(line)
-                .map(|x| x.set_position(mouse_pos));
+            if let Some(x) = data.transforms.get_mut(line) {
+                x.set_position(mouse_pos);
+            }
         }
-    }
-
-    fn setup(&mut self, world: &mut World) {
-        <Self::SystemData as DynamicSystemData>::setup(&self.accessor(), world);
-        let state = RoadGraphSynchronizeState::new(world);
-        world.insert(state);
     }
 }
 
@@ -160,16 +161,16 @@ impl RoadGraphSynchronizeState {
             .for_each(|e| entities.delete(e).unwrap());
     }
 
-    fn on_inter_select(
-        &mut self,
+    fn on_inter_select<'a>(
+        &'a mut self,
         selected: Entity,
-        selected_interc: &IntersectionComponent,
-        mouse: &MouseInfo,
-        map: &mut Map,
-        intersections: &WriteStorage<IntersectionComponent>,
-        lazy: &LazyUpdate,
-        entities: &EntitiesRes,
+        mouse: &'a MouseInfo,
+        map: &'a mut Map,
+        intersections: &'a WriteStorage<IntersectionComponent>,
+        lazy: &'a LazyUpdate,
+        entities: &'a EntitiesRes,
     ) {
+        let selected_interc = intersections.get(selected).unwrap();
         map.set_intersection_radius(selected_interc.id, selected_interc.radius);
         map.set_intersection_turn_policy(selected_interc.id, selected_interc.policy);
 
@@ -187,6 +188,28 @@ impl RoadGraphSynchronizeState {
                             },
                             9,
                         ))
+                        .build(),
+                );
+
+                self.rgs_ui.push(
+                    lazy.create_entity(entities)
+                        .with(Transform::new(vec2(0.0, 0.0)))
+                        .with(MeshRender::simple(
+                            CircleRender {
+                                radius: 10.0,
+                                color,
+                                ..Default::default()
+                            },
+                            9,
+                        ))
+                        .with(LogicComponent {
+                            radius: 5.0,
+                            on_click: Box::new(|w| {
+                                let lol = w.system_data::<Read<LazyUpdate>>();
+                                lol.create_entity(&w.entities()).build();
+                                println!("{} Ok boomer", w.read_resource::<Map>().lanes().len())
+                            }),
+                        })
                         .build(),
                 );
 
