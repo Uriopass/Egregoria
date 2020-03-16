@@ -149,6 +149,7 @@ impl MapUIState {
         let selected_interc = intersections.get(selected).unwrap();
         map.set_intersection_radius(selected_interc.id, selected_interc.radius);
         map.set_intersection_turn_policy(selected_interc.id, selected_interc.turn_policy);
+        map.set_intersection_light_policy(selected_interc.id, selected_interc.light_policy);
 
         match self.selected_inter {
             None => {
