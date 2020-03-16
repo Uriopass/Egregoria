@@ -1,5 +1,5 @@
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneID, LanePattern, Road, RoadID, TurnPolicy,
+    Intersection, IntersectionID, Lane, LaneID, LanePattern, LightPolicy, Road, RoadID, TurnPolicy,
 };
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
@@ -57,6 +57,15 @@ impl Map {
 
         self.intersections[id].turn_policy = policy;
         self.intersections[id].gen_turns(&self.lanes, &self.roads);
+    }
+
+    pub fn set_intersection_light_policy(&mut self, id: IntersectionID, policy: LightPolicy) {
+        if self.intersections[id].light_policy == policy {
+            return;
+        }
+
+        self.intersections[id].light_policy = policy;
+        self.intersections[id].update_traffic_control(&self.roads, &mut self.lanes);
     }
 
     pub fn add_intersection(&mut self, pos: Vector2<f32>) -> IntersectionID {
