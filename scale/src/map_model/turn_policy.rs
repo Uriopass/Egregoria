@@ -53,19 +53,20 @@ impl TurnPolicy {
     }
 
     pub fn generate_turns(self, inter: &Intersection, lanes: &Lanes, roads: &Roads) -> Vec<TurnID> {
-        if inter.roads.len() == 1 {
+        if let [road_id] = inter.roads.as_slice() {
+            let road = &roads[*road_id];
             return Self::zip_on_same_length(
                 inter.id,
-                &inter.incoming_lanes,
-                &inter.outgoing_lanes,
+                road.incoming_lanes_from(inter.id),
+                road.outgoing_lanes_from(inter.id),
             );
         }
 
         let mut turns = vec![];
 
-        if inter.roads.len() == 2 {
-            let road1 = &roads[inter.roads[0]];
-            let road2 = &roads[inter.roads[1]];
+        if let [road1, road2] = inter.roads.as_slice() {
+            let road1 = &roads[*road1];
+            let road2 = &roads[*road2];
 
             let incoming_road1 = road1.incoming_lanes_from(inter.id);
             let incoming_road2 = road2.incoming_lanes_from(inter.id);
@@ -88,19 +89,24 @@ impl TurnPolicy {
             return turns;
         }
 
-        for incoming in &inter.incoming_lanes {
-            for outgoing in &inter.outgoing_lanes {
-                if lanes[*incoming].parent == lanes[*outgoing].parent && !self.back_turns {
+        for road1 in &inter.roads {
+            for road2 in &inter.roads {
+                if road1 == road2 && !self.back_turns {
                     continue;
                 }
-                let incoming_dir = lanes[*incoming].get_orientation_vec();
-                let outgoing_dir = lanes[*outgoing].get_orientation_vec();
 
-                let incoming_right = vec2(incoming_dir.y, -incoming_dir.x);
-                let id = TurnID::new(inter.id, *incoming, *outgoing);
+                for incoming in roads[*road1].incoming_lanes_from(inter.id) {
+                    for outgoing in roads[*road2].outgoing_lanes_from(inter.id) {
+                        let incoming_dir = lanes[*incoming].get_orientation_vec();
+                        let outgoing_dir = lanes[*outgoing].get_orientation_vec();
 
-                if self.left_turns || incoming_right.dot(outgoing_dir) >= -0.3 {
-                    turns.push(id);
+                        let incoming_right = vec2(incoming_dir.y, -incoming_dir.x);
+                        let id = TurnID::new(inter.id, *incoming, *outgoing);
+
+                        if self.left_turns || incoming_right.dot(outgoing_dir) >= -0.3 {
+                            turns.push(id);
+                        }
+                    }
                 }
             }
         }

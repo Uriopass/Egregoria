@@ -23,7 +23,7 @@ impl Default for LightPolicy {
 }
 
 impl LightPolicy {
-    pub fn apply(self, inter: &Intersection, roads: &Roads, lanes: &mut Lanes) {
+    pub fn apply(self, inter: &Intersection, lanes: &mut Lanes, roads: &Roads) {
         let mut in_road_lanes: Vec<&Vec<LaneID>> = inter
             .roads
             .iter()
@@ -92,7 +92,7 @@ impl LightPolicy {
                     rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0, cycle_size);
 
                 for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
-                    let light = TrafficControl::Periodic(TrafficLightSchedule::from_basic(
+                    let light = TrafficControl::Light(TrafficLightSchedule::from_basic(
                         cycle_size,
                         orange_length,
                         cycle_size + orange_length,

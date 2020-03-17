@@ -50,29 +50,27 @@ impl TrafficLightSchedule {
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum TrafficControl {
     Always,
-    Periodic(TrafficLightSchedule),
+    Light(TrafficLightSchedule),
     StopSign,
 }
 
 impl TrafficControl {
     pub fn is_always(&self) -> bool {
-        match self {
-            TrafficControl::Always => true,
-            _ => false,
-        }
+        matches!(self, TrafficControl::Always)
     }
 
     pub fn is_stop(&self) -> bool {
-        match self {
-            TrafficControl::StopSign => true,
-            _ => false,
-        }
+        matches!(self, TrafficControl::StopSign)
+    }
+
+    pub fn is_light(&self) -> bool {
+        matches!(self, TrafficControl::Light(_))
     }
 
     pub fn get_behavior(&self, time_seconds: u64) -> TrafficBehavior {
         match self {
             TrafficControl::Always => TrafficBehavior::GREEN,
-            TrafficControl::Periodic(schedule) => {
+            TrafficControl::Light(schedule) => {
                 let remainder = (time_seconds as usize + schedule.offset) % schedule.period;
                 if remainder < schedule.green {
                     TrafficBehavior::GREEN
