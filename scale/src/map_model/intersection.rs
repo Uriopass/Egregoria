@@ -1,7 +1,7 @@
 use crate::gui::InspectDragf;
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{
-    Intersections, LaneID, Lanes, LightPolicy, Road, RoadID, Roads, Turn, TurnID, TurnPolicy,
+    Intersections, Lanes, LightPolicy, RoadID, Roads, Turn, TurnID, TurnPolicy,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
@@ -41,10 +41,6 @@ pub struct Intersection {
     pub pos: Vector2<f32>,
 
     pub turns: BTreeMap<TurnID, Turn>,
-
-    pub incoming_lanes: Vec<LaneID>,
-    pub outgoing_lanes: Vec<LaneID>,
-
     pub roads: Vec<RoadID>,
 
     pub interface_radius: f32,
@@ -58,8 +54,6 @@ impl Intersection {
             id,
             pos,
             turns: BTreeMap::new(),
-            incoming_lanes: vec![],
-            outgoing_lanes: vec![],
             roads: vec![],
             interface_radius: 20.0,
             turn_policy: TurnPolicy::default(),
@@ -67,13 +61,11 @@ impl Intersection {
         })
     }
 
-    pub fn clean(&mut self, lanes: &Lanes, roads: &Roads) {
-        self.incoming_lanes.retain(|x| lanes.contains_key(*x));
-        self.outgoing_lanes.retain(|x| lanes.contains_key(*x));
-
-        self.roads.retain(|x| roads.contains_key(*x));
+    pub fn remove_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
+        self.roads.retain(|x| *x != road_id);
 
         self.gen_turns(lanes, roads);
+        self.update_traffic_control(lanes, roads);
     }
 
     pub fn gen_turns(&mut self, lanes: &Lanes, roads: &Roads) {
@@ -99,27 +91,14 @@ impl Intersection {
         }
     }
 
-    pub fn add_road(&mut self, road: &Road) {
-        self.roads.push(road.id);
-        if road.src == self.id {
-            self.fill_lanes(road.lanes_backward.clone(), road.lanes_forward.clone());
-        } else if road.dst == self.id {
-            self.fill_lanes(road.lanes_forward.clone(), road.lanes_backward.clone());
-        } else {
-            panic!(
-                "Trying to add {:?} to {:?} but it's between {:?} and {:?}",
-                road.id, self.id, road.src, road.dst
-            );
-        }
+    pub fn add_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
+        self.roads.push(road_id);
+        self.gen_turns(lanes, roads);
+        self.update_traffic_control(lanes, roads);
     }
 
-    fn fill_lanes(&mut self, incoming: Vec<LaneID>, outgoing: Vec<LaneID>) {
-        self.outgoing_lanes.extend(outgoing);
-        self.incoming_lanes.extend(incoming);
-    }
-
-    pub fn update_traffic_control(&self, roads: &Roads, lanes: &mut Lanes) {
-        self.light_policy.apply(self, roads, lanes);
+    pub fn update_traffic_control(&self, lanes: &mut Lanes, roads: &Roads) {
+        self.light_policy.apply(self, lanes, roads);
     }
 }
 

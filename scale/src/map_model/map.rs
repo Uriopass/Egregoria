@@ -65,7 +65,7 @@ impl Map {
         }
 
         self.intersections[id].light_policy = policy;
-        self.intersections[id].update_traffic_control(&self.roads, &mut self.lanes);
+        self.intersections[id].update_traffic_control(&mut self.lanes, &self.roads);
     }
 
     pub fn add_intersection(&mut self, pos: Vector2<f32>) -> IntersectionID {
@@ -77,7 +77,10 @@ impl Map {
 
         for x in self.intersections[id].roads.clone() {
             self.roads[x].gen_pos(&self.intersections, &mut self.lanes);
-            self.intersections[self.roads[x].other_end(id)].gen_turns(&self.lanes, &self.roads);
+
+            let other_end = &mut self.intersections[self.roads[x].other_end(id)];
+            other_end.gen_turns(&self.lanes, &self.roads);
+            other_end.update_traffic_control(&mut self.lanes, &self.roads);
         }
 
         self.intersections[id].gen_turns(&self.lanes, &self.roads);
@@ -106,21 +109,10 @@ impl Map {
             &pattern,
         );
 
-        let road = &mut self.roads[road_id];
+        self.intersections[src].add_road(road_id, &mut self.lanes, &self.roads);
+        self.intersections[dst].add_road(road_id, &mut self.lanes, &self.roads);
 
-        road.gen_pos(&self.intersections, &mut self.lanes);
-
-        self.intersections[src].add_road(road);
-        self.intersections[dst].add_road(road);
-
-        let id = road.id;
-
-        self.intersections[src].gen_turns(&self.lanes, &self.roads);
-        self.intersections[dst].gen_turns(&self.lanes, &self.roads);
-
-        self.intersections[src].update_traffic_control(&self.roads, &mut self.lanes);
-        self.intersections[dst].update_traffic_control(&self.roads, &mut self.lanes);
-        id
+        road_id
     }
 
     pub fn disconnect(&mut self, src: IntersectionID, dst: IntersectionID) -> Option<Road> {
@@ -137,11 +129,8 @@ impl Map {
             self.lanes.remove(*lane_id).unwrap();
         }
 
-        self.intersections[road.src].clean(&self.lanes, &self.roads);
-        self.intersections[road.dst].clean(&self.lanes, &self.roads);
-
-        self.intersections[road.src].update_traffic_control(&self.roads, &mut self.lanes);
-        self.intersections[road.dst].update_traffic_control(&self.roads, &mut self.lanes);
+        self.intersections[road.src].remove_road(road_id, &mut self.lanes, &self.roads);
+        self.intersections[road.dst].remove_road(road_id, &mut self.lanes, &self.roads);
 
         road
     }

@@ -1,6 +1,6 @@
 use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
-use cgmath::vec2;
+use cgmath::{vec2, InnerSpace, Vector2};
 use ggez::graphics::{Color, WHITE};
 use scale::map_model::{Map, TrafficBehavior};
 
@@ -53,9 +53,23 @@ impl RoadRenderer {
         }
 
         for n in lanes.values() {
+            rc.sr.color = MID_GRAY;
             rc.sr.draw_polyline(&n.points, 7.5);
             rc.sr.draw_circle(*n.points.first().unwrap(), 3.75);
             rc.sr.draw_circle(*n.points.last().unwrap(), 3.75);
+
+            rc.sr.color = WHITE;
+            if n.control.is_stop() || n.control.is_light() {
+                if let [.., b, p] = n.points.as_slice() {
+                    let dir = (p - b).normalize();
+                    let dir_nor: Vector2<f32> = [-dir.y, dir.x].into();
+                    rc.sr.draw_stroke(
+                        p + dir * 1.5 + 4.0 * dir_nor,
+                        p + dir * 1.5 - 4.0 * dir_nor,
+                        0.5,
+                    );
+                }
+            }
         }
 
         // draw traffic lights

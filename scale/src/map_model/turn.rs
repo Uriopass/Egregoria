@@ -28,7 +28,7 @@ impl Turn {
     }
 
     pub(crate) fn make_points(&mut self, lanes: &Lanes) {
-        const N_SPLINE: usize = 4;
+        const N_SPLINE: usize = 6;
 
         let src_lane = &lanes[self.id.src];
         let dst_lane = &lanes[self.id.dst];

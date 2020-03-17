@@ -24,6 +24,7 @@ pub struct Road {
 }
 
 impl Road {
+    /// Builds the road and its associated lanes
     pub fn make(
         store: &mut Roads,
         intersections: &Intersections,
@@ -51,6 +52,7 @@ impl Road {
         for lane in &lane_pattern.lanes_backward {
             road.add_lane(lanes, *lane, LaneDirection::Backward);
         }
+        road.gen_pos(intersections, lanes);
         id
     }
 
