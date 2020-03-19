@@ -26,24 +26,19 @@ pub fn spawn_new_transport(world: &mut World) {
             let r = (rand::random::<f32>() * l as f32) as usize;
 
             let (_, road) = roads.into_iter().nth(r).unwrap();
-            let lanes = road
-                .lanes_forward
-                .iter()
-                .chain(road.lanes_backward.iter())
-                .collect::<Vec<&LaneID>>();
+            let lanes = road.lanes_iter().collect::<Vec<&LaneID>>();
 
             if !lanes.is_empty() {
                 let r = (rand::random::<f32>() * lanes.len() as f32) as usize;
 
                 let lane: &Lane = &map.lanes()[*lanes[r]];
 
-                let a = lane.points.first().unwrap();
-                let b = lane.points.last().unwrap();
-
-                let diff = b - a;
-                pos.set_position(a + rand::random::<f32>() * diff);
-                pos.set_direction(diff.normalize());
-                obj = TransportObjective::Temporary(Traversable::Lane(lane.id));
+                if let [a, .., b] = lane.points.as_slice() {
+                    let diff = b - a;
+                    pos.set_position(a + rand::random::<f32>() * diff);
+                    pos.set_direction(diff.normalize());
+                    obj = TransportObjective::Temporary(Traversable::Lane(lane.id));
+                }
             }
         }
     }
