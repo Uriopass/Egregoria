@@ -57,7 +57,7 @@ impl TurnPolicy {
             let road = &roads[*road_id];
             return Self::zip_on_same_length(
                 inter.id,
-                road.incoming_lanes_from(inter.id),
+                road.incoming_lanes_to(inter.id),
                 road.outgoing_lanes_from(inter.id),
             );
         }
@@ -68,8 +68,8 @@ impl TurnPolicy {
             let road1 = &roads[*road1];
             let road2 = &roads[*road2];
 
-            let incoming_road1 = road1.incoming_lanes_from(inter.id);
-            let incoming_road2 = road2.incoming_lanes_from(inter.id);
+            let incoming_road1 = road1.incoming_lanes_to(inter.id);
+            let incoming_road2 = road2.incoming_lanes_to(inter.id);
 
             let outgoing_road1 = road1.outgoing_lanes_from(inter.id);
             let outgoing_road2 = road2.outgoing_lanes_from(inter.id);
@@ -95,7 +95,7 @@ impl TurnPolicy {
                     continue;
                 }
 
-                for incoming in roads[*road1].incoming_lanes_from(inter.id) {
+                for incoming in roads[*road1].incoming_lanes_to(inter.id) {
                     for outgoing in roads[*road2].outgoing_lanes_from(inter.id) {
                         let incoming_dir = lanes[*incoming].get_orientation_vec();
                         let outgoing_dir = lanes[*outgoing].get_orientation_vec();
