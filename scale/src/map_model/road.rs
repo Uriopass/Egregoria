@@ -19,8 +19,8 @@ pub struct Road {
 
     pub interpolation_points: Vec<Vector2<f32>>,
 
-    pub lanes_forward: Vec<LaneID>,
-    pub lanes_backward: Vec<LaneID>,
+    lanes_forward: Vec<LaneID>,
+    lanes_backward: Vec<LaneID>,
 }
 
 impl Road {
@@ -62,6 +62,10 @@ impl Road {
 
     pub fn n_lanes(&self) -> usize {
         self.lanes_backward.len() + self.lanes_forward.len()
+    }
+
+    pub fn lanes_iter(&self) -> impl Iterator<Item = &LaneID> {
+        self.lanes_forward.iter().chain(self.lanes_backward.iter())
     }
 
     pub fn add_lane(
@@ -110,7 +114,7 @@ impl Road {
         }
     }
 
-    pub fn incoming_lanes_from(&self, id: IntersectionID) -> &Vec<LaneID> {
+    pub fn incoming_lanes_to(&self, id: IntersectionID) -> &Vec<LaneID> {
         if id == self.src {
             &self.lanes_backward
         } else if id == self.dst {

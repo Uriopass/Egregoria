@@ -125,7 +125,7 @@ impl Map {
 
     fn remove_road(&mut self, road_id: RoadID) -> Road {
         let road = self.roads.remove(road_id).unwrap();
-        for lane_id in road.lanes_forward.iter().chain(road.lanes_backward.iter()) {
+        for lane_id in road.lanes_iter() {
             self.lanes.remove(*lane_id).unwrap();
         }
 

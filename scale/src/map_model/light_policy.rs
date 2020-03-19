@@ -27,7 +27,7 @@ impl LightPolicy {
         let mut in_road_lanes: Vec<&Vec<LaneID>> = inter
             .roads
             .iter()
-            .map(|x| roads[*x].incoming_lanes_from(inter.id))
+            .map(|x| roads[*x].incoming_lanes_to(inter.id))
             .filter(|v| !v.is_empty())
             .collect();
 
