@@ -1,15 +1,15 @@
-use cgmath::InnerSpace;
-use cgmath::Vector2;
+use super::Vec2;
+use cgmath::{vec2, InnerSpace};
 
 #[derive(Clone, Copy)]
 pub struct Ray {
-    pub from: Vector2<f32>,
-    pub dir: Vector2<f32>,
+    pub from: Vec2,
+    pub dir: Vec2,
 }
 
-pub fn intersection_point(r1: Ray, r2: Ray) -> Option<Vector2<f32>> {
-    let r2dir_nor = Vector2::new(-r2.dir.y, r2.dir.x);
-    let r1dir_nor = Vector2::new(-r1.dir.y, r1.dir.x);
+pub fn intersection_point(r1: Ray, r2: Ray) -> Option<Vec2> {
+    let r2dir_nor = vec2(-r2.dir.y, r2.dir.x);
+    let r1dir_nor = vec2(-r1.dir.y, r1.dir.x);
 
     let div = r1.dir.dot(-r2dir_nor);
 
@@ -25,8 +25,8 @@ pub fn intersection_point(r1: Ray, r2: Ray) -> Option<Vector2<f32>> {
 }
 
 pub fn both_dist_to_inter(r1: Ray, r2: Ray) -> Option<(f32, f32)> {
-    let r2dir_nor = Vector2::new(-r2.dir.y, r2.dir.x);
-    let r1dir_nor = Vector2::new(-r1.dir.y, r1.dir.x);
+    let r2dir_nor = vec2(-r2.dir.y, r2.dir.x);
+    let r1dir_nor = vec2(-r1.dir.y, r1.dir.x);
 
     let p_diff = r1.from - r2.from;
 

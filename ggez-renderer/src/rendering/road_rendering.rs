@@ -2,13 +2,20 @@ use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
 use cgmath::{vec2, InnerSpace, Vector2};
 use ggez::graphics::{Color, WHITE};
-use scale::map_model::{Map, TrafficBehavior};
+use scale::map_model::{LaneKind, Map, TrafficBehavior};
 
 pub struct RoadRenderer;
 const MID_GRAY: Color = Color {
     r: 0.5,
     g: 0.5,
     b: 0.5,
+    a: 1.0,
+};
+
+const HIGH_GRAY: Color = Color {
+    r: 0.7,
+    g: 0.7,
+    b: 0.7,
     a: 1.0,
 };
 
@@ -25,9 +32,9 @@ impl RoadRenderer {
 
         for (inter_id, inter) in inters {
             for (id, turn) in &inter.turns {
-                let mut p = Vec::with_capacity(2 + turn.points.len());
+                let mut p = Vec::with_capacity(2 + turn.points.n_points());
                 p.push(lanes[id.src].get_inter_node_pos(inter_id));
-                p.extend_from_slice(&turn.points);
+                p.extend_from_slice(turn.points.as_slice());
                 p.push(lanes[id.dst].get_inter_node_pos(inter_id));
 
                 rc.sr.draw_polyline(&p, 8.5);
@@ -35,7 +42,7 @@ impl RoadRenderer {
         }
 
         for n in lanes.values() {
-            rc.sr.draw_polyline(&n.points, 8.5);
+            rc.sr.draw_polyline(n.points.as_slice(), 8.5);
             rc.sr.draw_circle(*n.points.first().unwrap(), 4.25);
             rc.sr.draw_circle(*n.points.last().unwrap(), 4.25);
         }
@@ -43,9 +50,9 @@ impl RoadRenderer {
         rc.sr.color = MID_GRAY;
         for (inter_id, inter) in inters {
             for (id, turn) in &inter.turns {
-                let mut p = Vec::with_capacity(2 + turn.points.len());
+                let mut p = Vec::with_capacity(2 + turn.points.n_points());
                 p.push(lanes[id.src].get_inter_node_pos(inter_id));
-                p.extend_from_slice(&turn.points);
+                p.extend_from_slice(turn.points.as_slice());
                 p.push(lanes[id.dst].get_inter_node_pos(inter_id));
 
                 rc.sr.draw_polyline(&p, 7.5);
@@ -54,7 +61,12 @@ impl RoadRenderer {
 
         for n in lanes.values() {
             rc.sr.color = MID_GRAY;
-            rc.sr.draw_polyline(&n.points, 7.5);
+            match n.kind {
+                LaneKind::Walking => rc.sr.color = HIGH_GRAY,
+                _ => {}
+            }
+
+            rc.sr.draw_polyline(n.points.as_slice(), 7.5);
             rc.sr.draw_circle(*n.points.first().unwrap(), 3.75);
             rc.sr.draw_circle(*n.points.last().unwrap(), 3.75);
 

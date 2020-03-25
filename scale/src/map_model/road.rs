@@ -1,6 +1,7 @@
+use crate::geometry::polyline::PolyLine;
 use crate::map_model::{
-    Intersection, IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind,
-    LanePattern, Lanes, Roads, TrafficControl,
+    IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
+    Roads, TrafficControl,
 };
 use cgmath::InnerSpace;
 use cgmath::Vector2;
@@ -17,7 +18,7 @@ pub struct Road {
     pub src: IntersectionID,
     pub dst: IntersectionID,
 
-    pub interpolation_points: Vec<Vector2<f32>>,
+    pub interpolation_points: PolyLine,
 
     lanes_forward: Vec<LaneID>,
     lanes_backward: Vec<LaneID>,
@@ -41,7 +42,7 @@ impl Road {
             id,
             src,
             dst,
-            interpolation_points: vec![pos_src, pos_dst],
+            interpolation_points: vec![pos_src, pos_dst].into(),
             lanes_forward: vec![],
             lanes_backward: vec![],
         });
@@ -68,6 +69,10 @@ impl Road {
         self.lanes_forward.iter().chain(self.lanes_backward.iter())
     }
 
+    pub fn sidewalk_forward(&self) -> Option<&LaneID> {
+        self.lanes_forward.last()
+    }
+
     pub fn add_lane(
         &mut self,
         store: &mut Lanes,
@@ -85,7 +90,7 @@ impl Road {
             dst,
             control: TrafficControl::Always,
             kind: lane_type,
-            points: vec![],
+            points: Default::default(),
         });
         match direction {
             LaneDirection::Forward => self.lanes_forward.push(id),
@@ -95,20 +100,21 @@ impl Road {
     }
 
     pub fn gen_pos(&mut self, intersections: &Intersections, lanes: &mut Lanes) {
-        self.interpolation_points[0] = intersections[self.src].pos;
-        let l = self.interpolation_points.len();
-        self.interpolation_points[l - 1] = intersections[self.dst].pos;
+        self.interpolation_points.0[0] = intersections[self.src].pos;
+        let l = self.interpolation_points.n_points();
+        self.interpolation_points.0[l - 1] = intersections[self.dst].pos;
 
         for id in self.lanes_forward.iter().chain(self.lanes_backward.iter()) {
             lanes[*id].gen_pos(intersections, self);
         }
     }
 
-    pub fn dir_from(&self, i: &Intersection) -> Vector2<f32> {
-        if i.id == self.src {
-            (self.interpolation_points[1] - i.pos).normalize()
-        } else if i.id == self.dst {
-            (self.interpolation_points[self.interpolation_points.len() - 2] - i.pos).normalize()
+    pub fn dir_from(&self, id: IntersectionID, pos: Vector2<f32>) -> Vector2<f32> {
+        if id == self.src {
+            (self.interpolation_points.0[1] - pos).normalize()
+        } else if id == self.dst {
+            (self.interpolation_points.0[self.interpolation_points.n_points() - 2] - pos)
+                .normalize()
         } else {
             panic!("Asking dir from from an intersection not conected to the road");
         }
@@ -135,10 +141,7 @@ impl Road {
     }
 
     pub fn length(&self) -> f32 {
-        self.interpolation_points
-            .windows(2)
-            .map(|x| (x[0] - x[1]).magnitude())
-            .sum()
+        self.interpolation_points.length()
     }
 
     pub fn other_end(&self, my_end: IntersectionID) -> IntersectionID {

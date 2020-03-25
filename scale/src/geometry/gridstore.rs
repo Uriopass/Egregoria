@@ -1,5 +1,5 @@
+use super::Vec2;
 use cgmath::InnerSpace;
-use cgmath::Vector2;
 use slotmap::new_key_type;
 use slotmap::SlotMap;
 
@@ -20,11 +20,11 @@ enum ObjectState {
 #[derive(Clone)]
 pub struct CellObject {
     pub id: GridStoreHandle,
-    pub pos: Vector2<f32>,
+    pub pos: Vec2,
 }
 
 impl CellObject {
-    pub fn new(id: GridStoreHandle, pos: Vector2<f32>) -> Self {
+    pub fn new(id: GridStoreHandle, pos: Vec2) -> Self {
         Self { id, pos }
     }
 }
@@ -35,7 +35,7 @@ struct StoreObject<O: Copy> {
     /// User-defined object to be associated with a value
     obj: O,
     state: ObjectState,
-    pos: Vector2<f32>,
+    pos: Vec2,
     cell_id: usize,
 }
 
@@ -79,7 +79,7 @@ impl<O: Copy> GridStore<O> {
 
     /// Inserts a new object with a position and an associated object
     /// Returns the handle
-    pub fn insert(&mut self, pos: Vector2<f32>, obj: O) -> GridStoreHandle {
+    pub fn insert(&mut self, pos: Vec2, obj: O) -> GridStoreHandle {
         self.check_resize(pos);
         let cell_id = self.get_cell_id(pos);
         let handle = self.objects.insert(StoreObject {
@@ -95,7 +95,7 @@ impl<O: Copy> GridStore<O> {
     }
 
     /// Sets the position of an object. Note that this won't be taken into account until maintain() is called
-    pub fn set_position(&mut self, handle: GridStoreHandle, pos: Vector2<f32>) {
+    pub fn set_position(&mut self, handle: GridStoreHandle, pos: Vec2) {
         self.check_resize(pos);
         let new_cell_id = self.get_cell_id(pos);
         let obj = self
@@ -170,7 +170,7 @@ impl<O: Copy> GridStore<O> {
     /// Queries for all objects around a position within a certain radius.
     /// Note that if the radius is bigger than the cell size, query_around might omit some results
     #[rustfmt::skip]
-    pub fn query_around(&self, pos: Vector2<f32>, radius: f32) -> impl Iterator<Item = &CellObject> {
+    pub fn query_around(&self, pos: Vec2, radius: f32) -> impl Iterator<Item = &CellObject> {
 
         let cell = self.get_cell_id(pos);
         let mut objs: Vec<&GridStoreCell> = Vec::with_capacity(4);
@@ -229,7 +229,7 @@ impl<O: Copy> GridStore<O> {
         objs.push(&self.get_cell(cell_id as usize));
     }
 
-    fn check_resize(&mut self, pos: Vector2<f32>) {
+    fn check_resize(&mut self, pos: Vec2) {
         let mut reallocate = false;
 
         while (pos.x as i32) <= self.start_x {
@@ -304,7 +304,7 @@ impl<O: Copy> GridStore<O> {
         self.cells.get_mut(id).expect("get_cell error")
     }
 
-    fn get_cell_id(&self, pos: Vector2<f32>) -> usize {
+    fn get_cell_id(&self, pos: Vec2) -> usize {
         Self::get_cell_id_raw(
             self.width as i32,
             self.start_x,
@@ -314,13 +314,7 @@ impl<O: Copy> GridStore<O> {
         )
     }
 
-    fn get_cell_id_raw(
-        width: i32,
-        start_x: i32,
-        start_y: i32,
-        cell_size: i32,
-        pos: Vector2<f32>,
-    ) -> usize {
+    fn get_cell_id_raw(width: i32, start_x: i32, start_y: i32, cell_size: i32, pos: Vec2) -> usize {
         let i_x = (pos.x as i32 - start_x) / cell_size;
         let i_y = (pos.y as i32 - start_y) / cell_size;
         (i_y * width + i_x) as usize
