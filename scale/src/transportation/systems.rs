@@ -110,7 +110,7 @@ pub fn objective_update(
         Some(p) => {
             if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
                 match transport.objective {
-                    TransportObjective::Temporary(x) if transport.pos_objective.len() == 1 => {
+                    TransportObjective::Temporary(x) if transport.pos_objective.n_points() == 1 => {
                         if x.can_pass(time.time_seconds, map.lanes()) {
                             transport.pos_objective.pop();
                         }
@@ -256,7 +256,7 @@ pub fn calc_decision<'a>(
     transport.desired_dir = dir_to_pos;
     transport.desired_speed = transport.kind.cruising_speed();
 
-    if transport.pos_objective.len() == 1 {
+    if transport.pos_objective.n_points() == 1 {
         if let Temporary(trans) = transport.objective {
             if let Traversable::Lane(l_id) = trans {
                 match map.lanes()[l_id].control.get_behavior(time.time_seconds) {

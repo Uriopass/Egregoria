@@ -1,20 +1,20 @@
+use super::Vec2;
 use cgmath::InnerSpace;
-use cgmath::Vector2;
 
 pub struct Segment {
-    pub a: Vector2<f32>,
-    pub b: Vector2<f32>,
+    pub a: Vec2,
+    pub b: Vec2,
 }
 
 impl Segment {
-    pub fn new(a: Vector2<f32>, b: Vector2<f32>) -> Self {
+    pub fn new(a: Vec2, b: Vec2) -> Self {
         Self { a, b }
     }
 
-    pub fn project(&self, p: Vector2<f32>) -> Vector2<f32> {
-        let diff: Vector2<f32> = self.b - self.a;
-        let diff2: Vector2<f32> = p - self.a;
-        let diff3: Vector2<f32> = p - self.b;
+    pub fn project(&self, p: Vec2) -> Vec2 {
+        let diff: Vec2 = self.b - self.a;
+        let diff2: Vec2 = p - self.a;
+        let diff3: Vec2 = p - self.b;
 
         let proj1 = diff2.dot(diff);
         let proj2 = diff3.dot(-diff);

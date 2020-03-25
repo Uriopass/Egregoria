@@ -11,8 +11,8 @@ pub enum Traversable {
 impl Traversable {
     pub fn points<'a>(&self, m: &'a Map) -> &'a [Vector2<f32>] {
         match *self {
-            Traversable::Lane(id) => &m.lanes()[id].points,
-            Traversable::Turn(id) => &m.intersections()[id.parent].turns[&id].points,
+            Traversable::Lane(id) => m.lanes()[id].points.as_slice(),
+            Traversable::Turn(id) => m.intersections()[id.parent].turns[&id].points.as_slice(),
         }
     }
 

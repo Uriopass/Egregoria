@@ -1,6 +1,7 @@
+use crate::geometry::polyline::PolyLine;
 use crate::geometry::splines::Spline;
 use crate::map_model::{IntersectionID, LaneID, Lanes};
-use cgmath::{Array, InnerSpace, Vector2};
+use cgmath::{Array, InnerSpace};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, PartialOrd, Ord, Deserialize, PartialEq, Eq)]
@@ -19,12 +20,15 @@ impl TurnID {
 #[derive(Serialize, Deserialize)]
 pub struct Turn {
     pub id: TurnID,
-    pub points: Vec<Vector2<f32>>,
+    pub points: PolyLine,
 }
 
 impl Turn {
     pub fn new(id: TurnID) -> Self {
-        Self { id, points: vec![] }
+        Self {
+            id,
+            points: Default::default(),
+        }
     }
 
     pub(crate) fn make_points(&mut self, lanes: &Lanes) {

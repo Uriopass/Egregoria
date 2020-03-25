@@ -1,4 +1,4 @@
-use cgmath::Vector2;
+use super::Vec2;
 
 #[derive(Clone)]
 pub struct Rect {
@@ -75,7 +75,7 @@ impl Rect {
     }
 
     /// Checks whether the `Rect` contains a `Point`
-    pub fn contains(&self, point: Vector2<f32>) -> bool {
+    pub fn contains(&self, point: Vec2) -> bool {
         point.x >= self.left()
             && point.x <= self.right()
             && point.y <= self.bottom()
@@ -83,7 +83,7 @@ impl Rect {
     }
 
     /// Checks whether the `Rect` contains a `Point`
-    pub fn contains_within(&self, point: Vector2<f32>, tolerance: f32) -> bool {
+    pub fn contains_within(&self, point: Vec2, tolerance: f32) -> bool {
         point.x >= self.left() - tolerance
             && point.x <= self.right() + tolerance
             && point.y <= self.bottom() + tolerance
@@ -99,13 +99,13 @@ impl Rect {
     }
 
     /// Translates the `Rect` by an offset of (x, y)
-    pub fn translate(&mut self, offset: Vector2<f32>) {
+    pub fn translate(&mut self, offset: Vec2) {
         self.x += offset.x;
         self.y += offset.y;
     }
 
     /// Moves the `Rect`'s origin to (x, y)
-    pub fn move_to(&mut self, destination: Vector2<f32>) {
+    pub fn move_to(&mut self, destination: Vec2) {
         self.x = destination.x;
         self.y = destination.y;
     }
