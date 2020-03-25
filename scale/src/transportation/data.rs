@@ -1,7 +1,8 @@
-use crate::gui::{InspectDragf, InspectVec2, InspectVecVector};
+use crate::geometry::polyline::PolyLine;
+use crate::gui::{InspectDragf, InspectVec2};
 use crate::map_model::{Map, Traversable};
-use crate::rendering::meshrender_component::{MeshRender, RectRender};
-use crate::rendering::{Color, BLACK, ORANGE};
+use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
+use crate::rendering::{Color, BLACK, ORANGE, WHITE};
 use cgmath::{vec2, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -13,6 +14,7 @@ use specs::{Component, DenseVecStorage, World};
 pub enum TransportKind {
     Car,
     Bus,
+    Pedestrian,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,8 +26,7 @@ pub enum TransportObjective {
 #[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct TransportComponent {
     pub objective: TransportObjective,
-    #[inspect(proxy_type = "InspectVecVector")]
-    pub pos_objective: Vec<Vector2<f32>>,
+    pub pos_objective: PolyLine,
     #[inspect(proxy_type = "InspectDragf")]
     pub desired_speed: f32,
     #[inspect(proxy_type = "InspectVec2")]
@@ -43,6 +44,7 @@ impl TransportKind {
         match self {
             TransportKind::Car => 4.5,
             TransportKind::Bus => 9.0,
+            TransportKind::Pedestrian => 0.5,
         }
     }
 
@@ -50,6 +52,7 @@ impl TransportKind {
         match self {
             TransportKind::Car => 2.0,
             TransportKind::Bus => 2.0,
+            TransportKind::Pedestrian => 0.5,
         }
     }
 
@@ -57,6 +60,7 @@ impl TransportKind {
         match self {
             TransportKind::Car => 3.0,
             TransportKind::Bus => 2.0,
+            TransportKind::Pedestrian => 1.0,
         }
     }
 
@@ -64,6 +68,7 @@ impl TransportKind {
         match self {
             TransportKind::Car => 9.0,
             TransportKind::Bus => 9.0,
+            TransportKind::Pedestrian => 3.0,
         }
     }
 
@@ -71,6 +76,7 @@ impl TransportKind {
         match self {
             TransportKind::Car => 3.0,
             TransportKind::Bus => 5.0,
+            TransportKind::Pedestrian => 0.5,
         }
     }
 
@@ -78,6 +84,7 @@ impl TransportKind {
         match self {
             TransportKind::Car => 15.0,
             TransportKind::Bus => 10.0,
+            TransportKind::Pedestrian => 1.2,
         }
     }
 
@@ -85,11 +92,19 @@ impl TransportKind {
         match self {
             TransportKind::Car => 1.0,
             TransportKind::Bus => 0.8,
+            TransportKind::Pedestrian => 3.0,
         }
     }
 
     pub fn build_mr(self, mr: &mut MeshRender) {
         match self {
+            TransportKind::Pedestrian => {
+                mr.add(CircleRender {
+                    radius: 0.5,
+                    color: WHITE,
+                    ..Default::default()
+                });
+            }
             TransportKind::Car => {
                 mr.add(RectRender {
                     width: self.width(),
@@ -186,7 +201,7 @@ impl Default for TransportComponent {
             desired_dir: vec2(0.0, 0.0),
             wait_time: 0.0,
             ang_velocity: 0.0,
-            pos_objective: Vec::with_capacity(7),
+            pos_objective: PolyLine::with_capacity(7),
             kind: TransportKind::Car,
         }
     }
@@ -265,17 +280,19 @@ impl InspectRenderDefault<TransportKind> for TransportKind {
         let mut id = match d {
             TransportKind::Car => 0,
             TransportKind::Bus => 1,
+            TransportKind::Pedestrian => 2,
         };
 
         let changed = imgui::ComboBox::new(&im_str!("{}", label)).build_simple_string(
             ui,
             &mut id,
-            &[im_str!("Car"), im_str!("Bus")],
+            &[im_str!("Car"), im_str!("Bus"), im_str!("Pedestrian")],
         );
 
         match id {
             0 => **d = TransportKind::Car,
             1 => **d = TransportKind::Bus,
+            2 => **d = TransportKind::Pedestrian,
             _ => {}
         }
         changed

@@ -1,9 +1,7 @@
-use crate::geometry::pseudo_angle;
 use crate::map_model::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
 use cgmath::InnerSpace;
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
-use ordered_float::OrderedFloat;
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use specs::World;
@@ -24,18 +22,24 @@ impl Default for LightPolicy {
 
 impl LightPolicy {
     pub fn apply(self, inter: &Intersection, lanes: &mut Lanes, roads: &Roads) {
-        let mut in_road_lanes: Vec<&Vec<LaneID>> = inter
+        let in_road_lanes: Vec<Vec<&LaneID>> = inter
             .roads
             .iter()
-            .map(|x| roads[*x].incoming_lanes_to(inter.id))
+            .map(|&x| {
+                roads[x]
+                    .incoming_lanes_to(inter.id)
+                    .iter()
+                    .filter(|&&x| lanes[x].kind.needs_light())
+                    .collect::<Vec<&LaneID>>()
+            })
             .filter(|v| !v.is_empty())
             .collect();
 
         let two_lanes_or_less = in_road_lanes.len() <= 2;
 
-        for &incoming_lanes in &in_road_lanes {
-            for lane in incoming_lanes {
-                lanes[*lane].control = TrafficControl::Always;
+        for incoming_lanes in &in_road_lanes {
+            for &&lane in incoming_lanes {
+                lanes[lane].control = TrafficControl::Always;
             }
         }
 
@@ -43,28 +47,22 @@ impl LightPolicy {
             (LightPolicy::NoLights, _) | (LightPolicy::Smart, true) => {}
             (LightPolicy::StopSigns, _) => {
                 for incoming_lanes in in_road_lanes {
-                    for lane in incoming_lanes {
-                        lanes[*lane].control = TrafficControl::StopSign;
+                    for &lane in incoming_lanes {
+                        lanes[lane].control = TrafficControl::StopSign;
                     }
                 }
             }
             (LightPolicy::Smart, false) if in_road_lanes.len() == 3 => {
-                in_road_lanes.sort_by_key(|x| {
-                    OrderedFloat(pseudo_angle(
-                        roads[lanes[*x.first().unwrap()].parent].dir_from(inter),
-                    ))
-                });
-
                 if in_road_lanes.len() == 3 {
                     // stop sign on perpendicular road
                     let mut max_ang = 0.0;
                     let mut perp_road = None;
                     for i in 0..3 {
-                        let a = lanes[in_road_lanes[i][0]].parent;
-                        let b = lanes[in_road_lanes[(i + 1) % 3][0]].parent;
+                        let a = lanes[*in_road_lanes[i][0]].parent;
+                        let b = lanes[*in_road_lanes[(i + 1) % 3][0]].parent;
 
-                        let dir_a = roads[a].dir_from(inter);
-                        let dir_b = roads[b].dir_from(inter);
+                        let dir_a = roads[a].dir_from(inter.id, inter.pos);
+                        let dir_b = roads[b].dir_from(inter.id, inter.pos);
 
                         let ang = dir_a.angle(dir_b).0.abs();
                         if ang > max_ang {
@@ -72,19 +70,13 @@ impl LightPolicy {
                             perp_road = Some((i + 2) % 3);
                         }
                     }
-                    for lane in in_road_lanes[perp_road.unwrap()] {
-                        lanes[*lane].control = TrafficControl::StopSign;
+                    for &&lane in &in_road_lanes[perp_road.unwrap()] {
+                        lanes[lane].control = TrafficControl::StopSign;
                     }
                     return;
                 }
             }
             (LightPolicy::Smart, false) | (LightPolicy::Lights, _) => {
-                in_road_lanes.sort_by_key(|x| {
-                    OrderedFloat(pseudo_angle(
-                        roads[lanes[*x.first().unwrap()].parent].dir_from(inter),
-                    ))
-                });
-
                 let cycle_size = 10;
                 let orange_length = 4;
                 let offset = inter.id.as_ffi();
@@ -103,8 +95,8 @@ impl LightPolicy {
                         },
                     ));
 
-                    for lane in incoming_lanes {
-                        lanes[*lane].control = light;
+                    for &lane in incoming_lanes {
+                        lanes[lane].control = light;
                     }
                 }
             }

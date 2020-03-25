@@ -1,3 +1,4 @@
+use crate::geometry::pseudo_angle;
 use crate::gui::InspectDragf;
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{
@@ -8,6 +9,7 @@ use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::{Color, BLUE};
 use cgmath::Vector2;
 use imgui_inspect_derive::*;
+use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use specs::storage::BTreeStorage;
@@ -41,6 +43,8 @@ pub struct Intersection {
     pub pos: Vector2<f32>,
 
     pub turns: BTreeMap<TurnID, Turn>,
+
+    // sorted by angle
     pub roads: Vec<RoadID>,
 
     pub interface_radius: f32,
@@ -93,6 +97,11 @@ impl Intersection {
 
     pub fn add_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
         self.roads.push(road_id);
+        let id = self.id;
+        let pos = self.pos;
+        self.roads
+            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].dir_from(id, pos))));
+
         self.gen_turns(lanes, roads);
         self.update_traffic_control(lanes, roads);
     }

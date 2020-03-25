@@ -1,3 +1,4 @@
+use crate::geometry::polyline::PolyLine;
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
 use crate::map_model::IntersectionComponent;
 use crate::physics::{Kinematics, Transform};
@@ -234,11 +235,9 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for InspectVec<T> 
     }
 }
 
-pub struct InspectVecVector;
-
-impl InspectRenderDefault<Vec<Vector2<f32>>> for InspectVecVector {
+impl InspectRenderDefault<PolyLine> for PolyLine {
     fn render(
-        _data: &[&Vec<Vector2<f32>>],
+        _data: &[&PolyLine],
         _label: &'static str,
         _: &mut World,
         _ui: &Ui,
@@ -248,7 +247,7 @@ impl InspectRenderDefault<Vec<Vector2<f32>>> for InspectVecVector {
     }
 
     fn render_mut(
-        data: &mut [&mut Vec<Vector2<f32>>],
+        data: &mut [&mut PolyLine],
         label: &str,
         w: &mut World,
         ui: &Ui,
@@ -262,7 +261,7 @@ impl InspectRenderDefault<Vec<Vector2<f32>>> for InspectVecVector {
 
         if ui.collapsing_header(&im_str!("{}", label)).build() {
             ui.indent();
-            for (i, x) in v.iter_mut().enumerate() {
+            for (i, x) in v.0.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
                 <InspectVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
                     &mut [x],
