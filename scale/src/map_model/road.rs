@@ -69,8 +69,21 @@ impl Road {
         self.lanes_forward.iter().chain(self.lanes_backward.iter())
     }
 
-    pub fn sidewalk_forward(&self) -> Option<&LaneID> {
-        self.lanes_forward.last()
+    pub fn sidewalks<'a>(
+        &self,
+        from: IntersectionID,
+        lanes: &'a Lanes,
+    ) -> (Option<&'a Lane>, Option<&'a Lane>) {
+        (
+            self.incoming_lanes_to(from)
+                .iter()
+                .map(|x| &lanes[*x])
+                .find(|x| matches!(x.kind, LaneKind::Walking)),
+            self.outgoing_lanes_from(from)
+                .iter()
+                .map(|x| &lanes[*x])
+                .find(|x| matches!(x.kind, LaneKind::Walking)),
+        )
     }
 
     pub fn add_lane(

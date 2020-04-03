@@ -19,10 +19,7 @@ impl TrafficBehavior {
     }
 
     pub fn is_red(self) -> bool {
-        match self {
-            TrafficBehavior::RED => true,
-            _ => false,
-        }
+        matches!(self, TrafficBehavior::RED)
     }
 }
 

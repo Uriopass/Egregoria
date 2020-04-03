@@ -78,7 +78,7 @@ impl Intersection {
         let to_remove: Vec<TurnID> = self
             .turns
             .iter_mut()
-            .filter(|(id, _)| !turns.contains(id))
+            .filter(|(id, _)| turns.iter().find(|(id2, _)| id2 == *id).is_none())
             .map(|(id, _)| *id)
             .collect();
 
@@ -86,8 +86,10 @@ impl Intersection {
             self.turns.remove(&id);
         }
 
-        for turn in turns {
-            self.turns.entry(turn).or_insert_with(|| Turn::new(turn));
+        for (turn_id, kind) in turns {
+            self.turns
+                .entry(turn_id)
+                .or_insert_with(|| Turn::new(turn_id, kind));
         }
 
         for turn in self.turns.values_mut() {
