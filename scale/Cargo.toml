@@ -6,12 +6,12 @@ edition = "2018"
 
 [dependencies]
 ordered-float = "1.0.2"
-rand = {version = "0.7.2", features = ["small_rng"]}
+rand = {version = "0.7", default-features = false, features = ["small_rng"]}
 slotmap = {version = "0.4", features = ["serde"]}
 imgui-inspect = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
 imgui-inspect-derive = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
 bincode = "1.2.1"
 serde = "1.0"
 imgui = "0.3"
-cgmath = {version = "0.17", features = ["serde"]}
+cgmath = {git = "https://github.com/rustgd/cgmath", features = ["serde"]}
 specs = {version = "0.16", default-features = false, features = ["shred-derive", "specs-derive", "serde"]}

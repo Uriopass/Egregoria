@@ -2,7 +2,7 @@ use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
 use cgmath::{vec2, InnerSpace, Vector2};
 use ggez::graphics::{Color, WHITE};
-use scale::map_model::{LaneKind, Map, TrafficBehavior};
+use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
 
 pub struct RoadRenderer;
 const MID_GRAY: Color = Color {
@@ -48,23 +48,11 @@ impl RoadRenderer {
         }
 
         rc.sr.color = MID_GRAY;
-        for (inter_id, inter) in inters {
-            for (id, turn) in &inter.turns {
-                let mut p = Vec::with_capacity(2 + turn.points.n_points());
-                p.push(lanes[id.src].get_inter_node_pos(inter_id));
-                p.extend_from_slice(turn.points.as_slice());
-                p.push(lanes[id.dst].get_inter_node_pos(inter_id));
-
-                rc.sr.draw_polyline(&p, 7.5);
-            }
-        }
-
         for n in lanes.values() {
-            rc.sr.color = MID_GRAY;
-            match n.kind {
-                LaneKind::Walking => rc.sr.color = HIGH_GRAY,
-                _ => {}
-            }
+            rc.sr.color = match n.kind {
+                LaneKind::Walking => HIGH_GRAY,
+                _ => MID_GRAY,
+            };
 
             rc.sr.draw_polyline(n.points.as_slice(), 7.5);
             rc.sr.draw_circle(*n.points.first().unwrap(), 3.75);
@@ -81,6 +69,39 @@ impl RoadRenderer {
                         0.5,
                     );
                 }
+            }
+        }
+        for (inter_id, inter) in inters {
+            rc.sr.color = MID_GRAY;
+
+            for (id, turn) in &inter.turns {
+                if turn.kind != TurnKind::Normal {
+                    continue;
+                }
+                let mut p = Vec::with_capacity(2 + turn.points.n_points());
+                p.push(lanes[id.src].get_inter_node_pos(inter_id));
+                p.extend_from_slice(turn.points.as_slice());
+                p.push(lanes[id.dst].get_inter_node_pos(inter_id));
+
+                rc.sr.draw_polyline(&p, 7.5);
+            }
+            rc.sr.color = HIGH_GRAY;
+
+            for (id, turn) in &inter.turns {
+                if turn.kind == TurnKind::Normal {
+                    continue;
+                }
+                let mut p = Vec::with_capacity(2 + turn.points.n_points());
+                p.push(lanes[id.src].get_inter_node_pos(inter_id));
+                p.extend_from_slice(turn.points.as_slice());
+                p.push(lanes[id.dst].get_inter_node_pos(inter_id));
+
+                rc.sr.color = match lanes[id.src].kind {
+                    LaneKind::Walking => HIGH_GRAY,
+                    _ => MID_GRAY,
+                };
+
+                rc.sr.draw_polyline(&p, 7.5);
             }
         }
 

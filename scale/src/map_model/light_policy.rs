@@ -30,7 +30,7 @@ impl LightPolicy {
                     .incoming_lanes_to(inter.id)
                     .iter()
                     .filter(|&&x| lanes[x].kind.needs_light())
-                    .collect::<Vec<&LaneID>>()
+                    .collect::<Vec<_>>()
             })
             .filter(|v| !v.is_empty())
             .collect();
@@ -53,27 +53,24 @@ impl LightPolicy {
                 }
             }
             (LightPolicy::Smart, false) if in_road_lanes.len() == 3 => {
-                if in_road_lanes.len() == 3 {
-                    // stop sign on perpendicular road
-                    let mut max_ang = 0.0;
-                    let mut perp_road = None;
-                    for i in 0..3 {
-                        let a = lanes[*in_road_lanes[i][0]].parent;
-                        let b = lanes[*in_road_lanes[(i + 1) % 3][0]].parent;
+                // stop sign on perpendicular road
+                let mut max_ang = 0.0;
+                let mut perp_road = None;
+                for i in 0..3 {
+                    let a = lanes[*in_road_lanes[i][0]].parent;
+                    let b = lanes[*in_road_lanes[(i + 1) % 3][0]].parent;
 
-                        let dir_a = roads[a].dir_from(inter.id, inter.pos);
-                        let dir_b = roads[b].dir_from(inter.id, inter.pos);
+                    let dir_a = roads[a].dir_from(inter.id, inter.pos);
+                    let dir_b = roads[b].dir_from(inter.id, inter.pos);
 
-                        let ang = dir_a.angle(dir_b).0.abs();
-                        if ang > max_ang {
-                            max_ang = ang;
-                            perp_road = Some((i + 2) % 3);
-                        }
+                    let ang = dir_a.angle(dir_b).0.abs();
+                    if ang > max_ang {
+                        max_ang = ang;
+                        perp_road = Some((i + 2) % 3);
                     }
-                    for &&lane in &in_road_lanes[perp_road.unwrap()] {
-                        lanes[lane].control = TrafficControl::StopSign;
-                    }
-                    return;
+                }
+                for &&lane in &in_road_lanes[perp_road.unwrap()] {
+                    lanes[lane].control = TrafficControl::StopSign;
                 }
             }
             (LightPolicy::Smart, false) | (LightPolicy::Lights, _) => {
