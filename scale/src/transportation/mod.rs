@@ -3,6 +3,7 @@ use crate::map_model::{Lane, LaneID, Map, Traversable};
 use crate::physics::{add_transport_to_coworld, Collider, CollisionWorld, Kinematics, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use cgmath::{vec2, InnerSpace};
+use rand::random;
 use specs::{Builder, Entity, World, WorldExt};
 
 mod data;
@@ -23,19 +24,21 @@ pub fn spawn_new_transport(world: &mut World) {
         let roads = map.roads();
         let l = roads.len();
         if l > 0 {
-            let r = (rand::random::<f32>() * l as f32) as usize;
+            let r = (random::<f32>() * l as f32) as usize;
 
             let (_, road) = roads.into_iter().nth(r).unwrap();
-            let lanes = road.lanes_iter().collect::<Vec<&LaneID>>();
+            let lanes = road
+                .lanes_iter()
+                .filter(|x| map.lanes()[**x].kind.vehicles())
+                .collect::<Vec<&LaneID>>();
 
             if !lanes.is_empty() {
-                let r = (rand::random::<f32>() * lanes.len() as f32) as usize;
+                let r = (random::<f32>() * lanes.len() as f32) as usize;
 
                 let lane: &Lane = &map.lanes()[*lanes[r]];
-
                 if let [a, .., b] = lane.points.as_slice() {
                     let diff = b - a;
-                    pos.set_position(a + rand::random::<f32>() * diff);
+                    pos.set_position(*a + random::<f32>() * diff);
                     pos.set_direction(diff.normalize());
                     obj = TransportObjective::Temporary(Traversable::Lane(lane.id));
                 }

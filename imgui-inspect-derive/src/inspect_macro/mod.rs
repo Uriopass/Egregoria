@@ -94,7 +94,7 @@ fn try_handle_inspect_type<
     default_render_trait: proc_macro2::TokenStream,
     arg_type: proc_macro2::TokenStream,
 ) {
-    if f.attrs.iter().find(|x| x.path == *path).is_some() {
+    if f.attrs.iter().any(|x| x.path == *path) {
         handle_inspect_type::<FieldArgsT, ArgsT>(parsed_field, &f, default_render_trait, arg_type);
     }
 }
@@ -303,7 +303,7 @@ fn generate(
                 }
 
                 let should_render_children = if header {
-                    ui.collapsing_header(&imgui::im_str!( "{}", header_name)).default_open(true).build()
+                    ui.collapsing_header(&imgui::im_str!( "{}", label)).default_open(true).build()
                 } else {
                     true
                 };
@@ -333,7 +333,7 @@ fn generate(
                 }
 
                 let should_render_children = if header {
-                    ui.collapsing_header(&imgui::im_str!("{}", header_name)).default_open(true).build()
+                    ui.collapsing_header(&imgui::im_str!("{}", label)).default_open(true).build()
                 } else {
                     true
                 };

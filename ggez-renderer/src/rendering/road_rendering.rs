@@ -112,7 +112,7 @@ impl RoadRenderer {
                 let dir: Vector2<f32> = (to - from) / l;
                 let normal = vec2(-dir.y, dir.x);
 
-                for i in 4..l as usize - 4 {
+                for i in 4..l as usize - 3 {
                     let along = from + dir * i as f32;
                     rc.sr
                         .draw_stroke(along - normal * 1.5, along + normal * 1.5, 0.5);
