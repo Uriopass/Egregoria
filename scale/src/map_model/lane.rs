@@ -20,6 +20,10 @@ pub enum LaneKind {
 }
 
 impl LaneKind {
+    pub fn vehicles(self) -> bool {
+        matches!(self, LaneKind::Driving | LaneKind::Biking | LaneKind::Bus)
+    }
+
     pub fn needs_light(self) -> bool {
         matches!(self, LaneKind::Driving | LaneKind::Biking | LaneKind::Bus)
     }

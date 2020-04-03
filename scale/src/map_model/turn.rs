@@ -17,21 +17,33 @@ impl TurnID {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialOrd, Ord, PartialEq, Serialize, Deserialize)]
+pub enum TurnKind {
+    Crosswalk,
+    WalkingCorner,
+    Normal,
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Turn {
     pub id: TurnID,
     pub points: PolyLine,
+    pub kind: TurnKind,
 }
 
 impl Turn {
-    pub fn new(id: TurnID) -> Self {
+    pub fn new(id: TurnID, kind: TurnKind) -> Self {
         Self {
             id,
             points: Default::default(),
+            kind,
         }
     }
 
-    pub(crate) fn make_points(&mut self, lanes: &Lanes) {
+    pub fn make_points(&mut self, lanes: &Lanes) {
+        if self.kind == TurnKind::Crosswalk {
+            return;
+        }
         const N_SPLINE: usize = 6;
 
         let src_lane = &lanes[self.id.src];
@@ -53,8 +65,8 @@ impl Turn {
         };
 
         self.points.clear();
-        for i in 0..N_SPLINE {
-            let c = (i + 1) as f32 / (N_SPLINE + 1) as f32;
+        for i in 1..=N_SPLINE {
+            let c = i as f32 / (N_SPLINE + 1) as f32;
 
             let pos = spline.get(c);
             debug_assert!(pos.is_finite());

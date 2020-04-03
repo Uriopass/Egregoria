@@ -179,7 +179,7 @@ impl ShapeRenderer {
                 &points
                     .iter()
                     .map(|x| Point2::new(x.x, x.y))
-                    .collect::<Vec<Point2<f32>>>(),
+                    .collect::<Vec<_>>(),
                 Color {
                     a: (self.zoom * self.zoom * 50.0).min(self.color.a).max(0.0),
                     ..self.color

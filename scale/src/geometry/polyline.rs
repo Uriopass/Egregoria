@@ -46,7 +46,7 @@ impl PolyLine {
     }
 
     pub fn as_slice(&self) -> &[Vec2] {
-        &self.0
+        self.0.as_slice()
     }
 
     pub fn clear(&mut self) {

@@ -135,11 +135,11 @@ pub fn objective_update(
                 Traversable::Lane(id) => {
                     let lane = &map.lanes()[id];
 
-                    let neighs = map.intersections()[lane.dst]
+                    let neighs: Vec<(&TurnID, &Turn)> = map.intersections()[lane.dst]
                         .turns
                         .iter()
                         .filter(|(_, x)| x.id.src == id)
-                        .collect::<Vec<(&TurnID, &Turn)>>();
+                        .collect();
 
                     if neighs.is_empty() {
                         return;
