@@ -1,0 +1,31 @@
+[package]
+name = "imgui-inspect-derive"
+version = "0.3.2"
+authors = ["Philip Degarmo <aclysma@gmail.com>"]
+edition = "2018"
+description = "Traits and default implementations for inspecting values with imgui."
+license = "MIT/Apache-2.0"
+readme = "../README.md"
+repository = "https://github.com/aclysma/imgui-inspect"
+homepage = "https://github.com/aclysma/imgui-inspect"
+keywords = ["game", "imgui"]
+categories = ["gui", "visualization"]
+
+[badges]
+travis-ci = { repository = "aclysma/imgui-inspect", branch = "master" }
+maintenance = { status = "experimental" }
+
+[lib]
+name="imgui_inspect_derive"
+proc-macro = true
+
+[features]
+default = ["generate_code"]
+generate_code = []
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "1.0"
+darling = "0.10"
+specs = "0.16"

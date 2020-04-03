@@ -8,8 +8,8 @@ edition = "2018"
 ordered-float = "1.0.2"
 rand = {version = "0.7", default-features = false, features = ["small_rng"]}
 slotmap = {version = "0.4", features = ["serde"]}
-imgui-inspect = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
-imgui-inspect-derive = { git = "https://github.com/Uriopass/imgui-inspect-specs/" }
+imgui-inspect = { path = "../imgui-inspect" }
+imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 bincode = "1.2.1"
 serde = "1.0"
 imgui = "0.3"
