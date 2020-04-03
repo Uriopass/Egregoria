@@ -3,7 +3,9 @@ cargo-features = ["profile-overrides"]
 [workspace]
 members = [
     "scale",
-    "ggez-renderer"
+    "ggez-renderer",
+    "imgui-inspect",
+    "imgui-inspect-derive",
 ]
 
 # Set the settings for build scripts and proc-macros.
@@ -17,6 +19,12 @@ opt-level = 3
 opt-level = 1
 
 [profile.dev.package.ggez-renderer]
+opt-level = 1
+
+[profile.dev.package.imgui-inspect]
+opt-level = 1
+
+[profile.dev.package.imgui-inspect-derive]
 opt-level = 1
 
 [profile.release]
