@@ -73,7 +73,6 @@ impl RoadRenderer {
         }
         for (inter_id, inter) in inters {
             rc.sr.color = MID_GRAY;
-
             for (id, turn) in &inter.turns {
                 if turn.kind != TurnKind::Normal {
                     continue;
@@ -85,10 +84,10 @@ impl RoadRenderer {
 
                 rc.sr.draw_polyline(&p, 7.5);
             }
-            rc.sr.color = HIGH_GRAY;
 
+            rc.sr.color = HIGH_GRAY;
             for (id, turn) in &inter.turns {
-                if turn.kind == TurnKind::Normal {
+                if turn.kind != TurnKind::WalkingCorner {
                     continue;
                 }
                 let mut p = Vec::with_capacity(2 + turn.points.n_points());
@@ -96,12 +95,28 @@ impl RoadRenderer {
                 p.extend_from_slice(turn.points.as_slice());
                 p.push(lanes[id.dst].get_inter_node_pos(inter_id));
 
-                rc.sr.color = match lanes[id.src].kind {
-                    LaneKind::Walking => HIGH_GRAY,
-                    _ => MID_GRAY,
-                };
-
                 rc.sr.draw_polyline(&p, 7.5);
+            }
+
+            rc.sr.color = WHITE;
+            for (id, turn) in &inter.turns {
+                if turn.kind != TurnKind::Crosswalk {
+                    continue;
+                }
+
+                let from = lanes[id.src].get_inter_node_pos(inter_id);
+                let to = lanes[id.dst].get_inter_node_pos(inter_id);
+
+                let l = (to - from).magnitude();
+
+                let dir: Vector2<f32> = (to - from) / l;
+                let normal = vec2(-dir.y, dir.x);
+
+                for i in 4..l as usize - 4 {
+                    let along = from + dir * i as f32;
+                    rc.sr
+                        .draw_stroke(along - normal * 1.5, along + normal * 1.5, 0.5);
+                }
             }
         }
 
@@ -116,9 +131,18 @@ impl RoadRenderer {
 
             let dir_nor = vec2(-dir.y, dir.x);
 
-            let r_center = n.points.last().unwrap() + dir_nor * 2.0;
+            let r_center = n.points.last().unwrap() + dir_nor * 2.0 + dir * 2.5;
 
             if n.control.is_stop() {
+                rc.sr.color = scale_color(scale::rendering::WHITE);
+                rc.sr.draw_rect_cos_sin(
+                    r_center,
+                    1.5,
+                    1.5,
+                    std::f32::consts::FRAC_1_SQRT_2,
+                    std::f32::consts::FRAC_1_SQRT_2,
+                );
+
                 rc.sr.color = scale_color(scale::rendering::RED);
                 rc.sr.draw_rect_cos_sin(
                     r_center,
