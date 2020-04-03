@@ -3,6 +3,7 @@ use crate::geometry::segment::Segment;
 use crate::map_model::{IntersectionID, Intersections, Road, RoadID, TrafficControl};
 use cgmath::InnerSpace;
 use cgmath::Vector2;
+use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -57,39 +58,69 @@ pub struct LanePattern {
     pub lanes_backward: Vec<LaneKind>,
 }
 
-impl LanePattern {
-    pub fn one_way(n_lanes: usize) -> Self {
-        assert!(n_lanes > 0);
-        LanePattern {
-            lanes_backward: vec![LaneKind::Walking],
-            lanes_forward: (0..n_lanes)
-                .map(|_| LaneKind::Driving)
-                .chain(std::iter::once(LaneKind::Walking))
-                .collect(),
-            name: if n_lanes == 1 {
-                "One way".to_owned()
-            } else {
-                format!("One way {} lanes", n_lanes)
-            },
+#[derive(Clone, Copy, Inspect)]
+pub struct LanePatternBuilder {
+    #[inspect(min_value = 1.0)]
+    pub n_lanes: u32,
+    pub sidewalks: bool,
+    pub one_way: bool,
+}
+
+impl Default for LanePatternBuilder {
+    fn default() -> Self {
+        LanePatternBuilder {
+            n_lanes: 1,
+            sidewalks: true,
+            one_way: false,
         }
     }
+}
 
-    pub fn two_way(n_lanes: usize) -> Self {
+impl LanePatternBuilder {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn n_lanes(&mut self, n_lanes: u32) -> &mut Self {
         assert!(n_lanes > 0);
+        self.n_lanes = n_lanes;
+        self
+    }
+
+    pub fn sidewalks(&mut self, sidewalks: bool) -> &mut Self {
+        self.sidewalks = sidewalks;
+        self
+    }
+
+    pub fn one_way(&mut self, one_way: bool) -> &mut Self {
+        self.one_way = one_way;
+        self
+    }
+
+    pub fn build(self) -> LanePattern {
+        let mut backward = if self.one_way {
+            vec![]
+        } else {
+            (0..self.n_lanes).map(|_| LaneKind::Driving).collect()
+        };
+
+        let mut forward: Vec<_> = (0..self.n_lanes).map(|_| LaneKind::Driving).collect();
+
+        if self.sidewalks {
+            backward.push(LaneKind::Walking);
+            forward.push(LaneKind::Walking);
+        }
+
+        let mut name = if self.one_way { "One way" } else { "Two way" }.to_owned();
+        name.push_str(&format!(" {} lanes", self.n_lanes));
+
+        if !self.sidewalks {
+            name.push_str(&" no sidewalks");
+        }
         LanePattern {
-            lanes_backward: (0..n_lanes)
-                .map(|_| LaneKind::Driving)
-                .chain(std::iter::once(LaneKind::Walking))
-                .collect(),
-            lanes_forward: (0..n_lanes)
-                .map(|_| LaneKind::Driving)
-                .chain(std::iter::once(LaneKind::Walking))
-                .collect(),
-            name: if n_lanes == 1 {
-                "Two way".to_owned()
-            } else {
-                format!("Two way {} lanes", n_lanes)
-            },
+            lanes_backward: backward,
+            lanes_forward: forward,
+            name,
         }
     }
 }

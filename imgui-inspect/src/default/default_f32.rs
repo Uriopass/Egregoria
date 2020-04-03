@@ -8,7 +8,7 @@ impl InspectRenderDefault<f32> for f32 {
         ui: &imgui::Ui,
         _args: &InspectArgsDefault,
     ) {
-        if data.len() == 0 {
+        if data.is_empty() {
             // Values are inconsistent
             let style_token = ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0]);
             ui.text(&imgui::im_str!("{}: ", label));

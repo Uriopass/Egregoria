@@ -8,7 +8,7 @@ impl InspectRenderSlider<f32> for f32 {
         ui: &imgui::Ui,
         _args: &InspectArgsSlider,
     ) {
-        if data.len() == 0 {
+        if data.is_empty() {
             ui.text(&imgui::im_str!("{}: None", label));
             return;
         }
