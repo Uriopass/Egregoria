@@ -1,6 +1,6 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use crate::interaction::{MovedEvent, SelectedEntity};
-use crate::map_model::{make_inter_entity, IntersectionComponent, LanePattern, Map};
+use crate::map_model::{make_inter_entity, IntersectionComponent, LanePatternBuilder, Map};
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{LineToRender, MeshRender};
 use crate::rendering::{Color, BLUE};
@@ -15,7 +15,7 @@ pub struct MapUIState {
     reader: ReaderId<MovedEvent>,
     pub selected_inter: Option<Entity>,
     pub entities: Vec<Entity>,
-    pub pattern: LanePattern,
+    pub pattern_builder: LanePatternBuilder,
 }
 
 impl MapUIState {
@@ -28,7 +28,7 @@ impl MapUIState {
             reader,
             selected_inter: None,
             entities: vec![],
-            pattern: LanePattern::two_way(1),
+            pattern_builder: LanePatternBuilder::new(),
         }
     }
 }
@@ -64,7 +64,7 @@ impl<'a> System<'a> for MapUISystem {
             let id = data.map.add_intersection(data.mouseinfo.unprojected);
             let intersections = &data.intersections;
             if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
-                data.map.connect(x.id, id, &state.pattern);
+                data.map.connect(x.id, id, &state.pattern_builder.build());
             }
             let e = make_inter_entity(
                 &data.map.intersections()[id],
@@ -108,7 +108,7 @@ impl<'a> System<'a> for MapUISystem {
                 let id = data.map.add_intersection(data.mouseinfo.unprojected);
                 let intersections = &data.intersections;
                 let lol = intersections.get(x).unwrap();
-                data.map.connect(lol.id, id, &state.pattern);
+                data.map.connect(lol.id, id, &state.pattern_builder.build());
                 let e = make_inter_entity(
                     &data.map.intersections()[id],
                     data.mouseinfo.unprojected,
@@ -177,7 +177,11 @@ impl MapUIState {
                     if map.find_road(selected_interc.id, interc2.id).is_some() {
                         map.disconnect(selected_interc.id, interc2.id);
                     }
-                    map.connect(interc2.id, selected_interc.id, &self.pattern);
+                    map.connect(
+                        interc2.id,
+                        selected_interc.id,
+                        &self.pattern_builder.build(),
+                    );
 
                     self.deactive_connect(&entities);
                 }

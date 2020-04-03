@@ -22,7 +22,7 @@ impl Default for TurnPolicy {
 fn filter_vehicles(x: &[LaneID], lanes: &Lanes) -> Vec<LaneID> {
     x.iter()
         .filter(|x| lanes[**x].kind.vehicles())
-        .map(|&x| x)
+        .copied()
         .collect::<Vec<_>>()
 }
 
@@ -161,26 +161,25 @@ impl TurnPolicy {
             .roads
             .iter()
             .chain(inter.roads.iter().take(1))
-            .filter_map(|x| {
-                if let (Some(incoming), Some(outgoing)) = roads[*x].sidewalks(inter.id, lanes) {
-                    Some((incoming, outgoing))
-                } else {
-                    None
-                }
-            })
+            .map(|x| roads[*x].sidewalks(inter.id, lanes))
             .collect::<Vec<_>>()
             .windows(2)
         {
             if let [(incoming, outgoing_in), (_, outgoing)] = *w {
-                turns.push((
-                    TurnID::new(inter.id, incoming.id, outgoing.id),
-                    TurnKind::WalkingCorner,
-                ));
-                if n_roads > 2 {
+                if let (Some(incoming), Some(outgoing)) = (incoming, outgoing) {
                     turns.push((
-                        TurnID::new(inter.id, outgoing_in.id, incoming.id),
-                        TurnKind::Crosswalk,
+                        TurnID::new(inter.id, incoming.id, outgoing.id),
+                        TurnKind::WalkingCorner,
                     ));
+                }
+
+                if let (Some(incoming), Some(outgoing_in)) = (incoming, outgoing_in) {
+                    if n_roads > 2 {
+                        turns.push((
+                            TurnID::new(inter.id, outgoing_in.id, incoming.id),
+                            TurnKind::Crosswalk,
+                        ));
+                    }
                 }
             }
         }

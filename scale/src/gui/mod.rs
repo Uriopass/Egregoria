@@ -1,9 +1,10 @@
 use crate::engine_interaction::{RenderStats, TimeInfo};
 use crate::interaction::SelectedEntity;
-use crate::map_model::{LanePattern, MapUIState};
+use crate::map_model::{LanePatternBuilder, MapUIState};
 use crate::transportation::{delete_transport_entity, spawn_new_transport, TransportComponent};
 use imgui::im_str;
 use imgui::Ui;
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 pub use inspect::*;
 use specs::world::World;
 use specs::{Entity, Join, WorldExt};
@@ -106,25 +107,17 @@ impl Gui {
                         }
                     }
 
-                    let pattern = &mut world.get_mut::<MapUIState>().unwrap().pattern;
+                    let mut pattern = world.get_mut::<MapUIState>().unwrap().pattern_builder;
 
-                    ui.text(im_str!("Current selection: {}", pattern.name));
+                    <LanePatternBuilder as InspectRenderDefault<LanePatternBuilder>>::render_mut(
+                        &mut [&mut pattern],
+                        "Road shape",
+                        world,
+                        &ui,
+                        &InspectArgsDefault::default(),
+                    );
 
-                    if ui.small_button(im_str!("One way")) {
-                        *pattern = LanePattern::one_way(1);
-                    }
-
-                    if ui.small_button(im_str!("One way two lanes")) {
-                        *pattern = LanePattern::one_way(2);
-                    }
-
-                    if ui.small_button(im_str!("Two way")) {
-                        *pattern = LanePattern::two_way(1);
-                    }
-
-                    if ui.small_button(im_str!("Two way two lanes")) {
-                        *pattern = LanePattern::two_way(2);
-                    }
+                    world.get_mut::<MapUIState>().unwrap().pattern_builder = pattern;
                 });
             self.show_car_ui = opened;
         }

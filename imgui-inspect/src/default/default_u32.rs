@@ -8,7 +8,7 @@ impl InspectRenderDefault<u32> for u32 {
         ui: &imgui::Ui,
         _args: &InspectArgsDefault,
     ) {
-        if data.len() == 0 {
+        if data.is_empty() {
             // Values are inconsistent
             let style_token = ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0]);
             ui.text(&imgui::im_str!("{}: ", label));
@@ -36,7 +36,7 @@ impl InspectRenderDefault<u32> for u32 {
         label: &'static str,
         _: &mut World,
         ui: &imgui::Ui,
-        _args: &InspectArgsDefault,
+        args: &InspectArgsDefault,
     ) -> bool {
         let same_or_none_value = get_same_or_none_mut(data);
 
@@ -56,16 +56,18 @@ impl InspectRenderDefault<u32> for u32 {
         };
 
         let mut changed = false;
-        if ui
-            .input_int(&imgui::im_str!("{}", label), &mut value)
-            .build()
+        if imgui::InputInt::new(&ui, &imgui::im_str!("{}", label), &mut value).build()
+            && value >= args.min_value.map(|x| x as i32).unwrap_or(0).max(0)
+            && value <= args.max_value.map(|x| x as i32).unwrap_or(std::i32::MAX)
         {
-            for d in data {
-                // CAST
-                let value = value as u32;
+            {
+                for d in data {
+                    // CAST
+                    let value = value as u32;
 
-                **d = value;
-                changed = true;
+                    **d = value;
+                    changed = true;
+                }
             }
         }
 

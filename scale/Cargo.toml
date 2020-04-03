@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 ordered-float = "1.0.2"
-rand = {version = "0.7", default-features = false, features = ["small_rng"]}
+rand = {version = "0.7", default-features = false, features = ["std", "small_rng"]}
 slotmap = {version = "0.4", features = ["serde"]}
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }

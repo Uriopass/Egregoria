@@ -42,7 +42,7 @@ pub trait InspectRenderStruct<T> {
 
 /// Utility function that, given a list of references, returns Some(T) if they are the same, otherwise None
 pub fn get_same_or_none<T: PartialEq + Clone>(data: &[&T]) -> Option<T> {
-    if data.len() == 0 {
+    if data.is_empty() {
         return None;
     }
 
@@ -58,7 +58,7 @@ pub fn get_same_or_none<T: PartialEq + Clone>(data: &[&T]) -> Option<T> {
 
 /// Utility function that, given a list of references, returns Some(T) if they are the same, otherwise None
 fn get_same_or_none_mut<T: PartialEq + Clone>(data: &mut [&mut T]) -> Option<T> {
-    if data.len() == 0 {
+    if data.is_empty() {
         return None;
     }
 
