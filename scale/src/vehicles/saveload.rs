@@ -1,20 +1,20 @@
 use crate::physics::Transform;
-use crate::transportation::make_transport_entity;
-use crate::transportation::TransportComponent;
+use crate::vehicles::make_vehicle_entity;
+use crate::vehicles::VehicleComponent;
 use specs::{Join, World, WorldExt};
 use std::fs::File;
 
-const TRANSPORT_FILENAME: &str = "world/transport";
+const VEHICLE_FILENAME: &str = "world/vehicle";
 
 pub fn save(world: &mut World) {
     let _ = std::fs::create_dir("world");
 
-    let path = TRANSPORT_FILENAME.to_string() + ".bc";
+    let path = VEHICLE_FILENAME.to_string() + ".bc";
     let file = File::create(path).unwrap();
 
-    let comps: Vec<(Transform, TransportComponent)> = (
+    let comps: Vec<(Transform, VehicleComponent)> = (
         &world.read_component::<Transform>(),
-        &world.read_component::<TransportComponent>(),
+        &world.read_component::<VehicleComponent>(),
     )
         .join()
         .map(|(trans, car)| (trans.clone(), car.clone()))
@@ -24,7 +24,7 @@ pub fn save(world: &mut World) {
 }
 
 pub fn load(world: &mut World) {
-    let file = File::open(TRANSPORT_FILENAME.to_string() + ".bc");
+    let file = File::open(VEHICLE_FILENAME.to_string() + ".bc");
     if let Err(e) = file {
         println!("error while trying to load entities: {}", e);
         return;
@@ -32,9 +32,9 @@ pub fn load(world: &mut World) {
 
     let des = bincode::deserialize_from(file.unwrap());
 
-    let comps: Vec<(Transform, TransportComponent)> = des.unwrap_or_default();
+    let comps: Vec<(Transform, VehicleComponent)> = des.unwrap_or_default();
 
     for (trans, car) in comps {
-        make_transport_entity(world, trans, car);
+        make_vehicle_entity(world, trans, car);
     }
 }

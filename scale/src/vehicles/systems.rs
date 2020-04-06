@@ -3,30 +3,30 @@ use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::map_model::{Map, TrafficBehavior, Traversable, Turn, TurnID};
 use crate::physics::{CollisionWorld, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
-use crate::transportation::TransportComponent;
-use crate::transportation::TransportObjective;
-use crate::transportation::TransportObjective::Temporary;
+use crate::vehicles::VehicleComponent;
+use crate::vehicles::VehicleObjective;
+use crate::vehicles::VehicleObjective::Temporary;
 use cgmath::{vec2, Angle, InnerSpace, MetricSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 
 #[derive(Default)]
-pub struct TransportDecision;
+pub struct VehicleDecision;
 
 pub const OBJECTIVE_OK_DIST: f32 = 4.0;
 
 #[derive(SystemData)]
-pub struct TransportDecisionSystemData<'a> {
+pub struct VehicleDecisionSystemData<'a> {
     map: Read<'a, Map, PanicHandler>,
     time: Read<'a, TimeInfo>,
     coworld: Read<'a, CollisionWorld, PanicHandler>,
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
-    transports: WriteStorage<'a, TransportComponent>,
+    vehicles: WriteStorage<'a, VehicleComponent>,
 }
 
-impl<'a> System<'a> for TransportDecision {
-    type SystemData = TransportDecisionSystemData<'a>;
+impl<'a> System<'a> for VehicleDecision {
+    type SystemData = VehicleDecisionSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
         let cow = data.coworld;
@@ -36,28 +36,28 @@ impl<'a> System<'a> for TransportDecision {
         (
             &mut data.transforms,
             &mut data.kinematics,
-            &mut data.transports,
+            &mut data.vehicles,
         )
             .join()
-            .for_each(|(trans, kin, transport)| {
-                objective_update(transport, &time, trans, &map);
-                transport_physics(&cow, &map, &time, trans, kin, transport);
+            .for_each(|(trans, kin, vehicle)| {
+                objective_update(vehicle, &time, trans, &map);
+                vehicle_physics(&cow, &map, &time, trans, kin, vehicle);
             });
     }
 }
 
-fn transport_physics(
+fn vehicle_physics(
     coworld: &CollisionWorld,
     map: &Map,
     time: &TimeInfo,
     trans: &mut Transform,
     kin: &mut Kinematics,
-    transport: &mut TransportComponent,
+    vehicle: &mut VehicleComponent,
 ) {
     let direction = trans.direction();
     let speed: f32 = kin.velocity.magnitude() * kin.velocity.dot(direction).signum();
     let dot = (kin.velocity / speed).dot(direction);
-    let kind = transport.kind;
+    let kind = vehicle.kind;
 
     if speed > 1.0 && dot.abs() < 0.9 {
         let coeff = speed.max(1.0).min(9.0) / 9.0;
@@ -73,64 +73,64 @@ fn transport_physics(
 
     let objs = neighbors.map(|obj| (obj.pos, coworld.get_obj(obj.id)));
 
-    calc_decision(transport, map, speed, time, trans, objs);
+    calc_decision(vehicle, map, speed, time, trans, objs);
 
     let speed = speed
-        + ((transport.desired_speed - speed)
+        + ((vehicle.desired_speed - speed)
             .min(time.delta * kind.acceleration())
             .max(-time.delta * kind.deceleration()));
 
     let max_ang_vel = (speed.abs() / kind.min_turning_radius()).min(2.0);
 
-    let delta_ang = direction.angle(transport.desired_dir);
+    let delta_ang = direction.angle(vehicle.desired_dir);
     let mut ang = Vector2::unit_x().angle(direction);
 
-    transport.ang_velocity += time.delta * kind.ang_acc();
-    transport.ang_velocity = transport
+    vehicle.ang_velocity += time.delta * kind.ang_acc();
+    vehicle.ang_velocity = vehicle
         .ang_velocity
         .min(max_ang_vel)
         .min(3.0 * delta_ang.0.abs());
 
     ang.0 += delta_ang
         .0
-        .min(transport.ang_velocity * time.delta)
-        .max(-transport.ang_velocity * time.delta);
+        .min(vehicle.ang_velocity * time.delta)
+        .max(-vehicle.ang_velocity * time.delta);
     let direction = vec2(ang.cos(), ang.sin());
     trans.set_direction(direction);
     kin.velocity = direction * speed;
 }
 
 pub fn objective_update(
-    transport: &mut TransportComponent,
+    vehicle: &mut VehicleComponent,
     time: &TimeInfo,
     trans: &Transform,
     map: &Map,
 ) {
-    match transport.pos_objective.last() {
+    match vehicle.pos_objective.last() {
         Some(p) => {
             if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
-                match transport.objective {
-                    TransportObjective::Temporary(x) if transport.pos_objective.n_points() == 1 => {
+                match vehicle.objective {
+                    VehicleObjective::Temporary(x) if vehicle.pos_objective.n_points() == 1 => {
                         if x.can_pass(time.time_seconds, map.lanes()) {
-                            transport.pos_objective.pop();
+                            vehicle.pos_objective.pop();
                         }
                     }
                     _ => {
-                        transport.pos_objective.pop();
+                        vehicle.pos_objective.pop();
                     }
                 }
             }
         }
-        None => match transport.objective {
-            TransportObjective::None => {
+        None => match vehicle.objective {
+            VehicleObjective::None => {
                 let lane = map.closest_lane(trans.position());
                 if let Some(id) = lane {
-                    transport.set_travers_objective(Traversable::Lane(id), map);
+                    vehicle.set_travers_objective(Traversable::Lane(id), map);
                 }
             }
-            TransportObjective::Temporary(x) => match x {
+            VehicleObjective::Temporary(x) => match x {
                 Traversable::Turn(id) => {
-                    transport.set_travers_objective(Traversable::Lane(id.dst), map);
+                    vehicle.set_travers_objective(Traversable::Lane(id.dst), map);
                 }
                 Traversable::Lane(id) => {
                     let lane = &map.lanes()[id];
@@ -148,7 +148,7 @@ pub fn objective_update(
                     let r = rand::random::<f32>() * (neighs.len() as f32);
                     let (turn_id, _) = neighs[r as usize];
 
-                    transport.set_travers_objective(Traversable::Turn(*turn_id), map);
+                    vehicle.set_travers_objective(Traversable::Turn(*turn_id), map);
                 }
             },
         },
@@ -156,27 +156,27 @@ pub fn objective_update(
 }
 
 pub fn calc_decision<'a>(
-    transport: &'a mut TransportComponent,
+    vehicle: &'a mut VehicleComponent,
     map: &'a Map,
     speed: f32,
     time: &'a TimeInfo,
     trans: &Transform,
     neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
 ) {
-    if transport.wait_time > 0.0 {
-        transport.wait_time -= time.delta;
+    if vehicle.wait_time > 0.0 {
+        vehicle.wait_time -= time.delta;
         return;
     }
-    let objective: Vector2<f32> = *match transport.pos_objective.last() {
+    let objective: Vector2<f32> = *match vehicle.pos_objective.last() {
         Some(x) => x,
         None => {
             return;
         }
     };
 
-    let is_terminal = match &transport.objective {
-        TransportObjective::None => return,
-        TransportObjective::Temporary(_) => false,
+    let is_terminal = match &vehicle.objective {
+        VehicleObjective::None => return,
+        VehicleObjective::Temporary(_) => false,
     };
 
     let position = trans.position();
@@ -185,13 +185,13 @@ pub fn calc_decision<'a>(
     let delta_pos = objective - position;
     let dist_to_pos = delta_pos.magnitude();
     let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
-    let time_to_stop = speed / transport.kind.deceleration();
+    let time_to_stop = speed / vehicle.kind.deceleration();
     let stop_dist = time_to_stop * speed / 2.0;
 
     let mut min_front_dist: f32 = 50.0;
 
     let my_ray = Ray {
-        from: position - direction * transport.kind.width() / 2.0,
+        from: position - direction * vehicle.kind.width() / 2.0,
         dir: direction,
     };
 
@@ -220,7 +220,7 @@ pub fn calc_decision<'a>(
         // front cone
         if dir_dot > 0.7 && his_direction.dot(direction) > 0.0 {
             min_front_dist =
-                min_front_dist.min(dist - transport.kind.width() / 2.0 - nei.1.kind.width() / 2.0);
+                min_front_dist.min(dist - vehicle.kind.width() / 2.0 - nei.1.kind.width() / 2.0);
             continue;
         }
 
@@ -245,33 +245,33 @@ pub fn calc_decision<'a>(
             }
             None => continue,
         }
-        min_front_dist = min_front_dist.min(dist - transport.kind.width() / 2.0);
+        min_front_dist = min_front_dist.min(dist - vehicle.kind.width() / 2.0);
     }
 
     if speed.abs() < 0.2 && min_front_dist < 1.5 {
-        transport.wait_time = rand::random::<f32>() * 0.5;
+        vehicle.wait_time = rand::random::<f32>() * 0.5;
         return;
     }
 
-    transport.desired_dir = dir_to_pos;
-    transport.desired_speed = transport.kind.cruising_speed();
+    vehicle.desired_dir = dir_to_pos;
+    vehicle.desired_speed = vehicle.kind.cruising_speed();
 
-    if transport.pos_objective.n_points() == 1 {
-        if let Temporary(trans) = transport.objective {
+    if vehicle.pos_objective.n_points() == 1 {
+        if let Temporary(trans) = vehicle.objective {
             if let Traversable::Lane(l_id) = trans {
                 match map.lanes()[l_id].control.get_behavior(time.time_seconds) {
                     TrafficBehavior::RED | TrafficBehavior::ORANGE => {
                         if dist_to_pos
                             < OBJECTIVE_OK_DIST * 1.05
                                 + stop_dist
-                                + (transport.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
+                                + (vehicle.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
                         {
-                            transport.desired_speed = 0.0;
+                            vehicle.desired_speed = 0.0;
                         }
                     }
                     TrafficBehavior::STOP => {
                         if dist_to_pos < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
-                            transport.desired_speed = 0.0;
+                            vehicle.desired_speed = 0.0;
                         }
                     }
                     _ => {}
@@ -282,16 +282,16 @@ pub fn calc_decision<'a>(
 
     if is_terminal && dist_to_pos < 1.0 + stop_dist {
         // Close to terminal objective
-        transport.desired_speed = 0.0;
+        vehicle.desired_speed = 0.0;
     }
 
     if dir_to_pos.dot(direction) < 0.8 {
         // Not facing the objective
-        transport.desired_speed = transport.desired_speed.min(6.0);
+        vehicle.desired_speed = vehicle.desired_speed.min(6.0);
     }
 
     if min_front_dist < 1.0 + stop_dist {
         // Car in front of us
-        transport.desired_speed = 0.0;
+        vehicle.desired_speed = 0.0;
     }
 }
