@@ -1,6 +1,6 @@
 use crate::interaction::Selectable;
 use crate::map_model::{Lane, LaneID, Map, Traversable};
-use crate::physics::{add_transport_to_coworld, Collider, CollisionWorld, Kinematics, Transform};
+use crate::physics::{add_vehicle_to_coworld, Collider, CollisionWorld, Kinematics, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use cgmath::{vec2, InnerSpace};
 use rand::random;
@@ -13,11 +13,11 @@ pub mod systems;
 pub use data::*;
 pub use saveload::*;
 
-pub fn spawn_new_transport(world: &mut World) {
+pub fn spawn_new_vehicle(world: &mut World) {
     let mut pos = Transform::new(vec2(0.0, 0.0));
-    let mut obj = TransportObjective::None;
+    let mut obj = VehicleObjective::None;
 
-    let kind = TransportKind::Car;
+    let kind = VehicleKind::Car;
 
     {
         let map = world.read_resource::<Map>();
@@ -40,39 +40,39 @@ pub fn spawn_new_transport(world: &mut World) {
                     let diff = b - a;
                     pos.set_position(*a + random::<f32>() * diff);
                     pos.set_direction(diff.normalize());
-                    obj = TransportObjective::Temporary(Traversable::Lane(lane.id));
+                    obj = VehicleObjective::Temporary(Traversable::Lane(lane.id));
                 }
             }
         }
     }
 
-    make_transport_entity(world, pos, TransportComponent::new(obj, kind));
+    make_vehicle_entity(world, pos, VehicleComponent::new(obj, kind));
 }
 
-pub fn make_transport_entity(
+pub fn make_vehicle_entity(
     world: &mut World,
     trans: Transform,
-    transport: TransportComponent,
+    vehicle: VehicleComponent,
 ) -> Entity {
     let mut mr = MeshRender::empty(3);
 
-    transport.kind.build_mr(&mut mr);
+    vehicle.kind.build_mr(&mut mr);
 
     let e = world
         .create_entity()
         .with(mr)
         .with(trans)
         .with(Kinematics::from_mass(1000.0))
-        .with(transport)
+        .with(vehicle)
         //.with(Movable)
         .with(Selectable::default())
         .build();
 
-    add_transport_to_coworld(world, e);
+    add_vehicle_to_coworld(world, e);
     e
 }
 
-pub fn delete_transport_entity(world: &mut World, e: Entity) {
+pub fn delete_vehicle_entity(world: &mut World, e: Entity) {
     {
         let handle = world.read_component::<Collider>().get(e).unwrap().0;
         let mut coworld = world.write_resource::<CollisionWorld>();
