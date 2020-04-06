@@ -7,7 +7,7 @@ use crate::humans::HumanUpdate;
 use crate::interaction::{
     FollowEntity, MovableSystem, MovedEvent, SelectableAuraSystem, SelectableSystem, SelectedEntity,
 };
-use crate::map_model::{MapUIState, MapUISystem};
+use crate::map_model::{Map, MapUIState, MapUISystem};
 use crate::physics::systems::KinematicsApply;
 use crate::physics::Collider;
 use crate::physics::CollisionWorld;
@@ -24,9 +24,12 @@ pub mod graphs;
 pub mod humans;
 pub mod interaction;
 pub mod map_model;
+pub mod pedestrians;
 pub mod physics;
 pub mod rendering;
 pub mod vehicles;
+
+use crate::pedestrians::PedestrianDecision;
 pub use specs;
 use specs::shrev::EventChannel;
 
@@ -34,11 +37,17 @@ pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
     DispatcherBuilder::new()
         .with(HumanUpdate, "human update", &[])
         .with(VehicleDecision, "car decision", &[])
+        .with(PedestrianDecision, "pedestrian decision", &[])
         .with(SelectableSystem, "selectable", &[])
         .with(
             MovableSystem::default(),
             "movable",
-            &["human update", "car decision", "selectable"],
+            &[
+                "human update",
+                "car decision",
+                "pedestrian decision",
+                "selectable",
+            ],
         )
         .with(MapUISystem, "rgs", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
@@ -75,7 +84,10 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
     let s = MapUIState::new(world);
     world.insert(s);
 
+    world.insert(Map::empty());
+
     dispatcher.setup(world);
-    map_model::setup(world);
-    vehicles::setup(world);
+    //map_model::setup(world);
+    //vehicles::setup(world);
+    pedestrians::setup(world);
 }
