@@ -12,7 +12,7 @@ use crate::physics::systems::KinematicsApply;
 use crate::physics::Collider;
 use crate::physics::CollisionWorld;
 use crate::rendering::meshrender_component::MeshRender;
-use crate::transportation::systems::TransportDecision;
+use crate::vehicles::systems::VehicleDecision;
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 
 #[macro_use]
@@ -26,14 +26,14 @@ pub mod interaction;
 pub mod map_model;
 pub mod physics;
 pub mod rendering;
-pub mod transportation;
+pub mod vehicles;
 pub use specs;
 use specs::shrev::EventChannel;
 
 pub fn dispatcher<'a>() -> Dispatcher<'a, 'a> {
     DispatcherBuilder::new()
         .with(HumanUpdate, "human update", &[])
-        .with(TransportDecision, "car decision", &[])
+        .with(VehicleDecision, "car decision", &[])
         .with(SelectableSystem, "selectable", &[])
         .with(
             MovableSystem::default(),
@@ -77,5 +77,5 @@ pub fn setup(world: &mut World, dispatcher: &mut Dispatcher) {
 
     dispatcher.setup(world);
     map_model::setup(world);
-    transportation::setup(world);
+    vehicles::setup(world);
 }

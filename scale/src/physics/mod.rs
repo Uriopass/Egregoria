@@ -6,7 +6,7 @@ pub mod systems;
 mod transform;
 
 use crate::geometry::gridstore::{GridStore, GridStoreHandle};
-use crate::transportation::{TransportComponent, TransportKind};
+use crate::vehicles::{VehicleComponent, VehicleKind};
 pub use kinematics::*;
 pub use transform::*;
 
@@ -14,7 +14,7 @@ pub use transform::*;
 pub struct PhysicsObject {
     pub dir: Vector2<f32>,
     pub speed: f32,
-    pub kind: TransportKind,
+    pub kind: VehicleKind,
 }
 
 pub type CollisionWorld = GridStore<PhysicsObject>;
@@ -23,14 +23,14 @@ pub type CollisionWorld = GridStore<PhysicsObject>;
 #[storage(VecStorage)]
 pub struct Collider(pub GridStoreHandle);
 
-pub fn add_transport_to_coworld(world: &mut World, e: Entity) {
+pub fn add_vehicle_to_coworld(world: &mut World, e: Entity) {
     let trans = world
         .read_component::<transform::Transform>()
         .get(e)
         .unwrap()
         .clone();
-    let transport = world
-        .read_component::<TransportComponent>()
+    let vehicle = world
+        .read_component::<VehicleComponent>()
         .get(e)
         .unwrap()
         .clone();
@@ -41,7 +41,7 @@ pub fn add_transport_to_coworld(world: &mut World, e: Entity) {
         PhysicsObject {
             dir: trans.direction(),
             speed: 0.0,
-            kind: transport.kind,
+            kind: vehicle.kind,
         },
     );
 

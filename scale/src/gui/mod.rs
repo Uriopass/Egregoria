@@ -1,7 +1,7 @@
 use crate::engine_interaction::{RenderStats, TimeInfo};
 use crate::interaction::SelectedEntity;
 use crate::map_model::{LanePatternBuilder, MapUIState};
-use crate::transportation::{delete_transport_entity, spawn_new_transport, TransportComponent};
+use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
 use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -68,7 +68,7 @@ impl Gui {
                 }
             });
             if ui.small_button(im_str!("Save")) {
-                crate::transportation::save(world);
+                crate::vehicles::save(world);
                 crate::map_model::save(world);
             }
         });
@@ -89,21 +89,21 @@ impl Gui {
                     ui.same_line(0.0);
                     if ui.small_button(im_str!("spawn car")) {
                         for _ in 0..self.n_cars {
-                            spawn_new_transport(world);
+                            spawn_new_vehicle(world);
                         }
                     }
 
                     if ui.small_button(im_str!("delete all cars")) {
                         let to_delete: Vec<Entity> = (
                             &world.entities(),
-                            &world.read_component::<TransportComponent>(),
+                            &world.read_component::<VehicleComponent>(),
                         )
                             .join()
                             .map(|(e, _)| e)
                             .collect();
 
                         for e in to_delete {
-                            delete_transport_entity(world, e);
+                            delete_vehicle_entity(world, e);
                         }
                     }
 

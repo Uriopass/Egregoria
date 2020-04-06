@@ -1,8 +1,8 @@
 use crate::geometry::polyline::PolyLine;
 use crate::gui::{InspectDragf, InspectVec2};
 use crate::map_model::{Map, Traversable};
-use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
-use crate::rendering::{Color, BLACK, ORANGE, WHITE};
+use crate::rendering::meshrender_component::{MeshRender, RectRender};
+use crate::rendering::{Color, BLACK, ORANGE};
 use cgmath::{vec2, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -11,21 +11,20 @@ use serde::{Deserialize, Serialize};
 use specs::{Component, DenseVecStorage, World};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum TransportKind {
+pub enum VehicleKind {
     Car,
     Bus,
-    Pedestrian,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TransportObjective {
+pub enum VehicleObjective {
     None,
     Temporary(Traversable),
 }
 
 #[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
-pub struct TransportComponent {
-    pub objective: TransportObjective,
+pub struct VehicleComponent {
+    pub objective: VehicleObjective,
     pub pos_objective: PolyLine,
     #[inspect(proxy_type = "InspectDragf")]
     pub desired_speed: f32,
@@ -36,76 +35,62 @@ pub struct TransportComponent {
     #[inspect(proxy_type = "InspectDragf")]
     pub wait_time: f32,
 
-    pub kind: TransportKind,
+    pub kind: VehicleKind,
 }
 
-impl TransportKind {
+impl VehicleKind {
     pub fn width(self) -> f32 {
         match self {
-            TransportKind::Car => 4.5,
-            TransportKind::Bus => 9.0,
-            TransportKind::Pedestrian => 0.5,
+            VehicleKind::Car => 4.5,
+            VehicleKind::Bus => 9.0,
         }
     }
 
     pub fn height(self) -> f32 {
         match self {
-            TransportKind::Car => 2.0,
-            TransportKind::Bus => 2.0,
-            TransportKind::Pedestrian => 0.5,
+            VehicleKind::Car => 2.0,
+            VehicleKind::Bus => 2.0,
         }
     }
 
     pub fn acceleration(self) -> f32 {
         match self {
-            TransportKind::Car => 3.0,
-            TransportKind::Bus => 2.0,
-            TransportKind::Pedestrian => 1.0,
+            VehicleKind::Car => 3.0,
+            VehicleKind::Bus => 2.0,
         }
     }
 
     pub fn deceleration(self) -> f32 {
         match self {
-            TransportKind::Car => 9.0,
-            TransportKind::Bus => 9.0,
-            TransportKind::Pedestrian => 3.0,
+            VehicleKind::Car => 9.0,
+            VehicleKind::Bus => 9.0,
         }
     }
 
     pub fn min_turning_radius(self) -> f32 {
         match self {
-            TransportKind::Car => 3.0,
-            TransportKind::Bus => 5.0,
-            TransportKind::Pedestrian => 0.5,
+            VehicleKind::Car => 3.0,
+            VehicleKind::Bus => 5.0,
         }
     }
 
     pub fn cruising_speed(self) -> f32 {
         match self {
-            TransportKind::Car => 15.0,
-            TransportKind::Bus => 10.0,
-            TransportKind::Pedestrian => 1.2,
+            VehicleKind::Car => 15.0,
+            VehicleKind::Bus => 10.0,
         }
     }
 
     pub fn ang_acc(self) -> f32 {
         match self {
-            TransportKind::Car => 1.0,
-            TransportKind::Bus => 0.8,
-            TransportKind::Pedestrian => 3.0,
+            VehicleKind::Car => 1.0,
+            VehicleKind::Bus => 0.8,
         }
     }
 
     pub fn build_mr(self, mr: &mut MeshRender) {
         match self {
-            TransportKind::Pedestrian => {
-                mr.add(CircleRender {
-                    radius: 0.5,
-                    color: WHITE,
-                    ..Default::default()
-                });
-            }
-            TransportKind::Car => {
+            VehicleKind::Car => {
                 mr.add(RectRender {
                     width: self.width(),
                     height: self.height(),
@@ -155,7 +140,7 @@ impl TransportKind {
                     ..Default::default()
                 });
             }
-            TransportKind::Bus => {
+            VehicleKind::Bus => {
                 mr.add(RectRender {
                     width: self.width(),
                     height: self.height(),
@@ -193,22 +178,22 @@ pub fn get_random_car_color() -> Color {
     unreachable!();
 }
 
-impl Default for TransportComponent {
+impl Default for VehicleComponent {
     fn default() -> Self {
         Self {
-            objective: TransportObjective::None,
+            objective: VehicleObjective::None,
             desired_speed: 0.0,
             desired_dir: vec2(0.0, 0.0),
             wait_time: 0.0,
             ang_velocity: 0.0,
             pos_objective: PolyLine::with_capacity(7),
-            kind: TransportKind::Car,
+            kind: VehicleKind::Car,
         }
     }
 }
 
-impl TransportComponent {
-    pub fn new(objective: TransportObjective, kind: TransportKind) -> TransportComponent {
+impl VehicleComponent {
+    pub fn new(objective: VehicleObjective, kind: VehicleKind) -> VehicleComponent {
         Self {
             objective,
             kind,
@@ -217,15 +202,15 @@ impl TransportComponent {
     }
 
     pub fn set_travers_objective(&mut self, travers: Traversable, map: &Map) {
-        self.objective = TransportObjective::Temporary(travers);
+        self.objective = VehicleObjective::Temporary(travers);
         let p = travers.points(map);
         self.pos_objective.extend(p.iter().rev());
     }
 }
 
-impl<'a> InspectRenderDefault<TransportObjective> for TransportObjective {
+impl<'a> InspectRenderDefault<VehicleObjective> for VehicleObjective {
     fn render(
-        _: &[&TransportObjective],
+        _: &[&VehicleObjective],
         _: &'static str,
         _: &mut World,
         _: &Ui,
@@ -235,7 +220,7 @@ impl<'a> InspectRenderDefault<TransportObjective> for TransportObjective {
     }
 
     fn render_mut(
-        data: &mut [&mut TransportObjective],
+        data: &mut [&mut VehicleObjective],
         label: &'static str,
         _: &mut World,
         ui: &Ui,
@@ -247,27 +232,21 @@ impl<'a> InspectRenderDefault<TransportObjective> for TransportObjective {
 
         let obj = &data[0];
         match obj {
-            TransportObjective::None => ui.text(im_str!("None {}", label)),
-            TransportObjective::Temporary(x) => ui.text(im_str!("{:?} {}", x, label)),
+            VehicleObjective::None => ui.text(im_str!("None {}", label)),
+            VehicleObjective::Temporary(x) => ui.text(im_str!("{:?} {}", x, label)),
         }
 
         false
     }
 }
 
-impl InspectRenderDefault<TransportKind> for TransportKind {
-    fn render(
-        _: &[&TransportKind],
-        _: &'static str,
-        _: &mut World,
-        _: &Ui,
-        _: &InspectArgsDefault,
-    ) {
+impl InspectRenderDefault<VehicleKind> for VehicleKind {
+    fn render(_: &[&VehicleKind], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
         unimplemented!()
     }
 
     fn render_mut(
-        data: &mut [&mut TransportKind],
+        data: &mut [&mut VehicleKind],
         label: &'static str,
         _: &mut World,
         ui: &Ui,
@@ -278,21 +257,19 @@ impl InspectRenderDefault<TransportKind> for TransportKind {
         }
         let d = &mut data[0];
         let mut id = match d {
-            TransportKind::Car => 0,
-            TransportKind::Bus => 1,
-            TransportKind::Pedestrian => 2,
+            VehicleKind::Car => 0,
+            VehicleKind::Bus => 1,
         };
 
         let changed = imgui::ComboBox::new(&im_str!("{}", label)).build_simple_string(
             ui,
             &mut id,
-            &[im_str!("Car"), im_str!("Bus"), im_str!("Pedestrian")],
+            &[im_str!("Car"), im_str!("Bus")],
         );
 
         match id {
-            0 => **d = TransportKind::Car,
-            1 => **d = TransportKind::Bus,
-            2 => **d = TransportKind::Pedestrian,
+            0 => **d = VehicleKind::Car,
+            1 => **d = VehicleKind::Bus,
             _ => {}
         }
         changed
