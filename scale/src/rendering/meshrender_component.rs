@@ -19,6 +19,15 @@ pub enum MeshRenderEnum {
     Line(LineRender),
 }
 
+impl MeshRenderEnum {
+    pub fn as_circle_mut(&mut self) -> &mut CircleRender {
+        match self {
+            MeshRenderEnum::Circle(x) => x,
+            _ => panic!(),
+        }
+    }
+}
+
 impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
     fn render(
         _: &[&MeshRenderEnum],
@@ -204,7 +213,7 @@ impl Default for CircleRender {
         CircleRender {
             offset: zero(),
             radius: 0.0,
-            color: WHITE,
+            color: Color::WHITE,
             filled: true,
         }
     }
@@ -228,7 +237,7 @@ impl Default for RectRender {
             offset: [0.0, 0.0].into(),
             width: 0.0,
             height: 0.0,
-            color: WHITE,
+            color: Color::WHITE,
             filled: true,
         }
     }

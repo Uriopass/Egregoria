@@ -6,7 +6,7 @@ pub mod systems;
 mod transform;
 
 use crate::geometry::gridstore::{GridStore, GridStoreHandle};
-use crate::vehicles::{VehicleComponent, VehicleKind};
+use crate::vehicles::VehicleComponent;
 pub use kinematics::*;
 pub use transform::*;
 
@@ -14,7 +14,7 @@ pub use transform::*;
 pub struct PhysicsObject {
     pub dir: Vector2<f32>,
     pub speed: f32,
-    pub kind: VehicleKind,
+    pub radius: f32,
 }
 
 pub type CollisionWorld = GridStore<PhysicsObject>;
@@ -41,7 +41,7 @@ pub fn add_vehicle_to_coworld(world: &mut World, e: Entity) {
         PhysicsObject {
             dir: trans.direction(),
             speed: 0.0,
-            kind: vehicle.kind,
+            radius: vehicle.kind.width(),
         },
     );
 
