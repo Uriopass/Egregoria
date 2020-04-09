@@ -1,4 +1,4 @@
-use cgmath::Vector2;
+use cgmath::{vec2, Vector2};
 use specs::{Component, Entity, VecStorage, World, WorldExt};
 
 mod kinematics;
@@ -15,6 +15,16 @@ pub struct PhysicsObject {
     pub dir: Vector2<f32>,
     pub speed: f32,
     pub radius: f32,
+}
+
+impl PhysicsObject {
+    pub fn with_radius(radius: f32) -> Self {
+        Self {
+            dir: vec2(1.0, 0.0),
+            speed: 0.0,
+            radius,
+        }
+    }
 }
 
 pub type CollisionWorld = GridStore<PhysicsObject>;
