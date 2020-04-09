@@ -3,7 +3,7 @@ use crate::interaction::{MovedEvent, SelectedEntity};
 use crate::map_model::{make_inter_entity, IntersectionComponent, LanePatternBuilder, Map};
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{LineToRender, MeshRender};
-use crate::rendering::{Color, BLUE};
+use crate::rendering::Color;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use specs::shrev::{EventChannel, ReaderId};
@@ -153,7 +153,10 @@ impl MapUIState {
 
         match self.selected_inter {
             None => {
-                let color = Color { a: 0.5, ..BLUE };
+                let color = Color {
+                    a: 0.5,
+                    ..Color::BLUE
+                };
                 self.entities.push(
                     lazy.create_entity(entities)
                         .with(Transform::new(mouse.unprojected))

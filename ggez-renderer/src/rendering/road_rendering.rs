@@ -134,7 +134,7 @@ impl RoadRenderer {
             let r_center = n.points.last().unwrap() + dir_nor * 2.0 + dir * 2.5;
 
             if n.control.is_stop() {
-                rc.sr.color = scale_color(scale::rendering::WHITE);
+                rc.sr.color = scale_color(scale::rendering::Color::WHITE);
                 rc.sr.draw_rect_cos_sin(
                     r_center,
                     1.5,
@@ -143,7 +143,7 @@ impl RoadRenderer {
                     std::f32::consts::FRAC_1_SQRT_2,
                 );
 
-                rc.sr.color = scale_color(scale::rendering::RED);
+                rc.sr.color = scale_color(scale::rendering::Color::RED);
                 rc.sr.draw_rect_cos_sin(
                     r_center,
                     1.0,

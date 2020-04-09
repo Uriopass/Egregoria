@@ -4,7 +4,9 @@ use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Component, DenseVecStorage};
 
-#[derive(Serialize, Deserialize, Component, Inspect)]
+pub(crate) const WALKING_SPEED: f32 = 3.0;
+
+#[derive(Clone, Serialize, Deserialize, Component, Inspect)]
 pub struct PedestrianComponent {
     #[inspect(proxy_type = "InspectVec2")]
     pub objective: Vector2<f32>,

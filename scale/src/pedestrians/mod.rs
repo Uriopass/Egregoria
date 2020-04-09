@@ -1,7 +1,7 @@
 use crate::interaction::Selectable;
-use crate::physics::Transform;
+use crate::physics::{Kinematics, Transform};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
-use cgmath::Vector2;
+use cgmath::vec2;
 use specs::{Builder, World, WorldExt};
 
 pub mod data;
@@ -20,11 +20,12 @@ pub fn spawn_pedestrian(world: &mut World) {
     world
         .create_entity()
         .with(Transform::new(
-            200.0 * Vector2::<f32>::from(rand::random::<[f32; 2]>()),
+            200.0f32 * vec2(rand::random(), rand::random()),
         ))
         .with(PedestrianComponent {
-            objective: rand::random::<[f32; 2]>().into(),
+            objective: 200.0f32 * vec2(rand::random(), rand::random()),
         })
+        .with(Kinematics::from_mass(80.0))
         .with(MeshRender::simple(
             CircleRender {
                 radius: 0.5,
