@@ -107,7 +107,13 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         }
 
         self.dispatch.run_now(&self.world);
-        self.world.maintain();
+
+        if ggez::input::keyboard::is_key_pressed(ctx, ggez::input::keyboard::KeyCode::F) {
+            for _ in 0..10 {
+                self.dispatch.run_now(&self.world);
+                self.world.maintain();
+            }
+        }
 
         self.cam.easy_camera_movement(
             ctx,
