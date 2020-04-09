@@ -6,7 +6,7 @@ use crate::map_model::{
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
-use crate::rendering::{Color, BLUE};
+use crate::rendering::Color;
 use cgmath::Vector2;
 use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
@@ -129,7 +129,10 @@ pub fn make_inter_entity<'a>(
         .with(MeshRender::simple(
             CircleRender {
                 radius: 2.0,
-                color: Color { a: 0.5, ..BLUE },
+                color: Color {
+                    a: 0.5,
+                    ..Color::BLUE
+                },
                 filled: true,
                 ..CircleRender::default()
             },

@@ -156,10 +156,10 @@ pub fn objective_update(
 }
 
 pub fn calc_decision<'a>(
-    vehicle: &'a mut VehicleComponent,
-    map: &'a Map,
+    vehicle: &mut VehicleComponent,
+    map: &Map,
     speed: f32,
-    time: &'a TimeInfo,
+    time: &TimeInfo,
     trans: &Transform,
     neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
 ) {
@@ -196,18 +196,14 @@ pub fn calc_decision<'a>(
     };
 
     // Collision avoidance
-    for nei in neighs {
-        if nei.0 == position {
+    for (his_pos, nei_physics_obj) in neighs {
+        if his_pos == position {
             continue;
         }
-
-        let his_pos = nei.0;
 
         let towards_vec = his_pos - position;
 
         let dist2 = towards_vec.magnitude2();
-
-        let nei_physics_obj = nei.1;
 
         let dist = dist2.sqrt();
         let towards_dir = towards_vec / dist;
@@ -219,8 +215,8 @@ pub fn calc_decision<'a>(
 
         // front cone
         if dir_dot > 0.7 && his_direction.dot(direction) > 0.0 {
-            min_front_dist =
-                min_front_dist.min(dist - vehicle.kind.width() / 2.0 - nei.1.kind.width() / 2.0);
+            min_front_dist = min_front_dist
+                .min(dist - vehicle.kind.width() / 2.0 - nei_physics_obj.radius / 2.0);
             continue;
         }
 
@@ -231,7 +227,7 @@ pub fn calc_decision<'a>(
         // closest win
 
         let his_ray = Ray {
-            from: his_pos - nei.1.kind.width() / 2.0 * his_direction,
+            from: his_pos - nei_physics_obj.radius / 2.0 * his_direction,
             dir: his_direction,
         };
 

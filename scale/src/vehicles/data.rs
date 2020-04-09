@@ -2,7 +2,7 @@ use crate::geometry::polyline::PolyLine;
 use crate::gui::{InspectDragf, InspectVec2};
 use crate::map_model::{Map, Traversable};
 use crate::rendering::meshrender_component::{MeshRender, RectRender};
-use crate::rendering::{Color, BLACK, ORANGE};
+use crate::rendering::Color;
 use cgmath::{vec2, Vector2};
 use imgui::{im_str, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -101,42 +101,42 @@ impl VehicleKind {
                     width: 0.4,
                     height: 1.8,
                     offset: [-1.7, 0.0].into(),
-                    color: BLACK,
+                    color: Color::BLACK,
                     ..Default::default()
                 })
                 .add(RectRender {
                     width: 1.0,
                     height: 1.6,
                     offset: [0.8, 0.0].into(),
-                    color: BLACK,
+                    color: Color::BLACK,
                     ..Default::default()
                 })
                 .add(RectRender {
                     width: 2.7,
                     height: 0.15,
                     offset: [-0.4, 0.85].into(),
-                    color: BLACK,
+                    color: Color::BLACK,
                     ..Default::default()
                 })
                 .add(RectRender {
                     width: 2.7,
                     height: 0.15,
                     offset: [-0.4, -0.85].into(),
-                    color: BLACK,
+                    color: Color::BLACK,
                     ..Default::default()
                 })
                 .add(RectRender {
                     width: 0.4,
                     height: 0.15,
                     offset: [2.1, -0.7].into(),
-                    color: BLACK,
+                    color: Color::BLACK,
                     ..Default::default()
                 })
                 .add(RectRender {
                     width: 0.4,
                     height: 0.15,
                     offset: [2.1, 0.7].into(),
-                    color: BLACK,
+                    color: Color::BLACK,
                     ..Default::default()
                 });
             }
@@ -144,7 +144,7 @@ impl VehicleKind {
                 mr.add(RectRender {
                     width: self.width(),
                     height: self.height(),
-                    color: ORANGE,
+                    color: Color::ORANGE,
                     ..Default::default()
                 });
             }
