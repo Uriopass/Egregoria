@@ -23,23 +23,17 @@ pub fn spawn_pedestrian(world: &mut World) {
         .unwrap()
         .insert(pos, PhysicsObject::with_radius(0.5));
 
-    let x_obj = if rand::random() {
-        20.0f32 * rand::random::<f32>()
-    } else {
-        200.0 - 20.0f32 * rand::random::<f32>()
-    };
-
     world
         .create_entity()
         .with(Transform::new(pos))
         .with(PedestrianComponent {
-            objective: vec2(x_obj, pos.y),
+            objective: 200.0 * vec2(rand::random::<f32>(), rand::random::<f32>()),
             ..Default::default()
         })
         .with(Kinematics::from_mass(80.0))
         .with(MeshRender::simple(
             CircleRender {
-                radius: 0.5,
+                radius: 0.3,
                 ..Default::default()
             },
             3,

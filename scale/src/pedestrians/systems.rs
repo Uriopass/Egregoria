@@ -1,7 +1,5 @@
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{CollisionWorld, Kinematics, PhysicsObject, Transform};
-use crate::rendering::meshrender_component::MeshRender;
-use crate::rendering::Color;
 use cgmath::{vec2, InnerSpace, MetricSpace, Vector2, Zero};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -16,7 +14,6 @@ pub struct PedestrianDecisionData<'a> {
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
     pedestrians: WriteStorage<'a, PedestrianComponent>,
-    meshrender: WriteStorage<'a, MeshRender>,
 }
 
 impl<'a> System<'a> for PedestrianDecision {
@@ -29,24 +26,25 @@ impl<'a> System<'a> for PedestrianDecision {
             &mut data.transforms,
             &mut data.kinematics,
             &mut data.pedestrians,
-            &mut data.meshrender,
         )
             .join()
-            .for_each(|(trans, kin, pedestrian, mr)| {
+            .for_each(|(trans, kin, pedestrian)| {
                 objective_update(pedestrian, trans);
 
                 let neighbors = cow.query_around(trans.position(), 10.0);
 
                 let objs = neighbors.map(|obj| (obj.pos, cow.get_obj(obj.id)));
 
-                calc_decision(pedestrian, trans, kin, objs, mr);
+                calc_decision(pedestrian, trans, kin, objs);
             });
     }
 }
 
 pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform) {
     if pedestrian.objective.distance(trans.position()) < 2.0 {
-        pedestrian.objective.x = 200.0 - pedestrian.objective.x;
+        //pedestrian.objective.x = 200.0 - pedestrian.objective.x;
+        pedestrian.objective.x = rand::random::<f32>() * 200.0f32;
+        pedestrian.objective.y = rand::random::<f32>() * 200.0f32;
     }
 }
 
@@ -55,10 +53,10 @@ pub fn calc_decision<'a>(
     trans: &mut Transform,
     kin: &mut Kinematics,
     neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
-    mr: &mut MeshRender,
 ) {
     let objective = pedestrian.objective;
     let position = trans.position();
+    let direction = trans.direction();
 
     let delta_pos: Vector2<f32> = objective - position;
     let dist_to_pos = delta_pos.magnitude();
@@ -66,12 +64,7 @@ pub fn calc_decision<'a>(
 
     let mut v: Vector2<f32> = dir_to_pos * pedestrian.walking_speed;
 
-    mr.orders.get_mut(0).unwrap().as_circle_mut().color =
-        if v.x > 0.0 { Color::GREEN } else { Color::BLUE };
-
-    mr.orders[0].as_circle_mut().filled = v.x > 0.0;
-
-    for (his_pos, his_obj) in neighs {
+    for (his_pos, _) in neighs {
         if his_pos == position {
             continue;
         }
@@ -80,11 +73,9 @@ pub fn calc_decision<'a>(
         let dist = towards_vec.magnitude();
         let towards_dir: Vector2<f32> = towards_vec / dist;
 
-        v += -towards_dir * (-dist / 2.0).exp() * 2.0;
+        let forward_boost = 1.0 + direction.dot(towards_dir).abs();
 
-        if dist < 1.0 {
-            mr.orders.get_mut(0).unwrap().as_circle_mut().color = Color::RED;
-        }
+        v += -towards_dir * (-dist / 1.7).exp() * forward_boost;
     }
 
     v += 0.1 * vec2(rand::random::<f32>(), rand::random());
