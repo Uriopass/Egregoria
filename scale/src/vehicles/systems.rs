@@ -1,7 +1,7 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::map_model::{Map, TrafficBehavior, Traversable, Turn, TurnID};
-use crate::physics::{CollisionWorld, PhysicsObject};
+use crate::physics::{CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::vehicles::VehicleComponent;
 use crate::vehicles::VehicleObjective;
@@ -212,15 +212,16 @@ pub fn calc_decision<'a>(
         let his_direction = nei_physics_obj.dir;
 
         // let pos_dot = towards_vec.dot(dir_normal_right);
+        let is_vehicle = nei_physics_obj.group == PhysicsGroup::Vehicles;
 
         // front cone
-        if dir_dot > 0.7 && his_direction.dot(direction) > 0.0 {
+        if dir_dot > 0.7 && (his_direction.dot(direction) > 0.0 || !is_vehicle) {
             min_front_dist = min_front_dist
                 .min(dist - vehicle.kind.width() / 2.0 - nei_physics_obj.radius / 2.0);
             continue;
         }
 
-        if dir_dot < 0.0 {
+        if dir_dot < 0.0 || !is_vehicle {
             continue;
         }
 

@@ -1,5 +1,6 @@
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneID, LanePattern, LightPolicy, Road, RoadID, TurnPolicy,
+    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, LightPolicy, Road, RoadID,
+    TurnPolicy,
 };
 use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
@@ -121,6 +122,27 @@ impl Map {
         let r = self.remove_road(road_id);
 
         Some(r)
+    }
+
+    pub fn get_random_lane(&self, kind: LaneKind) -> Option<&Lane> {
+        let l = self.roads.len();
+        if l == 0 {
+            return None;
+        }
+        let r = (rand::random::<f32>() * l as f32) as usize;
+
+        let (_, road) = self.roads.iter().nth(r).unwrap();
+        let lanes = road
+            .lanes_iter()
+            .filter(|x| self.lanes[**x].kind == kind)
+            .collect::<Vec<&LaneID>>();
+
+        if lanes.is_empty() {
+            return None;
+        }
+        let r = (rand::random::<f32>() * lanes.len() as f32) as usize;
+
+        Some(&self.lanes[*lanes[r]])
     }
 
     fn remove_road(&mut self, road_id: RoadID) -> Road {
