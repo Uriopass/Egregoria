@@ -1,5 +1,7 @@
 use crate::interaction::Selectable;
-use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
+use crate::physics::{
+    Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
+};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use cgmath::vec2;
 use specs::{Builder, World, WorldExt};
@@ -11,17 +13,21 @@ pub use data::*;
 pub use systems::*;
 
 pub fn setup(world: &mut World) {
-    for _ in 0..1000 {
+    for _ in 0..2000 {
         spawn_pedestrian(world);
     }
 }
 
 pub fn spawn_pedestrian(world: &mut World) {
     let pos = 200.0f32 * vec2(rand::random(), rand::random());
-    let h = world
-        .get_mut::<CollisionWorld>()
-        .unwrap()
-        .insert(pos, PhysicsObject::with_radius(0.5));
+    let h = world.get_mut::<CollisionWorld>().unwrap().insert(
+        pos,
+        PhysicsObject {
+            radius: 0.3,
+            group: PhysicsGroup::Pedestrians,
+            ..Default::default()
+        },
+    );
 
     world
         .create_entity()

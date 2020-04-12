@@ -64,7 +64,7 @@ pub fn calc_decision<'a>(
 
     let mut v: Vector2<f32> = dir_to_pos * pedestrian.walking_speed;
 
-    for (his_pos, _) in neighs {
+    for (his_pos, his_obj) in neighs {
         if his_pos == position {
             continue;
         }
@@ -75,7 +75,7 @@ pub fn calc_decision<'a>(
 
         let forward_boost = 1.0 + direction.dot(towards_dir).abs();
 
-        v += -towards_dir * (-dist / 1.7).exp() * forward_boost;
+        v += -towards_dir * (-(dist - his_obj.radius).max(0.0) / 1.5).exp() * forward_boost;
     }
 
     v += 0.1 * vec2(rand::random::<f32>(), rand::random());
