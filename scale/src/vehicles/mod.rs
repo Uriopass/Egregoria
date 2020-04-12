@@ -1,8 +1,10 @@
 use crate::interaction::Selectable;
-use crate::map_model::{Lane, LaneID, Map, Traversable};
-use crate::physics::{add_vehicle_to_coworld, Collider, CollisionWorld, Kinematics, Transform};
+use crate::map_model::{LaneKind, Map, Traversable};
+use crate::physics::{
+    Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
+};
 use crate::rendering::meshrender_component::MeshRender;
-use cgmath::{vec2, InnerSpace};
+use cgmath::InnerSpace;
 use rand::random;
 use specs::{Builder, Entity, World, WorldExt};
 
@@ -14,39 +16,21 @@ pub use data::*;
 pub use saveload::*;
 
 pub fn spawn_new_vehicle(world: &mut World) {
-    let mut pos = Transform::new(vec2(0.0, 0.0));
-    let mut obj = VehicleObjective::None;
+    let map = world.read_resource::<Map>();
 
-    let kind = VehicleKind::Car;
+    if let Some(lane) = map.get_random_lane(LaneKind::Driving) {
+        if let [a, b, ..] = lane.points.as_slice() {
+            let diff = b - a;
 
-    {
-        let map = world.read_resource::<Map>();
-        let roads = map.roads();
-        let l = roads.len();
-        if l > 0 {
-            let r = (random::<f32>() * l as f32) as usize;
+            let mut pos = Transform::new(*a + random::<f32>() * diff);
+            pos.set_direction(diff.normalize());
 
-            let (_, road) = roads.into_iter().nth(r).unwrap();
-            let lanes = road
-                .lanes_iter()
-                .filter(|x| map.lanes()[**x].kind.vehicles())
-                .collect::<Vec<&LaneID>>();
+            let obj = VehicleObjective::Temporary(Traversable::Lane(lane.id));
 
-            if !lanes.is_empty() {
-                let r = (random::<f32>() * lanes.len() as f32) as usize;
-
-                let lane: &Lane = &map.lanes()[*lanes[r]];
-                if let [a, .., b] = lane.points.as_slice() {
-                    let diff = b - a;
-                    pos.set_position(*a + random::<f32>() * diff);
-                    pos.set_direction(diff.normalize());
-                    obj = VehicleObjective::Temporary(Traversable::Lane(lane.id));
-                }
-            }
+            drop(map);
+            make_vehicle_entity(world, pos, VehicleComponent::new(obj, VehicleKind::Car));
         }
     }
-
-    make_vehicle_entity(world, pos, VehicleComponent::new(obj, kind));
 }
 
 pub fn make_vehicle_entity(
@@ -55,21 +39,28 @@ pub fn make_vehicle_entity(
     vehicle: VehicleComponent,
 ) -> Entity {
     let mut mr = MeshRender::empty(3);
-
     vehicle.kind.build_mr(&mut mr);
 
-    let e = world
+    let coworld = world.get_mut::<CollisionWorld>().unwrap();
+    let h = coworld.insert(
+        trans.position(),
+        PhysicsObject {
+            dir: trans.direction(),
+            speed: 0.0,
+            radius: vehicle.kind.width(),
+            group: PhysicsGroup::Vehicles,
+        },
+    );
+
+    world
         .create_entity()
         .with(mr)
         .with(trans)
         .with(Kinematics::from_mass(1000.0))
         .with(vehicle)
-        //.with(Movable)
+        .with(Collider(h))
         .with(Selectable::default())
-        .build();
-
-    add_vehicle_to_coworld(world, e);
-    e
+        .build()
 }
 
 pub fn delete_vehicle_entity(world: &mut World, e: Entity) {
