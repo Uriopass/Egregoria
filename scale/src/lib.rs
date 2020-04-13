@@ -3,7 +3,6 @@
 use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, RenderStats, TimeInfo};
 use crate::geometry::gridstore::GridStore;
 use crate::gui::Gui;
-use crate::humans::HumanUpdate;
 use crate::interaction::{
     FollowEntity, MovableSystem, MovedEvent, SelectableAuraSystem, SelectableSystem, SelectedEntity,
 };
@@ -24,7 +23,6 @@ pub mod gui;
 pub mod engine_interaction;
 pub mod geometry;
 pub mod graphs;
-pub mod humans;
 pub mod interaction;
 pub mod map_model;
 pub mod pedestrians;
@@ -38,19 +36,13 @@ use specs::shrev::EventChannel;
 
 pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     let mut dispatch = DispatcherBuilder::new()
-        .with(HumanUpdate, "human update", &[])
         .with(VehicleDecision, "car decision", &[])
         .with(PedestrianDecision, "pedestrian decision", &[])
         .with(SelectableSystem, "selectable", &[])
         .with(
             MovableSystem::default(),
             "movable",
-            &[
-                "human update",
-                "car decision",
-                "pedestrian decision",
-                "selectable",
-            ],
+            &["car decision", "pedestrian decision", "selectable"],
         )
         .with(MapUISystem, "rgs", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
