@@ -1,5 +1,6 @@
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{CollisionWorld, Kinematics, PhysicsObject, Transform};
+use crate::utils::Restrict;
 use cgmath::{vec2, InnerSpace, MetricSpace, Vector2, Zero};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -80,7 +81,7 @@ pub fn calc_decision<'a>(
 
     v += 0.1 * vec2(rand::random::<f32>(), rand::random());
 
-    let s = v.magnitude().min(1.3 * pedestrian.walking_speed);
+    let s = v.magnitude().restrict(0.0, 1.3 * pedestrian.walking_speed);
 
     kin.velocity = v.normalize_to(s);
     if !kin.velocity.is_zero() {

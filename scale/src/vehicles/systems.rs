@@ -3,6 +3,7 @@ use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::map_model::{Map, TrafficBehavior, Traversable, Turn, TurnID};
 use crate::physics::{CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
+use crate::utils::Restrict;
 use crate::vehicles::VehicleComponent;
 use crate::vehicles::VehicleObjective;
 use crate::vehicles::VehicleObjective::Temporary;
@@ -60,7 +61,7 @@ fn vehicle_physics(
     let kind = vehicle.kind;
 
     if speed > 1.0 && dot.abs() < 0.9 {
-        let coeff = speed.max(1.0).min(9.0) / 9.0;
+        let coeff = speed.restrict(1.0, 9.0) / 9.0;
         kin.acceleration -= kin.velocity / coeff;
         return;
     }
@@ -76,11 +77,12 @@ fn vehicle_physics(
     calc_decision(vehicle, map, speed, time, trans, objs);
 
     let speed = speed
-        + ((vehicle.desired_speed - speed)
-            .min(time.delta * kind.acceleration())
-            .max(-time.delta * kind.deceleration()));
+        + (vehicle.desired_speed - speed).restrict(
+            -time.delta * kind.deceleration(),
+            time.delta * kind.acceleration(),
+        );
 
-    let max_ang_vel = (speed.abs() / kind.min_turning_radius()).min(2.0);
+    let max_ang_vel = (speed.abs() / kind.min_turning_radius()).restrict(0.0, 2.0);
 
     let delta_ang = direction.angle(vehicle.desired_dir);
     let mut ang = Vector2::unit_x().angle(direction);
@@ -88,13 +90,13 @@ fn vehicle_physics(
     vehicle.ang_velocity += time.delta * kind.ang_acc();
     vehicle.ang_velocity = vehicle
         .ang_velocity
-        .min(max_ang_vel)
-        .min(3.0 * delta_ang.0.abs());
+        .restrict(3.0 * delta_ang.0.abs(), max_ang_vel);
 
-    ang.0 += delta_ang
-        .0
-        .min(vehicle.ang_velocity * time.delta)
-        .max(-vehicle.ang_velocity * time.delta);
+    ang.0 += delta_ang.0.restrict(
+        -vehicle.ang_velocity * time.delta,
+        vehicle.ang_velocity * time.delta,
+    );
+
     let direction = vec2(ang.cos(), ang.sin());
     trans.set_direction(direction);
     kin.velocity = direction * speed;
@@ -167,12 +169,7 @@ pub fn calc_decision<'a>(
         vehicle.wait_time -= time.delta;
         return;
     }
-    let objective: Vector2<f32> = *match vehicle.pos_objective.last() {
-        Some(x) => x,
-        None => {
-            return;
-        }
-    };
+    let objective: Vector2<f32> = *unwrap_ret!(vehicle.pos_objective.last());
 
     let is_terminal = match &vehicle.objective {
         VehicleObjective::None => return,
