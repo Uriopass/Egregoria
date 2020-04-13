@@ -16,6 +16,9 @@ use crate::vehicles::systems::VehicleDecision;
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 
 #[macro_use]
+pub mod utils;
+
+#[macro_use]
 pub mod gui;
 
 pub mod engine_interaction;

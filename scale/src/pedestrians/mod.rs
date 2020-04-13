@@ -9,6 +9,7 @@ use specs::{Builder, World, WorldExt};
 pub mod data;
 pub mod systems;
 
+use crate::map_model::{LaneKind, Map};
 pub use data::*;
 pub use systems::*;
 
@@ -19,7 +20,18 @@ pub fn setup(world: &mut World) {
 }
 
 pub fn spawn_pedestrian(world: &mut World) {
-    let pos = 200.0f32 * vec2(rand::random(), rand::random());
+    let map = world.read_resource::<Map>();
+
+    let lane = unwrap_ret!(map.get_random_lane(LaneKind::Walking));
+
+    let pos = if let [a, b, ..] = lane.points.as_slice() {
+        a + (b - a) * rand::random()
+    } else {
+        return;
+    };
+
+    drop(map);
+
     let h = world.get_mut::<CollisionWorld>().unwrap().insert(
         pos,
         PhysicsObject {
