@@ -203,8 +203,7 @@ impl VehicleComponent {
 
     pub fn set_travers_objective(&mut self, travers: Traversable, map: &Map) {
         self.objective = VehicleObjective::Temporary(travers);
-        let p = travers.points(map);
-        self.pos_objective.extend(p.iter().rev());
+        self.pos_objective = travers.points(map);
     }
 }
 
@@ -240,6 +239,8 @@ impl<'a> InspectRenderDefault<VehicleObjective> for VehicleObjective {
     }
 }
 
+enum_inspect_impl!(VehicleKind; VehicleKind::Car, VehicleKind::Bus);
+/*
 impl InspectRenderDefault<VehicleKind> for VehicleKind {
     fn render(_: &[&VehicleKind], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
         unimplemented!()
@@ -274,4 +275,4 @@ impl InspectRenderDefault<VehicleKind> for VehicleKind {
         }
         changed
     }
-}
+}*/
