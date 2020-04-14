@@ -42,10 +42,18 @@ impl<'a> System<'a> for PedestrianDecision {
 }
 
 pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform) {
-    if pedestrian.objective.distance(trans.position()) < 2.0 {
+    if pedestrian
+        .pos_objective
+        .first()
+        .unwrap()
+        .distance(trans.position())
+        < 2.0
+    {
         //pedestrian.objective.x = 200.0 - pedestrian.objective.x;
-        pedestrian.objective.x = rand::random::<f32>() * 200.0f32;
-        pedestrian.objective.y = rand::random::<f32>() * 200.0f32;
+        *pedestrian.pos_objective.first_mut().unwrap() = vec2(
+            rand::random::<f32>() * 200.0f32,
+            rand::random::<f32>() * 200.0f32,
+        );
     }
 }
 
@@ -55,7 +63,7 @@ pub fn calc_decision<'a>(
     kin: &mut Kinematics,
     neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
 ) {
-    let objective = pedestrian.objective;
+    let objective = unwrap_ret!(pedestrian.pos_objective.first());
     let position = trans.position();
     let direction = trans.direction();
 

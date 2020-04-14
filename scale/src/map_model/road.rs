@@ -113,9 +113,8 @@ impl Road {
     }
 
     pub fn gen_pos(&mut self, intersections: &Intersections, lanes: &mut Lanes) {
-        self.interpolation_points.0[0] = intersections[self.src].pos;
-        let l = self.interpolation_points.n_points();
-        self.interpolation_points.0[l - 1] = intersections[self.dst].pos;
+        *self.interpolation_points.first_mut().unwrap() = intersections[self.src].pos;
+        *self.interpolation_points.last_mut().unwrap() = intersections[self.dst].pos;
 
         for id in self.lanes_forward.iter().chain(self.lanes_backward.iter()) {
             lanes[*id].gen_pos(intersections, self);
@@ -124,9 +123,13 @@ impl Road {
 
     pub fn dir_from(&self, id: IntersectionID, pos: Vector2<f32>) -> Vector2<f32> {
         if id == self.src {
-            (self.interpolation_points.0[1] - pos).normalize()
+            (self.interpolation_points.get(1).unwrap() - pos).normalize()
         } else if id == self.dst {
-            (self.interpolation_points.0[self.interpolation_points.n_points() - 2] - pos)
+            (self
+                .interpolation_points
+                .get(self.interpolation_points.n_points() - 2)
+                .unwrap()
+                - pos)
                 .normalize()
         } else {
             panic!("Asking dir from from an intersection not conected to the road");

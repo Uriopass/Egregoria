@@ -262,7 +262,7 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
 
         if ui.collapsing_header(&im_str!("{}", label)).build() {
             ui.indent();
-            for (i, x) in v.0.iter_mut().enumerate() {
+            for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
                 <InspectVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
                     &mut [x],
@@ -290,6 +290,40 @@ macro_rules! empty_inspect_impl {
 
             fn render_mut(_: &mut [&mut $x], _: &'static str, _: &mut specs::World, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault) -> bool {
                 ui.text(std::stringify!($x));
+                false
+            }
+        }
+    };
+}
+
+#[rustfmt::skip]
+macro_rules! enum_inspect_impl {
+    ($t: ty; $($x: pat),+) => {
+        impl InspectRenderDefault<$t> for $t {
+            fn render(_: &[&$t], _: &'static str, _: &mut specs::World, _: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault,
+            ) {
+                unimplemented!()
+            }
+
+            fn render_mut(
+                data: &mut [&mut $t],
+                label: &'static str,
+                _: &mut specs::World,
+                ui: &imgui::Ui,
+                _: &imgui_inspect::InspectArgsDefault,
+            ) -> bool {
+                if data.len() != 1 {
+                    unimplemented!()
+                }
+                let d = &mut data[0];
+                let mut aha = "No match";
+                $(
+                    if let $x = d {
+                        aha = stringify!($x);
+                    }
+                )+
+
+                ui.text(imgui::im_str!("{} {}", &aha, label));
                 false
             }
         }

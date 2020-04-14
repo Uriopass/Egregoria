@@ -108,17 +108,17 @@ pub fn objective_update(
     trans: &Transform,
     map: &Map,
 ) {
-    match vehicle.pos_objective.last() {
+    match vehicle.pos_objective.first() {
         Some(p) => {
             if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
                 match vehicle.objective {
                     VehicleObjective::Temporary(x) if vehicle.pos_objective.n_points() == 1 => {
                         if x.can_pass(time.time_seconds, map.lanes()) {
-                            vehicle.pos_objective.pop();
+                            vehicle.pos_objective.pop_first();
                         }
                     }
                     _ => {
-                        vehicle.pos_objective.pop();
+                        vehicle.pos_objective.pop_first();
                     }
                 }
             }
@@ -169,7 +169,7 @@ pub fn calc_decision<'a>(
         vehicle.wait_time -= time.delta;
         return;
     }
-    let objective: Vector2<f32> = *unwrap_ret!(vehicle.pos_objective.last());
+    let objective: Vector2<f32> = *unwrap_ret!(vehicle.pos_objective.first());
 
     let is_terminal = match &vehicle.objective {
         VehicleObjective::None => return,
