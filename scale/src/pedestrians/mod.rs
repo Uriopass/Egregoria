@@ -9,7 +9,8 @@ use specs::{Builder, World, WorldExt};
 pub mod data;
 pub mod systems;
 
-use crate::map_model::{LaneKind, Map};
+use crate::geometry::polyline::PolyLine;
+use crate::map_model::{LaneKind, Map, Traversable};
 pub use data::*;
 pub use systems::*;
 
@@ -24,6 +25,7 @@ pub fn spawn_pedestrian(world: &mut World) {
 
     let lane = unwrap_ret!(map.get_random_lane(LaneKind::Walking));
 
+    let lane_id = lane.id;
     let pos = if let [a, b, ..] = lane.points.as_slice() {
         a + (b - a) * rand::random()
     } else {
@@ -45,7 +47,10 @@ pub fn spawn_pedestrian(world: &mut World) {
         .create_entity()
         .with(Transform::new(pos))
         .with(PedestrianComponent {
-            objective: 200.0 * vec2(rand::random::<f32>(), rand::random::<f32>()),
+            objective: Some(Traversable::Lane(lane_id)),
+            pos_objective: PolyLine::new(vec![
+                200.0 * vec2(rand::random::<f32>(), rand::random::<f32>()),
+            ]),
             ..Default::default()
         })
         .with(Kinematics::from_mass(80.0))

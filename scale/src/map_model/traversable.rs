@@ -1,5 +1,6 @@
-use crate::map_model::{LaneID, Lanes, Map, TurnID};
-use cgmath::Vector2;
+use crate::geometry::polyline::PolyLine;
+use crate::map_model::{IntersectionID, LaneID, Lanes, Map, TurnID};
+use imgui_inspect::InspectRenderDefault;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
@@ -9,10 +10,24 @@ pub enum Traversable {
 }
 
 impl Traversable {
-    pub fn points<'a>(&self, m: &'a Map) -> &'a [Vector2<f32>] {
+    pub fn points_from<'a>(&self, m: &'a Map, i: IntersectionID) -> PolyLine {
         match *self {
-            Traversable::Lane(id) => m.lanes()[id].points.as_slice(),
-            Traversable::Turn(id) => m.intersections()[id.parent].turns[&id].points.as_slice(),
+            Traversable::Lane(id) => {
+                let l = &m.lanes()[id];
+                if l.src == i {
+                    l.points.clone()
+                } else {
+                    PolyLine::new(l.points.iter().rev().copied().collect())
+                }
+            }
+            Traversable::Turn(id) => m.intersections()[id.parent].turns[&id].points.clone(),
+        }
+    }
+
+    pub fn points<'a>(&self, m: &'a Map) -> PolyLine {
+        match *self {
+            Traversable::Lane(id) => m.lanes()[id].points.clone(),
+            Traversable::Turn(id) => m.intersections()[id.parent].turns[&id].points.clone(),
         }
     }
 
@@ -33,3 +48,5 @@ impl Traversable {
         }
     }
 }
+
+enum_inspect_impl!(Traversable; Traversable::Lane(_), Traversable::Turn(_));
