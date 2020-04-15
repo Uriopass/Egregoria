@@ -1,8 +1,9 @@
+use crate::engine_interaction::TimeInfo;
 use crate::map_model::{Map, Traversable, TraverseDirection, TraverseKind};
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::utils::{Choose, Restrict};
-use cgmath::{vec2, InnerSpace, MetricSpace, Vector2, Zero};
+use cgmath::{vec2, Angle, InnerSpace, MetricSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use std::borrow::Borrow;
@@ -14,6 +15,7 @@ pub struct PedestrianDecision;
 pub struct PedestrianDecisionData<'a> {
     cow: Read<'a, CollisionWorld, PanicHandler>,
     map: Read<'a, Map, PanicHandler>,
+    time: Read<'a, TimeInfo>,
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
     pedestrians: WriteStorage<'a, PedestrianComponent>,
@@ -25,6 +27,7 @@ impl<'a> System<'a> for PedestrianDecision {
     fn run(&mut self, mut data: Self::SystemData) {
         let cow: &CollisionWorld = data.cow.borrow();
         let map: &Map = data.map.borrow();
+        let time: &TimeInfo = data.time.borrow();
         (
             &mut data.transforms,
             &mut data.kinematics,
@@ -38,9 +41,82 @@ impl<'a> System<'a> for PedestrianDecision {
 
                 let objs = neighbors.map(|obj| (obj.pos, cow.get_obj(obj.id)));
 
-                calc_decision(pedestrian, trans, kin, objs);
+                let (desired_v, desired_dir) = calc_decision(pedestrian, trans, kin, objs);
+
+                physics(kin, trans, time, desired_v, desired_dir);
             });
     }
+}
+
+pub fn physics(
+    kin: &mut Kinematics,
+    trans: &mut Transform,
+    time: &TimeInfo,
+    desired_velocity: Vector2<f32>,
+    desired_dir: Vector2<f32>,
+) {
+    let diff = desired_velocity - kin.velocity;
+    let mag = diff.magnitude().min(time.delta);
+    if mag > 0.0 {
+        kin.velocity += diff.normalize_to(mag);
+    }
+
+    let delta_ang = trans.direction().angle(desired_dir);
+    let mut ang = Vector2::unit_x().angle(trans.direction());
+
+    const ANG_VEL: f32 = 1.0;
+    ang.0 += delta_ang
+        .0
+        .restrict(-ANG_VEL * time.delta, ANG_VEL * time.delta);
+
+    trans.set_direction(vec2(ang.cos(), ang.sin()));
+}
+
+pub fn calc_decision<'a>(
+    pedestrian: &mut PedestrianComponent,
+    trans: &Transform,
+    kin: &Kinematics,
+    neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
+) -> (Vector2<f32>, Vector2<f32>) {
+    let objective = match pedestrian.itinerary.get_point() {
+        Some(x) => x,
+        None => return (vec2(0.0, 0.0), trans.direction()),
+    };
+
+    let position = trans.position();
+    let direction = trans.direction();
+
+    let delta_pos: Vector2<f32> = objective - position;
+    let dist_to_pos = delta_pos.magnitude();
+    let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
+
+    let mut desired_v: Vector2<f32> = dir_to_pos * pedestrian.walking_speed;
+
+    for (his_pos, his_obj) in neighs {
+        if his_pos == position {
+            continue;
+        }
+
+        let towards_vec = his_pos - position;
+        let dist = towards_vec.magnitude();
+        let towards_dir: Vector2<f32> = towards_vec / dist;
+
+        let forward_boost = 1.0 + direction.dot(towards_dir).abs();
+
+        desired_v +=
+            -towards_dir * 1.5 * (-(dist - his_obj.radius).max(0.0) * 0.7).exp() * forward_boost;
+    }
+
+    //desired_v += 0.1 * vec2(rand::random::<f32>(), rand::random()) * desired_v.magnitude();
+
+    let s = desired_v
+        .magnitude()
+        .restrict(0.0, 1.3 * pedestrian.walking_speed);
+    if s > 0.0 {
+        desired_v.normalize_to(s);
+    }
+
+    (desired_v, (dir_to_pos + kin.velocity).normalize())
 }
 
 pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform, map: &Map) {
@@ -118,45 +194,5 @@ pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform,
                     .set_simple(*traversables.choose().unwrap(), map);
             }
         }
-    }
-}
-
-pub fn calc_decision<'a>(
-    pedestrian: &mut PedestrianComponent,
-    trans: &mut Transform,
-    kin: &mut Kinematics,
-    neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
-) {
-    let objective = unwrap_ret!(pedestrian.itinerary.get_point());
-    let position = trans.position();
-    let direction = trans.direction();
-
-    let delta_pos: Vector2<f32> = objective - position;
-    let dist_to_pos = delta_pos.magnitude();
-    let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
-
-    let mut v: Vector2<f32> = dir_to_pos * pedestrian.walking_speed;
-
-    for (his_pos, his_obj) in neighs {
-        if his_pos == position {
-            continue;
-        }
-
-        let towards_vec = his_pos - position;
-        let dist = towards_vec.magnitude();
-        let towards_dir: Vector2<f32> = towards_vec / dist;
-
-        let forward_boost = 1.0 + direction.dot(towards_dir).abs();
-
-        v += -towards_dir * (-(dist - his_obj.radius).max(0.0) / 1.5).exp() * forward_boost;
-    }
-
-    v += 0.1 * vec2(rand::random::<f32>(), rand::random());
-
-    let s = v.magnitude().restrict(0.0, 1.3 * pedestrian.walking_speed);
-
-    kin.velocity = v.normalize_to(s);
-    if !kin.velocity.is_zero() {
-        trans.set_direction(kin.velocity.normalize());
     }
 }

@@ -156,8 +156,8 @@ impl MeshRender {
         }
     }
 
-    pub fn build(self) -> Self {
-        self
+    pub fn build(&self) -> Self {
+        self.clone()
     }
 }
 

@@ -21,10 +21,6 @@ impl<'a> RenderContext<'a> {
 
     pub fn clear(&mut self) {
         graphics::clear(self.ctx, graphics::Color::from_rgb(0, 0, 0));
-        graphics::set_window_title(
-            self.ctx,
-            format!("{} FPS", ggez::timer::fps(self.ctx) as i32).as_ref(),
-        );
     }
 
     #[allow(dead_code)]
