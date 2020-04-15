@@ -1,6 +1,7 @@
+use crate::map_model::{Map, Traversable, TraverseDirection, TraverseKind};
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{CollisionWorld, Kinematics, PhysicsObject, Transform};
-use crate::utils::Restrict;
+use crate::utils::{Choose, Restrict};
 use cgmath::{vec2, InnerSpace, MetricSpace, Vector2, Zero};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -12,6 +13,7 @@ pub struct PedestrianDecision;
 #[derive(SystemData)]
 pub struct PedestrianDecisionData<'a> {
     cow: Read<'a, CollisionWorld, PanicHandler>,
+    map: Read<'a, Map, PanicHandler>,
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
     pedestrians: WriteStorage<'a, PedestrianComponent>,
@@ -22,7 +24,7 @@ impl<'a> System<'a> for PedestrianDecision {
 
     fn run(&mut self, mut data: Self::SystemData) {
         let cow: &CollisionWorld = data.cow.borrow();
-
+        let map: &Map = data.map.borrow();
         (
             &mut data.transforms,
             &mut data.kinematics,
@@ -30,7 +32,7 @@ impl<'a> System<'a> for PedestrianDecision {
         )
             .join()
             .for_each(|(trans, kin, pedestrian)| {
-                objective_update(pedestrian, trans);
+                objective_update(pedestrian, trans, map);
 
                 let neighbors = cow.query_around(trans.position(), 10.0);
 
@@ -41,19 +43,81 @@ impl<'a> System<'a> for PedestrianDecision {
     }
 }
 
-pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform) {
-    if pedestrian
-        .pos_objective
-        .first()
-        .unwrap()
-        .distance(trans.position())
-        < 2.0
-    {
-        //pedestrian.objective.x = 200.0 - pedestrian.objective.x;
-        *pedestrian.pos_objective.first_mut().unwrap() = vec2(
-            rand::random::<f32>() * 200.0f32,
-            rand::random::<f32>() * 200.0f32,
-        );
+pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform, map: &Map) {
+    if let Some(x) = pedestrian.itinerary.get_point() {
+        if x.distance(trans.position()) > 2.0 {
+            return;
+        }
+        pedestrian.itinerary.advance(map);
+    }
+
+    if pedestrian.itinerary.has_ended() {
+        let t = *unwrap_ret!(pedestrian.itinerary.get_travers());
+        match t.kind {
+            TraverseKind::Lane(l) => {
+                let arrived = &map.intersections()[map.lanes()[l].dst];
+
+                let neighs = arrived.turns_adirectional(l);
+
+                /*println!("--- {:?}", l);
+                for x in neighs.iter() {
+                    println!("{:?}", x);
+                }*/
+
+                let turn = unwrap_ret!(neighs.choose());
+
+                //println!("Choose {:?}", turn);
+                let direction = if turn.id.src == l {
+                    TraverseDirection::Forward
+                } else {
+                    TraverseDirection::Backward
+                };
+
+                pedestrian.itinerary.set_simple(
+                    Traversable::new(TraverseKind::Turn(turn.id), direction),
+                    map,
+                );
+            }
+            TraverseKind::Turn(turn) => {
+                let arrived_at = &map.lanes()[match t.dir {
+                    TraverseDirection::Forward => turn.dst,
+                    TraverseDirection::Backward => turn.src,
+                }];
+
+                let dir_if_take_lane = if arrived_at.src == turn.parent {
+                    TraverseDirection::Forward
+                } else {
+                    TraverseDirection::Backward
+                };
+
+                let inter = &map.intersections()[turn.parent];
+
+                let mut traversables = vec![Traversable::new(
+                    TraverseKind::Lane(arrived_at.id),
+                    dir_if_take_lane,
+                )];
+
+                for turn_inter in inter.turns_adirectional(arrived_at.id) {
+                    if turn_inter.id == turn {
+                        continue;
+                    }
+                    let direction = if turn_inter.id.src == arrived_at.id {
+                        TraverseDirection::Forward
+                    } else {
+                        TraverseDirection::Backward
+                    };
+
+                    traversables.push(Traversable::new(
+                        TraverseKind::Turn(turn_inter.id),
+                        direction,
+                    ));
+                }
+
+                pedestrian
+                    .itinerary
+                    .set_simple(*traversables.choose().unwrap(), map);
+            }
+        }
     }
 }
 
@@ -63,7 +127,7 @@ pub fn calc_decision<'a>(
     kin: &mut Kinematics,
     neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
 ) {
-    let objective = unwrap_ret!(pedestrian.pos_objective.first());
+    let objective = unwrap_ret!(pedestrian.itinerary.get_point());
     let position = trans.position();
     let direction = trans.direction();
 

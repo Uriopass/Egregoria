@@ -1,5 +1,5 @@
 use crate::interaction::Selectable;
-use crate::map_model::{LaneKind, Map, Traversable};
+use crate::map_model::{Itinerary, LaneKind, Map, Traversable, TraverseDirection, TraverseKind};
 use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
 };
@@ -25,10 +25,15 @@ pub fn spawn_new_vehicle(world: &mut World) {
             let mut pos = Transform::new(*a + random::<f32>() * diff);
             pos.set_direction(diff.normalize());
 
-            let obj = VehicleObjective::Temporary(Traversable::Lane(lane.id));
+            let mut it = Itinerary::default();
+            it.set_simple(
+                Traversable::new(TraverseKind::Lane(lane.id), TraverseDirection::Forward),
+                &map,
+            );
+            it.advance(&map);
 
             drop(map);
-            make_vehicle_entity(world, pos, VehicleComponent::new(obj, VehicleKind::Car));
+            make_vehicle_entity(world, pos, VehicleComponent::new(it, VehicleKind::Car));
         }
     }
 }

@@ -299,7 +299,7 @@ macro_rules! empty_inspect_impl {
 #[rustfmt::skip]
 macro_rules! enum_inspect_impl {
     ($t: ty; $($x: pat),+) => {
-        impl InspectRenderDefault<$t> for $t {
+        impl imgui_inspect::InspectRenderDefault<$t> for $t {
             fn render(_: &[&$t], _: &'static str, _: &mut specs::World, _: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault,
             ) {
                 unimplemented!()
