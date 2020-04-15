@@ -1,6 +1,7 @@
 use crate::engine_interaction::{RenderStats, TimeInfo};
 use crate::interaction::SelectedEntity;
 use crate::map_model::{LanePatternBuilder, MapUIState};
+use crate::pedestrians::spawn_pedestrian;
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
 use imgui::im_str;
 use imgui::Ui;
@@ -18,6 +19,7 @@ pub struct Gui {
     show_stats: bool,
     show_tips: bool,
     n_cars: i32,
+    n_pedestrians: i32,
 }
 
 impl Default for Gui {
@@ -27,6 +29,7 @@ impl Default for Gui {
             show_stats: true,
             show_tips: false,
             n_cars: 100,
+            n_pedestrians: 100,
         }
     }
 }
@@ -90,6 +93,19 @@ impl Gui {
                     if ui.small_button(im_str!("spawn car")) {
                         for _ in 0..self.n_cars {
                             spawn_new_vehicle(world);
+                        }
+                    }
+
+                    ui.set_next_item_width(70.0);
+                    imgui::DragInt::new(&ui, im_str!("n_pedestrians"), &mut self.n_pedestrians)
+                        .min(1)
+                        .max(1000)
+                        .build();
+
+                    ui.same_line(0.0);
+                    if ui.small_button(im_str!("spawn pedestrians")) {
+                        for _ in 0..self.n_pedestrians {
+                            spawn_pedestrian(world);
                         }
                     }
 
