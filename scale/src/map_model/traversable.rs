@@ -1,47 +1,53 @@
 use crate::geometry::polyline::PolyLine;
-use crate::map_model::{IntersectionID, LaneID, Lanes, Map, TurnID};
-use imgui_inspect::InspectRenderDefault;
+use crate::map_model::{LaneID, Lanes, Map, TurnID};
+use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum Traversable {
+pub enum TraverseDirection {
+    Forward,
+    Backward,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum TraverseKind {
     Lane(LaneID),
     Turn(TurnID),
 }
 
-impl Traversable {
-    pub fn points_from<'a>(&self, m: &'a Map, i: IntersectionID) -> PolyLine {
-        match *self {
-            Traversable::Lane(id) => {
-                let l = &m.lanes()[id];
-                if l.src == i {
-                    l.points.clone()
-                } else {
-                    PolyLine::new(l.points.iter().rev().copied().collect())
-                }
-            }
-            Traversable::Turn(id) => m.intersections()[id.parent].turns[&id].points.clone(),
-        }
-    }
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Inspect)]
+pub struct Traversable {
+    pub kind: TraverseKind,
+    pub dir: TraverseDirection,
+}
 
-    pub fn points<'a>(&self, m: &'a Map) -> PolyLine {
-        match *self {
-            Traversable::Lane(id) => m.lanes()[id].points.clone(),
-            Traversable::Turn(id) => m.intersections()[id.parent].turns[&id].points.clone(),
+impl Traversable {
+    pub fn new(kind: TraverseKind, dir: TraverseDirection) -> Self {
+        Self { kind, dir }
+    }
+    pub fn points(&self, m: &Map) -> PolyLine {
+        let p = match self.kind {
+            TraverseKind::Lane(id) => &m.lanes()[id].points,
+            TraverseKind::Turn(id) => &m.intersections()[id.parent].turns[&id].points,
+        };
+
+        match self.dir {
+            TraverseDirection::Forward => p.clone(),
+            TraverseDirection::Backward => PolyLine::new(p.iter().copied().rev().collect()),
         }
     }
 
     pub fn can_pass(&self, time: u64, lanes: &Lanes) -> bool {
-        match self {
-            Traversable::Lane(id) => !lanes[*id].control.get_behavior(time).is_red(),
-            Traversable::Turn(_) => true,
+        match self.kind {
+            TraverseKind::Lane(id) => !lanes[id].control.get_behavior(time).is_red(),
+            TraverseKind::Turn(_) => true,
         }
     }
 
     pub fn is_valid(&self, m: &Map) -> bool {
-        match *self {
-            Traversable::Lane(id) => m.lanes().contains_key(id),
-            Traversable::Turn(id) => {
+        match self.kind {
+            TraverseKind::Lane(id) => m.lanes().contains_key(id),
+            TraverseKind::Turn(id) => {
                 m.intersections().contains_key(id.parent)
                     && m.intersections()[id.parent].turns.contains_key(&id)
             }
@@ -49,4 +55,5 @@ impl Traversable {
     }
 }
 
-enum_inspect_impl!(Traversable; Traversable::Lane(_), Traversable::Turn(_));
+enum_inspect_impl!(TraverseKind; TraverseKind::Lane(_), TraverseKind::Turn(_));
+enum_inspect_impl!(TraverseDirection; TraverseDirection::Forward, TraverseDirection::Backward);

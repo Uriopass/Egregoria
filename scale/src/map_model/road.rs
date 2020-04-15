@@ -123,14 +123,9 @@ impl Road {
 
     pub fn dir_from(&self, id: IntersectionID, pos: Vector2<f32>) -> Vector2<f32> {
         if id == self.src {
-            (self.interpolation_points.get(1).unwrap() - pos).normalize()
+            (self.interpolation_points[1] - pos).normalize()
         } else if id == self.dst {
-            (self
-                .interpolation_points
-                .get(self.interpolation_points.n_points() - 2)
-                .unwrap()
-                - pos)
-                .normalize()
+            (self.interpolation_points[self.interpolation_points.n_points() - 2] - pos).normalize()
         } else {
             panic!("Asking dir from from an intersection not conected to the road");
         }

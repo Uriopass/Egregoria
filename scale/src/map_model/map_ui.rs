@@ -72,6 +72,7 @@ impl<'a> System<'a> for MapUISystem {
                 &data.lazy,
                 &data.entities,
             );
+            println!("{:?}", e);
             *data.selected = SelectedEntity(Some(e));
         }
 

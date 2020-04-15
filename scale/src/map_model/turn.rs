@@ -24,7 +24,13 @@ pub enum TurnKind {
     Normal,
 }
 
-#[derive(Serialize, Deserialize)]
+impl TurnKind {
+    pub fn is_crosswalk(&self) -> bool {
+        matches!(self, TurnKind::Crosswalk)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Turn {
     pub id: TurnID,
     pub points: PolyLine,
@@ -41,16 +47,21 @@ impl Turn {
     }
 
     pub fn make_points(&mut self, lanes: &Lanes) {
-        if self.kind == TurnKind::Crosswalk {
-            return;
-        }
         const N_SPLINE: usize = 6;
+
+        self.points.clear();
 
         let src_lane = &lanes[self.id.src];
         let dst_lane = &lanes[self.id.dst];
 
         let pos_src = src_lane.get_inter_node_pos(self.id.parent);
         let pos_dst = dst_lane.get_inter_node_pos(self.id.parent);
+
+        if self.kind.is_crosswalk() {
+            self.points.push(pos_src);
+            self.points.push(pos_dst);
+            return;
+        }
 
         let dist = (pos_dst - pos_src).magnitude() / 2.0;
 
@@ -64,7 +75,7 @@ impl Turn {
             to_derivative: derivative_dst,
         };
 
-        self.points.clear();
+        self.points.push(pos_src);
         for i in 1..=N_SPLINE {
             let c = i as f32 / (N_SPLINE + 1) as f32;
 
@@ -72,5 +83,6 @@ impl Turn {
             debug_assert!(pos.is_finite());
             self.points.push(pos);
         }
+        self.points.push(pos_dst);
     }
 }
