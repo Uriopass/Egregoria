@@ -25,7 +25,7 @@ pub enum TurnKind {
 }
 
 impl TurnKind {
-    pub fn is_crosswalk(&self) -> bool {
+    pub fn is_crosswalk(self) -> bool {
         matches!(self, TurnKind::Crosswalk)
     }
 }
