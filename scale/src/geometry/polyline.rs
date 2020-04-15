@@ -29,6 +29,10 @@ impl PolyLine {
         self.0.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn extend<'a>(&mut self, s: impl IntoIterator<Item = &'a Vec2>) {
         self.0.extend(s)
     }

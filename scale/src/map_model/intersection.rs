@@ -2,7 +2,7 @@ use crate::geometry::pseudo_angle;
 use crate::gui::InspectDragf;
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{
-    Intersections, Lanes, LightPolicy, RoadID, Roads, Turn, TurnID, TurnPolicy,
+    Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, Turn, TurnID, TurnPolicy,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
@@ -95,6 +95,22 @@ impl Intersection {
         for turn in self.turns.values_mut() {
             turn.make_points(lanes);
         }
+    }
+
+    pub fn turns_from(&self, lane: LaneID) -> Vec<&Turn> {
+        self.turns
+            .iter()
+            .filter(|(id, _)| id.src == lane)
+            .map(|(_, x)| x)
+            .collect()
+    }
+
+    pub fn turns_adirectional(&self, lane: LaneID) -> Vec<&Turn> {
+        self.turns
+            .iter()
+            .filter(|(id, _)| id.src == lane || id.dst == lane)
+            .map(|(_, x)| x)
+            .collect()
     }
 
     pub fn add_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {

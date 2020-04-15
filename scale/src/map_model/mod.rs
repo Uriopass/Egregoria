@@ -2,6 +2,7 @@ use crate::map_model::traffic_control::TrafficControl;
 use specs::World;
 
 mod intersection;
+mod itinerary;
 mod lane;
 mod light_policy;
 mod map;
@@ -14,6 +15,7 @@ mod turn;
 mod turn_policy;
 
 pub use intersection::*;
+pub use itinerary::*;
 pub use lane::*;
 pub use light_policy::*;
 pub use map::*;

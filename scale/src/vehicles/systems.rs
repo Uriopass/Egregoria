@@ -1,12 +1,10 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
-use crate::map_model::{Map, TrafficBehavior, Traversable, Turn, TurnID};
+use crate::map_model::{Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind};
 use crate::physics::{CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
-use crate::utils::Restrict;
+use crate::utils::{Choose, Restrict};
 use crate::vehicles::VehicleComponent;
-use crate::vehicles::VehicleObjective;
-use crate::vehicles::VehicleObjective::Temporary;
 use cgmath::{vec2, Angle, InnerSpace, MetricSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -90,7 +88,8 @@ fn vehicle_physics(
     vehicle.ang_velocity += time.delta * kind.ang_acc();
     vehicle.ang_velocity = vehicle
         .ang_velocity
-        .restrict(3.0 * delta_ang.0.abs(), max_ang_vel);
+        .min(3.0 * delta_ang.0.abs())
+        .min(max_ang_vel);
 
     ang.0 += delta_ang.0.restrict(
         -vehicle.ang_velocity * time.delta,
@@ -108,52 +107,49 @@ pub fn objective_update(
     trans: &Transform,
     map: &Map,
 ) {
-    match vehicle.pos_objective.first() {
-        Some(p) => {
-            if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
-                match vehicle.objective {
-                    VehicleObjective::Temporary(x) if vehicle.pos_objective.n_points() == 1 => {
-                        if x.can_pass(time.time_seconds, map.lanes()) {
-                            vehicle.pos_objective.pop_first();
-                        }
-                    }
-                    _ => {
-                        vehicle.pos_objective.pop_first();
-                    }
-                }
+    if let Some(p) = vehicle.itinerary.get_point() {
+        if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
+            let k = vehicle.itinerary.get_travers().unwrap();
+            if vehicle.itinerary.remaining_points() > 1
+                || k.can_pass(time.time_seconds, map.lanes())
+            {
+                vehicle.itinerary.advance(map);
             }
         }
-        None => match vehicle.objective {
-            VehicleObjective::None => {
-                let lane = map.closest_lane(trans.position());
-                if let Some(id) = lane {
-                    vehicle.set_travers_objective(Traversable::Lane(id), map);
-                }
+    }
+
+    if vehicle.itinerary.has_ended() {
+        if vehicle.itinerary.get_travers().is_none() {
+            let lane = map.closest_lane(trans.position());
+            if let Some(id) = lane {
+                vehicle.itinerary.set_simple(
+                    Traversable::new(TraverseKind::Lane(id), TraverseDirection::Forward),
+                    map,
+                );
             }
-            VehicleObjective::Temporary(x) => match x {
-                Traversable::Turn(id) => {
-                    vehicle.set_travers_objective(Traversable::Lane(id.dst), map);
-                }
-                Traversable::Lane(id) => {
-                    let lane = &map.lanes()[id];
+            return;
+        }
 
-                    let neighs: Vec<(&TurnID, &Turn)> = map.intersections()[lane.dst]
-                        .turns
-                        .iter()
-                        .filter(|(_, x)| x.id.src == id)
-                        .collect();
+        match vehicle.itinerary.get_travers().unwrap().kind {
+            TraverseKind::Turn(id) => {
+                vehicle.itinerary.set_simple(
+                    Traversable::new(TraverseKind::Lane(id.dst), TraverseDirection::Forward),
+                    map,
+                );
+            }
+            TraverseKind::Lane(id) => {
+                let lane = &map.lanes()[id];
 
-                    if neighs.is_empty() {
-                        return;
-                    }
+                let neighs = map.intersections()[lane.dst].turns_from(id);
 
-                    let r = rand::random::<f32>() * (neighs.len() as f32);
-                    let (turn_id, _) = neighs[r as usize];
+                let turn = unwrap_ret!(neighs.choose());
 
-                    vehicle.set_travers_objective(Traversable::Turn(*turn_id), map);
-                }
-            },
-        },
+                vehicle.itinerary.set_simple(
+                    Traversable::new(TraverseKind::Turn(turn.id), TraverseDirection::Forward),
+                    map,
+                );
+            }
+        }
     }
 }
 
@@ -169,12 +165,9 @@ pub fn calc_decision<'a>(
         vehicle.wait_time -= time.delta;
         return;
     }
-    let objective: Vector2<f32> = *unwrap_ret!(vehicle.pos_objective.first());
+    let objective: Vector2<f32> = *unwrap_ret!(vehicle.itinerary.get_point());
 
-    let is_terminal = match &vehicle.objective {
-        VehicleObjective::None => return,
-        VehicleObjective::Temporary(_) => false,
-    };
+    let is_terminal = false; // TODO: change depending on route
 
     let position = trans.position();
     let direction = trans.direction();
@@ -250,26 +243,28 @@ pub fn calc_decision<'a>(
     vehicle.desired_dir = dir_to_pos;
     vehicle.desired_speed = vehicle.kind.cruising_speed();
 
-    if vehicle.pos_objective.n_points() == 1 {
-        if let Temporary(trans) = vehicle.objective {
-            if let Traversable::Lane(l_id) = trans {
-                match map.lanes()[l_id].control.get_behavior(time.time_seconds) {
-                    TrafficBehavior::RED | TrafficBehavior::ORANGE => {
-                        if dist_to_pos
-                            < OBJECTIVE_OK_DIST * 1.05
-                                + stop_dist
-                                + (vehicle.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
-                        {
-                            vehicle.desired_speed = 0.0;
-                        }
+    if vehicle.itinerary.remaining_points() == 1 {
+        if let Some(Traversable {
+            kind: TraverseKind::Lane(l_id),
+            ..
+        }) = vehicle.itinerary.get_travers()
+        {
+            match map.lanes()[*l_id].control.get_behavior(time.time_seconds) {
+                TrafficBehavior::RED | TrafficBehavior::ORANGE => {
+                    if dist_to_pos
+                        < OBJECTIVE_OK_DIST * 1.05
+                            + stop_dist
+                            + (vehicle.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
+                    {
+                        vehicle.desired_speed = 0.0;
                     }
-                    TrafficBehavior::STOP => {
-                        if dist_to_pos < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
-                            vehicle.desired_speed = 0.0;
-                        }
-                    }
-                    _ => {}
                 }
+                TrafficBehavior::STOP => {
+                    if dist_to_pos < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
+                        vehicle.desired_speed = 0.0;
+                    }
+                }
+                _ => {}
             }
         }
     }

@@ -1,14 +1,11 @@
-use crate::geometry::polyline::PolyLine;
 use crate::gui::{InspectDragf, InspectVec2};
-use crate::map_model::{Map, Traversable};
+use crate::map_model::Itinerary;
 use crate::rendering::meshrender_component::{MeshRender, RectRender};
 use crate::rendering::Color;
 use cgmath::{vec2, Vector2};
-use imgui::{im_str, Ui};
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
-use specs::{Component, DenseVecStorage, World};
+use specs::{Component, DenseVecStorage};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum VehicleKind {
@@ -16,16 +13,9 @@ pub enum VehicleKind {
     Bus,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum VehicleObjective {
-    None,
-    Temporary(Traversable),
-}
-
 #[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct VehicleComponent {
-    pub objective: VehicleObjective,
-    pub pos_objective: PolyLine,
+    pub itinerary: Itinerary,
     #[inspect(proxy_type = "InspectDragf")]
     pub desired_speed: f32,
     #[inspect(proxy_type = "InspectVec2")]
@@ -181,98 +171,24 @@ pub fn get_random_car_color() -> Color {
 impl Default for VehicleComponent {
     fn default() -> Self {
         Self {
-            objective: VehicleObjective::None,
+            itinerary: Default::default(),
             desired_speed: 0.0,
             desired_dir: vec2(0.0, 0.0),
             wait_time: 0.0,
             ang_velocity: 0.0,
-            pos_objective: PolyLine::with_capacity(7),
             kind: VehicleKind::Car,
         }
     }
 }
 
 impl VehicleComponent {
-    pub fn new(objective: VehicleObjective, kind: VehicleKind) -> VehicleComponent {
+    pub fn new(itinerary: Itinerary, kind: VehicleKind) -> VehicleComponent {
         Self {
-            objective,
+            itinerary,
             kind,
             ..Default::default()
         }
     }
-
-    pub fn set_travers_objective(&mut self, travers: Traversable, map: &Map) {
-        self.objective = VehicleObjective::Temporary(travers);
-        self.pos_objective = travers.points(map);
-    }
-}
-
-impl<'a> InspectRenderDefault<VehicleObjective> for VehicleObjective {
-    fn render(
-        _: &[&VehicleObjective],
-        _: &'static str,
-        _: &mut World,
-        _: &Ui,
-        _: &InspectArgsDefault,
-    ) {
-        unimplemented!();
-    }
-
-    fn render_mut(
-        data: &mut [&mut VehicleObjective],
-        label: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        _: &InspectArgsDefault,
-    ) -> bool {
-        if data.len() != 1 {
-            return false;
-        }
-
-        let obj = &data[0];
-        match obj {
-            VehicleObjective::None => ui.text(im_str!("None {}", label)),
-            VehicleObjective::Temporary(x) => ui.text(im_str!("{:?} {}", x, label)),
-        }
-
-        false
-    }
 }
 
 enum_inspect_impl!(VehicleKind; VehicleKind::Car, VehicleKind::Bus);
-/*
-impl InspectRenderDefault<VehicleKind> for VehicleKind {
-    fn render(_: &[&VehicleKind], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
-        unimplemented!()
-    }
-
-    fn render_mut(
-        data: &mut [&mut VehicleKind],
-        label: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        _: &InspectArgsDefault,
-    ) -> bool {
-        if data.len() != 1 {
-            unimplemented!()
-        }
-        let d = &mut data[0];
-        let mut id = match d {
-            VehicleKind::Car => 0,
-            VehicleKind::Bus => 1,
-        };
-
-        let changed = imgui::ComboBox::new(&im_str!("{}", label)).build_simple_string(
-            ui,
-            &mut id,
-            &[im_str!("Car"), im_str!("Bus")],
-        );
-
-        match id {
-            0 => **d = VehicleKind::Car,
-            1 => **d = VehicleKind::Bus,
-            _ => {}
-        }
-        changed
-    }
-}*/
