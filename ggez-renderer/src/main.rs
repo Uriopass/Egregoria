@@ -23,7 +23,7 @@ fn main() {
 
     c.window_setup = c
         .window_setup
-        .vsync(true)
+        .vsync(false)
         .samples(NumSamples::Four)
         .title("Scale");
 

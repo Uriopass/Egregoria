@@ -92,23 +92,24 @@ impl Road {
         lane_type: LaneKind,
         direction: LaneDirection,
     ) -> LaneID {
-        let (src, dst) = match direction {
-            LaneDirection::Forward => (self.src, self.dst),
-            LaneDirection::Backward => (self.dst, self.src),
+        let (src, dst, road_lanes) = match direction {
+            LaneDirection::Forward => (self.src, self.dst, &mut self.lanes_forward),
+            LaneDirection::Backward => (self.dst, self.src, &mut self.lanes_backward),
         };
+        let dist_from_center = road_lanes.iter().map(|x| store[*x].width).sum();
+        let self_id = self.id;
         let id = store.insert_with_key(|id| Lane {
             id,
-            parent: self.id,
+            parent: self_id,
             src,
             dst,
             control: TrafficControl::Always,
             kind: lane_type,
             points: Default::default(),
+            width: if lane_type.vehicles() { 8.0 } else { 4.0 },
+            dist_from_center,
         });
-        match direction {
-            LaneDirection::Forward => self.lanes_forward.push(id),
-            LaneDirection::Backward => self.lanes_backward.push(id),
-        };
+        road_lanes.push(id);
         id
     }
 
@@ -167,23 +168,22 @@ impl Road {
         );
     }
 
-    pub fn idx_unchecked(&self, lane: LaneID) -> usize {
-        if let Some((x, _)) = self
-            .lanes_backward
-            .iter()
-            .enumerate()
-            .find(|(_, x)| **x == lane)
-        {
-            return x;
+    pub fn distance_from_center(&self, lane: LaneID, lanes: &Lanes) -> f32 {
+        let mut dist = 0.0;
+        for x in &self.lanes_backward {
+            if *x == lane {
+                return dist;
+            }
+            dist -= lanes[*x].width;
         }
-        if let Some((x, _)) = self
-            .lanes_forward
-            .iter()
-            .enumerate()
-            .find(|(_, x)| **x == lane)
-        {
-            return x;
+
+        let mut dist = 0.0;
+        for x in &self.lanes_forward {
+            if *x == lane {
+                return dist;
+            }
+            dist += lanes[*x].width;
         }
-        0
+        0.0
     }
 }

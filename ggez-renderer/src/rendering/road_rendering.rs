@@ -37,14 +37,15 @@ impl RoadRenderer {
                 p.extend_from_slice(turn.points.as_slice());
                 p.push(lanes[id.dst].get_inter_node_pos(inter_id));
 
-                rc.sr.draw_polyline(&p, 8.5);
+                rc.sr.draw_polyline(&p, lanes[id.src].width + 0.5);
             }
         }
 
         for n in lanes.values() {
-            rc.sr.draw_polyline(n.points.as_slice(), 8.5);
-            rc.sr.draw_circle(*n.points.first().unwrap(), 4.25);
-            rc.sr.draw_circle(*n.points.last().unwrap(), 4.25);
+            let w = n.width + 0.5;
+            rc.sr.draw_polyline(n.points.as_slice(), w);
+            rc.sr.draw_circle(*n.points.first().unwrap(), w / 2.0);
+            rc.sr.draw_circle(*n.points.last().unwrap(), w / 2.0);
         }
 
         rc.sr.color = MID_GRAY;
@@ -54,9 +55,11 @@ impl RoadRenderer {
                 _ => MID_GRAY,
             };
 
-            rc.sr.draw_polyline(n.points.as_slice(), 7.5);
-            rc.sr.draw_circle(*n.points.first().unwrap(), 3.75);
-            rc.sr.draw_circle(*n.points.last().unwrap(), 3.75);
+            rc.sr.draw_polyline(n.points.as_slice(), n.width - 0.5);
+            rc.sr
+                .draw_circle(*n.points.first().unwrap(), (n.width - 0.5) / 2.0);
+            rc.sr
+                .draw_circle(*n.points.last().unwrap(), (n.width - 0.5) / 2.0);
 
             rc.sr.color = WHITE;
             if n.control.is_stop() || n.control.is_light() {
@@ -82,7 +85,7 @@ impl RoadRenderer {
                 p.extend_from_slice(turn.points.as_slice());
                 p.push(lanes[id.dst].get_inter_node_pos(inter_id));
 
-                rc.sr.draw_polyline(&p, 7.5);
+                rc.sr.draw_polyline(&p, lanes[id.src].width - 0.5);
             }
 
             rc.sr.color = HIGH_GRAY;
@@ -95,7 +98,7 @@ impl RoadRenderer {
                 p.extend_from_slice(turn.points.as_slice());
                 p.push(lanes[id.dst].get_inter_node_pos(inter_id));
 
-                rc.sr.draw_polyline(&p, 7.5);
+                rc.sr.draw_polyline(&p, lanes[id.src].width - 0.5);
             }
 
             rc.sr.color = WHITE;
@@ -112,7 +115,7 @@ impl RoadRenderer {
                 let dir: Vector2<f32> = (to - from) / l;
                 let normal = vec2(-dir.y, dir.x);
 
-                for i in 4..l as usize - 3 {
+                for i in 2..l as usize - 1 {
                     let along = from + dir * i as f32;
                     rc.sr
                         .draw_stroke(along - normal * 1.5, along + normal * 1.5, 0.5);
