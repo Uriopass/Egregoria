@@ -68,12 +68,28 @@ impl Itinerary {
         v
     }
 
+    pub fn check_validity(&mut self, map: &Map) {
+        match &self.kind {
+            ItineraryKind::None => {}
+            ItineraryKind::Simple(id) => {
+                if !id.is_valid(map) {
+                    self.set_none()
+                }
+            }
+            ItineraryKind::Route { .. } => todo!(),
+        }
+    }
+
     pub fn has_ended(&self) -> bool {
         match &self.kind {
             ItineraryKind::None => true,
             ItineraryKind::Simple(_) => self.local_path.is_empty(),
             ItineraryKind::Route { cursor, path } => *cursor >= path.len(),
         }
+    }
+
+    pub fn is_none(&self) -> bool {
+        matches!(self.kind, ItineraryKind::None)
     }
 }
 

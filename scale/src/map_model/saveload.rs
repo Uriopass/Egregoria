@@ -127,11 +127,11 @@ pub fn add_doublecircle(pos: Vector2<f32>, m: &mut Map) {
     );
 
     for x in second_circle.windows(2) {
-        m.connect(x[0], x[1], &LanePatternBuilder::new().one_way(true).build());
+        m.connect(x[1], x[0], &LanePatternBuilder::new().one_way(true).build());
     }
     m.connect(
-        *second_circle.last().unwrap(),
         second_circle[0],
+        *second_circle.last().unwrap(),
         &LanePatternBuilder::new().one_way(true).build(),
     );
 
