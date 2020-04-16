@@ -18,4 +18,4 @@ maintenance = { status = "experimental" }
 [dependencies]
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 imgui = "0.3"
-specs = "0.16"
+specs = { version = "0.16", default-features = false }

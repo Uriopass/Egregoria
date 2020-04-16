@@ -107,6 +107,14 @@ pub fn objective_update(
     trans: &Transform,
     map: &Map,
 ) {
+    if vehicle
+        .itinerary
+        .get_travers()
+        .map_or(false, |x| !x.is_valid(map))
+    {
+        vehicle.itinerary.set_none();
+    }
+
     if let Some(p) = vehicle.itinerary.get_point() {
         if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
             let k = vehicle.itinerary.get_travers().unwrap();
@@ -120,13 +128,11 @@ pub fn objective_update(
 
     if vehicle.itinerary.has_ended() {
         if vehicle.itinerary.get_travers().is_none() {
-            let lane = map.closest_lane(trans.position());
-            if let Some(id) = lane {
-                vehicle.itinerary.set_simple(
-                    Traversable::new(TraverseKind::Lane(id), TraverseDirection::Forward),
-                    map,
-                );
-            }
+            let id = unwrap_ret!(map.closest_lane(trans.position()));
+            vehicle.itinerary.set_simple(
+                Traversable::new(TraverseKind::Lane(id), TraverseDirection::Forward),
+                map,
+            );
             return;
         }
 

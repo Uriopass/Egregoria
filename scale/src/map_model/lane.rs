@@ -1,6 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::segment::Segment;
-use crate::map_model::{IntersectionID, Intersections, Road, RoadID, TrafficControl};
+use crate::map_model::{Intersection, IntersectionID, Intersections, Road, RoadID, TrafficControl};
 use cgmath::InnerSpace;
 use cgmath::Vector2;
 use imgui_inspect_derive::*;
@@ -49,6 +49,8 @@ pub struct Lane {
 
     // Always from start to finish. (depends on direction)
     pub points: PolyLine,
+    pub width: f32,
+    pub dist_from_center: f32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -134,17 +136,11 @@ impl Lane {
         }
     }
 
-    fn get_node_pos(
-        &self,
-        inter_id: IntersectionID,
-        inters: &Intersections,
-        parent_road: &Road,
-    ) -> Vector2<f32> {
-        let inter = &inters[inter_id];
+    fn get_node_pos(&self, inter: &Intersection, parent_road: &Road) -> Vector2<f32> {
+        let lane_dist = self.width / 2.0 + self.dist_from_center;
 
-        let lane_dist = 0.5 + parent_road.idx_unchecked(self.id) as f32;
-        let dir = parent_road.dir_from(inter_id, inter.pos);
-        let dir_normal: Vector2<f32> = if inter_id == self.dst {
+        let dir = parent_road.dir_from(inter.id, inter.pos);
+        let dir_normal: Vector2<f32> = if inter.id == self.dst {
             [-dir.y, dir.x].into()
         } else {
             [dir.y, -dir.x].into()
@@ -152,12 +148,12 @@ impl Lane {
 
         let mindist = parent_road.length() / 2.0 - 1.0;
 
-        inter.pos + dir * inter.interface_radius.min(mindist) + dir_normal * lane_dist as f32 * 8.0
+        inter.pos + dir * inter.interface_radius.min(mindist) + dir_normal * lane_dist
     }
 
     pub fn gen_pos(&mut self, intersections: &Intersections, parent_road: &Road) {
-        let pos_src = self.get_node_pos(self.src, intersections, parent_road);
-        let pos_dst = self.get_node_pos(self.dst, intersections, parent_road);
+        let pos_src = self.get_node_pos(&intersections[self.src], parent_road);
+        let pos_dst = self.get_node_pos(&intersections[self.dst], parent_road);
 
         self.points.clear();
         self.points.push(pos_src);

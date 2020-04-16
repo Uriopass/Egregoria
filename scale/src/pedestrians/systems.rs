@@ -90,7 +90,9 @@ pub fn calc_decision<'a>(
     let dist_to_pos = delta_pos.magnitude();
     let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
 
-    let mut desired_v: Vector2<f32> = dir_to_pos * pedestrian.walking_speed;
+    let mut desired_v = vec2(0.0, 0.0);
+
+    let mut estimated_density = 1.0;
 
     for (his_pos, his_obj) in neighs {
         if his_pos == position {
@@ -103,11 +105,15 @@ pub fn calc_decision<'a>(
 
         let forward_boost = 1.0 + direction.dot(towards_dir).abs();
 
-        desired_v +=
-            -towards_dir * 1.5 * (-(dist - his_obj.radius).max(0.0) * 0.7).exp() * forward_boost;
+        estimated_density += 1.0 / (1.0 + dist);
+
+        desired_v += -towards_dir * 1.0 * (-(dist - his_obj.radius) * 0.7).exp() * forward_boost;
     }
 
+    desired_v *= 2.0 / estimated_density.restrict(1.0, 4.0);
+
     //desired_v += 0.1 * vec2(rand::random::<f32>(), rand::random()) * desired_v.magnitude();
+    desired_v += dir_to_pos * pedestrian.walking_speed;
 
     let s = desired_v
         .magnitude()
@@ -120,29 +126,36 @@ pub fn calc_decision<'a>(
 }
 
 pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform, map: &Map) {
+    pedestrian.itinerary.check_validity(map);
+
     if let Some(x) = pedestrian.itinerary.get_point() {
-        if x.distance(trans.position()) > 2.0 {
+        if x.distance(trans.position()) > 3.0 {
             return;
         }
         pedestrian.itinerary.advance(map);
     }
 
+    if pedestrian.itinerary.is_none() {
+        if let Some(closest) = map.closest_lane(trans.position()) {
+            pedestrian.itinerary.set_simple(
+                Traversable::new(TraverseKind::Lane(closest), TraverseDirection::Forward),
+                map,
+            );
+            pedestrian.itinerary.advance(map);
+        }
+    }
+
     if pedestrian.itinerary.has_ended() {
         let t = *unwrap_ret!(pedestrian.itinerary.get_travers());
+
         match t.kind {
             TraverseKind::Lane(l) => {
                 let arrived = &map.intersections()[map.lanes()[l].dst];
 
                 let neighs = arrived.turns_adirectional(l);
 
-                /*println!("--- {:?}", l);
-                for x in neighs.iter() {
-                    println!("{:?}", x);
-                }*/
-
                 let turn = unwrap_ret!(neighs.choose());
 
-                //println!("Choose {:?}", turn);
                 let direction = if turn.id.src == l {
                     TraverseDirection::Forward
                 } else {
