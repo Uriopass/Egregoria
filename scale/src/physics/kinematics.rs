@@ -1,6 +1,6 @@
+use crate::geometry::Vec2;
 use crate::gui::InspectVec2;
 use cgmath::num_traits::zero;
-use cgmath::Vector2;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};

@@ -1,10 +1,10 @@
 use crate::geometry::polyline::PolyLine;
+use crate::geometry::Vec2;
 use crate::map_model::{
     IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
     Roads, TrafficControl,
 };
 use cgmath::InnerSpace;
-use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 

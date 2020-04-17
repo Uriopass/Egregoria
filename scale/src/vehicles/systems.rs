@@ -1,11 +1,12 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
+use crate::geometry::Vec2;
 use crate::map_model::{Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind};
 use crate::physics::{CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::{Choose, Restrict};
 use crate::vehicles::VehicleComponent;
-use cgmath::{vec2, Angle, Array, InnerSpace, MetricSpace, Vector2};
+use cgmath::{Angle, Array, InnerSpace, MetricSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 
@@ -98,7 +99,7 @@ fn vehicle_physics(
 
     assert!(ang.0.is_finite());
 
-    let direction = vec2(ang.cos(), ang.sin());
+    let direction = vec2!(ang.cos(), ang.sin());
     trans.set_direction(direction);
 
     assert!(speed.is_finite());

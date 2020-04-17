@@ -1,5 +1,5 @@
 use crate::geometry::gridstore::{GridStore, GridStoreHandle};
-use cgmath::{vec2, Vector2};
+use crate::geometry::Vec2;
 use specs::{Component, VecStorage};
 
 mod kinematics;
@@ -27,7 +27,7 @@ pub struct PhysicsObject {
 impl Default for PhysicsObject {
     fn default() -> Self {
         Self {
-            dir: vec2(1.0, 0.0),
+            dir: vec2!(1.0, 0.0),
             speed: 0.0,
             radius: 1.0,
             group: PhysicsGroup::Unknown,

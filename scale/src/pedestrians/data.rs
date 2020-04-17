@@ -5,7 +5,6 @@ use crate::physics::{
 };
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::Color;
-use cgmath::vec2;
 use imgui_inspect_derive::*;
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
@@ -62,14 +61,14 @@ pub fn spawn_pedestrian(world: &mut World) {
                 .add(RectRender {
                     height: 0.12,
                     width: 0.15,
-                    offset: vec2(0.0, 0.225),
+                    offset: vec2!(0.0, 0.225),
                     color: Color::from_hex(0xFFCCA8),
                     ..Default::default()
                 })
                 .add(RectRender {
                     height: 0.12,
                     width: 0.15,
-                    offset: vec2(0.0, -0.225),
+                    offset: vec2!(0.0, -0.225),
                     color: Color::from_hex(0xFFCCA8),
                     ..Default::default()
                 })
@@ -82,13 +81,13 @@ pub fn spawn_pedestrian(world: &mut World) {
                 .add(CircleRender {
                     radius: 0.1,
                     color,
-                    offset: vec2(0.0, 0.2),
+                    offset: vec2!(0.0, 0.2),
                     ..Default::default()
                 })
                 .add(CircleRender {
                     radius: 0.1,
                     color,
-                    offset: vec2(0.0, -0.2),
+                    offset: vec2!(0.0, -0.2),
                     ..Default::default()
                 })
                 .add(CircleRender {

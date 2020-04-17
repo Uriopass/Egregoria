@@ -1,10 +1,11 @@
 use crate::engine_interaction::TimeInfo;
+use crate::geometry::Vec2;
 use crate::map_model::{Map, Traversable, TraverseDirection, TraverseKind};
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::{Choose, Restrict};
-use cgmath::{vec2, Angle, Array, InnerSpace, MetricSpace, Vector2};
+use cgmath::{Angle, Array, InnerSpace, MetricSpace};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use std::borrow::Borrow;
@@ -83,14 +84,14 @@ pub fn physics(
     }
 
     let delta_ang = trans.direction().angle(desired_dir);
-    let mut ang = Vector2::unit_x().angle(trans.direction());
+    let mut ang = vec2!(1.0, 0.0).angle(trans.direction());
 
     const ANG_VEL: f32 = 1.0;
     ang.0 += delta_ang
         .0
         .restrict(-ANG_VEL * time.delta, ANG_VEL * time.delta);
 
-    trans.set_direction(vec2(ang.cos(), ang.sin()));
+    trans.set_direction(vec2!(ang.cos(), ang.sin()));
 }
 
 pub fn calc_decision<'a>(
@@ -101,7 +102,7 @@ pub fn calc_decision<'a>(
 ) -> (Vec2, Vec2) {
     let objective = match pedestrian.itinerary.get_point() {
         Some(x) => x,
-        None => return (vec2(0.0, 0.0), trans.direction()),
+        None => return (vec2!(0.0, 0.0), trans.direction()),
     };
 
     let position = trans.position();
@@ -113,10 +114,10 @@ pub fn calc_decision<'a>(
         delta_pos / dist_to_pos
     } else {
         panic!("the fuck");
-        vec2(1.0, 0.0)
+        vec2!(1.0, 0.0)
     };
 
-    let mut desired_v = vec2(0.0, 0.0);
+    let mut desired_v = vec2!(0.0, 0.0);
 
     let mut estimated_density = 1.0;
 
@@ -138,7 +139,7 @@ pub fn calc_decision<'a>(
 
     desired_v *= 2.0 / estimated_density.restrict(2.0, 4.0);
 
-    //desired_v += 0.1 * vec2(rand::random::<f32>(), rand::random()) * desired_v.magnitude();
+    //desired_v += 0.1 * vec2!(rand::random::<f32>(), rand::random()) * desired_v.magnitude();
     desired_v += dir_to_pos * pedestrian.walking_speed;
 
     let s = desired_v
