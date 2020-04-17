@@ -177,6 +177,7 @@ pub fn calc_decision<'a>(
 
     let position = trans.position();
     let direction = trans.direction();
+    let direction_normal = trans.normal();
 
     let delta_pos = objective - position;
     let dist_to_pos = delta_pos.magnitude();
@@ -191,6 +192,8 @@ pub fn calc_decision<'a>(
         dir: direction,
     };
 
+    let on_lane = vehicle.itinerary.get_travers().unwrap().kind.is_lane();
+
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {
         if his_pos == position {
@@ -198,20 +201,17 @@ pub fn calc_decision<'a>(
         }
 
         let towards_vec = his_pos - position;
-
-        let dist2 = towards_vec.magnitude2();
-
-        let dist = dist2.sqrt();
+        let dist = towards_vec.magnitude();
         let towards_dir = towards_vec / dist;
 
         let dir_dot = towards_dir.dot(direction);
-        let his_direction = nei_physics_obj.dir;
+        let tow_nor_dot = towards_vec.dot(direction_normal).abs();
 
         // let pos_dot = towards_vec.dot(dir_normal_right);
         let is_vehicle = nei_physics_obj.group == PhysicsGroup::Vehicles;
 
         // front cone
-        if dir_dot > 0.7 && (his_direction.dot(direction) > 0.3 || !is_vehicle) {
+        if dir_dot > 0.7 && (!on_lane || tow_nor_dot < 4.0) {
             let mut dist_to_obj = dist - vehicle.kind.width() / 2.0 - nei_physics_obj.radius / 2.0;
             if !is_vehicle {
                 dist_to_obj -= 2.5;
@@ -226,6 +226,8 @@ pub fn calc_decision<'a>(
         }
 
         // closest win
+
+        let his_direction = nei_physics_obj.dir;
 
         let his_ray = Ray {
             from: his_pos - nei_physics_obj.radius / 2.0 * his_direction,

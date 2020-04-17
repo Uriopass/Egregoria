@@ -15,6 +15,12 @@ pub enum TraverseKind {
     Turn(TurnID),
 }
 
+impl TraverseKind {
+    pub fn is_lane(&self) -> bool {
+        matches!(self, TraverseKind::Lane(_))
+    }
+}
+
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, Inspect)]
 pub struct Traversable {
     pub kind: TraverseKind,
