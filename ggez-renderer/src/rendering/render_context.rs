@@ -19,7 +19,7 @@ impl<'a> RenderContext<'a> {
         font: Option<Font>,
     ) -> RenderContext<'a> {
         let rect = cam.get_screen_box();
-        let sr = ShapeRenderer::new(&rect, cam.camera.zoom);
+        let sr = ShapeRenderer::new(ctx, &rect, cam.camera.zoom);
         RenderContext { ctx, cam, sr, font }
     }
 
@@ -85,6 +85,9 @@ impl<'a> RenderContext<'a> {
 
     pub fn flush(&mut self) -> GameResult<()> {
         if !self.sr.empty {
+            if let Some(x) = self.sr.img.clone() {
+                self.sr.meshbuilder.texture(x);
+            }
             let mesh = self.sr.meshbuilder.build(self.ctx)?;
             graphics::draw(self.ctx, &mesh, DrawParam::new().dest([0.0, 0.0]))?;
             self.sr.reset();

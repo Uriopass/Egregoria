@@ -1,6 +1,7 @@
 use crate::geometry::rect::Rect;
 use cgmath::{ElementWise, EuclideanSpace, Point2, Vector2};
-use ggez::graphics::{Color, DrawMode, MeshBuilder, Vertex, WHITE};
+use ggez::graphics::{Color, DrawMode, Image, MeshBuilder, Vertex, WHITE};
+use ggez::Context;
 
 pub struct ShapeRenderer {
     pub color: Color,
@@ -9,16 +10,20 @@ pub struct ShapeRenderer {
     pub screen_box: Rect,
     pub empty: bool,
     pub zoom: f32,
+    pub img: Option<Image>,
 }
 const DEFAULT_THICKNESS: f32 = 0.2;
 impl ShapeRenderer {
-    pub fn new(screen_box: &Rect, zoom: f32) -> Self {
+    pub fn new(ctx: &mut Context, screen_box: &Rect, zoom: f32) -> Self {
+        let img = Image::new(ctx, "/test.png").unwrap();
+
         ShapeRenderer {
             color: WHITE,
             mode: DrawMode::fill(),
             meshbuilder: MeshBuilder::new(),
             screen_box: screen_box.clone(),
             empty: true,
+            img: Some(img),
             zoom,
         }
     }
@@ -49,6 +54,7 @@ impl ShapeRenderer {
         if r > 0.0 && self.screen_box.contains_within(p, r) {
             self.meshbuilder
                 .circle(self.mode, pp, r, 0.3 / self.zoom, self.color);
+
             self.empty = false;
             true
         } else {
@@ -75,6 +81,8 @@ impl ShapeRenderer {
         self.empty = false;
         true
     }
+
+    pub fn draw_image(&mut self, p: Vector2<f32>, id: usize) {}
 
     pub fn draw_rect_cos_sin(
         &mut self,
