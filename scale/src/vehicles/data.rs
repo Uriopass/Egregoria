@@ -19,7 +19,7 @@ pub struct VehicleComponent {
     #[inspect(proxy_type = "InspectDragf")]
     pub desired_speed: f32,
     #[inspect(proxy_type = "InspectVec2")]
-    pub desired_dir: Vector2<f32>,
+    pub desired_dir: Vec2,
     #[inspect(proxy_type = "InspectDragf")]
     pub ang_velocity: f32,
     #[inspect(proxy_type = "InspectDragf")]

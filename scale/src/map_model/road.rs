@@ -122,7 +122,7 @@ impl Road {
         }
     }
 
-    pub fn dir_from(&self, id: IntersectionID, pos: Vector2<f32>) -> Vector2<f32> {
+    pub fn dir_from(&self, id: IntersectionID, pos: Vec2) -> Vec2 {
         if id == self.src {
             (self.interpolation_points[1] - pos).normalize()
         } else if id == self.dst {

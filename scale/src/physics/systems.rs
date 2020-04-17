@@ -1,7 +1,7 @@
 use crate::engine_interaction::TimeInfo;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::CollisionWorld;
-use cgmath::{InnerSpace, Zero};
+use cgmath::{Array, InnerSpace, Zero};
 use specs::prelude::ResourceId;
 use specs::{Join, Read, ReadStorage, System, SystemData, World, Write, WriteStorage};
 
@@ -29,6 +29,9 @@ impl<'a> System<'a> for KinematicsApply {
         )
             .join()
         {
+            assert!(kin.velocity.is_finite());
+            assert!(transform.position().is_finite());
+
             kin.velocity += kin.acceleration * delta;
             transform.translate(kin.velocity * delta);
             kin.acceleration.set_zero();

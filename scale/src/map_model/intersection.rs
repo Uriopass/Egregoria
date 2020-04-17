@@ -40,7 +40,7 @@ pub struct IntersectionComponent {
 #[derive(Serialize, Deserialize)]
 pub struct Intersection {
     pub id: IntersectionID,
-    pub pos: Vector2<f32>,
+    pub pos: Vec2,
 
     pub turns: BTreeMap<TurnID, Turn>,
 
@@ -53,7 +53,7 @@ pub struct Intersection {
 }
 
 impl Intersection {
-    pub fn make(store: &mut Intersections, pos: Vector2<f32>) -> IntersectionID {
+    pub fn make(store: &mut Intersections, pos: Vec2) -> IntersectionID {
         store.insert_with_key(|id| Intersection {
             id,
             pos,
@@ -131,7 +131,7 @@ impl Intersection {
 
 pub fn make_inter_entity<'a>(
     inter: &Intersection,
-    inter_pos: Vector2<f32>,
+    inter_pos: Vec2,
     lazy: &LazyUpdate,
     entities: &Entities<'a>,
 ) -> Entity {

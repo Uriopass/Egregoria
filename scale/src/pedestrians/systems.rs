@@ -4,7 +4,7 @@ use crate::pedestrians::PedestrianComponent;
 use crate::physics::{CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::{Choose, Restrict};
-use cgmath::{vec2, Angle, InnerSpace, MetricSpace, Vector2};
+use cgmath::{vec2, Angle, Array, InnerSpace, MetricSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use std::borrow::Borrow;
@@ -57,13 +57,17 @@ pub fn physics(
     trans: &mut Transform,
     mr: &mut MeshRender,
     time: &TimeInfo,
-    desired_velocity: Vector2<f32>,
-    desired_dir: Vector2<f32>,
+    desired_velocity: Vec2,
+    desired_dir: Vec2,
 ) {
+    assert!(kin.velocity.is_finite());
+    assert!(desired_velocity.is_finite());
     let diff = desired_velocity - kin.velocity;
     let mag = diff.magnitude().min(time.delta);
     if mag > 0.0 {
-        kin.velocity += diff.normalize_to(mag);
+        let lol = diff.normalize_to(mag);
+        assert!(lol.x.is_finite());
+        kin.velocity += lol;
     }
 
     let speed = kin.velocity.magnitude();
@@ -93,8 +97,8 @@ pub fn calc_decision<'a>(
     pedestrian: &mut PedestrianComponent,
     trans: &Transform,
     kin: &Kinematics,
-    neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
-) -> (Vector2<f32>, Vector2<f32>) {
+    neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
+) -> (Vec2, Vec2) {
     let objective = match pedestrian.itinerary.get_point() {
         Some(x) => x,
         None => return (vec2(0.0, 0.0), trans.direction()),
@@ -103,9 +107,14 @@ pub fn calc_decision<'a>(
     let position = trans.position();
     let direction = trans.direction();
 
-    let delta_pos: Vector2<f32> = objective - position;
+    let delta_pos: Vec2 = objective - position;
     let dist_to_pos = delta_pos.magnitude();
-    let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
+    let dir_to_pos: Vec2 = if dist_to_pos > 0.0 {
+        delta_pos / dist_to_pos
+    } else {
+        panic!("the fuck");
+        vec2(1.0, 0.0)
+    };
 
     let mut desired_v = vec2(0.0, 0.0);
 
@@ -118,7 +127,7 @@ pub fn calc_decision<'a>(
 
         let towards_vec = his_pos - position;
         let dist = towards_vec.magnitude();
-        let towards_dir: Vector2<f32> = towards_vec / dist;
+        let towards_dir: Vec2 = towards_vec / dist;
 
         let forward_boost = 1.0 + direction.dot(towards_dir).abs();
 

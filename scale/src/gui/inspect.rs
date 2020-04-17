@@ -1,4 +1,5 @@
 use crate::geometry::polyline::PolyLine;
+use crate::geometry::Vec2;
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
 use crate::map_model::IntersectionComponent;
 use crate::pedestrians::PedestrianComponent;
@@ -85,14 +86,8 @@ impl InspectRenderDefault<f64> for InspectDragf {
 }
 
 pub struct InspectVec2;
-impl InspectRenderDefault<Vector2<f32>> for InspectVec2 {
-    fn render(
-        data: &[&Vector2<f32>],
-        label: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        _: &InspectArgsDefault,
-    ) {
+impl InspectRenderDefault<Vec2> for InspectVec2 {
+    fn render(data: &[&Vec2], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -103,7 +98,7 @@ impl InspectRenderDefault<Vector2<f32>> for InspectVec2 {
     }
 
     fn render_mut(
-        data: &mut [&mut Vector2<f32>],
+        data: &mut [&mut Vec2],
         label: &'static str,
         _: &mut World,
         ui: &Ui,
@@ -125,14 +120,8 @@ impl InspectRenderDefault<Vector2<f32>> for InspectVec2 {
 }
 
 pub struct InspectVec2Rotation;
-impl InspectRenderDefault<Vector2<f32>> for InspectVec2Rotation {
-    fn render(
-        data: &[&Vector2<f32>],
-        label: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        _: &InspectArgsDefault,
-    ) {
+impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
+    fn render(data: &[&Vec2], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -142,7 +131,7 @@ impl InspectRenderDefault<Vector2<f32>> for InspectVec2Rotation {
     }
 
     fn render_mut(
-        data: &mut [&mut Vector2<f32>],
+        data: &mut [&mut Vec2],
         label: &'static str,
         _: &mut World,
         ui: &Ui,
@@ -264,13 +253,7 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
             ui.indent();
             for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
-                <InspectVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
-                    &mut [x],
-                    "",
-                    w,
-                    ui,
-                    args,
-                );
+                <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(&mut [x], "", w, ui, args);
                 id.pop(ui);
             }
             ui.unindent();
@@ -370,7 +353,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         clone_and_modify(self.world, self.entity, |world, mut x: Transform| {
             let mut position = x.position();
             let mut direction = x.direction();
-            if <InspectVec2 as InspectRenderDefault<Vector2<f32>>>::render_mut(
+            if <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(
                 &mut [&mut position],
                 "position",
                 world,
@@ -379,7 +362,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
             ) {
                 event = Some(position);
             }
-            <InspectVec2Rotation as InspectRenderDefault<Vector2<f32>>>::render_mut(
+            <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
                 &mut [&mut direction],
                 "direction",
                 world,

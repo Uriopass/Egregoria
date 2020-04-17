@@ -43,7 +43,7 @@ impl Itinerary {
         self.local_path.n_points()
     }
 
-    pub fn get_point(&self) -> Option<&Vector2<f32>> {
+    pub fn get_point(&self) -> Option<&Vec2> {
         self.local_path.first()
     }
 
@@ -55,7 +55,7 @@ impl Itinerary {
         }
     }
 
-    pub fn advance(&mut self, map: &Map) -> Option<Vector2<f32>> {
+    pub fn advance(&mut self, map: &Map) -> Option<Vec2> {
         let v = self.local_path.pop_first();
         if self.local_path.is_empty() {
             if let ItineraryKind::Route { cursor, path } = &mut self.kind {

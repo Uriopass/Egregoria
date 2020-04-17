@@ -208,7 +208,7 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct CircleRender {
     #[inspect(proxy_type = "InspectVec2")]
-    pub offset: Vector2<f32>,
+    pub offset: Vec2,
     #[inspect(proxy_type = "InspectDragf")]
     pub radius: f32,
     pub color: Color,
@@ -229,7 +229,7 @@ impl Default for CircleRender {
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct RectRender {
     #[inspect(proxy_type = "InspectVec2")]
-    pub offset: Vector2<f32>,
+    pub offset: Vec2,
     #[inspect(proxy_type = "InspectDragf")]
     pub width: f32,
     #[inspect(proxy_type = "InspectDragf")]
@@ -262,7 +262,7 @@ pub struct LineToRender {
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct LineRender {
     #[inspect(proxy_type = "InspectVec2")]
-    pub offset: Vector2<f32>,
+    pub offset: Vec2,
     pub color: Color,
     #[inspect(proxy_type = "InspectDragf")]
     pub thickness: f32,

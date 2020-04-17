@@ -69,11 +69,11 @@ impl Map {
         self.intersections[id].update_traffic_control(&mut self.lanes, &self.roads);
     }
 
-    pub fn add_intersection(&mut self, pos: Vector2<f32>) -> IntersectionID {
+    pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
         Intersection::make(&mut self.intersections, pos)
     }
 
-    pub fn move_intersection(&mut self, id: IntersectionID, pos: Vector2<f32>) {
+    pub fn move_intersection(&mut self, id: IntersectionID, pos: Vec2) {
         self.intersections[id].pos = pos;
 
         for x in self.intersections[id].roads.clone() {
@@ -167,7 +167,7 @@ impl Map {
         None
     }
 
-    pub fn closest_lane(&self, p: Vector2<f32>) -> Option<LaneID> {
+    pub fn closest_lane(&self, p: Vec2) -> Option<LaneID> {
         let mut min_dist = std::f32::MAX;
         let mut closest = None;
 

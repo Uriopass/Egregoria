@@ -5,7 +5,7 @@ use crate::physics::{CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::{Choose, Restrict};
 use crate::vehicles::VehicleComponent;
-use cgmath::{vec2, Angle, InnerSpace, MetricSpace, Vector2};
+use cgmath::{vec2, Angle, Array, InnerSpace, MetricSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 
@@ -96,9 +96,15 @@ fn vehicle_physics(
         vehicle.ang_velocity * time.delta,
     );
 
+    assert!(ang.0.is_finite());
+
     let direction = vec2(ang.cos(), ang.sin());
     trans.set_direction(direction);
+
+    assert!(speed.is_finite());
+    assert!(direction.is_finite());
     kin.velocity = direction * speed;
+    assert!(kin.velocity.is_finite());
 }
 
 pub fn objective_update(
@@ -165,13 +171,13 @@ pub fn calc_decision<'a>(
     speed: f32,
     time: &TimeInfo,
     trans: &Transform,
-    neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
+    neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
 ) {
     if vehicle.wait_time > 0.0 {
         vehicle.wait_time -= time.delta;
         return;
     }
-    let objective: Vector2<f32> = *unwrap_ret!(vehicle.itinerary.get_point());
+    let objective: Vec2 = *unwrap_ret!(vehicle.itinerary.get_point());
 
     let is_terminal = false; // TODO: change depending on route
 
@@ -181,7 +187,7 @@ pub fn calc_decision<'a>(
 
     let delta_pos = objective - position;
     let dist_to_pos = delta_pos.magnitude();
-    let dir_to_pos: Vector2<f32> = delta_pos / dist_to_pos;
+    let dir_to_pos: Vec2 = delta_pos / dist_to_pos;
     let time_to_stop = speed / vehicle.kind.deceleration();
     let stop_dist = time_to_stop * speed / 2.0;
 
