@@ -104,7 +104,7 @@ pub fn load_parismap() -> Map {
     map
 }
 
-pub fn add_doublecircle(pos: Vector2<f32>, m: &mut Map) {
+pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
     let mut first_circle = vec![];
     let mut second_circle = vec![];
 
@@ -112,7 +112,7 @@ pub fn add_doublecircle(pos: Vector2<f32>, m: &mut Map) {
     for i in 0..N_POINTS {
         let angle = (i as f32 / N_POINTS as f32) * 2.0 * std::f32::consts::PI;
 
-        let v: Vector2<f32> = [angle.cos(), angle.sin()].into();
+        let v: Vec2 = [angle.cos(), angle.sin()].into();
         first_circle.push(m.add_intersection(pos + v * 100.0));
         second_circle.push(m.add_intersection(pos + v * 200.0));
     }
@@ -140,7 +140,7 @@ pub fn add_doublecircle(pos: Vector2<f32>, m: &mut Map) {
     }
 }
 
-pub fn add_grid(pos: Vector2<f32>, m: &mut Map) {
+pub fn add_grid(pos: Vec2, m: &mut Map) {
     let mut grid: [[Option<IntersectionID>; 10]; 10] = [[None; 10]; 10];
     for (y, l) in grid.iter_mut().enumerate() {
         for (x, v) in l.iter_mut().enumerate() {
@@ -178,12 +178,13 @@ pub fn add_grid(pos: Vector2<f32>, m: &mut Map) {
 pub fn load(world: &mut World) {
     let mut map = load_from_file();
 
+    map = load_parismap();
+
     if map.is_empty() {
         add_doublecircle([0.0, 0.0].into(), &mut map);
         add_grid([0.0, 250.0].into(), &mut map);
     }
 
-    // let map = load_parismap();
     world.insert(map);
 
     let map = world.read_resource::<Map>();

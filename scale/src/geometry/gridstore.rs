@@ -232,24 +232,30 @@ impl<O: Copy> GridStore<O> {
     fn check_resize(&mut self, pos: Vec2) {
         let mut reallocate = false;
 
+        assert!(pos.x.is_finite());
+
         while (pos.x as i32) <= self.start_x {
+            println!("Reallocating for {:?}", pos);
             self.start_x -= self.cell_size;
             self.width += 1;
             reallocate = true;
         }
 
         while (pos.y as i32) <= self.start_y {
+            println!("Reallocating for {:?}", pos);
             self.start_y -= self.cell_size;
             self.height += 1;
             reallocate = true;
         }
 
         while (pos.x as i32) >= self.start_x + self.width as i32 * self.cell_size {
+            println!("Reallocating for {:?}", pos);
             self.width += 1;
             reallocate = true;
         }
 
         while (pos.y as i32) >= self.start_y + self.height as i32 * self.cell_size {
+            println!("Reallocating for {:?}", pos);
             self.height += 1;
             self.cells
                 .resize_with((self.width * self.height) as usize, GridStoreCell::default);

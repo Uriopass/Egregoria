@@ -9,9 +9,9 @@ use specs::{Component, VecStorage};
 #[storage(VecStorage)]
 pub struct Kinematics {
     #[inspect(proxy_type = "InspectVec2")]
-    pub velocity: Vector2<f32>,
+    pub velocity: Vec2,
     #[inspect(proxy_type = "InspectVec2", skip = true)]
-    pub acceleration: Vector2<f32>,
+    pub acceleration: Vec2,
     pub mass: f32,
 }
 

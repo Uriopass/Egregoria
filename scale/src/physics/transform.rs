@@ -15,7 +15,7 @@ impl Transform {
         Transform::new([0.0, 0.0])
     }
 
-    pub fn new<T: Into<Vector2<f32>>>(position: T) -> Self {
+    pub fn new<T: Into<Vec2>>(position: T) -> Self {
         let position = position.into();
         let mut m = Matrix3::identity();
         m.z.x = position.x;
@@ -23,16 +23,16 @@ impl Transform {
         Transform { m, rotated: false }
     }
 
-    pub fn position(&self) -> Vector2<f32> {
+    pub fn position(&self) -> Vec2 {
         Vector2::new(self.m.z.x, self.m.z.y)
     }
 
-    pub fn set_position(&mut self, position: Vector2<f32>) {
+    pub fn set_position(&mut self, position: Vec2) {
         self.m.z.x = position.x;
         self.m.z.y = position.y;
     }
 
-    pub fn translate(&mut self, offset: Vector2<f32>) {
+    pub fn translate(&mut self, offset: Vec2) {
         self.m.z.x += offset.x;
         self.m.z.y += offset.y;
     }
@@ -55,7 +55,7 @@ impl Transform {
         self.rotated = sin != 0.0;
     }
 
-    pub fn set_direction(&mut self, dir: Vector2<f32>) {
+    pub fn set_direction(&mut self, dir: Vec2) {
         self.set_cos_sin(dir.x, dir.y);
     }
 
@@ -71,15 +71,15 @@ impl Transform {
         f32::atan2(self.sin(), self.cos())
     }
 
-    pub fn direction(&self) -> Vector2<f32> {
+    pub fn direction(&self) -> Vec2 {
         Vector2::new(self.cos(), self.sin())
     }
 
-    pub fn normal(&self) -> Vector2<f32> {
+    pub fn normal(&self) -> Vec2 {
         Vector2::new(-self.sin(), self.cos())
     }
 
-    pub fn apply_rotation(&self, vec: Vector2<f32>) -> Vector2<f32> {
+    pub fn apply_rotation(&self, vec: Vec2) -> Vec2 {
         Vector2::<f32>::new(
             vec.x * self.cos() + vec.y * self.sin(),
             vec.x * self.sin() - vec.y * self.cos(),
@@ -90,7 +90,7 @@ impl Transform {
         !self.rotated
     }
 
-    pub fn project(&self, point: Vector2<f32>) -> Vector2<f32> {
+    pub fn project(&self, point: Vec2) -> Vec2 {
         let p = self.m * point.extend(1.0);
         Vector2::new(p.x, p.y)
     }
