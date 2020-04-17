@@ -156,6 +156,6 @@ pub fn make_inter_entity<'a>(
         ))
         .with(Transform::new(inter_pos))
         .with(Movable)
-        .with(Selectable::default())
+        .with(Selectable::new(10.0))
         .build()
 }

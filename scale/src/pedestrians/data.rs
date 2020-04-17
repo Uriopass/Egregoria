@@ -1,4 +1,4 @@
-use crate::interaction::Selectable;
+use crate::interaction::{Movable, Selectable};
 use crate::map_model::{Itinerary, LaneKind, Map, Traversable, TraverseDirection, TraverseKind};
 use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
@@ -58,6 +58,7 @@ pub fn spawn_pedestrian(world: &mut World) {
             ..Default::default()
         })
         .with(Kinematics::from_mass(80.0))
+        .with(Movable)
         .with({
             let mut lol = MeshRender::empty(3);
             if is_tpose {

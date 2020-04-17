@@ -75,6 +75,10 @@ impl Transform {
         Vector2::new(self.cos(), self.sin())
     }
 
+    pub fn normal(&self) -> Vector2<f32> {
+        Vector2::new(-self.sin(), self.cos())
+    }
+
     pub fn apply_rotation(&self, vec: Vector2<f32>) -> Vector2<f32> {
         Vector2::<f32>::new(
             vec.x * self.cos() + vec.y * self.sin(),

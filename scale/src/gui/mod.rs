@@ -1,7 +1,7 @@
 use crate::engine_interaction::{RenderStats, TimeInfo};
 use crate::interaction::SelectedEntity;
 use crate::map_model::{LanePatternBuilder, MapUIState};
-use crate::pedestrians::spawn_pedestrian;
+use crate::pedestrians::{spawn_pedestrian, PedestrianComponent};
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
 use imgui::im_str;
 use imgui::Ui;
@@ -134,6 +134,15 @@ impl Gui {
                     );
 
                     world.get_mut::<MapUIState>().unwrap().pattern_builder = pattern;
+
+                    ui.text(im_str!(
+                        "{} pedestrians",
+                        world.read_component::<PedestrianComponent>().join().count()
+                    ));
+                    ui.text(im_str!(
+                        "{} vehicles",
+                        world.read_component::<VehicleComponent>().join().count()
+                    ));
                 });
             self.show_car_ui = opened;
         }
