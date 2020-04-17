@@ -48,8 +48,6 @@ pub fn spawn_pedestrian(world: &mut World) {
     );
     let color = random_pedestrian_shirt_color();
 
-    let is_tpose = rand::random::<bool>();
-
     world
         .create_entity()
         .with(Transform::new(pos))
@@ -60,49 +58,8 @@ pub fn spawn_pedestrian(world: &mut World) {
         .with(Kinematics::from_mass(80.0))
         .with(Movable)
         .with({
-            let mut lol = MeshRender::empty(3);
-            if is_tpose {
-                lol.add(RectRender {
-                    height: 0.3,
-                    width: 0.1,
-                    offset: vec2(0.0, 0.35),
-                    color: Color::from_hex(0xFFCCA8),
-                    ..Default::default()
-                })
+            MeshRender::empty(3)
                 .add(RectRender {
-                    height: 0.3,
-                    width: 0.1,
-                    offset: vec2(0.0, -0.35),
-                    color: Color::from_hex(0xFFCCA8),
-                    ..Default::default()
-                })
-                .add(CircleRender {
-                    radius: 0.05,
-                    offset: vec2(0.12, 0.06),
-                    color: Color::from_hex(0xDDBB98),
-                    ..Default::default()
-                })
-                .add(CircleRender {
-                    radius: 0.05,
-                    offset: vec2(0.12, -0.06),
-                    color: Color::from_hex(0xDDBB98),
-                    ..Default::default()
-                })
-                .add(RectRender {
-                    height: 0.1,
-                    width: 0.3,
-                    offset: vec2(0.1, 0.0),
-                    color: Color::from_hex(0xFFCCA8),
-                    ..Default::default()
-                })
-                .add(CircleRender {
-                    radius: 0.05,
-                    offset: vec2(0.25, 0.0),
-                    color: Color::from_hex(0xFFCCA8),
-                    ..Default::default()
-                });
-            } else {
-                lol.add(RectRender {
                     height: 0.12,
                     width: 0.15,
                     offset: vec2(0.0, 0.225),
@@ -115,32 +72,31 @@ pub fn spawn_pedestrian(world: &mut World) {
                     offset: vec2(0.0, -0.225),
                     color: Color::from_hex(0xFFCCA8),
                     ..Default::default()
-                });
-            }
-            lol.add(RectRender {
-                height: 0.4,
-                width: 0.2,
-                color,
-                ..Default::default()
-            })
-            .add(CircleRender {
-                radius: 0.1,
-                color,
-                offset: vec2(0.0, 0.2),
-                ..Default::default()
-            })
-            .add(CircleRender {
-                radius: 0.1,
-                color,
-                offset: vec2(0.0, -0.2),
-                ..Default::default()
-            })
-            .add(CircleRender {
-                radius: 0.125,
-                color: Color::BLACK,
-                ..Default::default()
-            })
-            .build()
+                })
+                .add(RectRender {
+                    height: 0.4,
+                    width: 0.2,
+                    color,
+                    ..Default::default()
+                })
+                .add(CircleRender {
+                    radius: 0.1,
+                    color,
+                    offset: vec2(0.0, 0.2),
+                    ..Default::default()
+                })
+                .add(CircleRender {
+                    radius: 0.1,
+                    color,
+                    offset: vec2(0.0, -0.2),
+                    ..Default::default()
+                })
+                .add(CircleRender {
+                    radius: 0.125,
+                    color: Color::BLACK,
+                    ..Default::default()
+                })
+                .build()
         })
         .with(Collider(h))
         .with(Selectable::new(0.5))
