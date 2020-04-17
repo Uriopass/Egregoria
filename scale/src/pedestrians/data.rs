@@ -16,6 +16,7 @@ use specs::{Component, DenseVecStorage};
 pub struct PedestrianComponent {
     pub itinerary: Itinerary,
     pub walking_speed: f32,
+    pub walk_anim: f32,
 }
 
 pub fn spawn_pedestrian(world: &mut World) {
@@ -45,7 +46,10 @@ pub fn spawn_pedestrian(world: &mut World) {
             ..Default::default()
         },
     );
-    let color = random_pedestrian_color();
+    let color = random_pedestrian_shirt_color();
+
+    let is_tpose = rand::random::<bool>();
+
     world
         .create_entity()
         .with(Transform::new(pos))
@@ -54,33 +58,89 @@ pub fn spawn_pedestrian(world: &mut World) {
             ..Default::default()
         })
         .with(Kinematics::from_mass(80.0))
-        .with(
-            MeshRender::empty(3)
+        .with({
+            let mut lol = MeshRender::empty(3);
+            if is_tpose {
+                lol.add(RectRender {
+                    height: 0.3,
+                    width: 0.1,
+                    offset: vec2(0.0, 0.35),
+                    color: Color::from_hex(0xFFCCA8),
+                    ..Default::default()
+                })
                 .add(RectRender {
-                    height: 0.6,
-                    width: 0.2,
-                    color,
+                    height: 0.3,
+                    width: 0.1,
+                    offset: vec2(0.0, -0.35),
+                    color: Color::from_hex(0xFFCCA8),
                     ..Default::default()
                 })
                 .add(CircleRender {
-                    radius: 0.15,
-                    color: Color::BLACK,
+                    radius: 0.05,
+                    offset: vec2(0.12, 0.06),
+                    color: Color::from_hex(0xDDBB98),
                     ..Default::default()
                 })
                 .add(CircleRender {
-                    radius: 0.1,
-                    color,
-                    offset: vec2(0.0, 0.3),
+                    radius: 0.05,
+                    offset: vec2(0.12, -0.06),
+                    color: Color::from_hex(0xDDBB98),
+                    ..Default::default()
+                })
+                .add(RectRender {
+                    height: 0.1,
+                    width: 0.3,
+                    offset: vec2(0.1, 0.0),
+                    color: Color::from_hex(0xFFCCA8),
                     ..Default::default()
                 })
                 .add(CircleRender {
-                    radius: 0.1,
-                    color,
-                    offset: vec2(0.0, -0.3),
+                    radius: 0.05,
+                    offset: vec2(0.25, 0.0),
+                    color: Color::from_hex(0xFFCCA8),
+                    ..Default::default()
+                });
+            } else {
+                lol.add(RectRender {
+                    height: 0.12,
+                    width: 0.15,
+                    offset: vec2(0.0, 0.225),
+                    color: Color::from_hex(0xFFCCA8),
                     ..Default::default()
                 })
-                .build(),
-        )
+                .add(RectRender {
+                    height: 0.12,
+                    width: 0.15,
+                    offset: vec2(0.0, -0.225),
+                    color: Color::from_hex(0xFFCCA8),
+                    ..Default::default()
+                });
+            }
+            lol.add(RectRender {
+                height: 0.4,
+                width: 0.2,
+                color,
+                ..Default::default()
+            })
+            .add(CircleRender {
+                radius: 0.1,
+                color,
+                offset: vec2(0.0, 0.2),
+                ..Default::default()
+            })
+            .add(CircleRender {
+                radius: 0.1,
+                color,
+                offset: vec2(0.0, -0.2),
+                ..Default::default()
+            })
+            .add(CircleRender {
+                radius: 0.125,
+                color: Color::BLACK,
+                ..Default::default()
+            })
+            .build()
+        })
         .with(Collider(h))
         .with(Selectable::new(0.5))
         .build();
@@ -94,11 +154,12 @@ impl Default for PedestrianComponent {
                 .unwrap()
                 .sample(&mut rand::thread_rng())
                 .max(0.5),
+            walk_anim: 0.0,
         }
     }
 }
 
-pub fn random_pedestrian_color() -> Color {
+pub fn random_pedestrian_shirt_color() -> Color {
     let car_colors: [(Color, f32); 7] = [
         (Color::from_hex(0xff_ff_ff), 0.1),  // White
         (Color::from_hex(0x66_66_66), 0.1),  // Gray
