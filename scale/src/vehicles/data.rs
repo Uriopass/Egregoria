@@ -79,11 +79,14 @@ impl VehicleKind {
     }
 
     pub fn build_mr(self, mr: &mut MeshRender) {
+        let width = self.width();
+        let height = self.height();
+
         match self {
             VehicleKind::Car => {
                 mr.add(RectRender {
-                    width: self.width(),
-                    height: self.height(),
+                    width,
+                    height,
                     color: get_random_car_color(),
                     ..Default::default()
                 })

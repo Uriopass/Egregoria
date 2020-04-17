@@ -8,12 +8,16 @@ use ggez::{graphics, Context, GameResult};
 pub struct RenderContext<'a> {
     pub cam: &'a mut camera_handler::CameraHandler,
     pub sr: ShapeRenderer,
-    font: Font,
+    font: Option<Font>,
     ctx: &'a mut Context,
 }
 
 impl<'a> RenderContext<'a> {
-    pub fn new(cam: &'a mut CameraHandler, ctx: &'a mut Context, font: Font) -> RenderContext<'a> {
+    pub fn new(
+        cam: &'a mut CameraHandler,
+        ctx: &'a mut Context,
+        font: Option<Font>,
+    ) -> RenderContext<'a> {
         let rect = cam.get_screen_box();
         let sr = ShapeRenderer::new(&rect, cam.camera.zoom);
         RenderContext { ctx, cam, sr, font }
@@ -56,7 +60,7 @@ impl<'a> RenderContext<'a> {
         size: f32,
         color: Color,
     ) -> GameResult<()> {
-        let text = Text::new((text, self.font, 70.0));
+        let text = Text::new((text, self.font.unwrap(), 70.0));
         pos.y += text.height(self.ctx) as f32 * 0.02 * size;
         let trans = graphics::DrawParam::new()
             .color(color)

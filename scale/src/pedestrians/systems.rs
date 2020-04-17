@@ -2,6 +2,7 @@ use crate::engine_interaction::TimeInfo;
 use crate::map_model::{Map, Traversable, TraverseDirection, TraverseKind};
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{CollisionWorld, Kinematics, PhysicsObject, Transform};
+use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::{Choose, Restrict};
 use cgmath::{vec2, Angle, InnerSpace, MetricSpace, Vector2};
 use specs::prelude::*;
@@ -19,6 +20,7 @@ pub struct PedestrianDecisionData<'a> {
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
     pedestrians: WriteStorage<'a, PedestrianComponent>,
+    mr: WriteStorage<'a, MeshRender>,
 }
 
 impl<'a> System<'a> for PedestrianDecision {
@@ -32,9 +34,10 @@ impl<'a> System<'a> for PedestrianDecision {
             &mut data.transforms,
             &mut data.kinematics,
             &mut data.pedestrians,
+            &mut data.mr,
         )
             .join()
-            .for_each(|(trans, kin, pedestrian)| {
+            .for_each(|(trans, kin, pedestrian, mr)| {
                 objective_update(pedestrian, trans, map);
 
                 let neighbors = cow.query_around(trans.position(), 10.0);
@@ -43,14 +46,16 @@ impl<'a> System<'a> for PedestrianDecision {
 
                 let (desired_v, desired_dir) = calc_decision(pedestrian, trans, kin, objs);
 
-                physics(kin, trans, time, desired_v, desired_dir);
+                physics(pedestrian, kin, trans, mr, time, desired_v, desired_dir);
             });
     }
 }
 
 pub fn physics(
+    pedestrian: &mut PedestrianComponent,
     kin: &mut Kinematics,
     trans: &mut Transform,
+    mr: &mut MeshRender,
     time: &TimeInfo,
     desired_velocity: Vector2<f32>,
     desired_dir: Vector2<f32>,
@@ -59,6 +64,18 @@ pub fn physics(
     let mag = diff.magnitude().min(time.delta);
     if mag > 0.0 {
         kin.velocity += diff.normalize_to(mag);
+    }
+
+    let speed = kin.velocity.magnitude();
+    pedestrian.walk_anim += 7.0 * speed * time.delta / pedestrian.walking_speed;
+
+    let offset = pedestrian.walk_anim.cos()
+        * 0.1
+        * (speed * 2.0 - pedestrian.walking_speed).restrict(0.0, 1.0);
+
+    if mr.orders[0].as_rect_mut().offset.y.abs() < 0.25 {
+        mr.orders[0].as_rect_mut().offset.x = offset;
+        mr.orders[1].as_rect_mut().offset.x = -offset;
     }
 
     let delta_ang = trans.direction().angle(desired_dir);
@@ -110,7 +127,7 @@ pub fn calc_decision<'a>(
         desired_v += -towards_dir * 1.0 * (-(dist - his_obj.radius) * 0.7).exp() * forward_boost;
     }
 
-    desired_v *= 2.0 / estimated_density.restrict(1.0, 4.0);
+    desired_v *= 2.0 / estimated_density.restrict(2.0, 4.0);
 
     //desired_v += 0.1 * vec2(rand::random::<f32>(), rand::random()) * desired_v.magnitude();
     desired_v += dir_to_pos * pedestrian.walking_speed;

@@ -26,6 +26,13 @@ impl MeshRenderEnum {
             _ => panic!(),
         }
     }
+
+    pub fn as_rect_mut(&mut self) -> &mut RectRender {
+        match self {
+            MeshRenderEnum::Rect(x) => x,
+            _ => panic!(),
+        }
+    }
 }
 
 impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
