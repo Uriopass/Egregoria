@@ -96,24 +96,3 @@ impl Transform {
         vec2!(p.x, p.y)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    pub fn angle_test() {
-        let mut x = Transform::new(vec2!(0.0, 0.0));
-        x.set_angle(0.5);
-        assert!((x.angle() - 0.5).abs() < 0.001);
-
-        x.set_angle(0.2);
-        assert!((x.angle() - 0.2).abs() < 0.001);
-
-        x.set_angle(-0.2);
-        assert!((x.angle() + 0.2).abs() < 0.001);
-
-        x.set_angle(3.0);
-        assert!((x.angle() - 3.0).abs() < 0.001);
-    }
-}

@@ -33,7 +33,8 @@ pub mod physics;
 pub mod rendering;
 pub mod vehicles;
 
-use crate::pedestrians::PedestrianDecision;
+use crate::pedestrians::{spawn_pedestrian, PedestrianDecision};
+use crate::vehicles::spawn_new_vehicle;
 pub use specs;
 use specs::shrev::EventChannel;
 
@@ -85,5 +86,9 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     vehicles::setup(world);
     pedestrians::setup(world);
 
+    for _ in 0..1 {
+        spawn_pedestrian(world);
+        spawn_new_vehicle(world);
+    }
     dispatch
 }

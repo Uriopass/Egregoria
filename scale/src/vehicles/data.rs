@@ -176,7 +176,7 @@ impl Default for VehicleComponent {
         Self {
             itinerary: Default::default(),
             desired_speed: 0.0,
-            desired_dir: vec2!(0.0, 0.0),
+            desired_dir: vec2!(1.0, 0.0),
             wait_time: 0.0,
             ang_velocity: 0.0,
             kind: VehicleKind::Car,

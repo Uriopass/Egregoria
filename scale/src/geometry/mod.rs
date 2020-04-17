@@ -18,17 +18,28 @@ macro_rules! vec2 {
     };
 }
 
-pub trait DirDist {
-    fn dir_dist(&self) -> (Vec2, f32);
+pub trait Vec2Impl {
+    fn dir_dist(&self) -> Option<(Vec2, f32)>;
+
+    fn cap_magnitude(&self, max: f32) -> Vec2;
 }
 
-impl DirDist for Vec2 {
-    fn dir_dist(&self) -> (Vec2, f32) {
+impl Vec2Impl for Vec2 {
+    fn dir_dist(&self) -> Option<(Vec2, f32)> {
         let m = self.magnitude();
         if m > 0.0 {
-            (self / m, m)
+            Some((self / m, m))
         } else {
-            (*self, m)
+            None
+        }
+    }
+
+    fn cap_magnitude(&self, max: f32) -> Vec2 {
+        let m = self.magnitude();
+        if m > max {
+            self * max / m
+        } else {
+            *self
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::engine_interaction::TimeInfo;
-use crate::geometry::Vec2;
+use crate::geometry::{Vec2, Vec2Impl};
 use crate::map_model::{Map, Traversable, TraverseDirection, TraverseKind};
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{CollisionWorld, Kinematics, PhysicsObject, Transform};
@@ -61,13 +61,10 @@ pub fn physics(
     desired_velocity: Vec2,
     desired_dir: Vec2,
 ) {
-    assert!(kin.velocity.is_finite());
-    assert!(desired_velocity.is_finite());
     let diff = desired_velocity - kin.velocity;
     let mag = diff.magnitude().min(time.delta);
     if mag > 0.0 {
         let lol = diff.normalize_to(mag);
-        assert!(lol.x.is_finite());
         kin.velocity += lol;
     }
 
@@ -109,12 +106,9 @@ pub fn calc_decision<'a>(
     let direction = trans.direction();
 
     let delta_pos: Vec2 = objective - position;
-    let dist_to_pos = delta_pos.magnitude();
-    let dir_to_pos: Vec2 = if dist_to_pos > 0.0 {
-        delta_pos / dist_to_pos
-    } else {
-        panic!("the fuck");
-        vec2!(1.0, 0.0)
+    let (dir_to_pos, _) = match delta_pos.dir_dist() {
+        Some(x) => x,
+        None => return (vec2!(0.0, 0.0), trans.direction()),
     };
 
     let mut desired_v = vec2!(0.0, 0.0);
@@ -126,30 +120,26 @@ pub fn calc_decision<'a>(
             continue;
         }
 
-        let towards_vec = his_pos - position;
-        let dist = towards_vec.magnitude();
-        let towards_dir: Vec2 = towards_vec / dist;
+        let towards_vec: Vec2 = his_pos - position;
+        if let Some((towards_dir, dist)) = towards_vec.dir_dist() {
+            let forward_boost = 1.0 + direction.dot(towards_dir).abs();
 
-        let forward_boost = 1.0 + direction.dot(towards_dir).abs();
+            estimated_density += 1.0 / (1.0 + dist);
 
-        estimated_density += 1.0 / (1.0 + dist);
-
-        desired_v += -towards_dir * 1.0 * (-(dist - his_obj.radius) * 0.7).exp() * forward_boost;
+            desired_v +=
+                -towards_dir * 1.0 * (-(dist - his_obj.radius) * 0.7).exp() * forward_boost;
+        }
     }
 
     desired_v *= 2.0 / estimated_density.restrict(2.0, 4.0);
 
-    //desired_v += 0.1 * vec2!(rand::random::<f32>(), rand::random()) * desired_v.magnitude();
     desired_v += dir_to_pos * pedestrian.walking_speed;
 
-    let s = desired_v
-        .magnitude()
-        .restrict(0.0, 1.3 * pedestrian.walking_speed);
-    if s > 0.0 {
-        desired_v.normalize_to(s);
-    }
+    desired_v = desired_v.cap_magnitude(1.3 * pedestrian.walking_speed);
 
-    (desired_v, (dir_to_pos + kin.velocity).normalize())
+    let desired_dir = (dir_to_pos + kin.velocity).normalize();
+
+    (desired_v, desired_dir)
 }
 
 pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform, map: &Map) {

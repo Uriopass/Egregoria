@@ -1,5 +1,5 @@
 use super::Vec2;
-use cgmath::InnerSpace;
+use cgmath::{Array, InnerSpace};
 use slotmap::new_key_type;
 use slotmap::SlotMap;
 
@@ -232,7 +232,7 @@ impl<O: Copy> GridStore<O> {
     fn check_resize(&mut self, pos: Vec2) {
         let mut reallocate = false;
 
-        assert!(pos.x.is_finite());
+        assert!(pos.is_finite());
 
         while (pos.x as i32) <= self.start_x {
             println!("Reallocating for {:?}", pos);
