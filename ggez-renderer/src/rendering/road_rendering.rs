@@ -189,7 +189,11 @@ impl RoadRenderer {
             let pos1 = inters[n.src].pos;
             let pos2 = inters[n.dst].pos;
 
-            rc.sr.draw_stroke(pos1, pos2, n.n_lanes() as f32 * 8.0);
+            rc.sr.draw_stroke(
+                pos1,
+                pos2,
+                n.lanes_iter().map(|x| map.lanes()[*x].width).sum(),
+            );
         }
     }
 
