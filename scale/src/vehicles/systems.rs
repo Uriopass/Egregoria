@@ -6,7 +6,7 @@ use crate::physics::{CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::{Choose, Restrict};
 use crate::vehicles::VehicleComponent;
-use cgmath::{Angle, Array, InnerSpace, MetricSpace, Vector2};
+use cgmath::{Angle, InnerSpace, MetricSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 
@@ -17,7 +17,7 @@ pub const OBJECTIVE_OK_DIST: f32 = 4.0;
 
 #[derive(SystemData)]
 pub struct VehicleDecisionSystemData<'a> {
-    map: Read<'a, Map, PanicHandler>,
+    map: Read<'a, Map>,
     time: Read<'a, TimeInfo>,
     coworld: Read<'a, CollisionWorld, PanicHandler>,
     transforms: WriteStorage<'a, Transform>,

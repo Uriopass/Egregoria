@@ -17,6 +17,12 @@ pub struct Map {
     intersections: Intersections,
 }
 
+impl Default for Map {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
 impl Map {
     pub fn empty() -> Self {
         Self {

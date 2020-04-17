@@ -5,7 +5,7 @@ use crate::pedestrians::PedestrianComponent;
 use crate::physics::{CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::{Choose, Restrict};
-use cgmath::{Angle, Array, InnerSpace, MetricSpace};
+use cgmath::{Angle, InnerSpace, MetricSpace};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use std::borrow::Borrow;
