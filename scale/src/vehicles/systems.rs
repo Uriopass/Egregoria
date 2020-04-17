@@ -211,9 +211,13 @@ pub fn calc_decision<'a>(
         let is_vehicle = nei_physics_obj.group == PhysicsGroup::Vehicles;
 
         // front cone
-        if dir_dot > 0.7 && (his_direction.dot(direction) > 0.0 || !is_vehicle) {
-            min_front_dist = min_front_dist
-                .min(dist - vehicle.kind.width() / 2.0 - nei_physics_obj.radius / 2.0);
+        if dir_dot > 0.7 && (his_direction.dot(direction) > 0.3 || !is_vehicle) {
+            let mut dist_to_obj = dist - vehicle.kind.width() / 2.0 - nei_physics_obj.radius / 2.0;
+            if !is_vehicle {
+                dist_to_obj -= 2.5;
+            }
+            min_front_dist = min_front_dist.min(dist_to_obj);
+
             continue;
         }
 

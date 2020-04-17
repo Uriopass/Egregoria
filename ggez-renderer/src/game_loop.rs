@@ -25,7 +25,7 @@ pub struct EngineState<'a> {
     pub cam: CameraHandler,
     pub render_enabled: bool,
     pub grid: bool,
-    pub font: Font,
+    pub font: Option<Font>,
     pub imgui_wrapper: ImGuiWrapper,
     pub smr: SortedMeshRenderer,
     pub road_render: RoadRenderer,
@@ -39,7 +39,7 @@ impl<'a> EngineState<'a> {
     ) -> GameResult<EngineState<'a>> {
         println!("{}", filesystem::resources_dir(ctx).display());
 
-        let font = graphics::Font::new(ctx, "/bmonofont-i18n.ttf")?;
+        let font = graphics::Font::new(ctx, "/bmonofont-i18n.ttf").ok();
         //        let text = graphics::Text::new(("Hello world!", font, 48.0));
         //       let test: Image = graphics::Image::new(ctx, "/test.png")?;
 
