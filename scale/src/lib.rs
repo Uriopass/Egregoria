@@ -19,10 +19,12 @@ use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
 pub mod utils;
 
 #[macro_use]
+pub mod geometry;
+
+#[macro_use]
 pub mod gui;
 
 pub mod engine_interaction;
-pub mod geometry;
 pub mod graphs;
 pub mod interaction;
 pub mod map_model;

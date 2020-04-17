@@ -1,5 +1,5 @@
 use crate::map_model::{Intersection, IntersectionID, LaneID, Lanes, Roads, TurnID, TurnKind};
-use cgmath::{vec2, InnerSpace};
+use cgmath::InnerSpace;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use std::iter::{Extend, Iterator};
@@ -136,7 +136,7 @@ impl TurnPolicy {
                         let incoming_dir = incoming.get_orientation_vec();
                         let outgoing_dir = outgoing.get_orientation_vec();
 
-                        let incoming_right = vec2(incoming_dir.y, -incoming_dir.x);
+                        let incoming_right = vec2!(incoming_dir.y, -incoming_dir.x);
                         let id = TurnID::new(inter.id, incoming.id, outgoing.id);
 
                         if self.left_turns || incoming_right.dot(outgoing_dir) >= -0.3 {

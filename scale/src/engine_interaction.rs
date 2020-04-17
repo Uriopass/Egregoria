@@ -1,4 +1,4 @@
-use cgmath::Vector2;
+use crate::geometry::Vec2;
 use specs::prelude::ComponentEvent;
 use specs::ReaderId;
 use std::collections::HashSet;
@@ -48,7 +48,7 @@ pub struct MouseInfo {
 impl Default for MouseInfo {
     fn default() -> Self {
         MouseInfo {
-            unprojected: Vector2::new(0.0, 0.0),
+            unprojected: vec2!(0.0, 0.0),
             buttons: HashSet::new(),
             just_pressed: HashSet::new(),
         }
