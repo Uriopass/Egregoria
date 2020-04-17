@@ -1,8 +1,8 @@
+use crate::geometry::Vec2;
 use crate::gui::{InspectDragf, InspectVec2};
 use crate::map_model::Itinerary;
 use crate::rendering::meshrender_component::{MeshRender, RectRender};
 use crate::rendering::Color;
-use cgmath::{vec2, Vector2};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Component, DenseVecStorage};
@@ -176,7 +176,7 @@ impl Default for VehicleComponent {
         Self {
             itinerary: Default::default(),
             desired_speed: 0.0,
-            desired_dir: vec2(0.0, 0.0),
+            desired_dir: vec2!(0.0, 0.0),
             wait_time: 0.0,
             ang_velocity: 0.0,
             kind: VehicleKind::Car,

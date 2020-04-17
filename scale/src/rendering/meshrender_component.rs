@@ -1,8 +1,8 @@
 use crate::engine_interaction::MAX_LAYERS;
+use crate::geometry::Vec2;
 use crate::gui::{ImEntity, InspectDragf, InspectVec, InspectVec2};
 use crate::rendering::colors::*;
 use cgmath::num_traits::zero;
-use cgmath::Vector2;
 use imgui::Ui;
 use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;

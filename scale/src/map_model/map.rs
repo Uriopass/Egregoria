@@ -1,8 +1,8 @@
+use crate::geometry::Vec2;
 use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, LightPolicy, Road, RoadID,
     TurnPolicy,
 };
-use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 

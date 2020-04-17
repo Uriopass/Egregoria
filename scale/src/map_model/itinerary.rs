@@ -1,6 +1,6 @@
 use crate::geometry::polyline::PolyLine;
+use crate::geometry::Vec2;
 use crate::map_model::{Map, Traversable};
-use cgmath::Vector2;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 

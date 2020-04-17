@@ -3,7 +3,6 @@ use crate::geometry::Vec2;
 use crate::interaction::SelectedEntity;
 use crate::physics::{Kinematics, Transform};
 use cgmath::num_traits::zero;
-use cgmath::Vector2;
 use serde::{Deserialize, Serialize};
 use specs::prelude::ResourceId;
 use specs::shrev::EventChannel;
@@ -11,7 +10,6 @@ use specs::{
     Component, Entity, NullStorage, Read, ReadStorage, System, SystemData, World, Write,
     WriteStorage,
 };
-use std::f32;
 
 #[derive(Component, Default, Clone, Serialize, Deserialize)]
 #[storage(NullStorage)]

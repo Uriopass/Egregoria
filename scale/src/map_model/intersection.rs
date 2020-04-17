@@ -1,4 +1,5 @@
 use crate::geometry::pseudo_angle;
+use crate::geometry::Vec2;
 use crate::gui::InspectDragf;
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{
@@ -7,7 +8,6 @@ use crate::map_model::{
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::Color;
-use cgmath::Vector2;
 use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};

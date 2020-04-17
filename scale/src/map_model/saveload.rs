@@ -1,6 +1,6 @@
+use crate::geometry::Vec2;
 use crate::map_model::{make_inter_entity, IntersectionID, LanePatternBuilder, Map};
 use cgmath::num_traits::FloatConst;
-use cgmath::Vector2;
 use specs::{LazyUpdate, World, WorldExt};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -83,7 +83,7 @@ pub fn load_parismap() -> Map {
         long = (long - CENTER_B) * scale / f64::cos(long / 180.0 * f64::PI());
         lat = (lat - CENTER_A) * scale;
 
-        ids.push(map.add_intersection(Vector2::new(lat as f32, long as f32)));
+        ids.push(map.add_intersection(vec2!(lat as f32, long as f32)));
     }
 
     //Parse junctions
@@ -144,7 +144,7 @@ pub fn add_grid(pos: Vec2, m: &mut Map) {
     let mut grid: [[Option<IntersectionID>; 10]; 10] = [[None; 10]; 10];
     for (y, l) in grid.iter_mut().enumerate() {
         for (x, v) in l.iter_mut().enumerate() {
-            *v = Some(m.add_intersection(pos + Vector2::new(x as f32 * 70.0, y as f32 * 70.0)));
+            *v = Some(m.add_intersection(pos + vec2!(x as f32 * 70.0, y as f32 * 70.0)));
         }
     }
 

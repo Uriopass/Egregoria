@@ -1,8 +1,8 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::segment::Segment;
+use crate::geometry::Vec2;
 use crate::map_model::{Intersection, IntersectionID, Intersections, Road, RoadID, TrafficControl};
 use cgmath::InnerSpace;
-use cgmath::Vector2;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
