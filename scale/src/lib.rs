@@ -82,6 +82,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     world.insert(s);
 
     dispatch.setup(world);
+
     map_model::setup(world);
     vehicles::setup(world);
     pedestrians::setup(world);
@@ -90,5 +91,6 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
         spawn_pedestrian(world);
         spawn_new_vehicle(world);
     }
+
     dispatch
 }

@@ -1,7 +1,7 @@
 use crate::engine_interaction::TimeInfo;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::CollisionWorld;
-use cgmath::{Array, InnerSpace, Zero};
+use cgmath::{InnerSpace, Zero};
 use specs::prelude::ResourceId;
 use specs::{Join, Read, ReadStorage, System, SystemData, World, Write, WriteStorage};
 
