@@ -1,6 +1,6 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
-use crate::geometry::Vec2;
+use crate::geometry::{Vec2, Vec2Impl};
 use crate::map_model::{Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind};
 use crate::physics::{CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
@@ -55,16 +55,20 @@ fn vehicle_physics(
     vehicle: &mut VehicleComponent,
 ) {
     let direction = trans.direction();
-    let speed: f32 = kin.velocity.magnitude() * kin.velocity.dot(direction).signum();
-    let dot = (kin.velocity / speed).dot(direction);
-    let kind = vehicle.kind;
+    //debug_assert!(direction.magnitude() > 0.5 && direction.is_finite());
 
-    if speed > 1.0 && dot.abs() < 0.9 {
-        let coeff = speed.restrict(1.0, 9.0) / 9.0;
-        kin.acceleration -= kin.velocity / coeff;
-        return;
+    let speed: f32 = kin.velocity.magnitude() * kin.velocity.dot(direction).signum();
+
+    if speed > 1.0 {
+        let dot = (kin.velocity / speed).dot(direction);
+        if dot.abs() < 0.9 {
+            let coeff = speed.restrict(1.0, 9.0) / 9.0;
+            kin.acceleration -= kin.velocity / coeff;
+            return;
+        }
     }
 
+    let kind = vehicle.kind;
     let pos = trans.position();
 
     let danger_length = (speed * speed / (2.0 * kind.deceleration())).min(40.0);
@@ -84,7 +88,7 @@ fn vehicle_physics(
     let max_ang_vel = (speed.abs() / kind.min_turning_radius()).restrict(0.0, 2.0);
 
     let delta_ang = direction.angle(vehicle.desired_dir);
-    let mut ang = Vector2::unit_x().angle(direction);
+    let mut ang = vec2!(1.0, 0.0).angle(direction);
 
     vehicle.ang_velocity += time.delta * kind.ang_acc();
     vehicle.ang_velocity = vehicle
@@ -97,15 +101,10 @@ fn vehicle_physics(
         vehicle.ang_velocity * time.delta,
     );
 
-    assert!(ang.0.is_finite());
-
     let direction = vec2!(ang.cos(), ang.sin());
     trans.set_direction(direction);
 
-    assert!(speed.is_finite());
-    assert!(direction.is_finite());
     kin.velocity = direction * speed;
-    assert!(kin.velocity.is_finite());
 }
 
 pub fn objective_update(
@@ -186,9 +185,8 @@ pub fn calc_decision<'a>(
     let direction = trans.direction();
     let direction_normal = trans.normal();
 
-    let delta_pos = objective - position;
-    let dist_to_pos = delta_pos.magnitude();
-    let dir_to_pos: Vec2 = delta_pos / dist_to_pos;
+    let delta_pos: Vec2 = objective - position;
+    let (dir_to_pos, dist_to_pos) = unwrap_ret!(delta_pos.dir_dist());
     let time_to_stop = speed / vehicle.kind.deceleration();
     let stop_dist = time_to_stop * speed / 2.0;
 
@@ -203,7 +201,7 @@ pub fn calc_decision<'a>(
 
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {
-        if his_pos == position {
+        if his_pos.distance2(position) < 1e-5 {
             continue;
         }
 
