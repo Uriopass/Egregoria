@@ -40,7 +40,7 @@ pub enum MouseButton {
 }
 
 pub struct MouseInfo {
-    pub unprojected: Vector2<f32>,
+    pub unprojected: Vec2,
     pub buttons: HashSet<MouseButton>,
     pub just_pressed: HashSet<MouseButton>,
 }

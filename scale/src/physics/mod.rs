@@ -18,7 +18,7 @@ pub enum PhysicsGroup {
 
 #[derive(Clone, Copy)]
 pub struct PhysicsObject {
-    pub dir: Vector2<f32>,
+    pub dir: Vec2,
     pub speed: f32,
     pub radius: f32,
     pub group: PhysicsGroup,

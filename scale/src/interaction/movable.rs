@@ -1,4 +1,5 @@
 use crate::engine_interaction::{MouseButton, MouseInfo, TimeInfo};
+use crate::geometry::Vec2;
 use crate::interaction::SelectedEntity;
 use crate::physics::{Kinematics, Transform};
 use cgmath::num_traits::zero;
@@ -20,12 +21,12 @@ empty_inspect_impl!(Movable);
 #[derive(Debug)]
 pub struct MovedEvent {
     pub entity: Entity,
-    pub new_pos: Vector2<f32>,
+    pub new_pos: Vec2,
 }
 
 #[derive(Default)]
 pub struct MovableSystem {
-    offset: Option<Vector2<f32>>,
+    offset: Option<Vec2>,
 }
 
 #[derive(SystemData)]

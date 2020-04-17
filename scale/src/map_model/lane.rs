@@ -128,7 +128,7 @@ impl LanePatternBuilder {
 }
 
 impl Lane {
-    pub fn get_inter_node_pos(&self, id: IntersectionID) -> Vector2<f32> {
+    pub fn get_inter_node_pos(&self, id: IntersectionID) -> Vec2 {
         match (id, self.points.as_slice()) {
             (x, [p, ..]) if x == self.src => *p,
             (x, [.., p]) if x == self.dst => *p,
@@ -136,11 +136,11 @@ impl Lane {
         }
     }
 
-    fn get_node_pos(&self, inter: &Intersection, parent_road: &Road) -> Vector2<f32> {
+    fn get_node_pos(&self, inter: &Intersection, parent_road: &Road) -> Vec2 {
         let lane_dist = self.width / 2.0 + self.dist_from_center;
 
         let dir = parent_road.dir_from(inter.id, inter.pos);
-        let dir_normal: Vector2<f32> = if inter.id == self.dst {
+        let dir_normal: Vec2 = if inter.id == self.dst {
             [-dir.y, dir.x].into()
         } else {
             [dir.y, -dir.x].into()
@@ -160,12 +160,12 @@ impl Lane {
         self.points.push(pos_dst);
     }
 
-    pub fn dist_to(&self, p: Vector2<f32>) -> f32 {
+    pub fn dist_to(&self, p: Vec2) -> f32 {
         let segm = Segment::new(self.points[0], self.points[1]);
         (segm.project(p) - p).magnitude()
     }
 
-    pub fn get_orientation_vec(&self) -> Vector2<f32> {
+    pub fn get_orientation_vec(&self) -> Vec2 {
         let src = self.points[0];
         let dst = self.points[1];
 
