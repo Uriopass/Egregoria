@@ -1,0 +1,12 @@
+[package]
+name = "wgpu-renderer"
+version = "0.1.0"
+authors = ["Paris Douady <paris.douady@hotmail.fr>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+#scale = { path = "../scale" }
+wgpu = "0.4.0"
+winit = "0.22.1"

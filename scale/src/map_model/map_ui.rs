@@ -1,8 +1,9 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use crate::interaction::{MovedEvent, SelectedEntity};
-use crate::map_model::{make_inter_entity, IntersectionComponent, LanePatternBuilder, Map};
+use crate::geometry::Vec2;
+use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity};
+use crate::map_model::{Intersection, IntersectionComponent, LanePatternBuilder, Map};
 use crate::physics::Transform;
-use crate::rendering::meshrender_component::{LineToRender, MeshRender};
+use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
 use crate::rendering::Color;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -96,15 +97,16 @@ impl<'a> System<'a> for MapUISystem {
 
         if let Some(x) = data.selected.e {
             if data.intersections.contains(x) {
+                state.on_inter_select(
+                    x,
+                    &data.mouseinfo,
+                    &mut data.map,
+                    &data.intersections,
+                    &data.lazy,
+                    &data.entities,
+                );
                 if data.selected.dirty {
-                    state.on_inter_select(
-                        x,
-                        &data.mouseinfo,
-                        &mut data.map,
-                        &data.intersections,
-                        &data.lazy,
-                        &data.entities,
-                    );
+                    state.on_select_dirty(&data.intersections, x, &mut data.map);
                 }
             } else {
                 state.deactive_connect(&data.entities);
@@ -147,20 +149,28 @@ impl MapUIState {
             .for_each(|e| entities.delete(e).unwrap());
     }
 
-    fn on_inter_select<'a>(
-        &'a mut self,
+    fn on_select_dirty(
+        &mut self,
+        intersections: &WriteStorage<IntersectionComponent>,
         selected: Entity,
-        mouse: &'a MouseInfo,
-        map: &'a mut Map,
-        intersections: &'a WriteStorage<IntersectionComponent>,
-        lazy: &'a LazyUpdate,
-        entities: &'a EntitiesRes,
+        map: &mut Map,
     ) {
         let selected_interc = intersections.get(selected).unwrap();
         map.set_intersection_radius(selected_interc.id, selected_interc.radius);
         map.set_intersection_turn_policy(selected_interc.id, selected_interc.turn_policy);
         map.set_intersection_light_policy(selected_interc.id, selected_interc.light_policy);
         self.map_render_dirty = true;
+    }
+
+    fn on_inter_select(
+        &mut self,
+        selected: Entity,
+        mouse: &MouseInfo,
+        map: &mut Map,
+        intersections: &WriteStorage<IntersectionComponent>,
+        lazy: &LazyUpdate,
+        entities: &EntitiesRes,
+    ) {
         match self.selected_inter {
             None => {
                 let color = Color {
@@ -170,20 +180,27 @@ impl MapUIState {
                 self.entities.push(
                     lazy.create_entity(entities)
                         .with(Transform::new(mouse.unprojected))
-                        .with(MeshRender::simple(
-                            LineToRender {
-                                to: selected,
-                                color,
-                                thickness: 4.0,
-                            },
-                            9,
-                        ))
+                        .with(
+                            MeshRender::empty(9)
+                                .add(LineToRender {
+                                    to: selected,
+                                    color,
+                                    thickness: 4.0,
+                                })
+                                .add(CircleRender {
+                                    radius: 2.0,
+                                    color: Color::BLUE,
+                                    ..Default::default()
+                                })
+                                .build(),
+                        )
                         .build(),
                 );
 
                 self.selected_inter = Some(selected);
             }
             Some(y) => {
+                let selected_interc = intersections.get(selected).unwrap();
                 // Already selected, connect the two
                 let interc2 = intersections.get(y).unwrap();
                 if y != selected {
@@ -201,4 +218,35 @@ impl MapUIState {
             }
         }
     }
+}
+
+pub fn make_inter_entity<'a>(
+    inter: &Intersection,
+    inter_pos: Vec2,
+    lazy: &LazyUpdate,
+    entities: &Entities<'a>,
+) -> Entity {
+    lazy.create_entity(entities)
+        .with(IntersectionComponent {
+            id: inter.id,
+            radius: inter.interface_radius,
+            turn_policy: inter.turn_policy,
+            light_policy: inter.light_policy,
+        })
+        /*.with(MeshRender::simple(
+            CircleRender {
+                radius: 2.0,
+                color: Color {
+                    a: 0.5,
+                    ..Color::BLUE
+                },
+                filled: true,
+                ..CircleRender::default()
+            },
+            2,
+        ))*/
+        .with(Transform::new(inter_pos))
+        .with(Movable)
+        .with(Selectable::new(10.0))
+        .build()
 }

@@ -29,7 +29,7 @@ impl<'a> RenderContext<'a> {
 
     #[allow(dead_code)]
     pub fn draw_grid(&mut self, grid_size: f32, color: Color) {
-        let screen = self.sr.screen_box.clone();
+        let screen = self.sr.screen_box;
 
         let mut x = (screen.x / grid_size).ceil() * grid_size;
         self.sr.color = color;
