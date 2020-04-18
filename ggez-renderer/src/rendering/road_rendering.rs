@@ -99,29 +99,11 @@ impl RoadRenderer {
 
                 let dir: Vector2<f32> = (to - from) / l;
                 let normal = vec2(-dir.y, dir.x);
-
-                let eps = 1e-3;
-                rc.sr.draw_raw_quad(
-                    [
-                        from - normal * 1.5,
-                        from + normal * 1.5,
-                        to + normal * 1.5,
-                        to - normal * 1.5,
-                    ],
-                    [
-                        vec2(1.0 / 16.0 + eps, 1.0 / 16.0 - eps),
-                        vec2(2.0 / 16.0 - eps, 1.0 / 16.0 - eps),
-                        vec2(2.0 / 16.0 - eps, 0.0 / 16.0 + eps),
-                        vec2(1.0 / 16.0 + eps, 0.0 / 16.0 + eps),
-                    ],
-                );
-
-                /*
                 for i in 2..l as usize - 1 {
                     let along = from + dir * i as f32;
                     rc.sr
                         .draw_stroke(along - normal * 1.5, along + normal * 1.5, 0.5);
-                }*/
+                }
             }
         }
 
