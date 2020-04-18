@@ -34,6 +34,7 @@ pub mod rendering;
 pub mod vehicles;
 
 use crate::pedestrians::{spawn_pedestrian, PedestrianDecision};
+use crate::rendering::assets::AssetRender;
 use crate::vehicles::spawn_new_vehicle;
 pub use specs;
 use specs::shrev::EventChannel;
@@ -70,6 +71,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
 
     world.register::<Collider>();
     world.register::<MeshRender>();
+    world.register::<AssetRender>();
 
     // Event channels init
     let reader = MeshRenderEventReader(world.write_storage::<MeshRender>().register_reader());

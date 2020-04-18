@@ -1,7 +1,9 @@
 use crate::gui::imgui_wrapper::ImGuiWrapper;
 use crate::rendering::camera_handler::CameraHandler;
+use crate::rendering::instanced_render::InstancedRender;
 use crate::rendering::render_context::RenderContext;
 use crate::rendering::road_rendering::RoadRenderer;
+use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
 use cgmath::Vector2;
 use ggez::graphics::{Color, DrawMode, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
@@ -26,8 +28,9 @@ pub struct EngineState<'a> {
     pub grid: bool,
     pub font: Option<Font>,
     pub imgui_wrapper: ImGuiWrapper,
-    pub smr: SortedMeshRenderer,
+    pub sorted_mesh_render: SortedMeshRenderer,
     pub road_render: RoadRenderer,
+    pub instanced_render: InstancedRender,
 }
 
 impl<'a> EngineState<'a> {
@@ -53,8 +56,9 @@ impl<'a> EngineState<'a> {
             render_enabled: true,
             grid: true,
             imgui_wrapper,
-            smr: SortedMeshRenderer::new(),
+            sorted_mesh_render: SortedMeshRenderer::new(),
             road_render: RoadRenderer::new(),
+            instanced_render: InstancedRender::new(ctx),
         })
     }
 }
@@ -181,7 +185,10 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
                     time.time_seconds,
                     &mut rc,
                 );
-                self.smr.render(&mut self.world, &mut rc);
+                rc.flush()?;
+
+                self.sorted_mesh_render.render(&mut self.world, &mut rc);
+                self.instanced_render.render(&mut self.world, &mut rc);
             }
         }
 
@@ -279,7 +286,7 @@ fn scale_mb(x: MouseButton) -> scale::engine_interaction::MouseButton {
     }
 }
 
-use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
+/*
 use gfx::*;
 
 // Define the input struct for our shader.
@@ -289,7 +296,6 @@ gfx_defines! {
     }
 }
 
-/*
 fn shader_test(sself: &mut EngineState, ctx: &mut Context) -> GameResult<()> {
     let img = Image::new(ctx, "/test.png").ok();
     let mut sr = ShapeRenderer::new(&sself.cam.get_screen_box(), sself.cam.camera.zoom, img);
