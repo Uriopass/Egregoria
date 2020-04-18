@@ -37,4 +37,4 @@ I will try to keep a blog about Scale's development [here](http://douady.paris/b
 
 ## Screenshot
 
-#![resources/screen1.png](Screenshot of scale)
+![Screenshot of scale](resources/screen1.png)
