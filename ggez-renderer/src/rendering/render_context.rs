@@ -9,7 +9,7 @@ pub struct RenderContext<'a> {
     pub cam: &'a mut camera_handler::CameraHandler,
     pub sr: ShapeRenderer,
     font: Option<Font>,
-    ctx: &'a mut Context,
+    pub ctx: &'a mut Context,
 }
 
 impl<'a> RenderContext<'a> {
