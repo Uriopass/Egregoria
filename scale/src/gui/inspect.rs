@@ -4,6 +4,7 @@ use crate::interaction::{FollowEntity, Movable, MovedEvent};
 use crate::map_model::IntersectionComponent;
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Kinematics, Transform};
+use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::VehicleComponent;
 use cgmath::InnerSpace;
@@ -384,6 +385,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         }
         self.inspect_component::<VehicleComponent>();
         self.inspect_component::<PedestrianComponent>();
+        self.inspect_component::<AssetRender>();
         self.inspect_component::<MeshRender>();
         self.inspect_component::<Kinematics>();
         self.inspect_component::<Movable>();

@@ -12,6 +12,7 @@ mod data;
 mod saveload;
 pub mod systems;
 
+use crate::rendering::assets::{AssetID, AssetRender};
 pub use data::*;
 pub use saveload::*;
 
@@ -59,7 +60,12 @@ pub fn make_vehicle_entity(
 
     world
         .create_entity()
-        .with(mr)
+        //        .with(mr)
+        .with(AssetRender {
+            id: AssetID::CAR,
+            hide: false,
+            scale: 4.5,
+        })
         .with(trans)
         .with(Kinematics::from_mass(1000.0))
         .with(vehicle)

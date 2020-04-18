@@ -2,6 +2,7 @@ mod default_bool;
 mod default_f32;
 mod default_option;
 mod default_string;
+mod default_u16;
 mod default_u32;
 mod default_usize;
 
