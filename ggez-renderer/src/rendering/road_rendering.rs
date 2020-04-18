@@ -30,12 +30,13 @@ impl RoadRenderer {
 
         rc.sr.color = WHITE;
 
-        for (inter_id, inter) in inters {
+        let mut p = Vec::with_capacity(8);
+        for (_, inter) in inters {
             for (id, turn) in &inter.turns {
-                let mut p = Vec::with_capacity(2 + turn.points.n_points());
-                p.push(lanes[id.src].get_inter_node_pos(inter_id));
+                p.clear();
+                p.push(turn.points[0] - lanes[id.src].get_orientation_vec());
                 p.extend_from_slice(turn.points.as_slice());
-                p.push(lanes[id.dst].get_inter_node_pos(inter_id));
+                p.push(turn.points.last().unwrap() + lanes[id.dst].get_orientation_vec());
 
                 rc.sr.draw_polyline(&p, lanes[id.src].width + 0.5);
             }
@@ -44,8 +45,6 @@ impl RoadRenderer {
         for n in lanes.values() {
             let w = n.width + 0.5;
             rc.sr.draw_polyline(n.points.as_slice(), w);
-            rc.sr.draw_circle(*n.points.first().unwrap(), w / 2.0);
-            rc.sr.draw_circle(*n.points.last().unwrap(), w / 2.0);
         }
 
         rc.sr.color = MID_GRAY;
@@ -56,51 +55,37 @@ impl RoadRenderer {
             };
 
             rc.sr.draw_polyline(n.points.as_slice(), n.width - 0.5);
-            rc.sr
-                .draw_circle(*n.points.first().unwrap(), (n.width - 0.5) / 2.0);
-            rc.sr
-                .draw_circle(*n.points.last().unwrap(), (n.width - 0.5) / 2.0);
-
-            rc.sr.color = WHITE;
-            if n.control.is_stop() || n.control.is_light() {
-                if let [.., b, p] = n.points.as_slice() {
-                    let dir = (p - b).normalize();
-                    let dir_nor: Vector2<f32> = [-dir.y, dir.x].into();
-                    rc.sr.draw_stroke(
-                        p + dir * 1.5 + 4.0 * dir_nor,
-                        p + dir * 1.5 - 4.0 * dir_nor,
-                        0.5,
-                    );
-                }
-            }
         }
         for (inter_id, inter) in inters {
+            // Draw normal turns
             rc.sr.color = MID_GRAY;
             for (id, turn) in &inter.turns {
                 if turn.kind != TurnKind::Normal {
                     continue;
                 }
-                let mut p = Vec::with_capacity(2 + turn.points.n_points());
-                p.push(lanes[id.src].get_inter_node_pos(inter_id));
+                p.clear();
+                p.push(turn.points[0] - lanes[id.src].get_orientation_vec());
                 p.extend_from_slice(turn.points.as_slice());
-                p.push(lanes[id.dst].get_inter_node_pos(inter_id));
+                p.push(turn.points.last().unwrap() + lanes[id.dst].get_orientation_vec());
 
                 rc.sr.draw_polyline(&p, lanes[id.src].width - 0.5);
             }
 
+            // Draw walking corners
             rc.sr.color = HIGH_GRAY;
             for (id, turn) in &inter.turns {
                 if turn.kind != TurnKind::WalkingCorner {
                     continue;
                 }
-                let mut p = Vec::with_capacity(2 + turn.points.n_points());
-                p.push(lanes[id.src].get_inter_node_pos(inter_id));
+                p.clear();
+                p.push(turn.points[0] - lanes[id.src].get_orientation_vec());
                 p.extend_from_slice(turn.points.as_slice());
-                p.push(lanes[id.dst].get_inter_node_pos(inter_id));
+                p.push(turn.points.last().unwrap() + lanes[id.dst].get_orientation_vec());
 
                 rc.sr.draw_polyline(&p, lanes[id.src].width - 0.5);
             }
 
+            // Draw crosswalks
             rc.sr.color = WHITE;
             for (id, turn) in &inter.turns {
                 if turn.kind != TurnKind::Crosswalk {
@@ -115,11 +100,28 @@ impl RoadRenderer {
                 let dir: Vector2<f32> = (to - from) / l;
                 let normal = vec2(-dir.y, dir.x);
 
+                let eps = 1e-3;
+                rc.sr.draw_raw_quad(
+                    [
+                        from - normal * 1.5,
+                        from + normal * 1.5,
+                        to + normal * 1.5,
+                        to - normal * 1.5,
+                    ],
+                    [
+                        vec2(1.0 / 16.0 + eps, 1.0 / 16.0 - eps),
+                        vec2(2.0 / 16.0 - eps, 1.0 / 16.0 - eps),
+                        vec2(2.0 / 16.0 - eps, 0.0 / 16.0 + eps),
+                        vec2(1.0 / 16.0 + eps, 0.0 / 16.0 + eps),
+                    ],
+                );
+
+                /*
                 for i in 2..l as usize - 1 {
                     let along = from + dir * i as f32;
                     rc.sr
                         .draw_stroke(along - normal * 1.5, along + normal * 1.5, 0.5);
-                }
+                }*/
             }
         }
 
@@ -142,8 +144,10 @@ impl RoadRenderer {
                     r_center,
                     1.5,
                     1.5,
-                    std::f32::consts::FRAC_1_SQRT_2,
-                    std::f32::consts::FRAC_1_SQRT_2,
+                    vec2(
+                        std::f32::consts::FRAC_1_SQRT_2,
+                        std::f32::consts::FRAC_1_SQRT_2,
+                    ),
                 );
 
                 rc.sr.color = scale_color(scale::rendering::Color::RED);
@@ -151,14 +155,16 @@ impl RoadRenderer {
                     r_center,
                     1.0,
                     1.0,
-                    std::f32::consts::FRAC_1_SQRT_2,
-                    std::f32::consts::FRAC_1_SQRT_2,
+                    vec2(
+                        std::f32::consts::FRAC_1_SQRT_2,
+                        std::f32::consts::FRAC_1_SQRT_2,
+                    ),
                 );
                 continue;
             }
 
             rc.sr.color = scale_color(scale::rendering::Color::gray(0.3));
-            rc.sr.draw_rect_cos_sin(r_center, 1.1, 3.1, dir.x, dir.y);
+            rc.sr.draw_rect_cos_sin(r_center, 1.1, 3.1, dir);
 
             rc.sr.color = scale_color(scale::rendering::Color::gray(0.1));
             for i in -1..2 {
