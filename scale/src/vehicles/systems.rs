@@ -4,7 +4,7 @@ use crate::geometry::{Vec2, Vec2Impl};
 use crate::map_model::{Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind};
 use crate::physics::{CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
-use crate::utils::{Choose, Restrict};
+use crate::utils::{rand_det, Choose, Restrict};
 use crate::vehicles::VehicleComponent;
 use cgmath::{Angle, InnerSpace, MetricSpace};
 use specs::prelude::*;
@@ -253,7 +253,7 @@ pub fn calc_decision<'a>(
     }
 
     if speed.abs() < 0.2 && min_front_dist < 1.5 {
-        vehicle.wait_time = rand::random::<f32>() * 0.5;
+        vehicle.wait_time = rand_det::<f32>() * 0.5;
         return;
     }
 

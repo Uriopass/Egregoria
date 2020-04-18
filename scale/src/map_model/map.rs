@@ -3,6 +3,7 @@ use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, LightPolicy, Road, RoadID,
     TurnPolicy,
 };
+use crate::utils::rand_det;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 
@@ -135,7 +136,7 @@ impl Map {
         if l == 0 {
             return None;
         }
-        let r = (rand::random::<f32>() * l as f32) as usize;
+        let r = (rand_det::<f32>() * l as f32) as usize;
 
         let (_, road) = self.roads.iter().nth(r).unwrap();
         let lanes = road
@@ -146,7 +147,7 @@ impl Map {
         if lanes.is_empty() {
             return None;
         }
-        let r = (rand::random::<f32>() * lanes.len() as f32) as usize;
+        let r = (rand_det::<f32>() * lanes.len() as f32) as usize;
 
         Some(&self.lanes[*lanes[r]])
     }

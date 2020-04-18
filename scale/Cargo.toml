@@ -16,3 +16,4 @@ serde = "1.0"
 imgui = "0.3"
 cgmath = {git = "https://github.com/rustgd/cgmath", features = ["serde"]}
 specs = {version = "0.16", default-features = false, features = ["shred-derive", "specs-derive", "serde"]}
+lazy_static = "1.4.0"
