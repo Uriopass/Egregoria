@@ -1,10 +1,13 @@
 use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
+use crate::rendering::shape_render::ShapeRenderer;
 use cgmath::{vec2, InnerSpace, Vector2};
-use ggez::graphics::{Color, WHITE};
+use ggez::graphics::{Color, Mesh, WHITE};
 use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
 
-pub struct RoadRenderer;
+pub struct RoadRenderer {
+    pub mesh: Option<Mesh>,
+}
 const MID_GRAY: Color = Color {
     r: 0.5,
     g: 0.5,
@@ -21,14 +24,14 @@ const HIGH_GRAY: Color = Color {
 
 impl RoadRenderer {
     pub fn new() -> Self {
-        RoadRenderer
+        RoadRenderer { mesh: None }
     }
 
-    pub fn near_render(&mut self, map: &Map, time: u64, rc: &mut RenderContext) {
+    pub fn near_render(&mut self, map: &Map, time: u64, sr: &mut ShapeRenderer) {
         let inters = map.intersections();
         let lanes = map.lanes();
 
-        rc.sr.color = WHITE;
+        sr.color = WHITE;
 
         let mut p = Vec::with_capacity(8);
         for (_, inter) in inters {
@@ -38,27 +41,27 @@ impl RoadRenderer {
                 p.extend_from_slice(turn.points.as_slice());
                 p.push(turn.points.last().unwrap() + lanes[id.dst].get_orientation_vec());
 
-                rc.sr.draw_polyline(&p, lanes[id.src].width + 0.5);
+                sr.draw_polyline(&p, lanes[id.src].width + 0.5);
             }
         }
 
         for n in lanes.values() {
             let w = n.width + 0.5;
-            rc.sr.draw_polyline(n.points.as_slice(), w);
+            sr.draw_polyline(n.points.as_slice(), w);
         }
 
-        rc.sr.color = MID_GRAY;
+        sr.color = MID_GRAY;
         for n in lanes.values() {
-            rc.sr.color = match n.kind {
+            sr.color = match n.kind {
                 LaneKind::Walking => HIGH_GRAY,
                 _ => MID_GRAY,
             };
 
-            rc.sr.draw_polyline(n.points.as_slice(), n.width - 0.5);
+            sr.draw_polyline(n.points.as_slice(), n.width - 0.5);
         }
         for (inter_id, inter) in inters {
             // Draw normal turns
-            rc.sr.color = MID_GRAY;
+            sr.color = MID_GRAY;
             for (id, turn) in &inter.turns {
                 if turn.kind != TurnKind::Normal {
                     continue;
@@ -68,11 +71,11 @@ impl RoadRenderer {
                 p.extend_from_slice(turn.points.as_slice());
                 p.push(turn.points.last().unwrap() + lanes[id.dst].get_orientation_vec());
 
-                rc.sr.draw_polyline(&p, lanes[id.src].width - 0.5);
+                sr.draw_polyline(&p, lanes[id.src].width - 0.5);
             }
 
             // Draw walking corners
-            rc.sr.color = HIGH_GRAY;
+            sr.color = HIGH_GRAY;
             for (id, turn) in &inter.turns {
                 if turn.kind != TurnKind::WalkingCorner {
                     continue;
@@ -82,11 +85,11 @@ impl RoadRenderer {
                 p.extend_from_slice(turn.points.as_slice());
                 p.push(turn.points.last().unwrap() + lanes[id.dst].get_orientation_vec());
 
-                rc.sr.draw_polyline(&p, lanes[id.src].width - 0.5);
+                sr.draw_polyline(&p, lanes[id.src].width - 0.5);
             }
 
             // Draw crosswalks
-            rc.sr.color = WHITE;
+            sr.color = WHITE;
             for (id, turn) in &inter.turns {
                 if turn.kind != TurnKind::Crosswalk {
                     continue;
@@ -101,8 +104,7 @@ impl RoadRenderer {
                 let normal = vec2(-dir.y, dir.x);
                 for i in 2..l as usize - 1 {
                     let along = from + dir * i as f32;
-                    rc.sr
-                        .draw_stroke(along - normal * 1.5, along + normal * 1.5, 0.5);
+                    sr.draw_stroke(along - normal * 1.5, along + normal * 1.5, 0.5);
                 }
             }
         }
@@ -121,8 +123,8 @@ impl RoadRenderer {
             let r_center = n.points.last().unwrap() + dir_nor * 2.0 + dir * 2.5;
 
             if n.control.is_stop() {
-                rc.sr.color = scale_color(scale::rendering::Color::WHITE);
-                rc.sr.draw_rect_cos_sin(
+                sr.color = scale_color(scale::rendering::Color::WHITE);
+                sr.draw_rect_cos_sin(
                     r_center,
                     1.5,
                     1.5,
@@ -132,8 +134,8 @@ impl RoadRenderer {
                     ),
                 );
 
-                rc.sr.color = scale_color(scale::rendering::Color::RED);
-                rc.sr.draw_rect_cos_sin(
+                sr.color = scale_color(scale::rendering::Color::RED);
+                sr.draw_rect_cos_sin(
                     r_center,
                     1.0,
                     1.0,
@@ -145,14 +147,14 @@ impl RoadRenderer {
                 continue;
             }
 
-            rc.sr.color = scale_color(scale::rendering::Color::gray(0.3));
-            rc.sr.draw_rect_cos_sin(r_center, 1.1, 3.1, dir);
+            sr.color = scale_color(scale::rendering::Color::gray(0.3));
+            sr.draw_rect_cos_sin(r_center, 1.1, 3.1, dir);
 
-            rc.sr.color = scale_color(scale::rendering::Color::gray(0.1));
+            sr.color = scale_color(scale::rendering::Color::gray(0.1));
             for i in -1..2 {
-                rc.sr.draw_circle(r_center + i as f32 * dir_nor, 0.5);
+                sr.draw_circle(r_center + i as f32 * dir_nor, 0.5);
             }
-            rc.sr.color = scale_color(n.control.get_behavior(time).as_render_color());
+            sr.color = scale_color(n.control.get_behavior(time).as_render_color());
 
             let offset = match n.control.get_behavior(time) {
                 TrafficBehavior::RED => -1.0,
@@ -161,23 +163,23 @@ impl RoadRenderer {
                 _ => unreachable!(),
             };
 
-            rc.sr.draw_circle(r_center + offset * dir_nor, 0.5);
+            sr.draw_circle(r_center + offset * dir_nor, 0.5);
         }
     }
 
-    pub fn far_render(&mut self, map: &Map, _time: u64, rc: &mut RenderContext) {
+    pub fn far_render(&mut self, map: &Map, _time: u64, sr: &mut ShapeRenderer) {
         let inters = map.intersections();
 
-        rc.sr.color = MID_GRAY;
+        sr.color = MID_GRAY;
         for n in inters.values() {
-            rc.sr.draw_circle(n.pos, 8.0);
+            sr.draw_circle(n.pos, 8.0);
         }
 
         for n in map.roads().values() {
             let pos1 = inters[n.src].pos;
             let pos2 = inters[n.dst].pos;
 
-            rc.sr.draw_stroke(
+            sr.draw_stroke(
                 pos1,
                 pos2,
                 n.lanes_iter().map(|x| map.lanes()[*x].width).sum(),
@@ -185,11 +187,15 @@ impl RoadRenderer {
         }
     }
 
-    pub fn render(&mut self, map: &Map, time: u64, rc: &mut RenderContext) {
+    pub fn build_mesh(&mut self, map: &Map, time: u64, rc: &mut RenderContext) {
+        let mut sr = ShapeRenderer::new(rc.cam.get_screen_box(), rc.cam.camera.zoom, false);
+
         if rc.cam.camera.zoom < 1.5 && map.roads().len() > 1000 {
-            self.far_render(map, time, rc);
+            self.far_render(map, time, &mut sr);
         } else {
-            self.near_render(map, time, rc);
+            self.near_render(map, time, &mut sr);
         }
+
+        self.mesh = sr.meshbuilder.build(rc.ctx).ok()
     }
 }

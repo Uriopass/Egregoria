@@ -16,6 +16,7 @@ pub struct MapUIState {
     pub selected_inter: Option<Entity>,
     pub entities: Vec<Entity>,
     pub pattern_builder: LanePatternBuilder,
+    pub map_render_dirty: bool,
 }
 
 impl MapUIState {
@@ -29,6 +30,7 @@ impl MapUIState {
             selected_inter: None,
             entities: vec![],
             pattern_builder: LanePatternBuilder::new(),
+            map_render_dirty: true,
         }
     }
 }
@@ -52,10 +54,12 @@ impl<'a> System<'a> for MapUISystem {
 
     fn run(&mut self, mut data: Self::SystemData) {
         let state = &mut data.self_state;
+        state.map_render_dirty = false;
         // Moved events
         for event in data.moved.read(&mut state.reader) {
             if let Some(rnc) = data.intersections.get(event.entity) {
                 data.map.move_intersection(rnc.id, event.new_pos);
+                state.map_render_dirty = true;
             }
         }
 
@@ -63,8 +67,9 @@ impl<'a> System<'a> for MapUISystem {
         if data.kbinfo.just_pressed.contains(&KeyCode::I) {
             let id = data.map.add_intersection(data.mouseinfo.unprojected);
             let intersections = &data.intersections;
-            if let Some(x) = data.selected.0.and_then(|x| intersections.get(x)) {
+            if let Some(x) = data.selected.e.and_then(|x| intersections.get(x)) {
                 data.map.connect(x.id, id, &state.pattern_builder.build());
+                state.map_render_dirty = true;
             }
             let e = make_inter_entity(
                 &data.map.intersections()[id],
@@ -73,14 +78,15 @@ impl<'a> System<'a> for MapUISystem {
                 &data.entities,
             );
             println!("{:?}", e);
-            *data.selected = SelectedEntity(Some(e));
+            data.selected.e = Some(e);
         }
 
         // Intersection deletion
         if data.kbinfo.just_pressed.contains(&KeyCode::Backspace) {
-            if let Some(e) = data.selected.0 {
+            if let Some(e) = data.selected.e {
                 if let Some(inter) = data.intersections.get(e) {
                     data.map.remove_intersection(inter.id);
+                    state.map_render_dirty = true;
                     data.intersections.remove(e);
                     data.entities.delete(e).unwrap();
                 }
@@ -88,16 +94,18 @@ impl<'a> System<'a> for MapUISystem {
             state.deactive_connect(&data.entities);
         }
 
-        if let Some(x) = data.selected.0 {
+        if let Some(x) = data.selected.e {
             if data.intersections.contains(x) {
-                state.on_inter_select(
-                    x,
-                    &data.mouseinfo,
-                    &mut data.map,
-                    &data.intersections,
-                    &data.lazy,
-                    &data.entities,
-                );
+                if data.selected.dirty {
+                    state.on_inter_select(
+                        x,
+                        &data.mouseinfo,
+                        &mut data.map,
+                        &data.intersections,
+                        &data.lazy,
+                        &data.entities,
+                    );
+                }
             } else {
                 state.deactive_connect(&data.entities);
             }
@@ -107,6 +115,7 @@ impl<'a> System<'a> for MapUISystem {
             if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
                 // Unselected with click in empty space
                 let id = data.map.add_intersection(data.mouseinfo.unprojected);
+                state.map_render_dirty = true;
                 let intersections = &data.intersections;
                 let lol = intersections.get(x).unwrap();
                 data.map.connect(lol.id, id, &state.pattern_builder.build());
@@ -116,7 +125,7 @@ impl<'a> System<'a> for MapUISystem {
                     &data.lazy,
                     &data.entities,
                 );
-                *data.selected = SelectedEntity(Some(e));
+                data.selected.e = Some(e);
             }
         }
 
@@ -151,7 +160,7 @@ impl MapUIState {
         map.set_intersection_radius(selected_interc.id, selected_interc.radius);
         map.set_intersection_turn_policy(selected_interc.id, selected_interc.turn_policy);
         map.set_intersection_light_policy(selected_interc.id, selected_interc.light_policy);
-
+        self.map_render_dirty = true;
         match self.selected_inter {
             None => {
                 let color = Color {

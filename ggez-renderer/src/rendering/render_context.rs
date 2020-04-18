@@ -19,7 +19,7 @@ impl<'a> RenderContext<'a> {
         font: Option<Font>,
     ) -> RenderContext<'a> {
         let rect = cam.get_screen_box();
-        let sr = ShapeRenderer::new(&rect, cam.camera.zoom);
+        let sr = ShapeRenderer::new(rect, cam.camera.zoom, true);
         RenderContext { ctx, cam, sr, font }
     }
 

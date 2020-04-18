@@ -36,24 +36,25 @@ impl Default for Gui {
 
 impl Gui {
     pub fn render(&mut self, ui: &Ui, world: &mut World) {
-        let selected = *world.read_resource::<SelectedEntity>();
+        let mut selected = *world.read_resource::<SelectedEntity>();
         // Window
-        if let Some(e) = selected.0 {
+        if let Some(e) = selected.e {
             let mut is_open = true;
             imgui::Window::new(im_str!("Inspect"))
                 .size([300.0, 300.0], imgui::Condition::FirstUseEver)
                 .position([30.0, 160.0], imgui::Condition::FirstUseEver)
                 .opened(&mut is_open)
                 .build(&ui, || {
-                    crate::gui::inspect::InspectRenderer {
+                    selected.dirty = crate::gui::inspect::InspectRenderer {
                         world,
                         entity: e,
+                        dirty: false,
                         ui,
                     }
                     .render();
                 });
             if !is_open {
-                *world.write_resource::<SelectedEntity>() = SelectedEntity(None);
+                world.write_resource::<SelectedEntity>().e = None;
             }
         }
 

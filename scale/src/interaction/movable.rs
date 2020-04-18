@@ -45,10 +45,10 @@ impl<'a> System<'a> for MovableSystem {
         if data.mouse.buttons.contains(&MouseButton::Left)
             && data
                 .selected
-                .0
+                .e
                 .map_or(false, |e| data.movable.get(e).is_some())
         {
-            let e = data.selected.0.unwrap();
+            let e = data.selected.e.unwrap();
             match self.offset {
                 None => {
                     let p = data.transforms.get_mut(e).unwrap();
@@ -73,7 +73,7 @@ impl<'a> System<'a> for MovableSystem {
                 }
             }
         } else if let Some(off) = self.offset.take() {
-            if let Some(e) = data.selected.0 {
+            if let Some(e) = data.selected.e {
                 if let Some(kin) = data.kinematics.get_mut(e) {
                     let p = data.transforms.get(e).unwrap();
                     kin.velocity =

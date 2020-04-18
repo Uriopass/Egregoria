@@ -212,17 +212,18 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for InspectVec<T> 
 
         let v = &mut data[0];
 
+        let mut changed = false;
         if ui.collapsing_header(&im_str!("{}", label)).build() {
             ui.indent();
             for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
-                <T as InspectRenderDefault<T>>::render_mut(&mut [x], "", w, ui, args);
+                changed |= <T as InspectRenderDefault<T>>::render_mut(&mut [x], "", w, ui, args);
                 id.pop(ui);
             }
             ui.unindent();
         }
 
-        false
+        changed
     }
 }
 
@@ -249,18 +250,25 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
         }
 
         let v = &mut data[0];
+        let mut changed = false;
 
         if ui.collapsing_header(&im_str!("{}", label)).build() {
             ui.indent();
             for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
-                <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(&mut [x], "", w, ui, args);
+                changed |= <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(
+                    &mut [x],
+                    "",
+                    w,
+                    ui,
+                    args,
+                );
                 id.pop(ui);
             }
             ui.unindent();
         }
 
-        false
+        changed
     }
 }
 
@@ -317,53 +325,66 @@ macro_rules! enum_inspect_impl {
 pub struct InspectRenderer<'a, 'b> {
     pub world: &'a mut World,
     pub entity: Entity,
+    pub dirty: bool,
     pub ui: &'b Ui<'b>,
 }
 
 fn clone_and_modify<T: Component + Clone>(
     world: &mut World,
     entity: Entity,
-    f: impl FnOnce(&mut World, T) -> T,
-) {
+    f: impl FnOnce(&mut World, T) -> Option<T>,
+) -> bool {
     let c = world.write_component::<T>().get_mut(entity).cloned();
 
     if let Some(x) = c {
         let m = f(world, x);
-        *world.write_component::<T>().get_mut(entity).unwrap() = m;
+        if let Some(v) = m {
+            *world.write_component::<T>().get_mut(entity).unwrap() = v;
+            true
+        } else {
+            false
+        }
+    } else {
+        false
     }
 }
 
 impl<'a, 'b> InspectRenderer<'a, 'b> {
     fn inspect_component<T: Component + Clone + InspectRenderDefault<T>>(&mut self) {
         let ui = self.ui;
-        clone_and_modify(self.world, self.entity, |world, mut x| {
-            <T as InspectRenderDefault<T>>::render_mut(
+        self.dirty |= clone_and_modify(self.world, self.entity, |world, mut x| {
+            if <T as InspectRenderDefault<T>>::render_mut(
                 &mut [&mut x],
                 std::any::type_name::<T>().split("::").last().unwrap_or(""),
                 world,
                 ui,
                 &InspectArgsDefault::default(),
-            );
-            x
+            ) {
+                Some(x)
+            } else {
+                None
+            }
         });
     }
 
-    pub fn render(mut self) {
+    pub fn render(mut self) -> bool {
         let ui = self.ui;
         let mut event = None;
-        clone_and_modify(self.world, self.entity, |world, mut x: Transform| {
+        self.dirty |= clone_and_modify(self.world, self.entity, |world, mut x: Transform| {
             let mut position = x.position();
             let mut direction = x.direction();
-            if <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(
+            let mut changed = <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(
                 &mut [&mut position],
                 "position",
                 world,
                 ui,
                 &InspectArgsDefault::default(),
-            ) {
+            );
+
+            if changed {
                 event = Some(position);
             }
-            <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
+            changed |= <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
                 &mut [&mut direction],
                 "direction",
                 world,
@@ -372,7 +393,11 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
             );
             x.set_direction(direction);
             x.set_position(position);
-            x
+            if changed {
+                Some(x)
+            } else {
+                None
+            }
         });
 
         if let Some(new_pos) = event {
@@ -399,5 +424,9 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         } else if ui.small_button(im_str!("Unfollow")) {
             follow.take();
         }
+        if self.dirty {
+            ui.text("dirty");
+        }
+        self.dirty
     }
 }

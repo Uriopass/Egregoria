@@ -130,6 +130,10 @@ pub struct MeshRender {
     layer: u32,
 }
 
+impl Component for MeshRender {
+    type Storage = FlaggedStorage<Self, VecStorage<Self>>;
+}
+
 #[allow(dead_code)]
 impl MeshRender {
     pub fn empty(layer: u32) -> Self {
@@ -166,10 +170,6 @@ impl MeshRender {
     pub fn build(&self) -> Self {
         self.clone()
     }
-}
-
-impl Component for MeshRender {
-    type Storage = FlaggedStorage<Self, VecStorage<Self>>;
 }
 
 impl InspectRenderDefault<MeshRender> for MeshRender {

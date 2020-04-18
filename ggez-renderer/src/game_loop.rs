@@ -5,7 +5,7 @@ use crate::rendering::render_context::RenderContext;
 use crate::rendering::road_rendering::RoadRenderer;
 use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
 use cgmath::Vector2;
-use ggez::graphics::{Color, DrawMode, Font};
+use ggez::graphics::{Color, DrawMode, DrawParam, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::MouseButton;
 use ggez::{filesystem, graphics, timer, Context, GameResult};
@@ -14,7 +14,7 @@ use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::geometry::intersections::intersection_point;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
-use scale::map_model::Map;
+use scale::map_model::{Map, MapUIState};
 use scale::physics::{CollisionWorld, Transform};
 use scale::specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
@@ -177,15 +177,20 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             rc.flush()?;
         }
 
-        // Render entities
         {
             if self.render_enabled {
-                self.road_render.render(
-                    &self.world.read_resource::<Map>(),
-                    time.time_seconds,
-                    &mut rc,
-                );
-                rc.flush()?;
+                if self.world.read_resource::<MapUIState>().map_render_dirty
+                    || self.road_render.mesh.is_none()
+                {
+                    self.road_render.build_mesh(
+                        &self.world.read_resource::<Map>(),
+                        time.time_seconds,
+                        &mut rc,
+                    );
+                }
+                if let Some(m) = &self.road_render.mesh {
+                    ggez::graphics::draw(rc.ctx, m, DrawParam::default())?;
+                }
 
                 self.sorted_mesh_render.render(&mut self.world, &mut rc);
                 self.instanced_render.render(&mut self.world, &mut rc);
@@ -193,8 +198,6 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         }
 
         rc.finish()?;
-
-        //shader_test(self, ctx)?;
 
         let mut gui: Gui = (*self.world.read_resource::<Gui>()).clone();
         self.imgui_wrapper
