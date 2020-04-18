@@ -1,19 +1,15 @@
 use crate::geometry::pseudo_angle;
 use crate::geometry::Vec2;
 use crate::gui::InspectDragf;
-use crate::interaction::{Movable, Selectable};
 use crate::map_model::{
     Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, Turn, TurnID, TurnPolicy,
 };
-use crate::physics::Transform;
-use crate::rendering::meshrender_component::{CircleRender, MeshRender};
-use crate::rendering::Color;
 use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use specs::storage::BTreeStorage;
-use specs::{Builder, Component, Entities, Entity, LazyUpdate};
+use specs::Component;
 use std::collections::BTreeMap;
 
 new_key_type! {
@@ -127,35 +123,4 @@ impl Intersection {
     pub fn update_traffic_control(&self, lanes: &mut Lanes, roads: &Roads) {
         self.light_policy.apply(self, lanes, roads);
     }
-}
-
-pub fn make_inter_entity<'a>(
-    inter: &Intersection,
-    inter_pos: Vec2,
-    lazy: &LazyUpdate,
-    entities: &Entities<'a>,
-) -> Entity {
-    lazy.create_entity(entities)
-        .with(IntersectionComponent {
-            id: inter.id,
-            radius: inter.interface_radius,
-            turn_policy: inter.turn_policy,
-            light_policy: inter.light_policy,
-        })
-        .with(MeshRender::simple(
-            CircleRender {
-                radius: 2.0,
-                color: Color {
-                    a: 0.5,
-                    ..Color::BLUE
-                },
-                filled: true,
-                ..CircleRender::default()
-            },
-            2,
-        ))
-        .with(Transform::new(inter_pos))
-        .with(Movable)
-        .with(Selectable::new(10.0))
-        .build()
 }

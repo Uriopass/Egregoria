@@ -6,4 +6,4 @@ pub mod systems;
 pub use data::*;
 pub use systems::*;
 
-pub fn setup(world: &mut World) {}
+pub fn setup(_world: &mut World) {}

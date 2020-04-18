@@ -4,15 +4,14 @@ use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
 };
 use crate::rendering::meshrender_component::MeshRender;
+use crate::utils::rand_det;
 use cgmath::InnerSpace;
-use rand::random;
 use specs::{Builder, Entity, World, WorldExt};
 
 mod data;
 mod saveload;
 pub mod systems;
 
-use crate::rendering::assets::{AssetID, AssetRender};
 pub use data::*;
 pub use saveload::*;
 
@@ -23,7 +22,7 @@ pub fn spawn_new_vehicle(world: &mut World) {
         if let [a, b, ..] = lane.points.as_slice() {
             let diff = b - a;
 
-            let mut pos = Transform::new(*a + random::<f32>() * diff);
+            let mut pos = Transform::new(*a + rand_det::<f32>() * diff);
             pos.set_direction(diff.normalize());
 
             let mut it = Itinerary::default();
@@ -60,12 +59,12 @@ pub fn make_vehicle_entity(
 
     world
         .create_entity()
-        //        .with(mr)
-        .with(AssetRender {
+        .with(mr)
+        /*.with(AssetRender {
             id: AssetID::CAR,
             hide: false,
             scale: 4.5,
-        })
+        })*/
         .with(trans)
         .with(Kinematics::from_mass(1000.0))
         .with(vehicle)

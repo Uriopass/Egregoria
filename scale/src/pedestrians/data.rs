@@ -5,8 +5,8 @@ use crate::physics::{
 };
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::Color;
+use crate::utils::rand_normal;
 use imgui_inspect_derive::*;
-use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 use specs::{Builder, World, WorldExt};
 use specs::{Component, DenseVecStorage};
@@ -24,7 +24,7 @@ pub fn spawn_pedestrian(world: &mut World) {
     let lane = unwrap_ret!(map.get_random_lane(LaneKind::Walking));
 
     let pos = if let [a, b, ..] = lane.points.as_slice() {
-        a + (b - a) * rand::random()
+        a + (b - a) * crate::utils::rand_det()
     } else {
         return;
     };
@@ -106,10 +106,7 @@ impl Default for PedestrianComponent {
     fn default() -> Self {
         Self {
             itinerary: Itinerary::default(),
-            walking_speed: rand_distr::Normal::new(1.34f32, 0.26) // https://arxiv.org/pdf/cond-mat/9805244.pdf
-                .unwrap()
-                .sample(&mut rand::thread_rng())
-                .max(0.5),
+            walking_speed: rand_normal(1.34f32, 0.26).max(0.5), // https://arxiv.org/pdf/cond-mat/9805244.pdf
             walk_anim: 0.0,
         }
     }
@@ -128,7 +125,7 @@ pub fn random_pedestrian_shirt_color() -> Color {
 
     let total: f32 = car_colors.iter().map(|x| x.1).sum();
 
-    let r = rand::random::<f32>() * total;
+    let r = crate::utils::rand_det::<f32>() * total;
     let mut partial = 0.0;
     for (col, freq) in &car_colors {
         partial += freq;

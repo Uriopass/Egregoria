@@ -196,7 +196,7 @@ impl ShapeRenderer {
             from_srgb(self.color.r),
             from_srgb(self.color.g),
             from_srgb(self.color.b),
-            1.0,
+            self.color.a,
         );
 
         let verts: [Vertex; 4] = [

@@ -3,6 +3,7 @@ use crate::gui::{InspectDragf, InspectVec2};
 use crate::map_model::Itinerary;
 use crate::rendering::meshrender_component::{MeshRender, RectRender};
 use crate::rendering::Color;
+use crate::utils::rand_det;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Component, DenseVecStorage};
@@ -160,7 +161,7 @@ pub fn get_random_car_color() -> Color {
 
     let total: f32 = car_colors.iter().map(|x| x.1).sum();
 
-    let r = rand::random::<f32>() * total;
+    let r = rand_det::<f32>() * total;
     let mut partial = 0.0;
     for (col, freq) in &car_colors {
         partial += freq;
