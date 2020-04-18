@@ -2,7 +2,6 @@ use crate::gui::imgui_wrapper::ImGuiWrapper;
 use crate::rendering::camera_handler::CameraHandler;
 use crate::rendering::render_context::RenderContext;
 use crate::rendering::road_rendering::RoadRenderer;
-use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
 use cgmath::Vector2;
 use ggez::graphics::{Color, DrawMode, Font};
 use ggez::input::keyboard::{KeyCode, KeyMods};
@@ -188,6 +187,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
 
         rc.finish()?;
 
+        //shader_test(self, ctx)?;
+
         let mut gui: Gui = (*self.world.read_resource::<Gui>()).clone();
         self.imgui_wrapper
             .render(ctx, &mut self.world, &mut gui, 1.0);
@@ -277,6 +278,29 @@ fn scale_mb(x: MouseButton) -> scale::engine_interaction::MouseButton {
         MouseButton::Other(x) => scale::engine_interaction::MouseButton::Other(x),
     }
 }
+
+use crate::rendering::sorted_mesh_renderer::SortedMeshRenderer;
+use gfx::*;
+
+// Define the input struct for our shader.
+gfx_defines! {
+    constant Dim {
+        rate: f32 = "u_Rate",
+    }
+}
+
+/*
+fn shader_test(sself: &mut EngineState, ctx: &mut Context) -> GameResult<()> {
+    let img = Image::new(ctx, "/test.png").ok();
+    let mut sr = ShapeRenderer::new(&sself.cam.get_screen_box(), sself.cam.camera.zoom, img);
+    sr.draw_rect_cos_sin(vec2(0.0, 0.0), 100.0, 100.0, vec2(0.0, 1.0));
+    let mesh: Mesh = sr.meshbuilder.build(ctx)?;
+    let dim = Dim { rate: 0.5 };
+    let shader = ggez::graphics::Shader::new(ctx, "/test.glslv", "/test.glslf", dim, "Dim", None)?;
+    let l = ggez::graphics::use_shader(ctx, &shader);
+    ggez::graphics::draw(ctx, &mesh, DrawParam::new())?;
+    Ok(())
+}*/
 
 #[allow(dead_code)]
 fn debug_coworld(rc: &mut RenderContext, world: &World) -> GameResult<()> {
