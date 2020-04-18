@@ -21,7 +21,7 @@ impl<'a> System<'a> for SelectableAuraSystem {
         meshrenders.get_mut(self.aura.unwrap()).unwrap().hide = true;
 
         if let Some(pos) = selected
-            .0
+            .e
             .and_then(|sel| transforms.get(sel).map(|x| x.position()))
         {
             transforms

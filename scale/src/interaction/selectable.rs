@@ -25,7 +25,10 @@ impl Default for Selectable {
 }
 
 #[derive(Default, Clone, Copy)]
-pub struct SelectedEntity(pub Option<Entity>);
+pub struct SelectedEntity {
+    pub e: Option<Entity>,
+    pub dirty: bool, // Modified by inspection
+}
 
 pub struct SelectableSystem;
 impl<'a> System<'a> for SelectableSystem {
@@ -53,16 +56,16 @@ impl<'a> System<'a> for SelectableSystem {
                     min_dist2 = dist2;
                 }
             }
-            *selected = SelectedEntity(closest);
+            selected.e = closest;
         }
 
-        if let Some(x) = selected.0 {
+        if let Some(x) = selected.e {
             if !entities.is_alive(x) {
-                *selected = SelectedEntity(None);
+                selected.e = None;
             }
         }
         if kbinfo.just_pressed.contains(&KeyCode::Escape) {
-            *selected = SelectedEntity(None);
+            selected.e = None;
         }
     }
 }
