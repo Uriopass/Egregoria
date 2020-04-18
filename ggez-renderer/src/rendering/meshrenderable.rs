@@ -33,14 +33,9 @@ impl MeshRenderable for RectRender {
     fn draw(&self, trans: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
         rc.sr.color = scale_color(self.color);
         rc.sr.set_filled(self.filled);
-        if trans.is_angle_zero() {
-            rc.sr
-                .draw_rect_centered(trans.position() + self.offset, self.width, self.height);
-        } else {
-            let rect_pos = trans.position() + trans.apply_rotation(self.offset);
-            rc.sr
-                .draw_rect_cos_sin(rect_pos, self.width, self.height, trans.cos(), trans.sin());
-        }
+        let rect_pos = trans.position() + trans.apply_rotation(self.offset);
+        rc.sr
+            .draw_rect_cos_sin(rect_pos, self.width, self.height, trans.direction());
     }
 }
 

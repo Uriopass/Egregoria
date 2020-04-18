@@ -6,7 +6,7 @@ use crate::physics::{CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::{Choose, Restrict};
 use crate::vehicles::VehicleComponent;
-use cgmath::{Angle, InnerSpace, MetricSpace, Vector2};
+use cgmath::{Angle, InnerSpace, MetricSpace};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 
