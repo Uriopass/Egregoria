@@ -38,7 +38,7 @@ impl<'a> System<'a> for VehicleDecision {
             &mut data.kinematics,
             &mut data.vehicles,
         )
-            .join()
+            .par_join()
             .for_each(|(trans, kin, vehicle)| {
                 objective_update(vehicle, &time, trans, &map);
                 vehicle_physics(&cow, &map, &time, trans, kin, vehicle);
@@ -215,8 +215,12 @@ pub fn calc_decision<'a>(
         // let pos_dot = towards_vec.dot(dir_normal_right);
         let is_vehicle = nei_physics_obj.group == PhysicsGroup::Vehicles;
 
+        let his_direction = nei_physics_obj.dir;
+
         // front cone
-        if dir_dot > 0.7 && (!on_lane || tow_nor_dot < 4.0) {
+        if (dir_dot > 0.7 && (!is_vehicle || his_direction.dot(direction) > 0.0))
+            && (!on_lane || tow_nor_dot < 4.0)
+        {
             let mut dist_to_obj = dist - vehicle.kind.width() / 2.0 - nei_physics_obj.radius / 2.0;
             if !is_vehicle {
                 dist_to_obj -= 2.5;
@@ -231,8 +235,6 @@ pub fn calc_decision<'a>(
         }
 
         // closest win
-
-        let his_direction = nei_physics_obj.dir;
 
         let his_ray = Ray {
             from: his_pos - nei_physics_obj.radius / 2.0 * his_direction,
