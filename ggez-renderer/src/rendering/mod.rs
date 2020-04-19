@@ -1,4 +1,3 @@
-pub mod camera;
 pub mod camera_handler;
 pub mod instanced_render;
 pub mod meshrenderable;

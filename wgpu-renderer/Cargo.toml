@@ -8,5 +8,8 @@ edition = "2018"
 
 [dependencies]
 #scale = { path = "../scale" }
-wgpu = "0.4.0"
+wgpu = {version = "0.5.0", features = ["vulkan"]}
 winit = "0.22.1"
+image = "0.22"
+futures = "0.3.4"
+glsl-to-spirv = "0.1.7"

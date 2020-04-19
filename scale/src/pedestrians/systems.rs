@@ -8,6 +8,7 @@ use crate::utils::{Choose, Restrict};
 use cgmath::{Angle, InnerSpace, MetricSpace};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
+use specs::ParJoin;
 use std::borrow::Borrow;
 
 #[derive(Default)]
@@ -35,10 +36,10 @@ impl<'a> System<'a> for PedestrianDecision {
             &mut data.transforms,
             &mut data.kinematics,
             &mut data.pedestrians,
-            &mut data.mr,
+            &mut data.mr.par_restrict_mut(),
         )
-            .join()
-            .for_each(|(trans, kin, pedestrian, mr)| {
+            .par_join()
+            .for_each(|(trans, kin, pedestrian, mut mr)| {
                 objective_update(pedestrian, trans, map);
 
                 let neighbors = cow.query_around(trans.position(), 10.0);
@@ -47,7 +48,15 @@ impl<'a> System<'a> for PedestrianDecision {
 
                 let (desired_v, desired_dir) = calc_decision(pedestrian, trans, kin, objs);
 
-                physics(pedestrian, kin, trans, mr, time, desired_v, desired_dir);
+                physics(
+                    pedestrian,
+                    kin,
+                    trans,
+                    mr.get_mut_unchecked(),
+                    time,
+                    desired_v,
+                    desired_dir,
+                );
             });
     }
 }

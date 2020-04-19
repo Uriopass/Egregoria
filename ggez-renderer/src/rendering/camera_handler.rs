@@ -1,5 +1,5 @@
+use crate::geometry::camera::Camera;
 use crate::geometry::rect::Rect;
-use crate::rendering::camera::Camera;
 use cgmath::Vector2;
 use ggez::graphics;
 use ggez::input;
