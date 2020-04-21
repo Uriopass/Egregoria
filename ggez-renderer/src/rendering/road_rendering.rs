@@ -1,6 +1,6 @@
+use crate::geometry::tesselator::Tesselator;
 use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
-use crate::rendering::shape_render::ShapeRenderer;
 use cgmath::{vec2, InnerSpace, Vector2};
 use ggez::graphics::{Color, Mesh, WHITE};
 use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
@@ -27,7 +27,7 @@ impl RoadRenderer {
         RoadRenderer { mesh: None }
     }
 
-    pub fn near_render(&mut self, map: &Map, time: u64, sr: &mut ShapeRenderer) {
+    pub fn near_render(&mut self, map: &Map, time: u64, sr: &mut Tesselator) {
         let inters = map.intersections();
         let lanes = map.lanes();
 
@@ -167,7 +167,7 @@ impl RoadRenderer {
         }
     }
 
-    pub fn far_render(&mut self, map: &Map, _time: u64, sr: &mut ShapeRenderer) {
+    pub fn far_render(&mut self, map: &Map, _time: u64, sr: &mut Tesselator) {
         let inters = map.intersections();
 
         sr.color = MID_GRAY;
@@ -188,14 +188,14 @@ impl RoadRenderer {
     }
 
     pub fn build_mesh(&mut self, map: &Map, time: u64, rc: &mut RenderContext) {
-        let mut sr = ShapeRenderer::new(rc.cam.get_screen_box(), rc.cam.camera.zoom, false);
+        let mut tess = Tesselator::new(rc.cam.get_screen_box(), rc.cam.camera.zoom, false);
 
         if rc.cam.camera.zoom < 1.5 && map.roads().len() > 1000 {
-            self.far_render(map, time, &mut sr);
+            self.far_render(map, time, &mut tess);
         } else {
-            self.near_render(map, time, &mut sr);
+            self.near_render(map, time, &mut tess);
         }
 
-        self.mesh = sr.meshbuilder.build(rc.ctx).ok()
+        self.mesh = tess.meshbuilder.build(rc.ctx).ok()
     }
 }

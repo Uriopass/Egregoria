@@ -3,7 +3,7 @@ use cgmath::{vec2, InnerSpace};
 use cgmath::{ElementWise, EuclideanSpace, Point2, Vector2};
 use ggez::graphics::{Color, DrawMode, MeshBuilder, Vertex, WHITE};
 
-pub struct ShapeRenderer {
+pub struct Tesselator {
     pub color: Color,
     pub mode: DrawMode,
     pub meshbuilder: MeshBuilder,
@@ -13,9 +13,9 @@ pub struct ShapeRenderer {
     pub cull: bool,
 }
 const DEFAULT_THICKNESS: f32 = 0.2;
-impl ShapeRenderer {
+impl Tesselator {
     pub fn new(screen_box: Rect, zoom: f32, cull: bool) -> Self {
-        ShapeRenderer {
+        Tesselator {
             color: WHITE,
             mode: DrawMode::fill(),
             meshbuilder: MeshBuilder::new(),
@@ -37,7 +37,7 @@ fn from_srgb(component: f32) -> f32 {
 }
 
 #[allow(dead_code)]
-impl ShapeRenderer {
+impl Tesselator {
     pub fn set_filled(&mut self, filled: bool) {
         if filled {
             self.mode = DrawMode::fill()
