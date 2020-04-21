@@ -1,13 +1,13 @@
+use crate::geometry::tesselator::Tesselator;
 use crate::rendering::camera_handler;
 use crate::rendering::camera_handler::CameraHandler;
-use crate::rendering::shape_render::ShapeRenderer;
 use cgmath::{EuclideanSpace, Point2, Vector2};
 use ggez::graphics::{Color, DrawParam, Font, Image, Mesh, Text};
 use ggez::{graphics, Context, GameResult};
 
 pub struct RenderContext<'a> {
     pub cam: &'a mut camera_handler::CameraHandler,
-    pub sr: ShapeRenderer,
+    pub tess: Tesselator,
     font: Option<Font>,
     pub ctx: &'a mut Context,
 }
@@ -19,8 +19,13 @@ impl<'a> RenderContext<'a> {
         font: Option<Font>,
     ) -> RenderContext<'a> {
         let rect = cam.get_screen_box();
-        let sr = ShapeRenderer::new(rect, cam.camera.zoom, true);
-        RenderContext { ctx, cam, sr, font }
+        let tess = Tesselator::new(rect, cam.camera.zoom, true);
+        RenderContext {
+            ctx,
+            cam,
+            tess,
+            font,
+        }
     }
 
     pub fn clear(&mut self) {
@@ -29,12 +34,12 @@ impl<'a> RenderContext<'a> {
 
     #[allow(dead_code)]
     pub fn draw_grid(&mut self, grid_size: f32, color: Color) {
-        let screen = self.sr.screen_box;
+        let screen = self.tess.screen_box;
 
         let mut x = (screen.x / grid_size).ceil() * grid_size;
-        self.sr.color = color;
+        self.tess.color = color;
         while x < screen.x + screen.w {
-            self.sr.draw_line(
+            self.tess.draw_line(
                 Vector2::new(x, screen.y),
                 Vector2::new(x, screen.y + screen.h),
             );
@@ -43,7 +48,7 @@ impl<'a> RenderContext<'a> {
 
         let mut y = (screen.y / grid_size).ceil() * grid_size;
         while y < screen.y + screen.h {
-            self.sr.draw_line(
+            self.tess.draw_line(
                 Vector2::new(screen.x, y),
                 Vector2::new(screen.x + screen.w, y),
             );
@@ -84,10 +89,10 @@ impl<'a> RenderContext<'a> {
     }
 
     pub fn flush(&mut self) -> GameResult<()> {
-        if !self.sr.empty {
-            let mesh = self.sr.meshbuilder.build(self.ctx)?;
+        if !self.tess.empty {
+            let mesh = self.tess.meshbuilder.build(self.ctx)?;
             graphics::draw(self.ctx, &mesh, DrawParam::new().dest([0.0, 0.0]))?;
-            self.sr.reset();
+            self.tess.reset();
         }
         Ok(())
     }

@@ -123,14 +123,6 @@ impl Map {
         road_id
     }
 
-    pub fn disconnect(&mut self, src: IntersectionID, dst: IntersectionID) -> Option<Road> {
-        let r = self.find_road(src, dst);
-        let road_id = r?;
-        let r = self.remove_road(road_id);
-
-        Some(r)
-    }
-
     pub fn get_random_lane(&self, kind: LaneKind) -> Option<&Lane> {
         let l = self.roads.len();
         if l == 0 {
@@ -152,7 +144,7 @@ impl Map {
         Some(&self.lanes[*lanes[r]])
     }
 
-    fn remove_road(&mut self, road_id: RoadID) -> Road {
+    pub(crate) fn remove_road(&mut self, road_id: RoadID) -> Road {
         let road = self.roads.remove(road_id).unwrap();
         for lane_id in road.lanes_iter() {
             self.lanes.remove(*lane_id).unwrap();

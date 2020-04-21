@@ -23,18 +23,18 @@ impl MeshRenderable for MeshRenderEnum {
 
 impl MeshRenderable for CircleRender {
     fn draw(&self, pos: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
-        rc.sr.color = scale_color(self.color);
-        rc.sr.set_filled(self.filled);
-        rc.sr.draw_circle(pos.project(self.offset), self.radius);
+        rc.tess.color = scale_color(self.color);
+        rc.tess.set_filled(self.filled);
+        rc.tess.draw_circle(pos.project(self.offset), self.radius);
     }
 }
 
 impl MeshRenderable for RectRender {
     fn draw(&self, trans: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
-        rc.sr.color = scale_color(self.color);
-        rc.sr.set_filled(self.filled);
+        rc.tess.color = scale_color(self.color);
+        rc.tess.set_filled(self.filled);
         let rect_pos = trans.position() + trans.apply_rotation(self.offset);
-        rc.sr
+        rc.tess
             .draw_rect_cos_sin(rect_pos, self.width, self.height, trans.direction());
     }
 }
@@ -43,8 +43,8 @@ impl MeshRenderable for LineToRender {
     fn draw(&self, trans: &Transform, transforms: &ReadStorage<Transform>, rc: &mut RenderContext) {
         let e = self.to;
         let pos2 = transforms.get(e).unwrap().position();
-        rc.sr.color = scale_color(self.color);
-        rc.sr.draw_stroke(trans.position(), pos2, self.thickness);
+        rc.tess.color = scale_color(self.color);
+        rc.tess.draw_stroke(trans.position(), pos2, self.thickness);
     }
 }
 
@@ -52,8 +52,8 @@ impl MeshRenderable for LineRender {
     fn draw(&self, trans: &Transform, _: &ReadStorage<Transform>, rc: &mut RenderContext) {
         let start = trans.position();
         let end = start + self.offset;
-        rc.sr.color = scale_color(self.color);
-        rc.sr.draw_stroke(start, end, self.thickness);
+        rc.tess.color = scale_color(self.color);
+        rc.tess.draw_stroke(start, end, self.thickness);
     }
 }
 

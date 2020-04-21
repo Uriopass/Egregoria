@@ -301,7 +301,7 @@ gfx_defines! {
 
 fn shader_test(sself: &mut EngineState, ctx: &mut Context) -> GameResult<()> {
     let img = Image::new(ctx, "/test.png").ok();
-    let mut sr = ShapeRenderer::new(&sself.cam.get_screen_box(), sself.cam.camera.zoom, img);
+    let mut sr = Tesselator::new(&sself.cam.get_screen_box(), sself.cam.camera.zoom, img);
     sr.draw_rect_cos_sin(vec2(0.0, 0.0), 100.0, 100.0, vec2(0.0, 1.0));
     let mesh: Mesh = sr.meshbuilder.build(ctx)?;
     let dim = Dim { rate: 0.5 };
@@ -316,11 +316,11 @@ fn debug_coworld(rc: &mut RenderContext, world: &World) -> GameResult<()> {
     let lol = world.read_resource::<CollisionWorld>();
     rc.draw_grid(50.0, Color::new(0.0, 0.0, 1.0, 1.0));
     rc.flush()?;
-    rc.sr.mode = DrawMode::stroke(0.1);
-    rc.sr.color = Color::new(0.8, 0.8, 0.9, 0.5);
+    rc.tess.mode = DrawMode::stroke(0.1);
+    rc.tess.color = Color::new(0.8, 0.8, 0.9, 0.5);
     for x in lol.cells() {
         for y in &x.objs {
-            rc.sr.draw_circle(y.pos, 10.0);
+            rc.tess.draw_circle(y.pos, 10.0);
             rc.draw_text(
                 &format!("{}", lol.query_around(y.pos, 10.0).count()),
                 y.pos,
@@ -352,16 +352,16 @@ fn debug_rays(rc: &mut RenderContext, time: TimeInfo) {
 
     let inter = intersection_point(r, r2);
 
-    rc.sr.color = ggez::graphics::WHITE;
-    rc.sr.draw_line(r.from, r.from + r.dir * 50.0);
-    rc.sr.draw_line(r2.from, r2.from + r2.dir * 50.0);
+    rc.tess.color = ggez::graphics::WHITE;
+    rc.tess.draw_line(r.from, r.from + r.dir * 50.0);
+    rc.tess.draw_line(r2.from, r2.from + r2.dir * 50.0);
 
     if let Some(v) = inter {
-        rc.sr.color.r = 1.0;
-        rc.sr.color.g = 0.0;
-        rc.sr.color.b = 0.0;
+        rc.tess.color.r = 1.0;
+        rc.tess.color.g = 0.0;
+        rc.tess.color.b = 0.0;
 
-        rc.sr.draw_circle(v, 2.0);
+        rc.tess.draw_circle(v, 2.0);
     }
 }
 

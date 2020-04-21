@@ -204,14 +204,16 @@ impl MapUIState {
                 // Already selected, connect the two
                 let interc2 = intersections.get(y).unwrap();
                 if y != selected {
-                    if map.find_road(selected_interc.id, interc2.id).is_some() {
-                        map.disconnect(selected_interc.id, interc2.id);
+                    if let Some(id) = map.find_road(selected_interc.id, interc2.id) {
+                        map.remove_road(id);
                     }
                     map.connect(
                         interc2.id,
                         selected_interc.id,
                         &self.pattern_builder.build(),
                     );
+
+                    self.map_render_dirty = true;
 
                     self.deactive_connect(&entities);
                 }

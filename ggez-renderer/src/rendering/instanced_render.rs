@@ -1,7 +1,7 @@
 use crate::rendering::render_context::RenderContext;
 use cgmath::{InnerSpace, Vector2};
 use ggez::graphics::spritebatch::SpriteBatch;
-use ggez::graphics::{DrawParam, Drawable, Image};
+use ggez::graphics::{DrawParam, Drawable, FilterMode, Image};
 use ggez::Context;
 use scale::physics::Transform;
 use scale::rendering::assets::AssetRender;
@@ -24,7 +24,8 @@ impl InstancedRender {
             x: 0.5 * car.width() as f32,
             y: 0.5 * car.height() as f32,
         });
-        let spr_car = SpriteBatch::new(car);
+        let mut spr_car = SpriteBatch::new(car);
+        spr_car.set_filter(FilterMode::Linear);
 
         let texs = vec![spr_car];
         InstancedRender {
