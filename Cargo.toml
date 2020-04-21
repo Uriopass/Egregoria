@@ -2,12 +2,11 @@
 members = [
     "scale",
     "ggez-renderer",
-    "wgpu-renderer",
     "imgui-inspect",
     "imgui-inspect-derive",
 ]
 
-default-members = ["wgpu-renderer"]
+default-members = ["ggez-renderer"]
 
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]
