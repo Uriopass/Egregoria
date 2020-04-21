@@ -1,4 +1,5 @@
 use crate::gui::InspectDragf;
+use crate::rendering::Color;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Component, DenseVecStorage};
@@ -19,4 +20,5 @@ pub struct AssetRender {
     pub hide: bool,
     #[inspect(proxy_type = "InspectDragf")]
     pub scale: f32,
+    pub tint: Color,
 }

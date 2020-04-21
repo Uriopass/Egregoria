@@ -65,6 +65,7 @@ pub fn make_vehicle_entity(
             id: AssetID::CAR,
             hide: false,
             scale: 4.5,
+            tint: get_random_car_color(),
         })
         .with(trans)
         .with(Kinematics::from_mass(1000.0))
