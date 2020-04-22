@@ -325,7 +325,6 @@ macro_rules! enum_inspect_impl {
 pub struct InspectRenderer<'a, 'b> {
     pub world: &'a mut World,
     pub entity: Entity,
-    pub dirty: bool,
     pub ui: &'b Ui<'b>,
 }
 
@@ -350,9 +349,9 @@ fn clone_and_modify<T: Component + Clone>(
 }
 
 impl<'a, 'b> InspectRenderer<'a, 'b> {
-    fn inspect_component<T: Component + Clone + InspectRenderDefault<T>>(&mut self) {
+    fn inspect_component<T: Component + Clone + InspectRenderDefault<T>>(&mut self) -> bool {
         let ui = self.ui;
-        self.dirty |= clone_and_modify(self.world, self.entity, |world, mut x| {
+        clone_and_modify(self.world, self.entity, |world, mut x| {
             if <T as InspectRenderDefault<T>>::render_mut(
                 &mut [&mut x],
                 std::any::type_name::<T>().split("::").last().unwrap_or(""),
@@ -364,13 +363,14 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
             } else {
                 None
             }
-        });
+        })
     }
 
     pub fn render(mut self) -> bool {
         let ui = self.ui;
         let mut event = None;
-        self.dirty |= clone_and_modify(self.world, self.entity, |world, mut x: Transform| {
+        let mut dirty = false;
+        dirty |= clone_and_modify(self.world, self.entity, |world, mut x: Transform| {
             let mut position = x.position();
             let mut direction = x.direction();
             let mut changed = <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(
@@ -408,13 +408,13 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
                     new_pos,
                 });
         }
-        self.inspect_component::<VehicleComponent>();
-        self.inspect_component::<PedestrianComponent>();
-        self.inspect_component::<AssetRender>();
-        self.inspect_component::<MeshRender>();
-        self.inspect_component::<Kinematics>();
-        self.inspect_component::<Movable>();
-        self.inspect_component::<IntersectionComponent>();
+        dirty |= self.inspect_component::<VehicleComponent>();
+        dirty |= self.inspect_component::<PedestrianComponent>();
+        dirty |= self.inspect_component::<AssetRender>();
+        dirty |= self.inspect_component::<MeshRender>();
+        dirty |= self.inspect_component::<Kinematics>();
+        dirty |= self.inspect_component::<Movable>();
+        dirty |= self.inspect_component::<IntersectionComponent>();
 
         let follow = &mut self.world.write_resource::<FollowEntity>().0;
         if follow.is_none() {
@@ -424,9 +424,9 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         } else if ui.small_button(im_str!("Unfollow")) {
             follow.take();
         }
-        if self.dirty {
+        if dirty {
             ui.text("dirty");
         }
-        self.dirty
+        dirty
     }
 }
