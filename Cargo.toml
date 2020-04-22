@@ -4,6 +4,7 @@ members = [
     "ggez-renderer",
     "imgui-inspect",
     "imgui-inspect-derive",
+    "wgpu-renderer"
 ]
 
 default-members = ["ggez-renderer"]
