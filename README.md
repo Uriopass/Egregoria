@@ -41,4 +41,4 @@ I will try to keep a blog about Scale's development [here](http://douady.paris/b
 
 ## Special thanks to
 
-- @shika-blyat: wgpu-renderer
+- [`@shika-blyat`](https://github.com/shika-blyat): wgpu-renderer
