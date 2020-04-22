@@ -1,12 +1,5 @@
-mod depth;
-mod shader;
-mod surface;
-mod vertex;
-
-use std::path::PathBuf;
-
 use futures::executor;
-use wgpu::{Color, CompareFunction, PrimitiveTopology};
+use wgpu::Color;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
@@ -14,25 +7,24 @@ use winit::{
     window::WindowBuilder,
 };
 
-use shader::ShaderDescriptor;
-use surface::{BufferUsageDescriptor, PipelineDescriptor, RenderPassDescriptor, Surface};
-use vertex::Vertex;
+use crate::engine::draweables::{ClearScreen, IndexType, Mesh, MeshBuilder};
+use engine::context::GfxContext;
+use engine::vertex::Vertex;
 
-fn wgpu_color(r: f64, g: f64, b: f64, a: f64) -> Color {
-    Color { r, g, b, a }
-}
+mod engine;
+
 const VERTICES: &[Vertex] = &[
     Vertex {
         position: [-0.5, -0.5, 0.1],
-        color: [1.0, 1.0, 1.0, 0.5],
+        color: [1.0, 1.0, 1.0, 1.0],
     },
     Vertex {
         position: [0.5, -0.5, 0.1],
-        color: [1.0, 1.0, 1.0, 0.5],
+        color: [1.0, 1.0, 1.0, 1.0],
     },
     Vertex {
         position: [0.5, 0.5, 0.1],
-        color: [1.0, 1.0, 1.0, 0.5],
+        color: [1.0, 1.0, 1.0, 1.0],
     },
     Vertex {
         position: [0.5, -0.5, 0.5],
@@ -48,7 +40,7 @@ const VERTICES: &[Vertex] = &[
     },
 ];
 
-const INDICES: &[u16] = &[0, 1, 2, 3, 4, 5];
+const INDICES: &[IndexType] = &[0, 1, 2, 3, 4, 5];
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -56,29 +48,30 @@ fn main() {
         .with_inner_size(PhysicalSize::new(500, 500))
         .build(&event_loop)
         .expect("Failed to create window");
-    let mut surface = executor::block_on(Surface::new(window));
-    let shader_desc = ShaderDescriptor {
-        vert_shader: PathBuf::from("wgpu-renderer/src/shaders/shader.vert"),
-        frag_shader: PathBuf::from("wgpu-renderer/src/shaders/shader.frag"),
+    let mut ctx = executor::block_on(GfxContext::new(window));
+
+    ctx.register_pipeline::<Mesh>();
+    ctx.register_pipeline::<ClearScreen>();
+
+    let mut mb = MeshBuilder::new();
+    mb.extend(&VERTICES, &INDICES);
+    let mesh = mb.build(&ctx);
+
+    let clear_screen = ClearScreen {
+        clear_color: Color {
+            r: 0.5,
+            g: 0.5,
+            b: 0.5,
+            a: 1.0,
+        },
     };
-    let pipeline_desc = PipelineDescriptor {
-        shader_desc,
-        vertex_buffer_number: 1,
-        compare_depth_function: CompareFunction::Less,
-        alpha_blending: true,
-        primitive_topo: PrimitiveTopology::TriangleList,
-    };
-    let vertex_buffer =
-        surface.create_buffer(bytemuck::cast_slice(VERTICES), wgpu::BufferUsage::VERTEX);
-    let index_buffer =
-        surface.create_buffer(bytemuck::cast_slice(INDICES), wgpu::BufferUsage::INDEX);
-    surface.create_pipeline(pipeline_desc);
+
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::Resized(physical_size) => {
-                    surface.resize(physical_size);
+                    ctx.resize(physical_size);
                 }
                 WindowEvent::CloseRequested => {
                     println!("The close button was pressed. stopping");
@@ -86,20 +79,11 @@ fn main() {
                 }
                 _ => (),
             },
-            Event::MainEventsCleared => surface.request_redraw(),
-            Event::RedrawRequested(_) => {
-                let buffer_usage_desc = Some(BufferUsageDescriptor {
-                    vertex_buffer: &vertex_buffer,
-                    index_buffer: &index_buffer,
-                    indices: 0..INDICES.len() as u32,
-                    base_vertex: 0,
-                });
-                let render_pass_desc = RenderPassDescriptor {
-                    clear_color: wgpu_color(0.5, 0.5, 0.5, 1.0),
-                    buffer_usage_desc,
-                    vertices: None,
-                };
-                surface.redraw(render_pass_desc);
+            Event::MainEventsCleared => {
+                ctx.begin_frame();
+                ctx.draw(&clear_screen);
+                ctx.draw(&mesh);
+                ctx.end_frame();
             }
             _ => (),
         }
