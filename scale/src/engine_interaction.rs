@@ -1,6 +1,4 @@
 use crate::geometry::Vec2;
-use specs::prelude::ComponentEvent;
-use specs::ReaderId;
 use std::collections::HashSet;
 
 #[derive(Default)]
@@ -14,7 +12,7 @@ pub struct TimeInfo {
     pub delta: f32,
     pub time: f64,
     pub time_seconds: u64,
-    pub time_speed: f32,
+    pub time_speed: f64,
 }
 
 impl Default for TimeInfo {
@@ -28,7 +26,6 @@ impl Default for TimeInfo {
     }
 }
 
-pub struct MeshRenderEventReader(pub ReaderId<ComponentEvent>);
 pub const MAX_LAYERS: u32 = 20;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]

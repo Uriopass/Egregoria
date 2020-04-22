@@ -24,7 +24,8 @@ impl Segment {
         } else if proj2 <= 0.0 {
             self.b
         } else {
-            self.a + diff * (proj1 / diff.magnitude())
+            let lol = proj1 / diff.magnitude2();
+            self.a + diff * lol
         }
     }
 }

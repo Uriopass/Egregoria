@@ -14,8 +14,10 @@ use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::geometry::intersections::intersection_point;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
-use scale::map_model::{Map, MapUIState};
+use scale::map_model::{Map, MapUIState, TraverseKind};
+use scale::pedestrians::PedestrianComponent;
 use scale::physics::{CollisionWorld, Transform};
+use scale::specs::Join;
 use scale::specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
@@ -31,6 +33,7 @@ pub struct EngineState<'a> {
     pub sorted_mesh_render: SortedMeshRenderer,
     pub road_render: RoadRenderer,
     pub instanced_render: InstancedRender,
+    pub time_sync: f64,
 }
 
 impl<'a> EngineState<'a> {
@@ -59,15 +62,14 @@ impl<'a> EngineState<'a> {
             sorted_mesh_render: SortedMeshRenderer::new(),
             road_render: RoadRenderer::new(),
             instanced_render: InstancedRender::new(ctx),
+            time_sync: 0.0,
         })
     }
 }
 
-impl<'a> ggez::event::EventHandler for EngineState<'a> {
-    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+impl EngineState<'_> {
+    fn tick(&mut self, ctx: &mut Context) {
         let start_update = std::time::Instant::now();
-        let delta = timer::delta(ctx).as_secs_f64().min(1.0 / 100.0);
-
         let pressed: Vec<engine_interaction::MouseButton> =
             if !self.imgui_wrapper.last_mouse_captured {
                 vec![MouseButton::Left, MouseButton::Right, MouseButton::Middle]
@@ -102,22 +104,8 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             ),
         };
 
-        {
-            let mut time = self.world.write_resource::<TimeInfo>();
-            time.delta = delta as f32 * time.time_speed;
-            time.time += delta * time.time_speed as f64;
-            time.time_seconds = time.time as u64;
-        }
-
         self.dispatch.run_now(&self.world);
         self.world.maintain();
-
-        if ggez::input::keyboard::is_key_pressed(ctx, ggez::input::keyboard::KeyCode::F) {
-            for _ in 0..10 {
-                self.dispatch.run_now(&self.world);
-                self.world.maintain();
-            }
-        }
 
         self.cam.easy_camera_movement(
             ctx,
@@ -151,9 +139,36 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             .write_resource::<KeyboardInfo>()
             .just_pressed
             .clear();
-
         self.world.write_resource::<RenderStats>().update_time =
             (std::time::Instant::now() - start_update).as_secs_f32();
+    }
+}
+
+const TIME_STEP: f64 = 1.0 / 30.0;
+
+impl<'a> ggez::event::EventHandler for EngineState<'a> {
+    fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+        let delta = timer::delta(ctx).as_secs_f64();
+
+        let time = self.world.read_resource::<TimeInfo>();
+        self.time_sync += delta * time.time_speed;
+        let mut ticks_to_do = (((self.time_sync - time.time) / TIME_STEP) as u32).max(0);
+
+        if ticks_to_do > 3 {
+            ticks_to_do = 3;
+            self.time_sync = time.time + 3.0 * TIME_STEP;
+        }
+        drop(time);
+
+        for _ in 0..ticks_to_do {
+            let mut time = self.world.write_resource::<TimeInfo>();
+            time.delta = TIME_STEP as f32;
+            time.time += TIME_STEP;
+            time.time_seconds = time.time as u64;
+            drop(time);
+
+            self.tick(ctx);
+        }
 
         Ok(())
     }

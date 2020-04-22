@@ -1,7 +1,7 @@
 #![windows_subsystem = "windows"]
 #![allow(clippy::unreadable_literal)]
 
-use crate::engine_interaction::{KeyboardInfo, MeshRenderEventReader, RenderStats, TimeInfo};
+use crate::engine_interaction::{KeyboardInfo, RenderStats, TimeInfo};
 use crate::geometry::gridstore::GridStore;
 use crate::gui::Gui;
 use crate::interaction::{
@@ -74,9 +74,6 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     world.register::<AssetRender>();
 
     // Event channels init
-    let reader = MeshRenderEventReader(world.write_storage::<MeshRender>().register_reader());
-    world.insert(reader);
-
     world.insert(EventChannel::<MovedEvent>::new());
 
     // Systems state init
@@ -89,9 +86,9 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     vehicles::setup(world);
     pedestrians::setup(world);
 
-    for _ in 0..1 {
+    for _ in 0..5000 {
         spawn_pedestrian(world);
-        spawn_new_vehicle(world);
+        //spawn_new_vehicle(world);
     }
 
     dispatch

@@ -43,7 +43,7 @@ impl Itinerary {
         self.local_path.n_points()
     }
 
-    pub fn get_point(&self) -> Option<&Vec2> {
+    pub fn get_point(&self) -> Option<Vec2> {
         self.local_path.first()
     }
 

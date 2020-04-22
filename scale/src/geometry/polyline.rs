@@ -1,6 +1,8 @@
 use super::Vec2;
-use cgmath::InnerSpace;
+use crate::geometry::segment::Segment;
+use cgmath::{vec2, InnerSpace};
 use serde::{Deserialize, Serialize};
+use std::hint::unreachable_unchecked;
 use std::ops::Index;
 use std::slice::{Iter, IterMut};
 
@@ -49,6 +51,39 @@ impl PolyLine {
         self.0.push(item)
     }
 
+    pub fn project(&self, p: Vec2) -> Option<Vec2> {
+        if self.n_points() <= 1 {
+            return self.first();
+        }
+
+        if self.n_points() == 2 {
+            return Some(
+                Segment {
+                    a: self.0[0],
+                    b: self.0[1],
+                }
+                .project(p),
+            );
+        }
+
+        let mut min_proj = vec2(0.0, 0.0);
+        let mut min_dist = std::f32::INFINITY;
+
+        for w in self.0.windows(2) {
+            if let [a, b] = w {
+                let proj = Segment { a: *a, b: *b }.project(p);
+                let d = (p - proj).magnitude();
+                if d <= min_dist {
+                    min_dist = d;
+                    min_proj = proj;
+                }
+            } else {
+                unsafe { unreachable_unchecked() } // windows(2)
+            }
+        }
+        Some(min_proj)
+    }
+
     pub fn pop_first(&mut self) -> Option<Vec2> {
         if self.0.is_empty() {
             None
@@ -57,12 +92,12 @@ impl PolyLine {
         }
     }
 
-    pub fn last(&self) -> Option<&Vec2> {
-        self.0.last()
+    pub fn last(&self) -> Option<Vec2> {
+        self.0.last().copied()
     }
 
-    pub fn first(&self) -> Option<&Vec2> {
-        self.0.first()
+    pub fn first(&self) -> Option<Vec2> {
+        self.0.first().copied()
     }
 
     pub fn last_mut(&mut self) -> Option<&mut Vec2> {

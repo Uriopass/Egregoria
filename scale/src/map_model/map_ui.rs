@@ -160,6 +160,7 @@ impl MapUIState {
         map.set_intersection_turn_policy(selected_interc.id, selected_interc.turn_policy);
         map.set_intersection_light_policy(selected_interc.id, selected_interc.light_policy);
         self.map_render_dirty = true;
+        println!("dirty");
     }
 
     fn on_inter_select(

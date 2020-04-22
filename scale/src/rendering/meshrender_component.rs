@@ -8,7 +8,7 @@ use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
-use specs::{Component, DenseVecStorage, Entity, FlaggedStorage, World};
+use specs::{Component, DenseVecStorage, Entity, World};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MeshRenderEnum {
@@ -123,15 +123,11 @@ impl From<LineRender> for MeshRenderEnum {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Component)]
 pub struct MeshRender {
     pub orders: Vec<MeshRenderEnum>,
     pub hide: bool,
     layer: u32,
-}
-
-impl Component for MeshRender {
-    type Storage = FlaggedStorage<Self, DenseVecStorage<Self>>;
 }
 
 #[allow(dead_code)]
