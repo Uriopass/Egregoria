@@ -48,14 +48,15 @@ impl Gui {
                     selected.dirty = crate::gui::inspect::InspectRenderer {
                         world,
                         entity: e,
-                        dirty: false,
                         ui,
                     }
                     .render();
                 });
             if !is_open {
-                world.write_resource::<SelectedEntity>().e = None;
+                selected.e = None;
+                selected.dirty = false;
             }
+            *world.write_resource::<SelectedEntity>() = selected;
         }
 
         // Menu bar

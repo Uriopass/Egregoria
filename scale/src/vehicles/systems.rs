@@ -177,7 +177,7 @@ pub fn calc_decision<'a>(
         vehicle.wait_time -= time.delta;
         return;
     }
-    let objective: Vec2 = *unwrap_ret!(vehicle.itinerary.get_point());
+    let objective: Vec2 = unwrap_ret!(vehicle.itinerary.get_point());
 
     let is_terminal = false; // TODO: change depending on route
 
@@ -221,9 +221,9 @@ pub fn calc_decision<'a>(
         if (dir_dot > 0.7 && (!is_vehicle || his_direction.dot(direction) > 0.0))
             && (!on_lane || tow_nor_dot < 4.0)
         {
-            let mut dist_to_obj = dist - vehicle.kind.width() / 2.0 - nei_physics_obj.radius / 2.0;
+            let mut dist_to_obj = dist - vehicle.kind.width() / 2.0 - nei_physics_obj.radius;
             if !is_vehicle {
-                dist_to_obj -= 2.5;
+                dist_to_obj -= 1.0;
             }
             min_front_dist = min_front_dist.min(dist_to_obj);
 
@@ -288,18 +288,18 @@ pub fn calc_decision<'a>(
         }
     }
 
+    // Close to terminal objective
     if is_terminal && dist_to_pos < 1.0 + stop_dist {
-        // Close to terminal objective
         vehicle.desired_speed = 0.0;
     }
 
+    // Stop at 50 cm of object in front
+    if min_front_dist < 0.5 + stop_dist {
+        vehicle.desired_speed = 0.0;
+    }
+
+    // Not facing the objective
     if dir_to_pos.dot(direction) < 0.8 {
-        // Not facing the objective
         vehicle.desired_speed = vehicle.desired_speed.min(6.0);
-    }
-
-    if min_front_dist < 1.0 + stop_dist {
-        // Car in front of us
-        vehicle.desired_speed = 0.0;
     }
 }

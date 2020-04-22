@@ -1,7 +1,9 @@
 use crate::geometry::rect::Rect;
 use cgmath::{vec2, InnerSpace};
 use cgmath::{ElementWise, EuclideanSpace, Point2, Vector2};
-use ggez::graphics::{Color, DrawMode, MeshBuilder, Vertex, WHITE};
+use ggez::graphics::{
+    Color, DrawMode, LineCap, LineJoin, MeshBuilder, StrokeOptions, Vertex, WHITE,
+};
 
 pub struct Tesselator {
     pub color: Color,
@@ -12,6 +14,7 @@ pub struct Tesselator {
     pub zoom: f32,
     pub cull: bool,
 }
+
 const DEFAULT_THICKNESS: f32 = 0.2;
 impl Tesselator {
     pub fn new(screen_box: Rect, zoom: f32, cull: bool) -> Self {
@@ -42,7 +45,7 @@ impl Tesselator {
         if filled {
             self.mode = DrawMode::fill()
         } else {
-            self.mode = DrawMode::stroke(DEFAULT_THICKNESS);
+            self.mode = DrawMode::stroke(DEFAULT_THICKNESS)
         }
     }
 
@@ -239,7 +242,11 @@ impl Tesselator {
 
         self.meshbuilder
             .polyline(
-                DrawMode::stroke(thickness),
+                DrawMode::Stroke(
+                    StrokeOptions::default()
+                        .with_line_width(thickness)
+                        .with_line_join(LineJoin::Round),
+                ),
                 &points
                     .iter()
                     .map(|x| Point2::new(x.x, x.y))
