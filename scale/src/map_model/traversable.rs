@@ -43,6 +43,13 @@ impl Traversable {
         }
     }
 
+    pub fn raw_points<'a>(&self, m: &'a Map) -> &'a PolyLine {
+        match self.kind {
+            TraverseKind::Lane(id) => &m.lanes()[id].points,
+            TraverseKind::Turn(id) => &m.intersections()[id.parent].turns[&id].points,
+        }
+    }
+
     pub fn can_pass(&self, time: u64, lanes: &Lanes) -> bool {
         match self.kind {
             TraverseKind::Lane(id) => !lanes[id].control.get_behavior(time).is_red(),
