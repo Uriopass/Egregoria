@@ -38,3 +38,7 @@ I will try to keep a blog about Scale's development [here](http://douady.paris/b
 ## Screenshot
 
 ![Screenshot of scale](resources/screen1.png)
+
+## Special thanks to
+
+- @shika-blyat: wgpu-renderer
