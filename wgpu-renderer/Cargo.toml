@@ -10,13 +10,7 @@ edition = "2018"
 wgpu = "0.5.0"
 winit = "0.22.1"
 glsl-to-spirv = "0.1.7"
-futures = "*"
-bytemuck = "*"
-
-[[bin]]
-name = "no_buffers"
-path = "bin/no_buffers.rs"
-
-[[bin]]
-name = "depth_buffer"
-path = "bin/test_depth_buffer.rs"
+futures = "0.3.4"
+bytemuck = "1.2.0"
+image = "0.23.4"
+lazy_static = "1.4.0"
