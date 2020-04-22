@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::engine::context::GfxContext;
+use crate::engine::GfxContext;
 use image::GenericImageView;
 use wgpu::CommandEncoderDescriptor;
 

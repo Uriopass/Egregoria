@@ -1,3 +1,7 @@
+use engine::{
+    ClearScreen, Draweable, GfxContext, IndexType, Mesh, MeshBuilder, RainbowMesh,
+    RainbowMeshBuilder, Vertex,
+};
 use futures::executor;
 use wgpu::Color;
 use winit::{
@@ -6,10 +10,6 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-
-use crate::engine::draweables::{ClearScreen, IndexType, Mesh, MeshBuilder};
-use engine::context::GfxContext;
-use engine::vertex::Vertex;
 
 mod engine;
 
@@ -51,11 +51,12 @@ fn main() {
     let mut ctx = executor::block_on(GfxContext::new(window));
 
     ctx.register_pipeline::<Mesh>();
+    ctx.register_pipeline::<RainbowMesh>();
     ctx.register_pipeline::<ClearScreen>();
 
-    let mut mb = MeshBuilder::new();
+    let mut mb = RainbowMeshBuilder::new();
     mb.extend(&VERTICES, &INDICES);
-    let mesh = mb.build(&ctx);
+    let mut mesh = mb.build(&ctx);
 
     let clear_screen = ClearScreen {
         clear_color: Color {
@@ -80,10 +81,11 @@ fn main() {
                 _ => (),
             },
             Event::MainEventsCleared => {
-                ctx.begin_frame();
-                ctx.draw(&clear_screen);
-                ctx.draw(&mesh);
-                ctx.end_frame();
+                let mut frame = ctx.begin_frame();
+                clear_screen.draw(&mut frame);
+                mesh.time.value.time += 0.01;
+                mesh.draw(&mut frame);
+                frame.finish();
             }
             _ => (),
         }
