@@ -136,14 +136,19 @@ pub fn calc_decision<'a>(
         }
     }
 
-    if let Some(TraverseKind::Lane(l)) = pedestrian.itinerary.get_travers().map(|x| x.kind) {
-        let lane = &map.lanes()[l];
-        if let Some(projected) = lane.points.project(position) {
-            desired_v += (projected - trans.position()) * 0.3;
+    if let Some(points) = pedestrian
+        .itinerary
+        .get_travers()
+        .map(|x| x.raw_points(map))
+    {
+        if let Some(projected) = points.project(position) {
+            let lane_force = projected - trans.position();
+            let m = lane_force.magnitude();
+            desired_v += lane_force * m * 0.1;
         }
     }
 
-    desired_v = desired_v.cap_magnitude(1.3 * pedestrian.walking_speed);
+    desired_v = desired_v.cap_magnitude(1.2 * pedestrian.walking_speed);
 
     let desired_dir = (dir_to_pos + kin.velocity).normalize();
 
