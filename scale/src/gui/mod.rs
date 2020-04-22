@@ -188,7 +188,7 @@ impl Gui {
             .collapsible(false)
             .resizable(false)
             .build(&ui, || {
-                imgui::Slider::new(im_str!("speed"), std::ops::RangeInclusive::new(0.0, 3.0))
+                imgui::Slider::new(im_str!("speed"), std::ops::RangeInclusive::new(0.0, 5.0))
                     .display_format(im_str!("%.1f"))
                     .build(&ui, &mut time_info.time_speed);
             });
