@@ -1,3 +1,4 @@
+use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
 use cgmath::{InnerSpace, Vector2};
 use ggez::graphics::spritebatch::SpriteBatch;
@@ -54,6 +55,12 @@ impl InstancedRender {
                 rotation: Vector2::<f32>::unit_x().angle(trans.direction()).0,
                 scale: [scale, scale].into(),
                 offset: [0.0, 0.0].into(),
+                color: ggez::graphics::Color {
+                    r: ar.tint.r,
+                    g: ar.tint.g,
+                    b: ar.tint.b,
+                    a: ar.tint.a,
+                },
                 ..Default::default()
             };
             self.texs[ar.id.id as usize].add(dp);

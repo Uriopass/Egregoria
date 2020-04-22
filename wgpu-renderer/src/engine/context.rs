@@ -1,12 +1,11 @@
 use winit::window::Window;
 
-use crate::engine::render_pass::Draweable;
-use crate::engine::texture::Texture;
+use crate::engine::{Draweable, PreparedPipeline, Texture};
 use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
-    Adapter, CommandBuffer, Device, Queue, RenderPipeline, Surface, SwapChain, SwapChainDescriptor,
-    SwapChainOutput,
+    Adapter, CommandBuffer, CommandEncoderDescriptor, Device, Queue, RenderPipeline, Surface,
+    SwapChain, SwapChainDescriptor, SwapChainOutput,
 };
 
 #[allow(dead_code)]
@@ -20,9 +19,21 @@ pub struct GfxContext {
     pub swapchain: SwapChain,
     pub depth_texture: Texture,
     pub sc_desc: SwapChainDescriptor,
-    pub pipelines: HashMap<TypeId, RenderPipeline>,
+    pub pipelines: HashMap<TypeId, PreparedPipeline>,
     pub cur_frame: Option<SwapChainOutput>,
     pub queue_buffer: Vec<CommandBuffer>,
+}
+
+pub struct FrameContext<'a> {
+    pub encoder: wgpu::CommandEncoder,
+    pub frame: wgpu::SwapChainOutput,
+    pub gfx: &'a GfxContext,
+}
+
+impl FrameContext<'_> {
+    pub fn finish(self) {
+        self.gfx.queue.submit(&[self.encoder.finish()]);
+    }
 }
 
 impl GfxContext {
@@ -72,22 +83,21 @@ impl GfxContext {
         }
     }
 
-    pub fn begin_frame(&mut self) {
-        self.cur_frame = Some(
-            self.swapchain
-                .get_next_texture()
-                .expect("Timeout getting texture"),
-        );
-    }
+    pub fn begin_frame(&mut self) -> FrameContext {
+        let tex = self
+            .swapchain
+            .get_next_texture()
+            .expect("Timeout getting texture");
 
-    pub fn end_frame(&mut self) {
-        self.queue.submit(&self.queue_buffer);
-        self.queue_buffer.clear();
-        self.cur_frame = None; // drops the old swapchain texture
-    }
-
-    pub fn draw(&mut self, x: &impl Draweable) {
-        self.queue_buffer.push(x.draw(self))
+        FrameContext {
+            gfx: self,
+            encoder: self
+                .device
+                .create_command_encoder(&CommandEncoderDescriptor {
+                    label: Some("Render encoder"),
+                }),
+            frame: tex,
+        }
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -99,7 +109,7 @@ impl GfxContext {
         self.depth_texture = Texture::create_depth_texture(&self.device, &self.sc_desc);
     }
 
-    pub fn get_pipeline<T: Draweable>(&self) -> &wgpu::RenderPipeline {
+    pub fn get_pipeline<T: Draweable>(&self) -> &PreparedPipeline {
         &self
             .pipelines
             .get(&std::any::TypeId::of::<T>())
