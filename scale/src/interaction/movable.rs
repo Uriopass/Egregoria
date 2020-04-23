@@ -76,8 +76,8 @@ impl<'a> System<'a> for MovableSystem {
             if let Some(e) = data.selected.e {
                 if let Some(kin) = data.kinematics.get_mut(e) {
                     let p = data.transforms.get(e).unwrap();
-                    kin.velocity =
-                        (data.mouse.unprojected - (p.position() - off)) / data.time.delta;
+                    kin.velocity = (data.mouse.unprojected - (p.position() - off))
+                        / data.time.delta.max(1.0 / 30.0);
                 }
             }
         }
