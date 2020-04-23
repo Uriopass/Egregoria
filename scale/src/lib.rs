@@ -86,7 +86,8 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     vehicles::setup(world);
     pedestrians::setup(world);
 
-    for _ in 0..10000 {
+    for _ in 0..1000 {
+        spawn_pedestrian(world);
         spawn_pedestrian(world);
         spawn_new_vehicle(world);
     }

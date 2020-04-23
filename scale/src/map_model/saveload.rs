@@ -178,7 +178,7 @@ pub fn add_grid(pos: Vec2, m: &mut Map) {
 pub fn load(world: &mut World) {
     let mut map = load_from_file();
 
-    map = load_parismap();
+    // map = load_parismap();
 
     if map.is_empty() {
         add_doublecircle([0.0, 0.0].into(), &mut map);
