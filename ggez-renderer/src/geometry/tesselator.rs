@@ -1,9 +1,7 @@
 use crate::geometry::rect::Rect;
 use cgmath::{vec2, InnerSpace};
 use cgmath::{ElementWise, EuclideanSpace, Point2, Vector2};
-use ggez::graphics::{
-    Color, DrawMode, LineCap, LineJoin, MeshBuilder, StrokeOptions, Vertex, WHITE,
-};
+use ggez::graphics::{Color, DrawMode, LineJoin, MeshBuilder, StrokeOptions, Vertex, WHITE};
 
 pub struct Tesselator {
     pub color: Color,
