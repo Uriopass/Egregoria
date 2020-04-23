@@ -1,3 +1,5 @@
+![Screenshot of scale](resources/screen1.png)
+
 [![Build status](https://github.com/Uriopass/Scale/workflows/rust-build/badge.svg)](#)
 
 # Scale
@@ -35,10 +37,7 @@ A Github Action tests the builds on Ubuntu.
 I will try to keep a blog about Scale's development [here](http://douady.paris/blog/index.html).
 
 
-## Screenshot
-
-![Screenshot of scale](resources/screen1.png)
-
 ## Special thanks to
 
-- [`@shika-blyat`](https://github.com/shika-blyat): wgpu-renderer
+- [`@shika-blyat`](https://github.com/shika-blyat): For his work on the wgpu renderer
+- [`@dabreegster`](https://github.com/dabreegster): For inspiration on the map model
