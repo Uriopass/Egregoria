@@ -1,14 +1,5 @@
 use cgmath::{InnerSpace, Vector2};
 
-pub mod gridstore;
-pub mod intersections;
-pub mod polyline;
-pub mod rect;
-pub mod segment;
-pub mod splines;
-
-pub type Vec2 = Vector2<f32>;
-
 macro_rules! vec2 {
     ($a: expr, $b: expr) => {
         crate::geometry::Vec2::new($a, $b)
@@ -17,6 +8,15 @@ macro_rules! vec2 {
         crate::geometry::Vec2::new($a, $b)
     };
 }
+
+pub mod gridstore;
+pub mod intersections;
+pub mod polyline;
+pub mod rect;
+pub mod segment;
+pub mod splines;
+
+pub type Vec2 = Vector2<f32>;
 
 pub trait Vec2Impl {
     fn dir_dist(&self) -> Option<(Vec2, f32)>;

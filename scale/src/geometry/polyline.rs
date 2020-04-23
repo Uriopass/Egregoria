@@ -1,6 +1,6 @@
 use super::Vec2;
 use crate::geometry::segment::Segment;
-use cgmath::{vec2, InnerSpace};
+use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 use std::ops::Index;
@@ -66,7 +66,7 @@ impl PolyLine {
             );
         }
 
-        let mut min_proj = vec2(0.0, 0.0);
+        let mut min_proj = vec2!(0.0, 0.0);
         let mut min_dist = std::f32::INFINITY;
 
         for w in self.0.windows(2) {
