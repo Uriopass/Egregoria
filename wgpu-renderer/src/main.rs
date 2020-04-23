@@ -1,7 +1,7 @@
-use engine::{
-    ClearScreen, Draweable, GfxContext, IndexType, Mesh, MeshBuilder, RainbowMesh,
-    RainbowMeshBuilder, Vertex,
-};
+#![allow(dead_code)]
+
+use crate::engine::{Texture, TexturedMesh, TexturedMeshBuilder, UvVertex};
+use engine::{ClearScreen, Draweable, GfxContext, IndexType, Mesh, RainbowMesh, Vertex};
 use futures::executor;
 use wgpu::Color;
 use winit::{
@@ -15,32 +15,69 @@ mod engine;
 
 const VERTICES: &[Vertex] = &[
     Vertex {
-        position: [-0.5, -0.5, 0.1],
-        color: [1.0, 1.0, 1.0, 1.0],
-    },
-    Vertex {
-        position: [0.5, -0.5, 0.1],
-        color: [1.0, 1.0, 1.0, 1.0],
-    },
-    Vertex {
-        position: [0.5, 0.5, 0.1],
-        color: [1.0, 1.0, 1.0, 1.0],
-    },
-    Vertex {
         position: [0.5, -0.5, 0.5],
-        color: [0.0, 0.0, 0.0, 1.0],
+        color: [1.0, 1.0, 1.0, 1.0],
     },
     Vertex {
-        position: [0.5, 0.5, 0.0],
-        color: [0.0, 0.0, 0.0, 1.0],
+        position: [-0.5, -0.5, 0.5],
+        color: [1.0, 1.0, 1.0, 1.0],
     },
     Vertex {
         position: [-0.5, 0.5, 0.5],
+        color: [1.0, 1.0, 1.0, 1.0],
+    },
+    Vertex {
+        position: [-0.5, -0.5, 0.2],
         color: [0.0, 0.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [-0.5, 0.5, 0.2],
+        color: [0.0, 0.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [0.5, 0.5, 0.2],
+        color: [0.0, 0.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [-0.5, 0.0, 0.1],
+        color: [0.5, 0.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [-0.5, 0.5, 0.1],
+        color: [0.5, 0.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [0.0, 0.5, 0.1],
+        color: [0.5, 0.0, 0.0, 1.0],
     },
 ];
 
-const INDICES: &[IndexType] = &[0, 1, 2, 3, 4, 5];
+const INDICES: &[IndexType] = &[2, 1, 0, 5, 4, 3, 8, 7, 6];
+
+const UV_VERTICES: &[UvVertex] = &[
+    UvVertex {
+        position: [-0.5, -0.5, 0.5],
+        color: [1.0, 1.0, 1.0, 1.0],
+        uv: [0.0, 1.0],
+    },
+    UvVertex {
+        position: [0.5, -0.5, 0.5],
+        color: [1.0, 1.0, 1.0, 1.0],
+        uv: [1.0, 1.0],
+    },
+    UvVertex {
+        position: [0.5, 0.5, 0.5],
+        color: [1.0, 1.0, 1.0, 1.0],
+        uv: [1.0, 0.0],
+    },
+    UvVertex {
+        position: [-0.5, 0.5, 0.5],
+        color: [1.0, 1.0, 1.0, 1.0],
+        uv: [0.0, 0.0],
+    },
+];
+
+const UV_INDICES: &[IndexType] = &[2, 1, 0, 3, 2, 0];
 
 fn main() {
     let event_loop = EventLoop::new();
@@ -52,11 +89,14 @@ fn main() {
 
     ctx.register_pipeline::<Mesh>();
     ctx.register_pipeline::<RainbowMesh>();
+    ctx.register_pipeline::<TexturedMesh>();
     ctx.register_pipeline::<ClearScreen>();
 
-    let mut mb = RainbowMeshBuilder::new();
-    mb.extend(&VERTICES, &INDICES);
-    let mut mesh = mb.build(&ctx);
+    let tex = Texture::from_path(&ctx, "resources/car.png").expect("couldn't load car");
+
+    let mut mb = TexturedMeshBuilder::new();
+    mb.extend(&UV_VERTICES, &UV_INDICES);
+    let mesh = mb.build(&ctx, tex);
 
     let clear_screen = ClearScreen {
         clear_color: Color {
@@ -83,7 +123,6 @@ fn main() {
             Event::MainEventsCleared => {
                 let mut frame = ctx.begin_frame();
                 clear_screen.draw(&mut frame);
-                mesh.time.value.time += 0.01;
                 mesh.draw(&mut frame);
                 frame.finish();
             }

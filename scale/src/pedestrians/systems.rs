@@ -40,7 +40,7 @@ impl<'a> System<'a> for PedestrianDecision {
             &mut data.pedestrians,
             &mut data.mr,
         )
-            .join()
+            .par_join()
             .for_each(|(coll, trans, kin, pedestrian, mr)| {
                 objective_update(pedestrian, trans, map);
 

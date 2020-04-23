@@ -1,15 +1,25 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Draweable, FrameContext, GfxContext, IndexType, Uniform, Vertex,
+    compile_shader, CompiledShader, Draweable, FrameContext, GfxContext, IndexType, Texture,
+    UvVertex,
 };
 use lazy_static::*;
-use wgpu::ShaderStage;
+use wgpu::TextureComponentType;
 
-pub struct RainbowMeshBuilder {
-    vertices: Vec<Vertex>,
+pub struct TexturedMeshBuilder {
+    vertices: Vec<UvVertex>,
     indices: Vec<IndexType>,
 }
 
-impl RainbowMeshBuilder {
+pub struct TexturedMesh {
+    pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
+    pub n_indices: u32,
+    pub alpha_blend: bool,
+    pub tex: Texture,
+    pub bind_group: wgpu::BindGroup,
+}
+
+impl TexturedMeshBuilder {
     pub fn new() -> Self {
         Self {
             vertices: vec![],
@@ -17,15 +27,15 @@ impl RainbowMeshBuilder {
         }
     }
 
-    pub fn extend(&mut self, vertices: &[Vertex], indices: &[IndexType]) -> &mut Self {
+    pub fn extend(&mut self, vertices: &[UvVertex], indices: &[IndexType]) -> &mut Self {
         let offset = self.vertices.len() as IndexType;
         self.vertices.extend_from_slice(vertices);
         self.indices.extend(indices.iter().map(|x| x + offset));
         self
     }
 
-    pub fn build(self, gfx: &GfxContext) -> RainbowMesh {
-        let pipeline = gfx.get_pipeline::<RainbowMesh>();
+    pub fn build(self, gfx: &GfxContext, tex: Texture) -> TexturedMesh {
+        let pipeline = gfx.get_pipeline::<TexturedMesh>();
 
         let vertex_buffer = gfx.device.create_buffer_with_data(
             bytemuck::cast_slice(&self.vertices),
@@ -36,70 +46,62 @@ impl RainbowMeshBuilder {
             wgpu::BufferUsage::INDEX,
         );
 
-        let time = TimeUniform { time: 0.0 };
-
-        let time_uniform_buffer = gfx.device.create_buffer_with_data(
-            bytemuck::cast_slice(&[time]),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
-
-        let time_uniform_bindgroup = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let bind_group = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bindgroupslayouts[0],
-            bindings: &[wgpu::Binding {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer {
-                    buffer: &time_uniform_buffer,
-                    // FYI: you can share a single buffer between bindings.
-                    range: 0..std::mem::size_of_val(&time) as wgpu::BufferAddress,
+            bindings: &[
+                wgpu::Binding {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&tex.view),
                 },
-            }],
+                wgpu::Binding {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&tex.sampler),
+                },
+            ],
             label: None,
         });
 
-        RainbowMesh {
+        TexturedMesh {
             vertex_buffer,
             index_buffer,
             n_indices: self.indices.len() as u32,
             alpha_blend: false,
-            time: Uniform {
-                buffer: time_uniform_buffer,
-                bindgroup: time_uniform_bindgroup,
-                value: TimeUniform { time: 0.0 },
-            },
+            tex,
+            bind_group,
         }
     }
 }
 
-pub struct RainbowMesh {
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
-    pub n_indices: u32,
-    pub alpha_blend: bool,
-    pub time: Uniform<TimeUniform>,
-}
-
-#[derive(Clone, Copy)]
-pub struct TimeUniform {
-    pub time: f32,
-}
-
-unsafe impl bytemuck::Pod for TimeUniform {}
-unsafe impl bytemuck::Zeroable for TimeUniform {}
-
 lazy_static! {
     static ref VERT_SHADER: CompiledShader =
-        compile_shader("resources/shaders/rainbow_mesh_shader.vert");
+        compile_shader("resources/shaders/textured_mesh_shader.vert");
     static ref FRAG_SHADER: CompiledShader =
-        compile_shader("resources/shaders/rainbow_mesh_shader.frag");
+        compile_shader("resources/shaders/textured_mesh_shader.frag");
 }
 
-impl Draweable for RainbowMesh {
+impl Draweable for TexturedMesh {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
-        let layouts = vec![Uniform::<TimeUniform>::bindgroup_layout(
-            &gfx.device,
-            0,
-            ShaderStage::FRAGMENT,
-        )];
+        let layouts = vec![gfx
+            .device
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                bindings: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::SampledTexture {
+                            multisampled: false,
+                            dimension: wgpu::TextureViewDimension::D2,
+                            component_type: TextureComponentType::Uint,
+                        },
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler { comparison: false },
+                    },
+                ],
+                label: None,
+            })];
 
         let render_pipeline_layout =
             gfx.device
@@ -145,7 +147,7 @@ impl Draweable for RainbowMesh {
             }),
             vertex_state: wgpu::VertexStateDescriptor {
                 index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers: &[Vertex::desc()],
+                vertex_buffers: &[UvVertex::desc()],
             },
             sample_count: 1,
             sample_mask: !0,
@@ -158,8 +160,6 @@ impl Draweable for RainbowMesh {
     }
 
     fn draw(&self, ctx: &mut FrameContext) {
-        self.time.upload_to_gpu(&ctx.gfx.device, &mut ctx.encoder);
-
         let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: &ctx.frame.view,
@@ -179,8 +179,9 @@ impl Draweable for RainbowMesh {
             }),
         });
 
-        render_pass.set_pipeline(&ctx.gfx.get_pipeline::<Self>().pipeline);
-        render_pass.set_bind_group(0, &self.time.bindgroup, &[]);
+        let pipeline = &ctx.gfx.get_pipeline::<Self>();
+        render_pass.set_pipeline(&pipeline.pipeline);
+        render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
         render_pass.set_index_buffer(&self.index_buffer, 0, 0);
         render_pass.draw_indexed(0..self.n_indices, 0, 0..1);

@@ -6,7 +6,7 @@ pub struct CompiledShader(pub Vec<u32>);
 
 pub fn compile_shader(p: impl AsRef<Path>) -> CompiledShader {
     let p = p.as_ref();
-    let mut file = File::open(p).expect(&format!("Failed to open {:?} shader file", p));
+    let mut file = File::open(p).unwrap_or_else(|_| panic!("Failed to open {:?} shader file", p));
     let mut src = String::new();
     file.read_to_string(&mut src)
         .expect("Failed to read the content of the shader");

@@ -20,7 +20,7 @@ impl MeshBuilder {
     pub fn extend(&mut self, vertices: &[Vertex], indices: &[IndexType]) -> &mut Self {
         let offset = self.vertices.len() as IndexType;
         self.vertices.extend_from_slice(vertices);
-        self.indices.extend(indices.into_iter().map(|x| x + offset));
+        self.indices.extend(indices.iter().map(|x| x + offset));
         self
     }
 
@@ -85,13 +85,7 @@ impl Draweable for Mesh {
                 module: &fs_module,
                 entry_point: "main",
             }),
-            rasterization_state: Some(wgpu::RasterizationStateDescriptor {
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: wgpu::CullMode::Back,
-                depth_bias: 0,
-                depth_bias_slope_scale: 0.0,
-                depth_bias_clamp: 0.0,
-            }),
+            rasterization_state: None,
             primitive_topology: wgpu::PrimitiveTopology::TriangleList,
             color_states: &color_states,
             depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {

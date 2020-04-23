@@ -1,13 +1,15 @@
 use crate::engine::context::{FrameContext, GfxContext};
-use wgpu::{BindGroupLayout, CommandBuffer};
+use wgpu::BindGroupLayout;
 
 mod clear_screen;
 mod mesh;
 mod rainbow;
+mod textured_mesh;
 
 pub use clear_screen::*;
 pub use mesh::*;
 pub use rainbow::*;
+pub use textured_mesh::*;
 
 pub type IndexType = u32;
 
