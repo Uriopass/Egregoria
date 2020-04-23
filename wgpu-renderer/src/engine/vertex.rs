@@ -14,18 +14,7 @@ impl Vertex {
         wgpu::VertexBufferDescriptor {
             stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttributeDescriptor {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float3,
-                },
-                wgpu::VertexAttributeDescriptor {
-                    offset: mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-                    shader_location: 1,
-                    format: wgpu::VertexFormat::Float4,
-                },
-            ],
+            attributes: &wgpu::vertex_attr_array![0 => Float3, 1 => Float4],
         }
     }
 }

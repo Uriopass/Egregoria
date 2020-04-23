@@ -4,8 +4,8 @@ use crate::engine::{Draweable, PreparedPipeline, Texture};
 use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
-    Adapter, CommandBuffer, CommandEncoderDescriptor, Device, Queue, RenderPipeline, Surface,
-    SwapChain, SwapChainDescriptor, SwapChainOutput,
+    Adapter, CommandBuffer, CommandEncoderDescriptor, Device, Queue, Surface, SwapChain,
+    SwapChainDescriptor, SwapChainOutput,
 };
 
 #[allow(dead_code)]

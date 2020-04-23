@@ -154,9 +154,9 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         self.time_sync += delta * time.time_speed;
         let mut ticks_to_do = (((self.time_sync - time.time) / TIME_STEP) as u32).max(0);
 
-        if ticks_to_do > 3 {
-            ticks_to_do = 3;
-            self.time_sync = time.time + 3.0 * TIME_STEP;
+        if ticks_to_do > 1 {
+            ticks_to_do = 1;
+            self.time_sync = time.time + 1.0 * TIME_STEP;
         }
         drop(time);
 
