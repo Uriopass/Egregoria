@@ -3,7 +3,7 @@ use crate::geometry::Vec2;
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
 use crate::map_model::IntersectionComponent;
 use crate::pedestrians::PedestrianComponent;
-use crate::physics::{Kinematics, Transform};
+use crate::physics::{Collider, Kinematics, Transform};
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::VehicleComponent;
@@ -413,6 +413,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         dirty |= self.inspect_component::<AssetRender>();
         dirty |= self.inspect_component::<MeshRender>();
         dirty |= self.inspect_component::<Kinematics>();
+        dirty |= self.inspect_component::<Collider>();
         dirty |= self.inspect_component::<Movable>();
         dirty |= self.inspect_component::<IntersectionComponent>();
 
