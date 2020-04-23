@@ -153,7 +153,6 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
         self.manage_timestep(delta);
 
         self.manage_io(ctx);
-        self.manage_entity_follow();
 
         self.dispatch.run_now(&self.world);
         self.world.maintain();
@@ -164,6 +163,7 @@ impl<'a> ggez::event::EventHandler for EngineState<'a> {
             !self.imgui_wrapper.last_mouse_captured,
             !self.imgui_wrapper.last_kb_captured,
         );
+        self.manage_entity_follow();
         self.cam.update(ctx);
 
         self.world
