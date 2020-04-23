@@ -57,6 +57,8 @@ impl<'a> System<'a> for PedestrianDecision {
     }
 }
 
+const PEDESTRIAN_ACC: f32 = 1.0;
+
 pub fn physics(
     pedestrian: &mut PedestrianComponent,
     kin: &mut Kinematics,
@@ -67,7 +69,7 @@ pub fn physics(
     desired_dir: Vec2,
 ) {
     let diff = desired_velocity - kin.velocity;
-    let mag = diff.magnitude().min(time.delta);
+    let mag = diff.magnitude().min(time.delta * PEDESTRIAN_ACC);
     if mag > 0.0 {
         let lol = diff.normalize_to(mag);
         kin.velocity += lol;
@@ -80,10 +82,8 @@ pub fn physics(
         * 0.1
         * (speed * 2.0 - pedestrian.walking_speed).restrict(0.0, 1.0);
 
-    if mr.orders[0].as_rect_mut().offset.y.abs() < 0.25 {
-        mr.orders[0].as_rect_mut().offset.x = offset;
-        mr.orders[1].as_rect_mut().offset.x = -offset;
-    }
+    mr.orders[0].as_rect_mut().offset.x = offset;
+    mr.orders[1].as_rect_mut().offset.x = -offset;
 
     let delta_ang = trans.direction().angle(desired_dir);
     let mut ang = vec2!(1.0, 0.0).angle(trans.direction());

@@ -201,25 +201,28 @@ pub fn calc_decision<'a>(
 
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {
-        if his_pos.distance2(position) < 1e-5 {
+        let towards_vec = his_pos - position;
+        let dist2 = towards_vec.magnitude2();
+
+        if dist2 < 1e-5 {
             continue;
         }
 
-        let towards_vec = his_pos - position;
-        let dist = towards_vec.magnitude();
+        let dist = dist2.sqrt();
         let towards_dir = towards_vec / dist;
 
-        let dir_dot = towards_dir.dot(direction);
-        let tow_nor_dot = towards_vec.dot(direction_normal).abs();
+        let cos_angle = towards_dir.dot(direction);
+        let dist_to_side = towards_vec.dot(direction_normal).abs();
 
-        // let pos_dot = towards_vec.dot(dir_normal_right);
         let is_vehicle = nei_physics_obj.group == PhysicsGroup::Vehicles;
 
         let his_direction = nei_physics_obj.dir;
+        let cos_direction_angle = his_direction.dot(direction);
 
         // front cone
-        if (dir_dot > 0.7 && (!is_vehicle || his_direction.dot(direction) > 0.0))
-            && (!on_lane || tow_nor_dot < 4.0)
+        if cos_angle > 0.7
+            && (!is_vehicle || cos_direction_angle > 0.0)
+            && (!on_lane || dist_to_side < 4.0)
         {
             let mut dist_to_obj = dist - vehicle.kind.width() / 2.0 - nei_physics_obj.radius;
             if !is_vehicle {
@@ -230,14 +233,14 @@ pub fn calc_decision<'a>(
             continue;
         }
 
-        if dir_dot < 0.0 || !is_vehicle {
+        if !is_vehicle || cos_angle < 0.0 {
             continue;
         }
 
         // closest win
 
         let his_ray = Ray {
-            from: his_pos - nei_physics_obj.radius / 2.0 * his_direction,
+            from: his_pos - nei_physics_obj.radius * his_direction,
             dir: his_direction,
         };
 
