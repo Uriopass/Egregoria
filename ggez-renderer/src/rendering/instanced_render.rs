@@ -1,4 +1,3 @@
-use crate::rendering::meshrenderable::scale_color;
 use crate::rendering::render_context::RenderContext;
 use cgmath::{InnerSpace, Vector2};
 use ggez::graphics::spritebatch::SpriteBatch;

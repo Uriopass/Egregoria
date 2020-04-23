@@ -14,10 +14,8 @@ use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::geometry::intersections::intersection_point;
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
-use scale::map_model::{Map, MapUIState, TraverseKind};
-use scale::pedestrians::PedestrianComponent;
+use scale::map_model::{Map, MapUIState};
 use scale::physics::{CollisionWorld, Transform};
-use scale::specs::Join;
 use scale::specs::{Dispatcher, RunNow, World, WorldExt};
 use std::collections::HashSet;
 use std::iter::FromIterator;
@@ -68,8 +66,7 @@ impl<'a> EngineState<'a> {
 }
 
 impl EngineState<'_> {
-    fn tick(&mut self, ctx: &mut Context) {
-        let start_update = std::time::Instant::now();
+    fn manage_io(&mut self, ctx: &Context) {
         let pressed: Vec<engine_interaction::MouseButton> =
             if !self.imgui_wrapper.last_mouse_captured {
                 vec![MouseButton::Left, MouseButton::Right, MouseButton::Middle]
@@ -103,17 +100,9 @@ impl EngineState<'_> {
                 pressed.into_iter().filter(|x| !last_pressed.contains(x)),
             ),
         };
+    }
 
-        self.dispatch.run_now(&self.world);
-        self.world.maintain();
-
-        self.cam.easy_camera_movement(
-            ctx,
-            timer::delta(ctx).as_secs_f32(),
-            !self.imgui_wrapper.last_mouse_captured,
-            !self.imgui_wrapper.last_kb_captured,
-        );
-
+    fn manage_entity_follow(&mut self) {
         if !self
             .world
             .read_resource::<MouseInfo>()
@@ -133,14 +122,24 @@ impl EngineState<'_> {
                 self.cam.camera.position = pos;
             }
         }
-        self.cam.update(ctx);
+    }
 
-        self.world
-            .write_resource::<KeyboardInfo>()
-            .just_pressed
-            .clear();
-        self.world.write_resource::<RenderStats>().update_time =
-            (std::time::Instant::now() - start_update).as_secs_f32();
+    fn manage_timestep(&mut self, delta: f64) {
+        let mut time = self.world.write_resource::<TimeInfo>();
+
+        self.time_sync += delta * time.time_speed;
+        let diff = self.time_sync - time.time;
+        if diff > TIME_STEP * 2.0 {
+            self.time_sync = time.time + TIME_STEP;
+        }
+
+        if diff > TIME_STEP {
+            time.delta = TIME_STEP as f32;
+            time.time += TIME_STEP;
+            time.time_seconds = time.time as u64;
+        } else {
+            time.delta = 0.0;
+        }
     }
 }
 
@@ -149,26 +148,31 @@ const TIME_STEP: f64 = 1.0 / 30.0;
 impl<'a> ggez::event::EventHandler for EngineState<'a> {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
         let delta = timer::delta(ctx).as_secs_f64();
+        let start_update = std::time::Instant::now();
 
-        let time = self.world.read_resource::<TimeInfo>();
-        self.time_sync += delta * time.time_speed;
-        let mut ticks_to_do = (((self.time_sync - time.time) / TIME_STEP) as u32).max(0);
+        self.manage_timestep(delta);
 
-        if ticks_to_do > 1 {
-            ticks_to_do = 1;
-            self.time_sync = time.time + 1.0 * TIME_STEP;
-        }
-        drop(time);
+        self.manage_io(ctx);
+        self.manage_entity_follow();
 
-        for _ in 0..ticks_to_do {
-            let mut time = self.world.write_resource::<TimeInfo>();
-            time.delta = TIME_STEP as f32;
-            time.time += TIME_STEP;
-            time.time_seconds = time.time as u64;
-            drop(time);
+        self.dispatch.run_now(&self.world);
+        self.world.maintain();
 
-            self.tick(ctx);
-        }
+        self.cam.easy_camera_movement(
+            ctx,
+            timer::delta(ctx).as_secs_f32(),
+            !self.imgui_wrapper.last_mouse_captured,
+            !self.imgui_wrapper.last_kb_captured,
+        );
+        self.cam.update(ctx);
+
+        self.world
+            .write_resource::<KeyboardInfo>()
+            .just_pressed
+            .clear();
+
+        self.world.write_resource::<RenderStats>().update_time =
+            (std::time::Instant::now() - start_update).as_secs_f32();
 
         Ok(())
     }
