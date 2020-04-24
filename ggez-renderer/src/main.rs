@@ -1,5 +1,5 @@
 use crate::game_loop::EngineState;
-use ggez::conf::NumSamples;
+use ggez::conf::{FullscreenType, NumSamples};
 use ggez::{conf, event, ContextBuilder};
 use scale::specs::{World, WorldExt};
 use std::env;
@@ -16,7 +16,10 @@ fn main() {
 
     let mut c = conf::Conf::new();
     if cfg!(target_os = "windows") {
-        c.window_mode = c.window_mode.dimensions(1600.0, 900.0);
+        c.window_mode = c
+            .window_mode
+            .dimensions(1920.0, 1080.0)
+            .fullscreen_type(FullscreenType::True);
     } else {
         c.window_mode = c.window_mode.dimensions(1200.0, 800.0);
     }
