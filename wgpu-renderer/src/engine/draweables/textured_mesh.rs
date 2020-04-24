@@ -1,6 +1,5 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Draweable, FrameContext, GfxContext, IndexType, Texture,
-    UvVertex,
+    compile_shader, CompiledShader, Context, Draweable, FrameContext, IndexType, Texture, UvVertex,
 };
 use lazy_static::*;
 use wgpu::TextureComponentType;
@@ -34,7 +33,7 @@ impl TexturedMeshBuilder {
         self
     }
 
-    pub fn build(self, gfx: &GfxContext, tex: Texture) -> TexturedMesh {
+    pub fn build(self, gfx: &Context, tex: Texture) -> TexturedMesh {
         let pipeline = gfx.get_pipeline::<TexturedMesh>();
 
         let vertex_buffer = gfx.device.create_buffer_with_data(
@@ -80,7 +79,7 @@ lazy_static! {
 }
 
 impl Draweable for TexturedMesh {
-    fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
+    fn create_pipeline(gfx: &Context) -> super::PreparedPipeline {
         let layouts = vec![gfx
             .device
             .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -106,7 +105,7 @@ impl Draweable for TexturedMesh {
         let render_pipeline_layout =
             gfx.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    bind_group_layouts: &[&layouts[0]],
+                    bind_group_layouts: &[&layouts[0], &gfx.projection_layout],
                 });
 
         let vs_module = gfx.device.create_shader_module(&VERT_SHADER.0);
@@ -182,6 +181,7 @@ impl Draweable for TexturedMesh {
         let pipeline = &ctx.gfx.get_pipeline::<Self>();
         render_pass.set_pipeline(&pipeline.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
+        render_pass.set_bind_group(1, &ctx.gfx.projection.bindgroup, &[]);
         render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
         render_pass.set_index_buffer(&self.index_buffer, 0, 0);
         render_pass.draw_indexed(0..self.n_indices, 0, 0..1);

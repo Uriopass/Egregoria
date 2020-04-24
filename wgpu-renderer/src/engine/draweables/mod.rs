@@ -1,4 +1,4 @@
-use crate::engine::context::{FrameContext, GfxContext};
+use crate::engine::context::{Context, FrameContext};
 use wgpu::BindGroupLayout;
 
 mod clear_screen;
@@ -19,6 +19,6 @@ pub struct PreparedPipeline {
 }
 
 pub trait Draweable: 'static {
-    fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline;
+    fn create_pipeline(gfx: &Context) -> PreparedPipeline;
     fn draw(&self, ctx: &mut FrameContext);
 }

@@ -1,5 +1,5 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Draweable, FrameContext, GfxContext, IndexType, Uniform, Vertex,
+    compile_shader, CompiledShader, Context, Draweable, FrameContext, IndexType, Uniform, Vertex,
 };
 use lazy_static::*;
 use wgpu::ShaderStage;
@@ -24,7 +24,7 @@ impl RainbowMeshBuilder {
         self
     }
 
-    pub fn build(self, gfx: &GfxContext) -> RainbowMesh {
+    pub fn build(self, gfx: &Context) -> RainbowMesh {
         let pipeline = gfx.get_pipeline::<RainbowMesh>();
 
         let vertex_buffer = gfx.device.create_buffer_with_data(
@@ -38,34 +38,12 @@ impl RainbowMeshBuilder {
 
         let time = TimeUniform { time: 0.0 };
 
-        let time_uniform_buffer = gfx.device.create_buffer_with_data(
-            bytemuck::cast_slice(&[time]),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
-
-        let time_uniform_bindgroup = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &pipeline.bindgroupslayouts[0],
-            bindings: &[wgpu::Binding {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer {
-                    buffer: &time_uniform_buffer,
-                    // FYI: you can share a single buffer between bindings.
-                    range: 0..std::mem::size_of_val(&time) as wgpu::BufferAddress,
-                },
-            }],
-            label: None,
-        });
-
         RainbowMesh {
             vertex_buffer,
             index_buffer,
             n_indices: self.indices.len() as u32,
             alpha_blend: false,
-            time: Uniform {
-                buffer: time_uniform_buffer,
-                bindgroup: time_uniform_bindgroup,
-                value: TimeUniform { time: 0.0 },
-            },
+            time: Uniform::new(time, &gfx.device, &pipeline.bindgroupslayouts[0]),
         }
     }
 }
@@ -83,8 +61,7 @@ pub struct TimeUniform {
     pub time: f32,
 }
 
-unsafe impl bytemuck::Pod for TimeUniform {}
-unsafe impl bytemuck::Zeroable for TimeUniform {}
+u8slice_impl!(TimeUniform);
 
 lazy_static! {
     static ref VERT_SHADER: CompiledShader =
@@ -94,7 +71,7 @@ lazy_static! {
 }
 
 impl Draweable for RainbowMesh {
-    fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
+    fn create_pipeline(gfx: &Context) -> super::PreparedPipeline {
         let layouts = vec![Uniform::<TimeUniform>::bindgroup_layout(
             &gfx.device,
             0,
@@ -104,7 +81,7 @@ impl Draweable for RainbowMesh {
         let render_pipeline_layout =
             gfx.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    bind_group_layouts: &[&layouts[0]],
+                    bind_group_layouts: &[&layouts[0], &gfx.projection_layout],
                 });
 
         let vs_module = gfx.device.create_shader_module(&VERT_SHADER.0);
@@ -181,6 +158,7 @@ impl Draweable for RainbowMesh {
 
         render_pass.set_pipeline(&ctx.gfx.get_pipeline::<Self>().pipeline);
         render_pass.set_bind_group(0, &self.time.bindgroup, &[]);
+        render_pass.set_bind_group(1, &ctx.gfx.projection.bindgroup, &[]);
         render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
         render_pass.set_index_buffer(&self.index_buffer, 0, 0);
         render_pass.draw_indexed(0..self.n_indices, 0, 0..1);

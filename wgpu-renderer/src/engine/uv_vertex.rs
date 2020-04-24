@@ -6,8 +6,7 @@ pub struct UvVertex {
     pub uv: [f32; 2],
 }
 
-unsafe impl bytemuck::Pod for UvVertex {}
-unsafe impl bytemuck::Zeroable for UvVertex {}
+u8slice_impl!(UvVertex);
 
 impl UvVertex {
     pub fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
