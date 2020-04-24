@@ -1,6 +1,6 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Draweable, FrameContext, GfxContext, IndexType,
-    PreparedPipeline, Vertex,
+    compile_shader, CompiledShader, Context, Draweable, FrameContext, IndexType, PreparedPipeline,
+    Vertex,
 };
 use lazy_static::*;
 
@@ -24,7 +24,7 @@ impl MeshBuilder {
         self
     }
 
-    pub fn build(self, ctx: &GfxContext) -> Mesh {
+    pub fn build(self, ctx: &Context) -> Mesh {
         let vertex_buffer = ctx.device.create_buffer_with_data(
             bytemuck::cast_slice(&self.vertices),
             wgpu::BufferUsage::VERTEX,
@@ -56,14 +56,14 @@ lazy_static! {
 }
 
 impl Draweable for Mesh {
-    fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline {
+    fn create_pipeline(gfx: &Context) -> PreparedPipeline {
         let vs_module = gfx.device.create_shader_module(&VERT_SHADER.0);
         let fs_module = gfx.device.create_shader_module(&FRAG_SHADER.0);
 
         let render_pipeline_layout =
             gfx.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    bind_group_layouts: &[],
+                    bind_group_layouts: &[&gfx.projection_layout],
                 });
         let color_states = [wgpu::ColorStateDescriptor {
             format: gfx.sc_desc.format,
@@ -132,7 +132,7 @@ impl Draweable for Mesh {
         });
 
         render_pass.set_pipeline(&ctx.gfx.get_pipeline::<Self>().pipeline);
-
+        render_pass.set_bind_group(1, &ctx.gfx.projection.bindgroup, &[]);
         render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
         render_pass.set_index_buffer(&self.index_buffer, 0, 0);
         render_pass.draw_indexed(0..self.n_indices, 0, 0..1);

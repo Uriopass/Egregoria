@@ -1,5 +1,5 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Draweable, FrameContext, GfxContext, PreparedPipeline,
+    compile_shader, CompiledShader, Context, Draweable, FrameContext, PreparedPipeline,
 };
 
 use lazy_static::*;
@@ -14,7 +14,7 @@ lazy_static! {
 }
 
 impl Draweable for ClearScreen {
-    fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline {
+    fn create_pipeline(gfx: &Context) -> PreparedPipeline {
         let layout = gfx
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {

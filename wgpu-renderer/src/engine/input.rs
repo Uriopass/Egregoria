@@ -1,32 +1,43 @@
-use crate::geometry::Vec2;
+use cgmath::{vec2, Vector2};
 use std::collections::HashSet;
+use winit::event::{ElementState, MouseScrollDelta, WindowEvent};
 
 #[derive(Default)]
-pub struct RenderStats {
-    pub update_time: f32,
-    pub render_time: f32,
+pub struct InputContext {
+    pub mouse: MouseInfo,
+    pub keyboard: KeyboardInfo,
 }
 
-#[derive(Clone, Copy)]
-pub struct TimeInfo {
-    pub delta: f32,
-    pub time: f64,
-    pub time_seconds: u64,
-    pub time_speed: f64,
-}
-
-impl Default for TimeInfo {
-    fn default() -> Self {
-        Self {
-            delta: 0.0,
-            time: 0.0,
-            time_seconds: 0,
-            time_speed: 1.0,
+impl InputContext {
+    pub fn end_frame(&mut self) {
+        self.mouse.just_pressed.clear();
+        self.keyboard.just_pressed.clear();
+        self.mouse.wheel_delta = 0.0;
+    }
+    pub fn handle(&mut self, event: &WindowEvent) -> bool {
+        match event {
+            WindowEvent::CursorMoved { position, .. } => {
+                self.mouse.screen = vec2(position.x as f32, position.y as f32);
+                true
+            }
+            WindowEvent::MouseInput { button, state, .. } => {
+                match state {
+                    ElementState::Pressed => self.mouse.buttons.insert(button.into()),
+                    ElementState::Released => self.mouse.buttons.remove(&button.into()),
+                };
+                true
+            }
+            WindowEvent::MouseWheel { delta, .. } => {
+                match delta {
+                    MouseScrollDelta::LineDelta(_, y) => self.mouse.wheel_delta = *y,
+                    _ => {}
+                }
+                true
+            }
+            _ => false,
         }
     }
 }
-
-pub const MAX_LAYERS: u32 = 20;
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum MouseButton {
@@ -36,8 +47,21 @@ pub enum MouseButton {
     Other(u8),
 }
 
+impl From<&winit::event::MouseButton> for MouseButton {
+    fn from(x: &winit::event::MouseButton) -> Self {
+        match x {
+            winit::event::MouseButton::Left => MouseButton::Left,
+            winit::event::MouseButton::Right => MouseButton::Right,
+            winit::event::MouseButton::Middle => MouseButton::Middle,
+            winit::event::MouseButton::Other(v) => MouseButton::Other(*v),
+        }
+    }
+}
+
 pub struct MouseInfo {
-    pub unprojected: Vec2,
+    pub wheel_delta: f32,
+    pub screen: Vector2<f32>,
+    pub unprojected: Vector2<f32>,
     pub buttons: HashSet<MouseButton>,
     pub just_pressed: HashSet<MouseButton>,
 }
@@ -45,7 +69,9 @@ pub struct MouseInfo {
 impl Default for MouseInfo {
     fn default() -> Self {
         MouseInfo {
-            unprojected: vec2!(0.0, 0.0),
+            wheel_delta: 0.0,
+            screen: vec2(0.0, 0.0),
+            unprojected: vec2(0.0, 0.0),
             buttons: HashSet::new(),
             just_pressed: HashSet::new(),
         }

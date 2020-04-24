@@ -5,8 +5,7 @@ pub struct Vertex {
     pub color: [f32; 4],
 }
 
-unsafe impl bytemuck::Pod for Vertex {}
-unsafe impl bytemuck::Zeroable for Vertex {}
+u8slice_impl!(Vertex);
 
 impl Vertex {
     pub fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
