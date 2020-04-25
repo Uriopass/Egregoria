@@ -1,5 +1,5 @@
 use crate::engine::{
-    ClearScreen, Drawable, Mesh, PreparedPipeline, RainbowMesh, Texture, TexturedMesh, Uniform,
+    ClearScreen, Drawable, Mesh, PreparedPipeline, SpriteBatch, Texture, TexturedMesh, Uniform,
 };
 use cgmath::SquareMatrix;
 use std::any::TypeId;
@@ -92,8 +92,8 @@ impl GfxContext {
 
         me.register_pipeline::<ClearScreen>();
         me.register_pipeline::<Mesh>();
-        me.register_pipeline::<RainbowMesh>();
         me.register_pipeline::<TexturedMesh>();
+        me.register_pipeline::<SpriteBatch>();
 
         me
     }

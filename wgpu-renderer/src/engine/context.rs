@@ -1,8 +1,6 @@
 use crate::engine::{AudioContext, ClearScreen, Drawable, GfxContext, InputContext};
 use crate::game_loop;
 use futures::executor;
-use std::fs::File;
-use std::io::BufReader;
 use wgpu::{Color, SwapChainOutput};
 use winit::{
     dpi::PhysicalSize,

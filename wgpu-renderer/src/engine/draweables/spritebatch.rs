@@ -1,49 +1,125 @@
 use crate::engine::{
-    compile_shader, ColoredUvVertex, CompiledShader, Drawable, FrameContext, GfxContext, IndexType,
-    Texture, VBDesc,
+    compile_shader, CompiledShader, Drawable, FrameContext, GfxContext, IndexType, Texture,
+    UvVertex, VBDesc,
 };
-use lazy_static::*;
-use wgpu::TextureComponentType;
 
-pub struct TexturedMeshBuilder {
-    vertices: Vec<ColoredUvVertex>,
-    indices: Vec<IndexType>,
+use lazy_static::*;
+use wgpu::{TextureComponentType, VertexBufferDescriptor};
+
+pub struct SpriteBatchBuilder {
+    pub tex: Texture,
+    pub instances: Vec<InstanceRaw>,
 }
 
-pub struct TexturedMesh {
+pub struct SpriteBatch {
     pub vertex_buffer: wgpu::Buffer,
     pub index_buffer: wgpu::Buffer,
+    pub instance_buffer: wgpu::Buffer,
     pub n_indices: u32,
+    pub n_instances: u32,
     pub alpha_blend: bool,
     pub tex: Texture,
     pub bind_group: wgpu::BindGroup,
 }
 
-impl TexturedMeshBuilder {
-    pub fn new() -> Self {
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct InstanceRaw {
+    model: cgmath::Matrix4<f32>,
+    tint: cgmath::Vector3<f32>,
+}
+
+impl InstanceRaw {
+    pub fn new(
+        mut model: cgmath::Matrix4<f32>,
+        tint: cgmath::Vector3<f32>,
+        scale: f32,
+    ) -> InstanceRaw {
+        model.x.x *= scale;
+        model.y.y *= scale;
+        Self { model, tint }
+    }
+}
+
+u8slice_impl!(InstanceRaw);
+
+impl VBDesc for InstanceRaw {
+    fn desc<'a>() -> VertexBufferDescriptor<'a> {
+        wgpu::VertexBufferDescriptor {
+            stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
+            step_mode: wgpu::InputStepMode::Instance,
+            attributes: &wgpu::vertex_attr_array![2 => Float4, 3 => Float4, 4 => Float4, 5 => Float4, 6 => Float3],
+        }
+    }
+}
+
+const UV_VERTICES: &[UvVertex] = &[
+    UvVertex {
+        position: [0.0, 0.0, 0.0],
+        uv: [0.0, 1.0],
+    },
+    UvVertex {
+        position: [1.0, 0.0, 0.0],
+        uv: [1.0, 1.0],
+    },
+    UvVertex {
+        position: [1.0, 1.0, 0.0],
+        uv: [1.0, 0.0],
+    },
+    UvVertex {
+        position: [0.0, 1.0, 0.0],
+        uv: [0.0, 0.0],
+    },
+];
+
+const UV_INDICES: &[IndexType] = &[0, 1, 2, 0, 2, 3];
+
+impl SpriteBatchBuilder {
+    pub fn new(tex: Texture) -> Self {
         Self {
-            vertices: vec![],
-            indices: vec![],
+            tex,
+            instances: vec![],
         }
     }
 
-    pub fn extend(&mut self, vertices: &[ColoredUvVertex], indices: &[IndexType]) -> &mut Self {
-        let offset = self.vertices.len() as IndexType;
-        self.vertices.extend_from_slice(vertices);
-        self.indices.extend(indices.iter().map(|x| x + offset));
-        self
-    }
+    pub fn build(&self, gfx: &GfxContext) -> SpriteBatch {
+        let pipeline = gfx.get_pipeline::<SpriteBatch>();
 
-    pub fn build(&self, gfx: &GfxContext, tex: Texture) -> TexturedMesh {
-        let pipeline = gfx.get_pipeline::<TexturedMesh>();
+        let a = self.tex.width;
+        let b = self.tex.height;
+        let m = a.max(b);
 
-        let vertex_buffer = gfx.device.create_buffer_with_data(
-            bytemuck::cast_slice(&self.vertices),
+        let x = self.tex.width / (2.0 * m);
+        let y = self.tex.height / (2.0 * m);
+
+        let v = [
+            UvVertex {
+                position: [-x, -y, 0.0],
+                ..UV_VERTICES[0]
+            },
+            UvVertex {
+                position: [x, -y, 0.0],
+                ..UV_VERTICES[1]
+            },
+            UvVertex {
+                position: [x, y, 0.0],
+                ..UV_VERTICES[2]
+            },
+            UvVertex {
+                position: [-x, y, 0.0],
+                ..UV_VERTICES[3]
+            },
+        ];
+
+        let vertex_buffer = gfx
+            .device
+            .create_buffer_with_data(bytemuck::cast_slice(&v), wgpu::BufferUsage::VERTEX);
+        let index_buffer = gfx
+            .device
+            .create_buffer_with_data(bytemuck::cast_slice(UV_INDICES), wgpu::BufferUsage::INDEX);
+        let instance_buffer = gfx.device.create_buffer_with_data(
+            bytemuck::cast_slice(&self.instances),
             wgpu::BufferUsage::VERTEX,
-        );
-        let index_buffer = gfx.device.create_buffer_with_data(
-            bytemuck::cast_slice(&self.indices),
-            wgpu::BufferUsage::INDEX,
         );
 
         let bind_group = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -51,35 +127,35 @@ impl TexturedMeshBuilder {
             bindings: &[
                 wgpu::Binding {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&tex.view),
+                    resource: wgpu::BindingResource::TextureView(&self.tex.view),
                 },
                 wgpu::Binding {
                     binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&tex.sampler),
+                    resource: wgpu::BindingResource::Sampler(&self.tex.sampler),
                 },
             ],
             label: None,
         });
 
-        TexturedMesh {
+        SpriteBatch {
             vertex_buffer,
             index_buffer,
-            n_indices: self.indices.len() as u32,
+            instance_buffer,
+            n_indices: UV_INDICES.len() as u32,
+            n_instances: self.instances.len() as u32,
             alpha_blend: false,
-            tex: tex.clone(),
+            tex: self.tex.clone(),
             bind_group,
         }
     }
 }
 
 lazy_static! {
-    static ref VERT_SHADER: CompiledShader =
-        compile_shader("resources/shaders/textured_mesh_shader.vert");
-    static ref FRAG_SHADER: CompiledShader =
-        compile_shader("resources/shaders/textured_mesh_shader.frag");
+    static ref VERT_SHADER: CompiledShader = compile_shader("resources/shaders/spritebatch.vert");
+    static ref FRAG_SHADER: CompiledShader = compile_shader("resources/shaders/spritebatch.frag");
 }
 
-impl Drawable for TexturedMesh {
+impl Drawable for SpriteBatch {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
         let layouts = vec![gfx
             .device
@@ -139,7 +215,7 @@ impl Drawable for TexturedMesh {
             depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
                 format: wgpu::TextureFormat::Depth32Float,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
+                depth_compare: wgpu::CompareFunction::Always,
                 stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
                 stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
                 stencil_read_mask: 0,
@@ -147,7 +223,7 @@ impl Drawable for TexturedMesh {
             }),
             vertex_state: wgpu::VertexStateDescriptor {
                 index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers: &[ColoredUvVertex::desc()],
+                vertex_buffers: &[UvVertex::desc(), InstanceRaw::desc()],
             },
             sample_count: 1,
             sample_mask: !0,
@@ -184,7 +260,8 @@ impl Drawable for TexturedMesh {
         render_pass.set_bind_group(0, &self.bind_group, &[]);
         render_pass.set_bind_group(1, &ctx.gfx.projection.bindgroup, &[]);
         render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
+        render_pass.set_vertex_buffer(1, &self.instance_buffer, 0, 0);
         render_pass.set_index_buffer(&self.index_buffer, 0, 0);
-        render_pass.draw_indexed(0..self.n_indices, 0, 0..1);
+        render_pass.draw_indexed(0..self.n_indices, 0, 0..self.n_instances);
     }
 }

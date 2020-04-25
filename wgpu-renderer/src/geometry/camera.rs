@@ -9,13 +9,13 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(viewport_width: f32, viewport_height: f32) -> Camera {
+    pub fn new(viewport_width: f32, viewport_height: f32, zoom: f32) -> Camera {
         let mut c = Camera {
             viewport: Vector2::new(viewport_width, viewport_height),
             position: Vector2::zero(),
             projection: Matrix4::zero(),
             invprojection: Matrix4::zero(),
-            zoom: 1.0,
+            zoom,
         };
         c.update();
         c

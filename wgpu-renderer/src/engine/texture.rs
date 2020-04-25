@@ -5,12 +5,16 @@ use image::GenericImageView;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::rc::Rc;
 use wgpu::CommandEncoderDescriptor;
 
+#[derive(Clone)]
 pub struct Texture {
-    pub texture: wgpu::Texture,
-    pub view: wgpu::TextureView,
-    pub sampler: wgpu::Sampler,
+    pub width: f32,
+    pub height: f32,
+    pub texture: Rc<wgpu::Texture>,
+    pub view: Rc<wgpu::TextureView>,
+    pub sampler: Rc<wgpu::Sampler>,
 }
 
 impl Texture {
@@ -86,9 +90,11 @@ impl Texture {
         });
 
         Some(Self {
-            texture,
-            view,
-            sampler,
+            texture: Rc::new(texture),
+            view: Rc::new(view),
+            sampler: Rc::new(sampler),
+            width: dimensions.0 as f32,
+            height: dimensions.1 as f32,
         })
     }
 
@@ -128,9 +134,11 @@ impl Texture {
         });
 
         Self {
-            texture,
-            view,
-            sampler,
+            width: sc_desc.width as f32,
+            height: sc_desc.height as f32,
+            texture: Rc::new(texture),
+            view: Rc::new(view),
+            sampler: Rc::new(sampler),
         }
     }
 }
