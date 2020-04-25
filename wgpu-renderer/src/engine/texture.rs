@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::engine::Context;
+use crate::engine::GfxContext;
 use image::GenericImageView;
 use std::fs::File;
 use std::io::Read;
@@ -14,17 +14,17 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn from_path(ctx: &Context, p: impl AsRef<Path>) -> Option<Self> {
+    pub fn from_path(ctx: &GfxContext, p: impl AsRef<Path>) -> Option<Self> {
         let mut buf = vec![];
         File::open(p).ok()?.read_to_end(&mut buf).ok()?;
         Texture::from_bytes(&ctx, &buf)
     }
-    pub fn from_bytes(ctx: &Context, bytes: &[u8]) -> Option<Self> {
+    pub fn from_bytes(ctx: &GfxContext, bytes: &[u8]) -> Option<Self> {
         let img = image::load_from_memory(bytes).ok()?;
         Self::from_image(ctx, &img)
     }
 
-    pub fn from_image(ctx: &Context, img: &image::DynamicImage) -> Option<Self> {
+    pub fn from_image(ctx: &GfxContext, img: &image::DynamicImage) -> Option<Self> {
         let rgba = img.as_rgba8().unwrap();
         let dimensions = img.dimensions();
 

@@ -1,6 +1,6 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Context, Draweable, FrameContext, IndexType, PreparedPipeline,
-    Vertex,
+    compile_shader, CompiledShader, Drawable, FrameContext, GfxContext, IndexType,
+    PreparedPipeline, Vertex,
 };
 use lazy_static::*;
 
@@ -24,7 +24,7 @@ impl MeshBuilder {
         self
     }
 
-    pub fn build(self, ctx: &Context) -> Mesh {
+    pub fn build(self, ctx: &GfxContext) -> Mesh {
         let vertex_buffer = ctx.device.create_buffer_with_data(
             bytemuck::cast_slice(&self.vertices),
             wgpu::BufferUsage::VERTEX,
@@ -55,8 +55,8 @@ lazy_static! {
     static ref FRAG_SHADER: CompiledShader = compile_shader("resources/shaders/mesh_shader.frag");
 }
 
-impl Draweable for Mesh {
-    fn create_pipeline(gfx: &Context) -> PreparedPipeline {
+impl Drawable for Mesh {
+    fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline {
         let vs_module = gfx.device.create_shader_module(&VERT_SHADER.0);
         let fs_module = gfx.device.create_shader_module(&FRAG_SHADER.0);
 

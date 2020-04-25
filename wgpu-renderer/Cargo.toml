@@ -10,8 +10,9 @@ edition = "2018"
 wgpu = "0.5.0"
 winit = "0.22.1"
 glsl-to-spirv = "0.1.7"
-futures = "0.3.4"
+futures = {version = "0.3.4", default-features = false, features = ["executor"] }
 bytemuck = "1.2.0"
-image = "0.23.4"
+image = {version = "0.23.4", default-features = false, features = ["png"] }
 lazy_static = "1.4.0"
-cgmath = "0.17.0"
+cgmath = {git = "https://github.com/rustgd/cgmath", default-features = false}
+rodio = {version = "0.11.0", default-features = false, features = ["wav"] }

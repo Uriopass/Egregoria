@@ -13,5 +13,5 @@ imgui = "0.3"
 gfx_core = "0.9.2"
 gfx_device_gl = "0.16"
 gfx = "0.18.2"
-cgmath = {git = "https://github.com/rustgd/cgmath", features = ["mint"]}
+cgmath = {git = "https://github.com/rustgd/cgmath", default-features = false, features = ["mint"]}
 ggez = {git = "https://github.com/Uriopass/ggez", branch = "patch-2" }
