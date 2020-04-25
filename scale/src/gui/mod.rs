@@ -1,7 +1,7 @@
 use crate::engine_interaction::{RenderStats, TimeInfo};
 use crate::interaction::SelectedEntity;
 use crate::map_model::{LanePatternBuilder, MapUIState};
-use crate::pedestrians::{spawn_pedestrian, PedestrianComponent};
+use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
 use imgui::im_str;
 use imgui::Ui;
@@ -122,6 +122,20 @@ impl Gui {
 
                         for e in to_delete {
                             delete_vehicle_entity(world, e);
+                        }
+                    }
+
+                    if ui.small_button(im_str!("delete all pedestrians")) {
+                        let to_delete: Vec<Entity> = (
+                            &world.entities(),
+                            &world.read_component::<PedestrianComponent>(),
+                        )
+                            .join()
+                            .map(|(e, _)| e)
+                            .collect();
+
+                        for e in to_delete {
+                            delete_pedestrian(world, e);
                         }
                     }
 

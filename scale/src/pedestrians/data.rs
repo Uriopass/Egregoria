@@ -8,7 +8,7 @@ use crate::rendering::Color;
 use crate::utils::rand_normal;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
-use specs::{Builder, World, WorldExt};
+use specs::{Builder, Entity, World, WorldExt};
 use specs::{Component, DenseVecStorage};
 
 #[derive(Clone, Serialize, Deserialize, Component, Inspect)]
@@ -16,6 +16,15 @@ pub struct PedestrianComponent {
     pub itinerary: Itinerary,
     pub walking_speed: f32,
     pub walk_anim: f32,
+}
+
+pub fn delete_pedestrian(world: &mut World, e: Entity) {
+    {
+        let handle = world.read_component::<Collider>().get(e).unwrap().0;
+        let mut coworld = world.write_resource::<CollisionWorld>();
+        coworld.remove(handle);
+    }
+    world.delete_entity(e).unwrap();
 }
 
 pub fn spawn_pedestrian(world: &mut World) {
