@@ -7,8 +7,8 @@ pub struct Vertex {
 
 u8slice_impl!(Vertex);
 
-impl Vertex {
-    pub fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
+impl super::VBDesc for Vertex {
+    fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
         use std::mem;
         wgpu::VertexBufferDescriptor {
             stride: mem::size_of::<Vertex>() as wgpu::BufferAddress,

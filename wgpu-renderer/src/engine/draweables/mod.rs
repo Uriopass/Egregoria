@@ -3,12 +3,12 @@ use wgpu::BindGroupLayout;
 
 mod clear_screen;
 mod mesh;
-mod rainbow;
+mod spritebatch;
 mod textured_mesh;
 
 pub use clear_screen::*;
 pub use mesh::*;
-pub use rainbow::*;
+pub use spritebatch::*;
 pub use textured_mesh::*;
 
 pub type IndexType = u32;

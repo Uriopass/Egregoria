@@ -14,9 +14,9 @@ const CAMERA_KEY_MOVESPEED: f32 = 300.0;
 
 #[allow(dead_code)]
 impl CameraHandler {
-    pub fn new(width: f32, height: f32) -> CameraHandler {
+    pub fn new(width: f32, height: f32, zoom: f32) -> CameraHandler {
         CameraHandler {
-            camera: Camera::new(width, height),
+            camera: Camera::new(width, height, zoom),
             last_pos: vec2(0.0, 0.0),
         }
     }

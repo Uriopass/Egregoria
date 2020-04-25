@@ -1,6 +1,6 @@
 use crate::engine::{
     compile_shader, CompiledShader, Drawable, FrameContext, GfxContext, IndexType,
-    PreparedPipeline, Vertex,
+    PreparedPipeline, VBDesc, Vertex,
 };
 use lazy_static::*;
 
