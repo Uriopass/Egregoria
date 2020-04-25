@@ -29,7 +29,7 @@ impl CameraHandler {
 
     pub fn update(&mut self, ctx: &mut Context) {
         self.camera.update();
-        ctx.set_proj(self.camera.projection);
+        ctx.gfx.set_proj(self.camera.projection);
     }
 
     pub fn get_screen_box(&self) -> Rect {

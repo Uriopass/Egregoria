@@ -1,5 +1,5 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Context, Draweable, FrameContext, IndexType, Uniform, Vertex,
+    compile_shader, CompiledShader, Drawable, FrameContext, GfxContext, IndexType, Uniform, Vertex,
 };
 use lazy_static::*;
 use wgpu::ShaderStage;
@@ -24,7 +24,7 @@ impl RainbowMeshBuilder {
         self
     }
 
-    pub fn build(self, gfx: &Context) -> RainbowMesh {
+    pub fn build(self, gfx: &GfxContext) -> RainbowMesh {
         let pipeline = gfx.get_pipeline::<RainbowMesh>();
 
         let vertex_buffer = gfx.device.create_buffer_with_data(
@@ -70,8 +70,8 @@ lazy_static! {
         compile_shader("resources/shaders/rainbow_mesh_shader.frag");
 }
 
-impl Draweable for RainbowMesh {
-    fn create_pipeline(gfx: &Context) -> super::PreparedPipeline {
+impl Drawable for RainbowMesh {
+    fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
         let layouts = vec![Uniform::<TimeUniform>::bindgroup_layout(
             &gfx.device,
             0,

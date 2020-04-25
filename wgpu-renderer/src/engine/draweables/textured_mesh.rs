@@ -1,5 +1,6 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Context, Draweable, FrameContext, IndexType, Texture, UvVertex,
+    compile_shader, CompiledShader, Drawable, FrameContext, GfxContext, IndexType, Texture,
+    UvVertex,
 };
 use lazy_static::*;
 use wgpu::TextureComponentType;
@@ -33,7 +34,7 @@ impl TexturedMeshBuilder {
         self
     }
 
-    pub fn build(self, gfx: &Context, tex: Texture) -> TexturedMesh {
+    pub fn build(self, gfx: &GfxContext, tex: Texture) -> TexturedMesh {
         let pipeline = gfx.get_pipeline::<TexturedMesh>();
 
         let vertex_buffer = gfx.device.create_buffer_with_data(
@@ -78,8 +79,8 @@ lazy_static! {
         compile_shader("resources/shaders/textured_mesh_shader.frag");
 }
 
-impl Draweable for TexturedMesh {
-    fn create_pipeline(gfx: &Context) -> super::PreparedPipeline {
+impl Drawable for TexturedMesh {
+    fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
         let layouts = vec![gfx
             .device
             .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
