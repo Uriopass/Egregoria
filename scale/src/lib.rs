@@ -8,9 +8,11 @@ use crate::interaction::{
     FollowEntity, MovableSystem, MovedEvent, SelectableAuraSystem, SelectableSystem, SelectedEntity,
 };
 use crate::map_model::{MapUIState, MapUISystem};
+use crate::pedestrians::PedestrianDecision;
 use crate::physics::systems::KinematicsApply;
 use crate::physics::Collider;
 use crate::physics::CollisionWorld;
+use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::systems::VehicleDecision;
 use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
@@ -33,9 +35,6 @@ pub mod physics;
 pub mod rendering;
 pub mod vehicles;
 
-use crate::pedestrians::{spawn_pedestrian, PedestrianDecision};
-use crate::rendering::assets::AssetRender;
-use crate::vehicles::spawn_new_vehicle;
 pub use specs;
 use specs::shrev::EventChannel;
 
@@ -85,12 +84,6 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     map_model::setup(world);
     vehicles::setup(world);
     pedestrians::setup(world);
-
-    for _ in 0..1000 {
-        spawn_pedestrian(world);
-        spawn_pedestrian(world);
-        spawn_new_vehicle(world);
-    }
 
     dispatch
 }
