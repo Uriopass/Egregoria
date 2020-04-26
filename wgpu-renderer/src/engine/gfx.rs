@@ -65,7 +65,7 @@ impl GfxContext {
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
             width: win_width,
             height: win_height,
-            present_mode: wgpu::PresentMode::Mailbox,
+            present_mode: wgpu::PresentMode::Fifo,
         };
         let swapchain = device.create_swap_chain(&surface, &sc_desc);
         let depth_texture = Texture::create_depth_texture(&device, &sc_desc);

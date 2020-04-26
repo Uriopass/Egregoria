@@ -8,7 +8,6 @@ use crate::utils::{Choose, Restrict};
 use cgmath::{Angle, InnerSpace, MetricSpace};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
-use specs::ParJoin;
 use std::borrow::Borrow;
 
 #[derive(Default)]
@@ -40,7 +39,7 @@ impl<'a> System<'a> for PedestrianDecision {
             &mut data.pedestrians,
             &mut data.mr,
         )
-            .par_join()
+            .join()
             .for_each(|(coll, trans, kin, pedestrian, mr)| {
                 objective_update(pedestrian, trans, map);
 

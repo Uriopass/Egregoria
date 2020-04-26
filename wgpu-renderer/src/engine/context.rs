@@ -32,7 +32,7 @@ impl Context {
 
         let gfx = executor::block_on(GfxContext::new(window));
         let input = InputContext::default();
-        let audio = AudioContext::new(10);
+        let audio = AudioContext::new(2);
 
         (Self { gfx, input, audio }, event_loop)
     }
