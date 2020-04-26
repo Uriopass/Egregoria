@@ -20,7 +20,7 @@ impl AudioContext {
         .unwrap()
     }
 
-    pub fn play_sound<S>(&self, source: S) -> bool
+    pub fn play_sound<S>(&self, source: S, volume: f32) -> bool
     where
         S: rodio::Source + Send + 'static,
         S::Item: rodio::Sample + Send,
@@ -28,6 +28,7 @@ impl AudioContext {
         for sink in &self.sinks {
             if sink.len() == 0 {
                 sink.append(source);
+                sink.set_volume(volume);
                 return true;
             }
         }

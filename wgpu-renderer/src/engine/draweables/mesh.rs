@@ -24,7 +24,10 @@ impl MeshBuilder {
         self
     }
 
-    pub fn build(self, ctx: &GfxContext) -> Mesh {
+    pub fn build(self, ctx: &GfxContext) -> Option<Mesh> {
+        if self.vertices.len() == 0 {
+            return None;
+        }
         let vertex_buffer = ctx.device.create_buffer_with_data(
             bytemuck::cast_slice(&self.vertices),
             wgpu::BufferUsage::VERTEX,
@@ -34,12 +37,12 @@ impl MeshBuilder {
             wgpu::BufferUsage::INDEX,
         );
 
-        Mesh {
+        Some(Mesh {
             vertex_buffer,
             index_buffer,
             n_indices: self.indices.len() as u32,
             alpha_blend: false,
-        }
+        })
     }
 }
 

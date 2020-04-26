@@ -37,7 +37,6 @@ impl Default for Gui {
 impl Gui {
     pub fn render(&mut self, ui: &Ui, world: &mut World) {
         let mut selected = *world.read_resource::<SelectedEntity>();
-        // Window
         if let Some(e) = selected.e {
             let mut is_open = true;
             imgui::Window::new(im_str!("Inspect"))

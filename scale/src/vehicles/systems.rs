@@ -296,8 +296,8 @@ pub fn calc_decision<'a>(
         vehicle.desired_speed = 0.0;
     }
 
-    // Stop at 50 cm of object in front
-    if min_front_dist < 0.5 + stop_dist {
+    // Stop at 80 cm of object in front
+    if min_front_dist < 0.8 + stop_dist {
         vehicle.desired_speed = 0.0;
     }
 

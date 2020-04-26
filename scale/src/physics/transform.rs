@@ -78,11 +78,12 @@ impl Transform {
     }
 
     pub fn to_matrix4(&self) -> cgmath::Matrix4<f32> {
+        let m = self.m;
         cgmath::Matrix4 {
-            x: self.m.x.extend(0.0),
-            y: self.m.y.extend(0.0),
-            z: self.m.z.extend(0.0),
-            w: vec4(0.0, 0.0, 0.0, 1.0),
+            x: vec4(m.x.x, m.x.y, 0.0, 0.0),
+            y: vec4(m.y.x, m.y.y, 0.0, 0.0),
+            z: vec4(0.0, 0.0, 1.0, 0.0),
+            w: vec4(m.z.x, m.z.y, 0.0, 1.0),
         }
     }
 
