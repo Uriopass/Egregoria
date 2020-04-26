@@ -4,6 +4,7 @@ use crate::rendering::CameraHandler;
 use cgmath::{vec2, InnerSpace, Vector2};
 use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
 use scale::rendering::Color;
+use std::hint::unreachable_unchecked;
 
 pub struct RoadRenderer {
     road_mesh: Option<Mesh>,
@@ -35,24 +36,13 @@ impl RoadRenderer {
         sr.color = Color::WHITE;
 
         let mut p = Vec::with_capacity(8);
-        for (_, inter) in inters {
-            for (id, turn) in &inter.turns {
-                p.clear();
-                p.push(turn.points[0] - lanes[id.src].get_orientation_vec());
-                p.extend_from_slice(turn.points.as_slice());
-                p.push(turn.points.last().unwrap() + lanes[id.dst].get_orientation_vec());
-
-                sr.draw_polyline(&p, 0.1, lanes[id.src].width + 0.5);
-            }
-        }
 
         for n in lanes.values() {
+            sr.color = Color::WHITE;
+
             let w = n.width + 0.5;
             sr.draw_polyline(n.points.as_slice(), 0.1, w);
-        }
 
-        sr.color = MID_GRAY;
-        for n in lanes.values() {
             sr.color = match n.kind {
                 LaneKind::Walking => HIGH_GRAY,
                 _ => MID_GRAY,
@@ -60,53 +50,45 @@ impl RoadRenderer {
 
             sr.draw_polyline(n.points.as_slice(), 0.2, n.width - 0.5);
         }
+
         for (inter_id, inter) in inters {
-            // Draw normal turns
-            sr.color = MID_GRAY;
             for (id, turn) in &inter.turns {
-                if turn.kind != TurnKind::Normal {
+                sr.color = Color::WHITE;
+
+                if let TurnKind::Crosswalk = turn.kind {
+                    let from = lanes[id.src].get_inter_node_pos(inter_id);
+                    let to = lanes[id.dst].get_inter_node_pos(inter_id);
+
+                    let l = (to - from).magnitude();
+
+                    let dir: Vector2<f32> = (to - from) / l;
+                    let normal = vec2(-dir.y, dir.x);
+                    for i in 2..l as usize - 1 {
+                        let along = from + dir * i as f32;
+                        sr.draw_stroke(along - normal * 1.5, along + normal * 1.5, 0.21, 0.5);
+                    }
                     continue;
                 }
+
+                p.clear();
+                p.push(turn.points[0] - lanes[id.src].get_orientation_vec());
+                p.extend_from_slice(turn.points.as_slice());
+                p.push(turn.points.last().unwrap() + lanes[id.dst].get_orientation_vec());
+
+                sr.draw_polyline(&p, 0.1, lanes[id.src].width + 0.5);
+
+                sr.color = match turn.kind {
+                    TurnKind::Crosswalk => unreachable!(),
+                    TurnKind::WalkingCorner => HIGH_GRAY,
+                    TurnKind::Normal => MID_GRAY,
+                };
+
                 p.clear();
                 p.push(turn.points[0] - lanes[id.src].get_orientation_vec());
                 p.extend_from_slice(turn.points.as_slice());
                 p.push(turn.points.last().unwrap() + lanes[id.dst].get_orientation_vec());
 
                 sr.draw_polyline(&p, 0.2, lanes[id.src].width - 0.5);
-            }
-
-            // Draw walking corners
-            sr.color = HIGH_GRAY;
-            for (id, turn) in &inter.turns {
-                if turn.kind != TurnKind::WalkingCorner {
-                    continue;
-                }
-                p.clear();
-                p.push(turn.points[0] - lanes[id.src].get_orientation_vec());
-                p.extend_from_slice(turn.points.as_slice());
-                p.push(turn.points.last().unwrap() + lanes[id.dst].get_orientation_vec());
-
-                sr.draw_polyline(&p, 0.2, lanes[id.src].width - 0.5);
-            }
-
-            // Draw crosswalks
-            sr.color = Color::WHITE;
-            for (id, turn) in &inter.turns {
-                if turn.kind != TurnKind::Crosswalk {
-                    continue;
-                }
-
-                let from = lanes[id.src].get_inter_node_pos(inter_id);
-                let to = lanes[id.dst].get_inter_node_pos(inter_id);
-
-                let l = (to - from).magnitude();
-
-                let dir: Vector2<f32> = (to - from) / l;
-                let normal = vec2(-dir.y, dir.x);
-                for i in 2..l as usize - 1 {
-                    let along = from + dir * i as f32;
-                    sr.draw_stroke(along - normal * 1.5, along + normal * 1.5, 0.2, 0.5);
-                }
             }
         }
     }
