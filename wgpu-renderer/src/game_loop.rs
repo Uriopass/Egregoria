@@ -1,11 +1,8 @@
-use crate::engine::{
-    Context, Drawable, FrameContext, GfxContext, InstanceRaw, SpriteBatch, SpriteBatchBuilder,
-    Texture,
-};
+use crate::engine::{Context, FrameContext, GfxContext};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
-use crate::rendering::CameraHandler;
-use cgmath::{Vector2, Vector3};
-use rodio::Decoder;
+use crate::rendering::{CameraHandler, InstancedRender};
+use cgmath::Vector2;
+use rodio::{Decoder, Source};
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
@@ -14,17 +11,17 @@ use scale::specs::RunNow;
 use scale::specs::WorldExt;
 use std::fs::File;
 use std::io::Read;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use winit::dpi::PhysicalSize;
 
 pub struct State<'a> {
     camera: CameraHandler,
-    sb: SpriteBatch,
     gui: ImguiWrapper,
     world: scale::specs::World,
     dispatcher: scale::specs::Dispatcher<'a, 'a>,
     time_sync: f64,
     last_time: Instant,
+    instanced_renderer: InstancedRender,
 }
 
 const TIME_STEP: f64 = 1.0 / 50.0;
@@ -33,28 +30,14 @@ impl<'a> State<'a> {
     pub fn new(ctx: &mut Context) -> Self {
         let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 10.0);
 
-        let tex = Texture::from_path(&ctx.gfx, "resources/car.png").expect("couldn't load car");
-
         let mut buf = vec![];
         File::open("resources/music.mp3")
             .unwrap()
             .read_to_end(&mut buf)
             .unwrap();
+        let source = Decoder::new(std::io::Cursor::new(buf)).unwrap();
         ctx.audio
-            .play_sound(Decoder::new(std::io::Cursor::new(buf)).unwrap());
-
-        let mut sb = SpriteBatchBuilder::new(tex);
-
-        let mut pos = Transform::new(Vector2::<f32>::new(10.0, 0.0));
-        pos.set_angle(0.5);
-
-        sb.instances.push(InstanceRaw::new(
-            pos.to_matrix4(),
-            Vector3::new(1.0, 1.0, 1.0),
-            4.5,
-        ));
-
-        let sbb = sb.build(&ctx.gfx);
+            .play_sound(source.fade_in(Duration::new(1, 0)).repeat_infinite(), 0.04);
 
         let wrapper = ImguiWrapper::new(&mut ctx.gfx);
 
@@ -63,12 +46,12 @@ impl<'a> State<'a> {
 
         Self {
             camera,
-            sb: sbb,
             gui: wrapper,
             world,
             dispatcher,
             time_sync: 0.0,
             last_time: Instant::now(),
+            instanced_renderer: InstancedRender::new(&mut ctx.gfx),
         }
     }
 
@@ -79,7 +62,7 @@ impl<'a> State<'a> {
 
         self.manage_timestep(delta);
 
-        self.manage_io();
+        self.manage_io(ctx);
 
         self.dispatcher.run_now(&self.world);
         self.world.maintain();
@@ -98,8 +81,7 @@ impl<'a> State<'a> {
     }
 
     pub fn render(&mut self, ctx: &mut FrameContext) {
-        self.sb.draw(ctx);
-
+        self.instanced_renderer.render(&mut self.world, ctx);
         let mut gui = (*self.world.read_resource::<Gui>()).clone();
         self.gui.render(ctx, &mut self.world, &mut gui);
         *self.world.write_resource::<Gui>() = gui;
@@ -145,7 +127,10 @@ impl<'a> State<'a> {
         }
     }
 
-    fn manage_io(&mut self) {
+    fn manage_io(&mut self, ctx: &Context) {
+        *self.world.write_resource::<KeyboardInfo>() = ctx.input.keyboard.clone();
+        *self.world.write_resource::<MouseInfo>() = ctx.input.mouse.clone();
+
         if self.gui.last_kb_captured {
             let kb: &mut KeyboardInfo = &mut self.world.write_resource::<KeyboardInfo>();
             kb.just_pressed.clear();

@@ -34,7 +34,11 @@ impl TexturedMeshBuilder {
         self
     }
 
-    pub fn build(&self, gfx: &GfxContext, tex: Texture) -> TexturedMesh {
+    pub fn build(&self, gfx: &GfxContext, tex: Texture) -> Option<TexturedMesh> {
+        if self.vertices.len() == 0 {
+            return None;
+        }
+
         let pipeline = gfx.get_pipeline::<TexturedMesh>();
 
         let vertex_buffer = gfx.device.create_buffer_with_data(
@@ -61,14 +65,14 @@ impl TexturedMeshBuilder {
             label: None,
         });
 
-        TexturedMesh {
+        Some(TexturedMesh {
             vertex_buffer,
             index_buffer,
             n_indices: self.indices.len() as u32,
             alpha_blend: false,
             tex: tex.clone(),
             bind_group,
-        }
+        })
     }
 }
 

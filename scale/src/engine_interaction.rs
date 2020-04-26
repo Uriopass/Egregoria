@@ -36,6 +36,7 @@ pub enum MouseButton {
     Other(u8),
 }
 
+#[derive(Clone)]
 pub struct MouseInfo {
     pub wheel_delta: f32,
     pub screen: Vec2,
@@ -56,6 +57,7 @@ impl Default for MouseInfo {
     }
 }
 
+#[derive(Clone)]
 pub struct KeyboardInfo {
     pub just_pressed: HashSet<KeyCode>,
     pub is_pressed: HashSet<KeyCode>,

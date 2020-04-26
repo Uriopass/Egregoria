@@ -12,9 +12,9 @@ pub struct SpriteBatchBuilder {
 }
 
 pub struct SpriteBatch {
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
-    pub instance_buffer: wgpu::Buffer,
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
+    instance_buffer: wgpu::Buffer,
     pub n_indices: u32,
     pub n_instances: u32,
     pub alpha_blend: bool,
@@ -36,6 +36,8 @@ impl InstanceRaw {
         scale: f32,
     ) -> InstanceRaw {
         model.x.x *= scale;
+        model.x.y *= scale;
+        model.y.x *= scale;
         model.y.y *= scale;
         Self { model, tint }
     }
@@ -82,7 +84,7 @@ impl SpriteBatchBuilder {
         }
     }
 
-    pub fn build(&self, gfx: &GfxContext) -> SpriteBatch {
+    pub fn build(&self, gfx: &GfxContext) -> Option<SpriteBatch> {
         let pipeline = gfx.get_pipeline::<SpriteBatch>();
 
         let m = self.tex.width.max(self.tex.height);
@@ -108,6 +110,10 @@ impl SpriteBatchBuilder {
                 ..UV_VERTICES[3]
             },
         ];
+
+        if self.instances.len() == 0 {
+            return None;
+        }
 
         let vertex_buffer = gfx
             .device
@@ -135,7 +141,7 @@ impl SpriteBatchBuilder {
             label: None,
         });
 
-        SpriteBatch {
+        Some(SpriteBatch {
             vertex_buffer,
             index_buffer,
             instance_buffer,
@@ -144,7 +150,7 @@ impl SpriteBatchBuilder {
             alpha_blend: false,
             tex: self.tex.clone(),
             bind_group,
-        }
+        })
     }
 }
 

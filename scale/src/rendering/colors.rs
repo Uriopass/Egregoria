@@ -11,36 +11,6 @@ pub struct Color {
     pub a: f32,
 }
 
-impl InspectRenderDefault<Color> for Color {
-    fn render(_: &[&Color], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
-        unimplemented!()
-    }
-
-    fn render_mut(
-        data: &mut [&mut Color],
-        label: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        _args: &InspectArgsDefault,
-    ) -> bool {
-        if data.len() != 1 {
-            unimplemented!();
-        }
-
-        let c = &mut data[0];
-        let mut color_arr = [c.r, c.g, c.b, c.a];
-        if ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui) {
-            c.r = color_arr[0];
-            c.g = color_arr[1];
-            c.b = color_arr[2];
-            c.a = color_arr[3];
-            true
-        } else {
-            false
-        }
-    }
-}
-
 impl Color {
     pub const fn gray(level: f32) -> Self {
         Self {
@@ -129,4 +99,40 @@ impl Color {
         b: 0.1,
         a: 1.0,
     };
+}
+
+impl InspectRenderDefault<Color> for Color {
+    fn render(_: &[&Color], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
+        unimplemented!()
+    }
+
+    fn render_mut(
+        data: &mut [&mut Color],
+        label: &'static str,
+        _: &mut World,
+        ui: &Ui,
+        _args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+
+        let c = &mut data[0];
+        let mut color_arr = [c.r, c.g, c.b, c.a];
+        if ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui) {
+            c.r = color_arr[0];
+            c.g = color_arr[1];
+            c.b = color_arr[2];
+            c.a = color_arr[3];
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl Into<[f32; 4]> for Color {
+    fn into(self) -> [f32; 4] {
+        [self.r, self.g, self.b, self.a]
+    }
 }
