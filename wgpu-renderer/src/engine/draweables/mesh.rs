@@ -104,7 +104,7 @@ impl Drawable for Mesh {
                 index_format: wgpu::IndexFormat::Uint32,
                 vertex_buffers: &[Vertex::desc()],
             },
-            sample_count: 1,
+            sample_count: gfx.samples,
             sample_mask: !0,
             alpha_to_coverage_enabled: false,
         };
@@ -117,8 +117,8 @@ impl Drawable for Mesh {
     fn draw(&self, ctx: &mut FrameContext) {
         let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &ctx.frame.view,
-                resolve_target: None,
+                attachment: &ctx.gfx.multi_frame,
+                resolve_target: Some(&ctx.frame.view),
                 load_op: wgpu::LoadOp::Load,
                 store_op: wgpu::StoreOp::Store,
                 clear_color: wgpu::Color::BLACK, // useless

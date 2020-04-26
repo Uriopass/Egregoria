@@ -54,7 +54,7 @@ impl Drawable for ClearScreen {
                         index_format: wgpu::IndexFormat::Uint16,
                         vertex_buffers: &[],
                     },
-                    sample_count: 1,
+                    sample_count: gfx.samples,
                     sample_mask: !0,
                     alpha_to_coverage_enabled: false,
                 }),
@@ -65,8 +65,8 @@ impl Drawable for ClearScreen {
     fn draw(&self, ctx: &mut FrameContext) {
         let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &ctx.frame.view,
-                resolve_target: None,
+                attachment: &ctx.gfx.multi_frame,
+                resolve_target: Some(&ctx.frame.view),
                 load_op: wgpu::LoadOp::Clear,
                 store_op: wgpu::StoreOp::Store,
                 clear_color: self.clear_color,
