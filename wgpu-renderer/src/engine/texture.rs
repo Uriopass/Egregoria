@@ -103,6 +103,7 @@ impl Texture {
     pub fn create_depth_texture(
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
+        samples: u32,
     ) -> Self {
         let desc = wgpu::TextureDescriptor {
             format: Self::DEPTH_FORMAT,
@@ -114,7 +115,7 @@ impl Texture {
             },
             mip_level_count: 1,
             array_layer_count: 1,
-            sample_count: 1,
+            sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
             label: None,
         };

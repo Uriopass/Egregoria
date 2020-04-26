@@ -3,7 +3,6 @@ use crate::geometry::Tesselator;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, RoadRenderer};
 use cgmath::Vector2;
-use rodio::{Decoder, Source};
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
@@ -14,7 +13,7 @@ use scale::specs::RunNow;
 use scale::specs::WorldExt;
 use std::fs::File;
 use std::io::Read;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
 pub struct State<'a> {
@@ -40,10 +39,10 @@ impl<'a> State<'a> {
             .unwrap()
             .read_to_end(&mut buf)
             .unwrap();
-        let source = Decoder::new(std::io::Cursor::new(buf)).unwrap();
-        ctx.audio
-            .play_sound(source.fade_in(Duration::new(1, 0)).repeat_infinite(), 0.04);
-
+        /*let source = Decoder::new(std::io::Cursor::new(buf)).unwrap();
+                ctx.audio
+                    .play_sound(source.fade_in(Duration::new(1, 0)).repeat_infinite(), 0.02);
+        */
         let wrapper = ImguiWrapper::new(&mut ctx.gfx);
 
         let mut world = scale::specs::World::empty();
