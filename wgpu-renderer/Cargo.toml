@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 wgpu          = "0.5.0"
-winit         = "0.22.1"
+winit         = "0.21"
 glsl-to-spirv = "0.1.7"
 futures       = { version = "0.3.4", default-features = false, features = ["executor"] }
 bytemuck      = "1.2.0"
@@ -17,4 +17,5 @@ lazy_static   = "1.4.0"
 cgmath        = { git = "https://github.com/rustgd/cgmath", default-features = false }
 rodio         = { version = "0.11.0", default-features = false, features = ["wav"] }
 imgui-wgpu    = "0.6.0"
+imgui-winit-support = "0.3.1"
 scale         = { path = "../scale" }

@@ -85,9 +85,7 @@ impl SpriteBatchBuilder {
     pub fn build(&self, gfx: &GfxContext) -> SpriteBatch {
         let pipeline = gfx.get_pipeline::<SpriteBatch>();
 
-        let a = self.tex.width;
-        let b = self.tex.height;
-        let m = a.max(b);
+        let m = self.tex.width.max(self.tex.height);
 
         let x = self.tex.width / (2.0 * m);
         let y = self.tex.height / (2.0 * m);
