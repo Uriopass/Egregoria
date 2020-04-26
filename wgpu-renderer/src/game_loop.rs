@@ -5,12 +5,15 @@ use crate::engine::{
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::CameraHandler;
 use cgmath::{Vector2, Vector3};
+use rodio::Decoder;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
 use scale::physics::Transform;
 use scale::specs::RunNow;
 use scale::specs::WorldExt;
+use std::fs::File;
+use std::io::Read;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
@@ -31,6 +34,14 @@ impl<'a> State<'a> {
         let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 10.0);
 
         let tex = Texture::from_path(&ctx.gfx, "resources/car.png").expect("couldn't load car");
+
+        let mut buf = vec![];
+        File::open("resources/music.mp3")
+            .unwrap()
+            .read_to_end(&mut buf)
+            .unwrap();
+        ctx.audio
+            .play_sound(Decoder::new(std::io::Cursor::new(buf)).unwrap());
 
         let mut sb = SpriteBatchBuilder::new(tex);
 
@@ -63,6 +74,7 @@ impl<'a> State<'a> {
 
     pub fn update(&mut self, ctx: &mut Context) {
         let delta = (Instant::now() - self.last_time).as_secs_f64();
+
         self.last_time = Instant::now();
 
         self.manage_timestep(delta);

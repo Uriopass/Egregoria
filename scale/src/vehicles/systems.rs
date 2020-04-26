@@ -38,7 +38,7 @@ impl<'a> System<'a> for VehicleDecision {
             &mut data.kinematics,
             &mut data.vehicles,
         )
-            .par_join()
+            .join()
             .for_each(|(trans, kin, vehicle)| {
                 objective_update(vehicle, &time, trans, &map);
                 vehicle_physics(&cow, &map, &time, trans, kin, vehicle);

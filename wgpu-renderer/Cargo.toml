@@ -15,7 +15,7 @@ bytemuck      = "1.2.0"
 image         = { version = "0.23.4", default-features = false, features = ["png"] }
 lazy_static   = "1.4.0"
 cgmath        = { git = "https://github.com/rustgd/cgmath", default-features = false }
-rodio         = { version = "0.11.0", default-features = false, features = ["wav"] }
+rodio         = { version = "0.11.0", default-features = false, features = ["mp3"] }
 imgui-wgpu    = "0.6.0"
 imgui-winit-support = "0.3.1"
 scale         = { path = "../scale" }
