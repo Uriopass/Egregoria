@@ -219,7 +219,7 @@ impl Drawable for SpriteBatch {
             depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
                 format: wgpu::TextureFormat::Depth32Float,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Always,
+                depth_compare: wgpu::CompareFunction::GreaterEqual,
                 stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
                 stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
                 stencil_read_mask: 0,
