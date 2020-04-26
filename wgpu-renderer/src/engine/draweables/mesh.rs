@@ -94,7 +94,7 @@ impl Drawable for Mesh {
             depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
                 format: wgpu::TextureFormat::Depth32Float,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
+                depth_compare: wgpu::CompareFunction::GreaterEqual,
                 stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
                 stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
                 stencil_read_mask: 0,
@@ -135,7 +135,7 @@ impl Drawable for Mesh {
         });
 
         render_pass.set_pipeline(&ctx.gfx.get_pipeline::<Self>().pipeline);
-        render_pass.set_bind_group(1, &ctx.gfx.projection.bindgroup, &[]);
+        render_pass.set_bind_group(0, &ctx.gfx.projection.bindgroup, &[]);
         render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
         render_pass.set_index_buffer(&self.index_buffer, 0, 0);
         render_pass.draw_indexed(0..self.n_indices, 0, 0..1);

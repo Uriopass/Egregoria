@@ -1,6 +1,6 @@
 use crate::engine::{MeshBuilder, Vertex};
 use crate::geometry::rect::Rect;
-use cgmath::{vec2, vec3, InnerSpace, Vector2};
+use cgmath::{vec2, InnerSpace, Vector2};
 use scale::rendering::Color;
 
 pub struct Tesselator {
@@ -40,7 +40,8 @@ impl Tesselator {
             return false;
         }
 
-        let n_points = (r * self.zoom) as usize;
+        let n_points = ((r * self.zoom) as usize).max(4);
+        let n_pointsu32 = n_points as u32;
 
         let color = self.color.into();
         let mut points = Vec::with_capacity(n_points);
@@ -51,7 +52,7 @@ impl Tesselator {
 
         let mut indices = Vec::with_capacity(n_points * 3);
 
-        for i in 0..n_points as u32 {
+        for i in 0..n_pointsu32 {
             let v = std::f32::consts::PI * 2.0 * (i as f32) / n_points as f32;
             let trans = r * vec2(v.cos(), v.sin());
             points.push(Vertex {
@@ -60,7 +61,11 @@ impl Tesselator {
             });
             indices.push(0);
             indices.push(i + 1);
-            indices.push(i + 2);
+            if i == n_pointsu32 - 1 {
+                indices.push(1);
+            } else {
+                indices.push(i + 2);
+            }
         }
 
         self.meshbuilder.extend(&points, &indices);
@@ -90,7 +95,12 @@ impl Tesselator {
 
         let points: [Vector2<_>; 4] = [a + b + pxy, a - b + pxy, -a - b + pxy, -a + b + pxy];
 
-        let color = self.color.into();
+        let mut color: [f32; 4] = self.color.into();
+
+        for x in color.iter_mut() {
+            *x = from_srgb(*x);
+        }
+
         let verts: [Vertex; 4] = [
             Vertex {
                 position: [points[0].x, points[0].y, z],
@@ -123,7 +133,7 @@ impl Tesselator {
         if self.cull
             && !self
                 .screen_box
-                .intersects_line_within(p1, p2, thickness / 2.0)
+                .intersects_line_within(p1, p2, thickness * 0.5)
         {
             return false;
         }
@@ -138,7 +148,11 @@ impl Tesselator {
 
         let points: [Vector2<f32>; 4] = [p1 - nor, p1 + nor, p2 + nor, p2 - nor];
 
-        let color = self.color.into();
+        let mut color: [f32; 4] = self.color.into();
+
+        for x in color.iter_mut() {
+            *x = from_srgb(*x);
+        }
 
         let verts: [Vertex; 4] = [
             Vertex {
@@ -183,6 +197,6 @@ impl Tesselator {
     }
 
     pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>, z: f32) -> bool {
-        self.draw_stroke(p1, p2, z, 0.5 / self.zoom)
+        self.draw_stroke(p1, p2, z, 1.0 / self.zoom)
     }
 }

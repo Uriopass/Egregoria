@@ -5,7 +5,7 @@ layout(location=1) in vec4 a_color;
 
 layout(location=0) out vec4 v_color;
 
-layout(set=1, binding=0)
+layout(set=0, binding=0)
 uniform Uniforms {
     mat4 u_view_proj;
 };

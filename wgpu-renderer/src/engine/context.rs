@@ -40,9 +40,9 @@ impl Context {
     pub fn start(mut self, mut state: game_loop::State<'static>, el: EventLoop<()>) {
         let clear_screen = ClearScreen {
             clear_color: Color {
-                r: 0.5,
-                g: 0.5,
-                b: 0.5,
+                r: 0.0,
+                g: 0.0,
+                b: 0.0,
                 a: 1.0,
             },
         };

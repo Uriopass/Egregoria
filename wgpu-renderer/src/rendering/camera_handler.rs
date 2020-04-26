@@ -1,6 +1,6 @@
 use crate::engine::Context;
-use crate::geometry::Camera;
 use crate::geometry::Rect;
+use crate::geometry::{Camera, Tesselator};
 use cgmath::{vec2, Vector2};
 use scale::engine_interaction::{KeyCode, MouseButton};
 
@@ -19,6 +19,10 @@ impl CameraHandler {
             camera: Camera::new(width, height, zoom),
             last_pos: vec2(0.0, 0.0),
         }
+    }
+
+    pub fn zoom(&self) -> f32 {
+        self.camera.zoom
     }
 
     pub fn center_camera(&mut self, ctx: &mut Context) {
@@ -43,6 +47,10 @@ impl CameraHandler {
             w: downright.x - upleft.x,
             h: upleft.y - downright.y,
         }
+    }
+
+    pub fn culled_tesselator(&self) -> Tesselator {
+        Tesselator::new(self.get_screen_box(), self.zoom(), true)
     }
 
     pub fn projection(&self) -> cgmath::Matrix4<f32> {

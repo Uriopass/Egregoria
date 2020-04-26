@@ -1,12 +1,15 @@
-use crate::engine::{Context, FrameContext, GfxContext};
+use crate::engine::{Context, Drawable, FrameContext, GfxContext};
+use crate::geometry::Tesselator;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
-use crate::rendering::{CameraHandler, InstancedRender};
+use crate::rendering::{CameraHandler, InstancedRender, RoadRenderer};
 use cgmath::Vector2;
 use rodio::{Decoder, Source};
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
+use scale::map_model::{Map, MapUIState};
 use scale::physics::Transform;
+use scale::rendering::Color;
 use scale::specs::RunNow;
 use scale::specs::WorldExt;
 use std::fs::File;
@@ -22,6 +25,8 @@ pub struct State<'a> {
     time_sync: f64,
     last_time: Instant,
     instanced_renderer: InstancedRender,
+    road_renderer: RoadRenderer,
+    grid: bool,
 }
 
 const TIME_STEP: f64 = 1.0 / 50.0;
@@ -52,6 +57,8 @@ impl<'a> State<'a> {
             time_sync: 0.0,
             last_time: Instant::now(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
+            road_renderer: RoadRenderer::new(),
+            grid: true,
         }
     }
 
@@ -81,10 +88,69 @@ impl<'a> State<'a> {
     }
 
     pub fn render(&mut self, ctx: &mut FrameContext) {
+        let time: TimeInfo = *self.world.read_resource::<TimeInfo>();
+
+        let mut tess = self.camera.culled_tesselator();
+        // Render grid
+        if self.grid && self.camera.zoom() > 3.0 {
+            let gray_maj = (self.camera.zoom() / 40.0).min(0.2);
+            let gray_min = gray_maj / 2.0;
+            if self.camera.zoom() > 6.0 {
+                self.draw_grid(
+                    &mut tess,
+                    1.0,
+                    Color::new(gray_min, gray_min, gray_min, 1.0),
+                );
+            }
+            self.draw_grid(
+                &mut tess,
+                10.0,
+                Color::new(gray_maj, gray_maj, gray_maj, 1.0),
+            );
+        }
+
+        self.road_renderer.render(
+            &self.world.read_resource::<Map>(),
+            time.time_seconds,
+            &mut tess,
+            &self.camera,
+            ctx,
+            self.world.read_resource::<MapUIState>().map_render_dirty,
+        );
+
         self.instanced_renderer.render(&mut self.world, ctx);
+
+        tess.meshbuilder.build(ctx.gfx).map(|x| x.draw(ctx));
+
         let mut gui = (*self.world.read_resource::<Gui>()).clone();
         self.gui.render(ctx, &mut self.world, &mut gui);
         *self.world.write_resource::<Gui>() = gui;
+    }
+
+    pub fn draw_grid(&mut self, tess: &mut Tesselator, grid_size: f32, color: Color) {
+        let screen = tess.screen_box;
+
+        let mut x = (screen.x / grid_size).ceil() * grid_size;
+        tess.color = color;
+        while x < screen.x + screen.w {
+            tess.draw_line(
+                Vector2::new(x, screen.y),
+                Vector2::new(x, screen.y + screen.h),
+                0.01,
+            );
+            x += grid_size;
+        }
+
+        let mut y = (screen.y / grid_size).ceil() * grid_size;
+        while y < screen.y + screen.h {
+            tess.draw_line(
+                Vector2::new(screen.x, y),
+                Vector2::new(screen.x + screen.w, y),
+                0.01,
+            );
+            x += grid_size;
+            y += grid_size;
+        }
     }
 
     fn manage_timestep(&mut self, delta: f64) {

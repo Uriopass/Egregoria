@@ -44,7 +44,7 @@ impl Drawable for ClearScreen {
                     depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
                         format: wgpu::TextureFormat::Depth32Float,
                         depth_write_enabled: true,
-                        depth_compare: wgpu::CompareFunction::Less,
+                        depth_compare: wgpu::CompareFunction::GreaterEqual,
                         stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
                         stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
                         stencil_read_mask: 0,
@@ -75,7 +75,7 @@ impl Drawable for ClearScreen {
                 attachment: &ctx.gfx.depth_texture.view,
                 depth_load_op: wgpu::LoadOp::Clear,
                 depth_store_op: wgpu::StoreOp::Store,
-                clear_depth: 1.0,
+                clear_depth: 0.0,
                 stencil_load_op: wgpu::LoadOp::Clear,
                 stencil_store_op: wgpu::StoreOp::Store,
                 clear_stencil: 0,
