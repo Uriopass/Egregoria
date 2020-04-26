@@ -37,6 +37,8 @@ pub enum MouseButton {
 }
 
 pub struct MouseInfo {
+    pub wheel_delta: f32,
+    pub screen: Vec2,
     pub unprojected: Vec2,
     pub buttons: HashSet<MouseButton>,
     pub just_pressed: HashSet<MouseButton>,
@@ -45,6 +47,8 @@ pub struct MouseInfo {
 impl Default for MouseInfo {
     fn default() -> Self {
         MouseInfo {
+            wheel_delta: 0.0,
+            screen: vec2!(0.0, 0.0),
             unprojected: vec2!(0.0, 0.0),
             buttons: HashSet::new(),
             just_pressed: HashSet::new(),
@@ -55,6 +59,7 @@ impl Default for MouseInfo {
 pub struct KeyboardInfo {
     pub just_pressed: HashSet<KeyCode>,
     pub is_pressed: HashSet<KeyCode>,
+    pub last_characters: Vec<char>,
 }
 
 impl Default for KeyboardInfo {
@@ -62,6 +67,7 @@ impl Default for KeyboardInfo {
         KeyboardInfo {
             just_pressed: HashSet::new(),
             is_pressed: HashSet::new(),
+            last_characters: Vec::with_capacity(4),
         }
     }
 }

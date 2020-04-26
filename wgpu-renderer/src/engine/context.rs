@@ -37,7 +37,7 @@ impl Context {
         (Self { gfx, input, audio }, event_loop)
     }
 
-    pub fn start(mut self, mut state: game_loop::State, el: EventLoop<()>) {
+    pub fn start(mut self, mut state: game_loop::State<'static>, el: EventLoop<()>) {
         let clear_screen = ClearScreen {
             clear_color: Color {
                 r: 0.5,
@@ -52,6 +52,7 @@ impl Context {
 
         el.run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Poll;
+            state.event(&self.gfx, &event);
             match event {
                 Event::WindowEvent { event, .. } => {
                     let managed = self.input.handle(&event);

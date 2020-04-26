@@ -35,6 +35,7 @@ pub mod physics;
 pub mod rendering;
 pub mod vehicles;
 
+pub use imgui;
 pub use specs;
 use specs::shrev::EventChannel;
 

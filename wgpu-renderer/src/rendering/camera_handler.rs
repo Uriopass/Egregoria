@@ -1,8 +1,8 @@
-use crate::engine::MouseButton;
-use crate::engine::{Context, KeyCode};
+use crate::engine::Context;
 use crate::geometry::Camera;
 use crate::geometry::Rect;
 use cgmath::{vec2, Vector2};
+use scale::engine_interaction::{KeyCode, MouseButton};
 
 #[allow(dead_code)]
 pub struct CameraHandler {
