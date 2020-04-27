@@ -12,10 +12,9 @@ layout(set = 0, binding = 1) uniform sampler s_diffuse;
 void main() {
     vec4 col = texture(sampler2D(t_diffuse, s_diffuse), in_uv);
 
-    /*
-    if (col.a * in_color.a < 0.1) {
-        discard;
-    }*/
-
     out_color = col * in_color;
+
+    if (out_color.a < 0.1) {
+        discard;
+    }
 }
