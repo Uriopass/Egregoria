@@ -68,7 +68,7 @@ impl RoadRenderer {
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                sr.draw_polyline(&p, first_dir, last_dir, 0.1, w + 0.5);
+                sr.draw_polyline_with_dir(&p, first_dir, last_dir, 0.1, w + 0.5);
 
                 sr.color = match turn.kind {
                     TurnKind::Crosswalk => unreachable!(),
@@ -79,7 +79,7 @@ impl RoadRenderer {
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                sr.draw_polyline(&p, first_dir, last_dir, 0.2, w - 0.5);
+                sr.draw_polyline_with_dir(&p, first_dir, last_dir, 0.2, w - 0.5);
             }
         }
     }

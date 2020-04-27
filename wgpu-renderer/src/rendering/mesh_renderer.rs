@@ -16,6 +16,15 @@ impl MeshRenderer {
             }
             for order in &mr.orders {
                 match order {
+                    MeshRenderEnum::StrokeCircle(x) => {
+                        tess.color = x.color.into();
+                        tess.draw_stroke_circle(
+                            trans.project(x.offset),
+                            mr.z,
+                            x.radius,
+                            x.thickness,
+                        );
+                    }
                     MeshRenderEnum::Circle(x) => {
                         tess.color = x.color.into();
                         tess.draw_circle(trans.project(x.offset), mr.z, x.radius);

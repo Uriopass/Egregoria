@@ -11,6 +11,7 @@ use specs::{Component, DenseVecStorage, Entity, World};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MeshRenderEnum {
+    StrokeCircle(StrokeCircleRender),
     Circle(CircleRender),
     Rect(RectRender),
     #[serde(skip)]
@@ -58,6 +59,11 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
         let mre = &mut data[0];
 
         match mre {
+            MeshRenderEnum::StrokeCircle(x) => <StrokeCircleRender as InspectRenderDefault<
+                StrokeCircleRender,
+            >>::render_mut(
+                &mut [x], label, world, ui, args
+            ),
             MeshRenderEnum::Circle(x) => {
                 <CircleRender as InspectRenderDefault<CircleRender>>::render_mut(
                     &mut [x],
@@ -98,29 +104,21 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
     }
 }
 
-impl From<CircleRender> for MeshRenderEnum {
-    fn from(x: CircleRender) -> Self {
-        MeshRenderEnum::Circle(x)
-    }
+macro_rules! mk_from_mr {
+    ($t: ty; $p: expr) => {
+        impl From<$t> for MeshRenderEnum {
+            fn from(x: $t) -> Self {
+                $p(x)
+            }
+        }
+    };
 }
 
-impl From<RectRender> for MeshRenderEnum {
-    fn from(x: RectRender) -> Self {
-        MeshRenderEnum::Rect(x)
-    }
-}
-
-impl From<LineToRender> for MeshRenderEnum {
-    fn from(x: LineToRender) -> Self {
-        MeshRenderEnum::LineTo(x)
-    }
-}
-
-impl From<LineRender> for MeshRenderEnum {
-    fn from(x: LineRender) -> Self {
-        MeshRenderEnum::Line(x)
-    }
-}
+mk_from_mr!(StrokeCircleRender; |x| MeshRenderEnum::StrokeCircle(x));
+mk_from_mr!(CircleRender; |x| MeshRenderEnum::Circle(x));
+mk_from_mr!(RectRender; |x| MeshRenderEnum::Rect(x));
+mk_from_mr!(LineRender; |x| MeshRenderEnum::Line(x));
+mk_from_mr!(LineToRender; |x| MeshRenderEnum::LineTo(x));
 
 #[derive(Clone, Serialize, Deserialize, Component)]
 pub struct MeshRender {
@@ -201,10 +199,32 @@ pub struct CircleRender {
 
 impl Default for CircleRender {
     fn default() -> Self {
-        CircleRender {
+        Self {
             offset: zero(),
             radius: 0.0,
             color: Color::WHITE,
+        }
+    }
+}
+
+#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
+pub struct StrokeCircleRender {
+    #[inspect(proxy_type = "InspectVec2")]
+    pub offset: Vec2,
+    #[inspect(proxy_type = "InspectDragf")]
+    pub radius: f32,
+    pub color: Color,
+    #[inspect(proxy_type = "InspectDragf")]
+    pub thickness: f32,
+}
+
+impl Default for StrokeCircleRender {
+    fn default() -> Self {
+        Self {
+            offset: zero(),
+            radius: 0.0,
+            color: Color::WHITE,
+            thickness: 0.1,
         }
     }
 }
@@ -222,7 +242,7 @@ pub struct RectRender {
 
 impl Default for RectRender {
     fn default() -> Self {
-        RectRender {
+        Self {
             offset: [0.0, 0.0].into(),
             width: 0.0,
             height: 0.0,
