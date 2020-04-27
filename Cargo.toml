@@ -1,13 +1,10 @@
 [workspace]
 members = [
     "scale",
-    "ggez-renderer",
     "imgui-inspect",
     "imgui-inspect-derive",
     "wgpu-renderer"
 ]
-
-default-members = ["wgpu-renderer"]
 
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]
@@ -19,7 +16,7 @@ opt-level = 2
 [profile.dev.package.scale]
 opt-level = 1
 
-[profile.dev.package.ggez-renderer]
+[profile.dev.package.wgpu-renderer]
 opt-level = 1
 
 [profile.dev.package.imgui-inspect]
