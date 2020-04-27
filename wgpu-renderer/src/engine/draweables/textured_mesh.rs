@@ -35,7 +35,7 @@ impl TexturedMeshBuilder {
     }
 
     pub fn build(&self, gfx: &GfxContext, tex: Texture) -> Option<TexturedMesh> {
-        if self.vertices.len() == 0 {
+        if self.vertices.is_empty() {
             return None;
         }
 
@@ -70,7 +70,7 @@ impl TexturedMeshBuilder {
             index_buffer,
             n_indices: self.indices.len() as u32,
             alpha_blend: false,
-            tex: tex.clone(),
+            tex,
             bind_group,
         })
     }

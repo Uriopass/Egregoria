@@ -31,7 +31,7 @@ impl InputContext {
                     },
                 ..
             } => {
-                let code = to_scale_kc(kc);
+                let code = to_scale_kc(*kc);
                 match state {
                     ElementState::Pressed => {
                         self.keyboard.is_pressed.insert(code);
@@ -48,7 +48,7 @@ impl InputContext {
                 true
             }
             WindowEvent::MouseInput { button, state, .. } => {
-                let b = to_scale_mb(button);
+                let b = to_scale_mb(*button);
                 match state {
                     ElementState::Pressed => {
                         self.mouse.just_pressed.insert(b);
@@ -60,11 +60,11 @@ impl InputContext {
                 };
                 true
             }
-            WindowEvent::MouseWheel { delta, .. } => {
-                match delta {
-                    MouseScrollDelta::LineDelta(_, y) => self.mouse.wheel_delta = *y,
-                    _ => {}
-                }
+            WindowEvent::MouseWheel {
+                delta: MouseScrollDelta::LineDelta(_, y),
+                ..
+            } => {
+                self.mouse.wheel_delta = *y;
                 true
             }
             _ => false,
@@ -72,16 +72,16 @@ impl InputContext {
     }
 }
 
-fn to_scale_mb(x: &winit::event::MouseButton) -> MouseButton {
+fn to_scale_mb(x: winit::event::MouseButton) -> MouseButton {
     match x {
         winit::event::MouseButton::Left => MouseButton::Left,
         winit::event::MouseButton::Right => MouseButton::Right,
         winit::event::MouseButton::Middle => MouseButton::Middle,
-        winit::event::MouseButton::Other(v) => MouseButton::Other(*v),
+        winit::event::MouseButton::Other(v) => MouseButton::Other(v),
     }
 }
 
-fn to_scale_kc(x: &VirtualKeyCode) -> KeyCode {
+fn to_scale_kc(x: VirtualKeyCode) -> KeyCode {
     match x {
         winit::event::VirtualKeyCode::Key1 => KeyCode::Key1,
         winit::event::VirtualKeyCode::Key2 => KeyCode::Key2,
