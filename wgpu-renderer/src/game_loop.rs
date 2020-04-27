@@ -34,12 +34,12 @@ impl<'a> State<'a> {
     pub fn new(ctx: &mut Context) -> Self {
         let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 10.0);
 
-        let mut buf = vec![];
+        /*let mut buf = vec![];
         File::open("resources/music.mp3")
             .unwrap()
             .read_to_end(&mut buf)
             .unwrap();
-        /*let source = Decoder::new(std::io::Cursor::new(buf)).unwrap();
+        let source = Decoder::new(std::io::Cursor::new(buf)).unwrap();
                 ctx.audio
                     .play_sound(source.fade_in(Duration::new(1, 0)).repeat_infinite(), 0.02);
         */
