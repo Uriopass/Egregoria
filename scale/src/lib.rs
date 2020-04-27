@@ -1,5 +1,6 @@
 #![windows_subsystem = "windows"]
 #![allow(clippy::unreadable_literal)]
+#![allow(clippy::block_in_if_condition_stmt)]
 
 use crate::engine_interaction::{KeyboardInfo, RenderStats, TimeInfo};
 use crate::geometry::gridstore::GridStore;

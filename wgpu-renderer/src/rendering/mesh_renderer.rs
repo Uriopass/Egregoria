@@ -6,7 +6,7 @@ use scale::specs::{Join, World, WorldExt};
 pub struct MeshRenderer;
 
 impl MeshRenderer {
-    pub fn render(&mut self, world: &mut World, tess: &mut Tesselator) {
+    pub fn render(world: &mut World, tess: &mut Tesselator) {
         let transforms = world.read_component::<Transform>();
         let mesh_render = world.read_component::<MeshRender>();
 

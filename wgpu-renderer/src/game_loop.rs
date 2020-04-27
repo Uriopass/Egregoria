@@ -1,7 +1,7 @@
 use crate::engine::{Context, Drawable, FrameContext, GfxContext};
 use crate::geometry::Tesselator;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
-use crate::rendering::{CameraHandler, InstancedRender, RoadRenderer};
+use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use cgmath::Vector2;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
@@ -112,6 +112,8 @@ impl<'a> State<'a> {
         );
 
         self.instanced_renderer.render(&mut self.world, ctx);
+
+        MeshRenderer::render(&mut self.world, &mut tess);
 
         if let Some(x) = tess.meshbuilder.build(ctx.gfx) {
             x.draw(ctx)

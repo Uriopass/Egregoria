@@ -112,7 +112,7 @@ impl SpriteBatchBuilder {
             },
         ];
 
-        if self.instances.len() == 0 {
+        if self.instances.is_empty() {
             return None;
         }
 

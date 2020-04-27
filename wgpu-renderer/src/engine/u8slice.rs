@@ -23,8 +23,9 @@ unsafe impl bytemuck::Pod for Matrix4NT {}
 unsafe impl bytemuck::Zeroable for Matrix4NT {}
 
 impl ToU8Slice for [cgmath::Matrix4<f32>] {
-    fn to_slice(&self) -> &[u8] {
-        let v: &[Matrix4NT] = unsafe { std::mem::transmute(self) };
+    fn to_slice<'a>(&'a self) -> &'a [u8] {
+        let v: &'a [Matrix4NT] =
+            unsafe { &*(self as *const [cgmath::Matrix4<f32>] as *const [Matrix4NT]) };
         bytemuck::cast_slice(v)
     }
 }

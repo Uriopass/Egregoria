@@ -35,7 +35,7 @@ impl MeshBuilder {
     }
 
     pub fn build(self, ctx: &GfxContext) -> Option<Mesh> {
-        if self.vertices.len() == 0 {
+        if self.vertices.is_empty() {
             return None;
         }
         let vertex_buffer = ctx.device.create_buffer_with_data(
