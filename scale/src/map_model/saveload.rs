@@ -192,9 +192,9 @@ pub fn load(world: &mut World) {
     for (_, inter) in map.intersections() {
         make_inter_entity(
             inter,
-            inter.pos,
             &world.read_resource::<LazyUpdate>(),
             &world.entities(),
+            &world.read_resource::<Map>(),
         );
     }
 }

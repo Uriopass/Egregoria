@@ -1,7 +1,7 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::splines::Spline;
 use crate::map_model::{IntersectionID, LaneID, Lanes};
-use cgmath::{Array, InnerSpace};
+use cgmath::{Angle, Array, InnerSpace};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, PartialOrd, Ord, Deserialize, PartialEq, Eq)]
@@ -37,6 +37,10 @@ pub struct Turn {
     pub kind: TurnKind,
 }
 
+const TURN_ANG_ADD: f32 = 0.29;
+const TURN_ANG_MUL: f32 = 0.36;
+const TURN_MUL: f32 = 0.46;
+
 impl Turn {
     pub fn new(id: TurnID, kind: TurnKind) -> Self {
         Self {
@@ -63,10 +67,17 @@ impl Turn {
             return;
         }
 
-        let dist = (pos_dst - pos_src).magnitude() / 2.0;
+        let src_dir = src_lane.get_orientation_vec();
+        let dst_dir = dst_lane.get_orientation_vec();
 
-        let derivative_src = src_lane.get_orientation_vec() * dist;
-        let derivative_dst = dst_lane.get_orientation_vec() * dist;
+        let ang = src_dir.angle(dst_dir);
+
+        let dist = (pos_dst - pos_src).magnitude()
+            * (TURN_ANG_ADD + ang.normalize_signed().0.abs() * TURN_ANG_MUL)
+            * TURN_MUL;
+
+        let derivative_src = src_dir * dist;
+        let derivative_dst = dst_dir * dist;
 
         let spline = Spline {
             from: pos_src,

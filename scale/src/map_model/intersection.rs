@@ -68,6 +68,25 @@ impl Intersection {
         self.update_traffic_control(lanes, roads);
     }
 
+    pub fn get_barycenter(&self, roads: &Roads, lanes: &Lanes) -> Vec2 {
+        let mut n_lanes = 0;
+        let mut barycenter = vec2!(0.0, 0.0);
+
+        for road_id in &self.roads {
+            for lane_id in roads[*road_id].lanes_iter() {
+                let lane = &lanes[*lane_id];
+                barycenter += lane.get_inter_node_pos(self.id);
+                n_lanes += 1;
+            }
+        }
+
+        if n_lanes == 0 {
+            self.pos
+        } else {
+            barycenter / (n_lanes as f32)
+        }
+    }
+
     pub fn gen_turns(&mut self, lanes: &Lanes, roads: &Roads) {
         let turns = self.turn_policy.generate_turns(self, lanes, roads);
 

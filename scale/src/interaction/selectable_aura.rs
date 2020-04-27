@@ -1,6 +1,6 @@
 use crate::interaction::SelectedEntity;
 use crate::physics::Transform;
-use crate::rendering::meshrender_component::{CircleRender, MeshRender};
+use crate::rendering::meshrender_component::{MeshRender, StrokeCircleRender};
 use crate::rendering::Color;
 use specs::prelude::*;
 use specs::shred::DynamicSystemData;
@@ -35,10 +35,11 @@ impl<'a> System<'a> for SelectableAuraSystem {
     fn setup(&mut self, world: &mut World) {
         <Self::SystemData as DynamicSystemData>::setup(&self.accessor(), world);
         let mut mr = MeshRender::simple(
-            CircleRender {
+            StrokeCircleRender {
                 offset: [0.0, 0.0].into(),
                 color: Color::gray(0.7),
                 radius: 3.0,
+                thickness: 0.1,
             },
             0.9,
         );
