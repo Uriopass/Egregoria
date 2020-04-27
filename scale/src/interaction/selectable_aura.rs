@@ -37,11 +37,10 @@ impl<'a> System<'a> for SelectableAuraSystem {
         let mut mr = MeshRender::simple(
             CircleRender {
                 offset: [0.0, 0.0].into(),
-                filled: false,
                 color: Color::gray(0.7),
                 radius: 3.0,
             },
-            9,
+            0.9,
         );
         mr.hide = true;
         self.aura = Some(
