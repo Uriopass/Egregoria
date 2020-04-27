@@ -1,5 +1,4 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use crate::geometry::Vec2;
 use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity};
 use crate::map_model::{Intersection, IntersectionComponent, LanePatternBuilder, Map};
 use crate::physics::Transform;
@@ -74,9 +73,9 @@ impl<'a> System<'a> for MapUISystem {
             }
             let e = make_inter_entity(
                 &data.map.intersections()[id],
-                data.mouseinfo.unprojected,
                 &data.lazy,
                 &data.entities,
+                &data.map,
             );
             println!("{:?}", e);
             data.selected.e = Some(e);
@@ -123,9 +122,9 @@ impl<'a> System<'a> for MapUISystem {
                 data.map.connect(lol.id, id, &state.pattern_builder.build());
                 let e = make_inter_entity(
                     &data.map.intersections()[id],
-                    data.mouseinfo.unprojected,
                     &data.lazy,
                     &data.entities,
+                    &data.map,
                 );
                 data.selected.e = Some(e);
             }
@@ -182,15 +181,15 @@ impl MapUIState {
                         .with(Transform::new(mouse.unprojected))
                         .with(
                             MeshRender::empty(0.9)
+                                .add(CircleRender {
+                                    radius: 2.0,
+                                    color,
+                                    ..Default::default()
+                                })
                                 .add(LineToRender {
                                     to: selected,
                                     color,
                                     thickness: 4.0,
-                                })
-                                .add(CircleRender {
-                                    radius: 2.0,
-                                    color: Color::BLUE,
-                                    ..Default::default()
                                 })
                                 .build(),
                         )
@@ -224,9 +223,9 @@ impl MapUIState {
 
 pub fn make_inter_entity<'a>(
     inter: &Intersection,
-    inter_pos: Vec2,
     lazy: &LazyUpdate,
     entities: &Entities<'a>,
+    map: &Map,
 ) -> Entity {
     lazy.create_entity(entities)
         .with(IntersectionComponent {
@@ -235,19 +234,18 @@ pub fn make_inter_entity<'a>(
             turn_policy: inter.turn_policy,
             light_policy: inter.light_policy,
         })
-        /*.with(MeshRender::simple(
+        .with(MeshRender::simple(
             CircleRender {
                 radius: 2.0,
                 color: Color {
-                    a: 0.5,
+                    a: 0.2,
                     ..Color::BLUE
                 },
-                filled: true,
                 ..CircleRender::default()
             },
-            2,
-        ))*/
-        .with(Transform::new(inter_pos))
+            0.2,
+        ))
+        .with(Transform::new(inter.pos))
         .with(Movable)
         .with(Selectable::new(10.0))
         .build()
