@@ -103,42 +103,36 @@ impl VehicleKind {
                     height: 1.8,
                     offset: [-1.7, 0.0].into(),
                     color: Color::BLACK,
-                    ..Default::default()
                 })
                 .add(RectRender {
                     width: 1.0,
                     height: 1.6,
                     offset: [0.8, 0.0].into(),
                     color: Color::BLACK,
-                    ..Default::default()
                 })
                 .add(RectRender {
                     width: 2.7,
                     height: 0.15,
                     offset: [-0.4, 0.85].into(),
                     color: Color::BLACK,
-                    ..Default::default()
                 })
                 .add(RectRender {
                     width: 2.7,
                     height: 0.15,
                     offset: [-0.4, -0.85].into(),
                     color: Color::BLACK,
-                    ..Default::default()
                 })
                 .add(RectRender {
                     width: 0.4,
                     height: 0.15,
                     offset: [2.1, -0.7].into(),
                     color: Color::BLACK,
-                    ..Default::default()
                 })
                 .add(RectRender {
                     width: 0.4,
                     height: 0.15,
                     offset: [2.1, 0.7].into(),
                     color: Color::BLACK,
-                    ..Default::default()
                 });
             }
             VehicleKind::Bus => {
@@ -181,7 +175,7 @@ pub fn make_vehicle_entity(
     trans: Transform,
     vehicle: VehicleComponent,
 ) -> Entity {
-    let mut mr = MeshRender::empty(3);
+    let mut mr = MeshRender::empty(0.3);
     vehicle.kind.build_mr(&mut mr);
 
     let coworld = world.get_mut::<CollisionWorld>().unwrap();

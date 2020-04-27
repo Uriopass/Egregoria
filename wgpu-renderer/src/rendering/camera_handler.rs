@@ -50,7 +50,7 @@ impl CameraHandler {
     }
 
     pub fn culled_tesselator(&self) -> Tesselator {
-        Tesselator::new(self.get_screen_box(), self.zoom(), true)
+        Tesselator::new(Some(self.get_screen_box()), self.zoom())
     }
 
     pub fn projection(&self) -> cgmath::Matrix4<f32> {

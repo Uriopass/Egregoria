@@ -8,7 +8,7 @@ use scale::gui::Gui;
 use scale::interaction::FollowEntity;
 use scale::map_model::{Map, MapUIState};
 use scale::physics::Transform;
-use scale::rendering::Color;
+use scale::rendering::{Color, LinearColor};
 use scale::specs::RunNow;
 use scale::specs::WorldExt;
 use std::fs::File;
@@ -87,6 +87,8 @@ impl<'a> State<'a> {
     }
 
     pub fn render(&mut self, ctx: &mut FrameContext) {
+        let start = Instant::now();
+
         let time: TimeInfo = *self.world.read_resource::<TimeInfo>();
 
         let mut tess = self.camera.culled_tesselator();
@@ -95,17 +97,9 @@ impl<'a> State<'a> {
             let gray_maj = (self.camera.zoom() / 40.0).min(0.2);
             let gray_min = gray_maj / 2.0;
             if self.camera.zoom() > 6.0 {
-                self.draw_grid(
-                    &mut tess,
-                    1.0,
-                    Color::new(gray_min, gray_min, gray_min, 1.0),
-                );
+                tess.draw_grid(1.0, Color::new(gray_min, gray_min, gray_min, 1.0));
             }
-            self.draw_grid(
-                &mut tess,
-                10.0,
-                Color::new(gray_maj, gray_maj, gray_maj, 1.0),
-            );
+            tess.draw_grid(10.0, Color::new(gray_maj, gray_maj, gray_maj, 1.0));
         }
 
         self.road_renderer.render(
@@ -119,37 +113,16 @@ impl<'a> State<'a> {
 
         self.instanced_renderer.render(&mut self.world, ctx);
 
-        tess.meshbuilder.build(ctx.gfx).map(|x| x.draw(ctx));
+        if let Some(x) = tess.meshbuilder.build(ctx.gfx) {
+            x.draw(ctx)
+        }
 
         let mut gui = (*self.world.read_resource::<Gui>()).clone();
         self.gui.render(ctx, &mut self.world, &mut gui);
         *self.world.write_resource::<Gui>() = gui;
-    }
 
-    pub fn draw_grid(&mut self, tess: &mut Tesselator, grid_size: f32, color: Color) {
-        let screen = tess.screen_box;
-
-        let mut x = (screen.x / grid_size).ceil() * grid_size;
-        tess.color = color;
-        while x < screen.x + screen.w {
-            tess.draw_line(
-                Vector2::new(x, screen.y),
-                Vector2::new(x, screen.y + screen.h),
-                0.01,
-            );
-            x += grid_size;
-        }
-
-        let mut y = (screen.y / grid_size).ceil() * grid_size;
-        while y < screen.y + screen.h {
-            tess.draw_line(
-                Vector2::new(screen.x, y),
-                Vector2::new(screen.x + screen.w, y),
-                0.01,
-            );
-            x += grid_size;
-            y += grid_size;
-        }
+        self.world.write_resource::<RenderStats>().render_time =
+            (Instant::now() - start).as_secs_f32();
     }
 
     fn manage_timestep(&mut self, delta: f64) {
@@ -221,5 +194,36 @@ impl<'a> State<'a> {
 
     pub fn unproject(&mut self, pos: Vector2<f32>) -> Vector2<f32> {
         self.camera.unproject_mouse_click(pos)
+    }
+}
+
+#[allow(dead_code)]
+fn debug_rays(tess: &mut Tesselator, time: TimeInfo) {
+    let c = time.time.cos() as f32;
+    let s = time.time.sin() as f32;
+
+    let r = scale::geometry::intersections::Ray {
+        from: 10.0 * Vector2::new(c, s),
+        dir: Vector2::new(
+            (time.time * 2.3 + 1.0).cos() as f32,
+            (time.time * 2.3 + 1.0).sin() as f32,
+        ),
+    };
+
+    let r2 = scale::geometry::intersections::Ray {
+        from: 10.0 * Vector2::new((time.time as f32 * 1.5 + 3.0).cos(), s * 2.0),
+        dir: Vector2::new(c, -s),
+    };
+
+    let inter = scale::geometry::intersections::intersection_point(r, r2);
+
+    tess.color = LinearColor::WHITE;
+    tess.draw_line(r.from, r.from + r.dir * 50.0, 0.5);
+    tess.draw_line(r2.from, r2.from + r2.dir * 50.0, 0.5);
+
+    if let Some(v) = inter {
+        tess.color = LinearColor::RED;
+
+        tess.draw_circle(v, 0.5, 2.0);
     }
 }

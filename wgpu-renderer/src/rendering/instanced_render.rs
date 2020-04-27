@@ -39,7 +39,9 @@ impl InstancedRender {
         }
 
         for x in &mut self.texs {
-            x.build(fctx.gfx).map(|x| x.draw(fctx));
+            if let Some(x) = x.build(fctx.gfx) {
+                x.draw(fctx)
+            }
         }
     }
 }

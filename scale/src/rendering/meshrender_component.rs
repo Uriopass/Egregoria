@@ -1,4 +1,3 @@
-use crate::engine_interaction::MAX_LAYERS;
 use crate::geometry::Vec2;
 use crate::gui::{ImEntity, InspectDragf, InspectVec, InspectVec2};
 use crate::rendering::colors::*;
@@ -127,24 +126,17 @@ impl From<LineRender> for MeshRenderEnum {
 pub struct MeshRender {
     pub orders: Vec<MeshRenderEnum>,
     pub hide: bool,
-    layer: u32,
+    pub z: f32,
 }
 
 #[allow(dead_code)]
 impl MeshRender {
-    pub fn empty(layer: u32) -> Self {
-        if layer >= MAX_LAYERS {
-            panic!("Invalid layer: {}", layer);
-        }
+    pub fn empty(z: f32) -> Self {
         MeshRender {
             orders: vec![],
             hide: false,
-            layer,
+            z,
         }
-    }
-
-    pub fn layer(&self) -> u32 {
-        self.layer
     }
 
     pub fn add<T: Into<MeshRenderEnum>>(&mut self, x: T) -> &mut Self {
@@ -152,14 +144,11 @@ impl MeshRender {
         self
     }
 
-    pub fn simple<T: Into<MeshRenderEnum>>(x: T, layer: u32) -> Self {
-        if layer >= MAX_LAYERS {
-            panic!("Invalid layer: {}", layer);
-        }
+    pub fn simple<T: Into<MeshRenderEnum>>(x: T, z: f32) -> Self {
         MeshRender {
             orders: vec![x.into()],
             hide: false,
-            layer,
+            z,
         }
     }
 
@@ -208,7 +197,6 @@ pub struct CircleRender {
     #[inspect(proxy_type = "InspectDragf")]
     pub radius: f32,
     pub color: Color,
-    pub filled: bool,
 }
 
 impl Default for CircleRender {
@@ -217,7 +205,6 @@ impl Default for CircleRender {
             offset: zero(),
             radius: 0.0,
             color: Color::WHITE,
-            filled: true,
         }
     }
 }
@@ -231,7 +218,6 @@ pub struct RectRender {
     #[inspect(proxy_type = "InspectDragf")]
     pub height: f32,
     pub color: Color,
-    pub filled: bool,
 }
 
 impl Default for RectRender {
@@ -241,7 +227,6 @@ impl Default for RectRender {
             width: 0.0,
             height: 0.0,
             color: Color::WHITE,
-            filled: true,
         }
     }
 }

@@ -66,20 +66,18 @@ pub fn spawn_pedestrian(world: &mut World) {
         .with(Kinematics::from_mass(80.0))
         .with(Movable)
         .with({
-            MeshRender::empty(3)
+            MeshRender::empty(0.3)
                 .add(RectRender {
                     height: 0.12,
                     width: 0.15,
                     offset: vec2!(0.0, 0.225),
                     color: Color::from_hex(0xFFCCA8),
-                    ..Default::default()
                 })
                 .add(RectRender {
                     height: 0.12,
                     width: 0.15,
                     offset: vec2!(0.0, -0.225),
                     color: Color::from_hex(0xFFCCA8),
-                    ..Default::default()
                 })
                 .add(RectRender {
                     height: 0.4,
@@ -91,13 +89,11 @@ pub fn spawn_pedestrian(world: &mut World) {
                     radius: 0.1,
                     color,
                     offset: vec2!(0.0, 0.2),
-                    ..Default::default()
                 })
                 .add(CircleRender {
                     radius: 0.1,
                     color,
                     offset: vec2!(0.0, -0.2),
-                    ..Default::default()
                 })
                 .add(CircleRender {
                     radius: 0.125,

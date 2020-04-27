@@ -104,6 +104,109 @@ impl Color {
     };
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct LinearColor {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32,
+}
+
+impl LinearColor {
+    pub fn gray(level: f32) -> Self {
+        let level = from_srgb(level);
+        Self {
+            r: level,
+            g: level,
+            b: level,
+            a: 1.0,
+        }
+    }
+
+    pub const TRANSPARENT: LinearColor = LinearColor {
+        r: 0.0,
+        g: 0.0,
+        b: 0.0,
+        a: 0.0,
+    };
+
+    pub const WHITE: LinearColor = LinearColor {
+        r: 1.0,
+        g: 1.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    pub const BLACK: LinearColor = LinearColor {
+        r: 0.0,
+        g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    pub const RED: LinearColor = LinearColor {
+        r: 1.0,
+        g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    pub const GREEN: LinearColor = LinearColor {
+        r: 0.0,
+        g: 1.0,
+        b: 0.0,
+        a: 1.0,
+    };
+
+    pub const BLUE: LinearColor = LinearColor {
+        r: 0.0,
+        g: 0.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    pub const CYAN: LinearColor = LinearColor {
+        r: 0.0,
+        g: 1.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    pub const MAGENTA: LinearColor = LinearColor {
+        r: 1.0,
+        g: 0.0,
+        b: 1.0,
+        a: 1.0,
+    };
+
+    pub const YELLOW: LinearColor = LinearColor {
+        r: 1.0,
+        g: 1.0,
+        b: 0.0,
+        a: 1.0,
+    };
+}
+
+fn from_srgb(component: f32) -> f32 {
+    let a = 0.055;
+    if component <= 0.04045 {
+        component / 12.92
+    } else {
+        ((component + a) / (1.0 + a)).powf(2.4)
+    }
+}
+
+impl From<Color> for LinearColor {
+    fn from(color: Color) -> Self {
+        LinearColor {
+            r: from_srgb(color.r),
+            g: from_srgb(color.g),
+            b: from_srgb(color.b),
+            a: color.a,
+        }
+    }
+}
+
 impl InspectRenderDefault<Color> for Color {
     fn render(_: &[&Color], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
         unimplemented!()
@@ -135,6 +238,12 @@ impl InspectRenderDefault<Color> for Color {
 }
 
 impl Into<[f32; 4]> for Color {
+    fn into(self) -> [f32; 4] {
+        [self.r, self.g, self.b, self.a]
+    }
+}
+
+impl Into<[f32; 4]> for LinearColor {
     fn into(self) -> [f32; 4] {
         [self.r, self.g, self.b, self.a]
     }

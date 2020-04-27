@@ -5,8 +5,8 @@ use crate::engine::{
 use lazy_static::*;
 
 pub struct MeshBuilder {
-    vertices: Vec<Vertex>,
-    indices: Vec<IndexType>,
+    pub vertices: Vec<Vertex>,
+    pub indices: Vec<IndexType>,
 }
 
 impl MeshBuilder {
@@ -22,6 +22,16 @@ impl MeshBuilder {
         self.vertices.extend_from_slice(vertices);
         self.indices.extend(indices.iter().map(|x| x + offset));
         self
+    }
+
+    pub fn extend_with(&mut self, f: impl Fn(&mut Vec<Vertex>, &mut dyn FnMut(IndexType)) -> ()) {
+        let offset = self.vertices.len() as IndexType;
+        let vertices = &mut self.vertices;
+        let indices = &mut self.indices;
+        let mut x = move |index: IndexType| {
+            indices.push(index + offset);
+        };
+        f(vertices, &mut x);
     }
 
     pub fn build(self, ctx: &GfxContext) -> Option<Mesh> {
