@@ -194,7 +194,6 @@ pub fn load(world: &mut World) {
             inter,
             &world.read_resource::<LazyUpdate>(),
             &world.entities(),
-            &world.read_resource::<Map>(),
         );
     }
 }

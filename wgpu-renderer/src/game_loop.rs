@@ -11,7 +11,7 @@ use scale::physics::Transform;
 use scale::rendering::{Color, LinearColor};
 use scale::specs::RunNow;
 use scale::specs::WorldExt;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
 pub struct State<'a> {
@@ -69,7 +69,7 @@ impl<'a> State<'a> {
 
         self.manage_io(ctx);
 
-        for i in 0..n_updates {
+        for _ in 0..n_updates {
             self.dispatcher.run_now(&self.world);
             self.world.maintain();
 
@@ -150,7 +150,7 @@ impl<'a> State<'a> {
         }
 
         time.delta = TIME_STEP as f32;
-        return (diff / TIME_STEP) as u32;
+        (diff / TIME_STEP) as u32
     }
 
     fn manage_entity_follow(&mut self) {
