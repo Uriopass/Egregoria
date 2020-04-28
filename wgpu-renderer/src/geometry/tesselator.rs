@@ -25,14 +25,25 @@ impl Tesselator {
 #[allow(dead_code)]
 impl Tesselator {
     pub fn draw_circle(&mut self, p: Vector2<f32>, z: f32, r: f32) -> bool {
+        let n_points = ((6.0 * (r * self.zoom).cbrt()) as usize).max(4);
+
+        self.draw_regular_polygon(p, z, r, n_points, 0.0)
+    }
+
+    pub fn draw_regular_polygon(
+        &mut self,
+        p: Vector2<f32>,
+        z: f32,
+        r: f32,
+        n_points: usize,
+        start_angle: f32,
+    ) -> bool {
         if r <= 0.0 || self.cull_rect.map_or(false, |x| !x.contains_within(p, r)) {
             return false;
         }
 
-        let n_points = ((6.0 * (r * self.zoom).cbrt()) as usize).max(4);
-        let n_pointsu32 = n_points as u32;
-
         let color = self.color.into();
+        let n_pointsu32 = n_points as u32;
 
         self.meshbuilder.extend_with(|vertices, index_push| {
             vertices.push(Vertex {
@@ -41,7 +52,7 @@ impl Tesselator {
             });
 
             for i in 0..n_pointsu32 {
-                let v = std::f32::consts::PI * 2.0 * (i as f32) / n_points as f32;
+                let v = std::f32::consts::PI * 2.0 * (i as f32) / n_points as f32 + start_angle;
                 let trans = r * vec2(v.cos(), v.sin());
                 vertices.push(Vertex {
                     position: (p + trans).extend(z).into(),
