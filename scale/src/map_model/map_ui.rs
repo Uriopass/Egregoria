@@ -74,12 +74,7 @@ impl<'a> System<'a> for MapUISystem {
                 data.map.connect(x.id, id, &state.pattern_builder.build());
                 state.map_render_dirty = true;
             }
-            let e = make_inter_entity(
-                &data.map.intersections()[id],
-                &data.lazy,
-                &data.entities,
-                &data.map,
-            );
+            let e = make_inter_entity(&data.map.intersections()[id], &data.lazy, &data.entities);
             println!("{:?}", e);
             data.selected.e = Some(e);
         }
@@ -123,12 +118,8 @@ impl<'a> System<'a> for MapUISystem {
                 let intersections = &data.intersections;
                 let lol = intersections.get(x).unwrap();
                 data.map.connect(lol.id, id, &state.pattern_builder.build());
-                let e = make_inter_entity(
-                    &data.map.intersections()[id],
-                    &data.lazy,
-                    &data.entities,
-                    &data.map,
-                );
+                let e =
+                    make_inter_entity(&data.map.intersections()[id], &data.lazy, &data.entities);
                 data.selected.e = Some(e);
             }
         }
@@ -230,7 +221,6 @@ pub fn make_inter_entity<'a>(
     inter: &Intersection,
     lazy: &LazyUpdate,
     entities: &Entities<'a>,
-    map: &Map,
 ) -> Entity {
     lazy.create_entity(entities)
         .with(IntersectionComponent {
