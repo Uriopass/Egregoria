@@ -4,6 +4,7 @@ use crate::gui::InspectDragf;
 use crate::map_model::{
     Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, Turn, TurnID, TurnPolicy,
 };
+use cgmath::{Angle, InnerSpace};
 use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -55,7 +56,7 @@ impl Intersection {
             pos,
             turns: BTreeMap::new(),
             roads: vec![],
-            interface_radius: 20.0,
+            interface_radius: 5.0,
             turn_policy: TurnPolicy::default(),
             light_policy: LightPolicy::default(),
         })
@@ -64,7 +65,7 @@ impl Intersection {
     pub fn remove_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
         self.roads.retain(|x| *x != road_id);
 
-        self.gen_turns(lanes, roads);
+        self.update_turns(lanes, roads);
         self.update_traffic_control(lanes, roads);
     }
 
@@ -87,7 +88,7 @@ impl Intersection {
         }
     }
 
-    pub fn gen_turns(&mut self, lanes: &Lanes, roads: &Roads) {
+    pub fn update_turns(&mut self, lanes: &Lanes, roads: &Roads) {
         let turns = self.turn_policy.generate_turns(self, lanes, roads);
 
         let to_remove: Vec<TurnID> = self
@@ -135,11 +136,35 @@ impl Intersection {
         self.roads
             .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].dir_from(id, pos))));
 
-        self.gen_turns(lanes, roads);
+        self.update_turns(lanes, roads);
         self.update_traffic_control(lanes, roads);
     }
 
     pub fn update_traffic_control(&self, lanes: &mut Lanes, roads: &Roads) {
         self.light_policy.apply(self, lanes, roads);
+    }
+
+    pub fn update_optimal_radius(&mut self, lanes: &Lanes, roads: &Roads) {
+        let mut max_dist: f32 = 5.0;
+        for i in 0..self.roads.len() {
+            let r1 = &roads[self.roads[i]];
+            let r2 = &roads[self.roads[(i + 1) % self.roads.len()]];
+
+            let width1 = r1.max_dist(lanes);
+            let width2 = r2.max_dist(lanes);
+
+            let w = (width1.powi(2) + width2.powi(2)).sqrt();
+
+            max_dist = max_dist.max(w);
+
+            let dir1 = r1.dir_from(self.id, self.pos);
+            let dir2 = r2.dir_from(self.id, self.pos);
+
+            let ang = dir1.angle(dir2).normalize_signed().0.abs();
+            if ang < std::f32::consts::FRAC_PI_2 && ang > 0.01 {
+                max_dist = max_dist.max(w / ang.sin());
+            }
+        }
+        self.interface_radius = max_dist * 1.1;
     }
 }
