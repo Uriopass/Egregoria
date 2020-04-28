@@ -57,8 +57,11 @@ impl<'a> System<'a> for MapUISystem {
         state.map_render_dirty = false;
         // Moved events
         for event in data.moved.read(&mut state.reader) {
-            if let Some(rnc) = data.intersections.get(event.entity) {
-                data.map.move_intersection(rnc.id, event.new_pos);
+            if let Some(rnc) = data.intersections.get_mut(event.entity) {
+                data.map
+                    .update_intersection(rnc.id, |inter| inter.pos = event.new_pos);
+
+                rnc.radius = data.map.intersections()[rnc.id].interface_radius;
                 state.map_render_dirty = true;
             }
         }
@@ -155,9 +158,11 @@ impl MapUIState {
         map: &mut Map,
     ) {
         let selected_interc = intersections.get(selected).unwrap();
-        map.set_intersection_radius(selected_interc.id, selected_interc.radius);
-        map.set_intersection_turn_policy(selected_interc.id, selected_interc.turn_policy);
-        map.set_intersection_light_policy(selected_interc.id, selected_interc.light_policy);
+        map.update_intersection(selected_interc.id, |inter| {
+            inter.turn_policy = selected_interc.turn_policy;
+            inter.light_policy = selected_interc.light_policy;
+        });
+
         self.map_render_dirty = true;
     }
 

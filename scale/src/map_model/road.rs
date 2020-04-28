@@ -5,6 +5,7 @@ use crate::map_model::{
     Roads, TrafficControl,
 };
 use cgmath::InnerSpace;
+use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -166,6 +167,14 @@ impl Road {
             "Asking other end of {:?} which isn't connected to {:?}",
             self.id, my_end
         );
+    }
+
+    pub fn max_dist(&self, lanes: &Lanes) -> f32 {
+        self.lanes_iter()
+            .map(|x| OrderedFloat(lanes[*x].dist_from_center + lanes[*x].width))
+            .max()
+            .unwrap_or(OrderedFloat(0.0))
+            .0
     }
 
     pub fn distance_from_center(&self, lane: LaneID, lanes: &Lanes) -> f32 {
