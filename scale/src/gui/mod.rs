@@ -195,15 +195,18 @@ impl Gui {
         let time_info = world.get_mut::<TimeInfo>().unwrap();
         let [w, h] = ui.io().display_size;
         imgui::Window::new(im_str!("Time controls"))
-            .size([200.0, 40.0], imgui::Condition::Always)
+            .size([230.0, 40.0], imgui::Condition::Always)
             .position([w / 2.0 - 100.0, h - 30.0], imgui::Condition::Always)
             .no_decoration()
             .collapsible(false)
             .resizable(false)
             .build(&ui, || {
-                imgui::Slider::new(im_str!("speed"), std::ops::RangeInclusive::new(0.0, 5.0))
-                    .display_format(im_str!("%.1f"))
-                    .build(&ui, &mut time_info.time_speed);
+                imgui::Slider::new(
+                    im_str!("Time warp"),
+                    std::ops::RangeInclusive::new(0.0, 6.0),
+                )
+                .display_format(im_str!("%.1f"))
+                .build(&ui, &mut time_info.time_speed);
             });
     }
 }
