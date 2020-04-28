@@ -65,12 +65,24 @@ impl<'a> State<'a> {
 
         self.last_time = Instant::now();
 
-        self.manage_timestep(delta);
+        let n_updates = self.manage_timestep(delta);
 
         self.manage_io(ctx);
 
-        self.dispatcher.run_now(&self.world);
-        self.world.maintain();
+        for i in 0..n_updates {
+            self.dispatcher.run_now(&self.world);
+            self.world.maintain();
+
+            let mut time = self.world.write_resource::<TimeInfo>();
+
+            time.time += time.delta as f64;
+            time.time_seconds = time.time as u64;
+
+            if time.delta > 0.0 && (Instant::now() - self.last_time).as_secs_f32() * 1000.0 > 10.0 {
+                self.time_sync = time.time;
+                break;
+            }
+        }
 
         self.camera.easy_camera_movement(
             ctx,
@@ -126,22 +138,19 @@ impl<'a> State<'a> {
             (Instant::now() - start).as_secs_f32();
     }
 
-    fn manage_timestep(&mut self, delta: f64) {
+    fn manage_timestep(&mut self, delta: f64) -> u32 {
         let mut time = self.world.write_resource::<TimeInfo>();
 
         self.time_sync += delta * time.time_speed;
+
         let diff = self.time_sync - time.time;
-        if diff > TIME_STEP * 2.0 {
-            self.time_sync = time.time + TIME_STEP;
+        if diff < TIME_STEP {
+            time.delta = 0.0;
+            return 1;
         }
 
-        if diff > TIME_STEP {
-            time.delta = TIME_STEP as f32;
-            time.time += TIME_STEP;
-            time.time_seconds = time.time as u64;
-        } else {
-            time.delta = 0.0;
-        }
+        time.delta = TIME_STEP as f32;
+        return (diff / TIME_STEP) as u32;
     }
 
     fn manage_entity_follow(&mut self) {
