@@ -17,20 +17,12 @@ use std::marker::PhantomData;
 
 pub struct InspectDragf;
 impl InspectRenderDefault<f32> for InspectDragf {
-    fn render(
-        data: &[&f32],
-        label: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        args: &InspectArgsDefault,
-    ) {
+    fn render(data: &[&f32], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
-        let mut cp = *data[0];
-        ui.drag_float(&im_str!("{}", label), &mut cp)
-            .speed(args.step.unwrap_or(0.1))
-            .build();
+        let cp = *data[0];
+        ui.text(&im_str!("{} {}", cp, label));
     }
 
     fn render_mut(
@@ -50,20 +42,12 @@ impl InspectRenderDefault<f32> for InspectDragf {
 }
 
 impl InspectRenderDefault<f64> for InspectDragf {
-    fn render(
-        data: &[&f64],
-        label: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        args: &InspectArgsDefault,
-    ) {
+    fn render(data: &[&f64], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
-        let mut cp = *data[0] as f32;
-        ui.drag_float(&im_str!("{}", label), &mut cp)
-            .speed(args.step.unwrap_or(0.1))
-            .build();
+        let cp = *data[0];
+        ui.text(&im_str!("{} {}", cp, label));
     }
 
     fn render_mut(
@@ -117,6 +101,33 @@ impl InspectRenderDefault<Vec2> for InspectVec2 {
         x.x = conv[0];
         x.y = conv[1];
         changed
+    }
+}
+
+pub struct InspectVec2Immutable;
+impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
+    fn render(data: &[&Vec2], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = data[0];
+        imgui::InputFloat2::new(ui, &im_str!("{}", label), &mut [x.x, x.y])
+            .always_insert_mode(false)
+            .build();
+    }
+
+    fn render_mut(
+        data: &mut [&mut Vec2],
+        label: &'static str,
+        w: &mut World,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        Self::render(&[&*data[0]], label, w, ui, args);
+        false
     }
 }
 
@@ -292,9 +303,20 @@ macro_rules! empty_inspect_impl {
 macro_rules! enum_inspect_impl {
     ($t: ty; $($x: pat),+) => {
         impl imgui_inspect::InspectRenderDefault<$t> for $t {
-            fn render(_: &[&$t], _: &'static str, _: &mut specs::World, _: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault,
+            fn render(data: &[&$t], label: &'static str, _: &mut specs::World, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault,
             ) {
-                unimplemented!()
+                if data.len() != 1 {
+                    unimplemented!()
+                }
+                let d = &data[0];
+                let mut aha = "No match";
+                $(
+                    if let $x = d {
+                        aha = stringify!($x);
+                    }
+                )+
+
+                ui.text(imgui::im_str!("{} {}", &aha, label));
             }
 
             fn render_mut(

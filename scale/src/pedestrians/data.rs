@@ -46,10 +46,12 @@ pub fn spawn_pedestrian(world: &mut World) {
     itinerary.advance(&map);
     drop(map);
 
+    let size = 0.5;
+
     let h = world.get_mut::<CollisionWorld>().unwrap().insert(
         pos,
         PhysicsObject {
-            radius: 0.3,
+            radius: size * 0.6,
             group: PhysicsGroup::Pedestrians,
             ..Default::default()
         },
@@ -66,37 +68,37 @@ pub fn spawn_pedestrian(world: &mut World) {
         .with(Kinematics::from_mass(80.0))
         .with(Movable)
         .with({
-            MeshRender::empty(0.3)
+            MeshRender::empty(0.35)
                 .add(RectRender {
-                    height: 0.12,
-                    width: 0.15,
-                    offset: vec2!(0.0, 0.225),
+                    height: 0.14,
+                    width: size * 0.4,
+                    offset: vec2!(0.0, size * 0.6),
                     color: Color::from_hex(0xFFCCA8),
                 })
                 .add(RectRender {
-                    height: 0.12,
-                    width: 0.15,
-                    offset: vec2!(0.0, -0.225),
+                    height: 0.14,
+                    width: size * 0.4,
+                    offset: vec2!(0.0, -size * 0.6),
                     color: Color::from_hex(0xFFCCA8),
                 })
                 .add(RectRender {
-                    height: 0.4,
-                    width: 0.2,
+                    height: size,
+                    width: size * 0.5,
                     color,
                     ..Default::default()
                 })
                 .add(CircleRender {
-                    radius: 0.1,
+                    radius: size * 0.25,
                     color,
-                    offset: vec2!(0.0, 0.2),
+                    offset: vec2!(0.0, size * 0.5),
                 })
                 .add(CircleRender {
-                    radius: 0.1,
+                    radius: size * 0.25,
                     color,
-                    offset: vec2!(0.0, -0.2),
+                    offset: vec2!(0.0, -size * 0.5),
                 })
                 .add(CircleRender {
-                    radius: 0.125,
+                    radius: 0.16,
                     color: Color::BLACK,
                     ..Default::default()
                 })

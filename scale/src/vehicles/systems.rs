@@ -2,7 +2,7 @@ use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::geometry::{Vec2, Vec2Impl};
 use crate::map_model::{Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind};
-use crate::physics::{CollisionWorld, PhysicsGroup, PhysicsObject};
+use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::{rand_det, Choose, Restrict};
 use crate::vehicles::VehicleComponent;
@@ -20,6 +20,7 @@ pub struct VehicleDecisionSystemData<'a> {
     map: Read<'a, Map>,
     time: Read<'a, TimeInfo>,
     coworld: Read<'a, CollisionWorld, PanicHandler>,
+    colliders: ReadStorage<'a, Collider>,
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
     vehicles: WriteStorage<'a, VehicleComponent>,
@@ -37,11 +38,12 @@ impl<'a> System<'a> for VehicleDecision {
             &mut data.transforms,
             &mut data.kinematics,
             &mut data.vehicles,
+            &data.colliders,
         )
             .join()
-            .for_each(|(trans, kin, vehicle)| {
+            .for_each(|(trans, kin, vehicle, collider)| {
                 objective_update(vehicle, &time, trans, &map);
-                vehicle_physics(&cow, &map, &time, trans, kin, vehicle);
+                vehicle_physics(&cow, &map, &time, trans, kin, vehicle, collider);
             });
     }
 }
@@ -53,6 +55,7 @@ fn vehicle_physics(
     trans: &mut Transform,
     kin: &mut Kinematics,
     vehicle: &mut VehicleComponent,
+    collider: &Collider,
 ) {
     let direction = trans.direction();
     //debug_assert!(direction.magnitude() > 0.5 && direction.is_finite());
@@ -70,6 +73,7 @@ fn vehicle_physics(
 
     let kind = vehicle.kind;
     let pos = trans.position();
+    let my_obj = coworld.get_obj(collider.0);
 
     let danger_length = (speed * speed / (2.0 * kind.deceleration())).min(40.0);
 
@@ -77,7 +81,7 @@ fn vehicle_physics(
 
     let objs = neighbors.map(|obj| (obj.pos, coworld.get_obj(obj.id)));
 
-    calc_decision(vehicle, map, speed, time, trans, objs);
+    calc_decision(vehicle, map, speed, time, trans, my_obj, objs);
 
     let speed = speed
         + (vehicle.desired_speed - speed).restrict(
@@ -171,6 +175,7 @@ pub fn calc_decision<'a>(
     speed: f32,
     time: &TimeInfo,
     trans: &Transform,
+    my_obj: &PhysicsObject,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
 ) {
     if vehicle.wait_time > 0.0 {
@@ -197,6 +202,7 @@ pub fn calc_decision<'a>(
         dir: direction,
     };
 
+    let my_radius = my_obj.radius;
     let on_lane = vehicle.itinerary.get_travers().unwrap().kind.is_lane();
 
     // Collision avoidance
@@ -224,7 +230,7 @@ pub fn calc_decision<'a>(
             && (!is_vehicle || cos_direction_angle > 0.0)
             && (!on_lane || dist_to_side < 4.0)
         {
-            let mut dist_to_obj = dist - vehicle.kind.width() / 2.0 - nei_physics_obj.radius;
+            let mut dist_to_obj = dist - my_radius - nei_physics_obj.radius;
             if !is_vehicle {
                 dist_to_obj -= 1.0;
             }
@@ -248,13 +254,15 @@ pub fn calc_decision<'a>(
 
         match inter {
             Some((my_dist, his_dist)) => {
-                if my_dist - speed.min(2.5) < his_dist - nei_physics_obj.speed.min(2.5) {
+                if my_dist - speed.min(2.5) - my_radius
+                    < his_dist - nei_physics_obj.speed.min(2.5) - nei_physics_obj.radius
+                {
                     continue;
                 }
             }
             None => continue,
         }
-        min_front_dist = min_front_dist.min(dist - vehicle.kind.width() / 2.0);
+        min_front_dist = min_front_dist.min(dist - my_radius);
     }
 
     if speed.abs() < 0.2 && min_front_dist < 1.5 {

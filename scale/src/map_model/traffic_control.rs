@@ -56,7 +56,7 @@ impl TrafficControl {
         matches!(self, TrafficControl::Always)
     }
 
-    pub fn is_stop(&self) -> bool {
+    pub fn is_stop_sign(&self) -> bool {
         matches!(self, TrafficControl::StopSign)
     }
 
