@@ -3,11 +3,11 @@ use rand::{Rng, SeedableRng};
 use rand_distr::{Distribution, Float, Standard, StandardNormal};
 use std::sync::Mutex;
 
-macro_rules! unwrap_ret {
-    ($e: expr) => {
+macro_rules! unwrap_or {
+    ($e: expr, $t: tt) => {
         match $e {
             Some(x) => x,
-            None => return,
+            None => $t,
         }
     };
 }

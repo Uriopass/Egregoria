@@ -175,7 +175,7 @@ pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform,
     }
 
     if pedestrian.itinerary.has_ended() {
-        let t = *unwrap_ret!(pedestrian.itinerary.get_travers());
+        let t = *unwrap_or!(pedestrian.itinerary.get_travers(), return);
 
         match t.kind {
             TraverseKind::Lane(l) => {
@@ -183,7 +183,7 @@ pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform,
 
                 let neighs = arrived.turns_adirectional(l);
 
-                let turn = unwrap_ret!(neighs.choose());
+                let turn = unwrap_or!(neighs.choose(), return);
 
                 let direction = if turn.id.src == l {
                     TraverseDirection::Forward
