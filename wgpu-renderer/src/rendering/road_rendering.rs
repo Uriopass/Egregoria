@@ -154,10 +154,10 @@ impl RoadRenderer {
         tess: &mut Tesselator,
         cam: &CameraHandler,
         ctx: &mut FrameContext,
-        map_dirty: bool,
+        map_dirty: &mut bool,
     ) {
         let render_near = cam.camera.zoom >= 1.5 || map.roads().len() < 1000;
-        if map_dirty || self.road_mesh.is_none() {
+        if *map_dirty || self.road_mesh.is_none() {
             let mut tess = Tesselator::new(None, cam.camera.zoom);
 
             if render_near {
@@ -165,6 +165,8 @@ impl RoadRenderer {
             } else {
                 self.far_render(map, &mut tess);
             }
+
+            *map_dirty = false;
 
             self.road_mesh = tess.meshbuilder.build(ctx.gfx)
         }

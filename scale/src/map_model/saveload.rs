@@ -189,11 +189,12 @@ pub fn load(world: &mut World) {
 
     let map = world.read_resource::<Map>();
 
-    for (_, inter) in map.intersections() {
+    for id in map.intersections().keys() {
         make_inter_entity(
-            inter,
+            id,
             &world.read_resource::<LazyUpdate>(),
             &world.entities(),
+            &map,
         );
     }
 }
