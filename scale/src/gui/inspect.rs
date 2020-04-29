@@ -392,9 +392,11 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         let ui = self.ui;
         let mut event = None;
         let mut dirty = false;
-        dirty |= clone_and_modify(self.world, self.entity, |world, mut x: Transform| {
+        let entity = self.entity;
+        dirty |= clone_and_modify(self.world, entity, |world, mut x: Transform| {
             let mut position = x.position();
             let mut direction = x.direction();
+            let old_pos = position;
             let mut changed = <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(
                 &mut [&mut position],
                 "position",
@@ -404,7 +406,11 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
             );
 
             if changed {
-                event = Some(position);
+                event = Some(MovedEvent {
+                    entity,
+                    new_pos: position,
+                    delta_pos: position - old_pos,
+                });
             }
             changed |= <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
                 &mut [&mut direction],
@@ -422,13 +428,10 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
             }
         });
 
-        if let Some(new_pos) = event {
+        if let Some(ev) = event {
             self.world
                 .write_resource::<EventChannel<MovedEvent>>()
-                .single_write(MovedEvent {
-                    entity: self.entity,
-                    new_pos,
-                });
+                .single_write(ev);
         }
         dirty |= self.inspect_component::<VehicleComponent>();
         dirty |= self.inspect_component::<PedestrianComponent>();

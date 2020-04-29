@@ -20,11 +20,12 @@ empty_inspect_impl!(Movable);
 pub struct MovedEvent {
     pub entity: Entity,
     pub new_pos: Vec2,
+    pub delta_pos: Vec2,
 }
 
 #[derive(Default)]
 pub struct MovableSystem {
-    offset: Option<Vec2>,
+    clicked_at: Option<Vec2>,
 }
 
 #[derive(SystemData)]
@@ -49,35 +50,37 @@ impl<'a> System<'a> for MovableSystem {
                 .map_or(false, |e| data.movable.get(e).is_some())
         {
             let e = data.selected.e.unwrap();
-            match self.offset {
+            match &mut self.clicked_at {
                 None => {
-                    let p = data.transforms.get_mut(e).unwrap();
                     if let Some(kin) = data.kinematics.get_mut(e) {
                         kin.velocity = zero();
                         kin.acceleration = zero();
                     }
-                    self.offset = Some(p.position() - data.mouse.unprojected);
+                    self.clicked_at = Some(data.mouse.unprojected);
                 }
                 Some(off) => {
                     let p = data.transforms.get_mut(e).unwrap();
                     let old_pos = p.position();
-                    let new_pos = off + data.mouse.unprojected;
+                    let new_pos = old_pos + (data.mouse.unprojected - *off);
+                    *off = data.mouse.unprojected;
                     if new_pos != old_pos {
                         if let Some(kin) = data.kinematics.get_mut(e) {
                             kin.velocity = zero();
                             kin.acceleration = zero();
                         }
                         p.set_position(new_pos);
-                        data.moved.single_write(MovedEvent { entity: e, new_pos });
+                        data.moved.single_write(MovedEvent {
+                            entity: e,
+                            new_pos,
+                            delta_pos: new_pos - old_pos,
+                        });
                     }
                 }
             }
-        } else if let Some(off) = self.offset.take() {
+        } else if let Some(off) = self.clicked_at.take() {
             if let Some(e) = data.selected.e {
                 if let Some(kin) = data.kinematics.get_mut(e) {
-                    let p = data.transforms.get(e).unwrap();
-                    kin.velocity = (data.mouse.unprojected - (p.position() - off))
-                        / data.time.delta.max(1.0 / 30.0);
+                    kin.velocity = (data.mouse.unprojected - off) / data.time.delta.max(1.0 / 30.0);
                 }
             }
         }

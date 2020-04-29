@@ -119,7 +119,7 @@ impl<'a> State<'a> {
             &mut tess,
             &self.camera,
             ctx,
-            self.world.read_resource::<MapUIState>().map_render_dirty,
+            &mut self.world.write_resource::<MapUIState>().map_render_dirty,
         );
 
         self.instanced_renderer.render(&mut self.world, ctx);

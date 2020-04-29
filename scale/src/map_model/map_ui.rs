@@ -1,6 +1,8 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity};
-use crate::map_model::{Intersection, IntersectionComponent, LanePatternBuilder, Map};
+use crate::map_model::{
+    Intersection, IntersectionComponent, IntersectionID, LanePatternBuilder, Lanes, Map, Roads,
+};
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
 use crate::rendering::Color;
@@ -54,12 +56,18 @@ impl<'a> System<'a> for MapUISystem {
 
     fn run(&mut self, mut data: Self::SystemData) {
         let state = &mut data.self_state;
-        state.map_render_dirty = false;
         // Moved events
         for event in data.moved.read(&mut state.reader) {
             if let Some(rnc) = data.intersections.get_mut(event.entity) {
                 data.map
-                    .update_intersection(rnc.id, |inter| inter.pos = event.new_pos);
+                    .update_intersection(rnc.id, |inter| inter.pos += event.delta_pos);
+
+                let new_barycenter = data.map.intersections()[rnc.id]
+                    .get_barycenter(data.map.roads(), data.map.lanes());
+                data.transforms
+                    .get_mut(event.entity)
+                    .unwrap()
+                    .set_position(new_barycenter);
 
                 rnc.radius = data.map.intersections()[rnc.id].interface_radius;
                 state.map_render_dirty = true;
@@ -74,7 +82,7 @@ impl<'a> System<'a> for MapUISystem {
                 data.map.connect(x.id, id, &state.pattern_builder.build());
                 state.map_render_dirty = true;
             }
-            let e = make_inter_entity(&data.map.intersections()[id], &data.lazy, &data.entities);
+            let e = make_inter_entity(id, &data.lazy, &data.entities, &data.map);
             println!("{:?}", e);
             data.selected.e = Some(e);
         }
@@ -118,8 +126,7 @@ impl<'a> System<'a> for MapUISystem {
                 let intersections = &data.intersections;
                 let lol = intersections.get(x).unwrap();
                 data.map.connect(lol.id, id, &state.pattern_builder.build());
-                let e =
-                    make_inter_entity(&data.map.intersections()[id], &data.lazy, &data.entities);
+                let e = make_inter_entity(id, &data.lazy, &data.entities, &data.map);
                 data.selected.e = Some(e);
             }
         }
@@ -218,13 +225,15 @@ impl MapUIState {
 }
 
 pub fn make_inter_entity<'a>(
-    inter: &Intersection,
+    id: IntersectionID,
     lazy: &LazyUpdate,
     entities: &Entities<'a>,
+    map: &Map,
 ) -> Entity {
+    let inter = &map.intersections()[id];
     lazy.create_entity(entities)
         .with(IntersectionComponent {
-            id: inter.id,
+            id,
             radius: inter.interface_radius,
             turn_policy: inter.turn_policy,
             light_policy: inter.light_policy,
@@ -240,7 +249,9 @@ pub fn make_inter_entity<'a>(
             },
             0.2,
         ))
-        .with(Transform::new(inter.pos))
+        .with(Transform::new(
+            inter.get_barycenter(map.roads(), map.lanes()),
+        ))
         .with(Movable)
         .with(Selectable::new(10.0))
         .build()
