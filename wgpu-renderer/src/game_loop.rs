@@ -26,7 +26,7 @@ pub struct State<'a> {
     grid: bool,
 }
 
-const TIME_STEP: f64 = 1.0 / 50.0;
+const TIME_STEP: f64 = 1.0 / 30.0;
 
 impl<'a> State<'a> {
     pub fn new(ctx: &mut Context) -> Self {

@@ -92,53 +92,37 @@ impl RoadRenderer {
 
             let dir = n.get_orientation_vec();
 
-            let dir_nor = vec2(-dir.y, dir.x);
+            let dir_nor = vec2(dir.y, -dir.x);
 
-            let r_center = n.points.last().unwrap() + dir_nor * 2.0 + dir * 2.5;
+            let r_center = n.points.last().unwrap() + dir_nor * 2.5 + dir * 2.5;
 
-            if n.control.is_stop() {
+            if n.control.is_stop_sign() {
                 sr.color = LinearColor::WHITE;
-                sr.draw_rect_cos_sin(
-                    r_center,
-                    0.3,
-                    1.5,
-                    1.5,
-                    vec2(
-                        std::f32::consts::FRAC_1_SQRT_2,
-                        std::f32::consts::FRAC_1_SQRT_2,
-                    ),
-                );
+                sr.draw_regular_polygon(r_center, 0.3, 0.5, 8, std::f32::consts::FRAC_PI_8);
 
                 sr.color = LinearColor::RED;
-                sr.draw_rect_cos_sin(
-                    r_center,
-                    0.3,
-                    1.0,
-                    1.0,
-                    vec2(
-                        std::f32::consts::FRAC_1_SQRT_2,
-                        std::f32::consts::FRAC_1_SQRT_2,
-                    ),
-                );
+                sr.draw_regular_polygon(r_center, 0.3, 0.4, 8, std::f32::consts::FRAC_PI_8);
                 continue;
             }
 
+            let size = 0.5; // light size
+
             sr.color = LinearColor::gray(0.3);
-            sr.draw_rect_cos_sin(r_center, 0.3, 1.1, 3.1, dir);
+            sr.draw_rect_cos_sin(r_center, 0.3, size + 0.1, size * 3.0 + 0.1, dir);
 
             for i in -1..2 {
-                sr.draw_circle(r_center + i as f32 * dir_nor, 0.3, 0.5);
+                sr.draw_circle(r_center + i as f32 * dir_nor * size, 0.3, size * 0.5);
             }
             sr.color = n.control.get_behavior(time).as_render_color().into();
 
             let offset = match n.control.get_behavior(time) {
-                TrafficBehavior::RED => -1.0,
+                TrafficBehavior::RED => -size,
                 TrafficBehavior::ORANGE => 0.0,
-                TrafficBehavior::GREEN => 1.0,
+                TrafficBehavior::GREEN => size,
                 _ => unreachable!(),
             };
 
-            sr.draw_circle(r_center + offset * dir_nor, 0.3, 0.5);
+            sr.draw_circle(r_center + offset * dir_nor, 0.3, size * 0.5);
         }
     }
 
