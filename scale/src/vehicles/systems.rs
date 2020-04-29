@@ -43,45 +43,29 @@ impl<'a> System<'a> for VehicleDecision {
             .join()
             .for_each(|(trans, kin, vehicle, collider)| {
                 objective_update(vehicle, &time, trans, &map);
-                vehicle_physics(&cow, &map, &time, trans, kin, vehicle, collider);
+
+                let my_obj = cow.get_obj(collider.0);
+                let speed: f32 = my_obj.speed;
+                let danger_length = (speed * speed / (2.0 * vehicle.kind.deceleration())).min(40.0);
+                let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
+                let objs = neighbors.map(|obj| (obj.pos, cow.get_obj(obj.id)));
+
+                calc_decision(vehicle, map, speed, &time, trans, my_obj, objs);
+
+                vehicle_physics(&time, trans, kin, vehicle, speed);
             });
     }
 }
 
 fn vehicle_physics(
-    coworld: &CollisionWorld,
-    map: &Map,
     time: &TimeInfo,
     trans: &mut Transform,
     kin: &mut Kinematics,
     vehicle: &mut VehicleComponent,
-    collider: &Collider,
+    speed: f32,
 ) {
-    let direction = trans.direction();
-    //debug_assert!(direction.magnitude() > 0.5 && direction.is_finite());
-
-    let speed: f32 = kin.velocity.magnitude() * kin.velocity.dot(direction).signum();
-
-    if speed > 1.0 {
-        let dot = (kin.velocity / speed).dot(direction);
-        if dot.abs() < 0.9 {
-            let coeff = speed.restrict(1.0, 9.0) / 9.0;
-            kin.acceleration -= kin.velocity / coeff;
-            return;
-        }
-    }
-
     let kind = vehicle.kind;
-    let pos = trans.position();
-    let my_obj = coworld.get_obj(collider.0);
-
-    let danger_length = (speed * speed / (2.0 * kind.deceleration())).min(40.0);
-
-    let neighbors = coworld.query_around(pos, 12.0 + danger_length);
-
-    let objs = neighbors.map(|obj| (obj.pos, coworld.get_obj(obj.id)));
-
-    calc_decision(vehicle, map, speed, time, trans, my_obj, objs);
+    let direction = trans.direction();
 
     let speed = speed
         + (vehicle.desired_speed - speed).restrict(
@@ -138,7 +122,7 @@ pub fn objective_update(
 
     if vehicle.itinerary.has_ended() {
         if vehicle.itinerary.get_travers().is_none() {
-            let id = unwrap_ret!(map.closest_lane(trans.position()));
+            let id = unwrap_or!(map.closest_lane(trans.position()), return);
             vehicle.itinerary.set_simple(
                 Traversable::new(TraverseKind::Lane(id), TraverseDirection::Forward),
                 map,
@@ -158,7 +142,7 @@ pub fn objective_update(
 
                 let neighs = map.intersections()[lane.dst].turns_from(id);
 
-                let turn = unwrap_ret!(neighs.choose());
+                let turn = unwrap_or!(neighs.choose(), return);
 
                 vehicle.itinerary.set_simple(
                     Traversable::new(TraverseKind::Turn(turn.id), TraverseDirection::Forward),
@@ -178,11 +162,13 @@ pub fn calc_decision<'a>(
     my_obj: &PhysicsObject,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
 ) {
+    vehicle.desired_speed = 0.0;
+
     if vehicle.wait_time > 0.0 {
         vehicle.wait_time -= time.delta;
         return;
     }
-    let objective: Vec2 = unwrap_ret!(vehicle.itinerary.get_point());
+    let objective: Vec2 = unwrap_or!(vehicle.itinerary.get_point(), return);
 
     let is_terminal = false; // TODO: change depending on route
 
@@ -191,7 +177,7 @@ pub fn calc_decision<'a>(
     let direction_normal = trans.normal();
 
     let delta_pos: Vec2 = objective - position;
-    let (dir_to_pos, dist_to_pos) = unwrap_ret!(delta_pos.dir_dist());
+    let (dir_to_pos, dist_to_pos) = unwrap_or!(delta_pos.dir_dist(), return);
     let time_to_stop = speed / vehicle.kind.deceleration();
     let stop_dist = time_to_stop * speed / 2.0;
 
@@ -207,23 +193,19 @@ pub fn calc_decision<'a>(
 
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {
-        let towards_vec = his_pos - position;
-        let dist2 = towards_vec.magnitude2();
-
-        if dist2 < 1e-5 {
+        if std::ptr::eq(nei_physics_obj, my_obj) {
             continue;
         }
 
-        let dist = dist2.sqrt();
-        let towards_dir = towards_vec / dist;
+        let towards_vec: Vec2 = his_pos - position;
+        let (towards_dir, dist) = unwrap_or!(towards_vec.dir_dist(), continue);
 
         let cos_angle = towards_dir.dot(direction);
         let dist_to_side = towards_vec.dot(direction_normal).abs();
 
-        let is_vehicle = nei_physics_obj.group == PhysicsGroup::Vehicles;
+        let is_vehicle = matches!(nei_physics_obj.group, PhysicsGroup::Vehicles);
 
-        let his_direction = nei_physics_obj.dir;
-        let cos_direction_angle = his_direction.dot(direction);
+        let cos_direction_angle = nei_physics_obj.dir.dot(direction);
 
         // front cone
         if cos_angle > 0.7
@@ -246,21 +228,16 @@ pub fn calc_decision<'a>(
         // closest win
 
         let his_ray = Ray {
-            from: his_pos - nei_physics_obj.radius * his_direction,
-            dir: his_direction,
+            from: his_pos - nei_physics_obj.radius * nei_physics_obj.dir,
+            dir: nei_physics_obj.dir,
         };
 
-        let inter = both_dist_to_inter(my_ray, his_ray);
+        let (my_dist, his_dist) = unwrap_or!(both_dist_to_inter(my_ray, his_ray), continue);
 
-        match inter {
-            Some((my_dist, his_dist)) => {
-                if my_dist - speed.min(2.5) - my_radius
-                    < his_dist - nei_physics_obj.speed.min(2.5) - nei_physics_obj.radius
-                {
-                    continue;
-                }
-            }
-            None => continue,
+        if my_dist - speed.min(2.5) - my_radius
+            < his_dist - nei_physics_obj.speed.min(2.5) - nei_physics_obj.radius
+        {
+            continue;
         }
         min_front_dist = min_front_dist.min(dist - my_radius);
     }

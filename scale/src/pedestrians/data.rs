@@ -30,7 +30,7 @@ pub fn delete_pedestrian(world: &mut World, e: Entity) {
 pub fn spawn_pedestrian(world: &mut World) {
     let map = world.read_resource::<Map>();
 
-    let lane = unwrap_ret!(map.get_random_lane(LaneKind::Walking));
+    let lane = unwrap_or!(map.get_random_lane(LaneKind::Walking), return);
 
     let pos = if let [a, b, ..] = lane.points.as_slice() {
         a + (b - a) * crate::utils::rand_det()
