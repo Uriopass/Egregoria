@@ -62,7 +62,7 @@ impl TexturedMeshBuilder {
                     resource: wgpu::BindingResource::Sampler(&tex.sampler),
                 },
             ],
-            label: None,
+            label: Some("Textured mesh bindgroup"),
         });
 
         Some(TexturedMesh {
@@ -104,7 +104,7 @@ impl Drawable for TexturedMesh {
                         ty: wgpu::BindingType::Sampler { comparison: false },
                     },
                 ],
-                label: None,
+                label: Some("Bind group layout for textured mesh"),
             })];
 
         let render_pipeline_layout =

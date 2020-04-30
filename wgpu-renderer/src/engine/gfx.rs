@@ -143,7 +143,7 @@ impl GfxContext {
             dimension: wgpu::TextureDimension::D2,
             format: sc_desc.format,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-            label: Some("mfd"),
+            label: Some("multisampled frame descriptor"),
         };
 
         device

@@ -24,7 +24,14 @@ where
                     range: 0..std::mem::size_of_val(&value) as wgpu::BufferAddress,
                 },
             }],
-            label: None,
+            label: Some(
+                format!(
+                    "{} {}",
+                    "uniform bindgroup for value of type",
+                    std::any::type_name::<T>()
+                )
+                .as_ref(),
+            ),
         });
         Self {
             buffer,
@@ -63,7 +70,14 @@ impl<T> Uniform<T> {
                     dynamic: false, // The dynamic field indicates whether this buffer will change size or not. This is useful if we want to store an array of things in our uniforms.
                 },
             }],
-            label: None,
+            label: Some(
+                format!(
+                    "{} {}",
+                    "Bindgroup layout for value of type",
+                    std::any::type_name::<T>()
+                )
+                .as_ref(),
+            ),
         })
     }
 }

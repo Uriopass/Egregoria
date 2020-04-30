@@ -18,17 +18,26 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn from_path(ctx: &GfxContext, p: impl AsRef<Path>) -> Option<Self> {
+    pub fn from_path(
+        ctx: &GfxContext,
+        p: impl AsRef<Path>,
+        label: Option<&'static str>,
+    ) -> Option<Self> {
         let mut buf = vec![];
-        File::open(p).ok()?.read_to_end(&mut buf).ok()?;
-        Texture::from_bytes(&ctx, &buf)
+        let mut f = File::open(p).ok()?;
+        f.read_to_end(&mut buf).ok()?;
+        Texture::from_bytes(&ctx, &buf, label)
     }
-    pub fn from_bytes(ctx: &GfxContext, bytes: &[u8]) -> Option<Self> {
+    pub fn from_bytes(ctx: &GfxContext, bytes: &[u8], label: Option<&'static str>) -> Option<Self> {
         let img = image::load_from_memory(bytes).ok()?;
-        Self::from_image(ctx, &img)
+        Self::from_image(ctx, &img, label)
     }
 
-    pub fn from_image(ctx: &GfxContext, img: &image::DynamicImage) -> Option<Self> {
+    pub fn from_image(
+        ctx: &GfxContext,
+        img: &image::DynamicImage,
+        label: Option<&'static str>,
+    ) -> Option<Self> {
         let rgba = img.as_rgba8().unwrap();
         let dimensions = img.dimensions();
 
@@ -38,7 +47,7 @@ impl Texture {
             depth: 1,
         };
         let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
-            label: None,
+            label,
             size,
             array_layer_count: 1,
             mip_level_count: 1,
@@ -54,7 +63,9 @@ impl Texture {
 
         let mut encoder = ctx
             .device
-            .create_command_encoder(&CommandEncoderDescriptor { label: None });
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("Texture creation encoder"),
+            });
 
         encoder.copy_buffer_to_texture(
             wgpu::BufferCopyView {
@@ -117,7 +128,7 @@ impl Texture {
             array_layer_count: 1,
             sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
-            label: None,
+            label: Some("depth texture"),
         };
         let texture = device.create_texture(&desc);
 

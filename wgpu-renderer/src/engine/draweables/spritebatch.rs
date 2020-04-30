@@ -139,7 +139,7 @@ impl SpriteBatchBuilder {
                     resource: wgpu::BindingResource::Sampler(&self.tex.sampler),
                 },
             ],
-            label: None,
+            label: Some("bind group for spritebatch"),
         });
 
         Some(SpriteBatch {
@@ -181,7 +181,7 @@ impl Drawable for SpriteBatch {
                         ty: wgpu::BindingType::Sampler { comparison: false },
                     },
                 ],
-                label: None,
+                label: Some("Bind group layout for spritebatch"),
             })];
 
         let render_pipeline_layout =

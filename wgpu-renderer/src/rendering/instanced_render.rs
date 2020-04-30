@@ -10,7 +10,7 @@ pub struct InstancedRender {
 
 impl InstancedRender {
     pub fn new(ctx: &mut GfxContext) -> Self {
-        let car = Texture::from_path(ctx, "resources/car.png").unwrap();
+        let car = Texture::from_path(ctx, "resources/car.png", Some("cartex")).unwrap();
         let spr_car = SpriteBatchBuilder::new(car);
         let texs = vec![spr_car];
         InstancedRender { texs }
