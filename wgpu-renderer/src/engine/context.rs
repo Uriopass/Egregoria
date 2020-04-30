@@ -86,10 +86,12 @@ impl Context {
                         self.input.mouse.unprojected = state.unproject(self.input.mouse.screen);
 
                         state.update(&mut self);
+
                         let mut frame_ctx = self.gfx.begin_frame(frame.take().unwrap());
                         clear_screen.draw(&mut frame_ctx);
                         state.render(&mut frame_ctx);
                         frame_ctx.finish();
+
                         self.input.end_frame();
                     }
                 }
