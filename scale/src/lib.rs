@@ -39,6 +39,7 @@ pub mod vehicles;
 pub use imgui;
 pub use specs;
 use specs::shrev::EventChannel;
+use specs::world::EntitiesRes;
 
 pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     let mut dispatch = DispatcherBuilder::new()
@@ -62,6 +63,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     let collision_world: CollisionWorld = GridStore::new(50);
 
     // Resources init
+    world.insert(EntitiesRes::default());
     world.insert(TimeInfo::default());
     world.insert(collision_world);
     world.insert(KeyboardInfo::default());

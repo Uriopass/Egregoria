@@ -33,15 +33,19 @@ impl<'a> State<'a> {
         let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 10.0);
 
         /*
-                let mut buf = vec![];
-                File::open("resources/music.mp3")
-                    .unwrap()
-                    .read_to_end(&mut buf)
-                    .unwrap();
-                let source = Decoder::new(std::io::Cursor::new(buf)).unwrap();
-                ctx.audio
-                    .play_sound(source.fade_in(Duration::new(1, 0)).repeat_infinite(), 0.02);
-        */
+        let mut buf = vec![];
+        std::fs::File::open("resources/shrek.mp3")
+            .unwrap()
+            .read_to_end(&mut buf)
+            .unwrap();
+        let source = rodio::Decoder::new(std::io::Cursor::new(buf)).unwrap();
+        ctx.audio.play_sound(
+            source
+                .fade_in(std::time::Duration::new(1, 0))
+                .repeat_infinite(),
+            0.02,
+        );*/
+
         let wrapper = ImguiWrapper::new(&mut ctx.gfx);
 
         let mut world = scale::specs::World::empty();
@@ -117,7 +121,6 @@ impl<'a> State<'a> {
             &self.world.read_resource::<Map>(),
             time.time_seconds,
             &mut tess,
-            &self.camera,
             ctx,
             &mut self.world.write_resource::<MapUIState>().map_render_dirty,
         );

@@ -3,12 +3,26 @@ use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
 };
 use crate::utils::rand_det;
+use cgmath::MetricSpace;
+use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 
 pub type Roads = DenseSlotMap<RoadID, Road>;
 pub type Lanes = DenseSlotMap<LaneID, Lane>;
 pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
+
+#[derive(Debug, Clone, Copy)]
+pub enum ProjectKind {
+    Inter(IntersectionID),
+    Road(RoadID),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct MapProject {
+    pub pos: Vec2,
+    pub kind: ProjectKind,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct Map {
@@ -32,7 +46,11 @@ impl Map {
         }
     }
 
-    pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection) -> ()) {
+    pub fn update_intersection(
+        &mut self,
+        id: IntersectionID,
+        f: impl Fn(&mut Intersection) -> (),
+    ) -> &Intersection {
         let inter = &mut self.intersections[id];
         f(inter);
 
@@ -42,6 +60,7 @@ impl Map {
         }
 
         self.invalidate(id);
+        &self.intersections[id]
     }
 
     fn invalidate(&mut self, id: IntersectionID) {
@@ -56,6 +75,7 @@ impl Map {
         let inter = &mut self.intersections[id];
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
+        inter.update_barycenter(&self.lanes, &self.roads);
     }
 
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
@@ -74,7 +94,7 @@ impl Map {
         &mut self,
         src: IntersectionID,
         dst: IntersectionID,
-        pattern: &LanePattern,
+        pattern: LanePattern,
     ) -> RoadID {
         let road_id = Road::make(
             &mut self.roads,
@@ -82,7 +102,7 @@ impl Map {
             src,
             dst,
             &mut self.lanes,
-            &pattern,
+            pattern,
         );
 
         self.intersections[src].add_road(road_id, &mut self.lanes, &self.roads);
@@ -109,6 +129,58 @@ impl Map {
     }
 
     /* Helpers */
+
+    pub fn project(&self, pos: Vec2) -> Option<MapProject> {
+        const THRESHOLD: f32 = 20.0;
+
+        let (min_inter, d) = self
+            .intersections()
+            .values()
+            .map(|inter| {
+                let mut d = inter.pos.distance2(pos);
+                if d > inter.interface_radius.powi(2) {
+                    d = std::f32::INFINITY;
+                }
+                (inter, d)
+            })
+            .min_by_key(|(_, d)| OrderedFloat(*d))?;
+
+        if d.is_finite() {
+            return Some(MapProject {
+                pos: min_inter.barycenter,
+                kind: ProjectKind::Inter(min_inter.id),
+            });
+        }
+
+        let (min_road, d, projected) = self
+            .roads()
+            .values()
+            .map(|road| {
+                let proj = road.interpolation_points.project(pos).unwrap();
+                (road, proj.distance2(pos), proj)
+            })
+            .min_by_key(|(_, d, _)| OrderedFloat(*d))?;
+
+        if d < THRESHOLD * THRESHOLD {
+            let r1 = self.intersections[min_road.src].interface_radius;
+            let r2 = self.intersections[min_road.dst].interface_radius;
+
+            if projected.distance2(min_road.interpolation_points[0]) < r1 {
+                return None;
+            }
+
+            if projected.distance2(min_road.interpolation_points.last().unwrap()) < r2 {
+                return None;
+            }
+
+            Some(MapProject {
+                pos: projected,
+                kind: ProjectKind::Road(min_road.id),
+            })
+        } else {
+            None
+        }
+    }
 
     pub fn is_empty(&self) -> bool {
         self.roads.is_empty() && self.lanes.is_empty() && self.intersections.is_empty()

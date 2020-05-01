@@ -60,6 +60,14 @@ pub struct LanePattern {
     pub lanes_backward: Vec<LaneKind>,
 }
 
+impl PartialEq for LanePattern {
+    fn eq(&self, other: &Self) -> bool {
+        self.lanes_backward == other.lanes_backward && self.lanes_forward == other.lanes_forward
+    }
+}
+
+impl Eq for LanePattern {}
+
 #[derive(Clone, Copy, Inspect)]
 pub struct LanePatternBuilder {
     #[inspect(min_value = 1.0)]
