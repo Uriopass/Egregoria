@@ -1,6 +1,5 @@
 use crate::engine::{Drawable, FrameContext, Mesh};
 use crate::geometry::Tesselator;
-use crate::rendering::CameraHandler;
 use cgmath::{vec2, InnerSpace, Vector2};
 use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
 use scale::rendering::LinearColor;
@@ -42,6 +41,13 @@ impl RoadRenderer {
         }
 
         for (inter_id, inter) in inters {
+            if inter.roads.is_empty() {
+                sr.color = LinearColor::WHITE;
+                sr.draw_circle(inter.pos, 0.2, 5.5);
+
+                sr.color = mid_gray;
+                sr.draw_circle(inter.pos, 0.3, 5.0);
+            }
             for (id, turn) in &inter.turns {
                 sr.color = LinearColor::WHITE;
 
@@ -152,19 +158,13 @@ impl RoadRenderer {
         map: &Map,
         time: u64,
         tess: &mut Tesselator,
-        cam: &CameraHandler,
         ctx: &mut FrameContext,
         map_dirty: &mut bool,
     ) {
-        let render_near = cam.camera.zoom >= 1.5 || map.roads().len() < 1000;
         if *map_dirty || self.road_mesh.is_none() {
-            let mut tess = Tesselator::new(None, cam.camera.zoom);
+            let mut tess = Tesselator::new(None, 15.0);
 
-            if render_near {
-                self.near_render(map, &mut tess);
-            } else {
-                self.far_render(map, &mut tess);
-            }
+            self.near_render(map, &mut tess);
 
             *map_dirty = false;
 

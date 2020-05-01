@@ -4,6 +4,7 @@ use crate::gui::InspectDragf;
 use crate::map_model::{
     Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, Turn, TurnID, TurnPolicy,
 };
+use crate::utils::Restrict;
 use cgmath::{Angle, InnerSpace};
 use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
@@ -38,6 +39,7 @@ pub struct IntersectionComponent {
 pub struct Intersection {
     pub id: IntersectionID,
     pub pos: Vec2,
+    pub barycenter: Vec2,
 
     pub turns: BTreeMap<TurnID, Turn>,
 
@@ -54,6 +56,7 @@ impl Intersection {
         store.insert_with_key(|id| Intersection {
             id,
             pos,
+            barycenter: pos,
             turns: BTreeMap::new(),
             roads: vec![],
             interface_radius: 5.0,
@@ -62,30 +65,22 @@ impl Intersection {
         })
     }
 
-    pub fn remove_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
-        self.roads.retain(|x| *x != road_id);
+    pub fn add_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
+        self.roads.push(road_id);
+        let id = self.id;
+        let pos = self.pos;
+        self.roads
+            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].dir_from(id, pos))));
 
         self.update_turns(lanes, roads);
         self.update_traffic_control(lanes, roads);
     }
 
-    pub fn get_barycenter(&self, roads: &Roads, lanes: &Lanes) -> Vec2 {
-        let mut n_lanes = 0;
-        let mut barycenter = vec2!(0.0, 0.0);
+    pub fn remove_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
+        self.roads.retain(|x| *x != road_id);
 
-        for road_id in &self.roads {
-            for lane_id in roads[*road_id].lanes_iter() {
-                let lane = &lanes[*lane_id];
-                barycenter += lane.get_inter_node_pos(self.id);
-                n_lanes += 1;
-            }
-        }
-
-        if n_lanes == 0 {
-            self.pos
-        } else {
-            barycenter / (n_lanes as f32)
-        }
+        self.update_turns(lanes, roads);
+        self.update_traffic_control(lanes, roads);
     }
 
     pub fn update_turns(&mut self, lanes: &Lanes, roads: &Roads) {
@@ -113,39 +108,16 @@ impl Intersection {
         }
     }
 
-    pub fn turns_from(&self, lane: LaneID) -> Vec<&Turn> {
-        self.turns
-            .iter()
-            .filter(|(id, _)| id.src == lane)
-            .map(|(_, x)| x)
-            .collect()
-    }
-
-    pub fn turns_adirectional(&self, lane: LaneID) -> Vec<&Turn> {
-        self.turns
-            .iter()
-            .filter(|(id, _)| id.src == lane || id.dst == lane)
-            .map(|(_, x)| x)
-            .collect()
-    }
-
-    pub fn add_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
-        self.roads.push(road_id);
-        let id = self.id;
-        let pos = self.pos;
-        self.roads
-            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].dir_from(id, pos))));
-
-        self.update_turns(lanes, roads);
-        self.update_traffic_control(lanes, roads);
-    }
-
     pub fn update_traffic_control(&self, lanes: &mut Lanes, roads: &Roads) {
         self.light_policy.apply(self, lanes, roads);
     }
 
     pub fn update_optimal_radius(&mut self, lanes: &Lanes, roads: &Roads) {
-        let mut max_dist: f32 = 5.0;
+        let mut max_dist: f32 = 10.0;
+        if self.roads.len() == 1 {
+            self.interface_radius = max_dist;
+            return;
+        }
         for i in 0..self.roads.len() {
             let r1 = &roads[self.roads[i]];
             let r2 = &roads[self.roads[(i + 1) % self.roads.len()]];
@@ -161,10 +133,49 @@ impl Intersection {
             let dir2 = r2.dir_from(self.id, self.pos);
 
             let ang = dir1.angle(dir2).normalize_signed().0.abs();
-            if ang < std::f32::consts::FRAC_PI_2 && ang > 0.01 {
-                max_dist = max_dist.max(w / ang.sin());
-            }
+
+            max_dist = max_dist.max(w / ang.restrict(0.01, std::f32::consts::FRAC_PI_2).sin());
         }
         self.interface_radius = max_dist * 1.1;
+    }
+
+    pub fn update_barycenter(&mut self, lanes: &Lanes, roads: &Roads) {
+        let mut n_lanes = 0;
+        let mut barycenter = vec2!(0.0, 0.0);
+
+        if self.roads.len() <= 1 {
+            self.barycenter = self.pos;
+            return;
+        }
+
+        for road_id in &self.roads {
+            for lane_id in roads[*road_id].lanes_iter() {
+                let lane = &lanes[*lane_id];
+                barycenter += lane.get_inter_node_pos(self.id);
+                n_lanes += 1;
+            }
+        }
+
+        self.barycenter = if n_lanes == 0 {
+            self.pos
+        } else {
+            barycenter / (n_lanes as f32)
+        };
+    }
+
+    pub fn turns_from(&self, lane: LaneID) -> Vec<&Turn> {
+        self.turns
+            .iter()
+            .filter(|(id, _)| id.src == lane)
+            .map(|(_, x)| x)
+            .collect()
+    }
+
+    pub fn turns_adirectional(&self, lane: LaneID) -> Vec<&Turn> {
+        self.turns
+            .iter()
+            .filter(|(id, _)| id.src == lane || id.dst == lane)
+            .map(|(_, x)| x)
+            .collect()
     }
 }

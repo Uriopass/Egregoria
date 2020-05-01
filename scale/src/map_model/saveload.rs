@@ -1,7 +1,7 @@
 use crate::geometry::Vec2;
-use crate::map_model::{make_inter_entity, IntersectionID, LanePatternBuilder, Map};
+use crate::map_model::{IntersectionID, LanePatternBuilder, Map};
 use cgmath::num_traits::FloatConst;
-use specs::{LazyUpdate, World, WorldExt};
+use specs::{World, WorldExt};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::ops::Deref;
@@ -97,7 +97,7 @@ pub fn load_parismap() -> Map {
         map.connect(
             ids[src],
             ids[dst],
-            &LanePatternBuilder::new().one_way(n_lanes == 1).build(),
+            LanePatternBuilder::new().one_way(n_lanes == 1).build(),
         );
     }
 
@@ -118,25 +118,25 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
     }
 
     for x in first_circle.windows(2) {
-        m.connect(x[0], x[1], &LanePatternBuilder::new().one_way(true).build());
+        m.connect(x[0], x[1], LanePatternBuilder::new().one_way(true).build());
     }
     m.connect(
         *first_circle.last().unwrap(),
         first_circle[0],
-        &LanePatternBuilder::new().one_way(true).build(),
+        LanePatternBuilder::new().one_way(true).build(),
     );
 
     for x in second_circle.windows(2) {
-        m.connect(x[1], x[0], &LanePatternBuilder::new().one_way(true).build());
+        m.connect(x[1], x[0], LanePatternBuilder::new().one_way(true).build());
     }
     m.connect(
         second_circle[0],
         *second_circle.last().unwrap(),
-        &LanePatternBuilder::new().one_way(true).build(),
+        LanePatternBuilder::new().one_way(true).build(),
     );
 
     for (a, b) in first_circle.into_iter().zip(second_circle) {
-        m.connect(a, b, &LanePatternBuilder::new().build());
+        m.connect(a, b, LanePatternBuilder::new().build());
     }
 }
 
@@ -152,24 +152,24 @@ pub fn add_grid(pos: Vec2, m: &mut Map) {
         m.connect(
             grid[9][x].unwrap(),
             grid[9][x + 1].unwrap(),
-            &LanePatternBuilder::new().build(),
+            LanePatternBuilder::new().build(),
         );
         m.connect(
             grid[x][9].unwrap(),
             grid[x + 1][9].unwrap(),
-            &LanePatternBuilder::new().build(),
+            LanePatternBuilder::new().build(),
         );
 
         for y in 0..9 {
             m.connect(
                 grid[y][x].unwrap(),
                 grid[y][x + 1].unwrap(),
-                &LanePatternBuilder::new().build(),
+                LanePatternBuilder::new().build(),
             );
             m.connect(
                 grid[y][x].unwrap(),
                 grid[y + 1][x].unwrap(),
-                &LanePatternBuilder::new().build(),
+                LanePatternBuilder::new().build(),
             );
         }
     }
@@ -186,15 +186,4 @@ pub fn load(world: &mut World) {
     }
 
     world.insert(map);
-
-    let map = world.read_resource::<Map>();
-
-    for id in map.intersections().keys() {
-        make_inter_entity(
-            id,
-            &world.read_resource::<LazyUpdate>(),
-            &world.entities(),
-            &map,
-        );
-    }
 }

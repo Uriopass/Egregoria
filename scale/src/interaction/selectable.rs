@@ -24,7 +24,7 @@ impl Default for Selectable {
     }
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct SelectedEntity {
     pub e: Option<Entity>,
     pub dirty: bool, // Modified by inspection

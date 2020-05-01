@@ -23,6 +23,8 @@ pub struct Road {
 
     lanes_forward: Vec<LaneID>,
     lanes_backward: Vec<LaneID>,
+
+    pub lane_pattern: LanePattern,
 }
 
 impl Road {
@@ -33,7 +35,7 @@ impl Road {
         src: IntersectionID,
         dst: IntersectionID,
         lanes: &mut Lanes,
-        lane_pattern: &LanePattern,
+        lane_pattern: LanePattern,
     ) -> RoadID {
         let pos_src = intersections[src].pos;
         let pos_dst = intersections[dst].pos;
@@ -46,6 +48,7 @@ impl Road {
             interpolation_points: vec![pos_src, pos_dst].into(),
             lanes_forward: vec![],
             lanes_backward: vec![],
+            lane_pattern: lane_pattern.clone(),
         });
         let road = &mut store[id];
         for lane in &lane_pattern.lanes_forward {
