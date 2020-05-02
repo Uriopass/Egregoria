@@ -346,13 +346,7 @@ fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
     use ProjectKind::*;
     match (x, y) {
         (Road(id), Road(id2)) => id != id2,
-        (Inter(id), Inter(id2)) => {
-            id != id2
-                && map.intersections()[id]
-                    .roads
-                    .iter()
-                    .all(|x| map.roads()[*x].other_end(id) != id2)
-        }
+        (Inter(id), Inter(id2)) => id != id2,
         (Inter(id_inter), Road(id_road)) | (Road(id_road), Inter(id_inter)) => {
             let r = &map.roads()[id_road];
             r.src != id_inter && r.dst != id_inter
