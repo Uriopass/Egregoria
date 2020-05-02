@@ -221,12 +221,17 @@ pub fn calc_decision<'a>(
             continue;
         }
 
+        // Ignore cars behind
         if !is_vehicle || cos_angle < 0.0 {
             continue;
         }
 
-        // closest win
+        // Ignore collided cars that face us
+        if cos_direction_angle < 0.0 && dist < my_obj.radius + nei_physics_obj.radius {
+            continue;
+        }
 
+        // closest win
         let his_ray = Ray {
             from: his_pos - nei_physics_obj.radius * nei_physics_obj.dir,
             dir: nei_physics_obj.dir,
