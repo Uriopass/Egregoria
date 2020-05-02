@@ -67,10 +67,6 @@ impl Intersection {
 
     pub fn add_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
         self.roads.push(road_id);
-        let id = self.id;
-        let pos = self.pos;
-        self.roads
-            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].dir_from(id, pos))));
 
         self.update_turns(lanes, roads);
         self.update_traffic_control(lanes, roads);
@@ -84,8 +80,12 @@ impl Intersection {
     }
 
     pub fn update_turns(&mut self, lanes: &Lanes, roads: &Roads) {
-        let turns = self.turn_policy.generate_turns(self, lanes, roads);
+        let id = self.id;
+        let pos = self.pos;
+        self.roads
+            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].dir_from(id, pos))));
 
+        let turns = self.turn_policy.generate_turns(self, lanes, roads);
         let to_remove: Vec<TurnID> = self
             .turns
             .iter_mut()
