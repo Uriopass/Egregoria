@@ -129,6 +129,12 @@ impl<'a> State<'a> {
 
         MeshRenderer::render(&mut self.world, &mut tess);
 
+        debug_pathfinder(
+            &mut tess,
+            &self.world.read_resource::<Map>(),
+            self.world.read_resource::<MouseInfo>().unprojected,
+        );
+
         if let Some(x) = tess.meshbuilder.build(ctx.gfx) {
             x.draw(ctx)
         }
@@ -207,6 +213,45 @@ impl<'a> State<'a> {
 
     pub fn unproject(&mut self, pos: Vector2<f32>) -> Vector2<f32> {
         self.camera.unproject_mouse_click(pos)
+    }
+}
+
+#[allow(dead_code)]
+fn debug_pathfinder(tess: &mut Tesselator, map: &Map, mouse_pos: cgmath::Vector2<f32>) {
+    let pathfinder = map.pathfinder();
+    let g = pathfinder.inner_ref();
+    tess.color = LinearColor::WHITE;
+
+    for (id, &p) in g {
+        tess.draw_circle(p, 0.9, 5.0);
+        for (id2, _) in g.get_neighs(id) {
+            let p2 = g[id2];
+            tess.draw_line(p, p2, 0.9);
+        }
+    }
+
+    let n_inter = map.intersections().len();
+
+    let r_id1 = map
+        .closest_inter(mouse_pos)
+        .map(|x| &map.intersections()[x]);
+
+    let r2 = (mouse_pos.x * 100000.0).abs() as usize % n_inter;
+
+    let r_id2 = map.intersections().iter().nth(r2).map(|(_, x)| x);
+
+    if let (Some(i1), Some(i2)) = (r_id1, r_id2) {
+        let path = pathfinder.path(i1, i2);
+
+        tess.color = LinearColor::RED;
+        if let Some((p, _)) = path {
+            for w in p.windows(2) {
+                let p1 = g[w[0]];
+                let p2 = g[w[1]];
+
+                tess.draw_line(p1, p2, 0.95);
+            }
+        }
     }
 }
 

@@ -72,7 +72,7 @@ impl PolyLine {
         for w in self.0.windows(2) {
             if let [a, b] = w {
                 let proj = Segment { a: *a, b: *b }.project(p);
-                let d = (p - proj).magnitude();
+                let d = (p - proj).magnitude2();
                 if d <= min_dist {
                     min_dist = d;
                     min_proj = proj;

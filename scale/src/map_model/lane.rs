@@ -1,5 +1,4 @@
 use crate::geometry::polyline::PolyLine;
-use crate::geometry::segment::Segment;
 use crate::geometry::Vec2;
 use crate::map_model::{Intersection, IntersectionID, Intersections, Road, RoadID, TrafficControl};
 use cgmath::InnerSpace;
@@ -168,9 +167,8 @@ impl Lane {
         self.points.push(pos_dst);
     }
 
-    pub fn dist_to(&self, p: Vec2) -> f32 {
-        let segm = Segment::new(self.points[0], self.points[1]);
-        (segm.project(p) - p).magnitude()
+    pub fn dist2_to(&self, p: Vec2) -> f32 {
+        (self.points.project(p).unwrap() - p).magnitude2()
     }
 
     pub fn get_orientation_vec(&self) -> Vec2 {

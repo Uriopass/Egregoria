@@ -34,6 +34,12 @@ where
         .sample(&mut (*l.unwrap()))
 }
 
+/// Gives number in range [min; max[
+pub fn rand_range(min: i64, max: i64) -> i64 {
+    let l = RAND_STATE.lock();
+    rand_distr::Uniform::new(min, max).sample(&mut (*l.unwrap()))
+}
+
 pub trait Choose<'a> {
     type Output;
     fn choose(&'a self) -> Self::Output;
