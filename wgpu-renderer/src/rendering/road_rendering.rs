@@ -171,7 +171,7 @@ impl RoadRenderer {
             self.road_mesh = tess.meshbuilder.build(ctx.gfx)
         }
 
-        self.road_mesh.as_ref().unwrap().draw(ctx);
+        self.road_mesh.as_ref().map(|x| x.draw(ctx));
 
         self.signals_render(map, time, tess);
     }

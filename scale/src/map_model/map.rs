@@ -142,6 +142,13 @@ impl Map {
         road
     }
 
+    pub fn clear(&mut self) {
+        self.intersections.clear();
+        self.lanes.clear();
+        self.roads.clear();
+        self.pathfinder.clear();
+    }
+
     /* Helpers */
 
     pub fn project(&self, pos: Vec2) -> Option<MapProject> {

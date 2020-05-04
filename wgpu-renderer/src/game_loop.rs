@@ -232,16 +232,25 @@ fn debug_pathfinder(tess: &mut Tesselator, map: &Map, mouse_pos: cgmath::Vector2
 
     let n_inter = map.intersections().len();
 
+    if n_inter <= 1 {
+        return;
+    }
+
     let r_id1 = map
         .closest_inter(mouse_pos)
         .map(|x| &map.intersections()[x]);
 
-    let r2 = (mouse_pos.x * 100000.0).abs() as usize % n_inter;
+    let r2 = (mouse_pos.x * 100_000.0).abs() as usize % n_inter;
 
     let r_id2 = map.intersections().iter().nth(r2).map(|(_, x)| x);
 
     if let (Some(i1), Some(i2)) = (r_id1, r_id2) {
+        let t = std::time::Instant::now();
         let path = pathfinder.path(i1, i2);
+        println!(
+            "Pathfinded in {}",
+            (std::time::Instant::now() - t).as_secs_f32() * 1000.0
+        );
 
         tess.color = LinearColor::RED;
         if let Some((p, _)) = path {
@@ -249,7 +258,7 @@ fn debug_pathfinder(tess: &mut Tesselator, map: &Map, mouse_pos: cgmath::Vector2
                 let p1 = g[w[0]];
                 let p2 = g[w[1]];
 
-                tess.draw_line(p1, p2, 0.95);
+                tess.draw_stroke(p1, p2, 0.95, 20.0);
             }
         }
     }

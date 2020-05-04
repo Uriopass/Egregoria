@@ -56,11 +56,9 @@ impl Scanner {
     }
 }
 
-pub fn load_parismap() -> Map {
+pub fn load_parismap(map: &mut Map) {
     let file = File::open("resources/paris_54000.txt").unwrap();
     let mut scanner = Scanner::new(BufReader::new(file));
-
-    let mut map = Map::empty();
 
     let n = scanner.next::<i32>();
     let m = scanner.next::<i32>();
@@ -100,8 +98,6 @@ pub fn load_parismap() -> Map {
             LanePatternBuilder::new().one_way(n_lanes == 1).build(),
         );
     }
-
-    map
 }
 
 pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
@@ -175,15 +171,16 @@ pub fn add_grid(pos: Vec2, m: &mut Map) {
     }
 }
 
+pub fn load_testfield(map: &mut Map) {
+    add_doublecircle([0.0, 0.0].into(), map);
+    add_grid([0.0, 250.0].into(), map);
+}
+
 pub fn load(world: &mut World) {
-    let mut map = load_from_file();
+    let map = load_from_file();
 
-    //map = load_parismap();
-
-    if map.is_empty() {
-        add_doublecircle([0.0, 0.0].into(), &mut map);
-        add_grid([0.0, 250.0].into(), &mut map);
-    }
+    //load_parismap(&mut map);
+    //load_testfield(&mut map);
 
     world.insert(map);
 }

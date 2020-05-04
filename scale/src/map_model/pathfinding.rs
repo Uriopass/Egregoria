@@ -43,6 +43,10 @@ impl Pathfinder {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.g.clear()
+    }
+
     pub fn inner_ref(&self) -> &SecondaryGraph<IntersectionID, Vec2, NotNan<f32>> {
         &self.g
     }
