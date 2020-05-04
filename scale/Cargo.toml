@@ -5,7 +5,7 @@ authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
 edition = "2018"
 
 [dependencies]
-ordered-float = "1.0.2"
+ordered-float = { version = "1.0.2", features = ["serde"] }
 rand = {version = "0.7", default-features = false, features = ["std", "small_rng"]}
 rand_distr = "0.2.2"
 slotmap = {version = "0.4", default-features = false, features = ["serde"]}
@@ -17,4 +17,5 @@ imgui = "0.3"
 cgmath = {git = "https://github.com/rustgd/cgmath", features = ["serde"]}
 specs = {version = "0.16", default-features = false, features = ["shred-derive", "specs-derive", "serde"]}
 lazy_static = "1.4.0"
+pathfinding = "2.0.4"
 #const-tweaker = "0.3.1"
