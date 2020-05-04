@@ -1,6 +1,6 @@
 use crate::engine_interaction::{RenderStats, TimeInfo};
 use crate::interaction::SelectedEntity;
-use crate::map_model::{LanePatternBuilder, MapUIState};
+use crate::map_model::{LanePatternBuilder, Map, MapUIState};
 use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
 use imgui::im_str;
@@ -15,7 +15,7 @@ mod inspect;
 
 #[derive(Clone)]
 pub struct Gui {
-    show_car_ui: bool,
+    show_map_ui: bool,
     show_stats: bool,
     show_tips: bool,
     n_cars: i32,
@@ -25,7 +25,7 @@ pub struct Gui {
 impl Default for Gui {
     fn default() -> Self {
         Self {
-            show_car_ui: true,
+            show_map_ui: true,
             show_stats: true,
             show_tips: false,
             n_cars: 100,
@@ -61,8 +61,8 @@ impl Gui {
         // Menu bar
         ui.main_menu_bar(|| {
             ui.menu(im_str!("Show"), true, || {
-                if imgui::MenuItem::new(im_str!("Cars")).build(&ui) {
-                    self.show_car_ui = true;
+                if imgui::MenuItem::new(im_str!("Map")).build(&ui) {
+                    self.show_map_ui = true;
                 }
                 if imgui::MenuItem::new(im_str!("Stats")).build(&ui) {
                     self.show_stats = true;
@@ -77,28 +77,28 @@ impl Gui {
             }
         });
 
-        if self.show_car_ui {
-            let mut opened = self.show_car_ui;
-            imgui::Window::new(im_str!("Traffic"))
+        if self.show_map_ui {
+            let mut opened = self.show_map_ui;
+            imgui::Window::new(im_str!("Map"))
                 .size([200.0, 140.0], imgui::Condition::FirstUseEver)
                 .position([30.0, 30.0], imgui::Condition::FirstUseEver)
                 .opened(&mut opened)
                 .build(&ui, || {
                     ui.set_next_item_width(70.0);
-                    imgui::DragInt::new(&ui, im_str!("n_cars"), &mut self.n_cars)
+                    imgui::DragInt::new(&ui, im_str!("n cars"), &mut self.n_cars)
                         .min(1)
                         .max(1000)
                         .build();
 
                     ui.same_line(0.0);
-                    if ui.small_button(im_str!("spawn car")) {
+                    if ui.small_button(im_str!("spawn cars")) {
                         for _ in 0..self.n_cars {
                             spawn_new_vehicle(world);
                         }
                     }
 
                     ui.set_next_item_width(70.0);
-                    imgui::DragInt::new(&ui, im_str!("n_pedestrians"), &mut self.n_pedestrians)
+                    imgui::DragInt::new(&ui, im_str!("n pedestrians"), &mut self.n_pedestrians)
                         .min(1)
                         .max(1000)
                         .build();
@@ -148,7 +148,21 @@ impl Gui {
                         &InspectArgsDefault::default(),
                     );
 
-                    world.get_mut::<MapUIState>().unwrap().pattern_builder = pattern;
+                    world.write_resource::<MapUIState>().pattern_builder = pattern;
+
+                    let map: &mut Map = &mut world.write_resource::<Map>();
+
+                    if ui.small_button(im_str!("load Paris map")) {
+                        map.clear();
+                        crate::map_model::load_parismap(map);
+                        world.write_resource::<MapUIState>().map_render_dirty = true;
+                    }
+
+                    if ui.small_button(im_str!("load test field")) {
+                        map.clear();
+                        crate::map_model::load_testfield(map);
+                        world.write_resource::<MapUIState>().map_render_dirty = true;
+                    }
 
                     ui.text(im_str!(
                         "{} pedestrians",
@@ -159,7 +173,7 @@ impl Gui {
                         world.read_component::<VehicleComponent>().join().count()
                     ));
                 });
-            self.show_car_ui = opened;
+            self.show_map_ui = opened;
         }
 
         if self.show_stats {
