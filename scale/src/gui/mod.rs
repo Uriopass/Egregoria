@@ -215,12 +215,11 @@ impl Gui {
             .collapsible(false)
             .resizable(false)
             .build(&ui, || {
-                imgui::Slider::new(
-                    im_str!("Time warp"),
-                    std::ops::RangeInclusive::new(0.0, 6.0),
-                )
-                .display_format(im_str!("%.1f"))
-                .build(&ui, &mut time_info.time_speed);
+                imgui::DragFloat::new(&ui, im_str!("Time warp"), &mut time_info.time_speed)
+                    .min(0.0)
+                    .speed(0.1)
+                    .display_format(im_str!("%.1f"))
+                    .build();
             });
     }
 }

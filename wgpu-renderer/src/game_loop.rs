@@ -82,7 +82,7 @@ impl<'a> State<'a> {
             time.time += time.delta as f64;
             time.time_seconds = time.time as u64;
 
-            if time.delta > 0.0 && (Instant::now() - self.last_time).as_secs_f32() * 1000.0 > 10.0 {
+            if time.delta > 0.0 && (Instant::now() - self.last_time).as_secs_f32() * 1000.0 > 20.0 {
                 self.time_sync = time.time;
                 break;
             }
@@ -144,7 +144,7 @@ impl<'a> State<'a> {
     fn manage_timestep(&mut self, delta: f64) -> u32 {
         let mut time = self.world.write_resource::<TimeInfo>();
 
-        self.time_sync += delta * time.time_speed;
+        self.time_sync += delta * time.time_speed as f64;
 
         let diff = self.time_sync - time.time;
         if diff < TIME_STEP {
