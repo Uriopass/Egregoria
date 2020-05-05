@@ -12,7 +12,7 @@ pub struct TimeInfo {
     pub delta: f32,
     pub time: f64,
     pub time_seconds: u64,
-    pub time_speed: f64,
+    pub time_speed: f32,
 }
 
 impl Default for TimeInfo {
