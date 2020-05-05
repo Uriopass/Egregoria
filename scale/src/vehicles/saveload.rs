@@ -12,13 +12,12 @@ pub fn save(world: &mut World) {
     let path = VEHICLE_FILENAME.to_string() + ".bc";
     let file = File::create(path).unwrap();
 
-    let comps: Vec<(Transform, VehicleComponent)> = (
+    let storages = (
         &world.read_component::<Transform>(),
         &world.read_component::<VehicleComponent>(),
-    )
-        .join()
-        .map(|(trans, car)| (trans.clone(), car.clone()))
-        .collect();
+    );
+
+    let comps: Vec<_> = storages.join().map(|(trans, car)| (trans, car)).collect();
 
     bincode::serialize_into(file, &comps).unwrap();
 }

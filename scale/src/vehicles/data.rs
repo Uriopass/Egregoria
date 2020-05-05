@@ -21,7 +21,7 @@ pub enum VehicleKind {
     Bus,
 }
 
-#[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, Inspect, Serialize, Deserialize)]
 pub struct VehicleComponent {
     pub itinerary: Itinerary,
     #[inspect(proxy_type = "InspectDragf")]
@@ -157,8 +157,7 @@ pub fn spawn_new_vehicle(world: &mut World) {
             let mut pos = Transform::new(*a + rand_det::<f32>() * diff);
             pos.set_direction(diff.normalize());
 
-            let mut it = Itinerary::default();
-            it.set_simple(
+            let mut it = Itinerary::simple(
                 Traversable::new(TraverseKind::Lane(lane.id), TraverseDirection::Forward),
                 &map,
             );

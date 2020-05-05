@@ -171,7 +171,9 @@ impl RoadRenderer {
             self.road_mesh = tess.meshbuilder.build(ctx.gfx)
         }
 
-        self.road_mesh.as_ref().map(|x| x.draw(ctx));
+        if let Some(x) = self.road_mesh.as_ref() {
+            x.draw(ctx)
+        }
 
         self.signals_render(map, time, tess);
     }

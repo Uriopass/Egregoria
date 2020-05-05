@@ -1,7 +1,9 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::geometry::{Vec2, Vec2Impl};
-use crate::map_model::{Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind};
+use crate::map_model::{
+    Itinerary, Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind,
+};
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::{rand_det, Choose, Restrict};
@@ -101,13 +103,7 @@ pub fn objective_update(
     trans: &Transform,
     map: &Map,
 ) {
-    if vehicle
-        .itinerary
-        .get_travers()
-        .map_or(false, |x| !x.is_valid(map))
-    {
-        vehicle.itinerary.set_none();
-    }
+    vehicle.itinerary.check_validity(map);
 
     if let Some(p) = vehicle.itinerary.get_point() {
         if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
@@ -123,7 +119,7 @@ pub fn objective_update(
     if vehicle.itinerary.has_ended() {
         if vehicle.itinerary.get_travers().is_none() {
             let id = unwrap_or!(map.closest_lane(trans.position()), return);
-            vehicle.itinerary.set_simple(
+            vehicle.itinerary = Itinerary::simple(
                 Traversable::new(TraverseKind::Lane(id), TraverseDirection::Forward),
                 map,
             );
@@ -132,7 +128,7 @@ pub fn objective_update(
 
         match vehicle.itinerary.get_travers().unwrap().kind {
             TraverseKind::Turn(id) => {
-                vehicle.itinerary.set_simple(
+                vehicle.itinerary = Itinerary::simple(
                     Traversable::new(TraverseKind::Lane(id.dst), TraverseDirection::Forward),
                     map,
                 );
@@ -144,7 +140,7 @@ pub fn objective_update(
 
                 let turn = unwrap_or!(neighs.choose(), return);
 
-                vehicle.itinerary.set_simple(
+                vehicle.itinerary = Itinerary::simple(
                     Traversable::new(TraverseKind::Turn(turn.id), TraverseDirection::Forward),
                     map,
                 );
@@ -277,7 +273,7 @@ fn calc_front_dist<'a>(
         // front cone
         if cos_angle > 0.7
             && (!is_vehicle || cos_direction_angle > 0.0)
-            && (!on_lane || dist_to_side < 4.0)
+            && (!on_lane || dist_to_side < 3.0)
         {
             let mut dist_to_obj = dist - my_radius - nei_physics_obj.radius;
             if !is_vehicle {
@@ -290,11 +286,6 @@ fn calc_front_dist<'a>(
 
         // don't do ray checks for other things than cars
         if !is_vehicle {
-            continue;
-        }
-
-        // Ignore collided cars that face us (mitigates gridlocks)
-        if cos_direction_angle < 0.0 && dist < self_obj.radius + nei_physics_obj.radius {
             continue;
         }
 
@@ -311,7 +302,7 @@ fn calc_front_dist<'a>(
         {
             continue;
         }
-        min_front_dist = min_front_dist.min(dist - my_radius);
+        min_front_dist = min_front_dist.min(dist - my_radius - nei_physics_obj.radius - 5.0);
     }
     min_front_dist
 }

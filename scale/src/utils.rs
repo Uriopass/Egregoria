@@ -4,7 +4,7 @@ use rand_distr::{Distribution, Float, Standard, StandardNormal};
 use std::sync::Mutex;
 
 macro_rules! unwrap_or {
-    ($e: expr, $t: tt) => {
+    ($e: expr, $t: expr) => {
         match $e {
             Some(x) => x,
             None => $t,

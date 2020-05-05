@@ -350,41 +350,31 @@ pub struct InspectRenderer<'a, 'b> {
     pub ui: &'b Ui<'b>,
 }
 
-fn clone_and_modify<T: Component + Clone>(
+/// Avoids Cloning by mutably aliasing the component inside the world
+/// Unsound if the inspector also try to get the component using the world borrow
+fn modify<T: Component>(
     world: &mut World,
     entity: Entity,
-    f: impl FnOnce(&mut World, T) -> Option<T>,
+    f: impl FnOnce(&mut World, *mut T) -> bool,
 ) -> bool {
-    let c = world.write_component::<T>().get_mut(entity).cloned();
-
-    if let Some(x) = c {
-        let m = f(world, x);
-        if let Some(v) = m {
-            *world.write_component::<T>().get_mut(entity).unwrap() = v;
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    }
+    let mut storage = world.write_component::<T>();
+    let c = unwrap_or!(storage.get_mut(entity), return false);
+    let x: *mut T = c as *mut T;
+    drop(storage);
+    f(world, x)
 }
 
 impl<'a, 'b> InspectRenderer<'a, 'b> {
-    fn inspect_component<T: Component + Clone + InspectRenderDefault<T>>(&mut self) -> bool {
+    fn inspect_component<T: Component + InspectRenderDefault<T>>(&mut self) -> bool {
         let ui = self.ui;
-        clone_and_modify(self.world, self.entity, |world, mut x| {
-            if <T as InspectRenderDefault<T>>::render_mut(
-                &mut [&mut x],
+        modify(self.world, self.entity, |world, x| -> bool {
+            <T as InspectRenderDefault<T>>::render_mut(
+                &mut [unsafe { &mut *x }],
                 std::any::type_name::<T>().split("::").last().unwrap_or(""),
                 world,
                 ui,
                 &InspectArgsDefault::default(),
-            ) {
-                Some(x)
-            } else {
-                None
-            }
+            )
         })
     }
 
@@ -393,38 +383,36 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         let mut event = None;
         let mut dirty = false;
         let entity = self.entity;
-        dirty |= clone_and_modify(self.world, entity, |world, mut x: Transform| {
-            let mut position = x.position();
-            let mut direction = x.direction();
-            let old_pos = position;
-            let mut changed = <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(
-                &mut [&mut position],
-                "position",
-                world,
-                ui,
-                &InspectArgsDefault::default(),
-            );
+        dirty |= modify(self.world, entity, |world, x: *mut Transform| -> bool {
+            unsafe {
+                let mut position = (&*x).position();
+                let mut direction = (&*x).direction();
+                let old_pos = position;
+                let mut changed = <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(
+                    &mut [&mut position],
+                    "position",
+                    world,
+                    ui,
+                    &InspectArgsDefault::default(),
+                );
 
-            if changed {
-                event = Some(MovedEvent {
-                    entity,
-                    new_pos: position,
-                    delta_pos: position - old_pos,
-                });
-            }
-            changed |= <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
-                &mut [&mut direction],
-                "direction",
-                world,
-                ui,
-                &InspectArgsDefault::default(),
-            );
-            x.set_direction(direction);
-            x.set_position(position);
-            if changed {
-                Some(x)
-            } else {
-                None
+                if changed {
+                    event = Some(MovedEvent {
+                        entity,
+                        new_pos: position,
+                        delta_pos: position - old_pos,
+                    });
+                }
+                changed |= <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
+                    &mut [&mut direction],
+                    "direction",
+                    world,
+                    ui,
+                    &InspectArgsDefault::default(),
+                );
+                (&mut *x).set_direction(direction);
+                (&mut *x).set_position(position);
+                changed
             }
         });
 

@@ -129,12 +129,6 @@ impl<'a> State<'a> {
 
         MeshRenderer::render(&mut self.world, &mut tess);
 
-        debug_pathfinder(
-            &mut tess,
-            &self.world.read_resource::<Map>(),
-            self.world.read_resource::<MouseInfo>().unprojected,
-        );
-
         if let Some(x) = tess.meshbuilder.build(ctx.gfx) {
             x.draw(ctx)
         }
