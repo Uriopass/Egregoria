@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};
 use specs::{Component, DenseVecStorage};
 
-#[derive(Clone, Serialize, Deserialize, Component, Inspect)]
+#[derive(Serialize, Deserialize, Component, Inspect)]
 pub struct PedestrianComponent {
     pub itinerary: Itinerary,
     pub walking_speed: f32,
@@ -38,8 +38,7 @@ pub fn spawn_pedestrian(world: &mut World) {
         return;
     };
 
-    let mut itinerary = Itinerary::default();
-    itinerary.set_simple(
+    let mut itinerary = Itinerary::simple(
         Traversable::new(TraverseKind::Lane(lane.id), TraverseDirection::Forward),
         &map,
     );

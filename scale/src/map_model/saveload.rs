@@ -4,18 +4,17 @@ use cgmath::num_traits::FloatConst;
 use specs::{World, WorldExt};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::ops::Deref;
 
 const FILENAME: &str = "world/map.bc";
 
 pub fn save(world: &mut World) {
     let _ = std::fs::create_dir("world");
 
-    let map = world.read_resource::<Map>();
+    let map: &Map = &world.read_resource::<Map>();
 
     let file = File::create(FILENAME).unwrap();
 
-    bincode::serialize_into(file, map.deref()).unwrap();
+    bincode::serialize_into(file, map).unwrap();
 }
 
 fn load_from_file() -> Map {
