@@ -112,7 +112,7 @@ impl Intersection {
         self.light_policy.apply(self, lanes, roads);
     }
 
-    pub fn update_optimal_radius(&mut self, lanes: &Lanes, roads: &Roads) {
+    pub fn update_interface_radius(&mut self, lanes: &Lanes, roads: &Roads) {
         let mut max_dist: f32 = 10.0;
         if self.roads.len() == 1 {
             self.interface_radius = max_dist;
@@ -134,7 +134,7 @@ impl Intersection {
 
             let ang = dir1.angle(dir2).normalize_signed().0.abs();
 
-            max_dist = max_dist.max(w / ang.restrict(0.01, std::f32::consts::FRAC_PI_2).sin());
+            max_dist = max_dist.max(w / ang.restrict(0.1, std::f32::consts::FRAC_PI_2).sin());
         }
         self.interface_radius = max_dist * 1.1;
     }
@@ -161,6 +161,13 @@ impl Intersection {
         } else {
             barycenter / (n_lanes as f32)
         };
+    }
+
+    pub fn turns_from_iter(&self, lane: LaneID) -> impl Iterator<Item = &TurnID> {
+        self.turns
+            .iter()
+            .filter(move |(id, _)| id.src == lane)
+            .map(|(id, _)| id)
     }
 
     pub fn turns_from(&self, lane: LaneID) -> Vec<&Turn> {

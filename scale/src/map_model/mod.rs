@@ -7,7 +7,6 @@ mod lane;
 mod light_policy;
 mod map;
 mod map_ui;
-mod pathfinding;
 mod road;
 mod saveload;
 mod traffic_control;
@@ -15,7 +14,6 @@ mod traversable;
 mod turn;
 mod turn_policy;
 
-pub use self::pathfinding::*;
 pub use intersection::*;
 pub use itinerary::*;
 pub use lane::*;

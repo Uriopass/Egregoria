@@ -2,7 +2,7 @@ use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::geometry::{Vec2, Vec2Impl};
 use crate::map_model::{
-    Itinerary, Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind,
+    Itinerary, LaneKind, Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind,
 };
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
@@ -118,7 +118,10 @@ pub fn objective_update(
 
     if vehicle.itinerary.has_ended() {
         if vehicle.itinerary.get_travers().is_none() {
-            let id = unwrap_or!(map.closest_lane(trans.position()), return);
+            let id = unwrap_or!(
+                map.closest_lane(trans.position(), LaneKind::Driving),
+                return
+            );
             vehicle.itinerary = Itinerary::simple(
                 Traversable::new(TraverseKind::Lane(id), TraverseDirection::Forward),
                 map,

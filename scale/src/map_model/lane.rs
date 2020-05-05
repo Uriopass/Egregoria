@@ -50,6 +50,8 @@ pub struct Lane {
     pub points: PolyLine,
     pub width: f32,
     pub dist_from_center: f32,
+
+    pub parent_length: f32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -165,6 +167,8 @@ impl Lane {
         self.points.clear();
         self.points.push(pos_src);
         self.points.push(pos_dst);
+
+        self.parent_length = parent_road.length();
     }
 
     pub fn dist2_to(&self, p: Vec2) -> f32 {
