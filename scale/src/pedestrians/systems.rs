@@ -1,6 +1,6 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::{Vec2, Vec2Impl};
-use crate::map_model::{Itinerary, Map, Traversable, TraverseDirection, TraverseKind};
+use crate::map_model::{Itinerary, LaneKind, Map, Traversable, TraverseDirection, TraverseKind};
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;
@@ -165,7 +165,7 @@ pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform,
     }
 
     if pedestrian.itinerary.is_none() {
-        if let Some(closest) = map.closest_lane(trans.position()) {
+        if let Some(closest) = map.closest_lane(trans.position(), LaneKind::Walking) {
             pedestrian.itinerary = Itinerary::simple(
                 Traversable::new(TraverseKind::Lane(closest), TraverseDirection::Forward),
                 map,

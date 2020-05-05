@@ -1,10 +1,10 @@
 use crate::geometry::Vec2;
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Pathfinder, Road, RoadID,
+    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
 };
 use crate::utils::rand_det;
 use cgmath::MetricSpace;
-use ordered_float::OrderedFloat;
+use ordered_float::{NotNan, OrderedFloat};
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 
@@ -29,7 +29,6 @@ pub struct Map {
     roads: Roads,
     lanes: Lanes,
     intersections: Intersections,
-    pathfinder: Pathfinder,
 }
 
 impl Default for Map {
@@ -44,7 +43,6 @@ impl Map {
             roads: Roads::with_key(),
             lanes: Lanes::with_key(),
             intersections: Intersections::with_key(),
-            pathfinder: Pathfinder::default(),
         }
     }
 
@@ -67,7 +65,7 @@ impl Map {
 
     fn invalidate(&mut self, id: IntersectionID) {
         let inter = &mut self.intersections[id];
-        inter.update_optimal_radius(&self.lanes, &self.roads);
+        inter.update_interface_radius(&self.lanes, &self.roads);
 
         for x in inter.roads.clone() {
             let road = &mut self.roads[x];
@@ -78,13 +76,10 @@ impl Map {
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
         inter.update_barycenter(&self.lanes, &self.roads);
-        self.pathfinder.update(inter);
     }
 
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
-        let id = Intersection::make(&mut self.intersections, pos);
-        self.pathfinder.add(&self.intersections[id]);
-        id
+        Intersection::make(&mut self.intersections, pos)
     }
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
@@ -93,7 +88,6 @@ impl Map {
         }
 
         self.intersections.remove(src);
-        self.pathfinder.remove(src);
     }
 
     pub fn connect(
@@ -113,9 +107,6 @@ impl Map {
 
         let inters = &mut self.intersections;
 
-        self.pathfinder.connect(&inters[src], &inters[dst]);
-        self.pathfinder.connect(&inters[dst], &inters[src]);
-
         inters[src].add_road(road_id, &mut self.lanes, &self.roads);
         inters[dst].add_road(road_id, &mut self.lanes, &self.roads);
 
@@ -131,9 +122,6 @@ impl Map {
             self.lanes.remove(*lane_id).unwrap();
         }
 
-        self.pathfinder.disconnect(road.src, road.dst);
-        self.pathfinder.disconnect(road.dst, road.src);
-
         self.intersections[road.src].remove_road(road_id, &mut self.lanes, &self.roads);
         self.intersections[road.dst].remove_road(road_id, &mut self.lanes, &self.roads);
 
@@ -146,10 +134,30 @@ impl Map {
         self.intersections.clear();
         self.lanes.clear();
         self.roads.clear();
-        self.pathfinder.clear();
     }
 
-    /* Helpers */
+    pub fn path(&self, start: LaneID, end: LaneID) -> Option<(Vec<LaneID>, f32)> {
+        let inters = &self.intersections;
+        let lanes = &self.lanes;
+
+        let end_pos = inters[lanes[end].dst].pos;
+
+        let heuristic = |p: &LaneID| {
+            let pos = inters[lanes[*p].dst].pos;
+            NotNan::new(pos.distance(end_pos) * 1.2).unwrap() // Inexact but (much) faster
+        };
+
+        let successors = |p: &LaneID| {
+            let l = &lanes[*p];
+            let inter = &inters[l.dst];
+            inter
+                .turns_from_iter(*p)
+                .map(|x| (x.dst, NotNan::new(lanes[x.dst].parent_length).unwrap()))
+        };
+
+        pathfinding::directed::astar::astar(&start, successors, heuristic, |p| *p == end)
+            .map(|(v, d)| (v, d.into_inner()))
+    }
 
     pub fn project(&self, pos: Vec2) -> Option<MapProject> {
         const THRESHOLD: f32 = 20.0;
@@ -216,9 +224,6 @@ impl Map {
     pub fn intersections(&self) -> &Intersections {
         &self.intersections
     }
-    pub fn pathfinder(&self) -> &Pathfinder {
-        &self.pathfinder
-    }
 
     pub fn get_random_lane(&self, kind: LaneKind) -> Option<&Lane> {
         let l = self.roads.len();
@@ -251,9 +256,10 @@ impl Map {
         None
     }
 
-    pub fn closest_lane(&self, p: Vec2) -> Option<LaneID> {
+    pub fn closest_lane(&self, p: Vec2, kind: LaneKind) -> Option<LaneID> {
         self.lanes
             .iter()
+            .filter(|(_, x)| x.kind == kind)
             .min_by_key(|(_, lane)| OrderedFloat(lane.dist2_to(p)))
             .map(|(id, _)| id)
     }

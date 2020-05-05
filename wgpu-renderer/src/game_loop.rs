@@ -6,7 +6,7 @@ use cgmath::Vector2;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
 use scale::interaction::FollowEntity;
-use scale::map_model::{Map, MapUIState};
+use scale::map_model::{LaneKind, Map, MapUIState};
 use scale::physics::Transform;
 use scale::rendering::{Color, LinearColor};
 use scale::specs::RunNow;
@@ -129,6 +129,12 @@ impl<'a> State<'a> {
 
         MeshRenderer::render(&mut self.world, &mut tess);
 
+        debug_pathfinder(
+            &mut tess,
+            &self.world.read_resource::<Map>(),
+            self.world.read_resource::<MouseInfo>().unprojected,
+        );
+
         if let Some(x) = tess.meshbuilder.build(ctx.gfx) {
             x.draw(ctx)
         }
@@ -212,35 +218,20 @@ impl<'a> State<'a> {
 
 #[allow(dead_code)]
 fn debug_pathfinder(tess: &mut Tesselator, map: &Map, mouse_pos: cgmath::Vector2<f32>) {
-    let pathfinder = map.pathfinder();
-    let g = pathfinder.inner_ref();
-    tess.color = LinearColor::WHITE;
+    let lanes = map.lanes();
 
-    for (id, &p) in g {
-        tess.draw_circle(p, 0.9, 5.0);
-        for (id2, _) in g.get_neighs(id) {
-            let p2 = g[id2];
-            tess.draw_line(p, p2, 0.9);
-        }
-    }
+    let l1 = lanes
+        .iter()
+        .filter(|(_, l)| l.kind == LaneKind::Driving)
+        .nth(10)
+        .map(|(id, _)| id);
 
-    let n_inter = map.intersections().len();
+    let l2 = map.closest_lane(mouse_pos, LaneKind::Driving);
 
-    if n_inter <= 1 {
-        return;
-    }
-
-    let r_id1 = map
-        .closest_inter(mouse_pos)
-        .map(|x| &map.intersections()[x]);
-
-    let r2 = (mouse_pos.x * 100_000.0).abs() as usize % n_inter;
-
-    let r_id2 = map.intersections().iter().nth(r2).map(|(_, x)| x);
-
-    if let (Some(i1), Some(i2)) = (r_id1, r_id2) {
+    if let (Some(l1), Some(l2)) = (l1, l2) {
         let t = std::time::Instant::now();
-        let path = pathfinder.path(i1, i2);
+        let path = map.path(l1, l2);
+
         println!(
             "Pathfinded in {}",
             (std::time::Instant::now() - t).as_secs_f32() * 1000.0
@@ -248,11 +239,18 @@ fn debug_pathfinder(tess: &mut Tesselator, map: &Map, mouse_pos: cgmath::Vector2
 
         tess.color = LinearColor::RED;
         if let Some((p, _)) = path {
-            for w in p.windows(2) {
-                let p1 = g[w[0]];
-                let p2 = g[w[1]];
+            for l in p.windows(2) {
+                let l1 = &map.lanes()[l[0]];
+                let l2 = &map.lanes()[l[1]];
 
-                tess.draw_stroke(p1, p2, 0.95, 20.0);
+                tess.draw_stroke(
+                    l1.points.last().unwrap(),
+                    l2.points.first().unwrap(),
+                    1.0,
+                    l1.width,
+                );
+
+                tess.draw_polyline(l2.points.as_slice(), 1.0, l2.width);
             }
         }
     }

@@ -96,6 +96,7 @@ impl Road {
         lane_type: LaneKind,
         direction: LaneDirection,
     ) -> LaneID {
+        let length = self.length();
         let (src, dst, road_lanes) = match direction {
             LaneDirection::Forward => (self.src, self.dst, &mut self.lanes_forward),
             LaneDirection::Backward => (self.dst, self.src, &mut self.lanes_backward),
@@ -112,6 +113,7 @@ impl Road {
             points: Default::default(),
             width: if lane_type.vehicles() { 8.0 } else { 4.0 },
             dist_from_center,
+            parent_length: length,
         });
         road_lanes.push(id);
         id
