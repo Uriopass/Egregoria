@@ -344,10 +344,8 @@ macro_rules! enum_inspect_impl {
     };
 }
 
-pub struct InspectRenderer<'a, 'b> {
-    pub world: &'a mut World,
+pub struct InspectRenderer {
     pub entity: Entity,
-    pub ui: &'b Ui<'b>,
 }
 
 /// Avoids Cloning by mutably aliasing the component inside the world
@@ -364,10 +362,13 @@ fn modify<T: Component>(
     f(world, x)
 }
 
-impl<'a, 'b> InspectRenderer<'a, 'b> {
-    fn inspect_component<T: Component + InspectRenderDefault<T>>(&mut self) -> bool {
-        let ui = self.ui;
-        modify(self.world, self.entity, |world, x| -> bool {
+impl InspectRenderer {
+    fn inspect_component<T: Component + InspectRenderDefault<T>>(
+        &self,
+        world: &mut World,
+        ui: &Ui,
+    ) -> bool {
+        modify(world, self.entity, |world, x| -> bool {
             <T as InspectRenderDefault<T>>::render_mut(
                 &mut [unsafe { &mut *x }],
                 std::any::type_name::<T>().split("::").last().unwrap_or(""),
@@ -378,12 +379,11 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         })
     }
 
-    pub fn render(mut self) -> bool {
-        let ui = self.ui;
+    pub fn render(&self, world: &mut World, ui: &Ui) -> bool {
         let mut event = None;
         let mut dirty = false;
         let entity = self.entity;
-        dirty |= modify(self.world, entity, |world, x: *mut Transform| -> bool {
+        dirty |= modify(world, entity, |world, x: *mut Transform| -> bool {
             unsafe {
                 let mut position = (&*x).position();
                 let mut direction = (&*x).direction();
@@ -417,20 +417,20 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         });
 
         if let Some(ev) = event {
-            self.world
+            world
                 .write_resource::<EventChannel<MovedEvent>>()
                 .single_write(ev);
         }
-        dirty |= self.inspect_component::<VehicleComponent>();
-        dirty |= self.inspect_component::<PedestrianComponent>();
-        dirty |= self.inspect_component::<AssetRender>();
-        dirty |= self.inspect_component::<MeshRender>();
-        dirty |= self.inspect_component::<Kinematics>();
-        dirty |= self.inspect_component::<Collider>();
-        dirty |= self.inspect_component::<Movable>();
-        dirty |= self.inspect_component::<IntersectionComponent>();
+        dirty |= self.inspect_component::<VehicleComponent>(world, ui);
+        dirty |= self.inspect_component::<PedestrianComponent>(world, ui);
+        dirty |= self.inspect_component::<AssetRender>(world, ui);
+        dirty |= self.inspect_component::<MeshRender>(world, ui);
+        dirty |= self.inspect_component::<Kinematics>(world, ui);
+        dirty |= self.inspect_component::<Collider>(world, ui);
+        dirty |= self.inspect_component::<Movable>(world, ui);
+        dirty |= self.inspect_component::<IntersectionComponent>(world, ui);
 
-        let follow = &mut self.world.write_resource::<FollowEntity>().0;
+        let follow = &mut world.write_resource::<FollowEntity>().0;
         if follow.is_none() {
             if ui.small_button(im_str!("Follow")) {
                 follow.replace(self.entity);
@@ -438,6 +438,7 @@ impl<'a, 'b> InspectRenderer<'a, 'b> {
         } else if ui.small_button(im_str!("Unfollow")) {
             follow.take();
         }
+
         if dirty {
             ui.text("dirty");
         }

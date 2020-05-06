@@ -23,24 +23,8 @@ impl PolyLine {
         Self(Vec::with_capacity(c))
     }
 
-    pub fn length(&self) -> f32 {
-        self.0.windows(2).map(|x| (x[1] - x[0]).magnitude()).sum()
-    }
-
-    pub fn n_points(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
     pub fn extend<'a>(&mut self, s: impl IntoIterator<Item = &'a Vec2>) {
         self.0.extend(s)
-    }
-
-    pub fn get(&self, id: usize) -> Option<&Vec2> {
-        self.0.get(id)
     }
 
     pub fn pop(&mut self) -> Option<Vec2> {
@@ -49,6 +33,48 @@ impl PolyLine {
 
     pub fn push(&mut self, item: Vec2) {
         self.0.push(item)
+    }
+
+    pub fn last_mut(&mut self) -> Option<&mut Vec2> {
+        self.0.last_mut()
+    }
+
+    pub fn first_mut(&mut self) -> Option<&mut Vec2> {
+        self.0.first_mut()
+    }
+
+    pub fn clear(&mut self) {
+        self.0.clear()
+    }
+
+    pub fn pop_first(&mut self) -> Option<Vec2> {
+        if self.0.is_empty() {
+            None
+        } else {
+            Some(self.0.remove(0))
+        }
+    }
+
+    pub fn random_along(&self) -> Option<Vec2> {
+        let r = rand::random();
+        match self.n_points() {
+            0 => None,
+            1 => Some(self[0]),
+            2 => Some(self[0] * r + self[1] * (1.0 - r)),
+            _ => {
+                let l = self.length() * r;
+                let mut partial = 0.0;
+                for w in self.0.windows(2) {
+                    let m = (w[1] - w[0]).magnitude();
+                    if partial + m > l {
+                        let coeff = (l - partial) / m;
+                        return Some(w[0] * coeff + w[1] * (1.0 - coeff));
+                    }
+                    partial += m;
+                }
+                None
+            }
+        }
     }
 
     pub fn project(&self, p: Vec2) -> Option<Vec2> {
@@ -84,36 +110,32 @@ impl PolyLine {
         Some(min_proj)
     }
 
-    pub fn pop_first(&mut self) -> Option<Vec2> {
-        if self.0.is_empty() {
-            None
-        } else {
-            Some(self.0.remove(0))
-        }
+    pub fn length(&self) -> f32 {
+        self.0.windows(2).map(|x| (x[1] - x[0]).magnitude()).sum()
     }
 
-    pub fn last(&self) -> Option<Vec2> {
-        self.0.last().copied()
+    pub fn n_points(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    pub fn get(&self, id: usize) -> Option<&Vec2> {
+        self.0.get(id)
     }
 
     pub fn first(&self) -> Option<Vec2> {
         self.0.first().copied()
     }
 
-    pub fn last_mut(&mut self) -> Option<&mut Vec2> {
-        self.0.last_mut()
-    }
-
-    pub fn first_mut(&mut self) -> Option<&mut Vec2> {
-        self.0.first_mut()
+    pub fn last(&self) -> Option<Vec2> {
+        self.0.last().copied()
     }
 
     pub fn as_slice(&self) -> &[Vec2] {
         self.0.as_slice()
-    }
-
-    pub fn clear(&mut self) {
-        self.0.clear()
     }
 
     pub fn iter(&self) -> Iter<Vec2> {

@@ -1,6 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
-use crate::map_model::{IntersectionID, LaneID, Map, Traversable};
+use crate::map_model::{LaneID, Map, Traversable, TraverseDirection, TraverseKind};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
@@ -19,11 +19,10 @@ pub enum ItineraryKind {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Route {
-    /// End is at the beginning, allows for efficient popping
-    reversed_route: Vec<IntersectionID>,
-    end: LaneID,
-    end_pos: Vec2,
-    cur: Traversable,
+    /// Route is reversed, allows for efficient popping
+    pub reversed_route: Vec<LaneID>,
+    pub end_pos: Vec2,
+    pub cur: Traversable,
 }
 
 impl Itinerary {
@@ -41,30 +40,71 @@ impl Itinerary {
         }
     }
 
-    pub fn route(
-        path: Vec<IntersectionID>,
-        cur: Traversable,
-        objective: (LaneID, Vec2),
-        m: &Map,
-    ) -> Itinerary {
+    pub fn route(cur: Traversable, objective: (LaneID, Vec2), map: &Map) -> Itinerary {
+        let start = match cur.kind {
+            TraverseKind::Lane(id) => id,
+            TraverseKind::Turn(id) => id.dst,
+        };
+
+        let mut reversed_route: Vec<LaneID> =
+            unwrap_or!(map.path(start, objective.0), return Itinerary::none())
+                .into_iter()
+                .rev()
+                .collect();
+
+        reversed_route.pop(); // Remove start
+
         let kind = ItineraryKind::Route(Route {
-            reversed_route: path.into_iter().rev().collect(),
-            end: objective.0,
+            reversed_route,
             end_pos: objective.1,
             cur,
         });
 
-        Self {
+        let mut it = Self {
             kind,
-            local_path: cur.points(m),
-        }
+            local_path: PolyLine::default(),
+        };
+        it.advance(map);
+        it
     }
 
     pub fn advance(&mut self, map: &Map) -> Option<Vec2> {
         let v = self.local_path.pop_first();
         if self.local_path.is_empty() {
             if let ItineraryKind::Route(r) = &mut self.kind {
-                // ...
+                match r.cur.kind {
+                    TraverseKind::Lane(id) => {
+                        let next_lane = r.reversed_route.pop()?;
+
+                        let turn =
+                            map.intersections()[map.lanes()[id].dst].find_turn(id, next_lane);
+
+                        match turn {
+                            Some((x, dir)) => {
+                                r.cur = Traversable::new(TraverseKind::Turn(x), dir);
+                                self.local_path = r.cur.points(map);
+                            }
+                            None => {
+                                *self = Itinerary::none();
+                            }
+                        }
+                    }
+                    TraverseKind::Turn(id) => {
+                        let lane_dst = match r.cur.dir {
+                            TraverseDirection::Forward => id.dst,
+                            TraverseDirection::Backward => id.src,
+                        };
+
+                        r.cur = Traversable::new(TraverseKind::Lane(lane_dst), r.cur.dir);
+
+                        // last lane, ignore and push end pos
+                        if r.reversed_route.is_empty() {
+                            self.local_path.push(r.end_pos);
+                        } else {
+                            self.local_path = r.cur.points(map);
+                        }
+                    }
+                }
             }
         }
         v
@@ -91,6 +131,14 @@ impl Itinerary {
             ItineraryKind::Simple(x) => Some(x),
             ItineraryKind::Route(Route { cur, .. }) => Some(cur),
         }
+    }
+
+    pub fn kind(&self) -> &ItineraryKind {
+        &self.kind
+    }
+
+    pub fn local_path(&self) -> &PolyLine {
+        &self.local_path
     }
 
     pub fn has_ended(&self) -> bool {

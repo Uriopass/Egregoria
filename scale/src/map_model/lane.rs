@@ -35,7 +35,7 @@ pub enum LaneDirection {
     Backward,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Lane {
     pub id: LaneID,
     pub parent: RoadID,

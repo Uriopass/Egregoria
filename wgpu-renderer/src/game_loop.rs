@@ -5,8 +5,8 @@ use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRendere
 use cgmath::Vector2;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
-use scale::interaction::FollowEntity;
-use scale::map_model::{LaneKind, Map, MapUIState};
+use scale::interaction::{FollowEntity, SelectedEntity};
+use scale::map_model::{Itinerary, Map, MapUIState};
 use scale::physics::Transform;
 use scale::rendering::{Color, LinearColor};
 use scale::specs::RunNow;
@@ -129,11 +129,7 @@ impl<'a> State<'a> {
 
         MeshRenderer::render(&mut self.world, &mut tess);
 
-        debug_pathfinder(
-            &mut tess,
-            &self.world.read_resource::<Map>(),
-            self.world.read_resource::<MouseInfo>().unprojected,
-        );
+        debug_pathfinder(&mut tess, &self.world);
 
         if let Some(x) = tess.meshbuilder.build(ctx.gfx) {
             x.draw(ctx)
@@ -217,41 +213,56 @@ impl<'a> State<'a> {
 }
 
 #[allow(dead_code)]
-fn debug_pathfinder(tess: &mut Tesselator, map: &Map, mouse_pos: cgmath::Vector2<f32>) {
-    let lanes = map.lanes();
+fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) {
+    let map: &Map = &world.read_resource::<Map>();
+    let selected = world.read_resource::<SelectedEntity>().e;
+    if selected.is_none() {
+        return;
+    }
+    let selected = selected.unwrap();
 
-    let l1 = lanes
-        .iter()
-        .filter(|(_, l)| l.kind == LaneKind::Driving)
-        .nth(10)
-        .map(|(id, _)| id);
+    let pos = world
+        .read_storage::<Transform>()
+        .get(selected)
+        .unwrap()
+        .position();
 
-    let l2 = map.closest_lane(mouse_pos, LaneKind::Driving);
+    let mut itinerary = &Itinerary::none();
 
-    if let (Some(l1), Some(l2)) = (l1, l2) {
-        let t = std::time::Instant::now();
-        let path = map.path(l1, l2);
+    let stor = world.read_storage::<scale::vehicles::VehicleComponent>();
+    let car = stor.get(selected);
+    if let Some(v) = car {
+        itinerary = &v.itinerary;
+    }
 
-        println!(
-            "Pathfinded in {}",
-            (std::time::Instant::now() - t).as_secs_f32() * 1000.0
-        );
+    let stor = world.read_storage::<scale::pedestrians::PedestrianComponent>();
+    let ped = stor.get(selected);
+    if let Some(v) = ped {
+        itinerary = &v.itinerary;
+    }
 
+    tess.color = LinearColor::GREEN;
+    tess.draw_polyline(itinerary.local_path().as_slice(), 1.0, 1.0);
+
+    if let Some(p) = itinerary.get_point() {
+        tess.draw_stroke(p, pos, 1.0, 1.0);
+    }
+
+    if let scale::map_model::ItineraryKind::Route(r) = itinerary.kind() {
         tess.color = LinearColor::RED;
-        if let Some((p, _)) = path {
-            for l in p.windows(2) {
-                let l1 = &map.lanes()[l[0]];
-                let l2 = &map.lanes()[l[1]];
+        tess.draw_circle(r.end_pos, 1.0, 5.0);
+        for l in r.reversed_route.windows(2) {
+            let l1 = &map.lanes()[l[0]];
+            let l2 = &map.lanes()[l[1]];
 
-                tess.draw_stroke(
-                    l1.points.last().unwrap(),
-                    l2.points.first().unwrap(),
-                    1.0,
-                    l1.width,
-                );
+            tess.draw_stroke(
+                l2.points.last().unwrap(),
+                l1.points.first().unwrap(),
+                1.0,
+                3.0,
+            );
 
-                tess.draw_polyline(l2.points.as_slice(), 1.0, l2.width);
-            }
+            tess.draw_polyline(l2.points.as_slice(), 1.0, l2.width);
         }
     }
 }
