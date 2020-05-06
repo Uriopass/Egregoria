@@ -4,7 +4,7 @@ use crate::map_model::{
     TraverseKind,
 };
 use crate::utils::{rand_det, Choose};
-use cgmath::{MetricSpace, Zero};
+use cgmath::MetricSpace;
 use ordered_float::{NotNan, OrderedFloat};
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
@@ -146,7 +146,7 @@ impl Map {
         let heuristic = |t: &Traversable| {
             let pos = inters[t.destination_intersection(lanes)].pos;
 
-            NotNan::new(pos.distance(end_pos) * 1.2).unwrap() // Inexact but (much) faster
+            NotNan::new(pos.distance(end_pos) * 1.3).unwrap() // Inexact but (much) faster
         };
 
         let successors = |t: &Traversable| {
@@ -159,12 +159,17 @@ impl Map {
                     TraverseKind::Lane(lane_from_id),
                     lane_from.dir_from(inter.id),
                 ),
-                NotNan::new(lane_from.parent_length).unwrap(),
+                unsafe { NotNan::unchecked_new(lane_from.parent_length) },
             );
 
             inter
                 .turns_from(lane_from_id)
-                .map(|(x, dir)| (Traversable::new(TraverseKind::Turn(x), dir), NotNan::zero()))
+                .map(|(x, dir)| {
+                    (
+                        Traversable::new(TraverseKind::Turn(x), dir),
+                        NotNan::new(0.001).unwrap(),
+                    )
+                })
                 .chain(std::iter::once(lane_travers))
         };
 
