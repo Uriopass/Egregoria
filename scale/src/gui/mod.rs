@@ -1,4 +1,4 @@
-use crate::engine_interaction::{RenderStats, TimeInfo};
+use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
 use crate::interaction::SelectedEntity;
 use crate::map_model::{LanePatternBuilder, Map, MapUIState};
 use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
@@ -16,7 +16,7 @@ mod inspect;
 #[derive(Clone)]
 pub struct Gui {
     show_map_ui: bool,
-    show_stats: bool,
+    show_info: bool,
     show_tips: bool,
     n_cars: i32,
     n_pedestrians: i32,
@@ -26,7 +26,7 @@ impl Default for Gui {
     fn default() -> Self {
         Self {
             show_map_ui: true,
-            show_stats: true,
+            show_info: true,
             show_tips: false,
             n_cars: 100,
             n_pedestrians: 100,
@@ -44,12 +44,8 @@ impl Gui {
                 .position([30.0, 160.0], imgui::Condition::FirstUseEver)
                 .opened(&mut is_open)
                 .build(&ui, || {
-                    selected.dirty = crate::gui::inspect::InspectRenderer {
-                        world,
-                        entity: e,
-                        ui,
-                    }
-                    .render();
+                    selected.dirty =
+                        crate::gui::inspect::InspectRenderer { entity: e }.render(world, ui);
                 });
             if !is_open {
                 selected.e = None;
@@ -64,8 +60,8 @@ impl Gui {
                 if imgui::MenuItem::new(im_str!("Map")).build(&ui) {
                     self.show_map_ui = true;
                 }
-                if imgui::MenuItem::new(im_str!("Stats")).build(&ui) {
-                    self.show_stats = true;
+                if imgui::MenuItem::new(im_str!("Info")).build(&ui) {
+                    self.show_info = true;
                 }
                 if imgui::MenuItem::new(im_str!("Tips")).build(&ui) {
                     self.show_tips = true;
@@ -176,15 +172,17 @@ impl Gui {
             self.show_map_ui = opened;
         }
 
-        if self.show_stats {
+        if self.show_info {
             let stats = world.read_resource::<RenderStats>();
-            imgui::Window::new(im_str!("Stats"))
+            let mouse = world.read_resource::<MouseInfo>().unprojected;
+            imgui::Window::new(im_str!("Info"))
                 .size([200.0, 100.0], imgui::Condition::FirstUseEver)
                 .position([300.0, 50.0], imgui::Condition::FirstUseEver)
-                .opened(&mut self.show_stats)
+                .opened(&mut self.show_info)
                 .build(&ui, || {
                     ui.text(im_str!("Update time: {:.1}ms", stats.update_time * 1000.0));
                     ui.text(im_str!("Render time: {:.1}ms", stats.render_time * 1000.0));
+                    ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
                 });
         }
 
@@ -217,6 +215,7 @@ impl Gui {
             .build(&ui, || {
                 imgui::DragFloat::new(&ui, im_str!("Time warp"), &mut time_info.time_speed)
                     .min(0.0)
+                    .max(1000.0)
                     .speed(0.1)
                     .display_format(im_str!("%.1f"))
                     .build();

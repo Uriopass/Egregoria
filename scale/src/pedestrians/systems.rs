@@ -4,7 +4,7 @@ use crate::map_model::{Itinerary, LaneKind, Map, Traversable, TraverseDirection,
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;
-use crate::utils::{Choose, Restrict};
+use crate::utils::Restrict;
 use cgmath::{Angle, InnerSpace, MetricSpace};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -156,6 +156,7 @@ pub fn calc_decision<'a>(
 
 pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform, map: &Map) {
     pedestrian.itinerary.check_validity(map);
+    let mut last_travers = pedestrian.itinerary.get_travers().copied();
 
     if let Some(x) = pedestrian.itinerary.get_point() {
         if x.distance(trans.position()) > 3.0 {
@@ -164,75 +165,25 @@ pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform,
         pedestrian.itinerary.advance(map);
     }
 
-    if pedestrian.itinerary.is_none() {
-        if let Some(closest) = map.closest_lane(trans.position(), LaneKind::Walking) {
-            pedestrian.itinerary = Itinerary::simple(
-                Traversable::new(TraverseKind::Lane(closest), TraverseDirection::Forward),
-                map,
-            );
-            pedestrian.itinerary.advance(map);
-        }
-    }
-
     if pedestrian.itinerary.has_ended() {
-        let t = *unwrap_or!(pedestrian.itinerary.get_travers(), return);
-
-        match t.kind {
-            TraverseKind::Lane(l) => {
-                let arrived = &map.intersections()[map.lanes()[l].dst];
-
-                let neighs = arrived.turns_adirectional(l);
-
-                let turn = unwrap_or!(neighs.choose(), return);
-
-                let direction = if turn.id.src == l {
-                    TraverseDirection::Forward
-                } else {
-                    TraverseDirection::Backward
-                };
-
-                pedestrian.itinerary = Itinerary::simple(
-                    Traversable::new(TraverseKind::Turn(turn.id), direction),
-                    map,
-                );
-            }
-            TraverseKind::Turn(turn) => {
-                let arrived_at = &map.lanes()[match t.dir {
-                    TraverseDirection::Forward => turn.dst,
-                    TraverseDirection::Backward => turn.src,
-                }];
-
-                let dir_if_take_lane = if arrived_at.src == turn.parent {
-                    TraverseDirection::Forward
-                } else {
-                    TraverseDirection::Backward
-                };
-
-                let inter = &map.intersections()[turn.parent];
-
-                let mut traversables = vec![Traversable::new(
-                    TraverseKind::Lane(arrived_at.id),
-                    dir_if_take_lane,
-                )];
-
-                for turn_inter in inter.turns_adirectional(arrived_at.id) {
-                    if turn_inter.id == turn {
-                        continue;
-                    }
-                    let direction = if turn_inter.id.src == arrived_at.id {
-                        TraverseDirection::Forward
-                    } else {
-                        TraverseDirection::Backward
-                    };
-
-                    traversables.push(Traversable::new(
-                        TraverseKind::Turn(turn_inter.id),
-                        direction,
-                    ));
-                }
-
-                pedestrian.itinerary = Itinerary::simple(*traversables.choose().unwrap(), map);
-            }
+        if last_travers.is_none() {
+            last_travers = map
+                .closest_lane(trans.position(), LaneKind::Walking)
+                .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
         }
+
+        let l = unwrap_or!(map.get_random_lane(LaneKind::Walking), return);
+
+        pedestrian.itinerary = Itinerary::route(
+            unwrap_or!(last_travers, return),
+            (l.id, l.points.random_along().unwrap()),
+            map,
+        );
+
+        if pedestrian.itinerary.is_none() {
+            dbg!("Pedestrian at {} couldn't find path", trans.position());
+        }
+
+        pedestrian.itinerary.advance(map);
     }
 }

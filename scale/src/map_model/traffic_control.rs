@@ -23,7 +23,7 @@ impl TrafficBehavior {
     }
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct TrafficLightSchedule {
     period: usize,
     green: usize,
@@ -44,7 +44,7 @@ impl TrafficLightSchedule {
     }
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum TrafficControl {
     Always,
     Light(TrafficLightSchedule),

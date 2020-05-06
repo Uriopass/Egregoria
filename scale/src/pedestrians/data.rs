@@ -1,5 +1,5 @@
 use crate::interaction::{Movable, Selectable};
-use crate::map_model::{Itinerary, LaneKind, Map, Traversable, TraverseDirection, TraverseKind};
+use crate::map_model::{Itinerary, LaneKind, Map};
 use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
 };
@@ -37,12 +37,6 @@ pub fn spawn_pedestrian(world: &mut World) {
     } else {
         return;
     };
-
-    let mut itinerary = Itinerary::simple(
-        Traversable::new(TraverseKind::Lane(lane.id), TraverseDirection::Forward),
-        &map,
-    );
-    itinerary.advance(&map);
     drop(map);
 
     let size = 0.5;
@@ -61,7 +55,7 @@ pub fn spawn_pedestrian(world: &mut World) {
         .create_entity()
         .with(Transform::new(pos))
         .with(PedestrianComponent {
-            itinerary,
+            itinerary: Itinerary::none(),
             ..Default::default()
         })
         .with(Kinematics::from_mass(80.0))

@@ -176,7 +176,7 @@ impl TurnPolicy {
                 if let (Some(incoming), Some(outgoing_in)) = (incoming, outgoing_in) {
                     if n_roads > 2 {
                         turns.push((
-                            TurnID::new(inter.id, outgoing_in.id, incoming.id),
+                            TurnID::new(inter.id, incoming.id, outgoing_in.id),
                             TurnKind::Crosswalk,
                         ));
                     }

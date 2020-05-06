@@ -1,8 +1,9 @@
 use crate::geometry::Vec2;
 use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
+    TraverseDirection,
 };
-use crate::utils::rand_det;
+use crate::utils::{rand_det, Choose};
 use cgmath::MetricSpace;
 use ordered_float::{NotNan, OrderedFloat};
 use serde::{Deserialize, Serialize};
@@ -136,7 +137,7 @@ impl Map {
         self.roads.clear();
     }
 
-    pub fn path(&self, start: LaneID, end: LaneID) -> Option<(Vec<LaneID>, f32)> {
+    pub fn path(&self, start: LaneID, end: LaneID) -> Option<Vec<LaneID>> {
         let inters = &self.intersections;
         let lanes = &self.lanes;
 
@@ -150,13 +151,17 @@ impl Map {
         let successors = |p: &LaneID| {
             let l = &lanes[*p];
             let inter = &inters[l.dst];
-            inter
-                .turns_from_iter(*p)
-                .map(|x| (x.dst, NotNan::new(lanes[x.dst].parent_length).unwrap()))
+            inter.turns_from_iter(*p).map(|(x, dir)| {
+                let dst = match dir {
+                    TraverseDirection::Forward => x.dst,
+                    TraverseDirection::Backward => x.src,
+                };
+                (dst, NotNan::new(lanes[dst].parent_length).unwrap())
+            })
         };
 
         pathfinding::directed::astar::astar(&start, successors, heuristic, |p| *p == end)
-            .map(|(v, d)| (v, d.into_inner()))
+            .map(|(v, _)| v)
     }
 
     pub fn project(&self, pos: Vec2) -> Option<MapProject> {
@@ -238,12 +243,7 @@ impl Map {
             .filter(|x| self.lanes[**x].kind == kind)
             .collect::<Vec<&LaneID>>();
 
-        if lanes.is_empty() {
-            return None;
-        }
-        let r = (rand_det::<f32>() * lanes.len() as f32) as usize;
-
-        Some(&self.lanes[*lanes[r]])
+        lanes.choose().map(|x| &self.lanes[**x])
     }
 
     pub fn find_road(&self, a: IntersectionID, b: IntersectionID) -> Option<RoadID> {

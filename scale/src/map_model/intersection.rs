@@ -2,7 +2,8 @@ use crate::geometry::pseudo_angle;
 use crate::geometry::Vec2;
 use crate::gui::InspectDragf;
 use crate::map_model::{
-    Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, Turn, TurnID, TurnPolicy,
+    Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, TraverseDirection, Turn, TurnID,
+    TurnPolicy,
 };
 use crate::utils::Restrict;
 use cgmath::{Angle, InnerSpace};
@@ -163,26 +164,38 @@ impl Intersection {
         };
     }
 
-    pub fn turns_from_iter(&self, lane: LaneID) -> impl Iterator<Item = &TurnID> {
-        self.turns
-            .iter()
-            .filter(move |(id, _)| id.src == lane)
-            .map(|(id, _)| id)
+    pub fn find_turn(&self, src: LaneID, dst: LaneID) -> Option<(TurnID, TraverseDirection)> {
+        self.turns.iter().find_map(move |(&id, _)| {
+            if id.src == src && id.dst == dst {
+                Some((id, TraverseDirection::Forward))
+            } else if id.dst == src && id.src == dst {
+                Some((id, TraverseDirection::Backward))
+            } else {
+                None
+            }
+        })
     }
 
-    pub fn turns_from(&self, lane: LaneID) -> Vec<&Turn> {
-        self.turns
-            .iter()
-            .filter(|(id, _)| id.src == lane)
-            .map(|(_, x)| x)
-            .collect()
+    pub fn turns_from_iter(
+        &self,
+        lane: LaneID,
+    ) -> impl Iterator<Item = (TurnID, TraverseDirection)> + '_ {
+        self.turns.iter().filter_map(move |(&id, _)| {
+            if id.src == lane {
+                Some((id, TraverseDirection::Forward))
+            } else if id.dst == lane {
+                Some((id, TraverseDirection::Backward))
+            } else {
+                None
+            }
+        })
     }
 
-    pub fn turns_adirectional(&self, lane: LaneID) -> Vec<&Turn> {
+    pub fn turns_from(&self, lane: LaneID) -> Vec<TurnID> {
         self.turns
             .iter()
             .filter(|(id, _)| id.src == lane || id.dst == lane)
-            .map(|(_, x)| x)
+            .map(|(x, _)| *x)
             .collect()
     }
 }

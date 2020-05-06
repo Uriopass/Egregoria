@@ -6,7 +6,7 @@ use crate::map_model::{
 };
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
-use crate::utils::{rand_det, Choose, Restrict};
+use crate::utils::{rand_det, Restrict};
 use crate::vehicles::VehicleComponent;
 use cgmath::{Angle, InnerSpace, MetricSpace, Vector2};
 use specs::prelude::*;
@@ -105,6 +105,8 @@ pub fn objective_update(
 ) {
     vehicle.itinerary.check_validity(map);
 
+    let mut last_travers = vehicle.itinerary.get_travers().copied();
+
     if let Some(p) = vehicle.itinerary.get_point() {
         if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
             let k = vehicle.itinerary.get_travers().unwrap();
@@ -117,38 +119,25 @@ pub fn objective_update(
     }
 
     if vehicle.itinerary.has_ended() {
-        if vehicle.itinerary.get_travers().is_none() {
-            let id = unwrap_or!(
-                map.closest_lane(trans.position(), LaneKind::Driving),
-                return
-            );
-            vehicle.itinerary = Itinerary::simple(
-                Traversable::new(TraverseKind::Lane(id), TraverseDirection::Forward),
-                map,
-            );
-            return;
+        if last_travers.is_none() {
+            last_travers = map
+                .closest_lane(trans.position(), LaneKind::Driving)
+                .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
         }
 
-        match vehicle.itinerary.get_travers().unwrap().kind {
-            TraverseKind::Turn(id) => {
-                vehicle.itinerary = Itinerary::simple(
-                    Traversable::new(TraverseKind::Lane(id.dst), TraverseDirection::Forward),
-                    map,
-                );
-            }
-            TraverseKind::Lane(id) => {
-                let lane = &map.lanes()[id];
+        let l = unwrap_or!(map.get_random_lane(LaneKind::Driving), return);
 
-                let neighs = map.intersections()[lane.dst].turns_from(id);
+        vehicle.itinerary = Itinerary::route(
+            unwrap_or!(last_travers, return),
+            (l.id, l.points.random_along().unwrap()),
+            map,
+        );
 
-                let turn = unwrap_or!(neighs.choose(), return);
-
-                vehicle.itinerary = Itinerary::simple(
-                    Traversable::new(TraverseKind::Turn(turn.id), TraverseDirection::Forward),
-                    map,
-                );
-            }
+        if vehicle.itinerary.is_none() {
+            dbg!("Car at {} couldn't find path", trans.position());
         }
+
+        vehicle.itinerary.advance(map);
     }
 }
 
@@ -274,7 +263,7 @@ fn calc_front_dist<'a>(
         let cos_direction_angle = nei_physics_obj.dir.dot(direction);
 
         // front cone
-        if cos_angle > 0.7
+        if cos_angle > 0.85 - 0.015 * speed.min(10.0)
             && (!is_vehicle || cos_direction_angle > 0.0)
             && (!on_lane || dist_to_side < 3.0)
         {
