@@ -251,18 +251,8 @@ fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) {
     if let scale::map_model::ItineraryKind::Route(r) = itinerary.kind() {
         tess.color = LinearColor::RED;
         tess.draw_circle(r.end_pos, 1.0, 5.0);
-        for l in r.reversed_route.windows(2) {
-            let l1 = &map.lanes()[l[0]];
-            let l2 = &map.lanes()[l[1]];
-
-            tess.draw_stroke(
-                l2.points.last().unwrap(),
-                l1.points.first().unwrap(),
-                1.0,
-                3.0,
-            );
-
-            tess.draw_polyline(l2.points.as_slice(), 1.0, l2.width);
+        for l in &r.reversed_route {
+            tess.draw_polyline(l.raw_points(map).as_slice(), 1.0, 3.0);
         }
     }
 }

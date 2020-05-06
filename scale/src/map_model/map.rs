@@ -1,10 +1,10 @@
 use crate::geometry::Vec2;
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
-    TraverseDirection,
+    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID, Traversable,
+    TraverseKind,
 };
 use crate::utils::{rand_det, Choose};
-use cgmath::MetricSpace;
+use cgmath::{MetricSpace, Zero};
 use ordered_float::{NotNan, OrderedFloat};
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
@@ -137,30 +137,43 @@ impl Map {
         self.roads.clear();
     }
 
-    pub fn path(&self, start: LaneID, end: LaneID) -> Option<Vec<LaneID>> {
+    pub fn path(&self, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
         let inters = &self.intersections;
         let lanes = &self.lanes;
 
         let end_pos = inters[lanes[end].dst].pos;
 
-        let heuristic = |p: &LaneID| {
-            let pos = inters[lanes[*p].dst].pos;
+        let heuristic = |t: &Traversable| {
+            let pos = inters[t.destination_intersection(lanes)].pos;
+
             NotNan::new(pos.distance(end_pos) * 1.2).unwrap() // Inexact but (much) faster
         };
 
-        let successors = |p: &LaneID| {
-            let l = &lanes[*p];
-            let inter = &inters[l.dst];
-            inter.turns_from_iter(*p).map(|(x, dir)| {
-                let dst = match dir {
-                    TraverseDirection::Forward => x.dst,
-                    TraverseDirection::Backward => x.src,
-                };
-                (dst, NotNan::new(lanes[dst].parent_length).unwrap())
-            })
+        let successors = |t: &Traversable| {
+            let inter = &inters[t.destination_intersection(lanes)];
+            let lane_from_id = t.destination_lane();
+            let lane_from = &lanes[lane_from_id];
+
+            let lane_travers = (
+                Traversable::new(
+                    TraverseKind::Lane(lane_from_id),
+                    lane_from.dir_from(inter.id),
+                ),
+                NotNan::new(lane_from.parent_length).unwrap(),
+            );
+
+            inter
+                .turns_from(lane_from_id)
+                .map(|(x, dir)| (Traversable::new(TraverseKind::Turn(x), dir), NotNan::zero()))
+                .chain(std::iter::once(lane_travers))
         };
 
-        pathfinding::directed::astar::astar(&start, successors, heuristic, |p| *p == end)
+        let has_arrived = |p: &Traversable| match p.kind {
+            TraverseKind::Lane(id) => id == end,
+            TraverseKind::Turn(_) => false,
+        };
+
+        pathfinding::directed::astar::astar(&start, successors, heuristic, has_arrived)
             .map(|(v, _)| v)
     }
 

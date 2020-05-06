@@ -1,6 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
-use crate::map_model::{LaneID, Map, Traversable, TraverseDirection, TraverseKind};
+use crate::map_model::{LaneID, Map, Traversable};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +20,7 @@ pub enum ItineraryKind {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Route {
     /// Route is reversed, allows for efficient popping
-    pub reversed_route: Vec<LaneID>,
+    pub reversed_route: Vec<Traversable>,
     pub end_pos: Vec2,
     pub cur: Traversable,
 }
@@ -41,13 +41,8 @@ impl Itinerary {
     }
 
     pub fn route(cur: Traversable, objective: (LaneID, Vec2), map: &Map) -> Itinerary {
-        let start = match cur.kind {
-            TraverseKind::Lane(id) => id,
-            TraverseKind::Turn(id) => id.dst,
-        };
-
-        let mut reversed_route: Vec<LaneID> =
-            unwrap_or!(map.path(start, objective.0), return Itinerary::none())
+        let mut reversed_route: Vec<Traversable> =
+            unwrap_or!(map.path(cur, objective.0), return Itinerary::none())
                 .into_iter()
                 .rev()
                 .collect();
@@ -72,38 +67,12 @@ impl Itinerary {
         let v = self.local_path.pop_first();
         if self.local_path.is_empty() {
             if let ItineraryKind::Route(r) = &mut self.kind {
-                match r.cur.kind {
-                    TraverseKind::Lane(id) => {
-                        let next_lane = r.reversed_route.pop()?;
+                r.cur = r.reversed_route.pop()?;
 
-                        let turn =
-                            map.intersections()[map.lanes()[id].dst].find_turn(id, next_lane);
-
-                        match turn {
-                            Some((x, dir)) => {
-                                r.cur = Traversable::new(TraverseKind::Turn(x), dir);
-                                self.local_path = r.cur.points(map);
-                            }
-                            None => {
-                                *self = Itinerary::none();
-                            }
-                        }
-                    }
-                    TraverseKind::Turn(id) => {
-                        let lane_dst = match r.cur.dir {
-                            TraverseDirection::Forward => id.dst,
-                            TraverseDirection::Backward => id.src,
-                        };
-
-                        r.cur = Traversable::new(TraverseKind::Lane(lane_dst), r.cur.dir);
-
-                        // last lane, ignore and push end pos
-                        if r.reversed_route.is_empty() {
-                            self.local_path.push(r.end_pos);
-                        } else {
-                            self.local_path = r.cur.points(map);
-                        }
-                    }
+                if r.reversed_route.is_empty() {
+                    self.local_path.push(r.end_pos);
+                } else {
+                    self.local_path = r.cur.points(map);
                 }
             }
         }

@@ -79,7 +79,7 @@ impl RoadRenderer {
                 sr.color = match turn.kind {
                     TurnKind::Crosswalk => unreachable!(),
                     TurnKind::WalkingCorner => high_gray,
-                    TurnKind::Normal => mid_gray,
+                    TurnKind::Driving => mid_gray,
                 };
 
                 p.clear();

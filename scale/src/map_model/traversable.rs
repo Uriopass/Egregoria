@@ -1,15 +1,15 @@
 use crate::geometry::polyline::PolyLine;
-use crate::map_model::{LaneID, Lanes, Map, TurnID};
+use crate::map_model::{IntersectionID, LaneID, Lanes, Map, TurnID};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub enum TraverseDirection {
     Forward,
     Backward,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub enum TraverseKind {
     Lane(LaneID),
     Turn(TurnID),
@@ -21,7 +21,7 @@ impl TraverseKind {
     }
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, Inspect)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, Inspect)]
 pub struct Traversable {
     pub kind: TraverseKind,
     pub dir: TraverseDirection,
@@ -64,6 +64,26 @@ impl Traversable {
                 m.intersections().contains_key(id.parent)
                     && m.intersections()[id.parent].turns.contains_key(&id)
             }
+        }
+    }
+
+    pub fn destination_intersection(&self, lanes: &Lanes) -> IntersectionID {
+        match self.kind {
+            TraverseKind::Lane(p) => match self.dir {
+                TraverseDirection::Forward => lanes[p].dst,
+                TraverseDirection::Backward => lanes[p].src,
+            },
+            TraverseKind::Turn(id) => id.parent,
+        }
+    }
+
+    pub fn destination_lane(&self) -> LaneID {
+        match self.kind {
+            TraverseKind::Lane(p) => p,
+            TraverseKind::Turn(t) => match self.dir {
+                TraverseDirection::Forward => t.dst,
+                TraverseDirection::Backward => t.src,
+            },
         }
     }
 }

@@ -37,8 +37,8 @@ impl TurnPolicy {
             .zip(outgoing)
             .map(|(lane_src, lane_dst)| {
                 (
-                    TurnID::new(inter_id, *lane_src, *lane_dst),
-                    TurnKind::Normal,
+                    TurnID::new(inter_id, *lane_src, *lane_dst, false),
+                    TurnKind::Driving,
                 )
             })
             .collect()
@@ -54,8 +54,8 @@ impl TurnPolicy {
             .map(|lane_src| {
                 outgoing.iter().map(move |lane_dst| {
                     (
-                        TurnID::new(inter_id, *lane_src, *lane_dst),
-                        TurnKind::Normal,
+                        TurnID::new(inter_id, *lane_src, *lane_dst, false),
+                        TurnKind::Driving,
                     )
                 })
             })
@@ -137,10 +137,10 @@ impl TurnPolicy {
                         let outgoing_dir = outgoing.get_orientation_vec();
 
                         let incoming_right = vec2!(incoming_dir.y, -incoming_dir.x);
-                        let id = TurnID::new(inter.id, incoming.id, outgoing.id);
+                        let id = TurnID::new(inter.id, incoming.id, outgoing.id, false);
 
                         if self.left_turns || incoming_right.dot(outgoing_dir) >= -0.3 {
-                            turns.push((id, TurnKind::Normal));
+                            turns.push((id, TurnKind::Driving));
                         }
                     }
                 }
@@ -168,7 +168,7 @@ impl TurnPolicy {
             if let [(incoming, outgoing_in), (_, outgoing)] = *w {
                 if let (Some(incoming), Some(outgoing)) = (incoming, outgoing) {
                     turns.push((
-                        TurnID::new(inter.id, incoming.id, outgoing.id),
+                        TurnID::new(inter.id, incoming.id, outgoing.id, true),
                         TurnKind::WalkingCorner,
                     ));
                 }
@@ -176,7 +176,7 @@ impl TurnPolicy {
                 if let (Some(incoming), Some(outgoing_in)) = (incoming, outgoing_in) {
                     if n_roads > 2 {
                         turns.push((
-                            TurnID::new(inter.id, incoming.id, outgoing_in.id),
+                            TurnID::new(inter.id, incoming.id, outgoing_in.id, true),
                             TurnKind::Crosswalk,
                         ));
                     }
