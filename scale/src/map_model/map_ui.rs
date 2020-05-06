@@ -23,7 +23,7 @@ impl MapUIState {
         world.setup::<MapUIData>();
 
         Self {
-            enabled: 0 == 0,
+            enabled: true,
             selected: None,
 
             project_entity: world
