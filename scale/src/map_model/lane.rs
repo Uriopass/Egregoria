@@ -1,6 +1,8 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
-use crate::map_model::{Intersection, IntersectionID, Intersections, Road, RoadID, TrafficControl};
+use crate::map_model::{
+    Intersection, IntersectionID, Intersections, Road, RoadID, TrafficControl, TraverseDirection,
+};
 use cgmath::InnerSpace;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
@@ -173,6 +175,14 @@ impl Lane {
 
     pub fn dist2_to(&self, p: Vec2) -> f32 {
         (self.points.project(p).unwrap() - p).magnitude2()
+    }
+
+    pub fn dir_from(&self, i: IntersectionID) -> TraverseDirection {
+        if self.src == i {
+            TraverseDirection::Forward
+        } else {
+            TraverseDirection::Backward
+        }
     }
 
     pub fn get_orientation_vec(&self) -> Vec2 {

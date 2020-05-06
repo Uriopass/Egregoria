@@ -176,26 +176,18 @@ impl Intersection {
         })
     }
 
-    pub fn turns_from_iter(
+    pub fn turns_from(
         &self,
         lane: LaneID,
     ) -> impl Iterator<Item = (TurnID, TraverseDirection)> + '_ {
         self.turns.iter().filter_map(move |(&id, _)| {
             if id.src == lane {
                 Some((id, TraverseDirection::Forward))
-            } else if id.dst == lane {
+            } else if id.bidirectional && id.dst == lane {
                 Some((id, TraverseDirection::Backward))
             } else {
                 None
             }
         })
-    }
-
-    pub fn turns_from(&self, lane: LaneID) -> Vec<TurnID> {
-        self.turns
-            .iter()
-            .filter(|(id, _)| id.src == lane || id.dst == lane)
-            .map(|(x, _)| *x)
-            .collect()
     }
 }

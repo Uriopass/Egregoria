@@ -4,16 +4,22 @@ use crate::map_model::{IntersectionID, LaneID, Lanes};
 use cgmath::{Angle, Array, InnerSpace};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Serialize, PartialOrd, Ord, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, PartialOrd, Ord, Deserialize, PartialEq, Eq, Hash)]
 pub struct TurnID {
     pub parent: IntersectionID,
     pub src: LaneID,
     pub dst: LaneID,
+    pub bidirectional: bool,
 }
 
 impl TurnID {
-    pub fn new(parent: IntersectionID, src: LaneID, dst: LaneID) -> Self {
-        Self { parent, src, dst }
+    pub fn new(parent: IntersectionID, src: LaneID, dst: LaneID, bidirectional: bool) -> Self {
+        Self {
+            parent,
+            src,
+            dst,
+            bidirectional,
+        }
     }
 }
 
@@ -21,7 +27,7 @@ impl TurnID {
 pub enum TurnKind {
     Crosswalk,
     WalkingCorner,
-    Normal,
+    Driving,
 }
 
 impl TurnKind {
