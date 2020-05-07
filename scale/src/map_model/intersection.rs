@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use specs::storage::BTreeStorage;
 use specs::Component;
-use std::collections::BTreeMap;
 
 new_key_type! {
     pub struct IntersectionID;
@@ -42,7 +41,7 @@ pub struct Intersection {
     pub pos: Vec2,
     pub barycenter: Vec2,
 
-    pub turns: BTreeMap<TurnID, Turn>,
+    turns: Vec<Turn>,
 
     // sorted by angle
     pub roads: Vec<RoadID>,
@@ -58,7 +57,7 @@ impl Intersection {
             id,
             pos,
             barycenter: pos,
-            turns: BTreeMap::new(),
+            turns: Default::default(),
             roads: vec![],
             interface_radius: 5.0,
             turn_policy: TurnPolicy::default(),
@@ -87,24 +86,17 @@ impl Intersection {
             .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].dir_from(id, pos))));
 
         let turns = self.turn_policy.generate_turns(self, lanes, roads);
-        let to_remove: Vec<TurnID> = self
-            .turns
-            .iter_mut()
-            .filter(|(id, _)| turns.iter().find(|(id2, _)| id2 == *id).is_none())
-            .map(|(id, _)| *id)
-            .collect();
 
-        for id in to_remove {
-            self.turns.remove(&id);
-        }
+        self.turns
+            .retain(|t| turns.iter().any(|(id2, _)| *id2 == t.id));
 
         for (turn_id, kind) in turns {
-            self.turns
-                .entry(turn_id)
-                .or_insert_with(|| Turn::new(turn_id, kind));
+            if self.turns.iter().all(|x| x.id != turn_id) {
+                self.turns.push(Turn::new(turn_id, kind))
+            }
         }
 
-        for turn in self.turns.values_mut() {
+        for turn in self.turns.iter_mut() {
             turn.make_points(lanes);
         }
     }
@@ -164,30 +156,28 @@ impl Intersection {
         };
     }
 
-    pub fn find_turn(&self, src: LaneID, dst: LaneID) -> Option<(TurnID, TraverseDirection)> {
-        self.turns.iter().find_map(move |(&id, _)| {
-            if id.src == src && id.dst == dst {
-                Some((id, TraverseDirection::Forward))
-            } else if id.dst == src && id.src == dst {
-                Some((id, TraverseDirection::Backward))
-            } else {
-                None
-            }
-        })
+    pub fn find_turn(&self, needle: TurnID) -> Option<&Turn> {
+        self.turns
+            .iter()
+            .find_map(move |x| if x.id == needle { Some(x) } else { None })
     }
 
     pub fn turns_from(
         &self,
         lane: LaneID,
     ) -> impl Iterator<Item = (TurnID, TraverseDirection)> + '_ {
-        self.turns.iter().filter_map(move |(&id, _)| {
+        self.turns.iter().filter_map(move |Turn { id, .. }| {
             if id.src == lane {
-                Some((id, TraverseDirection::Forward))
+                Some((*id, TraverseDirection::Forward))
             } else if id.bidirectional && id.dst == lane {
-                Some((id, TraverseDirection::Backward))
+                Some((*id, TraverseDirection::Backward))
             } else {
                 None
             }
         })
+    }
+
+    pub fn turns(&self) -> &Vec<Turn> {
+        &self.turns
     }
 }

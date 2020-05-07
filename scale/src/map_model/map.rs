@@ -1,11 +1,10 @@
 use crate::geometry::Vec2;
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID, Traversable,
-    TraverseKind,
+    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
 };
 use crate::utils::{rand_det, Choose};
 use cgmath::MetricSpace;
-use ordered_float::{NotNan, OrderedFloat};
+use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 
@@ -135,51 +134,6 @@ impl Map {
         self.intersections.clear();
         self.lanes.clear();
         self.roads.clear();
-    }
-
-    pub fn path(&self, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
-        let inters = &self.intersections;
-        let lanes = &self.lanes;
-
-        let end_pos = inters[lanes[end].dst].pos;
-
-        let heuristic = |t: &Traversable| {
-            let pos = inters[t.destination_intersection(lanes)].pos;
-
-            NotNan::new(pos.distance(end_pos) * 1.3).unwrap() // Inexact but (much) faster
-        };
-
-        let successors = |t: &Traversable| {
-            let inter = &inters[t.destination_intersection(lanes)];
-            let lane_from_id = t.destination_lane();
-            let lane_from = &lanes[lane_from_id];
-
-            let lane_travers = (
-                Traversable::new(
-                    TraverseKind::Lane(lane_from_id),
-                    lane_from.dir_from(inter.id),
-                ),
-                unsafe { NotNan::unchecked_new(lane_from.parent_length) },
-            );
-
-            inter
-                .turns_from(lane_from_id)
-                .map(|(x, dir)| {
-                    (
-                        Traversable::new(TraverseKind::Turn(x), dir),
-                        NotNan::new(0.001).unwrap(),
-                    )
-                })
-                .chain(std::iter::once(lane_travers))
-        };
-
-        let has_arrived = |p: &Traversable| match p.kind {
-            TraverseKind::Lane(id) => id == end,
-            TraverseKind::Turn(_) => false,
-        };
-
-        pathfinding::directed::astar::astar(&start, successors, heuristic, has_arrived)
-            .map(|(v, _)| v)
     }
 
     pub fn project(&self, pos: Vec2) -> Option<MapProject> {

@@ -97,6 +97,8 @@ pub fn load_parismap(map: &mut Map) {
             LanePatternBuilder::new().one_way(n_lanes == 1).build(),
         );
     }
+
+    print_stats(map);
 }
 
 pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
@@ -168,6 +170,19 @@ pub fn add_grid(pos: Vec2, m: &mut Map) {
             );
         }
     }
+}
+
+fn print_stats(map: &Map) {
+    println!("{} intersections", map.intersections().len());
+    println!("{} roads", map.roads().len());
+    println!("{} lanes", map.lanes().len());
+    println!(
+        "{} turns",
+        map.intersections()
+            .iter()
+            .map(|(_, x)| x.turns().len())
+            .sum::<usize>()
+    );
 }
 
 pub fn load_testfield(map: &mut Map) {

@@ -48,8 +48,9 @@ impl RoadRenderer {
                 sr.color = mid_gray;
                 sr.draw_circle(inter.pos, 0.3, 5.0);
             }
-            for (id, turn) in &inter.turns {
+            for turn in inter.turns() {
                 sr.color = LinearColor::WHITE;
+                let id = turn.id;
 
                 if let TurnKind::Crosswalk = turn.kind {
                     let from = lanes[id.src].get_inter_node_pos(inter_id);

@@ -34,7 +34,7 @@ impl Traversable {
     pub fn points(&self, m: &Map) -> PolyLine {
         let p = match self.kind {
             TraverseKind::Lane(id) => &m.lanes()[id].points,
-            TraverseKind::Turn(id) => &m.intersections()[id.parent].turns[&id].points,
+            TraverseKind::Turn(id) => &m.intersections()[id.parent].find_turn(id).unwrap().points,
         };
 
         match self.dir {
@@ -46,7 +46,7 @@ impl Traversable {
     pub fn raw_points<'a>(&self, m: &'a Map) -> &'a PolyLine {
         match self.kind {
             TraverseKind::Lane(id) => &m.lanes()[id].points,
-            TraverseKind::Turn(id) => &m.intersections()[id.parent].turns[&id].points,
+            TraverseKind::Turn(id) => &m.intersections()[id.parent].find_turn(id).unwrap().points,
         }
     }
 
@@ -62,7 +62,7 @@ impl Traversable {
             TraverseKind::Lane(id) => m.lanes().contains_key(id),
             TraverseKind::Turn(id) => {
                 m.intersections().contains_key(id.parent)
-                    && m.intersections()[id.parent].turns.contains_key(&id)
+                    && m.intersections()[id.parent].find_turn(id).is_some()
             }
         }
     }

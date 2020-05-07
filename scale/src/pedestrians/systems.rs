@@ -1,6 +1,8 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::{Vec2, Vec2Impl};
-use crate::map_model::{Itinerary, LaneKind, Map, Traversable, TraverseDirection, TraverseKind};
+use crate::map_model::{
+    Itinerary, LaneKind, Map, PedestrianPath, Traversable, TraverseDirection, TraverseKind,
+};
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;
@@ -183,6 +185,7 @@ pub fn objective_update(
             unwrap_or!(last_travers, return),
             (l.id, l.points.random_along().unwrap()),
             map,
+            &PedestrianPath,
         );
 
         if pedestrian.itinerary.is_none() {
