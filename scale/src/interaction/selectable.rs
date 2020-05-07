@@ -1,5 +1,6 @@
 use crate::engine_interaction::KeyCode;
 use crate::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
+use crate::interaction::Tool;
 use crate::physics::Transform;
 use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
@@ -37,6 +38,7 @@ impl<'a> System<'a> for SelectableSystem {
         Entities<'a>,
         Read<'a, MouseInfo>,
         Read<'a, KeyboardInfo>,
+        Read<'a, Tool>,
         Write<'a, SelectedEntity>,
         ReadStorage<'a, Transform>,
         ReadStorage<'a, Selectable>,
@@ -44,9 +46,9 @@ impl<'a> System<'a> for SelectableSystem {
 
     fn run(
         &mut self,
-        (entities, mouse, kbinfo, mut selected, transforms, selectables): Self::SystemData,
+        (entities, mouse, kbinfo, tool, mut selected, transforms, selectables): Self::SystemData,
     ) {
-        if mouse.just_pressed.contains(&MouseButton::Left) {
+        if mouse.just_pressed.contains(&MouseButton::Left) && matches!(*tool, Tool::Hand) {
             let mut min_dist2 = f32::MAX;
             let mut closest = None;
             for (entity, trans, select) in (&entities, &transforms, &selectables).join() {

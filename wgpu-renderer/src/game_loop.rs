@@ -5,8 +5,8 @@ use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRendere
 use cgmath::Vector2;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
-use scale::interaction::{FollowEntity, SelectedEntity};
-use scale::map_model::{Itinerary, Map, MapUIState};
+use scale::interaction::{FollowEntity, RoadBuildState, SelectedEntity};
+use scale::map_model::{Itinerary, Map};
 use scale::physics::Transform;
 use scale::rendering::{Color, LinearColor};
 use scale::specs::RunNow;
@@ -122,7 +122,10 @@ impl<'a> State<'a> {
             time.time_seconds,
             &mut tess,
             ctx,
-            &mut self.world.write_resource::<MapUIState>().map_render_dirty,
+            &mut self
+                .world
+                .write_resource::<RoadBuildState>()
+                .map_render_dirty,
         );
 
         self.instanced_renderer.render(&mut self.world, ctx);
