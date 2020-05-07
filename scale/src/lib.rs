@@ -8,7 +8,7 @@ use crate::gui::Gui;
 use crate::interaction::{
     FollowEntity, MovableSystem, MovedEvent, SelectableAuraSystem, SelectableSystem, SelectedEntity,
 };
-use crate::map_model::{MapUIState, MapUISystem};
+use crate::interaction::{RoadBuildState, RoadBuildSystem};
 use crate::pedestrians::PedestrianDecision;
 use crate::physics::systems::KinematicsApply;
 use crate::physics::Collider;
@@ -51,7 +51,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
             "movable",
             &["car decision", "pedestrian decision", "selectable"],
         )
-        .with(MapUISystem, "rgs", &["movable"])
+        .with(RoadBuildSystem, "rgs", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
         .with(
             SelectableAuraSystem::default(),
@@ -80,7 +80,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     world.insert(EventChannel::<MovedEvent>::new());
 
     // Systems state init
-    let s = MapUIState::new(world);
+    let s = RoadBuildState::new(world);
     world.insert(s);
 
     dispatch.setup(world);

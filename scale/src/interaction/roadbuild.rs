@@ -1,5 +1,5 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity};
+use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity, Tool};
 use crate::map_model::{
     IntersectionComponent, IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject,
     ProjectKind,
@@ -12,18 +12,17 @@ use specs::shred::PanicHandler;
 use specs::shrev::{EventChannel, ReaderId};
 use specs::world::EntitiesRes;
 
-pub struct MapUISystem;
+pub struct RoadBuildSystem;
 
-impl MapUIState {
+impl RoadBuildState {
     pub fn new(world: &mut World) -> Self {
         let reader = world
             .write_resource::<EventChannel<MovedEvent>>()
             .register_reader();
 
-        world.setup::<MapUIData>();
+        world.setup::<RoadBuildData>();
 
         Self {
-            enabled: true,
             selected: None,
 
             project_entity: world
@@ -47,13 +46,14 @@ impl MapUIState {
 }
 
 #[derive(SystemData)]
-pub struct MapUIData<'a> {
+pub struct RoadBuildData<'a> {
     entities: Entities<'a>,
     lazy: Read<'a, LazyUpdate>,
     moved: Read<'a, EventChannel<MovedEvent>>,
     kbinfo: Read<'a, KeyboardInfo>,
     mouseinfo: Read<'a, MouseInfo>,
-    self_state: Write<'a, MapUIState, PanicHandler>,
+    tool: Read<'a, Tool>,
+    self_state: Write<'a, RoadBuildState, PanicHandler>,
     map: Write<'a, Map, PanicHandler>,
     selected: Write<'a, SelectedEntity>,
     intersections: WriteStorage<'a, IntersectionComponent>,
@@ -61,9 +61,7 @@ pub struct MapUIData<'a> {
     meshrender: WriteStorage<'a, MeshRender>,
 }
 
-pub struct MapUIState {
-    pub enabled: bool,
-
+pub struct RoadBuildState {
     selected: Option<(Entity, MapProject)>,
 
     pub project_entity: Entity,
@@ -74,19 +72,20 @@ pub struct MapUIState {
     reader: ReaderId<MovedEvent>,
 }
 
-impl<'a> System<'a> for MapUISystem {
-    type SystemData = MapUIData<'a>;
+impl<'a> System<'a> for RoadBuildSystem {
+    type SystemData = RoadBuildData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
         let state = &mut data.self_state;
 
-        data.meshrender.get_mut(state.project_entity).unwrap().hide = !state.enabled;
-
-        if !state.enabled {
+        if !matches!(*data.tool, Tool::Roadbuild) {
             data.moved.read(&mut state.reader).for_each(drop);
             state.set_selected(&data.entities, None);
+            data.meshrender.get_mut(state.project_entity).unwrap().hide = true;
             return;
         }
+
+        data.meshrender.get_mut(state.project_entity).unwrap().hide = false;
 
         for event in data.moved.read(&mut state.reader) {
             if let Some((
@@ -354,7 +353,7 @@ fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
     }
 }
 
-impl MapUIState {
+impl RoadBuildState {
     fn set_selected(&mut self, entities: &EntitiesRes, sel: Option<(Entity, MapProject)>) {
         if let Some((e, _)) = self.selected.take() {
             entities.delete(e).unwrap();
