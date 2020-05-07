@@ -1,6 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
-use crate::map_model::{LaneID, Map, Traversable};
+use crate::map_model::{LaneID, Map, Pathfinder, Traversable};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
@@ -48,9 +48,14 @@ impl Itinerary {
         }
     }
 
-    pub fn route(cur: Traversable, objective: (LaneID, Vec2), map: &Map) -> Itinerary {
+    pub fn route(
+        cur: Traversable,
+        objective: (LaneID, Vec2),
+        map: &Map,
+        pather: &impl Pathfinder,
+    ) -> Itinerary {
         let mut reversed_route: Vec<Traversable> =
-            unwrap_or!(map.path(cur, objective.0), return Itinerary::none())
+            unwrap_or!(pather.path(map, cur, objective.0), return Itinerary::none())
                 .into_iter()
                 .rev()
                 .collect();
@@ -77,6 +82,9 @@ impl Itinerary {
             if let ItineraryKind::Route(r) = &mut self.kind {
                 r.cur = r.reversed_route.pop()?;
 
+                if !r.cur.is_valid(map) {
+                    return v;
+                }
                 if r.reversed_route.is_empty() {
                     self.local_path.push(r.end_pos);
                 } else {

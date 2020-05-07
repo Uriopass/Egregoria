@@ -84,6 +84,7 @@ impl<'a> System<'a> for MapUISystem {
 
         if !state.enabled {
             data.moved.read(&mut state.reader).for_each(drop);
+            state.set_selected(&data.entities, None);
             return;
         }
 
