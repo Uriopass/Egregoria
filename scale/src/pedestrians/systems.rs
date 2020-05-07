@@ -41,7 +41,7 @@ impl<'a> System<'a> for PedestrianDecision {
         )
             .join()
             .for_each(|(coll, trans, kin, pedestrian, mr)| {
-                objective_update(pedestrian, trans, map);
+                objective_update(pedestrian, trans, map, time.time);
 
                 let my_obj = cow.get_obj(coll.0);
                 let neighbors = cow.query_around(trans.position(), 10.0);
@@ -154,7 +154,12 @@ pub fn calc_decision<'a>(
     (desired_v, desired_dir)
 }
 
-pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform, map: &Map) {
+pub fn objective_update(
+    pedestrian: &mut PedestrianComponent,
+    trans: &Transform,
+    map: &Map,
+    time: f64,
+) {
     pedestrian.itinerary.check_validity(map);
     let mut last_travers = pedestrian.itinerary.get_travers().copied();
 
@@ -165,7 +170,7 @@ pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform,
         pedestrian.itinerary.advance(map);
     }
 
-    if pedestrian.itinerary.has_ended() {
+    if pedestrian.itinerary.has_ended(time) {
         if last_travers.is_none() {
             last_travers = map
                 .closest_lane(trans.position(), LaneKind::Walking)
@@ -182,8 +187,7 @@ pub fn objective_update(pedestrian: &mut PedestrianComponent, trans: &Transform,
 
         if pedestrian.itinerary.is_none() {
             dbg!("Pedestrian at {} couldn't find path", trans.position());
+            pedestrian.itinerary = Itinerary::wait_until(time + 10.0);
         }
-
-        pedestrian.itinerary.advance(map);
     }
 }
