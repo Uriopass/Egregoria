@@ -118,7 +118,7 @@ pub fn objective_update(
         }
     }
 
-    if vehicle.itinerary.has_ended() {
+    if vehicle.itinerary.has_ended(time.time) {
         if last_travers.is_none() {
             last_travers = map
                 .closest_lane(trans.position(), LaneKind::Driving)
@@ -134,10 +134,9 @@ pub fn objective_update(
         );
 
         if vehicle.itinerary.is_none() {
-            dbg!("Car at {} couldn't find path", trans.position());
+            println!("No path from {:?} to {:?}", last_travers, l.id);
+            vehicle.itinerary = Itinerary::wait_until(time.time + 10.0);
         }
-
-        vehicle.itinerary.advance(map);
     }
 }
 

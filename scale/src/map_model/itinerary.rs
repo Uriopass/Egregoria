@@ -13,6 +13,7 @@ pub struct Itinerary {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ItineraryKind {
     None,
+    WaitUntil(f64),
     Simple(Traversable),
     Route(Route),
 }
@@ -37,6 +38,13 @@ impl Itinerary {
         Self {
             kind: ItineraryKind::Simple(t),
             local_path: t.points(m),
+        }
+    }
+
+    pub fn wait_until(x: f64) -> Self {
+        Self {
+            kind: ItineraryKind::WaitUntil(x),
+            local_path: PolyLine::default(),
         }
     }
 
@@ -97,6 +105,7 @@ impl Itinerary {
     pub fn get_travers(&self) -> Option<&Traversable> {
         match &self.kind {
             ItineraryKind::None => None,
+            ItineraryKind::WaitUntil(_) => None,
             ItineraryKind::Simple(x) => Some(x),
             ItineraryKind::Route(Route { cur, .. }) => Some(cur),
         }
@@ -110,8 +119,11 @@ impl Itinerary {
         &self.local_path
     }
 
-    pub fn has_ended(&self) -> bool {
-        self.local_path.is_empty()
+    pub fn has_ended(&self, time: f64) -> bool {
+        match self.kind {
+            ItineraryKind::WaitUntil(x) => time > x,
+            _ => self.local_path.is_empty(),
+        }
     }
 
     pub fn is_none(&self) -> bool {
