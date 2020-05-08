@@ -21,4 +21,5 @@ pub struct AssetRender {
     #[inspect(proxy_type = "InspectDragf")]
     pub scale: f32,
     pub tint: Color,
+    pub z: f32,
 }

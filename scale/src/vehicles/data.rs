@@ -192,6 +192,7 @@ pub fn make_vehicle_entity(
             hide: false,
             scale: 4.5,
             tint: get_random_car_color(),
+            z: 0.7,
         })
         .with(trans)
         .with(Kinematics::from_mass(1000.0))

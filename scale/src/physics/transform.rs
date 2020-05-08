@@ -23,6 +23,20 @@ impl Transform {
         Transform { m }
     }
 
+    pub fn new_cos_sin(position: Vec2, cossin: Vec2) -> Self {
+        let mut m = Matrix3::identity();
+        let cos = cossin.x;
+        let sin = cossin.y;
+
+        m.z.x = position.x;
+        m.z.y = position.y;
+        m.x.x = cos;
+        m.x.y = sin;
+        m.y.x = -sin;
+        m.y.y = cos;
+        Transform { m }
+    }
+
     pub fn position(&self) -> Vec2 {
         vec2!(self.m.z.x, self.m.z.y)
     }
@@ -77,13 +91,13 @@ impl Transform {
         vec2!(-self.sin(), self.cos())
     }
 
-    pub fn to_matrix4(&self) -> cgmath::Matrix4<f32> {
+    pub fn to_matrix4(&self, z: f32) -> cgmath::Matrix4<f32> {
         let m = self.m;
         cgmath::Matrix4 {
             x: vec4(m.x.x, m.x.y, 0.0, 0.0),
             y: vec4(m.y.x, m.y.y, 0.0, 0.0),
-            z: vec4(0.0, 0.0, 1.0, 0.0),
-            w: vec4(m.z.x, m.z.y, 0.0, 1.0),
+            z: vec4(0.0, 0.0, 0.0, 0.0),
+            w: vec4(m.z.x, m.z.y, z, 1.0),
         }
     }
 

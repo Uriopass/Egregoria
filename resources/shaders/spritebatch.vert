@@ -5,7 +5,6 @@ layout(location=1) in vec2 in_uv;
 layout(location=2) in mat4 a_model;
 layout(location=6) in vec3 a_tint;
 
-
 layout(location=0) out vec4 out_color;
 layout(location=1) out vec3 out_pos;
 layout(location=2) out vec2 out_uv;

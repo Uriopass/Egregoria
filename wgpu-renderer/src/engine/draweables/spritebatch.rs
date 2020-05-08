@@ -26,20 +26,15 @@ pub struct SpriteBatch {
 #[derive(Debug, Copy, Clone)]
 pub struct InstanceRaw {
     model: cgmath::Matrix4<f32>,
-    tint: cgmath::Vector3<f32>,
+    tint: [f32; 3],
 }
 
 impl InstanceRaw {
-    pub fn new(
-        mut model: cgmath::Matrix4<f32>,
-        tint: cgmath::Vector3<f32>,
-        scale: f32,
-    ) -> InstanceRaw {
+    pub fn new(mut model: cgmath::Matrix4<f32>, tint: [f32; 3], scale: f32) -> InstanceRaw {
         model.x.x *= scale;
         model.x.y *= scale;
         model.y.x *= scale;
         model.y.y *= scale;
-        model.w.z = 0.5;
         Self { model, tint }
     }
 }
