@@ -216,19 +216,10 @@ impl<'a> State<'a> {
 }
 
 #[allow(dead_code)]
-fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) {
+fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) -> Option<()> {
     let map: &Map = &world.read_resource::<Map>();
-    let selected = world.read_resource::<SelectedEntity>().e;
-    if selected.is_none() {
-        return;
-    }
-    let selected = selected.unwrap();
-
-    let pos = world
-        .read_storage::<Transform>()
-        .get(selected)
-        .unwrap()
-        .position();
+    let selected = world.read_resource::<SelectedEntity>().e?;
+    let pos = world.read_storage::<Transform>().get(selected)?.position();
 
     let mut itinerary = &Itinerary::none();
 
@@ -258,6 +249,7 @@ fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) {
             tess.draw_polyline(l.raw_points(map).as_slice(), 1.0, 3.0);
         }
     }
+    Some(())
 }
 
 #[allow(dead_code)]

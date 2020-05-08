@@ -73,7 +73,6 @@ impl Eq for LanePattern {}
 
 #[derive(Clone, Copy, Inspect)]
 pub struct LanePatternBuilder {
-    #[inspect(min_value = 1.0)]
     pub n_lanes: u32,
     pub sidewalks: bool,
     pub one_way: bool,

@@ -263,6 +263,10 @@ impl Gui {
                     &InspectArgsDefault::default(),
                 );
 
+                if pattern.n_lanes == 0 {
+                    pattern.sidewalks = true;
+                }
+
                 world.write_resource::<RoadBuildState>().pattern_builder = pattern;
 
                 let map: &mut Map = &mut world.write_resource::<Map>();

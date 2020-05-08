@@ -6,8 +6,8 @@ use std::iter::{Extend, Iterator};
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Inspect)]
 pub struct TurnPolicy {
-    back_turns: bool,
-    left_turns: bool,
+    pub back_turns: bool,
+    pub left_turns: bool,
 }
 
 impl Default for TurnPolicy {
