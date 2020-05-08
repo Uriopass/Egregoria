@@ -19,7 +19,11 @@ pub struct Road {
     pub src: IntersectionID,
     pub dst: IntersectionID,
 
-    pub interpolation_points: PolyLine,
+    interpolation_points: PolyLine,
+    length: f32,
+
+    pub src_interface: f32,
+    pub dst_interface: f32,
 
     lanes_forward: Vec<LaneID>,
     lanes_backward: Vec<LaneID>,
@@ -41,11 +45,17 @@ impl Road {
         let pos_dst = intersections[dst].pos;
 
         debug_assert_ne!(pos_src, pos_dst);
+
+        let points = PolyLine::new(vec![pos_src, pos_dst]);
+        let length = points.length();
         let id = store.insert_with_key(|id| Self {
             id,
             src,
             dst,
-            interpolation_points: vec![pos_src, pos_dst].into(),
+            src_interface: 5.0,
+            dst_interface: 5.0,
+            interpolation_points: points,
+            length,
             lanes_forward: vec![],
             lanes_backward: vec![],
             lane_pattern: lane_pattern.clone(),
@@ -122,9 +132,40 @@ impl Road {
     pub fn gen_pos(&mut self, intersections: &Intersections, lanes: &mut Lanes) {
         *self.interpolation_points.first_mut().unwrap() = intersections[self.src].pos;
         *self.interpolation_points.last_mut().unwrap() = intersections[self.dst].pos;
+        self.length = self.interpolation_points.length();
 
         for id in self.lanes_forward.iter().chain(self.lanes_backward.iter()) {
             lanes[*id].gen_pos(intersections, self);
+        }
+    }
+
+    pub fn interfaces_from(&self, id: IntersectionID) -> (f32, f32) {
+        if id == self.src {
+            (self.src_interface, self.dst_interface)
+        } else if id == self.dst {
+            (self.dst_interface, self.src_interface)
+        } else {
+            panic!("Asking interface from from an intersection not conected to the road");
+        }
+    }
+
+    pub fn set_interface(&mut self, id: IntersectionID, v: f32) {
+        if id == self.src {
+            self.src_interface = v;
+        } else if id == self.dst {
+            self.dst_interface = v;
+        } else {
+            panic!("Setting interface from from an intersection not conected to the road");
+        }
+    }
+
+    pub fn max_interface(&mut self, id: IntersectionID, v: f32) {
+        if id == self.src {
+            self.src_interface = self.src_interface.max(v);
+        } else if id == self.dst {
+            self.dst_interface = self.dst_interface.max(v);
+        } else {
+            panic!("Setting interface from from an intersection not conected to the road");
         }
     }
 
@@ -159,7 +200,19 @@ impl Road {
     }
 
     pub fn length(&self) -> f32 {
-        self.interpolation_points.length()
+        self.length
+    }
+
+    pub fn interpolation_points(&self) -> &PolyLine {
+        &self.interpolation_points
+    }
+
+    pub fn src_point(&self) -> Vec2 {
+        self.interpolation_points.first().unwrap()
+    }
+
+    pub fn dst_point(&self) -> Vec2 {
+        self.interpolation_points.last().unwrap()
     }
 
     pub fn other_end(&self, my_end: IntersectionID) -> IntersectionID {

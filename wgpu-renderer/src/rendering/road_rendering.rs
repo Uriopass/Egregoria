@@ -7,6 +7,7 @@ use scale::geometry::Vec2Impl;
 use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
 use scale::physics::Transform;
 use scale::rendering::LinearColor;
+use scale::utils::Restrict;
 
 pub struct RoadRenderer {
     road_mesh: Option<Mesh>,
@@ -15,10 +16,11 @@ pub struct RoadRenderer {
 }
 
 const Z_LANE_BG: f32 = 0.21;
-const Z_LANE: f32 = 0.22;
-const Z_ARROW: f32 = 0.23;
-const Z_CROSSWALK: f32 = 0.24;
-const Z_SIGNAL: f32 = 0.25;
+const Z_SIDEWALK: f32 = 0.22;
+const Z_LANE: f32 = 0.23;
+const Z_ARROW: f32 = 0.24;
+const Z_CROSSWALK: f32 = 0.25;
+const Z_SIGNAL: f32 = 0.26;
 
 impl RoadRenderer {
     pub fn new(gfx: &GfxContext) -> Self {
@@ -56,7 +58,12 @@ impl RoadRenderer {
                 LaneKind::Walking => high_gray,
                 _ => mid_gray,
             };
-            tess.draw_stroke(first, last, Z_LANE, n.width - 0.5);
+            let z = match n.kind {
+                LaneKind::Walking => Z_SIDEWALK,
+                _ => Z_LANE,
+            };
+
+            tess.draw_stroke(first, last, z, n.width - 0.5);
         }
 
         for (inter_id, inter) in inters {
@@ -110,7 +117,12 @@ impl RoadRenderer {
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                tess.draw_polyline_with_dir(&p, first_dir, last_dir, Z_LANE, w - 0.5);
+                let z = match turn.kind {
+                    TurnKind::WalkingCorner => Z_SIDEWALK,
+                    _ => Z_LANE,
+                };
+
+                tess.draw_polyline_with_dir(&p, first_dir, last_dir, z, w - 0.5);
             }
         }
         tess.meshbuilder.build(gfx)
@@ -162,6 +174,9 @@ impl RoadRenderer {
         self.arrow_builder.instances.clear();
         let lanes = map.lanes();
         for road in map.roads().values() {
+            let fade =
+                (road.length() - 3.0 - road.src_interface - road.dst_interface).restrict(0.0, 1.0);
+
             let lanes = road
                 .lanes_iter()
                 .map(move |x| &lanes[*x])

@@ -1,6 +1,5 @@
 use crate::geometry::pseudo_angle;
 use crate::geometry::Vec2;
-use crate::gui::InspectDragf;
 use crate::map_model::{
     Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, TraverseDirection, Turn, TurnID,
     TurnPolicy,
@@ -29,8 +28,6 @@ impl IntersectionID {
 pub struct IntersectionComponent {
     #[inspect(skip = true)]
     pub id: IntersectionID,
-    #[inspect(proxy_type = "InspectDragf")]
-    pub radius: f32,
     pub turn_policy: TurnPolicy,
     pub light_policy: LightPolicy,
 }
@@ -46,7 +43,6 @@ pub struct Intersection {
     // sorted by angle
     pub roads: Vec<RoadID>,
 
-    pub interface_radius: f32,
     pub turn_policy: TurnPolicy,
     pub light_policy: LightPolicy,
 }
@@ -59,7 +55,6 @@ impl Intersection {
             barycenter: pos,
             turns: Default::default(),
             roads: vec![],
-            interface_radius: 5.0,
             turn_policy: TurnPolicy::default(),
             light_policy: LightPolicy::default(),
         })
@@ -105,31 +100,36 @@ impl Intersection {
         self.light_policy.apply(self, lanes, roads);
     }
 
-    pub fn update_interface_radius(&mut self, lanes: &Lanes, roads: &Roads) {
-        let mut max_dist: f32 = 10.0;
+    pub fn update_interface_radius(&self, lanes: &Lanes, roads: &mut Roads) {
+        for &r in &self.roads {
+            roads[r].set_interface(self.id, 9.0);
+        }
+
         if self.roads.len() == 1 {
-            self.interface_radius = max_dist;
             return;
         }
+
         for i in 0..self.roads.len() {
-            let r1 = &roads[self.roads[i]];
-            let r2 = &roads[self.roads[(i + 1) % self.roads.len()]];
+            let r1_id = self.roads[i];
+            let r2_id = self.roads[(i + 1) % self.roads.len()];
+
+            let r1 = &roads[r1_id];
+            let r2 = &roads[r2_id];
 
             let width1 = r1.max_dist(lanes);
             let width2 = r2.max_dist(lanes);
 
             let w = (width1.powi(2) + width2.powi(2)).sqrt();
 
-            max_dist = max_dist.max(w);
-
             let dir1 = r1.dir_from(self.id, self.pos);
             let dir2 = r2.dir_from(self.id, self.pos);
 
             let ang = dir1.angle(dir2).normalize_signed().0.abs();
 
-            max_dist = max_dist.max(w / ang.restrict(0.1, std::f32::consts::FRAC_PI_2).sin());
+            let min_dist = w * 1.1 / ang.restrict(0.1, std::f32::consts::FRAC_PI_2).sin();
+            roads[r1_id].max_interface(self.id, min_dist);
+            roads[r2_id].max_interface(self.id, min_dist);
         }
-        self.interface_radius = max_dist * 1.1;
     }
 
     pub fn update_barycenter(&mut self, lanes: &Lanes, roads: &Roads) {
