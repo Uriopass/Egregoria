@@ -29,6 +29,7 @@ pub struct Map {
     roads: Roads,
     lanes: Lanes,
     intersections: Intersections,
+    pub dirty: bool,
 }
 
 impl Default for Map {
@@ -43,15 +44,12 @@ impl Map {
             roads: Roads::with_key(),
             lanes: Lanes::with_key(),
             intersections: Intersections::with_key(),
+            dirty: true,
         }
     }
 
-    pub fn update_intersection(
-        &mut self,
-        id: IntersectionID,
-        f: impl Fn(&mut Intersection) -> (),
-    ) -> &Intersection {
-        let inter = &mut self.intersections[id];
+    pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection) -> ()) {
+        let inter = unwrap_or!(self.intersections.get_mut(id), return);
         f(inter);
 
         for x in self.intersections[id].roads.clone() {
@@ -60,10 +58,10 @@ impl Map {
         }
 
         self.invalidate(id);
-        &self.intersections[id]
     }
 
     fn invalidate(&mut self, id: IntersectionID) {
+        self.dirty = true;
         let inter = &mut self.intersections[id];
         inter.update_interface_radius(&self.lanes, &self.roads);
 
@@ -79,10 +77,12 @@ impl Map {
     }
 
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
+        self.dirty = true;
         Intersection::make(&mut self.intersections, pos)
     }
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
+        self.dirty = true;
         for road in self.intersections[src].roads.clone() {
             self.remove_road(road);
         }
@@ -96,6 +96,7 @@ impl Map {
         dst: IntersectionID,
         pattern: LanePattern,
     ) -> RoadID {
+        self.dirty = true;
         let road_id = Road::make(
             &mut self.roads,
             &self.intersections,
@@ -117,6 +118,7 @@ impl Map {
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Road {
+        self.dirty = true;
         let road = self.roads.remove(road_id).unwrap();
         for lane_id in road.lanes_iter() {
             self.lanes.remove(*lane_id).unwrap();
@@ -131,6 +133,7 @@ impl Map {
     }
 
     pub fn clear(&mut self) {
+        self.dirty = true;
         self.intersections.clear();
         self.lanes.clear();
         self.roads.clear();
