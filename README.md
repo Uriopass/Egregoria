@@ -41,3 +41,4 @@ I will try to keep a blog about Scale's development [here](http://douady.paris/b
 
 - [`@shika-blyat`](https://github.com/shika-blyat): For his work on the wgpu renderer
 - [`@dabreegster`](https://github.com/dabreegster): For inspiration on the map model
+- [`@kosuru`](https://soundcloud.com/kosuru-980687955): For his wonderful ambiant music
