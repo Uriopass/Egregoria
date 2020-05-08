@@ -1,15 +1,32 @@
 use crate::engine_interaction::TimeInfo;
+use crate::interaction::DeletedEvent;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::CollisionWorld;
 use cgmath::{InnerSpace, Zero};
 use specs::prelude::ResourceId;
-use specs::{Join, Read, ReadStorage, System, SystemData, World, Write, WriteStorage};
+use specs::shrev::EventChannel;
+use specs::{
+    Join, Read, ReadStorage, ReaderId, System, SystemData, World, WorldExt, Write, WriteStorage,
+};
 
-pub struct KinematicsApply;
+pub struct KinematicsApply {
+    reader: ReaderId<DeletedEvent>,
+}
+
+impl KinematicsApply {
+    pub fn new(world: &mut World) -> KinematicsApply {
+        let reader = world
+            .write_resource::<EventChannel<DeletedEvent>>()
+            .register_reader();
+
+        Self { reader }
+    }
+}
 
 #[derive(SystemData)]
 pub struct KinematicsApplyData<'a> {
     time: Read<'a, TimeInfo>,
+    deleted: Read<'a, EventChannel<DeletedEvent>>,
     coworld: Write<'a, CollisionWorld, specs::shred::PanicHandler>,
     colliders: ReadStorage<'a, Collider>,
     transforms: WriteStorage<'a, Transform>,
@@ -38,6 +55,12 @@ impl<'a> System<'a> for KinematicsApply {
                 let po = data.coworld.get_obj_mut(*handle);
                 po.dir = transform.direction();
                 po.speed = kin.velocity.magnitude();
+            }
+        }
+
+        for event in data.deleted.read(&mut self.reader) {
+            if let Some(v) = data.colliders.get(event.e) {
+                data.coworld.remove(v.0);
             }
         }
 

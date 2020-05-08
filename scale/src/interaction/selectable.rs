@@ -7,6 +7,7 @@ use cgmath::InnerSpace;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use specs::prelude::*;
+use specs::shrev::EventChannel;
 use specs::Component;
 use std::f32;
 
@@ -27,6 +28,10 @@ impl Default for Selectable {
     }
 }
 
+pub struct DeletedEvent {
+    pub e: Entity,
+}
+
 #[derive(Default, Debug, Clone, Copy)]
 pub struct InspectedEntity {
     pub e: Option<Entity>,
@@ -42,13 +47,14 @@ impl<'a> System<'a> for SelectableSystem {
         Read<'a, KeyboardInfo>,
         Read<'a, Tool>,
         Write<'a, InspectedEntity>,
+        Write<'a, EventChannel<DeletedEvent>>,
         ReadStorage<'a, Transform>,
         ReadStorage<'a, Selectable>,
     );
 
     fn run(
         &mut self,
-        (entities, mouse, kbinfo, tool, mut inspected, transforms, selectables): Self::SystemData,
+        (entities, mouse, kbinfo, tool, mut inspected, mut deleted_chan, transforms, selectables): Self::SystemData,
     ) {
         if mouse.just_pressed.contains(&MouseButton::Left) && matches!(*tool, Tool::Hand) {
             inspected.e = closest_entity(
@@ -57,12 +63,20 @@ impl<'a> System<'a> for SelectableSystem {
             );
         }
 
-        if let Some(x) = inspected.e {
-            if !entities.is_alive(x) {
+        if let Some(e) = inspected.e {
+            if !entities.is_alive(e) {
+                inspected.e = None;
+                return;
+            }
+
+            if kbinfo.just_pressed.contains(&KeyCode::Backspace) {
+                entities.delete(e).unwrap();
+                deleted_chan.single_write(DeletedEvent { e });
                 inspected.e = None;
             }
         }
-        if kbinfo.just_pressed.contains(&KeyCode::Escape) {
+
+        if kbinfo.just_pressed.contains(&KeyCode::Escape) || matches!(*tool, Tool::Bulldozer) {
             inspected.e = None;
         }
     }

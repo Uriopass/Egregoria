@@ -272,13 +272,11 @@ impl Gui {
                 if ui.small_button(im_str!("load Paris map")) {
                     map.clear();
                     crate::map_model::load_parismap(map);
-                    world.write_resource::<RoadBuildState>().map_render_dirty = true;
                 }
 
                 if ui.small_button(im_str!("load test field")) {
                     map.clear();
                     crate::map_model::load_testfield(map);
-                    world.write_resource::<RoadBuildState>().map_render_dirty = true;
                 }
 
                 ui.text(im_str!(

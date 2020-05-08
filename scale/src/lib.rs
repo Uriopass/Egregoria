@@ -6,7 +6,8 @@ use crate::engine_interaction::{KeyboardInfo, RenderStats, TimeInfo};
 use crate::geometry::gridstore::GridStore;
 use crate::gui::Gui;
 use crate::interaction::{
-    FollowEntity, InspectedAuraSystem, InspectedEntity, MovableSystem, MovedEvent, SelectableSystem,
+    DeletedEvent, FollowEntity, InspectedAuraSystem, InspectedEntity, MovableSystem, MovedEvent,
+    SelectableSystem,
 };
 use crate::interaction::{RoadBuildState, RoadBuildSystem};
 use crate::pedestrians::PedestrianDecision;
@@ -42,24 +43,6 @@ use specs::shrev::EventChannel;
 use specs::world::EntitiesRes;
 
 pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
-    let mut dispatch = DispatcherBuilder::new()
-        .with(VehicleDecision, "car decision", &[])
-        .with(PedestrianDecision, "pedestrian decision", &[])
-        .with(SelectableSystem, "selectable", &[])
-        .with(
-            MovableSystem::default(),
-            "movable",
-            &["car decision", "pedestrian decision", "selectable"],
-        )
-        .with(RoadBuildSystem, "rgs", &["movable"])
-        .with(KinematicsApply, "speed apply", &["movable"])
-        .with(
-            InspectedAuraSystem::default(),
-            "selectable aura",
-            &["movable"],
-        )
-        .build();
-
     let collision_world: CollisionWorld = GridStore::new(50);
 
     // Resources init
@@ -78,10 +61,30 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
 
     // Event channels init
     world.insert(EventChannel::<MovedEvent>::new());
+    world.insert(EventChannel::<DeletedEvent>::new());
 
     // Systems state init
     let s = RoadBuildState::new(world);
     world.insert(s);
+
+    // Dispatcher init
+    let mut dispatch = DispatcherBuilder::new()
+        .with(VehicleDecision, "car decision", &[])
+        .with(PedestrianDecision, "pedestrian decision", &[])
+        .with(SelectableSystem, "selectable", &[])
+        .with(
+            MovableSystem::default(),
+            "movable",
+            &["car decision", "pedestrian decision", "selectable"],
+        )
+        .with(RoadBuildSystem, "rgs", &["movable"])
+        .with(KinematicsApply::new(world), "speed apply", &["movable"])
+        .with(
+            InspectedAuraSystem::default(),
+            "selectable aura",
+            &["movable"],
+        )
+        .build();
 
     dispatch.setup(world);
 

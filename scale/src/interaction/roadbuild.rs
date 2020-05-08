@@ -39,7 +39,6 @@ impl RoadBuildState {
                 .build(),
 
             pattern_builder: LanePatternBuilder::new(),
-            map_render_dirty: true,
             reader,
         }
     }
@@ -67,8 +66,6 @@ pub struct RoadBuildState {
     pub project_entity: Entity,
 
     pub pattern_builder: LanePatternBuilder,
-    pub map_render_dirty: bool,
-
     reader: ReaderId<MovedEvent>,
 }
 
@@ -78,14 +75,24 @@ impl<'a> System<'a> for RoadBuildSystem {
     fn run(&mut self, mut data: Self::SystemData) {
         let state = &mut data.self_state;
 
-        if !matches!(*data.tool, Tool::Roadbuild) {
+        let mr = data.meshrender.get_mut(state.project_entity).unwrap();
+
+        if !matches!(*data.tool, Tool::Roadbuild | Tool::Bulldozer) {
             data.moved.read(&mut state.reader).for_each(drop);
             state.set_selected(&data.entities, None);
-            data.meshrender.get_mut(state.project_entity).unwrap().hide = true;
+            mr.hide = true;
             return;
         }
 
-        data.meshrender.get_mut(state.project_entity).unwrap().hide = false;
+        if matches!(*data.tool, Tool::Bulldozer) {
+            state.set_selected(&data.entities, None);
+        }
+
+        mr.hide = false;
+        mr.orders[0].as_circle_mut().color = match *data.tool {
+            Tool::Bulldozer => Color::RED,
+            _ => Color::BLUE,
+        };
 
         for event in data.moved.read(&mut state.reader) {
             if let Some((
@@ -100,7 +107,6 @@ impl<'a> System<'a> for RoadBuildSystem {
                     data.map.update_intersection(id, |x| {
                         x.pos += event.delta_pos;
                     });
-                    state.map_render_dirty = true;
                 }
             }
         }
@@ -132,7 +138,6 @@ impl<'a> System<'a> for RoadBuildSystem {
                         data.map.remove_road(id);
                     }
                 }
-                state.map_render_dirty = true;
                 state.set_selected(&data.entities, None);
             }
         }
@@ -155,9 +160,20 @@ impl<'a> System<'a> for RoadBuildSystem {
             _ => data.mouseinfo.unprojected,
         });
 
-        let left_click = data.mouseinfo.just_pressed.contains(&MouseButton::Left);
+        if data.mouseinfo.buttons.contains(&MouseButton::Left)
+            && matches!(*data.tool, Tool::Bulldozer)
+        {
+            match cur_proj.map(|x| x.kind) {
+                Some(ProjectKind::Inter(id)) => data.map.remove_intersection(id),
+                Some(ProjectKind::Road(id)) => {
+                    data.map.remove_road(id);
+                }
+                _ => {}
+            }
+            return;
+        }
 
-        if left_click {
+        if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
             match (state.selected, cur_proj) {
                 (sel, None) => {
                     // Intersection creation on empty ground
@@ -176,7 +192,6 @@ impl<'a> System<'a> for RoadBuildSystem {
                         hover,
                     );
 
-                    state.map_render_dirty = true;
                     data.inspected.dirty = false;
                     data.inspected.e = Some(ent);
 
@@ -208,11 +223,8 @@ impl<'a> System<'a> for RoadBuildSystem {
                     if compatible(map, hover.kind, selected_proj.kind) =>
                 {
                     // Connection between different things
-                    println!("Connection between {:?} and {:?}", selected_proj, hover);
                     let selected_after =
                         make_connection(map, selected_proj, hover, state.pattern_builder.build());
-
-                    state.map_render_dirty = true;
 
                     let ent = make_selected_entity(
                         &data.entities,
@@ -372,7 +384,5 @@ impl RoadBuildState {
             inter.turn_policy = selected_interc.turn_policy;
             inter.light_policy = selected_interc.light_policy;
         });
-
-        self.map_render_dirty = true;
     }
 }
