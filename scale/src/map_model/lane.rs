@@ -156,9 +156,21 @@ impl Lane {
             [dir.y, -dir.x].into()
         };
 
-        let mindist = parent_road.length() / 2.0 - 1.0;
+        let (my_interf, other_interf) = parent_road.interfaces_from(inter.id);
 
-        inter.pos + dir * inter.interface_radius.min(mindist) + dir_normal * lane_dist
+        let parlength = parent_road.length() - 1.0;
+        let half = parlength * 0.5;
+
+        let mut dist = my_interf;
+        if my_interf + other_interf > parlength {
+            if my_interf > half && other_interf > half {
+                dist = half;
+            } else if my_interf > half {
+                dist = parlength - other_interf;
+            }
+        }
+
+        inter.pos + dir * dist + dir_normal * lane_dist
     }
 
     pub fn gen_pos(&mut self, intersections: &Intersections, parent_road: &Road) {

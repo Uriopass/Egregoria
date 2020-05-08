@@ -63,7 +63,7 @@ impl Map {
     fn invalidate(&mut self, id: IntersectionID) {
         self.dirty = true;
         let inter = &mut self.intersections[id];
-        inter.update_interface_radius(&self.lanes, &self.roads);
+        inter.update_interface_radius(&self.lanes, &mut self.roads);
 
         for x in inter.roads.clone() {
             let road = &mut self.roads[x];
@@ -140,46 +140,30 @@ impl Map {
     }
 
     pub fn project(&self, pos: Vec2) -> Option<MapProject> {
-        const THRESHOLD: f32 = 20.0;
-
-        let (min_inter, d) = self
-            .intersections()
-            .values()
-            .map(|inter| {
-                let mut d = inter.pos.distance2(pos);
-                if d > inter.interface_radius.powi(2) {
-                    d = std::f32::INFINITY;
-                }
-                (inter, d)
-            })
-            .min_by_key(|(_, d)| OrderedFloat(*d))?;
-
-        if d.is_finite() {
-            return Some(MapProject {
-                pos: min_inter.barycenter,
-                kind: ProjectKind::Inter(min_inter.id),
-            });
-        }
+        const THRESHOLD: f32 = 15.0;
 
         let (min_road, d, projected) = self
             .roads()
             .values()
             .map(|road| {
-                let proj = road.interpolation_points.project(pos).unwrap();
+                let proj = road.interpolation_points().project(pos).unwrap();
                 (road, proj.distance2(pos), proj)
             })
             .min_by_key(|(_, d, _)| OrderedFloat(*d))?;
 
         if d < THRESHOLD * THRESHOLD {
-            let r1 = self.intersections[min_road.src].interface_radius;
-            let r2 = self.intersections[min_road.dst].interface_radius;
-
-            if projected.distance2(min_road.interpolation_points[0]) < r1 {
-                return None;
+            if projected.distance(min_road.src_point()) < min_road.src_interface {
+                return Some(MapProject {
+                    pos: self.intersections[min_road.src].barycenter,
+                    kind: ProjectKind::Inter(min_road.src),
+                });
             }
 
-            if projected.distance2(min_road.interpolation_points.last().unwrap()) < r2 {
-                return None;
+            if projected.distance(min_road.dst_point()) < min_road.dst_interface {
+                return Some(MapProject {
+                    pos: self.intersections[min_road.dst].barycenter,
+                    kind: ProjectKind::Inter(min_road.dst),
+                });
             }
 
             Some(MapProject {

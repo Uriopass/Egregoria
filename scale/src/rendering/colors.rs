@@ -187,7 +187,7 @@ impl LinearColor {
     };
 }
 
-fn from_srgb(component: f32) -> f32 {
+pub fn from_srgb(component: f32) -> f32 {
     let a = 0.055;
     if component <= 0.04045 {
         component / 12.92

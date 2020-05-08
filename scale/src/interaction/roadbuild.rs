@@ -342,11 +342,10 @@ fn make_selected_entity(
         ent = ent
             .with(IntersectionComponent {
                 id: inter_id,
-                radius: inter.interface_radius,
                 turn_policy: inter.turn_policy,
                 light_policy: inter.light_policy,
             })
-            .with(Selectable::new(inter.interface_radius))
+            .with(Selectable::new(15.0))
             .with(Movable);
     }
 
