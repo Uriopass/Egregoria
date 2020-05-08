@@ -1,14 +1,14 @@
 pub use self::follow::*;
+pub use self::inspected_aura::*;
 pub use self::movable::*;
 pub use self::roadbuild::*;
 pub use self::selectable::*;
-pub use self::selectable_aura::*;
 
 mod follow;
+mod inspected_aura;
 mod movable;
 mod roadbuild;
 mod selectable;
-mod selectable_aura;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Tool {

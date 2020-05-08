@@ -1,5 +1,5 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use crate::interaction::{Movable, MovedEvent, Selectable, SelectedEntity, Tool};
+use crate::interaction::{InspectedEntity, Movable, MovedEvent, Selectable, Tool};
 use crate::map_model::{
     IntersectionComponent, IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject,
     ProjectKind,
@@ -55,7 +55,7 @@ pub struct RoadBuildData<'a> {
     tool: Read<'a, Tool>,
     self_state: Write<'a, RoadBuildState, PanicHandler>,
     map: Write<'a, Map, PanicHandler>,
-    selected: Write<'a, SelectedEntity>,
+    inspected: Write<'a, InspectedEntity>,
     intersections: WriteStorage<'a, IntersectionComponent>,
     transforms: WriteStorage<'a, Transform>,
     meshrender: WriteStorage<'a, MeshRender>,
@@ -117,7 +117,7 @@ impl<'a> System<'a> for RoadBuildSystem {
             },
         )) = state.selected
         {
-            if data.selected.dirty {
+            if data.inspected.dirty {
                 state.on_select_dirty(&data.intersections, e, &mut data.map);
             }
         }
@@ -177,8 +177,8 @@ impl<'a> System<'a> for RoadBuildSystem {
                     );
 
                     state.map_render_dirty = true;
-                    data.selected.dirty = false;
-                    data.selected.e = Some(ent);
+                    data.inspected.dirty = false;
+                    data.inspected.e = Some(ent);
 
                     state.set_selected(&data.entities, Some((ent, hover)));
 
@@ -198,8 +198,8 @@ impl<'a> System<'a> for RoadBuildSystem {
                     );
 
                     if let ProjectKind::Inter(_) = hover.kind {
-                        data.selected.dirty = false;
-                        data.selected.e = Some(ent);
+                        data.inspected.dirty = false;
+                        data.inspected.e = Some(ent);
                     }
 
                     state.set_selected(&data.entities, Some((ent, hover)));
@@ -222,8 +222,8 @@ impl<'a> System<'a> for RoadBuildSystem {
                         hover,
                     );
 
-                    data.selected.dirty = false;
-                    data.selected.e = Some(ent);
+                    data.inspected.dirty = false;
+                    data.inspected.e = Some(ent);
 
                     let hover = MapProject {
                         pos: data.map.intersections()[selected_after].pos,

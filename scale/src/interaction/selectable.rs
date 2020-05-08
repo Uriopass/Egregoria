@@ -1,8 +1,10 @@
 use crate::engine_interaction::KeyCode;
 use crate::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
+use crate::geometry::Vec2;
 use crate::interaction::Tool;
 use crate::physics::Transform;
 use cgmath::InnerSpace;
+use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use specs::prelude::*;
 use specs::Component;
@@ -26,7 +28,7 @@ impl Default for Selectable {
 }
 
 #[derive(Default, Debug, Clone, Copy)]
-pub struct SelectedEntity {
+pub struct InspectedEntity {
     pub e: Option<Entity>,
     pub dirty: bool, // Modified by inspection
 }
@@ -39,35 +41,40 @@ impl<'a> System<'a> for SelectableSystem {
         Read<'a, MouseInfo>,
         Read<'a, KeyboardInfo>,
         Read<'a, Tool>,
-        Write<'a, SelectedEntity>,
+        Write<'a, InspectedEntity>,
         ReadStorage<'a, Transform>,
         ReadStorage<'a, Selectable>,
     );
 
     fn run(
         &mut self,
-        (entities, mouse, kbinfo, tool, mut selected, transforms, selectables): Self::SystemData,
+        (entities, mouse, kbinfo, tool, mut inspected, transforms, selectables): Self::SystemData,
     ) {
         if mouse.just_pressed.contains(&MouseButton::Left) && matches!(*tool, Tool::Hand) {
-            let mut min_dist2 = f32::MAX;
-            let mut closest = None;
-            for (entity, trans, select) in (&entities, &transforms, &selectables).join() {
-                let dist2: f32 = (trans.position() - mouse.unprojected).magnitude2();
-                if dist2 <= min_dist2 && dist2 <= select.radius * select.radius {
-                    closest = Some(entity);
-                    min_dist2 = dist2;
-                }
-            }
-            selected.e = closest;
+            inspected.e = closest_entity(
+                (&entities, &transforms, &selectables).join(),
+                mouse.unprojected,
+            );
         }
 
-        if let Some(x) = selected.e {
+        if let Some(x) = inspected.e {
             if !entities.is_alive(x) {
-                selected.e = None;
+                inspected.e = None;
             }
         }
         if kbinfo.just_pressed.contains(&KeyCode::Escape) {
-            selected.e = None;
+            inspected.e = None;
         }
     }
+}
+
+fn closest_entity<'a>(
+    it: impl IntoIterator<Item = (Entity, &'a Transform, &'a Selectable)>,
+    pos: Vec2,
+) -> Option<Entity> {
+    it.into_iter()
+        .map(|(e, trans, select)| (e, select, (trans.position() - pos).magnitude2()))
+        .filter(|(_, select, dist2)| *dist2 <= select.radius * select.radius)
+        .min_by_key(|(_, _, d)| OrderedFloat(*d))
+        .map(|(e, _, _)| e)
 }

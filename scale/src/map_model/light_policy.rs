@@ -41,14 +41,12 @@ impl LightPolicy {
         }
 
         match self {
-            LightPolicy::NoLights => return,
+            LightPolicy::NoLights => {}
             LightPolicy::StopSigns => {
                 self.stop_signs(in_road_lanes, lanes);
-                return;
             }
             LightPolicy::Lights => {
                 self.lights(in_road_lanes, inter, lanes);
-                return;
             }
             LightPolicy::Smart => {
                 if in_road_lanes.len() <= 2 {
