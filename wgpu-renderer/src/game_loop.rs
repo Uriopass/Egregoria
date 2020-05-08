@@ -5,7 +5,7 @@ use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRendere
 use cgmath::Vector2;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
-use scale::interaction::{FollowEntity, RoadBuildState, SelectedEntity};
+use scale::interaction::{FollowEntity, InspectedEntity, RoadBuildState};
 use scale::map_model::{Itinerary, Map};
 use scale::physics::Transform;
 use scale::rendering::{Color, LinearColor};
@@ -218,7 +218,7 @@ impl<'a> State<'a> {
 #[allow(dead_code)]
 fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) -> Option<()> {
     let map: &Map = &world.read_resource::<Map>();
-    let selected = world.read_resource::<SelectedEntity>().e?;
+    let selected = world.read_resource::<InspectedEntity>().e?;
     let pos = world.read_storage::<Transform>().get(selected)?.position();
 
     let mut itinerary = &Itinerary::none();

@@ -1,6 +1,6 @@
 use crate::engine_interaction::{MouseButton, MouseInfo, TimeInfo};
 use crate::geometry::Vec2;
-use crate::interaction::SelectedEntity;
+use crate::interaction::InspectedEntity;
 use crate::physics::{Kinematics, Transform};
 use cgmath::num_traits::zero;
 use serde::{Deserialize, Serialize};
@@ -32,7 +32,7 @@ pub struct MovableSystem {
 pub struct MovableSystemData<'a> {
     mouse: Read<'a, MouseInfo>,
     time: Read<'a, TimeInfo>,
-    selected: Read<'a, SelectedEntity>,
+    inspected: Read<'a, InspectedEntity>,
     moved: Write<'a, EventChannel<MovedEvent>>,
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
@@ -45,11 +45,11 @@ impl<'a> System<'a> for MovableSystem {
     fn run(&mut self, mut data: Self::SystemData) {
         if data.mouse.buttons.contains(&MouseButton::Left)
             && data
-                .selected
+                .inspected
                 .e
                 .map_or(false, |e| data.movable.get(e).is_some())
         {
-            let e = data.selected.e.unwrap();
+            let e = data.inspected.e.unwrap();
             match &mut self.clicked_at {
                 None => {
                     if let Some(kin) = data.kinematics.get_mut(e) {
@@ -78,7 +78,7 @@ impl<'a> System<'a> for MovableSystem {
                 }
             }
         } else if let Some(off) = self.clicked_at.take() {
-            if let Some(e) = data.selected.e {
+            if let Some(e) = data.inspected.e {
                 if let Some(kin) = data.kinematics.get_mut(e) {
                     kin.velocity = (data.mouse.unprojected - off) / data.time.delta.max(1.0 / 30.0);
                 }

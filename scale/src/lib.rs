@@ -6,7 +6,7 @@ use crate::engine_interaction::{KeyboardInfo, RenderStats, TimeInfo};
 use crate::geometry::gridstore::GridStore;
 use crate::gui::Gui;
 use crate::interaction::{
-    FollowEntity, MovableSystem, MovedEvent, SelectableAuraSystem, SelectableSystem, SelectedEntity,
+    FollowEntity, InspectedAuraSystem, InspectedEntity, MovableSystem, MovedEvent, SelectableSystem,
 };
 use crate::interaction::{RoadBuildState, RoadBuildSystem};
 use crate::pedestrians::PedestrianDecision;
@@ -54,7 +54,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
         .with(RoadBuildSystem, "rgs", &["movable"])
         .with(KinematicsApply, "speed apply", &["movable"])
         .with(
-            SelectableAuraSystem::default(),
+            InspectedAuraSystem::default(),
             "selectable aura",
             &["movable"],
         )
@@ -68,7 +68,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     world.insert(collision_world);
     world.insert(KeyboardInfo::default());
     world.insert(Gui::default());
-    world.insert(SelectedEntity::default());
+    world.insert(InspectedEntity::default());
     world.insert(FollowEntity::default());
     world.insert(RenderStats::default());
 

@@ -1,4 +1,4 @@
-use crate::interaction::SelectedEntity;
+use crate::interaction::InspectedEntity;
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{MeshRender, StrokeCircleRender};
 use crate::rendering::Color;
@@ -6,21 +6,21 @@ use specs::prelude::*;
 use specs::shred::DynamicSystemData;
 
 #[derive(Default)]
-pub struct SelectableAuraSystem {
+pub struct InspectedAuraSystem {
     aura: Option<Entity>,
 }
 
-impl<'a> System<'a> for SelectableAuraSystem {
+impl<'a> System<'a> for InspectedAuraSystem {
     type SystemData = (
-        Read<'a, SelectedEntity>,
+        Read<'a, InspectedEntity>,
         WriteStorage<'a, Transform>,
         WriteStorage<'a, MeshRender>,
     );
 
-    fn run(&mut self, (selected, mut transforms, mut meshrenders): Self::SystemData) {
+    fn run(&mut self, (inspected, mut transforms, mut meshrenders): Self::SystemData) {
         meshrenders.get_mut(self.aura.unwrap()).unwrap().hide = true;
 
-        if let Some(pos) = selected
+        if let Some(pos) = inspected
             .e
             .and_then(|sel| transforms.get(sel).map(|x| x.position()))
         {

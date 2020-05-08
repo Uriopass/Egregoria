@@ -1,5 +1,5 @@
 use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
-use crate::interaction::{RoadBuildState, SelectedEntity, Tool};
+use crate::interaction::{InspectedEntity, RoadBuildState, Tool};
 use crate::map_model::{LanePatternBuilder, Map};
 use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
@@ -74,26 +74,24 @@ impl Gui {
                     (im_str!("Bulldozer"), Tool::Bulldozer),
                 ];
 
-                let tok = ui.push_style_var(StyleVar::Alpha(0.5));
                 for (name, tool) in &tools {
-                    let tok = if tool == cur_tool {
-                        Some(ui.push_style_var(StyleVar::Alpha(1.0)))
+                    let tok = ui.push_style_var(StyleVar::Alpha(if tool == cur_tool {
+                        1.0
                     } else {
-                        None
-                    };
+                        0.5
+                    }));
                     if ui.button(name, [80.0, 30.0]) {
                         *cur_tool = *tool;
                     }
-                    tok.map(|x| x.pop(ui));
+                    tok.pop(ui);
                 }
-                tok.pop(ui);
             });
         tok.pop(ui);
     }
 
     pub fn inspector(&mut self, ui: &Ui, world: &mut World) {
-        let mut selected = *world.read_resource::<SelectedEntity>();
-        let e = unwrap_or!(selected.e, return);
+        let mut inspected = *world.read_resource::<InspectedEntity>();
+        let e = unwrap_or!(inspected.e, return);
 
         let mut is_open = true;
         imgui::Window::new(im_str!("Inspect"))
@@ -101,14 +99,14 @@ impl Gui {
             .position([30.0, 160.0], imgui::Condition::FirstUseEver)
             .opened(&mut is_open)
             .build(&ui, || {
-                selected.dirty =
+                inspected.dirty =
                     crate::gui::inspect::InspectRenderer { entity: e }.render(world, ui);
             });
         if !is_open {
-            selected.e = None;
-            selected.dirty = false;
+            inspected.e = None;
+            inspected.dirty = false;
         }
-        *world.write_resource::<SelectedEntity>() = selected;
+        *world.write_resource::<InspectedEntity>() = inspected;
     }
 
     pub fn time_controls(&mut self, ui: &Ui, world: &mut World) {
