@@ -34,46 +34,65 @@ impl LightPolicy {
             .filter(|v| !v.is_empty())
             .collect();
 
-        let two_lanes_or_less = in_road_lanes.len() <= 2;
-
         for incoming_lanes in &in_road_lanes {
             for &&lane in incoming_lanes {
                 lanes[lane].control = TrafficControl::Always;
             }
         }
 
-        match (self, two_lanes_or_less) {
-            (LightPolicy::NoLights, _) | (LightPolicy::Smart, true) => {}
-            (LightPolicy::StopSigns, _) => {
-                for incoming_lanes in in_road_lanes {
-                    for &lane in incoming_lanes {
-                        lanes[lane].control = TrafficControl::StopSign;
-                    }
+        match self {
+            LightPolicy::NoLights => return,
+            LightPolicy::StopSigns => {
+                self.stop_signs(in_road_lanes, lanes);
+                return;
+            }
+            LightPolicy::Lights => {
+                self.lights(in_road_lanes, inter, lanes);
+                return;
+            }
+            LightPolicy::Smart => {
+                if in_road_lanes.len() <= 2 {
+                    return;
+                }
+
+                if inter.turn_policy.left_turns {
+                    self.lights(in_road_lanes, inter, lanes);
+                } else {
+                    self.stop_signs(in_road_lanes, lanes);
                 }
             }
-            (LightPolicy::Smart, false) | (LightPolicy::Lights, _) => {
-                let cycle_size = 10;
-                let orange_length = 4;
-                let offset = inter.id.as_ffi();
-                let offset: usize =
-                    rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0, cycle_size);
+        }
+    }
 
-                for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
-                    let light = TrafficControl::Light(TrafficLightSchedule::from_basic(
-                        cycle_size,
-                        orange_length,
-                        cycle_size + orange_length,
-                        if i % 2 == 0 {
-                            cycle_size + orange_length + offset
-                        } else {
-                            offset
-                        },
-                    ));
+    fn stop_signs(self, in_road_lanes: Vec<Vec<&LaneID>>, lanes: &mut Lanes) {
+        for incoming_lanes in in_road_lanes {
+            for &lane in incoming_lanes {
+                lanes[lane].control = TrafficControl::StopSign;
+            }
+        }
+    }
 
-                    for &lane in incoming_lanes {
-                        lanes[lane].control = light;
-                    }
-                }
+    fn lights(self, in_road_lanes: Vec<Vec<&LaneID>>, inter: &Intersection, lanes: &mut Lanes) {
+        let cycle_size = 10;
+        let orange_length = 4;
+        let offset = inter.id.as_ffi();
+        let offset: usize =
+            rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0, cycle_size);
+
+        for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
+            let light = TrafficControl::Light(TrafficLightSchedule::from_basic(
+                cycle_size,
+                orange_length,
+                cycle_size + orange_length,
+                if i % 2 == 0 {
+                    cycle_size + orange_length + offset
+                } else {
+                    offset
+                },
+            ));
+
+            for &lane in incoming_lanes {
+                lanes[lane].control = light;
             }
         }
     }
