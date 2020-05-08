@@ -1,5 +1,4 @@
 use crate::engine::{Drawable, FrameContext, GfxContext, InstanceRaw, SpriteBatchBuilder, Texture};
-use cgmath::vec3;
 use scale::physics::Transform;
 use scale::rendering::assets::AssetRender;
 use scale::specs::{Join, World, WorldExt};
@@ -30,8 +29,8 @@ impl InstancedRender {
             }
 
             let instance = InstanceRaw::new(
-                trans.to_matrix4(),
-                vec3(ar.tint.r, ar.tint.g, ar.tint.b),
+                trans.to_matrix4(ar.z),
+                [ar.tint.r, ar.tint.g, ar.tint.b],
                 ar.scale,
             );
 
