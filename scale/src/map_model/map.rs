@@ -68,6 +68,7 @@ impl Map {
         for x in inter.roads.clone() {
             let road = &mut self.roads[x];
             road.gen_pos(&self.intersections, &mut self.lanes);
+            self.intersections[road.other_end(id)].update_turns(&self.lanes, &self.roads);
         }
 
         let inter = &mut self.intersections[id];
@@ -141,6 +142,20 @@ impl Map {
 
     pub fn project(&self, pos: Vec2) -> Option<MapProject> {
         const THRESHOLD: f32 = 15.0;
+
+        if let Some(v) = self
+            .intersections
+            .values()
+            .filter(|x| x.roads.is_empty())
+            .min_by_key(|x| OrderedFloat(x.pos.distance2(pos)))
+        {
+            if v.pos.distance(pos) < 5.0 {
+                return Some(MapProject {
+                    pos: v.pos,
+                    kind: ProjectKind::Inter(v.id),
+                });
+            }
+        }
 
         let (min_road, d, projected) = self
             .roads()
