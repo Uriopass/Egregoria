@@ -290,6 +290,10 @@ fn calc_front_dist<'a>(
 
         let (my_dist, his_dist) = unwrap_or!(both_dist_to_inter(my_ray, his_ray), continue);
 
+        if my_dist > 50.0 || his_dist > 50.0 {
+            continue;
+        }
+
         if my_dist - speed.min(2.5) - my_radius
             < his_dist - nei_physics_obj.speed.min(2.5) - nei_physics_obj.radius
         {

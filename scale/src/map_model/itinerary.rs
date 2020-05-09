@@ -111,7 +111,7 @@ impl Itinerary {
             ItineraryKind::None | ItineraryKind::WaitUntil(_) => true,
             ItineraryKind::Simple(_) => self.remaining_points() == 1,
             ItineraryKind::Route(Route { reversed_route, .. }) => {
-                reversed_route.len() == 0 && self.remaining_points() == 1
+                reversed_route.is_empty() && self.remaining_points() == 1
             }
         }
     }
