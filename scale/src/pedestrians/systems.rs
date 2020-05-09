@@ -137,15 +137,17 @@ pub fn calc_decision<'a>(
         }
     }
 
-    if let Some(points) = pedestrian
-        .itinerary
-        .get_travers()
-        .map(|x| x.raw_points(map))
-    {
-        if let Some(projected) = points.project(position) {
-            let lane_force = projected - trans.position();
-            let m = lane_force.magnitude();
-            desired_v += lane_force * m * 0.1;
+    if !pedestrian.itinerary.is_terminal() {
+        if let Some(points) = pedestrian
+            .itinerary
+            .get_travers()
+            .map(|x| x.raw_points(map))
+        {
+            if let Some(projected) = points.project(position) {
+                let lane_force = projected - trans.position();
+                let m = lane_force.magnitude();
+                desired_v += lane_force * m * 0.1;
+            }
         }
     }
 

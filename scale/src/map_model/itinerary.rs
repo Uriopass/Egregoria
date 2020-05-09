@@ -106,16 +106,24 @@ impl Itinerary {
         self.local_path.n_points()
     }
 
+    pub fn is_terminal(&self) -> bool {
+        match &self.kind {
+            ItineraryKind::None | ItineraryKind::WaitUntil(_) => true,
+            ItineraryKind::Simple(_) => self.remaining_points() == 1,
+            ItineraryKind::Route(Route { reversed_route, .. }) => {
+                reversed_route.len() == 0 && self.remaining_points() == 1
+            }
+        }
+    }
+
     pub fn get_point(&self) -> Option<Vec2> {
         self.local_path.first()
     }
 
     pub fn get_travers(&self) -> Option<&Traversable> {
         match &self.kind {
-            ItineraryKind::None => None,
-            ItineraryKind::WaitUntil(_) => None,
-            ItineraryKind::Simple(x) => Some(x),
-            ItineraryKind::Route(Route { cur, .. }) => Some(cur),
+            ItineraryKind::None | ItineraryKind::WaitUntil(_) => None,
+            ItineraryKind::Simple(cur) | ItineraryKind::Route(Route { cur, .. }) => Some(cur),
         }
     }
 
