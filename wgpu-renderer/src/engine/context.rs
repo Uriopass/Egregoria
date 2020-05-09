@@ -1,7 +1,8 @@
-use crate::engine::{AudioContext, ClearScreen, Drawable, GfxContext, InputContext};
+use crate::engine::{AudioContext, FrameContext, GfxContext, InputContext};
 use crate::game_loop;
+use crate::rendering::imgui_wrapper::GuiRenderContext;
 use futures::executor;
-use wgpu::{Color, SwapChainOutput};
+use wgpu::{Color, CommandEncoderDescriptor, SwapChainOutput};
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
@@ -38,13 +39,11 @@ impl Context {
     }
 
     pub fn start(mut self, mut state: game_loop::State<'static>, el: EventLoop<()>) {
-        let clear_screen = ClearScreen {
-            clear_color: Color {
-                r: 0.0,
-                g: 0.0,
-                b: 0.0,
-                a: 1.0,
-            },
+        let clear_color = Color {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
         };
 
         let mut frame: Option<SwapChainOutput> = None;
@@ -87,10 +86,68 @@ impl Context {
 
                         state.update(&mut self);
 
-                        let mut frame_ctx = self.gfx.begin_frame(frame.take().unwrap());
-                        clear_screen.draw(&mut frame_ctx);
-                        state.render(&mut frame_ctx);
-                        frame_ctx.finish();
+                        let mut encoder =
+                            self.gfx
+                                .device
+                                .create_command_encoder(&CommandEncoderDescriptor {
+                                    label: Some("Render encoder"),
+                                });
+
+                        self.gfx
+                            .projection
+                            .upload_to_gpu(&self.gfx.device, &mut encoder);
+
+                        let mut objs = vec![];
+
+                        let frame = frame.take().unwrap();
+                        {
+                            let mut render_pass =
+                                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                    color_attachments: &[
+                                        wgpu::RenderPassColorAttachmentDescriptor {
+                                            attachment: &self.gfx.multi_frame,
+                                            resolve_target: Some(&frame.view),
+                                            load_op: wgpu::LoadOp::Clear,
+                                            store_op: wgpu::StoreOp::Store,
+                                            clear_color: wgpu::Color {
+                                                r: clear_color.r,
+                                                g: clear_color.g,
+                                                b: clear_color.b,
+                                                a: clear_color.a,
+                                            },
+                                        },
+                                    ],
+                                    depth_stencil_attachment: Some(
+                                        wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                                            attachment: &self.gfx.depth_texture.view,
+                                            depth_load_op: wgpu::LoadOp::Clear,
+                                            depth_store_op: wgpu::StoreOp::Store,
+                                            clear_depth: 0.0,
+                                            stencil_load_op: wgpu::LoadOp::Clear,
+                                            stencil_store_op: wgpu::StoreOp::Store,
+                                            clear_stencil: 0,
+                                        },
+                                    ),
+                                });
+
+                            let mut fc = FrameContext {
+                                objs: &mut objs,
+                                gfx: &self.gfx,
+                            };
+                            state.render(&mut fc);
+                            for obj in fc.objs {
+                                obj.draw(&self.gfx, &mut render_pass);
+                            }
+                        }
+
+                        state.render_gui(GuiRenderContext {
+                            device: &self.gfx.device,
+                            encoder: &mut encoder,
+                            frame_view: &frame.view,
+                            window: &self.gfx.window,
+                        });
+
+                        self.gfx.queue.submit(&[encoder.finish()]);
 
                         self.input.end_frame();
                     }

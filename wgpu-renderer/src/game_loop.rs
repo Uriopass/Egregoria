@@ -1,6 +1,6 @@
-use crate::engine::{Context, Drawable, FrameContext, GfxContext};
+use crate::engine::{Context, FrameContext, GfxContext};
 use crate::geometry::Tesselator;
-use crate::rendering::imgui_wrapper::ImguiWrapper;
+use crate::rendering::imgui_wrapper::{GuiRenderContext, ImguiWrapper};
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use cgmath::Vector2;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
@@ -131,15 +131,17 @@ impl<'a> State<'a> {
         debug_pathfinder(&mut tess, &self.world);
 
         if let Some(x) = tess.meshbuilder.build(ctx.gfx) {
-            x.draw(ctx)
+            ctx.draw(x)
         }
-
-        let mut gui = (*self.world.read_resource::<Gui>()).clone();
-        self.gui.render(ctx, &mut self.world, &mut gui);
-        *self.world.write_resource::<Gui>() = gui;
 
         self.world.write_resource::<RenderStats>().render_time =
             (Instant::now() - start).as_secs_f32();
+    }
+
+    pub fn render_gui(&mut self, ctx: GuiRenderContext) {
+        let mut gui = (*self.world.read_resource::<Gui>()).clone();
+        self.gui.render(ctx, &mut self.world, &mut gui);
+        *self.world.write_resource::<Gui>() = gui;
     }
 
     fn manage_timestep(&mut self, delta: f64) -> u32 {

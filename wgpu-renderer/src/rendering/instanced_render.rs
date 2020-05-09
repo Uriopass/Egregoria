@@ -1,4 +1,4 @@
-use crate::engine::{Drawable, FrameContext, GfxContext, InstanceRaw, SpriteBatchBuilder, Texture};
+use crate::engine::{FrameContext, GfxContext, InstanceRaw, SpriteBatchBuilder, Texture};
 use scale::physics::Transform;
 use scale::rendering::assets::AssetRender;
 use scale::specs::{Join, World, WorldExt};
@@ -39,7 +39,7 @@ impl InstancedRender {
 
         for x in &mut self.texs {
             if let Some(x) = x.build(fctx.gfx) {
-                x.draw(fctx)
+                fctx.objs.push(Box::new(x));
             }
         }
     }

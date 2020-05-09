@@ -1,25 +1,27 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Drawable, FrameContext, GfxContext, IndexType, Texture,
+    compile_shader, CompiledShader, Drawable, GfxContext, HasPipeline, IndexType, Texture,
     UvVertex, VBDesc,
 };
 
 use lazy_static::*;
-use wgpu::{TextureComponentType, VertexBufferDescriptor};
+use std::rc::Rc;
+use wgpu::{RenderPass, TextureComponentType, VertexBufferDescriptor};
 
 pub struct SpriteBatchBuilder {
     pub tex: Texture,
     pub instances: Vec<InstanceRaw>,
 }
 
+#[derive(Clone)]
 pub struct SpriteBatch {
-    vertex_buffer: wgpu::Buffer,
-    index_buffer: wgpu::Buffer,
-    instance_buffer: wgpu::Buffer,
+    vertex_buffer: Rc<wgpu::Buffer>,
+    index_buffer: Rc<wgpu::Buffer>,
+    instance_buffer: Rc<wgpu::Buffer>,
     pub n_indices: u32,
     pub n_instances: u32,
     pub alpha_blend: bool,
     pub tex: Texture,
-    pub bind_group: wgpu::BindGroup,
+    pub bind_group: Rc<wgpu::BindGroup>,
 }
 
 #[repr(C)]
@@ -111,18 +113,21 @@ impl SpriteBatchBuilder {
             return None;
         }
 
-        let vertex_buffer = gfx
-            .device
-            .create_buffer_with_data(bytemuck::cast_slice(&v), wgpu::BufferUsage::VERTEX);
-        let index_buffer = gfx
-            .device
-            .create_buffer_with_data(bytemuck::cast_slice(UV_INDICES), wgpu::BufferUsage::INDEX);
-        let instance_buffer = gfx.device.create_buffer_with_data(
+        let vertex_buffer = Rc::new(
+            gfx.device
+                .create_buffer_with_data(bytemuck::cast_slice(&v), wgpu::BufferUsage::VERTEX),
+        );
+        let index_buffer =
+            Rc::new(gfx.device.create_buffer_with_data(
+                bytemuck::cast_slice(UV_INDICES),
+                wgpu::BufferUsage::INDEX,
+            ));
+        let instance_buffer = Rc::new(gfx.device.create_buffer_with_data(
             bytemuck::cast_slice(&self.instances),
             wgpu::BufferUsage::VERTEX,
-        );
+        ));
 
-        let bind_group = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let bind_group = Rc::new(gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bindgroupslayouts[0],
             bindings: &[
                 wgpu::Binding {
@@ -135,7 +140,7 @@ impl SpriteBatchBuilder {
                 },
             ],
             label: Some("bind group for spritebatch"),
-        });
+        }));
 
         Some(SpriteBatch {
             vertex_buffer,
@@ -155,7 +160,7 @@ lazy_static! {
     static ref FRAG_SHADER: CompiledShader = compile_shader("resources/shaders/spritebatch.frag");
 }
 
-impl Drawable for SpriteBatch {
+impl HasPipeline for SpriteBatch {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
         let layouts = vec![gfx
             .device
@@ -234,34 +239,17 @@ impl Drawable for SpriteBatch {
             bindgroupslayouts: layouts,
         }
     }
+}
 
-    fn draw(&self, ctx: &mut FrameContext) {
-        let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &ctx.gfx.multi_frame,
-                resolve_target: Some(&ctx.frame.view),
-                load_op: wgpu::LoadOp::Load,
-                store_op: wgpu::StoreOp::Store,
-                clear_color: wgpu::Color::BLACK,
-            }],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                attachment: &ctx.gfx.depth_texture.view,
-                depth_load_op: wgpu::LoadOp::Load,
-                depth_store_op: wgpu::StoreOp::Store,
-                clear_depth: 1.0,
-                stencil_load_op: wgpu::LoadOp::Load,
-                stencil_store_op: wgpu::StoreOp::Store,
-                clear_stencil: 0,
-            }),
-        });
-
-        let pipeline = &ctx.gfx.get_pipeline::<Self>();
-        render_pass.set_pipeline(&pipeline.pipeline);
-        render_pass.set_bind_group(0, &self.bind_group, &[]);
-        render_pass.set_bind_group(1, &ctx.gfx.projection.bindgroup, &[]);
-        render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
-        render_pass.set_vertex_buffer(1, &self.instance_buffer, 0, 0);
-        render_pass.set_index_buffer(&self.index_buffer, 0, 0);
-        render_pass.draw_indexed(0..self.n_indices, 0, 0..self.n_instances);
+impl Drawable for SpriteBatch {
+    fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        let pipeline = &gfx.get_pipeline::<Self>();
+        rp.set_pipeline(&pipeline.pipeline);
+        rp.set_bind_group(0, &self.bind_group, &[]);
+        rp.set_bind_group(1, &gfx.projection.bindgroup, &[]);
+        rp.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
+        rp.set_vertex_buffer(1, &self.instance_buffer, 0, 0);
+        rp.set_index_buffer(&self.index_buffer, 0, 0);
+        rp.draw_indexed(0..self.n_indices, 0, 0..self.n_instances);
     }
 }
