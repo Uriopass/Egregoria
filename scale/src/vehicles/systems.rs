@@ -159,7 +159,7 @@ pub fn calc_decision<'a>(
     }
     let objective: Vec2 = unwrap_or!(vehicle.itinerary.get_point(), return);
 
-    let is_terminal = false; // TODO: change depending on route
+    let is_terminal = vehicle.itinerary.is_terminal();
 
     let front_dist = calc_front_dist(vehicle, speed, trans, self_obj, neighs);
 
