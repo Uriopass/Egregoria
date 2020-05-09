@@ -1,4 +1,4 @@
-use crate::engine::{FrameContext, GfxContext};
+use crate::engine::GfxContext;
 use imgui_wgpu::Renderer;
 use std::time::Instant;
 
@@ -9,6 +9,13 @@ pub struct ImguiWrapper {
     platform: imgui_winit_support::WinitPlatform,
     pub last_mouse_captured: bool,
     pub last_kb_captured: bool,
+}
+
+pub struct GuiRenderContext<'a> {
+    pub device: &'a wgpu::Device,
+    pub encoder: &'a mut wgpu::CommandEncoder,
+    pub frame_view: &'a wgpu::TextureView,
+    pub window: &'a winit::window::Window,
 }
 
 impl ImguiWrapper {
@@ -53,7 +60,7 @@ impl ImguiWrapper {
 
     pub fn render(
         &mut self,
-        gfx: &mut FrameContext,
+        gfx: GuiRenderContext,
         world: &mut scale::specs::World,
         gui: &mut scale::gui::Gui,
     ) {
@@ -66,7 +73,7 @@ impl ImguiWrapper {
 
         // Prepare
         self.platform
-            .prepare_frame(self.imgui.io_mut(), &gfx.gfx.window)
+            .prepare_frame(self.imgui.io_mut(), gfx.window)
             .expect("Failed to prepare frame");
 
         let ui: scale::imgui::Ui = self.imgui.frame();
@@ -74,15 +81,10 @@ impl ImguiWrapper {
         self.last_mouse_captured = ui.io().want_capture_mouse;
         self.last_kb_captured = ui.io().want_capture_keyboard;
 
-        self.platform.prepare_render(&ui, &gfx.gfx.window);
+        self.platform.prepare_render(&ui, gfx.window);
 
         self.renderer
-            .render(
-                ui.render(),
-                &gfx.gfx.device,
-                &mut gfx.encoder,
-                &gfx.frame.view,
-            )
+            .render(ui.render(), gfx.device, gfx.encoder, gfx.frame_view)
             .unwrap();
     }
 

@@ -1,9 +1,9 @@
 use crate::engine::{
-    compile_shader, ColoredUvVertex, CompiledShader, Drawable, FrameContext, GfxContext, IndexType,
+    compile_shader, ColoredUvVertex, CompiledShader, Drawable, GfxContext, HasPipeline, IndexType,
     Texture, VBDesc,
 };
 use lazy_static::*;
-use wgpu::TextureComponentType;
+use wgpu::{RenderPass, TextureComponentType};
 
 pub struct TexturedMeshBuilder {
     vertices: Vec<ColoredUvVertex>,
@@ -83,7 +83,7 @@ lazy_static! {
         compile_shader("resources/shaders/textured_mesh_shader.frag");
 }
 
-impl Drawable for TexturedMesh {
+impl HasPipeline for TexturedMesh {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
         let layouts = vec![gfx
             .device
@@ -162,33 +162,16 @@ impl Drawable for TexturedMesh {
             bindgroupslayouts: layouts,
         }
     }
+}
 
-    fn draw(&self, ctx: &mut FrameContext) {
-        let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &ctx.gfx.multi_frame,
-                resolve_target: Some(&ctx.frame.view),
-                load_op: wgpu::LoadOp::Load,
-                store_op: wgpu::StoreOp::Store,
-                clear_color: wgpu::Color::BLACK,
-            }],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                attachment: &ctx.gfx.depth_texture.view,
-                depth_load_op: wgpu::LoadOp::Load,
-                depth_store_op: wgpu::StoreOp::Store,
-                clear_depth: 1.0,
-                stencil_load_op: wgpu::LoadOp::Load,
-                stencil_store_op: wgpu::StoreOp::Store,
-                clear_stencil: 0,
-            }),
-        });
-
-        let pipeline = &ctx.gfx.get_pipeline::<Self>();
-        render_pass.set_pipeline(&pipeline.pipeline);
-        render_pass.set_bind_group(0, &self.bind_group, &[]);
-        render_pass.set_bind_group(1, &ctx.gfx.projection.bindgroup, &[]);
-        render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
-        render_pass.set_index_buffer(&self.index_buffer, 0, 0);
-        render_pass.draw_indexed(0..self.n_indices, 0, 0..1);
+impl Drawable for TexturedMesh {
+    fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        let pipeline = &gfx.get_pipeline::<Self>();
+        rp.set_pipeline(&pipeline.pipeline);
+        rp.set_bind_group(0, &self.bind_group, &[]);
+        rp.set_bind_group(1, &gfx.projection.bindgroup, &[]);
+        rp.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
+        rp.set_index_buffer(&self.index_buffer, 0, 0);
+        rp.draw_indexed(0..self.n_indices, 0, 0..1);
     }
 }

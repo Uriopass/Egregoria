@@ -1,12 +1,11 @@
 use crate::engine::{
-    ClearScreen, Drawable, Mesh, PreparedPipeline, SpriteBatch, Texture, TexturedMesh, Uniform,
+    Drawable, HasPipeline, Mesh, PreparedPipeline, SpriteBatch, Texture, TexturedMesh, Uniform,
 };
 use cgmath::SquareMatrix;
 use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
-    Adapter, CommandBuffer, CommandEncoderDescriptor, Device, Queue, ShaderStage, Surface,
-    SwapChain, SwapChainDescriptor,
+    Adapter, CommandBuffer, Device, Queue, ShaderStage, Surface, SwapChain, SwapChainDescriptor,
 };
 use winit::window::Window;
 
@@ -30,14 +29,13 @@ pub struct GfxContext {
 }
 
 pub struct FrameContext<'a> {
-    pub encoder: wgpu::CommandEncoder,
-    pub frame: wgpu::SwapChainOutput,
     pub gfx: &'a GfxContext,
+    pub objs: &'a mut Vec<Box<dyn Drawable>>,
 }
 
-impl FrameContext<'_> {
-    pub fn finish(self) {
-        self.gfx.queue.submit(&[self.encoder.finish()]);
+impl<'a> FrameContext<'a> {
+    pub fn draw(&mut self, v: impl Drawable + 'static) {
+        self.objs.push(Box::new(v))
     }
 }
 
@@ -97,7 +95,6 @@ impl GfxContext {
             multi_frame,
         };
 
-        me.register_pipeline::<ClearScreen>();
         me.register_pipeline::<Mesh>();
         me.register_pipeline::<TexturedMesh>();
         me.register_pipeline::<SpriteBatch>();
@@ -107,22 +104,6 @@ impl GfxContext {
 
     pub fn set_proj(&mut self, proj: cgmath::Matrix4<f32>) {
         self.projection.value = proj;
-    }
-
-    pub fn begin_frame(&mut self, frame: wgpu::SwapChainOutput) -> FrameContext {
-        let mut encoder = self
-            .device
-            .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("Render encoder"),
-            });
-
-        self.projection.upload_to_gpu(&self.device, &mut encoder);
-
-        FrameContext {
-            gfx: self,
-            encoder,
-            frame,
-        }
     }
 
     fn create_multisampled_framebuffer(
@@ -162,14 +143,14 @@ impl GfxContext {
             Self::create_multisampled_framebuffer(&self.sc_desc, &self.device, self.samples);
     }
 
-    pub fn get_pipeline<T: Drawable>(&self) -> &PreparedPipeline {
+    pub fn get_pipeline<T: 'static + Drawable>(&self) -> &PreparedPipeline {
         &self
             .pipelines
             .get(&std::any::TypeId::of::<T>())
             .expect("Pipeline was not registered in context")
     }
 
-    pub fn register_pipeline<T: Drawable>(&mut self) {
+    pub fn register_pipeline<T: HasPipeline>(&mut self) {
         self.pipelines
             .insert(std::any::TypeId::of::<T>(), T::create_pipeline(self));
     }

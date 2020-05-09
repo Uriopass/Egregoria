@@ -1,12 +1,10 @@
-use crate::engine::{FrameContext, GfxContext};
-use wgpu::BindGroupLayout;
+use crate::engine::GfxContext;
+use wgpu::{BindGroupLayout, RenderPass};
 
-mod clear_screen;
 mod mesh;
 mod spritebatch;
 mod textured_mesh;
 
-pub use clear_screen::*;
 pub use mesh::*;
 pub use spritebatch::*;
 pub use textured_mesh::*;
@@ -18,7 +16,10 @@ pub struct PreparedPipeline {
     pub bindgroupslayouts: Vec<BindGroupLayout>,
 }
 
-pub trait Drawable: 'static {
+pub trait HasPipeline: 'static {
     fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline;
-    fn draw(&self, ctx: &mut FrameContext);
+}
+
+pub trait Drawable {
+    fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>);
 }

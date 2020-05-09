@@ -1,5 +1,5 @@
 use crate::engine::{
-    Drawable, FrameContext, GfxContext, InstanceRaw, Mesh, SpriteBatch, SpriteBatchBuilder, Texture,
+    FrameContext, GfxContext, InstanceRaw, Mesh, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
 use cgmath::{vec2, InnerSpace, Vector2};
@@ -214,12 +214,12 @@ impl RoadRenderer {
             map.dirty = false;
         }
 
-        if let Some(ref x) = self.road_mesh {
-            x.draw(ctx)
+        if let Some(x) = self.road_mesh.clone() {
+            ctx.draw(x);
         }
 
-        if let Some(ref x) = self.arrows {
-            x.draw(ctx)
+        if let Some(x) = self.arrows.clone() {
+            ctx.draw(x);
         }
 
         Self::signals_render(map, time, tess);

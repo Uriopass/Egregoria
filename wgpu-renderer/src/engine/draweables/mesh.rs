@@ -1,8 +1,10 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Drawable, FrameContext, GfxContext, IndexType,
-    PreparedPipeline, VBDesc, Vertex,
+    compile_shader, CompiledShader, Drawable, GfxContext, HasPipeline, IndexType, PreparedPipeline,
+    VBDesc, Vertex,
 };
 use lazy_static::*;
+use std::rc::Rc;
+use wgpu::RenderPass;
 
 pub struct MeshBuilder {
     pub vertices: Vec<Vertex>,
@@ -38,14 +40,14 @@ impl MeshBuilder {
         if self.vertices.is_empty() {
             return None;
         }
-        let vertex_buffer = ctx.device.create_buffer_with_data(
+        let vertex_buffer = Rc::new(ctx.device.create_buffer_with_data(
             bytemuck::cast_slice(&self.vertices),
             wgpu::BufferUsage::VERTEX,
-        );
-        let index_buffer = ctx.device.create_buffer_with_data(
+        ));
+        let index_buffer = Rc::new(ctx.device.create_buffer_with_data(
             bytemuck::cast_slice(&self.indices),
             wgpu::BufferUsage::INDEX,
-        );
+        ));
 
         Some(Mesh {
             vertex_buffer,
@@ -56,9 +58,10 @@ impl MeshBuilder {
     }
 }
 
+#[derive(Clone)]
 pub struct Mesh {
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
+    pub vertex_buffer: Rc<wgpu::Buffer>,
+    pub index_buffer: Rc<wgpu::Buffer>,
     pub n_indices: u32,
     pub alpha_blend: bool,
 }
@@ -68,7 +71,7 @@ lazy_static! {
     static ref FRAG_SHADER: CompiledShader = compile_shader("resources/shaders/mesh_shader.frag");
 }
 
-impl Drawable for Mesh {
+impl HasPipeline for Mesh {
     fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline {
         let vs_module = gfx.device.create_shader_module(&VERT_SHADER.0);
         let fs_module = gfx.device.create_shader_module(&FRAG_SHADER.0);
@@ -123,31 +126,14 @@ impl Drawable for Mesh {
             bindgroupslayouts: vec![],
         }
     }
+}
 
-    fn draw(&self, ctx: &mut FrameContext) {
-        let mut render_pass = ctx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &ctx.gfx.multi_frame,
-                resolve_target: Some(&ctx.frame.view),
-                load_op: wgpu::LoadOp::Load,
-                store_op: wgpu::StoreOp::Store,
-                clear_color: wgpu::Color::BLACK, // useless
-            }],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                attachment: &ctx.gfx.depth_texture.view,
-                depth_load_op: wgpu::LoadOp::Load,
-                depth_store_op: wgpu::StoreOp::Store,
-                clear_depth: 1.0,
-                stencil_load_op: wgpu::LoadOp::Load,
-                stencil_store_op: wgpu::StoreOp::Store,
-                clear_stencil: 0,
-            }),
-        });
-
-        render_pass.set_pipeline(&ctx.gfx.get_pipeline::<Self>().pipeline);
-        render_pass.set_bind_group(0, &ctx.gfx.projection.bindgroup, &[]);
-        render_pass.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
-        render_pass.set_index_buffer(&self.index_buffer, 0, 0);
-        render_pass.draw_indexed(0..self.n_indices, 0, 0..1);
+impl Drawable for Mesh {
+    fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        rp.set_pipeline(&gfx.get_pipeline::<Self>().pipeline);
+        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+        rp.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
+        rp.set_index_buffer(&self.index_buffer, 0, 0);
+        rp.draw_indexed(0..self.n_indices, 0, 0..1);
     }
 }
