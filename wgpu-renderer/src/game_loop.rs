@@ -59,7 +59,7 @@ impl<'a> State<'a> {
             time_sync: 0.0,
             last_time: Instant::now(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
-            road_renderer: RoadRenderer::new(&ctx.gfx),
+            road_renderer: RoadRenderer::new(&mut ctx.gfx),
             grid: true,
         }
     }
