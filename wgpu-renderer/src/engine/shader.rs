@@ -2,6 +2,7 @@ use glsl_to_spirv::{ShaderType, SpirvOutput};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 pub struct CompiledShader(pub Vec<u32>, pub ShaderType);
 
@@ -12,11 +13,22 @@ fn cache_filename(p: &Path) -> Option<PathBuf> {
     Some(p.parent()?.parent()?.join("compiled_shaders").join(name))
 }
 
-fn find_in_cache(compiled_path: &PathBuf, stype: ShaderType) -> Option<CompiledShader> {
+fn find_in_cache(
+    compiled_path: &PathBuf,
+    stype: ShaderType,
+    last_modified: SystemTime,
+) -> Option<CompiledShader> {
     let x = File::open(&compiled_path).ok()?;
-    let data = wgpu::read_spirv(x).ok()?;
 
-    Some(CompiledShader(data, stype))
+    let cached_last_modified = x.metadata().ok()?.modified().ok()?;
+
+    if cached_last_modified > last_modified {
+        let data = wgpu::read_spirv(x).ok()?;
+
+        Some(CompiledShader(data, stype))
+    } else {
+        None
+    }
 }
 
 fn save_to_cache(compiled_path: &PathBuf, spirv: &mut SpirvOutput) -> Option<()> {
@@ -47,16 +59,25 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
         }
     };
 
-    if let Some(x) = compiled_name
-        .as_ref()
-        .and_then(|x| find_in_cache(&x, stype.clone()))
-    {
-        return x;
+    let mut sfile = File::open(p).unwrap_or_else(|_| panic!("Failed to open {:?} shader file", p));
+
+    if let Some(last_modified) = sfile.metadata().ok().and_then(|x| x.modified().ok()) {
+        if let Some(x) = compiled_name
+            .as_ref()
+            .and_then(|x| find_in_cache(&x, stype.clone(), last_modified))
+        {
+            return x;
+        }
     }
 
-    let mut file = File::open(p).unwrap_or_else(|_| panic!("Failed to open {:?} shader file", p));
+    println!(
+        r#"Shader "{}" not found in cache or is outdated, recompiling"#,
+        p.to_string_lossy().into_owned()
+    );
+
     let mut src = String::new();
-    file.read_to_string(&mut src)
+    sfile
+        .read_to_string(&mut src)
         .expect("Failed to read the content of the shader");
 
     let mut spirv = glsl_to_spirv::compile(&src, stype.clone()).unwrap();

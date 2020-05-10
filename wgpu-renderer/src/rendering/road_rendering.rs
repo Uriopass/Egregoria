@@ -1,5 +1,6 @@
 use crate::engine::{
-    FrameContext, GfxContext, InstanceRaw, Mesh, SpriteBatch, SpriteBatchBuilder, Texture,
+    compile_shader, CompiledShader, FrameContext, GfxContext, InstanceRaw, Mesh, ShadedBatch,
+    ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
 use cgmath::{vec2, InnerSpace, Vector2};
@@ -10,10 +11,24 @@ use scale::rendering::{from_srgb, LinearColor};
 use scale::utils::Restrict;
 use std::ops::Mul;
 
+#[derive(Clone, Copy)]
+struct Crosswalk;
+
+impl Shaders for Crosswalk {
+    fn vert_shader() -> CompiledShader {
+        compile_shader("resources/shaders/crosswalk.vert", None)
+    }
+
+    fn frag_shader() -> CompiledShader {
+        compile_shader("resources/shaders/crosswalk.frag", None)
+    }
+}
+
 pub struct RoadRenderer {
     road_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
     arrow_builder: SpriteBatchBuilder,
+    crosswalks: Option<ShadedBatch<Crosswalk>>,
 }
 
 const Z_LANE_BG: f32 = 0.21;
@@ -26,19 +41,22 @@ const Z_SIGNAL: f32 = 0.26;
 const MID_GRAY_V: f32 = 0.5;
 
 impl RoadRenderer {
-    pub fn new(gfx: &GfxContext) -> Self {
+    pub fn new(gfx: &mut GfxContext) -> Self {
         let arrow_builder = SpriteBatchBuilder::new(
             Texture::from_path(gfx, "resources/arrow_one_way.png", Some("arrow")).unwrap(),
         );
+
+        gfx.register_pipeline::<ShadedBatch<Crosswalk>>();
 
         RoadRenderer {
             road_mesh: None,
             arrows: None,
             arrow_builder,
+            crosswalks: None,
         }
     }
 
-    pub fn road_mesh(map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
+    fn road_mesh(map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
         let mid_gray: LinearColor = LinearColor::gray(MID_GRAY_V);
         let high_gray: LinearColor = LinearColor::gray(0.7);
 
@@ -79,28 +97,12 @@ impl RoadRenderer {
                 tess.draw_circle(inter.pos, Z_LANE, 5.0);
             }
             for turn in inter.turns() {
-                tess.color = LinearColor::WHITE;
-                let id = turn.id;
-
                 if matches!(turn.kind, TurnKind::Crosswalk) {
-                    let from = lanes[id.src].get_inter_node_pos(inter_id);
-                    let to = lanes[id.dst].get_inter_node_pos(inter_id);
-
-                    let l = (to - from).magnitude();
-
-                    let dir: Vector2<f32> = (to - from) / l;
-                    let normal = vec2(-dir.y, dir.x);
-                    for i in 2..l as usize - 1 {
-                        let along = from + dir * i as f32;
-                        tess.draw_stroke(
-                            along - normal * 1.5,
-                            along + normal * 1.5,
-                            Z_CROSSWALK,
-                            0.5,
-                        );
-                    }
                     continue;
                 }
+
+                tess.color = LinearColor::WHITE;
+                let id = turn.id;
 
                 let w = lanes[id.src].width;
 
@@ -113,9 +115,8 @@ impl RoadRenderer {
                 tess.draw_polyline_with_dir(&p, first_dir, last_dir, Z_LANE_BG, w + 0.5);
 
                 tess.color = match turn.kind {
-                    TurnKind::Crosswalk => unreachable!(),
                     TurnKind::WalkingCorner => high_gray,
-                    TurnKind::Driving => mid_gray,
+                    _ => mid_gray,
                 };
 
                 p.clear();
@@ -132,7 +133,7 @@ impl RoadRenderer {
         tess.meshbuilder.build(gfx)
     }
 
-    pub fn signals_render(map: &Map, time: u64, sr: &mut Tesselator) {
+    fn signals_render(map: &Map, time: u64, sr: &mut Tesselator) {
         for n in map.lanes().values() {
             if n.control.is_always() {
                 continue;
@@ -174,7 +175,7 @@ impl RoadRenderer {
         }
     }
 
-    pub fn arrows(&mut self, map: &Map, gfx: &GfxContext) -> Option<SpriteBatch> {
+    fn arrows(&mut self, map: &Map, gfx: &GfxContext) -> Option<SpriteBatch> {
         self.arrow_builder.instances.clear();
         let lanes = map.lanes();
         for road in map.roads().values() {
@@ -206,6 +207,40 @@ impl RoadRenderer {
         self.arrow_builder.build(gfx)
     }
 
+    fn crosswalks(&mut self, map: &Map, gfx: &GfxContext) -> Option<ShadedBatch<Crosswalk>> {
+        let mut builder = ShadedBatchBuilder::<Crosswalk>::new();
+
+        let lanes = map.lanes();
+        for (inter_id, inter) in map.intersections() {
+            for turn in inter.turns() {
+                let id = turn.id;
+
+                if matches!(turn.kind, TurnKind::Crosswalk) {
+                    let from = lanes[id.src].get_inter_node_pos(inter_id);
+                    let to = lanes[id.dst].get_inter_node_pos(inter_id);
+
+                    let l = (to - from).magnitude();
+
+                    let dir: Vector2<f32> = (to - from) / l;
+
+                    let t = Transform::new_cos_sin(from + dir * 2.25, dir);
+                    let mut m = t.to_matrix4(Z_CROSSWALK);
+
+                    m.x.x *= l - 4.0;
+                    m.x.y *= l - 4.0;
+
+                    m.y.x *= 3.0;
+                    m.y.y *= 3.0;
+
+                    builder
+                        .instances
+                        .push(ShadedInstanceRaw::new(m, [1.0, 1.0, 1.0, 1.0]));
+                }
+            }
+        }
+        builder.build(&gfx)
+    }
+
     pub fn render(
         &mut self,
         map: &mut Map,
@@ -216,6 +251,8 @@ impl RoadRenderer {
         if map.dirty || self.road_mesh.is_none() {
             self.road_mesh = Self::road_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
             self.arrows = self.arrows(map, &ctx.gfx);
+            self.crosswalks = self.crosswalks(map, &ctx.gfx);
+
             map.dirty = false;
         }
 
@@ -224,6 +261,10 @@ impl RoadRenderer {
         }
 
         if let Some(x) = self.arrows.clone() {
+            ctx.draw(x);
+        }
+
+        if let Some(x) = self.crosswalks.clone() {
             ctx.draw(x);
         }
 
