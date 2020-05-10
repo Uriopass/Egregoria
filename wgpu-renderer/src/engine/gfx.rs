@@ -1,11 +1,14 @@
 use crate::engine::{
-    Drawable, HasPipeline, Mesh, PreparedPipeline, SpriteBatch, Texture, TexturedMesh, Uniform,
+    CompiledShader, Drawable, HasPipeline, Mesh, PreparedPipeline, SpriteBatch, Texture,
+    TexturedMesh, Uniform,
 };
 use cgmath::SquareMatrix;
+use glsl_to_spirv::ShaderType;
 use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
-    Adapter, CommandBuffer, Device, Queue, ShaderStage, Surface, SwapChain, SwapChainDescriptor,
+    Adapter, BindGroupLayout, CommandBuffer, Device, Queue, RenderPipeline, ShaderStage, Surface,
+    SwapChain, SwapChainDescriptor, VertexBufferDescriptor,
 };
 use winit::window::Window;
 
@@ -141,6 +144,69 @@ impl GfxContext {
             Texture::create_depth_texture(&self.device, &self.sc_desc, self.samples);
         self.multi_frame =
             Self::create_multisampled_framebuffer(&self.sc_desc, &self.device, self.samples);
+    }
+
+    pub fn basic_pipeline(
+        &self,
+        layouts: &[&BindGroupLayout],
+        vertex_buffers: &[VertexBufferDescriptor],
+        vert_shader: &CompiledShader,
+        frag_shader: &CompiledShader,
+    ) -> RenderPipeline {
+        assert!(matches!(vert_shader.1, ShaderType::Vertex));
+        assert!(matches!(frag_shader.1, ShaderType::Fragment));
+
+        let render_pipeline_layout =
+            self.device
+                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    bind_group_layouts: layouts,
+                });
+
+        let vs_module = self.device.create_shader_module(&vert_shader.0);
+        let fs_module = self.device.create_shader_module(&frag_shader.0);
+
+        let color_states = [wgpu::ColorStateDescriptor {
+            format: self.sc_desc.format,
+            color_blend: wgpu::BlendDescriptor {
+                src_factor: wgpu::BlendFactor::SrcAlpha,
+                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha_blend: wgpu::BlendDescriptor::REPLACE,
+            write_mask: wgpu::ColorWrite::ALL,
+        }];
+
+        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
+            layout: &render_pipeline_layout,
+            vertex_stage: wgpu::ProgrammableStageDescriptor {
+                module: &vs_module,
+                entry_point: "main",
+            },
+            fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
+                module: &fs_module,
+                entry_point: "main",
+            }),
+            rasterization_state: None,
+            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
+            color_states: &color_states,
+            depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::GreaterEqual,
+                stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
+                stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
+                stencil_read_mask: 0,
+                stencil_write_mask: 0,
+            }),
+            vertex_state: wgpu::VertexStateDescriptor {
+                index_format: wgpu::IndexFormat::Uint32,
+                vertex_buffers,
+            },
+            sample_count: self.samples,
+            sample_mask: !0,
+            alpha_to_coverage_enabled: false,
+        };
+        self.device.create_render_pipeline(&render_pipeline_desc)
     }
 
     pub fn get_pipeline<T: 'static + Drawable>(&self) -> &PreparedPipeline {

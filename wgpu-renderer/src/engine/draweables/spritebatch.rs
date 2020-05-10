@@ -1,11 +1,9 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Drawable, GfxContext, HasPipeline, IndexType, Texture,
-    UvVertex, VBDesc,
+    compile_shader, Drawable, GfxContext, HasPipeline, IndexType, Texture, UvVertex, VBDesc,
 };
 
-use lazy_static::*;
 use std::rc::Rc;
-use wgpu::{RenderPass, TextureComponentType, VertexBufferDescriptor};
+use wgpu::{RenderPass, VertexBufferDescriptor};
 
 pub struct SpriteBatchBuilder {
     pub tex: Texture,
@@ -155,87 +153,22 @@ impl SpriteBatchBuilder {
     }
 }
 
-lazy_static! {
-    static ref VERT_SHADER: CompiledShader = compile_shader("resources/shaders/spritebatch.vert");
-    static ref FRAG_SHADER: CompiledShader = compile_shader("resources/shaders/spritebatch.frag");
-}
-
 impl HasPipeline for SpriteBatch {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
-        let layouts = vec![gfx
-            .device
-            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                bindings: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::SampledTexture {
-                            multisampled: false,
-                            dimension: wgpu::TextureViewDimension::D2,
-                            component_type: TextureComponentType::Uint,
-                        },
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler { comparison: false },
-                    },
-                ],
-                label: Some("Bind group layout for spritebatch"),
-            })];
+        let vert = compile_shader("resources/shaders/spritebatch.vert", None);
+        let frag = compile_shader("resources/shaders/spritebatch.frag", None);
 
-        let render_pipeline_layout =
-            gfx.device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    bind_group_layouts: &[&layouts[0], &gfx.projection_layout],
-                });
+        let layouts = vec![Texture::bindgroup_layout(&gfx.device)];
 
-        let vs_module = gfx.device.create_shader_module(&VERT_SHADER.0);
-        let fs_module = gfx.device.create_shader_module(&FRAG_SHADER.0);
+        let pipeline = gfx.basic_pipeline(
+            &[&layouts[0], &gfx.projection_layout],
+            &[UvVertex::desc(), InstanceRaw::desc()],
+            &vert,
+            &frag,
+        );
 
-        let color_states = [wgpu::ColorStateDescriptor {
-            format: gfx.sc_desc.format,
-            color_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha_blend: wgpu::BlendDescriptor::REPLACE,
-            write_mask: wgpu::ColorWrite::ALL,
-        }];
-
-        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
-            layout: &render_pipeline_layout,
-            vertex_stage: wgpu::ProgrammableStageDescriptor {
-                module: &vs_module,
-                entry_point: "main",
-            },
-            fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-                module: &fs_module,
-                entry_point: "main",
-            }),
-            rasterization_state: None,
-            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-            color_states: &color_states,
-            depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
-                format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::GreaterEqual,
-                stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-                stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-                stencil_read_mask: 0,
-                stencil_write_mask: 0,
-            }),
-            vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers: &[UvVertex::desc(), InstanceRaw::desc()],
-            },
-            sample_count: gfx.samples,
-            sample_mask: !0,
-            alpha_to_coverage_enabled: false,
-        };
         super::PreparedPipeline {
-            pipeline: gfx.device.create_render_pipeline(&render_pipeline_desc),
+            pipeline,
             bindgroupslayouts: layouts,
         }
     }

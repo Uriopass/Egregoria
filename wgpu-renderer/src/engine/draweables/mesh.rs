@@ -1,8 +1,7 @@
 use crate::engine::{
-    compile_shader, ColoredVertex, CompiledShader, Drawable, GfxContext, HasPipeline, IndexType,
-    PreparedPipeline, VBDesc,
+    compile_shader, ColoredVertex, Drawable, GfxContext, HasPipeline, IndexType, PreparedPipeline,
+    VBDesc,
 };
-use lazy_static::*;
 use std::rc::Rc;
 use wgpu::RenderPass;
 
@@ -69,63 +68,20 @@ pub struct Mesh {
     pub alpha_blend: bool,
 }
 
-lazy_static! {
-    static ref VERT_SHADER: CompiledShader = compile_shader("resources/shaders/mesh_shader.vert");
-    static ref FRAG_SHADER: CompiledShader = compile_shader("resources/shaders/mesh_shader.frag");
-}
-
 impl HasPipeline for Mesh {
     fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline {
-        let vs_module = gfx.device.create_shader_module(&VERT_SHADER.0);
-        let fs_module = gfx.device.create_shader_module(&FRAG_SHADER.0);
+        let vert = compile_shader("resources/shaders/mesh_shader.vert", None);
+        let frag = compile_shader("resources/shaders/mesh_shader.frag", None);
 
-        let render_pipeline_layout =
-            gfx.device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    bind_group_layouts: &[&gfx.projection_layout],
-                });
-        let color_states = [wgpu::ColorStateDescriptor {
-            format: gfx.sc_desc.format,
-            color_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha_blend: wgpu::BlendDescriptor::REPLACE,
-            write_mask: wgpu::ColorWrite::ALL,
-        }];
-        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
-            layout: &render_pipeline_layout,
-            vertex_stage: wgpu::ProgrammableStageDescriptor {
-                module: &vs_module,
-                entry_point: "main",
-            },
-            fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-                module: &fs_module,
-                entry_point: "main",
-            }),
-            rasterization_state: None,
-            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-            color_states: &color_states,
-            depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
-                format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::GreaterEqual,
-                stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-                stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-                stencil_read_mask: 0,
-                stencil_write_mask: 0,
-            }),
-            vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers: &[ColoredVertex::desc()],
-            },
-            sample_count: gfx.samples,
-            sample_mask: !0,
-            alpha_to_coverage_enabled: false,
-        };
+        let pipeline = gfx.basic_pipeline(
+            &[&gfx.projection_layout],
+            &[ColoredVertex::desc()],
+            &vert,
+            &frag,
+        );
+
         PreparedPipeline {
-            pipeline: gfx.device.create_render_pipeline(&render_pipeline_desc),
+            pipeline,
             bindgroupslayouts: vec![],
         }
     }
