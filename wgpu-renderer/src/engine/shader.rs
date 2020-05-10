@@ -7,9 +7,16 @@ pub struct CompiledShader(pub Vec<u32>);
 pub fn compile_shader(p: impl AsRef<Path>) -> CompiledShader {
     let p = p.as_ref();
 
-    let mut extension = p.extension().unwrap().to_string_lossy().into_owned();
-    extension.push_str(".spirv");
-    let compiled_path = p.with_extension(extension);
+    let mut name = p.file_name().unwrap().to_string_lossy().into_owned();
+    name.push_str(".spirv");
+
+    let compiled_path = p
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("compiled_shaders")
+        .join(name);
 
     if let Ok(x) = File::open(compiled_path.clone()) {
         let data = wgpu::read_spirv(x).unwrap();
