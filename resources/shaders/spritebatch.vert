@@ -16,6 +16,5 @@ uniform Uniforms {
 void main() {
     gl_Position = u_view_proj * in_model * vec4(in_pos, 1.0);
     out_color = vec4(in_tint, 1.0);
-    out_pos = in_pos;
     out_uv = in_uv;
 }
