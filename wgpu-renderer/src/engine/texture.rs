@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::rc::Rc;
-use wgpu::CommandEncoderDescriptor;
+use wgpu::{CommandEncoderDescriptor, TextureComponentType};
 
 #[derive(Clone)]
 pub struct Texture {
@@ -152,5 +152,27 @@ impl Texture {
             view: Rc::new(view),
             sampler: Rc::new(sampler),
         }
+    }
+
+    pub fn bindgroup_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            bindings: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    ty: wgpu::BindingType::SampledTexture {
+                        multisampled: false,
+                        dimension: wgpu::TextureViewDimension::D2,
+                        component_type: TextureComponentType::Uint,
+                    },
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler { comparison: false },
+                },
+            ],
+            label: Some("Texture bindgroup layout"),
+        })
     }
 }
