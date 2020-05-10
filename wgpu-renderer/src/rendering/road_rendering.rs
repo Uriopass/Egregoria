@@ -3,7 +3,7 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
-use cgmath::{vec2, InnerSpace, Vector2};
+use cgmath::{vec2, InnerSpace};
 use scale::geometry::Vec2Impl;
 use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
 use scale::physics::Transform;
@@ -88,7 +88,7 @@ impl RoadRenderer {
             tess.draw_stroke(first, last, z, n.width - 0.5);
         }
 
-        for (inter_id, inter) in inters {
+        for inter in inters.values() {
             if inter.roads.is_empty() {
                 tess.color = LinearColor::WHITE;
                 tess.draw_circle(inter.pos, Z_LANE_BG, 5.5);
@@ -221,7 +221,11 @@ impl RoadRenderer {
 
                     let l = (to - from).magnitude();
 
-                    let dir: Vector2<f32> = (to - from) / l;
+                    if l < 4.0 {
+                        continue;
+                    }
+
+                    let dir = (to - from) / l;
 
                     let t = Transform::new_cos_sin(from + dir * 2.25, dir);
                     let mut m = t.to_matrix4(Z_CROSSWALK);
