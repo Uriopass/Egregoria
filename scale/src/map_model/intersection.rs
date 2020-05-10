@@ -100,7 +100,7 @@ impl Intersection {
         self.light_policy.apply(self, lanes, roads);
     }
 
-    pub fn update_interface_radius(&self, lanes: &Lanes, roads: &mut Roads) {
+    pub fn update_interface_radius(&self, roads: &mut Roads) {
         for &r in &self.roads {
             roads[r].set_interface(self.id, 9.0);
         }
@@ -116,8 +116,8 @@ impl Intersection {
             let r1 = &roads[r1_id];
             let r2 = &roads[r2_id];
 
-            let width1 = r1.max_dist(lanes);
-            let width2 = r2.max_dist(lanes);
+            let width1 = r1.width / 2.0;
+            let width2 = r2.width / 2.0;
 
             let w = (width1.powi(2) + width2.powi(2)).sqrt();
 

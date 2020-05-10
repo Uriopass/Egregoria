@@ -63,7 +63,7 @@ impl Map {
     fn invalidate(&mut self, id: IntersectionID) {
         self.dirty = true;
         let inter = &mut self.intersections[id];
-        inter.update_interface_radius(&self.lanes, &mut self.roads);
+        inter.update_interface_radius(&mut self.roads);
 
         for x in inter.roads.clone() {
             let road = &mut self.roads[x];
@@ -121,8 +121,8 @@ impl Map {
     pub fn remove_road(&mut self, road_id: RoadID) -> Road {
         self.dirty = true;
         let road = self.roads.remove(road_id).unwrap();
-        for lane_id in road.lanes_iter() {
-            self.lanes.remove(*lane_id).unwrap();
+        for &lane_id in road.lanes_iter() {
+            self.lanes.remove(lane_id);
         }
 
         self.intersections[road.src].remove_road(road_id, &mut self.lanes, &self.roads);

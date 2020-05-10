@@ -128,20 +128,6 @@ impl<'a> System<'a> for RoadBuildSystem {
             }
         }
 
-        if data.kbinfo.just_pressed.contains(&KeyCode::Backspace) {
-            if let Some((_, p)) = state.selected {
-                match p.kind {
-                    ProjectKind::Inter(id) => {
-                        data.map.remove_intersection(id);
-                    }
-                    ProjectKind::Road(id) => {
-                        data.map.remove_road(id);
-                    }
-                }
-                state.set_selected(&data.entities, None);
-            }
-        }
-
         let map: &mut Map = &mut data.map;
 
         let cur_proj = map.project(data.mouseinfo.unprojected);
@@ -166,7 +152,18 @@ impl<'a> System<'a> for RoadBuildSystem {
             match cur_proj.map(|x| x.kind) {
                 Some(ProjectKind::Inter(id)) => data.map.remove_intersection(id),
                 Some(ProjectKind::Road(id)) => {
+                    let r = &data.map.roads()[id];
+                    let src = r.src;
+                    let dst = r.dst;
+
                     data.map.remove_road(id);
+
+                    if data.map.intersections()[src].roads.is_empty() {
+                        data.map.remove_intersection(src);
+                    }
+                    if data.map.intersections()[dst].roads.is_empty() {
+                        data.map.remove_intersection(dst);
+                    }
                 }
                 _ => {}
             }

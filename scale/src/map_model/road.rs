@@ -5,7 +5,6 @@ use crate::map_model::{
     Roads, TrafficControl,
 };
 use cgmath::InnerSpace;
-use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -20,7 +19,8 @@ pub struct Road {
     pub dst: IntersectionID,
 
     interpolation_points: PolyLine,
-    length: f32,
+    pub length: f32,
+    pub width: f32,
 
     pub src_interface: f32,
     pub dst_interface: f32,
@@ -47,15 +47,15 @@ impl Road {
         debug_assert_ne!(pos_src, pos_dst);
 
         let points = PolyLine::new(vec![pos_src, pos_dst]);
-        let length = points.length();
         let id = store.insert_with_key(|id| Self {
             id,
             src,
             dst,
-            src_interface: 5.0,
-            dst_interface: 5.0,
+            src_interface: 9.0,
+            dst_interface: 9.0,
             interpolation_points: points,
-            length,
+            width: 1.0,
+            length: 1.0,
             lanes_forward: vec![],
             lanes_backward: vec![],
             lane_pattern: lane_pattern.clone(),
@@ -80,7 +80,10 @@ impl Road {
     }
 
     pub fn lanes_iter(&self) -> impl Iterator<Item = &LaneID> {
-        self.lanes_forward.iter().chain(self.lanes_backward.iter())
+        self.lanes_forward
+            .iter()
+            .rev()
+            .chain(self.lanes_backward.iter())
     }
 
     pub fn sidewalks<'a>(
@@ -106,12 +109,11 @@ impl Road {
         lane_type: LaneKind,
         direction: LaneDirection,
     ) -> LaneID {
-        let length = self.length();
-        let (src, dst, road_lanes) = match direction {
-            LaneDirection::Forward => (self.src, self.dst, &mut self.lanes_forward),
-            LaneDirection::Backward => (self.dst, self.src, &mut self.lanes_backward),
+        let (src, dst) = match direction {
+            LaneDirection::Forward => (self.src, self.dst),
+            LaneDirection::Backward => (self.dst, self.src),
         };
-        let dist_from_center = road_lanes.iter().map(|x| store[*x].width).sum();
+
         let self_id = self.id;
         let id = store.insert_with_key(|id| Lane {
             id,
@@ -122,10 +124,12 @@ impl Road {
             kind: lane_type,
             points: Default::default(),
             width: if lane_type.vehicles() { 8.0 } else { 4.0 },
-            dist_from_center,
-            parent_length: length,
+            parent_length: self.length,
         });
-        road_lanes.push(id);
+        match direction {
+            LaneDirection::Forward => self.lanes_forward.push(id),
+            LaneDirection::Backward => self.lanes_backward.push(id),
+        }
         id
     }
 
@@ -133,9 +137,13 @@ impl Road {
         *self.interpolation_points.first_mut().unwrap() = intersections[self.src].pos;
         *self.interpolation_points.last_mut().unwrap() = intersections[self.dst].pos;
         self.length = self.interpolation_points.length();
+        self.width = self.lanes_iter().map(|&x| lanes[x].width).sum();
 
-        for id in self.lanes_forward.iter().chain(self.lanes_backward.iter()) {
-            lanes[*id].gen_pos(intersections, self);
+        let mut dist_from_bottom = 0.0;
+        for &id in self.lanes_iter() {
+            let l = &mut lanes[id];
+            l.gen_pos(intersections, self, dist_from_bottom);
+            dist_from_bottom += l.width;
         }
     }
 
@@ -199,10 +207,6 @@ impl Road {
         }
     }
 
-    pub fn length(&self) -> f32 {
-        self.length
-    }
-
     pub fn interpolation_points(&self) -> &PolyLine {
         &self.interpolation_points
     }
@@ -225,32 +229,5 @@ impl Road {
             "Asking other end of {:?} which isn't connected to {:?}",
             self.id, my_end
         );
-    }
-
-    pub fn max_dist(&self, lanes: &Lanes) -> f32 {
-        self.lanes_iter()
-            .map(|x| OrderedFloat(lanes[*x].dist_from_center + lanes[*x].width))
-            .max()
-            .unwrap_or(OrderedFloat(0.0))
-            .0
-    }
-
-    pub fn distance_from_center(&self, lane: LaneID, lanes: &Lanes) -> f32 {
-        let mut dist = 0.0;
-        for x in &self.lanes_backward {
-            if *x == lane {
-                return dist;
-            }
-            dist -= lanes[*x].width;
-        }
-
-        let mut dist = 0.0;
-        for x in &self.lanes_forward {
-            if *x == lane {
-                return dist;
-            }
-            dist += lanes[*x].width;
-        }
-        0.0
     }
 }
