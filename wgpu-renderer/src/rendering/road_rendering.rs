@@ -14,8 +14,6 @@ pub struct RoadRenderer {
     road_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
     arrow_builder: SpriteBatchBuilder,
-    crosswalks: Option<SpriteBatch>,
-    crosswalk_builder: SpriteBatchBuilder,
 }
 
 const Z_LANE_BG: f32 = 0.21;
@@ -31,10 +29,6 @@ impl RoadRenderer {
     pub fn new(gfx: &GfxContext) -> Self {
         let arrow_builder = SpriteBatchBuilder::new(
             Texture::from_path(gfx, "resources/arrow_one_way.png", Some("arrow")).unwrap(),
-        );
-
-        let crosswalk_builder = SpriteBatchBuilder::new(
-            Texture::from_path(gfx, "resources/crosswalk.png", Some("crosswalk")).unwrap(),
         );
 
         RoadRenderer {
