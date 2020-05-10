@@ -179,7 +179,7 @@ impl RoadRenderer {
         self.arrow_builder.instances.clear();
         let lanes = map.lanes();
         for road in map.roads().values() {
-            let fade = (road.length() - 5.0 - road.src_interface - road.dst_interface)
+            let fade = (road.length - 5.0 - road.src_interface - road.dst_interface)
                 .mul(0.2)
                 .restrict(0.0, 1.0);
 

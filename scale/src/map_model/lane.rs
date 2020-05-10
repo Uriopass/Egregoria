@@ -51,7 +51,6 @@ pub struct Lane {
     // Always from start to finish. (depends on direction)
     pub points: PolyLine,
     pub width: f32,
-    pub dist_from_center: f32,
 
     pub parent_length: f32,
 }
@@ -146,11 +145,16 @@ impl Lane {
         }
     }
 
-    fn get_node_pos(&self, inter: &Intersection, parent_road: &Road) -> Vec2 {
-        let lane_dist = self.width / 2.0 + self.dist_from_center;
+    fn get_node_pos(
+        &self,
+        inter: &Intersection,
+        parent_road: &Road,
+        dist_from_bottom: f32,
+    ) -> Vec2 {
+        let lane_dist = self.width / 2.0 + dist_from_bottom - parent_road.width / 2.0;
 
         let dir = parent_road.dir_from(inter.id, inter.pos);
-        let dir_normal: Vec2 = if inter.id == self.dst {
+        let dir_normal: Vec2 = if inter.id == parent_road.src {
             [-dir.y, dir.x].into()
         } else {
             [dir.y, -dir.x].into()
@@ -158,7 +162,7 @@ impl Lane {
 
         let (my_interf, other_interf) = parent_road.interfaces_from(inter.id);
 
-        let parlength = parent_road.length() - 1.0;
+        let parlength = parent_road.length - 1.0;
         let half = parlength * 0.5;
 
         let mut dist = my_interf;
@@ -173,15 +177,20 @@ impl Lane {
         inter.pos + dir * dist + dir_normal * lane_dist
     }
 
-    pub fn gen_pos(&mut self, intersections: &Intersections, parent_road: &Road) {
-        let pos_src = self.get_node_pos(&intersections[self.src], parent_road);
-        let pos_dst = self.get_node_pos(&intersections[self.dst], parent_road);
+    pub fn gen_pos(
+        &mut self,
+        intersections: &Intersections,
+        parent_road: &Road,
+        dist_from_bottom: f32,
+    ) {
+        let pos_src = self.get_node_pos(&intersections[self.src], parent_road, dist_from_bottom);
+        let pos_dst = self.get_node_pos(&intersections[self.dst], parent_road, dist_from_bottom);
 
         self.points.clear();
         self.points.push(pos_src);
         self.points.push(pos_dst);
 
-        self.parent_length = parent_road.length();
+        self.parent_length = parent_road.length;
     }
 
     pub fn dist2_to(&self, p: Vec2) -> f32 {
