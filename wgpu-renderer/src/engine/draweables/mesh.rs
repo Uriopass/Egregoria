@@ -1,13 +1,13 @@
 use crate::engine::{
-    compile_shader, CompiledShader, Drawable, GfxContext, HasPipeline, IndexType, PreparedPipeline,
-    VBDesc, Vertex,
+    compile_shader, ColoredVertex, CompiledShader, Drawable, GfxContext, HasPipeline, IndexType,
+    PreparedPipeline, VBDesc,
 };
 use lazy_static::*;
 use std::rc::Rc;
 use wgpu::RenderPass;
 
 pub struct MeshBuilder {
-    pub vertices: Vec<Vertex>,
+    pub vertices: Vec<ColoredVertex>,
     pub indices: Vec<IndexType>,
 }
 
@@ -19,14 +19,17 @@ impl MeshBuilder {
         }
     }
 
-    pub fn extend(&mut self, vertices: &[Vertex], indices: &[IndexType]) -> &mut Self {
+    pub fn extend(&mut self, vertices: &[ColoredVertex], indices: &[IndexType]) -> &mut Self {
         let offset = self.vertices.len() as IndexType;
         self.vertices.extend_from_slice(vertices);
         self.indices.extend(indices.iter().map(|x| x + offset));
         self
     }
 
-    pub fn extend_with(&mut self, f: impl Fn(&mut Vec<Vertex>, &mut dyn FnMut(IndexType)) -> ()) {
+    pub fn extend_with(
+        &mut self,
+        f: impl Fn(&mut Vec<ColoredVertex>, &mut dyn FnMut(IndexType)) -> (),
+    ) {
         let offset = self.vertices.len() as IndexType;
         let vertices = &mut self.vertices;
         let indices = &mut self.indices;
@@ -115,7 +118,7 @@ impl HasPipeline for Mesh {
             }),
             vertex_state: wgpu::VertexStateDescriptor {
                 index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers: &[Vertex::desc()],
+                vertex_buffers: &[ColoredVertex::desc()],
             },
             sample_count: gfx.samples,
             sample_mask: !0,

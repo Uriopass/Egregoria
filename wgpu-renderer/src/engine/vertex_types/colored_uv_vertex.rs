@@ -1,3 +1,5 @@
+use crate::engine::VBDesc;
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct ColoredUvVertex {
@@ -8,7 +10,7 @@ pub struct ColoredUvVertex {
 
 u8slice_impl!(ColoredUvVertex);
 
-impl super::VBDesc for ColoredUvVertex {
+impl VBDesc for ColoredUvVertex {
     fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
         wgpu::VertexBufferDescriptor {
             stride: std::mem::size_of::<ColoredUvVertex>() as wgpu::BufferAddress,
