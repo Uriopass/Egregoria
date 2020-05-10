@@ -6,13 +6,16 @@ use cgmath::{vec2, InnerSpace, Vector2};
 use scale::geometry::Vec2Impl;
 use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
 use scale::physics::Transform;
-use scale::rendering::LinearColor;
+use scale::rendering::{from_srgb, LinearColor};
 use scale::utils::Restrict;
+use std::ops::Mul;
 
 pub struct RoadRenderer {
     road_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
     arrow_builder: SpriteBatchBuilder,
+    crosswalks: Option<SpriteBatch>,
+    crosswalk_builder: SpriteBatchBuilder,
 }
 
 const Z_LANE_BG: f32 = 0.21;
@@ -22,11 +25,18 @@ const Z_ARROW: f32 = 0.24;
 const Z_CROSSWALK: f32 = 0.25;
 const Z_SIGNAL: f32 = 0.26;
 
+const MID_GRAY_V: f32 = 0.5;
+
 impl RoadRenderer {
     pub fn new(gfx: &GfxContext) -> Self {
         let arrow_builder = SpriteBatchBuilder::new(
             Texture::from_path(gfx, "resources/arrow_one_way.png", Some("arrow")).unwrap(),
         );
+
+        let crosswalk_builder = SpriteBatchBuilder::new(
+            Texture::from_path(gfx, "resources/crosswalk.png", Some("crosswalk")).unwrap(),
+        );
+
         RoadRenderer {
             road_mesh: None,
             arrows: None,
@@ -35,7 +45,7 @@ impl RoadRenderer {
     }
 
     pub fn road_mesh(map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
-        let mid_gray: LinearColor = LinearColor::gray(0.5);
+        let mid_gray: LinearColor = LinearColor::gray(MID_GRAY_V);
         let high_gray: LinearColor = LinearColor::gray(0.7);
 
         let inters = map.intersections();
@@ -174,8 +184,9 @@ impl RoadRenderer {
         self.arrow_builder.instances.clear();
         let lanes = map.lanes();
         for road in map.roads().values() {
-            let fade =
-                (road.length() - 3.0 - road.src_interface - road.dst_interface).restrict(0.0, 1.0);
+            let fade = (road.length() - 5.0 - road.src_interface - road.dst_interface)
+                .mul(0.2)
+                .restrict(0.0, 1.0);
 
             let lanes = road
                 .lanes_iter()
@@ -192,7 +203,7 @@ impl RoadRenderer {
                     let mid = w[0] * 0.5 + w[1] * 0.5;
                     self.arrow_builder.instances.push(InstanceRaw::new(
                         Transform::new_cos_sin(mid, dir).to_matrix4(Z_ARROW),
-                        [0.7; 3],
+                        [from_srgb(MID_GRAY_V) + fade * 0.6; 3],
                         4.0,
                     ));
                 }

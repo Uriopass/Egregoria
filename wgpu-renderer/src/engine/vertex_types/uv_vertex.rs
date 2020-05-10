@@ -1,3 +1,5 @@
+use crate::engine::VBDesc;
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct UvVertex {
@@ -7,7 +9,7 @@ pub struct UvVertex {
 
 u8slice_impl!(UvVertex);
 
-impl super::VBDesc for UvVertex {
+impl VBDesc for UvVertex {
     fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
         use std::mem;
         wgpu::VertexBufferDescriptor {
