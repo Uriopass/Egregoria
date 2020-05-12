@@ -71,22 +71,22 @@ impl LightPolicy {
     }
 
     fn lights(self, in_road_lanes: Vec<Vec<&LaneID>>, inter: &Intersection, lanes: &mut Lanes) {
-        let cycle_size = 10;
+        let n_cycles = (in_road_lanes.len() + 1) / 2;
+        let cycle_size = 14;
         let orange_length = 4;
+
+        let total_length = cycle_size * n_cycles;
+
         let offset = inter.id.as_ffi();
-        let offset: usize =
-            rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0, cycle_size);
+        let inter_offset: usize =
+            rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0, total_length);
 
         for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
             let light = TrafficControl::Light(TrafficLightSchedule::from_basic(
-                cycle_size,
+                cycle_size - orange_length,
                 orange_length,
-                cycle_size + orange_length,
-                if i % 2 == 0 {
-                    cycle_size + orange_length + offset
-                } else {
-                    offset
-                },
+                total_length - cycle_size,
+                cycle_size * (i % n_cycles) + inter_offset,
             ));
 
             for &lane in incoming_lanes {
