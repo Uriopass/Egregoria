@@ -113,6 +113,7 @@ pub fn objective_update(
             let k = vehicle.itinerary.get_travers().unwrap();
             if vehicle.itinerary.remaining_points() > 1
                 || k.can_pass(time.time_seconds, map.lanes())
+                || vehicle.itinerary.is_terminal()
             {
                 vehicle.itinerary.advance(map);
             }
@@ -176,7 +177,7 @@ pub fn calc_decision<'a>(
     vehicle.desired_dir = dir_to_pos;
     vehicle.desired_speed = vehicle.kind.cruising_speed();
 
-    if vehicle.itinerary.remaining_points() == 1 {
+    if vehicle.itinerary.remaining_points() == 1 && !is_terminal {
         if let Some(Traversable {
             kind: TraverseKind::Lane(l_id),
             ..
