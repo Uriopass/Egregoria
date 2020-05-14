@@ -114,17 +114,15 @@ impl Road {
             LaneDirection::Backward => (self.dst, self.src),
         };
 
-        let self_id = self.id;
         let id = store.insert_with_key(|id| Lane {
             id,
-            parent: self_id,
             src,
             dst,
             control: TrafficControl::Always,
             kind: lane_type,
             points: Default::default(),
             width: if lane_type.vehicles() { 8.0 } else { 4.0 },
-            parent_length: self.length,
+            inter_length: self.length,
         });
         match direction {
             LaneDirection::Forward => self.lanes_forward.push(id),

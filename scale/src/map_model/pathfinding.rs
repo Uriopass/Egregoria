@@ -1,5 +1,5 @@
 use crate::map_model::{LaneID, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
-use cgmath::MetricSpace;
+use cgmath::{MetricSpace, Zero};
 use ordered_float::NotNan;
 
 pub trait Pathfinder {
@@ -31,7 +31,7 @@ impl Pathfinder for PedestrianPath {
                     TraverseKind::Lane(lane_from_id),
                     lane_from.dir_from(inter.id),
                 ),
-                unsafe { NotNan::unchecked_new(lane_from.parent_length) },
+                NotNan::new(lane_from.inter_length).unwrap_or(NotNan::zero()),
             );
 
             inter
@@ -74,9 +74,12 @@ impl Pathfinder for DirectionalPath {
         let successors = |p: &LaneID| {
             let l = &lanes[*p];
             let inter = &inters[l.dst];
-            inter
-                .turns_from(*p)
-                .map(|(x, _)| (x.dst, NotNan::new(lanes[x.dst].parent_length).unwrap()))
+            inter.turns_from(*p).map(|(x, _)| {
+                (
+                    x.dst,
+                    NotNan::new(lanes[x.dst].inter_length).unwrap_or(NotNan::zero()),
+                )
+            })
         };
 
         let (v, _) =
