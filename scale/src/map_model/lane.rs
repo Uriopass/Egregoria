@@ -1,7 +1,7 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
 use crate::map_model::{
-    Intersection, IntersectionID, Intersections, Road, RoadID, TrafficControl, TraverseDirection,
+    Intersection, IntersectionID, Intersections, Road, TrafficControl, TraverseDirection,
 };
 use cgmath::InnerSpace;
 use imgui_inspect_derive::*;
@@ -16,6 +16,7 @@ new_key_type! {
 pub enum LaneKind {
     Driving,
     Biking,
+    Parking,
     Bus,
     Construction,
     Walking,
@@ -40,7 +41,6 @@ pub enum LaneDirection {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Lane {
     pub id: LaneID,
-    pub parent: RoadID,
     pub kind: LaneKind,
 
     pub control: TrafficControl,
@@ -48,11 +48,12 @@ pub struct Lane {
     pub src: IntersectionID,
     pub dst: IntersectionID,
 
-    // Always from start to finish. (depends on direction)
+    /// Always from start to finish. (depends on direction)
     pub points: PolyLine,
     pub width: f32,
 
-    pub parent_length: f32,
+    /// Length from intersection to intersection
+    pub inter_length: f32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -190,7 +191,7 @@ impl Lane {
         self.points.push(pos_src);
         self.points.push(pos_dst);
 
-        self.parent_length = parent_road.length;
+        self.inter_length = parent_road.length;
     }
 
     pub fn dist2_to(&self, p: Vec2) -> f32 {
