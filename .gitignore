@@ -6,3 +6,4 @@
 world/*
 world
 *.spirv
+*.bc
