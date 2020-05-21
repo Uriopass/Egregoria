@@ -1,3 +1,4 @@
+use crate::geometry::polyline::PolyLine;
 use crate::geometry::pseudo_angle;
 use crate::geometry::Vec2;
 use crate::map_model::{
@@ -45,6 +46,8 @@ pub struct Intersection {
 
     pub turn_policy: TurnPolicy,
     pub light_policy: LightPolicy,
+
+    pub polygon: PolyLine,
 }
 
 impl Intersection {
@@ -57,6 +60,7 @@ impl Intersection {
             roads: vec![],
             turn_policy: TurnPolicy::default(),
             light_policy: LightPolicy::default(),
+            polygon: PolyLine::default(),
         })
     }
 
@@ -76,9 +80,8 @@ impl Intersection {
 
     pub fn update_turns(&mut self, lanes: &Lanes, roads: &Roads) {
         let id = self.id;
-        let pos = self.pos;
         self.roads
-            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].dir_from(id, pos))));
+            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].dir_from(id))));
 
         let turns = self.turn_policy.generate_turns(self, lanes, roads);
 
@@ -121,8 +124,8 @@ impl Intersection {
 
             let w = (width1.powi(2) + width2.powi(2)).sqrt();
 
-            let dir1 = r1.dir_from(self.id, self.pos);
-            let dir2 = r2.dir_from(self.id, self.pos);
+            let dir1 = r1.dir_from(self.id);
+            let dir2 = r2.dir_from(self.id);
 
             let ang = dir1.angle(dir2).normalize_signed().0.abs();
 
@@ -132,28 +135,39 @@ impl Intersection {
         }
     }
 
-    pub fn update_barycenter(&mut self, lanes: &Lanes, roads: &Roads) {
-        let mut n_lanes = 0;
-        let mut barycenter = vec2!(0.0, 0.0);
-
+    pub fn update_barycenter(&mut self, roads: &Roads) {
         if self.roads.len() <= 1 {
             self.barycenter = self.pos;
             return;
         }
 
-        for road_id in &self.roads {
-            for lane_id in roads[*road_id].lanes_iter() {
-                let lane = &lanes[*lane_id];
-                barycenter += lane.get_inter_node_pos(self.id);
-                n_lanes += 1;
-            }
-        }
+        let sum: Vec2 = self
+            .roads
+            .iter()
+            .map(|&road_id| {
+                let r = &roads[road_id];
+                let dir = r.dir_from(self.id);
+                let dist = r.interface_from(self.id);
+                dir * dist
+            })
+            .sum();
 
-        self.barycenter = if n_lanes == 0 {
-            self.pos
-        } else {
-            barycenter / (n_lanes as f32)
-        };
+        self.barycenter = self.pos + sum / (self.roads.len() as f32);
+    }
+
+    pub fn update_polygon(&mut self, roads: &Roads) {
+        self.polygon.clear();
+        for &road in &self.roads {
+            let road = &roads[road];
+            let interf = road.interface_from(self.id);
+            let w = road.width;
+            let dir = road.dir_from(self.id);
+
+            let left = self.pos + dir * interf + w * 0.5 * vec2!(-dir.y, dir.x);
+            let right = self.pos + dir * interf + w * 0.5 * vec2!(dir.y, -dir.x);
+            self.polygon.push(right);
+            self.polygon.push(left);
+        }
     }
 
     pub fn find_turn(&self, needle: TurnID) -> Option<&Turn> {

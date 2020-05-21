@@ -294,17 +294,18 @@ fn make_connection(
             };
 
             let id = map.add_intersection(r_pos);
-
             map.connect(r.src, id, r.lane_pattern.clone());
             map.connect(id, r.dst, r.lane_pattern);
 
-            map.connect(id_inter, id, pattern);
-
-            if let Road(_) = to.kind {
-                id
+            let thing = if let Road(_) = to.kind {
+                (id, id_inter)
             } else {
-                id_inter
-            }
+                (id_inter, id)
+            };
+
+            map.connect(thing.0, thing.1, pattern);
+
+            thing.0
         }
     }
 }
@@ -364,7 +365,7 @@ fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
 impl RoadBuildState {
     fn set_selected(&mut self, entities: &EntitiesRes, sel: Option<(Entity, MapProject)>) {
         if let Some((e, _)) = self.selected.take() {
-            entities.delete(e).unwrap();
+            let _ = entities.delete(e);
         }
         self.selected = sel;
     }

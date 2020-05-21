@@ -136,9 +136,9 @@ impl GfxContext {
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        self.size = (new_size.width, new_size.height);
-        self.sc_desc.width = new_size.width;
-        self.sc_desc.height = new_size.height;
+        self.size = (new_size.width.max(1), new_size.height.max(1));
+        self.sc_desc.width = self.size.0;
+        self.sc_desc.height = self.size.1;
         self.swapchain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
         self.depth_texture =
             Texture::create_depth_texture(&self.device, &self.sc_desc, self.samples);

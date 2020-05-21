@@ -32,8 +32,8 @@ pub struct RoadRenderer {
 }
 
 const Z_LANE_BG: f32 = 0.21;
-const Z_SIDEWALK: f32 = 0.22;
-const Z_LANE: f32 = 0.23;
+const Z_LANE: f32 = 0.22;
+const Z_SIDEWALK: f32 = 0.23;
 const Z_ARROW: f32 = 0.24;
 const Z_CROSSWALK: f32 = 0.25;
 const Z_SIGNAL: f32 = 0.26;
@@ -56,7 +56,8 @@ impl RoadRenderer {
         }
     }
 
-    fn road_mesh(map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
+    fn road_mesh(&self, map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
+        let low_gray: LinearColor = LinearColor::gray(0.3);
         let mid_gray: LinearColor = LinearColor::gray(MID_GRAY_V);
         let high_gray: LinearColor = LinearColor::gray(0.7);
 
@@ -70,14 +71,12 @@ impl RoadRenderer {
         for n in lanes.values() {
             tess.color = LinearColor::WHITE;
 
-            let first = n.points.first().unwrap();
-            let last = n.points.last().unwrap();
-
             let w = n.width + 0.5;
-            tess.draw_stroke(first, last, Z_LANE_BG, w);
+            tess.draw_polyline(n.points.as_slice(), Z_LANE_BG, w);
 
             tess.color = match n.kind {
                 LaneKind::Walking => high_gray,
+                LaneKind::Parking => low_gray,
                 _ => mid_gray,
             };
             let z = match n.kind {
@@ -85,7 +84,7 @@ impl RoadRenderer {
                 _ => Z_LANE,
             };
 
-            tess.draw_stroke(first, last, z, n.width - 0.5);
+            tess.draw_polyline(n.points.as_slice(), z, n.width - 0.5);
         }
 
         for inter in inters.values() {
@@ -95,6 +94,13 @@ impl RoadRenderer {
 
                 tess.color = mid_gray;
                 tess.draw_circle(inter.pos, Z_LANE, 5.0);
+            } else {
+                tess.color = mid_gray;
+                tess.draw_filled_polygon(inter.polygon.as_slice(), Z_LANE);
+                tess.color = LinearColor::MAGENTA;
+                for point in inter.polygon.iter().copied() {
+                    tess.draw_circle(point, 1.0, 1.0);
+                }
             }
             for turn in inter.turns() {
                 if matches!(turn.kind, TurnKind::Crosswalk) {
@@ -253,7 +259,7 @@ impl RoadRenderer {
         ctx: &mut FrameContext,
     ) {
         if map.dirty || self.road_mesh.is_none() {
-            self.road_mesh = Self::road_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
+            self.road_mesh = self.road_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
             self.arrows = self.arrows(map, &ctx.gfx);
             self.crosswalks = self.crosswalks(map, &ctx.gfx);
 
