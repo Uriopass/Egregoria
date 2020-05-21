@@ -1,4 +1,5 @@
 mod camera;
+pub mod earcut;
 mod rect;
 mod tesselator;
 

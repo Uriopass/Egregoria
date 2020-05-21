@@ -1,3 +1,5 @@
+#![allow(clippy::or_fun_call)]
+
 use crate::map_model::{LaneID, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
 use cgmath::{MetricSpace, Zero};
 use ordered_float::NotNan;

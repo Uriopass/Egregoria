@@ -1,4 +1,5 @@
 use crate::engine::{ColoredVertex, IndexType, MeshBuilder};
+use crate::geometry::earcut::earcut;
 use crate::geometry::rect::Rect;
 use cgmath::{vec2, InnerSpace, Vector2};
 use scale::rendering::{Color, LinearColor};
@@ -66,6 +67,34 @@ impl Tesselator {
                     index_push(i + 2);
                 }
             }
+        });
+
+        true
+    }
+
+    pub fn draw_filled_polygon(&mut self, points: &[Vector2<f32>], z: f32) -> bool {
+        if self
+            .cull_rect
+            .map_or(false, |x| points.iter().any(|&p| x.contains_within(p, 1.0)))
+        {
+            return false;
+        }
+
+        let color = self.color.into();
+        self.meshbuilder.extend_with(|vertices, index_push| {
+            vertices.extend(points.iter().map(|p| ColoredVertex {
+                position: [p.x, p.y, z],
+                color,
+            }));
+
+            // Safe because Vector2 and [f32; 2] has same layout
+            let points: &[[f32; 2]] =
+                unsafe { &*(points as *const [Vector2<f32>] as *const [[f32; 2]]) };
+            earcut(bytemuck::cast_slice(points), |x, y, z| {
+                index_push(x as u32);
+                index_push(y as u32);
+                index_push(z as u32);
+            });
         });
 
         true
@@ -335,7 +364,8 @@ impl Tesselator {
             return true;
         }
         let first_dir = (points[1] - points[0]).normalize();
-        let last_dir = (points[2] - points[1]).normalize();
+        let n = points.len();
+        let last_dir = (points[n - 1] - points[n - 2]).normalize();
         self.draw_polyline_with_dir(points, first_dir, last_dir, z, thickness)
     }
 

@@ -30,6 +30,15 @@ impl LaneKind {
     pub fn needs_light(self) -> bool {
         matches!(self, LaneKind::Driving | LaneKind::Biking | LaneKind::Bus)
     }
+
+    pub fn width(self) -> f32 {
+        match self {
+            LaneKind::Driving | LaneKind::Biking | LaneKind::Bus => 8.0,
+            LaneKind::Parking => 4.0,
+            LaneKind::Construction => 4.0,
+            LaneKind::Walking => 4.0,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -75,6 +84,7 @@ impl Eq for LanePattern {}
 pub struct LanePatternBuilder {
     pub n_lanes: u32,
     pub sidewalks: bool,
+    pub parking: bool,
     pub one_way: bool,
 }
 
@@ -83,6 +93,7 @@ impl Default for LanePatternBuilder {
         LanePatternBuilder {
             n_lanes: 1,
             sidewalks: true,
+            parking: true,
             one_way: false,
         }
     }
@@ -93,18 +104,23 @@ impl LanePatternBuilder {
         Default::default()
     }
 
-    pub fn n_lanes(&mut self, n_lanes: u32) -> &mut Self {
+    pub fn n_lanes(mut self, n_lanes: u32) -> Self {
         assert!(n_lanes > 0);
         self.n_lanes = n_lanes;
         self
     }
 
-    pub fn sidewalks(&mut self, sidewalks: bool) -> &mut Self {
+    pub fn sidewalks(mut self, sidewalks: bool) -> Self {
         self.sidewalks = sidewalks;
         self
     }
 
-    pub fn one_way(&mut self, one_way: bool) -> &mut Self {
+    pub fn parking(mut self, parking: bool) -> Self {
+        self.parking = parking;
+        self
+    }
+
+    pub fn one_way(mut self, one_way: bool) -> Self {
         self.one_way = one_way;
         self
     }
@@ -117,6 +133,11 @@ impl LanePatternBuilder {
         };
 
         let mut forward: Vec<_> = (0..self.n_lanes).map(|_| LaneKind::Driving).collect();
+
+        if self.parking {
+            backward.push(LaneKind::Parking);
+            forward.push(LaneKind::Parking);
+        }
 
         if self.sidewalks {
             backward.push(LaneKind::Walking);
@@ -154,26 +175,14 @@ impl Lane {
     ) -> Vec2 {
         let lane_dist = self.width / 2.0 + dist_from_bottom - parent_road.width / 2.0;
 
-        let dir = parent_road.dir_from(inter.id, inter.pos);
+        let dir = parent_road.dir_from(inter.id);
         let dir_normal: Vec2 = if inter.id == parent_road.src {
             [-dir.y, dir.x].into()
         } else {
             [dir.y, -dir.x].into()
         };
 
-        let (my_interf, other_interf) = parent_road.interfaces_from(inter.id);
-
-        let parlength = parent_road.length - 1.0;
-        let half = parlength * 0.5;
-
-        let mut dist = my_interf;
-        if my_interf + other_interf > parlength {
-            if my_interf > half && other_interf > half {
-                dist = half;
-            } else if my_interf > half {
-                dist = parlength - other_interf;
-            }
-        }
+        let dist = parent_road.interface_from(inter.id);
 
         inter.pos + dir * dist + dir_normal * lane_dist
     }

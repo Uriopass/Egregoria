@@ -74,7 +74,8 @@ impl Map {
         let inter = &mut self.intersections[id];
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
-        inter.update_barycenter(&self.lanes, &self.roads);
+        inter.update_barycenter(&self.roads);
+        inter.update_polygon(&self.roads);
     }
 
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {

@@ -8,6 +8,12 @@ use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
+#[derive(Serialize, Deserialize)]
+pub struct ParkingSpot {
+    pub parent: LaneID,
+    pub dist_along: f32,
+}
+
 new_key_type! {
     pub struct RoadID;
 }
@@ -27,6 +33,8 @@ pub struct Road {
 
     lanes_forward: Vec<LaneID>,
     lanes_backward: Vec<LaneID>,
+
+    pub parking_spots: Vec<ParkingSpot>,
 
     pub lane_pattern: LanePattern,
 }
@@ -59,6 +67,7 @@ impl Road {
             lanes_forward: vec![],
             lanes_backward: vec![],
             lane_pattern: lane_pattern.clone(),
+            parking_spots: vec![],
         });
         let road = &mut store[id];
         for lane in &lane_pattern.lanes_forward {
@@ -121,7 +130,7 @@ impl Road {
             control: TrafficControl::Always,
             kind: lane_type,
             points: Default::default(),
-            width: if lane_type.vehicles() { 8.0 } else { 4.0 },
+            width: lane_type.width(),
             inter_length: self.length,
         });
         match direction {
@@ -145,7 +154,26 @@ impl Road {
         }
     }
 
-    pub fn interfaces_from(&self, id: IntersectionID) -> (f32, f32) {
+    pub fn interface_from(&self, id: IntersectionID) -> f32 {
+        let (my_interf, other_interf) = self.interfaces_from(id);
+
+        let l = self.length - 1.0;
+        let half = l * 0.5;
+
+        if my_interf + other_interf > l {
+            if my_interf > half && other_interf > half {
+                half
+            } else if my_interf > half {
+                l - other_interf
+            } else {
+                my_interf
+            }
+        } else {
+            my_interf
+        }
+    }
+
+    fn interfaces_from(&self, id: IntersectionID) -> (f32, f32) {
         if id == self.src {
             (self.src_interface, self.dst_interface)
         } else if id == self.dst {
@@ -175,11 +203,12 @@ impl Road {
         }
     }
 
-    pub fn dir_from(&self, id: IntersectionID, pos: Vec2) -> Vec2 {
+    pub fn dir_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
-            (self.interpolation_points[1] - pos).normalize()
+            (self.interpolation_points[1] - self.interpolation_points[0]).normalize()
         } else if id == self.dst {
-            (self.interpolation_points[self.interpolation_points.n_points() - 2] - pos).normalize()
+            let n = self.interpolation_points().n_points();
+            (self.interpolation_points[n - 2] - self.interpolation_points[n - 1]).normalize()
         } else {
             panic!("Asking dir from from an intersection not conected to the road");
         }

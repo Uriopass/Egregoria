@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(clippy::unreadable_literal)]
 
 mod engine;
 mod game_loop;
