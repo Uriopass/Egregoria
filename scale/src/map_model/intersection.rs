@@ -201,8 +201,7 @@ impl Intersection {
             };
 
             for i in 1..6 {
-                let c = i as f32 / (6) as f32;
-
+                let c = i as f32 / 6.0;
                 let pos = spline.get(c);
                 self.polygon.push(pos);
             }

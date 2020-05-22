@@ -71,7 +71,7 @@ pub fn load_parismap(map: &mut Map) {
     const CENTER_B: f64 = 48.855_782_8;
 
     //Scale nodes
-    let scale: f64 = 60000.0;
+    let scale: f64 = 80000.0;
 
     for _ in 0..n {
         let mut long = scanner.next::<f64>();
@@ -94,7 +94,10 @@ pub fn load_parismap(map: &mut Map) {
         map.connect(
             ids[src],
             ids[dst],
-            LanePatternBuilder::new().one_way(n_lanes == 1).build(),
+            LanePatternBuilder::new()
+                .one_way(n_lanes == 1)
+                .parking(false)
+                .build(),
         );
     }
 
