@@ -37,7 +37,6 @@ struct Node {
     z: i32,             // z-order curve value
     prevz_idx: NodeIdx, // previous node in z-order
     nextz_idx: NodeIdx, // next node in z-order
-    steiner: bool,      // indicates whether this is a steiner point
     idx: NodeIdx,       // index within LinkedLists vector that holds all nodes
 }
 
@@ -59,7 +58,6 @@ impl Node {
             z: 0,
             nextz_idx: 0,
             prevz_idx: 0,
-            steiner: false,
             idx,
         }
     }
@@ -75,16 +73,6 @@ pub struct LinkedLists {
     usehash: bool,
 }
 
-macro_rules! noderef {
-    ($ll:expr,$idx:expr) => {
-        unsafe { $ll.nodes.get_unchecked($idx) }
-    };
-}
-macro_rules! node {
-    ($ll:expr,$idx:expr) => {
-        unsafe { $ll.nodes.get_unchecked($idx) }
-    };
-}
 macro_rules! nodemut {
     ($ll:expr,$idx:expr) => {
         unsafe { $ll.nodes.get_unchecked_mut($idx) }
@@ -136,15 +124,21 @@ impl LinkedLists {
     fn iter_pairs(&self, r: std::ops::Range<NodeIdx>) -> NodePairIterator {
         NodePairIterator::new(self, r.start, r.end)
     }
+
+    #[inline(always)]
+    fn noderef(&self, id: NodeIdx) -> &Node {
+        unsafe { self.nodes.get_unchecked(id) }
+    }
+
     fn insert_node(&mut self, i: VertIdx, x: f32, y: f32, last: NodeIdx) -> NodeIdx {
         let mut p = Node::new(i, x, y, self.nodes.len());
         if last == 0 {
             p.next_idx = p.idx;
             p.prev_idx = p.idx;
         } else {
-            p.next_idx = noderef!(self, last).next_idx;
+            p.next_idx = self.noderef(last).next_idx;
             p.prev_idx = last;
-            let lastnextidx = noderef!(self, last).next_idx;
+            let lastnextidx = self.noderef(last).next_idx;
             nodemut!(self, lastnextidx).prev_idx = p.idx;
             nodemut!(self, last).next_idx = p.idx;
         };
@@ -153,10 +147,10 @@ impl LinkedLists {
         id
     }
     fn remove_node(&mut self, p_idx: NodeIdx) {
-        let pi = noderef!(self, p_idx).prev_idx;
-        let ni = noderef!(self, p_idx).next_idx;
-        let pz = noderef!(self, p_idx).prevz_idx;
-        let nz = noderef!(self, p_idx).nextz_idx;
+        let pi = self.noderef(p_idx).prev_idx;
+        let ni = self.noderef(p_idx).next_idx;
+        let pz = self.noderef(p_idx).prevz_idx;
+        let nz = self.noderef(p_idx).nextz_idx;
         nodemut!(self, pi).next_idx = ni;
         nodemut!(self, ni).prev_idx = pi;
         nodemut!(self, pz).nextz_idx = nz;
@@ -182,7 +176,6 @@ impl LinkedLists {
             z: 0,
             nextz_idx: 0,
             prevz_idx: 0,
-            steiner: false,
             idx: 0,
         });
         ll
@@ -190,7 +183,6 @@ impl LinkedLists {
 }
 
 struct NodeIterator<'a> {
-    cur: NodeIdx,
     end: NodeIdx,
     ll: &'a LinkedLists,
     pending_result: Option<&'a Node>,
@@ -199,8 +191,7 @@ struct NodeIterator<'a> {
 impl<'a> NodeIterator<'a> {
     fn new(ll: &LinkedLists, start: NodeIdx, end: NodeIdx) -> NodeIterator {
         NodeIterator {
-            pending_result: Some(noderef!(ll, start)),
-            cur: start,
+            pending_result: Some(ll.noderef(start)),
             end,
             ll,
         }
@@ -210,20 +201,17 @@ impl<'a> NodeIterator<'a> {
 impl<'a> Iterator for NodeIterator<'a> {
     type Item = &'a Node;
     fn next(&mut self) -> Option<Self::Item> {
-        self.cur = noderef!(self.ll, self.cur).next_idx;
-        let cur_result = self.pending_result;
-        if self.cur == self.end {
-            // only one branch, saves time
+        let cur_result = self.pending_result?;
+        if cur_result.next_idx == self.end {
             self.pending_result = None;
         } else {
-            self.pending_result = Some(noderef!(self.ll, self.cur));
+            self.pending_result = Some(self.ll.noderef(cur_result.next_idx));
         }
-        cur_result
+        Some(cur_result)
     }
 }
 
 struct NodePairIterator<'a> {
-    cur: NodeIdx,
     end: NodeIdx,
     ll: &'a LinkedLists,
     pending_result: Option<(&'a Node, &'a Node)>,
@@ -232,8 +220,7 @@ struct NodePairIterator<'a> {
 impl<'a> NodePairIterator<'a> {
     fn new(ll: &LinkedLists, start: NodeIdx, end: NodeIdx) -> NodePairIterator {
         NodePairIterator {
-            pending_result: Some((noderef!(ll, start), nextref!(ll, start))),
-            cur: start,
+            pending_result: Some((ll.noderef(start), nextref!(ll, start))),
             end,
             ll,
         }
@@ -243,15 +230,14 @@ impl<'a> NodePairIterator<'a> {
 impl<'a> Iterator for NodePairIterator<'a> {
     type Item = (&'a Node, &'a Node);
     fn next(&mut self) -> Option<Self::Item> {
-        self.cur = node!(self.ll, self.cur).next_idx;
-        let cur_result = self.pending_result;
-        if self.cur == self.end {
+        let (a, b) = self.pending_result?;
+        if b.next_idx == self.end {
             // only one branch, saves time
             self.pending_result = None;
         } else {
-            self.pending_result = Some((noderef!(self.ll, self.cur), nextref!(self.ll, self.cur)))
+            self.pending_result = Some((b, self.ll.noderef(b.next_idx)))
         }
-        cur_result
+        Some((a, b))
     }
 }
 
@@ -281,19 +267,19 @@ fn earcut_linked_hashed(
     // iterate through ears, slicing them one by one
     let mut stop_idx = ear_idx;
     let mut prev_idx = 0;
-    let mut next_idx = node!(ll, ear_idx).next_idx;
+    let mut next_idx = ll.noderef(ear_idx).next_idx;
     while stop_idx != next_idx {
-        prev_idx = node!(ll, ear_idx).prev_idx;
-        next_idx = node!(ll, ear_idx).next_idx;
+        prev_idx = ll.noderef(ear_idx).prev_idx;
+        next_idx = ll.noderef(ear_idx).next_idx;
         if is_ear_hashed(ll, prev_idx, ear_idx, next_idx) {
             on_triangle(
-                node!(ll, prev_idx).i,
-                node!(ll, ear_idx).i,
-                node!(ll, next_idx).i,
+                ll.noderef(prev_idx).i,
+                ll.noderef(ear_idx).i,
+                ll.noderef(next_idx).i,
             );
             ll.remove_node(ear_idx);
             // skipping the next vertex leads to less sliver triangles
-            ear_idx = node!(ll, next_idx).next_idx;
+            ear_idx = ll.noderef(next_idx).next_idx;
             stop_idx = ear_idx;
         } else {
             ear_idx = next_idx;
@@ -327,20 +313,20 @@ fn earcut_linked_unhashed(
     // iterate through ears, slicing them one by one
     let mut stop_idx = ear_idx;
     let mut prev_idx = 0;
-    let mut next_idx = node!(ll, ear_idx).next_idx;
+    let mut next_idx = ll.noderef(ear_idx).next_idx;
     while stop_idx != next_idx {
-        prev_idx = node!(ll, ear_idx).prev_idx;
-        next_idx = node!(ll, ear_idx).next_idx;
+        prev_idx = ll.noderef(ear_idx).prev_idx;
+        next_idx = ll.noderef(ear_idx).next_idx;
         if is_ear(ll, prev_idx, ear_idx, next_idx) {
             on_triangle(
-                node!(ll, prev_idx).i,
-                node!(ll, ear_idx).i,
-                node!(ll, next_idx).i,
+                ll.noderef(prev_idx).i,
+                ll.noderef(ear_idx).i,
+                ll.noderef(next_idx).i,
             );
 
             ll.remove_node(ear_idx);
             // skipping the next vertex leads to less sliver triangles
-            ear_idx = node!(ll, next_idx).next_idx;
+            ear_idx = ll.noderef(next_idx).next_idx;
             stop_idx = ear_idx;
         } else {
             ear_idx = next_idx;
@@ -368,12 +354,12 @@ fn index_curve(ll: &mut LinkedLists, start: NodeIdx) {
     let invsize = ll.invsize;
     let mut p = start;
     loop {
-        if node!(ll, p).z == 0 {
-            nodemut!(ll, p).z = zorder(node!(ll, p).x, node!(ll, p).y, invsize);
+        if ll.noderef(p).z == 0 {
+            nodemut!(ll, p).z = zorder(ll.noderef(p).x, ll.noderef(p).y, invsize);
         }
-        nodemut!(ll, p).prevz_idx = node!(ll, p).prev_idx;
-        nodemut!(ll, p).nextz_idx = node!(ll, p).next_idx;
-        p = node!(ll, p).next_idx;
+        nodemut!(ll, p).prevz_idx = ll.noderef(p).prev_idx;
+        nodemut!(ll, p).nextz_idx = ll.noderef(p).next_idx;
+        p = ll.noderef(p).next_idx;
         if p == start {
             break;
         }
@@ -409,18 +395,18 @@ fn sort_linked(ll: &mut LinkedLists, mut list: NodeIdx) {
             psize = 0;
             while q != 0 && psize < insize {
                 psize += 1;
-                q = noderef!(ll, q).nextz_idx;
+                q = ll.noderef(q).nextz_idx;
             }
             qsize = insize;
 
             while psize > 0 || (qsize > 0 && q != 0) {
-                if psize > 0 && (qsize == 0 || q == 0 || noderef!(ll, p).z <= noderef!(ll, q).z) {
+                if psize > 0 && (qsize == 0 || q == 0 || ll.noderef(p).z <= ll.noderef(q).z) {
                     e = p;
-                    p = noderef!(ll, p).nextz_idx;
+                    p = ll.noderef(p).nextz_idx;
                     psize -= 1;
                 } else {
                     e = q;
-                    q = noderef!(ll, q).nextz_idx;
+                    q = ll.noderef(q).nextz_idx;
                     qsize -= 1;
                 }
 
@@ -447,7 +433,7 @@ fn sort_linked(ll: &mut LinkedLists, mut list: NodeIdx) {
 
 // check whether a polygon node forms a valid ear with adjacent nodes
 fn is_ear(ll: &LinkedLists, prev: NodeIdx, ear: NodeIdx, next: NodeIdx) -> bool {
-    let (a, b, c) = (noderef!(ll, prev), noderef!(ll, ear), noderef!(ll, next));
+    let (a, b, c) = (ll.noderef(prev), ll.noderef(ear), ll.noderef(next));
     if area(a, b, c) >= 0.0 {
         false // reflex, cant be ear
     } else {
@@ -475,9 +461,9 @@ fn is_ear_hashed(
     next_idx: NodeIdx,
 ) -> bool {
     let (prev, ear, next) = (
-        &node!(ll, prev_idx).clone(),
-        &node!(ll, ear_idx).clone(),
-        &node!(ll, next_idx).clone(),
+        &ll.noderef(prev_idx).clone(),
+        &ll.noderef(ear_idx).clone(),
+        &ll.noderef(next_idx).clone(),
     );
     if area(prev, ear, next) >= 0.0 {
         return false;
@@ -493,60 +479,60 @@ fn is_ear_hashed(
 
     let mut p = ear.prevz_idx;
     let mut n = ear.nextz_idx;
-    while (p != 0) && (node!(ll, p).z >= min_z) && (n != 0) && (node!(ll, n).z <= max_z) {
+    while (p != 0) && (ll.noderef(p).z >= min_z) && (n != 0) && (ll.noderef(n).z <= max_z) {
         if earcheck(
             prev,
             ear,
             next,
             prevref!(ll, p),
-            noderef!(ll, p),
+            ll.noderef(p),
             nextref!(ll, p),
         ) {
             return false;
         }
-        p = node!(ll, p).prevz_idx;
+        p = ll.noderef(p).prevz_idx;
 
         if earcheck(
             prev,
             ear,
             next,
             prevref!(ll, n),
-            noderef!(ll, n),
+            ll.noderef(n),
             nextref!(ll, n),
         ) {
             return false;
         }
-        n = node!(ll, n).nextz_idx;
+        n = ll.noderef(n).nextz_idx;
     }
 
     nodemut!(ll, 0).z = min_z - 1;
-    while node!(ll, p).z >= min_z {
+    while ll.noderef(p).z >= min_z {
         if earcheck(
             prev,
             ear,
             next,
             prevref!(ll, p),
-            noderef!(ll, p),
+            ll.noderef(p),
             nextref!(ll, p),
         ) {
             return false;
         }
-        p = node!(ll, p).prevz_idx;
+        p = ll.noderef(p).prevz_idx;
     }
 
     nodemut!(ll, 0).z = max_z + 1;
-    while node!(ll, n).z <= max_z {
+    while ll.noderef(n).z <= max_z {
         if earcheck(
             prev,
             ear,
             next,
             prevref!(ll, n),
-            noderef!(ll, n),
+            ll.noderef(n),
             nextref!(ll, n),
         ) {
             return false;
         }
-        n = node!(ll, n).nextz_idx;
+        n = ll.noderef(n).nextz_idx;
     }
 
     true
@@ -568,19 +554,18 @@ fn filter_points(ll: &mut LinkedLists, start: NodeIdx, mut end: NodeIdx) -> Node
     // the algorithm of other code that calls the filter_points function.
     loop {
         again = false;
-        if !node!(ll, p).steiner
-            && (noderef!(ll, p) == *nextref!(ll, p)
-                || area(prevref!(ll, p), noderef!(ll, p), nextref!(ll, p)) == 0.0)
+        if ll.noderef(p) == next!(ll, p)
+            || area(prevref!(ll, p), ll.noderef(p), nextref!(ll, p)) == 0.0
         {
             ll.remove_node(p);
-            end = node!(ll, p).prev_idx;
+            end = ll.noderef(p).prev_idx;
             p = end;
-            if p == node!(ll, p).next_idx {
+            if p == ll.noderef(p).next_idx {
                 break end;
             }
             again = true;
         } else {
-            p = node!(ll, p).next_idx;
+            p = ll.noderef(p).next_idx;
         }
         if !again && p == end {
             break end;
@@ -594,7 +579,7 @@ fn linked_list(data: &[f32], start: usize, end: usize, clockwise: bool) -> (Link
     let mut ll: LinkedLists = LinkedLists::new(data.len() / DIM);
     if data.len() < 80 {
         ll.usehash = false
-    };
+    }
     let (last_idx, _) = linked_list_add_contour(&mut ll, data, start, end, clockwise);
     (ll, last_idx)
 }
@@ -644,9 +629,9 @@ fn linked_list_add_contour(
 
     ll.minx = f32::min(contour_minx, ll.minx);
 
-    if noderef!(ll, lastidx) == *nextref!(ll, lastidx) {
+    if ll.noderef(lastidx) == *nextref!(ll, lastidx) {
         ll.remove_node(lastidx);
-        lastidx = noderef!(ll, lastidx).next_idx;
+        lastidx = ll.noderef(lastidx).next_idx;
     }
     (lastidx, leftmost_idx)
 }
@@ -738,31 +723,31 @@ fn cure_local_intersections(
     //                            a p  pn b
 
     loop {
-        let a = node!(ll, p).prev_idx;
+        let a = ll.noderef(p).prev_idx;
         let b = next!(ll, p).next_idx;
 
-        if noderef!(ll, a) != noderef!(ll, b)
+        if ll.noderef( a) != ll.noderef( b)
             && pseudo_intersects(
-            noderef!(ll, a),
-            noderef!(ll, p),
+            ll.noderef( a),
+            ll.noderef( p),
             nextref!(ll, p),
-            noderef!(ll, b),
+            ll.noderef( b),
         )
             // prev next a, prev next b
-            && locally_inside(ll, noderef!(ll, a), noderef!(ll, b))
-            && locally_inside(ll, noderef!(ll, b), noderef!(ll, a))
+            && locally_inside(ll, ll.noderef( a), ll.noderef( b))
+            && locally_inside(ll, ll.noderef( b), ll.noderef( a))
         {
-            on_triangle(noderef!(ll, a).i, noderef!(ll, p).i, noderef!(ll, b).i);
+            on_triangle(ll.noderef(a).i, ll.noderef(p).i, ll.noderef(b).i);
 
             // remove two nodes involved
             ll.remove_node(p);
-            let nidx = noderef!(ll, p).next_idx;
+            let nidx = ll.noderef(p).next_idx;
             ll.remove_node(nidx);
 
-            start = noderef!(ll, b).idx;
+            start = ll.noderef(b).idx;
             p = start;
         }
-        p = noderef!(ll, p).next_idx;
+        p = ll.noderef(p).next_idx;
         if p == start {
             break;
         }
@@ -781,16 +766,16 @@ fn split_earcut(
     let mut a = start_idx;
     loop {
         let mut b = next!(ll, a).next_idx;
-        while b != noderef!(ll, a).prev_idx {
-            if noderef!(ll, a).i != noderef!(ll, b).i
-                && is_valid_diagonal(ll, noderef!(ll, a), noderef!(ll, b))
+        while b != ll.noderef(a).prev_idx {
+            if ll.noderef(a).i != ll.noderef(b).i
+                && is_valid_diagonal(ll, ll.noderef(a), ll.noderef(b))
             {
                 // split the polygon in two by the diagonal
                 let mut c = split_bridge_polygon(ll, a, b);
 
                 // filter colinear points around the cuts
-                let an = noderef!(ll, a).next_idx;
-                let cn = noderef!(ll, c).next_idx;
+                let an = ll.noderef(a).next_idx;
+                let cn = ll.noderef(c).next_idx;
                 a = filter_points(ll, a, an);
                 c = filter_points(ll, c, cn);
 
@@ -799,9 +784,9 @@ fn split_earcut(
                 earcut_linked_hashed(ll, c, on_triangle, 0);
                 return;
             }
-            b = noderef!(ll, b).next_idx;
+            b = ll.noderef(b).next_idx;
         }
-        a = noderef!(ll, a).next_idx;
+        a = ll.noderef(a).next_idx;
         if a == start_idx {
             break;
         }
@@ -958,21 +943,11 @@ Return value is the new node, at point 7.
 fn split_bridge_polygon(ll: &mut LinkedLists, a: NodeIdx, b: NodeIdx) -> NodeIdx {
     let cidx = ll.nodes.len();
     let didx = cidx + 1;
-    let mut c = Node::new(
-        noderef!(ll, a).i,
-        noderef!(ll, a).x,
-        noderef!(ll, a).y,
-        cidx,
-    );
-    let mut d = Node::new(
-        noderef!(ll, b).i,
-        noderef!(ll, b).x,
-        noderef!(ll, b).y,
-        didx,
-    );
+    let mut c = Node::new(ll.noderef(a).i, ll.noderef(a).x, ll.noderef(a).y, cidx);
+    let mut d = Node::new(ll.noderef(b).i, ll.noderef(b).x, ll.noderef(b).y, didx);
 
-    let an = noderef!(ll, a).next_idx;
-    let bp = noderef!(ll, b).prev_idx;
+    let an = ll.noderef(a).next_idx;
+    let bp = ll.noderef(b).prev_idx;
 
     nodemut!(ll, a).next_idx = b;
     nodemut!(ll, b).prev_idx = a;
