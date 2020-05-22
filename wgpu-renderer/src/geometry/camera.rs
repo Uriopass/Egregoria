@@ -32,10 +32,10 @@ impl Camera {
         let offsety = -2.0 * self.zoom * self.position.y / self.viewport.y;
 
 
-        // cgmath matrix init is backward, beware
+        // cgmath matrix init is backwards
         self.projection = Matrix4::new(scalex, 0.0, 0.0, 0.0,
                                        0.0, scaley, 0.0, 0.0,
-                                       0.0, 0.0, 1.0, 0.0,
+                                       0.0, 0.0, 0.1, 0.0,
                                        offsetx, offsety, 0.0, 1.0);
         self.invprojection = self.projection.invert().unwrap();
     }
