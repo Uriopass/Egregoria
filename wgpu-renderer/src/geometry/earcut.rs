@@ -41,6 +41,13 @@ struct Node {
     idx: NodeIdx,       // index within LinkedLists vector that holds all nodes
 }
 
+impl PartialEq for Node {
+    fn eq(&self, other: &Self) -> bool {
+        self.x == other.x && self.y == other.y
+    }
+}
+impl Eq for Node {}
+
 impl Node {
     fn new(i: VertIdx, x: f32, y: f32, idx: NodeIdx) -> Node {
         Node {
@@ -246,10 +253,6 @@ impl<'a> Iterator for NodePairIterator<'a> {
         }
         cur_result
     }
-}
-
-fn compare_x(a: &Node, b: &Node) -> std::cmp::Ordering {
-    a.x.partial_cmp(&b.x).unwrap_or(std::cmp::Ordering::Equal)
 }
 
 // minx, miny and invsize are later used to transform coords
@@ -566,7 +569,7 @@ fn filter_points(ll: &mut LinkedLists, start: NodeIdx, mut end: NodeIdx) -> Node
     loop {
         again = false;
         if !node!(ll, p).steiner
-            && (equals(noderef!(ll, p), nextref!(ll, p))
+            && (noderef!(ll, p) == *nextref!(ll, p)
                 || area(prevref!(ll, p), noderef!(ll, p), nextref!(ll, p)) == 0.0)
         {
             ll.remove_node(p);
@@ -641,7 +644,7 @@ fn linked_list_add_contour(
 
     ll.minx = f32::min(contour_minx, ll.minx);
 
-    if equals(noderef!(ll, lastidx), nextref!(ll, lastidx)) {
+    if noderef!(ll, lastidx) == *nextref!(ll, lastidx) {
         ll.remove_node(lastidx);
         lastidx = noderef!(ll, lastidx).next_idx;
     }
@@ -658,7 +661,7 @@ fn zorder(xf: f32, yf: f32, invsize: f32) -> i32 {
     let y: i64 = (yf * invsize) as i64;
     let mut xy: i64 = x << 32 | y;
 
-    // todo ... big endian?
+    // what about big endian?
     xy = (xy | (xy << 8)) & 0x00FF00FF00FF00FF;
     xy = (xy | (xy << 4)) & 0x0F0F0F0F0F0F0F0F;
     xy = (xy | (xy << 2)) & 0x3333333333333333;
@@ -702,11 +705,6 @@ fn area(p: &Node, q: &Node, r: &Node) -> f32 {
     (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y)
 }
 
-// check if two points are equal
-fn equals(p1: &Node, p2: &Node) -> bool {
-    p1.x == p2.x && p1.y == p2.y
-}
-
 /* go through all polygon nodes and cure small local self-intersections
 what is a small local self-intersection? well, lets say you have four points
 a,b,c,d. now imagine you have three line segments, a-b, b-c, and c-d. now
@@ -743,7 +741,7 @@ fn cure_local_intersections(
         let a = node!(ll, p).prev_idx;
         let b = next!(ll, p).next_idx;
 
-        if !equals(noderef!(ll, a), noderef!(ll, b))
+        if noderef!(ll, a) != noderef!(ll, b)
             && pseudo_intersects(
             noderef!(ll, a),
             noderef!(ll, p),
@@ -852,7 +850,7 @@ detection for endpoint detection.
 */
 
 fn pseudo_intersects(p1: &Node, q1: &Node, p2: &Node, q2: &Node) -> bool {
-    if (equals(p1, p2) && equals(q1, q2)) || (equals(p1, q2) && equals(q1, p2)) {
+    if (p1 == p2 && q1 == q2) || (p1 == q2 && q1 == p2) {
         return true;
     }
     (area(p1, q1, p2) > 0.0) != (area(p1, q1, q2) > 0.0)
@@ -996,7 +994,7 @@ fn split_bridge_polygon(ll: &mut LinkedLists, a: NodeIdx, b: NodeIdx) -> NodeIdx
 fn signed_area(data: &[f32], start: usize, end: usize) -> f32 {
     let i = (start..end).step_by(DIM);
     let j = (start..end).cycle().skip((end - DIM) - start).step_by(DIM);
-    i.zip(j).fold(0., |s, (i, j)| {
-        s + (data[j] - data[i]) * (data[i + 1] + data[j + 1])
-    })
+    i.zip(j)
+        .map(|(i, j)| (data[j] - data[i]) * (data[i + 1] + data[j + 1]))
+        .sum()
 }
