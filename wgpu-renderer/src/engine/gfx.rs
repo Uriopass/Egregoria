@@ -2,13 +2,16 @@ use crate::engine::{
     CompiledShader, Drawable, HasPipeline, Mesh, PreparedPipeline, SpriteBatch, Texture,
     TexturedMesh, Uniform,
 };
+use crate::game_loop::State;
+use crate::rendering::imgui_wrapper::GuiRenderContext;
 use cgmath::SquareMatrix;
 use glsl_to_spirv::ShaderType;
 use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
-    Adapter, BindGroupLayout, CommandBuffer, Device, Queue, RenderPipeline, ShaderStage, Surface,
-    SwapChain, SwapChainDescriptor, VertexBufferDescriptor,
+    Adapter, BindGroupLayout, CommandBuffer, CommandEncoderDescriptor, Device, Queue,
+    RenderPipeline, ShaderStage, Surface, SwapChain, SwapChainDescriptor, SwapChainOutput,
+    VertexBufferDescriptor,
 };
 use winit::window::Window;
 
@@ -133,6 +136,68 @@ impl GfxContext {
         device
             .create_texture(multisampled_frame_descriptor)
             .create_default_view()
+    }
+
+    pub fn render_frame(
+        &mut self,
+        state: &mut State,
+        clear_color: &wgpu::Color,
+        frame: &mut Option<SwapChainOutput>,
+    ) {
+        let mut encoder = self
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("Render encoder"),
+            });
+
+        self.projection.upload_to_gpu(&self.device, &mut encoder);
+
+        let mut objs = vec![];
+
+        let frame = frame.take().unwrap();
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &self.multi_frame,
+                    resolve_target: Some(&frame.view),
+                    load_op: wgpu::LoadOp::Clear,
+                    store_op: wgpu::StoreOp::Store,
+                    clear_color: wgpu::Color {
+                        r: clear_color.r,
+                        g: clear_color.g,
+                        b: clear_color.b,
+                        a: clear_color.a,
+                    },
+                }],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                    attachment: &self.depth_texture.view,
+                    depth_load_op: wgpu::LoadOp::Clear,
+                    depth_store_op: wgpu::StoreOp::Store,
+                    clear_depth: 0.0,
+                    stencil_load_op: wgpu::LoadOp::Clear,
+                    stencil_store_op: wgpu::StoreOp::Store,
+                    clear_stencil: 0,
+                }),
+            });
+
+            let mut fc = FrameContext {
+                objs: &mut objs,
+                gfx: &self,
+            };
+            state.render(&mut fc);
+            for obj in fc.objs {
+                obj.draw(&self, &mut render_pass);
+            }
+        }
+
+        state.render_gui(GuiRenderContext {
+            device: &self.device,
+            encoder: &mut encoder,
+            frame_view: &frame.view,
+            window: &self.window,
+        });
+
+        self.queue.submit(&[encoder.finish()]);
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {

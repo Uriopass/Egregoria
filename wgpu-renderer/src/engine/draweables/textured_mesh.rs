@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::engine::{
     compile_shader, ColoredUvVertex, Drawable, GfxContext, HasPipeline, IndexType, Texture, VBDesc,
 };
