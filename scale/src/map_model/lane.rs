@@ -65,20 +65,11 @@ pub struct Lane {
     pub inter_length: f32,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct LanePattern {
-    pub name: String,
     pub lanes_forward: Vec<LaneKind>,
     pub lanes_backward: Vec<LaneKind>,
 }
-
-impl PartialEq for LanePattern {
-    fn eq(&self, other: &Self) -> bool {
-        self.lanes_backward == other.lanes_backward && self.lanes_forward == other.lanes_forward
-    }
-}
-
-impl Eq for LanePattern {}
 
 #[derive(Clone, Copy, Inspect)]
 pub struct LanePatternBuilder {
@@ -144,16 +135,9 @@ impl LanePatternBuilder {
             forward.push(LaneKind::Walking);
         }
 
-        let mut name = if self.one_way { "One way" } else { "Two way" }.to_owned();
-        name.push_str(&format!(" {} lanes", self.n_lanes));
-
-        if !self.sidewalks {
-            name.push_str(&" no sidewalks");
-        }
         LanePattern {
             lanes_backward: backward,
             lanes_forward: forward,
-            name,
         }
     }
 }
