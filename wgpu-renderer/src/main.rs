@@ -1,3 +1,4 @@
+#![windows_subsystem = "windows"]
 #![allow(clippy::unreadable_literal)]
 
 mod engine;

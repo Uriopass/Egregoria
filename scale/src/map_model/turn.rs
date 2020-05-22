@@ -73,8 +73,8 @@ impl Turn {
             return;
         }
 
-        let src_dir = src_lane.get_orientation_vec();
-        let dst_dir = dst_lane.get_orientation_vec();
+        let src_dir = src_lane.orientation();
+        let dst_dir = dst_lane.orientation();
 
         let ang = src_dir.angle(dst_dir);
 

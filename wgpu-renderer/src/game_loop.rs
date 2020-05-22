@@ -30,7 +30,7 @@ const TIME_STEP: f64 = 1.0 / 30.0;
 
 impl<'a> State<'a> {
     pub fn new(ctx: &mut Context) -> Self {
-        let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 10.0);
+        let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 3.0);
 
         /*
         let mut buf = vec![];

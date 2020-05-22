@@ -18,22 +18,18 @@ void main() {
     float gray;
 
     if (proj < fw) {
-        gray = lerp(0.0, 1.0, proj * invfw);
+        gray = lerp(0.21404114, 1.0, proj * invfw);
     } else if (proj < 0.5 + fw) {
         gray = 1.0;
     } else if (proj < 0.5 + fw * 2.0) {
-        gray = lerp(1.0, 0.0, (proj - 0.5 - fw) * invfw);
+        gray = lerp(1.0, 0.21404114, (proj - 0.5 - fw) * invfw);
     } else {
-        gray = 0.0;
+        gray = 0.21404114;
     }
 
     if (fw == 0.25) {
         gray = 0.8;
     }
 
-    if (gray == 0.0) {
-        discard;
-    }
-
-    out_color = vec4(1.0, 1.0, 1.0, gray);
+    out_color = vec4(gray, gray, gray, 1.0);
 }

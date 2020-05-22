@@ -175,7 +175,7 @@ impl Lane {
     ) -> Vec2 {
         let lane_dist = self.width / 2.0 + dist_from_bottom - parent_road.width / 2.0;
 
-        let dir = parent_road.dir_from(inter.id);
+        let dir = parent_road.orientation_from(inter.id);
         let dir_normal: Vec2 = if inter.id == parent_road.src {
             [-dir.y, dir.x].into()
         } else {
@@ -215,7 +215,7 @@ impl Lane {
         }
     }
 
-    pub fn get_orientation_vec(&self) -> Vec2 {
+    pub fn orientation(&self) -> Vec2 {
         let src = self.points[0];
         let dst = self.points[1];
 
