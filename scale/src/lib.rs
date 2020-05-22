@@ -1,4 +1,3 @@
-#![windows_subsystem = "windows"]
 #![allow(clippy::unreadable_literal)]
 #![allow(clippy::block_in_if_condition_stmt)]
 

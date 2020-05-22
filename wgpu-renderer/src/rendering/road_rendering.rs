@@ -31,6 +31,7 @@ pub struct RoadRenderer {
     crosswalks: Option<ShadedBatch<Crosswalk>>,
 }
 
+const Z_INTER_BG: f32 = 0.20;
 const Z_LANE_BG: f32 = 0.21;
 const Z_LANE: f32 = 0.22;
 const Z_SIDEWALK: f32 = 0.23;
@@ -94,26 +95,24 @@ impl RoadRenderer {
 
                 tess.color = mid_gray;
                 tess.draw_circle(inter.pos, Z_LANE, 5.0);
-            } else {
-                tess.color = mid_gray;
-                tess.draw_filled_polygon(inter.polygon.as_slice(), Z_LANE);
-                tess.color = LinearColor::MAGENTA;
-                for point in inter.polygon.iter().copied() {
-                    tess.draw_circle(point, 1.0, 1.0);
-                }
+                continue;
             }
-            for turn in inter.turns() {
-                if matches!(turn.kind, TurnKind::Crosswalk) {
-                    continue;
-                }
 
+            tess.color = mid_gray;
+            tess.draw_filled_polygon(inter.polygon.as_slice(), Z_INTER_BG);
+
+            for turn in inter
+                .turns()
+                .iter()
+                .filter(|turn| matches!(turn.kind, TurnKind::WalkingCorner))
+            {
                 tess.color = LinearColor::WHITE;
                 let id = turn.id;
 
                 let w = lanes[id.src].width;
 
-                let first_dir = lanes[id.src].get_orientation_vec();
-                let last_dir = lanes[id.dst].get_orientation_vec();
+                let first_dir = lanes[id.src].orientation();
+                let last_dir = lanes[id.dst].orientation();
 
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
@@ -145,7 +144,7 @@ impl RoadRenderer {
                 continue;
             }
 
-            let dir = n.get_orientation_vec();
+            let dir = n.orientation();
 
             let dir_nor = vec2(dir.y, -dir.x);
 
@@ -236,8 +235,8 @@ impl RoadRenderer {
                     let t = Transform::new_cos_sin(from + dir * 2.25, dir);
                     let mut m = t.to_matrix4(Z_CROSSWALK);
 
-                    m.x.x *= l - 4.0;
-                    m.x.y *= l - 4.0;
+                    m.x.x *= l - 4.5;
+                    m.x.y *= l - 4.5;
 
                     m.y.x *= 3.0;
                     m.y.y *= 3.0;

@@ -68,7 +68,9 @@ impl Map {
         for x in inter.roads.clone() {
             let road = &mut self.roads[x];
             road.gen_pos(&self.intersections, &mut self.lanes);
-            self.intersections[road.other_end(id)].update_turns(&self.lanes, &self.roads);
+            let other_end = &mut self.intersections[road.other_end(id)];
+            other_end.update_turns(&self.lanes, &self.roads);
+            other_end.update_interface_radius(&mut self.roads);
         }
 
         let inter = &mut self.intersections[id];

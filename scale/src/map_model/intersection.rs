@@ -1,5 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::pseudo_angle;
+use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::map_model::{
     Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, TraverseDirection, Turn, TurnID,
@@ -81,7 +82,7 @@ impl Intersection {
     pub fn update_turns(&mut self, lanes: &Lanes, roads: &Roads) {
         let id = self.id;
         self.roads
-            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].dir_from(id))));
+            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].orientation_from(id))));
 
         let turns = self.turn_policy.generate_turns(self, lanes, roads);
 
@@ -124,8 +125,8 @@ impl Intersection {
 
             let w = (width1.powi(2) + width2.powi(2)).sqrt();
 
-            let dir1 = r1.dir_from(self.id);
-            let dir2 = r2.dir_from(self.id);
+            let dir1 = r1.orientation_from(self.id);
+            let dir2 = r2.orientation_from(self.id);
 
             let ang = dir1.angle(dir2).normalize_signed().0.abs();
 
@@ -146,7 +147,7 @@ impl Intersection {
             .iter()
             .map(|&road_id| {
                 let r = &roads[road_id];
-                let dir = r.dir_from(self.id);
+                let dir = r.orientation_from(self.id);
                 let dist = r.interface_from(self.id);
                 dir * dist
             })
@@ -157,16 +158,54 @@ impl Intersection {
 
     pub fn update_polygon(&mut self, roads: &Roads) {
         self.polygon.clear();
-        for &road in &self.roads {
-            let road = &roads[road];
-            let interf = road.interface_from(self.id);
-            let w = road.width;
-            let dir = road.dir_from(self.id);
 
-            let left = self.pos + dir * interf + w * 0.5 * vec2!(-dir.y, dir.x);
-            let right = self.pos + dir * interf + w * 0.5 * vec2!(dir.y, -dir.x);
+        for (i, &road) in self.roads.iter().enumerate() {
+            let road = &roads[road];
+            let next_road = &roads[self.roads[(i + 1) % self.roads.len()]];
+
+            let interf = road.interface_from(self.id);
+            let dir = road.orientation_from(self.id);
+
+            let left = self.pos + dir * interf + road.width * 0.5 * vec2!(-dir.y, dir.x);
+            let right = self.pos + dir * interf + road.width * 0.5 * vec2!(dir.y, -dir.x);
+
+            let interf2 = next_road.interface_from(self.id);
+            let dir2 = next_road.orientation_from(self.id);
+            let next_right =
+                self.pos + dir2 * interf2 + next_road.width * 0.5 * vec2!(dir2.y, -dir2.x);
+
             self.polygon.push(right);
             self.polygon.push(left);
+
+            let src_dir = -road.orientation_from(self.id);
+            let dst_dir = next_road.orientation_from(self.id);
+
+            let ang = src_dir.angle(dst_dir);
+
+            const TURN_ANG_ADD: f32 = 0.29;
+            const TURN_ANG_MUL: f32 = 0.36;
+            const TURN_MUL: f32 = 0.46;
+
+            let dist = (next_right - left).magnitude()
+                * (TURN_ANG_ADD + ang.normalize_signed().0.abs() * TURN_ANG_MUL)
+                * TURN_MUL;
+
+            let derivative_src = src_dir * dist;
+            let derivative_dst = dst_dir * dist;
+
+            let spline = Spline {
+                from: left,
+                to: next_right,
+                from_derivative: derivative_src,
+                to_derivative: derivative_dst,
+            };
+
+            for i in 1..6 {
+                let c = i as f32 / (6) as f32;
+
+                let pos = spline.get(c);
+                self.polygon.push(pos);
+            }
         }
     }
 

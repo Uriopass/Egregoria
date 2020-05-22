@@ -203,7 +203,7 @@ impl Road {
         }
     }
 
-    pub fn dir_from(&self, id: IntersectionID) -> Vec2 {
+    pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
             (self.interpolation_points[1] - self.interpolation_points[0]).normalize()
         } else if id == self.dst {

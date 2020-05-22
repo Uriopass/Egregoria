@@ -133,8 +133,8 @@ impl TurnPolicy {
                             continue;
                         }
 
-                        let incoming_dir = incoming.get_orientation_vec();
-                        let outgoing_dir = outgoing.get_orientation_vec();
+                        let incoming_dir = incoming.orientation();
+                        let outgoing_dir = outgoing.orientation();
 
                         let incoming_right = vec2!(incoming_dir.y, -incoming_dir.x);
                         let id = TurnID::new(inter.id, incoming.id, outgoing.id, false);
