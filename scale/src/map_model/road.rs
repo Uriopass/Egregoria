@@ -4,7 +4,6 @@ use crate::map_model::{
     IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
     Roads, TrafficControl,
 };
-use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -205,10 +204,9 @@ impl Road {
 
     pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
-            (self.interpolation_points[1] - self.interpolation_points[0]).normalize()
+            self.interpolation_points.begin_dir().unwrap()
         } else if id == self.dst {
-            let n = self.interpolation_points().n_points();
-            (self.interpolation_points[n - 2] - self.interpolation_points[n - 1]).normalize()
+            -self.interpolation_points.end_dir().unwrap()
         } else {
             panic!("Asking dir from from an intersection not conected to the road");
         }

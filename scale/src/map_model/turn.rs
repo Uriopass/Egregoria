@@ -73,8 +73,8 @@ impl Turn {
             return;
         }
 
-        let src_dir = src_lane.orientation();
-        let dst_dir = dst_lane.orientation();
+        let src_dir = -src_lane.orientation_from(self.id.parent);
+        let dst_dir = dst_lane.orientation_from(self.id.parent);
 
         let ang = src_dir.angle(dst_dir);
 

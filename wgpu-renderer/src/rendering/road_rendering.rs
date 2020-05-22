@@ -111,8 +111,8 @@ impl RoadRenderer {
 
                 let w = lanes[id.src].width;
 
-                let first_dir = lanes[id.src].orientation();
-                let last_dir = lanes[id.dst].orientation();
+                let first_dir = -lanes[id.src].orientation_from(id.parent);
+                let last_dir = lanes[id.dst].orientation_from(id.parent);
 
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
@@ -144,7 +144,7 @@ impl RoadRenderer {
                 continue;
             }
 
-            let dir = n.orientation();
+            let dir = n.orientation_from(n.dst);
 
             let dir_nor = vec2(dir.y, -dir.x);
 

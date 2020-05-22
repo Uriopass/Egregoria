@@ -1,5 +1,6 @@
 use super::Vec2;
 use crate::geometry::segment::Segment;
+use crate::geometry::Vec2Impl;
 use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
@@ -108,6 +109,23 @@ impl PolyLine {
             }
         }
         Some(min_proj)
+    }
+
+    pub fn begin_dir(&self) -> Option<Vec2> {
+        if self.0.len() >= 2 {
+            (self[1] - self[0]).dir_dist().map(|(dir, _)| dir)
+        } else {
+            None
+        }
+    }
+
+    pub fn end_dir(&self) -> Option<Vec2> {
+        let l = self.0.len();
+        if l >= 2 {
+            (self[l - 1] - self[l - 2]).dir_dist().map(|(dir, _)| dir)
+        } else {
+            None
+        }
     }
 
     pub fn length(&self) -> f32 {
