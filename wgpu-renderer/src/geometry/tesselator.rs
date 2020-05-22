@@ -11,7 +11,6 @@ pub struct Tesselator {
     pub zoom: f32,
 }
 
-const DEFAULT_THICKNESS: f32 = 0.2;
 impl Tesselator {
     pub fn new(cull_rect: Option<Rect>, zoom: f32) -> Self {
         Tesselator {
@@ -80,14 +79,14 @@ impl Tesselator {
             return false;
         }
 
-        let color = self.color.into();
+        let color: [f32; 4] = self.color.into();
         self.meshbuilder.extend_with(|vertices, index_push| {
             vertices.extend(points.iter().map(|p| ColoredVertex {
                 position: [p.x, p.y, z],
                 color,
             }));
 
-            // Safe because Vector2 and [f32; 2] has same layout
+            // Safe because Vector2 and [f32; 2] have the same layout (Vector2 is repr(c))
             let points: &[[f32; 2]] =
                 unsafe { &*(points as *const [Vector2<f32>] as *const [[f32; 2]]) };
             earcut(bytemuck::cast_slice(points), |x, y, z| {
