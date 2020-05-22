@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 pub struct AudioContext {
     device: Option<rodio::Device>,
     sinks: Vec<rodio::Sink>,
