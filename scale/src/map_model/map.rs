@@ -52,6 +52,8 @@ impl Map {
         let inter = unwrap_or!(self.intersections.get_mut(id), return);
         f(inter);
 
+        self.invalidate(id);
+
         for x in self.intersections[id].roads.clone() {
             let other_end = self.roads[x].other_end(id);
             self.invalidate(other_end);
