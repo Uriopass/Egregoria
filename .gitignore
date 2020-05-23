@@ -7,3 +7,4 @@ world/*
 world
 *.spirv
 *.bc
+*.exe
