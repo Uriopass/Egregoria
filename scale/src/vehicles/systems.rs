@@ -228,7 +228,6 @@ fn calc_front_dist<'a>(
 ) -> f32 {
     let position = trans.position();
     let direction = trans.direction();
-    let direction_normal = trans.normal();
 
     let mut min_front_dist: f32 = 50.0;
 
@@ -258,7 +257,7 @@ fn calc_front_dist<'a>(
             continue;
         }
 
-        let dist_to_side = towards_vec.dot(direction_normal).abs();
+        let dist_to_side = towards_vec.perp_dot(direction).abs();
 
         let is_vehicle = matches!(nei_physics_obj.group, PhysicsGroup::Vehicles);
 

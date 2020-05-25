@@ -263,26 +263,35 @@ fn make_connection(
             let mid_idx = map.add_intersection(from.pos);
             let mid_idy = map.add_intersection(to.pos);
 
-            map.connect(rx.src, mid_idx, rx.lane_pattern.clone());
-            map.connect(mid_idx, rx.dst, rx.lane_pattern);
+            map.connect_straight(rx.src, mid_idx, rx.lane_pattern.clone());
+            map.connect_straight(mid_idx, rx.dst, rx.lane_pattern);
 
-            map.connect(ry.src, mid_idy, ry.lane_pattern.clone());
-            map.connect(mid_idy, ry.dst, ry.lane_pattern);
+            map.connect_straight(ry.src, mid_idy, ry.lane_pattern.clone());
+            map.connect_straight(mid_idy, ry.dst, ry.lane_pattern);
 
-            map.connect(mid_idx, mid_idy, pattern);
+            map.connect_straight(mid_idx, mid_idy, pattern);
 
             mid_idy
         }
-        (Inter(id), Inter(id2)) => {
-            if let Some(id) = map.find_road(id, id2) {
-                let road = map.roads().get(id).unwrap();
-                if road.lane_pattern == pattern {
-                    return id2;
+        (Inter(src), Inter(dst)) => {
+            if let [id] = map.intersections()[src].roads.as_slice() {
+                let id = *id;
+                let r = &map.roads()[id];
+                let r_src = r.other_end(src);
+                if r.lane_pattern == pattern && r_src != dst {
+                    let rev = r.src == src;
+                    let mut line = map.remove_road(id).interpolation_points_owned();
+                    if rev {
+                        line.reverse();
+                    }
+                    line.push(map.intersections()[dst].pos);
+                    map.remove_intersection(src);
+                    map.connect(r_src, dst, pattern, line);
+                    return dst;
                 }
-                map.remove_road(id);
             }
-            map.connect(id, id2, pattern);
-            id2
+            map.connect_straight(src, dst, pattern);
+            dst
         }
         (Inter(id_inter), Road(id_road)) | (Road(id_road), Inter(id_inter)) => {
             let r = map.remove_road(id_road);
@@ -294,8 +303,8 @@ fn make_connection(
             };
 
             let id = map.add_intersection(r_pos);
-            map.connect(r.src, id, r.lane_pattern.clone());
-            map.connect(id, r.dst, r.lane_pattern);
+            map.connect_straight(r.src, id, r.lane_pattern.clone());
+            map.connect_straight(id, r.dst, r.lane_pattern);
 
             let thing = if let Road(_) = to.kind {
                 (id, id_inter)
@@ -303,7 +312,7 @@ fn make_connection(
                 (id_inter, id)
             };
 
-            map.connect(thing.0, thing.1, pattern);
+            map.connect_straight(thing.0, thing.1, pattern);
 
             thing.0
         }

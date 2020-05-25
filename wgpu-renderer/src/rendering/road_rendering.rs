@@ -66,9 +66,7 @@ impl RoadRenderer {
         let lanes = map.lanes();
 
         tess.color = LinearColor::WHITE;
-
         let mut p = Vec::with_capacity(8);
-
         for n in lanes.values() {
             tess.color = LinearColor::WHITE;
 

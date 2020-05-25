@@ -48,6 +48,10 @@ impl PolyLine {
         self.0.clear()
     }
 
+    pub fn reverse(&mut self) {
+        self.0.reverse()
+    }
+
     pub fn pop_first(&mut self) -> Option<Vec2> {
         if self.0.is_empty() {
             None

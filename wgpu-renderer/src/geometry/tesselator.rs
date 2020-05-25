@@ -2,6 +2,7 @@ use crate::engine::{ColoredVertex, IndexType, MeshBuilder};
 use crate::geometry::earcut::earcut;
 use crate::geometry::rect::Rect;
 use cgmath::{vec2, InnerSpace, Vector2};
+use scale::geometry::Vec2Impl;
 use scale::rendering::{Color, LinearColor};
 
 pub struct Tesselator {
@@ -302,21 +303,33 @@ impl Tesselator {
             let elbow = window[1];
             let c = window[2];
 
-            let ac = c - a;
+            let (x, _) = match (elbow - a).dir_dist() {
+                Some(x) => x,
+                None => continue,
+            };
 
-            let dist = ac.magnitude();
+            let (y, _) = match (elbow - c).dir_dist() {
+                Some(x) => x,
+                None => continue,
+            };
 
-            if dist <= 0.0 {
-                continue;
+            let (mut dir, _) = match (x + y).dir_dist() {
+                Some(x) => x,
+                None => continue,
+            };
+
+            if x.perp_dot(y) < 0.0 {
+                dir = -dir;
             }
 
-            let nor = (halfthick / dist) * vec2(-ac.y, ac.x);
+            let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
+
             verts.push(ColoredVertex {
-                position: (elbow + nor).extend(z).into(),
+                position: (elbow + mul * dir * halfthick).extend(z).into(),
                 color,
             });
             verts.push(ColoredVertex {
-                position: (elbow - nor).extend(z).into(),
+                position: (elbow - mul * dir * halfthick).extend(z).into(),
                 color,
             });
             let i = index as u32;
@@ -377,26 +390,25 @@ impl Tesselator {
             .cull_rect
             .expect("Cannot draw grid when not culling since I do not know where is the screen");
 
-        let mut x = (screen.x / grid_size).ceil() * grid_size;
+        let startx = (screen.x / grid_size).ceil() * grid_size;
         self.set_color(color);
-        while x < screen.x + screen.w {
+        for x in 0..(screen.w / grid_size) as i32 {
+            let x = startx + x as f32 * grid_size;
             self.draw_line(
                 Vector2::new(x, screen.y),
                 Vector2::new(x, screen.y + screen.h),
                 0.01,
             );
-            x += grid_size;
         }
 
-        let mut y = (screen.y / grid_size).ceil() * grid_size;
-        while y < screen.y + screen.h {
+        let starty = (screen.y / grid_size).ceil() * grid_size;
+        for y in 0..(screen.h / grid_size) as i32 {
+            let y = starty + y as f32 * grid_size;
             self.draw_line(
                 Vector2::new(screen.x, y),
                 Vector2::new(screen.x + screen.w, y),
                 0.01,
             );
-            x += grid_size;
-            y += grid_size;
         }
     }
 }

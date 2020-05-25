@@ -57,8 +57,8 @@ pub struct GridStore<O: Copy> {
     start_x: i32,
     start_y: i32,
     cell_size: i32,
-    width: u32,
-    height: u32,
+    width: i32,
+    height: i32,
     cells: Vec<GridStoreCell>,
     objects: SlotMap<GridStoreHandle, StoreObject<O>>,
 }
@@ -230,70 +230,77 @@ impl<O: Copy> GridStore<O> {
     }
 
     fn check_resize(&mut self, pos: Vec2) {
-        let mut reallocate = false;
-
         assert!(pos.is_finite());
 
-        while (pos.x as i32) <= self.start_x {
-            println!("Reallocating for {:?}", pos);
-            self.start_x -= self.cell_size;
-            self.width += 1;
+        let mut reallocate = false;
+
+        let x = pos.x as i32;
+        let y = pos.y as i32;
+
+        if x <= self.start_x {
+            let diff = 1 + (self.start_x - x) / self.cell_size;
+            self.start_x -= self.cell_size * diff;
+            self.width += diff;
             reallocate = true;
         }
 
-        while (pos.y as i32) <= self.start_y {
-            println!("Reallocating for {:?}", pos);
-            self.start_y -= self.cell_size;
-            self.height += 1;
+        if y <= self.start_y {
+            let diff = 1 + (self.start_y - y) / self.cell_size;
+            self.start_y -= self.cell_size * diff;
+            self.height += diff;
             reallocate = true;
         }
 
-        while (pos.x as i32) >= self.start_x + self.width as i32 * self.cell_size {
-            println!("Reallocating for {:?}", pos);
-            self.width += 1;
+        let right = self.start_x + self.width as i32 * self.cell_size;
+        if x >= right {
+            self.width += 1 + (x - right) / self.cell_size;
             reallocate = true;
         }
 
-        while (pos.y as i32) >= self.start_y + self.height as i32 * self.cell_size {
-            println!("Reallocating for {:?}", pos);
-            self.height += 1;
+        let up = self.start_y + self.height as i32 * self.cell_size;
+        if y >= up {
+            self.height += 1 + (y - up) / self.cell_size;
             self.cells
                 .resize_with((self.width * self.height) as usize, GridStoreCell::default);
         }
 
         if reallocate {
-            println!(
-                "Reallocating coworld to x: {} y: {} w: {} h: {}",
+            self.reallocate();
+        }
+    }
+
+    fn reallocate(&mut self) {
+        println!(
+            "Reallocating coworld to x: {} y: {} w: {} h: {}",
+            self.start_x,
+            self.start_y,
+            self.width as i32 * self.cell_size,
+            self.height as i32 * self.cell_size
+        );
+        self.cells
+            .resize_with((self.width * self.height) as usize, GridStoreCell::default);
+
+        for x in &mut self.cells {
+            x.objs.clear();
+            x.dirty = false;
+        }
+
+        for (id, obj) in &mut self.objects {
+            let cell_id = Self::get_cell_id_raw(
+                self.width as i32,
                 self.start_x,
                 self.start_y,
-                self.width as i32 * self.cell_size,
-                self.height as i32 * self.cell_size
+                self.cell_size,
+                obj.pos,
             );
+            obj.cell_id = cell_id;
+            obj.state = ObjectState::Unchanged;
+
             self.cells
-                .resize_with((self.width * self.height) as usize, GridStoreCell::default);
-
-            for x in &mut self.cells {
-                x.objs.clear();
-                x.dirty = false;
-            }
-
-            for (id, obj) in &mut self.objects {
-                let cell_id = Self::get_cell_id_raw(
-                    self.width as i32,
-                    self.start_x,
-                    self.start_y,
-                    self.cell_size,
-                    obj.pos,
-                );
-                obj.cell_id = cell_id;
-                obj.state = ObjectState::Unchanged;
-
-                self.cells
-                    .get_mut(cell_id)
-                    .unwrap()
-                    .objs
-                    .push(CellObject::new(id, obj.pos));
-            }
+                .get_mut(cell_id)
+                .unwrap()
+                .objs
+                .push(CellObject::new(id, obj.pos));
         }
     }
 

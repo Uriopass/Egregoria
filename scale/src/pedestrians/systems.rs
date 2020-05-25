@@ -191,7 +191,7 @@ pub fn objective_update(
         );
 
         if pedestrian.itinerary.is_none() {
-            dbg!("Pedestrian at {} couldn't find path", trans.position());
+            println!("Pedestrian at {:?} couldn't find path", trans.position());
             pedestrian.itinerary = Itinerary::wait_until(time + 10.0);
         }
     }

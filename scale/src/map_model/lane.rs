@@ -1,5 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
+use crate::geometry::Vec2Impl;
 use crate::map_model::{
     Intersection, IntersectionID, Intersections, Road, TrafficControl, TraverseDirection,
 };
@@ -178,12 +179,45 @@ impl Lane {
         parent_road: &Road,
         dist_from_bottom: f32,
     ) {
-        let pos_src = self.get_node_pos(&intersections[self.src], parent_road, dist_from_bottom);
-        let pos_dst = self.get_node_pos(&intersections[self.dst], parent_road, dist_from_bottom);
+        let pos_src = self.get_node_pos(
+            &intersections[parent_road.src],
+            parent_road,
+            dist_from_bottom,
+        );
+        let pos_dst = self.get_node_pos(
+            &intersections[parent_road.dst],
+            parent_road,
+            dist_from_bottom,
+        );
 
         self.points.clear();
         self.points.push(pos_src);
+
+        for window in parent_road.interpolation_points().as_slice().windows(3) {
+            let a = window[0];
+            let elbow = window[1];
+            let c = window[2];
+
+            let (x, _): (Vec2, _) = unwrap_or!((elbow - a).dir_dist(), continue);
+            let (y, _) = unwrap_or!((elbow - c).dir_dist(), continue);
+
+            let (mut dir, _) = unwrap_or!((x + y).dir_dist(), continue);
+
+            if x.perp_dot(y) < 0.0 {
+                dir = -dir;
+            }
+
+            let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
+
+            let nor = mul * (dist_from_bottom - parent_road.width * 0.5 + self.width * 0.5) * dir;
+            self.points.push(elbow + nor);
+        }
+
         self.points.push(pos_dst);
+
+        if self.dir_from(parent_road.src) == TraverseDirection::Backward {
+            self.points.reverse();
+        }
 
         self.inter_length = parent_road.length;
     }
