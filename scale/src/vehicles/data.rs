@@ -1,7 +1,7 @@
 use crate::geometry::Vec2;
 use crate::gui::{InspectDragf, InspectVec2};
 use crate::interaction::Selectable;
-use crate::map_model::{Itinerary, LaneKind, Map};
+use crate::map_model::{Itinerary, LaneKind, Map, Traversable, TraverseDirection, TraverseKind};
 use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
 };
@@ -154,10 +154,13 @@ pub fn spawn_new_vehicle(world: &mut World) {
         if let [a, b, ..] = lane.points.as_slice() {
             let diff = b - a;
 
-            let mut pos = Transform::new(*a + rand_det::<f32>() * diff);
-            pos.set_direction(diff.normalize());
+            let pos = Transform::new_cos_sin(*a + rand_det::<f32>() * diff, diff.normalize());
 
-            let it = Itinerary::none();
+            let mut it = Itinerary::simple(
+                Traversable::new(TraverseKind::Lane(lane.id), TraverseDirection::Forward),
+                &map,
+            );
+            it.advance(&map);
 
             drop(map);
             make_vehicle_entity(world, pos, VehicleComponent::new(it, VehicleKind::Car));

@@ -181,18 +181,18 @@ pub fn objective_update(
                 .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
         }
 
-        let l = unwrap_or!(map.get_random_lane(LaneKind::Walking), return);
-
-        pedestrian.itinerary = Itinerary::route(
-            unwrap_or!(last_travers, return),
-            (l.id, l.points.random_along().unwrap()),
-            map,
-            &PedestrianPath,
-        );
-
-        if pedestrian.itinerary.is_none() {
-            println!("Pedestrian at {:?} couldn't find path", trans.position());
-            pedestrian.itinerary = Itinerary::wait_until(time + 10.0);
-        }
+        pedestrian.itinerary = next_objective(map, last_travers.as_ref())
+            .unwrap_or_else(|| Itinerary::wait_until(time + 10.0));
     }
+}
+
+fn next_objective(map: &Map, last_travers: Option<&Traversable>) -> Option<Itinerary> {
+    let l = map.get_random_lane(LaneKind::Driving)?;
+
+    Itinerary::route(
+        *last_travers?,
+        (l.id, l.points.random_along().unwrap()),
+        map,
+        &PedestrianPath,
+    )
 }

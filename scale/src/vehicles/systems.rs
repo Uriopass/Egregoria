@@ -127,20 +127,20 @@ pub fn objective_update(
                 .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
         }
 
-        let l = unwrap_or!(map.get_random_lane(LaneKind::Driving), return);
-
-        vehicle.itinerary = Itinerary::route(
-            unwrap_or!(last_travers, return),
-            (l.id, l.points.random_along().unwrap()),
-            map,
-            &DirectionalPath,
-        );
-
-        if vehicle.itinerary.is_none() {
-            println!("No path from {:?} to {:?}", last_travers, l.id);
-            vehicle.itinerary = Itinerary::wait_until(time.time + 10.0);
-        }
+        let itinerary = next_objective(map, last_travers.as_ref());
+        vehicle.itinerary = itinerary.unwrap_or(Itinerary::wait_until(time.time + 10.0));
     }
+}
+
+fn next_objective(map: &Map, last_travers: Option<&Traversable>) -> Option<Itinerary> {
+    let l = map.get_random_lane(LaneKind::Driving)?;
+
+    Itinerary::route(
+        *last_travers?,
+        (l.id, l.points.random_along().unwrap()),
+        map,
+        &DirectionalPath,
+    )
 }
 
 pub fn calc_decision<'a>(

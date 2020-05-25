@@ -2,7 +2,6 @@
 #![allow(clippy::block_in_if_condition_stmt)]
 
 use crate::engine_interaction::{KeyboardInfo, RenderStats, TimeInfo};
-use crate::geometry::gridstore::GridStore;
 use crate::gui::Gui;
 use crate::interaction::{
     DeletedEvent, FollowEntity, InspectedAuraSystem, InspectedEntity, MovableSystem, MovedEvent,
@@ -42,7 +41,7 @@ use specs::shrev::EventChannel;
 use specs::world::EntitiesRes;
 
 pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
-    let collision_world: CollisionWorld = GridStore::new(50);
+    let collision_world: CollisionWorld = CollisionWorld::new(50);
 
     // Resources init
     world.insert(EntitiesRes::default());
