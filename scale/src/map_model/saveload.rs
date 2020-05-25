@@ -91,7 +91,7 @@ pub fn load_parismap(map: &mut Map) {
         let _ = scanner.next::<usize>();
         let _ = scanner.next::<usize>();
 
-        map.connect(
+        map.connect_straight(
             ids[src],
             ids[dst],
             LanePatternBuilder::new()
@@ -113,30 +113,44 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
         let angle = (i as f32 / N_POINTS as f32) * 2.0 * std::f32::consts::PI;
 
         let v: Vec2 = [angle.cos(), angle.sin()].into();
-        first_circle.push(m.add_intersection(pos + v * 100.0));
-        second_circle.push(m.add_intersection(pos + v * 200.0));
+        first_circle.push(m.add_intersection(pos + v * 200.0));
+        second_circle.push(m.add_intersection(pos + v * 300.0));
     }
 
     for x in first_circle.windows(2) {
-        m.connect(x[0], x[1], LanePatternBuilder::new().one_way(true).build());
+        m.connect_straight(
+            x[0],
+            x[1],
+            LanePatternBuilder::new()
+                .one_way(true)
+                .parking(false)
+                .build(),
+        );
     }
-    m.connect(
+    m.connect_straight(
         *first_circle.last().unwrap(),
         first_circle[0],
         LanePatternBuilder::new().one_way(true).build(),
     );
 
     for x in second_circle.windows(2) {
-        m.connect(x[1], x[0], LanePatternBuilder::new().one_way(true).build());
+        m.connect_straight(
+            x[1],
+            x[0],
+            LanePatternBuilder::new()
+                .one_way(true)
+                .parking(false)
+                .build(),
+        );
     }
-    m.connect(
+    m.connect_straight(
         second_circle[0],
         *second_circle.last().unwrap(),
         LanePatternBuilder::new().one_way(true).build(),
     );
 
     for (a, b) in first_circle.into_iter().zip(second_circle) {
-        m.connect(a, b, LanePatternBuilder::new().build());
+        m.connect_straight(a, b, LanePatternBuilder::new().build());
     }
 }
 
@@ -144,29 +158,29 @@ pub fn add_grid(pos: Vec2, m: &mut Map) {
     let mut grid: [[Option<IntersectionID>; 10]; 10] = [[None; 10]; 10];
     for (y, l) in grid.iter_mut().enumerate() {
         for (x, v) in l.iter_mut().enumerate() {
-            *v = Some(m.add_intersection(pos + vec2!(x as f32 * 70.0, y as f32 * 70.0)));
+            *v = Some(m.add_intersection(pos + vec2!(x as f32 * 100.0, y as f32 * 100.0)));
         }
     }
 
     for x in 0..9 {
-        m.connect(
+        m.connect_straight(
             grid[9][x].unwrap(),
             grid[9][x + 1].unwrap(),
             LanePatternBuilder::new().build(),
         );
-        m.connect(
+        m.connect_straight(
             grid[x][9].unwrap(),
             grid[x + 1][9].unwrap(),
             LanePatternBuilder::new().build(),
         );
 
         for y in 0..9 {
-            m.connect(
+            m.connect_straight(
                 grid[y][x].unwrap(),
                 grid[y][x + 1].unwrap(),
                 LanePatternBuilder::new().build(),
             );
-            m.connect(
+            m.connect_straight(
                 grid[y][x].unwrap(),
                 grid[y + 1][x].unwrap(),
                 LanePatternBuilder::new().build(),
@@ -190,7 +204,7 @@ fn print_stats(map: &Map) {
 
 pub fn load_testfield(map: &mut Map) {
     add_doublecircle([0.0, 0.0].into(), map);
-    add_grid([0.0, 250.0].into(), map);
+    add_grid([0.0, 350.0].into(), map);
 }
 
 pub fn load(world: &mut World) {

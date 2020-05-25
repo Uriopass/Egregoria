@@ -1,3 +1,4 @@
+use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
 use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
@@ -96,20 +97,38 @@ impl Map {
         self.intersections.remove(src);
     }
 
-    pub fn connect(
+    pub fn connect_straight(
         &mut self,
         src: IntersectionID,
         dst: IntersectionID,
         pattern: LanePattern,
     ) -> RoadID {
-        self.dirty = true;
-        let road_id = Road::make(
-            &mut self.roads,
-            &self.intersections,
+        self.connect(
             src,
             dst,
-            &mut self.lanes,
             pattern,
+            PolyLine::new(vec![
+                self.intersections[src].pos,
+                self.intersections[dst].pos,
+            ]),
+        )
+    }
+    pub fn connect(
+        &mut self,
+        src: IntersectionID,
+        dst: IntersectionID,
+        pattern: LanePattern,
+        interpolation_points: PolyLine,
+    ) -> RoadID {
+        self.dirty = true;
+        let road_id = Road::make(
+            src,
+            dst,
+            interpolation_points,
+            pattern,
+            &self.intersections,
+            &mut self.lanes,
+            &mut self.roads,
         );
 
         let inters = &mut self.intersections;

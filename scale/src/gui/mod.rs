@@ -5,7 +5,7 @@ use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponen
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
 use imgui::Ui;
 use imgui::{im_str, StyleVar};
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 pub use inspect::*;
 use specs::world::World;
 use specs::{Entity, Join, WorldExt};
@@ -86,6 +86,37 @@ impl Gui {
                     tok.pop(ui);
                 }
             });
+        if *world.read_resource::<Tool>() == Tool::Roadbuild {
+            imgui::Window::new(im_str!("Road build"))
+                .size([150.0, 100.0], imgui::Condition::Always)
+                .position([w - 230.0, h / 2.0 - 30.0], imgui::Condition::Always)
+                .scroll_bar(false)
+                .title_bar(true)
+                .movable(false)
+                .collapsible(false)
+                .resizable(false)
+                .build(&ui, || {
+                    let mut pattern = world.get_mut::<RoadBuildState>().unwrap().pattern_builder;
+
+                    <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
+                        &mut [&mut pattern],
+                        "Road shape",
+                        world,
+                        &ui,
+                        &InspectArgsStruct {
+                            header: Some(false),
+                            indent_children: Some(false),
+                        },
+                    );
+
+                    if pattern.n_lanes == 0 {
+                        pattern.sidewalks = true;
+                    }
+
+                    world.write_resource::<RoadBuildState>().pattern_builder = pattern;
+                });
+        }
+
         tok.pop(ui);
     }
 
@@ -250,22 +281,6 @@ impl Gui {
                         delete_pedestrian(world, e);
                     }
                 }
-
-                let mut pattern = world.get_mut::<RoadBuildState>().unwrap().pattern_builder;
-
-                <LanePatternBuilder as InspectRenderDefault<LanePatternBuilder>>::render_mut(
-                    &mut [&mut pattern],
-                    "Road shape",
-                    world,
-                    &ui,
-                    &InspectArgsDefault::default(),
-                );
-
-                if pattern.n_lanes == 0 {
-                    pattern.sidewalks = true;
-                }
-
-                world.write_resource::<RoadBuildState>().pattern_builder = pattern;
 
                 let map: &mut Map = &mut world.write_resource::<Map>();
 

@@ -41,26 +41,21 @@ pub struct Road {
 impl Road {
     /// Builds the road and its associated lanes
     pub fn make(
-        store: &mut Roads,
-        intersections: &Intersections,
         src: IntersectionID,
         dst: IntersectionID,
-        lanes: &mut Lanes,
+        interpolation_points: PolyLine,
         lane_pattern: LanePattern,
+        intersections: &Intersections,
+        lanes: &mut Lanes,
+        store: &mut Roads,
     ) -> RoadID {
-        let pos_src = intersections[src].pos;
-        let pos_dst = intersections[dst].pos;
-
-        debug_assert_ne!(pos_src, pos_dst);
-
-        let points = PolyLine::new(vec![pos_src, pos_dst]);
         let id = store.insert_with_key(|id| Self {
             id,
             src,
             dst,
             src_interface: 9.0,
             dst_interface: 9.0,
-            interpolation_points: points,
+            interpolation_points,
             width: 1.0,
             length: 1.0,
             lanes_forward: vec![],
@@ -234,6 +229,10 @@ impl Road {
 
     pub fn interpolation_points(&self) -> &PolyLine {
         &self.interpolation_points
+    }
+
+    pub fn interpolation_points_owned(self) -> PolyLine {
+        self.interpolation_points
     }
 
     pub fn src_point(&self) -> Vec2 {
