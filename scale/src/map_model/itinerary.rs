@@ -53,12 +53,12 @@ impl Itinerary {
         objective: (LaneID, Vec2),
         map: &Map,
         pather: &impl Pathfinder,
-    ) -> Itinerary {
-        let mut reversed_route: Vec<Traversable> =
-            unwrap_or!(pather.path(map, cur, objective.0), return Itinerary::none())
-                .into_iter()
-                .rev()
-                .collect();
+    ) -> Option<Itinerary> {
+        let mut reversed_route: Vec<Traversable> = pather
+            .path(map, cur, objective.0)?
+            .into_iter()
+            .rev()
+            .collect();
 
         reversed_route.pop(); // Remove start
 
@@ -73,7 +73,7 @@ impl Itinerary {
             local_path: PolyLine::default(),
         };
         it.advance(map);
-        it
+        Some(it)
     }
 
     pub fn advance(&mut self, map: &Map) -> Option<Vec2> {
