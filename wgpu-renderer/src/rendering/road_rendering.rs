@@ -3,8 +3,7 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
-use cgmath::{vec2, InnerSpace};
-use scale::geometry::Vec2Impl;
+use scale::geometry::vec2;
 use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
 use scale::physics::Transform;
 use scale::rendering::{from_srgb, LinearColor};

@@ -4,7 +4,6 @@ use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
 };
 use crate::utils::{rand_det, Choose};
-use cgmath::MetricSpace;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;

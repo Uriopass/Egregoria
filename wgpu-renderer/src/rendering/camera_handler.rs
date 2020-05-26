@@ -1,13 +1,13 @@
 use crate::engine::Context;
 use crate::geometry::Rect;
 use crate::geometry::{Camera, Tesselator};
-use cgmath::{vec2, Vector2};
 use scale::engine_interaction::{KeyCode, MouseButton};
+use scale::geometry::{vec2, Vec2};
 
 #[allow(dead_code)]
 pub struct CameraHandler {
     pub camera: Camera,
-    last_pos: Vector2<f32>,
+    last_pos: Vec2,
 }
 
 const CAMERA_KEY_MOVESPEED: f32 = 300.0;
@@ -62,7 +62,7 @@ impl CameraHandler {
         self.update(ctx);
     }
 
-    pub fn unproject_mouse_click(&self, pos: Vector2<f32>) -> Vector2<f32> {
+    pub fn unproject_mouse_click(&self, pos: Vec2) -> Vec2 {
         self.camera.unproject(pos)
     }
 

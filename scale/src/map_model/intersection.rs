@@ -7,7 +7,6 @@ use crate::map_model::{
     TurnPolicy,
 };
 use crate::utils::Restrict;
-use cgmath::{Angle, InnerSpace};
 use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -128,7 +127,7 @@ impl Intersection {
             let dir1 = r1.orientation_from(self.id);
             let dir2 = r2.orientation_from(self.id);
 
-            let ang = dir1.angle(dir2).normalize_signed().0.abs();
+            let ang = dir1.angle(dir2).abs();
 
             let min_dist = w * 1.1 / ang.restrict(0.1, std::f32::consts::FRAC_PI_2).sin();
             roads[r1_id].max_interface(self.id, min_dist);
@@ -187,7 +186,7 @@ impl Intersection {
             const TURN_MUL: f32 = 0.46;
 
             let dist = (next_right - left).magnitude()
-                * (TURN_ANG_ADD + ang.normalize_signed().0.abs() * TURN_ANG_MUL)
+                * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL)
                 * TURN_MUL;
 
             let derivative_src = src_dir * dist;

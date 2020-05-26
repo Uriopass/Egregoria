@@ -1,8 +1,8 @@
 use crate::engine_interaction::TimeInfo;
+use crate::geometry::Vec2;
 use crate::interaction::DeletedEvent;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::CollisionWorld;
-use cgmath::{InnerSpace, Zero};
 use specs::prelude::ResourceId;
 use specs::shrev::EventChannel;
 use specs::{
@@ -48,11 +48,11 @@ impl<'a> System<'a> for KinematicsApply {
         {
             kin.velocity += kin.acceleration * delta;
             transform.translate(kin.velocity * delta);
-            kin.acceleration.set_zero();
+            kin.acceleration = Vec2::zero();
 
             if let Some(Collider(handle)) = collider {
                 data.coworld.set_position(*handle, transform.position());
-                let po = data.coworld.get_obj_mut(*handle);
+                let (_, po) = data.coworld.get_mut(*handle).unwrap();
                 po.dir = transform.direction();
                 po.speed = kin.velocity.magnitude();
             }

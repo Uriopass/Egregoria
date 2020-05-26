@@ -19,3 +19,4 @@ rodio         = { version = "0.11.0", default-features = false, features = ["mp3
 imgui-wgpu    = "0.6.0"
 imgui-winit-support = "0.3.1"
 scale         = { path = "../scale" }
+mint          = "0.5.5"

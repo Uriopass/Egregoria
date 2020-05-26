@@ -1,6 +1,5 @@
 use crate::geometry::Vec2;
 use crate::map_model::{IntersectionID, LanePatternBuilder, Map};
-use cgmath::num_traits::FloatConst;
 use specs::{World, WorldExt};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -77,7 +76,7 @@ pub fn load_parismap(map: &mut Map) {
         let mut long = scanner.next::<f64>();
         let mut lat = scanner.next::<f64>();
 
-        long = (long - CENTER_B) * scale / f64::cos(long / 180.0 * f64::PI());
+        long = (long - CENTER_B) * scale / f64::cos(long / 180.0 * std::f64::consts::PI);
         lat = (lat - CENTER_A) * scale;
 
         ids.push(map.add_intersection(vec2!(lat as f32, long as f32)));

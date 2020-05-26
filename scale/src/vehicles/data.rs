@@ -9,7 +9,6 @@ use crate::rendering::assets::{AssetID, AssetRender};
 use crate::rendering::meshrender_component::{MeshRender, RectRender};
 use crate::rendering::Color;
 use crate::utils::rand_det;
-use cgmath::InnerSpace;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};

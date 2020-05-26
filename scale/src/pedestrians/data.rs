@@ -1,3 +1,4 @@
+use crate::geometry::Vec2;
 use crate::interaction::{Movable, Selectable};
 use crate::map_model::{Itinerary, LaneKind, Map};
 use crate::physics::{
@@ -32,8 +33,8 @@ pub fn spawn_pedestrian(world: &mut World) {
 
     let lane = unwrap_or!(map.get_random_lane(LaneKind::Walking), return);
 
-    let pos = if let [a, b, ..] = lane.points.as_slice() {
-        a + (b - a) * crate::utils::rand_det()
+    let pos: Vec2 = if let [a, b, ..] = lane.points.as_slice() {
+        a + (b - a) * crate::utils::rand_det::<f32>()
     } else {
         return;
     };

@@ -1,7 +1,5 @@
 use super::Vec2;
 use crate::geometry::segment::Segment;
-use crate::geometry::Vec2Impl;
-use cgmath::InnerSpace;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 use std::ops::Index;
@@ -61,7 +59,7 @@ impl PolyLine {
     }
 
     pub fn random_along(&self) -> Option<Vec2> {
-        let r = rand::random();
+        let r: f32 = rand::random();
         match self.n_points() {
             0 => None,
             1 => Some(self[0]),

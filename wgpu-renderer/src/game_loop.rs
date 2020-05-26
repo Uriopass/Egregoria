@@ -2,8 +2,8 @@ use crate::engine::{Context, FrameContext, GfxContext};
 use crate::geometry::Tesselator;
 use crate::rendering::imgui_wrapper::{GuiRenderContext, ImguiWrapper};
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
-use cgmath::Vector2;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
+use scale::geometry::{vec2::vec2, Vec2};
 use scale::gui::Gui;
 use scale::interaction::{FollowEntity, InspectedEntity};
 use scale::map_model::{Itinerary, Map};
@@ -176,7 +176,7 @@ impl<'a> State<'a> {
                 .get(e)
                 .map(|x| x.position())
             {
-                self.camera.camera.position = pos;
+                self.camera.camera.position = [pos.x, pos.y].into();
             }
         }
     }
@@ -208,7 +208,7 @@ impl<'a> State<'a> {
             .resize(ctx, size.width as f32, size.height as f32);
     }
 
-    pub fn unproject(&mut self, pos: Vector2<f32>) -> Vector2<f32> {
+    pub fn unproject(&mut self, pos: Vec2) -> Vec2 {
         self.camera.unproject_mouse_click(pos)
     }
 }
@@ -256,16 +256,16 @@ fn debug_rays(tess: &mut Tesselator, time: TimeInfo) {
     let s = time.time.sin() as f32;
 
     let r = scale::geometry::intersections::Ray {
-        from: 10.0 * Vector2::new(c, s),
-        dir: Vector2::new(
+        from: 10.0 * vec2(c, s),
+        dir: vec2(
             (time.time * 2.3 + 1.0).cos() as f32,
             (time.time * 2.3 + 1.0).sin() as f32,
         ),
     };
 
     let r2 = scale::geometry::intersections::Ray {
-        from: 10.0 * Vector2::new((time.time as f32 * 1.5 + 3.0).cos(), s * 2.0),
-        dir: Vector2::new(c, -s),
+        from: 10.0 * vec2((time.time as f32 * 1.5 + 3.0).cos(), s * 2.0),
+        dir: vec2(c, -s),
     };
 
     let inter = scale::geometry::intersections::intersection_point(r, r2);

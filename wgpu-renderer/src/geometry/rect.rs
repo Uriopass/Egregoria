@@ -1,4 +1,4 @@
-use cgmath::Vector2;
+use scale::geometry::Vec2;
 
 #[derive(Clone, Copy)]
 pub struct Rect {
@@ -46,14 +46,6 @@ impl Rect {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
-    /// Gets the `Rect`'s x and y coordinates as a `Point2`.
-    pub const fn point(&self) -> cgmath::Point2<f32> {
-        cgmath::Point2 {
-            x: self.x,
-            y: self.y,
-        }
-    }
-
     /// Returns the left edge of the `Rect`
     pub const fn left(&self) -> f32 {
         self.x
@@ -75,7 +67,7 @@ impl Rect {
     }
 
     /// Checks whether the `Rect` contains a `Point`
-    pub fn contains(&self, point: Vector2<f32>) -> bool {
+    pub fn contains(&self, point: Vec2) -> bool {
         point.x >= self.left()
             && point.x <= self.right()
             && point.y <= self.bottom()
@@ -83,7 +75,7 @@ impl Rect {
     }
 
     /// Checks whether the `Rect` contains a `Point`
-    pub fn contains_within(&self, point: Vector2<f32>, tolerance: f32) -> bool {
+    pub fn contains_within(&self, point: Vec2, tolerance: f32) -> bool {
         point.x >= self.left() - tolerance
             && point.x <= self.right() + tolerance
             && point.y <= self.bottom() + tolerance
@@ -98,12 +90,7 @@ impl Rect {
             && self.bottom() >= other.top()
     }
 
-    pub fn intersects_line_within(
-        &self,
-        p1: Vector2<f32>,
-        p2: Vector2<f32>,
-        tolerance: f32,
-    ) -> bool {
+    pub fn intersects_line_within(&self, p1: Vec2, p2: Vec2, tolerance: f32) -> bool {
         let outcode0 = self.compute_code(p1, tolerance);
         let outcode1 = self.compute_code(p2, tolerance);
         if outcode0 == 0 || outcode1 == 0 {
@@ -115,7 +102,7 @@ impl Rect {
         true
     }
 
-    fn compute_code(&self, p: Vector2<f32>, tolerance: f32) -> u8 {
+    fn compute_code(&self, p: Vec2, tolerance: f32) -> u8 {
         const INSIDE: u8 = 0; // 0000
         const LEFT: u8 = 1; // 0001
         const RIGHT: u8 = 2; // 0010
@@ -143,13 +130,13 @@ impl Rect {
         code
     }
     /// Translates the `Rect` by an offset of (x, y)
-    pub fn translate(&mut self, offset: Vector2<f32>) {
+    pub fn translate(&mut self, offset: Vec2) {
         self.x += offset.x;
         self.y += offset.y;
     }
 
     /// Moves the `Rect`'s origin to (x, y)
-    pub fn move_to(&mut self, destination: Vector2<f32>) {
+    pub fn move_to(&mut self, destination: Vec2) {
         self.x = destination.x;
         self.y = destination.y;
     }

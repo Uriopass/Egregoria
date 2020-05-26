@@ -1,6 +1,5 @@
 use crate::geometry::Vec2;
 use crate::gui::InspectVec2;
-use cgmath::num_traits::zero;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
@@ -18,8 +17,8 @@ pub struct Kinematics {
 impl Kinematics {
     pub fn from_mass(mass: f32) -> Self {
         Kinematics {
-            velocity: zero(),
-            acceleration: zero(),
+            velocity: Vec2::zero(),
+            acceleration: Vec2::zero(),
             mass,
         }
     }

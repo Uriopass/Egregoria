@@ -3,7 +3,6 @@ use crate::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
 use crate::geometry::Vec2;
 use crate::interaction::Tool;
 use crate::physics::Transform;
-use cgmath::InnerSpace;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use specs::prelude::*;

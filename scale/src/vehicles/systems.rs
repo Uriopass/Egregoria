@@ -1,6 +1,6 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
-use crate::geometry::{Vec2, Vec2Impl};
+use crate::geometry::Vec2;
 use crate::map_model::{
     DirectionalPath, Itinerary, LaneKind, Map, TrafficBehavior, Traversable, TraverseDirection,
     TraverseKind,
@@ -9,7 +9,6 @@ use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::{rand_det, Restrict};
 use crate::vehicles::VehicleComponent;
-use cgmath::{Angle, InnerSpace, MetricSpace, Vector2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 
@@ -47,11 +46,11 @@ impl<'a> System<'a> for VehicleDecision {
             .for_each(|(trans, kin, vehicle, collider)| {
                 objective_update(vehicle, &time, trans, &map);
 
-                let self_obj = cow.get_obj(collider.0);
+                let (_, self_obj) = cow.get(collider.0).unwrap();
                 let speed: f32 = self_obj.speed;
                 let danger_length = (speed * speed / (2.0 * vehicle.kind.deceleration())).min(40.0);
                 let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
-                let objs = neighbors.map(|obj| (obj.pos, cow.get_obj(obj.id)));
+                let objs = neighbors.map(|(id, pos)| (Vec2::from(*pos), cow.get(*id).unwrap().1));
 
                 calc_decision(vehicle, map, speed, &time, trans, self_obj, objs);
 
@@ -84,10 +83,10 @@ fn vehicle_physics(
     vehicle.ang_velocity += time.delta * kind.ang_acc();
     vehicle.ang_velocity = vehicle
         .ang_velocity
-        .min(3.0 * delta_ang.0.abs())
+        .min(3.0 * delta_ang.abs())
         .min(max_ang_vel);
 
-    ang.0 += delta_ang.0.restrict(
+    ang += delta_ang.restrict(
         -vehicle.ang_velocity * time.delta,
         vehicle.ang_velocity * time.delta,
     );
@@ -128,7 +127,7 @@ pub fn objective_update(
         }
 
         let itinerary = next_objective(map, last_travers.as_ref());
-        vehicle.itinerary = itinerary.unwrap_or(Itinerary::wait_until(time.time + 10.0));
+        vehicle.itinerary = itinerary.unwrap_or_else(|| Itinerary::wait_until(time.time + 10.0));
     }
 }
 
@@ -224,7 +223,7 @@ fn calc_front_dist<'a>(
     speed: f32,
     trans: &Transform,
     self_obj: &PhysicsObject,
-    neighs: impl Iterator<Item = (Vector2<f32>, &'a PhysicsObject)>,
+    neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
 ) -> f32 {
     let position = trans.position();
     let direction = trans.direction();

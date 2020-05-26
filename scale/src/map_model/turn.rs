@@ -1,7 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::splines::Spline;
 use crate::map_model::{IntersectionID, LaneID, Lanes};
-use cgmath::{Angle, Array, InnerSpace};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, PartialOrd, Ord, Deserialize, PartialEq, Eq, Hash)]
@@ -78,9 +77,8 @@ impl Turn {
 
         let ang = src_dir.angle(dst_dir);
 
-        let dist = (pos_dst - pos_src).magnitude()
-            * (TURN_ANG_ADD + ang.normalize_signed().0.abs() * TURN_ANG_MUL)
-            * TURN_MUL;
+        let dist =
+            (pos_dst - pos_src).magnitude() * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL) * TURN_MUL;
 
         let derivative_src = src_dir * dist;
         let derivative_dst = dst_dir * dist;
