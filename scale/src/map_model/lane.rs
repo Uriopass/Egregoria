@@ -1,5 +1,5 @@
 use crate::geometry::polyline::PolyLine;
-use crate::geometry::Vec2;
+use crate::geometry::{vec2, Vec2};
 use crate::map_model::{
     Intersection, IntersectionID, Intersections, Road, TrafficControl, TraverseDirection,
 };
@@ -199,7 +199,7 @@ impl Lane {
             let (x, _): (Vec2, _) = unwrap_or!((elbow - a).dir_dist(), continue);
             let (y, _) = unwrap_or!((elbow - c).dir_dist(), continue);
 
-            let (mut dir, _) = unwrap_or!((x + y).dir_dist(), continue);
+            let (mut dir, _) = (x + y).dir_dist().unwrap_or((vec2(-x.y, x.x), 0.0));
 
             if x.perp_dot(y) < 0.0 {
                 dir = -dir;

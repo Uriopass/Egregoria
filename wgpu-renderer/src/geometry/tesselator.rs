@@ -1,4 +1,4 @@
-use crate::engine::{ColoredVertex, IndexType, MeshBuilder};
+use crate::engine::{ColoredVertex, MeshBuilder};
 use crate::geometry::earcut::earcut;
 use crate::geometry::rect::Rect;
 use scale::geometry::{vec2, Vec2};
@@ -276,50 +276,73 @@ impl Tesselator {
 
         let color = self.color.into();
 
-        let verts = &mut self.meshbuilder.vertices;
-        let indices = &mut self.meshbuilder.indices;
-        let offset = verts.len() as IndexType;
+        self.meshbuilder.extend_with(move |verts, index_push| {
+            let nor: Vec2 = halfthick * vec2(-first_dir.y, first_dir.x);
 
-        let nor: Vec2 = halfthick * vec2(-first_dir.y, first_dir.x);
+            verts.push(ColoredVertex {
+                position: [points[0].x + nor.x, points[0].y + nor.y, z],
+                color,
+            });
 
-        verts.push(ColoredVertex {
-            position: [points[0].x + nor.x, points[0].y + nor.y, z],
-            color,
-        });
+            verts.push(ColoredVertex {
+                position: [points[0].x - nor.x, points[0].y - nor.y, z],
+                color,
+            });
 
-        verts.push(ColoredVertex {
-            position: [points[0].x - nor.x, points[0].y - nor.y, z],
-            color,
-        });
+            let mut index: u32 = 0;
 
-        for (index, window) in points.windows(3).enumerate() {
-            let a = window[0];
-            let elbow = window[1];
-            let c = window[2];
+            for window in points.windows(3) {
+                let a = window[0];
+                let elbow = window[1];
+                let c = window[2];
 
-            let (x, _) = match (elbow - a).dir_dist() {
-                Some(x) => x,
-                None => continue,
-            };
+                let (ae, _) = match (elbow - a).dir_dist() {
+                    Some(x) => x,
+                    None => continue,
+                };
 
-            let (y, _) = match (elbow - c).dir_dist() {
-                Some(x) => x,
-                None => continue,
-            };
+                let (ce, _) = match (elbow - c).dir_dist() {
+                    Some(x) => x,
+                    None => continue,
+                };
 
-            let (mut dir, _) = match (x + y).dir_dist() {
-                Some(x) => x,
-                None => continue,
-            };
+                let (mut dir, _) = match (ae + ce).dir_dist() {
+                    Some(x) => x,
+                    None => ([-ae.y, ae.x].into(), 0.0),
+                };
 
-            if x.perp_dot(y) < 0.0 {
-                dir = -dir;
+                if ae.perp_dot(ce) < 0.0 {
+                    dir = -dir;
+                }
+
+                let mul = 1.0 + (1.0 + ae.dot(ce).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
+
+                let p1 = elbow + mul * dir * halfthick;
+                let p2 = elbow - mul * dir * halfthick;
+                verts.push(ColoredVertex {
+                    position: [p1.x, p1.y, z],
+                    color,
+                });
+                verts.push(ColoredVertex {
+                    position: [p2.x, p2.y, z],
+                    color,
+                });
+
+                index_push(index * 2);
+                index_push(index * 2 + 1);
+                index_push(index * 2 + 2);
+
+                index_push(index * 2 + 1);
+                index_push(index * 2 + 2);
+                index_push(index * 2 + 3);
+
+                index += 1;
             }
 
-            let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
+            let nor: Vec2 = halfthick * vec2(-last_dir.y, last_dir.x);
 
-            let p1 = elbow + mul * dir * halfthick;
-            let p2 = elbow - mul * dir * halfthick;
+            let p1 = points[n_points - 1] + nor;
+            let p2 = points[n_points - 1] - nor;
             verts.push(ColoredVertex {
                 position: [p1.x, p1.y, z],
                 color,
@@ -328,37 +351,15 @@ impl Tesselator {
                 position: [p2.x, p2.y, z],
                 color,
             });
-            let i = index as u32;
-            indices.push(offset + i * 2);
-            indices.push(offset + i * 2 + 1);
-            indices.push(offset + i * 2 + 2);
 
-            indices.push(offset + i * 2 + 1);
-            indices.push(offset + i * 2 + 2);
-            indices.push(offset + i * 2 + 3);
-        }
+            index_push(index * 2);
+            index_push(index * 2 + 1);
+            index_push(index * 2 + 2);
 
-        let nor: Vec2 = halfthick * vec2(-last_dir.y, last_dir.x);
-
-        let p1 = points[n_points - 1] + nor;
-        let p2 = points[n_points - 1] - nor;
-        verts.push(ColoredVertex {
-            position: [p1.x, p1.y, z],
-            color,
+            index_push(index * 2 + 1);
+            index_push(index * 2 + 2);
+            index_push(index * 2 + 3);
         });
-        verts.push(ColoredVertex {
-            position: [p2.x, p2.y, z],
-            color,
-        });
-        let i = (n_points * 2) as u32;
-        indices.push(offset + i - 3);
-        indices.push(offset + i - 2);
-        indices.push(offset + i - 1);
-
-        indices.push(offset + i - 4);
-        indices.push(offset + i - 3);
-        indices.push(offset + i - 2);
-
         true
     }
 

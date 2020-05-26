@@ -65,7 +65,6 @@ impl RoadRenderer {
         let lanes = map.lanes();
 
         tess.color = LinearColor::WHITE;
-        let mut p = Vec::with_capacity(8);
         for n in lanes.values() {
             tess.color = LinearColor::WHITE;
 
@@ -85,6 +84,7 @@ impl RoadRenderer {
             tess.draw_polyline(n.points.as_slice(), z, n.width - 0.5);
         }
 
+        let mut p = Vec::with_capacity(8);
         for inter in inters.values() {
             if inter.roads.is_empty() {
                 tess.color = LinearColor::WHITE;
@@ -116,18 +116,12 @@ impl RoadRenderer {
 
                 tess.draw_polyline_with_dir(&p, first_dir, last_dir, Z_LANE_BG, w + 0.5);
 
-                tess.color = match turn.kind {
-                    TurnKind::WalkingCorner => high_gray,
-                    _ => mid_gray,
-                };
+                tess.color = high_gray;
 
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                let z = match turn.kind {
-                    TurnKind::WalkingCorner => Z_SIDEWALK,
-                    _ => Z_LANE,
-                };
+                let z = Z_SIDEWALK;
 
                 tess.draw_polyline_with_dir(&p, first_dir, last_dir, z, w - 0.5);
             }
