@@ -1,5 +1,4 @@
 use crate::map_model::{Intersection, IntersectionID, LaneID, Lanes, Roads, TurnID, TurnKind};
-use cgmath::InnerSpace;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use std::iter::{Extend, Iterator};

@@ -2,7 +2,6 @@ use crate::engine_interaction::{MouseButton, MouseInfo, TimeInfo};
 use crate::geometry::Vec2;
 use crate::interaction::InspectedEntity;
 use crate::physics::{Kinematics, Transform};
-use cgmath::num_traits::zero;
 use serde::{Deserialize, Serialize};
 use specs::prelude::ResourceId;
 use specs::shrev::EventChannel;
@@ -53,8 +52,8 @@ impl<'a> System<'a> for MovableSystem {
             match &mut self.clicked_at {
                 None => {
                     if let Some(kin) = data.kinematics.get_mut(e) {
-                        kin.velocity = zero();
-                        kin.acceleration = zero();
+                        kin.velocity = Vec2::zero();
+                        kin.acceleration = Vec2::zero();
                     }
                     self.clicked_at = Some(data.mouse.unprojected);
                 }
@@ -65,8 +64,8 @@ impl<'a> System<'a> for MovableSystem {
                     *off = data.mouse.unprojected;
                     if new_pos != old_pos {
                         if let Some(kin) = data.kinematics.get_mut(e) {
-                            kin.velocity = zero();
-                            kin.acceleration = zero();
+                            kin.velocity = Vec2::zero();
+                            kin.acceleration = Vec2::zero();
                         }
                         p.set_position(new_pos);
                         data.moved.single_write(MovedEvent {

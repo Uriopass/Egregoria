@@ -1,7 +1,6 @@
 use crate::geometry::Vec2;
 use crate::gui::{ImEntity, InspectDragf, InspectVec, InspectVec2};
 use crate::rendering::colors::*;
-use cgmath::num_traits::zero;
 use imgui::Ui;
 use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
@@ -200,7 +199,7 @@ pub struct CircleRender {
 impl Default for CircleRender {
     fn default() -> Self {
         Self {
-            offset: zero(),
+            offset: Vec2::zero(),
             radius: 0.0,
             color: Color::WHITE,
         }
@@ -221,7 +220,7 @@ pub struct StrokeCircleRender {
 impl Default for StrokeCircleRender {
     fn default() -> Self {
         Self {
-            offset: zero(),
+            offset: Vec2::zero(),
             radius: 0.0,
             color: Color::WHITE,
             thickness: 0.1,

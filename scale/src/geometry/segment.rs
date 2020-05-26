@@ -1,5 +1,4 @@
 use super::Vec2;
-use cgmath::InnerSpace;
 
 pub struct Segment {
     pub a: Vec2,

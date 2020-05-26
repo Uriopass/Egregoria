@@ -7,7 +7,6 @@ use crate::physics::{Collider, Kinematics, Transform};
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::VehicleComponent;
-use cgmath::InnerSpace;
 use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -139,7 +138,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
         }
         let x = data[0];
         let ang = x.angle(vec2!(0.0, 1.0));
-        ui.text(&im_str!("{} {}", label, ang.0));
+        ui.text(&im_str!("{} {}", label, ang));
     }
 
     fn render_mut(

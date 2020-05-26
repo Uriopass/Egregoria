@@ -1,4 +1,3 @@
-use crate::geometry::gridstore::{GridStore, GridStoreHandle};
 use crate::geometry::Vec2;
 use crate::gui::{InspectDragf, InspectVec2Rotation};
 use imgui::Ui;
@@ -11,6 +10,7 @@ pub mod systems;
 mod kinematics;
 mod transform;
 
+use flat_spatial::densegrid::DenseGridHandle;
 pub use kinematics::*;
 pub use transform::*;
 
@@ -44,11 +44,11 @@ impl Default for PhysicsObject {
     }
 }
 
-pub type CollisionWorld = GridStore<PhysicsObject>;
+pub type CollisionWorld = flat_spatial::DenseGrid<PhysicsObject>;
 
 #[derive(Clone, Component, Debug)]
 #[storage(VecStorage)]
-pub struct Collider(pub GridStoreHandle);
+pub struct Collider(pub DenseGridHandle);
 
 impl InspectRenderDefault<Collider> for Collider {
     fn render(_: &[&Collider], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
@@ -67,7 +67,7 @@ impl InspectRenderDefault<Collider> for Collider {
         }
         let d = &mut data[0];
 
-        let mut obj = { *world.read_resource::<CollisionWorld>().get_obj(d.0) };
+        let mut obj = { *world.read_resource::<CollisionWorld>().get(d.0).unwrap().1 };
 
         let changed = <PhysicsObject as InspectRenderDefault<PhysicsObject>>::render_mut(
             &mut [&mut obj],
@@ -79,7 +79,7 @@ impl InspectRenderDefault<Collider> for Collider {
 
         let coworld: &mut CollisionWorld = &mut world.write_resource::<CollisionWorld>();
         if changed {
-            *coworld.get_obj_mut(d.0) = obj;
+            *coworld.get_mut(d.0).unwrap().1 = obj;
         }
         changed
     }

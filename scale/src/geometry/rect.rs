@@ -46,14 +46,6 @@ impl Rect {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
-    /// Gets the `Rect`'s x and y coordinates as a `Point2`.
-    pub const fn point(&self) -> cgmath::Point2<f32> {
-        cgmath::Point2 {
-            x: self.x,
-            y: self.y,
-        }
-    }
-
     /// Returns the left edge of the `Rect`
     pub const fn left(&self) -> f32 {
         self.x

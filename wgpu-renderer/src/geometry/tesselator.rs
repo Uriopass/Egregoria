@@ -1,8 +1,7 @@
 use crate::engine::{ColoredVertex, IndexType, MeshBuilder};
 use crate::geometry::earcut::earcut;
 use crate::geometry::rect::Rect;
-use cgmath::{vec2, InnerSpace, Vector2};
-use scale::geometry::Vec2Impl;
+use scale::geometry::{vec2, Vec2};
 use scale::rendering::{Color, LinearColor};
 
 pub struct Tesselator {
@@ -25,7 +24,7 @@ impl Tesselator {
 
 #[allow(dead_code)]
 impl Tesselator {
-    pub fn draw_circle(&mut self, p: Vector2<f32>, z: f32, r: f32) -> bool {
+    pub fn draw_circle(&mut self, p: Vec2, z: f32, r: f32) -> bool {
         let n_points = ((6.0 * (r * self.zoom).cbrt()) as usize).max(4);
 
         self.draw_regular_polygon(p, z, r, n_points, 0.0)
@@ -33,7 +32,7 @@ impl Tesselator {
 
     pub fn draw_regular_polygon(
         &mut self,
-        p: Vector2<f32>,
+        p: Vec2,
         z: f32,
         r: f32,
         n_points: usize,
@@ -48,15 +47,15 @@ impl Tesselator {
 
         self.meshbuilder.extend_with(|vertices, index_push| {
             vertices.push(ColoredVertex {
-                position: p.extend(z).into(),
+                position: [p.x, p.y, z],
                 color,
             });
 
             for i in 0..n_pointsu32 {
                 let v = std::f32::consts::PI * 2.0 * (i as f32) / n_points as f32 + start_angle;
-                let trans = r * vec2(v.cos(), v.sin());
+                let trans = p + r * vec2(v.cos(), v.sin());
                 vertices.push(ColoredVertex {
-                    position: (p + trans).extend(z).into(),
+                    position: [trans.x, trans.y, z],
                     color,
                 });
                 index_push(0);
@@ -72,7 +71,7 @@ impl Tesselator {
         true
     }
 
-    pub fn draw_filled_polygon(&mut self, points: &[Vector2<f32>], z: f32) -> bool {
+    pub fn draw_filled_polygon(&mut self, points: &[Vec2], z: f32) -> bool {
         if self
             .cull_rect
             .map_or(false, |x| points.iter().any(|&p| x.contains_within(p, 1.0)))
@@ -88,8 +87,7 @@ impl Tesselator {
             }));
 
             // Safe because Vector2 and [f32; 2] have the same layout (Vector2 is repr(c))
-            let points: &[[f32; 2]] =
-                unsafe { &*(points as *const [Vector2<f32>] as *const [[f32; 2]]) };
+            let points: &[[f32; 2]] = unsafe { &*(points as *const [Vec2] as *const [[f32; 2]]) };
             earcut(bytemuck::cast_slice(points), |x, y, z| {
                 index_push(x as u32);
                 index_push(y as u32);
@@ -100,7 +98,7 @@ impl Tesselator {
         true
     }
 
-    pub fn draw_stroke_circle(&mut self, p: Vector2<f32>, z: f32, r: f32, thickness: f32) -> bool {
+    pub fn draw_stroke_circle(&mut self, p: Vec2, z: f32, r: f32, thickness: f32) -> bool {
         if r <= 0.0 || self.cull_rect.map_or(false, |x| !x.contains_within(p, r)) {
             return false;
         }
@@ -123,12 +121,14 @@ impl Tesselator {
             for i in 0..n_pointsu32 {
                 let v = std::f32::consts::PI * 2.0 * (i as f32) / n_points as f32;
                 let trans = vec2(v.cos(), v.sin());
+                let p1 = p + (r + halfthick) * trans;
+                let p2 = p + (r - halfthick) * trans;
                 vertices.push(ColoredVertex {
-                    position: (p + (r + halfthick) * trans).extend(z).into(),
+                    position: [p1.x, p1.y, z],
                     color,
                 });
                 vertices.push(ColoredVertex {
-                    position: (p + (r - halfthick) * trans).extend(z).into(),
+                    position: [p2.x, p2.y, z],
                     color,
                 });
                 index_push(i * 2);
@@ -164,11 +164,11 @@ impl Tesselator {
 
     pub fn draw_rect_cos_sin(
         &mut self,
-        p: Vector2<f32>,
+        p: Vec2,
         z: f32,
         width: f32,
         height: f32,
-        cos_sin: Vector2<f32>,
+        cos_sin: Vec2,
     ) -> bool {
         if let Some(x) = self.cull_rect {
             if !x.contains_within(p, width.max(height)) {
@@ -180,7 +180,7 @@ impl Tesselator {
         let b = (height / 2.0) * vec2(-cos_sin.y, cos_sin.x);
         let pxy = vec2(p.x, p.y);
 
-        let points: [Vector2<_>; 4] = [a + b + pxy, a - b + pxy, -a - b + pxy, -a + b + pxy];
+        let points: [Vec2; 4] = [a + b + pxy, a - b + pxy, -a - b + pxy, -a + b + pxy];
 
         let color: [f32; 4] = self.color.into();
 
@@ -206,13 +206,7 @@ impl Tesselator {
         true
     }
 
-    pub fn draw_stroke(
-        &mut self,
-        p1: Vector2<f32>,
-        p2: Vector2<f32>,
-        z: f32,
-        thickness: f32,
-    ) -> bool {
+    pub fn draw_stroke(&mut self, p1: Vec2, p2: Vec2, z: f32, thickness: f32) -> bool {
         if let Some(x) = self.cull_rect {
             if !x.intersects_line_within(p1, p2, thickness * 0.5) {
                 return false;
@@ -225,27 +219,27 @@ impl Tesselator {
             return false;
         }
         let ratio = (thickness * 0.5) / dist;
-        let nor: Vector2<f32> = ratio * vec2(-diff.y, diff.x);
+        let nor: Vec2 = ratio * vec2(-diff.y, diff.x);
 
-        let points: [Vector2<f32>; 4] = [p1 - nor, p1 + nor, p2 + nor, p2 - nor];
+        let points: [Vec2; 4] = [p1 - nor, p1 + nor, p2 + nor, p2 - nor];
 
         let color: [f32; 4] = self.color.into();
 
         let verts: [ColoredVertex; 4] = [
             ColoredVertex {
-                position: points[0].extend(z).into(),
+                position: [points[0].x, points[0].y, z],
                 color,
             },
             ColoredVertex {
-                position: points[1].extend(z).into(),
+                position: [points[1].x, points[1].y, z],
                 color,
             },
             ColoredVertex {
-                position: points[2].extend(z).into(),
+                position: [points[2].x, points[2].y, z],
                 color,
             },
             ColoredVertex {
-                position: points[3].extend(z).into(),
+                position: [points[3].x, points[3].y, z],
                 color,
             },
         ];
@@ -255,9 +249,9 @@ impl Tesselator {
 
     pub fn draw_polyline_with_dir(
         &mut self,
-        points: &[Vector2<f32>],
-        first_dir: Vector2<f32>,
-        last_dir: Vector2<f32>,
+        points: &[Vec2],
+        first_dir: Vec2,
+        last_dir: Vec2,
         z: f32,
         thickness: f32,
     ) -> bool {
@@ -271,7 +265,7 @@ impl Tesselator {
         }
         if let Some(cull_rect) = self.cull_rect {
             let window_intersects =
-                |x: &[Vector2<f32>]| cull_rect.intersects_line_within(x[0], x[1], thickness);
+                |x: &[Vec2]| cull_rect.intersects_line_within(x[0], x[1], thickness);
 
             if !points.windows(2).any(window_intersects) {
                 return false;
@@ -286,15 +280,15 @@ impl Tesselator {
         let indices = &mut self.meshbuilder.indices;
         let offset = verts.len() as IndexType;
 
-        let nor: Vector2<f32> = halfthick * vec2(-first_dir.y, first_dir.x);
+        let nor: Vec2 = halfthick * vec2(-first_dir.y, first_dir.x);
 
         verts.push(ColoredVertex {
-            position: (points[0] + nor).extend(z).into(),
+            position: [points[0].x + nor.x, points[0].y + nor.y, z],
             color,
         });
 
         verts.push(ColoredVertex {
-            position: (points[0] - nor).extend(z).into(),
+            position: [points[0].x - nor.x, points[0].y - nor.y, z],
             color,
         });
 
@@ -324,12 +318,14 @@ impl Tesselator {
 
             let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
 
+            let p1 = elbow + mul * dir * halfthick;
+            let p2 = elbow - mul * dir * halfthick;
             verts.push(ColoredVertex {
-                position: (elbow + mul * dir * halfthick).extend(z).into(),
+                position: [p1.x, p1.y, z],
                 color,
             });
             verts.push(ColoredVertex {
-                position: (elbow - mul * dir * halfthick).extend(z).into(),
+                position: [p2.x, p2.y, z],
                 color,
             });
             let i = index as u32;
@@ -342,18 +338,18 @@ impl Tesselator {
             indices.push(offset + i * 2 + 3);
         }
 
-        let nor: Vector2<f32> = halfthick * vec2(-last_dir.y, last_dir.x);
+        let nor: Vec2 = halfthick * vec2(-last_dir.y, last_dir.x);
 
+        let p1 = points[n_points - 1] + nor;
+        let p2 = points[n_points - 1] - nor;
         verts.push(ColoredVertex {
-            position: (points[n_points - 1] + nor).extend(z).into(),
+            position: [p1.x, p1.y, z],
             color,
         });
-
         verts.push(ColoredVertex {
-            position: (points[n_points - 1] - nor).extend(z).into(),
+            position: [p2.x, p2.y, z],
             color,
         });
-
         let i = (n_points * 2) as u32;
         indices.push(offset + i - 3);
         indices.push(offset + i - 2);
@@ -366,7 +362,7 @@ impl Tesselator {
         true
     }
 
-    pub fn draw_polyline(&mut self, points: &[Vector2<f32>], z: f32, thickness: f32) -> bool {
+    pub fn draw_polyline(&mut self, points: &[Vec2], z: f32, thickness: f32) -> bool {
         let n_points = points.len();
         if n_points < 2 || thickness <= 0.0 {
             return true;
@@ -381,7 +377,7 @@ impl Tesselator {
         self.draw_polyline_with_dir(points, first_dir, last_dir, z, thickness)
     }
 
-    pub fn draw_line(&mut self, p1: Vector2<f32>, p2: Vector2<f32>, z: f32) -> bool {
+    pub fn draw_line(&mut self, p1: Vec2, p2: Vec2, z: f32) -> bool {
         self.draw_stroke(p1, p2, z, 1.5 / self.zoom)
     }
 
@@ -394,21 +390,13 @@ impl Tesselator {
         self.set_color(color);
         for x in 0..(screen.w / grid_size) as i32 {
             let x = startx + x as f32 * grid_size;
-            self.draw_line(
-                Vector2::new(x, screen.y),
-                Vector2::new(x, screen.y + screen.h),
-                0.01,
-            );
+            self.draw_line(vec2(x, screen.y), vec2(x, screen.y + screen.h), 0.01);
         }
 
         let starty = (screen.y / grid_size).ceil() * grid_size;
         for y in 0..(screen.h / grid_size) as i32 {
             let y = starty + y as f32 * grid_size;
-            self.draw_line(
-                Vector2::new(screen.x, y),
-                Vector2::new(screen.x + screen.w, y),
-                0.01,
-            );
+            self.draw_line(vec2(screen.x, y), vec2(screen.x + screen.w, y), 0.01);
         }
     }
 }

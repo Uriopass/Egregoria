@@ -1,8 +1,9 @@
-use cgmath::{Matrix4, SquareMatrix, Vector2, Vector4, Zero};
+use cgmath::{Matrix4, SquareMatrix, Vector4, Zero};
+use scale::geometry::{vec2, Vec2};
 
 pub struct Camera {
-    pub viewport: Vector2<f32>,
-    pub position: Vector2<f32>,
+    pub viewport: Vec2,
+    pub position: Vec2,
     pub zoom: f32,
     pub projection: Matrix4<f32>,
     pub invprojection: Matrix4<f32>,
@@ -11,8 +12,8 @@ pub struct Camera {
 impl Camera {
     pub fn new(viewport_width: f32, viewport_height: f32, zoom: f32) -> Camera {
         let mut c = Camera {
-            viewport: Vector2::new(viewport_width, viewport_height),
-            position: Vector2::zero(),
+            viewport: vec2(viewport_width, viewport_height),
+            position: Vec2::zero(),
             projection: Matrix4::zero(),
             invprojection: Matrix4::zero(),
             zoom,
@@ -40,7 +41,7 @@ impl Camera {
         self.invprojection = self.projection.invert().unwrap();
     }
 
-    pub fn unproject(&self, screen_coords: Vector2<f32>) -> Vector2<f32> {
+    pub fn unproject(&self, screen_coords: Vec2) -> Vec2 {
         let v = self.invprojection
             * Vector4::new(
                 -1.0 + 2.0 * screen_coords.x / self.viewport.x,
@@ -48,17 +49,17 @@ impl Camera {
                 0.0,
                 1.0,
             );
-        Vector2::new(v.x, v.y)
+        vec2(v.x, v.y)
     }
 
     #[allow(dead_code)]
-    pub fn project(&self, world_coords: Vector2<f32>) -> Vector2<f32> {
+    pub fn project(&self, world_coords: Vec2) -> Vec2 {
         let v = self.projection * Vector4::new(world_coords.x, world_coords.y, 0.0, 1.0);
-        Vector2::new(v.x, v.y)
+        vec2(v.x, v.y)
     }
 
     pub fn set_viewport(&mut self, viewport_width: f32, viewport_height: f32) {
-        self.viewport = Vector2::new(viewport_width, viewport_height);
+        self.viewport = vec2(viewport_width, viewport_height);
         self.update()
     }
 }

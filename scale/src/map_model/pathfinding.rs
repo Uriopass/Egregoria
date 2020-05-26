@@ -1,7 +1,5 @@
 #![allow(clippy::or_fun_call)]
-
 use crate::map_model::{LaneID, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
-use cgmath::{MetricSpace, Zero};
 use ordered_float::NotNan;
 
 pub trait Pathfinder {
@@ -33,7 +31,7 @@ impl Pathfinder for PedestrianPath {
                     TraverseKind::Lane(lane_from_id),
                     lane_from.dir_from(inter.id),
                 ),
-                NotNan::new(lane_from.inter_length).unwrap_or(NotNan::zero()),
+                NotNan::new(lane_from.inter_length).unwrap_or(NotNan::new(0.0).unwrap()),
             );
 
             inter
@@ -79,7 +77,7 @@ impl Pathfinder for DirectionalPath {
             inter.turns_from(*p).map(|(x, _)| {
                 (
                     x.dst,
-                    NotNan::new(lanes[x.dst].inter_length).unwrap_or(NotNan::zero()),
+                    NotNan::new(lanes[x.dst].inter_length).unwrap_or(NotNan::new(0.0).unwrap()),
                 )
             })
         };

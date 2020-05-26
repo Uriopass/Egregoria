@@ -30,12 +30,12 @@ pub struct ShadedBatch<T: Shaders> {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ShadedInstanceRaw {
-    model: cgmath::Matrix4<f32>,
+    model: mint::ColumnMatrix4<f32>,
     tint: [f32; 4],
 }
 
 impl ShadedInstanceRaw {
-    pub fn new(model: cgmath::Matrix4<f32>, tint: [f32; 4]) -> Self {
+    pub fn new(model: mint::ColumnMatrix4<f32>, tint: [f32; 4]) -> Self {
         Self { model, tint }
     }
 }

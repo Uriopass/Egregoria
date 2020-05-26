@@ -1,5 +1,5 @@
 use crate::engine_interaction::TimeInfo;
-use crate::geometry::{Vec2, Vec2Impl};
+use crate::geometry::Vec2;
 use crate::map_model::{
     Itinerary, LaneKind, Map, PedestrianPath, Traversable, TraverseDirection, TraverseKind,
 };
@@ -7,7 +7,6 @@ use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::Restrict;
-use cgmath::{Angle, InnerSpace, MetricSpace};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use std::borrow::Borrow;
@@ -45,10 +44,10 @@ impl<'a> System<'a> for PedestrianDecision {
             .for_each(|(coll, trans, kin, pedestrian, mr)| {
                 objective_update(pedestrian, trans, map, time.time);
 
-                let my_obj = cow.get_obj(coll.0);
+                let (_, my_obj) = cow.get(coll.0).unwrap();
                 let neighbors = cow.query_around(trans.position(), 10.0);
 
-                let objs = neighbors.map(|obj| (obj.pos, cow.get_obj(obj.id)));
+                let objs = neighbors.map(|(id, pos)| (Vec2::from(*pos), cow.get(*id).unwrap().1));
 
                 let (desired_v, desired_dir) =
                     calc_decision(pedestrian, trans, kin, map, my_obj, objs);
@@ -90,9 +89,7 @@ pub fn physics(
     let mut ang = vec2!(1.0, 0.0).angle(trans.direction());
 
     const ANG_VEL: f32 = 1.0;
-    ang.0 += delta_ang
-        .0
-        .restrict(-ANG_VEL * time.delta, ANG_VEL * time.delta);
+    ang += delta_ang.restrict(-ANG_VEL * time.delta, ANG_VEL * time.delta);
 
     trans.set_direction(vec2!(ang.cos(), ang.sin()));
 }
