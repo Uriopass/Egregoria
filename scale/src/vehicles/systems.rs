@@ -50,7 +50,7 @@ impl<'a> System<'a> for VehicleDecision {
                 let speed: f32 = self_obj.speed;
                 let danger_length = (speed * speed / (2.0 * vehicle.kind.deceleration())).min(40.0);
                 let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
-                let objs = neighbors.map(|(id, pos)| (Vec2::from(*pos), cow.get(*id).unwrap().1));
+                let objs = neighbors.map(|(id, pos)| (Vec2::from(pos), cow.get(id).unwrap().1));
 
                 calc_decision(vehicle, map, speed, &time, trans, self_obj, objs);
 

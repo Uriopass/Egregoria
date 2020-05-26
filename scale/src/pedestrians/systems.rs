@@ -47,7 +47,7 @@ impl<'a> System<'a> for PedestrianDecision {
                 let (_, my_obj) = cow.get(coll.0).unwrap();
                 let neighbors = cow.query_around(trans.position(), 10.0);
 
-                let objs = neighbors.map(|(id, pos)| (Vec2::from(*pos), cow.get(*id).unwrap().1));
+                let objs = neighbors.map(|(id, pos)| (Vec2::from(pos), cow.get(id).unwrap().1));
 
                 let (desired_v, desired_dir) =
                     calc_decision(pedestrian, trans, kin, map, my_obj, objs);
