@@ -25,6 +25,7 @@ impl MeshBuilder {
         self
     }
 
+    #[inline(always)]
     pub fn extend_with(
         &mut self,
         f: impl Fn(&mut Vec<ColoredVertex>, &mut dyn FnMut(IndexType)) -> (),
