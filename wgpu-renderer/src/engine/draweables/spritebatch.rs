@@ -1,6 +1,4 @@
-use crate::engine::{
-    compile_shader, Drawable, GfxContext, HasPipeline, IndexType, Texture, UvVertex, VBDesc,
-};
+use crate::engine::{compile_shader, Drawable, GfxContext, IndexType, Texture, UvVertex, VBDesc};
 
 use std::rc::Rc;
 use wgpu::{RenderPass, VertexBufferDescriptor};
@@ -153,7 +151,7 @@ impl SpriteBatchBuilder {
     }
 }
 
-impl HasPipeline for SpriteBatch {
+impl Drawable for SpriteBatch {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
         let vert = compile_shader("resources/shaders/spritebatch.vert", None);
         let frag = compile_shader("resources/shaders/spritebatch.frag", None);
@@ -172,9 +170,7 @@ impl HasPipeline for SpriteBatch {
             bindgroupslayouts: layouts,
         }
     }
-}
 
-impl Drawable for SpriteBatch {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
         rp.set_pipeline(&pipeline.pipeline);

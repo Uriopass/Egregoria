@@ -18,10 +18,10 @@ pub struct PreparedPipeline {
     pub bindgroupslayouts: Vec<BindGroupLayout>,
 }
 
-pub trait HasPipeline: 'static {
-    fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline;
-}
-
 pub trait Drawable {
+    fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline
+    where
+        Self: Sized;
+
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>);
 }

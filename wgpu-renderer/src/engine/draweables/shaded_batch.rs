@@ -1,6 +1,4 @@
-use crate::engine::{
-    CompiledShader, Drawable, GfxContext, HasPipeline, IndexType, UvVertex, VBDesc,
-};
+use crate::engine::{CompiledShader, Drawable, GfxContext, IndexType, UvVertex, VBDesc};
 
 use std::marker::PhantomData;
 use std::rc::Rc;
@@ -113,7 +111,7 @@ impl<T: Shaders> ShadedBatchBuilder<T> {
     }
 }
 
-impl<T: 'static + Shaders> HasPipeline for ShadedBatch<T> {
+impl<T: 'static + Shaders> Drawable for ShadedBatch<T> {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
         let vert = T::vert_shader();
         let frag = T::frag_shader();
@@ -130,9 +128,7 @@ impl<T: 'static + Shaders> HasPipeline for ShadedBatch<T> {
             bindgroupslayouts: vec![],
         }
     }
-}
 
-impl<T: 'static + Shaders> Drawable for ShadedBatch<T> {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
         rp.set_pipeline(&pipeline.pipeline);

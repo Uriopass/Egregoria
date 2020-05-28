@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use crate::engine::{
-    compile_shader, ColoredUvVertex, Drawable, GfxContext, HasPipeline, IndexType, Texture, VBDesc,
+    compile_shader, ColoredUvVertex, Drawable, GfxContext, IndexType, Texture, VBDesc,
 };
 use wgpu::RenderPass;
 
@@ -75,7 +75,7 @@ impl TexturedMeshBuilder {
     }
 }
 
-impl HasPipeline for TexturedMesh {
+impl Drawable for TexturedMesh {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
         let layouts = vec![Texture::bindgroup_layout(&gfx.device)];
 
@@ -94,9 +94,7 @@ impl HasPipeline for TexturedMesh {
             bindgroupslayouts: layouts,
         }
     }
-}
 
-impl Drawable for TexturedMesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
         rp.set_pipeline(&pipeline.pipeline);
