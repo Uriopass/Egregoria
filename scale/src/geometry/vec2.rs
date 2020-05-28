@@ -118,6 +118,17 @@ impl Mul<Vec2> for Vec2 {
     }
 }
 
+impl Div<Vec2> for f32 {
+    type Output = Vec2;
+
+    fn div(self, rhs: Vec2) -> Self::Output {
+        Vec2 {
+            x: self / rhs.x,
+            y: self / rhs.y,
+        }
+    }
+}
+
 impl Div<f32> for Vec2 {
     type Output = Vec2;
 

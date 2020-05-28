@@ -4,7 +4,6 @@ use crate::engine::{
 };
 use crate::game_loop::State;
 use crate::rendering::imgui_wrapper::GuiRenderContext;
-use cgmath::SquareMatrix;
 use glsl_to_spirv::ShaderType;
 use std::any::TypeId;
 use std::collections::HashMap;
@@ -28,7 +27,7 @@ pub struct GfxContext {
     pub sc_desc: SwapChainDescriptor,
     pub pipelines: HashMap<TypeId, PreparedPipeline>,
     pub queue_buffer: Vec<CommandBuffer>,
-    pub projection: Uniform<cgmath::Matrix4<f32>>,
+    pub projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub projection_layout: wgpu::BindGroupLayout,
     pub samples: u32,
     pub multi_frame: wgpu::TextureView,
@@ -78,8 +77,12 @@ impl GfxContext {
         let depth_texture = Texture::create_depth_texture(&device, &sc_desc, samples);
 
         let projection_layout =
-            Uniform::<cgmath::Matrix4<f32>>::bindgroup_layout(&device, 0, ShaderStage::VERTEX);
-        let projection = Uniform::new(cgmath::Matrix4::identity(), &device, &projection_layout);
+            Uniform::<mint::ColumnMatrix4<f32>>::bindgroup_layout(&device, 0, ShaderStage::VERTEX);
+        let projection = Uniform::new(
+            mint::ColumnMatrix4::from([0.0; 16]),
+            &device,
+            &projection_layout,
+        );
 
         let multi_frame = Self::create_multisampled_framebuffer(&sc_desc, &device, samples);
 
@@ -108,7 +111,7 @@ impl GfxContext {
         me
     }
 
-    pub fn set_proj(&mut self, proj: cgmath::Matrix4<f32>) {
+    pub fn set_proj(&mut self, proj: mint::ColumnMatrix4<f32>) {
         self.projection.value = proj;
     }
 

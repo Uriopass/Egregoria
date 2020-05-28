@@ -33,7 +33,7 @@ impl CameraHandler {
 
     pub fn update(&mut self, ctx: &mut Context) {
         self.camera.update();
-        ctx.gfx.set_proj(self.camera.projection);
+        ctx.gfx.set_proj(self.camera.projection());
     }
 
     pub fn get_screen_box(&self) -> Rect {
@@ -53,8 +53,8 @@ impl CameraHandler {
         Tesselator::new(Some(self.get_screen_box()), self.zoom())
     }
 
-    pub fn projection(&self) -> cgmath::Matrix4<f32> {
-        self.camera.projection
+    pub fn projection(&self) -> mint::ColumnMatrix4<f32> {
+        self.camera.projection()
     }
 
     pub fn resize(&mut self, ctx: &mut Context, width: f32, height: f32) {
