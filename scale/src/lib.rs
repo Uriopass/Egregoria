@@ -32,16 +32,22 @@ pub mod interaction;
 pub mod map_model;
 pub mod pedestrians;
 pub mod physics;
+pub mod rand_provider;
 pub mod rendering;
 pub mod vehicles;
 
 pub use imgui;
+pub use rand_provider::RandProvider;
 pub use specs;
 use specs::shrev::EventChannel;
 use specs::world::EntitiesRes;
 
+const RNG_SEED: u64 = 123;
+
 pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     let collision_world: CollisionWorld = CollisionWorld::new(50);
+
+    println!("Seed is {}", RNG_SEED);
 
     // Resources init
     world.insert(EntitiesRes::default());
@@ -52,6 +58,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     world.insert(InspectedEntity::default());
     world.insert(FollowEntity::default());
     world.insert(RenderStats::default());
+    world.insert(RandProvider::new(RNG_SEED));
 
     world.register::<Collider>();
     world.register::<MeshRender>();

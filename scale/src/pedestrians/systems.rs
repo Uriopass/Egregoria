@@ -184,7 +184,7 @@ pub fn objective_update(
 }
 
 fn next_objective(map: &Map, last_travers: Option<&Traversable>) -> Option<Itinerary> {
-    let l = map.get_random_lane(LaneKind::Driving)?;
+    let l = map.get_random_lane(LaneKind::Driving, &mut rand::thread_rng())?;
 
     Itinerary::route(
         *last_travers?,

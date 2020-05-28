@@ -7,8 +7,9 @@ use crate::map_model::{
 };
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
-use crate::utils::{rand_det, Restrict};
+use crate::utils::Restrict;
 use crate::vehicles::VehicleComponent;
+use rand::thread_rng;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 
@@ -132,7 +133,7 @@ pub fn objective_update(
 }
 
 fn next_objective(map: &Map, last_travers: Option<&Traversable>) -> Option<Itinerary> {
-    let l = map.get_random_lane(LaneKind::Driving)?;
+    let l = map.get_random_lane(LaneKind::Driving, &mut thread_rng())?;
 
     Itinerary::route(
         *last_travers?,
@@ -164,7 +165,7 @@ pub fn calc_decision<'a>(
     let front_dist = calc_front_dist(vehicle, speed, trans, self_obj, neighs);
 
     if speed.abs() < 0.2 && front_dist < 1.5 {
-        vehicle.wait_time = rand_det::<f32>() * 0.5;
+        vehicle.wait_time = 0.25;
         return;
     }
 
