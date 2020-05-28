@@ -1,6 +1,5 @@
 use crate::engine::{
-    CompiledShader, Drawable, HasPipeline, Mesh, PreparedPipeline, SpriteBatch, Texture,
-    TexturedMesh, Uniform,
+    CompiledShader, Drawable, Mesh, PreparedPipeline, SpriteBatch, Texture, TexturedMesh, Uniform,
 };
 use crate::game_loop::State;
 use crate::rendering::imgui_wrapper::GuiRenderContext;
@@ -284,7 +283,7 @@ impl GfxContext {
             .expect("Pipeline was not registered in context")
     }
 
-    pub fn register_pipeline<T: HasPipeline>(&mut self) {
+    pub fn register_pipeline<T: 'static + Drawable>(&mut self) {
         self.pipelines
             .insert(std::any::TypeId::of::<T>(), T::create_pipeline(self));
     }

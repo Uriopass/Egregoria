@@ -1,6 +1,5 @@
 use crate::engine::{
-    compile_shader, ColoredVertex, Drawable, GfxContext, HasPipeline, IndexType, PreparedPipeline,
-    VBDesc,
+    compile_shader, ColoredVertex, Drawable, GfxContext, IndexType, PreparedPipeline, VBDesc,
 };
 use std::rc::Rc;
 use wgpu::RenderPass;
@@ -69,7 +68,7 @@ pub struct Mesh {
     pub alpha_blend: bool,
 }
 
-impl HasPipeline for Mesh {
+impl Drawable for Mesh {
     fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline {
         let vert = compile_shader("resources/shaders/mesh_shader.vert", None);
         let frag = compile_shader("resources/shaders/mesh_shader.frag", None);
@@ -86,9 +85,7 @@ impl HasPipeline for Mesh {
             bindgroupslayouts: vec![],
         }
     }
-}
 
-impl Drawable for Mesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         rp.set_pipeline(&gfx.get_pipeline::<Self>().pipeline);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
