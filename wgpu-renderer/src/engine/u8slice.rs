@@ -17,15 +17,15 @@ macro_rules! u8slice_impl {
 
 #[repr(transparent)]
 #[derive(Clone, Copy)]
-struct Matrix4NT(cgmath::Matrix4<f32>);
+struct Matrix4NT(mint::ColumnMatrix4<f32>);
 
 unsafe impl bytemuck::Pod for Matrix4NT {}
 unsafe impl bytemuck::Zeroable for Matrix4NT {}
 
-impl ToU8Slice for [cgmath::Matrix4<f32>] {
+impl ToU8Slice for [mint::ColumnMatrix4<f32>] {
     fn to_slice<'a>(&'a self) -> &'a [u8] {
         let v: &'a [Matrix4NT] =
-            unsafe { &*(self as *const [cgmath::Matrix4<f32>] as *const [Matrix4NT]) };
+            unsafe { &*(self as *const [mint::ColumnMatrix4<f32>] as *const [Matrix4NT]) };
         bytemuck::cast_slice(v)
     }
 }
