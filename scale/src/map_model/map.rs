@@ -3,8 +3,9 @@ use crate::geometry::Vec2;
 use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
 };
-use crate::utils::{rand_det, Choose};
 use ordered_float::OrderedFloat;
+use rand::prelude::IteratorRandom;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 
@@ -227,20 +228,14 @@ impl Map {
         &self.intersections
     }
 
-    pub fn get_random_lane(&self, kind: LaneKind) -> Option<&Lane> {
-        let l = self.roads.len();
-        if l == 0 {
-            return None;
-        }
-        let r = (rand_det::<f32>() * l as f32) as usize;
-
-        let (_, road) = self.roads.iter().nth(r).unwrap();
+    pub fn get_random_lane<R: Rng>(&self, kind: LaneKind, r: &mut R) -> Option<&Lane> {
+        let (_, road) = self.roads.iter().choose(r)?;
         let lanes = road
             .lanes_iter()
             .filter(|x| self.lanes[**x].kind == kind)
             .collect::<Vec<&LaneID>>();
 
-        lanes.choose().map(|x| &self.lanes[**x])
+        lanes.iter().choose(r).map(|x| &self.lanes[**x])
     }
 
     pub fn find_road(&self, a: IntersectionID, b: IntersectionID) -> Option<RoadID> {

@@ -6,8 +6,10 @@ use crate::physics::{
 };
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::Color;
-use crate::utils::rand_normal;
+use crate::utils::rand_world;
+use crate::RandProvider;
 use imgui_inspect_derive::*;
+use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};
 use specs::{Component, DenseVecStorage};
@@ -31,14 +33,20 @@ pub fn delete_pedestrian(world: &mut World, e: Entity) {
 pub fn spawn_pedestrian(world: &mut World) {
     let map = world.read_resource::<Map>();
 
-    let lane = unwrap_or!(map.get_random_lane(LaneKind::Walking), return);
+    let lane = unwrap_or!(
+        map.get_random_lane(
+            LaneKind::Walking,
+            &mut world.write_resource::<RandProvider>().rng
+        ),
+        return
+    );
 
-    let pos: Vec2 = if let [a, b, ..] = lane.points.as_slice() {
-        a + (b - a) * crate::utils::rand_det::<f32>()
+    let pos: Vec2 = if let [a, b, ..] = *lane.points.as_slice() {
+        drop(map);
+        a + (b - a) * rand_world::<f32>(world)
     } else {
         return;
     };
-    drop(map);
 
     let size = 0.5;
 
@@ -107,7 +115,10 @@ impl Default for PedestrianComponent {
     fn default() -> Self {
         Self {
             itinerary: Itinerary::default(),
-            walking_speed: rand_normal(1.34f32, 0.26).max(0.5), // https://arxiv.org/pdf/cond-mat/9805244.pdf
+            walking_speed: rand_distr::Normal::new(1.34f32, 0.26) // https://arxiv.org/pdf/cond-mat/9805244.pdf
+                .unwrap()
+                .sample(&mut rand::thread_rng())
+                .max(0.5),
             walk_anim: 0.0,
         }
     }
@@ -126,7 +137,7 @@ pub fn random_pedestrian_shirt_color() -> Color {
 
     let total: f32 = car_colors.iter().map(|x| x.1).sum();
 
-    let r = crate::utils::rand_det::<f32>() * total;
+    let r = rand::random::<f32>() * total;
     let mut partial = 0.0;
     for (col, freq) in &car_colors {
         partial += freq;

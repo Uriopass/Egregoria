@@ -8,7 +8,8 @@ use crate::physics::{
 use crate::rendering::assets::{AssetID, AssetRender};
 use crate::rendering::meshrender_component::{MeshRender, RectRender};
 use crate::rendering::Color;
-use crate::utils::rand_det;
+use crate::utils::rand_world;
+use crate::RandProvider;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};
@@ -147,23 +148,31 @@ impl VehicleKind {
 }
 
 pub fn spawn_new_vehicle(world: &mut World) {
+    let r: f32 = rand_world(world);
+
     let map = world.read_resource::<Map>();
 
-    if let Some(lane) = map.get_random_lane(LaneKind::Driving) {
-        if let [a, b, ..] = lane.points.as_slice() {
-            let diff = b - a;
+    let lane = unwrap_or!(
+        map.get_random_lane(
+            LaneKind::Driving,
+            &mut world.write_resource::<RandProvider>().rng,
+        ),
+        return
+    );
 
-            let pos = Transform::new_cos_sin(*a + rand_det::<f32>() * diff, diff.normalize());
+    if let [a, b, ..] = *lane.points.as_slice() {
+        let diff = b - a;
 
-            let mut it = Itinerary::simple(
-                Traversable::new(TraverseKind::Lane(lane.id), TraverseDirection::Forward),
-                &map,
-            );
-            it.advance(&map);
+        let pos = Transform::new_cos_sin(a + r * diff, diff.normalize());
 
-            drop(map);
-            make_vehicle_entity(world, pos, VehicleComponent::new(it, VehicleKind::Car));
-        }
+        let mut it = Itinerary::simple(
+            Traversable::new(TraverseKind::Lane(lane.id), TraverseDirection::Forward),
+            &map,
+        );
+        it.advance(&map);
+
+        drop(map);
+        make_vehicle_entity(world, pos, VehicleComponent::new(it, VehicleKind::Car));
     }
 }
 
@@ -228,7 +237,7 @@ pub fn get_random_car_color() -> Color {
 
     let total: f32 = car_colors.iter().map(|x| x.1).sum();
 
-    let r = rand_det::<f32>() * total;
+    let r = rand::random::<f32>() * total;
     let mut partial = 0.0;
     for (col, freq) in &car_colors {
         partial += freq;
