@@ -161,7 +161,6 @@ pub fn objective_update(
     map: &Map,
     time: f64,
 ) {
-    pedestrian.itinerary.check_validity(map);
     let mut last_travers = pedestrian.itinerary.get_travers().copied();
 
     if let Some(x) = pedestrian.itinerary.get_point() {
@@ -178,15 +177,16 @@ pub fn objective_update(
                 .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
         }
 
-        pedestrian.itinerary = next_objective(map, last_travers.as_ref())
+        pedestrian.itinerary = next_objective(trans.position(), map, last_travers.as_ref())
             .unwrap_or_else(|| Itinerary::wait_until(time + 10.0));
     }
 }
 
-fn next_objective(map: &Map, last_travers: Option<&Traversable>) -> Option<Itinerary> {
-    let l = map.get_random_lane(LaneKind::Driving, &mut rand::thread_rng())?;
+fn next_objective(pos: Vec2, map: &Map, last_travers: Option<&Traversable>) -> Option<Itinerary> {
+    let l = map.get_random_lane(LaneKind::Walking, &mut rand::thread_rng())?;
 
     Itinerary::route(
+        pos,
         *last_travers?,
         (l.id, l.points.random_along().unwrap()),
         map,
