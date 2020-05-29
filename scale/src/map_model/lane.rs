@@ -196,10 +196,10 @@ impl Lane {
             let elbow = window[1];
             let c = window[2];
 
-            let (x, _): (Vec2, _) = unwrap_or!((elbow - a).dir_dist(), continue);
-            let (y, _) = unwrap_or!((elbow - c).dir_dist(), continue);
+            let x = unwrap_or!((elbow - a).try_normalize(), continue);
+            let y = unwrap_or!((elbow - c).try_normalize(), continue);
 
-            let (mut dir, _) = (x + y).dir_dist().unwrap_or((vec2(-x.y, x.x), 0.0));
+            let mut dir = (x + y).try_normalize().unwrap_or(vec2(-x.y, x.x));
 
             if x.perp_dot(y) < 0.0 {
                 dir = -dir;
@@ -234,9 +234,9 @@ impl Lane {
 
     pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
-            self.points.begin_dir().unwrap()
+            self.points.first_dir().unwrap()
         } else {
-            -self.points.end_dir().unwrap()
+            -self.points.last_dir().unwrap()
         }
     }
 }

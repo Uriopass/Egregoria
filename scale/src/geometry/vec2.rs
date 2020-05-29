@@ -8,7 +8,7 @@ pub struct Vec2 {
     pub y: f32,
 }
 
-pub fn vec2(x: f32, y: f32) -> Vec2 {
+pub const fn vec2(x: f32, y: f32) -> Vec2 {
     Vec2 { x, y }
 }
 
@@ -261,13 +261,19 @@ impl Vec2 {
     }
 
     #[inline]
+    pub fn try_normalize(self) -> Option<Vec2> {
+        let m = self.magnitude();
+        if m > std::f32::EPSILON {
+            Some(self / m)
+        } else {
+            None
+        }
+    }
+
+    #[inline]
     pub fn normalize(self) -> Vec2 {
         let m = self.magnitude();
-        if m > 0.0 {
-            self / m
-        } else {
-            self
-        }
+        self / m
     }
 
     #[inline]

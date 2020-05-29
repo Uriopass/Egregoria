@@ -187,7 +187,7 @@ impl RoadRenderer {
                 for w in lane.points.as_slice().windows(2) {
                     let a = w[0];
                     let b = w[1];
-                    let (dir, _) = match (b - a).dir_dist() {
+                    let dir = match (b - a).try_normalize() {
                         Some(x) => x,
                         None => continue,
                     };
