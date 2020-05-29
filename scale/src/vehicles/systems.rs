@@ -79,6 +79,7 @@ fn vehicle_physics(
     let max_ang_vel = (speed.abs() / kind.min_turning_radius()).restrict(0.0, 2.0);
 
     let delta_ang = direction.angle(vehicle.desired_dir);
+
     let mut ang = vec2!(1.0, 0.0).angle(direction);
 
     vehicle.ang_velocity += time.delta * kind.ang_acc();
@@ -104,8 +105,6 @@ pub fn objective_update(
     trans: &Transform,
     map: &Map,
 ) {
-    vehicle.itinerary.check_validity(map);
-
     let mut last_travers = vehicle.itinerary.get_travers().copied();
 
     if let Some(p) = vehicle.itinerary.get_point() {
@@ -127,15 +126,16 @@ pub fn objective_update(
                 .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
         }
 
-        let itinerary = next_objective(map, last_travers.as_ref());
+        let itinerary = next_objective(trans.position(), map, last_travers.as_ref());
         vehicle.itinerary = itinerary.unwrap_or_else(|| Itinerary::wait_until(time.time + 10.0));
     }
 }
 
-fn next_objective(map: &Map, last_travers: Option<&Traversable>) -> Option<Itinerary> {
+fn next_objective(pos: Vec2, map: &Map, last_travers: Option<&Traversable>) -> Option<Itinerary> {
     let l = map.get_random_lane(LaneKind::Driving, &mut thread_rng())?;
 
     Itinerary::route(
+        pos,
         *last_travers?,
         (l.id, l.points.random_along().unwrap()),
         map,

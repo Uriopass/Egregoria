@@ -28,3 +28,13 @@ pub fn pseudo_angle(v: Vec2) -> f32 {
         1.0 - p
     }
 }
+
+pub fn angle_lerp(src: Vec2, dst: Vec2, ang_amount: f32) -> Vec2 {
+    let dot = src.dot(dst);
+    let perp_dot = src.perp_dot(dst);
+
+    if dot > 0.0 && perp_dot < ang_amount {
+        return dst;
+    }
+    return (src + src.perpendicular() * perp_dot.signum() * ang_amount).normalize();
+}

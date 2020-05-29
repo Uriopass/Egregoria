@@ -3,7 +3,7 @@ use crate::geometry::segment::Segment;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
-use std::ops::Index;
+use std::ops::{Index, RangeBounds};
 use std::slice::{Iter, IterMut};
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -59,6 +59,10 @@ impl PolyLine {
         }
     }
 
+    pub fn drain(&mut self, r: impl RangeBounds<usize>) {
+        self.0.drain(r);
+    }
+
     pub fn random_along(&self) -> Option<Vec2> {
         let r: f32 = rand::random();
         match self.n_points() {
@@ -105,7 +109,7 @@ impl PolyLine {
                 .enumerate()
                 .map(|(i, w)| {
                     if let [a, b] = *w {
-                        (i, Segment { a, b }.project(p))
+                        (i + 1, Segment { a, b }.project(p))
                     } else {
                         unsafe { unreachable_unchecked() } // windows(2)
                     }

@@ -49,6 +49,7 @@ impl Itinerary {
     }
 
     pub fn route(
+        pos: Vec2,
         cur: Traversable,
         objective: (LaneID, Vec2),
         map: &Map,
@@ -68,9 +69,13 @@ impl Itinerary {
             cur,
         });
 
+        let mut points = cur.points(map);
+        let (id, _) = points.project_segment(pos)?;
+        points.drain(..id - 1);
+
         let mut it = Self {
             kind,
-            local_path: PolyLine::default(),
+            local_path: points,
         };
         it.advance(map);
         Some(it)
