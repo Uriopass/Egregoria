@@ -1,5 +1,5 @@
 use crate::geometry::polyline::PolyLine;
-use crate::geometry::{vec2, Vec2};
+use crate::geometry::Vec2;
 use crate::map_model::{
     Intersection, IntersectionID, Intersections, Road, TrafficControl, TraverseDirection,
 };
@@ -160,15 +160,15 @@ impl Lane {
         let lane_dist = self.width / 2.0 + dist_from_bottom - parent_road.width / 2.0;
 
         let dir = parent_road.orientation_from(inter.id);
-        let dir_normal: Vec2 = if inter.id == parent_road.src {
-            [-dir.y, dir.x].into()
+        let dir_perp: Vec2 = if inter.id == parent_road.src {
+            -dir.perpendicular()
         } else {
-            [dir.y, -dir.x].into()
+            dir.perpendicular()
         };
 
         let dist = parent_road.interface_from(inter.id);
 
-        inter.pos + dir * dist + dir_normal * lane_dist
+        inter.pos + dir * dist + dir_perp * lane_dist
     }
 
     pub fn gen_pos(
@@ -199,7 +199,7 @@ impl Lane {
             let x = unwrap_or!((elbow - a).try_normalize(), continue);
             let y = unwrap_or!((elbow - c).try_normalize(), continue);
 
-            let mut dir = (x + y).try_normalize().unwrap_or(vec2(-x.y, x.x));
+            let mut dir = (x + y).try_normalize().unwrap_or(-x.perpendicular());
 
             if x.perp_dot(y) < 0.0 {
                 dir = -dir;

@@ -165,8 +165,8 @@ impl Intersection {
             let interf = road.interface_from(self.id);
             let dir = road.orientation_from(self.id);
 
-            let left = self.pos + dir * interf + road.width * 0.5 * vec2!(-dir.y, dir.x);
-            let right = self.pos + dir * interf + road.width * 0.5 * vec2!(dir.y, -dir.x);
+            let left = self.pos + dir * interf - road.width * 0.5 * dir.perpendicular();
+            let right = self.pos + dir * interf + road.width * 0.5 * dir.perpendicular();
 
             let interf2 = next_road.interface_from(self.id);
             let dir2 = next_road.orientation_from(self.id);

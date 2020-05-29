@@ -219,9 +219,9 @@ impl Tesselator {
             return false;
         }
         let ratio = (thickness * 0.5) / dist;
-        let nor: Vec2 = ratio * vec2(-diff.y, diff.x);
+        let perp: Vec2 = ratio * diff.perpendicular();
 
-        let points: [Vec2; 4] = [p1 - nor, p1 + nor, p2 + nor, p2 - nor];
+        let points: [Vec2; 4] = [p1 + perp, p1 - perp, p2 - perp, p2 + perp];
 
         let color: [f32; 4] = self.color.into();
 
@@ -308,7 +308,7 @@ impl Tesselator {
 
                 let mut dir = match (ae + ce).try_normalize() {
                     Some(x) => x,
-                    None => vec2(-ae.y, ae.x),
+                    None => -ae.perpendicular(),
                 };
 
                 if ae.perp_dot(ce) < 0.0 {

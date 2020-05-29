@@ -3,7 +3,6 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
-use scale::geometry::vec2;
 use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
 use scale::physics::Transform;
 use scale::rendering::{from_srgb, LinearColor};
@@ -136,10 +135,9 @@ impl RoadRenderer {
             }
 
             let dir = n.orientation_from(n.dst);
+            let dir_perp = dir.perpendicular();
 
-            let dir_nor = vec2(dir.y, -dir.x);
-
-            let r_center = n.points.last().unwrap() + dir_nor * 2.5 + dir * 2.5;
+            let r_center = n.points.last().unwrap() + dir_perp * 2.5 + dir * 2.5;
 
             if n.control.is_stop_sign() {
                 sr.color = LinearColor::WHITE;
@@ -156,7 +154,7 @@ impl RoadRenderer {
             sr.draw_rect_cos_sin(r_center, Z_SIGNAL, size + 0.1, size * 3.0 + 0.1, dir);
 
             for i in -1..2 {
-                sr.draw_circle(r_center + i as f32 * dir_nor * size, Z_SIGNAL, size * 0.5);
+                sr.draw_circle(r_center + i as f32 * dir_perp * size, Z_SIGNAL, size * 0.5);
             }
             sr.color = n.control.get_behavior(time).as_render_color().into();
 
@@ -167,7 +165,7 @@ impl RoadRenderer {
                 _ => unreachable!(),
             };
 
-            sr.draw_circle(r_center + offset * dir_nor, Z_SIGNAL, size * 0.5);
+            sr.draw_circle(r_center + offset * dir_perp, Z_SIGNAL, size * 0.5);
         }
     }
 

@@ -214,6 +214,14 @@ impl Vec2 {
     }
 
     #[inline]
+    pub fn perpendicular(self) -> Self {
+        Self {
+            x: self.y,
+            y: -self.x,
+        }
+    }
+
+    #[inline]
     pub fn magnitude(self) -> f32 {
         (self.x * self.x + self.y * self.y).sqrt()
     }
@@ -235,7 +243,7 @@ impl Vec2 {
 
     #[inline]
     pub fn perp_dot(self, rhs: Self) -> f32 {
-        self.x * rhs.y - self.y * rhs.x
+        self.dot(rhs.perpendicular())
     }
 
     #[inline]
@@ -252,7 +260,7 @@ impl Vec2 {
     pub fn cossin_angle(self, other: Vec2) -> Vec2 {
         let s = self.normalize();
         let o = other.normalize();
-        s * o + s * vec2!(-o.y, o.x)
+        s * o - s * o.perpendicular()
     }
 
     #[inline]
