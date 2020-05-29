@@ -72,34 +72,28 @@ pub fn spawn_pedestrian(world: &mut World) {
         .with({
             MeshRender::empty(0.35)
                 .add(RectRender {
+                    // Arm 1
                     height: 0.14,
                     width: size * 0.4,
                     offset: vec2!(0.0, size * 0.6),
-                    color: Color::from_hex(0xFFCCA8),
+                    color: Color::from_hex(0xFFCCA8), // Skin color (beige)
                 })
                 .add(RectRender {
+                    // Arm 2
                     height: 0.14,
                     width: size * 0.4,
                     offset: vec2!(0.0, -size * 0.6),
                     color: Color::from_hex(0xFFCCA8),
                 })
                 .add(RectRender {
+                    // Body
                     height: size,
                     width: size * 0.5,
                     color,
                     ..Default::default()
                 })
                 .add(CircleRender {
-                    radius: size * 0.25,
-                    color,
-                    offset: vec2!(0.0, size * 0.5),
-                })
-                .add(CircleRender {
-                    radius: size * 0.25,
-                    color,
-                    offset: vec2!(0.0, -size * 0.5),
-                })
-                .add(CircleRender {
+                    // Head
                     radius: 0.16,
                     color: Color::BLACK,
                     ..Default::default()
