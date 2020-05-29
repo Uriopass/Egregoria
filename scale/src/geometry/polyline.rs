@@ -1,5 +1,6 @@
 use super::Vec2;
 use crate::geometry::segment::Segment;
+use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 use std::ops::Index;
@@ -81,50 +82,50 @@ impl PolyLine {
     }
 
     pub fn project(&self, p: Vec2) -> Option<Vec2> {
-        if self.n_points() <= 1 {
-            return self.first();
-        }
+        self.project_segment(p).map(|x| x.1)
+    }
 
-        if self.n_points() == 2 {
-            return Some(
+    /// Returns the id of the point right after the projection along with the projection
+    /// None if polyline is empty
+    pub fn project_segment(&self, p: Vec2) -> Option<(usize, Vec2)> {
+        match self.n_points() {
+            0 => None,
+            1 => self.first().map(|x| (0, x)),
+            2 => Some((
+                1,
                 Segment {
                     a: self.0[0],
                     b: self.0[1],
                 }
                 .project(p),
-            );
+            )),
+            _ => self
+                .0
+                .windows(2)
+                .enumerate()
+                .map(|(i, w)| {
+                    if let [a, b] = *w {
+                        (i, Segment { a, b }.project(p))
+                    } else {
+                        unsafe { unreachable_unchecked() } // windows(2)
+                    }
+                })
+                .min_by_key(|&(_, proj)| OrderedFloat((p - proj).magnitude2())),
         }
-
-        let mut min_proj = vec2!(0.0, 0.0);
-        let mut min_dist = std::f32::INFINITY;
-
-        for w in self.0.windows(2) {
-            if let [a, b] = w {
-                let proj = Segment { a: *a, b: *b }.project(p);
-                let d = (p - proj).magnitude2();
-                if d <= min_dist {
-                    min_dist = d;
-                    min_proj = proj;
-                }
-            } else {
-                unsafe { unreachable_unchecked() } // windows(2)
-            }
-        }
-        Some(min_proj)
     }
 
-    pub fn begin_dir(&self) -> Option<Vec2> {
+    pub fn first_dir(&self) -> Option<Vec2> {
         if self.0.len() >= 2 {
-            (self[1] - self[0]).dir_dist().map(|(dir, _)| dir)
+            (self[1] - self[0]).try_normalize()
         } else {
             None
         }
     }
 
-    pub fn end_dir(&self) -> Option<Vec2> {
+    pub fn last_dir(&self) -> Option<Vec2> {
         let l = self.0.len();
         if l >= 2 {
-            (self[l - 1] - self[l - 2]).dir_dist().map(|(dir, _)| dir)
+            (self[l - 1] - self[l - 2]).try_normalize()
         } else {
             None
         }
