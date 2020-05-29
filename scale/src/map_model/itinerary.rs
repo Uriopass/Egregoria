@@ -85,10 +85,15 @@ impl Itinerary {
                 if !r.cur.is_valid(map) {
                     return v;
                 }
+
+                let points = r.cur.points(map);
                 if r.reversed_route.is_empty() {
+                    if let Some((id, _)) = points.project_segment(r.end_pos) {
+                        self.local_path.extend(&points.as_slice()[..id]);
+                    }
                     self.local_path.push(r.end_pos);
                 } else {
-                    self.local_path = r.cur.points(map);
+                    self.local_path = points;
                 }
             }
         }

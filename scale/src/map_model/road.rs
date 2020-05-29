@@ -199,9 +199,9 @@ impl Road {
 
     pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
-            self.interpolation_points.begin_dir().unwrap()
+            self.interpolation_points.first_dir().unwrap()
         } else if id == self.dst {
-            -self.interpolation_points.end_dir().unwrap()
+            -self.interpolation_points.last_dir().unwrap()
         } else {
             panic!("Asking dir from from an intersection not conected to the road");
         }

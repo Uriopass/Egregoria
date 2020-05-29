@@ -296,19 +296,19 @@ impl Tesselator {
                 let elbow = window[1];
                 let c = window[2];
 
-                let (ae, _) = match (elbow - a).dir_dist() {
+                let ae = match (elbow - a).try_normalize() {
                     Some(x) => x,
                     None => continue,
                 };
 
-                let (ce, _) = match (elbow - c).dir_dist() {
+                let ce = match (elbow - c).try_normalize() {
                     Some(x) => x,
                     None => continue,
                 };
 
-                let (mut dir, _) = match (ae + ce).dir_dist() {
+                let mut dir = match (ae + ce).try_normalize() {
                     Some(x) => x,
-                    None => ([-ae.y, ae.x].into(), 0.0),
+                    None => vec2(-ae.y, ae.x),
                 };
 
                 if ae.perp_dot(ce) < 0.0 {

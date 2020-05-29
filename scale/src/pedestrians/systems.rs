@@ -111,7 +111,7 @@ pub fn calc_decision<'a>(
     let direction = trans.direction();
 
     let delta_pos: Vec2 = objective - position;
-    let (dir_to_pos, _) = match delta_pos.dir_dist() {
+    let dir_to_pos = match delta_pos.try_normalize() {
         Some(x) => x,
         None => return (vec2!(0.0, 0.0), trans.direction()),
     };
