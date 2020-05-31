@@ -36,5 +36,5 @@ pub fn angle_lerp(src: Vec2, dst: Vec2, ang_amount: f32) -> Vec2 {
     if dot > 0.0 && perp_dot < ang_amount {
         return dst;
     }
-    return (src + src.perpendicular() * perp_dot.signum() * ang_amount).normalize();
+    (src + src.perpendicular() * perp_dot.signum() * ang_amount).normalize()
 }

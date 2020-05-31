@@ -274,6 +274,15 @@ impl Tesselator {
 
         let halfthick = thickness * 0.5;
 
+        /*
+                let b = self.color;
+                self.color = LinearColor::GREEN;
+                for p in points {
+                    self.draw_circle(*p, 1.0, 1.0);
+                }
+                self.color = b;
+        */
+
         let color = self.color.into();
 
         self.meshbuilder.extend_with(move |verts, index_push| {

@@ -1,29 +1,24 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use crate::interaction::{InspectedEntity, Movable, MovedEvent, Selectable, Tool};
+use crate::geometry::polyline::PolyLine;
+use crate::geometry::Vec2;
+use crate::interaction::Tool;
 use crate::map_model::{
-    IntersectionComponent, IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject,
-    ProjectKind,
+    IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind,
 };
 use crate::physics::Transform;
-use crate::rendering::meshrender_component::{CircleRender, LineToRender, MeshRender};
+use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::Color;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
-use specs::shrev::{EventChannel, ReaderId};
-use specs::world::EntitiesRes;
 
 pub struct RoadBuildSystem;
 
-impl RoadBuildState {
+impl RoadBuildResource {
     pub fn new(world: &mut World) -> Self {
-        let reader = world
-            .write_resource::<EventChannel<MovedEvent>>()
-            .register_reader();
-
         world.setup::<RoadBuildData>();
 
         Self {
-            selected: None,
+            build_state: BuildState::Hover,
 
             project_entity: world
                 .create_entity()
@@ -39,53 +34,56 @@ impl RoadBuildState {
                 .build(),
 
             pattern_builder: LanePatternBuilder::new(),
-            reader,
         }
     }
 }
 
 #[derive(SystemData)]
 pub struct RoadBuildData<'a> {
-    entities: Entities<'a>,
-    lazy: Read<'a, LazyUpdate>,
-    moved: Read<'a, EventChannel<MovedEvent>>,
     kbinfo: Read<'a, KeyboardInfo>,
     mouseinfo: Read<'a, MouseInfo>,
     tool: Read<'a, Tool>,
-    self_state: Write<'a, RoadBuildState, PanicHandler>,
+    self_r: Write<'a, RoadBuildResource, PanicHandler>,
     map: Write<'a, Map, PanicHandler>,
-    inspected: Write<'a, InspectedEntity>,
-    intersections: WriteStorage<'a, IntersectionComponent>,
-    transforms: WriteStorage<'a, Transform>,
     meshrender: WriteStorage<'a, MeshRender>,
 }
 
-pub struct RoadBuildState {
-    selected: Option<(Entity, MapProject)>,
+#[derive(Clone, Copy)]
+enum BuildState {
+    Hover,
+    Start(MapProject),
+    Interpolation(Vec2, MapProject),
+}
+
+impl BuildState {
+    #[allow(dead_code)]
+    pub fn proj(&self) -> Option<&MapProject> {
+        use BuildState::*;
+        match self {
+            Hover => None,
+            Start(x) | Interpolation(_, x) => Some(x),
+        }
+    }
+}
+
+pub struct RoadBuildResource {
+    build_state: BuildState,
 
     pub project_entity: Entity,
-
     pub pattern_builder: LanePatternBuilder,
-    reader: ReaderId<MovedEvent>,
 }
 
 impl<'a> System<'a> for RoadBuildSystem {
     type SystemData = RoadBuildData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        let state = &mut data.self_state;
+        let state = &mut data.self_r;
 
         let mr = data.meshrender.get_mut(state.project_entity).unwrap();
 
         if !matches!(*data.tool, Tool::Roadbuild | Tool::Bulldozer) {
-            data.moved.read(&mut state.reader).for_each(drop);
-            state.set_selected(&data.entities, None);
             mr.hide = true;
             return;
-        }
-
-        if matches!(*data.tool, Tool::Bulldozer) {
-            state.set_selected(&data.entities, None);
         }
 
         mr.hide = false;
@@ -94,58 +92,15 @@ impl<'a> System<'a> for RoadBuildSystem {
             _ => Color::BLUE,
         };
 
-        for event in data.moved.read(&mut state.reader) {
-            if let Some((
-                e,
-                MapProject {
-                    kind: ProjectKind::Inter(id),
-                    ..
-                },
-            )) = state.selected
-            {
-                if e == event.entity {
-                    data.map.update_intersection(id, |x| {
-                        x.pos += event.delta_pos;
-                    });
-                }
-            }
-        }
-
         if data.kbinfo.just_pressed.contains(&KeyCode::Escape) {
-            state.set_selected(&data.entities, None);
-        }
-
-        if let Some((
-            e,
-            MapProject {
-                kind: ProjectKind::Inter(_),
-                ..
-            },
-        )) = state.selected
-        {
-            if data.inspected.dirty {
-                state.on_select_dirty(&data.intersections, e, &mut data.map);
-            }
+            state.build_state = BuildState::Hover;
         }
 
         let map: &mut Map = &mut data.map;
 
         let cur_proj = map.project(data.mouseinfo.unprojected);
 
-        let pos_project_ent = data.transforms.get_mut(state.project_entity).unwrap();
-
-        pos_project_ent.set_position(match cur_proj {
-            Some(v)
-                if state
-                    .selected
-                    .map(|(_, x)| compatible(map, x.kind, v.kind))
-                    .unwrap_or(true) =>
-            {
-                v.pos
-            }
-            _ => data.mouseinfo.unprojected,
-        });
-
+        // todo: move this to bulldozer system
         if data.mouseinfo.buttons.contains(&MouseButton::Left)
             && matches!(*data.tool, Tool::Bulldozer)
         {
@@ -170,9 +125,11 @@ impl<'a> System<'a> for RoadBuildSystem {
             return;
         }
 
+        state.update_drawing(&mut data.meshrender, data.mouseinfo.unprojected);
+
         if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
-            match (state.selected, cur_proj) {
-                (sel, None) => {
+            match (state.build_state, cur_proj) {
+                (BuildState::Hover, None) => {
                     // Intersection creation on empty ground
                     let id = map.add_intersection(data.mouseinfo.unprojected);
 
@@ -181,67 +138,123 @@ impl<'a> System<'a> for RoadBuildSystem {
                         kind: ProjectKind::Inter(id),
                     };
 
-                    let ent = make_selected_entity(
-                        &data.entities,
-                        &data.lazy,
-                        state.project_entity,
-                        &map,
-                        hover,
-                    );
-
-                    data.inspected.dirty = false;
-                    data.inspected.e = Some(ent);
-
-                    state.set_selected(&data.entities, Some((ent, hover)));
-
-                    if let Some((_, selected_proj)) = sel {
-                        // Connect if selected
-                        make_connection(map, selected_proj, hover, state.pattern_builder.build());
-                    }
+                    state.build_state = BuildState::Start(hover);
                 }
-                (None, Some(hover)) => {
-                    // Hover selection
-                    let ent = make_selected_entity(
-                        &data.entities,
-                        &data.lazy,
-                        state.project_entity,
-                        &map,
-                        hover,
-                    );
-
-                    if let ProjectKind::Inter(_) = hover.kind {
-                        data.inspected.dirty = false;
-                        data.inspected.e = Some(ent);
-                    }
-
-                    state.set_selected(&data.entities, Some((ent, hover)));
+                (BuildState::Start(v), None) => {
+                    // Set interpolation point
+                    state.build_state = BuildState::Interpolation(data.mouseinfo.unprojected, v);
                 }
-                (Some((_, selected_proj)), Some(hover))
-                    if compatible(map, hover.kind, selected_proj.kind) =>
-                {
-                    // Connection between different things
-                    let selected_after =
-                        make_connection(map, selected_proj, hover, state.pattern_builder.build());
+                (BuildState::Interpolation(interpoint, selected_proj), None) => {
+                    // Interpolated connection to empty
+                    let id = map.add_intersection(data.mouseinfo.unprojected);
 
-                    let ent = make_selected_entity(
-                        &data.entities,
-                        &data.lazy,
-                        state.project_entity,
-                        &map,
-                        hover,
+                    let selected_after = make_connection(
+                        map,
+                        selected_proj,
+                        MapProject {
+                            pos: data.mouseinfo.unprojected,
+                            kind: ProjectKind::Inter(id),
+                        },
+                        Some(interpoint),
+                        state.pattern_builder.build(),
                     );
-
-                    data.inspected.dirty = false;
-                    data.inspected.e = Some(ent);
 
                     let hover = MapProject {
                         pos: data.map.intersections()[selected_after].pos,
                         kind: ProjectKind::Inter(selected_after),
                     };
 
-                    state.set_selected(&data.entities, Some((ent, hover)));
+                    state.build_state = BuildState::Start(hover);
+                }
+                (BuildState::Hover, Some(hover)) => {
+                    // Hover selection
+                    state.build_state = BuildState::Start(hover);
+                }
+                (BuildState::Start(selected_proj), Some(hover))
+                    if compatible(map, hover.kind, selected_proj.kind) =>
+                {
+                    // Straight connection to something
+                    let selected_after = make_connection(
+                        map,
+                        selected_proj,
+                        hover,
+                        None,
+                        state.pattern_builder.build(),
+                    );
+
+                    let hover = MapProject {
+                        pos: data.map.intersections()[selected_after].barycenter,
+                        kind: ProjectKind::Inter(selected_after),
+                    };
+
+                    state.build_state = BuildState::Start(hover);
+                }
+                (BuildState::Interpolation(interpoint, selected_proj), Some(hover))
+                    if compatible(map, hover.kind, selected_proj.kind) =>
+                {
+                    // Interpolated connection to something
+                    let selected_after = make_connection(
+                        map,
+                        selected_proj,
+                        hover,
+                        Some(interpoint),
+                        state.pattern_builder.build(),
+                    );
+
+                    let hover = MapProject {
+                        pos: data.map.intersections()[selected_after].barycenter,
+                        kind: ProjectKind::Inter(selected_after),
+                    };
+
+                    state.build_state = BuildState::Start(hover);
                 }
                 _ => {}
+            }
+        }
+    }
+}
+
+impl RoadBuildResource {
+    pub fn update_drawing(&self, mr: &mut WriteStorage<MeshRender>, mouse: Vec2) {
+        let mr = mr.get_mut(self.project_entity).unwrap();
+        mr.orders.clear();
+
+        match self.build_state {
+            BuildState::Hover => {
+                mr.add(CircleRender {
+                    offset: mouse,
+                    radius: 1.0,
+                    color: Color::BLUE,
+                });
+            }
+            BuildState::Start(x) => {
+                mr.add(CircleRender {
+                    offset: mouse,
+                    radius: 1.0,
+                    color: Color::BLUE,
+                })
+                .add(CircleRender {
+                    offset: x.pos,
+                    radius: 1.0,
+                    color: Color::BLUE,
+                });
+            }
+            BuildState::Interpolation(p, x) => {
+                mr.add(CircleRender {
+                    offset: mouse,
+                    radius: 1.0,
+                    color: Color::BLUE,
+                })
+                .add(CircleRender {
+                    offset: x.pos,
+                    radius: 1.0,
+                    color: Color::BLUE,
+                })
+                .add(CircleRender {
+                    offset: p,
+                    radius: 1.0,
+                    color: Color::GREEN,
+                });
             }
         }
     }
@@ -251,6 +264,7 @@ fn make_connection(
     map: &mut Map,
     from: MapProject,
     to: MapProject,
+    interpoint: Option<Vec2>,
     pattern: LanePattern,
 ) -> IntersectionID {
     use ProjectKind::*;
@@ -274,23 +288,21 @@ fn make_connection(
             mid_idy
         }
         (Inter(src), Inter(dst)) => {
-            if let [id] = map.intersections()[src].roads.as_slice() {
-                let id = *id;
-                let r = &map.roads()[id];
-                let r_src = r.other_end(src);
-                if r.lane_pattern == pattern && r_src != dst {
-                    let rev = r.src == src;
-                    let mut line = map.remove_road(id).interpolation_points_owned();
-                    if rev {
-                        line.reverse();
-                    }
-                    line.push(map.intersections()[dst].pos);
-                    map.remove_intersection(src);
-                    map.connect(r_src, dst, pattern, line);
-                    return dst;
-                }
+            // todo: simplify this
+            if let Some(interpoint) = interpoint {
+                map.connect(
+                    src,
+                    dst,
+                    pattern,
+                    PolyLine::new(vec![
+                        map.intersections()[src].pos,
+                        interpoint,
+                        map.intersections()[dst].pos,
+                    ]),
+                );
+            } else {
+                map.connect_straight(src, dst, pattern);
             }
-            map.connect_straight(src, dst, pattern);
             dst
         }
         (Inter(id_inter), Road(id_road)) | (Road(id_road), Inter(id_inter)) => {
@@ -319,46 +331,6 @@ fn make_connection(
     }
 }
 
-fn make_selected_entity(
-    entities: &EntitiesRes,
-    lazy: &LazyUpdate,
-    project_entity: Entity,
-    map: &Map,
-    hover: MapProject,
-) -> Entity {
-    let mut ent = lazy
-        .create_entity(entities)
-        .with(
-            MeshRender::empty(0.9)
-                .add(CircleRender {
-                    offset: vec2!(0.0, 0.0),
-                    radius: 2.0,
-                    color: Color::BLUE,
-                })
-                .add(LineToRender {
-                    to: project_entity,
-                    color: Color::BLUE,
-                    thickness: 4.0,
-                })
-                .build(),
-        )
-        .with(Transform::new(hover.pos));
-
-    if let ProjectKind::Inter(inter_id) = hover.kind {
-        let inter = &map.intersections()[inter_id];
-        ent = ent
-            .with(IntersectionComponent {
-                id: inter_id,
-                turn_policy: inter.turn_policy,
-                light_policy: inter.light_policy,
-            })
-            .with(Selectable::new(15.0))
-            .with(Movable);
-    }
-
-    ent.build()
-}
-
 fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
     use ProjectKind::*;
     match (x, y) {
@@ -368,27 +340,5 @@ fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
             let r = &map.roads()[id_road];
             r.src != id_inter && r.dst != id_inter
         }
-    }
-}
-
-impl RoadBuildState {
-    fn set_selected(&mut self, entities: &EntitiesRes, sel: Option<(Entity, MapProject)>) {
-        if let Some((e, _)) = self.selected.take() {
-            let _ = entities.delete(e);
-        }
-        self.selected = sel;
-    }
-
-    fn on_select_dirty(
-        &mut self,
-        intersections: &WriteStorage<IntersectionComponent>,
-        selected: Entity,
-        map: &mut Map,
-    ) {
-        let selected_interc = intersections.get(selected).unwrap();
-        map.update_intersection(selected_interc.id, |inter| {
-            inter.turn_policy = selected_interc.turn_policy;
-            inter.light_policy = selected_interc.light_policy;
-        });
     }
 }

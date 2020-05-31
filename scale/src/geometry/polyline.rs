@@ -23,8 +23,12 @@ impl PolyLine {
         Self(Vec::with_capacity(c))
     }
 
-    pub fn extend<'a>(&mut self, s: impl IntoIterator<Item = &'a Vec2>) {
-        self.0.extend(s)
+    pub fn extend<A, T>(&mut self, s: T)
+    where
+        T: IntoIterator<Item = A>,
+        Vec<Vec2>: Extend<A>,
+    {
+        self.0.extend(s);
     }
 
     pub fn pop(&mut self) -> Option<Vec2> {
@@ -64,25 +68,8 @@ impl PolyLine {
     }
 
     pub fn random_along(&self) -> Option<Vec2> {
-        let r: f32 = rand::random();
-        match self.n_points() {
-            0 => None,
-            1 => Some(self[0]),
-            2 => Some(self[0] * r + self[1] * (1.0 - r)),
-            _ => {
-                let l = self.length() * r;
-                let mut partial = 0.0;
-                for w in self.0.windows(2) {
-                    let m = (w[1] - w[0]).magnitude();
-                    if partial + m > l {
-                        let coeff = (l - partial) / m;
-                        return Some(w[0] * coeff + w[1] * (1.0 - coeff));
-                    }
-                    partial += m;
-                }
-                None
-            }
-        }
+        let r: f32 = rand::random::<f32>() * self.length();
+        self.point_along(r)
     }
 
     pub fn project(&self, p: Vec2) -> Option<Vec2> {
@@ -118,6 +105,10 @@ impl PolyLine {
         }
     }
 
+    pub fn segment_vec(&self, id: usize) -> Option<Vec2> {
+        Some(self.get(id + 1)? - self.get(id)?)
+    }
+
     pub fn first_dir(&self) -> Option<Vec2> {
         if self.0.len() >= 2 {
             (self[1] - self[0]).try_normalize()
@@ -132,6 +123,52 @@ impl PolyLine {
             (self[l - 1] - self[l - 2]).try_normalize()
         } else {
             None
+        }
+    }
+
+    pub fn point_along(&self, l: f32) -> Option<Vec2> {
+        match self.n_points() {
+            0 => None,
+            1 => Some(self[0]),
+            2 => {
+                let r = l / self.length();
+                Some(self[0] * r + self[1] * (1.0 - r))
+            }
+            _ => {
+                let mut partial = 0.0;
+                for w in self.0.windows(2) {
+                    let m = (w[1] - w[0]).magnitude();
+                    if partial + m > l {
+                        let coeff = (l - partial) / m;
+                        return Some(w[0] * coeff + w[1] * (1.0 - coeff));
+                    }
+                    partial += m;
+                }
+                None
+            }
+        }
+    }
+
+    pub fn point_dir_along(&self, l: f32) -> Option<(Vec2, Vec2)> {
+        match self.n_points() {
+            0 | 1 => None,
+            2 => {
+                let (dir, m) = (self[1] - self[0]).dir_dist()?;
+                let r = l / m;
+                Some((self[0] * r + self[1] * (1.0 - r), dir))
+            }
+            _ => {
+                let mut partial = 0.0;
+                for w in self.0.windows(2) {
+                    let (dir, m) = unwrap_or!((w[1] - w[0]).dir_dist(), continue);
+                    if partial + m > l {
+                        let coeff = (l - partial) / m;
+                        return Some((w[0] * coeff + w[1] * (1.0 - coeff), dir));
+                    }
+                    partial += m;
+                }
+                None
+            }
         }
     }
 

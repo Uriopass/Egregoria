@@ -1,5 +1,5 @@
 use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
-use crate::interaction::{InspectedEntity, RoadBuildState, Tool};
+use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
 use crate::map_model::{LanePatternBuilder, Map};
 use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
@@ -96,7 +96,10 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .build(&ui, || {
-                    let mut pattern = world.get_mut::<RoadBuildState>().unwrap().pattern_builder;
+                    let mut pattern = world
+                        .get_mut::<RoadBuildResource>()
+                        .unwrap()
+                        .pattern_builder;
 
                     <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
                         &mut [&mut pattern],
@@ -113,7 +116,7 @@ impl Gui {
                         pattern.sidewalks = true;
                     }
 
-                    world.write_resource::<RoadBuildState>().pattern_builder = pattern;
+                    world.write_resource::<RoadBuildResource>().pattern_builder = pattern;
                 });
         }
 

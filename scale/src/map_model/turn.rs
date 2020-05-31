@@ -45,19 +45,18 @@ pub struct Turn {
 const TURN_ANG_ADD: f32 = 0.29;
 const TURN_ANG_MUL: f32 = 0.36;
 const TURN_MUL: f32 = 0.46;
+const N_SPLINE: usize = 6;
 
 impl Turn {
     pub fn new(id: TurnID, kind: TurnKind) -> Self {
         Self {
             id,
-            points: Default::default(),
+            points: PolyLine::with_capacity(N_SPLINE + 2),
             kind,
         }
     }
 
     pub fn make_points(&mut self, lanes: &Lanes) {
-        const N_SPLINE: usize = 6;
-
         self.points.clear();
 
         let src_lane = &lanes[self.id.src];
@@ -90,14 +89,6 @@ impl Turn {
             to_derivative: derivative_dst,
         };
 
-        self.points.push(pos_src);
-        for i in 1..=N_SPLINE {
-            let c = i as f32 / (N_SPLINE + 1) as f32;
-
-            let pos = spline.get(c);
-            debug_assert!(pos.is_finite());
-            self.points.push(pos);
-        }
-        self.points.push(pos_dst);
+        self.points.extend(spline.smart_points(0.3));
     }
 }

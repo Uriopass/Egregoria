@@ -57,6 +57,10 @@ pub struct Lane {
     pub src: IntersectionID,
     pub dst: IntersectionID,
 
+    /// Src and dst implies direction
+    pub src_dir: Vec2,
+    pub dst_dir: Vec2,
+
     /// Always from src to dst
     pub points: PolyLine,
     pub width: f32,
@@ -191,24 +195,31 @@ impl Lane {
         self.points.clear();
         self.points.push(pos_src);
 
-        for window in parent_road.interpolation_points().as_slice().windows(3) {
-            let a = window[0];
-            let elbow = window[1];
-            let c = window[2];
+        if parent_road.interpolation_points().n_points() > 2 {
+            let spline = parent_road.interpolation_spline();
 
-            let x = unwrap_or!((elbow - a).try_normalize(), continue);
-            let y = unwrap_or!((elbow - c).try_normalize(), continue);
+            let points: Vec<Vec2> = spline.smart_points(1.0).collect();
 
-            let mut dir = (x + y).try_normalize().unwrap_or(-x.perpendicular());
+            for window in points.windows(3) {
+                let a = window[0];
+                let elbow = window[1];
+                let c = window[2];
 
-            if x.perp_dot(y) < 0.0 {
-                dir = -dir;
+                let x = unwrap_or!((elbow - a).try_normalize(), continue);
+                let y = unwrap_or!((elbow - c).try_normalize(), continue);
+
+                let mut dir = (x + y).try_normalize().unwrap_or(-x.perpendicular());
+
+                if x.perp_dot(y) < 0.0 {
+                    dir = -dir;
+                }
+
+                let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
+
+                let nor =
+                    mul * (dist_from_bottom - parent_road.width * 0.5 + self.width * 0.5) * dir;
+                self.points.push(elbow + nor);
             }
-
-            let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
-
-            let nor = mul * (dist_from_bottom - parent_road.width * 0.5 + self.width * 0.5) * dir;
-            self.points.push(elbow + nor);
         }
 
         self.points.push(pos_dst);
@@ -234,9 +245,9 @@ impl Lane {
 
     pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
-            self.points.first_dir().unwrap()
+            self.src_dir
         } else {
-            -self.points.last_dir().unwrap()
+            self.dst_dir
         }
     }
 }
