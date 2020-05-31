@@ -7,15 +7,15 @@ use crate::interaction::{
     DeletedEvent, FollowEntity, InspectedAuraSystem, InspectedEntity, MovableSystem, MovedEvent,
     SelectableSystem,
 };
-use crate::interaction::{RoadBuildState, RoadBuildSystem};
+use crate::interaction::{RoadBuildResource, RoadBuildSystem};
 use crate::pedestrians::PedestrianDecision;
 use crate::physics::systems::KinematicsApply;
-use crate::physics::Collider;
 use crate::physics::CollisionWorld;
+use crate::physics::{Collider, Transform};
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::systems::VehicleDecision;
-use specs::{Dispatcher, DispatcherBuilder, World, WorldExt};
+use specs::{Dispatcher, DispatcherBuilder, LazyUpdate, World, WorldExt};
 
 #[macro_use]
 pub mod utils;
@@ -59,7 +59,9 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     world.insert(FollowEntity::default());
     world.insert(RenderStats::default());
     world.insert(RandProvider::new(RNG_SEED));
+    world.insert(LazyUpdate::default());
 
+    world.register::<Transform>();
     world.register::<Collider>();
     world.register::<MeshRender>();
     world.register::<AssetRender>();
@@ -69,7 +71,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     world.insert(EventChannel::<DeletedEvent>::new());
 
     // Systems state init
-    let s = RoadBuildState::new(world);
+    let s = RoadBuildResource::new(world);
     world.insert(s);
 
     // Dispatcher init

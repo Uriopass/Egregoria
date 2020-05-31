@@ -67,8 +67,11 @@ impl RoadRenderer {
         for n in lanes.values() {
             tess.color = LinearColor::WHITE;
 
+            let or_src = n.orientation_from(n.src);
+            let or_dst = -n.orientation_from(n.dst);
+
             let w = n.width + 0.5;
-            tess.draw_polyline(n.points.as_slice(), Z_LANE_BG, w);
+            tess.draw_polyline_with_dir(n.points.as_slice(), or_src, or_dst, Z_LANE_BG, w);
 
             tess.color = match n.kind {
                 LaneKind::Walking => high_gray,
@@ -80,7 +83,7 @@ impl RoadRenderer {
                 _ => Z_LANE,
             };
 
-            tess.draw_polyline(n.points.as_slice(), z, n.width - 0.5);
+            tess.draw_polyline_with_dir(n.points.as_slice(), or_src, or_dst, z, n.width - 0.5);
         }
 
         let mut p = Vec::with_capacity(8);
@@ -182,14 +185,17 @@ impl RoadRenderer {
                 .map(move |x| &lanes[*x])
                 .filter(|l| l.kind.vehicles());
             for lane in lanes {
-                for w in lane.points.as_slice().windows(2) {
-                    let a = w[0];
-                    let b = w[1];
-                    let dir = match (b - a).try_normalize() {
+                let length = lane.points.length();
+                let n_arrows = ((length / 50.0) as i32).max(1);
+
+                for i in 0..n_arrows {
+                    let (mid, dir) = match lane.points.point_dir_along(
+                        lane.points.length() * (1.0 + i as f32) / (1.0 + n_arrows as f32),
+                    ) {
                         Some(x) => x,
                         None => continue,
                     };
-                    let mid = w[0] * 0.5 + w[1] * 0.5;
+
                     self.arrow_builder.instances.push(InstanceRaw::new(
                         Transform::new_cos_sin(mid, dir).to_matrix4(Z_ARROW),
                         [from_srgb(MID_GRAY_V) + fade * 0.6; 3],
