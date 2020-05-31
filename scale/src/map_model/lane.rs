@@ -120,6 +120,18 @@ impl LanePatternBuilder {
         self
     }
 
+    pub fn width(&self) -> f32 {
+        let mut w = 0.0;
+        if self.sidewalks {
+            w += LaneKind::Walking.width() * 2.0;
+        }
+        if self.parking {
+            w += LaneKind::Parking.width() * 2.0;
+        }
+        w += self.n_lanes as f32 * 2.0 * LaneKind::Driving.width();
+        w
+    }
+
     pub fn build(self) -> LanePattern {
         let mut backward = if self.one_way {
             vec![]

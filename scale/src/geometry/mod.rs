@@ -29,6 +29,7 @@ pub fn pseudo_angle(v: Vec2) -> f32 {
     }
 }
 
+// todo: use/test this for cars
 pub fn angle_lerp(src: Vec2, dst: Vec2, ang_amount: f32) -> Vec2 {
     let dot = src.dot(dst);
     let perp_dot = src.perp_dot(dst);

@@ -52,6 +52,11 @@ impl MeshRenderer {
                         let end = start + x.offset;
                         tess.draw_stroke(start, end, mr.z, x.thickness);
                     }
+
+                    MeshRenderEnum::AbsoluteLine(x) => {
+                        tess.color = x.color.into();
+                        tess.draw_stroke(x.src, x.dst, mr.z, x.thickness);
+                    }
                 }
             }
         }

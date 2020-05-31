@@ -58,7 +58,7 @@ impl Gui {
             StyleVar::ItemSpacing([0.0, 0.0]),
         ]);
         imgui::Window::new(im_str!("Toolbox"))
-            .size([80.0, 110.0], imgui::Condition::Always)
+            .size([80.0, 30.0 * 4.0 + 20.0], imgui::Condition::Always)
             .position([w - 80.0, h / 2.0 - 30.0], imgui::Condition::Always)
             .scroll_bar(false)
             .title_bar(true)
@@ -71,6 +71,7 @@ impl Gui {
                 let tools = [
                     (im_str!("Hand"), Tool::Hand),
                     (im_str!("Road Build"), Tool::Roadbuild),
+                    (im_str!("Road Editor"), Tool::RoadEditor),
                     (im_str!("Bulldozer"), Tool::Bulldozer),
                 ];
 
@@ -114,6 +115,7 @@ impl Gui {
 
                     if pattern.n_lanes == 0 {
                         pattern.sidewalks = true;
+                        pattern.parking = false;
                     }
 
                     world.write_resource::<RoadBuildResource>().pattern_builder = pattern;

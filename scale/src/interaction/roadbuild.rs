@@ -1,12 +1,13 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use crate::geometry::polyline::PolyLine;
+use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::interaction::Tool;
 use crate::map_model::{
     IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind,
 };
 use crate::physics::Transform;
-use crate::rendering::meshrender_component::{CircleRender, MeshRender};
+use crate::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
 use crate::rendering::Color;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -125,7 +126,13 @@ impl<'a> System<'a> for RoadBuildSystem {
             return;
         }
 
-        state.update_drawing(&mut data.meshrender, data.mouseinfo.unprojected);
+        state.update_drawing(
+            &mut data.meshrender,
+            cur_proj
+                .map(|x| x.pos)
+                .unwrap_or(data.mouseinfo.unprojected),
+            state.pattern_builder.width(),
+        );
 
         if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
             match (state.build_state, cur_proj) {
@@ -215,46 +222,67 @@ impl<'a> System<'a> for RoadBuildSystem {
 }
 
 impl RoadBuildResource {
-    pub fn update_drawing(&self, mr: &mut WriteStorage<MeshRender>, mouse: Vec2) {
+    pub fn update_drawing(&self, mr: &mut WriteStorage<MeshRender>, proj_pos: Vec2, patwidth: f32) {
         let mr = mr.get_mut(self.project_entity).unwrap();
         mr.orders.clear();
+
+        let transparent_blue = Color {
+            r: 0.3,
+            g: 0.3,
+            b: 1.0,
+            a: 1.0,
+        };
 
         match self.build_state {
             BuildState::Hover => {
                 mr.add(CircleRender {
-                    offset: mouse,
-                    radius: 1.0,
-                    color: Color::BLUE,
+                    offset: proj_pos,
+                    radius: 2.0,
+                    color: transparent_blue,
                 });
             }
             BuildState::Start(x) => {
                 mr.add(CircleRender {
-                    offset: mouse,
-                    radius: 1.0,
-                    color: Color::BLUE,
+                    offset: proj_pos,
+                    radius: patwidth * 0.5,
+                    color: transparent_blue,
                 })
                 .add(CircleRender {
                     offset: x.pos,
-                    radius: 1.0,
-                    color: Color::BLUE,
+                    radius: patwidth * 0.5,
+                    color: transparent_blue,
+                })
+                .add(AbsoluteLineRender {
+                    src: proj_pos,
+                    dst: x.pos,
+                    thickness: patwidth,
+                    color: transparent_blue,
                 });
             }
             BuildState::Interpolation(p, x) => {
-                mr.add(CircleRender {
-                    offset: mouse,
-                    radius: 1.0,
-                    color: Color::BLUE,
-                })
-                .add(CircleRender {
-                    offset: x.pos,
-                    radius: 1.0,
-                    color: Color::BLUE,
-                })
-                .add(CircleRender {
-                    offset: p,
-                    radius: 1.0,
-                    color: Color::GREEN,
-                });
+                let sp = Spline {
+                    from: x.pos,
+                    to: proj_pos,
+                    from_derivative: (p - x.pos) * std::f32::consts::FRAC_1_SQRT_2,
+                    to_derivative: (proj_pos - p) * std::f32::consts::FRAC_1_SQRT_2,
+                };
+                let mut points = sp.smart_points(1.0).peekable();
+                while let Some(v) = points.next() {
+                    mr.add(CircleRender {
+                        offset: v,
+                        radius: patwidth * 0.5,
+                        color: transparent_blue,
+                    });
+
+                    if let Some(peek) = points.peek() {
+                        mr.add(AbsoluteLineRender {
+                            src: v,
+                            dst: *peek,
+                            thickness: patwidth,
+                            color: transparent_blue,
+                        });
+                    }
+                }
             }
         }
     }

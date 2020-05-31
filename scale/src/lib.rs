@@ -5,7 +5,7 @@ use crate::engine_interaction::{KeyboardInfo, RenderStats, TimeInfo};
 use crate::gui::Gui;
 use crate::interaction::{
     DeletedEvent, FollowEntity, InspectedAuraSystem, InspectedEntity, MovableSystem, MovedEvent,
-    SelectableSystem,
+    RoadEditorSystem, SelectableSystem,
 };
 use crate::interaction::{RoadBuildResource, RoadBuildSystem};
 use crate::pedestrians::PedestrianDecision;
@@ -36,6 +36,7 @@ pub mod rand_provider;
 pub mod rendering;
 pub mod vehicles;
 
+use crate::map_model::IntersectionComponent;
 pub use imgui;
 pub use rand_provider::RandProvider;
 pub use specs;
@@ -65,6 +66,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     world.register::<Collider>();
     world.register::<MeshRender>();
     world.register::<AssetRender>();
+    world.register::<IntersectionComponent>();
 
     // Event channels init
     world.insert(EventChannel::<MovedEvent>::new());
@@ -85,6 +87,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
             &["car decision", "pedestrian decision", "selectable"],
         )
         .with(RoadBuildSystem, "rgs", &["movable"])
+        .with(RoadEditorSystem, "res", &["movable"])
         .with(KinematicsApply::new(world), "speed apply", &["movable"])
         .with(
             InspectedAuraSystem::default(),

@@ -3,15 +3,15 @@ use crate::map_model::{IntersectionComponent, Map};
 use specs::prelude::*;
 use specs::world::EntitiesRes;
 
-struct RoadEditor;
+pub struct RoadEditorSystem;
 
 #[derive(Default)]
-struct RoadEditorResource {
+pub struct RoadEditorResource {
     selected: Option<Entity>,
 }
 
 #[derive(SystemData)]
-struct RoadEditorData<'a> {
+pub struct RoadEditorData<'a> {
     entities: Entities<'a>,
     lazy: Read<'a, LazyUpdate>,
     tool: Read<'a, Tool>,
@@ -21,7 +21,7 @@ struct RoadEditorData<'a> {
     intersections: WriteStorage<'a, IntersectionComponent>,
 }
 
-impl<'a> System<'a> for RoadEditor {
+impl<'a> System<'a> for RoadEditorSystem {
     type SystemData = RoadEditorData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {

@@ -16,6 +16,7 @@ pub enum MeshRenderEnum {
     #[serde(skip)]
     LineTo(LineToRender),
     Line(LineRender),
+    AbsoluteLine(AbsoluteLineRender),
 }
 
 impl MeshRenderEnum {
@@ -99,6 +100,11 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
                     args,
                 )
             }
+            MeshRenderEnum::AbsoluteLine(x) => <AbsoluteLineRender as InspectRenderDefault<
+                AbsoluteLineRender,
+            >>::render_mut(
+                &mut [x], label, world, ui, args
+            ),
         }
     }
 }
@@ -118,6 +124,7 @@ mk_from_mr!(CircleRender; |x| MeshRenderEnum::Circle(x));
 mk_from_mr!(RectRender; |x| MeshRenderEnum::Rect(x));
 mk_from_mr!(LineRender; |x| MeshRenderEnum::Line(x));
 mk_from_mr!(LineToRender; |x| MeshRenderEnum::LineTo(x));
+mk_from_mr!(AbsoluteLineRender; |x| MeshRenderEnum::AbsoluteLine(x));
 
 #[derive(Clone, Serialize, Deserialize, Component)]
 pub struct MeshRender {
@@ -263,6 +270,17 @@ pub struct LineToRender {
 pub struct LineRender {
     #[inspect(proxy_type = "InspectVec2")]
     pub offset: Vec2,
+    pub color: Color,
+    #[inspect(proxy_type = "InspectDragf")]
+    pub thickness: f32,
+}
+
+#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
+pub struct AbsoluteLineRender {
+    #[inspect(proxy_type = "InspectVec2")]
+    pub src: Vec2,
+    #[inspect(proxy_type = "InspectVec2")]
+    pub dst: Vec2,
     pub color: Color,
     #[inspect(proxy_type = "InspectDragf")]
     pub thickness: f32,
