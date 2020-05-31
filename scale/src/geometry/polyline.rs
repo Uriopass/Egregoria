@@ -132,7 +132,7 @@ impl PolyLine {
             1 => Some(self[0]),
             2 => {
                 let r = l / self.length();
-                Some(self[0] * r + self[1] * (1.0 - r))
+                Some(self[0] * (1.0 - r) + self[1] * r)
             }
             _ => {
                 let mut partial = 0.0;
@@ -140,7 +140,7 @@ impl PolyLine {
                     let m = (w[1] - w[0]).magnitude();
                     if partial + m > l {
                         let coeff = (l - partial) / m;
-                        return Some(w[0] * coeff + w[1] * (1.0 - coeff));
+                        return Some(w[0] * (1.0 - coeff) + w[1] * coeff);
                     }
                     partial += m;
                 }
@@ -155,7 +155,7 @@ impl PolyLine {
             2 => {
                 let (dir, m) = (self[1] - self[0]).dir_dist()?;
                 let r = l / m;
-                Some((self[0] * r + self[1] * (1.0 - r), dir))
+                Some((self[0] * (1.0 - r) + self[1] * r, dir))
             }
             _ => {
                 let mut partial = 0.0;
@@ -163,7 +163,7 @@ impl PolyLine {
                     let (dir, m) = unwrap_or!((w[1] - w[0]).dir_dist(), continue);
                     if partial + m > l {
                         let coeff = (l - partial) / m;
-                        return Some((w[0] * coeff + w[1] * (1.0 - coeff), dir));
+                        return Some((w[0] * (1.0 - coeff) + w[1] * coeff, dir));
                     }
                     partial += m;
                 }
