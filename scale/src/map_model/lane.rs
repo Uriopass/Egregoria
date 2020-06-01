@@ -120,7 +120,7 @@ impl LanePatternBuilder {
         self
     }
 
-    pub fn width(&self) -> f32 {
+    pub fn width(self) -> f32 {
         let mut w = 0.0;
         if self.sidewalks {
             w += LaneKind::Walking.width() * 2.0;

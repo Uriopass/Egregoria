@@ -207,6 +207,10 @@ impl Intersection {
         }
     }
 
+    pub fn neighbors<'a>(&'a self, roads: &'a Roads) -> impl Iterator<Item = IntersectionID> + 'a {
+        self.roads.iter().map(move |&x| roads[x].other_end(self.id))
+    }
+
     pub fn find_turn(&self, needle: TurnID) -> Option<&Turn> {
         self.turns
             .iter()

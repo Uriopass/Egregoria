@@ -1,10 +1,12 @@
+pub use self::bulldozer::*;
 pub use self::follow::*;
 pub use self::inspected_aura::*;
 pub use self::movable::*;
 pub use self::roadbuild::*;
+pub use self::roadeditor::*;
 pub use self::selectable::*;
-pub use roadeditor::*;
 
+mod bulldozer;
 mod follow;
 mod inspected_aura;
 mod movable;
@@ -19,6 +21,8 @@ pub enum Tool {
     RoadEditor,
     Bulldozer,
 }
+
+const Z_TOOL: f32 = 0.9;
 
 impl Default for Tool {
     fn default() -> Self {
