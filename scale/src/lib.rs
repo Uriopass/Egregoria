@@ -4,8 +4,9 @@
 use crate::engine_interaction::{KeyboardInfo, RenderStats, TimeInfo};
 use crate::gui::Gui;
 use crate::interaction::{
-    DeletedEvent, FollowEntity, InspectedAuraSystem, InspectedEntity, MovableSystem, MovedEvent,
-    RoadEditorSystem, SelectableSystem,
+    BulldozerResource, BulldozerSystem, DeletedEvent, FollowEntity, InspectedAuraSystem,
+    InspectedEntity, MovableSystem, MovedEvent, RoadEditorResource, RoadEditorSystem,
+    SelectableSystem,
 };
 use crate::interaction::{RoadBuildResource, RoadBuildSystem};
 use crate::pedestrians::PedestrianDecision;
@@ -50,7 +51,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
 
     println!("Seed is {}", RNG_SEED);
 
-    // Resources init
+    // Basic resources init
     world.insert(EntitiesRes::default());
     world.insert(TimeInfo::default());
     world.insert(collision_world);
@@ -76,6 +77,12 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     let s = RoadBuildResource::new(world);
     world.insert(s);
 
+    let s = RoadEditorResource::new(world);
+    world.insert(s);
+
+    let s = BulldozerResource::new(world);
+    world.insert(s);
+
     // Dispatcher init
     let mut dispatch = DispatcherBuilder::new()
         .with(VehicleDecision, "car decision", &[])
@@ -86,8 +93,9 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
             "movable",
             &["car decision", "pedestrian decision", "selectable"],
         )
-        .with(RoadBuildSystem, "rgs", &["movable"])
-        .with(RoadEditorSystem, "res", &["movable"])
+        .with(RoadBuildSystem, "rgs", &[])
+        .with(RoadEditorSystem, "res", &[])
+        .with(BulldozerSystem, "bull", &[])
         .with(KinematicsApply::new(world), "speed apply", &["movable"])
         .with(
             InspectedAuraSystem::default(),

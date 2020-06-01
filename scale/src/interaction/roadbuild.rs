@@ -2,7 +2,7 @@ use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
-use crate::interaction::Tool;
+use crate::interaction::{Tool, Z_TOOL};
 use crate::map_model::{
     IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind,
 };
@@ -30,7 +30,7 @@ impl RoadBuildResource {
                         color: Color::BLUE,
                         ..Default::default()
                     },
-                    0.9,
+                    Z_TOOL,
                 ))
                 .build(),
 
@@ -82,16 +82,11 @@ impl<'a> System<'a> for RoadBuildSystem {
 
         let mr = data.meshrender.get_mut(state.project_entity).unwrap();
 
-        if !matches!(*data.tool, Tool::Roadbuild | Tool::Bulldozer) {
+        if !matches!(*data.tool, Tool::Roadbuild) {
             mr.hide = true;
             return;
         }
-
         mr.hide = false;
-        mr.orders[0].as_circle_mut().color = match *data.tool {
-            Tool::Bulldozer => Color::RED,
-            _ => Color::BLUE,
-        };
 
         if data.kbinfo.just_pressed.contains(&KeyCode::Escape) {
             state.build_state = BuildState::Hover;
@@ -100,31 +95,6 @@ impl<'a> System<'a> for RoadBuildSystem {
         let map: &mut Map = &mut data.map;
 
         let cur_proj = map.project(data.mouseinfo.unprojected);
-
-        // todo: move this to bulldozer system
-        if data.mouseinfo.buttons.contains(&MouseButton::Left)
-            && matches!(*data.tool, Tool::Bulldozer)
-        {
-            match cur_proj.map(|x| x.kind) {
-                Some(ProjectKind::Inter(id)) => data.map.remove_intersection(id),
-                Some(ProjectKind::Road(id)) => {
-                    let r = &data.map.roads()[id];
-                    let src = r.src;
-                    let dst = r.dst;
-
-                    data.map.remove_road(id);
-
-                    if data.map.intersections()[src].roads.is_empty() {
-                        data.map.remove_intersection(src);
-                    }
-                    if data.map.intersections()[dst].roads.is_empty() {
-                        data.map.remove_intersection(dst);
-                    }
-                }
-                _ => {}
-            }
-            return;
-        }
 
         state.update_drawing(
             &mut data.meshrender,
