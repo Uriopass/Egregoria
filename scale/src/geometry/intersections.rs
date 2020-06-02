@@ -10,8 +10,8 @@ pub fn intersection_point(r1: Ray, r2: Ray) -> Option<Vec2> {
     let div = r1.dir.perp_dot(r2.dir);
 
     let p_diff = r1.from - r2.from;
-    let t = -r2.dir.perp_dot(p_diff);
-    let s = -r1.dir.perp_dot(p_diff);
+    let t = r2.dir.perp_dot(p_diff);
+    let s = r1.dir.perp_dot(p_diff);
 
     if t * div > 0.0 && s * div > 0.0 {
         Some(r1.from + r1.dir * t / div)
@@ -24,8 +24,8 @@ pub fn both_dist_to_inter(r1: Ray, r2: Ray) -> Option<(f32, f32)> {
     let div = r1.dir.perp_dot(r2.dir);
 
     let p_diff = r1.from - r2.from;
-    let t = -r2.dir.perp_dot(p_diff);
-    let s = -r1.dir.perp_dot(p_diff);
+    let t = r2.dir.perp_dot(p_diff);
+    let s = r1.dir.perp_dot(p_diff);
 
     if t * div > 0.0 && s * div > 0.0 {
         Some((t / div, s / div))
