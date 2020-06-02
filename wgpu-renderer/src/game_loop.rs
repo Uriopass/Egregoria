@@ -11,6 +11,7 @@ use scale::physics::Transform;
 use scale::rendering::{Color, LinearColor};
 use scale::specs::RunNow;
 use scale::specs::WorldExt;
+use scale::utils::DebugOrder;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
@@ -129,6 +130,18 @@ impl<'a> State<'a> {
         MeshRenderer::render(&mut self.world, &mut tess);
 
         debug_pathfinder(&mut tess, &self.world);
+
+        for (order, col) in scale::utils::DEBUG_ORDERS.lock().unwrap().drain(..) {
+            tess.color = col.into();
+            match order {
+                DebugOrder::Point { pos, size } => {
+                    tess.draw_circle(pos, 3.0, size);
+                }
+                DebugOrder::Line { from, to } => {
+                    tess.draw_line(from, to, 3.0);
+                }
+            }
+        }
 
         if let Some(x) = tess.meshbuilder.build(ctx.gfx) {
             ctx.draw(x)
@@ -251,29 +264,30 @@ fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) -> Optio
 }
 
 #[allow(dead_code)]
-fn debug_rays(tess: &mut Tesselator, time: TimeInfo) {
-    let c = time.time.cos() as f32;
-    let s = time.time.sin() as f32;
+fn debug_rays(tess: &mut Tesselator, world: &scale::specs::World) {
+    let time = world.read_resource::<TimeInfo>();
+    let time = time.time * 0.2;
+    let c = time.cos() as f32;
+    let s = time.sin() as f32;
 
     let r = scale::geometry::intersections::Ray {
         from: 10.0 * vec2(c, s),
         dir: vec2(
-            (time.time * 2.3 + 1.0).cos() as f32,
-            (time.time * 2.3 + 1.0).sin() as f32,
+            (time * 2.3 + 1.0).cos() as f32,
+            (time * 2.3 + 1.0).sin() as f32,
         ),
     };
 
     let r2 = scale::geometry::intersections::Ray {
-        from: 10.0 * vec2((time.time as f32 * 1.5 + 3.0).cos(), s * 2.0),
+        from: 10.0 * vec2((time as f32 * 1.5 + 3.0).cos(), s * 2.0),
         dir: vec2(c, -s),
     };
-
-    let inter = scale::geometry::intersections::intersection_point(r, r2);
 
     tess.color = LinearColor::WHITE;
     tess.draw_line(r.from, r.from + r.dir * 50.0, 0.5);
     tess.draw_line(r2.from, r2.from + r2.dir * 50.0, 0.5);
 
+    let inter = scale::geometry::intersections::intersection_point(r, r2);
     if let Some(v) = inter {
         tess.color = LinearColor::RED;
 
