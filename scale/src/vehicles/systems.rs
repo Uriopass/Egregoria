@@ -163,13 +163,14 @@ pub fn calc_decision<'a>(
 
     let front_dist = calc_front_dist(vehicle, trans, self_obj, neighs);
 
+    let position = trans.position();
     let speed = self_obj.speed;
     if speed.abs() < 0.2 && front_dist < 1.5 {
-        vehicle.wait_time = 0.25;
+        vehicle.wait_time = (position.x * 1000.0).fract().abs() * 0.5;
         return;
     }
 
-    let delta_pos: Vec2 = objective - trans.position();
+    let delta_pos: Vec2 = objective - position;
     let (dir_to_pos, dist_to_pos) = unwrap_or!(delta_pos.dir_dist(), return);
     let time_to_stop = speed / vehicle.kind.deceleration();
     let stop_dist = time_to_stop * speed / 2.0;
