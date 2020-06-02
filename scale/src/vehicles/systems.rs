@@ -48,12 +48,12 @@ impl<'a> System<'a> for VehicleDecision {
                 objective_update(vehicle, &time, trans, &map);
 
                 let (_, self_obj) = cow.get(collider.0).unwrap();
-                let speed: f32 = self_obj.speed;
+                let speed = self_obj.speed;
                 let danger_length = (speed * speed / (2.0 * vehicle.kind.deceleration())).min(40.0);
                 let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
                 let objs = neighbors.map(|(id, pos)| (Vec2::from(pos), cow.get(id).unwrap().1));
 
-                calc_decision(vehicle, map, speed, &time, trans, self_obj, objs);
+                calc_decision(vehicle, map, &time, trans, self_obj, objs);
 
                 vehicle_physics(&time, trans, kin, vehicle, speed);
             });
@@ -146,7 +146,6 @@ fn next_objective(pos: Vec2, map: &Map, last_travers: Option<&Traversable>) -> O
 pub fn calc_decision<'a>(
     vehicle: &mut VehicleComponent,
     map: &Map,
-    speed: f32,
     time: &TimeInfo,
     trans: &Transform,
     self_obj: &PhysicsObject,
@@ -162,8 +161,9 @@ pub fn calc_decision<'a>(
 
     let is_terminal = vehicle.itinerary.is_terminal();
 
-    let front_dist = calc_front_dist(vehicle, speed, trans, self_obj, neighs);
+    let front_dist = calc_front_dist(vehicle, trans, self_obj, neighs);
 
+    let speed = self_obj.speed;
     if speed.abs() < 0.2 && front_dist < 1.5 {
         vehicle.wait_time = 0.25;
         return;
@@ -220,8 +220,7 @@ pub fn calc_decision<'a>(
 }
 
 fn calc_front_dist<'a>(
-    vehicle: &VehicleComponent,
-    speed: f32,
+    vehicle: &mut VehicleComponent,
     trans: &Transform,
     self_obj: &PhysicsObject,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
@@ -237,6 +236,8 @@ fn calc_front_dist<'a>(
     };
 
     let my_radius = self_obj.radius;
+    let speed = self_obj.speed;
+
     let on_lane = vehicle.itinerary.get_travers().unwrap().kind.is_lane();
 
     // Collision avoidance
@@ -273,7 +274,6 @@ fn calc_front_dist<'a>(
                 dist_to_obj -= 1.0;
             }
             min_front_dist = min_front_dist.min(dist_to_obj);
-
             continue;
         }
 
@@ -290,15 +290,12 @@ fn calc_front_dist<'a>(
 
         let (my_dist, his_dist) = unwrap_or!(both_dist_to_inter(my_ray, his_ray), continue);
 
-        if my_dist > 50.0 || his_dist > 50.0 {
-            continue;
-        }
-
         if my_dist - speed.min(2.5) - my_radius
             < his_dist - nei_physics_obj.speed.min(2.5) - nei_physics_obj.radius
         {
             continue;
         }
+
         min_front_dist = min_front_dist.min(dist - my_radius - nei_physics_obj.radius - 5.0);
     }
     min_front_dist
