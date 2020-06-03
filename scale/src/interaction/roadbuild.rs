@@ -1,10 +1,9 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use crate::geometry::polyline::PolyLine;
 use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::interaction::{Tool, Z_TOOL};
 use crate::map_model::{
-    IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind,
+    IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
@@ -286,21 +285,19 @@ fn make_connection(
             mid_idy
         }
         (Inter(src), Inter(dst)) => {
-            // todo: simplify this
-            if let Some(interpoint) = interpoint {
-                map.connect(
-                    src,
-                    dst,
-                    pattern,
-                    PolyLine::new(vec![
-                        map.intersections()[src].pos,
-                        interpoint,
-                        map.intersections()[dst].pos,
-                    ]),
-                );
-            } else {
-                map.connect_straight(src, dst, pattern);
-            }
+            let kind = match interpoint {
+                Some(x) => RoadSegmentKind::Curved(x),
+                None => RoadSegmentKind::Straight,
+            };
+
+            map.connect(
+                src,
+                dst,
+                pattern,
+                vec![map.intersections()[src].pos, map.intersections()[dst].pos],
+                vec![kind],
+            );
+
             dst
         }
         (Inter(id_inter), Road(id_road)) | (Road(id_road), Inter(id_inter)) => {
