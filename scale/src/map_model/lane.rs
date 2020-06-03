@@ -1,8 +1,7 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
-use crate::map_model::{
-    Intersection, IntersectionID, Intersections, Road, TrafficControl, TraverseDirection,
-};
+use crate::map_model::{IntersectionID, Road, TrafficControl, TraverseDirection};
+use either::Either;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -167,51 +166,29 @@ impl Lane {
         }
     }
 
-    fn get_node_pos(
-        &self,
-        inter: &Intersection,
-        parent_road: &Road,
-        dist_from_bottom: f32,
-    ) -> Vec2 {
-        let lane_dist = self.width / 2.0 + dist_from_bottom - parent_road.width / 2.0;
-
-        let dir = parent_road.orientation_from(inter.id);
-        let dir_perp: Vec2 = if inter.id == parent_road.src {
-            -dir.perpendicular()
-        } else {
-            dir.perpendicular()
-        };
-
-        let dist = parent_road.interface_from(inter.id);
-
-        inter.pos + dir * dist + dir_perp * lane_dist
-    }
-
-    pub fn gen_pos(
-        &mut self,
-        intersections: &Intersections,
-        parent_road: &Road,
-        dist_from_bottom: f32,
-    ) {
-        let pos_src = self.get_node_pos(
-            &intersections[parent_road.src],
-            parent_road,
-            dist_from_bottom,
-        );
-        let pos_dst = self.get_node_pos(
-            &intersections[parent_road.dst],
-            parent_road,
-            dist_from_bottom,
-        );
+    pub fn gen_pos(&mut self, parent_road: &Road, dist_from_bottom: f32) {
+        let lane_dist = self.width * 0.5 + dist_from_bottom - parent_road.width * 0.5;
 
         self.points.clear();
-        self.points.push(pos_src);
+        for v in parent_road.interpolation_splines() {
+            let spline = match v {
+                Either::Left(s) => s,
+                Either::Right(segment) => {
+                    let nor = (segment.dst - segment.src).perpendicular();
+                    if self.points.is_empty() {
+                        self.points.push(segment.src + nor * lane_dist);
+                    }
+                    self.points.push(segment.dst + nor * lane_dist);
+                    continue;
+                }
+            };
 
-        if parent_road.interpolation_points().n_points() > 2 {
-            let spline = parent_road.interpolation_spline();
+            if self.points.is_empty() {
+                let nor = -spline.from_derivative.normalize().perpendicular();
+                self.points.push(spline.from + nor * lane_dist);
+            }
 
             let points: Vec<Vec2> = spline.smart_points(1.0).collect();
-
             for window in points.windows(3) {
                 let a = window[0];
                 let elbow = window[1];
@@ -228,13 +205,13 @@ impl Lane {
 
                 let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
 
-                let nor =
-                    mul * (dist_from_bottom - parent_road.width * 0.5 + self.width * 0.5) * dir;
+                let nor = mul * lane_dist * dir;
                 self.points.push(elbow + nor);
             }
-        }
 
-        self.points.push(pos_dst);
+            let nor = -spline.to_derivative.normalize().perpendicular();
+            self.points.push(spline.to + nor * lane_dist);
+        }
 
         if self.dir_from(parent_road.src) == TraverseDirection::Backward {
             self.points.reverse();

@@ -1,10 +1,11 @@
-use crate::geometry::polyline::PolyLine;
+use crate::geometry::segment::Segment;
 use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::map_model::{
     IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
     Roads, TrafficControl,
 };
+use either::Either;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -18,13 +19,21 @@ new_key_type! {
     pub struct RoadID;
 }
 
+#[derive(Clone, Copy, Serialize, Deserialize)]
+pub enum RoadSegmentKind {
+    Straight,
+    Curved(Vec2),
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Road {
     pub id: RoadID,
     pub src: IntersectionID,
     pub dst: IntersectionID,
 
-    major_interpolation_points: PolyLine,
+    points: Vec<Vec2>,
+    segments: Vec<RoadSegmentKind>,
+
     pub length: f32,
     pub width: f32,
 
@@ -44,19 +53,24 @@ impl Road {
     pub fn make(
         src: IntersectionID,
         dst: IntersectionID,
-        interpolation_points: PolyLine,
+        points: Vec<Vec2>,
+        segments: Vec<RoadSegmentKind>,
         lane_pattern: LanePattern,
         intersections: &Intersections,
         lanes: &mut Lanes,
         store: &mut Roads,
     ) -> RoadID {
+        debug_assert!(points.len() >= 2);
+        debug_assert!(segments.len() == points.len() - 1);
+
         let id = store.insert_with_key(|id| Self {
             id,
             src,
             dst,
             src_interface: 9.0,
             dst_interface: 9.0,
-            major_interpolation_points: interpolation_points,
+            points,
+            segments,
             width: 1.0,
             length: 1.0,
             lanes_forward: vec![],
@@ -113,8 +127,8 @@ impl Road {
         lane_type: LaneKind,
         direction: LaneDirection,
     ) -> LaneID {
-        let src_dir = self.interpolation_points().first_dir().unwrap();
-        let dst_dir = -self.interpolation_points().last_dir().unwrap();
+        let src_dir = self.src_dir();
+        let dst_dir = self.dst_dir();
 
         let (src, dst, src_dir, dst_dir) = match direction {
             LaneDirection::Forward => (self.src, self.dst, src_dir, dst_dir),
@@ -140,32 +154,43 @@ impl Road {
     }
 
     pub fn gen_pos(&mut self, intersections: &Intersections, lanes: &mut Lanes) {
-        *self.major_interpolation_points.first_mut().unwrap() = intersections[self.src].pos;
-        *self.major_interpolation_points.last_mut().unwrap() = intersections[self.dst].pos;
-        self.length = self.major_interpolation_points.length();
+        *self.points.first_mut().unwrap() = intersections[self.src].pos
+            + self.orientation_from(self.src) * self.interface_from(self.src);
+        *self.points.last_mut().unwrap() = intersections[self.dst].pos
+            + self.orientation_from(self.dst) * self.interface_from(self.dst);
+
+        self.length = self
+            .points
+            .windows(2)
+            .map(|w| (w[1] - w[0]).magnitude())
+            .sum(); // fixme
 
         self.width = self.lanes_iter().map(|&x| lanes[x].width).sum();
 
         let mut dist_from_bottom = 0.0;
         for &id in self.lanes_iter() {
             let l = &mut lanes[id];
-            l.gen_pos(intersections, self, dist_from_bottom);
+            l.gen_pos(self, dist_from_bottom);
             dist_from_bottom += l.width;
         }
     }
 
-    pub fn interpolation_spline(&self) -> Spline {
-        let p = &self.major_interpolation_points;
-        let l = p.n_points();
-        let from = p[0] + self.orientation_from(self.src) * self.interface_from(self.src);
-        let to = p[l - 1] + self.orientation_from(self.dst) * self.interface_from(self.dst);
-
-        Spline {
-            from,
-            to,
-            from_derivative: (p[1] - from) * std::f32::consts::FRAC_1_SQRT_2,
-            to_derivative: (to - p[l - 2]) * std::f32::consts::FRAC_1_SQRT_2,
-        }
+    pub fn interpolation_splines(&self) -> impl Iterator<Item = Either<Spline, Segment>> + '_ {
+        self.points
+            .windows(2)
+            .zip(self.segments.iter())
+            .map(|x| match x {
+                (&[from, to], &RoadSegmentKind::Curved(elbow)) => either::Left(Spline {
+                    from,
+                    to,
+                    from_derivative: (elbow - from) * std::f32::consts::FRAC_1_SQRT_2,
+                    to_derivative: (to - elbow) * std::f32::consts::FRAC_1_SQRT_2,
+                }),
+                (&[from, to], RoadSegmentKind::Straight) => {
+                    either::Right(Segment { src: from, dst: to })
+                }
+                _ => unreachable!(),
+            })
     }
 
     pub fn interface_from(&self, id: IntersectionID) -> f32 {
@@ -219,9 +244,9 @@ impl Road {
 
     pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
-            self.major_interpolation_points.first_dir().unwrap()
+            self.src_dir()
         } else if id == self.dst {
-            -self.major_interpolation_points.last_dir().unwrap()
+            self.dst_dir()
         } else {
             panic!("Asking dir from from an intersection not conected to the road");
         }
@@ -247,20 +272,31 @@ impl Road {
         }
     }
 
-    pub fn interpolation_points(&self) -> &PolyLine {
-        &self.major_interpolation_points
+    pub fn project(&self, p: Vec2) -> Vec2 {
+        p // fixme
     }
 
-    pub fn interpolation_points_owned(self) -> PolyLine {
-        self.major_interpolation_points
+    pub fn src_dir(&self) -> Vec2 {
+        match self.segments[0] {
+            RoadSegmentKind::Straight => (self.points[1] - self.points[0]).normalize(),
+            RoadSegmentKind::Curved(p) => (p - self.src_point()).normalize(),
+        }
+    }
+
+    pub fn dst_dir(&self) -> Vec2 {
+        let l = self.points.len();
+        match self.segments.last().unwrap() {
+            RoadSegmentKind::Straight => (self.points[l - 2] - self.points[l - 1]).normalize(),
+            &RoadSegmentKind::Curved(p) => (p - self.dst_point()).normalize(),
+        }
     }
 
     pub fn src_point(&self) -> Vec2 {
-        self.major_interpolation_points.first().unwrap()
+        self.points[0]
     }
 
     pub fn dst_point(&self) -> Vec2 {
-        self.major_interpolation_points.last().unwrap()
+        *self.points.last().unwrap()
     }
 
     pub fn other_end(&self, my_end: IntersectionID) -> IntersectionID {

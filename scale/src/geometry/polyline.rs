@@ -4,7 +4,7 @@ use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 use std::ops::{Index, RangeBounds};
-use std::slice::{Iter, IterMut};
+use std::slice::{Iter, IterMut, Windows};
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct PolyLine(Vec<Vec2>);
@@ -85,8 +85,8 @@ impl PolyLine {
             2 => Some((
                 1,
                 Segment {
-                    a: self.0[0],
-                    b: self.0[1],
+                    src: self.0[0],
+                    dst: self.0[1],
                 }
                 .project(p),
             )),
@@ -96,7 +96,7 @@ impl PolyLine {
                 .enumerate()
                 .map(|(i, w)| {
                     if let [a, b] = *w {
-                        (i + 1, Segment { a, b }.project(p))
+                        (i + 1, Segment { src: a, dst: b }.project(p))
                     } else {
                         unsafe { unreachable_unchecked() } // windows(2)
                     }
@@ -206,6 +206,10 @@ impl PolyLine {
 
     pub fn iter_mut(&mut self) -> IterMut<Vec2> {
         self.0.iter_mut()
+    }
+
+    pub fn windows(&self, id: usize) -> Windows<'_, Vec2> {
+        self.0.windows(id)
     }
 }
 

@@ -1,7 +1,7 @@
-use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
 use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
+    RoadSegmentKind,
 };
 use ordered_float::OrderedFloat;
 use rand::prelude::IteratorRandom;
@@ -107,10 +107,8 @@ impl Map {
             src,
             dst,
             pattern,
-            PolyLine::new(vec![
-                self.intersections[src].pos,
-                self.intersections[dst].pos,
-            ]),
+            vec![self.intersections[src].pos, self.intersections[dst].pos],
+            vec![RoadSegmentKind::Straight],
         )
     }
     pub fn connect(
@@ -118,13 +116,15 @@ impl Map {
         src: IntersectionID,
         dst: IntersectionID,
         pattern: LanePattern,
-        interpolation_points: PolyLine,
+        points: Vec<Vec2>,
+        segments: Vec<RoadSegmentKind>,
     ) -> RoadID {
         self.dirty = true;
         let road_id = Road::make(
             src,
             dst,
-            interpolation_points,
+            points,
+            segments,
             pattern,
             &self.intersections,
             &mut self.lanes,
@@ -185,7 +185,7 @@ impl Map {
             .roads()
             .values()
             .map(|road| {
-                let proj = road.interpolation_points().project(pos).unwrap();
+                let proj = road.project(pos);
                 (road, proj.distance2(pos), proj)
             })
             .min_by_key(|(_, d, _)| OrderedFloat(*d))?;
