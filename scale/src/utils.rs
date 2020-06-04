@@ -36,6 +36,7 @@ use crate::rendering::Color;
 use lazy_static::*;
 use std::sync::{Arc, Mutex};
 
+#[derive(Copy, Clone)]
 pub enum DebugOrder {
     Point { pos: Vec2, size: f32 },
     Line { from: Vec2, to: Vec2 },
@@ -44,8 +45,18 @@ pub enum DebugOrder {
 lazy_static! {
     pub static ref DEBUG_ORDERS: Arc<Mutex<Vec<(DebugOrder, Color)>>> =
         Arc::new(Mutex::new(Vec::new()));
+    pub static ref PERSISTENT_DEBUG_ORDERS: Arc<Mutex<Vec<(DebugOrder, Color)>>> =
+        Arc::new(Mutex::new(Vec::new()));
 }
 
 pub fn debug_draw(order: DebugOrder, color: Color) {
     DEBUG_ORDERS.lock().unwrap().push((order, color));
+}
+
+pub fn debug_draw_persistent(order: DebugOrder, color: Color) {
+    PERSISTENT_DEBUG_ORDERS.lock().unwrap().push((order, color));
+}
+
+pub fn debug_clear_persistent() {
+    PERSISTENT_DEBUG_ORDERS.lock().unwrap().clear();
 }

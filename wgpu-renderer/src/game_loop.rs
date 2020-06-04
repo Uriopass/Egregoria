@@ -131,7 +131,13 @@ impl<'a> State<'a> {
 
         debug_pathfinder(&mut tess, &self.world);
 
-        for (order, col) in scale::utils::DEBUG_ORDERS.lock().unwrap().drain(..) {
+        for (order, col) in scale::utils::PERSISTENT_DEBUG_ORDERS
+            .lock()
+            .unwrap()
+            .iter()
+            .copied()
+            .chain(scale::utils::DEBUG_ORDERS.lock().unwrap().drain(..))
+        {
             tess.color = col.into();
             match order {
                 DebugOrder::Point { pos, size } => {
