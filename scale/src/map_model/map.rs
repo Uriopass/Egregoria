@@ -191,14 +191,14 @@ impl Map {
             .min_by_key(|(_, d, _)| OrderedFloat(*d))?;
 
         if d < THRESHOLD * THRESHOLD {
-            if projected.distance(min_road.src_point()) < min_road.src_interface {
+            if projected.approx_eq(min_road.src_point()) {
                 return Some(MapProject {
                     pos: self.intersections[min_road.src].barycenter,
                     kind: ProjectKind::Inter(min_road.src),
                 });
             }
 
-            if projected.distance(min_road.dst_point()) < min_road.dst_interface {
+            if projected.approx_eq(min_road.dst_point()) {
                 return Some(MapProject {
                     pos: self.intersections[min_road.dst].barycenter,
                     kind: ProjectKind::Inter(min_road.dst),
@@ -210,6 +210,18 @@ impl Map {
                 kind: ProjectKind::Road(min_road.id),
             })
         } else {
+            if self.intersections[min_road.src].polygon.contains(pos) {
+                return Some(MapProject {
+                    pos: self.intersections[min_road.src].barycenter,
+                    kind: ProjectKind::Inter(min_road.src),
+                });
+            }
+            if self.intersections[min_road.dst].polygon.contains(pos) {
+                return Some(MapProject {
+                    pos: self.intersections[min_road.dst].barycenter,
+                    kind: ProjectKind::Inter(min_road.dst),
+                });
+            }
             None
         }
     }

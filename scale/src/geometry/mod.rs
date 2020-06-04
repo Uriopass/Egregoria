@@ -8,6 +8,7 @@ macro_rules! vec2 {
 }
 
 pub mod intersections;
+pub mod polygon;
 pub mod polyline;
 pub mod rect;
 pub mod segment;
