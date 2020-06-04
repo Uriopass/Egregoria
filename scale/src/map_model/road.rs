@@ -21,7 +21,16 @@ new_key_type! {
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum RoadSegmentKind {
     Straight,
-    Curved(Vec2),
+    Curved((Vec2, Vec2)), // The two derivatives for the spline
+}
+
+impl RoadSegmentKind {
+    pub fn from_elbow(from: Vec2, to: Vec2, elbow: Vec2) -> RoadSegmentKind {
+        RoadSegmentKind::Curved((
+            (elbow - from) * std::f32::consts::FRAC_1_SQRT_2,
+            (to - elbow) * std::f32::consts::FRAC_1_SQRT_2,
+        ))
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -33,7 +42,7 @@ pub struct Road {
     pub src_point: Vec2,
     pub dst_point: Vec2,
 
-    segment: RoadSegmentKind,
+    pub segment: RoadSegmentKind,
 
     generated_points: PolyLine,
 
@@ -122,25 +131,22 @@ impl Road {
         )
     }
 
+    // todo: move this to Lane struct
     pub fn add_lane(
         &mut self,
         store: &mut Lanes,
         lane_type: LaneKind,
         direction: LaneDirection,
     ) -> LaneID {
-        let src_dir = self.src_dir();
-        let dst_dir = self.dst_dir();
-
-        let (src, dst, src_dir, dst_dir) = match direction {
-            LaneDirection::Forward => (self.src, self.dst, src_dir, dst_dir),
-            LaneDirection::Backward => (self.dst, self.src, dst_dir, src_dir),
+        let (src, dst) = match direction {
+            LaneDirection::Forward => (self.src, self.dst),
+            LaneDirection::Backward => (self.dst, self.src),
         };
+
         let id = store.insert_with_key(|id| Lane {
             id,
             src,
             dst,
-            src_dir,
-            dst_dir,
             kind: lane_type,
             points: Default::default(),
             width: lane_type.width(),
@@ -156,10 +162,8 @@ impl Road {
     }
 
     pub fn gen_pos(&mut self, intersections: &Intersections, lanes: &mut Lanes) {
-        self.src_point = intersections[self.src].pos
-            + self.orientation_from(self.src) * self.interface_from(self.src);
-        self.dst_point = intersections[self.dst].pos
-            + self.orientation_from(self.dst) * self.interface_from(self.dst);
+        self.src_point = intersections[self.src].pos;
+        self.dst_point = intersections[self.dst].pos;
 
         self.generate_points();
 
@@ -180,30 +184,46 @@ impl Road {
     fn generate_points(&mut self) {
         self.generated_points.clear();
 
-        let from = self.src_point;
-        let to = self.dst_point;
+        let (src_dir, dst_dir) = self.basic_orientations();
+
+        let from = self.src_point + src_dir * self.interface_from(self.src);
+        let to = self.dst_point + dst_dir * self.interface_from(self.dst);
 
         match &self.segment {
             RoadSegmentKind::Straight => {
                 self.generated_points.extend(&[from, to]);
             }
-            &RoadSegmentKind::Curved(elbow) => {
+            &RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
                 let s = Spline {
-                    from,
-                    to,
-                    from_derivative: (elbow - from) * std::f32::consts::FRAC_1_SQRT_2,
-                    to_derivative: (to - elbow) * std::f32::consts::FRAC_1_SQRT_2,
+                    from: self.src_point,
+                    to: self.dst_point,
+                    from_derivative,
+                    to_derivative,
                 };
 
-                self.generated_points.extend(s.smart_points(1.0));
+                self.generated_points.extend(s.smart_points(
+                    1.0,
+                    s.project_t(from, 0.3),
+                    s.project_t(to, 0.3),
+                ));
             }
         }
     }
 
-    pub fn interface_from(&self, id: IntersectionID) -> f32 {
+    pub fn interface_point(&self, id: IntersectionID) -> Vec2 {
+        if id == self.src {
+            self.generated_points[0]
+        } else if id == self.dst {
+            self.generated_points.last().unwrap()
+        } else {
+            panic!("Asking interface from an intersection not connected to the road");
+        }
+    }
+
+    fn interface_from(&self, id: IntersectionID) -> f32 {
         let (my_interf, other_interf) = self.interfaces_from(id);
 
-        let l = self.length - 1.0;
+        let l = self.length - 2.0;
         let half = l * 0.5;
 
         if my_interf + other_interf > l {
@@ -249,6 +269,28 @@ impl Road {
         }
     }
 
+    pub fn basic_orientations(&self) -> (Vec2, Vec2) {
+        match &self.segment {
+            RoadSegmentKind::Straight => {
+                let d = (self.dst_point - self.src_point).normalize();
+                (d, -d)
+            }
+            RoadSegmentKind::Curved((s, d)) => (s.normalize(), -d.normalize()),
+        }
+    }
+
+    pub fn basic_orientation_from(&self, id: IntersectionID) -> Vec2 {
+        let (src_dir, dst_dir) = self.basic_orientations();
+
+        if id == self.src {
+            src_dir
+        } else if id == self.dst {
+            dst_dir
+        } else {
+            panic!("Asking dir from from an intersection not conected to the road");
+        }
+    }
+
     pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
             self.src_dir()
@@ -284,25 +326,11 @@ impl Road {
     }
 
     pub fn src_dir(&self) -> Vec2 {
-        match self.segment {
-            RoadSegmentKind::Straight => (self.dst_point - self.src_point).normalize(),
-            RoadSegmentKind::Curved(p) => (p - self.src_point).normalize(),
-        }
+        self.generated_points.first_dir().unwrap()
     }
 
     pub fn dst_dir(&self) -> Vec2 {
-        match &self.segment {
-            RoadSegmentKind::Straight => (self.src_point - self.dst_point).normalize(),
-            &RoadSegmentKind::Curved(p) => (p - self.dst_point).normalize(),
-        }
-    }
-
-    pub fn src_point(&self) -> Vec2 {
-        self.src_point
-    }
-
-    pub fn dst_point(&self) -> Vec2 {
-        self.dst_point
+        -self.generated_points.last_dir().unwrap()
     }
 
     pub fn other_end(&self, my_end: IntersectionID) -> IntersectionID {

@@ -55,10 +55,6 @@ pub struct Lane {
     pub src: IntersectionID,
     pub dst: IntersectionID,
 
-    /// Src and dst implies direction
-    pub src_dir: Vec2,
-    pub dst_dir: Vec2,
-
     /// Always from src to dst
     pub points: PolyLine,
     pub width: f32,
@@ -221,9 +217,9 @@ impl Lane {
 
     pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
-            self.src_dir
+            self.points.first_dir().unwrap()
         } else {
-            self.dst_dir
+            -self.points.last_dir().unwrap()
         }
     }
 }
