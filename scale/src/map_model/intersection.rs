@@ -1,4 +1,4 @@
-use crate::geometry::polyline::PolyLine;
+use crate::geometry::polygon::Polygon;
 use crate::geometry::pseudo_angle;
 use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
@@ -47,7 +47,7 @@ pub struct Intersection {
     pub turn_policy: TurnPolicy,
     pub light_policy: LightPolicy,
 
-    pub polygon: PolyLine,
+    pub polygon: Polygon,
 }
 
 impl Intersection {
@@ -60,7 +60,7 @@ impl Intersection {
             roads: vec![],
             turn_policy: TurnPolicy::default(),
             light_policy: LightPolicy::default(),
-            polygon: PolyLine::default(),
+            polygon: Polygon(vec![]),
         })
     }
 
@@ -156,7 +156,7 @@ impl Intersection {
     }
 
     pub fn update_polygon(&mut self, roads: &Roads) {
-        self.polygon.clear();
+        self.polygon.0.clear();
 
         for (i, &road) in self.roads.iter().enumerate() {
             let road = &roads[road];
@@ -173,8 +173,8 @@ impl Intersection {
             let next_right =
                 self.pos + dir2 * interf2 + next_road.width * 0.5 * vec2!(dir2.y, -dir2.x);
 
-            self.polygon.push(right);
-            self.polygon.push(left);
+            self.polygon.0.push(right);
+            self.polygon.0.push(left);
 
             let src_dir = -road.orientation_from(self.id);
             let dst_dir = next_road.orientation_from(self.id);
@@ -202,7 +202,7 @@ impl Intersection {
             for i in 1..6 {
                 let c = i as f32 / 6.0;
                 let pos = spline.get(c);
-                self.polygon.push(pos);
+                self.polygon.0.push(pos);
             }
         }
     }

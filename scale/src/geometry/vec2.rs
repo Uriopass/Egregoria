@@ -313,4 +313,10 @@ impl Vec2 {
             self
         }
     }
+
+    #[inline]
+    pub fn approx_eq(self, other: Vec2) -> bool {
+        let m = self.distance2(other);
+        m < std::f32::EPSILON
+    }
 }
