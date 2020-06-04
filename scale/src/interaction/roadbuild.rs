@@ -159,7 +159,7 @@ impl<'a> System<'a> for RoadBuildSystem {
                     );
 
                     let hover = MapProject {
-                        pos: data.map.intersections()[selected_after].barycenter,
+                        pos: data.map.intersections()[selected_after].pos,
                         kind: ProjectKind::Inter(selected_after),
                     };
 
@@ -178,7 +178,7 @@ impl<'a> System<'a> for RoadBuildSystem {
                     );
 
                     let hover = MapProject {
-                        pos: data.map.intersections()[selected_after].barycenter,
+                        pos: data.map.intersections()[selected_after].pos,
                         kind: ProjectKind::Inter(selected_after),
                     };
 

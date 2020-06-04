@@ -37,7 +37,6 @@ pub struct IntersectionComponent {
 pub struct Intersection {
     pub id: IntersectionID,
     pub pos: Vec2,
-    pub barycenter: Vec2,
 
     turns: Vec<Turn>,
 
@@ -55,7 +54,6 @@ impl Intersection {
         store.insert_with_key(|id| Intersection {
             id,
             pos,
-            barycenter: pos,
             turns: Default::default(),
             roads: vec![],
             turn_policy: TurnPolicy::default(),
@@ -133,26 +131,6 @@ impl Intersection {
             roads[r1_id].max_interface(self.id, min_dist);
             roads[r2_id].max_interface(self.id, min_dist);
         }
-    }
-
-    pub fn update_barycenter(&mut self, roads: &Roads) {
-        if self.roads.len() <= 1 {
-            self.barycenter = self.pos;
-            return;
-        }
-
-        let sum: Vec2 = self
-            .roads
-            .iter()
-            .map(|&road_id| {
-                let r = &roads[road_id];
-                let dir = r.orientation_from(self.id);
-                let dist = r.interface_from(self.id);
-                dir * dist
-            })
-            .sum();
-
-        self.barycenter = self.pos + sum / (self.roads.len() as f32);
     }
 
     pub fn update_polygon(&mut self, roads: &Roads) {

@@ -26,7 +26,6 @@ impl Polygon {
             }
             j = i;
         }
-
-        return c;
+        c
     }
 }
