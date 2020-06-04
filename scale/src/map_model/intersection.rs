@@ -62,25 +62,19 @@ impl Intersection {
         })
     }
 
-    pub fn add_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
+    pub fn add_road(&mut self, road_id: RoadID, roads: &Roads) {
         self.roads.push(road_id);
 
-        self.update_turns(lanes, roads);
-        self.update_traffic_control(lanes, roads);
+        let id = self.id;
+        self.roads
+            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].basic_orientation_from(id))));
     }
 
-    pub fn remove_road(&mut self, road_id: RoadID, lanes: &mut Lanes, roads: &Roads) {
+    pub fn remove_road(&mut self, road_id: RoadID) {
         self.roads.retain(|x| *x != road_id);
-
-        self.update_turns(lanes, roads);
-        self.update_traffic_control(lanes, roads);
     }
 
     pub fn update_turns(&mut self, lanes: &Lanes, roads: &Roads) {
-        let id = self.id;
-        self.roads
-            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].orientation_from(id))));
-
         let turns = self.turn_policy.generate_turns(self, lanes, roads);
 
         self.turns
@@ -122,12 +116,12 @@ impl Intersection {
 
             let w = (width1.powi(2) + width2.powi(2)).sqrt();
 
-            let dir1 = r1.orientation_from(self.id);
-            let dir2 = r2.orientation_from(self.id);
+            let dir1 = r1.basic_orientation_from(self.id);
+            let dir2 = r2.basic_orientation_from(self.id);
 
             let ang = dir1.angle(dir2).abs();
 
-            let min_dist = w * 1.1 / ang.restrict(0.1, std::f32::consts::FRAC_PI_2).sin();
+            let min_dist = w * 1.1 / ang.restrict(0.2, std::f32::consts::FRAC_PI_2).sin();
             roads[r1_id].max_interface(self.id, min_dist);
             roads[r2_id].max_interface(self.id, min_dist);
         }
@@ -140,24 +134,21 @@ impl Intersection {
             let road = &roads[road];
             let next_road = &roads[self.roads[(i + 1) % self.roads.len()]];
 
-            let interf = road.interface_from(self.id);
-            let dir = road.orientation_from(self.id);
+            let src_orient = road.orientation_from(self.id);
 
-            let left = self.pos + dir * interf - road.width * 0.5 * dir.perpendicular();
-            let right = self.pos + dir * interf + road.width * 0.5 * dir.perpendicular();
+            let left =
+                road.interface_point(self.id) - road.width * 0.5 * src_orient.perpendicular();
+            let right =
+                road.interface_point(self.id) + road.width * 0.5 * src_orient.perpendicular();
 
-            let interf2 = next_road.interface_from(self.id);
-            let dir2 = next_road.orientation_from(self.id);
-            let next_right =
-                self.pos + dir2 * interf2 + next_road.width * 0.5 * vec2!(dir2.y, -dir2.x);
+            let dst_orient = next_road.orientation_from(self.id);
+            let next_right = next_road.interface_point(self.id)
+                + next_road.width * 0.5 * dst_orient.perpendicular();
 
             self.polygon.0.push(right);
             self.polygon.0.push(left);
 
-            let src_dir = -road.orientation_from(self.id);
-            let dst_dir = next_road.orientation_from(self.id);
-
-            let ang = src_dir.angle(dst_dir);
+            let ang = (-src_orient).angle(dst_orient);
 
             const TURN_ANG_ADD: f32 = 0.29;
             const TURN_ANG_MUL: f32 = 0.36;
@@ -167,14 +158,11 @@ impl Intersection {
                 * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL)
                 * TURN_MUL;
 
-            let derivative_src = src_dir * dist;
-            let derivative_dst = dst_dir * dist;
-
             let spline = Spline {
                 from: left,
                 to: next_right,
-                from_derivative: derivative_src,
-                to_derivative: derivative_dst,
+                from_derivative: -src_orient * dist,
+                to_derivative: dst_orient * dist,
             };
 
             for i in 1..6 {

@@ -89,6 +89,6 @@ impl Turn {
             to_derivative: derivative_dst,
         };
 
-        self.points.extend(spline.smart_points(0.3));
+        self.points.extend(spline.smart_points(0.3, 0.0, 1.0));
     }
 }

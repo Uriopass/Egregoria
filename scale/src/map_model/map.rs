@@ -69,11 +69,11 @@ impl Map {
         inter.update_interface_radius(&mut self.roads);
 
         for x in inter.roads.clone() {
+            let other_end = &mut self.intersections[self.roads[x].other_end(id)];
+            other_end.update_interface_radius(&mut self.roads);
+
             let road = &mut self.roads[x];
             road.gen_pos(&self.intersections, &mut self.lanes);
-            let other_end = &mut self.intersections[road.other_end(id)];
-            other_end.update_turns(&self.lanes, &self.roads);
-            other_end.update_interface_radius(&mut self.roads);
         }
 
         let inter = &mut self.intersections[id];
@@ -126,8 +126,8 @@ impl Map {
 
         let inters = &mut self.intersections;
 
-        inters[src].add_road(road_id, &mut self.lanes, &self.roads);
-        inters[dst].add_road(road_id, &mut self.lanes, &self.roads);
+        inters[src].add_road(road_id, &self.roads);
+        inters[dst].add_road(road_id, &self.roads);
 
         self.invalidate(src);
         self.invalidate(dst);
@@ -142,8 +142,8 @@ impl Map {
             self.lanes.remove(lane_id);
         }
 
-        self.intersections[road.src].remove_road(road_id, &mut self.lanes, &self.roads);
-        self.intersections[road.dst].remove_road(road_id, &mut self.lanes, &self.roads);
+        self.intersections[road.src].remove_road(road_id);
+        self.intersections[road.dst].remove_road(road_id);
 
         self.invalidate(road.src);
         self.invalidate(road.dst);
@@ -183,38 +183,25 @@ impl Map {
             })
             .min_by_key(|(_, d, _)| OrderedFloat(*d))?;
 
+        if self.intersections[min_road.src].polygon.contains(pos) {
+            return Some(MapProject {
+                pos: self.intersections[min_road.src].pos,
+                kind: ProjectKind::Inter(min_road.src),
+            });
+        }
+        if self.intersections[min_road.dst].polygon.contains(pos) {
+            return Some(MapProject {
+                pos: self.intersections[min_road.dst].pos,
+                kind: ProjectKind::Inter(min_road.dst),
+            });
+        }
+
         if d < THRESHOLD * THRESHOLD {
-            if projected.approx_eq(min_road.src_point()) {
-                return Some(MapProject {
-                    pos: self.intersections[min_road.src].pos,
-                    kind: ProjectKind::Inter(min_road.src),
-                });
-            }
-
-            if projected.approx_eq(min_road.dst_point()) {
-                return Some(MapProject {
-                    pos: self.intersections[min_road.dst].pos,
-                    kind: ProjectKind::Inter(min_road.dst),
-                });
-            }
-
             Some(MapProject {
                 pos: projected,
                 kind: ProjectKind::Road(min_road.id),
             })
         } else {
-            if self.intersections[min_road.src].polygon.contains(pos) {
-                return Some(MapProject {
-                    pos: self.intersections[min_road.src].pos,
-                    kind: ProjectKind::Inter(min_road.src),
-                });
-            }
-            if self.intersections[min_road.dst].polygon.contains(pos) {
-                return Some(MapProject {
-                    pos: self.intersections[min_road.dst].pos,
-                    kind: ProjectKind::Inter(min_road.dst),
-                });
-            }
             None
         }
     }
