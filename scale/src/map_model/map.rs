@@ -96,34 +96,28 @@ impl Map {
         self.intersections.remove(src);
     }
 
+    // todo: remove in favor of connect(..., RoadSegmentKind::Straight)
     pub fn connect_straight(
         &mut self,
         src: IntersectionID,
         dst: IntersectionID,
         pattern: LanePattern,
     ) -> RoadID {
-        self.connect(
-            src,
-            dst,
-            pattern,
-            vec![self.intersections[src].pos, self.intersections[dst].pos],
-            vec![RoadSegmentKind::Straight],
-        )
+        self.connect(src, dst, pattern, RoadSegmentKind::Straight)
     }
+
     pub fn connect(
         &mut self,
         src: IntersectionID,
         dst: IntersectionID,
         pattern: LanePattern,
-        points: Vec<Vec2>,
-        segments: Vec<RoadSegmentKind>,
+        segment: RoadSegmentKind,
     ) -> RoadID {
         self.dirty = true;
         let road_id = Road::make(
             src,
             dst,
-            points,
-            segments,
+            segment,
             pattern,
             &self.intersections,
             &mut self.lanes,

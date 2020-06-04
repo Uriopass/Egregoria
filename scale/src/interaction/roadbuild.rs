@@ -290,13 +290,7 @@ fn make_connection(
                 None => RoadSegmentKind::Straight,
             };
 
-            map.connect(
-                src,
-                dst,
-                pattern,
-                vec![map.intersections()[src].pos, map.intersections()[dst].pos],
-                vec![kind],
-            );
+            map.connect(src, dst, pattern, kind);
 
             dst
         }

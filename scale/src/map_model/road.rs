@@ -30,8 +30,10 @@ pub struct Road {
     pub src: IntersectionID,
     pub dst: IntersectionID,
 
-    points: Vec<Vec2>,
-    segments: Vec<RoadSegmentKind>,
+    pub src_point: Vec2,
+    pub dst_point: Vec2,
+
+    segment: RoadSegmentKind,
 
     generated_points: PolyLine,
 
@@ -54,24 +56,21 @@ impl Road {
     pub fn make(
         src: IntersectionID,
         dst: IntersectionID,
-        points: Vec<Vec2>,
-        segments: Vec<RoadSegmentKind>,
+        segment: RoadSegmentKind,
         lane_pattern: LanePattern,
         intersections: &Intersections,
         lanes: &mut Lanes,
         store: &mut Roads,
     ) -> RoadID {
-        debug_assert!(points.len() >= 2);
-        debug_assert!(segments.len() == points.len() - 1);
-
         let id = store.insert_with_key(|id| Self {
             id,
             src,
             dst,
             src_interface: 9.0,
             dst_interface: 9.0,
-            points,
-            segments,
+            src_point: intersections[src].pos,
+            dst_point: intersections[dst].pos,
+            segment,
             width: 0.0,
             length: 1.0,
             lanes_forward: vec![],
@@ -157,9 +156,9 @@ impl Road {
     }
 
     pub fn gen_pos(&mut self, intersections: &Intersections, lanes: &mut Lanes) {
-        *self.points.first_mut().unwrap() = intersections[self.src].pos
+        self.src_point = intersections[self.src].pos
             + self.orientation_from(self.src) * self.interface_from(self.src);
-        *self.points.last_mut().unwrap() = intersections[self.dst].pos
+        self.dst_point = intersections[self.dst].pos
             + self.orientation_from(self.dst) * self.interface_from(self.dst);
 
         self.generate_points();
@@ -181,30 +180,22 @@ impl Road {
     fn generate_points(&mut self) {
         self.generated_points.clear();
 
-        for x in self.points.windows(2).zip(self.segments.iter()) {
-            match x {
-                (&[from, to], RoadSegmentKind::Straight) => {
-                    if self.generated_points.is_empty() {
-                        self.generated_points.push(from);
-                    }
-                    self.generated_points.push(to);
-                    continue;
-                }
-                (&[from, to], &RoadSegmentKind::Curved(elbow)) => {
-                    let s = Spline {
-                        from,
-                        to,
-                        from_derivative: (elbow - from) * std::f32::consts::FRAC_1_SQRT_2,
-                        to_derivative: (to - elbow) * std::f32::consts::FRAC_1_SQRT_2,
-                    };
+        let from = self.src_point;
+        let to = self.dst_point;
 
-                    if self.generated_points.is_empty() {
-                        self.generated_points.push(from);
-                    }
+        match &self.segment {
+            RoadSegmentKind::Straight => {
+                self.generated_points.extend(&[from, to]);
+            }
+            &RoadSegmentKind::Curved(elbow) => {
+                let s = Spline {
+                    from,
+                    to,
+                    from_derivative: (elbow - from) * std::f32::consts::FRAC_1_SQRT_2,
+                    to_derivative: (to - elbow) * std::f32::consts::FRAC_1_SQRT_2,
+                };
 
-                    self.generated_points.extend(s.smart_points(1.0).skip(1));
-                }
-                _ => unreachable!(),
+                self.generated_points.extend(s.smart_points(1.0));
             }
         }
     }
@@ -293,26 +284,25 @@ impl Road {
     }
 
     pub fn src_dir(&self) -> Vec2 {
-        match self.segments[0] {
-            RoadSegmentKind::Straight => (self.points[1] - self.points[0]).normalize(),
-            RoadSegmentKind::Curved(p) => (p - self.src_point()).normalize(),
+        match self.segment {
+            RoadSegmentKind::Straight => (self.dst_point - self.src_point).normalize(),
+            RoadSegmentKind::Curved(p) => (p - self.src_point).normalize(),
         }
     }
 
     pub fn dst_dir(&self) -> Vec2 {
-        let l = self.points.len();
-        match self.segments.last().unwrap() {
-            RoadSegmentKind::Straight => (self.points[l - 2] - self.points[l - 1]).normalize(),
-            &RoadSegmentKind::Curved(p) => (p - self.dst_point()).normalize(),
+        match &self.segment {
+            RoadSegmentKind::Straight => (self.src_point - self.dst_point).normalize(),
+            &RoadSegmentKind::Curved(p) => (p - self.dst_point).normalize(),
         }
     }
 
     pub fn src_point(&self) -> Vec2 {
-        self.points[0]
+        self.src_point
     }
 
     pub fn dst_point(&self) -> Vec2 {
-        *self.points.last().unwrap()
+        self.dst_point
     }
 
     pub fn other_end(&self, my_end: IntersectionID) -> IntersectionID {
