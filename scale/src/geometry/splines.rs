@@ -1,4 +1,5 @@
 use super::Vec2;
+use crate::geometry::polyline::PolyLine;
 use ordered_float::OrderedFloat;
 
 #[derive(Clone, Copy, Debug)]
@@ -72,10 +73,25 @@ impl Spline {
     }
 
     pub fn project_t(&self, p: Vec2, detail: f32) -> f32 {
-        self.smart_points_t(detail, 0.0, 1.0)
-            .into_iter()
+        let mut l = self
+            .smart_points_t(detail, 0.0, 1.0)
             .min_by_key(|&t| OrderedFloat(self.get(t).distance2(p)))
-            .unwrap()
+            .unwrap();
+        let mut r = l + self.step(l, detail);
+        let mut k = (l + r) * 0.5;
+
+        let e = std::f32::EPSILON;
+
+        while (r - l) > e {
+            k = (r + l) * 0.5;
+            if self.get(k - e).distance2(p) < self.get(k + e).distance2(p) {
+                r = k
+            } else {
+                l = k
+            }
+        }
+
+        k
     }
 
     pub fn smart_points(
@@ -84,34 +100,20 @@ impl Spline {
         start: f32,
         end: f32,
     ) -> impl Iterator<Item = Vec2> + '_ {
-        assert!(end > start);
-
-        let points = self.smart_points_t(detail, start, end);
-        let mul = end / points.iter().max_by_key(|x| OrderedFloat(**x)).unwrap();
-        points.into_iter().map(move |t| self.get(t * mul))
+        self.smart_points_t(detail, start, end)
+            .map(move |t| self.get(t))
     }
 
-    fn smart_points_t(&self, detail: f32, start: f32, end: f32) -> Vec<f32> {
+    fn smart_points_t(&self, detail: f32, start: f32, end: f32) -> impl Iterator<Item = f32> + '_ {
+        assert!(end > start);
         let detail = detail.abs();
-        let mut t = start;
-        let mut points = vec![];
 
-        while t <= end {
-            points.push(t);
-            let dot = self
-                .derivative(t)
-                .normalize()
-                .perp_dot(self.derivative_2(t))
-                .abs()
-                .sqrt();
-            t += (detail / dot.max(std::f32::EPSILON)).min(0.15);
+        SmartPoints {
+            spline: self,
+            t: start,
+            end,
+            detail,
         }
-
-        if points.len() == 1 {
-            points.push(end);
-        }
-
-        points
     }
 
     pub fn points(&self, n: usize) -> impl Iterator<Item = Vec2> + '_ {
@@ -120,5 +122,44 @@ impl Spline {
 
             self.get(c)
         })
+    }
+
+    pub fn length(&self, detail: f32) -> f32 {
+        PolyLine::new(self.smart_points(detail, 0.0, 1.0).collect()).length()
+    }
+
+    fn step(&self, t: f32, detail: f32) -> f32 {
+        let dot = self
+            .derivative(t)
+            .normalize()
+            .perp_dot(self.derivative_2(t))
+            .abs()
+            .sqrt();
+        (detail / dot).min(0.15)
+    }
+}
+
+pub struct SmartPoints<'a> {
+    spline: &'a Spline,
+    t: f32,
+    end: f32,
+    detail: f32,
+}
+
+impl<'a> Iterator for SmartPoints<'a> {
+    type Item = f32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.t == self.end {
+            return None;
+        }
+        if self.t > self.end {
+            self.t = self.end;
+            return Some(self.end);
+        }
+
+        let r = self.t;
+        self.t += self.spline.step(r, self.detail);
+        Some(r)
     }
 }
