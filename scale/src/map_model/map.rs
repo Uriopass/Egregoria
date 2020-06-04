@@ -79,7 +79,6 @@ impl Map {
         let inter = &mut self.intersections[id];
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
-        inter.update_barycenter(&self.roads);
         inter.update_polygon(&self.roads);
     }
 
@@ -193,14 +192,14 @@ impl Map {
         if d < THRESHOLD * THRESHOLD {
             if projected.approx_eq(min_road.src_point()) {
                 return Some(MapProject {
-                    pos: self.intersections[min_road.src].barycenter,
+                    pos: self.intersections[min_road.src].pos,
                     kind: ProjectKind::Inter(min_road.src),
                 });
             }
 
             if projected.approx_eq(min_road.dst_point()) {
                 return Some(MapProject {
-                    pos: self.intersections[min_road.dst].barycenter,
+                    pos: self.intersections[min_road.dst].pos,
                     kind: ProjectKind::Inter(min_road.dst),
                 });
             }
@@ -212,13 +211,13 @@ impl Map {
         } else {
             if self.intersections[min_road.src].polygon.contains(pos) {
                 return Some(MapProject {
-                    pos: self.intersections[min_road.src].barycenter,
+                    pos: self.intersections[min_road.src].pos,
                     kind: ProjectKind::Inter(min_road.src),
                 });
             }
             if self.intersections[min_road.dst].polygon.contains(pos) {
                 return Some(MapProject {
-                    pos: self.intersections[min_road.dst].barycenter,
+                    pos: self.intersections[min_road.dst].pos,
                     kind: ProjectKind::Inter(min_road.dst),
                 });
             }
@@ -265,13 +264,6 @@ impl Map {
             .iter()
             .filter(|(_, x)| x.kind == kind)
             .min_by_key(|(_, lane)| OrderedFloat(lane.dist2_to(p)))
-            .map(|(id, _)| id)
-    }
-
-    pub fn closest_inter(&self, p: Vec2) -> Option<IntersectionID> {
-        self.intersections
-            .iter()
-            .min_by_key(|(_, inter)| OrderedFloat(inter.barycenter.distance2(p)))
             .map(|(id, _)| id)
     }
 
