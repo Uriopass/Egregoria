@@ -1,11 +1,10 @@
-use crate::geometry::segment::Segment;
+use crate::geometry::polyline::PolyLine;
 use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::map_model::{
     IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
     Roads, TrafficControl,
 };
-use either::Either;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -33,6 +32,8 @@ pub struct Road {
 
     points: Vec<Vec2>,
     segments: Vec<RoadSegmentKind>,
+
+    generated_points: PolyLine,
 
     pub length: f32,
     pub width: f32,
@@ -71,12 +72,13 @@ impl Road {
             dst_interface: 9.0,
             points,
             segments,
-            width: 1.0,
+            width: 0.0,
             length: 1.0,
             lanes_forward: vec![],
             lanes_backward: vec![],
             lane_pattern: lane_pattern.clone(),
             parking_spots: vec![],
+            generated_points: PolyLine::default(),
         });
         let road = &mut store[id];
         for lane in &lane_pattern.lanes_forward {
@@ -150,6 +152,7 @@ impl Road {
             LaneDirection::Forward => self.lanes_forward.push(id),
             LaneDirection::Backward => self.lanes_backward.push(id),
         }
+        self.width += lane_type.width();
         id
     }
 
@@ -159,13 +162,9 @@ impl Road {
         *self.points.last_mut().unwrap() = intersections[self.dst].pos
             + self.orientation_from(self.dst) * self.interface_from(self.dst);
 
-        self.length = self
-            .points
-            .windows(2)
-            .map(|w| (w[1] - w[0]).magnitude())
-            .sum(); // fixme
+        self.generate_points();
 
-        self.width = self.lanes_iter().map(|&x| lanes[x].width).sum();
+        self.length = self.generated_points.length();
 
         let mut dist_from_bottom = 0.0;
         for &id in self.lanes_iter() {
@@ -175,22 +174,39 @@ impl Road {
         }
     }
 
-    pub fn interpolation_splines(&self) -> impl Iterator<Item = Either<Spline, Segment>> + '_ {
-        self.points
-            .windows(2)
-            .zip(self.segments.iter())
-            .map(|x| match x {
-                (&[from, to], &RoadSegmentKind::Curved(elbow)) => either::Left(Spline {
-                    from,
-                    to,
-                    from_derivative: (elbow - from) * std::f32::consts::FRAC_1_SQRT_2,
-                    to_derivative: (to - elbow) * std::f32::consts::FRAC_1_SQRT_2,
-                }),
+    pub fn generated_points(&self) -> &PolyLine {
+        &self.generated_points
+    }
+
+    fn generate_points(&mut self) {
+        self.generated_points.clear();
+
+        for x in self.points.windows(2).zip(self.segments.iter()) {
+            match x {
                 (&[from, to], RoadSegmentKind::Straight) => {
-                    either::Right(Segment { src: from, dst: to })
+                    if self.generated_points.is_empty() {
+                        self.generated_points.push(from);
+                    }
+                    self.generated_points.push(to);
+                    continue;
+                }
+                (&[from, to], &RoadSegmentKind::Curved(elbow)) => {
+                    let s = Spline {
+                        from,
+                        to,
+                        from_derivative: (elbow - from) * std::f32::consts::FRAC_1_SQRT_2,
+                        to_derivative: (to - elbow) * std::f32::consts::FRAC_1_SQRT_2,
+                    };
+
+                    if self.generated_points.is_empty() {
+                        self.generated_points.push(from);
+                    }
+
+                    self.generated_points.extend(s.smart_points(1.0).skip(1));
                 }
                 _ => unreachable!(),
-            })
+            }
+        }
     }
 
     pub fn interface_from(&self, id: IntersectionID) -> f32 {
@@ -273,7 +289,7 @@ impl Road {
     }
 
     pub fn project(&self, p: Vec2) -> Vec2 {
-        p // fixme
+        self.generated_points.project(p).unwrap()
     }
 
     pub fn src_dir(&self) -> Vec2 {

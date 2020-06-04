@@ -211,6 +211,10 @@ impl PolyLine {
     pub fn windows(&self, id: usize) -> Windows<'_, Vec2> {
         self.0.windows(id)
     }
+
+    pub fn reserve(&mut self, additional: usize) {
+        self.0.reserve(additional);
+    }
 }
 
 impl Index<usize> for PolyLine {
