@@ -1,7 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
 use crate::map_model::{IntersectionID, Road, TrafficControl, TraverseDirection};
-use either::Either;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -169,49 +168,37 @@ impl Lane {
     pub fn gen_pos(&mut self, parent_road: &Road, dist_from_bottom: f32) {
         let lane_dist = self.width * 0.5 + dist_from_bottom - parent_road.width * 0.5;
 
+        let parent_points = parent_road.generated_points();
         self.points.clear();
-        for v in parent_road.interpolation_splines() {
-            let spline = match v {
-                Either::Left(s) => s,
-                Either::Right(segment) => {
-                    let nor = (segment.dst - segment.src).perpendicular();
-                    if self.points.is_empty() {
-                        self.points.push(segment.src + nor * lane_dist);
-                    }
-                    self.points.push(segment.dst + nor * lane_dist);
-                    continue;
-                }
-            };
 
-            if self.points.is_empty() {
-                let nor = -spline.from_derivative.normalize().perpendicular();
-                self.points.push(spline.from + nor * lane_dist);
+        self.points.reserve(parent_points.n_points());
+
+        let src_nor = -parent_road.src_dir().perpendicular();
+        self.points.push(parent_points[0] + src_nor * lane_dist);
+
+        for window in parent_points.windows(3) {
+            let a = window[0];
+            let elbow = window[1];
+            let c = window[2];
+
+            let x = unwrap_or!((elbow - a).try_normalize(), continue);
+            let y = unwrap_or!((elbow - c).try_normalize(), continue);
+
+            let mut dir = (x + y).try_normalize().unwrap_or(-x.perpendicular());
+
+            if x.perp_dot(y) < 0.0 {
+                dir = -dir;
             }
 
-            let points: Vec<Vec2> = spline.smart_points(1.0).collect();
-            for window in points.windows(3) {
-                let a = window[0];
-                let elbow = window[1];
-                let c = window[2];
+            let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
 
-                let x = unwrap_or!((elbow - a).try_normalize(), continue);
-                let y = unwrap_or!((elbow - c).try_normalize(), continue);
-
-                let mut dir = (x + y).try_normalize().unwrap_or(-x.perpendicular());
-
-                if x.perp_dot(y) < 0.0 {
-                    dir = -dir;
-                }
-
-                let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
-
-                let nor = mul * lane_dist * dir;
-                self.points.push(elbow + nor);
-            }
-
-            let nor = -spline.to_derivative.normalize().perpendicular();
-            self.points.push(spline.to + nor * lane_dist);
+            let nor = mul * lane_dist * dir;
+            self.points.push(elbow + nor);
         }
+
+        let dst_nor = parent_road.dst_dir().perpendicular();
+        self.points
+            .push(parent_road.generated_points().last().unwrap() + dst_nor * lane_dist);
 
         if self.dir_from(parent_road.src) == TraverseDirection::Backward {
             self.points.reverse();

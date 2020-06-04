@@ -1,5 +1,6 @@
 #![allow(clippy::unreadable_literal)]
 #![allow(clippy::block_in_if_condition_stmt)]
+#![allow(clippy::too_many_arguments)]
 
 use crate::engine_interaction::{KeyboardInfo, RenderStats, TimeInfo};
 use crate::gui::Gui;
