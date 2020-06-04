@@ -5,7 +5,7 @@ use crate::engine::{
 use crate::geometry::Tesselator;
 use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
 use scale::physics::Transform;
-use scale::rendering::{from_srgb, LinearColor};
+use scale::rendering::{from_srgb, Color, LinearColor};
 use scale::utils::Restrict;
 use std::ops::Mul;
 
@@ -56,9 +56,9 @@ impl RoadRenderer {
     }
 
     fn road_mesh(&self, map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
-        let low_gray: LinearColor = LinearColor::gray(0.3);
-        let mid_gray: LinearColor = LinearColor::gray(MID_GRAY_V);
-        let high_gray: LinearColor = LinearColor::gray(0.7);
+        let low_gray: LinearColor = Color::gray(0.3).into();
+        let mid_gray: LinearColor = Color::gray(MID_GRAY_V).into();
+        let high_gray: LinearColor = Color::gray(0.7).into();
 
         let inters = map.intersections();
         let lanes = map.lanes();
@@ -153,7 +153,7 @@ impl RoadRenderer {
 
             let size = 0.5; // light size
 
-            sr.color = LinearColor::gray(0.3);
+            sr.color = Color::gray(0.3).into();
             sr.draw_rect_cos_sin(r_center, Z_SIGNAL, size + 0.1, size * 3.0 + 0.1, dir);
 
             for i in -1..2 {

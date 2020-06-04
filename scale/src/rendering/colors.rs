@@ -114,7 +114,6 @@ pub struct LinearColor {
 
 impl LinearColor {
     pub fn gray(level: f32) -> Self {
-        let level = from_srgb(level);
         Self {
             r: level,
             g: level,
