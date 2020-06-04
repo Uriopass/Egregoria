@@ -184,14 +184,15 @@ impl RoadRenderer {
                 .lanes_iter()
                 .map(move |x| &lanes[*x])
                 .filter(|l| l.kind.vehicles());
-            for lane in lanes {
-                let length = lane.points.length();
-                let n_arrows = ((length / 50.0) as i32).max(1);
+            let n_arrows = ((road.length / 50.0) as i32).max(1);
 
+            for lane in lanes {
+                let l = lane.points.length();
                 for i in 0..n_arrows {
-                    let (mid, dir) = match lane.points.point_dir_along(
-                        lane.points.length() * (1.0 + i as f32) / (1.0 + n_arrows as f32),
-                    ) {
+                    let (mid, dir) = match lane
+                        .points
+                        .point_dir_along(l * (1.0 + i as f32) / (1.0 + n_arrows as f32))
+                    {
                         Some(x) => x,
                         None => continue,
                     };
