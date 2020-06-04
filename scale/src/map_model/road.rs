@@ -167,7 +167,16 @@ impl Road {
 
         self.generate_points();
 
-        self.length = self.generated_points.length();
+        self.length = match self.segment {
+            RoadSegmentKind::Straight => (self.dst_point - self.src_point).magnitude(),
+            RoadSegmentKind::Curved((from_derivative, to_derivative)) => Spline {
+                from: self.src_point,
+                to: self.dst_point,
+                from_derivative,
+                to_derivative,
+            }
+            .length(1.0),
+        };
 
         let mut dist_from_bottom = 0.0;
         for &id in self.lanes_iter() {
@@ -220,7 +229,7 @@ impl Road {
         }
     }
 
-    fn interface_from(&self, id: IntersectionID) -> f32 {
+    pub fn interface_from(&self, id: IntersectionID) -> f32 {
         let (my_interf, other_interf) = self.interfaces_from(id);
 
         let l = self.length - 2.0;

@@ -74,6 +74,9 @@ impl Map {
 
             let road = &mut self.roads[x];
             road.gen_pos(&self.intersections, &mut self.lanes);
+
+            let other_end = &mut self.intersections[self.roads[x].other_end(id)];
+            other_end.update_polygon(&self.roads);
         }
 
         let inter = &mut self.intersections[id];
