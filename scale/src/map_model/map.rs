@@ -1,3 +1,4 @@
+use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
@@ -97,6 +98,44 @@ impl Map {
         }
 
         self.intersections.remove(src);
+    }
+
+    pub fn split_road(&mut self, id: RoadID, pos: Vec2) -> IntersectionID {
+        let r = self.remove_road(id);
+        let id = self.add_intersection(pos);
+
+        match r.segment {
+            RoadSegmentKind::Straight => {
+                self.connect(r.src, id, r.lane_pattern.clone(), RoadSegmentKind::Straight);
+                self.connect(id, r.dst, r.lane_pattern, RoadSegmentKind::Straight);
+            }
+            RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
+                let s = Spline {
+                    from: r.src_point,
+                    to: r.dst_point,
+                    from_derivative,
+                    to_derivative,
+                };
+                let t_approx = s.project_t(pos, 1.0);
+
+                let (s_from, s_to) = s.split_at(t_approx);
+
+                self.connect(
+                    r.src,
+                    id,
+                    r.lane_pattern.clone(),
+                    RoadSegmentKind::Curved((s_from.from_derivative, s_from.to_derivative)),
+                );
+                self.connect(
+                    id,
+                    r.dst,
+                    r.lane_pattern,
+                    RoadSegmentKind::Curved((s_to.from_derivative, s_to.to_derivative)),
+                );
+            }
+        }
+
+        id
     }
 
     // todo: remove in favor of connect(..., RoadSegmentKind::Straight)
