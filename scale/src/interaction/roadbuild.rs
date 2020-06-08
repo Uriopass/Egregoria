@@ -3,8 +3,7 @@ use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::interaction::{Tool, Z_TOOL};
 use crate::map_model::{
-    IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadID,
-    RoadSegmentKind,
+    IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
 };
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
@@ -273,68 +272,24 @@ fn make_connection(
         None => RoadSegmentKind::Straight,
     };
 
-    match (from.kind, to.kind) {
+    let (from, to) = match (from.kind, to.kind) {
         (Road(src), Road(dst)) => {
-            let from_split = split_road(map, src, from.pos);
-            let to_split = split_road(map, dst, to.pos);
-
-            map.connect(from_split, to_split, pattern, connection_segment);
-
-            to_split
+            let from_split = map.split_road(src, from.pos);
+            let to_split = map.split_road(dst, to.pos);
+            (from_split, to_split)
         }
-        (Inter(src), Inter(dst)) => {
-            map.connect(src, dst, pattern, connection_segment);
-            dst
-        }
+        (Inter(src), Inter(dst)) => (src, dst),
         (Inter(id_inter), Road(id_road)) => {
-            let split = split_road(map, id_road, to.pos);
-            map.connect(id_inter, split, pattern, connection_segment);
-            split
+            let split = map.split_road(id_road, to.pos);
+            (id_inter, split)
         }
         (Road(id_road), Inter(id_inter)) => {
-            let split = split_road(map, id_road, from.pos);
-            map.connect(split, id_inter, pattern, connection_segment);
-            id_inter
+            let split = map.split_road(id_road, from.pos);
+            (split, id_inter)
         }
-    }
-}
-
-fn split_road(map: &mut Map, id: RoadID, pos: Vec2) -> IntersectionID {
-    let r = map.remove_road(id);
-    let id = map.add_intersection(pos);
-
-    match r.segment {
-        RoadSegmentKind::Straight => {
-            map.connect(r.src, id, r.lane_pattern.clone(), RoadSegmentKind::Straight);
-            map.connect(id, r.dst, r.lane_pattern, RoadSegmentKind::Straight);
-        }
-        RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
-            let s = Spline {
-                from: r.src_point,
-                to: r.dst_point,
-                from_derivative,
-                to_derivative,
-            };
-            let t_approx = s.project_t(pos, 1.0);
-
-            let (s_from, s_to) = s.split_at(t_approx);
-
-            map.connect(
-                r.src,
-                id,
-                r.lane_pattern.clone(),
-                RoadSegmentKind::Curved((s_from.from_derivative, s_from.to_derivative)),
-            );
-            map.connect(
-                id,
-                r.dst,
-                r.lane_pattern,
-                RoadSegmentKind::Curved((s_to.from_derivative, s_to.to_derivative)),
-            );
-        }
-    }
-
-    id
+    };
+    map.connect(from, to, pattern, connection_segment);
+    to
 }
 
 fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {

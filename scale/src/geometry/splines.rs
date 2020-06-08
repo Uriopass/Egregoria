@@ -73,25 +73,25 @@ impl Spline {
     }
 
     pub fn project_t(&self, p: Vec2, detail: f32) -> f32 {
-        let mut l = self
+        let mut le = self
             .smart_points_t(detail, 0.0, 1.0)
             .min_by_key(|&t| OrderedFloat(self.get(t).distance2(p)))
             .unwrap();
-        let mut r = l + self.step(l, detail);
-        let mut k = (l + r) * 0.5;
+        let mut ri = le + self.step(le, detail);
+        let mut cur = (le + ri) * 0.5;
 
         let e = std::f32::EPSILON;
 
-        while (r - l) > e {
-            k = (r + l) * 0.5;
-            if self.get(k - e).distance2(p) < self.get(k + e).distance2(p) {
-                r = k
+        while (ri - le) > e {
+            cur = (ri + le) * 0.5;
+            if self.get(cur - e).distance2(p) < self.get(cur + e).distance2(p) {
+                ri = cur
             } else {
-                l = k
+                le = cur
             }
         }
 
-        k
+        cur
     }
 
     pub fn smart_points(
@@ -150,7 +150,7 @@ impl<'a> Iterator for SmartPoints<'a> {
     type Item = f32;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.t == self.end {
+        if self.t.eq(&self.end) {
             return None;
         }
         if self.t > self.end {
