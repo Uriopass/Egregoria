@@ -18,6 +18,7 @@ pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 pub enum ProjectKind {
     Inter(IntersectionID),
     Road(RoadID),
+    Ground,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -199,7 +200,7 @@ impl Map {
         self.roads.clear();
     }
 
-    pub fn project(&self, pos: Vec2) -> Option<MapProject> {
+    pub fn project(&self, pos: Vec2) -> MapProject {
         const THRESHOLD: f32 = 15.0;
 
         if let Some(v) = self
@@ -209,42 +210,54 @@ impl Map {
             .min_by_key(|x| OrderedFloat(x.pos.distance2(pos)))
         {
             if v.pos.distance(pos) < 5.0 {
-                return Some(MapProject {
+                return MapProject {
                     pos: v.pos,
                     kind: ProjectKind::Inter(v.id),
-                });
+                };
             }
         }
 
-        let (min_road, d, projected) = self
+        let (min_road, d, projected) = match self
             .roads()
             .values()
             .map(|road| {
                 let proj = road.project(pos);
                 (road, proj.distance2(pos), proj)
             })
-            .min_by_key(|(_, d, _)| OrderedFloat(*d))?;
+            .min_by_key(|(_, d, _)| OrderedFloat(*d))
+        {
+            Some(x) => x,
+            None => {
+                return MapProject {
+                    pos,
+                    kind: ProjectKind::Ground,
+                }
+            }
+        };
 
         if self.intersections[min_road.src].polygon.contains(pos) {
-            return Some(MapProject {
+            return MapProject {
                 pos: self.intersections[min_road.src].pos,
                 kind: ProjectKind::Inter(min_road.src),
-            });
+            };
         }
         if self.intersections[min_road.dst].polygon.contains(pos) {
-            return Some(MapProject {
+            return MapProject {
                 pos: self.intersections[min_road.dst].pos,
                 kind: ProjectKind::Inter(min_road.dst),
-            });
+            };
         }
 
         if d < THRESHOLD * THRESHOLD {
-            Some(MapProject {
+            MapProject {
                 pos: projected,
                 kind: ProjectKind::Road(min_road.id),
-            })
+            }
         } else {
-            None
+            MapProject {
+                pos,
+                kind: ProjectKind::Ground,
+            }
         }
     }
 

@@ -55,17 +55,6 @@ enum BuildState {
     Interpolation(Vec2, MapProject),
 }
 
-impl BuildState {
-    #[allow(dead_code)]
-    pub fn proj(&self) -> Option<&MapProject> {
-        use BuildState::*;
-        match self {
-            Hover => None,
-            Start(x) | Interpolation(_, x) => Some(x),
-        }
-    }
-}
-
 pub struct RoadBuildResource {
     build_state: BuildState,
 
@@ -98,63 +87,29 @@ impl<'a> System<'a> for RoadBuildSystem {
 
         state.update_drawing(
             &mut data.meshrender,
-            cur_proj
-                .map(|x| x.pos)
-                .unwrap_or(data.mouseinfo.unprojected),
+            cur_proj.pos,
             state.pattern_builder.width(),
         );
 
         if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
-            match (state.build_state, cur_proj) {
-                (BuildState::Hover, None) => {
-                    // Intersection creation on empty ground
-                    let id = map.add_intersection(data.mouseinfo.unprojected);
+            use BuildState::*;
+            use ProjectKind::*;
 
-                    let hover = MapProject {
-                        pos: data.mouseinfo.unprojected,
-                        kind: ProjectKind::Inter(id),
-                    };
-
-                    state.build_state = BuildState::Start(hover);
+            match (state.build_state, cur_proj.kind) {
+                (Hover, _) => {
+                    // Hover selection
+                    state.build_state = BuildState::Start(cur_proj);
                 }
-                (BuildState::Start(v), None) => {
+                (Start(v), Ground) => {
                     // Set interpolation point
                     state.build_state = BuildState::Interpolation(data.mouseinfo.unprojected, v);
                 }
-                (BuildState::Interpolation(interpoint, selected_proj), None) => {
-                    // Interpolated connection to empty
-                    let id = map.add_intersection(data.mouseinfo.unprojected);
-
-                    let selected_after = make_connection(
-                        map,
-                        selected_proj,
-                        MapProject {
-                            pos: data.mouseinfo.unprojected,
-                            kind: ProjectKind::Inter(id),
-                        },
-                        Some(interpoint),
-                        state.pattern_builder.build(),
-                    );
-
-                    let hover = MapProject {
-                        pos: data.map.intersections()[selected_after].pos,
-                        kind: ProjectKind::Inter(selected_after),
-                    };
-
-                    state.build_state = BuildState::Start(hover);
-                }
-                (BuildState::Hover, Some(hover)) => {
-                    // Hover selection
-                    state.build_state = BuildState::Start(hover);
-                }
-                (BuildState::Start(selected_proj), Some(hover))
-                    if compatible(map, hover.kind, selected_proj.kind) =>
-                {
+                (Start(selected_proj), _) if compatible(map, cur_proj.kind, selected_proj.kind) => {
                     // Straight connection to something
                     let selected_after = make_connection(
                         map,
                         selected_proj,
-                        hover,
+                        cur_proj,
                         None,
                         state.pattern_builder.build(),
                     );
@@ -166,14 +121,14 @@ impl<'a> System<'a> for RoadBuildSystem {
 
                     state.build_state = BuildState::Start(hover);
                 }
-                (BuildState::Interpolation(interpoint, selected_proj), Some(hover))
-                    if compatible(map, hover.kind, selected_proj.kind) =>
+                (Interpolation(interpoint, selected_proj), _)
+                    if compatible(map, cur_proj.kind, selected_proj.kind) =>
                 {
                     // Interpolated connection to something
                     let selected_after = make_connection(
                         map,
                         selected_proj,
-                        hover,
+                        cur_proj,
                         Some(interpoint),
                         state.pattern_builder.build(),
                     );
@@ -187,6 +142,46 @@ impl<'a> System<'a> for RoadBuildSystem {
                 }
                 _ => {}
             }
+        }
+    }
+}
+
+fn make_connection(
+    map: &mut Map,
+    from: MapProject,
+    to: MapProject,
+    interpoint: Option<Vec2>,
+    pattern: LanePattern,
+) -> IntersectionID {
+    use ProjectKind::*;
+
+    let connection_segment = match interpoint {
+        Some(x) => RoadSegmentKind::from_elbow(from.pos, to.pos, x),
+        None => RoadSegmentKind::Straight,
+    };
+
+    let mut mk_inter = |proj: MapProject| match proj.kind {
+        Ground => map.add_intersection(proj.pos),
+        Inter(id) => id,
+        Road(id) => map.split_road(id, proj.pos),
+    };
+
+    let from = mk_inter(from);
+    let to = mk_inter(to);
+
+    map.connect(from, to, pattern, connection_segment);
+    to
+}
+
+fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
+    use ProjectKind::*;
+    match (x, y) {
+        (Ground, _) | (_, Ground) => true,
+        (Road(id), Road(id2)) => id != id2,
+        (Inter(id), Inter(id2)) => id != id2,
+        (Inter(id_inter), Road(id_road)) | (Road(id_road), Inter(id_inter)) => {
+            let r = &map.roads()[id_road];
+            r.src != id_inter && r.dst != id_inter
         }
     }
 }
@@ -254,52 +249,6 @@ impl RoadBuildResource {
                     }
                 }
             }
-        }
-    }
-}
-
-fn make_connection(
-    map: &mut Map,
-    from: MapProject,
-    to: MapProject,
-    interpoint: Option<Vec2>,
-    pattern: LanePattern,
-) -> IntersectionID {
-    use ProjectKind::*;
-
-    let connection_segment = match interpoint {
-        Some(x) => RoadSegmentKind::from_elbow(from.pos, to.pos, x),
-        None => RoadSegmentKind::Straight,
-    };
-
-    let (from, to) = match (from.kind, to.kind) {
-        (Road(src), Road(dst)) => {
-            let from_split = map.split_road(src, from.pos);
-            let to_split = map.split_road(dst, to.pos);
-            (from_split, to_split)
-        }
-        (Inter(src), Inter(dst)) => (src, dst),
-        (Inter(id_inter), Road(id_road)) => {
-            let split = map.split_road(id_road, to.pos);
-            (id_inter, split)
-        }
-        (Road(id_road), Inter(id_inter)) => {
-            let split = map.split_road(id_road, from.pos);
-            (split, id_inter)
-        }
-    };
-    map.connect(from, to, pattern, connection_segment);
-    to
-}
-
-fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
-    use ProjectKind::*;
-    match (x, y) {
-        (Road(id), Road(id2)) => id != id2,
-        (Inter(id), Inter(id2)) => id != id2,
-        (Inter(id_inter), Road(id_road)) | (Road(id_road), Inter(id_inter)) => {
-            let r = &map.roads()[id_road];
-            r.src != id_inter && r.dst != id_inter
         }
     }
 }

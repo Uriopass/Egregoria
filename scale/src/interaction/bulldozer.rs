@@ -61,21 +61,17 @@ impl<'a> System<'a> for BulldozerSystem {
         data.transforms
             .get_mut(data.self_r.project)
             .unwrap()
-            .set_position(
-                cur_proj
-                    .map(|x| x.pos)
-                    .unwrap_or(data.mouseinfo.unprojected),
-            );
+            .set_position(cur_proj.pos);
 
         if data.mouseinfo.buttons.contains(&MouseButton::Left) {
             let mut potentially_empty = Vec::new();
-            match cur_proj.map(|x| x.kind) {
-                Some(ProjectKind::Inter(id)) => {
+            match cur_proj.kind {
+                ProjectKind::Inter(id) => {
                     potentially_empty
                         .extend(data.map.intersections()[id].neighbors(data.map.roads()));
                     data.map.remove_intersection(id)
                 }
-                Some(ProjectKind::Road(id)) => {
+                ProjectKind::Road(id) => {
                     let r = &data.map.roads()[id];
 
                     potentially_empty.push(r.src);
