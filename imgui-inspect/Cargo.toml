@@ -1,6 +1,6 @@
 [package]
 name = "imgui-inspect"
-version = "0.3.4"
+version = "0.4.0"
 authors = ["Philip Degarmo <aclysma@gmail.com>"]
 edition = "2018"
 description = "Traits and default implementations for inspecting values with imgui."
@@ -17,5 +17,5 @@ maintenance = { status = "experimental" }
 
 [dependencies]
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
-imgui = "0.3"
+imgui = "0.4"
 specs = { version = "0.16", default-features = false }
