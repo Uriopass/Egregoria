@@ -8,12 +8,6 @@ use crate::map_model::{
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
-#[derive(Serialize, Deserialize)]
-pub struct ParkingSpot {
-    pub parent: LaneID,
-    pub dist_along: f32,
-}
-
 new_key_type! {
     pub struct RoadID;
 }
@@ -52,10 +46,8 @@ pub struct Road {
     pub src_interface: f32,
     pub dst_interface: f32,
 
-    lanes_forward: Vec<LaneID>,
-    lanes_backward: Vec<LaneID>,
-
-    pub parking_spots: Vec<ParkingSpot>,
+    pub lanes_forward: Vec<LaneID>,
+    pub lanes_backward: Vec<LaneID>,
 
     pub lane_pattern: LanePattern,
 }
@@ -85,15 +77,14 @@ impl Road {
             lanes_forward: vec![],
             lanes_backward: vec![],
             lane_pattern: lane_pattern.clone(),
-            parking_spots: vec![],
             generated_points: PolyLine::default(),
         });
         let road = &mut store[id];
         for lane in &lane_pattern.lanes_forward {
-            road.add_lane(lanes, *lane, LaneDirection::Forward);
+            Lane::make(road, lanes, *lane, LaneDirection::Forward);
         }
         for lane in &lane_pattern.lanes_backward {
-            road.add_lane(lanes, *lane, LaneDirection::Backward);
+            Lane::make(road, lanes, *lane, LaneDirection::Backward);
         }
         road.gen_pos(intersections, lanes);
         id
@@ -129,36 +120,6 @@ impl Road {
                 .map(|x| &lanes[*x])
                 .find(|x| matches!(x.kind, LaneKind::Walking)),
         )
-    }
-
-    // todo: move this to Lane struct
-    pub fn add_lane(
-        &mut self,
-        store: &mut Lanes,
-        lane_type: LaneKind,
-        direction: LaneDirection,
-    ) -> LaneID {
-        let (src, dst) = match direction {
-            LaneDirection::Forward => (self.src, self.dst),
-            LaneDirection::Backward => (self.dst, self.src),
-        };
-
-        let id = store.insert_with_key(|id| Lane {
-            id,
-            src,
-            dst,
-            kind: lane_type,
-            points: Default::default(),
-            width: lane_type.width(),
-            inter_length: self.length,
-            control: TrafficControl::Always,
-        });
-        match direction {
-            LaneDirection::Forward => self.lanes_forward.push(id),
-            LaneDirection::Backward => self.lanes_backward.push(id),
-        }
-        self.width += lane_type.width();
-        id
     }
 
     pub fn gen_pos(&mut self, intersections: &Intersections, lanes: &mut Lanes) {

@@ -1,6 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
-use crate::map_model::{IntersectionID, Road, TrafficControl, TraverseDirection};
+use crate::map_model::{IntersectionID, Lanes, Road, TrafficControl, TraverseDirection};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -153,6 +153,35 @@ impl LanePatternBuilder {
 }
 
 impl Lane {
+    pub fn make(
+        parent: &mut Road,
+        store: &mut Lanes,
+        lane_type: LaneKind,
+        direction: LaneDirection,
+    ) -> LaneID {
+        let (src, dst) = match direction {
+            LaneDirection::Forward => (parent.src, parent.dst),
+            LaneDirection::Backward => (parent.dst, parent.src),
+        };
+
+        let id = store.insert_with_key(|id| Lane {
+            id,
+            src,
+            dst,
+            kind: lane_type,
+            points: Default::default(),
+            width: lane_type.width(),
+            inter_length: parent.length,
+            control: TrafficControl::Always,
+        });
+        match direction {
+            LaneDirection::Forward => parent.lanes_forward.push(id),
+            LaneDirection::Backward => parent.lanes_backward.push(id),
+        }
+        parent.width += lane_type.width();
+        id
+    }
+
     pub fn get_inter_node_pos(&self, id: IntersectionID) -> Vec2 {
         match (id, self.points.as_slice()) {
             (x, [p, ..]) if x == self.src => *p,
