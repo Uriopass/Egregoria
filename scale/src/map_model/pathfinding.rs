@@ -1,6 +1,7 @@
 #![allow(clippy::or_fun_call)]
 use crate::map_model::{LaneID, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
 use ordered_float::NotNan;
+use slotmap::Key;
 
 pub trait Pathfinder {
     fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>>;
@@ -66,15 +67,24 @@ impl Pathfinder for DirectionalPath {
 
         let end_pos = inters[lanes[end].dst].pos;
 
-        let heuristic = |p: &LaneID| {
-            let pos = inters[lanes[*p].dst].pos;
+        let dummy = LaneID::null();
+
+        let heuristic = |&p: &LaneID| {
+            let pos = inters[lanes[p].dst].pos;
             NotNan::new(pos.distance(end_pos) * 1.2).unwrap() // Inexact but (much) faster
         };
 
-        let successors = |p: &LaneID| {
-            let l = &lanes[*p];
+        let successors = |&p: &LaneID| {
+            let l;
+            let p = if p == dummy {
+                l = &lanes[start_lane];
+                start_lane
+            } else {
+                l = &lanes[p];
+                p
+            };
             let inter = &inters[l.dst];
-            inter.turns_from(*p).map(|(x, _)| {
+            inter.turns_from(p).map(|(x, _)| {
                 (
                     x.dst,
                     NotNan::new(lanes[x.dst].inter_length).unwrap_or(NotNan::new(0.0).unwrap()),
@@ -82,8 +92,10 @@ impl Pathfinder for DirectionalPath {
             })
         };
 
+        // todo: when pathfinding is updated with this pr: https://github.com/samueltardieu/pathfinding/pull/247
+        // update heuristic code to remove the if dummy
         let (v, _) =
-            pathfinding::directed::astar::astar(&start_lane, successors, heuristic, |p| *p == end)?;
+            pathfinding::directed::astar::astar(&dummy, successors, heuristic, |p| *p == end)?;
 
         let mut path = Vec::with_capacity(v.len() * 2);
         path.push(start);

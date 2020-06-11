@@ -172,6 +172,29 @@ impl PolyLine {
         }
     }
 
+    /// Inverse of point_along
+    /// proj needs to be on the polyline for the result to be accurate
+    pub fn distance_along(&self, proj: Vec2) -> f32 {
+        match self.n_points() {
+            0 | 1 => 0.0,
+            2 => self[0].distance(proj),
+            _ => {
+                let mut partial = 0.0;
+                for w in self.0.windows(2) {
+                    let d = w[0].distance2(w[1]);
+                    let d2 = w[0].distance2(proj);
+
+                    if d2 < d {
+                        return partial + d2.sqrt();
+                    }
+
+                    partial += d.sqrt();
+                }
+                partial
+            }
+        }
+    }
+
     pub fn length(&self) -> f32 {
         self.0.windows(2).map(|x| (x[1] - x[0]).magnitude()).sum()
     }

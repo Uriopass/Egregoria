@@ -1,6 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
-use crate::map_model::{LaneID, Map, Pathfinder, Traversable};
+use crate::map_model::{LaneID, Map, Pathfinder, Traversable, TraverseKind};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
@@ -51,27 +51,50 @@ impl Itinerary {
     pub fn route(
         pos: Vec2,
         cur: Traversable,
-        objective: (LaneID, Vec2),
+        (l_obj, obj): (LaneID, Vec2),
         map: &Map,
         pather: &impl Pathfinder,
     ) -> Option<Itinerary> {
-        let mut reversed_route: Vec<Traversable> = pather
-            .path(map, cur, objective.0)?
-            .into_iter()
-            .rev()
-            .collect();
+        let mut points = cur.points(map);
+        let (segid, _) = points.project_segment(pos)?;
+
+        if let TraverseKind::Lane(id) = cur.kind {
+            if id == l_obj {
+                // start lane is objective lane
+
+                let (segid_obj, _) = points.project_segment(obj)?;
+
+                if segid_obj > segid
+                    || (segid_obj == segid
+                        && points[segid - 1].distance2(pos) < points[segid - 1].distance2(obj))
+                {
+                    let kind = ItineraryKind::Route(Route {
+                        reversed_route: vec![],
+                        end_pos: obj,
+                        cur,
+                    });
+
+                    let mut local_path = PolyLine::new(vec![]);
+                    local_path.extend(&points.as_slice()[segid..segid_obj]);
+                    local_path.push(obj);
+
+                    return Some(Itinerary { kind, local_path });
+                }
+            }
+        }
+
+        points.drain(..segid - 1);
+
+        let mut reversed_route: Vec<Traversable> =
+            pather.path(map, cur, l_obj)?.into_iter().rev().collect();
 
         reversed_route.pop(); // Remove start
 
         let kind = ItineraryKind::Route(Route {
             reversed_route,
-            end_pos: objective.1,
+            end_pos: obj,
             cur,
         });
-
-        let mut points = cur.points(map);
-        let (id, _) = points.project_segment(pos)?;
-        points.drain(..id - 1);
 
         let mut it = Self {
             kind,
