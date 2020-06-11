@@ -223,7 +223,7 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for InspectVec<T> 
         let v = &mut data[0];
 
         let mut changed = false;
-        if ui.collapsing_header(&im_str!("{}", label)).build() {
+        if imgui::CollapsingHeader::new(&im_str!("{}", label)).build(&ui) {
             ui.indent();
             for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
@@ -262,7 +262,7 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
         let v = &mut data[0];
         let mut changed = false;
 
-        if ui.collapsing_header(&im_str!("{}", label)).build() {
+        if imgui::CollapsingHeader::new(&im_str!("{}", label)).build(&ui) {
             ui.indent();
             for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
