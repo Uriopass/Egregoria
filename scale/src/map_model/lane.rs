@@ -203,6 +203,10 @@ impl Lane {
         self.inter_length = parent_road.length;
     }
 
+    pub fn control_point(&self) -> Vec2 {
+        self.points.last().unwrap()
+    }
+
     pub fn dist2_to(&self, p: Vec2) -> f32 {
         (self.points.project(p).unwrap() - p).magnitude2()
     }

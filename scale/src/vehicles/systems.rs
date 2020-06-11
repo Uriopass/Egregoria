@@ -172,46 +172,48 @@ pub fn calc_decision<'a>(
 
     let delta_pos: Vec2 = objective - position;
     let (dir_to_pos, dist_to_pos) = unwrap_or!(delta_pos.dir_dist(), return);
+
     let time_to_stop = speed / vehicle.kind.deceleration();
     let stop_dist = time_to_stop * speed / 2.0;
 
     vehicle.desired_dir = dir_to_pos;
     vehicle.desired_speed = vehicle.kind.cruising_speed();
 
-    if vehicle.itinerary.remaining_points() == 1 && !is_terminal {
-        if let Some(Traversable {
-            kind: TraverseKind::Lane(l_id),
-            ..
-        }) = vehicle.itinerary.get_travers()
-        {
-            match map.lanes()[*l_id].control.get_behavior(time.time_seconds) {
-                TrafficBehavior::RED | TrafficBehavior::ORANGE => {
-                    if dist_to_pos
-                        < OBJECTIVE_OK_DIST * 1.05
-                            + stop_dist
-                            + (vehicle.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
-                    {
-                        vehicle.desired_speed = 0.0;
-                    }
+    // Close to terminal objective
+    if is_terminal && dist_to_pos < 1.0 + stop_dist {
+        vehicle.desired_speed = 0.0;
+    }
+
+    if let Some(Traversable {
+        kind: TraverseKind::Lane(l_id),
+        ..
+    }) = vehicle.itinerary.get_travers()
+    {
+        let l = &map.lanes()[*l_id];
+        let dist_to_light = l.control_point().distance(position);
+        match l.control.get_behavior(time.time_seconds) {
+            TrafficBehavior::RED | TrafficBehavior::ORANGE => {
+                if dist_to_light
+                    < OBJECTIVE_OK_DIST * 1.05
+                        + 2.0
+                        + stop_dist
+                        + (vehicle.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
+                {
+                    vehicle.desired_speed = 0.0;
                 }
-                TrafficBehavior::STOP => {
-                    if dist_to_pos < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
-                        vehicle.desired_speed = 0.0;
-                    }
-                }
-                _ => {}
             }
+            TrafficBehavior::STOP => {
+                if dist_to_light < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
+                    vehicle.desired_speed = 0.0;
+                }
+            }
+            _ => {}
         }
     }
 
     // Not facing the objective
     if dir_to_pos.dot(trans.direction()) < 0.8 {
         vehicle.desired_speed = vehicle.desired_speed.min(6.0);
-    }
-
-    // Close to terminal objective
-    if is_terminal && dist_to_pos < 1.0 + stop_dist {
-        vehicle.desired_speed = 0.0;
     }
 
     // Stop at 80 cm of object in front
