@@ -18,9 +18,9 @@ imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 bincode = "1.2.1"
 serde = "1.0"
-imgui = "0.3"
+imgui = "0.4"
 specs = {version = "0.16", default-features = false, features = ["shred-derive", "specs-derive", "serde"]}
-pathfinding = "2.0.4"
+pathfinding = { git = "https://github.com/samueltardieu/pathfinding" }
 flat_spatial = "0.1.3"
 mint = "0.5.5"
 lazy_static = "1.4.0"

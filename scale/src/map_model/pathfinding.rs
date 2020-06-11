@@ -92,8 +92,6 @@ impl Pathfinder for DirectionalPath {
             })
         };
 
-        // todo: when pathfinding is updated with this pr: https://github.com/samueltardieu/pathfinding/pull/247
-        // update heuristic code to remove the if dummy
         let (v, _) =
             pathfinding::directed::astar::astar(&dummy, successors, heuristic, |p| *p == end)?;
 

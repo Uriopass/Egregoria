@@ -303,7 +303,7 @@ fn generate(
                 }
 
                 let should_render_children = if header {
-                    ui.collapsing_header(&imgui::im_str!( "{}", label)).default_open(true).build()
+                    ui.collapsing_header(&imgui::im_str!( "{}", label)).default_open(true).build(&ui)
                 } else {
                     true
                 };
@@ -333,7 +333,7 @@ fn generate(
                 }
 
                 let should_render_children = if header {
-                    ui.collapsing_header(&imgui::im_str!("{}", label)).default_open(true).build()
+                    ui.collapsing_header(&imgui::im_str!("{}", label)).default_open(true).build(&ui)
                 } else {
                     true
                 };
