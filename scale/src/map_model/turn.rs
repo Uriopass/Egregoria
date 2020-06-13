@@ -51,22 +51,21 @@ impl Turn {
     pub fn new(id: TurnID, kind: TurnKind) -> Self {
         Self {
             id,
-            points: PolyLine::with_capacity(N_SPLINE + 2),
+            points: PolyLine::new(vec![vec2!(0.0, 0.0); N_SPLINE + 2]),
             kind,
         }
     }
 
     pub fn make_points(&mut self, lanes: &Lanes) {
-        self.points.clear();
-
         let src_lane = &lanes[self.id.src];
         let dst_lane = &lanes[self.id.dst];
 
         let pos_src = src_lane.get_inter_node_pos(self.id.parent);
         let pos_dst = dst_lane.get_inter_node_pos(self.id.parent);
 
+        self.points.clear_push(pos_src);
+
         if self.kind.is_crosswalk() {
-            self.points.push(pos_src);
             self.points.push(pos_dst);
             return;
         }
@@ -89,6 +88,7 @@ impl Turn {
             to_derivative: derivative_dst,
         };
 
-        self.points.extend(spline.smart_points(0.3, 0.0, 1.0));
+        self.points
+            .extend(spline.smart_points(0.3, 0.0, 1.0).skip(1));
     }
 }

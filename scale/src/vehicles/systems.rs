@@ -189,25 +189,26 @@ pub fn calc_decision<'a>(
         ..
     }) = vehicle.itinerary.get_travers()
     {
-        let l = &map.lanes()[*l_id];
-        let dist_to_light = l.control_point().distance(position);
-        match l.control.get_behavior(time.time_seconds) {
-            TrafficBehavior::RED | TrafficBehavior::ORANGE => {
-                if dist_to_light
-                    < OBJECTIVE_OK_DIST * 1.05
-                        + 2.0
-                        + stop_dist
-                        + (vehicle.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
-                {
-                    vehicle.desired_speed = 0.0;
+        if let Some(l) = map.lanes().get(*l_id) {
+            let dist_to_light = l.control_point().distance(position);
+            match l.control.get_behavior(time.time_seconds) {
+                TrafficBehavior::RED | TrafficBehavior::ORANGE => {
+                    if dist_to_light
+                        < OBJECTIVE_OK_DIST * 1.05
+                            + 2.0
+                            + stop_dist
+                            + (vehicle.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
+                    {
+                        vehicle.desired_speed = 0.0;
+                    }
                 }
-            }
-            TrafficBehavior::STOP => {
-                if dist_to_light < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
-                    vehicle.desired_speed = 0.0;
+                TrafficBehavior::STOP => {
+                    if dist_to_light < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
+                        vehicle.desired_speed = 0.0;
+                    }
                 }
+                _ => {}
             }
-            _ => {}
         }
     }
 

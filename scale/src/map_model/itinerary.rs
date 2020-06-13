@@ -1,5 +1,5 @@
-use crate::geometry::polyline::PolyLine;
 use crate::geometry::Vec2;
+use crate::gui::InspectVec;
 use crate::map_model::{LaneID, Map, Pathfinder, Traversable, TraverseKind};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Inspect, Serialize, Deserialize)]
 pub struct Itinerary {
     kind: ItineraryKind,
-    local_path: PolyLine,
+    #[inspect(proxy_type = "InspectVec<Vec2>")]
+    local_path: Vec<Vec2>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -30,21 +31,21 @@ impl Itinerary {
     pub fn none() -> Self {
         Self {
             kind: ItineraryKind::None,
-            local_path: PolyLine::default(),
+            local_path: Default::default(),
         }
     }
 
     pub fn simple(t: Traversable, m: &Map) -> Self {
         Self {
             kind: ItineraryKind::Simple(t),
-            local_path: t.points(m),
+            local_path: t.points(m).into_vec(),
         }
     }
 
     pub fn wait_until(x: f64) -> Self {
         Self {
             kind: ItineraryKind::WaitUntil(x),
-            local_path: PolyLine::default(),
+            local_path: Default::default(),
         }
     }
 
@@ -55,14 +56,14 @@ impl Itinerary {
         map: &Map,
         pather: &impl Pathfinder,
     ) -> Option<Itinerary> {
-        let mut points = cur.points(map);
-        let (segid, _) = points.project_segment(pos)?;
+        let points = cur.points(map);
+        let (segid, _) = points.project_segment(pos);
 
         if let TraverseKind::Lane(id) = cur.kind {
             if id == l_obj {
                 // start lane is objective lane
 
-                let (segid_obj, _) = points.project_segment(obj)?;
+                let (segid_obj, _) = points.project_segment(obj);
 
                 if segid_obj > segid
                     || (segid_obj == segid
@@ -74,7 +75,7 @@ impl Itinerary {
                         cur,
                     });
 
-                    let mut local_path = PolyLine::new(vec![]);
+                    let mut local_path = vec![];
                     local_path.extend(&points.as_slice()[segid..segid_obj]);
                     local_path.push(obj);
 
@@ -83,6 +84,7 @@ impl Itinerary {
             }
         }
 
+        let mut points = points.into_vec();
         points.drain(..segid - 1);
 
         let mut reversed_route: Vec<Traversable> =
@@ -105,7 +107,12 @@ impl Itinerary {
     }
 
     pub fn advance(&mut self, map: &Map) -> Option<Vec2> {
-        let v = self.local_path.pop_first();
+        let v = if self.local_path.is_empty() {
+            None
+        } else {
+            Some(self.local_path.remove(0))
+        };
+
         if self.local_path.is_empty() {
             if let ItineraryKind::Route(r) = &mut self.kind {
                 r.cur = r.reversed_route.pop()?;
@@ -116,12 +123,11 @@ impl Itinerary {
 
                 let points = r.cur.points(map);
                 if r.reversed_route.is_empty() {
-                    if let Some((id, _)) = points.project_segment(r.end_pos) {
-                        self.local_path.extend(&points.as_slice()[..id]);
-                    }
+                    let (id, _) = points.project_segment(r.end_pos);
+                    self.local_path.extend(&points.as_slice()[..id]);
                     self.local_path.push(r.end_pos);
                 } else {
-                    self.local_path = points;
+                    self.local_path = points.into_vec();
                 }
             }
         }
@@ -136,7 +142,7 @@ impl Itinerary {
     }
 
     pub fn remaining_points(&self) -> usize {
-        self.local_path.n_points()
+        self.local_path.len()
     }
 
     pub fn is_terminal(&self) -> bool {
@@ -150,7 +156,7 @@ impl Itinerary {
     }
 
     pub fn get_point(&self) -> Option<Vec2> {
-        self.local_path.first()
+        self.local_path.first().copied()
     }
 
     pub fn get_travers(&self) -> Option<&Traversable> {
@@ -164,7 +170,7 @@ impl Itinerary {
         &self.kind
     }
 
-    pub fn local_path(&self) -> &PolyLine {
+    pub fn local_path(&self) -> &[Vec2] {
         &self.local_path
     }
 

@@ -253,7 +253,7 @@ fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) -> Optio
     }
 
     tess.color = LinearColor::GREEN;
-    tess.draw_polyline(itinerary.local_path().as_slice(), 1.0, 1.0);
+    tess.draw_polyline(&itinerary.local_path(), 1.0, 1.0);
 
     if let Some(p) = itinerary.get_point() {
         tess.draw_stroke(p, pos, 1.0, 1.0);

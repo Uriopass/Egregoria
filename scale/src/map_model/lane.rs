@@ -59,14 +59,27 @@ pub struct Lane {
     pub points: PolyLine,
     pub width: f32,
 
-    /// Length from intersection to intersection
-    pub inter_length: f32,
+    /// Length from start to end
+    pub length: f32,
 }
 
 #[derive(Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct LanePattern {
-    pub lanes_forward: Vec<LaneKind>,
-    pub lanes_backward: Vec<LaneKind>,
+    lanes_forward: Vec<LaneKind>,
+    lanes_backward: Vec<LaneKind>,
+}
+
+impl LanePattern {
+    pub fn lanes(&self) -> impl Iterator<Item = (LaneKind, LaneDirection)> + '_ {
+        self.lanes_forward
+            .iter()
+            .map(|&x| (x, LaneDirection::Forward))
+            .chain(
+                self.lanes_backward
+                    .iter()
+                    .map(|&x| (x, LaneDirection::Backward)),
+            )
+    }
 }
 
 #[derive(Clone, Copy, Inspect)]
@@ -171,7 +184,7 @@ impl Lane {
             kind: lane_type,
             points: Default::default(),
             width: lane_type.width(),
-            inter_length: parent.length,
+            length: 0.0,
             control: TrafficControl::Always,
         });
         match direction {
@@ -194,12 +207,11 @@ impl Lane {
         let lane_dist = self.width * 0.5 + dist_from_bottom - parent_road.width * 0.5;
 
         let parent_points = parent_road.generated_points();
-        self.points.clear();
-
-        self.points.reserve(parent_points.n_points());
 
         let src_nor = -parent_road.src_dir().perpendicular();
-        self.points.push(parent_points[0] + src_nor * lane_dist);
+        self.points
+            .clear_push(parent_points[0] + src_nor * lane_dist);
+        self.points.reserve(parent_points.n_points() - 1);
 
         for window in parent_points.windows(3) {
             let a = window[0];
@@ -223,21 +235,21 @@ impl Lane {
 
         let dst_nor = parent_road.dst_dir().perpendicular();
         self.points
-            .push(parent_road.generated_points().last().unwrap() + dst_nor * lane_dist);
+            .push(parent_road.generated_points().last() + dst_nor * lane_dist);
 
         if self.dir_from(parent_road.src) == TraverseDirection::Backward {
             self.points.reverse();
         }
 
-        self.inter_length = parent_road.length;
+        self.length = self.points.length();
     }
 
     pub fn control_point(&self) -> Vec2 {
-        self.points.last().unwrap()
+        self.points.last()
     }
 
     pub fn dist2_to(&self, p: Vec2) -> f32 {
-        (self.points.project(p).unwrap() - p).magnitude2()
+        (self.points.project(p) - p).magnitude2()
     }
 
     pub fn dir_from(&self, i: IntersectionID) -> TraverseDirection {

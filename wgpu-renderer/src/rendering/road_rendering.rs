@@ -140,7 +140,7 @@ impl RoadRenderer {
             let dir = n.orientation_from(n.dst);
             let dir_perp = dir.perpendicular();
 
-            let r_center = n.points.last().unwrap() + dir_perp * 2.5 + dir * 2.5;
+            let r_center = n.points.last() + dir_perp * 2.5 + dir * 2.5;
 
             if n.control.is_stop_sign() {
                 sr.color = LinearColor::WHITE;
