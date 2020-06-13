@@ -21,5 +21,24 @@ impl ParkingSpots {
         debug_assert!(matches!(lane.kind, LaneKind::Parking));
         let n_spots = (lane.length / PARKING_SPOT_LENGTH) as i32;
         let step = lane.length / n_spots as f32;
+
+        let spots = match self.spots.get_mut(lane.id) {
+            Some(x) => x,
+            None => {
+                self.spots.insert(lane.id, vec![]);
+                &mut self.spots[lane.id]
+            }
+        };
+
+        spots.clear();
+
+        spots.extend(
+            lane.points
+                .points_dirs_along((0..n_spots).map(|x| (x as f32 + 0.5) * step))
+                .map(|(pos, dir)| ParkingSpot {
+                    pos,
+                    orientation: dir,
+                }),
+        );
     }
 }

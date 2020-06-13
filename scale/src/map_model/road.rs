@@ -77,16 +77,13 @@ impl Road {
             lanes_forward: vec![],
             lanes_backward: vec![],
             lane_pattern: lane_pattern.clone(),
-            generated_points: PolyLine::default(),
+            generated_points: unsafe { PolyLine::new_unchecked(vec![]) },
         });
         let road = &mut store[id];
         for (lane_k, dir) in lane_pattern.lanes() {
-            let l_id = Lane::make(road, lanes, lane_k, dir);
-            if matches!(lane_k, LaneKind::Parking) {
-                parking.generate_spots(&lanes[l_id])
-            }
+            Lane::make(road, lanes, lane_k, dir);
         }
-        road.gen_pos(intersections, lanes);
+        road.gen_pos(intersections, lanes, parking);
         id
     }
 
@@ -122,7 +119,12 @@ impl Road {
         )
     }
 
-    pub fn gen_pos(&mut self, intersections: &Intersections, lanes: &mut Lanes) {
+    pub fn gen_pos(
+        &mut self,
+        intersections: &Intersections,
+        lanes: &mut Lanes,
+        parking: &mut ParkingSpots,
+    ) {
         self.src_point = intersections[self.src].pos;
         self.dst_point = intersections[self.dst].pos;
 
@@ -144,6 +146,9 @@ impl Road {
             let l = &mut lanes[id];
             l.gen_pos(self, dist_from_bottom);
             dist_from_bottom += l.width;
+            if matches!(l.kind, LaneKind::Parking) {
+                parking.generate_spots(l)
+            }
         }
     }
 
