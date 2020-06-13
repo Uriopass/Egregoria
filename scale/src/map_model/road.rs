@@ -2,8 +2,7 @@ use crate::geometry::polyline::PolyLine;
 use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::map_model::{
-    IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
-    Roads, TrafficControl,
+    IntersectionID, Intersections, Lane, LaneID, LaneKind, LanePattern, Lanes, ParkingSpots, Roads,
 };
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -62,6 +61,7 @@ impl Road {
         intersections: &Intersections,
         lanes: &mut Lanes,
         store: &mut Roads,
+        parking: &mut ParkingSpots,
     ) -> RoadID {
         let id = store.insert_with_key(|id| Self {
             id,
@@ -80,11 +80,11 @@ impl Road {
             generated_points: PolyLine::default(),
         });
         let road = &mut store[id];
-        for lane in &lane_pattern.lanes_forward {
-            Lane::make(road, lanes, *lane, LaneDirection::Forward);
-        }
-        for lane in &lane_pattern.lanes_backward {
-            Lane::make(road, lanes, *lane, LaneDirection::Backward);
+        for (lane_k, dir) in lane_pattern.lanes() {
+            let l_id = Lane::make(road, lanes, lane_k, dir);
+            if matches!(lane_k, LaneKind::Parking) {
+                parking.generate_spots(&lanes[l_id])
+            }
         }
         road.gen_pos(intersections, lanes);
         id
@@ -152,8 +152,6 @@ impl Road {
     }
 
     fn generate_points(&mut self) {
-        self.generated_points.clear();
-
         let (src_dir, dst_dir) = self.basic_orientations();
 
         let from = self.src_point + src_dir * self.interface_from(self.src);
@@ -161,7 +159,8 @@ impl Road {
 
         match &self.segment {
             RoadSegmentKind::Straight => {
-                self.generated_points.extend(&[from, to]);
+                self.generated_points.clear_push(from);
+                self.generated_points.push(to);
             }
             &RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
                 let s = Spline {
@@ -171,20 +170,18 @@ impl Road {
                     to_derivative,
                 };
 
-                self.generated_points.extend(s.smart_points(
-                    1.0,
-                    s.project_t(from, 0.3),
-                    s.project_t(to, 0.3),
-                ));
+                let mut points = s.smart_points(1.0, s.project_t(from, 0.3), s.project_t(to, 0.3));
+                self.generated_points.clear_push(points.next().unwrap());
+                self.generated_points.extend(points);
             }
         }
     }
 
     pub fn interface_point(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
-            self.generated_points[0]
+            self.generated_points.first()
         } else if id == self.dst {
-            self.generated_points.last().unwrap()
+            self.generated_points.last()
         } else {
             panic!("Asking interface from an intersection not connected to the road");
         }
@@ -292,7 +289,7 @@ impl Road {
     }
 
     pub fn project(&self, p: Vec2) -> Vec2 {
-        self.generated_points.project(p).unwrap()
+        self.generated_points.project(p)
     }
 
     pub fn src_dir(&self) -> Vec2 {

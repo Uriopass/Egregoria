@@ -32,7 +32,7 @@ impl Pathfinder for PedestrianPath {
                     TraverseKind::Lane(lane_from_id),
                     lane_from.dir_from(inter.id),
                 ),
-                NotNan::new(lane_from.inter_length).unwrap_or(NotNan::new(0.0).unwrap()),
+                NotNan::new(lane_from.length).unwrap_or(NotNan::new(0.0).unwrap()),
             );
 
             inter
@@ -87,7 +87,7 @@ impl Pathfinder for DirectionalPath {
             inter.turns_from(p).map(|(x, _)| {
                 (
                     x.dst,
-                    NotNan::new(lanes[x.dst].inter_length).unwrap_or(NotNan::new(0.0).unwrap()),
+                    NotNan::new(lanes[x.dst].length).unwrap_or(NotNan::new(0.0).unwrap()),
                 )
             })
         };

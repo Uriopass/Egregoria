@@ -140,11 +140,10 @@ pub fn calc_decision<'a>(
             .get_travers()
             .map(|x| x.raw_points(map))
         {
-            if let Some(projected) = points.project(position) {
-                let lane_force = projected - trans.position();
-                let m = lane_force.magnitude();
-                desired_v += lane_force * m * 0.1;
-            }
+            let projected = points.project(position);
+            let lane_force = projected - trans.position();
+            let m = lane_force.magnitude();
+            desired_v += lane_force * m * 0.1;
         }
     }
 

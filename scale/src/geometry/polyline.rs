@@ -6,21 +6,37 @@ use std::hint::unreachable_unchecked;
 use std::ops::{Index, RangeBounds};
 use std::slice::{Iter, IterMut, Windows};
 
+/// An ordered list of at least one point forming a broken line
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct PolyLine(Vec<Vec2>);
 
 impl From<Vec<Vec2>> for PolyLine {
     fn from(x: Vec<Vec2>) -> Self {
-        Self(x)
+        Self::new(x)
     }
 }
 
 impl PolyLine {
-    pub fn new(x: Vec<Vec2>) -> Self {
+    /// # Safety
+    /// Must have at least one element, if the vec is empty then things like first() or last() might behave very badly.
+    pub unsafe fn new_unchecked(x: Vec<Vec2>) -> Self {
         Self(x)
     }
-    pub fn with_capacity(c: usize) -> Self {
-        Self(Vec::with_capacity(c))
+
+    pub fn new(x: Vec<Vec2>) -> Self {
+        if x.is_empty() {
+            panic!("Vec must have at least one point")
+        }
+        Self(x)
+    }
+
+    pub fn clear_push(&mut self, x: Vec2) {
+        self.0.clear();
+        self.0.push(x)
+    }
+
+    pub fn into_vec(self) -> Vec<Vec2> {
+        self.0
     }
 
     pub fn extend<A, T>(&mut self, s: T)
@@ -31,12 +47,23 @@ impl PolyLine {
         self.0.extend(s);
     }
 
-    pub fn pop(&mut self) -> Option<Vec2> {
-        self.0.pop()
+    pub fn pop(&mut self) -> Vec2 {
+        let v = match self.0.pop() {
+            Some(x) => x,
+            None => unsafe { unreachable_unchecked() },
+        };
+        self.check_empty();
+        v
     }
 
     pub fn push(&mut self, item: Vec2) {
         self.0.push(item)
+    }
+
+    pub fn pop_first(&mut self) -> Vec2 {
+        let v = self.0.remove(0);
+        self.check_empty();
+        v
     }
 
     pub fn last_mut(&mut self) -> Option<&mut Vec2> {
@@ -47,24 +74,19 @@ impl PolyLine {
         self.0.first_mut()
     }
 
-    pub fn clear(&mut self) {
-        self.0.clear()
-    }
-
     pub fn reverse(&mut self) {
         self.0.reverse()
     }
 
-    pub fn pop_first(&mut self) -> Option<Vec2> {
-        if self.0.is_empty() {
-            None
-        } else {
-            Some(self.0.remove(0))
+    fn check_empty(&self) {
+        if self.is_empty() {
+            panic!("Cannot have empty polyline")
         }
     }
 
     pub fn drain(&mut self, r: impl RangeBounds<usize>) {
         self.0.drain(r);
+        self.check_empty()
     }
 
     pub fn random_along(&self) -> Option<Vec2> {
@@ -72,24 +94,24 @@ impl PolyLine {
         self.point_along(r)
     }
 
-    pub fn project(&self, p: Vec2) -> Option<Vec2> {
-        self.project_segment(p).map(|x| x.1)
+    pub fn project(&self, p: Vec2) -> Vec2 {
+        self.project_segment(p).1
     }
 
     /// Returns the id of the point right after the projection along with the projection
     /// None if polyline is empty
-    pub fn project_segment(&self, p: Vec2) -> Option<(usize, Vec2)> {
+    pub fn project_segment(&self, p: Vec2) -> (usize, Vec2) {
         match self.n_points() {
-            0 => None,
-            1 => self.first().map(|x| (0, x)),
-            2 => Some((
+            0 => unsafe { unreachable_unchecked() },
+            1 => (0, self.first()),
+            2 => (
                 1,
                 Segment {
                     src: self.0[0],
                     dst: self.0[1],
                 }
                 .project(p),
-            )),
+            ),
             _ => self
                 .0
                 .windows(2)
@@ -101,7 +123,8 @@ impl PolyLine {
                         unsafe { unreachable_unchecked() } // windows(2)
                     }
                 })
-                .min_by_key(|&(_, proj)| OrderedFloat((p - proj).magnitude2())),
+                .min_by_key(|&(_, proj)| OrderedFloat((p - proj).magnitude2()))
+                .unwrap(),
         }
     }
 
@@ -172,11 +195,27 @@ impl PolyLine {
         }
     }
 
+    /// dists should be in ascending order
+    pub fn points_dirs_along<'a>(
+        &'a self,
+        dists: impl IntoIterator<Item = f32> + 'a,
+    ) -> impl Iterator<Item = (Vec2, Vec2)> + 'a {
+        PointsAlongs {
+            dists: dists.into_iter(),
+            windows: self.0.windows(2),
+            lastp: self.first(),
+            dir: self.first_dir().unwrap_or_else(|| vec2!(1.0, 0.0)),
+            dist: 0.0,
+            partial: 0.0,
+        }
+    }
+
     /// Inverse of point_along
     /// proj needs to be on the polyline for the result to be accurate
     pub fn distance_along(&self, proj: Vec2) -> f32 {
         match self.n_points() {
-            0 | 1 => 0.0,
+            0 => unsafe { unreachable_unchecked() },
+            1 => 0.0,
             2 => self[0].distance(proj),
             _ => {
                 let mut partial = 0.0;
@@ -211,12 +250,12 @@ impl PolyLine {
         self.0.get(id)
     }
 
-    pub fn first(&self) -> Option<Vec2> {
-        self.0.first().copied()
+    pub fn first(&self) -> Vec2 {
+        self.0[0]
     }
 
-    pub fn last(&self) -> Option<Vec2> {
-        self.0.last().copied()
+    pub fn last(&self) -> Vec2 {
+        self.0[self.0.len() - 1]
     }
 
     pub fn as_slice(&self) -> &[Vec2] {
@@ -245,5 +284,34 @@ impl Index<usize> for PolyLine {
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0[index]
+    }
+}
+
+struct PointsAlongs<'a, T: Iterator<Item = f32>> {
+    dists: T,
+    windows: Windows<'a, Vec2>,
+    lastp: Vec2,
+    dir: Vec2,
+    dist: f32,
+    partial: f32,
+}
+
+impl<T: Iterator<Item = f32>> Iterator for PointsAlongs<'_, T> {
+    type Item = (Vec2, Vec2);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let d = self.dists.next()?;
+        while d > self.partial + self.dist {
+            let w = unwrap_or!(self.windows.next(), break);
+            let dd = (w[1] - w[0]).dir_dist().unwrap_or((vec2!(1.0, 0.0), 0.0));
+            self.dir = dd.0; // no structural assignment :(
+            self.dist = dd.1;
+            self.lastp = w[0];
+        }
+        Some((self.lastp + self.dir * (d - self.partial), self.dir))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.dists.size_hint()
     }
 }

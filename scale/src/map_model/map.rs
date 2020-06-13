@@ -1,7 +1,7 @@
 use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Road, RoadID,
+    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, ParkingSpots, Road, RoadID,
     RoadSegmentKind,
 };
 use ordered_float::OrderedFloat;
@@ -32,6 +32,7 @@ pub struct Map {
     roads: Roads,
     lanes: Lanes,
     intersections: Intersections,
+    parking: ParkingSpots,
     pub dirty: bool,
 }
 
@@ -47,6 +48,7 @@ impl Map {
             roads: Roads::with_key(),
             lanes: Lanes::with_key(),
             intersections: Intersections::with_key(),
+            parking: ParkingSpots::default(),
             dirty: true,
         }
     }
@@ -165,6 +167,7 @@ impl Map {
             &self.intersections,
             &mut self.lanes,
             &mut self.roads,
+            &mut self.parking,
         );
 
         let inters = &mut self.intersections;
