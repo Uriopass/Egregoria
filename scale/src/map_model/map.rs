@@ -77,7 +77,7 @@ impl Map {
             other_end.update_interface_radius(&mut self.roads);
 
             let road = &mut self.roads[x];
-            road.gen_pos(&self.intersections, &mut self.lanes);
+            road.gen_pos(&self.intersections, &mut self.lanes, &mut self.parking);
 
             let other_end = &mut self.intersections[self.roads[x].other_end(id)];
             other_end.update_polygon(&self.roads);

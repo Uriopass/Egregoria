@@ -7,7 +7,7 @@ use std::ops::{Index, RangeBounds};
 use std::slice::{Iter, IterMut, Windows};
 
 /// An ordered list of at least one point forming a broken line
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PolyLine(Vec<Vec2>);
 
 impl From<Vec<Vec2>> for PolyLine {
@@ -64,14 +64,6 @@ impl PolyLine {
         let v = self.0.remove(0);
         self.check_empty();
         v
-    }
-
-    pub fn last_mut(&mut self) -> Option<&mut Vec2> {
-        self.0.last_mut()
-    }
-
-    pub fn first_mut(&mut self) -> Option<&mut Vec2> {
-        self.0.first_mut()
     }
 
     pub fn reverse(&mut self) {
@@ -200,12 +192,17 @@ impl PolyLine {
         &'a self,
         dists: impl IntoIterator<Item = f32> + 'a,
     ) -> impl Iterator<Item = (Vec2, Vec2)> + 'a {
+        let mut windows = self.0.windows(2);
+        let (dir, dist) = windows
+            .next()
+            .and_then(|w| (w[1] - w[0]).dir_dist())
+            .unwrap_or_else(|| (vec2!(1.0, 0.0), 0.0));
         PointsAlongs {
             dists: dists.into_iter(),
-            windows: self.0.windows(2),
+            windows,
             lastp: self.first(),
-            dir: self.first_dir().unwrap_or_else(|| vec2!(1.0, 0.0)),
-            dist: 0.0,
+            dir,
+            dist,
             partial: 0.0,
         }
     }
@@ -251,11 +248,11 @@ impl PolyLine {
     }
 
     pub fn first(&self) -> Vec2 {
-        self.0[0]
+        unsafe { *self.0.get_unchecked(0) }
     }
 
     pub fn last(&self) -> Vec2 {
-        self.0[self.0.len() - 1]
+        unsafe { *self.0.get_unchecked(self.0.len() - 1) }
     }
 
     pub fn as_slice(&self) -> &[Vec2] {
@@ -302,10 +299,11 @@ impl<T: Iterator<Item = f32>> Iterator for PointsAlongs<'_, T> {
     fn next(&mut self) -> Option<Self::Item> {
         let d = self.dists.next()?;
         while d > self.partial + self.dist {
+            self.partial += self.dist;
             let w = unwrap_or!(self.windows.next(), break);
-            let dd = (w[1] - w[0]).dir_dist().unwrap_or((vec2!(1.0, 0.0), 0.0));
-            self.dir = dd.0; // no structural assignment :(
-            self.dist = dd.1;
+            let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((vec2!(1.0, 0.0), 0.0));
+            self.dir = dir; // no structural assignment :(
+            self.dist = dist;
             self.lastp = w[0];
         }
         Some((self.lastp + self.dir * (d - self.partial), self.dir))

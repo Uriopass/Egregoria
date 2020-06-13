@@ -182,7 +182,7 @@ impl Lane {
             src,
             dst,
             kind: lane_type,
-            points: Default::default(),
+            points: parent.generated_points().clone(),
             width: lane_type.width(),
             length: 0.0,
             control: TrafficControl::Always,
