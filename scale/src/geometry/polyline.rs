@@ -188,17 +188,17 @@ impl PolyLine {
     }
 
     /// dists should be in ascending order
-    pub fn points_dirs_along<'a>(
-        &'a self,
-        dists: impl IntoIterator<Item = f32> + 'a,
-    ) -> impl Iterator<Item = (Vec2, Vec2)> + 'a {
+    pub fn points_dirs_along<T>(&self, dists: T) -> PointsAlongs<T>
+    where
+        T: Iterator<Item = f32>,
+    {
         let mut windows = self.0.windows(2);
         let (dir, dist) = windows
             .next()
             .and_then(|w| (w[1] - w[0]).dir_dist())
             .unwrap_or_else(|| (vec2!(1.0, 0.0), 0.0));
         PointsAlongs {
-            dists: dists.into_iter(),
+            dists,
             windows,
             lastp: self.first(),
             dir,
@@ -284,7 +284,7 @@ impl Index<usize> for PolyLine {
     }
 }
 
-struct PointsAlongs<'a, T: Iterator<Item = f32>> {
+pub struct PointsAlongs<'a, T: Iterator<Item = f32>> {
     dists: T,
     windows: Windows<'a, Vec2>,
     lastp: Vec2,
