@@ -105,15 +105,16 @@ impl Spline {
     }
 
     fn smart_points_t(&self, detail: f32, start: f32, end: f32) -> impl Iterator<Item = f32> + '_ {
-        assert!(end > start);
         let detail = detail.abs();
 
-        SmartPoints {
-            spline: self,
-            t: start,
-            end,
-            detail,
-        }
+        std::iter::once(start)
+            .chain(SmartPoints {
+                spline: self,
+                t: start,
+                end,
+                detail,
+            })
+            .chain(std::iter::once(end))
     }
 
     pub fn points(&self, n: usize) -> impl Iterator<Item = Vec2> + '_ {
@@ -150,16 +151,10 @@ impl<'a> Iterator for SmartPoints<'a> {
     type Item = f32;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.t.eq(&self.end) {
+        self.t += self.spline.step(self.t, self.detail);
+        if self.t > self.end {
             return None;
         }
-        if self.t > self.end {
-            self.t = self.end;
-            return Some(self.end);
-        }
-
-        let r = self.t;
-        self.t += self.spline.step(r, self.detail);
-        Some(r)
+        Some(self.t)
     }
 }
