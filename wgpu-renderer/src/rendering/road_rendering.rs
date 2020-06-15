@@ -3,7 +3,7 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
-use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind};
+use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind, PARKING_SPOT_LENGTH};
 use scale::physics::Transform;
 use scale::rendering::{from_srgb, Color, LinearColor};
 use scale::utils::Restrict;
@@ -64,26 +64,45 @@ impl RoadRenderer {
         let lanes = map.lanes();
 
         tess.color = LinearColor::WHITE;
-        for n in lanes.values() {
+        for l in lanes.values() {
             tess.color = LinearColor::WHITE;
 
-            let or_src = n.orientation_from(n.src);
-            let or_dst = -n.orientation_from(n.dst);
+            let or_src = l.orientation_from(l.src);
+            let or_dst = -l.orientation_from(l.dst);
 
-            let w = n.width + 0.5;
-            tess.draw_polyline_with_dir(n.points.as_slice(), or_src, or_dst, Z_LANE_BG, w);
+            let w = l.width + 0.5;
+            tess.draw_polyline_with_dir(l.points.as_slice(), or_src, or_dst, Z_LANE_BG, w);
 
-            tess.color = match n.kind {
+            tess.color = match l.kind {
                 LaneKind::Walking => high_gray,
                 LaneKind::Parking => low_gray,
                 _ => mid_gray,
             };
-            let z = match n.kind {
+            let z = match l.kind {
                 LaneKind::Walking => Z_SIDEWALK,
                 _ => Z_LANE,
             };
 
-            tess.draw_polyline_with_dir(n.points.as_slice(), or_src, or_dst, z, n.width - 0.5);
+            tess.draw_polyline_with_dir(l.points.as_slice(), or_src, or_dst, z, l.width - 0.5);
+
+            if matches!(l.kind, LaneKind::Parking) {
+                let n_spots = (l.length / PARKING_SPOT_LENGTH) as i32;
+                let step = l.length / n_spots as f32;
+                tess.color = LinearColor::WHITE;
+
+                for (pos, dir) in l
+                    .points
+                    .points_dirs_along((0..=n_spots).map(|l| (l as f32) * step))
+                {
+                    let perp = dir.perpendicular();
+                    tess.draw_stroke(
+                        pos + perp * l.width * 0.5,
+                        pos - perp * l.width * 0.5,
+                        Z_LANE,
+                        0.2,
+                    );
+                }
+            }
         }
 
         let mut p = Vec::with_capacity(8);
