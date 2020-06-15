@@ -199,13 +199,11 @@ impl RoadRenderer {
                 .mul(0.2)
                 .restrict(0.0, 1.0);
 
-            let lanes = road
-                .lanes_iter()
-                .map(move |x| &lanes[*x])
-                .filter(|l| l.kind.vehicles());
+            let r_lanes = road.lanes_iter().filter(|(_, kind)| kind.vehicles());
             let n_arrows = ((road.length / 50.0) as i32).max(1);
 
-            for lane in lanes {
+            for (id, _) in r_lanes {
+                let lane = &lanes[id];
                 let l = lane.points.length();
                 for i in 0..n_arrows {
                     let (mid, dir) = match lane

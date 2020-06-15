@@ -1,4 +1,6 @@
-use crate::map_model::{Intersection, IntersectionID, LaneID, Lanes, Roads, TurnID, TurnKind};
+use crate::map_model::{
+    Intersection, IntersectionID, LaneID, LaneKind, Lanes, Roads, TurnID, TurnKind,
+};
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use std::iter::{Extend, Iterator};
@@ -18,9 +20,10 @@ impl Default for TurnPolicy {
     }
 }
 
-fn filter_vehicles(x: &[LaneID], lanes: &Lanes) -> Vec<LaneID> {
+fn filter_vehicles(x: &[(LaneID, LaneKind)]) -> Vec<LaneID> {
     x.iter()
-        .filter(|x| lanes[**x].kind.vehicles())
+        .filter(|(_, kind)| kind.vehicles())
+        .map(|(id, _)| id)
         .copied()
         .collect::<Vec<_>>()
 }
@@ -86,8 +89,8 @@ impl TurnPolicy {
                 let road = &roads[*road_id];
                 turns.extend(Self::zip_on_same_length(
                     inter.id,
-                    &filter_vehicles(road.incoming_lanes_to(inter.id), lanes),
-                    &filter_vehicles(road.outgoing_lanes_from(inter.id), lanes),
+                    &filter_vehicles(road.incoming_lanes_to(inter.id)),
+                    &filter_vehicles(road.outgoing_lanes_from(inter.id)),
                 ));
                 return;
             }
@@ -95,11 +98,11 @@ impl TurnPolicy {
                 let road1 = &roads[*road1];
                 let road2 = &roads[*road2];
 
-                let incoming_road1 = filter_vehicles(road1.incoming_lanes_to(inter.id), lanes);
-                let incoming_road2 = filter_vehicles(road2.incoming_lanes_to(inter.id), lanes);
+                let incoming_road1 = filter_vehicles(road1.incoming_lanes_to(inter.id));
+                let incoming_road2 = filter_vehicles(road2.incoming_lanes_to(inter.id));
 
-                let outgoing_road1 = filter_vehicles(road1.outgoing_lanes_from(inter.id), lanes);
-                let outgoing_road2 = filter_vehicles(road2.outgoing_lanes_from(inter.id), lanes);
+                let outgoing_road1 = filter_vehicles(road1.outgoing_lanes_from(inter.id));
+                let outgoing_road2 = filter_vehicles(road2.outgoing_lanes_from(inter.id));
 
                 turns.extend(Self::zip_on_same_length(
                     inter.id,
@@ -124,13 +127,14 @@ impl TurnPolicy {
                     continue;
                 }
 
-                for incoming in roads[*road1].incoming_lanes_to(inter.id) {
-                    for outgoing in roads[*road2].outgoing_lanes_from(inter.id) {
-                        let incoming = &lanes[*incoming];
-                        let outgoing = &lanes[*outgoing];
-                        if !incoming.kind.vehicles() || !outgoing.kind.vehicles() {
+                for (incoming, incoming_kind) in roads[*road1].incoming_lanes_to(inter.id) {
+                    for (outgoing, outgoing_kind) in roads[*road2].outgoing_lanes_from(inter.id) {
+                        if !incoming_kind.vehicles() || !outgoing_kind.vehicles() {
                             continue;
                         }
+
+                        let incoming = &lanes[*incoming];
+                        let outgoing = &lanes[*outgoing];
 
                         let incoming_dir = incoming.orientation_from(inter.id);
                         let outgoing_dir = outgoing.orientation_from(inter.id);
@@ -150,7 +154,6 @@ impl TurnPolicy {
     pub fn generate_walking_turns(
         self,
         inter: &Intersection,
-        lanes: &Lanes,
         roads: &Roads,
         turns: &mut Vec<(TurnID, TurnKind)>,
     ) {
@@ -160,14 +163,14 @@ impl TurnPolicy {
             .roads
             .iter()
             .chain(inter.roads.iter().take(1))
-            .map(|x| roads[*x].sidewalks(inter.id, lanes))
+            .map(|x| roads[*x].sidewalks(inter.id))
             .collect::<Vec<_>>()
             .windows(2)
         {
             if let [(incoming, outgoing_in), (_, outgoing)] = *w {
                 if let (Some(incoming), Some(outgoing)) = (incoming, outgoing) {
                     turns.push((
-                        TurnID::new(inter.id, incoming.id, outgoing.id, true),
+                        TurnID::new(inter.id, incoming, outgoing, true),
                         TurnKind::WalkingCorner,
                     ));
                 }
@@ -175,7 +178,7 @@ impl TurnPolicy {
                 if let (Some(incoming), Some(outgoing_in)) = (incoming, outgoing_in) {
                     if n_roads > 2 {
                         turns.push((
-                            TurnID::new(inter.id, incoming.id, outgoing_in.id, true),
+                            TurnID::new(inter.id, incoming, outgoing_in, true),
                             TurnKind::Crosswalk,
                         ));
                     }
@@ -194,7 +197,7 @@ impl TurnPolicy {
 
         self.generate_vehicle_turns(inter, lanes, roads, &mut turns);
 
-        self.generate_walking_turns(inter, lanes, roads, &mut turns);
+        self.generate_walking_turns(inter, roads, &mut turns);
 
         turns
     }

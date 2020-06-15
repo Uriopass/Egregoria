@@ -93,7 +93,7 @@ pub fn load_parismap(map: &mut Map) {
         map.connect_straight(
             ids[src],
             ids[dst],
-            LanePatternBuilder::new()
+            &LanePatternBuilder::new()
                 .one_way(n_lanes == 1)
                 .parking(false)
                 .build(),
@@ -120,7 +120,7 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
         m.connect_straight(
             x[0],
             x[1],
-            LanePatternBuilder::new()
+            &LanePatternBuilder::new()
                 .one_way(true)
                 .parking(false)
                 .build(),
@@ -129,14 +129,14 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
     m.connect_straight(
         *first_circle.last().unwrap(),
         first_circle[0],
-        LanePatternBuilder::new().one_way(true).build(),
+        &LanePatternBuilder::new().one_way(true).build(),
     );
 
     for x in second_circle.windows(2) {
         m.connect_straight(
             x[1],
             x[0],
-            LanePatternBuilder::new()
+            &LanePatternBuilder::new()
                 .one_way(true)
                 .parking(false)
                 .build(),
@@ -145,11 +145,11 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
     m.connect_straight(
         second_circle[0],
         *second_circle.last().unwrap(),
-        LanePatternBuilder::new().one_way(true).build(),
+        &LanePatternBuilder::new().one_way(true).build(),
     );
 
     for (a, b) in first_circle.into_iter().zip(second_circle) {
-        m.connect_straight(a, b, LanePatternBuilder::new().build());
+        m.connect_straight(a, b, &LanePatternBuilder::new().build());
     }
 }
 
@@ -161,29 +161,14 @@ pub fn add_grid(pos: Vec2, m: &mut Map) {
         }
     }
 
+    let pat = LanePatternBuilder::new().build();
     for x in 0..9 {
-        m.connect_straight(
-            grid[9][x].unwrap(),
-            grid[9][x + 1].unwrap(),
-            LanePatternBuilder::new().build(),
-        );
-        m.connect_straight(
-            grid[x][9].unwrap(),
-            grid[x + 1][9].unwrap(),
-            LanePatternBuilder::new().build(),
-        );
+        m.connect_straight(grid[9][x].unwrap(), grid[9][x + 1].unwrap(), &pat);
+        m.connect_straight(grid[x][9].unwrap(), grid[x + 1][9].unwrap(), &pat);
 
         for y in 0..9 {
-            m.connect_straight(
-                grid[y][x].unwrap(),
-                grid[y][x + 1].unwrap(),
-                LanePatternBuilder::new().build(),
-            );
-            m.connect_straight(
-                grid[y][x].unwrap(),
-                grid[y + 1][x].unwrap(),
-                LanePatternBuilder::new().build(),
-            );
+            m.connect_straight(grid[y][x].unwrap(), grid[y][x + 1].unwrap(), &pat);
+            m.connect_straight(grid[y][x].unwrap(), grid[y + 1][x].unwrap(), &pat);
         }
     }
 }
