@@ -1456,7 +1456,6 @@ name = "scale"
 version = "0.1.0"
 dependencies = [
  "bincode 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "either 1.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "flat_spatial 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-inspect 0.4.0",

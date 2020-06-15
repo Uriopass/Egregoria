@@ -2,7 +2,8 @@ use crate::geometry::polyline::PolyLine;
 use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::map_model::{
-    IntersectionID, Intersections, Lane, LaneID, LaneKind, LanePattern, Lanes, ParkingSpots, Roads,
+    IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
+    ParkingSpots, Roads,
 };
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -45,10 +46,8 @@ pub struct Road {
     pub src_interface: f32,
     pub dst_interface: f32,
 
-    pub lanes_forward: Vec<LaneID>,
-    pub lanes_backward: Vec<LaneID>,
-
-    pub lane_pattern: LanePattern,
+    lanes_forward: Vec<(LaneID, LaneKind)>,
+    lanes_backward: Vec<(LaneID, LaneKind)>,
 }
 
 impl Road {
@@ -57,7 +56,7 @@ impl Road {
         src: IntersectionID,
         dst: IntersectionID,
         segment: RoadSegmentKind,
-        lane_pattern: LanePattern,
+        lane_pattern: &LanePattern,
         intersections: &Intersections,
         lanes: &mut Lanes,
         store: &mut Roads,
@@ -76,12 +75,19 @@ impl Road {
             length: 1.0,
             lanes_forward: vec![],
             lanes_backward: vec![],
-            lane_pattern: lane_pattern.clone(),
             generated_points: unsafe { PolyLine::new_unchecked(vec![]) },
         });
         let road = &mut store[id];
         for (lane_k, dir) in lane_pattern.lanes() {
-            Lane::make(road, lanes, lane_k, dir);
+            let id = Lane::make(road, lanes, lane_k, dir);
+
+            match dir {
+                LaneDirection::Forward => &mut road.lanes_forward,
+                LaneDirection::Backward => &mut road.lanes_backward,
+            }
+            .push((id, lane_k));
+
+            road.width += lane_k.width();
         }
         road.gen_pos(intersections, lanes, parking);
         id
@@ -95,28 +101,50 @@ impl Road {
         self.lanes_backward.len() + self.lanes_forward.len()
     }
 
-    pub fn lanes_iter(&self) -> impl Iterator<Item = &LaneID> {
+    pub fn lanes_iter(&self) -> impl Iterator<Item = (LaneID, LaneKind)> + '_ {
         self.lanes_forward
             .iter()
             .rev()
             .chain(self.lanes_backward.iter())
+            .copied()
     }
 
-    pub fn sidewalks<'a>(
-        &self,
-        from: IntersectionID,
-        lanes: &'a Lanes,
-    ) -> (Option<&'a Lane>, Option<&'a Lane>) {
-        (
-            self.incoming_lanes_to(from)
-                .iter()
-                .map(|x| &lanes[*x])
-                .find(|x| matches!(x.kind, LaneKind::Walking)),
-            self.outgoing_lanes_from(from)
-                .iter()
-                .map(|x| &lanes[*x])
-                .find(|x| matches!(x.kind, LaneKind::Walking)),
-        )
+    pub fn sidewalks(&self, from: IntersectionID) -> (Option<LaneID>, Option<LaneID>) {
+        let outgoing = self
+            .lanes_forward
+            .last()
+            .filter(|(_, kind)| matches!(kind, LaneKind::Walking))
+            .map(|&(id, _)| id);
+        let incoming = self
+            .lanes_backward
+            .last()
+            .filter(|(_, kind)| matches!(kind, LaneKind::Walking))
+            .map(|&(id, _)| id);
+
+        if from == self.src {
+            (incoming, outgoing)
+        } else {
+            (outgoing, incoming)
+        }
+    }
+
+    pub fn parking(&self, from: IntersectionID) -> (Option<LaneID>, Option<LaneID>) {
+        let outgoing = self
+            .lanes_forward
+            .get(self.lanes_forward.len() - 2)
+            .filter(|(_, kind)| matches!(kind, LaneKind::Parking))
+            .map(|&(id, _)| id);
+        let incoming = self
+            .lanes_backward
+            .get(self.lanes_forward.len() - 2)
+            .filter(|(_, kind)| matches!(kind, LaneKind::Parking))
+            .map(|&(id, _)| id);
+
+        if from == self.src {
+            (incoming, outgoing)
+        } else {
+            (outgoing, incoming)
+        }
     }
 
     pub fn gen_pos(
@@ -142,13 +170,20 @@ impl Road {
         };
 
         let mut dist_from_bottom = 0.0;
-        for &id in self.lanes_iter() {
+        for (id, kind) in self.lanes_iter() {
             let l = &mut lanes[id];
             l.gen_pos(self, dist_from_bottom);
             dist_from_bottom += l.width;
-            if matches!(l.kind, LaneKind::Parking) {
+            if matches!(kind, LaneKind::Parking) {
                 parking.generate_spots(l)
             }
+        }
+    }
+
+    pub fn pattern(&self) -> LanePattern {
+        LanePattern {
+            lanes_forward: self.lanes_forward.iter().map(|&(_, kind)| kind).collect(),
+            lanes_backward: self.lanes_backward.iter().map(|&(_, kind)| kind).collect(),
         }
     }
 
@@ -273,7 +308,7 @@ impl Road {
         }
     }
 
-    pub fn incoming_lanes_to(&self, id: IntersectionID) -> &Vec<LaneID> {
+    pub fn incoming_lanes_to(&self, id: IntersectionID) -> &Vec<(LaneID, LaneKind)> {
         if id == self.src {
             &self.lanes_backward
         } else if id == self.dst {
@@ -283,7 +318,7 @@ impl Road {
         }
     }
 
-    pub fn outgoing_lanes_from(&self, id: IntersectionID) -> &Vec<LaneID> {
+    pub fn outgoing_lanes_from(&self, id: IntersectionID) -> &Vec<(LaneID, LaneKind)> {
         if id == self.src {
             &self.lanes_forward
         } else if id == self.dst {

@@ -111,7 +111,7 @@ impl<'a> System<'a> for RoadBuildSystem {
                         selected_proj,
                         cur_proj,
                         None,
-                        state.pattern_builder.build(),
+                        &state.pattern_builder.build(),
                     );
 
                     let hover = MapProject {
@@ -130,7 +130,7 @@ impl<'a> System<'a> for RoadBuildSystem {
                         selected_proj,
                         cur_proj,
                         Some(interpoint),
-                        state.pattern_builder.build(),
+                        &state.pattern_builder.build(),
                     );
 
                     let hover = MapProject {
@@ -151,7 +151,7 @@ fn make_connection(
     from: MapProject,
     to: MapProject,
     interpoint: Option<Vec2>,
-    pattern: LanePattern,
+    pattern: &LanePattern,
 ) -> IntersectionID {
     use ProjectKind::*;
 

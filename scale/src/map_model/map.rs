@@ -107,10 +107,11 @@ impl Map {
         let r = self.remove_road(id);
         let id = self.add_intersection(pos);
 
+        let pat = r.pattern();
         match r.segment {
             RoadSegmentKind::Straight => {
-                self.connect(r.src, id, r.lane_pattern.clone(), RoadSegmentKind::Straight);
-                self.connect(id, r.dst, r.lane_pattern, RoadSegmentKind::Straight);
+                self.connect(r.src, id, &pat, RoadSegmentKind::Straight);
+                self.connect(id, r.dst, &pat, RoadSegmentKind::Straight);
             }
             RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
                 let s = Spline {
@@ -126,13 +127,13 @@ impl Map {
                 self.connect(
                     r.src,
                     id,
-                    r.lane_pattern.clone(),
+                    &pat,
                     RoadSegmentKind::Curved((s_from.from_derivative, s_from.to_derivative)),
                 );
                 self.connect(
                     id,
                     r.dst,
-                    r.lane_pattern,
+                    &pat,
                     RoadSegmentKind::Curved((s_to.from_derivative, s_to.to_derivative)),
                 );
             }
@@ -146,7 +147,7 @@ impl Map {
         &mut self,
         src: IntersectionID,
         dst: IntersectionID,
-        pattern: LanePattern,
+        pattern: &LanePattern,
     ) -> RoadID {
         self.connect(src, dst, pattern, RoadSegmentKind::Straight)
     }
@@ -155,7 +156,7 @@ impl Map {
         &mut self,
         src: IntersectionID,
         dst: IntersectionID,
-        pattern: LanePattern,
+        pattern: &LanePattern,
         segment: RoadSegmentKind,
     ) -> RoadID {
         self.dirty = true;
@@ -184,8 +185,8 @@ impl Map {
     pub fn remove_road(&mut self, road_id: RoadID) -> Road {
         self.dirty = true;
         let road = self.roads.remove(road_id).unwrap();
-        for &lane_id in road.lanes_iter() {
-            self.lanes.remove(lane_id);
+        for (id, _) in road.lanes_iter() {
+            self.lanes.remove(id);
         }
 
         self.intersections[road.src].remove_road(road_id);
@@ -278,14 +279,15 @@ impl Map {
         &self.intersections
     }
 
-    pub fn get_random_lane<R: Rng>(&self, kind: LaneKind, r: &mut R) -> Option<&Lane> {
+    pub fn get_random_lane<R: Rng>(&self, filter: LaneKind, r: &mut R) -> Option<&Lane> {
         let (_, road) = self.roads.iter().choose(r)?;
         let lanes = road
             .lanes_iter()
-            .filter(|x| self.lanes[**x].kind == kind)
-            .collect::<Vec<&LaneID>>();
+            .filter(|&(_, kind)| kind == filter)
+            .map(|(id, _)| id)
+            .collect::<Vec<LaneID>>();
 
-        lanes.iter().choose(r).map(|x| &self.lanes[**x])
+        lanes.iter().choose(r).map(|&x| &self.lanes[x])
     }
 
     pub fn find_road(&self, a: IntersectionID, b: IntersectionID) -> Option<RoadID> {

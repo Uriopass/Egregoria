@@ -21,21 +21,22 @@ impl Default for LightPolicy {
 
 impl LightPolicy {
     pub fn apply(self, inter: &Intersection, lanes: &mut Lanes, roads: &Roads) {
-        let in_road_lanes: Vec<Vec<&LaneID>> = inter
+        let in_road_lanes: Vec<Vec<LaneID>> = inter
             .roads
             .iter()
             .map(|&x| {
                 roads[x]
                     .incoming_lanes_to(inter.id)
                     .iter()
-                    .filter(|&&x| lanes[x].kind.needs_light())
+                    .filter(|(_, kind)| kind.needs_light())
+                    .map(|&(id, _)| id)
                     .collect::<Vec<_>>()
             })
             .filter(|v| !v.is_empty())
             .collect();
 
         for incoming_lanes in &in_road_lanes {
-            for &&lane in incoming_lanes {
+            for &lane in incoming_lanes {
                 lanes[lane].control = TrafficControl::Always;
             }
         }
@@ -62,15 +63,15 @@ impl LightPolicy {
         }
     }
 
-    fn stop_signs(self, in_road_lanes: Vec<Vec<&LaneID>>, lanes: &mut Lanes) {
+    fn stop_signs(self, in_road_lanes: Vec<Vec<LaneID>>, lanes: &mut Lanes) {
         for incoming_lanes in in_road_lanes {
-            for &lane in incoming_lanes {
+            for lane in incoming_lanes {
                 lanes[lane].control = TrafficControl::StopSign;
             }
         }
     }
 
-    fn lights(self, in_road_lanes: Vec<Vec<&LaneID>>, inter: &Intersection, lanes: &mut Lanes) {
+    fn lights(self, in_road_lanes: Vec<Vec<LaneID>>, inter: &Intersection, lanes: &mut Lanes) {
         let n_cycles = (in_road_lanes.len() + 1) / 2;
         let cycle_size = 14;
         let orange_length = 4;
@@ -89,7 +90,7 @@ impl LightPolicy {
                 cycle_size * (i % n_cycles) + inter_offset,
             ));
 
-            for &lane in incoming_lanes {
+            for lane in incoming_lanes {
                 lanes[lane].control = light;
             }
         }
