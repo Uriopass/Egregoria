@@ -38,3 +38,7 @@ pub fn angle_lerp(src: Vec2, dst: Vec2, ang_amount: f32) -> Vec2 {
     }
     (src - src.perpendicular() * perp_dot.signum() * ang_amount).normalize()
 }
+
+pub fn linear_lerp(src: f32, dst: f32, amount: f32) -> f32 {
+    src + (dst - src).min(amount).max(-amount)
+}
