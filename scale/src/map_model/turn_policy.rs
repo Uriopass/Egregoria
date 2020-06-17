@@ -167,15 +167,17 @@ impl TurnPolicy {
             .collect::<Vec<_>>()
             .windows(2)
         {
-            if let [(incoming, outgoing_in), (_, outgoing)] = *w {
-                if let (Some(incoming), Some(outgoing)) = (incoming, outgoing) {
+            if let [a, b] = *w {
+                // Corners between lanes
+                if let (Some(incoming), Some(outgoing)) = (a.incoming, b.outgoing) {
                     turns.push((
                         TurnID::new(inter.id, incoming, outgoing, true),
                         TurnKind::WalkingCorner,
                     ));
                 }
 
-                if let (Some(incoming), Some(outgoing_in)) = (incoming, outgoing_in) {
+                // Crosswalk for each lane
+                if let (Some(incoming), Some(outgoing_in)) = (a.incoming, a.outgoing) {
                     if n_roads > 2 {
                         turns.push((
                             TurnID::new(inter.id, incoming, outgoing_in, true),

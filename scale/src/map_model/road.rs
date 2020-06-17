@@ -50,6 +50,12 @@ pub struct Road {
     lanes_backward: Vec<(LaneID, LaneKind)>,
 }
 
+#[derive(Copy, Clone)]
+pub struct LanePair {
+    pub incoming: Option<LaneID>,
+    pub outgoing: Option<LaneID>,
+}
+
 impl Road {
     /// Builds the road and its associated lanes
     pub fn make(
@@ -109,41 +115,46 @@ impl Road {
             .copied()
     }
 
-    pub fn sidewalks(&self, from: IntersectionID) -> (Option<LaneID>, Option<LaneID>) {
-        let outgoing = self
-            .lanes_forward
-            .last()
-            .filter(|(_, kind)| matches!(kind, LaneKind::Walking))
-            .map(|&(id, _)| id);
-        let incoming = self
-            .lanes_backward
-            .last()
-            .filter(|(_, kind)| matches!(kind, LaneKind::Walking))
-            .map(|&(id, _)| id);
-
-        if from == self.src {
-            (incoming, outgoing)
-        } else {
-            (outgoing, incoming)
-        }
+    pub fn sidewalks(&self, from: IntersectionID) -> LanePair {
+        self.mk_pair(from, |lanes| {
+            lanes
+                .last()
+                .filter(|(_, kind)| matches!(kind, LaneKind::Walking))
+                .map(|&(id, _)| id)
+        })
     }
 
-    pub fn parking(&self, from: IntersectionID) -> (Option<LaneID>, Option<LaneID>) {
-        let outgoing = self
-            .lanes_forward
-            .get(self.lanes_forward.len() - 2)
-            .filter(|(_, kind)| matches!(kind, LaneKind::Parking))
-            .map(|&(id, _)| id);
-        let incoming = self
-            .lanes_backward
-            .get(self.lanes_forward.len() - 2)
-            .filter(|(_, kind)| matches!(kind, LaneKind::Parking))
-            .map(|&(id, _)| id);
+    pub fn parking_next_to(&self, lane: &Lane) -> Option<LaneID> {
+        let lanes = if lane.src == self.src {
+            &self.lanes_forward
+        } else {
+            &self.lanes_backward
+        };
+
+        lanes[(lanes.len() - 2).max(0)..]
+            .iter()
+            .find(|(_, kind)| matches!(kind, LaneKind::Parking))
+            .map(|&(id, _)| id)
+    }
+
+    fn mk_pair(
+        &self,
+        from: IntersectionID,
+        find: fn(&[(LaneID, LaneKind)]) -> Option<LaneID>,
+    ) -> LanePair {
+        let fw = find(&self.lanes_forward);
+        let bw = find(&self.lanes_backward);
 
         if from == self.src {
-            (incoming, outgoing)
+            LanePair {
+                incoming: bw,
+                outgoing: fw,
+            }
         } else {
-            (outgoing, incoming)
+            LanePair {
+                incoming: fw,
+                outgoing: bw,
+            }
         }
     }
 
