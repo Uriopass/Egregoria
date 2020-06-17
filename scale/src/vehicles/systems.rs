@@ -1,13 +1,14 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
-use crate::geometry::Vec2;
+use crate::geometry::{angle_lerp, Vec2};
 use crate::map_model::{
     DirectionalPath, Itinerary, LaneKind, Map, TrafficBehavior, Traversable, TraverseDirection,
     TraverseKind,
 };
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
-use crate::utils::Restrict;
+use crate::rendering::Color;
+use crate::utils::{DebugOrder, Restrict};
 use crate::vehicles::VehicleComponent;
 use rand::thread_rng;
 use specs::prelude::*;
@@ -47,6 +48,14 @@ impl<'a> System<'a> for VehicleDecision {
             .for_each(|(trans, kin, vehicle, collider)| {
                 objective_update(vehicle, &time, trans, &map);
 
+                crate::utils::debug_draw(
+                    DebugOrder::Point {
+                        pos: vec2!(1.0, 1.0),
+                        size: 0.0,
+                    },
+                    Color::GREEN,
+                );
+
                 let (_, self_obj) = cow.get(collider.0).unwrap();
                 let speed = self_obj.speed;
                 let danger_length = (speed * speed / (2.0 * vehicle.kind.deceleration())).min(40.0);
@@ -78,22 +87,20 @@ fn vehicle_physics(
 
     let max_ang_vel = (speed.abs() / kind.min_turning_radius()).restrict(0.0, 2.0);
 
-    let delta_ang = direction.angle(vehicle.desired_dir);
-
-    let mut ang = vec2!(1.0, 0.0).angle(direction);
+    let approx_angle = direction.distance(vehicle.desired_dir);
 
     vehicle.ang_velocity += time.delta * kind.ang_acc();
     vehicle.ang_velocity = vehicle
         .ang_velocity
-        .min(3.0 * delta_ang.abs())
+        .min(3.0 * approx_angle)
         .min(max_ang_vel);
 
-    ang += delta_ang.restrict(
-        -vehicle.ang_velocity * time.delta,
+    let direction = angle_lerp(
+        direction,
+        vehicle.desired_dir,
         vehicle.ang_velocity * time.delta,
     );
 
-    let direction = vec2!(ang.cos(), ang.sin());
     trans.set_direction(direction);
 
     kin.velocity = direction * speed;
