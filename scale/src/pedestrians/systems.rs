@@ -1,5 +1,5 @@
 use crate::engine_interaction::TimeInfo;
-use crate::geometry::Vec2;
+use crate::geometry::{angle_lerp, Vec2};
 use crate::map_model::{
     Itinerary, LaneKind, Map, PedestrianPath, Traversable, TraverseDirection, TraverseKind,
 };
@@ -52,29 +52,18 @@ impl<'a> System<'a> for PedestrianDecision {
                 let (desired_v, desired_dir) =
                     calc_decision(pedestrian, trans, kin, map, my_obj, objs);
 
-                physics(pedestrian, kin, trans, mr, time, desired_v, desired_dir);
+                walk_anim(pedestrian, mr, time, kin);
+                physics(kin, trans, time, desired_v, desired_dir);
             });
     }
 }
 
-const PEDESTRIAN_ACC: f32 = 1.0;
-
-pub fn physics(
+pub fn walk_anim(
     pedestrian: &mut PedestrianComponent,
-    kin: &mut Kinematics,
-    trans: &mut Transform,
     mr: &mut MeshRender,
     time: &TimeInfo,
-    desired_velocity: Vec2,
-    desired_dir: Vec2,
+    kin: &Kinematics,
 ) {
-    let diff = desired_velocity - kin.velocity;
-    let mag = diff.magnitude().min(time.delta * PEDESTRIAN_ACC);
-    if mag > 0.0 {
-        let lol = diff.normalize_to(mag);
-        kin.velocity += lol;
-    }
-
     let speed = kin.velocity.magnitude();
     pedestrian.walk_anim += 7.0 * speed * time.delta / pedestrian.walking_speed;
 
@@ -84,14 +73,30 @@ pub fn physics(
 
     mr.orders[0].as_rect_mut().offset.x = offset;
     mr.orders[1].as_rect_mut().offset.x = -offset;
+}
 
-    let delta_ang = trans.direction().angle(desired_dir);
-    let mut ang = vec2!(1.0, 0.0).angle(trans.direction());
+const PEDESTRIAN_ACC: f32 = 1.0;
+
+pub fn physics(
+    kin: &mut Kinematics,
+    trans: &mut Transform,
+    time: &TimeInfo,
+    desired_velocity: Vec2,
+    desired_dir: Vec2,
+) {
+    let diff = desired_velocity - kin.velocity;
+    let mag = diff.magnitude().min(time.delta * PEDESTRIAN_ACC);
+    if mag > 0.0 {
+        kin.velocity += diff.normalize_to(mag);
+    }
 
     const ANG_VEL: f32 = 1.0;
-    ang += delta_ang.restrict(-ANG_VEL * time.delta, ANG_VEL * time.delta);
 
-    trans.set_direction(vec2!(ang.cos(), ang.sin()));
+    trans.set_direction(angle_lerp(
+        trans.direction(),
+        desired_dir,
+        ANG_VEL * time.delta,
+    ));
 }
 
 pub fn calc_decision<'a>(

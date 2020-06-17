@@ -64,12 +64,12 @@ impl<'a> System<'a> for VehicleDecision {
 
                 calc_decision(vehicle, map, &time, trans, self_obj, objs);
 
-                vehicle_physics(&time, trans, kin, vehicle, speed);
+                physics(&time, trans, kin, vehicle, speed);
             });
     }
 }
 
-fn vehicle_physics(
+fn physics(
     time: &TimeInfo,
     trans: &mut Transform,
     kin: &mut Kinematics,
