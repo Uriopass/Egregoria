@@ -74,9 +74,19 @@ impl<'a> State<'a> {
 
         self.manage_io(ctx);
 
+        self.camera.easy_camera_movement(
+            ctx,
+            delta as f32,
+            !self.gui.last_mouse_captured,
+            !self.gui.last_kb_captured,
+        );
+
         for _ in 0..n_updates {
             self.dispatcher.run_now(&self.world);
             self.world.maintain();
+
+            ctx.input.end_frame();
+            self.manage_io(ctx);
 
             let mut time = self.world.write_resource::<TimeInfo>();
 
@@ -88,13 +98,6 @@ impl<'a> State<'a> {
                 break;
             }
         }
-
-        self.camera.easy_camera_movement(
-            ctx,
-            delta as f32,
-            !self.gui.last_mouse_captured,
-            !self.gui.last_kb_captured,
-        );
         self.manage_entity_follow();
         self.camera.update(ctx);
 
