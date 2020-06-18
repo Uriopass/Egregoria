@@ -206,13 +206,9 @@ impl RoadRenderer {
                 let lane = &lanes[id];
                 let l = lane.points.length();
                 for i in 0..n_arrows {
-                    let (mid, dir) = match lane
+                    let (mid, dir) = lane
                         .points
-                        .point_dir_along(l * (1.0 + i as f32) / (1.0 + n_arrows as f32))
-                    {
-                        Some(x) => x,
-                        None => continue,
-                    };
+                        .point_dir_along(l * (1.0 + i as f32) / (1.0 + n_arrows as f32));
 
                     self.arrow_builder.instances.push(InstanceRaw::new(
                         Transform::new_cos_sin(mid, dir).to_matrix4(Z_ARROW),

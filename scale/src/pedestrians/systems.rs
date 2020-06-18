@@ -181,7 +181,7 @@ fn next_objective(pos: Vec2, map: &Map, last_travers: Option<&Traversable>) -> O
     Itinerary::route(
         pos,
         *last_travers?,
-        (l.id, l.points.random_along().unwrap()),
+        (l.id, l.points.random_along().0),
         map,
         &PedestrianPath,
     )
