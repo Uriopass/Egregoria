@@ -49,11 +49,22 @@ lazy_static! {
         Arc::new(Mutex::new(Vec::new()));
 }
 
-pub fn debug_draw(order: DebugOrder, color: Color) {
+pub fn debug_draw(order: DebugOrder) {
+    DEBUG_ORDERS.lock().unwrap().push((order, Color::GREEN));
+}
+
+pub fn debug_draw_color(order: DebugOrder, color: Color) {
     DEBUG_ORDERS.lock().unwrap().push((order, color));
 }
 
-pub fn debug_draw_persistent(order: DebugOrder, color: Color) {
+pub fn debug_draw_persistent(order: DebugOrder) {
+    PERSISTENT_DEBUG_ORDERS
+        .lock()
+        .unwrap()
+        .push((order, Color::GREEN));
+}
+
+pub fn debug_draw_persistent_color(order: DebugOrder, color: Color) {
     PERSISTENT_DEBUG_ORDERS.lock().unwrap().push((order, color));
 }
 
