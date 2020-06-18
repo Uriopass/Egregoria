@@ -138,6 +138,8 @@ impl Itinerary {
     }
 
     pub fn update(&mut self, position: Vec2, time: &TimeInfo, map: &Map) {
+        self.check_validity(map);
+
         if let Some(p) = self.get_point() {
             if p.distance2(position) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
                 let k = self.get_travers().unwrap();

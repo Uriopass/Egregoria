@@ -26,6 +26,10 @@ pub struct ParkingSpots {
 }
 
 impl ParkingSpots {
+    pub fn get(&self, spot: ParkingSpotID) -> Option<&ParkingSpot> {
+        self.spots.get(spot)
+    }
+
     pub fn generate_spots(&mut self, lane: &Lane) {
         debug_assert!(matches!(lane.kind, LaneKind::Parking));
 
@@ -73,11 +77,15 @@ impl ParkingSpots {
             .copied()
     }
 
+    pub fn unreserve(&self, spot: ParkingSpotID) {
+        self.reserved_spots.lock().unwrap().remove(&spot);
+    }
+
     pub fn reserve_near(&self, lane: LaneID, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
         let lane = map.lanes().get(lane)?;
 
         let mut reserved_spots = self.reserved_spots.lock().unwrap();
-        let depth = 2;
+        let depth = 3;
 
         let mut potential = vec![lane];
         let mut next = vec![];
