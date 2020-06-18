@@ -54,6 +54,7 @@ impl Map {
     }
 
     pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection) -> ()) {
+        println!("update_intersection {:?}", id);
         let inter = unwrap_or!(self.intersections.get_mut(id), return);
         f(inter);
 
@@ -68,6 +69,8 @@ impl Map {
     }
 
     fn invalidate(&mut self, id: IntersectionID) {
+        println!("invalidate {:?}", id);
+
         self.dirty = true;
         let inter = &mut self.intersections[id];
         inter.update_interface_radius(&mut self.roads);
@@ -90,11 +93,14 @@ impl Map {
     }
 
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
+        println!("add_intersection {:?}", pos);
         self.dirty = true;
         Intersection::make(&mut self.intersections, pos)
     }
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
+        println!("remove_intersection {:?}", src);
+
         self.dirty = true;
         for road in self.intersections[src].roads.clone() {
             self.remove_road(road);
@@ -104,6 +110,8 @@ impl Map {
     }
 
     pub fn split_road(&mut self, id: RoadID, pos: Vec2) -> IntersectionID {
+        println!("split_road {:?} {:?}", id, pos);
+
         let r = self.remove_road(id);
         let id = self.add_intersection(pos);
 
@@ -159,6 +167,8 @@ impl Map {
         pattern: &LanePattern,
         segment: RoadSegmentKind,
     ) -> RoadID {
+        println!("connect {:?} {:?} {:?} {:?}", src, dst, pattern, segment);
+
         self.dirty = true;
         let road_id = Road::make(
             src,
@@ -183,6 +193,8 @@ impl Map {
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Road {
+        println!("remove_road {:?}", road_id);
+
         self.dirty = true;
         let road = self.roads.remove(road_id).unwrap();
         for (id, _) in road.lanes_iter() {
@@ -198,6 +210,8 @@ impl Map {
     }
 
     pub fn clear(&mut self) {
+        println!("clear");
+
         self.dirty = true;
         self.intersections.clear();
         self.lanes.clear();

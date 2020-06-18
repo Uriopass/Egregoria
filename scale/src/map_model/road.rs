@@ -12,7 +12,7 @@ new_key_type! {
     pub struct RoadID;
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum RoadSegmentKind {
     Straight,
     Curved((Vec2, Vec2)), // The two derivatives for the spline
