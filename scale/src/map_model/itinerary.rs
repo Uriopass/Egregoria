@@ -1,3 +1,4 @@
+use crate::engine_interaction::TimeInfo;
 use crate::geometry::Vec2;
 use crate::gui::InspectVec;
 use crate::map_model::{LaneID, Map, Pathfinder, Traversable, TraverseKind};
@@ -26,6 +27,8 @@ pub struct Route {
     pub end_pos: Vec2,
     pub cur: Traversable,
 }
+
+pub const OBJECTIVE_OK_DIST: f32 = 4.0;
 
 impl Itinerary {
     pub fn none() -> Self {
@@ -132,6 +135,20 @@ impl Itinerary {
             }
         }
         v
+    }
+
+    pub fn update(&mut self, position: Vec2, time: &TimeInfo, map: &Map) {
+        if let Some(p) = self.get_point() {
+            if p.distance2(position) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
+                let k = self.get_travers().unwrap();
+                if self.remaining_points() > 1
+                    || k.can_pass(time.time_seconds, map.lanes())
+                    || self.is_terminal()
+                {
+                    self.advance(map);
+                }
+            }
+        }
     }
 
     pub fn check_validity(&mut self, map: &Map) {

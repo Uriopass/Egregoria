@@ -3,12 +3,11 @@ use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::geometry::{angle_lerp, Vec2};
 use crate::map_model::{
     DirectionalPath, Itinerary, LaneKind, Map, TrafficBehavior, Traversable, TraverseDirection,
-    TraverseKind,
+    TraverseKind, OBJECTIVE_OK_DIST,
 };
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
-use crate::rendering::Color;
-use crate::utils::{DebugOrder, Restrict};
+use crate::utils::Restrict;
 use crate::vehicles::VehicleComponent;
 use rand::thread_rng;
 use specs::prelude::*;
@@ -16,8 +15,6 @@ use specs::shred::PanicHandler;
 
 #[derive(Default)]
 pub struct VehicleDecision;
-
-pub const OBJECTIVE_OK_DIST: f32 = 4.0;
 
 #[derive(SystemData)]
 pub struct VehicleDecisionSystemData<'a> {
@@ -46,15 +43,7 @@ impl<'a> System<'a> for VehicleDecision {
         )
             .join()
             .for_each(|(trans, kin, vehicle, collider)| {
-                objective_update(vehicle, &time, trans, &map);
-
-                crate::utils::debug_draw(
-                    DebugOrder::Point {
-                        pos: vec2!(1.0, 1.0),
-                        size: 0.0,
-                    },
-                    Color::GREEN,
-                );
+                objective_update(&mut vehicle.itinerary, &time, trans, &map);
 
                 let (_, self_obj) = cow.get(collider.0).unwrap();
                 let speed = self_obj.speed;
@@ -95,46 +84,28 @@ fn physics(
         .min(3.0 * approx_angle)
         .min(max_ang_vel);
 
-    let direction = angle_lerp(
-        direction,
+    trans.set_direction(angle_lerp(
+        trans.direction(),
         vehicle.desired_dir,
         vehicle.ang_velocity * time.delta,
-    );
+    ));
 
-    trans.set_direction(direction);
-
-    kin.velocity = direction * speed;
+    kin.velocity = trans.direction() * speed;
 }
 
-pub fn objective_update(
-    vehicle: &mut VehicleComponent,
-    time: &TimeInfo,
-    trans: &Transform,
-    map: &Map,
-) {
-    let mut last_travers = vehicle.itinerary.get_travers().copied();
+pub fn objective_update(itinerary: &mut Itinerary, time: &TimeInfo, trans: &Transform, map: &Map) {
+    itinerary.update(trans.position(), time, map);
 
-    if let Some(p) = vehicle.itinerary.get_point() {
-        if p.distance2(trans.position()) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
-            let k = vehicle.itinerary.get_travers().unwrap();
-            if vehicle.itinerary.remaining_points() > 1
-                || k.can_pass(time.time_seconds, map.lanes())
-                || vehicle.itinerary.is_terminal()
-            {
-                vehicle.itinerary.advance(map);
-            }
-        }
-    }
-
-    if vehicle.itinerary.has_ended(time.time) {
+    if itinerary.has_ended(time.time) {
+        let mut last_travers = itinerary.get_travers().copied();
         if last_travers.is_none() {
             last_travers = map
                 .closest_lane(trans.position(), LaneKind::Driving)
                 .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
         }
 
-        let itinerary = next_objective(trans.position(), map, last_travers.as_ref());
-        vehicle.itinerary = itinerary.unwrap_or_else(|| Itinerary::wait_until(time.time + 10.0));
+        *itinerary = next_objective(trans.position(), map, last_travers.as_ref())
+            .unwrap_or_else(|| Itinerary::wait_until(time.time + 10.0));
     }
 }
 
