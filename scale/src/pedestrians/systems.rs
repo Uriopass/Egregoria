@@ -42,7 +42,7 @@ impl<'a> System<'a> for PedestrianDecision {
         )
             .join()
             .for_each(|(coll, trans, kin, pedestrian, mr)| {
-                objective_update(pedestrian, trans, map, time.time);
+                objective_update(&mut pedestrian.itinerary, trans, map, time);
 
                 let (_, my_obj) = cow.get(coll.0).unwrap();
                 let neighbors = cow.query_around(trans.position(), 10.0);
@@ -159,30 +159,19 @@ pub fn calc_decision<'a>(
     (desired_v, desired_dir)
 }
 
-pub fn objective_update(
-    pedestrian: &mut PedestrianComponent,
-    trans: &Transform,
-    map: &Map,
-    time: f64,
-) {
-    let mut last_travers = pedestrian.itinerary.get_travers().copied();
+pub fn objective_update(itinerary: &mut Itinerary, trans: &Transform, map: &Map, time: &TimeInfo) {
+    itinerary.update(trans.position(), time, map);
 
-    if let Some(x) = pedestrian.itinerary.get_point() {
-        if x.distance(trans.position()) > 3.0 {
-            return;
-        }
-        pedestrian.itinerary.advance(map);
-    }
-
-    if pedestrian.itinerary.has_ended(time) {
+    if itinerary.has_ended(time.time) {
+        let mut last_travers = itinerary.get_travers().copied();
         if last_travers.is_none() {
             last_travers = map
                 .closest_lane(trans.position(), LaneKind::Walking)
                 .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
         }
 
-        pedestrian.itinerary = next_objective(trans.position(), map, last_travers.as_ref())
-            .unwrap_or_else(|| Itinerary::wait_until(time + 10.0));
+        *itinerary = next_objective(trans.position(), map, last_travers.as_ref())
+            .unwrap_or_else(|| Itinerary::wait_until(time.time + 10.0));
     }
 }
 
