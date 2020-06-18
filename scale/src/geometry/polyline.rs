@@ -81,9 +81,9 @@ impl PolyLine {
         self.check_empty()
     }
 
-    pub fn random_along(&self) -> Option<Vec2> {
+    pub fn random_along(&self) -> (Vec2, Vec2) {
         let r: f32 = rand::random::<f32>() * self.length();
-        self.point_along(r)
+        self.point_dir_along(r)
     }
 
     pub fn project(&self, p: Vec2) -> Vec2 {
@@ -141,50 +141,12 @@ impl PolyLine {
         }
     }
 
-    pub fn point_along(&self, l: f32) -> Option<Vec2> {
-        match self.n_points() {
-            0 => None,
-            1 => Some(self[0]),
-            2 => {
-                let r = l / self.length();
-                Some(self[0] * (1.0 - r) + self[1] * r)
-            }
-            _ => {
-                let mut partial = 0.0;
-                for w in self.0.windows(2) {
-                    let m = (w[1] - w[0]).magnitude();
-                    if partial + m > l {
-                        let coeff = (l - partial) / m;
-                        return Some(w[0] * (1.0 - coeff) + w[1] * coeff);
-                    }
-                    partial += m;
-                }
-                None
-            }
-        }
+    pub fn point_along(&self, l: f32) -> Vec2 {
+        self.point_dir_along(l).0
     }
 
-    pub fn point_dir_along(&self, l: f32) -> Option<(Vec2, Vec2)> {
-        match self.n_points() {
-            0 | 1 => None,
-            2 => {
-                let (dir, m) = (self[1] - self[0]).dir_dist()?;
-                let r = l / m;
-                Some((self[0] * (1.0 - r) + self[1] * r, dir))
-            }
-            _ => {
-                let mut partial = 0.0;
-                for w in self.0.windows(2) {
-                    let (dir, m) = unwrap_or!((w[1] - w[0]).dir_dist(), continue);
-                    if partial + m > l {
-                        let coeff = (l - partial) / m;
-                        return Some((w[0] * (1.0 - coeff) + w[1] * coeff, dir));
-                    }
-                    partial += m;
-                }
-                None
-            }
-        }
+    pub fn point_dir_along(&self, l: f32) -> (Vec2, Vec2) {
+        self.points_dirs_along(std::iter::once(l)).next().unwrap()
     }
 
     /// dists should be in ascending order
