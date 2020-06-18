@@ -58,11 +58,13 @@ impl Traversable {
     }
 
     pub fn is_valid(&self, m: &Map) -> bool {
+        let lanes = m.lanes();
         match self.kind {
-            TraverseKind::Lane(id) => m.lanes().contains_key(id),
+            TraverseKind::Lane(id) => lanes.contains_key(id),
             TraverseKind::Turn(id) => {
                 m.intersections().contains_key(id.parent)
-                    && m.intersections()[id.parent].find_turn(id).is_some()
+                    && lanes.contains_key(id.src)
+                    && lanes.contains_key(id.dst)
             }
         }
     }

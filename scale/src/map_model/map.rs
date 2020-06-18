@@ -32,7 +32,7 @@ pub struct Map {
     roads: Roads,
     lanes: Lanes,
     intersections: Intersections,
-    parking: ParkingSpots,
+    pub parking: ParkingSpots,
     pub dirty: bool,
 }
 
