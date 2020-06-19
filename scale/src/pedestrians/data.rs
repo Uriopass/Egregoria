@@ -1,6 +1,7 @@
 use crate::geometry::Vec2;
 use crate::interaction::{Movable, Selectable};
-use crate::map_model::{Itinerary, LaneKind, Map};
+use crate::map_interaction::Itinerary;
+use crate::map_model::{LaneKind, Map};
 use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
 };
@@ -16,7 +17,6 @@ use specs::{Component, DenseVecStorage};
 
 #[derive(Serialize, Deserialize, Component, Inspect)]
 pub struct PedestrianComponent {
-    pub itinerary: Itinerary,
     pub walking_speed: f32,
     pub walk_anim: f32,
 }
@@ -63,10 +63,8 @@ pub fn spawn_pedestrian(world: &mut World) {
     world
         .create_entity()
         .with(Transform::new(pos))
-        .with(PedestrianComponent {
-            itinerary: Itinerary::none(),
-            ..Default::default()
-        })
+        .with(PedestrianComponent::default())
+        .with(Itinerary::none())
         .with(Kinematics::from_mass(80.0))
         .with(Movable)
         .with({
@@ -108,7 +106,6 @@ pub fn spawn_pedestrian(world: &mut World) {
 impl Default for PedestrianComponent {
     fn default() -> Self {
         Self {
-            itinerary: Itinerary::default(),
             walking_speed: rand_distr::Normal::new(1.34f32, 0.26) // https://arxiv.org/pdf/cond-mat/9805244.pdf
                 .unwrap()
                 .sample(&mut rand::thread_rng())

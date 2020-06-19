@@ -6,7 +6,8 @@ use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::geometry::{vec2::vec2, Vec2};
 use scale::gui::Gui;
 use scale::interaction::{FollowEntity, InspectedEntity};
-use scale::map_model::{Itinerary, Map};
+use scale::map_interaction::Itinerary;
+use scale::map_model::Map;
 use scale::physics::Transform;
 use scale::rendering::{Color, LinearColor};
 use scale::specs::RunNow;
@@ -241,19 +242,8 @@ fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) -> Optio
     let selected = world.read_resource::<InspectedEntity>().e?;
     let pos = world.read_storage::<Transform>().get(selected)?.position();
 
-    let mut itinerary = &Itinerary::none();
-
-    let stor = world.read_storage::<scale::vehicles::VehicleComponent>();
-    let car = stor.get(selected);
-    if let Some(v) = car {
-        itinerary = &v.itinerary;
-    }
-
-    let stor = world.read_storage::<scale::pedestrians::PedestrianComponent>();
-    let ped = stor.get(selected);
-    if let Some(v) = ped {
-        itinerary = &v.itinerary;
-    }
+    let stor = world.read_storage::<Itinerary>();
+    let itinerary = stor.get(selected)?;
 
     tess.color = LinearColor::GREEN;
     tess.draw_polyline(&itinerary.local_path(), 1.0, 1.0);
@@ -262,7 +252,7 @@ fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) -> Optio
         tess.draw_stroke(p, pos, 1.0, 1.0);
     }
 
-    if let scale::map_model::ItineraryKind::Route(r) = itinerary.kind() {
+    if let scale::map_interaction::ItineraryKind::Route(r) = itinerary.kind() {
         tess.color = LinearColor::RED;
         tess.draw_circle(r.end_pos, 1.0, 5.0);
         for l in &r.reversed_route {
