@@ -10,6 +10,8 @@ use crate::interaction::{
     SelectableSystem,
 };
 use crate::interaction::{RoadBuildResource, RoadBuildSystem};
+use crate::map_interaction::{ItinerarySystem, ParkingManagement};
+use crate::map_model::IntersectionComponent;
 use crate::pedestrians::PedestrianDecision;
 use crate::physics::systems::KinematicsApply;
 use crate::physics::CollisionWorld;
@@ -17,6 +19,8 @@ use crate::physics::{Collider, Transform};
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::systems::VehicleDecision;
+use specs::shrev::EventChannel;
+use specs::world::EntitiesRes;
 use specs::{Dispatcher, DispatcherBuilder, LazyUpdate, World, WorldExt};
 
 #[macro_use]
@@ -42,12 +46,6 @@ pub mod vehicles;
 pub use imgui;
 pub use rand_provider::RandProvider;
 pub use specs;
-
-use crate::map_interaction::ItinerarySystem;
-use crate::map_model::IntersectionComponent;
-use crate::vehicles::parking::ParkingManagement;
-use specs::shrev::EventChannel;
-use specs::world::EntitiesRes;
 
 const RNG_SEED: u64 = 123;
 
