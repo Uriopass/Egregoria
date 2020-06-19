@@ -33,7 +33,6 @@ pub mod geometry;
 pub mod gui;
 
 pub mod engine_interaction;
-pub mod graphs;
 pub mod interaction;
 pub mod map_interaction;
 pub mod map_model;
