@@ -1,14 +1,15 @@
+use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::gui::{InspectDragf, InspectVec2};
 use crate::interaction::Selectable;
+use crate::map_interaction::Itinerary;
 use crate::map_model::{
-    Itinerary, LaneKind, Map, ParkingSpotID, Traversable, TraverseDirection, TraverseKind,
+    LaneKind, Map, ParkingSpotID, Traversable, TraverseDirection, TraverseKind,
 };
 use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
 };
 use crate::rendering::assets::{AssetID, AssetRender};
-use crate::rendering::meshrender_component::{MeshRender, RectRender};
 use crate::rendering::Color;
 use crate::utils::rand_world;
 use crate::RandProvider;
@@ -16,6 +17,16 @@ use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};
 use specs::{Component, DenseVecStorage};
+
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+pub enum VehicleState {
+    Parked,
+    ParkedToRoad(Spline, f32),
+    Driving,
+    RoadToPark(Spline, f32),
+}
+
+debug_inspect_impl!(VehicleState);
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum VehicleKind {
@@ -25,7 +36,6 @@ pub enum VehicleKind {
 
 #[derive(Component, Debug, Inspect, Serialize, Deserialize)]
 pub struct VehicleComponent {
-    pub itinerary: Itinerary,
     #[inspect(proxy_type = "InspectDragf")]
     pub desired_speed: f32,
     #[inspect(proxy_type = "InspectVec2")]
@@ -36,20 +46,22 @@ pub struct VehicleComponent {
     pub wait_time: f32,
 
     #[inspect(skip)]
-    pub obj_spot: Option<ParkingSpotID>,
+    pub park_spot: Option<ParkingSpotID>,
+
+    pub state: VehicleState,
     pub kind: VehicleKind,
 }
 
 impl Default for VehicleComponent {
     fn default() -> Self {
         Self {
-            itinerary: Default::default(),
             desired_speed: 0.0,
             desired_dir: vec2!(1.0, 0.0),
             wait_time: 0.0,
             ang_velocity: 0.0,
             kind: VehicleKind::Car,
-            obj_spot: None,
+            state: VehicleState::Driving,
+            park_spot: None,
         }
     }
 }
@@ -103,66 +115,6 @@ impl VehicleKind {
             VehicleKind::Bus => 0.8,
         }
     }
-
-    pub fn build_mr(self, mr: &mut MeshRender) {
-        let width = self.width();
-        let height = self.height();
-
-        match self {
-            VehicleKind::Car => {
-                mr.add(RectRender {
-                    width,
-                    height,
-                    color: get_random_car_color(),
-                    ..Default::default()
-                })
-                .add(RectRender {
-                    width: 0.4,
-                    height: 1.8,
-                    offset: [-1.7, 0.0].into(),
-                    color: Color::BLACK,
-                })
-                .add(RectRender {
-                    width: 1.0,
-                    height: 1.6,
-                    offset: [0.8, 0.0].into(),
-                    color: Color::BLACK,
-                })
-                .add(RectRender {
-                    width: 2.7,
-                    height: 0.15,
-                    offset: [-0.4, 0.85].into(),
-                    color: Color::BLACK,
-                })
-                .add(RectRender {
-                    width: 2.7,
-                    height: 0.15,
-                    offset: [-0.4, -0.85].into(),
-                    color: Color::BLACK,
-                })
-                .add(RectRender {
-                    width: 0.4,
-                    height: 0.15,
-                    offset: [2.1, -0.7].into(),
-                    color: Color::BLACK,
-                })
-                .add(RectRender {
-                    width: 0.4,
-                    height: 0.15,
-                    offset: [2.1, 0.7].into(),
-                    color: Color::BLACK,
-                });
-            }
-            VehicleKind::Bus => {
-                mr.add(RectRender {
-                    width: self.width(),
-                    height: self.height(),
-                    color: Color::ORANGE,
-                    ..Default::default()
-                });
-            }
-        }
-    }
 }
 
 pub fn spawn_new_vehicle(world: &mut World) {
@@ -193,17 +145,15 @@ pub fn spawn_new_vehicle(world: &mut World) {
     }
 
     drop(map);
-    make_vehicle_entity(world, pos, VehicleComponent::new(it, VehicleKind::Car));
+    make_vehicle_entity(world, pos, VehicleComponent::new(VehicleKind::Car), it);
 }
 
 pub fn make_vehicle_entity(
     world: &mut World,
     trans: Transform,
     vehicle: VehicleComponent,
+    it: Itinerary,
 ) -> Entity {
-    let mut mr = MeshRender::empty(0.3);
-    vehicle.kind.build_mr(&mut mr);
-
     let coworld = world.get_mut::<CollisionWorld>().unwrap();
     let h = coworld.insert(
         trans.position(),
@@ -217,7 +167,6 @@ pub fn make_vehicle_entity(
 
     world
         .create_entity()
-        //.with(mr)
         .with(AssetRender {
             id: AssetID::CAR,
             hide: false,
@@ -227,9 +176,10 @@ pub fn make_vehicle_entity(
         })
         .with(trans)
         .with(Kinematics::from_mass(1000.0))
-        .with(vehicle)
         .with(Collider(h))
         .with(Selectable::default())
+        .with(vehicle)
+        .with(it)
         .build()
 }
 
@@ -269,9 +219,8 @@ pub fn get_random_car_color() -> Color {
 }
 
 impl VehicleComponent {
-    pub fn new(itinerary: Itinerary, kind: VehicleKind) -> VehicleComponent {
+    pub fn new(kind: VehicleKind) -> VehicleComponent {
         Self {
-            itinerary,
             kind,
             ..Default::default()
         }
