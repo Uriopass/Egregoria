@@ -39,6 +39,7 @@ pub mod rendering;
 pub mod vehicles;
 
 use crate::map_model::IntersectionComponent;
+use crate::vehicles::parking::ParkingManagement;
 pub use imgui;
 pub use rand_provider::RandProvider;
 pub use specs;
@@ -48,14 +49,12 @@ use specs::world::EntitiesRes;
 const RNG_SEED: u64 = 123;
 
 pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
-    let collision_world: CollisionWorld = CollisionWorld::new(50);
-
     println!("Seed is {}", RNG_SEED);
 
     // Basic resources init
     world.insert(EntitiesRes::default());
     world.insert(TimeInfo::default());
-    world.insert(collision_world);
+    world.insert(CollisionWorld::new(50));
     world.insert(KeyboardInfo::default());
     world.insert(Gui::default());
     world.insert(InspectedEntity::default());
@@ -63,6 +62,7 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
     world.insert(RenderStats::default());
     world.insert(RandProvider::new(RNG_SEED));
     world.insert(LazyUpdate::default());
+    world.insert(ParkingManagement::default());
 
     world.register::<Transform>();
     world.register::<Collider>();
