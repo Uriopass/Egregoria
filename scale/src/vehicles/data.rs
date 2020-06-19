@@ -1,7 +1,9 @@
 use crate::geometry::Vec2;
 use crate::gui::{InspectDragf, InspectVec2};
 use crate::interaction::Selectable;
-use crate::map_model::{Itinerary, LaneKind, Map, Traversable, TraverseDirection, TraverseKind};
+use crate::map_model::{
+    Itinerary, LaneKind, Map, ParkingSpotID, Traversable, TraverseDirection, TraverseKind,
+};
 use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
 };
@@ -33,7 +35,23 @@ pub struct VehicleComponent {
     #[inspect(proxy_type = "InspectDragf")]
     pub wait_time: f32,
 
+    #[inspect(skip)]
+    pub obj_spot: Option<ParkingSpotID>,
     pub kind: VehicleKind,
+}
+
+impl Default for VehicleComponent {
+    fn default() -> Self {
+        Self {
+            itinerary: Default::default(),
+            desired_speed: 0.0,
+            desired_dir: vec2!(1.0, 0.0),
+            wait_time: 0.0,
+            ang_velocity: 0.0,
+            kind: VehicleKind::Car,
+            obj_spot: None,
+        }
+    }
 }
 
 impl VehicleKind {
@@ -160,20 +178,22 @@ pub fn spawn_new_vehicle(world: &mut World) {
         return
     );
 
-    if let [a, b, ..] = *lane.points.as_slice() {
-        let diff = b - a;
+    let (pos, dir) = lane.points.point_dir_along(r * lane.points.length());
 
-        let pos = Transform::new_cos_sin(a + r * diff, diff.normalize());
+    let (segment, _) = lane.points.project_segment(pos);
 
-        let mut it = Itinerary::simple(
-            Traversable::new(TraverseKind::Lane(lane.id), TraverseDirection::Forward),
-            &map,
-        );
+    let pos = Transform::new_cos_sin(pos, dir);
+
+    let mut it = Itinerary::simple(
+        Traversable::new(TraverseKind::Lane(lane.id), TraverseDirection::Forward),
+        &map,
+    );
+    for _ in 0..segment {
         it.advance(&map);
-
-        drop(map);
-        make_vehicle_entity(world, pos, VehicleComponent::new(it, VehicleKind::Car));
     }
+
+    drop(map);
+    make_vehicle_entity(world, pos, VehicleComponent::new(it, VehicleKind::Car));
 }
 
 pub fn make_vehicle_entity(
@@ -246,19 +266,6 @@ pub fn get_random_car_color() -> Color {
         }
     }
     unreachable!();
-}
-
-impl Default for VehicleComponent {
-    fn default() -> Self {
-        Self {
-            itinerary: Default::default(),
-            desired_speed: 0.0,
-            desired_dir: vec2!(1.0, 0.0),
-            wait_time: 0.0,
-            ang_velocity: 0.0,
-            kind: VehicleKind::Car,
-        }
-    }
 }
 
 impl VehicleComponent {
