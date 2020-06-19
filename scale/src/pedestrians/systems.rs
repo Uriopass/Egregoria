@@ -1,7 +1,8 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::{angle_lerp, Vec2};
+use crate::map_interaction::Itinerary;
 use crate::map_model::{
-    Itinerary, LaneKind, Map, PedestrianPath, Traversable, TraverseDirection, TraverseKind,
+    LaneKind, Map, PedestrianPath, Traversable, TraverseDirection, TraverseKind,
 };
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
@@ -20,6 +21,7 @@ pub struct PedestrianDecisionData<'a> {
     map: Read<'a, Map, PanicHandler>,
     time: Read<'a, TimeInfo>,
     colliders: ReadStorage<'a, Collider>,
+    itinerarys: WriteStorage<'a, Itinerary>,
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
     pedestrians: WriteStorage<'a, PedestrianComponent>,
@@ -35,14 +37,15 @@ impl<'a> System<'a> for PedestrianDecision {
         let time: &TimeInfo = data.time.borrow();
         (
             &data.colliders,
+            &mut data.itinerarys,
             &mut data.transforms,
             &mut data.kinematics,
             &mut data.pedestrians,
             &mut data.mr,
         )
             .join()
-            .for_each(|(coll, trans, kin, pedestrian, mr)| {
-                objective_update(&mut pedestrian.itinerary, trans, map, time);
+            .for_each(|(coll, it, trans, kin, pedestrian, mr)| {
+                objective_update(it, trans, map, time);
 
                 let (_, my_obj) = cow.get(coll.0).unwrap();
                 let neighbors = cow.query_around(trans.position(), 10.0);
@@ -50,7 +53,7 @@ impl<'a> System<'a> for PedestrianDecision {
                 let objs = neighbors.map(|(id, pos)| (Vec2::from(pos), cow.get(id).unwrap().1));
 
                 let (desired_v, desired_dir) =
-                    calc_decision(pedestrian, trans, kin, map, my_obj, objs);
+                    calc_decision(pedestrian, trans, kin, map, my_obj, it, objs);
 
                 walk_anim(pedestrian, mr, time, kin);
                 physics(kin, trans, time, desired_v, desired_dir);
@@ -105,9 +108,10 @@ pub fn calc_decision<'a>(
     kin: &Kinematics,
     map: &Map,
     my_obj: &PhysicsObject,
+    it: &Itinerary,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
 ) -> (Vec2, Vec2) {
-    let objective = match pedestrian.itinerary.get_point() {
+    let objective = match it.get_point() {
         Some(x) => x,
         None => return (vec2!(0.0, 0.0), trans.direction()),
     };
@@ -139,12 +143,8 @@ pub fn calc_decision<'a>(
         }
     }
 
-    if !pedestrian.itinerary.is_terminal() {
-        if let Some(points) = pedestrian
-            .itinerary
-            .get_travers()
-            .map(|x| x.raw_points(map))
-        {
+    if !it.is_terminal() {
+        if let Some(points) = it.get_travers().map(|x| x.raw_points(map)) {
             let projected = points.project(position);
             let lane_force = projected - trans.position();
             let m = lane_force.magnitude();
@@ -160,8 +160,6 @@ pub fn calc_decision<'a>(
 }
 
 pub fn objective_update(itinerary: &mut Itinerary, trans: &Transform, map: &Map, time: &TimeInfo) {
-    itinerary.update(trans.position(), time, map);
-
     if itinerary.has_ended(time.time) {
         let mut last_travers = itinerary.get_travers().copied();
         if last_travers.is_none() {

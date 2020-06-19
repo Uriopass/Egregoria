@@ -1,9 +1,9 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
 use crate::geometry::{angle_lerp, Vec2};
+use crate::map_interaction::{Itinerary, OBJECTIVE_OK_DIST};
 use crate::map_model::{
-    DirectionalPath, Itinerary, LaneKind, Map, TrafficBehavior, Traversable, TraverseDirection,
-    TraverseKind, OBJECTIVE_OK_DIST,
+    DirectionalPath, LaneKind, Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind,
 };
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
@@ -25,6 +25,7 @@ pub struct VehicleDecisionSystemData<'a> {
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
     vehicles: WriteStorage<'a, VehicleComponent>,
+    itinerarys: WriteStorage<'a, Itinerary>,
 }
 
 impl<'a> System<'a> for VehicleDecision {
@@ -40,10 +41,11 @@ impl<'a> System<'a> for VehicleDecision {
             &mut data.kinematics,
             &mut data.vehicles,
             &data.colliders,
+            &mut data.itinerarys,
         )
             .join()
-            .for_each(|(trans, kin, vehicle, collider)| {
-                objective_update(&mut vehicle.itinerary, &time, trans, &map);
+            .for_each(|(trans, kin, vehicle, collider, it)| {
+                objective_update(it, &time, trans, &map);
 
                 let (_, self_obj) = cow.get(collider.0).unwrap();
                 let speed = self_obj.speed;
@@ -51,7 +53,7 @@ impl<'a> System<'a> for VehicleDecision {
                 let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
                 let objs = neighbors.map(|(id, pos)| (Vec2::from(pos), cow.get(id).unwrap().1));
 
-                calc_decision(vehicle, map, &time, trans, self_obj, objs);
+                calc_decision(vehicle, map, &time, trans, self_obj, it, objs);
 
                 physics(&time, trans, kin, vehicle, speed);
             });
@@ -94,8 +96,6 @@ fn physics(
 }
 
 pub fn objective_update(itinerary: &mut Itinerary, time: &TimeInfo, trans: &Transform, map: &Map) {
-    itinerary.update(trans.position(), time, map);
-
     if itinerary.has_ended(time.time) {
         let mut last_travers = itinerary.get_travers().copied();
         if last_travers.is_none() {
@@ -127,6 +127,7 @@ pub fn calc_decision<'a>(
     time: &TimeInfo,
     trans: &Transform,
     self_obj: &PhysicsObject,
+    it: &Itinerary,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
 ) {
     vehicle.desired_speed = 0.0;
@@ -135,11 +136,11 @@ pub fn calc_decision<'a>(
         vehicle.wait_time -= time.delta;
         return;
     }
-    let objective: Vec2 = unwrap_or!(vehicle.itinerary.get_point(), return);
+    let objective: Vec2 = unwrap_or!(it.get_point(), return);
 
-    let is_terminal = vehicle.itinerary.is_terminal();
+    let is_terminal = it.is_terminal();
 
-    let front_dist = calc_front_dist(vehicle, trans, self_obj, neighs);
+    let front_dist = calc_front_dist(vehicle, trans, self_obj, it, neighs);
 
     let position = trans.position();
     let speed = self_obj.speed;
@@ -165,7 +166,7 @@ pub fn calc_decision<'a>(
     if let Some(Traversable {
         kind: TraverseKind::Lane(l_id),
         ..
-    }) = vehicle.itinerary.get_travers()
+    }) = it.get_travers()
     {
         if let Some(l) = map.lanes().get(*l_id) {
             let dist_to_light = l.control_point().distance(position);
@@ -205,6 +206,7 @@ fn calc_front_dist<'a>(
     vehicle: &mut VehicleComponent,
     trans: &Transform,
     self_obj: &PhysicsObject,
+    it: &Itinerary,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
 ) -> f32 {
     let position = trans.position();
@@ -220,7 +222,7 @@ fn calc_front_dist<'a>(
     let my_radius = self_obj.radius;
     let speed = self_obj.speed;
 
-    let on_lane = vehicle.itinerary.get_travers().unwrap().kind.is_lane();
+    let on_lane = it.get_travers().unwrap().kind.is_lane();
 
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {

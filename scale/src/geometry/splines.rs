@@ -1,8 +1,9 @@
 use super::Vec2;
 use crate::geometry::polyline::PolyLine;
 use ordered_float::OrderedFloat;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Spline {
     pub from: Vec2,
     pub to: Vec2,

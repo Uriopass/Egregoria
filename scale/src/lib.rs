@@ -31,6 +31,7 @@ pub mod gui;
 pub mod engine_interaction;
 pub mod graphs;
 pub mod interaction;
+pub mod map_interaction;
 pub mod map_model;
 pub mod pedestrians;
 pub mod physics;
@@ -38,11 +39,13 @@ pub mod rand_provider;
 pub mod rendering;
 pub mod vehicles;
 
-use crate::map_model::IntersectionComponent;
-use crate::vehicles::parking::ParkingManagement;
 pub use imgui;
 pub use rand_provider::RandProvider;
 pub use specs;
+
+use crate::map_interaction::ItinerarySystem;
+use crate::map_model::IntersectionComponent;
+use crate::vehicles::parking::ParkingManagement;
 use specs::shrev::EventChannel;
 use specs::world::EntitiesRes;
 
@@ -86,17 +89,18 @@ pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
 
     // Dispatcher init
     let mut dispatch = DispatcherBuilder::new()
-        .with(VehicleDecision, "car decision", &[])
-        .with(PedestrianDecision, "pedestrian decision", &[])
         .with(SelectableSystem, "selectable", &[])
-        .with(
-            MovableSystem::default(),
-            "movable",
-            &["car decision", "pedestrian decision", "selectable"],
-        )
         .with(RoadBuildSystem, "rgs", &[])
         .with(RoadEditorSystem, "res", &[])
         .with(BulldozerSystem, "bull", &[])
+        .with(ItinerarySystem, "itinerary", &["rgs", "res", "bull"])
+        .with(VehicleDecision, "car", &["itinerary"])
+        .with(PedestrianDecision, "pedestrian", &["itinerary"])
+        .with(
+            MovableSystem::default(),
+            "movable",
+            &["car", "pedestrian", "selectable"],
+        )
         .with(KinematicsApply::new(world), "speed apply", &["movable"])
         .with(
             InspectedAuraSystem::default(),
