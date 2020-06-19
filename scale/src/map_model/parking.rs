@@ -1,10 +1,9 @@
 use crate::geometry::Vec2;
-use crate::map_model::{Lane, LaneID, LaneKind, Map};
+use crate::map_model::{Lane, LaneID, LaneKind};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
 use std::collections::HashSet;
-use std::sync::Mutex;
 
 new_key_type! {
     pub struct ParkingSpotID;
@@ -22,7 +21,6 @@ pub struct ParkingSpot {
 pub struct ParkingSpots {
     spots: SlotMap<ParkingSpotID, ParkingSpot>,
     lane_spots: SecondaryMap<LaneID, Vec<ParkingSpotID>>,
-    reserved_spots: Mutex<HashSet<ParkingSpotID>>, // todo: use chashmap if it becomes a performance issue
 }
 
 impl ParkingSpots {
@@ -75,41 +73,5 @@ impl ParkingSpots {
             .filter(|&p| !reserved_spots.contains(p))
             .min_by_key(|&&id| OrderedFloat(spots[id].pos.distance2(near)))
             .copied()
-    }
-
-    pub fn unreserve(&self, spot: ParkingSpotID) {
-        self.reserved_spots.lock().unwrap().remove(&spot);
-    }
-
-    pub fn reserve_near(&self, lane: LaneID, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
-        let lane = map.lanes().get(lane)?;
-
-        let mut reserved_spots = self.reserved_spots.lock().unwrap();
-        let depth = 3;
-
-        let mut potential = vec![lane];
-        let mut next = vec![];
-
-        for _ in 0..depth {
-            for lane in potential.drain(..) {
-                let parent = unwrap_or!(map.roads().get(lane.parent), continue);
-
-                let p = parent
-                    .parking_next_to(lane)
-                    .and_then(|x| self.closest_available_spot(x, near, &reserved_spots));
-                if let Some(spot) = p {
-                    reserved_spots.insert(spot);
-                    return Some(spot);
-                }
-
-                next.extend(
-                    map.intersections()[lane.dst]
-                        .turns_from(lane.id)
-                        .map(|(turn, _)| &map.lanes()[turn.dst]),
-                )
-            }
-            std::mem::swap(&mut potential, &mut next);
-        }
-        None
     }
 }
