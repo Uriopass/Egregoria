@@ -104,7 +104,7 @@ fn state_update(
     time: &TimeInfo,
 ) {
     match vehicle.state {
-        VehicleState::ParkedToRoad(spline, ref mut t) => {
+        VehicleState::ParkedToRoad(_, ref mut t) => {
             *t += time.delta / TIME_TO_PARK;
 
             if *t >= 1.0 {

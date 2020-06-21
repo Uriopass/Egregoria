@@ -96,7 +96,7 @@ impl PolyLine {
             pos,
             self.segment_vec(segm)
                 .and_then(|x| x.try_normalize())
-                .unwrap_or(vec2!(1.0, 0.0)),
+                .unwrap_or_else(|| vec2!(1.0, 0.0)),
         )
     }
 
