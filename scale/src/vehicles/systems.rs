@@ -46,38 +46,16 @@ impl<'a> System<'a> for VehicleDecision {
 
             (
                 &data.transforms,
+                &mut data.kinematics,
                 &mut data.vehicles,
                 &mut data.itinerarys,
                 &data.entities,
             )
                 .join()
-                .for_each(|(trans, vehicle, it, ent)| {
-                    let before = vehicle.state;
-                    state_update(vehicle, it, &parking, trans, &map, &time);
-                    if matches!(before, VehicleState::Parked(_))
-                        && !matches!(vehicle.state, VehicleState::Parked(_))
-                    {
-                        // unparked
-                        let h = Collider(cow.insert(
-                            trans.position(),
-                            PhysicsObject {
-                                dir: trans.direction(),
-                                group: PhysicsGroup::Vehicles,
-                                radius: vehicle.kind.width() / 2.0,
-                                speed: 0.0,
-                            },
-                        ));
-                        colliders.insert(ent, h).unwrap();
-                    }
-
-                    if !matches!(before, VehicleState::Parked(_))
-                        && matches!(vehicle.state, VehicleState::Parked(_))
-                    {
-                        // parked
-                        let h = colliders.get(ent).unwrap();
-                        cow.remove(h.0);
-                        colliders.remove(ent);
-                    }
+                .for_each(|(trans, kin, vehicle, it, ent)| {
+                    state_update(
+                        vehicle, kin, it, &mut cow, colliders, ent, &parking, trans, &map, &time,
+                    );
                 });
         }
 
@@ -115,24 +93,39 @@ impl<'a> System<'a> for VehicleDecision {
 
 fn state_update(
     vehicle: &mut VehicleComponent,
+    kin: &mut Kinematics,
     it: &mut Itinerary,
+    cow: &mut CollisionWorld,
+    colliders: &mut WriteStorage<Collider>,
+    ent: Entity,
     parking: &ParkingManagement,
     trans: &Transform,
     map: &Map,
     time: &TimeInfo,
 ) {
     match vehicle.state {
-        VehicleState::ParkedToRoad(_, t) => {
-            if t >= 1.0 {
+        VehicleState::ParkedToRoad(spline, ref mut t) => {
+            *t += time.delta / TIME_TO_PARK;
+
+            if *t >= 1.0 {
+                kin.velocity = trans.direction() * 2.0;
+
                 vehicle.state = VehicleState::Driving;
             }
         }
-        VehicleState::RoadToPark(_, t) => {
-            if t >= 1.0 {
+        VehicleState::RoadToPark(_, ref mut t) => {
+            *t += time.delta / TIME_TO_PARK;
+
+            if *t >= 1.0 {
                 let spot = unwrap_or!(vehicle.park_spot, {
                     vehicle.state = VehicleState::Driving;
                     return;
                 });
+
+                let h = colliders.get(ent).unwrap();
+                cow.remove(h.0);
+                colliders.remove(ent);
+                kin.velocity = Vec2::zero();
 
                 vehicle.state = VehicleState::Parked(spot);
             }
@@ -147,10 +140,12 @@ fn state_update(
                 let s = Spline {
                     from: trans.position(),
                     to: spot.pos,
-                    from_derivative: trans.direction(),
-                    to_derivative: spot.orientation,
+                    from_derivative: trans.direction() * 2.0,
+                    to_derivative: spot.orientation * 2.0,
                 };
+
                 vehicle.state = VehicleState::RoadToPark(s, 0.0);
+                kin.velocity = Vec2::zero();
             }
         }
         VehicleState::Parked(spot) => {
@@ -180,6 +175,18 @@ fn state_update(
                         from_derivative: trans.direction() * 2.0,
                         to_derivative: dir * 2.0,
                     };
+
+                    let h = Collider(cow.insert(
+                        trans.position(),
+                        PhysicsObject {
+                            dir: trans.direction(),
+                            group: PhysicsGroup::Vehicles,
+                            radius: vehicle.kind.width() / 2.0,
+                            speed: 0.0,
+                        },
+                    ));
+                    colliders.insert(ent, h).unwrap();
+
                     *it = itin;
                     vehicle.park_spot = Some(park);
                     vehicle.state = VehicleState::ParkedToRoad(s, 0.0);
@@ -206,23 +213,11 @@ fn physics(
             let spot = unwrap_or!(map.parking.get(id), return);
             trans.set_position(spot.pos);
             trans.set_direction(spot.orientation);
-            kin.velocity = Vec2::zero();
             return;
         }
-        VehicleState::ParkedToRoad(spline, ref mut t)
-        | VehicleState::RoadToPark(spline, ref mut t) => {
-            *t += time.delta / TIME_TO_PARK;
-            let v = spline.derivative(*t);
-
-            if *t >= 1.0 {
-                *t = 1.0;
-                kin.velocity = v / TIME_TO_PARK;
-            } else {
-                kin.velocity = Vec2::zero();
-            }
-
-            trans.set_position(spline.get(*t));
-            trans.set_direction(v.normalize());
+        VehicleState::ParkedToRoad(spline, t) | VehicleState::RoadToPark(spline, t) => {
+            trans.set_position(spline.get(t));
+            trans.set_direction(spline.derivative(t).normalize());
             return;
         }
         VehicleState::Driving => {}
@@ -276,7 +271,7 @@ fn next_objective(
     Itinerary::route(
         pos,
         *last_travers.filter(|t| t.is_valid(map))?,
-        (l.id, l.points.point_along(dist - 3.0)),
+        (l.id, l.points.point_along(dist - 5.0)),
         map,
         &DirectionalPath,
     )
