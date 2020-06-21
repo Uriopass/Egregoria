@@ -1,6 +1,5 @@
 use crate::geometry::splines::Spline;
-use crate::geometry::Vec2;
-use crate::gui::{InspectDragf, InspectVec2};
+use crate::gui::InspectDragf;
 use crate::interaction::Selectable;
 use crate::map_interaction::Itinerary;
 use crate::map_model::{
@@ -37,10 +36,6 @@ pub enum VehicleKind {
 #[derive(Component, Debug, Inspect, Serialize, Deserialize)]
 pub struct VehicleComponent {
     #[inspect(proxy_type = "InspectDragf")]
-    pub desired_speed: f32,
-    #[inspect(proxy_type = "InspectVec2")]
-    pub desired_dir: Vec2,
-    #[inspect(proxy_type = "InspectDragf")]
     pub ang_velocity: f32,
     #[inspect(proxy_type = "InspectDragf")]
     pub wait_time: f32,
@@ -55,8 +50,6 @@ pub struct VehicleComponent {
 impl Default for VehicleComponent {
     fn default() -> Self {
         Self {
-            desired_speed: 0.0,
-            desired_dir: vec2!(1.0, 0.0),
             wait_time: 0.0,
             ang_velocity: 0.0,
             kind: VehicleKind::Car,

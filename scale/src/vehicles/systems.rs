@@ -33,7 +33,7 @@ impl<'a> System<'a> for VehicleDecision {
 
     fn run(&mut self, mut data: Self::SystemData) {
         let cow = data.coworld;
-        let map = &*data.map;
+        let map = data.map;
         let time = data.time;
 
         (
@@ -48,37 +48,49 @@ impl<'a> System<'a> for VehicleDecision {
                 objective_update(it, &time, trans, &map);
 
                 let (_, self_obj) = cow.get(collider.0).unwrap();
-                let speed = self_obj.speed;
-                let danger_length = (speed * speed / (2.0 * vehicle.kind.deceleration())).min(40.0);
+                let danger_length =
+                    (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
                 let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
                 let objs = neighbors.map(|(id, pos)| (Vec2::from(pos), cow.get(id).unwrap().1));
 
-                calc_decision(vehicle, map, &time, trans, self_obj, it, objs);
+                let (desired_speed, desired_dir) =
+                    calc_decision(vehicle, &map, &time, trans, self_obj, it, objs);
 
-                physics(&time, trans, kin, vehicle, speed);
+                physics(
+                    trans,
+                    kin,
+                    vehicle,
+                    &time,
+                    self_obj,
+                    desired_speed,
+                    desired_dir,
+                );
             });
     }
 }
 
 fn physics(
-    time: &TimeInfo,
     trans: &mut Transform,
     kin: &mut Kinematics,
     vehicle: &mut VehicleComponent,
-    speed: f32,
+    time: &TimeInfo,
+    obj: &PhysicsObject,
+    desired_speed: f32,
+    desired_dir: Vec2,
 ) {
+    let speed = obj.speed;
     let kind = vehicle.kind;
     let direction = trans.direction();
 
     let speed = speed
-        + (vehicle.desired_speed - speed).restrict(
+        + (desired_speed - speed).restrict(
             -time.delta * kind.deceleration(),
             time.delta * kind.acceleration(),
         );
 
     let max_ang_vel = (speed.abs() / kind.min_turning_radius()).restrict(0.0, 2.0);
 
-    let approx_angle = direction.distance(vehicle.desired_dir);
+    let approx_angle = direction.distance(desired_dir);
 
     vehicle.ang_velocity += time.delta * kind.ang_acc();
     vehicle.ang_velocity = vehicle
@@ -88,7 +100,7 @@ fn physics(
 
     trans.set_direction(angle_lerp(
         trans.direction(),
-        vehicle.desired_dir,
+        desired_dir,
         vehicle.ang_velocity * time.delta,
     ));
 
@@ -129,14 +141,13 @@ pub fn calc_decision<'a>(
     self_obj: &PhysicsObject,
     it: &Itinerary,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
-) {
-    vehicle.desired_speed = 0.0;
-
+) -> (f32, Vec2) {
+    let default_return = (0.0, self_obj.dir);
     if vehicle.wait_time > 0.0 {
         vehicle.wait_time -= time.delta;
-        return;
+        return default_return;
     }
-    let objective: Vec2 = unwrap_or!(it.get_point(), return);
+    let objective: Vec2 = unwrap_or!(it.get_point(), return default_return);
 
     let is_terminal = it.is_terminal();
 
@@ -146,21 +157,18 @@ pub fn calc_decision<'a>(
     let speed = self_obj.speed;
     if speed.abs() < 0.2 && front_dist < 1.5 {
         vehicle.wait_time = (position.x * 1000.0).fract().abs() * 0.5;
-        return;
+        return default_return;
     }
 
     let delta_pos: Vec2 = objective - position;
-    let (dir_to_pos, dist_to_pos) = unwrap_or!(delta_pos.dir_dist(), return);
+    let (dir_to_pos, dist_to_pos) = unwrap_or!(delta_pos.dir_dist(), return default_return);
 
     let time_to_stop = speed / vehicle.kind.deceleration();
     let stop_dist = time_to_stop * speed / 2.0;
 
-    vehicle.desired_dir = dir_to_pos;
-    vehicle.desired_speed = vehicle.kind.cruising_speed();
-
     // Close to terminal objective
     if is_terminal && dist_to_pos < 1.0 + stop_dist {
-        vehicle.desired_speed = 0.0;
+        return (0.0, dir_to_pos);
     }
 
     if let Some(Traversable {
@@ -178,12 +186,12 @@ pub fn calc_decision<'a>(
                             + stop_dist
                             + (vehicle.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
                     {
-                        vehicle.desired_speed = 0.0;
+                        return (0.0, dir_to_pos);
                     }
                 }
                 TrafficBehavior::STOP => {
                     if dist_to_light < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
-                        vehicle.desired_speed = 0.0;
+                        return (0.0, dir_to_pos);
                     }
                 }
                 _ => {}
@@ -191,15 +199,17 @@ pub fn calc_decision<'a>(
         }
     }
 
-    // Not facing the objective
-    if dir_to_pos.dot(trans.direction()) < 0.8 {
-        vehicle.desired_speed = vehicle.desired_speed.min(6.0);
-    }
-
     // Stop at 80 cm of object in front
     if front_dist < 0.8 + stop_dist {
-        vehicle.desired_speed = 0.0;
+        return (0.0, dir_to_pos);
     }
+
+    // Not facing the objective
+    if dir_to_pos.dot(trans.direction()) < 0.8 {
+        return (6.0, dir_to_pos);
+    }
+
+    (vehicle.kind.cruising_speed(), dir_to_pos)
 }
 
 fn calc_front_dist<'a>(
