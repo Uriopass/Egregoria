@@ -1,8 +1,8 @@
 use crate::geometry::splines::Spline;
 use crate::geometry::Vec2;
 use crate::map_model::{
-    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, ParkingSpots, Road, RoadID,
-    RoadSegmentKind,
+    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, ParkingSpotID, ParkingSpots,
+    Road, RoadID, RoadSegmentKind,
 };
 use ordered_float::OrderedFloat;
 use rand::prelude::IteratorRandom;
@@ -58,14 +58,9 @@ impl Map {
         let inter = unwrap_or!(self.intersections.get_mut(id), return);
         f(inter);
 
-        self.invalidate(id);
-
-        for x in self.intersections[id].roads.clone() {
-            let other_end = self.roads[x].other_end(id);
-            self.invalidate(other_end);
-        }
-
-        self.invalidate(id);
+        let inter = &mut self.intersections[id];
+        inter.update_traffic_control(&mut self.lanes, &self.roads);
+        inter.update_turns(&self.lanes, &self.roads);
     }
 
     fn invalidate(&mut self, id: IntersectionID) {
@@ -199,6 +194,7 @@ impl Map {
         let road = self.roads.remove(road_id).unwrap();
         for (id, _) in road.lanes_iter() {
             self.lanes.remove(id);
+            self.parking.remove_spots(id);
         }
 
         self.intersections[road.src].remove_road(road_id);
@@ -322,7 +318,19 @@ impl Map {
             .map(|(id, _)| id)
     }
 
-    pub fn is_neigh(&self, src: IntersectionID, dst: IntersectionID) -> bool {
-        self.find_road(src, dst).is_some()
+    pub fn parking_to_drive(&self, spot: ParkingSpotID) -> Option<LaneID> {
+        let spot = self.parking.get(spot)?;
+        let park_lane = self
+            .lanes
+            .get(spot.parent)
+            .expect("Parking spot has no parent >:(");
+        let road = self
+            .roads
+            .get(park_lane.parent)
+            .expect("Lane has no parent >:(");
+        road.outgoing_lanes_from(park_lane.src)
+            .iter()
+            .rfind(|&&(_, kind)| kind == LaneKind::Driving)
+            .map(|&(id, _)| id)
     }
 }

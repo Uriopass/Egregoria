@@ -63,13 +63,13 @@ impl Itinerary {
         pather: &impl Pathfinder,
     ) -> Option<Itinerary> {
         let points = cur.points(map);
-        let (segid, _) = points.project_segment(pos);
+        let (_, segid) = points.project_segment(pos);
 
         if let TraverseKind::Lane(id) = cur.kind {
             if id == l_obj {
                 // start lane is objective lane
 
-                let (segid_obj, _) = points.project_segment(obj);
+                let (_, segid_obj) = points.project_segment(obj);
 
                 if segid_obj > segid
                     || (segid_obj == segid
@@ -129,7 +129,7 @@ impl Itinerary {
 
                 let points = r.cur.points(map);
                 if r.reversed_route.is_empty() {
-                    let (id, _) = points.project_segment(r.end_pos);
+                    let (_, id) = points.project_segment(r.end_pos);
                     self.local_path.extend(&points.as_slice()[..id]);
                     self.local_path.push(r.end_pos);
                 } else {
@@ -144,7 +144,15 @@ impl Itinerary {
         self.check_validity(map);
 
         if let Some(p) = self.get_point() {
-            if p.distance2(position) < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
+            let dist = p.distance2(position);
+            if self.is_terminal() {
+                if dist < 1.0 {
+                    self.advance(map);
+                }
+                return;
+            }
+
+            if dist < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
                 let k = self.get_travers().unwrap();
                 if self.remaining_points() > 1
                     || k.can_pass(time.time_seconds, map.lanes())
@@ -179,6 +187,14 @@ impl Itinerary {
 
     pub fn get_point(&self) -> Option<Vec2> {
         self.local_path.first().copied()
+    }
+
+    pub fn get_terminal(&self) -> Option<Vec2> {
+        match &self.kind {
+            ItineraryKind::None | ItineraryKind::WaitUntil(_) => None,
+            ItineraryKind::Simple(_) => self.local_path.last().copied(),
+            ItineraryKind::Route(Route { end_pos, .. }) => Some(*end_pos),
+        }
     }
 
     pub fn get_travers(&self) -> Option<&Traversable> {

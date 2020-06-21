@@ -1,14 +1,16 @@
 use crate::engine_interaction::TimeInfo;
 use crate::geometry::intersections::{both_dist_to_inter, Ray};
+use crate::geometry::splines::Spline;
 use crate::geometry::{angle_lerp, Vec2};
-use crate::map_interaction::{Itinerary, OBJECTIVE_OK_DIST};
+use crate::map_interaction::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
 use crate::map_model::{
-    DirectionalPath, LaneKind, Map, TrafficBehavior, Traversable, TraverseDirection, TraverseKind,
+    DirectionalPath, LaneKind, Map, ParkingSpotID, TrafficBehavior, Traversable, TraverseDirection,
+    TraverseKind,
 };
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::Restrict;
-use crate::vehicles::VehicleComponent;
+use crate::vehicles::{VehicleComponent, VehicleState, TIME_TO_PARK};
 use rand::thread_rng;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
@@ -18,10 +20,12 @@ pub struct VehicleDecision;
 
 #[derive(SystemData)]
 pub struct VehicleDecisionSystemData<'a> {
+    entities: Entities<'a>,
     map: Read<'a, Map>,
     time: Read<'a, TimeInfo>,
-    coworld: Read<'a, CollisionWorld, PanicHandler>,
-    colliders: ReadStorage<'a, Collider>,
+    parking: Read<'a, ParkingManagement>,
+    coworld: Write<'a, CollisionWorld, PanicHandler>,
+    colliders: WriteStorage<'a, Collider>,
     transforms: WriteStorage<'a, Transform>,
     kinematics: WriteStorage<'a, Kinematics>,
     vehicles: WriteStorage<'a, VehicleComponent>,
@@ -32,21 +36,60 @@ impl<'a> System<'a> for VehicleDecision {
     type SystemData = VehicleDecisionSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        let cow = data.coworld;
+        let mut cow = data.coworld;
         let map = data.map;
         let time = data.time;
+        let parking = data.parking;
+
+        {
+            let colliders = &mut data.colliders;
+
+            (
+                &data.transforms,
+                &mut data.vehicles,
+                &mut data.itinerarys,
+                &data.entities,
+            )
+                .join()
+                .for_each(|(trans, vehicle, it, ent)| {
+                    let before = vehicle.state;
+                    state_update(vehicle, it, &parking, trans, &map, &time);
+                    if matches!(before, VehicleState::Parked(_))
+                        && !matches!(vehicle.state, VehicleState::Parked(_))
+                    {
+                        // unparked
+                        let h = Collider(cow.insert(
+                            trans.position(),
+                            PhysicsObject {
+                                dir: trans.direction(),
+                                group: PhysicsGroup::Vehicles,
+                                radius: vehicle.kind.width() / 2.0,
+                                speed: 0.0,
+                            },
+                        ));
+                        colliders.insert(ent, h).unwrap();
+                    }
+
+                    if !matches!(before, VehicleState::Parked(_))
+                        && matches!(vehicle.state, VehicleState::Parked(_))
+                    {
+                        // parked
+                        let h = colliders.get(ent).unwrap();
+                        cow.remove(h.0);
+                        colliders.remove(ent);
+                    }
+                });
+        }
 
         (
             &mut data.transforms,
             &mut data.kinematics,
             &mut data.vehicles,
+            &data.itinerarys,
             &data.colliders,
-            &mut data.itinerarys,
         )
-            .join()
-            .for_each(|(trans, kin, vehicle, collider, it)| {
-                objective_update(it, &time, trans, &map);
-
+            .par_join()
+            .for_each(|(trans, kin, vehicle, it, collider)| {
                 let (_, self_obj) = cow.get(collider.0).unwrap();
                 let danger_length =
                     (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
@@ -62,10 +105,89 @@ impl<'a> System<'a> for VehicleDecision {
                     vehicle,
                     &time,
                     self_obj,
+                    &map,
                     desired_speed,
                     desired_dir,
                 );
             });
+    }
+}
+
+fn state_update(
+    vehicle: &mut VehicleComponent,
+    it: &mut Itinerary,
+    parking: &ParkingManagement,
+    trans: &Transform,
+    map: &Map,
+    time: &TimeInfo,
+) {
+    match vehicle.state {
+        VehicleState::ParkedToRoad(_, t) => {
+            if t >= 1.0 {
+                vehicle.state = VehicleState::Driving;
+            }
+        }
+        VehicleState::RoadToPark(_, t) => {
+            if t >= 1.0 {
+                let spot = unwrap_or!(vehicle.park_spot, {
+                    vehicle.state = VehicleState::Driving;
+                    return;
+                });
+
+                vehicle.state = VehicleState::Parked(spot);
+            }
+        }
+        VehicleState::Driving => {
+            if it.has_ended(time.time) {
+                *it = Itinerary::wait_until(time.time + 20.0);
+                let spot = vehicle.park_spot.and_then(|id| map.parking.get(id));
+
+                let spot = unwrap_or!(spot, return);
+
+                let s = Spline {
+                    from: trans.position(),
+                    to: spot.pos,
+                    from_derivative: trans.direction(),
+                    to_derivative: spot.orientation,
+                };
+                vehicle.state = VehicleState::RoadToPark(s, 0.0);
+            }
+        }
+        VehicleState::Parked(spot) => {
+            if it.has_ended(time.time) {
+                let mut lane = map.parking_to_drive(spot);
+
+                if lane.is_none() {
+                    lane = map.closest_lane(trans.position(), LaneKind::Driving);
+                }
+
+                let travers: Option<Traversable> = lane
+                    .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
+
+                if let Some((itin, park)) =
+                    next_objective(trans.position(), parking, map, travers.as_ref())
+                {
+                    parking.free(spot);
+
+                    let points = travers.unwrap().points(map);
+                    let d = points.distance_along(points.project(trans.position()));
+
+                    let (pos, dir) = points.point_dir_along(d + 5.0);
+
+                    let s = Spline {
+                        from: trans.position(),
+                        to: pos,
+                        from_derivative: trans.direction() * 2.0,
+                        to_derivative: dir * 2.0,
+                    };
+                    *it = itin;
+                    vehicle.park_spot = Some(park);
+                    vehicle.state = VehicleState::ParkedToRoad(s, 0.0);
+                } else {
+                    *it = Itinerary::wait_until(time.time + 10.0);
+                }
+            }
+        }
     }
 }
 
@@ -75,9 +197,37 @@ fn physics(
     vehicle: &mut VehicleComponent,
     time: &TimeInfo,
     obj: &PhysicsObject,
+    map: &Map,
     desired_speed: f32,
     desired_dir: Vec2,
 ) {
+    match vehicle.state {
+        VehicleState::Parked(id) => {
+            let spot = unwrap_or!(map.parking.get(id), return);
+            trans.set_position(spot.pos);
+            trans.set_direction(spot.orientation);
+            kin.velocity = Vec2::zero();
+            return;
+        }
+        VehicleState::ParkedToRoad(spline, ref mut t)
+        | VehicleState::RoadToPark(spline, ref mut t) => {
+            *t += time.delta / TIME_TO_PARK;
+            let v = spline.derivative(*t);
+
+            if *t >= 1.0 {
+                *t = 1.0;
+                kin.velocity = v / TIME_TO_PARK;
+            } else {
+                kin.velocity = Vec2::zero();
+            }
+
+            trans.set_position(spline.get(*t));
+            trans.set_direction(v.normalize());
+            return;
+        }
+        VehicleState::Driving => {}
+    }
+
     let speed = obj.speed;
     let kind = vehicle.kind;
     let direction = trans.direction();
@@ -107,30 +257,30 @@ fn physics(
     kin.velocity = trans.direction() * speed;
 }
 
-pub fn objective_update(itinerary: &mut Itinerary, time: &TimeInfo, trans: &Transform, map: &Map) {
-    if itinerary.has_ended(time.time) {
-        let mut last_travers = itinerary.get_travers().copied();
-        if last_travers.is_none() {
-            last_travers = map
-                .closest_lane(trans.position(), LaneKind::Driving)
-                .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
-        }
+fn next_objective(
+    pos: Vec2,
+    parking: &ParkingManagement,
+    map: &Map,
+    last_travers: Option<&Traversable>,
+) -> Option<(Itinerary, ParkingSpotID)> {
+    let rlane = map.get_random_lane(LaneKind::Driving, &mut thread_rng())?;
+    let spot_id = parking.reserve_near(rlane.id, rlane.points.random_along().0, map)?;
 
-        *itinerary = next_objective(trans.position(), map, last_travers.as_ref())
-            .unwrap_or_else(|| Itinerary::wait_until(time.time + 10.0));
-    }
-}
+    let l = &map.lanes()[map.parking_to_drive(spot_id)?];
 
-fn next_objective(pos: Vec2, map: &Map, last_travers: Option<&Traversable>) -> Option<Itinerary> {
-    let l = map.get_random_lane(LaneKind::Driving, &mut thread_rng())?;
+    let spot = map.parking.get(spot_id).unwrap();
+
+    let p = l.points.project(spot.pos);
+    let dist = l.points.distance_along(p);
 
     Itinerary::route(
         pos,
         *last_travers.filter(|t| t.is_valid(map))?,
-        (l.id, l.points.random_along().0),
+        (l.id, l.points.point_along(dist - 3.0)),
         map,
         &DirectionalPath,
     )
+    .map(move |it| (it, spot_id))
 }
 
 pub fn calc_decision<'a>(
@@ -149,7 +299,7 @@ pub fn calc_decision<'a>(
     }
     let objective: Vec2 = unwrap_or!(it.get_point(), return default_return);
 
-    let is_terminal = it.is_terminal();
+    let terminal_pos = it.get_terminal();
 
     let front_dist = calc_front_dist(vehicle, trans, self_obj, it, neighs);
 
@@ -160,15 +310,19 @@ pub fn calc_decision<'a>(
         return default_return;
     }
 
-    let delta_pos: Vec2 = objective - position;
-    let (dir_to_pos, dist_to_pos) = unwrap_or!(delta_pos.dir_dist(), return default_return);
+    let dir_to_pos = unwrap_or!(
+        (objective - position).try_normalize(),
+        return default_return
+    );
 
     let time_to_stop = speed / vehicle.kind.deceleration();
     let stop_dist = time_to_stop * speed / 2.0;
 
-    // Close to terminal objective
-    if is_terminal && dist_to_pos < 1.0 + stop_dist {
-        return (0.0, dir_to_pos);
+    if let Some(pos) = terminal_pos {
+        // Close to terminal objective
+        if pos.distance(trans.position()) < 1.0 + stop_dist {
+            return (0.0, dir_to_pos);
+        }
     }
 
     if let Some(Traversable {

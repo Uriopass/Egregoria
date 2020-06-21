@@ -87,22 +87,32 @@ impl PolyLine {
     }
 
     pub fn project(&self, p: Vec2) -> Vec2 {
-        self.project_segment(p).1
+        self.project_segment(p).0
+    }
+
+    pub fn project_dir(&self, p: Vec2) -> (Vec2, Vec2) {
+        let (pos, segm) = self.project_segment(p);
+        (
+            pos,
+            self.segment_vec(segm)
+                .and_then(|x| x.try_normalize())
+                .unwrap_or(vec2!(1.0, 0.0)),
+        )
     }
 
     /// Returns the id of the point right after the projection along with the projection
     /// None if polyline is empty
-    pub fn project_segment(&self, p: Vec2) -> (usize, Vec2) {
+    pub fn project_segment(&self, p: Vec2) -> (Vec2, usize) {
         match self.n_points() {
             0 => unsafe { unreachable_unchecked() },
-            1 => (0, self.first()),
+            1 => (self.first(), 0),
             2 => (
-                1,
                 Segment {
                     src: self.0[0],
                     dst: self.0[1],
                 }
                 .project(p),
+                1,
             ),
             _ => self
                 .0
@@ -110,12 +120,12 @@ impl PolyLine {
                 .enumerate()
                 .map(|(i, w)| {
                     if let [a, b] = *w {
-                        (i + 1, Segment { src: a, dst: b }.project(p))
+                        (Segment { src: a, dst: b }.project(p), i + 1)
                     } else {
                         unsafe { unreachable_unchecked() } // windows(2)
                     }
                 })
-                .min_by_key(|&(_, proj)| OrderedFloat((p - proj).magnitude2()))
+                .min_by_key(|&(proj, _)| OrderedFloat((p - proj).magnitude2()))
                 .unwrap(),
         }
     }
@@ -261,9 +271,9 @@ impl<T: Iterator<Item = f32>> Iterator for PointsAlongs<'_, T> {
     fn next(&mut self) -> Option<Self::Item> {
         let d = self.dists.next()?;
         while d > self.partial + self.dist {
-            self.partial += self.dist;
             let w = unwrap_or!(self.windows.next(), break);
             let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((vec2!(1.0, 0.0), 0.0));
+            self.partial += self.dist;
             self.dir = dir; // no structural assignment :(
             self.dist = dist;
             self.lastp = w[0];
