@@ -1,13 +1,10 @@
+use crate::engine_interaction::TimeInfo;
 use crate::geometry::splines::Spline;
 use crate::gui::InspectDragf;
 use crate::interaction::Selectable;
-use crate::map_interaction::Itinerary;
-use crate::map_model::{
-    LaneKind, Map, ParkingSpotID, Traversable, TraverseDirection, TraverseKind,
-};
-use crate::physics::{
-    Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
-};
+use crate::map_interaction::{Itinerary, ParkingManagement};
+use crate::map_model::{LaneKind, Map, ParkingSpotID};
+use crate::physics::{Collider, CollisionWorld, Kinematics, Transform};
 use crate::rendering::assets::{AssetID, AssetRender};
 use crate::rendering::Color;
 use crate::utils::rand_world;
@@ -17,9 +14,11 @@ use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};
 use specs::{Component, DenseVecStorage};
 
+pub const TIME_TO_PARK: f32 = 5.0;
+
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum VehicleState {
-    Parked,
+    Parked(ParkingSpotID),
     ParkedToRoad(Spline, f32),
     Driving,
     RoadToPark(Spline, f32),
@@ -45,18 +44,6 @@ pub struct VehicleComponent {
 
     pub state: VehicleState,
     pub kind: VehicleKind,
-}
-
-impl Default for VehicleComponent {
-    fn default() -> Self {
-        Self {
-            wait_time: 0.0,
-            ang_velocity: 0.0,
-            kind: VehicleKind::Car,
-            state: VehicleState::Driving,
-            park_spot: None,
-        }
-    }
 }
 
 impl VehicleKind {
@@ -111,34 +98,38 @@ impl VehicleKind {
 }
 
 pub fn spawn_new_vehicle(world: &mut World) {
-    let r: f32 = rand_world(world);
+    let r: f64 = rand_world(world);
 
     let map = world.read_resource::<Map>();
 
-    let lane = unwrap_or!(
+    let time = world.read_resource::<TimeInfo>().time;
+    let it = Itinerary::wait_until(time + r * 5.0);
+
+    let pm = world.read_resource::<ParkingManagement>();
+
+    let rl = unwrap_or!(
         map.get_random_lane(
-            LaneKind::Driving,
-            &mut world.write_resource::<RandProvider>().rng,
+            LaneKind::Parking,
+            &mut world.write_resource::<RandProvider>().rng
         ),
         return
     );
-
-    let (pos, dir) = lane.points.point_dir_along(r * lane.points.length());
-
-    let (segment, _) = lane.points.project_segment(pos);
-
-    let pos = Transform::new_cos_sin(pos, dir);
-
-    let mut it = Itinerary::simple(
-        Traversable::new(TraverseKind::Lane(lane.id), TraverseDirection::Forward),
-        &map,
+    let spot_id = unwrap_or!(
+        pm.reserve_near(rl.id, rl.points.random_along().0, &map),
+        return
     );
-    for _ in 0..segment {
-        it.advance(&map);
-    }
 
+    let spot = map.parking.get(spot_id).unwrap();
+    let pos = Transform::new_cos_sin(spot.pos, spot.orientation);
     drop(map);
-    make_vehicle_entity(world, pos, VehicleComponent::new(VehicleKind::Car), it);
+    drop(pm);
+
+    make_vehicle_entity(
+        world,
+        pos,
+        VehicleComponent::new(VehicleKind::Car, spot_id),
+        it,
+    );
 }
 
 pub fn make_vehicle_entity(
@@ -147,17 +138,6 @@ pub fn make_vehicle_entity(
     vehicle: VehicleComponent,
     it: Itinerary,
 ) -> Entity {
-    let coworld = world.get_mut::<CollisionWorld>().unwrap();
-    let h = coworld.insert(
-        trans.position(),
-        PhysicsObject {
-            dir: trans.direction(),
-            speed: 0.0,
-            radius: vehicle.kind.width() / 2.0,
-            group: PhysicsGroup::Vehicles,
-        },
-    );
-
     world
         .create_entity()
         .with(AssetRender {
@@ -169,7 +149,6 @@ pub fn make_vehicle_entity(
         })
         .with(trans)
         .with(Kinematics::from_mass(1000.0))
-        .with(Collider(h))
         .with(Selectable::default())
         .with(vehicle)
         .with(it)
@@ -212,10 +191,13 @@ pub fn get_random_car_color() -> Color {
 }
 
 impl VehicleComponent {
-    pub fn new(kind: VehicleKind) -> VehicleComponent {
+    pub fn new(kind: VehicleKind, spot: ParkingSpotID) -> VehicleComponent {
         Self {
+            ang_velocity: 0.0,
+            wait_time: 0.0,
+            park_spot: Some(spot),
+            state: VehicleState::Parked(spot),
             kind,
-            ..Default::default()
         }
     }
 }

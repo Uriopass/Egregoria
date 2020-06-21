@@ -1,6 +1,7 @@
 use crate::geometry::Vec2;
 use crate::map_model::{Lane, LaneID, LaneKind};
 use ordered_float::OrderedFloat;
+use rand::seq::IteratorRandom;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
 use std::collections::HashSet;
@@ -13,6 +14,7 @@ pub const PARKING_SPOT_LENGTH: f32 = 6.0;
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct ParkingSpot {
+    pub parent: LaneID,
     pub pos: Vec2,
     pub orientation: Vec2,
 }
@@ -26,6 +28,18 @@ pub struct ParkingSpots {
 impl ParkingSpots {
     pub fn get(&self, spot: ParkingSpotID) -> Option<&ParkingSpot> {
         self.spots.get(spot)
+    }
+
+    pub fn random_spot(&self) -> Option<ParkingSpotID> {
+        self.spots.keys().choose(&mut rand::thread_rng())
+    }
+
+    pub fn remove_spots(&mut self, lane: LaneID) {
+        if let Some(spots) = self.lane_spots.remove(lane) {
+            for spot in spots {
+                self.spots.remove(spot);
+            }
+        }
     }
 
     pub fn generate_spots(&mut self, lane: &Lane) {
@@ -46,12 +60,14 @@ impl ParkingSpots {
             self.spots.remove(spot);
         }
 
+        let parent = lane.id;
         let spots = &mut self.spots;
         lane_spots.extend(
             lane.points
                 .points_dirs_along((0..n_spots).map(|x| (x as f32 + 0.5) * step))
-                .map(|(pos, dir)| {
+                .map(move |(pos, dir)| {
                     spots.insert(ParkingSpot {
+                        parent,
                         pos,
                         orientation: dir,
                     })

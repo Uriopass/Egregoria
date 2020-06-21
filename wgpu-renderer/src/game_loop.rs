@@ -12,7 +12,6 @@ use scale::physics::Transform;
 use scale::rendering::{Color, LinearColor};
 use scale::specs::RunNow;
 use scale::specs::WorldExt;
-use scale::utils::DebugOrder;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
@@ -135,19 +134,25 @@ impl<'a> State<'a> {
 
         debug_pathfinder(&mut tess, &self.world);
 
-        for (order, col) in scale::utils::PERSISTENT_DEBUG_ORDERS
+        for (order, col) in scale::utils::debugdraw::PERSISTENT_DEBUG_ORDERS
             .lock()
             .unwrap()
             .iter()
             .copied()
-            .chain(scale::utils::DEBUG_ORDERS.lock().unwrap().drain(..))
+            .chain(
+                scale::utils::debugdraw::DEBUG_ORDERS
+                    .lock()
+                    .unwrap()
+                    .drain(..),
+            )
         {
             tess.color = col.into();
+            use scale::utils::debugdraw::DebugOrder::*;
             match order {
-                DebugOrder::Point { pos, size } => {
+                Point { pos, size } => {
                     tess.draw_circle(pos, 3.0, size);
                 }
-                DebugOrder::Line { from, to } => {
+                Line { from, to } => {
                     tess.draw_line(from, to, 3.0);
                 }
             }
@@ -254,10 +259,11 @@ fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) -> Optio
 
     if let scale::map_interaction::ItineraryKind::Route(r) = itinerary.kind() {
         tess.color = LinearColor::RED;
-        tess.draw_circle(r.end_pos, 1.0, 5.0);
         for l in &r.reversed_route {
             tess.draw_polyline(l.raw_points(map).as_slice(), 1.0, 3.0);
         }
+        tess.color = LinearColor::MAGENTA;
+        tess.draw_circle(r.end_pos, 1.0, 1.0);
     }
     Some(())
 }
