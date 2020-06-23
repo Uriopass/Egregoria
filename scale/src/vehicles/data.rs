@@ -156,8 +156,7 @@ pub fn make_vehicle_entity(
 }
 
 pub fn delete_vehicle_entity(world: &mut World, e: Entity) {
-    {
-        let handle = world.read_component::<Collider>().get(e).unwrap().0;
+    if let Some(&Collider(handle)) = world.read_component::<Collider>().get(e) {
         let mut coworld = world.write_resource::<CollisionWorld>();
         coworld.remove(handle);
     }
