@@ -90,7 +90,7 @@ impl Transform {
     }
 
     pub fn project(&self, point: Vec2) -> Vec2 {
-        let rotated = point * self.cossin + point * vec2!(-self.cossin.y, self.cossin.x);
+        let rotated = point * self.cossin - point * self.cossin.perpendicular();
         rotated + self.position
     }
 }
