@@ -14,13 +14,18 @@ ordered-float = { version = "1.0.2", features = ["serde"] }
 rand = {version = "0.7", default-features = false, features = ["std", "small_rng"]}
 rand_distr = "0.2.2"
 slotmap = { version = "0.4", default-features = false, features = ["serde"] }
-imgui-inspect = { path = "../imgui-inspect" }
-imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 bincode = "1.2.1"
 serde = "1.0"
-imgui = "0.4"
 specs = { version = "0.16", default-features = false, features = ["parallel", "shred-derive", "specs-derive", "serde"] }
 pathfinding = { git = "https://github.com/samueltardieu/pathfinding" }
 flat_spatial = "0.1.4"
 mint = "0.5.5"
 lazy_static = "1.4.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+imgui = "0.4"
+imgui-inspect = { path = "../imgui-inspect"}
+imgui-inspect-derive = { path = "../imgui-inspect-derive" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+imgui-inspect-derive = { path = "../imgui-inspect-derive", default-features = false }
