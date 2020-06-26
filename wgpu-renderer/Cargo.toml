@@ -13,8 +13,7 @@ glsl-to-spirv = "0.1.7"
 futures       = { version = "0.3.4", default-features = false, features = ["executor"] }
 bytemuck      = "1.2.0"
 image         = { version = "0.23.4", default-features = false, features = ["png"] }
-rodio         = { version = "0.11.0", default-features = false, features = ["mp3"] }
-imgui-wgpu    = { git = "https://github.com/Yatekii/imgui-wgpu-rs" } # need for imgui 0.4
+imgui-wgpu    = "0.7.0"
 imgui-winit-support = "0.4.0"
 scale         = { path = "../scale" }
 mint          = "0.5.5"
