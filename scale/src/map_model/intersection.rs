@@ -138,15 +138,10 @@ impl Intersection {
 
             let left =
                 road.interface_point(self.id) - road.width * 0.5 * src_orient.perpendicular();
-            let right =
-                road.interface_point(self.id) + road.width * 0.5 * src_orient.perpendicular();
 
             let dst_orient = next_road.orientation_from(self.id);
             let next_right = next_road.interface_point(self.id)
                 + next_road.width * 0.5 * dst_orient.perpendicular();
-
-            self.polygon.0.push(right);
-            self.polygon.0.push(left);
 
             let ang = (-src_orient).angle(dst_orient);
 
@@ -165,11 +160,7 @@ impl Intersection {
                 to_derivative: dst_orient * dist,
             };
 
-            for i in 1..6 {
-                let c = i as f32 / 6.0;
-                let pos = spline.get(c);
-                self.polygon.0.push(pos);
-            }
+            self.polygon.0.extend(spline.smart_points(1.0, 0.0, 1.0));
         }
     }
 
