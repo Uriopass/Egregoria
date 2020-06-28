@@ -3,7 +3,9 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
-use scale::map_model::{LaneKind, Map, ParkingSpot, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
+use scale::map_model::{
+    LaneKind, Map, ParkingSpot, TrafficBehavior, TurnKind, CROSSWALK_WIDTH, PARKING_SPOT_LENGTH,
+};
 use scale::physics::Transform;
 use scale::rendering::{from_srgb, Color, LinearColor};
 use scale::utils::Restrict;
@@ -84,23 +86,6 @@ impl RoadRenderer {
             };
 
             tess.draw_polyline_with_dir(l.points.as_slice(), or_src, or_dst, z, l.width - 0.5);
-
-            if matches!(l.kind, LaneKind::Parking) {
-                tess.color = LinearColor::WHITE;
-
-                for ParkingSpot {
-                    pos, orientation, ..
-                } in map.parking.spots(l.id)
-                {
-                    let perp = orientation.perpendicular();
-                    tess.draw_stroke(
-                        pos + perp * l.width * 0.5,
-                        pos - perp * l.width * 0.5,
-                        Z_LANE,
-                        0.2,
-                    );
-                }
-            }
         }
 
         let mut p = Vec::with_capacity(8);
