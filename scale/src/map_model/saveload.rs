@@ -55,6 +55,7 @@ impl Scanner {
 }
 
 pub fn load_parismap(map: &mut Map) {
+    let t = std::time::Instant::now();
     let file = File::open("resources/paris_54000.txt").unwrap();
     let mut scanner = Scanner::new(BufReader::new(file));
 
@@ -99,6 +100,11 @@ pub fn load_parismap(map: &mut Map) {
                 .build(),
         );
     }
+
+    println!(
+        "Loading parismap took {}ms",
+        t.elapsed().as_secs_f32() * 1000.0
+    );
 
     print_stats(map);
 }
@@ -153,8 +159,11 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
     }
 }
 
-pub fn add_grid(pos: Vec2, m: &mut Map) {
-    let mut grid: [[Option<IntersectionID>; 10]; 10] = [[None; 10]; 10];
+pub fn add_grid(pos: Vec2, m: &mut Map, size: usize) {
+    if size == 0 {
+        return;
+    }
+    let mut grid: Vec<Vec<Option<IntersectionID>>> = vec![vec![None; size]; size];
     for (y, l) in grid.iter_mut().enumerate() {
         for (x, v) in l.iter_mut().enumerate() {
             *v = Some(m.add_intersection(pos + vec2!(x as f32 * 100.0, y as f32 * 100.0)));
@@ -162,11 +171,11 @@ pub fn add_grid(pos: Vec2, m: &mut Map) {
     }
 
     let pat = LanePatternBuilder::new().build();
-    for x in 0..9 {
+    for x in 0..size - 1 {
         m.connect_straight(grid[9][x].unwrap(), grid[9][x + 1].unwrap(), &pat);
         m.connect_straight(grid[x][9].unwrap(), grid[x + 1][9].unwrap(), &pat);
 
-        for y in 0..9 {
+        for y in 0..size - 1 {
             m.connect_straight(grid[y][x].unwrap(), grid[y][x + 1].unwrap(), &pat);
             m.connect_straight(grid[y][x].unwrap(), grid[y + 1][x].unwrap(), &pat);
         }
@@ -188,7 +197,7 @@ fn print_stats(map: &Map) {
 
 pub fn load_testfield(map: &mut Map) {
     add_doublecircle([0.0, 0.0].into(), map);
-    add_grid([0.0, 350.0].into(), map);
+    add_grid([0.0, 350.0].into(), map, 10);
 }
 
 pub fn load(world: &mut World) {
