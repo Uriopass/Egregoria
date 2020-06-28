@@ -3,9 +3,7 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
-use scale::map_model::{
-    LaneKind, Map, ParkingSpot, TrafficBehavior, TurnKind, CROSSWALK_WIDTH, PARKING_SPOT_LENGTH,
-};
+use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
 use scale::physics::Transform;
 use scale::rendering::{from_srgb, Color, LinearColor};
 use scale::utils::Restrict;
