@@ -7,6 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
 wgpu          = "0.5.0"
 futures       = { version = "0.3.4", default-features = false, features = ["executor"] }
 bytemuck      = "1.2.0"
@@ -15,5 +16,10 @@ scale         = { path = "../scale" }
 mint          = "0.5.5"
 imgui-wgpu    = "0.7.0"
 imgui-winit-support = "0.4.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 winit         = "0.22"
 glsl-to-spirv = "0.1.7"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+#winit         = { version = "0.22", features=["stdweb"] }
