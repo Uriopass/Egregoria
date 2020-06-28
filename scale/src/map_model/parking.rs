@@ -1,5 +1,5 @@
 use crate::geometry::Vec2;
-use crate::map_model::{Lane, LaneID, LaneKind};
+use crate::map_model::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
 use ordered_float::OrderedFloat;
 use rand::seq::IteratorRandom;
 use serde::{Deserialize, Serialize};
@@ -53,7 +53,7 @@ impl ParkingSpots {
             }
         };
 
-        let n_spots = (lane.length / PARKING_SPOT_LENGTH) as i32;
+        let n_spots = ((lane.length - CROSSWALK_WIDTH) / PARKING_SPOT_LENGTH) as i32;
         let step = lane.length / n_spots as f32;
 
         for spot in lane_spots.drain(..) {
@@ -64,7 +64,9 @@ impl ParkingSpots {
         let spots = &mut self.spots;
         lane_spots.extend(
             lane.points
-                .points_dirs_along((0..n_spots).map(|x| (x as f32 + 0.5) * step))
+                .points_dirs_along(
+                    (0..n_spots).map(|x| (x as f32 + 0.5 + CROSSWALK_WIDTH * 0.5) * step),
+                )
                 .map(move |(pos, dir)| {
                     spots.insert(ParkingSpot {
                         parent,
@@ -73,6 +75,14 @@ impl ParkingSpots {
                     })
                 }),
         );
+    }
+
+    pub fn spots(&self, lane: LaneID) -> impl Iterator<Item = ParkingSpot> + '_ {
+        self.lane_spots
+            .get(lane)
+            .map(move |x| x.iter().map(move |spot| self.spots[*spot]))
+            .into_iter()
+            .flatten()
     }
 
     pub fn closest_available_spot(
