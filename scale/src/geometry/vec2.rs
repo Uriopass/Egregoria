@@ -228,7 +228,7 @@ impl Vec2 {
 
     #[inline]
     pub fn magnitude2(self) -> f32 {
-        self.x.mul_add(self.x, self.y * self.y)
+        self.dot(self)
     }
 
     #[inline]
