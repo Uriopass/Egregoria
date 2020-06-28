@@ -21,11 +21,11 @@ pathfinding = { git = "https://github.com/samueltardieu/pathfinding" }
 flat_spatial = "0.1.4"
 mint = "0.5.5"
 lazy_static = "1.4.0"
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-imgui = "0.4"
 imgui-inspect = { path = "../imgui-inspect"}
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+imgui = "0.4"
+
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-imgui-inspect-derive = { path = "../imgui-inspect-derive", default-features = false }
+#imgui = {version = "0.4", features = ["wasm"] }
