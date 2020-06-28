@@ -53,8 +53,9 @@ impl ParkingSpots {
             }
         };
 
-        let n_spots = ((lane.length - CROSSWALK_WIDTH) / PARKING_SPOT_LENGTH) as i32;
-        let step = lane.length / n_spots as f32;
+        let l = lane.length - CROSSWALK_WIDTH * 2.0;
+        let n_spots = (l / PARKING_SPOT_LENGTH) as i32;
+        let step = l / n_spots as f32;
 
         for spot in lane_spots.drain(..) {
             self.spots.remove(spot);
@@ -64,9 +65,7 @@ impl ParkingSpots {
         let spots = &mut self.spots;
         lane_spots.extend(
             lane.points
-                .points_dirs_along(
-                    (0..n_spots).map(|x| (x as f32 + 0.5 + CROSSWALK_WIDTH * 0.5) * step),
-                )
+                .points_dirs_along((0..n_spots).map(|x| (x as f32 + 0.5) * step + CROSSWALK_WIDTH))
                 .map(move |(pos, dir)| {
                     spots.insert(ParkingSpot {
                         parent,
