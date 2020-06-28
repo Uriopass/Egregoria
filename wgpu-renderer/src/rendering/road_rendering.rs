@@ -3,7 +3,7 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
-use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind, PARKING_SPOT_LENGTH};
+use scale::map_model::{LaneKind, Map, ParkingSpot, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
 use scale::physics::Transform;
 use scale::rendering::{from_srgb, Color, LinearColor};
 use scale::utils::Restrict;
@@ -86,15 +86,13 @@ impl RoadRenderer {
             tess.draw_polyline_with_dir(l.points.as_slice(), or_src, or_dst, z, l.width - 0.5);
 
             if matches!(l.kind, LaneKind::Parking) {
-                let n_spots = (l.length / PARKING_SPOT_LENGTH) as i32;
-                let step = l.length / n_spots as f32;
                 tess.color = LinearColor::WHITE;
 
-                for (pos, dir) in l
-                    .points
-                    .points_dirs_along((0..=n_spots).map(|l| (l as f32) * step))
+                for ParkingSpot {
+                    pos, orientation, ..
+                } in map.parking.spots(l.id)
                 {
-                    let perp = dir.perpendicular();
+                    let perp = orientation.perpendicular();
                     tess.draw_stroke(
                         pos + perp * l.width * 0.5,
                         pos - perp * l.width * 0.5,
@@ -247,8 +245,8 @@ impl RoadRenderer {
                     m.x.x *= l - 4.5;
                     m.x.y *= l - 4.5;
 
-                    m.y.x *= 3.0;
-                    m.y.y *= 3.0;
+                    m.y.x *= CROSSWALK_WIDTH;
+                    m.y.y *= CROSSWALK_WIDTH;
 
                     builder
                         .instances

@@ -27,6 +27,8 @@ pub use traversable::*;
 pub use turn::*;
 pub use turn_policy::*;
 
+pub const CROSSWALK_WIDTH: f32 = 4.0;
+
 pub fn setup(world: &mut World) {
     load(world);
 }
