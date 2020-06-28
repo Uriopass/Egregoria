@@ -223,12 +223,12 @@ impl Vec2 {
 
     #[inline]
     pub fn magnitude(self) -> f32 {
-        (self.x * self.x + self.y * self.y).sqrt()
+        self.magnitude2().sqrt()
     }
 
     #[inline]
     pub fn magnitude2(self) -> f32 {
-        self.x * self.x + self.y * self.y
+        self.x.mul_add(self.x, self.y * self.y)
     }
 
     #[inline]
@@ -238,7 +238,7 @@ impl Vec2 {
 
     #[inline]
     pub fn dot(self, rhs: Self) -> f32 {
-        self.x * rhs.x + self.y * rhs.y
+        self.x.mul_add(rhs.x, self.y * rhs.y)
     }
 
     #[inline]
@@ -248,12 +248,12 @@ impl Vec2 {
 
     #[inline]
     pub fn distance2(self, rhs: Self) -> f32 {
-        (self.x - rhs.x).powi(2) + (self.y - rhs.y).powi(2)
+        (self - rhs).magnitude2()
     }
 
     #[inline]
     pub fn distance(self, rhs: Self) -> f32 {
-        ((self.x - rhs.x).powi(2) + (self.y - rhs.y).powi(2)).sqrt()
+        (self - rhs).magnitude()
     }
 
     #[inline]
@@ -287,11 +287,7 @@ impl Vec2 {
     #[inline]
     pub fn normalize_to(self, v: f32) -> Vec2 {
         let m = self.magnitude();
-        if m > 0.0 {
-            self * (v / m)
-        } else {
-            self
-        }
+        self * (v / m)
     }
 
     #[inline]
