@@ -238,7 +238,7 @@ impl Vec2 {
 
     #[inline]
     pub fn dot(self, rhs: Self) -> f32 {
-        self.x.mul_add(rhs.x, self.y * rhs.y)
+        self.x * rhs.x + self.y * rhs.y
     }
 
     #[inline]
