@@ -38,7 +38,9 @@ impl Texture {
         img: &image::DynamicImage,
         label: Option<&'static str>,
     ) -> Option<Self> {
-        let rgba = img.as_rgba8().unwrap();
+        let rgba = img
+            .as_rgba8()
+            .expect("Trying to use non rgha8 image as texture");
         let dimensions = img.dimensions();
 
         let size = wgpu::Extent3d {

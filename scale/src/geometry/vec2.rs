@@ -164,7 +164,7 @@ impl Neg for Vec2 {
 
 impl std::iter::Sum for Vec2 {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let mut z = Self::zero();
+        let mut z = Self::ZERO;
         for x in iter {
             z += x;
         }
@@ -208,10 +208,9 @@ impl Vec2 {
         Self { x, y }
     }
 
-    #[inline]
-    pub fn zero() -> Self {
-        Self { x: 0.0, y: 0.0 }
-    }
+    pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
+    pub const UNIT_X: Self = Self { x: 1.0, y: 0.0 };
+    pub const UNIT_Y: Self = Self { x: 0.0, y: 1.0 };
 
     #[inline]
     pub fn perpendicular(self) -> Self {

@@ -48,11 +48,11 @@ impl<'a> System<'a> for KinematicsApply {
         {
             kin.velocity += kin.acceleration * delta;
             transform.translate(kin.velocity * delta);
-            kin.acceleration = Vec2::zero();
+            kin.acceleration = Vec2::ZERO;
 
             if let Some(Collider(handle)) = collider {
                 data.coworld.set_position(*handle, transform.position());
-                let (_, po) = data.coworld.get_mut(*handle).unwrap();
+                let (_, po) = data.coworld.get_mut(*handle).unwrap(); // Unwrap ok: handle is deleted only when entity is deleted too
                 po.dir = transform.direction();
                 po.speed = kin.velocity.magnitude();
             }

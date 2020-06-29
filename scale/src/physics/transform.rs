@@ -19,7 +19,7 @@ impl Transform {
         let position = position.into();
         Transform {
             position,
-            cossin: vec2!(1.0, 0.0),
+            cossin: Vec2::UNIT_X,
         }
     }
 

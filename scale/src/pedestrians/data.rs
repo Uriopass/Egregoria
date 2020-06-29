@@ -23,11 +23,12 @@ pub struct PedestrianComponent {
 
 pub fn delete_pedestrian(world: &mut World, e: Entity) {
     {
-        let handle = world.read_component::<Collider>().get(e).unwrap().0;
         let mut coworld = world.write_resource::<CollisionWorld>();
-        coworld.remove(handle);
+        if let Some(Collider(handle)) = world.read_component::<Collider>().get(e) {
+            coworld.remove(*handle)
+        }
     }
-    world.delete_entity(e).unwrap();
+    let _ = world.delete_entity(e);
 }
 
 pub fn spawn_pedestrian(world: &mut World) {
@@ -50,7 +51,7 @@ pub fn spawn_pedestrian(world: &mut World) {
 
     let size = 0.5;
 
-    let h = world.get_mut::<CollisionWorld>().unwrap().insert(
+    let h = world.write_resource::<CollisionWorld>().insert(
         pos,
         PhysicsObject {
             radius: size * 0.6,
@@ -107,7 +108,7 @@ impl Default for PedestrianComponent {
     fn default() -> Self {
         Self {
             walking_speed: rand_distr::Normal::new(1.34f32, 0.26) // https://arxiv.org/pdf/cond-mat/9805244.pdf
-                .unwrap()
+                .unwrap() // Unwrap ok: it is a normal distribution
                 .sample(&mut rand::thread_rng())
                 .max(0.5),
             walk_anim: 0.0,

@@ -13,9 +13,9 @@ impl Camera {
     pub fn new(viewport_width: f32, viewport_height: f32, zoom: f32) -> Camera {
         let mut c = Camera {
             viewport: vec2(viewport_width, viewport_height),
-            position: Vec2::zero(),
-            scale: Vec2::zero(),
-            offset: Vec2::zero(),
+            position: Vec2::ZERO,
+            scale: Vec2::ZERO,
+            offset: Vec2::ZERO,
             zoom,
         };
         c.update();
@@ -29,15 +29,6 @@ impl Camera {
 
         self.scale = 2.0 * self.zoom / self.viewport;
         self.offset = -2.0 * self.zoom * self.position / self.viewport;
-
-/*
-        self.projection = Matrix4::new(scalex, 0.0, 0.0, 0.0,
-                                       0.0, scaley, 0.0, 0.0,
-                                       0.0, 0.0, 0.1, 0.0,
-                                       offsetx, offsety, 0.0, 1.0);
-        self.invprojection = self.projection.invert().unwrap();
-        
- */
     }
 
     pub fn unproject(&self, screen_coords: Vec2) -> Vec2 {

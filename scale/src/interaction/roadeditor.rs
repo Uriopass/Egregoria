@@ -54,7 +54,7 @@ impl<'a> System<'a> for RoadEditorSystem {
     fn run(&mut self, mut data: Self::SystemData) {
         let state: &mut RoadEditorResource = &mut data.self_r;
 
-        let mr = data.meshrender.get_mut(state.project_entity).unwrap();
+        let mr = data.meshrender.get_mut(state.project_entity).unwrap(); // Unwrap ok: defined in new
 
         if !matches!(*data.tool, Tool::RoadEditor) {
             mr.hide = true;
@@ -72,7 +72,7 @@ impl<'a> System<'a> for RoadEditorSystem {
 
         data.trans
             .get_mut(state.project_entity)
-            .unwrap()
+            .unwrap() // Unwrap ok: defined in new
             .set_position(cur_proj.pos);
 
         if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
@@ -87,13 +87,13 @@ impl<'a> System<'a> for RoadEditorSystem {
                             light_policy: inter.light_policy,
                         },
                     )
-                    .unwrap();
+                    .unwrap(); // Unwrap ok: inspect_e is never deleted
                 data.inspected.e = Some(state.inspect_e);
             }
         }
 
         if data.inspected.e == Some(state.inspect_e) && data.inspected.dirty {
-            let selected_interc = data.intersections.get(state.inspect_e).unwrap();
+            let selected_interc = data.intersections.get(state.inspect_e).unwrap(); // Unwrap ok: defined in new
             data.map.update_intersection(selected_interc.id, |inter| {
                 inter.turn_policy = selected_interc.turn_policy;
                 inter.light_policy = selected_interc.light_policy;

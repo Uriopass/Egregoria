@@ -83,9 +83,10 @@ impl ImguiWrapper {
 
         self.platform.prepare_render(&ui, gfx.window);
 
-        self.renderer
+        let _ = self
+            .renderer
             .render(ui.render(), gfx.device, gfx.encoder, gfx.frame_view)
-            .unwrap();
+            .map_err(|err| println!("Error rendering the UI: {:?}", err));
     }
 
     pub fn handle_event(&mut self, gfx: &GfxContext, e: &winit::event::Event<()>) {

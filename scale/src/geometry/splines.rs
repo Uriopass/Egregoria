@@ -77,7 +77,7 @@ impl Spline {
         let mut le = self
             .smart_points_t(detail, 0.0, 1.0)
             .min_by_key(|&t| OrderedFloat(self.get(t).distance2(p)))
-            .unwrap();
+            .unwrap(); // Unwrap ok: smart_points always give start and end
         let mut ri = le + self.step(le, detail);
         let mut cur = (le + ri) * 0.5;
 

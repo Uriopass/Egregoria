@@ -51,25 +51,25 @@ pub mod debugdraw {
     }
 
     pub fn debug_draw(order: DebugOrder) {
-        DEBUG_ORDERS.lock().unwrap().push((order, Color::GREEN));
+        DEBUG_ORDERS.lock().unwrap().push((order, Color::GREEN)); // Unwrap ok: Mutex lives in main thread
     }
 
     pub fn debug_draw_color(order: DebugOrder, color: Color) {
-        DEBUG_ORDERS.lock().unwrap().push((order, color));
+        DEBUG_ORDERS.lock().unwrap().push((order, color)); // Unwrap ok: Mutex lives in main thread
     }
 
     pub fn debug_draw_persistent(order: DebugOrder) {
         PERSISTENT_DEBUG_ORDERS
             .lock()
-            .unwrap()
+            .unwrap() // Unwrap ok: Mutex lives in main thread
             .push((order, Color::GREEN));
     }
 
     pub fn debug_draw_persistent_color(order: DebugOrder, color: Color) {
-        PERSISTENT_DEBUG_ORDERS.lock().unwrap().push((order, color));
+        PERSISTENT_DEBUG_ORDERS.lock().unwrap().push((order, color)); // Unwrap ok: Mutex lives in main thread
     }
 
     pub fn debug_clear_persistent() {
-        PERSISTENT_DEBUG_ORDERS.lock().unwrap().clear();
+        PERSISTENT_DEBUG_ORDERS.lock().unwrap().clear(); // Unwrap ok: Mutex lives in main thread
     }
 }

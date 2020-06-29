@@ -259,9 +259,9 @@ impl Lane {
 
     pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
-            self.points.first_dir().unwrap()
+            self.points.first_dir().unwrap_or(Vec2::UNIT_X)
         } else {
-            -self.points.last_dir().unwrap()
+            -self.points.last_dir().unwrap_or(Vec2::UNIT_X)
         }
     }
 }

@@ -96,7 +96,7 @@ impl PolyLine {
             pos,
             self.segment_vec(segm)
                 .and_then(|x| x.try_normalize())
-                .unwrap_or_else(|| vec2!(1.0, 0.0)),
+                .unwrap_or(Vec2::UNIT_X),
         )
     }
 
@@ -126,7 +126,7 @@ impl PolyLine {
                     }
                 })
                 .min_by_key(|&(proj, _)| OrderedFloat((p - proj).magnitude2()))
-                .unwrap(),
+                .unwrap(), // Unwrap ok: n_points > 2
         }
     }
 
@@ -156,7 +156,7 @@ impl PolyLine {
     }
 
     pub fn point_dir_along(&self, l: f32) -> (Vec2, Vec2) {
-        self.points_dirs_along(std::iter::once(l)).next().unwrap()
+        self.points_dirs_along(std::iter::once(l)).next().unwrap() // Unwrap ok: std::iter::once
     }
 
     /// dists should be in ascending order
@@ -168,7 +168,7 @@ impl PolyLine {
         let (dir, dist) = windows
             .next()
             .and_then(|w| (w[1] - w[0]).dir_dist())
-            .unwrap_or_else(|| (vec2!(1.0, 0.0), 0.0));
+            .unwrap_or((Vec2::UNIT_X, 0.0));
         PointsAlongs {
             dists,
             windows,
@@ -272,7 +272,7 @@ impl<T: Iterator<Item = f32>> Iterator for PointsAlongs<'_, T> {
         let d = self.dists.next()?;
         while d > self.partial + self.dist {
             let w = unwrap_or!(self.windows.next(), break);
-            let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((vec2!(1.0, 0.0), 0.0));
+            let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((Vec2::UNIT_X, 0.0));
             self.partial += self.dist;
             self.dir = dir; // no structural assignment :(
             self.dist = dist;

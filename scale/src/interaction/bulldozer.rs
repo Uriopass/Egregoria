@@ -18,7 +18,7 @@ impl BulldozerResource {
     pub fn new(world: &mut World) -> Self {
         let mut mr = MeshRender::simple(
             CircleRender {
-                offset: Vec2::zero(),
+                offset: Vec2::ZERO,
                 radius: 2.0,
                 color: Color::RED,
             },
@@ -49,7 +49,7 @@ impl<'a> System<'a> for BulldozerSystem {
     type SystemData = BulldozerData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        let mr = data.mr.get_mut(data.self_r.project).unwrap();
+        let mr = data.mr.get_mut(data.self_r.project).unwrap(); // unwrap ok: self_r.project was defined with a meshrender in new
         if !matches!(*data.tool, Tool::Bulldozer) {
             mr.hide = true;
             return;
@@ -60,7 +60,7 @@ impl<'a> System<'a> for BulldozerSystem {
 
         data.transforms
             .get_mut(data.self_r.project)
-            .unwrap()
+            .unwrap() // unwrap ok: self_r.project was defined with a transform in new
             .set_position(cur_proj.pos);
 
         if data.mouseinfo.buttons.contains(&MouseButton::Left) {

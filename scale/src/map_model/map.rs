@@ -107,7 +107,9 @@ impl Map {
     pub fn split_road(&mut self, id: RoadID, pos: Vec2) -> IntersectionID {
         println!("split_road {:?} {:?}", id, pos);
 
-        let r = self.remove_road(id);
+        let r = self
+            .remove_road(id)
+            .expect("Trying to split unexisting road");
         let id = self.add_intersection(pos);
 
         let pat = r.pattern();
@@ -187,11 +189,11 @@ impl Map {
         road_id
     }
 
-    pub fn remove_road(&mut self, road_id: RoadID) -> Road {
+    pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
         println!("remove_road {:?}", road_id);
 
         self.dirty = true;
-        let road = self.roads.remove(road_id).unwrap();
+        let road = self.roads.remove(road_id)?;
         for (id, _) in road.lanes_iter() {
             self.lanes.remove(id);
             self.parking.remove_spots(id);
@@ -202,7 +204,7 @@ impl Map {
 
         self.invalidate(road.src);
         self.invalidate(road.dst);
-        road
+        Some(road)
     }
 
     pub fn clear(&mut self) {
@@ -212,6 +214,7 @@ impl Map {
         self.intersections.clear();
         self.lanes.clear();
         self.roads.clear();
+        self.parking.clear();
     }
 
     pub fn project(&self, pos: Vec2) -> MapProject {

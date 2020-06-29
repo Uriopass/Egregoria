@@ -36,7 +36,7 @@ pub struct PhysicsObject {
 impl Default for PhysicsObject {
     fn default() -> Self {
         Self {
-            dir: vec2!(1.0, 0.0),
+            dir: Vec2::UNIT_X,
             speed: 0.0,
             radius: 1.0,
             group: PhysicsGroup::Unknown,
@@ -67,7 +67,7 @@ impl InspectRenderDefault<Collider> for Collider {
         }
         let d = &mut data[0];
 
-        let mut obj = { *world.read_resource::<CollisionWorld>().get(d.0).unwrap().1 };
+        let mut obj = { *world.read_resource::<CollisionWorld>().get(d.0).unwrap().1 }; // Unwrap ok: Collider is tied to CollisionWorld
 
         let changed = <PhysicsObject as InspectRenderDefault<PhysicsObject>>::render_mut(
             &mut [&mut obj],
@@ -79,7 +79,7 @@ impl InspectRenderDefault<Collider> for Collider {
 
         let coworld: &mut CollisionWorld = &mut world.write_resource::<CollisionWorld>();
         if changed {
-            *coworld.get_mut(d.0).unwrap().1 = obj;
+            *coworld.get_mut(d.0).unwrap().1 = obj; // Unwrap ok: Collider is tied to CollisionWorld
         }
         changed
     }

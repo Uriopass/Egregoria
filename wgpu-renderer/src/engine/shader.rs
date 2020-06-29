@@ -46,7 +46,7 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
     let stype = match stype {
         Some(x) => x,
         None => {
-            let extension = p.extension().unwrap();
+            let extension = p.extension().expect("invalid shader extension");
 
             match extension.to_string_lossy().into_owned().as_ref() {
                 "frag" | "glslf" => glsl_to_spirv::ShaderType::Fragment,
@@ -80,10 +80,11 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
         .read_to_string(&mut src)
         .expect("Failed to read the content of the shader");
 
-    let mut spirv = glsl_to_spirv::compile(&src, stype.clone()).unwrap();
+    let mut spirv =
+        glsl_to_spirv::compile(&src, stype.clone()).expect("Couldn't compile glsl to spirv");
 
     compiled_name.and_then(|x| save_to_cache(&x, &mut spirv));
 
-    let data = wgpu::read_spirv(&spirv).unwrap();
+    let data = wgpu::read_spirv(&spirv).expect("Error trying to decode spirv");
     CompiledShader(data, stype)
 }

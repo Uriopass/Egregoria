@@ -47,10 +47,15 @@ impl<'a> System<'a> for PedestrianDecision {
             .for_each(|(coll, it, trans, kin, pedestrian, mr)| {
                 objective_update(it, trans, map, time);
 
-                let (_, my_obj) = cow.get(coll.0).unwrap();
+                let (_, my_obj) = cow.get(coll.0).expect("Handle not in collision world");
                 let neighbors = cow.query_around(trans.position(), 10.0);
 
-                let objs = neighbors.map(|(id, pos)| (Vec2::from(pos), cow.get(id).unwrap().1));
+                let objs = neighbors.map(|(id, pos)| {
+                    (
+                        Vec2::from(pos),
+                        cow.get(id).expect("Handle not in collision world").1,
+                    )
+                });
 
                 let (desired_v, desired_dir) =
                     calc_decision(pedestrian, trans, kin, map, my_obj, it, objs);
@@ -113,7 +118,7 @@ pub fn calc_decision<'a>(
 ) -> (Vec2, Vec2) {
     let objective = match it.get_point() {
         Some(x) => x,
-        None => return (vec2!(0.0, 0.0), trans.direction()),
+        None => return (Vec2::ZERO, trans.direction()),
     };
 
     let position = trans.position();
@@ -122,7 +127,7 @@ pub fn calc_decision<'a>(
     let delta_pos: Vec2 = objective - position;
     let dir_to_pos = match delta_pos.try_normalize() {
         Some(x) => x,
-        None => return (vec2!(0.0, 0.0), trans.direction()),
+        None => return (Vec2::ZERO, trans.direction()),
     };
 
     let mut desired_v = dir_to_pos * pedestrian.walking_speed;

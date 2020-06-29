@@ -222,7 +222,7 @@ impl Road {
                 };
 
                 let mut points = s.smart_points(1.0, s.project_t(from, 0.3), s.project_t(to, 0.3));
-                self.generated_points.clear_push(points.next().unwrap());
+                self.generated_points.clear_push(points.next().unwrap()); // unwrap ok: smart_points have start and end
                 self.generated_points.extend(points);
             }
         }
@@ -344,11 +344,11 @@ impl Road {
     }
 
     pub fn src_dir(&self) -> Vec2 {
-        self.generated_points.first_dir().unwrap()
+        self.generated_points.first_dir().unwrap_or(Vec2::UNIT_X)
     }
 
     pub fn dst_dir(&self) -> Vec2 {
-        -self.generated_points.last_dir().unwrap()
+        -self.generated_points.last_dir().unwrap_or(Vec2::UNIT_X)
     }
 
     pub fn other_end(&self, my_end: IntersectionID) -> IntersectionID {

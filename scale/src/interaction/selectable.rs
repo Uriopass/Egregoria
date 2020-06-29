@@ -69,7 +69,7 @@ impl<'a> System<'a> for SelectableSystem {
             }
 
             if kbinfo.just_pressed.contains(&KeyCode::Backspace) {
-                entities.delete(e).unwrap();
+                entities.delete(e).unwrap(); // Unwrap ok: checked is_alive just before
                 deleted_chan.single_write(DeletedEvent { e });
                 inspected.e = None;
             }

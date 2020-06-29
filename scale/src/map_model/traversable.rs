@@ -31,10 +31,17 @@ impl Traversable {
     pub fn new(kind: TraverseKind, dir: TraverseDirection) -> Self {
         Self { kind, dir }
     }
+
+    /// Invariant: Should only be called on valid traversables
     pub fn points(&self, m: &Map) -> PolyLine {
         let p = match self.kind {
             TraverseKind::Lane(id) => &m.lanes()[id].points,
-            TraverseKind::Turn(id) => &m.intersections()[id.parent].find_turn(id).unwrap().points,
+            TraverseKind::Turn(id) => {
+                &m.intersections()[id.parent]
+                    .find_turn(id)
+                    .expect("Traversable isn't valid")
+                    .points
+            }
         };
 
         match self.dir {
@@ -43,10 +50,16 @@ impl Traversable {
         }
     }
 
+    /// Invariant: Should only be called on valid traversables
     pub fn raw_points<'a>(&self, m: &'a Map) -> &'a PolyLine {
         match self.kind {
             TraverseKind::Lane(id) => &m.lanes()[id].points,
-            TraverseKind::Turn(id) => &m.intersections()[id.parent].find_turn(id).unwrap().points,
+            TraverseKind::Turn(id) => {
+                &m.intersections()[id.parent]
+                    .find_turn(id)
+                    .expect("Traversable isn't valid")
+                    .points
+            }
         }
     }
 

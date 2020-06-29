@@ -1,5 +1,6 @@
 use crate::geometry::polyline::PolyLine;
 use crate::geometry::splines::Spline;
+use crate::geometry::Vec2;
 use crate::map_model::{IntersectionID, LaneID, Lanes};
 use serde::{Deserialize, Serialize};
 
@@ -51,7 +52,7 @@ impl Turn {
     pub fn new(id: TurnID, kind: TurnKind) -> Self {
         Self {
             id,
-            points: PolyLine::new(vec![vec2!(0.0, 0.0); N_SPLINE + 2]),
+            points: PolyLine::new(vec![Vec2::ZERO; N_SPLINE + 2]),
             kind,
         }
     }

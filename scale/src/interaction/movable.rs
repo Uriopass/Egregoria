@@ -42,41 +42,43 @@ impl<'a> System<'a> for MovableSystem {
     type SystemData = MovableSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        if data.mouse.buttons.contains(&MouseButton::Left)
-            && data
-                .inspected
-                .e
-                .map_or(false, |e| data.movable.get(e).is_some())
-        {
-            let e = data.inspected.e.unwrap();
-            match &mut self.clicked_at {
-                None => {
-                    if let Some(kin) = data.kinematics.get_mut(e) {
-                        kin.velocity = Vec2::zero();
-                        kin.acceleration = Vec2::zero();
-                    }
-                    self.clicked_at = Some(data.mouse.unprojected);
-                }
-                Some(off) => {
-                    let p = data.transforms.get_mut(e).unwrap();
-                    let old_pos = p.position();
-                    let new_pos = old_pos + (data.mouse.unprojected - *off);
-                    *off = data.mouse.unprojected;
-                    if new_pos != old_pos {
+        if let Some(e) = data.inspected.e {
+            if data.mouse.buttons.contains(&MouseButton::Left) && data.movable.get(e).is_some() {
+                match &mut self.clicked_at {
+                    None => {
                         if let Some(kin) = data.kinematics.get_mut(e) {
-                            kin.velocity = Vec2::zero();
-                            kin.acceleration = Vec2::zero();
+                            kin.velocity = Vec2::ZERO;
+                            kin.acceleration = Vec2::ZERO;
                         }
-                        p.set_position(new_pos);
-                        data.moved.single_write(MovedEvent {
-                            entity: e,
-                            new_pos,
-                            delta_pos: new_pos - old_pos,
-                        });
+                        self.clicked_at = Some(data.mouse.unprojected);
+                    }
+                    Some(off) => {
+                        let p = data
+                            .transforms
+                            .get_mut(e)
+                            .expect("Movable entity doesn't have a position");
+                        let old_pos = p.position();
+                        let new_pos = old_pos + (data.mouse.unprojected - *off);
+                        *off = data.mouse.unprojected;
+                        if new_pos != old_pos {
+                            if let Some(kin) = data.kinematics.get_mut(e) {
+                                kin.velocity = Vec2::ZERO;
+                                kin.acceleration = Vec2::ZERO;
+                            }
+                            p.set_position(new_pos);
+                            data.moved.single_write(MovedEvent {
+                                entity: e,
+                                new_pos,
+                                delta_pos: new_pos - old_pos,
+                            });
+                        }
                     }
                 }
+                return;
             }
-        } else if let Some(off) = self.clicked_at.take() {
+        }
+
+        if let Some(off) = self.clicked_at.take() {
             if let Some(e) = data.inspected.e {
                 if let Some(kin) = data.kinematics.get_mut(e) {
                     kin.velocity = (data.mouse.unprojected - off) / data.time.delta.max(1.0 / 30.0);

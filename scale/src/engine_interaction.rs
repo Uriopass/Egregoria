@@ -49,8 +49,8 @@ impl Default for MouseInfo {
     fn default() -> Self {
         MouseInfo {
             wheel_delta: 0.0,
-            screen: vec2!(0.0, 0.0),
-            unprojected: vec2!(0.0, 0.0),
+            screen: Vec2::ZERO,
+            unprojected: Vec2::ZERO,
             buttons: HashSet::new(),
             just_pressed: HashSet::new(),
         }

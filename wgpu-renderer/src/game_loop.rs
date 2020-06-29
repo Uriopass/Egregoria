@@ -33,20 +33,6 @@ impl<'a> State<'a> {
     pub fn new(ctx: &mut Context) -> Self {
         let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 3.0);
 
-        /*
-        let mut buf = vec![];
-        std::fs::File::open("resources/shrek.mp3")
-            .unwrap()
-            .read_to_end(&mut buf)
-            .unwrap();
-        let source = rodio::Decoder::new(std::io::Cursor::new(buf)).unwrap();
-        ctx.audio.play_sound(
-            source
-                .fade_in(std::time::Duration::new(1, 0))
-                .repeat_infinite(),
-            0.02,
-        );*/
-
         let wrapper = ImguiWrapper::new(&mut ctx.gfx);
 
         let mut world = scale::specs::World::empty();
@@ -136,13 +122,13 @@ impl<'a> State<'a> {
 
         for (order, col) in scale::utils::debugdraw::PERSISTENT_DEBUG_ORDERS
             .lock()
-            .unwrap()
+            .unwrap() // Unwrap ok: Mutex lives in main thread
             .iter()
             .copied()
             .chain(
                 scale::utils::debugdraw::DEBUG_ORDERS
                     .lock()
-                    .unwrap()
+                    .unwrap() // Unwrap ok: Mutex lives in main thread
                     .drain(..),
             )
         {

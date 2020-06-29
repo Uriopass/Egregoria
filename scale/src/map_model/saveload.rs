@@ -11,20 +11,27 @@ pub fn save(world: &mut World) {
 
     let map: &Map = &world.read_resource::<Map>();
 
-    let file = File::create(FILENAME).unwrap();
+    let file = unwrap_or!(File::create(FILENAME).ok(), {
+        println!("Couldn't open file {}", FILENAME);
+        return;
+    });
 
-    bincode::serialize_into(file, map).unwrap();
+    let _ = bincode::serialize_into(file, map)
+        .map_err(|err| println!("Error while serializing: {}", err));
 }
 
 fn load_from_file() -> Map {
-    let file = File::open(FILENAME);
-    if let Err(e) = file {
-        println!("error while trying to load map: {}", e);
-        return Map::empty();
-    }
+    let file = match File::open(FILENAME) {
+        Ok(f) => f,
+        Err(e) => {
+            println!("error while trying to load map: {}", e);
+            return Map::empty();
+        }
+    };
 
-    let des = bincode::deserialize_from(file.unwrap());
-    des.unwrap_or_else(|_| Map::empty())
+    let des = bincode::deserialize_from(file);
+    des.map_err(|err| println!("Error while deserializing map: {}", err))
+        .unwrap_or_else(|_| Map::empty())
 }
 
 struct Scanner {
@@ -56,7 +63,11 @@ impl Scanner {
 
 pub fn load_parismap(map: &mut Map) {
     let t = std::time::Instant::now();
-    let file = File::open("resources/paris_54000.txt").unwrap();
+    let file = unwrap_or!(File::open("resources/paris_54000.txt").ok(), {
+        println!("Couldn't open parismap file");
+        return;
+    });
+
     let mut scanner = Scanner::new(BufReader::new(file));
 
     let n = scanner.next::<i32>();
@@ -133,7 +144,7 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
         );
     }
     m.connect_straight(
-        *first_circle.last().unwrap(),
+        *first_circle.last().unwrap(), // Unwrap ok: n_points > 0
         first_circle[0],
         &LanePatternBuilder::new().one_way(true).build(),
     );
@@ -150,7 +161,7 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
     }
     m.connect_straight(
         second_circle[0],
-        *second_circle.last().unwrap(),
+        *second_circle.last().unwrap(), // Unwrap ok: n_points > 0
         &LanePatternBuilder::new().one_way(true).build(),
     );
 
@@ -163,21 +174,21 @@ pub fn add_grid(pos: Vec2, m: &mut Map, size: usize) {
     if size == 0 {
         return;
     }
-    let mut grid: Vec<Vec<Option<IntersectionID>>> = vec![vec![None; size]; size];
+    let mut grid: Vec<Vec<IntersectionID>> = vec![vec![]; size];
     for (y, l) in grid.iter_mut().enumerate() {
-        for (x, v) in l.iter_mut().enumerate() {
-            *v = Some(m.add_intersection(pos + vec2!(x as f32 * 100.0, y as f32 * 100.0)));
+        for x in 0..size {
+            l.push(m.add_intersection(pos + vec2!(x as f32 * 100.0, y as f32 * 100.0)));
         }
     }
 
     let pat = LanePatternBuilder::new().build();
     for x in 0..size - 1 {
-        m.connect_straight(grid[9][x].unwrap(), grid[9][x + 1].unwrap(), &pat);
-        m.connect_straight(grid[x][9].unwrap(), grid[x + 1][9].unwrap(), &pat);
+        m.connect_straight(grid[9][x], grid[9][x + 1], &pat);
+        m.connect_straight(grid[x][9], grid[x + 1][9], &pat);
 
         for y in 0..size - 1 {
-            m.connect_straight(grid[y][x].unwrap(), grid[y][x + 1].unwrap(), &pat);
-            m.connect_straight(grid[y][x].unwrap(), grid[y + 1][x].unwrap(), &pat);
+            m.connect_straight(grid[y][x], grid[y][x + 1], &pat);
+            m.connect_straight(grid[y][x], grid[y + 1][x], &pat);
         }
     }
 }
