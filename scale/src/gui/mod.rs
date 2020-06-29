@@ -97,10 +97,7 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .build(&ui, || {
-                    let mut pattern = world
-                        .get_mut::<RoadBuildResource>()
-                        .unwrap()
-                        .pattern_builder;
+                    let mut pattern = world.write_resource::<RoadBuildResource>().pattern_builder;
 
                     <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
                         &mut [&mut pattern],
@@ -146,7 +143,7 @@ impl Gui {
     }
 
     pub fn time_controls(&mut self, ui: &Ui, world: &mut World) {
-        let time_info = world.get_mut::<TimeInfo>().unwrap();
+        let mut time_info = world.write_resource::<TimeInfo>();
         let [w, h] = ui.io().display_size;
         imgui::Window::new(im_str!("Time controls"))
             .size([230.0, 40.0], imgui::Condition::Always)

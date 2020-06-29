@@ -68,11 +68,16 @@ impl<'a> System<'a> for VehicleDecision {
         )
             .par_join()
             .for_each(|(trans, kin, vehicle, it, collider)| {
-                let (_, self_obj) = cow.get(collider.0).unwrap();
+                let (_, self_obj) = cow.get(collider.0).expect("Handle not in collision world");
                 let danger_length =
                     (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
                 let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
-                let objs = neighbors.map(|(id, pos)| (Vec2::from(pos), cow.get(id).unwrap().1));
+                let objs = neighbors.map(|(id, pos)| {
+                    (
+                        Vec2::from(pos),
+                        cow.get(id).expect("Handle not in collision world").1,
+                    )
+                });
 
                 let (desired_speed, desired_dir) =
                     calc_decision(vehicle, &map, &time, trans, self_obj, it, objs);
@@ -122,10 +127,10 @@ fn state_update(
                     return;
                 });
 
-                let h = colliders.get(ent).unwrap();
+                let h = colliders.get(ent).expect("Driving car has no collider");
                 cow.remove(h.0);
                 colliders.remove(ent);
-                kin.velocity = Vec2::zero();
+                kin.velocity = Vec2::ZERO;
 
                 vehicle.state = VehicleState::Parked(spot);
             }
@@ -145,7 +150,7 @@ fn state_update(
                 };
 
                 vehicle.state = VehicleState::RoadToPark(s, 0.0);
-                kin.velocity = Vec2::zero();
+                kin.velocity = Vec2::ZERO;
             }
         }
         VehicleState::Parked(spot) => {
@@ -164,7 +169,7 @@ fn state_update(
                 {
                     parking.free(spot);
 
-                    let points = travers.unwrap().points(map);
+                    let points = itin.get_travers().unwrap().points(map); // Unwrap ok: just got itinerary
                     let d = points.distance_along(points.project(trans.position()));
 
                     let (pos, dir) = points.point_dir_along(d + 5.0);
@@ -185,7 +190,7 @@ fn state_update(
                             speed: 0.0,
                         },
                     ));
-                    colliders.insert(ent, h).unwrap();
+                    colliders.insert(ent, h).expect("Invalid entity ?");
 
                     *it = itin;
                     vehicle.park_spot = Some(park);
@@ -263,7 +268,7 @@ fn next_objective(
 
     let l = &map.lanes()[map.parking_to_drive(spot_id)?];
 
-    let spot = map.parking.get(spot_id).unwrap();
+    let spot = map.parking.get(spot_id).unwrap(); // Unwrap ok: gotten using reserve_near
 
     let p = l.points.project(spot.pos);
     let dist = l.points.distance_along(p);
@@ -381,7 +386,11 @@ fn calc_front_dist<'a>(
     let my_radius = self_obj.radius;
     let speed = self_obj.speed;
 
-    let on_lane = it.get_travers().unwrap().kind.is_lane();
+    let on_lane = it
+        .get_travers()
+        .expect("Traversable should be valid")
+        .kind
+        .is_lane();
 
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {

@@ -42,7 +42,7 @@ const MID_GRAY_V: f32 = 0.5;
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext) -> Self {
         let arrow_builder = SpriteBatchBuilder::new(
-            Texture::from_path(gfx, "resources/arrow_one_way.png", Some("arrow")).unwrap(),
+            Texture::from_path(gfx, "resources/arrow_one_way.png", Some("arrow")).unwrap(), // Unwrap ok: File is there
         );
 
         gfx.register_pipeline::<ShadedBatch<Crosswalk>>();

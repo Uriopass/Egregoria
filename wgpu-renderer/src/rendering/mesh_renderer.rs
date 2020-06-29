@@ -43,8 +43,14 @@ impl MeshRenderer {
                     MeshRenderEnum::LineTo(x) => {
                         tess.color = x.color.into();
                         let e = x.to;
-                        let pos2 = transforms.get(e).unwrap().position();
-                        tess.draw_stroke(trans.position(), pos2, mr.z, x.thickness);
+                        if let Some(trans2) = transforms.get(e) {
+                            tess.draw_stroke(
+                                trans.position(),
+                                trans2.position(),
+                                mr.z,
+                                x.thickness,
+                            );
+                        }
                     }
                     MeshRenderEnum::Line(x) => {
                         tess.color = x.color.into();

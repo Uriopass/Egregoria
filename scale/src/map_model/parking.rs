@@ -76,6 +76,11 @@ impl ParkingSpots {
         );
     }
 
+    pub fn clear(&mut self) {
+        self.spots.clear();
+        self.lane_spots.clear();
+    }
+
     pub fn spots(&self, lane: LaneID) -> impl Iterator<Item = ParkingSpot> + '_ {
         self.lane_spots
             .get(lane)

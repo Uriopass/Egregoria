@@ -17,8 +17,8 @@ pub struct Kinematics {
 impl Kinematics {
     pub fn from_mass(mass: f32) -> Self {
         Kinematics {
-            velocity: Vec2::zero(),
-            acceleration: Vec2::zero(),
+            velocity: Vec2::ZERO,
+            acceleration: Vec2::ZERO,
             mass,
         }
     }

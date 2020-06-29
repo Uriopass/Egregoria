@@ -119,7 +119,7 @@ pub fn spawn_new_vehicle(world: &mut World) {
         return
     );
 
-    let spot = map.parking.get(spot_id).unwrap();
+    let spot = map.parking.get(spot_id).unwrap(); // Unwrap ok: Gotten using reserve_near
     let pos = Transform::new_cos_sin(spot.pos, spot.orientation);
     drop(map);
     drop(pm);
@@ -160,7 +160,7 @@ pub fn delete_vehicle_entity(world: &mut World, e: Entity) {
         let mut coworld = world.write_resource::<CollisionWorld>();
         coworld.remove(handle);
     }
-    world.delete_entity(e).unwrap();
+    world.delete_entity(e).unwrap(); // Unwrap ok: only point where car can be deleted
 }
 
 pub fn get_random_car_color() -> Color {

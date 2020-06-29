@@ -206,7 +206,7 @@ pub struct CircleRender {
 impl Default for CircleRender {
     fn default() -> Self {
         Self {
-            offset: Vec2::zero(),
+            offset: Vec2::ZERO,
             radius: 0.0,
             color: Color::WHITE,
         }
@@ -227,7 +227,7 @@ pub struct StrokeCircleRender {
 impl Default for StrokeCircleRender {
     fn default() -> Self {
         Self {
-            offset: Vec2::zero(),
+            offset: Vec2::ZERO,
             radius: 0.0,
             color: Color::WHITE,
             thickness: 0.1,

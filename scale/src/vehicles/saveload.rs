@@ -10,7 +10,10 @@ pub fn save(world: &mut World) {
     let _ = std::fs::create_dir("world");
 
     let path = VEHICLE_FILENAME.to_string() + ".bc";
-    let file = File::create(path).unwrap();
+    let file = unwrap_or!(File::create(path).ok(), {
+        println!("Couldn't create vehicle file");
+        return;
+    });
 
     let storages = (
         &world.read_component::<Transform>(),
@@ -23,7 +26,7 @@ pub fn save(world: &mut World) {
         .map(|(trans, car, it)| (trans, car, it))
         .collect();
 
-    bincode::serialize_into(file, &comps).unwrap();
+    let _ = bincode::serialize_into(file, &comps);
 }
 
 pub fn load(_world: &mut World) {
@@ -34,6 +37,7 @@ pub fn load(_world: &mut World) {
     }
 
     /*
+    // FIXME: load parked cars and shit
     let des = bincode::deserialize_from(file.unwrap());
 
     let comps: Vec<(Transform, VehicleComponent, Itinerary)> = des.unwrap_or_default();

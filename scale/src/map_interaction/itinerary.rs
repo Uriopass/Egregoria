@@ -153,11 +153,8 @@ impl Itinerary {
             }
 
             if dist < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
-                let k = self.get_travers().unwrap();
-                if self.remaining_points() > 1
-                    || k.can_pass(time.time_seconds, map.lanes())
-                    || self.is_terminal()
-                {
+                let k = self.get_travers().unwrap(); // Unwrap ok: We just called check_validity and get_point
+                if self.remaining_points() > 1 || k.can_pass(time.time_seconds, map.lanes()) {
                     self.advance(map);
                 }
             }

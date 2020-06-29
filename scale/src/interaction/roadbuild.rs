@@ -68,7 +68,7 @@ impl<'a> System<'a> for RoadBuildSystem {
     fn run(&mut self, mut data: Self::SystemData) {
         let state = &mut data.self_r;
 
-        let mr = data.meshrender.get_mut(state.project_entity).unwrap();
+        let mr = data.meshrender.get_mut(state.project_entity).unwrap(); // Unwrap ok: mr defined in new
 
         if !matches!(*data.tool, Tool::Roadbuild) {
             mr.hide = true;
@@ -188,7 +188,7 @@ fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
 
 impl RoadBuildResource {
     pub fn update_drawing(&self, mr: &mut WriteStorage<MeshRender>, proj_pos: Vec2, patwidth: f32) {
-        let mr = mr.get_mut(self.project_entity).unwrap();
+        let mr = mr.get_mut(self.project_entity).unwrap(); // Unwrap ok: Defined in new
         mr.orders.clear();
 
         let transparent_blue = Color {

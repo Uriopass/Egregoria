@@ -24,7 +24,7 @@ impl RandProvider {
         StandardNormal: Distribution<T>,
     {
         rand_distr::Normal::new(mean, std)
-            .unwrap()
+            .expect("Invalid normal distribution")
             .sample(&mut self.rng)
     }
 

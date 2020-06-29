@@ -18,17 +18,18 @@ impl<'a> System<'a> for InspectedAuraSystem {
     );
 
     fn run(&mut self, (inspected, mut transforms, mut meshrenders): Self::SystemData) {
-        meshrenders.get_mut(self.aura.unwrap()).unwrap().hide = true;
+        let mr = meshrenders.get_mut(self.aura.unwrap()).unwrap(); // Unwrap ok: defined in new
+        mr.hide = true;
 
         if let Some(pos) = inspected
             .e
             .and_then(|sel| transforms.get(sel).map(|x| x.position()))
         {
             transforms
-                .get_mut(self.aura.unwrap())
-                .unwrap()
+                .get_mut(self.aura.unwrap()) // Unwrap ok: defined in new
+                .unwrap() // Unwrap ok: defined in new
                 .set_position(pos);
-            meshrenders.get_mut(self.aura.unwrap()).unwrap().hide = false;
+            mr.hide = false;
         }
     }
 

@@ -26,13 +26,12 @@ impl Pathfinder for PedestrianPath {
             let inter = &inters[t.destination_intersection(lanes)];
             let lane_from_id = t.destination_lane();
             let lane_from = &lanes[lane_from_id];
-
             let lane_travers = (
                 Traversable::new(
                     TraverseKind::Lane(lane_from_id),
                     lane_from.dir_from(inter.id),
                 ),
-                NotNan::new(lane_from.length).unwrap_or(NotNan::new(0.0).unwrap()),
+                NotNan::new(lane_from.length).unwrap_or(NotNan::new(0.0).unwrap()), // Unwrap ok: zero
             );
 
             inter
@@ -40,7 +39,7 @@ impl Pathfinder for PedestrianPath {
                 .map(|(x, dir)| {
                     (
                         Traversable::new(TraverseKind::Turn(x), dir),
-                        NotNan::new(0.001).unwrap(),
+                        NotNan::new(0.001).unwrap(), // Unwrap ok: not nan
                     )
                 })
                 .chain(std::iter::once(lane_travers))
@@ -87,7 +86,7 @@ impl Pathfinder for DirectionalPath {
             inter.turns_from(p).map(|(x, _)| {
                 (
                     x.dst,
-                    NotNan::new(lanes[x.dst].length).unwrap_or(NotNan::new(0.0).unwrap()),
+                    NotNan::new(lanes[x.dst].length).unwrap_or(NotNan::new(0.0).unwrap()), // Unwrap ok: zero
                 )
             })
         };

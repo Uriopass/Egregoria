@@ -74,8 +74,8 @@ impl Context {
                         }
                     }
                 }
-                Event::MainEventsCleared => {
-                    if frame.is_none() {
+                Event::MainEventsCleared => match frame.take() {
+                    None => {
                         if let Some(new_size) = new_size.take() {
                             self.gfx.resize(new_size);
                             state.resized(&mut self, new_size);
@@ -86,16 +86,17 @@ impl Context {
                                 .get_next_texture()
                                 .expect("Timeout getting texture"),
                         );
-                    } else {
+                    }
+                    Some(sco) => {
                         self.input.mouse.unprojected = state.unproject(self.input.mouse.screen);
 
                         state.update(&mut self);
 
-                        self.gfx.render_frame(&mut state, &clear_color, &mut frame);
+                        self.gfx.render_frame(&mut state, &clear_color, sco);
 
                         self.input.end_frame();
                     }
-                }
+                },
                 _ => (),
             }
         })

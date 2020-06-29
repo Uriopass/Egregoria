@@ -11,7 +11,7 @@ pub struct ParkingManagement {
 impl ParkingManagement {
     pub fn free(&self, spot: ParkingSpotID) {
         assert!(
-            self.reserved_spots.lock().unwrap().remove(&spot),
+            self.reserved_spots.lock().unwrap().remove(&spot), // Unwrap ok: Mutex lives in the main thread
             "spot wasn't reserved"
         );
     }
@@ -19,7 +19,7 @@ impl ParkingManagement {
     pub fn reserve_near(&self, lane: LaneID, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
         let lane = map.lanes().get(lane)?;
 
-        let mut reserved_spots = self.reserved_spots.lock().unwrap();
+        let mut reserved_spots = self.reserved_spots.lock().unwrap(); // Unwrap ok: Mutex lives in the main thread
         let depth = 3;
 
         let mut potential = vec![lane];
