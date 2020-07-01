@@ -14,6 +14,7 @@ use crate::vehicles::{VehicleComponent, VehicleState, TIME_TO_PARK};
 use rand::thread_rng;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
+use std::sync::Mutex;
 
 #[derive(Default)]
 pub struct VehicleDecision;
@@ -42,7 +43,8 @@ impl<'a> System<'a> for VehicleDecision {
         let parking = data.parking;
 
         {
-            let colliders = &mut data.colliders;
+            let colliders = Mutex::new(&mut data.colliders);
+            let cowtex = Mutex::new(&mut *cow);
 
             (
                 &data.transforms,
@@ -51,10 +53,10 @@ impl<'a> System<'a> for VehicleDecision {
                 &mut data.itinerarys,
                 &data.entities,
             )
-                .join()
+                .par_join()
                 .for_each(|(trans, kin, vehicle, it, ent)| {
                     state_update(
-                        vehicle, kin, it, &mut cow, colliders, ent, &parking, trans, &map, &time,
+                        vehicle, kin, it, &cowtex, &colliders, ent, &parking, trans, &map, &time,
                     );
                 });
         }
@@ -100,8 +102,8 @@ fn state_update(
     vehicle: &mut VehicleComponent,
     kin: &mut Kinematics,
     it: &mut Itinerary,
-    cow: &mut CollisionWorld,
-    colliders: &mut WriteStorage<Collider>,
+    cow: &Mutex<&mut CollisionWorld>,
+    colliders: &Mutex<&mut WriteStorage<Collider>>,
     ent: Entity,
     parking: &ParkingManagement,
     trans: &Transform,
@@ -126,10 +128,12 @@ fn state_update(
                     vehicle.state = VehicleState::Driving;
                     return;
                 });
-
-                let h = colliders.get(ent).expect("Driving car has no collider");
-                cow.remove(h.0);
-                colliders.remove(ent);
+                {
+                    let mut colliders = colliders.lock().unwrap();
+                    let h = colliders.get(ent).expect("Driving car has no collider");
+                    cow.lock().unwrap().remove(h.0);
+                    colliders.remove(ent);
+                }
                 kin.velocity = Vec2::ZERO;
 
                 vehicle.state = VehicleState::Parked(spot);
@@ -181,7 +185,7 @@ fn state_update(
                         to_derivative: dir * 2.0,
                     };
 
-                    let h = Collider(cow.insert(
+                    let h = Collider(cow.lock().unwrap().insert(
                         trans.position(),
                         PhysicsObject {
                             dir: trans.direction(),
@@ -190,7 +194,11 @@ fn state_update(
                             speed: 0.0,
                         },
                     ));
-                    colliders.insert(ent, h).expect("Invalid entity ?");
+                    colliders
+                        .lock()
+                        .unwrap()
+                        .insert(ent, h)
+                        .expect("Invalid entity ?");
 
                     *it = itin;
                     vehicle.park_spot = Some(park);
