@@ -27,6 +27,9 @@ use specs::{Dispatcher, DispatcherBuilder, LazyUpdate, World, WorldExt};
 pub mod utils;
 
 #[macro_use]
+pub mod log;
+
+#[macro_use]
 pub mod geometry;
 
 #[macro_use]
@@ -46,71 +49,92 @@ pub use imgui;
 pub use rand_provider::RandProvider;
 pub use specs;
 
+pub struct ScaleState<'a> {
+    pub world: World,
+    dispatcher: Dispatcher<'a, 'a>,
+}
+
 const RNG_SEED: u64 = 123;
 
-pub fn setup<'a>(world: &mut World) -> Dispatcher<'a, 'a> {
-    println!("Seed is {}", RNG_SEED);
+impl<'a> ScaleState<'a> {
+    pub fn run(&mut self) {
+        let t = std::time::Instant::now();
+        self.dispatcher.dispatch_seq(&self.world);
+        self.dispatcher.dispatch_thread_local(&self.world);
+        self.world.maintain();
+        self.world.write_resource::<RenderStats>().update_time = t.elapsed().as_secs_f32();
+    }
 
-    // Basic resources init
-    world.insert(EntitiesRes::default());
-    world.insert(TimeInfo::default());
-    world.insert(CollisionWorld::new(50));
-    world.insert(KeyboardInfo::default());
-    world.insert(Gui::default());
-    world.insert(InspectedEntity::default());
-    world.insert(FollowEntity::default());
-    world.insert(RenderStats::default());
-    world.insert(RandProvider::new(RNG_SEED));
-    world.insert(LazyUpdate::default());
-    world.insert(ParkingManagement::default());
+    pub fn setup() -> ScaleState<'a> {
+        let mut world = World::empty();
 
-    world.register::<Transform>();
-    world.register::<Collider>();
-    world.register::<MeshRender>();
-    world.register::<AssetRender>();
-    world.register::<IntersectionComponent>();
+        println!("Seed is {}", RNG_SEED);
 
-    // Event channels init
-    world.insert(EventChannel::<MovedEvent>::new());
-    world.insert(EventChannel::<DeletedEvent>::new());
+        // Basic resources init
+        world.insert(EntitiesRes::default());
+        world.insert(TimeInfo::default());
+        world.insert(CollisionWorld::new(50));
+        world.insert(KeyboardInfo::default());
+        world.insert(Gui::default());
+        world.insert(InspectedEntity::default());
+        world.insert(FollowEntity::default());
+        world.insert(RenderStats::default());
+        world.insert(RandProvider::new(RNG_SEED));
+        world.insert(LazyUpdate::default());
+        world.insert(ParkingManagement::default());
 
-    // Systems state init
-    let s = RoadBuildResource::new(world);
-    world.insert(s);
+        world.register::<Transform>();
+        world.register::<Collider>();
+        world.register::<MeshRender>();
+        world.register::<AssetRender>();
+        world.register::<IntersectionComponent>();
 
-    let s = RoadEditorResource::new(world);
-    world.insert(s);
+        // Event channels init
+        world.insert(EventChannel::<MovedEvent>::new());
+        world.insert(EventChannel::<DeletedEvent>::new());
 
-    let s = BulldozerResource::new(world);
-    world.insert(s);
+        // Systems state init
+        let s = RoadBuildResource::new(&mut world);
+        world.insert(s);
 
-    // Dispatcher init
-    let mut dispatch = DispatcherBuilder::new()
-        .with(SelectableSystem, "selectable", &[])
-        .with(RoadBuildSystem, "rgs", &[])
-        .with(RoadEditorSystem, "res", &[])
-        .with(BulldozerSystem, "bull", &[])
-        .with(ItinerarySystem, "itinerary", &["rgs", "res", "bull"])
-        .with(VehicleDecision, "car", &["itinerary"])
-        .with(PedestrianDecision, "pedestrian", &["itinerary"])
-        .with(
-            MovableSystem::default(),
-            "movable",
-            &["car", "pedestrian", "selectable"],
-        )
-        .with(KinematicsApply::new(world), "speed apply", &["movable"])
-        .with(
-            InspectedAuraSystem::default(),
-            "selectable aura",
-            &["movable"],
-        )
-        .build();
+        let s = RoadEditorResource::new(&mut world);
+        world.insert(s);
 
-    dispatch.setup(world);
+        let s = BulldozerResource::new(&mut world);
+        world.insert(s);
 
-    map_model::setup(world);
-    vehicles::setup(world);
-    pedestrians::setup(world);
+        // Dispatcher init
+        let mut dispatcher = DispatcherBuilder::new()
+            .with(SelectableSystem, "selectable", &[])
+            .with(RoadBuildSystem, "rgs", &[])
+            .with(RoadEditorSystem, "res", &[])
+            .with(BulldozerSystem, "bull", &[])
+            .with(ItinerarySystem, "itinerary", &["rgs", "res", "bull"])
+            .with(VehicleDecision, "car", &["itinerary"])
+            .with(PedestrianDecision, "pedestrian", &["itinerary"])
+            .with(
+                MovableSystem::default(),
+                "movable",
+                &["car", "pedestrian", "selectable"],
+            )
+            .with(
+                KinematicsApply::new(&mut world),
+                "speed apply",
+                &["movable"],
+            )
+            .with(
+                InspectedAuraSystem::default(),
+                "selectable aura",
+                &["movable"],
+            )
+            .build();
 
-    dispatch
+        dispatcher.setup(&mut world);
+
+        map_model::setup(&mut world);
+        vehicles::setup(&mut world);
+        pedestrians::setup(&mut world);
+
+        Self { world, dispatcher }
+    }
 }
