@@ -246,7 +246,7 @@ impl<'a> System<'a> for ItinerarySystem {
         let time = &data.time;
         let map = &data.map;
         (&data.trans, &mut data.itinerarys)
-            .join()
+            .par_join()
             .for_each(|(trans, it)| it.update(trans.position(), time, map));
     }
 }

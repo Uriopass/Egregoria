@@ -3,10 +3,11 @@ use crate::geometry::Vec2;
 use crate::interaction::DeletedEvent;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::CollisionWorld;
-use specs::prelude::ResourceId;
+use specs::prelude::{ParallelIterator, ResourceId};
 use specs::shrev::EventChannel;
 use specs::{
-    Join, Read, ReadStorage, ReaderId, System, SystemData, World, WorldExt, Write, WriteStorage,
+    Join, ParJoin, Read, ReadStorage, ReaderId, System, SystemData, World, WorldExt, Write,
+    WriteStorage,
 };
 
 pub struct KinematicsApply {
@@ -39,23 +40,21 @@ impl<'a> System<'a> for KinematicsApply {
     fn run(&mut self, mut data: Self::SystemData) {
         let delta = data.time.delta;
 
-        for (transform, kin, collider) in (
-            &mut data.transforms,
-            &mut data.kinematics,
-            (&data.colliders).maybe(),
-        )
-            .join()
-        {
-            kin.velocity += kin.acceleration * delta;
-            transform.translate(kin.velocity * delta);
-            kin.acceleration = Vec2::ZERO;
+        (&mut data.transforms, &mut data.kinematics)
+            .par_join()
+            .for_each(|(transform, kin)| {
+                kin.velocity += kin.acceleration * delta;
+                transform.translate(kin.velocity * delta);
+                kin.acceleration = Vec2::ZERO;
+            });
 
-            if let Some(Collider(handle)) = collider {
-                data.coworld.set_position(*handle, transform.position());
-                let (_, po) = data.coworld.get_mut(*handle).unwrap(); // Unwrap ok: handle is deleted only when entity is deleted too
-                po.dir = transform.direction();
-                po.speed = kin.velocity.magnitude();
-            }
+        for (transform, kin, collider) in
+            (&mut data.transforms, &mut data.kinematics, &data.colliders).join()
+        {
+            data.coworld.set_position(collider.0, transform.position());
+            let (_, po) = data.coworld.get_mut(collider.0).unwrap(); // Unwrap ok: handle is deleted only when entity is deleted too
+            po.dir = transform.direction();
+            po.speed = kin.velocity.magnitude();
         }
 
         for event in data.deleted.read(&mut self.reader) {
