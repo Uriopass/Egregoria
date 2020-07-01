@@ -35,7 +35,7 @@ pub mod debugdraw {
     use crate::geometry::Vec2;
     pub use crate::rendering::Color;
     use lazy_static::*;
-    use std::sync::{Arc, Mutex};
+    use std::sync::Mutex;
 
     #[derive(Copy, Clone)]
     pub enum DebugOrder {
@@ -44,10 +44,9 @@ pub mod debugdraw {
     }
 
     lazy_static! {
-        pub static ref DEBUG_ORDERS: Arc<Mutex<Vec<(DebugOrder, Color)>>> =
-            Arc::new(Mutex::new(Vec::new()));
-        pub static ref PERSISTENT_DEBUG_ORDERS: Arc<Mutex<Vec<(DebugOrder, Color)>>> =
-            Arc::new(Mutex::new(Vec::new()));
+        pub static ref DEBUG_ORDERS: Mutex<Vec<(DebugOrder, Color)>> = Mutex::new(Vec::new());
+        pub static ref PERSISTENT_DEBUG_ORDERS: Mutex<Vec<(DebugOrder, Color)>> =
+            Mutex::new(Vec::new());
     }
 
     pub fn debug_draw(order: DebugOrder) {
