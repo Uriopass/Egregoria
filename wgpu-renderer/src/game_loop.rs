@@ -10,24 +10,20 @@ use scale::map_interaction::Itinerary;
 use scale::map_model::Map;
 use scale::physics::Transform;
 use scale::rendering::{Color, LinearColor};
-use scale::specs::RunNow;
 use scale::specs::WorldExt;
+use scale::ScaleState;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
 pub struct State<'a> {
     camera: CameraHandler,
     gui: ImguiWrapper,
-    world: scale::specs::World,
-    dispatcher: scale::specs::Dispatcher<'a, 'a>,
-    time_sync: f64,
+    state: ScaleState<'a>,
     last_time: Instant,
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
     grid: bool,
 }
-
-const TIME_STEP: f64 = 1.0 / 30.0;
 
 impl<'a> State<'a> {
     pub fn new(ctx: &mut Context) -> Self {
@@ -35,15 +31,12 @@ impl<'a> State<'a> {
 
         let wrapper = ImguiWrapper::new(&mut ctx.gfx);
 
-        let mut world = scale::specs::World::empty();
-        let dispatcher = scale::setup(&mut world);
+        let state = scale::ScaleState::setup();
 
         Self {
             camera,
             gui: wrapper,
-            world,
-            dispatcher,
-            time_sync: 0.0,
+            state,
             last_time: Instant::now(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
@@ -52,11 +45,10 @@ impl<'a> State<'a> {
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
-        let delta = (Instant::now() - self.last_time).as_secs_f64();
-
+        let delta = self.last_time.elapsed().as_secs_f64();
         self.last_time = Instant::now();
 
-        let n_updates = self.manage_timestep(delta);
+        self.manage_time(delta);
 
         self.manage_io(ctx);
 
@@ -67,34 +59,14 @@ impl<'a> State<'a> {
             !self.gui.last_kb_captured,
         );
 
-        for _ in 0..n_updates {
-            self.dispatcher.run_now(&self.world);
-            self.world.maintain();
+        self.state.run();
 
-            ctx.input.end_frame();
-            self.manage_io(ctx);
-
-            let mut time = self.world.write_resource::<TimeInfo>();
-
-            time.time += time.delta as f64;
-            time.time_seconds = time.time as u64;
-
-            if time.delta > 0.0 && (Instant::now() - self.last_time).as_secs_f32() * 1000.0 > 20.0 {
-                self.time_sync = time.time;
-                break;
-            }
-        }
         self.manage_entity_follow();
         self.camera.update(ctx);
-
-        self.world.write_resource::<RenderStats>().update_time =
-            (Instant::now() - self.last_time).as_secs_f32();
     }
 
     pub fn render(&mut self, ctx: &mut FrameContext) {
         let start = Instant::now();
-
-        let time: TimeInfo = *self.world.read_resource::<TimeInfo>();
 
         let mut tess = self.camera.culled_tesselator();
         // Render grid
@@ -107,18 +79,19 @@ impl<'a> State<'a> {
             tess.draw_grid(10.0, Color::new(gray_maj, gray_maj, gray_maj, 1.0));
         }
 
+        let time: TimeInfo = *self.state.world.read_resource::<TimeInfo>();
         self.road_renderer.render(
-            &mut self.world.write_resource::<Map>(),
+            &mut self.state.world.write_resource::<Map>(),
             time.time_seconds,
             &mut tess,
             ctx,
         );
 
-        self.instanced_renderer.render(&mut self.world, ctx);
+        self.instanced_renderer.render(&mut self.state.world, ctx);
 
-        MeshRenderer::render(&mut self.world, &mut tess);
+        MeshRenderer::render(&mut self.state.world, &mut tess);
 
-        debug_pathfinder(&mut tess, &self.world);
+        debug_pathfinder(&mut tess, &self.state.world);
 
         for (order, col) in scale::utils::debugdraw::PERSISTENT_DEBUG_ORDERS
             .lock()
@@ -148,43 +121,40 @@ impl<'a> State<'a> {
             ctx.draw(x)
         }
 
-        self.world.write_resource::<RenderStats>().render_time =
-            (Instant::now() - start).as_secs_f32();
+        self.state.world.write_resource::<RenderStats>().render_time =
+            start.elapsed().as_secs_f32();
     }
 
     pub fn render_gui(&mut self, ctx: GuiRenderContext) {
-        let mut gui = (*self.world.read_resource::<Gui>()).clone();
-        self.gui.render(ctx, &mut self.world, &mut gui);
-        *self.world.write_resource::<Gui>() = gui;
+        let mut gui = (*self.state.world.read_resource::<Gui>()).clone();
+        self.gui.render(ctx, &mut self.state.world, &mut gui);
+        *self.state.world.write_resource::<Gui>() = gui;
     }
 
-    fn manage_timestep(&mut self, delta: f64) -> u32 {
-        let mut time = self.world.write_resource::<TimeInfo>();
+    fn manage_time(&mut self, delta: f64) {
+        const MAX_TIMESTEP: f64 = 1.0 / 30.0;
+        let delta = delta.min(MAX_TIMESTEP);
 
-        self.time_sync += delta * time.time_speed as f64;
-
-        let diff = self.time_sync - time.time;
-        if diff < TIME_STEP {
-            time.delta = 0.0;
-            return 1;
-        }
-
-        time.delta = TIME_STEP as f32;
-        (diff / TIME_STEP) as u32
+        let mut time = self.state.world.write_resource::<TimeInfo>();
+        time.delta = delta as f32;
+        time.time += time.delta as f64;
+        time.time_seconds = time.time as u64;
     }
 
     fn manage_entity_follow(&mut self) {
         if !self
+            .state
             .world
             .read_resource::<MouseInfo>()
             .just_pressed
             .is_empty()
         {
-            self.world.write_resource::<FollowEntity>().0.take();
+            self.state.world.write_resource::<FollowEntity>().0.take();
         }
 
-        if let Some(e) = self.world.read_resource::<FollowEntity>().0 {
+        if let Some(e) = self.state.world.read_resource::<FollowEntity>().0 {
             if let Some(pos) = self
+                .state
                 .world
                 .read_component::<Transform>()
                 .get(e)
@@ -196,17 +166,17 @@ impl<'a> State<'a> {
     }
 
     fn manage_io(&mut self, ctx: &Context) {
-        *self.world.write_resource::<KeyboardInfo>() = ctx.input.keyboard.clone();
-        *self.world.write_resource::<MouseInfo>() = ctx.input.mouse.clone();
+        *self.state.world.write_resource::<KeyboardInfo>() = ctx.input.keyboard.clone();
+        *self.state.world.write_resource::<MouseInfo>() = ctx.input.mouse.clone();
 
         if self.gui.last_kb_captured {
-            let kb: &mut KeyboardInfo = &mut self.world.write_resource::<KeyboardInfo>();
+            let kb: &mut KeyboardInfo = &mut self.state.world.write_resource::<KeyboardInfo>();
             kb.just_pressed.clear();
             kb.is_pressed.clear();
         }
 
         if self.gui.last_mouse_captured {
-            let mouse: &mut MouseInfo = &mut self.world.write_resource::<MouseInfo>();
+            let mouse: &mut MouseInfo = &mut self.state.world.write_resource::<MouseInfo>();
             mouse.just_pressed.clear();
             mouse.buttons.clear();
             mouse.wheel_delta = 0.0;
