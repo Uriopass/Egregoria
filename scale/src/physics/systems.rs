@@ -38,6 +38,8 @@ impl<'a> System<'a> for KinematicsApply {
     type SystemData = KinematicsApplyData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
+        time_it!("Kinematics update");
+
         let delta = data.time.delta;
 
         (&mut data.transforms, &mut data.kinematics)
@@ -63,6 +65,7 @@ impl<'a> System<'a> for KinematicsApply {
             }
         }
 
+        time_it!("Coworld maintain");
         data.coworld.maintain();
     }
 }

@@ -58,6 +58,7 @@ const RNG_SEED: u64 = 123;
 
 impl<'a> ScaleState<'a> {
     pub fn run(&mut self) {
+        crate::log::clear();
         let t = std::time::Instant::now();
         self.dispatcher.dispatch_seq(&self.world);
         self.dispatcher.dispatch_thread_local(&self.world);
