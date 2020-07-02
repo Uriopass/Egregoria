@@ -37,6 +37,8 @@ impl<'a> System<'a> for VehicleDecision {
     type SystemData = VehicleDecisionSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
+        time_it!("Vehicle update");
+
         let mut cow = data.coworld;
         let map = data.map;
         let time = data.time;

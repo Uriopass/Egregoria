@@ -3,8 +3,8 @@ use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
 use crate::map_model::{LanePatternBuilder, Map};
 use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
-use imgui::Ui;
 use imgui::{im_str, StyleVar};
+use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 pub use inspect::*;
 use specs::world::World;
@@ -44,9 +44,20 @@ impl Gui {
 
         self.info(ui, world);
 
+        self.log(ui);
+
         self.toolbox(ui, world);
 
         self.time_controls(ui, world);
+    }
+
+    pub fn log(&mut self, ui: &Ui) {
+        Window::new(im_str!("frame log")).build(ui, || {
+            let fl = crate::log::get_frame_log();
+            for s in &*fl {
+                ui.text(im_str!("{}", s));
+            }
+        })
     }
 
     pub fn toolbox(&mut self, ui: &Ui, world: &mut World) {
