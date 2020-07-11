@@ -1,4 +1,4 @@
-use scale_geom::Vec2;
+use geom::Vec2;
 
 #[derive(Clone, Copy)]
 pub struct Rect {

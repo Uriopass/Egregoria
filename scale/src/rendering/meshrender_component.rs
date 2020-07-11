@@ -1,10 +1,10 @@
 use crate::gui::{ImEntity, InspectDragf, InspectVec};
 use crate::rendering::colors::*;
+use geom::Vec2;
 use imgui::Ui;
 use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
-use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use specs::{Component, DenseVecStorage, Entity, World};
 

@@ -2,11 +2,11 @@ use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, ParkingSpotID, ParkingSpots,
     Road, RoadID, RoadSegmentKind,
 };
+use geom::splines::Spline;
+use geom::Vec2;
 use ordered_float::OrderedFloat;
 use rand::prelude::IteratorRandom;
 use rand::Rng;
-use scale_geom::splines::Spline;
-use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 

@@ -7,7 +7,7 @@ use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::Restrict;
-use scale_geom::{angle_lerp, Vec2};
+use geom::{angle_lerp, Vec2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use std::borrow::Borrow;

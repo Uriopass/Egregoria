@@ -11,19 +11,19 @@ edition = "2018"
 
 [dependencies]
 ordered-float = { version = "2.0", features = ["serde"] }
-rand = {version = "0.7", default-features = false, features = ["std", "small_rng"]}
-rand_distr = "0.2.2"
-slotmap = { version = "0.4", default-features = false, features = ["serde"] }
-bincode = "1.2.1"
-serde = "1.0"
-specs = { version = "0.16", default-features = false, features = ["parallel", "shred-derive", "specs-derive", "serde"] }
-pathfinding = { git = "https://github.com/samueltardieu/pathfinding" }
-flat_spatial = "0.1.4"
-mint = "0.5.5"
-lazy_static = "1.4.0"
+rand          = {version = "0.7", default-features = false, features = ["std", "small_rng"]}
+rand_distr    = "0.2.2"
+slotmap       = { version = "0.4", default-features = false, features = ["serde"] }
+bincode       = "1.2.1"
+serde         = "1.0"
+specs         = { version = "0.16", default-features = false, features = ["parallel", "shred-derive", "specs-derive", "serde"] }
+pathfinding   = { git = "https://github.com/samueltardieu/pathfinding" }
+flat_spatial  = "0.1.4"
+mint          = "0.5.5"
+lazy_static   = "1.4.0"
 imgui-inspect = { path = "../imgui-inspect"}
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
-scale_geom = { path = "../scale_geom" }
+geom          = { path = "../geom" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 imgui = "0.4"

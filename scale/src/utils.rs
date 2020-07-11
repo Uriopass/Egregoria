@@ -33,8 +33,8 @@ impl<T: PartialOrd> Restrict for T {
 
 pub mod debugdraw {
     pub use crate::rendering::Color;
+    use geom::Vec2;
     use lazy_static::*;
-    use scale_geom::Vec2;
     use std::sync::Mutex;
 
     #[derive(Copy, Clone)]

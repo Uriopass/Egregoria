@@ -1,5 +1,5 @@
 [package]
-name = "scale_geom"
+name = "geom"
 version = "0.1.0"
 authors = ["Paris Douady <paris.douady@hotmail.fr>"]
 edition = "2018"

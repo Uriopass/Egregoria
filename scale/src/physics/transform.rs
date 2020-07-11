@@ -1,4 +1,4 @@
-use scale_geom::{vec2, Vec2};
+use geom::{vec2, Vec2};
 use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
 

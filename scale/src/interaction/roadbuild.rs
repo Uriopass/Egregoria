@@ -6,8 +6,8 @@ use crate::map_model::{
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
 use crate::rendering::Color;
-use scale_geom::splines::Spline;
-use scale_geom::Vec2;
+use geom::splines::Spline;
+use geom::Vec2;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 
