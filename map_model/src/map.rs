@@ -18,6 +18,7 @@ pub type Houses = DenseSlotMap<HouseID, House>;
 pub enum ProjectKind {
     Inter(IntersectionID),
     Road(RoadID),
+    House(HouseID),
     Ground,
 }
 
@@ -188,12 +189,12 @@ impl Map {
         let r = &self.roads[road];
 
         let l = r.generated_points.length();
-        let w = r.width;
+        let w = r.width * 0.5;
 
         for (pos, dir) in r
             .generated_points
             .points_dirs_along(std::iter::successors(Some(3.134f32), move |v| {
-                let next = v + 4.8172 + v.fract() * 1.8371;
+                let next = v + 8.8172 + v.fract() * 1.8371;
                 if next > l {
                     None
                 } else {
@@ -203,8 +204,8 @@ impl Map {
             .collect::<Vec<_>>()
         {
             let p = dir.perpendicular();
-            House::try_new(self, pos + p * (w + 8.0), p);
-            House::try_new(self, pos - p * (w + 8.0), -p);
+            House::try_new(self, pos + p * (w + 6.0), p);
+            House::try_new(self, pos - p * (w + 6.0), -p);
         }
     }
 
@@ -236,21 +237,19 @@ impl Map {
         self.parking.clear();
     }
 
+    fn closest_house(&self, pos: Vec2) -> Option<&House> {
+        self.houses
+            .values()
+            .min_by_key(|x| OrderedFloat(x.exterior.project(pos).distance2(pos)))
+    }
+
     pub fn project(&self, pos: Vec2) -> MapProject {
         const THRESHOLD: f32 = 15.0;
 
-        if let Some(v) = self
-            .intersections
-            .values()
-            .filter(|x| x.roads.is_empty())
-            .min_by_key(|x| OrderedFloat(x.pos.distance2(pos)))
-        {
-            if v.pos.distance(pos) < 5.0 {
-                return MapProject {
-                    pos: v.pos,
-                    kind: ProjectKind::Inter(v.id),
-                };
-            }
+        let mk_proj = move |kind| MapProject { pos, kind };
+
+        if let Some(h) = self.closest_house(pos).filter(|h| h.exterior.contains(pos)) {
+            return mk_proj(ProjectKind::House(h.id));
         }
 
         let (min_road, d, projected) = match self
@@ -264,10 +263,7 @@ impl Map {
         {
             Some(x) => x,
             None => {
-                return MapProject {
-                    pos,
-                    kind: ProjectKind::Ground,
-                }
+                return mk_proj(ProjectKind::Ground);
             }
         };
 
@@ -290,10 +286,7 @@ impl Map {
                 kind: ProjectKind::Road(min_road.id),
             }
         } else {
-            MapProject {
-                pos,
-                kind: ProjectKind::Ground,
-            }
+            mk_proj(ProjectKind::Ground)
         }
     }
 

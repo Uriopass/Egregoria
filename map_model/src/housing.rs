@@ -1,5 +1,5 @@
 use crate::{Map, ProjectKind};
-use geom::polyline::PolyLine;
+use geom::polygon::Polygon;
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -11,7 +11,7 @@ new_key_type! {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct House {
     pub id: HouseID,
-    pub exterior: PolyLine,
+    pub exterior: Polygon,
 }
 
 impl House {
@@ -28,12 +28,13 @@ impl House {
         }
     }
 
-    fn gen_exterior(at: Vec2, axis: Vec2) -> PolyLine {
-        PolyLine::new(vec![
+    fn gen_exterior(at: Vec2, axis: Vec2) -> Polygon {
+        let size = 12.0;
+        Polygon(vec![
             at,
-            at + axis,
-            at + axis + axis.perpendicular(),
-            at + axis.perpendicular(),
+            at + axis * size,
+            at + axis * size + axis.perpendicular() * size,
+            at + axis.perpendicular() * size,
         ])
     }
 }

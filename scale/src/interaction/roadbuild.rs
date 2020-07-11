@@ -48,7 +48,7 @@ pub struct RoadBuildData<'a> {
     meshrender: WriteStorage<'a, MeshRender>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum BuildState {
     Hover,
     Start(MapProject),
@@ -92,6 +92,10 @@ impl<'a> System<'a> for RoadBuildSystem {
         );
 
         if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
+            println!(
+                "left clicked with state {:?} and {:?}",
+                state.build_state, cur_proj.kind
+            );
             use BuildState::*;
             use ProjectKind::*;
 
@@ -164,6 +168,7 @@ fn make_connection(
         Ground => map.add_intersection(proj.pos),
         Inter(id) => id,
         Road(id) => map.split_road(id, proj.pos),
+        House(_) => unreachable!(),
     };
 
     let from = mk_inter(from);
@@ -176,13 +181,18 @@ fn make_connection(
 fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
     use ProjectKind::*;
     match (x, y) {
-        (Ground, _) | (_, Ground) => true,
+        (Ground, Ground)
+        | (Ground, Road(_))
+        | (Ground, Inter(_))
+        | (Road(_), Ground)
+        | (Inter(_), Ground) => true,
         (Road(id), Road(id2)) => id != id2,
         (Inter(id), Inter(id2)) => id != id2,
         (Inter(id_inter), Road(id_road)) | (Road(id_road), Inter(id_inter)) => {
             let r = &map.roads()[id_road];
             r.src != id_inter && r.dst != id_inter
         }
+        _ => false,
     }
 }
 
