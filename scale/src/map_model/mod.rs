@@ -1,6 +1,3 @@
-use crate::map_model::traffic_control::TrafficControl;
-use specs::World;
-
 mod intersection;
 mod lane;
 mod light_policy;
@@ -14,7 +11,7 @@ mod traversable;
 mod turn;
 mod turn_policy;
 
-pub use self::pathfinding::*;
+pub use self::pathfinding::*; // Use self or else it would be ambiguous with "pathfinding" crate
 pub use intersection::*;
 pub use lane::*;
 pub use light_policy::*;
@@ -28,7 +25,3 @@ pub use turn::*;
 pub use turn_policy::*;
 
 pub const CROSSWALK_WIDTH: f32 = 4.0;
-
-pub fn setup(world: &mut World) {
-    load(world);
-}
