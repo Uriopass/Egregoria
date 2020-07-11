@@ -1,15 +1,12 @@
 use crate::map_model::{IntersectionID, LanePatternBuilder, Map};
 use scale_geom::{vec2, Vec2};
-use specs::{World, WorldExt};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 const FILENAME: &str = "world/map.bc";
 
-pub fn save(world: &mut World) {
+pub fn save(map: &Map) {
     let _ = std::fs::create_dir("world");
-
-    let map: &Map = &world.read_resource::<Map>();
 
     let file = unwrap_or!(File::create(FILENAME).ok(), {
         println!("Couldn't open file {}", FILENAME);
@@ -211,11 +208,11 @@ pub fn load_testfield(map: &mut Map) {
     add_grid([0.0, 350.0].into(), map, 10);
 }
 
-pub fn load(world: &mut World) {
+pub fn load() -> Map {
     let map = load_from_file();
 
     //load_parismap(&mut map);
     //load_testfield(&mut map);
 
-    world.insert(map);
+    map
 }

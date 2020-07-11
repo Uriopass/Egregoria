@@ -129,7 +129,7 @@ impl<'a> ScaleState<'a> {
 
         dispatcher.setup(&mut world);
 
-        map_model::setup(&mut world);
+        world.insert(map_model::load());
         vehicles::setup(&mut world);
         pedestrians::setup(&mut world);
 
