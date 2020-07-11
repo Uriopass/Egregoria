@@ -19,3 +19,4 @@ maintenance = { status = "experimental" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 imgui = "0.4"
 specs = { version = "0.16", default-features = false }
+geom = { path = "../geom" }

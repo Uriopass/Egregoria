@@ -1,4 +1,4 @@
-use crate::map_model::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
+use crate::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use rand::seq::IteratorRandom;

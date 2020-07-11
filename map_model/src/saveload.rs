@@ -1,4 +1,4 @@
-use crate::map_model::{IntersectionID, LanePatternBuilder, Map};
+use crate::{IntersectionID, LanePatternBuilder, Map};
 use geom::{vec2, Vec2};
 use std::fs::File;
 use std::io::{BufRead, BufReader};

@@ -1,13 +1,13 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use crate::interaction::{Tool, Z_TOOL};
-use crate::map_model::{
-    IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
-};
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
 use crate::rendering::Color;
 use geom::splines::Spline;
 use geom::Vec2;
+use map_model::{
+    IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
+};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 

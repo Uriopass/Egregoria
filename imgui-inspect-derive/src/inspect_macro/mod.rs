@@ -277,11 +277,11 @@ fn generate(
     let default_impl = quote! {
 
         impl #impl_generics imgui_inspect::InspectRenderDefault<#struct_name1> for #struct_name2 #ty_generics #where_clause {
-            fn render(data: &[&Self], label: &'static str, world: &mut specs::World, ui: &imgui::Ui, args: &imgui_inspect::InspectArgsDefault) {
+            fn render(data: &[&Self], label: &'static str, world: &mut imgui_inspect::specs::World, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsDefault) {
                 <#struct_name3 as imgui_inspect::InspectRenderStruct<#struct_name4>>::render(data, label, world, ui, &imgui_inspect::InspectArgsStruct { header: args.header, indent_children: args.indent_children })
             }
 
-            fn render_mut(data: &mut [&mut Self], label: &'static str, world: &mut specs::World, ui: &imgui::Ui, args: &imgui_inspect::InspectArgsDefault) -> bool {
+            fn render_mut(data: &mut [&mut Self], label: &'static str, world: &mut imgui_inspect::specs::World, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsDefault) -> bool {
                 <#struct_name5 as imgui_inspect::InspectRenderStruct<#struct_name6>>::render_mut(data, label, world, ui, &imgui_inspect::InspectArgsStruct { header: args.header, indent_children: args.indent_children })
             }
         }
@@ -289,7 +289,7 @@ fn generate(
 
     let struct_impl = quote! {
         impl #impl_generics imgui_inspect::InspectRenderStruct<#struct_name1> for #struct_name2 #ty_generics #where_clause {
-            fn render(data: &[&Self], label: &'static str, world: &mut specs::World, ui: &imgui::Ui, args: &imgui_inspect::InspectArgsStruct) {
+            fn render(data: &[&Self], label: &'static str, world: &mut imgui_inspect::specs::World, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsStruct) {
                 let header_name = stringify!(#struct_name3);
 
                 let mut header = true;
@@ -303,7 +303,7 @@ fn generate(
                 }
 
                 let should_render_children = if header {
-                    imgui::CollapsingHeader::new(&imgui::im_str!( "{}", label)).default_open(true).build(&ui)
+                    imgui_inspect::imgui::CollapsingHeader::new(&imgui_inspect::imgui::im_str!( "{}", label)).default_open(true).build(&ui)
                 } else {
                     true
                 };
@@ -319,7 +319,7 @@ fn generate(
                 }
             }
 
-            fn render_mut(data: &mut [&mut Self], label: &'static str, world: &mut specs::World, ui: &imgui::Ui, args: &imgui_inspect::InspectArgsStruct) -> bool {
+            fn render_mut(data: &mut [&mut Self], label: &'static str, world: &mut imgui_inspect::specs::World, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsStruct) -> bool {
                 let header_name = stringify!(#struct_name4);
 
                 let mut header = true;
@@ -333,7 +333,7 @@ fn generate(
                 }
 
                 let should_render_children = if header {
-                    imgui::CollapsingHeader::new(&imgui::im_str!("{}", label)).default_open(true).build(&ui)
+                    imgui_inspect::imgui::CollapsingHeader::new(&imgui_inspect::imgui::im_str!("{}", label)).default_open(true).build(&ui)
                 } else {
                     true
                 };

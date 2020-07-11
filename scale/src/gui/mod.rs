@@ -1,12 +1,12 @@
 use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
 use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
-use crate::map_model::{LanePatternBuilder, Map};
 use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
 use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 pub use inspect::*;
+use map_model::{LanePatternBuilder, Map};
 use specs::world::World;
 use specs::{Entity, Join, WorldExt};
 
@@ -225,7 +225,7 @@ impl Gui {
             });
             if ui.small_button(im_str!("Save")) {
                 crate::vehicles::save(world);
-                crate::map_model::save(&world.read_resource::<Map>());
+                map_model::save(&world.read_resource::<Map>());
             }
         });
     }
@@ -299,12 +299,12 @@ impl Gui {
 
                 if ui.small_button(im_str!("load Paris map")) {
                     map.clear();
-                    crate::map_model::load_parismap(map);
+                    map_model::load_parismap(map);
                 }
 
                 if ui.small_button(im_str!("load test field")) {
                     map.clear();
-                    crate::map_model::load_testfield(map);
+                    map_model::load_testfield(map);
                 }
 
                 ui.text(im_str!(

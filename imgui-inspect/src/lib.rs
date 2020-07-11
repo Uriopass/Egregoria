@@ -1,4 +1,5 @@
 mod default;
+mod scale;
 mod slider;
 
 pub use default::*;

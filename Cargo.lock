@@ -491,7 +491,6 @@ dependencies = [
 name = "geom"
 version = "0.1.0"
 dependencies = [
- "imgui-inspect 0.4.0",
  "mint 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "ordered-float 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.110 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -707,6 +706,7 @@ dependencies = [
 name = "imgui-inspect"
 version = "0.4.0"
 dependencies = [
+ "geom 0.1.0",
  "imgui 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-inspect-derive 0.4.1",
  "specs 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -862,6 +862,21 @@ version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "libc 0.2.71 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "map_model"
+version = "0.1.0"
+dependencies = [
+ "bincode 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "geom 0.1.0",
+ "imgui-inspect 0.4.0",
+ "imgui-inspect-derive 0.4.1",
+ "ordered-float 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pathfinding 2.0.5-pre (git+https://github.com/samueltardieu/pathfinding)",
+ "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.110 (registry+https://github.com/rust-lang/crates.io-index)",
+ "slotmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1405,9 +1420,9 @@ dependencies = [
  "imgui-inspect 0.4.0",
  "imgui-inspect-derive 0.4.1",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "map_model 0.1.0",
  "mint 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "ordered-float 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "pathfinding 2.0.5-pre (git+https://github.com/samueltardieu/pathfinding)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_distr 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.110 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1838,6 +1853,7 @@ dependencies = [
  "image 0.23.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-wgpu 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-winit-support 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "map_model 0.1.0",
  "mint 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "scale 0.1.0",
  "wgpu 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",

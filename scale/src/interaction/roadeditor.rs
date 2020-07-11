@@ -1,11 +1,22 @@
 use crate::engine_interaction::{MouseButton, MouseInfo};
 use crate::interaction::{InspectedEntity, Tool, Z_TOOL};
-use crate::map_model::{IntersectionComponent, Map, ProjectKind};
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::Color;
+use imgui_inspect_derive::*;
+use map_model::{IntersectionID, LightPolicy, TurnPolicy};
+use map_model::{Map, ProjectKind};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
+use specs::{storage::BTreeStorage, Component};
+
+#[derive(Component, Clone, Inspect)]
+pub struct IntersectionComponent {
+    #[inspect(skip = true)]
+    pub id: IntersectionID,
+    pub turn_policy: TurnPolicy,
+    pub light_policy: LightPolicy,
+}
 
 pub struct RoadEditorSystem;
 

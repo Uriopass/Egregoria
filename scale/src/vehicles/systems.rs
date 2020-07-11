@@ -1,9 +1,5 @@
 use crate::engine_interaction::TimeInfo;
 use crate::map_interaction::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
-use crate::map_model::{
-    DirectionalPath, LaneKind, Map, ParkingSpotID, TrafficBehavior, Traversable, TraverseDirection,
-    TraverseKind,
-};
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::Restrict;
@@ -11,6 +7,10 @@ use crate::vehicles::{VehicleComponent, VehicleState, TIME_TO_PARK};
 use geom::intersections::{both_dist_to_inter, Ray};
 use geom::splines::Spline;
 use geom::{angle_lerp, Vec2};
+use map_model::{
+    DirectionalPath, LaneKind, Map, ParkingSpotID, TrafficBehavior, Traversable, TraverseDirection,
+    TraverseKind,
+};
 use rand::thread_rng;
 use specs::prelude::*;
 use specs::shred::PanicHandler;

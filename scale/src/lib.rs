@@ -9,9 +9,8 @@ use crate::interaction::{
     InspectedEntity, MovableSystem, MovedEvent, RoadEditorResource, RoadEditorSystem,
     SelectableSystem,
 };
-use crate::interaction::{RoadBuildResource, RoadBuildSystem};
+use crate::interaction::{IntersectionComponent, RoadBuildResource, RoadBuildSystem};
 use crate::map_interaction::{ItinerarySystem, ParkingManagement};
-use crate::map_model::IntersectionComponent;
 use crate::pedestrians::PedestrianDecision;
 use crate::physics::systems::KinematicsApply;
 use crate::physics::CollisionWorld;
@@ -35,7 +34,6 @@ pub mod gui;
 pub mod engine_interaction;
 pub mod interaction;
 pub mod map_interaction;
-pub mod map_model;
 pub mod pedestrians;
 pub mod physics;
 pub mod rand_provider;

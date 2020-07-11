@@ -1,4 +1,4 @@
-use crate::map_model::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
+use crate::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
 use geom::polyline::PolyLine;
 use geom::Vec2;
 use imgui_inspect_derive::*;

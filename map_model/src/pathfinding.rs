@@ -1,5 +1,5 @@
 #![allow(clippy::or_fun_call)]
-use crate::map_model::{LaneID, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
+use crate::{LaneID, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
 use ordered_float::NotNan;
 use slotmap::Key;
 

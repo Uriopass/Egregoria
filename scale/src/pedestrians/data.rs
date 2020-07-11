@@ -1,6 +1,5 @@
 use crate::interaction::{Movable, Selectable};
 use crate::map_interaction::Itinerary;
-use crate::map_model::{LaneKind, Map};
 use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
 };
@@ -10,6 +9,7 @@ use crate::utils::rand_world;
 use crate::RandProvider;
 use geom::{vec2, Vec2};
 use imgui_inspect_derive::*;
+use map_model::{LaneKind, Map};
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};

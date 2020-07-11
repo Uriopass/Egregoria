@@ -1,0 +1,18 @@
+[package]
+name = "map_model"
+version = "0.1.0"
+authors = ["Paris Douady <paris.douady@hotmail.fr>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ordered-float = "2.0"
+slotmap       = { version = "0.4", default-features = false, features = ["serde"] }
+serde         = { version = "1.0", features = ["derive"] }
+imgui-inspect = { path = "../imgui-inspect" }
+imgui-inspect-derive = { path = "../imgui-inspect-derive" }
+geom          = { path = "../geom" }
+rand          = { version = "0.7", default-features = false, features = ["std", "small_rng"] }
+pathfinding   = { git = "https://github.com/samueltardieu/pathfinding" }
+bincode       = "1.2.1"

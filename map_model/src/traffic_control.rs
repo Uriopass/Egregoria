@@ -1,4 +1,3 @@
-use crate::rendering::Color;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
@@ -10,14 +9,6 @@ pub enum TrafficBehavior {
 }
 
 impl TrafficBehavior {
-    pub fn as_render_color(self) -> Color {
-        match self {
-            TrafficBehavior::RED | TrafficBehavior::STOP => Color::RED,
-            TrafficBehavior::ORANGE => Color::ORANGE,
-            TrafficBehavior::GREEN => Color::GREEN,
-        }
-    }
-
     pub fn is_red(self) -> bool {
         matches!(self, TrafficBehavior::RED)
     }

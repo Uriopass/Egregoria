@@ -1,9 +1,10 @@
-use crate::map_model::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
-use imgui::{im_str, Ui};
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use crate::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
+use imgui_inspect::{
+    imgui::{im_str, Ui},
+    InspectArgsDefault, InspectRenderDefault,
+};
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
-use specs::World;
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum LightPolicy {
@@ -98,14 +99,20 @@ impl LightPolicy {
 }
 
 impl InspectRenderDefault<LightPolicy> for LightPolicy {
-    fn render(_: &[&LightPolicy], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
+    fn render(
+        _: &[&LightPolicy],
+        _: &'static str,
+        _: &mut imgui_inspect::specs::World,
+        _: &Ui,
+        _: &InspectArgsDefault,
+    ) {
         unimplemented!()
     }
 
     fn render_mut(
         data: &mut [&mut LightPolicy],
         label: &'static str,
-        _: &mut World,
+        _: &mut imgui_inspect::specs::World,
         ui: &Ui,
         _: &InspectArgsDefault,
     ) -> bool {
@@ -120,16 +127,17 @@ impl InspectRenderDefault<LightPolicy> for LightPolicy {
             LightPolicy::Smart => 3,
         };
 
-        let changed = imgui::ComboBox::new(&im_str!("{}", label)).build_simple_string(
-            ui,
-            &mut id,
-            &[
-                &im_str!("No lights"),
-                &im_str!("Stop signs"),
-                &im_str!("Lights"),
-                &im_str!("Smart"),
-            ],
-        );
+        let changed = imgui_inspect::imgui::ComboBox::new(&im_str!("{}", label))
+            .build_simple_string(
+                ui,
+                &mut id,
+                &[
+                    &im_str!("No lights"),
+                    &im_str!("Stop signs"),
+                    &im_str!("Lights"),
+                    &im_str!("Smart"),
+                ],
+            );
 
         if changed {
             match id {
