@@ -107,6 +107,12 @@ impl Map {
         self.intersections.remove(src);
     }
 
+    pub fn remove_house(&mut self, h: HouseID) -> Option<House> {
+        let h = self.houses.remove(h);
+        self.dirty |= h.is_some();
+        h
+    }
+
     pub fn split_road(&mut self, id: RoadID, pos: Vec2) -> IntersectionID {
         println!("split_road {:?} {:?}", id, pos);
 
