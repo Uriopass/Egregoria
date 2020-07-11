@@ -1,12 +1,3 @@
-macro_rules! vec2 {
-    ($a: expr, $b: expr) => {
-        crate::geometry::Vec2::new($a, $b)
-    };
-    ($a: expr, $b: expr,) => {
-        crate::geometry::Vec2::new($a, $b)
-    };
-}
-
 pub mod intersections;
 pub mod polygon;
 pub mod polyline;
@@ -14,7 +5,8 @@ pub mod rect;
 pub mod segment;
 pub mod splines;
 
-pub mod vec2;
+mod vec2;
+
 pub use vec2::*;
 
 pub fn pseudo_angle(v: Vec2) -> f32 {

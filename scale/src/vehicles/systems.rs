@@ -1,7 +1,4 @@
 use crate::engine_interaction::TimeInfo;
-use crate::geometry::intersections::{both_dist_to_inter, Ray};
-use crate::geometry::splines::Spline;
-use crate::geometry::{angle_lerp, Vec2};
 use crate::map_interaction::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
 use crate::map_model::{
     DirectionalPath, LaneKind, Map, ParkingSpotID, TrafficBehavior, Traversable, TraverseDirection,
@@ -12,6 +9,9 @@ use crate::physics::{Kinematics, Transform};
 use crate::utils::Restrict;
 use crate::vehicles::{VehicleComponent, VehicleState, TIME_TO_PARK};
 use rand::thread_rng;
+use scale_geom::intersections::{both_dist_to_inter, Ray};
+use scale_geom::splines::Spline;
+use scale_geom::{angle_lerp, Vec2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use std::sync::Mutex;
@@ -274,7 +274,13 @@ fn next_objective(
     last_travers: Option<&Traversable>,
 ) -> Option<(Itinerary, ParkingSpotID)> {
     let rlane = map.get_random_lane(LaneKind::Driving, &mut thread_rng())?;
-    let spot_id = parking.reserve_near(rlane.id, rlane.points.random_along().0, map)?;
+    let spot_id = parking.reserve_near(
+        rlane.id,
+        rlane
+            .points
+            .point_along(rand::random::<f32>() * rlane.points.length()),
+        map,
+    )?;
 
     let l = &map.lanes()[map.parking_to_drive(spot_id)?];
 

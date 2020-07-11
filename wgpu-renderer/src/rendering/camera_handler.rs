@@ -2,7 +2,7 @@ use crate::engine::Context;
 use crate::geometry::Rect;
 use crate::geometry::{Camera, Tesselator};
 use scale::engine_interaction::{KeyCode, MouseButton};
-use scale::geometry::{vec2, Vec2};
+use scale_geom::{vec2, Vec2};
 
 #[allow(dead_code)]
 pub struct CameraHandler {

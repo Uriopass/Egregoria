@@ -1,8 +1,8 @@
 use crate::engine::{ColoredVertex, MeshBuilder};
 use crate::geometry::earcut::earcut;
 use crate::geometry::rect::Rect;
-use scale::geometry::{vec2, Vec2};
 use scale::rendering::{Color, LinearColor};
+use scale_geom::{vec2, Vec2};
 
 pub struct Tesselator {
     pub color: LinearColor,

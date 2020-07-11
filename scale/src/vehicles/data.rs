@@ -1,5 +1,4 @@
 use crate::engine_interaction::TimeInfo;
-use crate::geometry::splines::Spline;
 use crate::gui::InspectDragf;
 use crate::interaction::Selectable;
 use crate::map_interaction::{Itinerary, ParkingManagement};
@@ -10,6 +9,7 @@ use crate::rendering::Color;
 use crate::utils::rand_world;
 use crate::RandProvider;
 use imgui_inspect_derive::*;
+use scale_geom::splines::Spline;
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};
 use specs::{Component, DenseVecStorage};
@@ -115,7 +115,12 @@ pub fn spawn_new_vehicle(world: &mut World) {
         return
     );
     let spot_id = unwrap_or!(
-        pm.reserve_near(rl.id, rl.points.random_along().0, &map),
+        pm.reserve_near(
+            rl.id,
+            rl.points
+                .point_along(rand::random::<f32>() * rl.points.length()),
+            &map
+        ),
         return
     );
 

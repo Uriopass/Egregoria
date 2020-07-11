@@ -1,10 +1,10 @@
-use crate::geometry::Vec2;
-use crate::gui::{ImEntity, InspectDragf, InspectVec, InspectVec2};
+use crate::gui::{ImEntity, InspectDragf, InspectVec};
 use crate::rendering::colors::*;
 use imgui::Ui;
 use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
+use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use specs::{Component, DenseVecStorage, Entity, World};
 
@@ -196,7 +196,6 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
 
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct CircleRender {
-    #[inspect(proxy_type = "InspectVec2")]
     pub offset: Vec2,
     #[inspect(proxy_type = "InspectDragf")]
     pub radius: f32,
@@ -215,7 +214,6 @@ impl Default for CircleRender {
 
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct StrokeCircleRender {
-    #[inspect(proxy_type = "InspectVec2")]
     pub offset: Vec2,
     #[inspect(proxy_type = "InspectDragf")]
     pub radius: f32,
@@ -237,7 +235,6 @@ impl Default for StrokeCircleRender {
 
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct RectRender {
-    #[inspect(proxy_type = "InspectVec2")]
     pub offset: Vec2,
     #[inspect(proxy_type = "InspectDragf")]
     pub width: f32,
@@ -268,7 +265,6 @@ pub struct LineToRender {
 
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct LineRender {
-    #[inspect(proxy_type = "InspectVec2")]
     pub offset: Vec2,
     pub color: Color,
     #[inspect(proxy_type = "InspectDragf")]
@@ -277,9 +273,7 @@ pub struct LineRender {
 
 #[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct AbsoluteLineRender {
-    #[inspect(proxy_type = "InspectVec2")]
     pub src: Vec2,
-    #[inspect(proxy_type = "InspectVec2")]
     pub dst: Vec2,
     pub color: Color,
     #[inspect(proxy_type = "InspectDragf")]

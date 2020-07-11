@@ -1,6 +1,6 @@
-use crate::geometry::polyline::PolyLine;
 use crate::map_model::{IntersectionID, LaneID, Lanes, Map, TurnID};
 use imgui_inspect_derive::*;
+use scale_geom::polyline::PolyLine;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]

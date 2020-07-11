@@ -1,5 +1,5 @@
 use scale::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use scale::geometry::vec2::vec2;
+use scale_geom::vec2;
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 
 #[derive(Default)]

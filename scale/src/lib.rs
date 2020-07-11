@@ -30,9 +30,6 @@ pub mod utils;
 pub mod log;
 
 #[macro_use]
-pub mod geometry;
-
-#[macro_use]
 pub mod gui;
 
 pub mod engine_interaction;

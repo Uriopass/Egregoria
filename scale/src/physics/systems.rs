@@ -1,8 +1,8 @@
 use crate::engine_interaction::TimeInfo;
-use crate::geometry::Vec2;
 use crate::interaction::DeletedEvent;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::CollisionWorld;
+use scale_geom::Vec2;
 use specs::prelude::{ParallelIterator, ResourceId};
 use specs::shrev::EventChannel;
 use specs::{

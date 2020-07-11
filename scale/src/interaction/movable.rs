@@ -1,7 +1,7 @@
 use crate::engine_interaction::{MouseButton, MouseInfo, TimeInfo};
-use crate::geometry::Vec2;
 use crate::interaction::InspectedEntity;
 use crate::physics::{Kinematics, Transform};
+use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use specs::prelude::ResourceId;
 use specs::shrev::EventChannel;

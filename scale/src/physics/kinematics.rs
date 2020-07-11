@@ -1,13 +1,11 @@
-use crate::geometry::Vec2;
-use crate::gui::InspectVec2;
 use imgui_inspect_derive::*;
+use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
 
 #[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
 #[storage(VecStorage)]
 pub struct Kinematics {
-    #[inspect(proxy_type = "InspectVec2")]
     pub velocity: Vec2,
     #[inspect(proxy_type = "InspectVec2", skip = true)]
     pub acceleration: Vec2,

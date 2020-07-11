@@ -1,4 +1,3 @@
-use crate::geometry::Vec2;
 use crate::interaction::{Movable, Selectable};
 use crate::map_interaction::Itinerary;
 use crate::map_model::{LaneKind, Map};
@@ -11,6 +10,7 @@ use crate::utils::rand_world;
 use crate::RandProvider;
 use imgui_inspect_derive::*;
 use rand_distr::Distribution;
+use scale_geom::{vec2, Vec2};
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};
 use specs::{Component, DenseVecStorage};
@@ -74,14 +74,14 @@ pub fn spawn_pedestrian(world: &mut World) {
                     // Arm 1
                     height: 0.14,
                     width: size * 0.4,
-                    offset: vec2!(0.0, size * 0.6),
+                    offset: vec2(0.0, size * 0.6),
                     color: Color::from_hex(0xFFCCA8), // Skin color (beige)
                 })
                 .add(RectRender {
                     // Arm 2
                     height: 0.14,
                     width: size * 0.4,
-                    offset: vec2!(0.0, -size * 0.6),
+                    offset: vec2(0.0, -size * 0.6),
                     color: Color::from_hex(0xFFCCA8),
                 })
                 .add(RectRender {

@@ -1,7 +1,3 @@
-use crate::geometry::polygon::Polygon;
-use crate::geometry::pseudo_angle;
-use crate::geometry::splines::Spline;
-use crate::geometry::Vec2;
 use crate::map_model::{
     Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, TraverseDirection, Turn, TurnID,
     TurnPolicy,
@@ -9,6 +5,10 @@ use crate::map_model::{
 use crate::utils::Restrict;
 use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
+use scale_geom::polygon::Polygon;
+use scale_geom::pseudo_angle;
+use scale_geom::splines::Spline;
+use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use specs::storage::BTreeStorage;
