@@ -23,7 +23,7 @@ impl Shaders for Crosswalk {
 }
 
 pub struct RoadRenderer {
-    road_mesh: Option<Mesh>,
+    map_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
     arrow_builder: SpriteBatchBuilder,
     crosswalks: Option<ShadedBatch<Crosswalk>>,
@@ -48,14 +48,14 @@ impl RoadRenderer {
         gfx.register_pipeline::<ShadedBatch<Crosswalk>>();
 
         RoadRenderer {
-            road_mesh: None,
+            map_mesh: None,
             arrows: None,
             arrow_builder,
             crosswalks: None,
         }
     }
 
-    fn road_mesh(&self, map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
+    fn map_mesh(&self, map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
         let low_gray: LinearColor = Color::gray(0.3).into();
         let mid_gray: LinearColor = Color::gray(MID_GRAY_V).into();
         let high_gray: LinearColor = Color::gray(0.7).into();
@@ -251,15 +251,15 @@ impl RoadRenderer {
         tess: &mut Tesselator,
         ctx: &mut FrameContext,
     ) {
-        if map.dirty || self.road_mesh.is_none() {
-            self.road_mesh = self.road_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
+        if map.dirty || self.map_mesh.is_none() {
+            self.map_mesh = self.map_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
             self.arrows = self.arrows(map, &ctx.gfx);
             self.crosswalks = self.crosswalks(map, &ctx.gfx);
 
             map.dirty = false;
         }
 
-        if let Some(x) = self.road_mesh.clone() {
+        if let Some(x) = self.map_mesh.clone() {
             ctx.draw(x);
         }
 
