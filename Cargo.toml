@@ -2,6 +2,7 @@
 members = [
     "scale",
     "geom",
+    "map_model",
     "imgui-inspect",
     "imgui-inspect-derive",
     "wgpu-renderer"

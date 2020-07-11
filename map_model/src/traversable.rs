@@ -1,5 +1,6 @@
-use crate::map_model::{IntersectionID, LaneID, Lanes, Map, TurnID};
+use crate::{IntersectionID, LaneID, Lanes, Map, TurnID};
 use geom::polyline::PolyLine;
+use imgui_inspect::imgui;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
@@ -101,6 +102,50 @@ impl Traversable {
             },
         }
     }
+}
+
+macro_rules! enum_inspect_impl {
+    ($t: ty; $($x: pat),+) => {
+        impl imgui_inspect::InspectRenderDefault<$t> for $t {
+            fn render(data: &[&$t], label: &'static str, _: &mut imgui_inspect::specs::World, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault,
+            ) {
+                if data.len() != 1 {
+                    unimplemented!()
+                }
+                let d = &data[0];
+                let mut aha = "No match";
+                $(
+                    if let $x = d {
+                        aha = stringify!($x);
+                    }
+                )+
+
+                ui.text(imgui::im_str!("{} {}", &aha, label));
+            }
+
+            fn render_mut(
+                data: &mut [&mut $t],
+                label: &'static str,
+                _: &mut imgui_inspect::specs::World,
+                ui: &imgui::Ui,
+                _: &imgui_inspect::InspectArgsDefault,
+            ) -> bool {
+                if data.len() != 1 {
+                    unimplemented!()
+                }
+                let d = &mut data[0];
+                let mut aha = "No match";
+                $(
+                    if let $x = d {
+                        aha = stringify!($x);
+                    }
+                )+
+
+                ui.text(imgui::im_str!("{} {}", &aha, label));
+                false
+            }
+        }
+    };
 }
 
 enum_inspect_impl!(TraverseKind; TraverseKind::Lane(_), TraverseKind::Turn(_));

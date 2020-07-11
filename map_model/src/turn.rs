@@ -1,4 +1,4 @@
-use crate::map_model::{IntersectionID, LaneID, Lanes};
+use crate::{IntersectionID, LaneID, Lanes};
 use geom::polyline::PolyLine;
 use geom::splines::Spline;
 use geom::Vec2;

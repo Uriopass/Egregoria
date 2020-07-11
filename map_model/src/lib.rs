@@ -1,3 +1,12 @@
+macro_rules! unwrap_or {
+    ($e: expr, $t: expr) => {
+        match $e {
+            Some(x) => x,
+            None => $t,
+        }
+    };
+}
+
 mod intersection;
 mod lane;
 mod light_policy;
@@ -11,7 +20,8 @@ mod traversable;
 mod turn;
 mod turn_policy;
 
-pub use self::pathfinding::*; // Use self or else it would be ambiguous with "pathfinding" crate
+pub use self::pathfinding::*;
+// Use self or else it would be ambiguous with "pathfinding" crate
 pub use intersection::*;
 pub use lane::*;
 pub use light_policy::*;

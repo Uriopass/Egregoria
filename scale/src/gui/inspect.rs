@@ -1,5 +1,5 @@
+use crate::interaction::IntersectionComponent;
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
-use crate::map_model::IntersectionComponent;
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::rendering::assets::AssetRender;

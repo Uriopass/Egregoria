@@ -1,4 +1,4 @@
-use crate::map_model::{
+use crate::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, ParkingSpotID, ParkingSpots,
     Road, RoadID, RoadSegmentKind,
 };

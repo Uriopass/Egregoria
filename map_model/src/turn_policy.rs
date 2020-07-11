@@ -1,6 +1,4 @@
-use crate::map_model::{
-    Intersection, IntersectionID, LaneID, LaneKind, Lanes, Roads, TurnID, TurnKind,
-};
+use crate::{Intersection, IntersectionID, LaneID, LaneKind, Lanes, Roads, TurnID, TurnKind};
 use geom::vec2;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};

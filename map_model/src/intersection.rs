@@ -1,18 +1,14 @@
-use crate::map_model::{
+use crate::{
     Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, TraverseDirection, Turn, TurnID,
     TurnPolicy,
 };
-use crate::utils::Restrict;
 use geom::polygon::Polygon;
 use geom::pseudo_angle;
 use geom::splines::Spline;
 use geom::Vec2;
-use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
-use specs::storage::BTreeStorage;
-use specs::Component;
 
 new_key_type! {
     pub struct IntersectionID;
@@ -22,15 +18,6 @@ impl IntersectionID {
     pub fn as_ffi(self) -> u64 {
         self.0.as_ffi()
     }
-}
-
-#[derive(Component, Clone, Serialize, Deserialize, Inspect)]
-#[storage(BTreeStorage)]
-pub struct IntersectionComponent {
-    #[inspect(skip = true)]
-    pub id: IntersectionID,
-    pub turn_policy: TurnPolicy,
-    pub light_policy: LightPolicy,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -121,7 +108,7 @@ impl Intersection {
 
             let ang = dir1.angle(dir2).abs();
 
-            let min_dist = w * 1.1 / ang.restrict(0.2, std::f32::consts::FRAC_PI_2).sin();
+            let min_dist = w * 1.1 / ang.max(0.2).min(std::f32::consts::FRAC_PI_2).sin();
             roads[r1_id].max_interface(self.id, min_dist);
             roads[r2_id].max_interface(self.id, min_dist);
         }

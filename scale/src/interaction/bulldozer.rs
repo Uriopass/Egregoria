@@ -1,10 +1,10 @@
 use crate::engine_interaction::{MouseButton, MouseInfo};
 use crate::interaction::Tool;
-use crate::map_model::{Map, ProjectKind};
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::Color;
 use geom::Vec2;
+use map_model::{Map, ProjectKind};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 

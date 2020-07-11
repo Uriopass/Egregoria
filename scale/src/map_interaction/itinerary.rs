@@ -1,9 +1,9 @@
 use crate::engine_interaction::TimeInfo;
 use crate::gui::InspectVec;
-use crate::map_model::{LaneID, Map, Pathfinder, Traversable, TraverseKind};
 use crate::physics::Transform;
 use geom::Vec2;
 use imgui_inspect_derive::*;
+use map_model::{LaneID, Map, Pathfinder, Traversable, TraverseKind};
 use serde::{Deserialize, Serialize};
 use specs::prelude::*;
 use specs::Component;

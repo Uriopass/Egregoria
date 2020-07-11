@@ -1,13 +1,11 @@
 use crate::engine_interaction::TimeInfo;
 use crate::map_interaction::Itinerary;
-use crate::map_model::{
-    LaneKind, Map, PedestrianPath, Traversable, TraverseDirection, TraverseKind,
-};
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::Restrict;
 use geom::{angle_lerp, Vec2};
+use map_model::{LaneKind, Map, PedestrianPath, Traversable, TraverseDirection, TraverseKind};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use std::borrow::Borrow;

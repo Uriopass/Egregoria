@@ -184,6 +184,13 @@ impl LinearColor {
         b: 0.0,
         a: 1.0,
     };
+
+    pub const ORANGE: Color = Color {
+        r: 1.0,
+        g: 0.5,
+        b: 0.1,
+        a: 1.0,
+    };
 }
 
 pub fn from_srgb(component: f32) -> f32 {

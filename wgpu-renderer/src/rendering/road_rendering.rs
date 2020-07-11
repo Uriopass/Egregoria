@@ -3,7 +3,7 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
-use scale::map_model::{LaneKind, Map, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
+use map_model::{LaneKind, Map, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
 use scale::physics::Transform;
 use scale::rendering::{from_srgb, Color, LinearColor};
 use scale::utils::Restrict;
@@ -159,7 +159,11 @@ impl RoadRenderer {
             for i in -1..2 {
                 sr.draw_circle(r_center + i as f32 * dir_perp * size, Z_SIGNAL, size * 0.5);
             }
-            sr.color = n.control.get_behavior(time).as_render_color().into();
+            sr.color = match n.control.get_behavior(time) {
+                TrafficBehavior::RED | TrafficBehavior::STOP => LinearColor::RED,
+                TrafficBehavior::ORANGE => LinearColor::ORANGE,
+                TrafficBehavior::GREEN => LinearColor::GREEN,
+            };
 
             let offset = match n.control.get_behavior(time) {
                 TrafficBehavior::RED => -size,
