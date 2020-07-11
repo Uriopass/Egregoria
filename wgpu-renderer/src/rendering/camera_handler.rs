@@ -77,7 +77,6 @@ impl CameraHandler {
         if mouse_enabled && ctx.input.mouse.buttons.contains(&MouseButton::Right) {
             self.camera.position.x -= p.x - self.last_pos.x;
             self.camera.position.y -= p.y - self.last_pos.y;
-            self.update(ctx);
         }
 
         if mouse_enabled {
@@ -117,6 +116,7 @@ impl CameraHandler {
                 self.zoom_by(ctx, 1.0 / 1.1);
             }
         }
+        self.camera.update();
     }
 
     fn zoom_by(&mut self, ctx: &mut Context, multiply: f32) {
