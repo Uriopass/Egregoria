@@ -7,6 +7,7 @@ macro_rules! unwrap_or {
     };
 }
 
+mod housing;
 mod intersection;
 mod lane;
 mod light_policy;
@@ -20,8 +21,9 @@ mod traversable;
 mod turn;
 mod turn_policy;
 
-pub use self::pathfinding::*;
 // Use self or else it would be ambiguous with "pathfinding" crate
+pub use self::pathfinding::*;
+pub use housing::*;
 pub use intersection::*;
 pub use lane::*;
 pub use light_policy::*;

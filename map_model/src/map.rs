@@ -1,7 +1,4 @@
-use crate::{
-    Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, ParkingSpotID, ParkingSpots,
-    Road, RoadID, RoadSegmentKind,
-};
+use crate::{Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, ParkingSpotID, ParkingSpots, Road, RoadID, RoadSegmentKind, HouseID, House};
 use geom::splines::Spline;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
@@ -13,7 +10,7 @@ use slotmap::DenseSlotMap;
 pub type Roads = DenseSlotMap<RoadID, Road>;
 pub type Lanes = DenseSlotMap<LaneID, Lane>;
 pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
-
+pub type Houses = DenseSlotMap<HouseID, House>,
 #[derive(Debug, Clone, Copy)]
 pub enum ProjectKind {
     Inter(IntersectionID),
@@ -29,9 +26,10 @@ pub struct MapProject {
 
 #[derive(Serialize, Deserialize)]
 pub struct Map {
-    roads: Roads,
-    lanes: Lanes,
-    intersections: Intersections,
+    pub(crate) roads: Roads,
+    pub(crate) lanes: Lanes,
+    pub(crate) intersections: Intersections,
+    pub(crate) houses: Houses,
     pub parking: ParkingSpots,
     pub dirty: bool,
 }
@@ -45,10 +43,11 @@ impl Default for Map {
 impl Map {
     pub fn empty() -> Self {
         Self {
-            roads: Roads::with_key(),
-            lanes: Lanes::with_key(),
-            intersections: Intersections::with_key(),
+            roads: Roads::default(),
+            lanes: Lanes::default(),
+            intersections: Intersections::default(),
             parking: ParkingSpots::default(),
+            houses: Houses::default(),
             dirty: true,
         }
     }
@@ -235,7 +234,7 @@ impl Map {
         }
 
         let (min_road, d, projected) = match self
-            .roads()
+            .roads
             .values()
             .map(|road| {
                 let proj = road.project(pos);
