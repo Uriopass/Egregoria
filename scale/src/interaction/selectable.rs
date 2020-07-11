@@ -1,9 +1,9 @@
 use crate::engine_interaction::KeyCode;
 use crate::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
-use crate::geometry::Vec2;
 use crate::interaction::Tool;
 use crate::physics::Transform;
 use ordered_float::OrderedFloat;
+use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use specs::prelude::*;
 use specs::shrev::EventChannel;

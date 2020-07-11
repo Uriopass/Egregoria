@@ -1,7 +1,7 @@
-use crate::geometry::Vec2;
 use crate::map_model::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
 use ordered_float::OrderedFloat;
 use rand::seq::IteratorRandom;
+use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
 use std::collections::HashSet;

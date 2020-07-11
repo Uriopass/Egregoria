@@ -1,5 +1,5 @@
-use crate::geometry::Vec2;
 use crate::map_model::{LaneID, Map, ParkingSpotID};
+use scale_geom::Vec2;
 use std::collections::HashSet;
 use std::sync::Mutex;
 

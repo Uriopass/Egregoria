@@ -2,7 +2,9 @@ mod default;
 mod slider;
 
 pub use default::*;
+pub use imgui;
 pub use slider::*;
+pub use specs;
 use specs::World;
 
 /// Options for rendering a value as a struct (i.e. draw all of its subfields)

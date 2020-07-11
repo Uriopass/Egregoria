@@ -1,5 +1,6 @@
 use super::Vec2;
-use crate::geometry::segment::Segment;
+use crate::segment::Segment;
+use imgui_inspect::imgui::im_str;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
@@ -79,11 +80,6 @@ impl PolyLine {
     pub fn drain(&mut self, r: impl RangeBounds<usize>) {
         self.0.drain(r);
         self.check_empty()
-    }
-
-    pub fn random_along(&self) -> (Vec2, Vec2) {
-        let r: f32 = rand::random::<f32>() * self.length();
-        self.point_dir_along(r)
     }
 
     pub fn project(&self, p: Vec2) -> Vec2 {
@@ -271,7 +267,10 @@ impl<T: Iterator<Item = f32>> Iterator for PointsAlongs<'_, T> {
     fn next(&mut self) -> Option<Self::Item> {
         let d = self.dists.next()?;
         while d > self.partial + self.dist {
-            let w = unwrap_or!(self.windows.next(), break);
+            let w = match self.windows.next() {
+                Some(x) => x,
+                None => break,
+            };
             let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((Vec2::UNIT_X, 0.0));
             self.partial += self.dist;
             self.dir = dir; // no structural assignment :(
@@ -283,5 +282,50 @@ impl<T: Iterator<Item = f32>> Iterator for PointsAlongs<'_, T> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.dists.size_hint()
+    }
+}
+
+impl imgui_inspect::InspectRenderDefault<PolyLine> for PolyLine {
+    fn render(
+        _data: &[&PolyLine],
+        _label: &'static str,
+        _: &mut imgui_inspect::specs::World,
+        _ui: &imgui_inspect::imgui::Ui,
+        _args: &imgui_inspect::InspectArgsDefault,
+    ) {
+        unimplemented!()
+    }
+
+    fn render_mut(
+        data: &mut [&mut PolyLine],
+        label: &str,
+        w: &mut imgui_inspect::specs::World,
+        ui: &imgui_inspect::imgui::Ui,
+        args: &imgui_inspect::InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+
+        let v = &mut data[0];
+        let mut changed = false;
+
+        if imgui_inspect::imgui::CollapsingHeader::new(&im_str!("{}", label)).build(&ui) {
+            ui.indent();
+            for (i, x) in v.iter_mut().enumerate() {
+                let id = ui.push_id(i as i32);
+                changed |= <Vec2 as imgui_inspect::InspectRenderDefault<Vec2>>::render_mut(
+                    &mut [x],
+                    "",
+                    w,
+                    ui,
+                    args,
+                );
+                id.pop(ui);
+            }
+            ui.unindent();
+        }
+
+        changed
     }
 }

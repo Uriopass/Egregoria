@@ -1,4 +1,4 @@
-use crate::geometry::Vec2;
+use scale_geom::{vec2, Vec2};
 use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
 
@@ -66,11 +66,11 @@ impl Transform {
     }
 
     pub fn direction(&self) -> Vec2 {
-        vec2!(self.cos(), self.sin())
+        vec2(self.cos(), self.sin())
     }
 
     pub fn normal(&self) -> Vec2 {
-        vec2!(-self.sin(), self.cos())
+        vec2(-self.sin(), self.cos())
     }
 
     pub fn to_matrix4(&self, z: f32) -> mint::ColumnMatrix4<f32> {
@@ -83,7 +83,7 @@ impl Transform {
     }
 
     pub fn apply_rotation(&self, vec: Vec2) -> Vec2 {
-        vec2!(
+        vec2(
             vec.x * self.cos() + vec.y * self.sin(),
             vec.x * self.sin() - vec.y * self.cos(),
         )

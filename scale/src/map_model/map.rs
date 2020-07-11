@@ -1,5 +1,3 @@
-use crate::geometry::splines::Spline;
-use crate::geometry::Vec2;
 use crate::map_model::{
     Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, ParkingSpotID, ParkingSpots,
     Road, RoadID, RoadSegmentKind,
@@ -7,6 +5,8 @@ use crate::map_model::{
 use ordered_float::OrderedFloat;
 use rand::prelude::IteratorRandom;
 use rand::Rng;
+use scale_geom::splines::Spline;
+use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 

@@ -1,8 +1,8 @@
-use crate::geometry::Vec2;
 use crate::gui::{InspectDragf, InspectVec2Rotation};
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
+use scale_geom::Vec2;
 use specs::{Component, VecStorage, World, WorldExt};
 
 pub mod systems;

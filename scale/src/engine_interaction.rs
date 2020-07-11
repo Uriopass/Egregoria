@@ -1,4 +1,4 @@
-use crate::geometry::Vec2;
+use scale_geom::Vec2;
 use std::collections::HashSet;
 
 #[derive(Default)]

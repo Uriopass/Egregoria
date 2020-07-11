@@ -1,4 +1,4 @@
-use crate::geometry::Vec2;
+use crate::Vec2;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]

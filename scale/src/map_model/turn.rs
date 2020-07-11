@@ -1,7 +1,7 @@
-use crate::geometry::polyline::PolyLine;
-use crate::geometry::splines::Spline;
-use crate::geometry::Vec2;
 use crate::map_model::{IntersectionID, LaneID, Lanes};
+use scale_geom::polyline::PolyLine;
+use scale_geom::splines::Spline;
+use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, PartialOrd, Ord, Deserialize, PartialEq, Eq, Hash)]

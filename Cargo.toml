@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "scale",
+    "scale_geom",
     "imgui-inspect",
     "imgui-inspect-derive",
     "wgpu-renderer"

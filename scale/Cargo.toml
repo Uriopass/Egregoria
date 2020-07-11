@@ -10,7 +10,7 @@ edition = "2018"
 # I'll prune some of them when I feel it's worth it.
 
 [dependencies]
-ordered-float = { version = "1.0.2", features = ["serde"] }
+ordered-float = { version = "2.0", features = ["serde"] }
 rand = {version = "0.7", default-features = false, features = ["std", "small_rng"]}
 rand_distr = "0.2.2"
 slotmap = { version = "0.4", default-features = false, features = ["serde"] }
@@ -23,6 +23,7 @@ mint = "0.5.5"
 lazy_static = "1.4.0"
 imgui-inspect = { path = "../imgui-inspect"}
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
+scale_geom = { path = "../scale_geom" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 imgui = "0.4"

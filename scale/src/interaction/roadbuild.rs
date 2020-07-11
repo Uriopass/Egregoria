@@ -1,6 +1,4 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use crate::geometry::splines::Spline;
-use crate::geometry::Vec2;
 use crate::interaction::{Tool, Z_TOOL};
 use crate::map_model::{
     IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
@@ -8,6 +6,8 @@ use crate::map_model::{
 use crate::physics::Transform;
 use crate::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
 use crate::rendering::Color;
+use scale_geom::splines::Spline;
+use scale_geom::Vec2;
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 

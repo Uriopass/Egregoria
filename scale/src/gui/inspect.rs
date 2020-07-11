@@ -1,5 +1,3 @@
-use crate::geometry::polyline::PolyLine;
-use crate::geometry::Vec2;
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
 use crate::map_model::IntersectionComponent;
 use crate::pedestrians::PedestrianComponent;
@@ -10,6 +8,7 @@ use crate::vehicles::VehicleComponent;
 use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use scale_geom::{vec2, Vec2};
 use specs::shrev::EventChannel;
 use specs::{Component, Entity, World, WorldExt};
 use std::marker::PhantomData;
@@ -69,73 +68,6 @@ impl InspectRenderDefault<f64> for InspectDragf {
     }
 }
 
-pub struct InspectVec2;
-impl InspectRenderDefault<Vec2> for InspectVec2 {
-    fn render(data: &[&Vec2], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
-        if data.len() != 1 {
-            unimplemented!();
-        }
-        let x = data[0];
-        imgui::InputFloat2::new(ui, &im_str!("{}", label), &mut [x.x, x.y])
-            .always_insert_mode(false)
-            .build();
-    }
-
-    fn render_mut(
-        data: &mut [&mut Vec2],
-        label: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        args: &InspectArgsDefault,
-    ) -> bool {
-        if data.len() != 1 {
-            unimplemented!();
-        }
-        let x = &mut data[0];
-        let mut conv = [x.x, x.y];
-        let changed = ui
-            .drag_float2(&im_str!("{}", label), &mut conv)
-            .speed(args.step.unwrap_or(0.1))
-            .build();
-        x.x = conv[0];
-        x.y = conv[1];
-        changed
-    }
-}
-
-impl InspectRenderDefault<Vec2> for Vec2 {
-    fn render(data: &[&Vec2], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
-        if data.len() != 1 {
-            unimplemented!();
-        }
-        let x = data[0];
-        imgui::InputFloat2::new(ui, &im_str!("{}", label), &mut [x.x, x.y])
-            .always_insert_mode(false)
-            .build();
-    }
-
-    fn render_mut(
-        data: &mut [&mut Vec2],
-        label: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        args: &InspectArgsDefault,
-    ) -> bool {
-        if data.len() != 1 {
-            unimplemented!();
-        }
-        let x = &mut data[0];
-        let mut conv = [x.x, x.y];
-        let changed = ui
-            .drag_float2(&im_str!("{}", label), &mut conv)
-            .speed(args.step.unwrap_or(0.1))
-            .build();
-        x.x = conv[0];
-        x.y = conv[1];
-        changed
-    }
-}
-
 pub struct InspectVec2Immutable;
 impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
     fn render(data: &[&Vec2], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
@@ -170,7 +102,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
             unimplemented!();
         }
         let x = data[0];
-        let ang = x.angle(vec2!(0.0, 1.0));
+        let ang = x.angle(vec2(0.0, 1.0));
         ui.text(&im_str!("{} {}", label, ang));
     }
 
@@ -261,51 +193,6 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for InspectVec<T> 
             for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
                 changed |= <T as InspectRenderDefault<T>>::render_mut(&mut [x], "", w, ui, args);
-                id.pop(ui);
-            }
-            ui.unindent();
-        }
-
-        changed
-    }
-}
-
-impl InspectRenderDefault<PolyLine> for PolyLine {
-    fn render(
-        _data: &[&PolyLine],
-        _label: &'static str,
-        _: &mut World,
-        _ui: &Ui,
-        _args: &InspectArgsDefault,
-    ) {
-        unimplemented!()
-    }
-
-    fn render_mut(
-        data: &mut [&mut PolyLine],
-        label: &str,
-        w: &mut World,
-        ui: &Ui,
-        args: &InspectArgsDefault,
-    ) -> bool {
-        if data.len() != 1 {
-            unimplemented!();
-        }
-
-        let v = &mut data[0];
-        let mut changed = false;
-
-        if imgui::CollapsingHeader::new(&im_str!("{}", label)).build(&ui) {
-            ui.indent();
-            for (i, x) in v.iter_mut().enumerate() {
-                let id = ui.push_id(i as i32);
-                changed |= <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(
-                    &mut [x],
-                    "",
-                    w,
-                    ui,
-                    args,
-                );
                 id.pop(ui);
             }
             ui.unindent();
@@ -456,7 +343,7 @@ impl InspectRenderer {
                 let mut position = (&*x).position();
                 let mut direction = (&*x).direction();
                 let old_pos = position;
-                let mut changed = <InspectVec2 as InspectRenderDefault<Vec2>>::render_mut(
+                let mut changed = <Vec2 as InspectRenderDefault<Vec2>>::render_mut(
                     &mut [&mut position],
                     "position",
                     world,

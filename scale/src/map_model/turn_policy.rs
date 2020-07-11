@@ -2,6 +2,7 @@ use crate::map_model::{
     Intersection, IntersectionID, LaneID, LaneKind, Lanes, Roads, TurnID, TurnKind,
 };
 use imgui_inspect_derive::*;
+use scale_geom::vec2;
 use serde::{Deserialize, Serialize};
 use std::iter::{Extend, Iterator};
 
@@ -139,7 +140,7 @@ impl TurnPolicy {
                         let incoming_dir = incoming.orientation_from(inter.id);
                         let outgoing_dir = outgoing.orientation_from(inter.id);
 
-                        let incoming_right = vec2!(incoming_dir.y, -incoming_dir.x);
+                        let incoming_right = vec2(incoming_dir.y, -incoming_dir.x);
                         let id = TurnID::new(inter.id, incoming.id, outgoing.id, false);
 
                         if self.left_turns || incoming_right.dot(outgoing_dir) >= -0.3 {

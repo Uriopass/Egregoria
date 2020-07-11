@@ -1,5 +1,4 @@
 use crate::engine_interaction::TimeInfo;
-use crate::geometry::{angle_lerp, Vec2};
 use crate::map_interaction::Itinerary;
 use crate::map_model::{
     LaneKind, Map, PedestrianPath, Traversable, TraverseDirection, TraverseKind,
@@ -8,6 +7,7 @@ use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::Restrict;
+use scale_geom::{angle_lerp, Vec2};
 use specs::prelude::*;
 use specs::shred::PanicHandler;
 use std::borrow::Borrow;
@@ -184,7 +184,11 @@ fn next_objective(pos: Vec2, map: &Map, last_travers: Option<&Traversable>) -> O
     Itinerary::route(
         pos,
         *last_travers?,
-        (l.id, l.points.random_along().0),
+        (
+            l.id,
+            l.points
+                .point_along(rand::random::<f32>() * l.points.length()),
+        ),
         map,
         &PedestrianPath,
     )
