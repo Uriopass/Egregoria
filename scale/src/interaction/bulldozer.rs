@@ -63,7 +63,7 @@ impl<'a> System<'a> for BulldozerSystem {
             .unwrap() // unwrap ok: self_r.project was defined with a transform in new
             .set_position(cur_proj.pos);
 
-        if data.mouseinfo.buttons.contains(&MouseButton::Left) {
+        if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
             let mut potentially_empty = Vec::new();
             println!("Trying to bulldozer {:?}", cur_proj);
             match cur_proj.kind {
