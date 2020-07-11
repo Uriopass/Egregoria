@@ -65,6 +65,7 @@ impl<'a> System<'a> for BulldozerSystem {
 
         if data.mouseinfo.buttons.contains(&MouseButton::Left) {
             let mut potentially_empty = Vec::new();
+            println!("Trying to bulldozer {:?}", cur_proj);
             match cur_proj.kind {
                 ProjectKind::Inter(id) => {
                     potentially_empty
@@ -79,7 +80,10 @@ impl<'a> System<'a> for BulldozerSystem {
 
                     data.map.remove_road(id);
                 }
-                _ => {}
+                ProjectKind::House(id) => {
+                    data.map.remove_house(id);
+                }
+                ProjectKind::Ground => {}
             }
 
             for id in potentially_empty {
