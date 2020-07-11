@@ -1,6 +1,6 @@
 use crate::{
-    IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
-    ParkingSpots, Roads,
+    IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes, Map,
+    ParkingSpots,
 };
 use geom::polyline::PolyLine;
 use geom::splines::Spline;
@@ -63,12 +63,10 @@ impl Road {
         dst: IntersectionID,
         segment: RoadSegmentKind,
         lane_pattern: &LanePattern,
-        intersections: &Intersections,
-        lanes: &mut Lanes,
-        store: &mut Roads,
-        parking: &mut ParkingSpots,
+        map: &mut Map,
     ) -> RoadID {
-        let id = store.insert_with_key(|id| Self {
+        let intersections = &map.intersections;
+        let id = map.roads.insert_with_key(|id| Self {
             id,
             src,
             dst,
@@ -83,9 +81,9 @@ impl Road {
             lanes_backward: vec![],
             generated_points: unsafe { PolyLine::new_unchecked(vec![]) },
         });
-        let road = &mut store[id];
+        let road = &mut map.roads[id];
         for (lane_k, dir) in lane_pattern.lanes() {
-            let id = Lane::make(road, lanes, lane_k, dir);
+            let id = Lane::make(road, &mut map.lanes, lane_k, dir);
 
             match dir {
                 LaneDirection::Forward => &mut road.lanes_forward,
@@ -95,7 +93,7 @@ impl Road {
 
             road.width += lane_k.width();
         }
-        road.gen_pos(intersections, lanes, parking);
+        road.gen_pos(intersections, &mut map.lanes, &mut map.parking);
         id
     }
 

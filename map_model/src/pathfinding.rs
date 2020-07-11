@@ -11,7 +11,7 @@ pub struct PedestrianPath;
 
 impl Pathfinder for PedestrianPath {
     fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
-        let inters = map.intersections;
+        let inters = &map.intersections;
         let lanes = &map.lanes;
 
         let end_pos = inters[lanes[end].dst].pos;
@@ -59,7 +59,7 @@ pub struct DirectionalPath;
 
 impl Pathfinder for DirectionalPath {
     fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
-        let inters = map.intersections;
+        let inters = &map.intersections;
         let lanes = &map.lanes;
 
         let start_lane = start.destination_lane();

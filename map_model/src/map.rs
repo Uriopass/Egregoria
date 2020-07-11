@@ -1,4 +1,7 @@
-use crate::{Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, ParkingSpotID, ParkingSpots, Road, RoadID, RoadSegmentKind, HouseID, House};
+use crate::{
+    House, HouseID, Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern,
+    ParkingSpotID, ParkingSpots, Road, RoadID, RoadSegmentKind,
+};
 use geom::splines::Spline;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
@@ -10,7 +13,7 @@ use slotmap::DenseSlotMap;
 pub type Roads = DenseSlotMap<RoadID, Road>;
 pub type Lanes = DenseSlotMap<LaneID, Lane>;
 pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
-pub type Houses = DenseSlotMap<HouseID, House>,
+pub type Houses = DenseSlotMap<HouseID, House>;
 #[derive(Debug, Clone, Copy)]
 pub enum ProjectKind {
     Inter(IntersectionID),
@@ -166,16 +169,7 @@ impl Map {
         println!("connect {:?} {:?} {:?} {:?}", src, dst, pattern, segment);
 
         self.dirty = true;
-        let road_id = Road::make(
-            src,
-            dst,
-            segment,
-            pattern,
-            &self.intersections,
-            &mut self.lanes,
-            &mut self.roads,
-            &mut self.parking,
-        );
+        let road_id = Road::make(src, dst, segment, pattern, self);
 
         let inters = &mut self.intersections;
 
