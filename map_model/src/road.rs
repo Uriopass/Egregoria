@@ -38,7 +38,7 @@ pub struct Road {
 
     pub segment: RoadSegmentKind,
 
-    generated_points: PolyLine,
+    pub(crate) generated_points: PolyLine,
 
     pub length: f32,
     pub width: f32,

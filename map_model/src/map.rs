@@ -179,7 +179,33 @@ impl Map {
         self.invalidate(src);
         self.invalidate(dst);
 
+        self.make_houses(road_id);
+
         road_id
+    }
+
+    fn make_houses(&mut self, road: RoadID) {
+        let r = &self.roads[road];
+
+        let l = r.generated_points.length();
+        let w = r.width;
+
+        for (pos, dir) in r
+            .generated_points
+            .points_dirs_along(std::iter::successors(Some(3.134f32), move |v| {
+                let next = v + 4.8172 + v.fract() * 1.8371;
+                if next > l {
+                    None
+                } else {
+                    Some(next)
+                }
+            }))
+            .collect::<Vec<_>>()
+        {
+            let p = dir.perpendicular();
+            House::try_new(self, pos + p * (w + 8.0), p);
+            House::try_new(self, pos - p * (w + 8.0), -p);
+        }
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
