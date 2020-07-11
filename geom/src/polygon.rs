@@ -1,5 +1,8 @@
+use crate::segment::Segment;
 use crate::Vec2;
+use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
+use std::hint::unreachable_unchecked;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Polygon(pub Vec<Vec2>);
@@ -27,5 +30,56 @@ impl Polygon {
             j = i;
         }
         c
+    }
+
+    pub fn project(&self, pos: Vec2) -> Vec2 {
+        self.project_segment(pos).0
+    }
+
+    pub fn first(&self) -> Vec2 {
+        *self.0.first().unwrap()
+    }
+
+    pub fn last(&self) -> Vec2 {
+        *self.0.last().unwrap()
+    }
+
+    pub fn project_segment(&self, p: Vec2) -> (Vec2, usize) {
+        match self.0.len() {
+            0 => unreachable!(),
+            1 => (self.first(), 0),
+            2 => (
+                Segment {
+                    src: self.0[0],
+                    dst: self.0[1],
+                }
+                .project(p),
+                1,
+            ),
+            _ => {
+                let l = [self.last(), self.first()];
+                self.0
+                    .windows(2)
+                    .chain(std::iter::once(l.as_ref()))
+                    .enumerate()
+                    .map(|(i, w)| {
+                        if let [a, b] = *w {
+                            (Segment { src: a, dst: b }.project(p), i + 1)
+                        } else {
+                            unsafe { unreachable_unchecked() } // windows(2)
+                        }
+                    })
+                    .min_by_key(|&(proj, _)| OrderedFloat((p - proj).magnitude2()))
+                    .unwrap()
+            } // Unwrap ok: n_points > 2
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &Vec2> {
+        self.0.iter()
+    }
+
+    pub fn as_slice(&self) -> &[Vec2] {
+        self.0.as_slice()
     }
 }
