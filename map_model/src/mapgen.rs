@@ -3,34 +3,6 @@ use geom::{vec2, Vec2};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-const FILENAME: &str = "world/map.bc";
-
-pub fn save(map: &Map) {
-    let _ = std::fs::create_dir("world");
-
-    let file = unwrap_or!(File::create(FILENAME).ok(), {
-        println!("Couldn't open file {}", FILENAME);
-        return;
-    });
-
-    let _ = bincode::serialize_into(file, map)
-        .map_err(|err| println!("Error while serializing: {}", err));
-}
-
-fn load_from_file() -> Map {
-    let file = match File::open(FILENAME) {
-        Ok(f) => f,
-        Err(e) => {
-            println!("error while trying to load map: {}", e);
-            return Map::empty();
-        }
-    };
-
-    let des = bincode::deserialize_from(file);
-    des.map_err(|err| println!("Error while deserializing map: {}", err))
-        .unwrap_or_else(|_| Map::empty())
-}
-
 struct Scanner {
     buffer: Vec<String>,
     file: BufReader<File>,
@@ -206,13 +178,4 @@ fn print_stats(map: &Map) {
 pub fn load_testfield(map: &mut Map) {
     add_doublecircle([0.0, 0.0].into(), map);
     add_grid([0.0, 350.0].into(), map, 10);
-}
-
-pub fn load() -> Map {
-    let map = load_from_file();
-
-    //load_parismap(&mut map);
-    //load_testfield(&mut map);
-
-    map
 }

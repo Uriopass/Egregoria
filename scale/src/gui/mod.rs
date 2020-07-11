@@ -225,7 +225,7 @@ impl Gui {
             });
             if ui.small_button(im_str!("Save")) {
                 crate::vehicles::save(world);
-                map_model::save(&world.read_resource::<Map>());
+                crate::saveload::save(&*world.read_resource::<Map>(), "map");
             }
         });
     }
