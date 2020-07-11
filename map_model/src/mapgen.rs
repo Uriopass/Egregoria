@@ -163,12 +163,12 @@ pub fn add_grid(pos: Vec2, m: &mut Map, size: usize) {
 }
 
 fn print_stats(map: &Map) {
-    println!("{} intersections", map.intersections().len());
-    println!("{} roads", map.roads().len());
-    println!("{} lanes", map.lanes().len());
+    println!("{} intersections", map.intersections.len());
+    println!("{} roads", map.roads.len());
+    println!("{} lanes", map.lanes.len());
     println!(
         "{} turns",
-        map.intersections()
+        map.intersections
             .iter()
             .map(|(_, x)| x.turns().len())
             .sum::<usize>()
