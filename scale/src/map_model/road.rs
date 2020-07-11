@@ -2,9 +2,9 @@ use crate::map_model::{
     IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
     ParkingSpots, Roads,
 };
-use scale_geom::polyline::PolyLine;
-use scale_geom::splines::Spline;
-use scale_geom::Vec2;
+use geom::polyline::PolyLine;
+use geom::splines::Spline;
+use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 

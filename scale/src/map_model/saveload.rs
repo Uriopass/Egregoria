@@ -1,5 +1,5 @@
 use crate::map_model::{IntersectionID, LanePatternBuilder, Map};
-use scale_geom::{vec2, Vec2};
+use geom::{vec2, Vec2};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 

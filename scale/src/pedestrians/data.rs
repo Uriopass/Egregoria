@@ -8,9 +8,9 @@ use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRende
 use crate::rendering::Color;
 use crate::utils::rand_world;
 use crate::RandProvider;
+use geom::{vec2, Vec2};
 use imgui_inspect_derive::*;
 use rand_distr::Distribution;
-use scale_geom::{vec2, Vec2};
 use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};
 use specs::{Component, DenseVecStorage};

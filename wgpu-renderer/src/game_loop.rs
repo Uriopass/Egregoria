@@ -2,6 +2,7 @@ use crate::engine::{Context, FrameContext, GfxContext};
 use crate::geometry::Tesselator;
 use crate::rendering::imgui_wrapper::{GuiRenderContext, ImguiWrapper};
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
+use geom::{vec2, Vec2};
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
 use scale::interaction::{FollowEntity, InspectedEntity};
@@ -11,7 +12,6 @@ use scale::physics::Transform;
 use scale::rendering::{Color, LinearColor};
 use scale::specs::WorldExt;
 use scale::ScaleState;
-use scale_geom::{vec2, Vec2};
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
@@ -231,7 +231,7 @@ fn debug_rays(tess: &mut Tesselator, world: &scale::specs::World) {
     let c = time.cos() as f32;
     let s = time.sin() as f32;
 
-    let r = scale_geom::intersections::Ray {
+    let r = geom::intersections::Ray {
         from: 10.0 * vec2(c, s),
         dir: vec2(
             (time * 2.3 + 1.0).cos() as f32,
@@ -239,7 +239,7 @@ fn debug_rays(tess: &mut Tesselator, world: &scale::specs::World) {
         ),
     };
 
-    let r2 = scale_geom::intersections::Ray {
+    let r2 = geom::intersections::Ray {
         from: 10.0 * vec2((time as f32 * 1.5 + 3.0).cos(), s * 2.0),
         dir: vec2(c, -s),
     };
@@ -248,7 +248,7 @@ fn debug_rays(tess: &mut Tesselator, world: &scale::specs::World) {
     tess.draw_line(r.from, r.from + r.dir * 50.0, 0.5);
     tess.draw_line(r2.from, r2.from + r2.dir * 50.0, 0.5);
 
-    let inter = scale_geom::intersections::intersection_point(r, r2);
+    let inter = geom::intersections::intersection_point(r, r2);
     if let Some(v) = inter {
         tess.color = LinearColor::RED;
 

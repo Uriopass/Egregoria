@@ -1,5 +1,5 @@
+use geom::Vec2;
 use imgui_inspect_derive::*;
-use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
 

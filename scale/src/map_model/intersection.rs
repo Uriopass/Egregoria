@@ -3,12 +3,12 @@ use crate::map_model::{
     TurnPolicy,
 };
 use crate::utils::Restrict;
+use geom::polygon::Polygon;
+use geom::pseudo_angle;
+use geom::splines::Spline;
+use geom::Vec2;
 use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
-use scale_geom::polygon::Polygon;
-use scale_geom::pseudo_angle;
-use scale_geom::splines::Spline;
-use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use specs::storage::BTreeStorage;

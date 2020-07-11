@@ -1,5 +1,5 @@
+use geom::{vec2, Vec2};
 use mint::ColumnMatrix4;
-use scale_geom::{vec2, Vec2};
 
 pub struct Camera {
     pub viewport: Vec2,

@@ -1,7 +1,7 @@
 use crate::map_model::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
+use geom::polyline::PolyLine;
+use geom::Vec2;
 use imgui_inspect_derive::*;
-use scale_geom::polyline::PolyLine;
-use scale_geom::Vec2;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
