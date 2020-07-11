@@ -868,7 +868,6 @@ dependencies = [
 name = "map_model"
 version = "0.1.0"
 dependencies = [
- "bincode 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "geom 0.1.0",
  "imgui-inspect 0.4.0",
  "imgui-inspect-derive 0.4.1",
@@ -1426,7 +1425,6 @@ dependencies = [
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_distr 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.110 (registry+https://github.com/rust-lang/crates.io-index)",
- "slotmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "specs 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

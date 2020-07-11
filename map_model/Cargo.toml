@@ -15,4 +15,3 @@ imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 geom          = { path = "../geom" }
 rand          = { version = "0.7", default-features = false, features = ["std", "small_rng"] }
 pathfinding   = { git = "https://github.com/samueltardieu/pathfinding" }
-bincode       = "1.2.1"
