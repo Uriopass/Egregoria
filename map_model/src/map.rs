@@ -310,16 +310,20 @@ impl Map {
     pub fn intersections(&self) -> &Intersections {
         &self.intersections
     }
+    pub fn houses(&self) -> &Houses {
+        &self.houses
+    }
 
     pub fn get_random_lane<R: Rng>(&self, filter: LaneKind, r: &mut R) -> Option<&Lane> {
-        let (_, road) = self.roads.iter().choose(r)?;
-        let lanes = road
+        self.roads
+            .iter()
+            .choose(r)?
+            .1
             .lanes_iter()
             .filter(|&(_, kind)| kind == filter)
             .map(|(id, _)| id)
-            .collect::<Vec<LaneID>>();
-
-        lanes.iter().choose(r).map(|&x| &self.lanes[x])
+            .choose(r)
+            .map(|x| &self.lanes[x])
     }
 
     pub fn find_road(&self, a: IntersectionID, b: IntersectionID) -> Option<RoadID> {
