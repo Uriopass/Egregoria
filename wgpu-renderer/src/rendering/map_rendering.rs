@@ -36,6 +36,7 @@ const Z_SIDEWALK: f32 = 0.23;
 const Z_ARROW: f32 = 0.24;
 const Z_CROSSWALK: f32 = 0.25;
 const Z_SIGNAL: f32 = 0.26;
+const Z_HOUSE: f32 = 0.3;
 
 const MID_GRAY_V: f32 = 0.5;
 
@@ -127,6 +128,11 @@ impl RoadRenderer {
 
                 tess.draw_polyline_with_dir(&p, first_dir, last_dir, z, w - 0.5);
             }
+        }
+
+        tess.color = LinearColor::gray(from_srgb(0.4));
+        for house in map.houses().values() {
+            tess.draw_filled_polygon(house.exterior.as_slice(), Z_HOUSE);
         }
         tess.meshbuilder.build(gfx)
     }
