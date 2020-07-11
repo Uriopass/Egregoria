@@ -59,6 +59,11 @@ impl<'a> State<'a> {
             !self.gui.last_kb_captured,
         );
 
+        if !self.gui.last_mouse_captured {
+            self.state.world.write_resource::<MouseInfo>().unprojected =
+                self.unproject(ctx.input.mouse.screen);
+        }
+
         self.state.run();
 
         self.manage_entity_follow();
@@ -192,7 +197,7 @@ impl<'a> State<'a> {
             .resize(ctx, size.width as f32, size.height as f32);
     }
 
-    pub fn unproject(&mut self, pos: Vec2) -> Vec2 {
+    pub fn unproject(&self, pos: Vec2) -> Vec2 {
         self.camera.unproject_mouse_click(pos)
     }
 }
