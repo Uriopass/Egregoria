@@ -185,10 +185,10 @@ impl LinearColor {
         a: 1.0,
     };
 
-    pub const ORANGE: Color = Color {
+    pub const ORANGE: LinearColor = LinearColor {
         r: 1.0,
-        g: 0.5,
-        b: 0.1,
+        g: 0.21,
+        b: 0.01,
         a: 1.0,
     };
 }

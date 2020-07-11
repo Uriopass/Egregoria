@@ -38,6 +38,7 @@ pub mod pedestrians;
 pub mod physics;
 pub mod rand_provider;
 pub mod rendering;
+mod saveload;
 pub mod vehicles;
 
 pub use imgui;
@@ -127,7 +128,7 @@ impl<'a> ScaleState<'a> {
 
         dispatcher.setup(&mut world);
 
-        world.insert(map_model::load());
+        world.insert(saveload::load::<map_model::Map>("map"));
         vehicles::setup(&mut world);
         pedestrians::setup(&mut world);
 

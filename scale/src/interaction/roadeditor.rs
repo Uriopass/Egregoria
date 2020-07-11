@@ -11,6 +11,7 @@ use specs::shred::PanicHandler;
 use specs::{storage::BTreeStorage, Component};
 
 #[derive(Component, Clone, Inspect)]
+#[storage(BTreeStorage)]
 pub struct IntersectionComponent {
     #[inspect(skip = true)]
     pub id: IntersectionID,

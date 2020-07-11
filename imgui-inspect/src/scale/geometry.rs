@@ -1,18 +1,21 @@
-use geom::Vec2;
+use crate::default::InspectArgsDefault;
+use crate::default::InspectRenderDefault;
+use geom::{polyline::PolyLine, Vec2};
+use imgui::im_str;
 
-impl imgui_inspect::InspectRenderDefault<Vec2> for Vec2 {
+impl InspectRenderDefault<Vec2> for Vec2 {
     fn render(
         data: &[&Vec2],
         label: &'static str,
-        _: &mut imgui_inspect::specs::World,
-        ui: &imgui_inspect::imgui::Ui,
-        _: &imgui_inspect::InspectArgsDefault,
+        _: &mut specs::World,
+        ui: &imgui::Ui,
+        _: &InspectArgsDefault,
     ) {
         if data.len() != 1 {
             unimplemented!();
         }
         let x = data[0];
-        imgui_inspect::imgui::InputFloat2::new(ui, &im_str!("{}", label), &mut [x.x, x.y])
+        imgui::InputFloat2::new(ui, &im_str!("{}", label), &mut [x.x, x.y])
             .always_insert_mode(false)
             .build();
     }
@@ -20,9 +23,9 @@ impl imgui_inspect::InspectRenderDefault<Vec2> for Vec2 {
     fn render_mut(
         data: &mut [&mut Vec2],
         label: &'static str,
-        _: &mut imgui_inspect::specs::World,
-        ui: &imgui_inspect::imgui::Ui,
-        args: &imgui_inspect::InspectArgsDefault,
+        _: &mut specs::World,
+        ui: &imgui::Ui,
+        args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
             unimplemented!();
@@ -35,6 +38,46 @@ impl imgui_inspect::InspectRenderDefault<Vec2> for Vec2 {
             .build();
         x.x = conv[0];
         x.y = conv[1];
+        changed
+    }
+}
+
+impl InspectRenderDefault<PolyLine> for PolyLine {
+    fn render(
+        _data: &[&PolyLine],
+        _label: &'static str,
+        _: &mut specs::World,
+        _ui: &imgui::Ui,
+        _args: &InspectArgsDefault,
+    ) {
+        unimplemented!()
+    }
+
+    fn render_mut(
+        data: &mut [&mut PolyLine],
+        label: &str,
+        w: &mut specs::World,
+        ui: &imgui::Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+
+        let v = &mut data[0];
+        let mut changed = false;
+
+        if imgui::CollapsingHeader::new(&im_str!("{}", label)).build(&ui) {
+            ui.indent();
+            for (i, x) in v.iter_mut().enumerate() {
+                let id = ui.push_id(i as i32);
+                changed |=
+                    <Vec2 as InspectRenderDefault<Vec2>>::render_mut(&mut [x], "", w, ui, args);
+                id.pop(ui);
+            }
+            ui.unindent();
+        }
+
         changed
     }
 }
