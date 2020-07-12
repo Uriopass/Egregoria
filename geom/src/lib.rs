@@ -1,3 +1,4 @@
+pub mod circle;
 pub mod intersections;
 pub mod polygon;
 pub mod polyline;
