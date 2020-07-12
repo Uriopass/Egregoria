@@ -99,7 +99,7 @@ impl RoadRenderer {
             }
 
             tess.color = mid_gray;
-            tess.draw_filled_polygon(inter.polygon.0.as_slice(), Z_INTER_BG);
+            tess.draw_filled_polygon(inter.polygon.as_slice(), Z_INTER_BG);
 
             for turn in inter
                 .turns()

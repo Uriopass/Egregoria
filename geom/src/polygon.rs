@@ -1,14 +1,55 @@
 use crate::circle::Circle;
 use crate::segment::Segment;
-use crate::Vec2;
+use crate::{vec2, Vec2};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Polygon(pub Vec<Vec2>);
+#[derive(Clone, Serialize, Deserialize, Default, Debug)]
+pub struct Polygon(Vec<Vec2>);
 
 impl Polygon {
+    pub fn rect(w: f32, h: f32) -> Self {
+        Self(vec![Vec2::ZERO, vec2(w, 0.0), vec2(w, h), vec2(0.0, h)])
+    }
+
+    pub fn translate(&mut self, p: Vec2) {
+        for x in self.0.iter_mut() {
+            *x += p
+        }
+    }
+
+    pub fn rotate(&mut self, cossin: Vec2) {
+        for x in self.0.iter_mut() {
+            *x = x.rotated_by(cossin)
+        }
+    }
+
+    pub fn segment(&self, seg: usize) -> (Vec2, Vec2) {
+        (
+            self.0[seg],
+            self.0[if seg + 1 == self.0.len() { 0 } else { seg + 1 }],
+        )
+    }
+
+    pub fn split_segment(&mut self, seg: usize, coeff: f32) {
+        let (p1, p2) = self.segment(seg);
+        self.0.insert(seg + 1, p1 + (p2 - p1) * coeff)
+    }
+
+    pub fn extrude(&mut self, seg: usize, dist: f32) {
+        assert!(dist.abs() > 0.0);
+
+        let (p1, p2) = self.segment(seg);
+        let perp = match (p2 - p1).perpendicular().try_normalize() {
+            Some(x) => x,
+            None => return,
+        };
+
+        self.0.insert(seg + 1, p1 + perp * dist);
+        self.0.insert(seg + 2, p2 + perp * dist)
+    }
+
     pub fn contains(&self, p: Vec2) -> bool {
         let nvert = self.0.len();
 
@@ -99,5 +140,17 @@ impl Polygon {
 
     pub fn as_slice(&self) -> &[Vec2] {
         self.0.as_slice()
+    }
+
+    pub fn clear(&mut self) {
+        self.0.clear()
+    }
+
+    pub fn extend<A, T>(&mut self, s: T)
+    where
+        T: IntoIterator<Item = A>,
+        Vec<Vec2>: Extend<A>,
+    {
+        self.0.extend(s);
     }
 }

@@ -82,15 +82,11 @@ impl Transform {
         }
     }
 
-    pub fn apply_rotation(&self, vec: Vec2) -> Vec2 {
-        vec2(
-            vec.x * self.cos() + vec.y * self.sin(),
-            vec.x * self.sin() - vec.y * self.cos(),
-        )
+    pub fn apply_rotation(&self, point: Vec2) -> Vec2 {
+        point.rotated_by(self.cossin)
     }
 
     pub fn project(&self, point: Vec2) -> Vec2 {
-        let rotated = point * self.cossin - point * self.cossin.perpendicular();
-        rotated + self.position
+        point.rotated_by(self.cossin) + self.position
     }
 }
