@@ -1,3 +1,4 @@
+use crate::circle::Circle;
 use crate::segment::Segment;
 use crate::Vec2;
 use ordered_float::OrderedFloat;
@@ -73,6 +74,23 @@ impl Polygon {
                     .unwrap()
             } // Unwrap ok: n_points > 2
         }
+    }
+
+    pub fn barycenter(&self) -> Vec2 {
+        self.0.iter().sum::<Vec2>() / (self.0.len() as f32)
+    }
+
+    pub fn bcircle(&self) -> Circle {
+        let center = self.barycenter();
+        let radius = self
+            .0
+            .iter()
+            .map(move |x| OrderedFloat(x.distance2(center)))
+            .max()
+            .unwrap()
+            .0
+            .sqrt();
+        Circle { center, radius }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &Vec2> {
