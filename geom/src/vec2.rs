@@ -164,8 +164,18 @@ impl Neg for Vec2 {
 
 impl std::iter::Sum for Vec2 {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let mut z = Self::ZERO;
+        let mut z = Vec2::ZERO;
         for x in iter {
+            z += x;
+        }
+        z
+    }
+}
+
+impl<'a> std::iter::Sum<&'a Vec2> for Vec2 {
+    fn sum<I: Iterator<Item = &'a Vec2>>(iter: I) -> Self {
+        let mut z = Vec2::ZERO;
+        for &x in iter {
             z += x;
         }
         z
