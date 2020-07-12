@@ -42,10 +42,10 @@ impl Intersection {
             id,
             pos,
             turns: Default::default(),
-            roads: vec![],
-            turn_policy: TurnPolicy::default(),
-            light_policy: LightPolicy::default(),
-            polygon: Polygon(vec![]),
+            roads: Default::default(),
+            turn_policy: Default::default(),
+            light_policy: Default::default(),
+            polygon: Default::default(),
         })
     }
 
@@ -115,7 +115,7 @@ impl Intersection {
     }
 
     pub fn update_polygon(&mut self, roads: &Roads) {
-        self.polygon.0.clear();
+        self.polygon.clear();
 
         for (i, &road) in self.roads.iter().enumerate() {
             let road = &roads[road];
@@ -147,7 +147,7 @@ impl Intersection {
                 to_derivative: dst_orient * dist,
             };
 
-            self.polygon.0.extend(spline.smart_points(1.0, 0.0, 1.0));
+            self.polygon.extend(spline.smart_points(1.0, 0.0, 1.0));
         }
     }
 

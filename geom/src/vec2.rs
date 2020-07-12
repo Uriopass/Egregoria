@@ -324,4 +324,9 @@ impl Vec2 {
         let m = self.distance2(other);
         m < std::f32::EPSILON
     }
+
+    #[inline]
+    pub fn rotated_by(self, cossin: Vec2) -> Self {
+        self.x * cossin - self.y * cossin.perpendicular()
+    }
 }

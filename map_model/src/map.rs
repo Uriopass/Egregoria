@@ -199,19 +199,12 @@ impl Map {
 
         for (pos, dir) in r
             .generated_points
-            .points_dirs_along(std::iter::successors(Some(3.134f32), move |v| {
-                let next = v + 8.8172 + v.fract() * 1.8371;
-                if next > l {
-                    None
-                } else {
-                    Some(next)
-                }
-            }))
+            .points_dirs_along((0..(l / 30.0) as usize).map(|i| i as f32 * 30.0 + 4.0))
             .collect::<Vec<_>>()
         {
             let p = dir.perpendicular();
-            House::try_new(self, pos + p * (w + 6.0), p);
-            House::try_new(self, pos - p * (w + 6.0), -p);
+            House::try_make(self, pos + p * (w + 3.0), p);
+            House::try_make(self, pos - p * (w + 3.0), -p);
         }
     }
 
