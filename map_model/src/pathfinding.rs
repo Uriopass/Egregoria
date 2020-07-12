@@ -1,6 +1,6 @@
 #![allow(clippy::or_fun_call)]
 use crate::{LaneID, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
-use ordered_float::NotNan;
+use ordered_float::OrderedFloat;
 use slotmap::Key;
 
 pub trait Pathfinder {
@@ -19,7 +19,7 @@ impl Pathfinder for PedestrianPath {
         let heuristic = |t: &Traversable| {
             let pos = inters[t.destination_intersection(lanes)].pos;
 
-            NotNan::new(pos.distance(end_pos) * 1.3).unwrap() // Inexact but (much) faster
+            OrderedFloat(pos.distance(end_pos) * 1.3) // Inexact but (much) faster
         };
 
         let successors = |t: &Traversable| {
@@ -31,7 +31,7 @@ impl Pathfinder for PedestrianPath {
                     TraverseKind::Lane(lane_from_id),
                     lane_from.dir_from(inter.id),
                 ),
-                NotNan::new(lane_from.length).unwrap_or(NotNan::new(0.0).unwrap()), // Unwrap ok: zero
+                OrderedFloat(lane_from.length),
             );
 
             inter
@@ -39,7 +39,7 @@ impl Pathfinder for PedestrianPath {
                 .map(|(x, dir)| {
                     (
                         Traversable::new(TraverseKind::Turn(x), dir),
-                        NotNan::new(0.001).unwrap(), // Unwrap ok: not nan
+                        OrderedFloat(0.001), // Unwrap ok: not nan
                     )
                 })
                 .chain(std::iter::once(lane_travers))
@@ -70,7 +70,7 @@ impl Pathfinder for DirectionalPath {
 
         let heuristic = |&p: &LaneID| {
             let pos = inters[lanes[p].dst].pos;
-            NotNan::new(pos.distance(end_pos) * 1.2).unwrap() // Inexact but (much) faster
+            OrderedFloat(pos.distance(end_pos) * 1.2) // Inexact but (much) faster
         };
 
         let successors = |&p: &LaneID| {
@@ -83,12 +83,9 @@ impl Pathfinder for DirectionalPath {
                 p
             };
             let inter = &inters[l.dst];
-            inter.turns_from(p).map(|(x, _)| {
-                (
-                    x.dst,
-                    NotNan::new(lanes[x.dst].length).unwrap_or(NotNan::new(0.0).unwrap()), // Unwrap ok: zero
-                )
-            })
+            inter
+                .turns_from(p)
+                .map(|(x, _)| (x.dst, OrderedFloat(lanes[x.dst].length)))
         };
 
         let (v, _) =
