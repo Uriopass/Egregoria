@@ -28,6 +28,10 @@ impl House {
             Self::gen_exterior_corner()
         };
 
+        if let Some(house) = mods::gen_house() {
+            exterior = house;
+        }
+
         exterior.rotate(axis);
         exterior.translate(at + axis * exterior.bcircle().radius);
 

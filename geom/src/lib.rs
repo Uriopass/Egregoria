@@ -6,9 +6,9 @@ pub mod rect;
 pub mod segment;
 pub mod splines;
 
-mod vec2;
+mod v2;
 
-pub use vec2::*;
+pub use v2::*;
 
 pub fn pseudo_angle(v: Vec2) -> f32 {
     debug_assert!((v.magnitude2() - 1.0).abs() <= 1e-5);
