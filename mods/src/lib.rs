@@ -55,7 +55,7 @@ pub fn eval_script<T: for<'a> FromLuaMulti<'a>>(name: &'static str) -> Option<T>
     let mut mkfile = || {
         let mut data = String::new();
         data_file.read_to_string(&mut data).unwrap();
-        let lua = Lua::new();
+        let lua = unsafe { Lua::unsafe_new() };
         add_std(&lua);
         Mutex::new(LuaFile {
             source: data,
@@ -74,10 +74,10 @@ pub fn eval_script<T: for<'a> FromLuaMulti<'a>>(name: &'static str) -> Option<T>
                 if luaf.time == time {
                     return luaf.lua.load(&luaf.source).eval().ok_print();
                 }
-                println!("Re-loading {}", name);
+                println!("re-loading {}", name);
             }
             None => {
-                println!("Loading {}", name);
+                println!("loading {}", name);
             }
         }
     }
