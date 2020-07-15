@@ -154,3 +154,9 @@ impl Polygon {
         self.0.extend(s);
     }
 }
+
+impl From<Vec<Vec2>> for Polygon {
+    fn from(v: Vec<Vec2>) -> Self {
+        Self(v)
+    }
+}
