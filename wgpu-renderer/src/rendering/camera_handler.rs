@@ -77,6 +77,7 @@ impl CameraHandler {
         if mouse_enabled && ctx.input.mouse.buttons.contains(&MouseButton::Right) {
             self.camera.position.x -= p.x - self.last_pos.x;
             self.camera.position.y -= p.y - self.last_pos.y;
+            self.camera.update();
         }
 
         if mouse_enabled {
@@ -94,18 +95,21 @@ impl CameraHandler {
 
             if is_pressed.contains(&KeyCode::Right) {
                 self.camera.position.x += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+                self.camera.update();
             }
             if is_pressed.contains(&KeyCode::Left) {
                 self.camera.position.x -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+                self.camera.update();
             }
             if is_pressed.contains(&KeyCode::Up) {
                 self.camera.position.y += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+                self.camera.update();
             }
             if is_pressed.contains(&KeyCode::Down) {
                 self.camera.position.y -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+                self.camera.update();
             }
 
-            self.last_pos = self.unproject_mouse_click(ctx.input.mouse.screen);
             let just_pressed = &ctx.input.keyboard.just_pressed;
             if just_pressed.contains(&KeyCode::Add) || just_pressed.contains(&KeyCode::Equals) {
                 self.zoom_by(ctx, 1.1);
@@ -116,7 +120,8 @@ impl CameraHandler {
                 self.zoom_by(ctx, 1.0 / 1.1);
             }
         }
-        self.camera.update();
+
+        self.last_pos = self.unproject_mouse_click(ctx.input.mouse.screen);
     }
 
     fn zoom_by(&mut self, ctx: &mut Context, multiply: f32) {
