@@ -1,4 +1,5 @@
 use crate::circle::Circle;
+use crate::rect::Rect;
 use crate::segment::Segment;
 use crate::{vec2, Vec2};
 use ordered_float::OrderedFloat;
@@ -72,6 +73,22 @@ impl Polygon {
             j = i;
         }
         c
+    }
+
+    pub fn bbox(&self) -> Rect {
+        if self.0.len() == 0 {
+            return Rect::zero();
+        }
+        let mut min: Vec2 = self.first();
+        let mut max: Vec2 = min;
+
+        for &v in self.as_slice() {
+            min = min.min(v);
+            max = max.max(v);
+        }
+
+        let diff = max - min;
+        Rect::new(min.x, min.y, diff.x, diff.y)
     }
 
     pub fn project(&self, pos: Vec2) -> Vec2 {
