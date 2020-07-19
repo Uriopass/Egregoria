@@ -25,11 +25,10 @@ impl House {
 
         let bcirc = exterior.bcircle();
 
-        if true
-            || (map.houses.values().all(|h| !h.bcirc.overlaps(&bcirc))
-                && exterior
-                    .iter()
-                    .all(|&p| matches!(map.project(p).kind, ProjectKind::Ground)))
+        if map.houses.values().all(|h| !h.bcirc.overlaps(&bcirc))
+            && exterior
+                .iter()
+                .all(|&p| matches!(map.project(p).kind, ProjectKind::Ground))
         {
             Some(map.houses.insert_with_key(move |id| Self {
                 id,
