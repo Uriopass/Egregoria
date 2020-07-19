@@ -199,7 +199,7 @@ impl Map {
 
         for (pos, dir) in r
             .generated_points
-            .points_dirs_along((0..(l / 30.0) as usize).map(|i| i as f32 * 30.0 + 4.0))
+            .points_dirs_along((0..(l / 30.0) as usize).map(|i| i as f32 * 30.0 + 15.0))
             .collect::<Vec<_>>()
         {
             let p = dir.perpendicular();
