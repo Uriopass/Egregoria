@@ -76,7 +76,7 @@ pub fn load_parismap(map: &mut Map) {
             ids[dst],
             &LanePatternBuilder::new()
                 .one_way(n_lanes == 1)
-                .parking(false)
+                .parking(true)
                 .build(),
         );
     }
