@@ -16,7 +16,7 @@ impl Segment {
         let diff3: Vec2 = p - self.dst;
 
         let proj1 = diff2.dot(diff);
-        let proj2 = diff3.dot(-diff);
+        let proj2 = -diff3.dot(diff);
 
         if proj1 <= 0.0 {
             self.src
