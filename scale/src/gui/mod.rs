@@ -6,7 +6,7 @@ use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 pub use inspect::*;
-use map_model::{LanePatternBuilder, Map};
+use map_model::{LanePatternBuilder, Map, SerializedMap};
 use specs::world::World;
 use specs::{Entity, Join, WorldExt};
 
@@ -225,7 +225,8 @@ impl Gui {
             });
             if ui.small_button(im_str!("Save")) {
                 crate::vehicles::save(world);
-                crate::saveload::save(&*world.read_resource::<Map>(), "map");
+                let serialized_map: SerializedMap = (&*world.read_resource::<Map>()).into();
+                crate::saveload::save(&serialized_map, "map");
             }
         });
     }

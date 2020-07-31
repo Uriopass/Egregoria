@@ -42,6 +42,7 @@ mod saveload;
 pub mod vehicles;
 
 pub use imgui;
+use map_model::Map;
 pub use rand_provider::RandProvider;
 pub use specs;
 
@@ -128,7 +129,11 @@ impl<'a> ScaleState<'a> {
 
         dispatcher.setup(&mut world);
 
-        world.insert(saveload::load::<map_model::Map>("map"));
+        let map: Map = saveload::load::<map_model::SerializedMap>("map")
+            .map(|x| x.into())
+            .unwrap_or_default();
+
+        world.insert(map);
         vehicles::setup(&mut world);
         pedestrians::setup(&mut world);
 
