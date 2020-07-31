@@ -1,5 +1,4 @@
 use crate::{Map, ProjectKind};
-use geom::circle::Circle;
 use geom::polygon::Polygon;
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
@@ -22,18 +21,13 @@ impl House {
         exterior.rotate(axis);
         exterior.translate(at + axis * exterior.bcircle().radius);
 
-        let bcirc = exterior.bcircle();
-
-        if map.houses.values().all(|h| !h.bcirc.overlaps(&bcirc))
-            && exterior
-                .iter()
-                .all(|&p| matches!(map.project(p).kind, ProjectKind::Ground))
+        if exterior
+            .iter()
+            .all(|&p| matches!(map.project(p).kind, ProjectKind::Ground))
         {
-            Some(map.houses.insert_with_key(move |id| Self {
-                id,
-                exterior,
-                bcirc,
-            }))
+            let id = map.houses.insert_with_key(move |id| Self { id, exterior });
+            map.spatial_map.insert_house(&map.houses[id]);
+            Some(id)
         } else {
             None
         }

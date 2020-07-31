@@ -213,6 +213,9 @@ impl Map {
 
         self.dirty = true;
         let road = self.roads.remove(road_id)?;
+
+        self.spatial_map.remove_road(&road);
+
         for (id, _) in road.lanes_iter() {
             self.lanes.remove(id);
             self.parking.remove_spots(id);
@@ -236,59 +239,51 @@ impl Map {
         self.parking.clear();
     }
 
-    fn closest_house(&self, pos: Vec2) -> Option<&House> {
-        self.houses
-            .values()
-            .min_by_key(|x| OrderedFloat(x.exterior.project(pos).distance2(pos)))
-    }
-
-    fn closest_road(&self, pos: Vec2) -> Option<(&Road, f32, Vec2)> {
-        self.roads
-            .values()
-            .map(|road| {
-                let proj = road.project(pos);
-                (road, proj.distance2(pos), proj)
-            })
-            .min_by_key(|(_, d, _)| OrderedFloat(*d))
-    }
-
     pub fn project(&self, pos: Vec2) -> MapProject {
-        const THRESHOLD: f32 = 15.0;
-
         let mk_proj = move |kind| MapProject { pos, kind };
 
-        if let Some(h) = self.closest_house(pos).filter(|h| h.exterior.contains(pos)) {
-            return mk_proj(ProjectKind::House(h.id));
-        }
+        for obj in self.spatial_map.query_point(pos) {
+            match obj {
+                ProjectKind::Road(id) => {
+                    let road = self.roads
+                        .get(id)
+                        .expect("Road does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
-        let (min_road, d, projected) = match self.closest_road(pos) {
-            Some(x) => x,
-            None => {
-                return mk_proj(ProjectKind::Ground);
+                    if self.intersections[road.src].polygon.contains(pos) {
+                        return MapProject {
+                            pos: self.intersections[road.src].pos,
+                            kind: ProjectKind::Inter(road.src),
+                        };
+                    }
+                    if self.intersections[road.dst].polygon.contains(pos) {
+                        return MapProject {
+                            pos: self.intersections[road.dst].pos,
+                            kind: ProjectKind::Inter(road.dst),
+                        };
+                    }
+
+                    let projected = road.generated_points.project(pos);
+                    if projected.distance(pos) < road.width {
+                        return MapProject {
+                            pos: projected,
+                            kind: ProjectKind::Road(id),
+                        };
+                    }
+                },
+                ProjectKind::House(id) => {
+                    if self.houses
+                        .get(id)
+                        .expect("House does not exist anymore, you seem to have forgotten to remove it from the spatial map.")
+                        .exterior
+                        .contains(pos) {
+                        return mk_proj(ProjectKind::House(id));
+                    }
+                },
+                _ => {},
             }
-        };
-
-        if self.intersections[min_road.src].polygon.contains(pos) {
-            return MapProject {
-                pos: self.intersections[min_road.src].pos,
-                kind: ProjectKind::Inter(min_road.src),
-            };
-        }
-        if self.intersections[min_road.dst].polygon.contains(pos) {
-            return MapProject {
-                pos: self.intersections[min_road.dst].pos,
-                kind: ProjectKind::Inter(min_road.dst),
-            };
         }
 
-        if d < THRESHOLD * THRESHOLD {
-            MapProject {
-                pos: projected,
-                kind: ProjectKind::Road(min_road.id),
-            }
-        } else {
-            mk_proj(ProjectKind::Ground)
-        }
+        mk_proj(ProjectKind::Ground)
     }
 
     pub fn is_empty(&self) -> bool {

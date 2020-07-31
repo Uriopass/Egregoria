@@ -36,7 +36,7 @@ impl TurnKind {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Turn {
     pub id: TurnID,
     pub points: PolyLine,

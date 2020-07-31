@@ -1,4 +1,4 @@
-use crate::{House, HouseID, Map, ProjectKind, Road, RoadID};
+use crate::{House, HouseID, ProjectKind, Road, RoadID};
 use flat_spatial::shape::AABB;
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;

@@ -36,6 +36,9 @@ impl PolyLine {
         self.0.push(x)
     }
 
+    /// # Safety
+    /// A strong invariant of polyline is that it always contains one point, if you break it things like
+    /// `first()` will be UB.
     pub unsafe fn clear_unchecked(&mut self) {
         self.0.clear();
     }

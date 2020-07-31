@@ -76,7 +76,7 @@ impl Polygon {
     }
 
     pub fn bbox(&self) -> Rect {
-        if self.0.len() == 0 {
+        if self.0.is_empty() {
             return Rect::zero();
         }
         let mut min: Vec2 = self.first();
