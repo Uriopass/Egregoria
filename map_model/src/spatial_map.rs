@@ -45,10 +45,10 @@ impl SpatialMap {
 
     pub fn insert_road(&mut self, r: &Road) {
         let mut bbox = r.generated_points.bbox();
-        bbox.x -= r.width;
-        bbox.y -= r.width;
-        bbox.w += 2.0 * r.width;
-        bbox.h += 2.0 * r.width;
+        bbox.x -= r.width * 0.5;
+        bbox.y -= r.width * 0.5;
+        bbox.w += r.width;
+        bbox.h += r.width;
 
         let handle = self
             .grid

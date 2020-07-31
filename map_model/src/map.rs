@@ -263,7 +263,7 @@ impl Map {
                     }
 
                     let projected = road.generated_points.project(pos);
-                    if projected.distance(pos) < road.width {
+                    if projected.distance(pos) < road.width * 0.5 {
                         return MapProject {
                             pos: projected,
                             kind: ProjectKind::Road(id),
