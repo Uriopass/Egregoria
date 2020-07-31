@@ -74,8 +74,19 @@ impl SpatialMap {
     pub fn query_point(&self, p: Vec2) -> impl Iterator<Item = ProjectKind> + '_ {
         self.grid.query([p.x, p.y]).map(|(_, _, k)| *k)
     }
+
+    pub fn debug_grid(&self) -> impl Iterator<Item = Rect> + '_ {
+        self.grid
+            .handles()
+            .filter_map(move |x| self.grid.get(x))
+            .map(|(aabb, _)| aabb_to_rect(*aabb))
+    }
 }
 
 fn rect_to_aabb(r: Rect) -> AABB {
     AABB::new([r.x, r.y].into(), [r.x + r.w, r.y + r.h].into())
+}
+
+fn aabb_to_rect(r: AABB) -> Rect {
+    Rect::new(r.ll.x, r.ll.y, r.ur.x - r.ll.x, r.ur.y - r.ll.y)
 }

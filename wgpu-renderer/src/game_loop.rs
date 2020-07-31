@@ -1,15 +1,13 @@
 use crate::engine::{Context, FrameContext, GfxContext};
-use crate::geometry::Tesselator;
 use crate::rendering::imgui_wrapper::{GuiRenderContext, ImguiWrapper};
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
-use geom::{vec2, Vec2};
+use geom::Vec2;
 use map_model::Map;
 use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use scale::gui::Gui;
-use scale::interaction::{FollowEntity, InspectedEntity};
-use scale::map_interaction::Itinerary;
+use scale::interaction::FollowEntity;
 use scale::physics::Transform;
-use scale::rendering::{Color, LinearColor};
+use scale::rendering::Color;
 use scale::specs::WorldExt;
 use scale::ScaleState;
 use std::time::Instant;
@@ -96,7 +94,14 @@ impl<'a> State<'a> {
 
         MeshRenderer::render(&mut self.state.world, &mut tess);
 
-        debug_pathfinder(&mut tess, &self.state.world);
+        {
+            let objs = crate::debug::DEBUG_OBJS.lock().unwrap();
+            for (val, _, obj) in &*objs {
+                if *val {
+                    obj(&mut tess, &self.state.world);
+                }
+            }
+        }
 
         for (order, col) in scale::utils::debugdraw::PERSISTENT_DEBUG_ORDERS
             .lock()
@@ -199,64 +204,5 @@ impl<'a> State<'a> {
 
     pub fn unproject(&self, pos: Vec2) -> Vec2 {
         self.camera.unproject_mouse_click(pos)
-    }
-}
-
-#[allow(dead_code)]
-fn debug_pathfinder(tess: &mut Tesselator, world: &scale::specs::World) -> Option<()> {
-    let map: &Map = &world.read_resource::<Map>();
-    let selected = world.read_resource::<InspectedEntity>().e?;
-    let pos = world.read_storage::<Transform>().get(selected)?.position();
-
-    let stor = world.read_storage::<Itinerary>();
-    let itinerary = stor.get(selected)?;
-
-    tess.color = LinearColor::GREEN;
-    tess.draw_polyline(&itinerary.local_path(), 1.0, 1.0);
-
-    if let Some(p) = itinerary.get_point() {
-        tess.draw_stroke(p, pos, 1.0, 1.0);
-    }
-
-    if let scale::map_interaction::ItineraryKind::Route(r) = itinerary.kind() {
-        tess.color = LinearColor::RED;
-        for l in &r.reversed_route {
-            tess.draw_polyline(l.raw_points(map).as_slice(), 1.0, 3.0);
-        }
-        tess.color = LinearColor::MAGENTA;
-        tess.draw_circle(r.end_pos, 1.0, 1.0);
-    }
-    Some(())
-}
-
-#[allow(dead_code)]
-fn debug_rays(tess: &mut Tesselator, world: &scale::specs::World) {
-    let time = world.read_resource::<TimeInfo>();
-    let time = time.time * 0.2;
-    let c = time.cos() as f32;
-    let s = time.sin() as f32;
-
-    let r = geom::intersections::Ray {
-        from: 10.0 * vec2(c, s),
-        dir: vec2(
-            (time * 2.3 + 1.0).cos() as f32,
-            (time * 2.3 + 1.0).sin() as f32,
-        ),
-    };
-
-    let r2 = geom::intersections::Ray {
-        from: 10.0 * vec2((time as f32 * 1.5 + 3.0).cos(), s * 2.0),
-        dir: vec2(c, -s),
-    };
-
-    tess.color = LinearColor::WHITE;
-    tess.draw_line(r.from, r.from + r.dir * 50.0, 0.5);
-    tess.draw_line(r2.from, r2.from + r2.dir * 50.0, 0.5);
-
-    let inter = geom::intersections::intersection_point(r, r2);
-    if let Some(v) = inter {
-        tess.color = LinearColor::RED;
-
-        tess.draw_circle(v, 0.5, 2.0);
     }
 }

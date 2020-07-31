@@ -18,6 +18,7 @@ mint          = "0.5.5"
 imgui-wgpu    = "0.7.0"
 imgui-winit-support = "0.4.0"
 map_model     = { path = "../map_model" }
+lazy_static   = "1.4.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 winit         = "0.22"
