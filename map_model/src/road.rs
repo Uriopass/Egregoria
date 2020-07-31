@@ -27,7 +27,7 @@ impl RoadSegmentKind {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Road {
     pub id: RoadID,
     pub src: IntersectionID,

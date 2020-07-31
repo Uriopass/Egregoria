@@ -1,4 +1,5 @@
 use super::Vec2;
+use crate::rect::Rect;
 use crate::segment::Segment;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -33,6 +34,10 @@ impl PolyLine {
     pub fn clear_push(&mut self, x: Vec2) {
         self.0.clear();
         self.0.push(x)
+    }
+
+    pub unsafe fn clear_unchecked(&mut self) {
+        self.0.clear();
     }
 
     pub fn into_vec(self) -> Vec<Vec2> {
@@ -196,6 +201,19 @@ impl PolyLine {
                 partial
             }
         }
+    }
+
+    pub fn bbox(&self) -> Rect {
+        let mut min: Vec2 = self.first();
+        let mut max: Vec2 = min;
+
+        for &v in self.as_slice() {
+            min = min.min(v);
+            max = max.max(v);
+        }
+
+        let diff = max - min;
+        Rect::new(min.x, min.y, diff.x, diff.y)
     }
 
     pub fn length(&self) -> f32 {
