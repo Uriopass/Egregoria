@@ -94,6 +94,7 @@ impl Road {
             road.width += lane_k.width();
         }
         road.gen_pos(intersections, &mut map.lanes, &mut map.parking);
+        map.spatial_map.insert_road(road);
         id
     }
 
