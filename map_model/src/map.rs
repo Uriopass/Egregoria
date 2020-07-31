@@ -1,13 +1,12 @@
 use crate::{
     House, HouseID, Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern,
-    ParkingSpotID, ParkingSpots, Road, RoadID, RoadSegmentKind,
+    ParkingSpotID, ParkingSpots, Road, RoadID, RoadSegmentKind, SpatialMap,
 };
 use geom::splines::Spline;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use rand::prelude::IteratorRandom;
 use rand::Rng;
-use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 
 pub type Roads = DenseSlotMap<RoadID, Road>;
@@ -28,12 +27,12 @@ pub struct MapProject {
     pub kind: ProjectKind,
 }
 
-#[derive(Serialize, Deserialize)]
 pub struct Map {
     pub(crate) roads: Roads,
     pub(crate) lanes: Lanes,
     pub(crate) intersections: Intersections,
     pub(crate) houses: Houses,
+    pub(crate) spatial_map: SpatialMap,
     pub parking: ParkingSpots,
     pub dirty: bool,
 }
@@ -53,6 +52,7 @@ impl Map {
             parking: ParkingSpots::default(),
             houses: Houses::default(),
             dirty: true,
+            spatial_map: SpatialMap::default(),
         }
     }
 
@@ -242,6 +242,16 @@ impl Map {
             .min_by_key(|x| OrderedFloat(x.exterior.project(pos).distance2(pos)))
     }
 
+    fn closest_road(&self, pos: Vec2) -> Option<(&Road, f32, Vec2)> {
+        self.roads
+            .values()
+            .map(|road| {
+                let proj = road.project(pos);
+                (road, proj.distance2(pos), proj)
+            })
+            .min_by_key(|(_, d, _)| OrderedFloat(*d))
+    }
+
     pub fn project(&self, pos: Vec2) -> MapProject {
         const THRESHOLD: f32 = 15.0;
 
@@ -251,15 +261,7 @@ impl Map {
             return mk_proj(ProjectKind::House(h.id));
         }
 
-        let (min_road, d, projected) = match self
-            .roads
-            .values()
-            .map(|road| {
-                let proj = road.project(pos);
-                (road, proj.distance2(pos), proj)
-            })
-            .min_by_key(|(_, d, _)| OrderedFloat(*d))
-        {
+        let (min_road, d, projected) = match self.closest_road(pos) {
             Some(x) => x,
             None => {
                 return mk_proj(ProjectKind::Ground);

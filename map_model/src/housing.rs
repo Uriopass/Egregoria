@@ -13,7 +13,6 @@ new_key_type! {
 pub struct House {
     pub id: HouseID,
     pub exterior: Polygon,
-    pub bcirc: Circle,
 }
 
 impl House {

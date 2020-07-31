@@ -19,7 +19,7 @@ pub struct ParkingSpot {
     pub orientation: Vec2,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Clone, Serialize, Deserialize, Default)]
 pub struct ParkingSpots {
     spots: SlotMap<ParkingSpotID, ParkingSpot>,
     lane_spots: SecondaryMap<LaneID, Vec<ParkingSpotID>>,
