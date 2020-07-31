@@ -75,6 +75,21 @@ impl Polygon {
         c
     }
 
+    pub fn intersects(&self, other: &Polygon) -> bool {
+        let mybbox = self.bbox();
+        let his_bbox = other.bbox();
+
+        mybbox.overlaps(&his_bbox)
+            && (self
+                .0
+                .iter()
+                .any(|&point| his_bbox.contains(point) && other.contains(point))
+                || other
+                    .0
+                    .iter()
+                    .any(|&point| mybbox.contains(point) && self.contains(point)))
+    }
+
     pub fn bbox(&self) -> Rect {
         if self.0.is_empty() {
             return Rect::zero();

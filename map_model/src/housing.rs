@@ -21,15 +21,29 @@ impl House {
         exterior.rotate(axis);
         exterior.translate(at + axis * exterior.bcircle().radius);
 
-        if exterior
-            .iter()
-            .all(|&p| matches!(map.project(p).kind, ProjectKind::Ground))
-        {
-            let id = map.houses.insert_with_key(move |id| Self { id, exterior });
-            map.spatial_map.insert_house(&map.houses[id]);
-            Some(id)
-        } else {
-            None
+        let bcirc = exterior.bcircle();
+
+        for obj in map.spatial_map.query_rect(exterior.bbox()) {
+            match obj {
+                ProjectKind::Road(r) => {
+                    let r = &map.roads[r];
+                    if r.project(bcirc.center).distance(bcirc.center) - r.width * 0.5 < bcirc.radius
+                    {
+                        return None;
+                    }
+                }
+                ProjectKind::House(h) => {
+                    let h = &map.houses[h];
+                    if h.exterior.intersects(&exterior) {
+                        return None;
+                    }
+                }
+                _ => {}
+            }
         }
+
+        let id = map.houses.insert_with_key(move |id| Self { id, exterior });
+        map.spatial_map.insert_house(&map.houses[id]);
+        Some(id)
     }
 }
