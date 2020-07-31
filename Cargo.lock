@@ -377,7 +377,7 @@ dependencies = [
 
 [[package]]
 name = "flat_spatial"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "mint 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -902,7 +902,7 @@ dependencies = [
 name = "map_model"
 version = "0.1.0"
 dependencies = [
- "flat_spatial 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flat_spatial 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "geom 0.1.0",
  "imgui-inspect 0.4.0",
  "imgui-inspect-derive 0.4.1",
@@ -2092,7 +2092,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum fake-simd 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 "checksum fixedbitset 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2fc4fcacf5cd3681968f6524ea159383132937739c6c40dabab9e37ed515911b"
 "checksum flat_spatial 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "93db084eb3d2da38418e98c043fe5adccd98bfad56a663e5e712660139759b76"
-"checksum flat_spatial 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "a20481d318377725f926dded51757717e63d1810ebdb03e4898c7e696b6f2b71"
+"checksum flat_spatial 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e460ba0cca7fdf8f828d0aab7e5d9544eadeed6b913166e3eabd6e3fb3465ba3"
 "checksum fnv 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 "checksum foreign-types 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"
 "checksum foreign-types-shared 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"

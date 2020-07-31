@@ -153,7 +153,7 @@ impl Tesselator {
         true
     }
 
-    pub fn set_color(&mut self, color: Color) {
+    pub fn set_color(&mut self, color: impl Into<LinearColor>) {
         self.color = color.into();
     }
 

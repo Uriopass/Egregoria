@@ -99,7 +99,17 @@ pub fn debug_rays(tess: &mut Tesselator, world: &World) -> Option<()> {
 pub fn debug_spatialmap(tess: &mut Tesselator, world: &World) -> Option<()> {
     let map: &Map = &world.read_resource::<Map>();
     for r in map.spatial_map().debug_grid() {
-        tess.draw_rect_cos_sin(vec2(r.x, r.y), 1.0, r.w, r.h, Vec2::UNIT_X);
+        tess.set_color(LinearColor {
+            a: 0.1,
+            ..LinearColor::BLUE
+        });
+        tess.draw_rect_cos_sin(
+            vec2(r.x + r.w * 0.5, r.y + r.h * 0.5),
+            1.0,
+            r.w,
+            r.h,
+            Vec2::UNIT_X,
+        );
     }
 
     Some(())
