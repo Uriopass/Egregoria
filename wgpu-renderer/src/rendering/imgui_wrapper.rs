@@ -3,7 +3,7 @@ use imgui_wgpu::Renderer;
 use std::time::Instant;
 
 pub struct ImguiWrapper {
-    imgui: scale::imgui::Context,
+    pub imgui: scale::imgui::Context,
     renderer: imgui_wgpu::Renderer,
     last_frame: Instant,
     platform: imgui_winit_support::WinitPlatform,
@@ -78,6 +78,8 @@ impl ImguiWrapper {
 
         let ui: scale::imgui::Ui = self.imgui.frame();
         gui.render(&ui, world);
+        crate::debug::debug_menu(&ui);
+
         self.last_mouse_captured = ui.io().want_capture_mouse;
         self.last_kb_captured = ui.io().want_capture_keyboard;
 

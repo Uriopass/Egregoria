@@ -302,6 +302,9 @@ impl Map {
     pub fn houses(&self) -> &Houses {
         &self.houses
     }
+    pub fn spatial_map(&self) -> &SpatialMap {
+        &self.spatial_map
+    }
 
     pub fn get_random_lane<R: Rng>(&self, filter: LaneKind, r: &mut R) -> Option<&Lane> {
         self.roads

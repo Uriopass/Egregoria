@@ -1,5 +1,6 @@
 #![allow(clippy::unreadable_literal)]
 
+mod debug;
 mod engine;
 mod game_loop;
 mod geometry;
