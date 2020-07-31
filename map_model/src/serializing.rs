@@ -1,4 +1,4 @@
-use crate::{Houses, Intersections, Lanes, Map, ParkingSpots, ProjectKind, Roads, SpatialMap};
+use crate::{Houses, Intersections, Lanes, Map, ParkingSpots, Roads, SpatialMap};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
