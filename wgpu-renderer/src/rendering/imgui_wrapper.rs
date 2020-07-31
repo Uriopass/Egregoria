@@ -78,7 +78,7 @@ impl ImguiWrapper {
 
         let ui: scale::imgui::Ui = self.imgui.frame();
         gui.render(&ui, world);
-        crate::debug::debug_menu(&ui);
+        crate::debug::debug_menu(gui, &ui);
 
         self.last_mouse_captured = ui.io().want_capture_mouse;
         self.last_kb_captured = ui.io().want_capture_keyboard;

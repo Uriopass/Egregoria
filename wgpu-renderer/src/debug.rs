@@ -22,19 +22,23 @@ lazy_static! {
             Box<dyn Sync + Send + Fn(&mut Tesselator, &World) -> Option<()>>
         )>,
     > = Mutex::new(vec![
-        (true, "Debug pathfindder", Box::new(debug_pathfinder)),
+        (false, "Debug pathfindder", Box::new(debug_pathfinder)),
         (false, "Debug rays", Box::new(debug_rays)),
-        (true, "Debug spatialmap", Box::new(debug_spatialmap))
+        (false, "Debug spatialmap", Box::new(debug_spatialmap))
     ]);
 }
 
-pub fn debug_menu(ui: &Ui) {
-    scale::imgui::Window::new(im_str!("debug window")).build(&ui, || {
-        let mut objs = DEBUG_OBJS.lock().unwrap();
-        for (val, name, _) in &mut *objs {
-            ui.checkbox(&im_str!("{}", *name), val);
-        }
-    })
+pub fn debug_menu(gui: &mut scale::gui::Gui, ui: &Ui) {
+    if gui.show_debug {
+        scale::imgui::Window::new(im_str!("Debug layers"))
+            .opened(&mut gui.show_debug)
+            .build(&ui, || {
+                let mut objs = DEBUG_OBJS.lock().unwrap();
+                for (val, name, _) in &mut *objs {
+                    ui.checkbox(&im_str!("{}", *name), val);
+                }
+            })
+    }
 }
 
 pub fn debug_pathfinder(tess: &mut Tesselator, world: &World) -> Option<()> {

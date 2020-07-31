@@ -15,11 +15,12 @@ mod inspect;
 
 #[derive(Clone)]
 pub struct Gui {
-    show_map_ui: bool,
-    show_info: bool,
-    show_tips: bool,
-    n_cars: i32,
-    n_pedestrians: i32,
+    pub show_map_ui: bool,
+    pub show_info: bool,
+    pub show_tips: bool,
+    pub show_debug: bool,
+    pub n_cars: i32,
+    pub n_pedestrians: i32,
 }
 
 impl Default for Gui {
@@ -28,6 +29,7 @@ impl Default for Gui {
             show_map_ui: true,
             show_info: true,
             show_tips: false,
+            show_debug: false,
             n_cars: 100,
             n_pedestrians: 100,
         }
@@ -221,6 +223,9 @@ impl Gui {
                 }
                 if imgui::MenuItem::new(im_str!("Tips")).build(&ui) {
                     self.show_tips = true;
+                }
+                if imgui::MenuItem::new(im_str!("Debug")).build(&ui) {
+                    self.show_debug = true;
                 }
             });
             if ui.small_button(im_str!("Save")) {
