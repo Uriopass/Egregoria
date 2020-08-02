@@ -1,4 +1,5 @@
 use crate::gui::{InspectDragf, InspectVec2Rotation};
+use flat_spatial::grid::GridHandle;
 use geom::Vec2;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -10,7 +11,6 @@ pub mod systems;
 mod kinematics;
 mod transform;
 
-use flat_spatial::densegrid::DenseGridHandle;
 pub use kinematics::*;
 pub use transform::*;
 
@@ -48,7 +48,7 @@ pub type CollisionWorld = flat_spatial::DenseGrid<PhysicsObject>;
 
 #[derive(Clone, Component, Debug)]
 #[storage(VecStorage)]
-pub struct Collider(pub DenseGridHandle);
+pub struct Collider(pub GridHandle);
 
 impl InspectRenderDefault<Collider> for Collider {
     fn render(_: &[&Collider], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
