@@ -367,16 +367,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "flat_spatial"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "mint 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "retain_mut 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "slotmap 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "flat_spatial"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
@@ -1473,7 +1463,7 @@ name = "scale"
 version = "0.1.0"
 dependencies = [
  "bincode 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "flat_spatial 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "flat_spatial 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "geom 0.1.0",
  "imgui 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-inspect 0.4.0",
@@ -2091,7 +2081,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum either 1.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 "checksum fake-simd 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 "checksum fixedbitset 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2fc4fcacf5cd3681968f6524ea159383132937739c6c40dabab9e37ed515911b"
-"checksum flat_spatial 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "93db084eb3d2da38418e98c043fe5adccd98bfad56a663e5e712660139759b76"
 "checksum flat_spatial 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "e460ba0cca7fdf8f828d0aab7e5d9544eadeed6b913166e3eabd6e3fb3465ba3"
 "checksum fnv 1.0.7 (registry+https://github.com/rust-lang/crates.io-index)" = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 "checksum foreign-types 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"
