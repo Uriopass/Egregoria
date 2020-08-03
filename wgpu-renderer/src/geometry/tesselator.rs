@@ -1,6 +1,6 @@
 use crate::engine::{ColoredVertex, MeshBuilder};
 use crate::geometry::earcut::earcut;
-use crate::geometry::rect::Rect;
+use geom::rect::Rect;
 use geom::{vec2, Vec2};
 use scale::rendering::{Color, LinearColor};
 

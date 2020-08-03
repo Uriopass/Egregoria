@@ -67,6 +67,50 @@ impl Rect {
         self.y + self.h
     }
 
+    pub fn area(&self) -> f32 {
+        self.w * self.h
+    }
+
+    pub fn intersects_line_within(&self, p1: Vec2, p2: Vec2, tolerance: f32) -> bool {
+        let outcode0 = self.compute_code(p1, tolerance);
+        let outcode1 = self.compute_code(p2, tolerance);
+        if outcode0 == 0 || outcode1 == 0 {
+            return true;
+        }
+        if outcode0 & outcode1 != 0 {
+            return false;
+        }
+        true
+    }
+
+    fn compute_code(&self, p: Vec2, tolerance: f32) -> u8 {
+        const INSIDE: u8 = 0; // 0000
+        const LEFT: u8 = 1; // 0001
+        const RIGHT: u8 = 2; // 0010
+        const BOTTOM: u8 = 4; // 0100
+        const TOP: u8 = 8; // 1000
+        let mut code = INSIDE; // initialised as being inside of [[clip window]]
+        let x = p.x;
+        let y = p.y;
+
+        if x < self.x - tolerance {
+            // to the left of clip window
+            code |= LEFT;
+        } else if x > self.x + self.w + tolerance {
+            // to the right of clip window
+            code |= RIGHT;
+        }
+
+        if y < self.y - tolerance {
+            // below the clip window
+            code |= BOTTOM;
+        } else if y > self.y + self.h + tolerance {
+            // above the clip window
+            code |= TOP;
+        }
+        code
+    }
+
     /// Checks whether the `Rect` contains a `Point`
     pub fn contains(&self, point: Vec2) -> bool {
         point.x >= self.left()
