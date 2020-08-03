@@ -3,7 +3,7 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
-use map_model::{LaneKind, Map, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
+use map_model::{Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
 use scale::physics::Transform;
 use scale::rendering::{from_srgb, Color, LinearColor};
 use scale::utils::Restrict;
@@ -137,48 +137,73 @@ impl RoadRenderer {
         tess.meshbuilder.build(gfx)
     }
 
+    fn render_lane_signals(n: &Lane, sr: &mut Tesselator, time: u64) {
+        if n.control.is_always() {
+            return;
+        }
+
+        let dir = n.orientation_from(n.dst);
+        let dir_perp = dir.perpendicular();
+
+        let r_center = n.points.last() + dir_perp * 2.5 + dir * 2.5;
+
+        if n.control.is_stop_sign() {
+            sr.color = LinearColor::WHITE;
+            sr.draw_regular_polygon(r_center, Z_SIGNAL, 0.5, 8, std::f32::consts::FRAC_PI_8);
+
+            sr.color = LinearColor::RED;
+            sr.draw_regular_polygon(r_center, Z_SIGNAL, 0.4, 8, std::f32::consts::FRAC_PI_8);
+            return;
+        }
+
+        let size = 0.5; // light size
+
+        sr.color = Color::gray(0.3).into();
+        sr.draw_rect_cos_sin(r_center, Z_SIGNAL, size + 0.1, size * 3.0 + 0.1, dir);
+
+        for i in -1..2 {
+            sr.draw_circle(r_center + i as f32 * dir_perp * size, Z_SIGNAL, size * 0.5);
+        }
+        sr.color = match n.control.get_behavior(time) {
+            TrafficBehavior::RED | TrafficBehavior::STOP => LinearColor::RED,
+            TrafficBehavior::ORANGE => LinearColor::ORANGE,
+            TrafficBehavior::GREEN => LinearColor::GREEN,
+        };
+
+        let offset = match n.control.get_behavior(time) {
+            TrafficBehavior::RED => -size,
+            TrafficBehavior::ORANGE => 0.0,
+            TrafficBehavior::GREEN => size,
+            _ => unreachable!(),
+        };
+
+        sr.draw_circle(r_center + offset * dir_perp, Z_SIGNAL, size * 0.5);
+    }
+
     fn signals_render(map: &Map, time: u64, sr: &mut Tesselator) {
-        for n in map.lanes().values() {
-            if n.control.is_always() {
-                continue;
+        match sr.cull_rect {
+            Some(rect) => {
+                if rect.w.max(rect.h) > 1500.0 {
+                    return;
+                }
+                for n in map
+                    .spatial_map()
+                    .query_rect(rect)
+                    .filter_map(|k| match k {
+                        ProjectKind::Road(id) => Some(id),
+                        _ => None,
+                    })
+                    .flat_map(|id| map.roads()[id].lanes_iter())
+                    .map(|(id, _)| &map.lanes()[id])
+                {
+                    Self::render_lane_signals(n, sr, time);
+                }
             }
-
-            let dir = n.orientation_from(n.dst);
-            let dir_perp = dir.perpendicular();
-
-            let r_center = n.points.last() + dir_perp * 2.5 + dir * 2.5;
-
-            if n.control.is_stop_sign() {
-                sr.color = LinearColor::WHITE;
-                sr.draw_regular_polygon(r_center, Z_SIGNAL, 0.5, 8, std::f32::consts::FRAC_PI_8);
-
-                sr.color = LinearColor::RED;
-                sr.draw_regular_polygon(r_center, Z_SIGNAL, 0.4, 8, std::f32::consts::FRAC_PI_8);
-                continue;
+            None => {
+                for n in map.lanes().values() {
+                    Self::render_lane_signals(n, sr, time);
+                }
             }
-
-            let size = 0.5; // light size
-
-            sr.color = Color::gray(0.3).into();
-            sr.draw_rect_cos_sin(r_center, Z_SIGNAL, size + 0.1, size * 3.0 + 0.1, dir);
-
-            for i in -1..2 {
-                sr.draw_circle(r_center + i as f32 * dir_perp * size, Z_SIGNAL, size * 0.5);
-            }
-            sr.color = match n.control.get_behavior(time) {
-                TrafficBehavior::RED | TrafficBehavior::STOP => LinearColor::RED,
-                TrafficBehavior::ORANGE => LinearColor::ORANGE,
-                TrafficBehavior::GREEN => LinearColor::GREEN,
-            };
-
-            let offset = match n.control.get_behavior(time) {
-                TrafficBehavior::RED => -size,
-                TrafficBehavior::ORANGE => 0.0,
-                TrafficBehavior::GREEN => size,
-                _ => unreachable!(),
-            };
-
-            sr.draw_circle(r_center + offset * dir_perp, Z_SIGNAL, size * 0.5);
         }
     }
 
