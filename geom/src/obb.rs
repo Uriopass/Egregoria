@@ -9,9 +9,23 @@ pub struct OBB {
 }
 
 impl OBB {
+    /// cossin of UNIT_X makes this an AABB
+    pub fn new(center: Vec2, cossin: Vec2, w: f32, h: f32) -> Self {
+        let up = cossin * w;
+        let right = cossin.perpendicular() * h;
+        Self {
+            corners: [
+                center - up - right,
+                center - up + right,
+                center + up + right,
+                center + up - right,
+            ],
+        }
+    }
+
     /// Returns true if other overlaps one dimension of this.
     /// Taken from https://www.flipcode.com/archives/2D_OBB_Intersection.shtml
-    pub fn intersects1way(&self, other: &OBB) -> bool {
+    fn intersects1way(&self, other: &OBB) -> bool {
         let mut axis = [
             self.corners[1] - self.corners[0],
             self.corners[3] - self.corners[0],
