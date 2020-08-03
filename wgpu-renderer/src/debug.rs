@@ -60,13 +60,11 @@ pub fn debug_obb(tess: &mut Tesselator, world: &World) -> Option<()> {
         6.0,
     );
 
-    let color;
-
-    if obb1.intersects(obb2) {
-        color = LinearColor::RED;
+    let color = if obb1.intersects(obb2) {
+        LinearColor::RED
     } else {
-        color = LinearColor::BLUE;
-    }
+        LinearColor::BLUE
+    };
 
     tess.set_color(color);
     tess.draw_filled_polygon(&obb1.corners, 0.99);
