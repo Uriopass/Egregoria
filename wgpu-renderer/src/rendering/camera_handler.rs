@@ -1,6 +1,6 @@
 use crate::engine::Context;
-use crate::geometry::Rect;
 use crate::geometry::{Camera, Tesselator};
+use geom::rect::Rect;
 use geom::{vec2, Vec2};
 use scale::engine_interaction::{KeyCode, MouseButton};
 
