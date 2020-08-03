@@ -237,6 +237,8 @@ impl Map {
         self.lanes.clear();
         self.roads.clear();
         self.parking.clear();
+        self.houses.clear();
+        self.spatial_map = SpatialMap::default();
     }
 
     pub fn project(&self, pos: Vec2) -> MapProject {

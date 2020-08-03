@@ -273,7 +273,7 @@ impl Gui {
                     }
                 }
 
-                if ui.small_button(im_str!("delete all cars")) {
+                if ui.small_button(im_str!("destroy all cars")) {
                     let to_delete: Vec<Entity> = (
                         &world.entities(),
                         &world.read_component::<VehicleComponent>(),
@@ -287,7 +287,7 @@ impl Gui {
                     }
                 }
 
-                if ui.small_button(im_str!("delete all pedestrians")) {
+                if ui.small_button(im_str!("kill all pedestrians")) {
                     let to_delete: Vec<Entity> = (
                         &world.entities(),
                         &world.read_component::<PedestrianComponent>(),
@@ -311,6 +311,10 @@ impl Gui {
                 if ui.small_button(im_str!("load test field")) {
                     map.clear();
                     map_model::load_testfield(map);
+                }
+
+                if ui.small_button(im_str!("clear the map")) {
+                    map.clear();
                 }
 
                 ui.text(im_str!(
