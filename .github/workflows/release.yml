@@ -1,0 +1,84 @@
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Create Release
+
+env:
+  # Could, potentially automatically parse
+  # the bin name, but let's do it automatically for now.
+  RELEASE_BIN: gh-actions-template
+
+  # Space separated paths to include in the archive.
+  # Start relative paths with a dot if you don't want
+  # paths to be preserved. Use "/" as a delimiter.
+  RELEASE_ADDS: README.md LICENSE
+
+
+jobs:
+  build:
+    name: Build release
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        build: [linux, macos, windows]
+        include:
+          - build: linux
+            os: ubuntu-latest
+            rust: stable
+          - build: macos
+            os: macos-latest
+            rust: stable
+          - build: windows
+            os: windows-latest
+            rust: stable
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Install Rust (rustup)
+        run: rustup update ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
+        if: matrix.os != 'macos-latest'
+        shell: bash
+
+      - name: Install Rust (macos)
+        # As of 7.12.2019 rust is not installed on MacOS
+        # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/software-installed-on-github-hosted-runners#macos-1015
+        run: |
+          curl https://sh.rustup.rs | sh -s -- -y
+          echo "##[add-path]$HOME/.cargo/bin"
+        if: matrix.os == 'macos-latest'
+
+      - name: Build
+        run: cargo build --verbose --release
+
+      - name: Create artifact directory
+        run: mkdir artifacts
+
+      - name: Create archive for Linux
+        run: 7z a -ttar -so -an ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }} | 7z a -si ./artifacts/${{ env.RELEASE_BIN }}-linux-x86_64.tar.gz
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Create archive for Windows
+        run: 7z a -tzip ./artifacts/${{ env.RELEASE_BIN }}-windows-x86_64.zip ./target/release/${{ env.RELEASE_BIN }}.exe ${{ env.RELEASE_ADDS }}
+        if: matrix.os == 'windows-latest'
+
+      - name: Install p7zip
+        # 7Zip not available on MacOS, install p7zip via homebrew.
+        run: brew install p7zip
+        if: matrix.os == 'macos-latest'
+
+      - name: Create archive for MacOS
+        run: 7z a -tzip ./artifacts/${{ env.RELEASE_BIN }}-mac-x86_64.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
+        if: matrix.os == 'macos-latest'
+
+      # This will double-zip
+      # See - https://github.com/actions/upload-artifact/issues/39
+      - uses: actions/upload-artifact@v1
+        name: Upload archive
+        with:
+          name: ${{ runner.os }}
+          path: artifacts/
