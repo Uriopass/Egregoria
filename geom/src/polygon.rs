@@ -91,16 +91,10 @@ impl Polygon {
     }
 
     pub fn bbox(&self) -> Rect {
-        if self.0.is_empty() {
-            return Rect::zero();
-        }
-        let mut min: Vec2 = self.first();
-        let mut max: Vec2 = min;
-
-        for &v in self.as_slice() {
-            min = min.min(v);
-            max = max.max(v);
-        }
+        let (min, max) = match super::minmax(&self.0) {
+            Some(x) => x,
+            None => return Rect::zero(),
+        };
 
         let diff = max - min;
         Rect::new(min.x, min.y, diff.x, diff.y)

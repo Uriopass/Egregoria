@@ -207,13 +207,10 @@ impl PolyLine {
     }
 
     pub fn bbox(&self) -> Rect {
-        let mut min: Vec2 = self.first();
-        let mut max: Vec2 = min;
-
-        for &v in self.as_slice() {
-            min = min.min(v);
-            max = max.max(v);
-        }
+        let (min, max) = match super::minmax(&self.0) {
+            Some(x) => x,
+            None => unsafe { unreachable_unchecked() },
+        };
 
         let diff = max - min;
         Rect::new(min.x, min.y, diff.x, diff.y)

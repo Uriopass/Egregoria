@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, Neg, Sub};
 
 #[derive(Copy, Clone, PartialEq, Default, Serialize, Deserialize, Debug)]
 #[repr(C)]
@@ -179,6 +179,20 @@ impl<'a> std::iter::Sum<&'a Vec2> for Vec2 {
             z += x;
         }
         z
+    }
+}
+
+impl DivAssign for Vec2 {
+    fn div_assign(&mut self, rhs: Self) {
+        self.x /= rhs.x;
+        self.y /= rhs.y;
+    }
+}
+
+impl DivAssign<f32> for Vec2 {
+    fn div_assign(&mut self, rhs: f32) {
+        self.x /= rhs;
+        self.y /= rhs;
     }
 }
 

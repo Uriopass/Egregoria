@@ -1,5 +1,6 @@
 pub mod circle;
 pub mod intersections;
+pub mod obb;
 pub mod polygon;
 pub mod polyline;
 pub mod rect;
@@ -9,6 +10,18 @@ pub mod splines;
 mod v2;
 
 pub use v2::*;
+
+pub fn minmax(x: &[Vec2]) -> Option<(Vec2, Vec2)> {
+    let mut min: Vec2 = *x.get(0)?;
+    let mut max: Vec2 = min;
+
+    for &v in &x[1..] {
+        min = min.min(v);
+        max = max.max(v);
+    }
+
+    Some((min, max))
+}
 
 pub fn pseudo_angle(v: Vec2) -> f32 {
     debug_assert!((v.magnitude2() - 1.0).abs() <= 1e-5);
