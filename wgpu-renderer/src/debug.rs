@@ -1,10 +1,11 @@
 #![allow(dead_code)]
 
 use crate::geometry::Tesselator;
+use geom::obb::OBB;
 use geom::{vec2, Vec2};
 use lazy_static::*;
 use map_model::Map;
-use scale::engine_interaction::TimeInfo;
+use scale::engine_interaction::{MouseInfo, TimeInfo};
 use scale::imgui::im_str;
 use scale::imgui::Ui;
 use scale::interaction::InspectedEntity;
@@ -24,7 +25,8 @@ lazy_static! {
     > = Mutex::new(vec![
         (false, "Debug pathfindder", Box::new(debug_pathfinder)),
         (false, "Debug rays", Box::new(debug_rays)),
-        (false, "Debug spatialmap", Box::new(debug_spatialmap))
+        (false, "Debug spatialmap", Box::new(debug_spatialmap)),
+        (true, "Debug OBBs", Box::new(debug_obb))
     ]);
 }
 
@@ -39,6 +41,38 @@ pub fn debug_menu(gui: &mut scale::gui::Gui, ui: &Ui) {
                 }
             })
     }
+}
+
+pub fn debug_obb(tess: &mut Tesselator, world: &World) -> Option<()> {
+    let time = world.read_resource::<TimeInfo>();
+    let mouse = world.read_resource::<MouseInfo>().unprojected;
+
+    let time = time.time * 0.2;
+    let c = time.cos() as f32;
+    let s = time.sin() as f32;
+
+    let obb1 = OBB::new(Vec2::ZERO, vec2(c, s), 10.0, 5.0);
+
+    let obb2 = OBB::new(
+        mouse,
+        vec2((time * 3.0).cos() as f32, (time * 3.0).sin() as f32),
+        8.0,
+        6.0,
+    );
+
+    let color;
+
+    if obb1.intersects(obb2) {
+        color = LinearColor::RED;
+    } else {
+        color = LinearColor::BLUE;
+    }
+
+    tess.set_color(color);
+    tess.draw_filled_polygon(&obb1.corners, 0.99);
+    tess.draw_filled_polygon(&obb2.corners, 0.99);
+
+    Some(())
 }
 
 pub fn debug_pathfinder(tess: &mut Tesselator, world: &World) -> Option<()> {

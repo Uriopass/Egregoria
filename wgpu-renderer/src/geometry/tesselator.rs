@@ -72,10 +72,9 @@ impl Tesselator {
     }
 
     pub fn draw_filled_polygon(&mut self, points: &[Vec2], z: f32) -> bool {
-        if self
-            .cull_rect
-            .map_or(false, |x| points.iter().any(|&p| x.contains_within(p, 1.0)))
-        {
+        if self.cull_rect.map_or(false, |x| {
+            !points.iter().any(|&p| x.contains_within(p, 1.0))
+        }) {
             return false;
         }
 
