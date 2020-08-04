@@ -1,22 +1,22 @@
 use crate::engine::{Context, FrameContext, GfxContext};
 use crate::rendering::imgui_wrapper::{GuiRenderContext, ImguiWrapper};
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
+use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
+use egregoria::gui::Gui;
+use egregoria::interaction::FollowEntity;
+use egregoria::physics::Transform;
+use egregoria::rendering::Color;
+use egregoria::specs::WorldExt;
+use egregoria::EgregoriaState;
 use geom::Vec2;
 use map_model::Map;
-use scale::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
-use scale::gui::Gui;
-use scale::interaction::FollowEntity;
-use scale::physics::Transform;
-use scale::rendering::Color;
-use scale::specs::WorldExt;
-use scale::ScaleState;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
 pub struct State<'a> {
     camera: CameraHandler,
     gui: ImguiWrapper,
-    state: ScaleState<'a>,
+    state: EgregoriaState<'a>,
     last_time: Instant,
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
@@ -29,7 +29,7 @@ impl<'a> State<'a> {
 
         let wrapper = ImguiWrapper::new(&mut ctx.gfx);
 
-        let state = scale::ScaleState::setup();
+        let state = egregoria::EgregoriaState::setup();
 
         Self {
             camera,
@@ -103,20 +103,20 @@ impl<'a> State<'a> {
             }
         }
 
-        for (order, col) in scale::utils::debugdraw::PERSISTENT_DEBUG_ORDERS
+        for (order, col) in egregoria::utils::debugdraw::PERSISTENT_DEBUG_ORDERS
             .lock()
             .unwrap() // Unwrap ok: Mutex lives in main thread
             .iter()
             .copied()
             .chain(
-                scale::utils::debugdraw::DEBUG_ORDERS
+                egregoria::utils::debugdraw::DEBUG_ORDERS
                     .lock()
                     .unwrap() // Unwrap ok: Mutex lives in main thread
                     .drain(..),
             )
         {
             tess.color = col.into();
-            use scale::utils::debugdraw::DebugOrder::*;
+            use egregoria::utils::debugdraw::DebugOrder::*;
             match order {
                 Point { pos, size } => {
                     tess.draw_circle(pos, 3.0, size);

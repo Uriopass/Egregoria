@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "scale",
+    "egregoria",
     "geom",
     "map_model",
     "mods",
@@ -16,7 +16,7 @@ opt-level = 1
 [profile.dev.package."*"]
 opt-level = 2
 
-[profile.dev.package.scale]
+[profile.dev.package.egregoria]
 opt-level = 0
 
 [profile.dev.package.map_model]

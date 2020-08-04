@@ -3,10 +3,10 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
+use egregoria::physics::Transform;
+use egregoria::rendering::{from_srgb, Color, LinearColor};
+use egregoria::utils::Restrict;
 use map_model::{Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
-use scale::physics::Transform;
-use scale::rendering::{from_srgb, Color, LinearColor};
-use scale::utils::Restrict;
 use std::ops::Mul;
 
 #[derive(Clone, Copy)]

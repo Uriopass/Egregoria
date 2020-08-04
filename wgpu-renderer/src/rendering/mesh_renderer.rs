@@ -1,7 +1,7 @@
 use crate::geometry::Tesselator;
-use scale::physics::Transform;
-use scale::rendering::meshrender_component::{MeshRender, MeshRenderEnum};
-use scale::specs::{Join, World, WorldExt};
+use egregoria::physics::Transform;
+use egregoria::rendering::meshrender_component::{MeshRender, MeshRenderEnum};
+use egregoria::specs::{Join, World, WorldExt};
 
 pub struct MeshRenderer;
 

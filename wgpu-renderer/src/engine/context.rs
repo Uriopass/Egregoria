@@ -28,7 +28,7 @@ impl Context {
                 size.width as f32 * 0.8,
                 size.height as f32 * 0.8,
             ))
-            .with_title("Scale 0.2")
+            .with_title("Egregoria 0.2")
             .build(&el)
             .expect("Failed to create window");
 
