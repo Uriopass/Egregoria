@@ -10,8 +10,8 @@ use scale::imgui::im_str;
 use scale::imgui::Ui;
 use scale::interaction::InspectedEntity;
 use scale::map_interaction::Itinerary;
-use scale::physics::Transform;
-use scale::rendering::LinearColor;
+use scale::physics::{CollisionWorld, Transform};
+use scale::rendering::{Color, LinearColor};
 use scale::specs::prelude::*;
 use std::sync::Mutex;
 
@@ -26,7 +26,8 @@ lazy_static! {
         (false, "Debug pathfindder", Box::new(debug_pathfinder)),
         (false, "Debug rays", Box::new(debug_rays)),
         (false, "Debug spatialmap", Box::new(debug_spatialmap)),
-        (false, "Debug OBBs", Box::new(debug_obb))
+        (false, "Debug OBBs", Box::new(debug_obb)),
+        (false, "Debug coworld", Box::new(debug_coworld))
     ]);
 }
 
@@ -41,6 +42,17 @@ pub fn debug_menu(gui: &mut scale::gui::Gui, ui: &Ui) {
                 }
             })
     }
+}
+
+fn debug_coworld(tess: &mut Tesselator, world: &World) -> Option<()> {
+    let coworld = world.read_resource::<CollisionWorld>();
+
+    tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
+    for h in coworld.handles() {
+        let pos = coworld.get(h).unwrap().0;
+        tess.draw_circle(pos.into(), 1.0, 3.0);
+    }
+    Some(())
 }
 
 pub fn debug_obb(tess: &mut Tesselator, world: &World) -> Option<()> {
