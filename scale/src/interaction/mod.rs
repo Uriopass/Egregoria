@@ -17,7 +17,8 @@ mod selectable;
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum Tool {
     Hand,
-    Roadbuild,
+    RoadbuildStraight,
+    RoadbuildCurved,
     RoadEditor,
     Bulldozer,
 }

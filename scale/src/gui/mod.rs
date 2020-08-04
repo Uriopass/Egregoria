@@ -70,9 +70,12 @@ impl Gui {
             StyleVar::WindowRounding(0.0),
             StyleVar::ItemSpacing([0.0, 0.0]),
         ]);
+
+        let toolbox_w = 120.0;
+
         imgui::Window::new(im_str!("Toolbox"))
-            .size([80.0, 30.0 * 4.0 + 20.0], imgui::Condition::Always)
-            .position([w - 80.0, h / 2.0 - 30.0], imgui::Condition::Always)
+            .size([toolbox_w, 30.0 * 4.0 + 20.0], imgui::Condition::Always)
+            .position([w - toolbox_w, h / 2.0 - 30.0], imgui::Condition::Always)
             .scroll_bar(false)
             .title_bar(true)
             .movable(false)
@@ -83,7 +86,8 @@ impl Gui {
 
                 let tools = [
                     (im_str!("Hand"), Tool::Hand),
-                    (im_str!("Road Build"), Tool::Roadbuild),
+                    (im_str!("Straight Road"), Tool::RoadbuildStraight),
+                    (im_str!("Curved Road"), Tool::RoadbuildCurved),
                     (im_str!("Road Editor"), Tool::RoadEditor),
                     (im_str!("Bulldozer"), Tool::Bulldozer),
                 ];
@@ -94,16 +98,22 @@ impl Gui {
                     } else {
                         0.5
                     }));
-                    if ui.button(name, [80.0, 30.0]) {
+                    if ui.button(name, [toolbox_w, 30.0]) {
                         *cur_tool = *tool;
                     }
                     tok.pop(ui);
                 }
             });
-        if *world.read_resource::<Tool>() == Tool::Roadbuild {
-            imgui::Window::new(im_str!("Road build"))
+        if matches!(
+            *world.read_resource::<Tool>(),
+            Tool::RoadbuildStraight | Tool::RoadbuildCurved
+        ) {
+            imgui::Window::new(im_str!("Road Properties"))
                 .size([150.0, 100.0], imgui::Condition::Always)
-                .position([w - 230.0, h / 2.0 - 30.0], imgui::Condition::Always)
+                .position(
+                    [w - 150.0 - toolbox_w, h / 2.0 - 30.0],
+                    imgui::Condition::Always,
+                )
                 .scroll_bar(false)
                 .title_bar(true)
                 .movable(false)
