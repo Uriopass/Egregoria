@@ -20,6 +20,7 @@ env:
 jobs:
   create-release:
     name: Create release
+    runs-on: ubuntu-latest
     steps:
       - name: Create Release
         id: create_release
@@ -103,7 +104,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ jobs.create-release.steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+          upload_url: ${{ jobs.create-release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
           asset_path: ./artifacts/${{ env.RELEASE_BIN }}-${{ matrix.os }}.zip
           asset_name: ${{ env.RELEASE_BIN }}-${{ matrix.os }}.zip
           asset_content_type: application/zip
