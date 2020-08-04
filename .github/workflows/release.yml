@@ -76,11 +76,11 @@ jobs:
         run: mkdir artifacts
 
       - name: Create archive for Linux
-        run: 7z a -tzip ./artifacts/${{ env.RELEASE_BIN }}-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
+        run: 7z a -tzip ./artifacts/scale-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
         if: matrix.os == 'ubuntu-latest'
 
       - name: Create archive for Windows
-        run: 7z a -tzip ./artifacts/${{ env.RELEASE_BIN }}-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }}.exe ${{ env.RELEASE_ADDS }}
+        run: 7z a -tzip ./artifacts/scale-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }}.exe ${{ env.RELEASE_ADDS }}
         if: matrix.os == 'windows-latest'
 
       - name: Install p7zip
@@ -89,7 +89,7 @@ jobs:
         if: matrix.os == 'macos-latest'
 
       - name: Create archive for MacOS
-        run: 7z a -tzip ./artifacts/${{ env.RELEASE_BIN }}-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
+        run: 7z a -tzip ./artifacts/scale-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
         if: matrix.os == 'macos-latest'
 
       # This will double-zip
@@ -107,6 +107,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./artifacts/${{ env.RELEASE_BIN }}-${{ matrix.os }}.zip
-          asset_name: ${{ env.RELEASE_BIN }}-${{ matrix.os }}.zip
+          asset_path: ./artifacts/scale-${{ matrix.os }}.zip
+          asset_name: scale-${{ matrix.os }}.zip
           asset_content_type: application/zip
