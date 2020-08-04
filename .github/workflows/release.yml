@@ -76,7 +76,7 @@ jobs:
         run: mkdir artifacts
 
       - name: Create archive for Linux
-        run: 7z a -ttar -so -an ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }} | 7z a -si ./artifacts/${{ env.RELEASE_BIN }}-${{ matrix.os }}.tar.gz
+        run: 7z a -tzip ./artifacts/${{ env.RELEASE_BIN }}-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
         if: matrix.os == 'ubuntu-latest'
 
       - name: Create archive for Windows
