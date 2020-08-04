@@ -44,7 +44,7 @@ impl Default for PhysicsObject {
     }
 }
 
-pub type CollisionWorld = flat_spatial::DenseGrid<PhysicsObject>;
+pub type CollisionWorld = flat_spatial::SparseGrid<PhysicsObject>;
 
 #[derive(Clone, Component, Debug)]
 #[storage(VecStorage)]
