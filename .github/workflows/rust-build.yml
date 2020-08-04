@@ -5,7 +5,7 @@ on:
     branches:
       - master
   tags-ignore:
-    - *  # don't run on tags since release does that
+    - v*  # don't run on tags since release does that
 
 jobs:
   build:
