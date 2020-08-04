@@ -16,7 +16,7 @@ rand_distr    = "0.2.2"
 bincode       = "1.2.1"
 serde         = "1.0"
 specs         = { version = "0.16", default-features = false, features = ["parallel", "shred-derive", "specs-derive", "serde"] }
-flat_spatial  = "0.3.2"
+flat_spatial  = "0.3.3"
 mint          = "0.5.5"
 lazy_static   = "1.4.0"
 imgui-inspect = { path = "../imgui-inspect"}
