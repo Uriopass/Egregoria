@@ -142,10 +142,10 @@ impl<'a> State<'a> {
     }
 
     fn manage_time(&mut self, delta: f64) {
-        const MAX_TIMESTEP: f64 = 1.0 / 30.0;
-        let delta = delta.min(MAX_TIMESTEP);
-
+        const MAX_TIMESTEP: f64 = 1.0 / 10.0;
         let mut time = self.state.world.write_resource::<TimeInfo>();
+
+        let delta = (delta * time.time_speed as f64).min(MAX_TIMESTEP);
         time.delta = delta as f32;
         time.time += time.delta as f64;
         time.time_seconds = time.time as u64;
