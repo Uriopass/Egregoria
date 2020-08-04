@@ -1,8 +1,8 @@
 use crate::engine::Context;
 use crate::geometry::{Camera, Tesselator};
+use egregoria::engine_interaction::{KeyCode, MouseButton};
 use geom::rect::Rect;
 use geom::{vec2, Vec2};
-use scale::engine_interaction::{KeyCode, MouseButton};
 
 #[allow(dead_code)]
 pub struct CameraHandler {

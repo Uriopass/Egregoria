@@ -58,11 +58,11 @@ jobs:
         run: mkdir artifacts
 
       - name: Create archive for Linux
-        run: 7z a -tzip ./artifacts/scale-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
+        run: 7z a -tzip ./artifacts/egregoria-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
         if: matrix.os == 'ubuntu-latest'
 
       - name: Create archive for Windows
-        run: 7z a -tzip ./artifacts/scale-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }}.exe ${{ env.RELEASE_ADDS }}
+        run: 7z a -tzip ./artifacts/egregoria-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }}.exe ${{ env.RELEASE_ADDS }}
         if: matrix.os == 'windows-latest'
 
       - name: Install p7zip
@@ -71,7 +71,7 @@ jobs:
         if: matrix.os == 'macos-latest'
 
       - name: Create archive for MacOS
-        run: 7z a -tzip ./artifacts/scale-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
+        run: 7z a -tzip ./artifacts/egregoria-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
         if: matrix.os == 'macos-latest'
 
       # This will double-zip
@@ -80,7 +80,7 @@ jobs:
         name: Upload archive
         with:
           name: ${{ matrix.os }}
-          path: artifacts/scale-${{ matrix.os }}.zip
+          path: artifacts/egregoria-${{ matrix.os }}.zip
   create-release:
     name: Create release
     needs: build
@@ -120,7 +120,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./artifacts/scale-macos-latest.zip
+          asset_path: ./artifacts/egregoria-macos-latest.zip
           asset_name: macos.zip
           asset_content_type: application/zip
 
@@ -131,7 +131,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./artifacts/scale-ubuntu-latest.zip
+          asset_path: ./artifacts/egregoria-ubuntu-latest.zip
           asset_name: linux.zip
           asset_content_type: application/zip
 
@@ -142,6 +142,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-          asset_path: ./artifacts/scale-windows-latest.zip
+          asset_path: ./artifacts/egregoria-windows-latest.zip
           asset_name: windows.zip
           asset_content_type: application/zip

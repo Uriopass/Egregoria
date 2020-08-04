@@ -1,7 +1,7 @@
 use crate::engine::{FrameContext, GfxContext, InstanceRaw, SpriteBatchBuilder, Texture};
-use scale::physics::Transform;
-use scale::rendering::assets::AssetRender;
-use scale::specs::{Join, World, WorldExt};
+use egregoria::physics::Transform;
+use egregoria::rendering::assets::AssetRender;
+use egregoria::specs::{Join, World, WorldExt};
 
 pub struct InstancedRender {
     pub texs: Vec<SpriteBatchBuilder>,

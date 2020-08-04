@@ -1,18 +1,18 @@
 #![allow(dead_code)]
 
 use crate::geometry::Tesselator;
+use egregoria::engine_interaction::{MouseInfo, TimeInfo};
+use egregoria::imgui::im_str;
+use egregoria::imgui::Ui;
+use egregoria::interaction::InspectedEntity;
+use egregoria::map_interaction::Itinerary;
+use egregoria::physics::{CollisionWorld, Transform};
+use egregoria::rendering::{Color, LinearColor};
+use egregoria::specs::prelude::*;
 use geom::obb::OBB;
 use geom::{vec2, Vec2};
 use lazy_static::*;
 use map_model::Map;
-use scale::engine_interaction::{MouseInfo, TimeInfo};
-use scale::imgui::im_str;
-use scale::imgui::Ui;
-use scale::interaction::InspectedEntity;
-use scale::map_interaction::Itinerary;
-use scale::physics::{CollisionWorld, Transform};
-use scale::rendering::{Color, LinearColor};
-use scale::specs::prelude::*;
 use std::sync::Mutex;
 
 lazy_static! {
@@ -31,9 +31,9 @@ lazy_static! {
     ]);
 }
 
-pub fn debug_menu(gui: &mut scale::gui::Gui, ui: &Ui) {
+pub fn debug_menu(gui: &mut egregoria::gui::Gui, ui: &Ui) {
     if gui.show_debug {
-        scale::imgui::Window::new(im_str!("Debug layers"))
+        egregoria::imgui::Window::new(im_str!("Debug layers"))
             .opened(&mut gui.show_debug)
             .build(&ui, || {
                 let mut objs = DEBUG_OBJS.lock().unwrap();
@@ -100,7 +100,7 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &World) -> Option<()> {
         tess.draw_stroke(p, pos, 1.0, 1.0);
     }
 
-    if let scale::map_interaction::ItineraryKind::Route(r) = itinerary.kind() {
+    if let egregoria::map_interaction::ItineraryKind::Route(r) = itinerary.kind() {
         tess.color = LinearColor::RED;
         for l in &r.reversed_route {
             tess.draw_polyline(l.raw_points(map).as_slice(), 1.0, 3.0);

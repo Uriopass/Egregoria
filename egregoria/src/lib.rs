@@ -46,14 +46,14 @@ use map_model::Map;
 pub use rand_provider::RandProvider;
 pub use specs;
 
-pub struct ScaleState<'a> {
+pub struct EgregoriaState<'a> {
     pub world: World,
     dispatcher: Dispatcher<'a, 'a>,
 }
 
 const RNG_SEED: u64 = 123;
 
-impl<'a> ScaleState<'a> {
+impl<'a> EgregoriaState<'a> {
     pub fn run(&mut self) {
         crate::log::clear();
         let t = std::time::Instant::now();
@@ -63,7 +63,7 @@ impl<'a> ScaleState<'a> {
         self.world.write_resource::<RenderStats>().update_time = t.elapsed().as_secs_f32();
     }
 
-    pub fn setup() -> ScaleState<'a> {
+    pub fn setup() -> EgregoriaState<'a> {
         let mut world = World::empty();
 
         println!("Seed is {}", RNG_SEED);

@@ -1,18 +1,23 @@
-![Screenshot of scale](resources/screen1.png)
+![Screenshot of Egregoria](resources/screen1.png)
 
-[![Build status](https://github.com/Uriopass/Scale/workflows/rust-build/badge.svg)](#)
+[![Build status](https://github.com/Uriopass/Egregoria/workflows/rust-build/badge.svg)](#)
 
-# Scale
+# Egregoria
 
-Scale is a simulation of modern day society, from the bottom-up. 
+Egregoria is a simulation of modern day society, from the bottom-up. 
 Each individual has its own thought model, meaning every action has its importance and influences the environment.  
-Scale is not a video game, but rather a live artwork. The world itself won't be generated or created by the user, but is part of the project.  
+Egregoria is not a video game, but rather a live artwork. The world itself won't be generated or created by the user, but is part of the project.  
 That way, the focus is on the world itself and not on the tools to build it. 
+
+#### Why Egregoria ?
+
+An Egregor is an autonomous psychic entity made up of, and influencing, the thoughts of a group of people.  
+It represents emergence at its purest form, where individuals come together to become a collective force.  
 
 ## How ?  
 This is of course very ambitious, so a minimal viable product will be made where features are increasingly added.
 
-The first [milestone](https://github.com/Uriopass/Scale/projects/1) will introduce humans into the world. They will have their own homes and a workplace, traveling by foot or using the road system.
+The first [milestone](https://github.com/Uriopass/Egregoria/projects/1) will introduce humans into the world. They will have their own homes and a workplace, traveling by foot or using the road system.
 
 ## Building the project
 
@@ -34,7 +39,7 @@ A Github Action tests the builds on Ubuntu.
 
 ## Devblog
 
-I will try to keep a blog about Scale's development [here](http://douady.paris/blog/index.html).
+I will try to keep a blog about Egregoria's development [here](http://douady.paris/blog/index.html).
 
 
 ## Special thanks to
