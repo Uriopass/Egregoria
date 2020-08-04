@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - master
-  tags-ignore:
-    - v*  # don't run on tags since release does that
+    tags-ignore:
+      - v*  # don't run on tags since release does that
 
 jobs:
   build:
