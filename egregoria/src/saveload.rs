@@ -1,6 +1,7 @@
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fs::File;
+use std::io::{BufReader, BufWriter};
 
 fn filename(name: &'static str) -> String {
     format!("world/{}.bc", name)
@@ -19,7 +20,7 @@ pub fn save<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
 
     let file = create_file(filename(name))?;
 
-    let _ = bincode::serialize_into(file, x)
+    let _ = bincode::serialize_into(BufWriter::new(file), x)
         .map_err(|err| println!("Error while serializing {}: {}", name, err));
     println!("Successfully saved {}", name);
     Some(())
@@ -28,7 +29,7 @@ pub fn save<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
 pub fn load<T: DeserializeOwned>(name: &'static str) -> Option<T> {
     let file = open_file(filename(name))?;
 
-    let des = bincode::deserialize_from(file);
+    let des = bincode::deserialize_from(BufReader::new(file));
     des.map_err(|err| println!("Error while deserializing {}: {}", name, err))
         .ok()
 }
