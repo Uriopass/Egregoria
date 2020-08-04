@@ -32,6 +32,5 @@ opt-level = 1
 opt-level = 1
 
 [profile.release]
-debug = true
-#incremental = true
+#debug = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
