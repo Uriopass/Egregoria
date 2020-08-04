@@ -26,7 +26,7 @@ lazy_static! {
         (false, "Debug pathfindder", Box::new(debug_pathfinder)),
         (false, "Debug rays", Box::new(debug_rays)),
         (false, "Debug spatialmap", Box::new(debug_spatialmap)),
-        (true, "Debug OBBs", Box::new(debug_obb))
+        (false, "Debug OBBs", Box::new(debug_obb))
     ]);
 }
 
