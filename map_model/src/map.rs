@@ -109,6 +109,7 @@ impl Map {
 
     pub fn remove_house(&mut self, h: HouseID) -> Option<House> {
         let h = self.houses.remove(h);
+        h.as_ref().map(|h| self.spatial_map.remove_house(h));
         self.dirty |= h.is_some();
         h
     }
