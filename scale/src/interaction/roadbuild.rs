@@ -70,7 +70,7 @@ impl<'a> System<'a> for RoadBuildSystem {
 
         let mr = data.meshrender.get_mut(state.project_entity).unwrap(); // Unwrap ok: mr defined in new
 
-        if !matches!(*data.tool, Tool::Roadbuild) {
+        if !matches!(*data.tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
             mr.hide = true;
             state.build_state = BuildState::Hover;
             return;
@@ -99,16 +99,18 @@ impl<'a> System<'a> for RoadBuildSystem {
             use BuildState::*;
             use ProjectKind::*;
 
-            match (state.build_state, cur_proj.kind) {
-                (Hover, _) => {
+            match (state.build_state, cur_proj.kind, *data.tool) {
+                (Hover, _, _) => {
                     // Hover selection
                     state.build_state = BuildState::Start(cur_proj);
                 }
-                (Start(v), Ground) => {
+                (Start(v), Ground, Tool::RoadbuildCurved) => {
                     // Set interpolation point
                     state.build_state = BuildState::Interpolation(data.mouseinfo.unprojected, v);
                 }
-                (Start(selected_proj), _) if compatible(map, cur_proj.kind, selected_proj.kind) => {
+                (Start(selected_proj), _, _)
+                    if compatible(map, cur_proj.kind, selected_proj.kind) =>
+                {
                     // Straight connection to something
                     let selected_after = make_connection(
                         map,
@@ -125,7 +127,7 @@ impl<'a> System<'a> for RoadBuildSystem {
 
                     state.build_state = BuildState::Start(hover);
                 }
-                (Interpolation(interpoint, selected_proj), _)
+                (Interpolation(interpoint, selected_proj), _, _)
                     if compatible(map, cur_proj.kind, selected_proj.kind) =>
                 {
                     // Interpolated connection to something
