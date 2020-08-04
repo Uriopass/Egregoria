@@ -46,7 +46,10 @@ fn find_in_cache(
         Err(_) => return CacheState::Outdated(shader),
     };
 
-    if cached_last_modified >= last_modified {
+    if last_modified
+        .duration_since(cached_last_modified)
+        .map_or(true, |d| d.as_secs_f32() < 10.0)
+    {
         CacheState::Fresh(shader)
     } else {
         CacheState::Outdated(shader)
