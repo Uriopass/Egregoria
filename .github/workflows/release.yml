@@ -79,8 +79,8 @@ jobs:
       - uses: actions/upload-artifact@v1
         name: Upload archive
         with:
-          name: ${{ runner.os }}
-          path: artifacts/
+          name: ${{ matrix.os }}
+          path: artifacts/scale-${{ matrix.os }}.zip
   create-release:
     name: Create release
     needs: build
@@ -88,7 +88,19 @@ jobs:
     steps:
       - uses: actions/download-artifact@v2
         with:
+          name: macos-latest
           path: artifacts/
+      - uses: actions/download-artifact@v2
+        with:
+          name: windows-latest
+          path: artifacts/
+      - uses: actions/download-artifact@v2
+        with:
+          name: ubuntu-latest
+          path: artifacts/
+
+      - name: print artifacts
+        run: ls -l artifacts
 
       - name: Create Release
         id: create_release
