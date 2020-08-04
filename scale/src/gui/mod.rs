@@ -74,7 +74,7 @@ impl Gui {
         let toolbox_w = 120.0;
 
         imgui::Window::new(im_str!("Toolbox"))
-            .size([toolbox_w, 30.0 * 4.0 + 20.0], imgui::Condition::Always)
+            .size([toolbox_w, 30.0 * 5.0 + 20.0], imgui::Condition::Always)
             .position([w - toolbox_w, h / 2.0 - 30.0], imgui::Condition::Always)
             .scroll_bar(false)
             .title_bar(true)
