@@ -23,6 +23,9 @@ use specs::world::EntitiesRes;
 use specs::{Dispatcher, DispatcherBuilder, LazyUpdate, World, WorldExt};
 
 #[macro_use]
+extern crate log as extern_log;
+
+#[macro_use]
 pub mod utils;
 
 #[macro_use]
@@ -67,7 +70,7 @@ impl<'a> EgregoriaState<'a> {
     pub fn setup() -> EgregoriaState<'a> {
         let mut world = World::empty();
 
-        println!("Seed is {}", RNG_SEED);
+        info!("Seed is {}", RNG_SEED);
 
         // Basic resources init
         world.insert(EntitiesRes::default());

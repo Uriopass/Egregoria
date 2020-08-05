@@ -57,7 +57,7 @@ impl Map {
     }
 
     pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection) -> ()) {
-        println!("update_intersection {:?}", id);
+        info!("update_intersection {:?}", id);
         let inter = unwrap_or!(self.intersections.get_mut(id), return);
         f(inter);
 
@@ -67,7 +67,7 @@ impl Map {
     }
 
     fn invalidate(&mut self, id: IntersectionID) {
-        println!("invalidate {:?}", id);
+        info!("invalidate {:?}", id);
 
         self.dirty = true;
         let inter = &mut self.intersections[id];
@@ -92,13 +92,13 @@ impl Map {
     }
 
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
-        println!("add_intersection {:?}", pos);
+        info!("add_intersection {:?}", pos);
         self.dirty = true;
         Intersection::make(&mut self.intersections, pos)
     }
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
-        println!("remove_intersection {:?}", src);
+        info!("remove_intersection {:?}", src);
 
         self.dirty = true;
         for road in self.intersections[src].roads.clone() {
@@ -118,7 +118,7 @@ impl Map {
     }
 
     pub fn split_road(&mut self, id: RoadID, pos: Vec2) -> IntersectionID {
-        println!("split_road {:?} {:?}", id, pos);
+        info!("split_road {:?} {:?}", id, pos);
 
         let r = self
             .remove_road(id)
@@ -177,7 +177,7 @@ impl Map {
         pattern: &LanePattern,
         segment: RoadSegmentKind,
     ) -> RoadID {
-        println!("connect {:?} {:?} {:?} {:?}", src, dst, pattern, segment);
+        info!("connect {:?} {:?} {:?} {:?}", src, dst, pattern, segment);
 
         self.dirty = true;
         let road_id = Road::make(src, dst, segment, pattern, self);
@@ -213,7 +213,7 @@ impl Map {
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
-        println!("remove_road {:?}", road_id);
+        info!("remove_road {:?}", road_id);
 
         self.dirty = true;
         let road = self.roads.remove(road_id)?;
@@ -234,7 +234,7 @@ impl Map {
     }
 
     pub fn clear(&mut self) {
-        println!("clear");
+        info!("clear");
 
         self.dirty = true;
         self.intersections.clear();

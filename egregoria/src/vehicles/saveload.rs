@@ -24,7 +24,7 @@ pub fn save(world: &mut World) {
 pub fn load(_world: &mut World) {
     let file = File::open(VEHICLE_FILENAME.to_string() + ".bc");
     if let Err(e) = file {
-        println!("error while trying to load entities: {}", e);
+        error!("failed loading entities: {}", e);
         return;
     }
 

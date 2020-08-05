@@ -17,7 +17,7 @@ trait ResultExt<T> {
 
 impl<T, E: Display> ResultExt<T> for Result<T, E> {
     fn ok_print(self) -> Option<T> {
-        self.map_err(|err| println!("{}", err)).ok()
+        self.map_err(|err| log::error!("{}", err)).ok()
     }
 }
 
@@ -47,8 +47,8 @@ lazy_static! {
 
 pub fn eval_script<T: for<'a> FromLuaMulti<'a>>(name: &'static str) -> Option<T> {
     let mut data_file = File::open(name)
-        .map_err(|err| format!("Could not open `{}`, {}", name, err))
-        .unwrap();
+        .map_err(|err| log::error!("Could not open `{}`, {}", name, err))
+        .ok()?;
 
     let time = data_file.metadata().ok_print()?.modified().ok_print()?;
 
@@ -74,10 +74,10 @@ pub fn eval_script<T: for<'a> FromLuaMulti<'a>>(name: &'static str) -> Option<T>
                 if luaf.time == time {
                     return luaf.lua.load(&luaf.source).eval().ok_print();
                 }
-                println!("re-loading {}", name);
+                log::info!("re-loading {}", name);
             }
             None => {
-                println!("loading {}", name);
+                log::info!("loading {}", name);
             }
         }
     }

@@ -7,6 +7,9 @@ macro_rules! unwrap_or {
     };
 }
 
+#[macro_use]
+extern crate log;
+
 mod housing;
 mod intersection;
 mod lane;

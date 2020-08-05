@@ -88,7 +88,7 @@ impl ImguiWrapper {
         let _ = self
             .renderer
             .render(ui.render(), gfx.device, gfx.encoder, gfx.frame_view)
-            .map_err(|err| println!("Error rendering the UI: {:?}", err));
+            .map_err(|err| log::error!("Error rendering the UI: {:?}", err));
     }
 
     pub fn handle_event(&mut self, gfx: &GfxContext, e: &winit::event::Event<()>) {

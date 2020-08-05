@@ -38,8 +38,8 @@ impl SpatialMap {
         if let Some(id) = self.house_ids.remove(h.id) {
             self.grid.remove(id);
         } else {
-            println!(
-                "Trying to remove {:?} from spatial map but it wasn't present",
+            warn!(
+                "trying to remove {:?} from spatial map but it wasn't present",
                 h.id
             )
         }
@@ -62,8 +62,8 @@ impl SpatialMap {
         if let Some(id) = self.road_ids.remove(r.id) {
             self.grid.remove(id);
         } else {
-            println!(
-                "Trying to remove {:?} from spatial map but it wasn't present",
+            warn!(
+                "trying to remove {:?} from spatial map but it wasn't present",
                 r.id
             )
         }
