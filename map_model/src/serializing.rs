@@ -28,11 +28,11 @@ impl From<&Map> for SerializedMap {
 
 impl Into<Map> for SerializedMap {
     fn into(mut self) -> Map {
-        let spatial_map = mk_spatial_map(&self);
-
         for inter in self.intersections.values_mut() {
             inter.update_polygon(&self.roads);
         }
+
+        let spatial_map = mk_spatial_map(&self);
         Map {
             roads: self.roads,
             lanes: self.lanes,
@@ -52,6 +52,9 @@ fn mk_spatial_map(m: &SerializedMap) -> SpatialMap {
     }
     for r in m.roads.values() {
         sm.insert_road(r);
+    }
+    for i in m.intersections.values() {
+        sm.update_inter(i);
     }
     sm
 }
