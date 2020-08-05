@@ -227,7 +227,9 @@ impl RoadRenderer {
                         .point_dir_along(l * (1.0 + i as f32) / (1.0 + n_arrows as f32));
 
                     self.arrow_builder.instances.push(InstanceRaw::new(
-                        Transform::new_cos_sin(mid, dir).to_matrix4(Z_ARROW),
+                        mid,
+                        dir,
+                        Z_ARROW,
                         [from_srgb(MID_GRAY_V) + fade * 0.6; 3],
                         4.0,
                     ));
