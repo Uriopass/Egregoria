@@ -6,20 +6,52 @@ use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 pub use inspect::*;
-use map_model::{LanePatternBuilder, Map, SerializedMap};
+use map_model::{LanePatternBuilder, Map};
 use serde::{Deserialize, Serialize};
 use specs::world::World;
 use specs::{Entity, Join, WorldExt};
+use std::time::{Duration, Instant};
 
 #[macro_use]
 mod inspect;
 
+#[derive(Copy, Clone, Serialize, Deserialize)]
+pub enum AutoSaveEvery {
+    Never,
+    OneMinute,
+    FiveMinutes,
+}
+
+impl Into<Option<Duration>> for AutoSaveEvery {
+    fn into(self) -> Option<Duration> {
+        match self {
+            AutoSaveEvery::Never => None,
+            AutoSaveEvery::OneMinute => Some(Duration::from_secs(60)),
+            AutoSaveEvery::FiveMinutes => Some(Duration::from_secs(5 * 60)),
+        }
+    }
+}
+
+impl AsRef<str> for AutoSaveEvery {
+    fn as_ref(&self) -> &str {
+        match self {
+            AutoSaveEvery::Never => "Never",
+            AutoSaveEvery::OneMinute => "One Minute",
+            AutoSaveEvery::FiveMinutes => "Five Minutes",
+        }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Gui {
     pub show_map_ui: bool,
     pub show_debug_info: bool,
     pub show_tips: bool,
     pub show_debug_layers: bool,
+    pub auto_save_every: AutoSaveEvery,
+    #[serde(skip)]
+    pub last_save: Instant,
     pub n_cars: i32,
     pub n_pedestrians: i32,
 }
@@ -31,6 +63,8 @@ impl Default for Gui {
             show_debug_info: false,
             show_tips: false,
             show_debug_layers: false,
+            auto_save_every: AutoSaveEvery::OneMinute,
+            last_save: Instant::now(),
             n_cars: 100,
             n_pedestrians: 100,
         }
@@ -47,9 +81,21 @@ impl Gui {
 
         self.info(ui, world);
 
+        self.tips(ui);
+
         self.toolbox(ui, world);
 
         self.time_controls(ui, world);
+
+        self.auto_save(world);
+    }
+
+    pub fn auto_save(&mut self, world: &mut World) {
+        if let Some(every) = self.auto_save_every.into() {
+            if Instant::now().duration_since(self.last_save) > every {
+                crate::save(world);
+            }
+        }
     }
 
     pub fn toolbox(&mut self, ui: &Ui, world: &mut World) {
@@ -209,11 +255,6 @@ impl Gui {
                 ui.text(im_str!("Move: Left drag"));
                 ui.text(im_str!("Deselect: Escape"));
                 ui.text(im_str!("Pan: Right click or Arrow keys"));
-                ui.separator();
-                ui.text(im_str!("Add intersection: I"));
-                ui.text(im_str!("Connect intersections: C"));
-                ui.text(im_str!("Disconnect intersections: C"));
-                ui.text(im_str!("Delete intersection: Backspace"));
             });
     }
 
@@ -233,10 +274,27 @@ impl Gui {
                     self.show_debug_layers = true;
                 }
             });
+            ui.menu(im_str!("Settings"), true, || {
+                ui.text("Auto save every");
+                ui.same_line(0.0);
+                let tok = imgui::ComboBox::new(im_str!(""))
+                    .preview_value(&im_str!("{}", self.auto_save_every.as_ref()))
+                    .begin(ui);
+                if let Some(tok) = tok {
+                    if imgui::Selectable::new(im_str!("Never")).build(ui) {
+                        self.auto_save_every = AutoSaveEvery::Never;
+                    }
+                    if imgui::Selectable::new(im_str!("One Minute")).build(ui) {
+                        self.auto_save_every = AutoSaveEvery::OneMinute;
+                    }
+                    if imgui::Selectable::new(im_str!("Five Minutes")).build(ui) {
+                        self.auto_save_every = AutoSaveEvery::FiveMinutes;
+                    }
+                    tok.end(ui);
+                }
+            });
             if ui.small_button(im_str!("Save")) {
-                crate::vehicles::save(world);
-                let serialized_map: SerializedMap = (&*world.read_resource::<Map>()).into();
-                crate::saveload::save(&serialized_map, "map");
+                crate::save(world);
             }
         });
     }
