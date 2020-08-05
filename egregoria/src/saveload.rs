@@ -31,5 +31,9 @@ pub fn load<T: DeserializeOwned>(name: &'static str) -> Option<T> {
 
     let des = bincode::deserialize_from(BufReader::new(file));
     des.map_err(|err| error!("failed deserializing {}: {}", name, err))
+        .map(|x| {
+            info!("successfully loaded {}", name);
+            x
+        })
         .ok()
 }
