@@ -45,6 +45,7 @@ pub use imgui;
 use map_model::{Map, SerializedMap};
 pub use rand_provider::RandProvider;
 pub use specs;
+use std::io::Write;
 
 pub struct EgregoriaState<'a> {
     pub world: World,
@@ -147,6 +148,7 @@ fn load(world: &mut World) {
 }
 
 fn save(world: &mut World) {
+    let _ = std::io::stdout().flush();
     crate::saveload::save(&*world.read_resource::<Gui>(), "gui");
     crate::vehicles::save(world);
     crate::saveload::save(&SerializedMap::from(&*world.read_resource::<Map>()), "map");
