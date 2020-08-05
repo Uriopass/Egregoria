@@ -1,5 +1,6 @@
 use crate::engine::{compile_shader, Drawable, GfxContext, IndexType, Texture, UvVertex, VBDesc};
 
+use geom::Vec2;
 use std::rc::Rc;
 use wgpu::{RenderPass, VertexBufferDescriptor};
 
@@ -23,17 +24,18 @@ pub struct SpriteBatch {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct InstanceRaw {
-    model: mint::ColumnMatrix4<f32>,
+    pos: [f32; 3],
+    dir: [f32; 2],
     tint: [f32; 3],
 }
 
 impl InstanceRaw {
-    pub fn new(mut model: mint::ColumnMatrix4<f32>, tint: [f32; 3], scale: f32) -> InstanceRaw {
-        model.x.x *= scale;
-        model.x.y *= scale;
-        model.y.x *= scale;
-        model.y.y *= scale;
-        Self { model, tint }
+    pub fn new(pos: Vec2, direction: Vec2, z: f32, tint: [f32; 3], scale: f32) -> InstanceRaw {
+        Self {
+            pos: [pos.x, pos.y, z],
+            dir: [direction.x * scale, direction.y * scale],
+            tint,
+        }
     }
 }
 
@@ -44,7 +46,7 @@ impl VBDesc for InstanceRaw {
         wgpu::VertexBufferDescriptor {
             stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
-            attributes: &wgpu::vertex_attr_array![2 => Float4, 3 => Float4, 4 => Float4, 5 => Float4, 6 => Float3],
+            attributes: &wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float3],
         }
     }
 }

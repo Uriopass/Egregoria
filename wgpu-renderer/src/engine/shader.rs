@@ -117,7 +117,7 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
         }
         CacheState::InvalidSpirv => {
             log::warn!(
-                r#"Shader "{}" was found in cache but is invalid, recompiling"#,
+                "Shader {} was found in cache but is invalid, recompiling",
                 p.to_string_lossy().into_owned()
             );
             None
@@ -125,14 +125,21 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
     };
 
     let mut src = String::new();
-    let fileread = sfile
-        .read_to_string(&mut src)
-        .map_err(|e| log::warn!("failed to read content of the shader {:?}: {}", p, e));
+    let fileread = sfile.read_to_string(&mut src).map_err(|e| {
+        log::warn!(
+            "failed to read content of the shader {}: {}",
+            p.to_string_lossy().into_owned(),
+            e
+        )
+    });
 
     let mut spirv = match fileread.and_then(|_| {
         catch_unwind(|| glsl_to_spirv::compile(&src, stype.clone()).unwrap()).map_err(|_| {})
     }) {
-        Ok(x) => x,
+        Ok(x) => {
+            log::info!("successfully compiled {}", p.to_string_lossy().into_owned());
+            x
+        }
         Err(_) => {
             return outdated
                 .expect("couldn't compile glsl and no outdated spirv found in cache, aborting.");

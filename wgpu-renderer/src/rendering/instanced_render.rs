@@ -29,7 +29,9 @@ impl InstancedRender {
             }
 
             let instance = InstanceRaw::new(
-                trans.to_matrix4(ar.z),
+                trans.position(),
+                trans.direction(),
+                ar.z,
                 [ar.tint.r, ar.tint.g, ar.tint.b],
                 ar.scale,
             );
