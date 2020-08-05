@@ -67,10 +67,7 @@ impl Context {
                             WindowEvent::Resized(physical_size) => {
                                 new_size = Some(physical_size);
                             }
-                            WindowEvent::CloseRequested => {
-                                println!("The close button was pressed. stopping");
-                                *control_flow = ControlFlow::Exit
-                            }
+                            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                             _ => (),
                         }
                     }

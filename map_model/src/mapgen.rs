@@ -33,7 +33,7 @@ impl Scanner {
 pub fn load_parismap(map: &mut Map) {
     let t = std::time::Instant::now();
     let file = unwrap_or!(File::open("resources/paris_54000.txt").ok(), {
-        println!("Couldn't open parismap file");
+        error!("Couldn't open parismap file");
         return;
     });
 
@@ -81,8 +81,8 @@ pub fn load_parismap(map: &mut Map) {
         );
     }
 
-    println!(
-        "Loading parismap took {}ms",
+    info!(
+        "loading parismap took {}ms",
         t.elapsed().as_secs_f32() * 1000.0
     );
 
@@ -163,10 +163,10 @@ pub fn add_grid(pos: Vec2, m: &mut Map, size: usize) {
 }
 
 fn print_stats(map: &Map) {
-    println!("{} intersections", map.intersections.len());
-    println!("{} roads", map.roads.len());
-    println!("{} lanes", map.lanes.len());
-    println!(
+    info!("{} intersections", map.intersections.len());
+    info!("{} roads", map.roads.len());
+    info!("{} lanes", map.lanes.len());
+    info!(
         "{} turns",
         map.intersections
             .iter()

@@ -102,21 +102,21 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
             return x;
         }
         CacheState::Outdated(x) => {
-            println!(
+            log::warn!(
                 r#"Shader "{}" was found in cache, but is outdated, recompiling if possible"#,
                 p.to_string_lossy().into_owned()
             );
             Some(x)
         }
         CacheState::Nofile => {
-            println!(
+            log::warn!(
                 r#"Shader "{}" not found in cache, recompiling"#,
                 p.to_string_lossy().into_owned()
             );
             None
         }
         CacheState::InvalidSpirv => {
-            println!(
+            log::warn!(
                 r#"Shader "{}" was found in cache but is invalid, recompiling"#,
                 p.to_string_lossy().into_owned()
             );
@@ -125,20 +125,22 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
     };
 
     let mut src = String::new();
-    sfile
+    let fileread = sfile
         .read_to_string(&mut src)
-        .expect("Failed to read the content of the shader");
+        .map_err(|e| log::warn!("failed to read content of the shader {:?}: {}", p, e));
 
-    let mut spirv = match catch_unwind(|| glsl_to_spirv::compile(&src, stype.clone()).unwrap()) {
+    let mut spirv = match fileread.and_then(|_| {
+        catch_unwind(|| glsl_to_spirv::compile(&src, stype.clone()).unwrap()).map_err(|_| {})
+    }) {
         Ok(x) => x,
         Err(_) => {
             return outdated
-                .expect("Couldn't compile glsl and no outdated spirv found in cache, aborting.");
+                .expect("couldn't compile glsl and no outdated spirv found in cache, aborting.");
         }
     };
 
     let _ = compiled_name.and_then(|x| save_to_cache(&x, &mut spirv));
 
-    let data = wgpu::read_spirv(&spirv).expect("Error trying to decode spirv");
+    let data = wgpu::read_spirv(&spirv).expect("error trying to decode spirv");
     CompiledShader(data, stype)
 }

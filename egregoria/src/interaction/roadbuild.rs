@@ -92,7 +92,7 @@ impl<'a> System<'a> for RoadBuildSystem {
         );
 
         if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
-            println!(
+            info!(
                 "left clicked with state {:?} and {:?}",
                 state.build_state, cur_proj.kind
             );

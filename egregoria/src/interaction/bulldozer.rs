@@ -65,7 +65,7 @@ impl<'a> System<'a> for BulldozerSystem {
 
         if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
             let mut potentially_empty = Vec::new();
-            println!("Trying to bulldozer {:?}", cur_proj);
+            info!("bulldozer {:?}", cur_proj);
             match cur_proj.kind {
                 ProjectKind::Inter(id) => {
                     potentially_empty

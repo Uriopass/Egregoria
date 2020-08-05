@@ -59,7 +59,6 @@ impl InspectRenderDefault<String> for String {
             .resize_buffer(true)
             .build()
         {
-            println!("text changed");
             for d in data {
                 **d = value.to_string();
                 changed = true;

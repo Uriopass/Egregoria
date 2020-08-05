@@ -8,11 +8,11 @@ fn filename(name: &'static str) -> String {
 }
 
 fn create_file(path: String) -> Option<File> {
-    File::create(path).map_err(|e| println!("{}", e)).ok()
+    File::create(path).map_err(|e| error!("{}", e)).ok()
 }
 
 fn open_file(path: String) -> Option<File> {
-    File::open(path).map_err(|e| println!("{}", e)).ok()
+    File::open(path).map_err(|e| error!("{}", e)).ok()
 }
 
 pub fn save<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
@@ -21,8 +21,8 @@ pub fn save<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
     let file = create_file(filename(name))?;
 
     let _ = bincode::serialize_into(BufWriter::new(file), x)
-        .map_err(|err| println!("Error while serializing {}: {}", name, err));
-    println!("Successfully saved {}", name);
+        .map_err(|err| error!("failed serializing {}: {}", name, err));
+    info!("successfully saved {}", name);
     Some(())
 }
 
@@ -30,6 +30,6 @@ pub fn load<T: DeserializeOwned>(name: &'static str) -> Option<T> {
     let file = open_file(filename(name))?;
 
     let des = bincode::deserialize_from(BufReader::new(file));
-    des.map_err(|err| println!("Error while deserializing {}: {}", name, err))
+    des.map_err(|err| error!("failed deserializing {}: {}", name, err))
         .ok()
 }
