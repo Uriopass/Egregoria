@@ -88,6 +88,7 @@ impl Map {
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
         inter.update_polygon(&self.roads);
+        self.spatial_map.update_inter(inter);
     }
 
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
@@ -103,6 +104,8 @@ impl Map {
         for road in self.intersections[src].roads.clone() {
             self.remove_road(road);
         }
+
+        self.spatial_map.update_inter(&self.intersections[src]);
 
         self.intersections.remove(src);
     }
@@ -245,32 +248,30 @@ impl Map {
     pub fn project(&self, pos: Vec2) -> MapProject {
         let mk_proj = move |kind| MapProject { pos, kind };
 
+        let mut qroad = None;
         for obj in self.spatial_map.query_point(pos) {
             match obj {
+                ProjectKind::Inter(id) => {
+                    let inter = self.intersections
+                        .get(id)
+                        .expect("Road does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
+
+                    if inter.polygon.contains(pos) {
+                        return MapProject {
+                            pos: inter.pos,
+                            kind: obj,
+                        };
+                    }
+                }
                 ProjectKind::Road(id) => {
+                    if qroad.is_some() { continue; }
                     let road = self.roads
                         .get(id)
                         .expect("Road does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
-                    if self.intersections[road.src].polygon.contains(pos) {
-                        return MapProject {
-                            pos: self.intersections[road.src].pos,
-                            kind: ProjectKind::Inter(road.src),
-                        };
-                    }
-                    if self.intersections[road.dst].polygon.contains(pos) {
-                        return MapProject {
-                            pos: self.intersections[road.dst].pos,
-                            kind: ProjectKind::Inter(road.dst),
-                        };
-                    }
-
                     let projected = road.generated_points.project(pos);
                     if projected.distance(pos) < road.width * 0.5 {
-                        return MapProject {
-                            pos: projected,
-                            kind: ProjectKind::Road(id),
-                        };
+                        qroad = Some((id, projected));
                     }
                 },
                 ProjectKind::House(id) => {
@@ -284,6 +285,13 @@ impl Map {
                 },
                 _ => {},
             }
+        }
+
+        if let Some((id, pos)) = qroad {
+            return MapProject {
+                pos,
+                kind: ProjectKind::Road(id),
+            };
         }
 
         mk_proj(ProjectKind::Ground)

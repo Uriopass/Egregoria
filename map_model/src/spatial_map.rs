@@ -1,4 +1,4 @@
-use crate::{House, HouseID, ProjectKind, Road, RoadID};
+use crate::{House, HouseID, Intersection, IntersectionID, ProjectKind, Road, RoadID};
 use flat_spatial::shape::AABB;
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
@@ -11,6 +11,7 @@ pub struct SpatialMap {
 
     house_ids: SecondaryMap<HouseID, ShapeGridHandle>,
     road_ids: SecondaryMap<RoadID, ShapeGridHandle>,
+    intersection_ids: SecondaryMap<IntersectionID, ShapeGridHandle>,
 }
 
 impl Default for SpatialMap {
@@ -19,6 +20,7 @@ impl Default for SpatialMap {
             grid: ShapeGrid::new(50),
             house_ids: Default::default(),
             road_ids: Default::default(),
+            intersection_ids: Default::default(),
         }
     }
 }
@@ -34,7 +36,7 @@ impl SpatialMap {
 
     pub fn remove_house(&mut self, h: &House) {
         if let Some(id) = self.house_ids.remove(h.id) {
-            self.grid.remove(id)
+            self.grid.remove(id);
         } else {
             println!(
                 "Trying to remove {:?} from spatial map but it wasn't present",
@@ -58,12 +60,29 @@ impl SpatialMap {
 
     pub fn remove_road(&mut self, r: &Road) {
         if let Some(id) = self.road_ids.remove(r.id) {
-            self.grid.remove(id)
+            self.grid.remove(id);
         } else {
             println!(
                 "Trying to remove {:?} from spatial map but it wasn't present",
                 r.id
             )
+        }
+    }
+
+    pub fn update_inter(&mut self, inter: &Intersection) {
+        if inter.roads.len() == 0 {
+            self.intersection_ids
+                .remove(inter.id)
+                .and_then(|h| self.grid.remove(h));
+            return;
+        }
+        let bbox = rect_to_aabb(inter.polygon.bbox());
+        match self.intersection_ids.get(inter.id) {
+            Some(x) => self.grid.set_shape(*x, bbox),
+            None => {
+                let h = self.grid.insert(bbox, ProjectKind::Inter(inter.id));
+                self.intersection_ids.insert(inter.id, h);
+            }
         }
     }
 

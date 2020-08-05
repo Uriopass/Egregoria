@@ -25,7 +25,7 @@ pub fn delete_pedestrian(world: &mut World, e: Entity) {
     {
         let mut coworld = world.write_resource::<CollisionWorld>();
         if let Some(Collider(handle)) = world.read_component::<Collider>().get(e) {
-            coworld.remove(*handle)
+            coworld.remove(*handle);
         }
     }
     let _ = world.delete_entity(e);
