@@ -36,7 +36,7 @@ impl AsRef<str> for AutoSaveEvery {
     fn as_ref(&self) -> &str {
         match self {
             AutoSaveEvery::Never => "Never",
-            AutoSaveEvery::OneMinute => "One Minute",
+            AutoSaveEvery::OneMinute => "Minute",
             AutoSaveEvery::FiveMinutes => "Five Minutes",
         }
     }
@@ -92,8 +92,10 @@ impl Gui {
 
     pub fn auto_save(&mut self, world: &mut World) {
         if let Some(every) = self.auto_save_every.into() {
-            if Instant::now().duration_since(self.last_save) > every {
+            let now = Instant::now();
+            if now.duration_since(self.last_save) > every {
                 crate::save(world);
+                self.last_save = now;
             }
         }
     }
@@ -284,7 +286,7 @@ impl Gui {
                     if imgui::Selectable::new(im_str!("Never")).build(ui) {
                         self.auto_save_every = AutoSaveEvery::Never;
                     }
-                    if imgui::Selectable::new(im_str!("One Minute")).build(ui) {
+                    if imgui::Selectable::new(im_str!("Minute")).build(ui) {
                         self.auto_save_every = AutoSaveEvery::OneMinute;
                     }
                     if imgui::Selectable::new(im_str!("Five Minutes")).build(ui) {
