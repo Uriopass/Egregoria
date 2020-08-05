@@ -32,16 +32,17 @@ lazy_static! {
 }
 
 pub fn debug_menu(gui: &mut egregoria::gui::Gui, ui: &Ui) {
-    if gui.show_debug {
-        egregoria::imgui::Window::new(im_str!("Debug layers"))
-            .opened(&mut gui.show_debug)
-            .build(&ui, || {
-                let mut objs = DEBUG_OBJS.lock().unwrap();
-                for (val, name, _) in &mut *objs {
-                    ui.checkbox(&im_str!("{}", *name), val);
-                }
-            })
+    if !gui.show_debug_layers {
+        return;
     }
+    egregoria::imgui::Window::new(im_str!("Debug layers"))
+        .opened(&mut gui.show_debug_layers)
+        .build(&ui, || {
+            let mut objs = DEBUG_OBJS.lock().unwrap();
+            for (val, name, _) in &mut *objs {
+                ui.checkbox(&im_str!("{}", *name), val);
+            }
+        })
 }
 
 fn debug_coworld(tess: &mut Tesselator, world: &World) -> Option<()> {
@@ -116,6 +117,7 @@ pub fn debug_rays(tess: &mut Tesselator, world: &World) -> Option<()> {
     let time = time.time * 0.2;
     let c = time.cos() as f32;
     let s = time.sin() as f32;
+    let mouse = world.read_resource::<MouseInfo>().unprojected;
 
     let r = geom::intersections::Ray {
         from: 10.0 * vec2(c, s),
@@ -126,8 +128,8 @@ pub fn debug_rays(tess: &mut Tesselator, world: &World) -> Option<()> {
     };
 
     let r2 = geom::intersections::Ray {
-        from: 10.0 * vec2((time as f32 * 1.5 + 3.0).cos(), s * 2.0),
-        dir: vec2(c, -s),
+        from: mouse,
+        dir: vec2((time * 3.0).cos() as f32, (time * 3.0).sin() as f32),
     };
 
     tess.color = LinearColor::WHITE;

@@ -7,18 +7,19 @@ use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 pub use inspect::*;
 use map_model::{LanePatternBuilder, Map, SerializedMap};
+use serde::{Deserialize, Serialize};
 use specs::world::World;
 use specs::{Entity, Join, WorldExt};
 
 #[macro_use]
 mod inspect;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Gui {
     pub show_map_ui: bool,
-    pub show_info: bool,
+    pub show_debug_info: bool,
     pub show_tips: bool,
-    pub show_debug: bool,
+    pub show_debug_layers: bool,
     pub n_cars: i32,
     pub n_pedestrians: i32,
 }
@@ -27,9 +28,9 @@ impl Default for Gui {
     fn default() -> Self {
         Self {
             show_map_ui: true,
-            show_info: true,
+            show_debug_info: false,
             show_tips: false,
-            show_debug: false,
+            show_debug_layers: false,
             n_cars: 100,
             n_pedestrians: 100,
         }
@@ -46,20 +47,9 @@ impl Gui {
 
         self.info(ui, world);
 
-        self.log(ui);
-
         self.toolbox(ui, world);
 
         self.time_controls(ui, world);
-    }
-
-    pub fn log(&mut self, ui: &Ui) {
-        Window::new(im_str!("frame log")).build(ui, || {
-            let fl = crate::log::get_frame_log();
-            for s in &*fl {
-                ui.text(im_str!("{}", s));
-            }
-        })
     }
 
     pub fn toolbox(&mut self, ui: &Ui, world: &mut World) {
@@ -73,7 +63,7 @@ impl Gui {
 
         let toolbox_w = 120.0;
 
-        imgui::Window::new(im_str!("Toolbox"))
+        Window::new(im_str!("Toolbox"))
             .size([toolbox_w, 30.0 * 5.0 + 20.0], imgui::Condition::Always)
             .position([w - toolbox_w, h / 2.0 - 30.0], imgui::Condition::Always)
             .scroll_bar(false)
@@ -108,7 +98,7 @@ impl Gui {
             *world.read_resource::<Tool>(),
             Tool::RoadbuildStraight | Tool::RoadbuildCurved
         ) {
-            imgui::Window::new(im_str!("Road Properties"))
+            Window::new(im_str!("Road Properties"))
                 .size([150.0, 100.0], imgui::Condition::Always)
                 .position(
                     [w - 150.0 - toolbox_w, h / 2.0 - 30.0],
@@ -150,7 +140,7 @@ impl Gui {
         let e = unwrap_or!(inspected.e, return);
 
         let mut is_open = true;
-        imgui::Window::new(im_str!("Inspect"))
+        Window::new(im_str!("Inspect"))
             .size([300.0, 300.0], imgui::Condition::FirstUseEver)
             .position([30.0, 160.0], imgui::Condition::FirstUseEver)
             .opened(&mut is_open)
@@ -168,7 +158,7 @@ impl Gui {
     pub fn time_controls(&mut self, ui: &Ui, world: &mut World) {
         let mut time_info = world.write_resource::<TimeInfo>();
         let [w, h] = ui.io().display_size;
-        imgui::Window::new(im_str!("Time controls"))
+        Window::new(im_str!("Time controls"))
             .size([230.0, 40.0], imgui::Condition::Always)
             .position([w / 2.0 - 100.0, h - 30.0], imgui::Condition::Always)
             .no_decoration()
@@ -185,19 +175,24 @@ impl Gui {
     }
 
     pub fn info(&mut self, ui: &Ui, world: &mut World) {
-        if !self.show_info {
+        if !self.show_debug_info {
             return;
         }
         let stats = world.read_resource::<RenderStats>();
         let mouse = world.read_resource::<MouseInfo>().unprojected;
-        imgui::Window::new(im_str!("Info"))
-            .size([200.0, 100.0], imgui::Condition::FirstUseEver)
+        Window::new(im_str!("Debug Info"))
             .position([300.0, 50.0], imgui::Condition::FirstUseEver)
-            .opened(&mut self.show_info)
+            .opened(&mut self.show_debug_info)
             .build(&ui, || {
                 ui.text(im_str!("Update time: {:.1}ms", stats.update_time * 1000.0));
                 ui.text(im_str!("Render time: {:.1}ms", stats.render_time * 1000.0));
                 ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
+                ui.separator();
+                ui.text("Frame log");
+                let fl = crate::log::get_frame_log();
+                for s in &*fl {
+                    ui.text(im_str!("{}", s));
+                }
             });
     }
 
@@ -205,7 +200,7 @@ impl Gui {
         if !self.show_tips {
             return;
         }
-        imgui::Window::new(im_str!("Tips"))
+        Window::new(im_str!("Tips"))
             .size([280.0, 200.0], imgui::Condition::FirstUseEver)
             .position([30.0, 470.0], imgui::Condition::FirstUseEver)
             .opened(&mut self.show_tips)
@@ -228,14 +223,14 @@ impl Gui {
                 if imgui::MenuItem::new(im_str!("Map")).build(&ui) {
                     self.show_map_ui = true;
                 }
-                if imgui::MenuItem::new(im_str!("Info")).build(&ui) {
-                    self.show_info = true;
-                }
                 if imgui::MenuItem::new(im_str!("Tips")).build(&ui) {
                     self.show_tips = true;
                 }
-                if imgui::MenuItem::new(im_str!("Debug")).build(&ui) {
-                    self.show_debug = true;
+                if imgui::MenuItem::new(im_str!("Debug Info")).build(&ui) {
+                    self.show_debug_info = true;
+                }
+                if imgui::MenuItem::new(im_str!("Debug Layers")).build(&ui) {
+                    self.show_debug_layers = true;
                 }
             });
             if ui.small_button(im_str!("Save")) {
@@ -252,7 +247,7 @@ impl Gui {
         }
 
         let mut opened = self.show_map_ui;
-        imgui::Window::new(im_str!("Map"))
+        Window::new(im_str!("Map"))
             .size([200.0, 140.0], imgui::Condition::FirstUseEver)
             .position([30.0, 30.0], imgui::Condition::FirstUseEver)
             .opened(&mut opened)
