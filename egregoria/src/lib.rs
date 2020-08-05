@@ -42,7 +42,7 @@ mod saveload;
 pub mod vehicles;
 
 pub use imgui;
-use map_model::Map;
+use map_model::{Map, SerializedMap};
 pub use rand_provider::RandProvider;
 pub use specs;
 
@@ -73,7 +73,6 @@ impl<'a> EgregoriaState<'a> {
         world.insert(TimeInfo::default());
         world.insert(CollisionWorld::new(50));
         world.insert(KeyboardInfo::default());
-        world.insert(Gui::default());
         world.insert(InspectedEntity::default());
         world.insert(FollowEntity::default());
         world.insert(RenderStats::default());
@@ -129,14 +128,26 @@ impl<'a> EgregoriaState<'a> {
 
         dispatcher.setup(&mut world);
 
-        let map: Map = saveload::load::<map_model::SerializedMap>("map")
-            .map(|x| x.into())
-            .unwrap_or_default();
-
-        world.insert(map);
-        vehicles::setup(&mut world);
-        pedestrians::setup(&mut world);
+        load(&mut world);
 
         Self { world, dispatcher }
     }
+}
+
+fn load(world: &mut World) {
+    let map: Map = saveload::load::<map_model::SerializedMap>("map")
+        .map(|x| x.into())
+        .unwrap_or_default();
+
+    world.insert(map);
+    vehicles::setup(world);
+    pedestrians::setup(world);
+
+    world.insert(crate::saveload::load::<Gui>("gui").unwrap_or_default());
+}
+
+fn save(world: &mut World) {
+    crate::saveload::save(&*world.read_resource::<Gui>(), "gui");
+    crate::vehicles::save(world);
+    crate::saveload::save(&SerializedMap::from(&*world.read_resource::<Map>()), "map");
 }
