@@ -23,11 +23,11 @@ lazy_static! {
             Box<dyn Sync + Send + Fn(&mut Tesselator, &World) -> Option<()>>
         )>,
     > = Mutex::new(vec![
-        (false, "Debug pathfindder", Box::new(debug_pathfinder)),
+        (false, "Debug pathfinder", Box::new(debug_pathfinder)),
         (false, "Debug rays", Box::new(debug_rays)),
         (false, "Debug spatialmap", Box::new(debug_spatialmap)),
         (false, "Debug OBBs", Box::new(debug_obb)),
-        (false, "Debug coworld", Box::new(debug_coworld))
+        (false, "Debug collision world", Box::new(debug_coworld))
     ]);
 }
 
