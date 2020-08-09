@@ -89,6 +89,17 @@ impl PolyLine {
         self.check_empty()
     }
 
+    /**
+    Project p onto the polyline and return the distance from the projection to p
+    **/
+    pub fn project_len(&self, p: Vec2) -> f32 {
+        let proj = self.project(p);
+        proj.distance2(p)
+    }
+
+    /**
+    Project p onto the polyline
+    **/
     pub fn project(&self, p: Vec2) -> Vec2 {
         self.project_segment(p).0
     }
