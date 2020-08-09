@@ -116,7 +116,12 @@ fn state_update(
         VehicleState::ParkedToRoad(_, ref mut t) => {
             *t += time.delta / TIME_TO_PARK;
 
-            if *t >= 1.0 {
+            let target = it.get_travers()
+                .expect("Should have a traverse when unparking")
+                .points(map);
+            let distance = target.project_len(trans.position());
+
+            if distance < 5.0 {
                 kin.velocity = trans.direction() * 2.0;
 
                 vehicle.state = VehicleState::Driving;
@@ -299,6 +304,9 @@ fn next_objective(
     .map(move |it| (it, spot_id))
 }
 
+/**
+Decide the appropriate velocity and direction to aim for.
+**/
 pub fn calc_decision<'a>(
     vehicle: &mut VehicleComponent,
     map: &Map,
