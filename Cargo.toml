@@ -6,8 +6,11 @@ members = [
     "mods",
     "imgui-inspect",
     "imgui-inspect-derive",
-    "wgpu-renderer"
+    "wgpu-renderer",
+    "headless-cli"
 ]
+
+default-members = ["wgpu-renderer"]
 
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]
