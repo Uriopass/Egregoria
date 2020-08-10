@@ -3,7 +3,7 @@ use crate::frame_log::FrameLog;
 use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
 use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
-use imgui::{im_str, StyleVar};
+use imgui::{im_str, ImString, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 pub use inspect::*;
@@ -50,6 +50,8 @@ pub struct Gui {
     pub show_debug_info: bool,
     pub show_tips: bool,
     pub show_debug_layers: bool,
+    pub show_scenarios: bool,
+    pub cur_scenario: String,
     pub auto_save_every: AutoSaveEvery,
     #[serde(skip)]
     pub last_save: Instant,
@@ -64,6 +66,8 @@ impl Default for Gui {
             show_debug_info: false,
             show_tips: false,
             show_debug_layers: false,
+            show_scenarios: false,
+            cur_scenario: String::new(),
             auto_save_every: AutoSaveEvery::OneMinute,
             last_save: Instant::now(),
             n_cars: 100,
@@ -89,6 +93,31 @@ impl Gui {
         self.time_controls(ui, world);
 
         self.auto_save(world);
+
+        self.scenario(ui, world);
+    }
+
+    pub fn scenario(&mut self, ui: &Ui, world: &mut World) {
+        if !self.show_scenarios {
+            return;
+        }
+        let buf = &mut self.cur_scenario;
+        Window::new(im_str!("Scenarios"))
+            .position([300.0, 300.0], imgui::Condition::FirstUseEver)
+            .opened(&mut self.show_scenarios)
+            .build(&ui, || {
+                let mut b = ImString::new(buf.clone());
+                if imgui::InputText::new(ui, im_str!(""), &mut b)
+                    .resize_buffer(true)
+                    .build()
+                {
+                    *buf = b.to_string();
+                }
+
+                if ui.small_button(im_str!("play scenario")) {
+                    crate::lua::scenario_runner::set_scenario(world, &buf);
+                }
+            });
     }
 
     pub fn auto_save(&mut self, world: &mut World) {
@@ -270,6 +299,9 @@ impl Gui {
                 }
                 if imgui::MenuItem::new(im_str!("Tips")).build(&ui) {
                     self.show_tips = true;
+                }
+                if imgui::MenuItem::new(im_str!("Scenarios")).build(&ui) {
+                    self.show_scenarios = true;
                 }
                 if imgui::MenuItem::new(im_str!("Debug Info")).build(&ui) {
                     self.show_debug_info = true;

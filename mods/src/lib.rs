@@ -1,6 +1,6 @@
 use geom::polygon::Polygon;
 use lazy_static::*;
-use mlua::{FromLuaMulti, Lua};
+use mlua::{FromLuaMulti, Lua, TableExt};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::File;
@@ -8,8 +8,10 @@ use std::io::Read;
 use std::sync::{Mutex, RwLock};
 use std::time::SystemTime;
 
+pub use mlua;
+
 mod stdlib;
-use stdlib::*;
+pub use stdlib::*;
 
 trait ResultExt<T> {
     fn ok_print(self) -> Option<T>;
@@ -45,24 +47,36 @@ lazy_static! {
     static ref MODS: Mods = Mods::new();
 }
 
-pub fn eval_script<T: for<'a> FromLuaMulti<'a>>(name: &'static str) -> Option<T> {
+pub fn call_f<'a, R: FromLuaMulti<'a>>(l: &'a Lua, f: &str) -> Option<R> {
+    l.globals().call_function(f, ()).ok_print()
+}
+
+pub fn eval_f(l: &Lua, f: &str) {
+    let _: Option<()> = call_f(l, f);
+}
+
+pub fn load(name: &str) -> Option<Lua> {
+    let mut data_file = File::open(name)
+        .map_err(|err| log::error!("Could not open `{}`, {}", name, err))
+        .ok()?;
+
+    let mut data = String::new();
+    data_file.read_to_string(&mut data).ok()?;
+    let lua = unsafe { Lua::unsafe_new() };
+    add_std(&lua);
+    lua.load(&data).eval().ok_print()?;
+    Some(lua)
+}
+
+pub fn with_init<F: FnOnce(&Lua), T: for<'a> FromLuaMulti<'a>>(
+    f: F,
+    name: &'static str,
+) -> Option<T> {
     let mut data_file = File::open(name)
         .map_err(|err| log::error!("Could not open `{}`, {}", name, err))
         .ok()?;
 
     let time = data_file.metadata().ok_print()?.modified().ok_print()?;
-
-    let mut mkfile = || {
-        let mut data = String::new();
-        data_file.read_to_string(&mut data).unwrap();
-        let lua = unsafe { Lua::unsafe_new() };
-        add_std(&lua);
-        Mutex::new(LuaFile {
-            source: data,
-            time,
-            lua,
-        })
-    };
 
     {
         let guard = MODS.files.read().unwrap();
@@ -82,11 +96,26 @@ pub fn eval_script<T: for<'a> FromLuaMulti<'a>>(name: &'static str) -> Option<T>
         }
     }
 
-    MODS.files.write().unwrap().insert(name, mkfile());
+    let mut data = String::new();
+    data_file.read_to_string(&mut data).ok()?;
+    let lua = unsafe { Lua::unsafe_new() };
+    add_std(&lua);
+    f(&lua);
+    let f = Mutex::new(LuaFile {
+        source: data,
+        time,
+        lua,
+    });
+
+    MODS.files.write().unwrap().insert(name, f);
 
     let guard = MODS.files.read().unwrap();
     let luaf = guard.get(name).unwrap().lock().unwrap();
     luaf.lua.load(&luaf.source).eval().ok_print()
+}
+
+pub fn eval_script<T: for<'a> FromLuaMulti<'a>>(name: &'static str) -> Option<T> {
+    with_init(|_| {}, name)
 }
 
 pub fn gen_house() -> Option<Polygon> {

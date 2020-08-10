@@ -11,7 +11,7 @@ edition = "2018"
 
 [dependencies]
 ordered-float = { version = "2.0", features = ["serde"] }
-rand          = {version = "0.7", default-features = false, features = ["std", "small_rng"]}
+rand          = { version = "0.7", default-features = false, features = ["std", "small_rng"] }
 rand_distr    = "0.2.2"
 bincode       = "1.2.1"
 serde         = "1.0"
@@ -19,11 +19,12 @@ specs         = { version = "0.16", default-features = false, features = ["paral
 flat_spatial  = "0.3.5"
 mint          = "0.5.5"
 lazy_static   = "1.4.0"
+log           = "0.4.11"
 imgui-inspect = { path = "../imgui-inspect"}
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 geom          = { path = "../geom" }
 map_model     = { path = "../map_model" }
-log           = "0.4.11"
+mods          = { path = "../mods" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 imgui = "0.4"

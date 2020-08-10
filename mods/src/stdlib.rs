@@ -34,6 +34,8 @@ pub struct LuaVec2(pub Vec2);
 impl UserData for LuaVec2 {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method("magnitude", |_, vec, ()| Ok(vec.0.magnitude()));
+        methods.add_method("x", |_, vec, ()| Ok(vec.0.x));
+        methods.add_method("y", |_, vec, ()| Ok(vec.0.y));
 
         methods.add_meta_function(MetaMethod::Unm, |_, vec1: LuaVec2| Ok(LuaVec2(-vec1.0)));
 
@@ -56,6 +58,10 @@ impl UserData for LuaVec2 {
         methods.add_meta_function(MetaMethod::Mul, |_, (vec1, vec2): (LuaVec2, LuaVec2)| {
             Ok(LuaVec2(vec1.0 * vec2.0))
         });
+
+        methods.add_meta_function(MetaMethod::ToString, |_, vec: LuaVec2| {
+            Ok(format!("({:.4}, {:.4})", vec.0.x, vec.0.y))
+        });
     }
 }
 
@@ -75,7 +81,12 @@ fn rand_in(_: &Lua, (min, max): (f32, f32)) -> LuaResult<f32> {
     Ok(min + rand::random::<f32>() * (max - min))
 }
 
+fn vec2(_: &Lua, (x, y): (f32, f32)) -> LuaResult<LuaVec2> {
+    Ok(LuaVec2(Vec2 { x, y }))
+}
+
 pub fn add_std(lua: &Lua) {
     std_add_fn!(lua, poly_rect);
     std_add_fn!(lua, rand_in);
+    std_add_fn!(lua, vec2);
 }

@@ -1,7 +1,7 @@
 use crate::{Houses, Intersections, Lanes, Map, ParkingSpots, Roads, SpatialMap};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct SerializedMap {
     pub(crate) roads: Roads,
     pub(crate) intersections: Intersections,

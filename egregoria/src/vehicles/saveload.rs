@@ -2,9 +2,6 @@ use crate::map_interaction::Itinerary;
 use crate::physics::Transform;
 use crate::vehicles::VehicleComponent;
 use specs::{Join, World, WorldExt};
-use std::fs::File;
-
-const VEHICLE_FILENAME: &str = "world/vehicle";
 
 pub fn save(world: &mut World) {
     let storages = (
@@ -22,12 +19,6 @@ pub fn save(world: &mut World) {
 }
 
 pub fn load(_world: &mut World) {
-    let file = File::open(VEHICLE_FILENAME.to_string() + ".bc");
-    if let Err(e) = file {
-        error!("failed loading entities: {}", e);
-        return;
-    }
-
     /*
     // FIXME: load parked cars and shit
     let des = bincode::deserialize_from(file.unwrap());
