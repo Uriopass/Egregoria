@@ -1,5 +1,6 @@
 use crate::engine::{CompiledShader, Drawable, GfxContext, IndexType, UvVertex, VBDesc};
 
+use geom::Vec2;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use wgpu::{RenderPass, VertexBufferDescriptor};
@@ -28,13 +29,20 @@ pub struct ShadedBatch<T: Shaders> {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ShadedInstanceRaw {
-    model: mint::ColumnMatrix4<f32>,
+    pos: [f32; 3],
+    rot: [f32; 2],
+    scale: [f32; 2],
     tint: [f32; 4],
 }
 
 impl ShadedInstanceRaw {
-    pub fn new(model: mint::ColumnMatrix4<f32>, tint: [f32; 4]) -> Self {
-        Self { model, tint }
+    pub fn new(pos: Vec2, z: f32, cossin: Vec2, scale: Vec2, tint: [f32; 4]) -> Self {
+        Self {
+            pos: [pos.x, pos.y, z],
+            rot: cossin.into(),
+            scale: scale.into(),
+            tint,
+        }
     }
 }
 
@@ -45,7 +53,7 @@ impl VBDesc for ShadedInstanceRaw {
         wgpu::VertexBufferDescriptor {
             stride: std::mem::size_of::<ShadedInstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
-            attributes: &wgpu::vertex_attr_array![2 => Float4, 3 => Float4, 4 => Float4, 5 => Float4, 6 => Float4],
+            attributes: &wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float2, 5 => Float4],
         }
     }
 }

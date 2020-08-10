@@ -3,9 +3,9 @@ use crate::engine::{
     ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
 };
 use crate::geometry::Tesselator;
-use egregoria::physics::Transform;
 use egregoria::rendering::{from_srgb, Color, LinearColor};
 use egregoria::utils::Restrict;
+use geom::vec2;
 use map_model::{Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
 use std::ops::Mul;
 
@@ -258,19 +258,16 @@ impl RoadRenderer {
                     }
 
                     let dir = (to - from) / l;
+                    let pos = from + dir * 2.25;
+                    let height = l - 4.5;
 
-                    let t = Transform::new_cos_sin(from + dir * 2.25, dir);
-                    let mut m = t.to_matrix4(Z_CROSSWALK);
-
-                    m.x.x *= l - 4.5;
-                    m.x.y *= l - 4.5;
-
-                    m.y.x *= CROSSWALK_WIDTH;
-                    m.y.y *= CROSSWALK_WIDTH;
-
-                    builder
-                        .instances
-                        .push(ShadedInstanceRaw::new(m, [1.0, 1.0, 1.0, 1.0]));
+                    builder.instances.push(ShadedInstanceRaw::new(
+                        pos,
+                        Z_CROSSWALK,
+                        dir,
+                        vec2(height, CROSSWALK_WIDTH),
+                        LinearColor::WHITE.into(),
+                    ));
                 }
             }
         }
