@@ -192,7 +192,7 @@ fn state_update(
                         PhysicsObject {
                             dir: trans.direction(),
                             group: PhysicsGroup::Vehicles,
-                            radius: vehicle.kind.width() / 2.0,
+                            radius: vehicle.kind.width() * 0.5,
                             speed: 0.0,
                         },
                     ));
@@ -332,7 +332,7 @@ pub fn calc_decision<'a>(
     );
 
     let time_to_stop = speed / vehicle.kind.deceleration();
-    let stop_dist = time_to_stop * speed / 2.0;
+    let stop_dist = time_to_stop * speed * 0.5;
 
     if let Some(pos) = terminal_pos {
         // Close to terminal objective
@@ -354,7 +354,7 @@ pub fn calc_decision<'a>(
                         < OBJECTIVE_OK_DIST * 1.05
                             + 2.0
                             + stop_dist
-                            + (vehicle.kind.width() / 2.0 - OBJECTIVE_OK_DIST).max(0.0)
+                            + (vehicle.kind.width() * 0.5 - OBJECTIVE_OK_DIST).max(0.0)
                     {
                         return (0.0, dir_to_pos);
                     }
@@ -395,7 +395,7 @@ fn calc_front_dist<'a>(
     let mut min_front_dist: f32 = 50.0;
 
     let my_ray = Ray {
-        from: position - direction * vehicle.kind.width() / 2.0,
+        from: position - direction * vehicle.kind.width() * 0.5,
         dir: direction,
     };
 

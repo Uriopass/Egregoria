@@ -70,7 +70,7 @@ impl SpatialMap {
     }
 
     pub fn update_inter(&mut self, inter: &Intersection) {
-        if inter.roads.len() == 0 {
+        if inter.roads.is_empty() {
             self.intersection_ids
                 .remove(inter.id)
                 .and_then(|h| self.grid.remove(h));

@@ -16,6 +16,7 @@ use map_model::Map;
 use std::sync::Mutex;
 
 lazy_static! {
+    #[allow(clippy::type_complexity)]
     pub static ref DEBUG_OBJS: Mutex<
         Vec<(
             bool,

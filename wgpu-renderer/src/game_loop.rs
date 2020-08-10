@@ -75,7 +75,7 @@ impl<'a> State<'a> {
         // Render grid
         if self.grid && self.camera.zoom() > 3.0 {
             let gray_maj = (self.camera.zoom() / 40.0).min(0.2);
-            let gray_min = gray_maj / 2.0;
+            let gray_min = gray_maj * 0.5;
             if self.camera.zoom() > 6.0 {
                 tess.draw_grid(1.0, Color::new(gray_min, gray_min, gray_min, 1.0));
             }
