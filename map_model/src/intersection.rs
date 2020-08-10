@@ -98,8 +98,8 @@ impl Intersection {
             let r1 = &roads[r1_id];
             let r2 = &roads[r2_id];
 
-            let width1 = r1.width / 2.0;
-            let width2 = r2.width / 2.0;
+            let width1 = r1.width * 0.5;
+            let width2 = r2.width * 0.5;
 
             let w = (width1.powi(2) + width2.powi(2)).sqrt();
 

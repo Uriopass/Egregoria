@@ -176,8 +176,8 @@ impl Tesselator {
             }
         }
 
-        let a = (width / 2.0) * cos_sin;
-        let b = (height / 2.0) * vec2(-cos_sin.y, cos_sin.x);
+        let a = (width * 0.5) * cos_sin;
+        let b = (height * 0.5) * vec2(-cos_sin.y, cos_sin.x);
         let pxy = vec2(p.x, p.y);
 
         let points: [Vec2; 4] = [a + b + pxy, a - b + pxy, -a - b + pxy, -a + b + pxy];

@@ -860,7 +860,7 @@ fn locally_inside(ll: &LinkedLists, a: &Node, b: &Node) -> bool {
 
 // check if the middle point of a polygon diagonal is inside the polygon
 fn middle_inside(ll: &LinkedLists, a: &Node, b: &Node) -> bool {
-    let (mx, my) = ((a.x + b.x) / 2.0, (a.y + b.y) / 2.0);
+    let (mx, my) = ((a.x + b.x) * 0.5, (a.y + b.y) * 0.5);
     ll.iter_pairs(a.idx..a.idx)
         .filter(|(p, n)| (p.y > my) != (n.y > my))
         .filter(|(p, n)| n.y != p.y)

@@ -113,7 +113,7 @@ impl Gui {
 
         Window::new(im_str!("Toolbox"))
             .size([toolbox_w, 30.0 * 5.0 + 20.0], imgui::Condition::Always)
-            .position([w - toolbox_w, h / 2.0 - 30.0], imgui::Condition::Always)
+            .position([w - toolbox_w, h * 0.5 - 30.0], imgui::Condition::Always)
             .scroll_bar(false)
             .title_bar(true)
             .movable(false)
@@ -149,7 +149,7 @@ impl Gui {
             Window::new(im_str!("Road Properties"))
                 .size([150.0, 100.0], imgui::Condition::Always)
                 .position(
-                    [w - 150.0 - toolbox_w, h / 2.0 - 30.0],
+                    [w - 150.0 - toolbox_w, h * 0.5 - 30.0],
                     imgui::Condition::Always,
                 )
                 .scroll_bar(false)
@@ -208,7 +208,7 @@ impl Gui {
         let [w, h] = ui.io().display_size;
         Window::new(im_str!("Time controls"))
             .size([230.0, 40.0], imgui::Condition::Always)
-            .position([w / 2.0 - 100.0, h - 30.0], imgui::Condition::Always)
+            .position([w * 0.5 - 100.0, h - 30.0], imgui::Condition::Always)
             .no_decoration()
             .collapsible(false)
             .resizable(false)

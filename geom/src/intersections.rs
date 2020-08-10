@@ -35,7 +35,7 @@ pub fn both_dist_to_inter(r1: Ray, r2: Ray) -> Option<(f32, f32)> {
 }
 
 pub fn time_to_hit(dist: f32, v0: f32, acc: f32) -> f32 {
-    // acc * t² / 2.0 + t*v0 - dist = 0
+    // acc * t² * 0.5 + t*v0 - dist = 0
     // delta = v0² + 2 * acc * dist
     // t = (-v0 + sqrt(v0² + 2*acc*dist)) / acc
     (-v0 + (v0 * v0 + 2.0 * acc * dist).sqrt()) / acc
