@@ -1,4 +1,5 @@
 use crate::engine_interaction::TimeInfo;
+use crate::frame_log::FrameLog;
 use crate::interaction::DeletedEvent;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::CollisionWorld;
@@ -27,6 +28,7 @@ impl KinematicsApply {
 #[derive(SystemData)]
 pub struct KinematicsApplyData<'a> {
     time: Read<'a, TimeInfo>,
+    flog: Read<'a, FrameLog>,
     deleted: Read<'a, EventChannel<DeletedEvent>>,
     coworld: Write<'a, CollisionWorld, specs::shred::PanicHandler>,
     colliders: ReadStorage<'a, Collider>,
@@ -38,7 +40,7 @@ impl<'a> System<'a> for KinematicsApply {
     type SystemData = KinematicsApplyData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        time_it!("Kinematics update");
+        time_it!(data.flog, "Kinematics update");
 
         let delta = data.time.delta;
 
@@ -65,7 +67,7 @@ impl<'a> System<'a> for KinematicsApply {
             }
         }
 
-        time_it!("Coworld maintain");
+        time_it!(data.flog, "Coworld maintain");
         data.coworld.maintain();
     }
 }

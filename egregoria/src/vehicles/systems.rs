@@ -1,4 +1,5 @@
 use crate::engine_interaction::TimeInfo;
+use crate::frame_log::FrameLog;
 use crate::map_interaction::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
@@ -25,6 +26,7 @@ pub struct VehicleDecisionSystemData<'a> {
     map: Read<'a, Map>,
     time: Read<'a, TimeInfo>,
     parking: Read<'a, ParkingManagement>,
+    flog: Read<'a, FrameLog>,
     coworld: Write<'a, CollisionWorld, PanicHandler>,
     colliders: WriteStorage<'a, Collider>,
     transforms: WriteStorage<'a, Transform>,
@@ -37,7 +39,7 @@ impl<'a> System<'a> for VehicleDecision {
     type SystemData = VehicleDecisionSystemData<'a>;
 
     fn run(&mut self, mut data: Self::SystemData) {
-        time_it!("Vehicle update");
+        time_it!(data.flog, "Vehicle update");
 
         let mut cow = data.coworld;
         let map = data.map;

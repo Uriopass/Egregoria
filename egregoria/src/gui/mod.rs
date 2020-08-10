@@ -1,4 +1,5 @@
 use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
+use crate::frame_log::FrameLog;
 use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
 use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
 use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
@@ -237,7 +238,8 @@ impl Gui {
                 ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
                 ui.separator();
                 ui.text("Frame log");
-                let fl = crate::log::get_frame_log();
+                let flog = world.read_resource::<FrameLog>();
+                let fl = flog.get_frame_log();
                 for s in &*fl {
                     ui.text(im_str!("{}", s));
                 }

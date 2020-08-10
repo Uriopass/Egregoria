@@ -29,7 +29,7 @@ extern crate log as extern_log;
 pub mod utils;
 
 #[macro_use]
-pub mod log;
+pub mod frame_log;
 
 #[macro_use]
 pub mod gui;
@@ -44,6 +44,7 @@ pub mod rendering;
 mod saveload;
 pub mod vehicles;
 
+use crate::frame_log::FrameLog;
 pub use imgui;
 use map_model::{Map, SerializedMap};
 pub use rand_provider::RandProvider;
@@ -59,7 +60,7 @@ const RNG_SEED: u64 = 123;
 
 impl<'a> EgregoriaState<'a> {
     pub fn run(&mut self) {
-        crate::log::clear();
+        self.world.read_resource::<FrameLog>().clear();
         let t = std::time::Instant::now();
         self.dispatcher.dispatch_seq(&self.world);
         self.dispatcher.dispatch_thread_local(&self.world);
@@ -83,6 +84,7 @@ impl<'a> EgregoriaState<'a> {
         world.insert(RandProvider::new(RNG_SEED));
         world.insert(LazyUpdate::default());
         world.insert(ParkingManagement::default());
+        world.insert(FrameLog::default());
 
         world.register::<Transform>();
         world.register::<Collider>();
