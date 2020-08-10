@@ -764,6 +764,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "headless-cli"
+version = "0.1.0"
+dependencies = [
+ "egregoria 0.1.0",
+]
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
