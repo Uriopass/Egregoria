@@ -44,7 +44,7 @@ impl Context {
         }
     }
 
-    pub fn start(mut self, mut state: game_loop::State<'static>) {
+    pub fn start(mut self, mut state: game_loop::State) {
         let clear_color = Color {
             r: 0.0,
             g: 0.0,

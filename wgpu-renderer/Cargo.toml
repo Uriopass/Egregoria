@@ -12,7 +12,7 @@ wgpu          = "0.5.0"
 futures       = { version = "0.3.4", default-features = false, features = ["executor"] }
 bytemuck      = "1.2.0"
 image         = { version = "0.23.4", default-features = false, features = ["png"] }
-egregoria         = { path = "../egregoria" }
+egregoria     = { path = "../egregoria" }
 geom          = { path = "../geom" }
 mint          = "0.5.5"
 imgui-wgpu    = "0.7.0"

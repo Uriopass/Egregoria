@@ -13,17 +13,17 @@ use map_model::Map;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
-pub struct State<'a> {
+pub struct State {
     camera: CameraHandler,
     gui: ImguiWrapper,
-    state: EgregoriaState<'a>,
+    state: EgregoriaState,
     last_time: Instant,
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
     grid: bool,
 }
 
-impl<'a> State<'a> {
+impl State {
     pub fn new(ctx: &mut Context) -> Self {
         let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 3.0);
 

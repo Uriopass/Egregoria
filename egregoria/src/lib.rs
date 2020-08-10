@@ -36,6 +36,7 @@ pub mod gui;
 
 pub mod engine_interaction;
 pub mod interaction;
+pub mod lua;
 pub mod map_interaction;
 pub mod pedestrians;
 pub mod physics;
@@ -45,20 +46,21 @@ mod saveload;
 pub mod vehicles;
 
 use crate::frame_log::FrameLog;
+use crate::lua::scenario_runner::{RunningScenario, RunningScenarioSystem};
 pub use imgui;
 use map_model::{Map, SerializedMap};
 pub use rand_provider::RandProvider;
 pub use specs;
 use std::io::Write;
 
-pub struct EgregoriaState<'a> {
+pub struct EgregoriaState {
     pub world: World,
-    dispatcher: Dispatcher<'a, 'a>,
+    dispatcher: Dispatcher<'static, 'static>,
 }
 
 const RNG_SEED: u64 = 123;
 
-impl<'a> EgregoriaState<'a> {
+impl EgregoriaState {
     pub fn run(&mut self) {
         self.world.read_resource::<FrameLog>().clear();
         let t = std::time::Instant::now();
@@ -68,7 +70,7 @@ impl<'a> EgregoriaState<'a> {
         self.world.write_resource::<RenderStats>().update_time = t.elapsed().as_secs_f32();
     }
 
-    pub fn setup() -> EgregoriaState<'a> {
+    pub fn setup() -> EgregoriaState {
         let mut world = World::empty();
 
         info!("Seed is {}", RNG_SEED);
@@ -85,6 +87,7 @@ impl<'a> EgregoriaState<'a> {
         world.insert(LazyUpdate::default());
         world.insert(ParkingManagement::default());
         world.insert(FrameLog::default());
+        world.insert(RunningScenario::default());
 
         world.register::<Transform>();
         world.register::<Collider>();
@@ -115,6 +118,7 @@ impl<'a> EgregoriaState<'a> {
             .with(ItinerarySystem, "itinerary", &["rgs", "res", "bull"])
             .with(VehicleDecision, "car", &["itinerary"])
             .with(PedestrianDecision, "pedestrian", &["itinerary"])
+            .with(RunningScenarioSystem, "scenario", &[])
             .with(
                 MovableSystem::default(),
                 "movable",
@@ -141,15 +145,12 @@ impl<'a> EgregoriaState<'a> {
 }
 
 fn load(world: &mut World) {
-    let map: Map = saveload::load::<map_model::SerializedMap>("map")
-        .map(|x| x.into())
-        .unwrap_or_default();
-
+    let map: Map = saveload::load_or_default::<map_model::SerializedMap>("map").into();
     world.insert(map);
     vehicles::setup(world);
     pedestrians::setup(world);
 
-    world.insert(crate::saveload::load::<Gui>("gui").unwrap_or_default());
+    world.insert(crate::saveload::load_or_default::<Gui>("gui"));
 }
 
 fn save(world: &mut World) {
