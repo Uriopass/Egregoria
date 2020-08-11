@@ -209,6 +209,13 @@ impl Itinerary {
         &self.local_path
     }
 
+    /// Does a logical prepend for a series of points to the local path vector.
+    /// If local is sorted soon to later, then it is also a physical prepend.
+    /// Otherwise it would actually be an append.
+    pub fn prepend_local_path(&mut self, points: Vec<Vec2>) {
+        self.local_path.splice(0..0, points.into_iter());
+    }
+
     pub fn has_ended(&self, time: f64) -> bool {
         match self.kind {
             ItineraryKind::WaitUntil(x) => time > x,
