@@ -19,7 +19,7 @@ pub struct Itinerary {
 pub enum ItineraryKind {
     None,
     WaitUntil(f64),
-    Simple(Traversable),
+    Simple,
     Route(Route),
 }
 
@@ -41,10 +41,10 @@ impl Itinerary {
         }
     }
 
-    pub fn simple(t: Traversable, m: &Map) -> Self {
+    pub fn simple(path: Vec<Vec2>) -> Self {
         Self {
-            kind: ItineraryKind::Simple(t),
-            local_path: t.points(m).into_vec(),
+            kind: ItineraryKind::Simple,
+            local_path: path,
         }
     }
 
@@ -175,7 +175,7 @@ impl Itinerary {
     pub fn is_terminal(&self) -> bool {
         match &self.kind {
             ItineraryKind::None | ItineraryKind::WaitUntil(_) => true,
-            ItineraryKind::Simple(_) => self.remaining_points() == 1,
+            ItineraryKind::Simple => self.remaining_points() == 1,
             ItineraryKind::Route(Route { reversed_route, .. }) => {
                 reversed_route.is_empty() && self.remaining_points() == 1
             }
@@ -189,15 +189,15 @@ impl Itinerary {
     pub fn get_terminal(&self) -> Option<Vec2> {
         match &self.kind {
             ItineraryKind::None | ItineraryKind::WaitUntil(_) => None,
-            ItineraryKind::Simple(_) => self.local_path.last().copied(),
+            ItineraryKind::Simple => self.local_path.last().copied(),
             ItineraryKind::Route(Route { end_pos, .. }) => Some(*end_pos),
         }
     }
 
     pub fn get_travers(&self) -> Option<&Traversable> {
         match &self.kind {
-            ItineraryKind::None | ItineraryKind::WaitUntil(_) => None,
-            ItineraryKind::Simple(cur) | ItineraryKind::Route(Route { cur, .. }) => Some(cur),
+            ItineraryKind::None | ItineraryKind::WaitUntil(_) | ItineraryKind::Simple => None,
+            ItineraryKind::Route(Route { cur, .. }) => Some(cur),
         }
     }
 
@@ -227,7 +227,7 @@ impl Default for ItineraryKind {
     }
 }
 
-enum_inspect_impl!(ItineraryKind; ItineraryKind::None, ItineraryKind::Simple(_), ItineraryKind::WaitUntil(_), ItineraryKind::Route(_));
+enum_inspect_impl!(ItineraryKind; ItineraryKind::None, ItineraryKind::Simple, ItineraryKind::WaitUntil(_), ItineraryKind::Route(_));
 
 pub struct ItinerarySystem;
 
