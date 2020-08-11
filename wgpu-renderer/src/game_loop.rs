@@ -5,6 +5,7 @@ use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeIn
 use egregoria::gui::Gui;
 use egregoria::interaction::FollowEntity;
 use egregoria::physics::Transform;
+use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
 use egregoria::rendering::Color;
 use egregoria::specs::WorldExt;
 use egregoria::EgregoriaState;
@@ -103,25 +104,19 @@ impl State {
             }
         }
 
-        for (order, col) in egregoria::utils::debugdraw::PERSISTENT_DEBUG_ORDERS
-            .lock()
-            .unwrap() // Unwrap ok: Mutex lives in main thread
+        let immediate = &mut *self.state.world.write_resource::<ImmediateDraw>();
+        for (order, col) in immediate
+            .persistent_orders
             .iter()
             .copied()
-            .chain(
-                egregoria::utils::debugdraw::DEBUG_ORDERS
-                    .lock()
-                    .unwrap() // Unwrap ok: Mutex lives in main thread
-                    .drain(..),
-            )
+            .chain(immediate.orders.drain(..))
         {
             tess.color = col.into();
-            use egregoria::utils::debugdraw::DebugOrder::*;
             match order {
-                Point { pos, size } => {
+                ImmediateOrder::Circle { pos, size } => {
                     tess.draw_circle(pos, 3.0, size);
                 }
-                Line { from, to } => {
+                ImmediateOrder::Line { from, to } => {
                     tess.draw_line(from, to, 3.0);
                 }
             }
