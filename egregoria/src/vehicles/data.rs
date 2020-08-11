@@ -2,7 +2,9 @@ use crate::engine_interaction::TimeInfo;
 use crate::gui::InspectDragf;
 use crate::interaction::Selectable;
 use crate::map_interaction::{Itinerary, ParkingManagement};
-use crate::physics::{Collider, CollisionWorld, Kinematics, Transform};
+use crate::physics::{
+    Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
+};
 use crate::rendering::assets::{AssetID, AssetRender};
 use crate::rendering::Color;
 use crate::utils::rand_world;
@@ -97,7 +99,7 @@ impl VehicleKind {
     }
 }
 
-pub fn spawn_new_vehicle(world: &mut World) {
+pub fn spawn_parked_vehicle(world: &mut World) {
     let r: f64 = rand_world(world);
 
     let map = world.read_resource::<Map>();
@@ -134,6 +136,7 @@ pub fn spawn_new_vehicle(world: &mut World) {
         pos,
         VehicleComponent::new(VehicleKind::Car, spot_id),
         it,
+        false,
     );
 }
 
@@ -142,8 +145,10 @@ pub fn make_vehicle_entity(
     trans: Transform,
     vehicle: VehicleComponent,
     it: Itinerary,
+    mk_collider: bool,
 ) -> Entity {
-    world
+    let w = vehicle.kind.width();
+    let e = world
         .create_entity()
         .with(AssetRender {
             id: AssetID::CAR,
@@ -157,7 +162,25 @@ pub fn make_vehicle_entity(
         .with(Selectable::default())
         .with(vehicle)
         .with(it)
-        .build()
+        .build();
+
+    if mk_collider {
+        let c = Collider(world.write_resource::<CollisionWorld>().insert(
+            trans.position(),
+            PhysicsObject {
+                dir: trans.direction(),
+                speed: 0.0,
+                radius: w * 0.5,
+                group: PhysicsGroup::Vehicles,
+            },
+        ));
+        world
+            .write_storage::<Collider>()
+            .insert(e, c)
+            .expect("Invalid ID ?");
+    }
+
+    e
 }
 
 pub fn delete_vehicle_entity(world: &mut World, e: Entity) {

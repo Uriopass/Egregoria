@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mlua          = { version = "0.4.1", features = ["vendored", "lua54"] }
+mlua          = { version = "0.4.1", features = ["vendored", "lua54", "send"] }
 geom          = { path = "../geom" }
 lazy_static   = "1.4.0"
 rand          = "0.7.3"

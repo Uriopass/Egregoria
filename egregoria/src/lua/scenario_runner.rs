@@ -1,13 +1,11 @@
 use mods::mlua::Lua;
 use specs::prelude::*;
+use std::sync::Mutex;
 
 #[derive(Default)]
 pub struct RunningScenario {
-    pub l: Option<Lua>,
+    pub l: Option<Mutex<Lua>>,
 }
-
-unsafe impl Send for RunningScenario {}
-unsafe impl Sync for RunningScenario {}
 
 pub struct RunningScenarioSystem;
 impl<'a> System<'a> for RunningScenarioSystem {
@@ -15,7 +13,8 @@ impl<'a> System<'a> for RunningScenarioSystem {
 
     fn run(&mut self, mut scenario: Self::SystemData) {
         if let Some(l) = &scenario.l {
-            if mods::call_f(l, "success").unwrap_or_default() {
+            mods::eval_f(&l.lock().unwrap(), "paint");
+            if mods::call_f(&l.lock().unwrap(), "success").unwrap_or_default() {
                 info!("scenario success");
                 scenario.l.take();
             }
@@ -27,6 +26,6 @@ pub fn set_scenario(world: &mut World, name: &str) {
     if let Some(l) = mods::load(name) {
         super::add_world(&l, world);
         mods::eval_f(&l, "init");
-        world.write_resource::<RunningScenario>().l = Some(l);
+        world.write_resource::<RunningScenario>().l = Some(Mutex::new(l));
     }
 }

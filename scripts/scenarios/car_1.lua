@@ -1,15 +1,14 @@
 function init()
-    x = rand_in(0.0, 50.0)
-    y = rand_in(0.0, 50.0)
-    start = vec2(x, y)
-    car = world:add_car(start)
-    arrival = vec2(start:x(), start:y())
+    local start = vec2(0.0, 0.0)
+    arrival = start + vec2(15.0, 0.0)
+    car = world:add_car(start, arrival)
 end
 
-function draw()
-    
+function paint()
+    draw:color(color(1.0, 0.0, 0.0, 1.0))
+    draw:circle(arrival, 0.5)
 end
 
 function success()
-    return (arrival - world:pos(car)):magnitude() < 0.1
+    return (arrival - world:pos(car)):magnitude() < 1.5
 end

@@ -2,7 +2,7 @@ use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
 use crate::frame_log::FrameLog;
 use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
 use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
-use crate::vehicles::{delete_vehicle_entity, spawn_new_vehicle, VehicleComponent};
+use crate::vehicles::{delete_vehicle_entity, spawn_parked_vehicle, VehicleComponent};
 use imgui::{im_str, ImString, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
@@ -355,7 +355,7 @@ impl Gui {
                 ui.same_line(0.0);
                 if ui.small_button(im_str!("spawn cars")) {
                     for _ in 0..self.n_cars {
-                        spawn_new_vehicle(world);
+                        spawn_parked_vehicle(world);
                     }
                 }
 
