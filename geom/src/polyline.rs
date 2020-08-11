@@ -92,7 +92,7 @@ impl PolyLine {
     /**
     Project p onto the polyline and return the distance squared from the projection to p
     **/
-    pub fn project_len2(&self, p: Vec2) -> f32 {
+    pub fn project_dist2(&self, p: Vec2) -> f32 {
         let proj = self.project(p);
         proj.distance2(p)
     }

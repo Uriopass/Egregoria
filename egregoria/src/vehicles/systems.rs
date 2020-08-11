@@ -3,7 +3,7 @@ use crate::map_interaction::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::Restrict;
-use crate::vehicles::{VehicleComponent, VehicleState, DISTANCE_FOR_UNPARKING, TIME_TO_PARK};
+use crate::vehicles::{VehicleComponent, VehicleState, DISTANCE2_FOR_UNPARKING, TIME_TO_PARK};
 use geom::intersections::{both_dist_to_inter, Ray};
 use geom::splines::Spline;
 use geom::{angle_lerp, Vec2};
@@ -123,9 +123,9 @@ fn state_update(
                 .get_travers()
                 .expect("Should have a traverse when unparking")
                 .points(map);
-            let distance = target.project_len2(trans.position());
+            let distance = target.project_dist2(trans.position());
 
-            if distance < DISTANCE_FOR_UNPARKING {
+            if distance < DISTANCE2_FOR_UNPARKING {
                 vehicle.state = VehicleState::Driving;
             }
         }
