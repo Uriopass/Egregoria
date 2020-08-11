@@ -2,7 +2,9 @@ use crate::map_interaction::Itinerary;
 use crate::physics::Transform;
 use crate::rendering::immediate::ImmediateDraw;
 use crate::rendering::Color;
+use crate::utils::delete_entity;
 use crate::vehicles::{make_vehicle_entity, VehicleComponent, VehicleKind, VehicleState};
+use geom::Vec2;
 use mods::mlua::{Lua, ToLua, UserData, UserDataMethods, Value};
 use mods::LuaVec2;
 use specs::{Entity, World, WorldExt};
@@ -19,10 +21,10 @@ impl UserData for LuaWorld {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method(
             "add_car",
-            |_: &Lua, sel: &Self, (pos, objective): (LuaVec2, LuaVec2)| unsafe {
+            |_: &Lua, sel: &Self, (pos, dir, objective): (LuaVec2, LuaVec2, LuaVec2)| unsafe {
                 let e = make_vehicle_entity(
                     &mut (*sel.w),
-                    Transform::new(pos.0),
+                    Transform::new_cos_sin(pos.0, dir.0.try_normalize().unwrap_or(Vec2::UNIT_X)),
                     VehicleComponent {
                         ang_velocity: 0.0,
                         wait_time: 0.0,
@@ -42,6 +44,11 @@ impl UserData for LuaWorld {
                 Some(t) => LuaVec2(t.position()).to_lua(l).unwrap(),
                 None => Value::Nil,
             })
+        });
+
+        methods.add_method("remove", |_: &Lua, sel: &Self, e: LuaEntity| unsafe {
+            delete_entity(&mut (*sel.w), e.0);
+            Ok(())
         });
     }
 }

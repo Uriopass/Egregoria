@@ -12,23 +12,13 @@ use imgui_inspect_derive::*;
 use map_model::{LaneKind, Map};
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
-use specs::{Builder, Entity, World, WorldExt};
+use specs::{Builder, World, WorldExt};
 use specs::{Component, DenseVecStorage};
 
 #[derive(Serialize, Deserialize, Component, Inspect)]
 pub struct PedestrianComponent {
     pub walking_speed: f32,
     pub walk_anim: f32,
-}
-
-pub fn delete_pedestrian(world: &mut World, e: Entity) {
-    {
-        let mut coworld = world.write_resource::<CollisionWorld>();
-        if let Some(Collider(handle)) = world.read_component::<Collider>().get(e) {
-            coworld.remove(*handle);
-        }
-    }
-    let _ = world.delete_entity(e);
 }
 
 pub fn spawn_pedestrian(world: &mut World) {

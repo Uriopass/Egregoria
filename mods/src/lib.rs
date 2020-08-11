@@ -49,8 +49,8 @@ pub fn call_f<'a, R: FromLuaMulti<'a>>(l: &'a Lua, f: &str) -> Option<R> {
     l.globals().call_function(f, ()).ok_print()
 }
 
-pub fn eval_f(l: &Lua, f: &str) {
-    let _: Option<()> = call_f(l, f);
+pub fn eval_f(l: &Lua, f: &str) -> Option<()> {
+    call_f(l, f)
 }
 
 pub fn load(name: &str) -> Option<Lua> {
@@ -61,6 +61,9 @@ pub fn load(name: &str) -> Option<Lua> {
     let mut data = String::new();
     data_file.read_to_string(&mut data).ok()?;
     let lua = unsafe { Lua::unsafe_new() };
+    lua.load(r#"package.path = "lua/?.lua;?.lua""#)
+        .eval()
+        .ok_print()?;
     add_std(&lua);
     lua.load(&data).eval().ok_print()?;
     Some(lua)
@@ -117,5 +120,5 @@ pub fn eval_script<T: for<'a> FromLuaMulti<'a>>(name: &'static str) -> Option<T>
 }
 
 pub fn gen_house() -> Option<Polygon> {
-    eval_script::<LuaPolygon>("scripts/test.lua").map(|x| x.0)
+    eval_script::<LuaPolygon>("lua/test.lua").map(|x| x.0)
 }
