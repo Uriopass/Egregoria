@@ -102,9 +102,7 @@ impl<'a> System<'a> for VehicleDecision {
     }
 }
 
-/**
-Decides whether a vehicle should change states, from parked to unparking to driving etc
-**/
+/// Decides whether a vehicle should change states, from parked to unparking to driving etc
 fn state_update(
     vehicle: &mut VehicleComponent,
     kin: &mut Kinematics,
@@ -119,8 +117,8 @@ fn state_update(
 ) {
     match vehicle.state {
         VehicleState::ParkedToRoad => {
-            /* Check the distance to the first traverseable, i.e. the start of the path, and if we're
-            close enough then exit unparking mode. */
+            // Check the distance to the first traverseable, i.e. the start of the path, and if we're
+            // close enough then exit unparking mode.
             let target = it
                 .get_travers()
                 .expect("Should have a traverse when unparking")
@@ -132,7 +130,7 @@ fn state_update(
             }
         }
         VehicleState::RoadToPark(_, ref mut t) => {
-            // Vehicle is on rails when parking. Increment the spline time. Once done parking, set state to park.
+            // Vehicle is on rails when parking.
 
             *t += time.delta / TIME_TO_PARK;
 
@@ -228,9 +226,7 @@ fn state_update(
     }
 }
 
-/**
-Handles actually moving the vehicles around, including acceleration and other physics stuff.
-**/
+/// Handles actually moving the vehicles around, including acceleration and other physics stuff.
 fn physics(
     trans: &mut Transform,
     kin: &mut Kinematics,
@@ -318,9 +314,7 @@ fn next_objective(
     .map(move |it| (it, spot_id))
 }
 
-/**
-Decide the appropriate velocity and direction to aim for.
-**/
+/// Decide the appropriate velocity and direction to aim for.
 pub fn calc_decision<'a>(
     vehicle: &mut VehicleComponent,
     map: &Map,
@@ -409,6 +403,9 @@ pub fn calc_decision<'a>(
     (vehicle.kind.cruising_speed(), dir_to_pos)
 }
 
+/// Calculates the distance to the closest problematic object in front of the car.
+/// It can be another car or a pedestrian, or it can be a potential collision point from a
+/// car coming perpendicularly.
 fn calc_front_dist<'a>(
     vehicle: &mut VehicleComponent,
     trans: &Transform,
