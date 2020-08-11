@@ -138,7 +138,7 @@ impl Gui {
         if let Some(every) = self.auto_save_every.into() {
             let now = Instant::now();
             if now.duration_since(self.last_save) > every {
-                crate::save(world);
+                crate::save_to_disk(world);
                 self.last_save = now;
             }
         }
@@ -344,7 +344,7 @@ impl Gui {
                 }
             });
             if ui.small_button(im_str!("Save")) {
-                crate::save(world);
+                crate::save_to_disk(world);
             }
         });
     }

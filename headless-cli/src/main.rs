@@ -3,6 +3,7 @@ use egregoria::engine_interaction::TimeInfo;
 use egregoria::specs::WorldExt;
 use egregoria::EgregoriaState;
 use log::LevelFilter;
+use std::path::Path;
 
 #[derive(FromArgs)]
 #[argh(description = "\
@@ -19,12 +20,19 @@ fn main() {
     let args: Args = argh::from_env();
 
     for scenario in args.scenario {
-        let state = egregoria::EgregoriaState::setup();
-        run(state, &scenario)
+        if let Ok(r) = std::fs::read_dir(&scenario) {
+            for p in r.filter_map(|x| x.ok()) {
+                let state = egregoria::EgregoriaState::init();
+                run(state, p.path().as_path())
+            }
+        } else {
+            let state = egregoria::EgregoriaState::init();
+            run(state, scenario.as_str().as_ref())
+        }
     }
 }
 
-fn run(mut state: EgregoriaState, name: &str) {
+fn run(mut state: EgregoriaState, name: &Path) {
     let l = match mods::load(name) {
         Some(l) => l,
         None => {
@@ -33,12 +41,12 @@ fn run(mut state: EgregoriaState, name: &str) {
     };
 
     egregoria::lua::add_world(&l, &mut state.world);
-    mods::eval_f(&l, "init");
+    mods::eval_f(&l, "Init");
 
     for i in 1..1000 {
         step(&mut state);
 
-        let v: Option<bool> = mods::call_f(&l, "success");
+        let v: Option<bool> = mods::call_f(&l, "Success");
         let v = match v {
             Some(x) => x,
             None => {
@@ -47,12 +55,12 @@ fn run(mut state: EgregoriaState, name: &str) {
         };
 
         if v {
-            log::info!("success for {} at iteration {}", name, i);
+            log::info!("success for {:?} at iteration {}", name, i);
             return;
         }
     }
 
-    log::warn!("failure for {}", name);
+    log::warn!("failure for {:?}", name);
 }
 
 const TIME_STEP: f64 = 1.0 / 30.0;

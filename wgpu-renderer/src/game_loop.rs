@@ -8,7 +8,7 @@ use egregoria::physics::Transform;
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
 use egregoria::rendering::Color;
 use egregoria::specs::WorldExt;
-use egregoria::EgregoriaState;
+use egregoria::{load_from_disk, EgregoriaState};
 use geom::Vec2;
 use map_model::Map;
 use std::time::Instant;
@@ -30,7 +30,8 @@ impl State {
 
         let wrapper = ImguiWrapper::new(&mut ctx.gfx);
 
-        let state = egregoria::EgregoriaState::setup();
+        let mut state = egregoria::EgregoriaState::init();
+        load_from_disk(&mut state.world);
 
         Self {
             camera,
