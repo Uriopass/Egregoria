@@ -1,9 +1,10 @@
 use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
 use crate::frame_log::FrameLog;
 use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
-use crate::pedestrians::{delete_pedestrian, spawn_pedestrian, PedestrianComponent};
-use crate::vehicles::{delete_vehicle_entity, spawn_parked_vehicle, VehicleComponent};
-use imgui::{im_str, ImString, StyleVar};
+use crate::pedestrians::{spawn_pedestrian, PedestrianComponent};
+use crate::utils::delete_entity;
+use crate::vehicles::{spawn_parked_vehicle, VehicleComponent};
+use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 pub use inspect::*;
@@ -51,12 +52,25 @@ pub struct Gui {
     pub show_tips: bool,
     pub show_debug_layers: bool,
     pub show_scenarios: bool,
-    pub cur_scenario: String,
     pub auto_save_every: AutoSaveEvery,
     #[serde(skip)]
     pub last_save: Instant,
+    #[serde(skip)]
+    pub available_scenarios: Vec<String>,
     pub n_cars: i32,
     pub n_pedestrians: i32,
+}
+
+fn available_scenarios() -> Vec<String> {
+    let mut available_scenarios = vec![];
+    for file in std::fs::read_dir("lua/scenarios")
+        .into_iter()
+        .flatten()
+        .filter_map(|x| x.ok())
+    {
+        available_scenarios.push(file.file_name().to_string_lossy().into_owned());
+    }
+    available_scenarios
 }
 
 impl Default for Gui {
@@ -67,9 +81,9 @@ impl Default for Gui {
             show_tips: false,
             show_debug_layers: false,
             show_scenarios: false,
-            cur_scenario: String::new(),
             auto_save_every: AutoSaveEvery::OneMinute,
             last_save: Instant::now(),
+            available_scenarios: available_scenarios(),
             n_cars: 100,
             n_pedestrians: 100,
         }
@@ -101,21 +115,21 @@ impl Gui {
         if !self.show_scenarios {
             return;
         }
-        let buf = &mut self.cur_scenario;
+        let scenarios = &mut self.available_scenarios;
         Window::new(im_str!("Scenarios"))
             .position([300.0, 300.0], imgui::Condition::FirstUseEver)
             .opened(&mut self.show_scenarios)
             .build(&ui, || {
-                let mut b = ImString::new(buf.clone());
-                if imgui::InputText::new(ui, im_str!(""), &mut b)
-                    .resize_buffer(true)
-                    .build()
-                {
-                    *buf = b.to_string();
+                for scenario in scenarios.iter() {
+                    if ui.small_button(&im_str!("{}", scenario)) {
+                        crate::lua::scenario_runner::set_scenario(
+                            world,
+                            &format!("lua/scenarios/{}", scenario),
+                        );
+                    }
                 }
-
-                if ui.small_button(im_str!("play scenario")) {
-                    crate::lua::scenario_runner::set_scenario(world, &buf);
+                if ui.small_button(im_str!("reload scenario list")) {
+                    *scenarios = available_scenarios();
                 }
             });
     }
@@ -382,7 +396,7 @@ impl Gui {
                         .collect();
 
                     for e in to_delete {
-                        delete_vehicle_entity(world, e);
+                        delete_entity(world, e);
                     }
                 }
 
@@ -396,7 +410,7 @@ impl Gui {
                         .collect();
 
                     for e in to_delete {
-                        delete_pedestrian(world, e);
+                        delete_entity(world, e);
                     }
                 }
 

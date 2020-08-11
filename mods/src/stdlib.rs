@@ -34,6 +34,10 @@ pub struct LuaVec2(pub Vec2);
 impl UserData for LuaVec2 {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method("magnitude", |_, vec, ()| Ok(vec.0.magnitude()));
+        methods.add_method("normalize", |_, vec, ()| {
+            Ok(LuaVec2(vec.0.try_normalize().unwrap_or(Vec2::UNIT_X)))
+        });
+        methods.add_method("distance", |_, vec, v: LuaVec2| Ok(vec.0.distance(v.0)));
         methods.add_method("x", |_, vec, ()| Ok(vec.0.x));
         methods.add_method("y", |_, vec, ()| Ok(vec.0.y));
 

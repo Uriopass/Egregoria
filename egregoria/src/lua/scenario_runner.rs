@@ -13,9 +13,24 @@ impl<'a> System<'a> for RunningScenarioSystem {
 
     fn run(&mut self, mut scenario: Self::SystemData) {
         if let Some(l) = &scenario.l {
-            mods::eval_f(&l.lock().unwrap(), "paint");
-            if mods::call_f(&l.lock().unwrap(), "success").unwrap_or_default() {
+            let l = l.lock().unwrap();
+            mods::eval_f(&l, "Draw");
+
+            let r: Option<bool> = mods::call_f(&l, "Success");
+            let is_success = match r {
+                Some(x) => x,
+                None => {
+                    drop(l);
+
+                    scenario.l.take();
+                    return;
+                }
+            };
+            if is_success {
                 info!("scenario success");
+                mods::eval_f(&l, "Cleanup");
+
+                drop(l);
                 scenario.l.take();
             }
         }
@@ -25,7 +40,11 @@ impl<'a> System<'a> for RunningScenarioSystem {
 pub fn set_scenario(world: &mut World, name: &str) {
     if let Some(l) = mods::load(name) {
         super::add_world(&l, world);
-        mods::eval_f(&l, "init");
-        world.write_resource::<RunningScenario>().l = Some(Mutex::new(l));
+        mods::eval_f(&l, "Init");
+        world
+            .write_resource::<RunningScenario>()
+            .l
+            .replace(Mutex::new(l))
+            .map(|old| mods::eval_f(&old.lock().unwrap(), "Cleanup"));
     }
 }

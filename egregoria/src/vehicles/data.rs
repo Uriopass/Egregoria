@@ -183,14 +183,6 @@ pub fn make_vehicle_entity(
     e
 }
 
-pub fn delete_vehicle_entity(world: &mut World, e: Entity) {
-    if let Some(&Collider(handle)) = world.read_component::<Collider>().get(e) {
-        let mut coworld = world.write_resource::<CollisionWorld>();
-        coworld.remove(handle);
-    }
-    world.delete_entity(e).unwrap(); // Unwrap ok: only point where car can be deleted
-}
-
 pub fn get_random_car_color() -> Color {
     let car_colors: [(Color, f32); 9] = [
         (Color::from_hex(0x22_22_22), 0.22),  // Black
