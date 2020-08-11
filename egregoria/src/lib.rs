@@ -47,6 +47,7 @@ pub mod vehicles;
 
 use crate::frame_log::FrameLog;
 use crate::lua::scenario_runner::{RunningScenario, RunningScenarioSystem};
+use crate::rendering::immediate::ImmediateDraw;
 pub use imgui;
 use map_model::{Map, SerializedMap};
 pub use rand_provider::RandProvider;
@@ -88,6 +89,7 @@ impl EgregoriaState {
         world.insert(ParkingManagement::default());
         world.insert(FrameLog::default());
         world.insert(RunningScenario::default());
+        world.insert(ImmediateDraw::default());
 
         world.register::<Transform>();
         world.register::<Collider>();

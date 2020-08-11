@@ -444,7 +444,6 @@ dependencies = [
  "imgui 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-inspect 0.4.0",
  "imgui-inspect-derive 0.4.1",
- "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "map_model 0.1.0",
  "mint 0.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
