@@ -14,10 +14,10 @@ use serde::{Deserialize, Serialize};
 use specs::{Builder, Entity, World, WorldExt};
 use specs::{Component, DenseVecStorage};
 
-// How close a vehicle should be to the start of its itinerary before it decides it's good enough and starts driving.
+/// How close a vehicle should be to the start of its itinerary before it decides it's good enough and starts driving.
 pub const DISTANCE_FOR_UNPARKING: f32 = 5.0;
 
-// The duration for the parking animation.
+/// The duration for the parking animation.
 pub const TIME_TO_PARK: f32 = 4.0;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
