@@ -121,7 +121,8 @@ fn state_update(
             Check the distance to the first traverseable, i.e. the start of the path, and if we're
             close enough then exit unparking mode.
             */
-            let target = it.get_travers()
+            let target = it
+                .get_travers()
                 .expect("Should have a traverse when unparking")
                 .points(map);
             let distance = target.project_len(trans.position());
@@ -207,7 +208,7 @@ fn state_update(
                     new_points.append(&mut itin.local_path.clone());
                     let itin = Itinerary {
                         kind: itin.kind,
-                        local_path: new_points
+                        local_path: new_points,
                     };
 
                     let h = Collider(cow.lock().unwrap().insert(
@@ -260,7 +261,7 @@ fn physics(
             trans.set_position(spline.get(t));
             trans.set_direction(spline.derivative(t).normalize());
             return;
-        },
+        }
         VehicleState::ParkedToRoad(_) => {}
         VehicleState::Driving => {}
     }
