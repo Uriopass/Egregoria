@@ -29,8 +29,6 @@ struct LuaFile {
     lua: Lua,
 }
 
-unsafe impl Send for LuaFile {}
-
 pub struct Mods {
     files: RwLock<HashMap<&'static str, Mutex<LuaFile>>>, // Mutex is very important to guarentee sync
 }

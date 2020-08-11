@@ -404,11 +404,7 @@ fn calc_front_dist<'a>(
     let my_radius = self_obj.radius;
     let speed = self_obj.speed;
 
-    let on_lane = it
-        .get_travers()
-        .expect("Traversable should be valid")
-        .kind
-        .is_lane();
+    let on_lane = it.get_travers().map_or(false, |t| t.kind.is_lane());
 
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {

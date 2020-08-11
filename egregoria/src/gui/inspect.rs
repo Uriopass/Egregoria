@@ -1,5 +1,6 @@
 use crate::interaction::IntersectionComponent;
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
+use crate::map_interaction::Itinerary;
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::rendering::assets::AssetRender;
@@ -384,6 +385,7 @@ impl InspectRenderer {
         dirty |= self.inspect_component::<Collider>(world, ui);
         dirty |= self.inspect_component::<Movable>(world, ui);
         dirty |= self.inspect_component::<IntersectionComponent>(world, ui);
+        dirty |= self.inspect_component::<Itinerary>(world, ui);
 
         let follow = &mut world.write_resource::<FollowEntity>().0;
         if follow.is_none() {

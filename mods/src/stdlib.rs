@@ -1,7 +1,7 @@
 use geom::polygon::Polygon;
 use geom::Vec2;
 use mlua::prelude::LuaResult;
-use mlua::{Lua, MetaMethod, UserData, UserDataMethods};
+use mlua::{FromLuaMulti, Lua, MetaMethod, ToLuaMulti, UserData, UserDataMethods};
 
 #[derive(Clone)]
 pub struct LuaPolygon(pub Polygon);
@@ -65,12 +65,16 @@ impl UserData for LuaVec2 {
     }
 }
 
-macro_rules! std_add_fn {
-    ($l: expr, $e: expr) => {
-        $l.globals()
-            .set(stringify!($e), $l.create_function($e).unwrap())
-            .unwrap();
-    };
+pub fn add_fn<'lua, 'callback, A, R, F>(l: &'lua Lua, name: &str, f: F)
+where
+    'lua: 'callback,
+    A: FromLuaMulti<'callback>,
+    R: ToLuaMulti<'callback>,
+    F: 'static + Send + Fn(&'callback Lua, A) -> mlua::Result<R>,
+{
+    l.globals()
+        .set(name, l.create_function(f).unwrap())
+        .unwrap()
 }
 
 fn poly_rect(_: &Lua, (w, h): (f32, f32)) -> LuaResult<LuaPolygon> {
@@ -86,7 +90,7 @@ fn vec2(_: &Lua, (x, y): (f32, f32)) -> LuaResult<LuaVec2> {
 }
 
 pub fn add_std(lua: &Lua) {
-    std_add_fn!(lua, poly_rect);
-    std_add_fn!(lua, rand_in);
-    std_add_fn!(lua, vec2);
+    add_fn(lua, "poly_rect", poly_rect);
+    add_fn(lua, "rand_in", rand_in);
+    add_fn(lua, "vec2", vec2);
 }

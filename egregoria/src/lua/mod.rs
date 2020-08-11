@@ -1,5 +1,7 @@
 use crate::map_interaction::Itinerary;
 use crate::physics::Transform;
+use crate::rendering::immediate::ImmediateDraw;
+use crate::rendering::Color;
 use crate::vehicles::{make_vehicle_entity, VehicleComponent, VehicleKind, VehicleState};
 use mods::mlua::{Lua, ToLua, UserData, UserDataMethods, Value};
 use mods::LuaVec2;
@@ -11,23 +13,29 @@ struct LuaWorld {
     w: *mut World,
 }
 
+unsafe impl Send for LuaWorld {}
+
 impl UserData for LuaWorld {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_method("add_car", |_: &Lua, sel: &Self, pos: LuaVec2| unsafe {
-            let e = make_vehicle_entity(
-                &mut (*sel.w),
-                Transform::new(pos.0),
-                VehicleComponent {
-                    ang_velocity: 0.0,
-                    wait_time: 0.0,
-                    park_spot: None,
-                    state: VehicleState::Driving,
-                    kind: VehicleKind::Car,
-                },
-                Itinerary::none(),
-            );
-            Ok(LuaEntity(e))
-        });
+        methods.add_method(
+            "add_car",
+            |_: &Lua, sel: &Self, (pos, objective): (LuaVec2, LuaVec2)| unsafe {
+                let e = make_vehicle_entity(
+                    &mut (*sel.w),
+                    Transform::new(pos.0),
+                    VehicleComponent {
+                        ang_velocity: 0.0,
+                        wait_time: 0.0,
+                        park_spot: None,
+                        state: VehicleState::Driving,
+                        kind: VehicleKind::Car,
+                    },
+                    Itinerary::simple(vec![objective.0]),
+                    true,
+                );
+                Ok(LuaEntity(e))
+            },
+        );
 
         methods.add_method("pos", |l: &Lua, sel: &Self, e: LuaEntity| unsafe {
             Ok(match (*sel.w).read_storage::<Transform>().get(e.0) {
@@ -38,13 +46,54 @@ impl UserData for LuaWorld {
     }
 }
 
+struct LuaDraw {
+    w: *mut World,
+    col: Color,
+}
+
+unsafe impl Send for LuaDraw {}
+
+impl UserData for LuaDraw {
+    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method_mut("circle", |_, sel, (pos, size): (LuaVec2, f32)| unsafe {
+            (*sel.w)
+                .write_resource::<ImmediateDraw>()
+                .circle(pos.0, size)
+                .color(sel.col);
+            Ok(())
+        });
+        methods.add_method_mut("color", |_, sel, col: LuaColor| {
+            sel.col = col.0;
+            Ok(())
+        });
+    }
+}
+
+#[derive(Clone, Copy)]
+struct LuaColor(Color);
+impl UserData for LuaColor {}
+
 #[derive(Clone, Copy)]
 struct LuaEntity(Entity);
 
 impl UserData for LuaEntity {}
 
+fn color(_: &Lua, (r, g, b, a): (f32, f32, f32, f32)) -> mods::mlua::Result<LuaColor> {
+    Ok(LuaColor(Color { r, g, b, a }))
+}
+
 pub fn add_world(lua: &Lua, w: &mut World) {
     lua.globals()
         .set("world", LuaWorld { w: w as *mut World })
         .unwrap();
+    lua.globals()
+        .set(
+            "draw",
+            LuaDraw {
+                w: w as *mut World,
+                col: Color::WHITE,
+            },
+        )
+        .unwrap();
+    mods::add_fn(lua, "color", color)
 }

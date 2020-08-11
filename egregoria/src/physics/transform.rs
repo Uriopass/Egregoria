@@ -2,7 +2,7 @@ use geom::{vec2, Vec2};
 use serde::{Deserialize, Serialize};
 use specs::{Component, VecStorage};
 
-#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Component, Debug, PartialEq, Clone, Serialize, Deserialize, Copy)]
 #[storage(VecStorage)]
 pub struct Transform {
     position: Vec2,
