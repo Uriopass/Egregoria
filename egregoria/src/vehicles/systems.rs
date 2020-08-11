@@ -117,10 +117,8 @@ fn state_update(
 ) {
     match vehicle.state {
         VehicleState::ParkedToRoad(_) => {
-            /*
-            Check the distance to the first traverseable, i.e. the start of the path, and if we're
-            close enough then exit unparking mode.
-            */
+            /* Check the distance to the first traverseable, i.e. the start of the path, and if we're
+            close enough then exit unparking mode. */
             let target = it
                 .get_travers()
                 .expect("Should have a traverse when unparking")
@@ -128,15 +126,11 @@ fn state_update(
             let distance = target.project_len(trans.position());
 
             if distance < DISTANCE_FOR_UNPARKING {
-                // kin.velocity = trans.direction() * 2.0;
-
                 vehicle.state = VehicleState::Driving;
             }
         }
         VehicleState::RoadToPark(_, ref mut t) => {
-            /*
-            Vehicle is on rails when parking. Increment the spline time. Once done parking, set state to park.
-            */
+            // Vehicle is on rails when parking. Increment the spline time. Once done parking, set state to park.
 
             *t += time.delta / TIME_TO_PARK;
 
@@ -175,7 +169,7 @@ fn state_update(
             }
         }
         VehicleState::Parked(spot) => {
-            /* Wait until it's time to start driving again, then set a route and unpark. */
+            // Wait until it's time to start driving again, then set a route and unpark.
             if it.has_ended(time.time) {
                 let mut lane = map.parking_to_drive(spot);
 
