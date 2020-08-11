@@ -11,6 +11,7 @@ use std::time::SystemTime;
 pub use mlua;
 
 mod stdlib;
+use std::path::Path;
 pub use stdlib::*;
 
 trait ResultExt<T> {
@@ -53,9 +54,10 @@ pub fn eval_f(l: &Lua, f: &str) -> Option<()> {
     call_f(l, f)
 }
 
-pub fn load(name: &str) -> Option<Lua> {
+pub fn load<P: AsRef<Path>>(name: P) -> Option<Lua> {
+    let name = name.as_ref();
     let mut data_file = File::open(name)
-        .map_err(|err| log::error!("Could not open `{}`, {}", name, err))
+        .map_err(|err| log::error!("Could not open `{:?}`, {}", name, err))
         .ok()?;
 
     let mut data = String::new();

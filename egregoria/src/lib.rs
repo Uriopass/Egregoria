@@ -71,7 +71,7 @@ impl EgregoriaState {
         self.world.write_resource::<RenderStats>().update_time = t.elapsed().as_secs_f32();
     }
 
-    pub fn setup() -> EgregoriaState {
+    pub fn init() -> EgregoriaState {
         let mut world = World::empty();
 
         info!("Seed is {}", RNG_SEED);
@@ -140,13 +140,11 @@ impl EgregoriaState {
 
         dispatcher.setup(&mut world);
 
-        load(&mut world);
-
         Self { world, dispatcher }
     }
 }
 
-fn load(world: &mut World) {
+pub fn load_from_disk(world: &mut World) {
     let map: Map = saveload::load_or_default::<map_model::SerializedMap>("map").into();
     world.insert(map);
     vehicles::setup(world);
@@ -155,7 +153,7 @@ fn load(world: &mut World) {
     world.insert(crate::saveload::load_or_default::<Gui>("gui"));
 }
 
-fn save(world: &mut World) {
+pub fn save_to_disk(world: &mut World) {
     let _ = std::io::stdout().flush();
     crate::saveload::save(&*world.read_resource::<Gui>(), "gui");
     crate::vehicles::save(world);
