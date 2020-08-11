@@ -25,7 +25,7 @@ impl<'a> System<'a> for RunningScenarioSystem {
 
 pub fn set_scenario(world: &mut World, name: &str) {
     if let Some(l) = mods::load(name) {
-        super::set_state(&l, world);
+        super::add_world(&l, world);
         mods::eval_f(&l, "init");
         world.write_resource::<RunningScenario>().l = Some(l);
     }

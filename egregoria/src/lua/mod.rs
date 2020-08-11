@@ -43,8 +43,8 @@ struct LuaEntity(Entity);
 
 impl UserData for LuaEntity {}
 
-pub fn set_state(lua: &Lua, w: &mut World) {
+pub fn add_world(lua: &Lua, w: &mut World) {
     lua.globals()
-        .set("state", LuaWorld { w: w as *mut World })
+        .set("world", LuaWorld { w: w as *mut World })
         .unwrap();
 }

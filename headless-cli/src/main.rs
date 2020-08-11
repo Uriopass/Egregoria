@@ -32,7 +32,7 @@ fn run(mut state: EgregoriaState, name: &str) {
         }
     };
 
-    egregoria::lua::set_state(&l, &mut state.world);
+    egregoria::lua::add_world(&l, &mut state.world);
     mods::eval_f(&l, "init");
 
     for i in 1..1000 {
