@@ -10,9 +10,9 @@ use specs::Component;
 
 #[derive(Component, Debug, Default, Inspect, Serialize, Deserialize)]
 pub struct Itinerary {
-    kind: ItineraryKind,
+    pub kind: ItineraryKind,
     #[inspect(proxy_type = "InspectVec<Vec2>")]
-    local_path: Vec<Vec2>,
+    pub local_path: Vec<Vec2>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

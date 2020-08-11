@@ -3,7 +3,7 @@ use crate::map_interaction::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::Restrict;
-use crate::vehicles::{VehicleComponent, VehicleState, TIME_TO_PARK};
+use crate::vehicles::{VehicleComponent, VehicleState, DISTANCE_FOR_UNPARKING, TIME_TO_PARK};
 use geom::intersections::{both_dist_to_inter, Ray};
 use geom::splines::Spline;
 use geom::{angle_lerp, Vec2};
@@ -100,6 +100,9 @@ impl<'a> System<'a> for VehicleDecision {
     }
 }
 
+/**
+Decides whether a vehicle should change states, from parked to unparking to driving etc
+**/
 fn state_update(
     vehicle: &mut VehicleComponent,
     kin: &mut Kinematics,
@@ -113,21 +116,27 @@ fn state_update(
     time: &TimeInfo,
 ) {
     match vehicle.state {
-        VehicleState::ParkedToRoad(_, ref mut t) => {
-            *t += time.delta / TIME_TO_PARK;
-
+        VehicleState::ParkedToRoad(_) => {
+            /*
+            Check the distance to the first traverseable, i.e. the start of the path, and if we're
+            close enough then exit unparking mode.
+            */
             let target = it.get_travers()
                 .expect("Should have a traverse when unparking")
                 .points(map);
             let distance = target.project_len(trans.position());
 
-            if distance < 5.0 {
-                kin.velocity = trans.direction() * 2.0;
+            if distance < DISTANCE_FOR_UNPARKING {
+                // kin.velocity = trans.direction() * 2.0;
 
                 vehicle.state = VehicleState::Driving;
             }
         }
         VehicleState::RoadToPark(_, ref mut t) => {
+            /*
+            Vehicle is on rails when parking. Increment the spline time. Once done parking, set state to park.
+            */
+
             *t += time.delta / TIME_TO_PARK;
 
             if *t >= 1.0 {
@@ -165,6 +174,7 @@ fn state_update(
             }
         }
         VehicleState::Parked(spot) => {
+            /* Wait until it's time to start driving again, then set a route and unpark. */
             if it.has_ended(time.time) {
                 let mut lane = map.parking_to_drive(spot);
 
@@ -192,6 +202,14 @@ fn state_update(
                         to_derivative: dir * 2.0,
                     };
 
+                    // Create some points along the spline and repack the itin with the new points.
+                    let mut new_points: Vec<Vec2> = s.points(8).collect();
+                    new_points.append(&mut itin.local_path.clone());
+                    let itin = Itinerary {
+                        kind: itin.kind,
+                        local_path: new_points
+                    };
+
                     let h = Collider(cow.lock().unwrap().insert(
                         trans.position(),
                         PhysicsObject {
@@ -209,7 +227,7 @@ fn state_update(
 
                     *it = itin;
                     vehicle.park_spot = Some(park);
-                    vehicle.state = VehicleState::ParkedToRoad(s, 0.0);
+                    vehicle.state = VehicleState::ParkedToRoad(s);
                 } else {
                     *it = Itinerary::wait_until(time.time + 10.0);
                 }
@@ -218,6 +236,9 @@ fn state_update(
     }
 }
 
+/**
+Handles actually moving the vehicles around, including acceleration and other physics stuff.
+**/
 fn physics(
     trans: &mut Transform,
     kin: &mut Kinematics,
@@ -235,11 +256,12 @@ fn physics(
             trans.set_direction(spot.orientation);
             return;
         }
-        VehicleState::ParkedToRoad(spline, t) | VehicleState::RoadToPark(spline, t) => {
+        VehicleState::RoadToPark(spline, t) => {
             trans.set_position(spline.get(t));
             trans.set_direction(spline.derivative(t).normalize());
             return;
-        }
+        },
+        VehicleState::ParkedToRoad(_) => {}
         VehicleState::Driving => {}
     }
 
@@ -338,6 +360,11 @@ pub fn calc_decision<'a>(
         (objective - position).try_normalize(),
         return default_return
     );
+
+    // If unparking, just set desired speed to 1/5 of usual
+    if let VehicleState::ParkedToRoad(_) = vehicle.state {
+        return (vehicle.kind.cruising_speed() / 5.0, dir_to_pos);
+    }
 
     let time_to_stop = speed / vehicle.kind.deceleration();
     let stop_dist = time_to_stop * speed / 2.0;
