@@ -246,7 +246,7 @@ impl Lane {
     }
 
     pub fn dist2_to(&self, p: Vec2) -> f32 {
-        (self.points.project(p) - p).magnitude2()
+        self.points.project_dist2(p)
     }
 
     pub fn dir_from(&self, i: IntersectionID) -> TraverseDirection {

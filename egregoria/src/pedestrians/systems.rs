@@ -148,6 +148,7 @@ pub fn calc_decision<'a>(
 
     if !it.is_terminal() {
         if let Some(points) = it.get_travers().map(|x| x.raw_points(map)) {
+            // Fixme: performance heavy on long curved roads which can have many points
             let projected = points.project(position);
             let lane_force = projected - trans.position();
             let m = lane_force.magnitude();
