@@ -10,9 +10,9 @@ use specs::Component;
 
 #[derive(Component, Debug, Default, Inspect, Serialize, Deserialize)]
 pub struct Itinerary {
-    pub kind: ItineraryKind,
+    kind: ItineraryKind,
     #[inspect(proxy_type = "InspectVec<Vec2>")]
-    pub local_path: Vec<Vec2>,
+    local_path: Vec<Vec2>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -207,6 +207,13 @@ impl Itinerary {
 
     pub fn local_path(&self) -> &[Vec2] {
         &self.local_path
+    }
+
+    /// Does a logical prepend for a series of points to the local path vector.
+    /// If local is sorted soon to later, then it is also a physical prepend.
+    /// Otherwise it would actually be an append.
+    pub fn prepend_local_path(&mut self, points: Vec<Vec2>) {
+        self.local_path.splice(0..0, points.into_iter());
     }
 
     pub fn has_ended(&self, time: f64) -> bool {

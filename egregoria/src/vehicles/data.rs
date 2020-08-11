@@ -23,7 +23,7 @@ pub const TIME_TO_PARK: f32 = 4.0;
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum VehicleState {
     Parked(ParkingSpotID),
-    ParkedToRoad(Spline),
+    ParkedToRoad,
     Driving,
     RoadToPark(Spline, f32),
 }

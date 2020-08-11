@@ -116,14 +116,14 @@ fn state_update(
     time: &TimeInfo,
 ) {
     match vehicle.state {
-        VehicleState::ParkedToRoad(_) => {
+        VehicleState::ParkedToRoad => {
             /* Check the distance to the first traverseable, i.e. the start of the path, and if we're
             close enough then exit unparking mode. */
             let target = it
                 .get_travers()
                 .expect("Should have a traverse when unparking")
                 .points(map);
-            let distance = target.project_len(trans.position());
+            let distance = target.project_len2(trans.position());
 
             if distance < DISTANCE_FOR_UNPARKING {
                 vehicle.state = VehicleState::Driving;
@@ -180,7 +180,7 @@ fn state_update(
                 let travers: Option<Traversable> = lane
                     .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
 
-                if let Some((itin, park)) =
+                if let Some((mut itin, park)) =
                     next_objective(trans.position(), parking, map, travers.as_ref())
                 {
                     parking.free(spot);
@@ -198,12 +198,7 @@ fn state_update(
                     };
 
                     // Create some points along the spline and repack the itin with the new points.
-                    let mut new_points: Vec<Vec2> = s.points(8).collect();
-                    new_points.append(&mut itin.local_path.clone());
-                    let itin = Itinerary {
-                        kind: itin.kind,
-                        local_path: new_points,
-                    };
+                    itin.prepend_local_path(s.points(8).collect());
 
                     let h = Collider(cow.lock().unwrap().insert(
                         trans.position(),
@@ -222,7 +217,7 @@ fn state_update(
 
                     *it = itin;
                     vehicle.park_spot = Some(park);
-                    vehicle.state = VehicleState::ParkedToRoad(s);
+                    vehicle.state = VehicleState::ParkedToRoad;
                 } else {
                     *it = Itinerary::wait_until(time.time + 10.0);
                 }
@@ -256,7 +251,7 @@ fn physics(
             trans.set_direction(spline.derivative(t).normalize());
             return;
         }
-        VehicleState::ParkedToRoad(_) => {}
+        VehicleState::ParkedToRoad => {}
         VehicleState::Driving => {}
     }
 
@@ -357,7 +352,7 @@ pub fn calc_decision<'a>(
     );
 
     // If unparking, just set desired speed to 1/5 of usual
-    if let VehicleState::ParkedToRoad(_) = vehicle.state {
+    if let VehicleState::ParkedToRoad = vehicle.state {
         return (vehicle.kind.cruising_speed() / 5.0, dir_to_pos);
     }
 
