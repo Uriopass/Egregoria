@@ -102,6 +102,13 @@ impl Color {
         b: 0.1,
         a: 1.0,
     };
+
+    pub const PURPLE: Color = Color {
+        r: 1.0,
+        g: 0.15,
+        b: 0.9,
+        a: 1.0,
+    };
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
