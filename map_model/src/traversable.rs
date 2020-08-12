@@ -99,7 +99,7 @@ impl Traversable {
 macro_rules! enum_inspect_impl {
     ($t: ty; $($x: pat),+) => {
         impl imgui_inspect::InspectRenderDefault<$t> for $t {
-            fn render(data: &[&$t], label: &'static str, _: &mut imgui_inspect::specs::World, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault,
+            fn render(data: &[&$t], label: &'static str, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault,
             ) {
                 if data.len() != 1 {
                     unimplemented!()
@@ -118,7 +118,6 @@ macro_rules! enum_inspect_impl {
             fn render_mut(
                 data: &mut [&mut $t],
                 label: &'static str,
-                _: &mut imgui_inspect::specs::World,
                 ui: &imgui::Ui,
                 _: &imgui_inspect::InspectArgsDefault,
             ) -> bool {

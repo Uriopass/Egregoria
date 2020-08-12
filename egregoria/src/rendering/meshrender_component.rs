@@ -6,7 +6,7 @@ use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
-use specs::{Component, DenseVecStorage, Entity, World};
+use specs::{Component, DenseVecStorage, Entity};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MeshRenderEnum {
@@ -36,20 +36,13 @@ impl MeshRenderEnum {
 }
 
 impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
-    fn render(
-        _: &[&MeshRenderEnum],
-        _: &'static str,
-        _: &mut World,
-        _: &Ui,
-        _: &InspectArgsDefault,
-    ) {
+    fn render(_: &[&MeshRenderEnum], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
         unimplemented!()
     }
 
     fn render_mut(
         data: &mut [&mut MeshRenderEnum],
         label: &'static str,
-        world: &mut World,
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
@@ -61,14 +54,11 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
         match mre {
             MeshRenderEnum::StrokeCircle(x) => <StrokeCircleRender as InspectRenderDefault<
                 StrokeCircleRender,
-            >>::render_mut(
-                &mut [x], label, world, ui, args
-            ),
+            >>::render_mut(&mut [x], label, ui, args),
             MeshRenderEnum::Circle(x) => {
                 <CircleRender as InspectRenderDefault<CircleRender>>::render_mut(
                     &mut [x],
                     label,
-                    world,
                     ui,
                     args,
                 )
@@ -77,7 +67,6 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
                 <RectRender as InspectRenderDefault<RectRender>>::render_mut(
                     &mut [x],
                     label,
-                    world,
                     ui,
                     args,
                 )
@@ -86,7 +75,6 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
                 <LineToRender as InspectRenderDefault<LineToRender>>::render_mut(
                     &mut [x],
                     label,
-                    world,
                     ui,
                     args,
                 )
@@ -95,16 +83,13 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
                 <LineRender as InspectRenderDefault<LineRender>>::render_mut(
                     &mut [x],
                     label,
-                    world,
                     ui,
                     args,
                 )
             }
             MeshRenderEnum::AbsoluteLine(x) => <AbsoluteLineRender as InspectRenderDefault<
                 AbsoluteLineRender,
-            >>::render_mut(
-                &mut [x], label, world, ui, args
-            ),
+            >>::render_mut(&mut [x], label, ui, args),
         }
     }
 }
@@ -162,23 +147,17 @@ impl MeshRender {
 }
 
 impl InspectRenderDefault<MeshRender> for MeshRender {
-    fn render(
-        data: &[&MeshRender],
-        label: &'static str,
-        world: &mut World,
-        ui: &Ui,
-        args: &InspectArgsDefault,
-    ) {
+    fn render(data: &[&MeshRender], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
         let mapped: Vec<&Vec<MeshRenderEnum>> = data.iter().map(|x| &x.orders).collect();
         <InspectVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
-            &mapped, label, world, ui, args,
+            &mapped, label, ui, args,
         );
     }
 
     fn render_mut(
         data: &mut [&mut MeshRender],
         label: &'static str,
-        world: &mut World,
+
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
@@ -187,7 +166,6 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
         <InspectVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
             &mut mapped,
             label,
-            world,
             ui,
             args,
         )

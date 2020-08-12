@@ -190,7 +190,7 @@ fn create_render_call<T: ToTokens>(
         const #args_name1 : #arg_type = #args;
         let values : Vec<_> = data.iter().map(|x| &x.#field_name1).collect();
         if data.len() != 0 {
-            <#source_type as #render_trait<#field_type>>::render(values.as_slice(), stringify!(#field_name2), world, ui, &#args_name2);
+            <#source_type as #render_trait<#field_type>>::render(values.as_slice(), stringify!(#field_name2), ui, &#args_name2);
         }
     }}
 }
@@ -230,7 +230,7 @@ fn create_render_mut_call<T: ToTokens>(
         #[allow(non_upper_case_globals)]
         const #args_name1 : #arg_type = #args;
         let mut values : Vec<_> = data.iter_mut().map(|x| &mut x.#field_name1).collect();
-        let mut changed = <#source_type as #render_trait<#field_type>>::render_mut(&mut values.as_mut_slice(), stringify!(#field_name2), world, ui, &#args_name2);
+        let mut changed = <#source_type as #render_trait<#field_type>>::render_mut(&mut values.as_mut_slice(), stringify!(#field_name2), ui, &#args_name2);
 
         #on_set_callback_impl
 
@@ -277,19 +277,19 @@ fn generate(
     let default_impl = quote! {
 
         impl #impl_generics imgui_inspect::InspectRenderDefault<#struct_name1> for #struct_name2 #ty_generics #where_clause {
-            fn render(data: &[&Self], label: &'static str, world: &mut imgui_inspect::specs::World, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsDefault) {
-                <#struct_name3 as imgui_inspect::InspectRenderStruct<#struct_name4>>::render(data, label, world, ui, &imgui_inspect::InspectArgsStruct { header: args.header, indent_children: args.indent_children })
+            fn render(data: &[&Self], label: &'static str, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsDefault) {
+                <#struct_name3 as imgui_inspect::InspectRenderStruct<#struct_name4>>::render(data, label, ui, &imgui_inspect::InspectArgsStruct { header: args.header, indent_children: args.indent_children })
             }
 
-            fn render_mut(data: &mut [&mut Self], label: &'static str, world: &mut imgui_inspect::specs::World, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsDefault) -> bool {
-                <#struct_name5 as imgui_inspect::InspectRenderStruct<#struct_name6>>::render_mut(data, label, world, ui, &imgui_inspect::InspectArgsStruct { header: args.header, indent_children: args.indent_children })
+            fn render_mut(data: &mut [&mut Self], label: &'static str, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsDefault) -> bool {
+                <#struct_name5 as imgui_inspect::InspectRenderStruct<#struct_name6>>::render_mut(data, label, ui, &imgui_inspect::InspectArgsStruct { header: args.header, indent_children: args.indent_children })
             }
         }
     };
 
     let struct_impl = quote! {
         impl #impl_generics imgui_inspect::InspectRenderStruct<#struct_name1> for #struct_name2 #ty_generics #where_clause {
-            fn render(data: &[&Self], label: &'static str, world: &mut imgui_inspect::specs::World, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsStruct) {
+            fn render(data: &[&Self], label: &'static str, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsStruct) {
                 let header_name = stringify!(#struct_name3);
 
                 let mut header = true;
@@ -319,7 +319,7 @@ fn generate(
                 }
             }
 
-            fn render_mut(data: &mut [&mut Self], label: &'static str, world: &mut imgui_inspect::specs::World, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsStruct) -> bool {
+            fn render_mut(data: &mut [&mut Self], label: &'static str, ui: &imgui_inspect::imgui::Ui, args: &imgui_inspect::InspectArgsStruct) -> bool {
                 let header_name = stringify!(#struct_name4);
 
                 let mut header = true;

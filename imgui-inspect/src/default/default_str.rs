@@ -4,7 +4,7 @@ impl InspectRenderDefault<&'static str> for &'static str {
     fn render(
         data: &[&&'static str],
         label: &'static str,
-        _: &mut World,
+
         ui: &imgui::Ui,
         _args: &InspectArgsDefault,
     ) {
@@ -34,7 +34,7 @@ impl InspectRenderDefault<&'static str> for &'static str {
     fn render_mut(
         data: &mut [&mut &'static str],
         label: &'static str,
-        _: &mut World,
+
         ui: &imgui::Ui,
         _args: &InspectArgsDefault,
     ) -> bool {

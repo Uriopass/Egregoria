@@ -1,7 +1,6 @@
 use imgui::{im_str, ColorEdit, EditableColor, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use serde::{Deserialize, Serialize};
-use specs::World;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Color {
@@ -221,14 +220,13 @@ impl From<Color> for LinearColor {
 }
 
 impl InspectRenderDefault<Color> for Color {
-    fn render(_: &[&Color], _: &'static str, _: &mut World, _: &Ui, _: &InspectArgsDefault) {
+    fn render(_: &[&Color], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
         unimplemented!()
     }
 
     fn render_mut(
         data: &mut [&mut Color],
         label: &'static str,
-        _: &mut World,
         ui: &Ui,
         _args: &InspectArgsDefault,
     ) -> bool {

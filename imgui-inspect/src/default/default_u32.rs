@@ -1,13 +1,7 @@
 use super::*;
 
 impl InspectRenderDefault<u32> for u32 {
-    fn render(
-        data: &[&u32],
-        label: &'static str,
-        _: &mut World,
-        ui: &imgui::Ui,
-        _args: &InspectArgsDefault,
-    ) {
+    fn render(data: &[&u32], label: &'static str, ui: &imgui::Ui, _args: &InspectArgsDefault) {
         if data.is_empty() {
             // Values are inconsistent
             let style_token = ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0]);
@@ -34,7 +28,7 @@ impl InspectRenderDefault<u32> for u32 {
     fn render_mut(
         data: &mut [&mut u32],
         label: &'static str,
-        _: &mut World,
+
         ui: &imgui::Ui,
         args: &InspectArgsDefault,
     ) -> bool {
