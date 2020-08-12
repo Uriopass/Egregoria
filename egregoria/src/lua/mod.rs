@@ -89,7 +89,7 @@ fn color(_: &Lua, (r, g, b, a): (f32, f32, f32, f32)) -> mods::mlua::Result<LuaC
     Ok(LuaColor(Color { r, g, b, a }))
 }
 
-pub fn add_world(lua: &Lua, w: &mut World) {
+pub fn add_egregoria_lua_stdlib(lua: &Lua, w: &mut World) {
     lua.globals()
         .set("world", LuaWorld { w: w as *mut World })
         .unwrap();

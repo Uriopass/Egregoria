@@ -17,7 +17,7 @@ struct Args {
 fn main() {
     env_logger::builder()
         .filter(None, LevelFilter::Info)
-        .filter("egregoria", LevelFilter::Warn)
+        .filter(Some("egregoria"), LevelFilter::Warn)
         .init();
 
     let args: Args = argh::from_env();
@@ -43,7 +43,7 @@ fn run(mut state: EgregoriaState, name: &Path) {
         }
     };
 
-    egregoria::lua::add_world(&l, &mut state.world);
+    egregoria::lua::add_egregoria_lua_stdlib(&l, &mut state.world);
     mods::eval_f(&l, "Init");
 
     for i in 1..1000 {

@@ -39,7 +39,7 @@ impl<'a> System<'a> for RunningScenarioSystem {
 
 pub fn set_scenario(world: &mut World, name: &str) {
     if let Some(l) = mods::load(name) {
-        super::add_world(&l, world);
+        super::add_egregoria_lua_stdlib(&l, world);
         mods::eval_f(&l, "Init");
         world
             .write_resource::<RunningScenario>()
