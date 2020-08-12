@@ -17,7 +17,7 @@ struct Args {
 fn main() {
     env_logger::builder()
         .filter(None, LevelFilter::Info)
-        .filter(Some("egregoria"), LevelFilter::Warn)
+        .filter("egregoria", LevelFilter::Warn)
         .init();
 
     let args: Args = argh::from_env();

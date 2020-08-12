@@ -207,7 +207,6 @@ impl Gui {
                     <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
                         &mut [&mut pattern],
                         "Road shape",
-                        world,
                         &ui,
                         &InspectArgsStruct {
                             header: Some(false),

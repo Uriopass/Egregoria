@@ -4,13 +4,7 @@ use geom::{polyline::PolyLine, Vec2};
 use imgui::im_str;
 
 impl InspectRenderDefault<Vec2> for Vec2 {
-    fn render(
-        data: &[&Vec2],
-        label: &'static str,
-        _: &mut specs::World,
-        ui: &imgui::Ui,
-        _: &InspectArgsDefault,
-    ) {
+    fn render(data: &[&Vec2], label: &'static str, ui: &imgui::Ui, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -23,7 +17,6 @@ impl InspectRenderDefault<Vec2> for Vec2 {
     fn render_mut(
         data: &mut [&mut Vec2],
         label: &'static str,
-        _: &mut specs::World,
         ui: &imgui::Ui,
         args: &InspectArgsDefault,
     ) -> bool {
@@ -46,7 +39,6 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
     fn render(
         _data: &[&PolyLine],
         _label: &'static str,
-        _: &mut specs::World,
         _ui: &imgui::Ui,
         _args: &InspectArgsDefault,
     ) {
@@ -56,7 +48,6 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
     fn render_mut(
         data: &mut [&mut PolyLine],
         label: &str,
-        w: &mut specs::World,
         ui: &imgui::Ui,
         args: &InspectArgsDefault,
     ) -> bool {
@@ -71,8 +62,7 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
             ui.indent();
             for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
-                changed |=
-                    <Vec2 as InspectRenderDefault<Vec2>>::render_mut(&mut [x], "", w, ui, args);
+                changed |= <Vec2 as InspectRenderDefault<Vec2>>::render_mut(&mut [x], "", ui, args);
                 id.pop(ui);
             }
             ui.unindent();

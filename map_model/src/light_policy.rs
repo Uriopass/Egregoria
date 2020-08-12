@@ -99,20 +99,13 @@ impl LightPolicy {
 }
 
 impl InspectRenderDefault<LightPolicy> for LightPolicy {
-    fn render(
-        _: &[&LightPolicy],
-        _: &'static str,
-        _: &mut imgui_inspect::specs::World,
-        _: &Ui,
-        _: &InspectArgsDefault,
-    ) {
+    fn render(_: &[&LightPolicy], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
         unimplemented!()
     }
 
     fn render_mut(
         data: &mut [&mut LightPolicy],
         label: &'static str,
-        _: &mut imgui_inspect::specs::World,
         ui: &Ui,
         _: &InspectArgsDefault,
     ) -> bool {

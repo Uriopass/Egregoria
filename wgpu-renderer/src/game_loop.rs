@@ -32,6 +32,7 @@ impl State {
         let wrapper = ImguiWrapper::new(&mut ctx.gfx);
 
         let mut state = egregoria::EgregoriaState::init();
+
         load_from_disk(&mut state.world);
 
         Self {
@@ -117,20 +118,22 @@ impl State {
             }
         }
 
-        let immediate = &mut *self.state.world.write_resource::<ImmediateDraw>();
-        for (order, col) in immediate
-            .persistent_orders
-            .iter()
-            .copied()
-            .chain(immediate.orders.drain(..))
         {
-            tess.color = col.into();
-            match order {
-                ImmediateOrder::Circle { pos, size } => {
-                    tess.draw_circle(pos, 3.0, size);
-                }
-                ImmediateOrder::Line { from, to } => {
-                    tess.draw_line(from, to, 3.0);
+            let immediate = &mut *self.state.world.write_resource::<ImmediateDraw>();
+            for (order, col) in immediate
+                .persistent_orders
+                .iter()
+                .copied()
+                .chain(immediate.orders.drain(..))
+            {
+                tess.color = col.into();
+                match order {
+                    ImmediateOrder::Circle { pos, size } => {
+                        tess.draw_circle(pos, 3.0, size);
+                    }
+                    ImmediateOrder::Line { from, to } => {
+                        tess.draw_line(from, to, 3.0);
+                    }
                 }
             }
         }

@@ -16,7 +16,7 @@ use std::marker::PhantomData;
 
 pub struct InspectDragf;
 impl InspectRenderDefault<f32> for InspectDragf {
-    fn render(data: &[&f32], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&f32], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -27,7 +27,7 @@ impl InspectRenderDefault<f32> for InspectDragf {
     fn render_mut(
         data: &mut [&mut f32],
         label: &'static str,
-        _: &mut World,
+
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
@@ -41,7 +41,7 @@ impl InspectRenderDefault<f32> for InspectDragf {
 }
 
 impl InspectRenderDefault<f64> for InspectDragf {
-    fn render(data: &[&f64], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&f64], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -52,7 +52,7 @@ impl InspectRenderDefault<f64> for InspectDragf {
     fn render_mut(
         data: &mut [&mut f64],
         label: &'static str,
-        _: &mut World,
+
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
@@ -71,7 +71,7 @@ impl InspectRenderDefault<f64> for InspectDragf {
 
 pub struct InspectVec2Immutable;
 impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
-    fn render(data: &[&Vec2], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&Vec2], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -84,21 +84,21 @@ impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
     fn render_mut(
         data: &mut [&mut Vec2],
         label: &'static str,
-        w: &mut World,
+
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
             unimplemented!();
         }
-        Self::render(&[&*data[0]], label, w, ui, args);
+        Self::render(&[&*data[0]], label, ui, args);
         false
     }
 }
 
 pub struct InspectVec2Rotation;
 impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
-    fn render(data: &[&Vec2], label: &'static str, _: &mut World, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&Vec2], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -110,7 +110,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
     fn render_mut(
         data: &mut [&mut Vec2],
         label: &'static str,
-        _: &mut World,
+
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
@@ -132,13 +132,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
 
 pub struct ImEntity;
 impl InspectRenderDefault<Entity> for ImEntity {
-    fn render(
-        data: &[&Entity],
-        label: &'static str,
-        _: &mut World,
-        ui: &Ui,
-        _args: &InspectArgsDefault,
-    ) {
+    fn render(data: &[&Entity], label: &'static str, ui: &Ui, _args: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -148,7 +142,7 @@ impl InspectRenderDefault<Entity> for ImEntity {
     fn render_mut(
         data: &mut [&mut Entity],
         label: &'static str,
-        _: &mut World,
+
         ui: &Ui,
         _: &InspectArgsDefault,
     ) -> bool {
@@ -165,20 +159,14 @@ pub struct InspectVec<T> {
 }
 
 impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for InspectVec<T> {
-    fn render(
-        _data: &[&Vec<T>],
-        _label: &'static str,
-        _: &mut World,
-        _ui: &Ui,
-        _args: &InspectArgsDefault,
-    ) {
+    fn render(_data: &[&Vec<T>], _label: &'static str, _ui: &Ui, _args: &InspectArgsDefault) {
         unimplemented!()
     }
 
     fn render_mut(
         data: &mut [&mut Vec<T>],
         label: &str,
-        w: &mut World,
+
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
@@ -193,7 +181,7 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for InspectVec<T> 
             ui.indent();
             for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
-                changed |= <T as InspectRenderDefault<T>>::render_mut(&mut [x], "", w, ui, args);
+                changed |= <T as InspectRenderDefault<T>>::render_mut(&mut [x], "", ui, args);
                 id.pop(ui);
             }
             ui.unindent();
@@ -207,11 +195,11 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for InspectVec<T> 
 macro_rules! empty_inspect_impl {
     ($x : ty) => {
         impl imgui_inspect::InspectRenderDefault<$x> for $x {
-            fn render(_: &[&$x], _: &'static str, _: &mut specs::World, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault) {
+            fn render(_: &[&$x], _: &'static str, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault) {
                 ui.text(std::stringify!($x))
             }
 
-            fn render_mut(_: &mut [&mut $x], _: &'static str, _: &mut specs::World, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault) -> bool {
+            fn render_mut(_: &mut [&mut $x], _: &'static str, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault) -> bool {
                 ui.text(std::stringify!($x));
                 false
             }
@@ -226,7 +214,6 @@ macro_rules! debug_inspect_impl {
             fn render(
                 data: &[&$t],
                 label: &'static str,
-                _: &mut specs::World,
                 ui: &imgui::Ui,
                 _: &imgui_inspect::InspectArgsDefault,
             ) {
@@ -240,7 +227,6 @@ macro_rules! debug_inspect_impl {
             fn render_mut(
                 data: &mut [&mut $t],
                 label: &'static str,
-                _: &mut specs::World,
                 ui: &imgui::Ui,
                 _: &imgui_inspect::InspectArgsDefault,
             ) -> bool {
@@ -259,7 +245,7 @@ macro_rules! debug_inspect_impl {
 macro_rules! enum_inspect_impl {
     ($t: ty; $($x: pat),+) => {
         impl imgui_inspect::InspectRenderDefault<$t> for $t {
-            fn render(data: &[&$t], label: &'static str, _: &mut specs::World, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault,
+            fn render(data: &[&$t], label: &'static str, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault,
             ) {
                 if data.len() != 1 {
                     unimplemented!()
@@ -278,7 +264,6 @@ macro_rules! enum_inspect_impl {
             fn render_mut(
                 data: &mut [&mut $t],
                 label: &'static str,
-                _: &mut specs::World,
                 ui: &imgui::Ui,
                 _: &imgui_inspect::InspectArgsDefault,
             ) -> bool {
@@ -306,16 +291,10 @@ pub struct InspectRenderer {
 
 /// Avoids Cloning by mutably aliasing the component inside the world
 /// Unsound if the inspector also try to get the component using the world borrow
-fn modify<T: Component>(
-    world: &mut World,
-    entity: Entity,
-    f: impl FnOnce(&mut World, *mut T) -> bool,
-) -> bool {
+fn modify<T: Component>(world: &mut World, entity: Entity, f: impl FnOnce(&mut T) -> bool) -> bool {
     let mut storage = world.write_component::<T>();
     let c = unwrap_or!(storage.get_mut(entity), return false);
-    let x: *mut T = c as *mut T;
-    drop(storage);
-    f(world, x)
+    f(c)
 }
 
 impl InspectRenderer {
@@ -324,11 +303,10 @@ impl InspectRenderer {
         world: &mut World,
         ui: &Ui,
     ) -> bool {
-        modify(world, self.entity, |world, x| -> bool {
+        modify(world, self.entity, |x| -> bool {
             <T as InspectRenderDefault<T>>::render_mut(
-                &mut [unsafe { &mut *x }],
+                &mut [x],
                 std::any::type_name::<T>().split("::").last().unwrap_or(""),
-                world,
                 ui,
                 &InspectArgsDefault::default(),
             )
@@ -339,37 +317,33 @@ impl InspectRenderer {
         let mut event = None;
         let mut dirty = false;
         let entity = self.entity;
-        dirty |= modify(world, entity, |world, x: *mut Transform| -> bool {
-            unsafe {
-                let mut position = (&*x).position();
-                let mut direction = (&*x).direction();
-                let old_pos = position;
-                let mut changed = <Vec2 as InspectRenderDefault<Vec2>>::render_mut(
-                    &mut [&mut position],
-                    "position",
-                    world,
-                    ui,
-                    &InspectArgsDefault::default(),
-                );
+        dirty |= modify(world, entity, |x: &mut Transform| -> bool {
+            let mut position = x.position();
+            let mut direction = x.direction();
+            let old_pos = position;
+            let mut changed = <Vec2 as InspectRenderDefault<Vec2>>::render_mut(
+                &mut [&mut position],
+                "position",
+                ui,
+                &InspectArgsDefault::default(),
+            );
 
-                if changed {
-                    event = Some(MovedEvent {
-                        entity,
-                        new_pos: position,
-                        delta_pos: position - old_pos,
-                    });
-                }
-                changed |= <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
-                    &mut [&mut direction],
-                    "direction",
-                    world,
-                    ui,
-                    &InspectArgsDefault::default(),
-                );
-                (&mut *x).set_direction(direction);
-                (&mut *x).set_position(position);
-                changed
+            if changed {
+                event = Some(MovedEvent {
+                    entity,
+                    new_pos: position,
+                    delta_pos: position - old_pos,
+                });
             }
+            changed |= <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
+                &mut [&mut direction],
+                "direction",
+                ui,
+                &InspectArgsDefault::default(),
+            );
+            x.set_direction(direction);
+            x.set_position(position);
+            changed
         });
 
         if let Some(ev) = event {
