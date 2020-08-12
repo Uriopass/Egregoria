@@ -1,3 +1,4 @@
+use crate::debug::DbgSplineState;
 use crate::engine::{Context, FrameContext, GfxContext};
 use crate::rendering::imgui_wrapper::{GuiRenderContext, ImguiWrapper};
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
@@ -98,9 +99,20 @@ impl State {
 
         {
             let objs = crate::debug::DEBUG_OBJS.lock().unwrap();
-            for (val, _, obj) in &*objs {
+            for (val, name, obj) in &*objs {
                 if *val {
-                    obj(&mut tess, &self.state.world);
+                    obj(&mut tess, &mut self.state.world);
+                }
+                // FIXME: This is bad, but I don't know how to clean up the entities
+                // made by debug splines
+                if !*val && *name == "Debug splines" {
+                    if let Some(x) = self.state.world.get_mut::<DbgSplineState>().cloned() {
+                        let _ = self
+                            .state
+                            .world
+                            .delete_entities(&[x.from, x.to, x.from_der, x.to_der]);
+                        self.state.world.remove::<DbgSplineState>();
+                    }
                 }
             }
         }
