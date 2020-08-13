@@ -1,5 +1,7 @@
 use super::Vec2;
+use serde::{Deserialize, Serialize};
 
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Segment {
     pub src: Vec2,
     pub dst: Vec2,

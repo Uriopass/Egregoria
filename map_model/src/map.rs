@@ -1,5 +1,5 @@
 use crate::{
-    House, HouseID, Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern,
+    House, HouseID, Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Lot, LotID,
     ParkingSpotID, ParkingSpots, Road, RoadID, RoadSegmentKind, SpatialMap,
 };
 use geom::splines::Spline;
@@ -13,6 +13,8 @@ pub type Roads = DenseSlotMap<RoadID, Road>;
 pub type Lanes = DenseSlotMap<LaneID, Lane>;
 pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 pub type Houses = DenseSlotMap<HouseID, House>;
+pub type Lots = DenseSlotMap<LotID, Lot>;
+
 #[derive(Debug, Clone, Copy)]
 pub enum ProjectKind {
     Inter(IntersectionID),
@@ -32,6 +34,7 @@ pub struct Map {
     pub(crate) lanes: Lanes,
     pub(crate) intersections: Intersections,
     pub(crate) houses: Houses,
+    pub(crate) lots: Lots,
     pub(crate) spatial_map: SpatialMap,
     pub parking: ParkingSpots,
     pub dirty: bool,
@@ -51,6 +54,7 @@ impl Map {
             intersections: Intersections::default(),
             parking: ParkingSpots::default(),
             houses: Houses::default(),
+            lots: Lots::default(),
             dirty: true,
             spatial_map: SpatialMap::default(),
         }
