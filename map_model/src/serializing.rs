@@ -1,4 +1,4 @@
-use crate::{Houses, Intersections, Lanes, Map, ParkingSpots, Roads, SpatialMap};
+use crate::{Houses, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default)]
@@ -8,6 +8,7 @@ pub struct SerializedMap {
     pub(crate) houses: Houses,
     pub(crate) lanes: Lanes,
     pub(crate) parking: ParkingSpots,
+    pub(crate) lots: Lots,
 }
 
 impl From<&Map> for SerializedMap {
@@ -22,6 +23,7 @@ impl From<&Map> for SerializedMap {
             houses: m.houses.clone(),
             lanes: m.lanes.clone(),
             parking: m.parking.clone(),
+            lots: m.lots.clone(),
         }
     }
 }
@@ -39,6 +41,7 @@ impl Into<Map> for SerializedMap {
             intersections: self.intersections,
             houses: self.houses,
             spatial_map,
+            lots: self.lots,
             parking: self.parking,
             dirty: false,
         }

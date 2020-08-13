@@ -1,9 +1,10 @@
 use crate::rect::Rect;
 use crate::Vec2;
+use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 
 /// Oriented bounding box
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct OBB {
     pub corners: [Vec2; 4],
 }
