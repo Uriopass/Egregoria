@@ -85,4 +85,13 @@ impl OBB {
     pub fn intersects(&self, other: OBB) -> bool {
         self.intersects1way(&other) && other.intersects1way(self)
     }
+
+    pub fn contains(&self, p: Vec2) -> bool {
+        let mut ok: bool = true;
+        ok &= (self.corners[1] - self.corners[0]).dot(p - self.corners[0]) > 0.0;
+        ok &= (self.corners[2] - self.corners[1]).dot(p - self.corners[1]) > 0.0;
+        ok &= (self.corners[3] - self.corners[2]).dot(p - self.corners[2]) > 0.0;
+        ok &= (self.corners[0] - self.corners[3]).dot(p - self.corners[3]) > 0.0;
+        ok
+    }
 }
