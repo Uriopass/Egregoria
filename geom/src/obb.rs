@@ -12,8 +12,8 @@ pub struct OBB {
 impl OBB {
     /// cossin of UNIT_X makes this an AABB
     pub fn new(center: Vec2, cossin: Vec2, w: f32, h: f32) -> Self {
-        let up = cossin * w;
-        let right = cossin.perpendicular() * h;
+        let up = cossin * w * 0.5;
+        let right = cossin.perpendicular() * h * 0.5;
         Self {
             corners: [
                 center - up - right,

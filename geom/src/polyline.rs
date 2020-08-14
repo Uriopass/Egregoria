@@ -291,10 +291,7 @@ impl<T: Iterator<Item = f32>> Iterator for PointsAlongs<'_, T> {
     fn next(&mut self) -> Option<Self::Item> {
         let d = self.dists.next()?;
         while d > self.partial + self.dist {
-            let w = match self.windows.next() {
-                Some(x) => x,
-                None => break,
-            };
+            let w = self.windows.next()?;
             let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((Vec2::UNIT_X, 0.0));
             self.partial += self.dist;
             self.dir = dir; // no structural assignment :(

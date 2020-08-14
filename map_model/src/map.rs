@@ -6,7 +6,7 @@ use geom::splines::Spline;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use rand::prelude::IteratorRandom;
-use rand::Rng;
+use rand::{Rng, SeedableRng};
 use slotmap::DenseSlotMap;
 
 pub type Roads = DenseSlotMap<RoadID, Road>;
@@ -197,25 +197,53 @@ impl Map {
         self.invalidate(src);
         self.invalidate(dst);
 
-        self.make_houses(road_id);
+        self.make_lots(road_id);
 
         road_id
     }
 
-    fn make_houses(&mut self, road: RoadID) {
+    fn make_lots(&mut self, road: RoadID) {
         let r = &self.roads[road];
 
-        let l = r.generated_points.length();
         let w = r.width * 0.5;
 
-        for (pos, dir) in r
+        let rng = rand::rngs::SmallRng::from_entropy();
+
+        // FIXME: Duplication (one generator for each side), curved gen is wrong and tweak alg overall
+        let lot_sizes = std::iter::successors(Some((rng, 0.0, 10.0)), |(rng, d, last)| {
+            let mut rng = rng.clone();
+            let size = 10.0 + rng.gen::<f32>() * 10.0;
+            Some((rng, d + (size + last) * 0.5, size))
+        });
+
+        for ((pos, dir), (_, _, s)) in r
             .generated_points
-            .points_dirs_along((0..(l / 30.0) as usize).map(|i| i as f32 * 30.0 + 15.0))
+            .points_dirs_along(lot_sizes.clone().map(|x| x.1))
+            .zip(lot_sizes.clone())
             .collect::<Vec<_>>()
         {
             let p = dir.perpendicular();
-            House::try_make(self, pos + p * (w + 3.0), p);
-            House::try_make(self, pos - p * (w + 3.0), -p);
+            Lot::try_make(self, road, pos + p * (w + 3.0), p, s * 0.9);
+        }
+
+        let rng = rand::rngs::SmallRng::from_entropy();
+
+        let lot_sizes = std::iter::successors(Some((rng, 0.0, 10.0)), |(rng, d, last)| {
+            let mut rng = rng.clone();
+            let size = 10.0 + rng.gen::<f32>() * 10.0;
+            Some((rng, d + (size + last) * 0.5, size))
+        });
+
+        let r = &self.roads[road];
+
+        for ((pos, dir), (_, _, s)) in r
+            .generated_points
+            .points_dirs_along(lot_sizes.clone().map(|x| x.1))
+            .zip(lot_sizes)
+            .collect::<Vec<_>>()
+        {
+            let p = dir.perpendicular();
+            Lot::try_make(self, road, pos - p * (w + 3.0), -p, s * 0.9);
         }
     }
 
@@ -328,6 +356,9 @@ impl Map {
     }
     pub fn houses(&self) -> &Houses {
         &self.houses
+    }
+    pub fn lots(&self) -> &Lots {
+        &self.lots
     }
     pub fn spatial_map(&self) -> &SpatialMap {
         &self.spatial_map
