@@ -88,7 +88,7 @@ impl SpatialMap {
         }
     }
 
-    pub fn add_lot(&mut self, lot: &Lot) {
+    pub fn insert_lot(&mut self, lot: &Lot) {
         let bbox = lot.shape.bbox();
         let handle = self
             .grid
