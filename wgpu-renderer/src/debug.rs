@@ -29,7 +29,7 @@ lazy_static! {
         (false, "Debug collision world", Box::new(debug_coworld)),
         (false, "Debug OBBs", Box::new(debug_obb)),
         (false, "Debug rays", Box::new(debug_rays)),
-        (true, "Debug splines", Box::new(debug_spline))
+        (false, "Debug splines", Box::new(debug_spline))
     ]);
 }
 
@@ -174,11 +174,17 @@ pub fn debug_obb(tess: &mut Tesselator, world: &mut World) -> Option<()> {
         6.0,
     );
 
-    let color = if obb1.intersects(obb2) {
+    let mut color = if obb1.intersects(obb2) {
         LinearColor::RED
     } else {
         LinearColor::BLUE
     };
+
+    if obb1.contains(mouse) {
+        color = LinearColor::CYAN
+    }
+
+    color.a = 0.5;
 
     tess.set_color(color);
     tess.draw_filled_polygon(&obb1.corners, 0.99);
