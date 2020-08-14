@@ -24,19 +24,26 @@ impl OBB {
         }
     }
 
+    pub fn axis(&self) -> [Vec2; 2] {
+        [
+            self.corners[1] - self.corners[0],
+            self.corners[3] - self.corners[0],
+        ]
+    }
+
+    pub fn center(&self) -> Vec2 {
+        (self.corners[2] + self.corners[0]) * 0.5
+    }
+
     /// Returns true if other overlaps one dimension of this.
     /// Taken from https://www.flipcode.com/archives/2D_OBB_Intersection.shtml
     fn intersects1way(&self, other: &OBB) -> bool {
-        let mut axis = [
-            self.corners[1] - self.corners[0],
-            self.corners[3] - self.corners[0],
-        ];
+        let mut axis = self.axis();
 
         // Make the length of each axis 1/edge length so we know any
         // dot product must be less than 1 to fall within the edge.
-        for x in &mut axis {
-            *x /= x.magnitude2();
-        }
+        axis[0] /= axis[0].magnitude2();
+        axis[1] /= axis[1].magnitude2();
 
         let origin = [self.corners[0].dot(axis[0]), self.corners[1].dot(axis[1])];
 
@@ -87,11 +94,10 @@ impl OBB {
     }
 
     pub fn contains(&self, p: Vec2) -> bool {
-        let mut ok: bool = true;
-        ok &= (self.corners[1] - self.corners[0]).dot(p - self.corners[0]) > 0.0;
-        ok &= (self.corners[2] - self.corners[1]).dot(p - self.corners[1]) > 0.0;
-        ok &= (self.corners[3] - self.corners[2]).dot(p - self.corners[2]) > 0.0;
-        ok &= (self.corners[0] - self.corners[3]).dot(p - self.corners[3]) > 0.0;
-        ok
+        let ok0 = (self.corners[1] - self.corners[0]).dot(p - self.corners[0]) > 0.0;
+        let ok1 = (self.corners[2] - self.corners[1]).dot(p - self.corners[1]) > 0.0;
+        let ok2 = (self.corners[3] - self.corners[2]).dot(p - self.corners[2]) > 0.0;
+        let ok3 = (self.corners[0] - self.corners[3]).dot(p - self.corners[3]) > 0.0;
+        ok0 & ok1 & ok2 & ok3
     }
 }
