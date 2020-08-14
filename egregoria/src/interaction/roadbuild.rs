@@ -99,8 +99,11 @@ impl<'a> System<'a> for RoadBuildSystem {
             use BuildState::*;
             use ProjectKind::*;
 
+            // FIXME: Use or patterns when stable
             match (state.build_state, cur_proj.kind, *data.tool) {
-                (Hover, _, _) => {
+                (Hover, ProjectKind::Ground, _)
+                | (Hover, ProjectKind::Road(_), _)
+                | (Hover, ProjectKind::Inter(_), _) => {
                     // Hover selection
                     state.build_state = BuildState::Start(cur_proj);
                 }
@@ -170,7 +173,7 @@ fn make_connection(
         Ground => map.add_intersection(proj.pos),
         Inter(id) => id,
         Road(id) => map.split_road(id, proj.pos),
-        House(_) => unreachable!(),
+        House(_) | Lot(_) => unreachable!(),
     };
 
     let from = mk_inter(from);

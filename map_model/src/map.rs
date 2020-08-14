@@ -20,6 +20,7 @@ pub enum ProjectKind {
     Inter(IntersectionID),
     Road(RoadID),
     House(HouseID),
+    Lot(LotID),
     Ground,
 }
 
@@ -117,7 +118,7 @@ impl Map {
     pub fn remove_house(&mut self, h: HouseID) -> Option<House> {
         let h = self.houses.remove(h);
         if let Some(h) = &h {
-            self.spatial_map.remove_house(h)
+            self.spatial_map.remove_house(h.id)
         }
         self.dirty |= h.is_some();
         h
@@ -267,6 +268,15 @@ impl Map {
                             pos: inter.pos,
                             kind: obj,
                         };
+                    }
+                }
+                ProjectKind::Lot(id) => {
+                    if self.lots
+                        .get(id)
+                        .expect("Lot does not exist anymore, you seem to have forgotten to remove it from the spatial map.")
+                        .shape
+                        .contains(pos) {
+                        return mk_proj(ProjectKind::Lot(id));
                     }
                 }
                 ProjectKind::Road(id) => {
