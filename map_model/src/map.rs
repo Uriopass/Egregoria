@@ -6,7 +6,7 @@ use geom::splines::Spline;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use rand::prelude::IteratorRandom;
-use rand::{Rng, SeedableRng};
+use rand::Rng;
 use slotmap::DenseSlotMap;
 
 pub type Roads = DenseSlotMap<RoadID, Road>;
@@ -203,48 +203,38 @@ impl Map {
     }
 
     fn make_lots(&mut self, road: RoadID) {
-        let r = &self.roads[road];
+        fn make_lots_side(sel: &mut Map, road: RoadID, side: f32) {
+            let r = &sel.roads[road];
 
-        let w = r.width * 0.5;
+            let w = r.width * 0.5;
 
-        let rng = rand::rngs::SmallRng::from_entropy();
+            let mut along = r.generated_points.points_dirs_manual();
+            let mut size = rand::random::<f32>() * 20.0 + 20.0;
+            let mut d = size * 0.5;
 
-        // FIXME: Duplication (one generator for each side), curved gen is wrong and tweak alg overall
-        let lot_sizes = std::iter::successors(Some((rng, 0.0, 10.0)), |(rng, d, last)| {
-            let mut rng = rng.clone();
-            let size = 10.0 + rng.gen::<f32>() * 10.0;
-            Some((rng, d + (size + last) * 0.5, size))
-        });
-
-        for ((pos, dir), (_, _, s)) in r
-            .generated_points
-            .points_dirs_along(lot_sizes.clone().map(|x| x.1))
-            .zip(lot_sizes.clone())
-            .collect::<Vec<_>>()
-        {
-            let p = dir.perpendicular();
-            Lot::try_make(self, road, pos + p * (w + 3.0), p, s * 0.9);
+            while let Some((pos, dir)) = along.next(d) {
+                let axis = side * dir.perpendicular();
+                let l = Lot::try_make(
+                    &mut sel.lots,
+                    &mut sel.spatial_map,
+                    &sel.roads,
+                    road,
+                    pos + axis * (w + 3.0),
+                    axis,
+                    size,
+                );
+                if l.is_some() {
+                    d += size * 0.5;
+                    size = rand::random::<f32>() * 20.0 + 20.0;
+                    d += size * 0.5 + 4.0;
+                } else {
+                    d += 2.0;
+                }
+            }
         }
 
-        let rng = rand::rngs::SmallRng::from_entropy();
-
-        let lot_sizes = std::iter::successors(Some((rng, 0.0, 10.0)), |(rng, d, last)| {
-            let mut rng = rng.clone();
-            let size = 10.0 + rng.gen::<f32>() * 10.0;
-            Some((rng, d + (size + last) * 0.5, size))
-        });
-
-        let r = &self.roads[road];
-
-        for ((pos, dir), (_, _, s)) in r
-            .generated_points
-            .points_dirs_along(lot_sizes.clone().map(|x| x.1))
-            .zip(lot_sizes)
-            .collect::<Vec<_>>()
-        {
-            let p = dir.perpendicular();
-            Lot::try_make(self, road, pos - p * (w + 3.0), -p, s * 0.9);
-        }
+        make_lots_side(self, road, 1.0);
+        make_lots_side(self, road, -1.0);
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
@@ -277,6 +267,7 @@ impl Map {
         self.roads.clear();
         self.parking.clear();
         self.houses.clear();
+        self.lots.clear();
         self.spatial_map = SpatialMap::default();
     }
 

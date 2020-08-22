@@ -2,6 +2,7 @@ use crate::{
     IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes, Map,
     ParkingSpots,
 };
+use geom::obb::OBB;
 use geom::polyline::PolyLine;
 use geom::splines::Spline;
 use geom::Vec2;
@@ -338,8 +339,11 @@ impl Road {
         }
     }
 
-    pub fn project(&self, p: Vec2) -> Vec2 {
-        self.generated_points.project(p)
+    pub fn intersects(&self, obb: OBB) -> bool {
+        let c = obb.center();
+        let p = self.generated_points.project(c);
+        let d = unwrap_or!((c - p).try_normalize_to(self.width * 0.5), return true);
+        obb.contains(p + d)
     }
 
     pub fn src_dir(&self) -> Vec2 {
