@@ -29,7 +29,7 @@ lazy_static! {
         (false, "Debug collision world", Box::new(debug_coworld)),
         (false, "Debug OBBs", Box::new(debug_obb)),
         (false, "Debug rays", Box::new(debug_rays)),
-        (true, "Debug splines", Box::new(debug_spline))
+        (false, "Debug splines", Box::new(debug_spline))
     ]);
 }
 
