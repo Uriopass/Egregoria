@@ -83,7 +83,7 @@ impl<'a> System<'a> for BulldozerSystem {
                 ProjectKind::House(id) => {
                     data.map.remove_house(id);
                 }
-                ProjectKind::Ground => {}
+                ProjectKind::Ground | ProjectKind::Lot(_) => {}
             }
 
             for id in potentially_empty {
