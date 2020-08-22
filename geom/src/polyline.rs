@@ -170,17 +170,20 @@ impl PolyLine {
     }
 
     /// dists should be in ascending order
-    pub fn points_dirs_along<T>(&self, dists: T) -> PointsAlongs<T>
-    where
-        T: Iterator<Item = f32>,
-    {
+    pub fn points_dirs_along<'a>(
+        &'a self,
+        dists: impl Iterator<Item = f32> + 'a,
+    ) -> impl Iterator<Item = (Vec2, Vec2)> + 'a {
+        self.points_dirs_manual().into_iter(dists)
+    }
+
+    pub fn points_dirs_manual(&self) -> PointsAlongs {
         let mut windows = self.0.windows(2);
         let (dir, dist) = windows
             .next()
             .and_then(|w| (w[1] - w[0]).dir_dist())
             .unwrap_or((Vec2::UNIT_X, 0.0));
         PointsAlongs {
-            dists,
             windows,
             lastp: self.first(),
             dir,
@@ -276,8 +279,7 @@ impl Index<usize> for PolyLine {
     }
 }
 
-pub struct PointsAlongs<'a, T: Iterator<Item = f32>> {
-    dists: T,
+pub struct PointsAlongs<'a> {
     windows: Windows<'a, Vec2>,
     lastp: Vec2,
     dir: Vec2,
@@ -285,11 +287,8 @@ pub struct PointsAlongs<'a, T: Iterator<Item = f32>> {
     partial: f32,
 }
 
-impl<T: Iterator<Item = f32>> Iterator for PointsAlongs<'_, T> {
-    type Item = (Vec2, Vec2);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let d = self.dists.next()?;
+impl<'a> PointsAlongs<'a> {
+    pub fn next(&mut self, d: f32) -> Option<(Vec2, Vec2)> {
         while d > self.partial + self.dist {
             let w = self.windows.next()?;
             let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((Vec2::UNIT_X, 0.0));
@@ -301,7 +300,10 @@ impl<T: Iterator<Item = f32>> Iterator for PointsAlongs<'_, T> {
         Some((self.lastp + self.dir * (d - self.partial), self.dir))
     }
 
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.dists.size_hint()
+    pub fn into_iter<IT: 'a + Iterator<Item = f32>>(
+        mut self,
+        mut it: IT,
+    ) -> impl Iterator<Item = (Vec2, Vec2)> + 'a {
+        std::iter::from_fn(move || self.next(it.next()?))
     }
 }

@@ -314,6 +314,16 @@ impl Vec2 {
     }
 
     #[inline]
+    pub fn try_normalize_to(self, v: f32) -> Option<Vec2> {
+        let m = self.magnitude();
+        if m > std::f32::EPSILON {
+            Some(self * (v / m))
+        } else {
+            None
+        }
+    }
+
+    #[inline]
     pub fn normalize_to(self, v: f32) -> Vec2 {
         let m = self.magnitude();
         self * (v / m)
