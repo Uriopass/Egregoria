@@ -1,4 +1,4 @@
-use crate::{House, HouseID, Intersection, IntersectionID, ProjectKind, Road, RoadID};
+use crate::{House, HouseID, Intersection, IntersectionID, Lot, LotID, ProjectKind, Road, RoadID};
 use flat_spatial::shape::AABB;
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
@@ -12,6 +12,7 @@ pub struct SpatialMap {
     house_ids: SecondaryMap<HouseID, ShapeGridHandle>,
     road_ids: SecondaryMap<RoadID, ShapeGridHandle>,
     intersection_ids: SecondaryMap<IntersectionID, ShapeGridHandle>,
+    lots_ids: SecondaryMap<LotID, ShapeGridHandle>,
 }
 
 impl Default for SpatialMap {
@@ -21,6 +22,7 @@ impl Default for SpatialMap {
             house_ids: Default::default(),
             road_ids: Default::default(),
             intersection_ids: Default::default(),
+            lots_ids: Default::default(),
         }
     }
 }
@@ -34,13 +36,13 @@ impl SpatialMap {
         self.house_ids.insert(h.id, handle);
     }
 
-    pub fn remove_house(&mut self, h: &House) {
-        if let Some(id) = self.house_ids.remove(h.id) {
+    pub fn remove_house(&mut self, id: HouseID) {
+        if let Some(id) = self.house_ids.remove(id) {
             self.grid.remove(id);
         } else {
             warn!(
                 "trying to remove {:?} from spatial map but it wasn't present",
-                h.id
+                id
             )
         }
     }
@@ -83,6 +85,25 @@ impl SpatialMap {
                 let h = self.grid.insert(bbox, ProjectKind::Inter(inter.id));
                 self.intersection_ids.insert(inter.id, h);
             }
+        }
+    }
+
+    pub fn insert_lot(&mut self, lot: &Lot) {
+        let bbox = lot.shape.bbox();
+        let handle = self
+            .grid
+            .insert(rect_to_aabb(bbox), ProjectKind::Lot(lot.id));
+        self.lots_ids.insert(lot.id, handle);
+    }
+
+    pub fn remove_lot(&mut self, id: LotID) {
+        if let Some(id) = self.lots_ids.remove(id) {
+            self.grid.remove(id);
+        } else {
+            warn!(
+                "trying to remove {:?} from spatial map but it wasn't present",
+                id
+            )
         }
     }
 

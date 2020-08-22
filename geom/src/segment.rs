@@ -29,4 +29,8 @@ impl Segment {
             self.src + diff * lol
         }
     }
+
+    pub fn vec(&self) -> Vec2 {
+        self.dst - self.src
+    }
 }
