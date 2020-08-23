@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 
 #[derive(Clone, Serialize, Deserialize, Default, Debug)]
-pub struct Polygon(Vec<Vec2>);
+pub struct Polygon(pub Vec<Vec2>);
 
 impl Polygon {
     pub fn rect(w: f32, h: f32) -> Self {

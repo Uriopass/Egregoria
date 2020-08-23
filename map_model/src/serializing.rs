@@ -59,5 +59,8 @@ fn mk_spatial_map(m: &SerializedMap) -> SpatialMap {
     for i in m.intersections.values() {
         sm.update_inter(i);
     }
+    for l in m.lots.values() {
+        sm.insert_lot(l);
+    }
     sm
 }

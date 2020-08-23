@@ -24,6 +24,16 @@ pub enum ProjectKind {
     Ground,
 }
 
+impl ProjectKind {
+    pub fn to_lot(self) -> Option<LotID> {
+        if let ProjectKind::Lot(id) = self {
+            Some(id)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct MapProject {
     pub pos: Vec2,
@@ -187,54 +197,20 @@ impl Map {
         info!("connect {:?} {:?} {:?} {:?}", src, dst, pattern, segment);
 
         self.dirty = true;
-        let road_id = Road::make(src, dst, segment, pattern, self);
+        let id = Road::make(src, dst, segment, pattern, self);
 
         let inters = &mut self.intersections;
 
-        inters[src].add_road(road_id, &self.roads);
-        inters[dst].add_road(road_id, &self.roads);
+        inters[src].add_road(id, &self.roads);
+        inters[dst].add_road(id, &self.roads);
 
         self.invalidate(src);
         self.invalidate(dst);
 
-        self.make_lots(road_id);
+        Lot::remove_intersecting_lots(self, id);
+        Lot::generate_along_road(self, id);
 
-        road_id
-    }
-
-    fn make_lots(&mut self, road: RoadID) {
-        fn make_lots_side(sel: &mut Map, road: RoadID, side: f32) {
-            let r = &sel.roads[road];
-
-            let w = r.width * 0.5;
-
-            let mut along = r.generated_points.points_dirs_manual();
-            let mut size = rand::random::<f32>() * 20.0 + 20.0;
-            let mut d = size * 0.5;
-
-            while let Some((pos, dir)) = along.next(d) {
-                let axis = side * dir.perpendicular();
-                let l = Lot::try_make(
-                    &mut sel.lots,
-                    &mut sel.spatial_map,
-                    &sel.roads,
-                    road,
-                    pos + axis * (w + 3.0),
-                    axis,
-                    size,
-                );
-                if l.is_some() {
-                    d += size * 0.5;
-                    size = rand::random::<f32>() * 20.0 + 20.0;
-                    d += size * 0.5 + 4.0;
-                } else {
-                    d += 2.0;
-                }
-            }
-        }
-
-        make_lots_side(self, road, 1.0);
-        make_lots_side(self, road, -1.0);
+        id
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
@@ -248,6 +224,11 @@ impl Map {
         for (id, _) in road.lanes_iter() {
             self.lanes.remove(id);
             self.parking.remove_spots(id);
+        }
+
+        for &lot in &road.lots {
+            self.lots.remove(lot);
+            self.spatial_map.remove_lot(lot);
         }
 
         self.intersections[road.src].remove_road(road_id);
