@@ -11,6 +11,7 @@ new_key_type! {
 pub struct House {
     pub id: HouseID,
     pub exterior: Polygon,
+    pub walkway: Polygon,
 }
 
 impl House {
@@ -19,26 +20,38 @@ impl House {
         let at = lot.shape.center();
         let axis = lot.road_edge.vec().perpendicular().normalize();
 
-        let mut exterior = Self::gen_exterior();
+        let mut exterior = Self::gen_exterior(lot.size);
 
-        exterior.rotate(axis);
-        exterior.translate(at);
+        exterior.rotate(-axis).translate(at);
 
-        let id = map.houses.insert_with_key(move |id| Self { id, exterior });
+        let mut ext = exterior.segment(exterior.0.len() - 1);
+        ext.resize(3.0);
+
+        let mut walkway = ext.to_polygon();
+        walkway.extrude(
+            0,
+            map.roads[lot.parent].generated_points.project_dist(ext.src) + 3.0,
+        );
+
+        let id = map.houses.insert_with_key(move |id| Self {
+            id,
+            exterior,
+            walkway,
+        });
         map.spatial_map.insert_house(&map.houses[id]);
         Some(id)
     }
 
-    pub fn gen_exterior() -> Polygon {
+    pub fn gen_exterior(size: f32) -> Polygon {
         fn rand_in(min: f32, max: f32) -> f32 {
             min + rand::random::<f32>() * (max - min)
         }
 
-        let a = rand_in(10.0, 20.0);
-        let b = rand_in(10.0, 20.0);
+        let a = rand_in(15.0, 20.0);
+        let b = rand_in(15.0, 20.0);
 
-        let w = f32::max(a, b);
-        let h = f32::min(a, b);
+        let w = f32::max(a, b) * (size / 40.0);
+        let h = f32::min(a, b) * (size / 40.0);
 
         let mut p = Polygon::rect(w, h);
         let corn_coeff = rand_in(0.5, 0.75);

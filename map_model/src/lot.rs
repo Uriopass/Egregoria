@@ -17,6 +17,7 @@ pub struct Lot {
     pub parent: RoadID,
     pub shape: OBB,
     pub road_edge: Segment,
+    pub size: f32,
 }
 
 impl Lot {
@@ -62,6 +63,7 @@ impl Lot {
             id,
             parent,
             shape,
+            size,
             road_edge,
         });
         spatial.insert_lot(&lots[id]);
