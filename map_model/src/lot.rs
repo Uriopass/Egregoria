@@ -1,8 +1,9 @@
-use crate::{Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
+use crate::{Intersections, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
 use geom::obb::OBB;
 use geom::polygon::Polygon;
 use geom::segment::Segment;
 use geom::Vec2;
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -23,6 +24,7 @@ impl Lot {
         lots: &mut Lots,
         spatial: &mut SpatialMap,
         roads: &Roads,
+        inters: &Intersections,
         parent: RoadID,
         at: Vec2,
         axis: Vec2,
@@ -35,6 +37,12 @@ impl Lot {
                 ProjectKind::Road(r) => {
                     let r = &roads[r];
                     if r.intersects(shape) {
+                        return None;
+                    }
+                }
+                ProjectKind::Inter(i) => {
+                    let i = &inters[i];
+                    if i.polygon.intersects(&Polygon(shape.corners.to_vec())) {
                         return None;
                     }
                 }
@@ -66,8 +74,14 @@ impl Lot {
 
             let w = r.width * 0.5;
 
+            fn picksize() -> f32 {
+                *[20.0f32, 30.0, 40.0]
+                    .choose(&mut rand::thread_rng())
+                    .unwrap()
+            }
+
             let mut along = r.generated_points.points_dirs_manual();
-            let mut size = rand::random::<f32>() * 20.0 + 20.0;
+            let mut size = picksize();
             let mut d = size * 0.5;
 
             let mut lots = vec![];
@@ -77,16 +91,18 @@ impl Lot {
                     &mut map.lots,
                     &mut map.spatial_map,
                     &map.roads,
+                    &map.intersections,
                     road,
                     pos + axis * (w + 3.0),
                     axis,
                     size,
                 );
                 if let Some(id) = l {
-                    d += size * 0.5;
-                    size = rand::random::<f32>() * 20.0 + 20.0;
-                    d += size * 0.5 + 4.0;
                     lots.push(id);
+
+                    d += size * 0.5 + 2.0;
+                    size = picksize();
+                    d += size * 0.5;
                 } else {
                     d += 2.0;
                 }
