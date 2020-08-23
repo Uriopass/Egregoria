@@ -1,4 +1,5 @@
 use super::Vec2;
+use crate::polygon::Polygon;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
@@ -30,7 +31,20 @@ impl Segment {
         }
     }
 
+    pub fn resize(&mut self, length: f32) -> &mut Self {
+        if let Some(v) = self.vec().try_normalize_to(length) {
+            let mid = (self.src + self.dst) * 0.5;
+            self.src = mid - v * 0.5;
+            self.dst = mid + v * 0.5;
+        }
+        self
+    }
+
     pub fn vec(&self) -> Vec2 {
         self.dst - self.src
+    }
+
+    pub fn to_polygon(self) -> Polygon {
+        Polygon(vec![self.src, self.dst])
     }
 }

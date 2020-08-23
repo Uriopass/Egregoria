@@ -14,41 +14,45 @@ impl Polygon {
         Self(vec![Vec2::ZERO, vec2(w, 0.0), vec2(w, h), vec2(0.0, h)])
     }
 
-    pub fn translate(&mut self, p: Vec2) {
+    pub fn translate(&mut self, p: Vec2) -> &mut Self {
         for x in self.0.iter_mut() {
             *x += p
         }
+        self
     }
 
-    pub fn rotate(&mut self, cossin: Vec2) {
+    pub fn rotate(&mut self, cossin: Vec2) -> &mut Self {
         for x in self.0.iter_mut() {
             *x = x.rotated_by(cossin)
         }
+        self
     }
 
-    pub fn segment(&self, seg: usize) -> (Vec2, Vec2) {
-        (
+    pub fn segment(&self, seg: usize) -> Segment {
+        Segment::new(
             self.0[seg],
             self.0[if seg + 1 == self.0.len() { 0 } else { seg + 1 }],
         )
     }
 
-    pub fn split_segment(&mut self, seg: usize, coeff: f32) {
-        let (p1, p2) = self.segment(seg);
-        self.0.insert(seg + 1, p1 + (p2 - p1) * coeff)
+    pub fn split_segment(&mut self, seg: usize, coeff: f32) -> &mut Self {
+        let Segment { src, dst } = self.segment(seg);
+        self.0.insert(seg + 1, src + (dst - src) * coeff);
+        self
     }
 
-    pub fn extrude(&mut self, seg: usize, dist: f32) {
+    pub fn extrude(&mut self, seg: usize, dist: f32) -> &mut Self {
         assert!(dist.abs() > 0.0);
 
-        let (p1, p2) = self.segment(seg);
-        let perp = match (p2 - p1).perpendicular().try_normalize() {
+        let Segment { src, dst } = self.segment(seg);
+        let perp = match (dst - src).perpendicular().try_normalize() {
             Some(x) => x,
-            None => return,
+            None => return self,
         };
 
-        self.0.insert(seg + 1, p1 + perp * dist);
-        self.0.insert(seg + 2, p2 + perp * dist)
+        self.0.insert(seg + 1, src + perp * dist);
+        self.0.insert(seg + 2, dst + perp * dist);
+        self
     }
 
     pub fn contains(&self, p: Vec2) -> bool {

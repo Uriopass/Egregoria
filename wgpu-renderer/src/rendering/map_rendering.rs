@@ -30,12 +30,13 @@ pub struct RoadRenderer {
 }
 
 const Z_INTER_BG: f32 = 0.20;
+const Z_LOT: f32 = 0.201;
+const Z_WALKWAY: f32 = 0.205;
 const Z_LANE_BG: f32 = 0.21;
 const Z_LANE: f32 = 0.22;
 const Z_SIDEWALK: f32 = 0.23;
 const Z_ARROW: f32 = 0.24;
 const Z_CROSSWALK: f32 = 0.25;
-const Z_LOT: f32 = 0.27;
 const Z_HOUSE: f32 = 0.28;
 const Z_SIGNAL: f32 = 0.29;
 
@@ -131,8 +132,10 @@ impl RoadRenderer {
             }
         }
 
-        tess.set_color(Color::gray(0.4));
         for house in map.houses().values() {
+            tess.set_color(Color::gray(0.3));
+            tess.draw_filled_polygon(house.walkway.as_slice(), Z_WALKWAY);
+            tess.set_color(Color::gray(0.4));
             tess.draw_filled_polygon(house.exterior.as_slice(), Z_HOUSE);
         }
 

@@ -95,6 +95,12 @@ impl PolyLine {
         proj.distance2(p)
     }
 
+    /// Distance squared from the projection to p
+    pub fn project_dist(&self, p: Vec2) -> f32 {
+        let proj = self.project(p);
+        proj.distance(p)
+    }
+
     /// Closest point to p on the polyline
     pub fn project(&self, p: Vec2) -> Vec2 {
         self.project_segment(p).0
