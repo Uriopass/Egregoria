@@ -343,9 +343,13 @@ impl Road {
     }
 
     pub fn intersects(&self, obb: OBB) -> bool {
-        obb.corners
-            .iter()
-            .any(|&p| self.generated_points.project(p).distance(p) < self.width * 0.5)
+        let c = obb.center();
+        self.generated_points.project(c).distance(c)
+            < (self.width + obb.axis()[0].magnitude()) * 0.5
+            || obb
+                .corners
+                .iter()
+                .any(|&p| self.generated_points.project(p).distance(p) < self.width * 0.5)
     }
 
     pub fn src_dir(&self) -> Vec2 {
