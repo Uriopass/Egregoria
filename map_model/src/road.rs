@@ -1,6 +1,6 @@
 use crate::{
-    IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes, Map,
-    ParkingSpots,
+    IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
+    LotID, Map, ParkingSpots,
 };
 use geom::obb::OBB;
 use geom::polyline::PolyLine;
@@ -49,6 +49,8 @@ pub struct Road {
 
     lanes_forward: Vec<(LaneID, LaneKind)>,
     lanes_backward: Vec<(LaneID, LaneKind)>,
+
+    pub(crate) lots: Vec<LotID>,
 }
 
 #[derive(Copy, Clone)]
@@ -81,6 +83,7 @@ impl Road {
             lanes_forward: vec![],
             lanes_backward: vec![],
             generated_points: unsafe { PolyLine::new_unchecked(vec![]) },
+            lots: vec![],
         });
         let road = &mut map.roads[id];
         for (lane_k, dir) in lane_pattern.lanes() {
@@ -340,10 +343,9 @@ impl Road {
     }
 
     pub fn intersects(&self, obb: OBB) -> bool {
-        let c = obb.center();
-        let p = self.generated_points.project(c);
-        let d = unwrap_or!((c - p).try_normalize_to(self.width * 0.5), return true);
-        obb.contains(p + d)
+        obb.corners
+            .iter()
+            .any(|&p| self.generated_points.project(p).distance(p) < self.width * 0.5)
     }
 
     pub fn src_dir(&self) -> Vec2 {
