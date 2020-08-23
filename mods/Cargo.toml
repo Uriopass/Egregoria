@@ -9,6 +9,5 @@ edition = "2018"
 [dependencies]
 mlua          = { version = "0.4.1", features = ["vendored", "lua54", "send"] }
 geom          = { path = "../geom" }
-lazy_static   = "1.4.0"
 rand          = "0.7.3"
 log           = "0.4.11"
