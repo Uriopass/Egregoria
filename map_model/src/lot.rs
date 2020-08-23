@@ -93,7 +93,7 @@ impl Lot {
                     &map.roads,
                     &map.intersections,
                     road,
-                    pos + axis * (w + 3.0),
+                    pos + axis * (w + 1.0),
                     axis,
                     size,
                 );
