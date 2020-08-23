@@ -17,12 +17,12 @@ impl House {
     pub fn make(map: &mut Map, id: LotID) -> Option<HouseID> {
         let lot = &map.lots[id];
         let at = lot.shape.center();
-        let axis = lot.road_edge.vec().perpendicular();
+        let axis = lot.road_edge.vec().perpendicular().normalize();
 
         let mut exterior = mods::gen_house()?;
 
         exterior.rotate(axis);
-        exterior.translate(at + axis * exterior.bcircle().radius);
+        exterior.translate(at);
 
         let id = map.houses.insert_with_key(move |id| Self { id, exterior });
         map.spatial_map.insert_house(&map.houses[id]);
