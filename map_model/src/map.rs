@@ -210,6 +210,10 @@ impl Map {
         Lot::remove_intersecting_lots(self, id);
         Lot::generate_along_road(self, id);
 
+        for &lot in &self.roads[id].lots.clone() {
+            House::make(self, lot);
+        }
+
         id
     }
 
@@ -241,15 +245,7 @@ impl Map {
 
     pub fn clear(&mut self) {
         info!("clear");
-
-        self.dirty = true;
-        self.intersections.clear();
-        self.lanes.clear();
-        self.roads.clear();
-        self.parking.clear();
-        self.houses.clear();
-        self.lots.clear();
-        self.spatial_map = SpatialMap::default();
+        *self = Self::empty();
     }
 
     pub fn project(&self, pos: Vec2) -> MapProject {
