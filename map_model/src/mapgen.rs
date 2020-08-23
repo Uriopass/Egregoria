@@ -1,5 +1,7 @@
 use crate::{IntersectionID, LanePatternBuilder, Map};
+use flat_spatial::SparseGrid;
 use geom::{vec2, Vec2};
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -51,7 +53,9 @@ pub fn load_parismap(map: &mut Map) {
     const CENTER_B: f64 = 48.855_782_8;
 
     //Scale nodes
-    let scale: f64 = 80000.0;
+    let scale: f64 = 90000.0;
+
+    let mut g = SparseGrid::new(50);
 
     for _ in 0..n {
         let mut long = scanner.next::<f64>();
@@ -60,9 +64,24 @@ pub fn load_parismap(map: &mut Map) {
         long = (long - CENTER_B) * scale / f64::cos(long / 180.0 * std::f64::consts::PI);
         lat = (lat - CENTER_A) * scale;
 
-        ids.push(map.add_intersection(vec2(lat as f32, long as f32)));
+        let p = vec2(lat as f32, long as f32);
+
+        let n = g.query_around(p, 50.0).next();
+        if let Some((h, _)) = n {
+            let (_, close_id) = g.get(h).unwrap();
+            ids.push(*close_id);
+            let newpos = (map.intersections[*close_id].pos + p) * 0.5;
+            map.update_intersection(*close_id, |i| i.pos = newpos);
+            g.set_position(h, newpos);
+            g.maintain();
+            continue;
+        }
+        let id = map.add_intersection(p);
+        ids.push(id);
+        g.insert(p, id);
     }
 
+    let mut already = HashSet::new();
     //Parse junctions
     for _ in 0..m {
         let src = scanner.next::<usize>();
@@ -71,14 +90,39 @@ pub fn load_parismap(map: &mut Map) {
         let _ = scanner.next::<usize>();
         let _ = scanner.next::<usize>();
 
+        let src = ids[src];
+        let dst = ids[dst];
+        if src == dst {
+            continue;
+        }
+
+        if already.contains(&(src, dst)) {
+            continue;
+        }
+        already.insert((src, dst));
+        if already.contains(&(dst, src)) {
+            map.remove_road(map.find_road(dst, src).unwrap());
+            map.connect_straight(
+                src,
+                dst,
+                &LanePatternBuilder::new()
+                    .one_way(false)
+                    .parking(true)
+                    .build(),
+            );
+            continue;
+        }
         map.connect_straight(
-            ids[src],
-            ids[dst],
+            src,
+            dst,
             &LanePatternBuilder::new()
                 .one_way(n_lanes == 1)
                 .parking(true)
                 .build(),
         );
+        if n_lanes != 1 {
+            already.insert((dst, src));
+        }
     }
 
     info!(

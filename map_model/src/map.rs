@@ -348,10 +348,10 @@ impl Map {
             .map(|x| &self.lanes[x])
     }
 
-    pub fn find_road(&self, a: IntersectionID, b: IntersectionID) -> Option<RoadID> {
-        for r in &self.intersections[a].roads {
+    pub fn find_road(&self, src: IntersectionID, dst: IntersectionID) -> Option<RoadID> {
+        for r in &self.intersections[src].roads {
             let road = &self.roads[*r];
-            if road.src == a && road.dst == b || (road.dst == a && road.src == b) {
+            if road.src == src && road.dst == dst {
                 return Some(road.id);
             }
         }
