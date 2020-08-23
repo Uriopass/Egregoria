@@ -144,8 +144,13 @@ impl Lot {
         rp(&map.intersections[r.dst].polygon);
 
         for lot in to_remove {
-            map.lots.remove(lot);
-            map.spatial_map.remove_lot(lot);
+            if let Some(l) = map.lots.remove(lot) {
+                let r = &mut map.roads[l.parent].lots;
+                if let Some(v) = r.iter().position(|&x| x == l.id) {
+                    r.swap_remove(v);
+                }
+                map.spatial_map.remove_lot(lot);
+            }
         }
     }
 }
