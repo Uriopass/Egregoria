@@ -29,9 +29,9 @@ pub struct RoadRenderer {
     crosswalks: Option<ShadedBatch<Crosswalk>>,
 }
 
-const Z_INTER_BG: f32 = 0.20;
-const Z_LOT: f32 = 0.201;
+const Z_LOT: f32 = 0.2;
 const Z_WALKWAY: f32 = 0.205;
+const Z_INTER_BG: f32 = 0.208;
 const Z_LANE_BG: f32 = 0.21;
 const Z_LANE: f32 = 0.22;
 const Z_SIDEWALK: f32 = 0.23;
