@@ -14,6 +14,7 @@ pub struct ImguiWrapper {
 pub struct GuiRenderContext<'a> {
     pub device: &'a wgpu::Device,
     pub encoder: &'a mut wgpu::CommandEncoder,
+    pub queue: &'a wgpu::Queue,
     pub frame_view: &'a wgpu::TextureView,
     pub window: &'a winit::window::Window,
 }
@@ -41,13 +42,7 @@ impl ImguiWrapper {
                 }),
             }]);
 
-        let renderer = Renderer::new(
-            &mut imgui,
-            &gfx.device,
-            &mut gfx.queue,
-            gfx.sc_desc.format,
-            None,
-        );
+        let renderer = Renderer::new(&mut imgui, &gfx.device, &mut gfx.queue, gfx.sc_desc.format);
         Self {
             imgui,
             renderer,
@@ -85,9 +80,21 @@ impl ImguiWrapper {
 
         self.platform.prepare_render(&ui, gfx.window);
 
+        let mut rpass = gfx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: &gfx.frame_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: true,
+                },
+            }],
+            depth_stencil_attachment: None,
+        });
+
         let _ = self
             .renderer
-            .render(ui.render(), gfx.device, gfx.encoder, gfx.frame_view)
+            .render(ui.render(), gfx.queue, gfx.device, &mut rpass)
             .map_err(|err| log::error!("Error rendering the UI: {:?}", err));
     }
 

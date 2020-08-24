@@ -2,6 +2,7 @@ use crate::engine::{
     compile_shader, ColoredVertex, Drawable, GfxContext, IndexType, PreparedPipeline, VBDesc,
 };
 use std::rc::Rc;
+use wgpu::util::DeviceExt;
 use wgpu::RenderPass;
 
 pub struct MeshBuilder {
@@ -42,13 +43,19 @@ impl MeshBuilder {
         if self.vertices.is_empty() {
             return None;
         }
-        let vertex_buffer = Rc::new(ctx.device.create_buffer_with_data(
-            bytemuck::cast_slice(&self.vertices),
-            wgpu::BufferUsage::VERTEX,
+        let vertex_buffer = Rc::new(ctx.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(&self.vertices),
+                usage: wgpu::BufferUsage::VERTEX,
+            },
         ));
-        let index_buffer = Rc::new(ctx.device.create_buffer_with_data(
-            bytemuck::cast_slice(&self.indices),
-            wgpu::BufferUsage::INDEX,
+        let index_buffer = Rc::new(ctx.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: bytemuck::cast_slice(&self.indices),
+                usage: wgpu::BufferUsage::INDEX,
+            },
         ));
 
         Some(Mesh {
@@ -76,8 +83,8 @@ impl Drawable for Mesh {
         let pipeline = gfx.basic_pipeline(
             &[&gfx.projection_layout],
             &[ColoredVertex::desc()],
-            &vert,
-            &frag,
+            vert,
+            frag,
         );
 
         PreparedPipeline {
@@ -89,8 +96,8 @@ impl Drawable for Mesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         rp.set_pipeline(&gfx.get_pipeline::<Self>().pipeline);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
-        rp.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
-        rp.set_index_buffer(&self.index_buffer, 0, 0);
+        rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..));
         rp.draw_indexed(0..self.n_indices, 0, 0..1);
     }
 }

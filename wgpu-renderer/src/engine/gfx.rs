@@ -8,7 +8,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
     Adapter, BindGroupLayout, CommandBuffer, CommandEncoderDescriptor, Device, Queue,
-    RenderPipeline, ShaderStage, Surface, SwapChain, SwapChainDescriptor, SwapChainOutput,
+    RenderPipeline, ShaderStage, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
     VertexBufferDescriptor,
 };
 use winit::window::Window;
@@ -45,25 +45,28 @@ impl<'a> FrameContext<'a> {
 
 impl GfxContext {
     pub async fn new(window: Window) -> Self {
+        let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+
         let (win_width, win_height) = (window.inner_size().width, window.inner_size().height);
-        let surface = Surface::create(&window);
-        let adapter = wgpu::Adapter::request(
-            &wgpu::RequestAdapterOptions {
+        let surface = unsafe { instance.create_surface(&window) };
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::Default,
                 compatible_surface: Some(&surface),
-            },
-            wgpu::BackendBit::PRIMARY,
-        )
-        .await
-        .expect("Failed to find a suitable adapter");
-        let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor {
-                extensions: wgpu::Extensions {
-                    anisotropic_filtering: false,
-                },
-                limits: Default::default(),
             })
-            .await;
+            .await
+            .expect("Failed to find a suitable adapter");
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    features: wgpu::Features::empty(),
+                    limits: wgpu::Limits::default(),
+                    shader_validation: true,
+                },
+                None,
+            )
+            .await
+            .unwrap();
         let sc_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
@@ -126,7 +129,6 @@ impl GfxContext {
         };
         let multisampled_frame_descriptor = &wgpu::TextureDescriptor {
             size: multisampled_texture_extent,
-            array_layer_count: 1,
             mip_level_count: 1,
             sample_count,
             dimension: wgpu::TextureDimension::D2,
@@ -137,14 +139,14 @@ impl GfxContext {
 
         device
             .create_texture(multisampled_frame_descriptor)
-            .create_default_view()
+            .create_view(&wgpu::TextureViewDescriptor::default())
     }
 
     pub fn render_frame(
         &mut self,
         state: &mut State,
         clear_color: &wgpu::Color,
-        frame: SwapChainOutput,
+        frame: wgpu::SwapChainFrame,
     ) {
         let mut encoder = self
             .device
@@ -152,7 +154,7 @@ impl GfxContext {
                 label: Some("Render encoder"),
             });
 
-        self.projection.upload_to_gpu(&self.device, &mut encoder);
+        self.projection.upload_to_gpu(&self.queue);
 
         let mut objs = vec![];
 
@@ -160,24 +162,27 @@ impl GfxContext {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &self.multi_frame,
-                    resolve_target: Some(&frame.view),
-                    load_op: wgpu::LoadOp::Clear,
-                    store_op: wgpu::StoreOp::Store,
-                    clear_color: wgpu::Color {
-                        r: clear_color.r,
-                        g: clear_color.g,
-                        b: clear_color.b,
-                        a: clear_color.a,
+                    resolve_target: Some(&frame.output.view),
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: clear_color.r,
+                            g: clear_color.g,
+                            b: clear_color.b,
+                            a: clear_color.a,
+                        }),
+                        store: true,
                     },
                 }],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                     attachment: &self.depth_texture.view,
-                    depth_load_op: wgpu::LoadOp::Clear,
-                    depth_store_op: wgpu::StoreOp::Store,
-                    clear_depth: 0.0,
-                    stencil_load_op: wgpu::LoadOp::Clear,
-                    stencil_store_op: wgpu::StoreOp::Store,
-                    clear_stencil: 0,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(0.0),
+                        store: true,
+                    }),
+                    stencil_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(0),
+                        store: true,
+                    }),
                 }),
             });
 
@@ -194,11 +199,12 @@ impl GfxContext {
         state.render_gui(GuiRenderContext {
             device: &self.device,
             encoder: &mut encoder,
-            frame_view: &frame.view,
+            queue: &self.queue,
+            frame_view: &frame.output.view,
             window: &self.window,
         });
 
-        self.queue.submit(&[encoder.finish()]);
+        self.queue.submit(vec![encoder.finish()]);
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -216,8 +222,8 @@ impl GfxContext {
         &self,
         layouts: &[&BindGroupLayout],
         vertex_buffers: &[VertexBufferDescriptor],
-        vert_shader: &CompiledShader,
-        frag_shader: &CompiledShader,
+        vert_shader: CompiledShader,
+        frag_shader: CompiledShader,
     ) -> RenderPipeline {
         assert!(matches!(vert_shader.1, ShaderType::Vertex));
         assert!(matches!(frag_shader.1, ShaderType::Fragment));
@@ -225,11 +231,13 @@ impl GfxContext {
         let render_pipeline_layout =
             self.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("basic pipeline"),
                     bind_group_layouts: layouts,
+                    push_constant_ranges: &[],
                 });
 
-        let vs_module = self.device.create_shader_module(&vert_shader.0);
-        let fs_module = self.device.create_shader_module(&frag_shader.0);
+        let vs_module = self.device.create_shader_module(vert_shader.0);
+        let fs_module = self.device.create_shader_module(frag_shader.0);
 
         let color_states = [wgpu::ColorStateDescriptor {
             format: self.sc_desc.format,
@@ -243,7 +251,8 @@ impl GfxContext {
         }];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
-            layout: &render_pipeline_layout,
+            label: None,
+            layout: Some(&render_pipeline_layout),
             vertex_stage: wgpu::ProgrammableStageDescriptor {
                 module: &vs_module,
                 entry_point: "main",
@@ -259,10 +268,12 @@ impl GfxContext {
                 format: wgpu::TextureFormat::Depth32Float,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::GreaterEqual,
-                stencil_front: wgpu::StencilStateFaceDescriptor::IGNORE,
-                stencil_back: wgpu::StencilStateFaceDescriptor::IGNORE,
-                stencil_read_mask: 0,
-                stencil_write_mask: 0,
+                stencil: StencilStateDescriptor {
+                    front: wgpu::StencilStateFaceDescriptor::IGNORE,
+                    back: wgpu::StencilStateFaceDescriptor::IGNORE,
+                    read_mask: 0,
+                    write_mask: 0,
+                },
             }),
             vertex_state: wgpu::VertexStateDescriptor {
                 index_format: wgpu::IndexFormat::Uint32,

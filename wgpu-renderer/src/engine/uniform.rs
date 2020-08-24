@@ -1,4 +1,5 @@
 use crate::engine::ToU8Slice;
+use wgpu::util::{BufferInitDescriptor, DeviceExt};
 
 pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
@@ -11,18 +12,18 @@ where
     [T]: ToU8Slice,
 {
     pub fn new(value: T, device: &wgpu::Device, layout: &wgpu::BindGroupLayout) -> Self {
-        let buffer = device.create_buffer_with_data(
-            ToU8Slice::to_slice([value].as_ref()),
-            wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        );
+        let r = [value];
+        let buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: ToU8Slice::to_slice(r.as_ref()),
+            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        });
+
         let bindgroup = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,
-            bindings: &[wgpu::Binding {
+            entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer {
-                    buffer: &buffer,
-                    range: 0..std::mem::size_of_val(&value) as wgpu::BufferAddress,
-                },
+                resource: wgpu::BindingResource::Buffer(buffer.slice(..)),
             }],
             label: Some(
                 format!(
@@ -40,19 +41,10 @@ where
         }
     }
 
-    pub fn upload_to_gpu(&self, device: &wgpu::Device, encoder: &mut wgpu::CommandEncoder) {
-        let staging_buffer = device.create_buffer_with_data(
-            ToU8Slice::to_slice([self.value].as_ref()),
-            wgpu::BufferUsage::COPY_SRC,
-        );
-
-        encoder.copy_buffer_to_buffer(
-            &staging_buffer,
-            0,
-            &self.buffer,
-            0,
-            std::mem::size_of::<T>() as wgpu::BufferAddress,
-        );
+    pub fn upload_to_gpu(&self, queue: &wgpu::Queue) {
+        let r = [self.value];
+        let data = ToU8Slice::to_slice(r.as_ref());
+        queue.write_buffer(&self.buffer, 0, data);
     }
 }
 
@@ -63,12 +55,14 @@ impl<T> Uniform<T> {
         visibility: wgpu::ShaderStage,
     ) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[wgpu::BindGroupLayoutEntry {
+            entries: &[wgpu::BindGroupLayoutEntry {
                 binding,
                 visibility,
                 ty: wgpu::BindingType::UniformBuffer {
                     dynamic: false, // The dynamic field indicates whether this buffer will change size or not. This is useful if we want to store an array of things in our uniforms.
+                    min_binding_size: None,
                 },
+                count: None,
             }],
             label: Some(format!("{} {}", "bglayout for", std::any::type_name::<T>()).as_ref()),
         })
