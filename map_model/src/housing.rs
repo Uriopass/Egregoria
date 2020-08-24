@@ -28,9 +28,10 @@ impl House {
         ext.resize(3.0);
 
         let mut walkway = ext.to_polygon();
+        let r = &map.roads[lot.parent];
         walkway.extrude(
             0,
-            map.roads[lot.parent].generated_points.project_dist(ext.src) + 3.0,
+            r.generated_points.project_dist(ext.src) - r.width * 0.5 + 3.0,
         );
 
         let id = map.houses.insert_with_key(move |id| Self {
