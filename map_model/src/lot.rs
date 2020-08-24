@@ -1,4 +1,4 @@
-use crate::{Intersections, LanePair, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
+use crate::{Intersections, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
 use geom::obb::OBB;
 use geom::polygon::Polygon;
 use geom::segment::Segment;

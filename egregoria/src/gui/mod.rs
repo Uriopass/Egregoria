@@ -415,6 +415,10 @@ impl Gui {
 
                 let map: &mut Map = &mut world.write_resource::<Map>();
 
+                if ui.small_button(im_str!("build houses")) {
+                    map.build_houses();
+                }
+
                 if ui.small_button(im_str!("load Paris map")) {
                     map.clear();
                     map_model::load_parismap(map);
