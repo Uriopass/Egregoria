@@ -210,11 +210,19 @@ impl Map {
         Lot::remove_intersecting_lots(self, id);
         Lot::generate_along_road(self, id);
 
-        for &lot in &self.roads[id].lots.clone() {
-            House::make(self, lot);
-        }
-
         id
+    }
+
+    pub fn build_houses(&mut self) {
+        info!("build houses");
+        for (id, lot) in self.lots.drain() {
+            let rlots = &mut self.roads[lot.parent].lots;
+            rlots.remove(rlots.iter().position(|&x| x == id).unwrap());
+            self.spatial_map.remove_lot(id);
+
+            House::make(&mut self.houses, &mut self.spatial_map, &self.roads, lot);
+        }
+        self.dirty = true;
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {

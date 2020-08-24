@@ -1,4 +1,4 @@
-use crate::{LotID, Map};
+use crate::{Houses, Lot, Roads, SpatialMap};
 use geom::polygon::Polygon;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -15,8 +15,12 @@ pub struct House {
 }
 
 impl House {
-    pub fn make(map: &mut Map, id: LotID) -> Option<HouseID> {
-        let lot = &map.lots[id];
+    pub fn make(
+        houses: &mut Houses,
+        spatial_map: &mut SpatialMap,
+        roads: &Roads,
+        lot: Lot,
+    ) -> Option<HouseID> {
         let at = lot.shape.center();
         let axis = lot.road_edge.vec().perpendicular().normalize();
 
@@ -28,18 +32,18 @@ impl House {
         ext.resize(3.0);
 
         let mut walkway = ext.to_polygon();
-        let r = &map.roads[lot.parent];
+        let r = &roads[lot.parent];
         walkway.extrude(
             0,
             r.generated_points.project_dist(ext.src) - r.width * 0.5 + 3.0,
         );
 
-        let id = map.houses.insert_with_key(move |id| Self {
+        let id = houses.insert_with_key(move |id| Self {
             id,
             exterior,
             walkway,
         });
-        map.spatial_map.insert_house(&map.houses[id]);
+        spatial_map.insert_house(&houses[id]);
         Some(id)
     }
 
