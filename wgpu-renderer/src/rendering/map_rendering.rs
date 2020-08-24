@@ -142,7 +142,10 @@ impl RoadRenderer {
         for lot in map.lots().values() {
             tess.set_color(Color::gray(0.2));
             tess.draw_filled_polygon(&lot.shape.corners, Z_LOT);
-            tess.set_color(Color::GREEN);
+            tess.set_color(Color {
+                g: 0.4,
+                ..Color::gray(0.2)
+            });
             tess.draw_stroke(lot.road_edge.src, lot.road_edge.dst, Z_LOT, 1.0);
         }
         tess.meshbuilder.build(gfx)
