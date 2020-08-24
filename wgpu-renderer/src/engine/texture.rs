@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::rc::Rc;
-use wgpu::{CommandEncoderDescriptor, TextureComponentType};
+use wgpu::{TextureComponentType, TextureCopyView, TextureDataLayout, TextureViewDescriptor};
 
 #[derive(Clone)]
 pub struct Texture {
@@ -51,7 +51,6 @@ impl Texture {
         let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
             label,
             size,
-            array_layer_count: 1,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -59,38 +58,24 @@ impl Texture {
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
         });
 
-        let buffer = ctx
-            .device
-            .create_buffer_with_data(&rgba, wgpu::BufferUsage::COPY_SRC);
-
-        let mut encoder = ctx
-            .device
-            .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("Texture creation encoder"),
-            });
-
-        encoder.copy_buffer_to_texture(
-            wgpu::BufferCopyView {
-                buffer: &buffer,
+        ctx.queue.write_texture(
+            TextureCopyView {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            &rgba,
+            TextureDataLayout {
                 offset: 0,
                 bytes_per_row: 4 * dimensions.0,
                 rows_per_image: dimensions.1,
             },
-            wgpu::TextureCopyView {
-                texture: &texture,
-                mip_level: 0,
-                array_layer: 0,
-                origin: wgpu::Origin3d::ZERO,
-            },
             size,
         );
 
-        let cmd_buffer = encoder.finish();
-
-        ctx.queue.submit(&[cmd_buffer]);
-
-        let view = texture.create_default_view();
+        let view = texture.create_view(&TextureViewDescriptor::default());
         let sampler = ctx.device.create_sampler(&wgpu::SamplerDescriptor {
+            label,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -99,7 +84,8 @@ impl Texture {
             mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Always,
+            compare: None,
+            anisotropy_clamp: None,
         });
 
         Some(Self {
@@ -127,15 +113,15 @@ impl Texture {
                 depth: 1,
             },
             mip_level_count: 1,
-            array_layer_count: 1,
             sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
             label: Some("depth texture"),
         };
         let texture = device.create_texture(&desc);
 
-        let view = texture.create_default_view();
+        let view = texture.create_view(&TextureViewDescriptor::default());
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -144,7 +130,8 @@ impl Texture {
             mipmap_filter: wgpu::FilterMode::Nearest,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
-            compare: wgpu::CompareFunction::Always,
+            compare: None,
+            anisotropy_clamp: None,
         });
 
         Self {
@@ -158,7 +145,7 @@ impl Texture {
 
     pub fn bindgroup_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            bindings: &[
+            entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStage::FRAGMENT,
@@ -167,11 +154,13 @@ impl Texture {
                         dimension: wgpu::TextureViewDimension::D2,
                         component_type: TextureComponentType::Uint,
                     },
+                    count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStage::FRAGMENT,
                     ty: wgpu::BindingType::Sampler { comparison: false },
+                    count: None,
                 },
             ],
             label: Some("Texture bindgroup layout"),

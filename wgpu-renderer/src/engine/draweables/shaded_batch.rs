@@ -3,6 +3,7 @@ use crate::engine::{CompiledShader, Drawable, GfxContext, IndexType, UvVertex, V
 use geom::Vec2;
 use std::marker::PhantomData;
 use std::rc::Rc;
+use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{RenderPass, VertexBufferDescriptor};
 
 pub trait Shaders {
@@ -53,7 +54,9 @@ impl VBDesc for ShadedInstanceRaw {
         wgpu::VertexBufferDescriptor {
             stride: std::mem::size_of::<ShadedInstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
-            attributes: &wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float2, 5 => Float4],
+            attributes: Box::leak(Box::new(
+                wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float2, 5 => Float4],
+            )),
         }
     }
 }
@@ -92,20 +95,23 @@ impl<T: Shaders> ShadedBatchBuilder<T> {
             return None;
         }
 
-        let vertex_buffer =
-            Rc::new(gfx.device.create_buffer_with_data(
-                bytemuck::cast_slice(UV_VERTICES),
-                wgpu::BufferUsage::VERTEX,
-            ));
-        let index_buffer =
-            Rc::new(gfx.device.create_buffer_with_data(
-                bytemuck::cast_slice(UV_INDICES),
-                wgpu::BufferUsage::INDEX,
-            ));
-        let instance_buffer = Rc::new(gfx.device.create_buffer_with_data(
-            bytemuck::cast_slice(&self.instances),
-            wgpu::BufferUsage::VERTEX,
-        ));
+        let vertex_buffer = Rc::new(gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(UV_VERTICES),
+            usage: wgpu::BufferUsage::VERTEX,
+        }));
+
+        let index_buffer = Rc::new(gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(UV_INDICES),
+            usage: wgpu::BufferUsage::INDEX,
+        }));
+
+        let instance_buffer = Rc::new(gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&self.instances),
+            usage: wgpu::BufferUsage::VERTEX,
+        }));
 
         Some(ShadedBatch {
             vertex_buffer,
@@ -127,8 +133,8 @@ impl<T: 'static + Shaders> Drawable for ShadedBatch<T> {
         let pipeline = gfx.basic_pipeline(
             &[&gfx.projection_layout],
             &[UvVertex::desc(), ShadedInstanceRaw::desc()],
-            &vert,
-            &frag,
+            vert,
+            frag,
         );
 
         super::PreparedPipeline {
@@ -141,9 +147,9 @@ impl<T: 'static + Shaders> Drawable for ShadedBatch<T> {
         let pipeline = &gfx.get_pipeline::<Self>();
         rp.set_pipeline(&pipeline.pipeline);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
-        rp.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
-        rp.set_vertex_buffer(1, &self.instance_buffer, 0, 0);
-        rp.set_index_buffer(&self.index_buffer, 0, 0);
+        rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..));
         rp.draw_indexed(0..self.n_indices, 0, 0..self.n_instances);
     }
 }

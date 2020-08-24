@@ -2,6 +2,7 @@ use crate::engine::{compile_shader, Drawable, GfxContext, IndexType, Texture, Uv
 
 use geom::Vec2;
 use std::rc::Rc;
+use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{RenderPass, VertexBufferDescriptor};
 
 pub struct SpriteBatchBuilder {
@@ -46,7 +47,9 @@ impl VBDesc for InstanceRaw {
         wgpu::VertexBufferDescriptor {
             stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
-            attributes: &wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float3],
+            attributes: Box::leak(Box::new(
+                wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float3],
+            )),
         }
     }
 }
@@ -111,28 +114,32 @@ impl SpriteBatchBuilder {
             return None;
         }
 
-        let vertex_buffer = Rc::new(
-            gfx.device
-                .create_buffer_with_data(bytemuck::cast_slice(&v), wgpu::BufferUsage::VERTEX),
-        );
-        let index_buffer =
-            Rc::new(gfx.device.create_buffer_with_data(
-                bytemuck::cast_slice(UV_INDICES),
-                wgpu::BufferUsage::INDEX,
-            ));
-        let instance_buffer = Rc::new(gfx.device.create_buffer_with_data(
-            bytemuck::cast_slice(&self.instances),
-            wgpu::BufferUsage::VERTEX,
-        ));
+        let vertex_buffer = Rc::new(gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&v),
+            usage: wgpu::BufferUsage::VERTEX,
+        }));
+
+        let index_buffer = Rc::new(gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(UV_INDICES),
+            usage: wgpu::BufferUsage::INDEX,
+        }));
+
+        let instance_buffer = Rc::new(gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&self.instances),
+            usage: wgpu::BufferUsage::VERTEX,
+        }));
 
         let bind_group = Rc::new(gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bindgroupslayouts[0],
-            bindings: &[
-                wgpu::Binding {
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(&self.tex.view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&self.tex.sampler),
                 },
@@ -163,8 +170,8 @@ impl Drawable for SpriteBatch {
         let pipeline = gfx.basic_pipeline(
             &[&layouts[0], &gfx.projection_layout],
             &[UvVertex::desc(), InstanceRaw::desc()],
-            &vert,
-            &frag,
+            vert,
+            frag,
         );
 
         super::PreparedPipeline {
@@ -178,9 +185,9 @@ impl Drawable for SpriteBatch {
         rp.set_pipeline(&pipeline.pipeline);
         rp.set_bind_group(0, &self.bind_group, &[]);
         rp.set_bind_group(1, &gfx.projection.bindgroup, &[]);
-        rp.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
-        rp.set_vertex_buffer(1, &self.instance_buffer, 0, 0);
-        rp.set_index_buffer(&self.index_buffer, 0, 0);
+        rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..));
         rp.draw_indexed(0..self.n_indices, 0, 0..self.n_instances);
     }
 }

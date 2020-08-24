@@ -4,12 +4,12 @@ use std::io::Read;
 use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
+use wgpu::ShaderModuleSource;
 
-pub struct CompiledShader(pub Vec<u32>, pub ShaderType);
+pub struct CompiledShader(pub ShaderModuleSource<'static>, pub ShaderType);
 
 pub enum CacheState {
     Nofile,
-    InvalidSpirv,
     Outdated(CompiledShader),
     Fresh(CompiledShader),
 }
@@ -26,19 +26,23 @@ fn find_in_cache(
     stype: ShaderType,
     last_modified: SystemTime,
 ) -> CacheState {
-    let x = match File::open(&compiled_path) {
+    let read = match std::fs::read(&compiled_path) {
         Ok(x) => x,
         Err(_) => return CacheState::Nofile,
     };
 
-    let data = match wgpu::read_spirv(&x) {
-        Ok(x) => x,
-        Err(_) => return CacheState::InvalidSpirv,
-    };
+    let read = Box::leak(Box::new(read));
+
+    let data = wgpu::util::make_spirv(read);
 
     let shader = CompiledShader(data, stype);
 
-    let cached_last_modified = match x.metadata() {
+    let f = match File::open(compiled_path) {
+        Ok(x) => x,
+        Err(_) => return CacheState::Nofile,
+    };
+
+    let cached_last_modified = match f.metadata() {
         Ok(x) => match x.modified() {
             Ok(x) => x,
             Err(_) => return CacheState::Outdated(shader),
@@ -115,13 +119,6 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
             );
             None
         }
-        CacheState::InvalidSpirv => {
-            log::warn!(
-                "Shader {} was found in cache but is invalid, recompiling",
-                p.to_string_lossy().into_owned()
-            );
-            None
-        }
     };
 
     let mut src = String::new();
@@ -148,6 +145,13 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
 
     let _ = compiled_name.and_then(|x| save_to_cache(&x, &mut spirv));
 
-    let data = wgpu::read_spirv(&spirv).expect("error trying to decode spirv");
+    let mut data = vec![];
+    spirv
+        .read_to_end(&mut data)
+        .expect("Couldn't read compiled spirv");
+
+    let leaked = Box::leak(Box::new(data));
+
+    let data = wgpu::util::make_spirv(leaked);
     CompiledShader(data, stype)
 }

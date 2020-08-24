@@ -2,6 +2,7 @@
 use crate::engine::{
     compile_shader, ColoredUvVertex, Drawable, GfxContext, IndexType, Texture, VBDesc,
 };
+use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::RenderPass;
 
 pub struct TexturedMeshBuilder {
@@ -40,23 +41,26 @@ impl TexturedMeshBuilder {
 
         let pipeline = gfx.get_pipeline::<TexturedMesh>();
 
-        let vertex_buffer = gfx.device.create_buffer_with_data(
-            bytemuck::cast_slice(&self.vertices),
-            wgpu::BufferUsage::VERTEX,
-        );
-        let index_buffer = gfx.device.create_buffer_with_data(
-            bytemuck::cast_slice(&self.indices),
-            wgpu::BufferUsage::INDEX,
-        );
+        let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&self.vertices),
+            usage: wgpu::BufferUsage::VERTEX,
+        });
+
+        let index_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&self.indices),
+            usage: wgpu::BufferUsage::INDEX,
+        });
 
         let bind_group = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &pipeline.bindgroupslayouts[0],
-            bindings: &[
-                wgpu::Binding {
+            entries: &[
+                wgpu::BindGroupEntry {
                     binding: 0,
                     resource: wgpu::BindingResource::TextureView(&tex.view),
                 },
-                wgpu::Binding {
+                wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&tex.sampler),
                 },
@@ -85,8 +89,8 @@ impl Drawable for TexturedMesh {
         let pipeline = gfx.basic_pipeline(
             &[&layouts[0], &gfx.projection_layout],
             &[ColoredUvVertex::desc()],
-            &vert,
-            &frag,
+            vert,
+            frag,
         );
 
         super::PreparedPipeline {
@@ -100,8 +104,8 @@ impl Drawable for TexturedMesh {
         rp.set_pipeline(&pipeline.pipeline);
         rp.set_bind_group(0, &self.bind_group, &[]);
         rp.set_bind_group(1, &gfx.projection.bindgroup, &[]);
-        rp.set_vertex_buffer(0, &self.vertex_buffer, 0, 0);
-        rp.set_index_buffer(&self.index_buffer, 0, 0);
+        rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..));
         rp.draw_indexed(0..self.n_indices, 0, 0..1);
     }
 }

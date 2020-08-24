@@ -1,7 +1,7 @@
 use crate::engine::{AudioContext, GfxContext, InputContext};
 use crate::game_loop;
 use futures::executor;
-use wgpu::{Color, SwapChainOutput};
+use wgpu::{Color, SwapChainFrame};
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
@@ -52,7 +52,7 @@ impl Context {
             a: 1.0,
         };
 
-        let mut frame: Option<SwapChainOutput> = None;
+        let mut frame: Option<SwapChainFrame> = None;
         let mut new_size: Option<PhysicalSize<u32>> = None;
 
         self.el.take().unwrap().run(move |event, _, control_flow| {
@@ -81,8 +81,8 @@ impl Context {
                         frame = Some(
                             self.gfx
                                 .swapchain
-                                .get_next_texture()
-                                .expect("Timeout getting texture"),
+                                .get_current_frame()
+                                .expect("Error getting swapchain frame"),
                         );
                     }
                     Some(sco) => {
