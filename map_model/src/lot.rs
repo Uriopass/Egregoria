@@ -1,4 +1,4 @@
-use crate::{Intersections, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
+use crate::{Intersections, LanePair, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
 use geom::obb::OBB;
 use geom::polygon::Polygon;
 use geom::segment::Segment;
@@ -113,8 +113,13 @@ impl Lot {
             map.roads[road].lots.extend_from_slice(&lots);
         }
 
-        gen_side(map, road, 1.0);
-        gen_side(map, road, -1.0);
+        let pair = map.roads[road].sidewalks(map.roads[road].src);
+        if pair.outgoing.is_some() {
+            gen_side(map, road, 1.0);
+        }
+        if pair.incoming.is_some() {
+            gen_side(map, road, -1.0);
+        }
     }
 
     pub fn remove_intersecting_lots(map: &mut Map, road: RoadID) {
