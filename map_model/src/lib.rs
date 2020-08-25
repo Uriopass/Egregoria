@@ -10,7 +10,7 @@ macro_rules! unwrap_or {
 #[macro_use]
 extern crate log;
 
-mod housing;
+mod house;
 mod intersection;
 mod lane;
 mod light_policy;
@@ -29,7 +29,7 @@ mod turn_policy;
 
 // Use self or else it would be ambiguous with "pathfinding" crate
 pub use self::pathfinding::*;
-pub use housing::*;
+pub use house::*;
 pub use intersection::*;
 pub use lane::*;
 pub use light_policy::*;
