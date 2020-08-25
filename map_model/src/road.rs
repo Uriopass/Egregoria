@@ -4,6 +4,7 @@ use crate::{
 };
 use geom::obb::OBB;
 use geom::polyline::PolyLine;
+use geom::rect::Rect;
 use geom::splines::Spline;
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
@@ -98,7 +99,8 @@ impl Road {
             road.width += lane_k.width();
         }
         road.gen_pos(intersections, &mut map.lanes, &mut map.parking);
-        map.spatial_map.insert_road(road);
+
+        map.spatial_map.insert(id, road.bbox());
         id
     }
 
@@ -192,6 +194,15 @@ impl Road {
                 parking.generate_spots(l)
             }
         }
+    }
+
+    pub fn bbox(&self) -> Rect {
+        let mut bbox = self.generated_points.bbox();
+        bbox.x -= self.width * 0.5;
+        bbox.y -= self.width * 0.5;
+        bbox.w += self.width;
+        bbox.h += self.width;
+        bbox
     }
 
     pub fn pattern(&self) -> LanePattern {

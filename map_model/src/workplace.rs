@@ -1,4 +1,4 @@
-use crate::{Houses, Lot, Roads, SpatialMap, Workplaces};
+use crate::{Lot, Roads, SpatialMap, Workplaces};
 use geom::polygon::Polygon;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -43,7 +43,7 @@ impl Workplace {
             exterior,
             walkway,
         });
-        spatial_map.insert_house(&houses[id]);
+        spatial_map.insert(id, exterior.bbox());
         Some(id)
     }
 
