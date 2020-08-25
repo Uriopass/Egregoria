@@ -125,7 +125,7 @@ impl Map {
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
         info!("add_intersection {:?}", pos);
         self.dirty = true;
-        Intersection::make(&mut self.intersections, pos)
+        Intersection::make(&mut self.intersections, &mut self.spatial_map, pos)
     }
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
