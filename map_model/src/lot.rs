@@ -66,7 +66,7 @@ impl Lot {
             size,
             road_edge,
         });
-        spatial.insert_lot(&lots[id]);
+        spatial.insert(id, shape.bbox());
         Some(id)
     }
 
@@ -156,7 +156,7 @@ impl Lot {
                 if let Some(v) = r.iter().position(|&x| x == l.id) {
                     r.swap_remove(v);
                 }
-                map.spatial_map.remove_lot(lot);
+                map.spatial_map.remove(lot);
             }
         }
     }

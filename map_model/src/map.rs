@@ -16,7 +16,7 @@ pub type Houses = DenseSlotMap<HouseID, House>;
 pub type Lots = DenseSlotMap<LotID, Lot>;
 pub type Workplaces = DenseSlotMap<WorkplaceID, Workplace>;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub enum ProjectKind {
     Inter(IntersectionID),
     Road(RoadID),
@@ -24,6 +24,21 @@ pub enum ProjectKind {
     Lot(LotID),
     Ground,
 }
+
+macro_rules! impl_from_pk {
+    ($t: ty, $e: expr) => {
+        impl From<$t> for ProjectKind {
+            fn from(x: $t) -> Self {
+                $e(x)
+            }
+        }
+    };
+}
+
+impl_from_pk!(IntersectionID, ProjectKind::Inter);
+impl_from_pk!(RoadID, ProjectKind::Road);
+impl_from_pk!(HouseID, ProjectKind::House);
+impl_from_pk!(LotID, ProjectKind::Lot);
 
 impl ProjectKind {
     pub fn to_lot(self) -> Option<LotID> {
@@ -106,7 +121,8 @@ impl Map {
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
         inter.update_polygon(&self.roads);
-        self.spatial_map.update_inter(inter);
+
+        self.spatial_map.update(inter.id, inter.polygon.bbox());
     }
 
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
@@ -123,15 +139,14 @@ impl Map {
             self.remove_road(road);
         }
 
-        self.spatial_map.update_inter(&self.intersections[src]);
-
+        self.spatial_map.remove(src);
         self.intersections.remove(src);
     }
 
     pub fn remove_house(&mut self, h: HouseID) -> Option<House> {
         let h = self.houses.remove(h);
         if let Some(h) = &h {
-            self.spatial_map.remove_house(h.id)
+            self.spatial_map.remove(h.id)
         }
         self.dirty |= h.is_some();
         h
@@ -221,7 +236,7 @@ impl Map {
         for (id, lot) in self.lots.drain() {
             let rlots = &mut self.roads[lot.parent].lots;
             rlots.remove(rlots.iter().position(|&x| x == id).unwrap());
-            self.spatial_map.remove_lot(id);
+            self.spatial_map.remove(id);
 
             House::make(&mut self.houses, &mut self.spatial_map, &self.roads, lot);
         }
@@ -234,7 +249,7 @@ impl Map {
         self.dirty = true;
         let road = self.roads.remove(road_id)?;
 
-        self.spatial_map.remove_road(&road);
+        self.spatial_map.remove(road_id);
 
         for (id, _) in road.lanes_iter() {
             self.lanes.remove(id);
@@ -243,7 +258,7 @@ impl Map {
 
         for &lot in &road.lots {
             self.lots.remove(lot);
-            self.spatial_map.remove_lot(lot);
+            self.spatial_map.remove(lot);
         }
 
         self.intersections[road.src].remove_road(road_id);

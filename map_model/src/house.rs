@@ -38,12 +38,13 @@ impl House {
             r.generated_points.project_dist(ext.src) - r.width * 0.5 + 3.0,
         );
 
+        let bbox = exterior.bbox();
         let id = houses.insert_with_key(move |id| Self {
             id,
             exterior,
             walkway,
         });
-        spatial_map.insert_house(&houses[id]);
+        spatial_map.insert(id, bbox);
         Some(id)
     }
 
