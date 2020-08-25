@@ -1,9 +1,10 @@
 use crate::{
-    Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, TraverseDirection, Turn, TurnID,
-    TurnPolicy,
+    Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, SpatialMap, TraverseDirection, Turn,
+    TurnID, TurnPolicy,
 };
 use geom::polygon::Polygon;
 use geom::pseudo_angle;
+use geom::rect::Rect;
 use geom::splines::Spline;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
@@ -37,8 +38,8 @@ pub struct Intersection {
 }
 
 impl Intersection {
-    pub fn make(store: &mut Intersections, pos: Vec2) -> IntersectionID {
-        store.insert_with_key(|id| Intersection {
+    pub fn make(store: &mut Intersections, spatial: &mut SpatialMap, pos: Vec2) -> IntersectionID {
+        let id = store.insert_with_key(|id| Intersection {
             id,
             pos,
             turns: Default::default(),
@@ -46,7 +47,9 @@ impl Intersection {
             turn_policy: Default::default(),
             light_policy: Default::default(),
             polygon: Default::default(),
-        })
+        });
+        spatial.insert(id, Rect::new(pos.x, pos.y, 0.0, 0.0));
+        id
     }
 
     pub fn add_road(&mut self, road_id: RoadID, roads: &Roads) {
