@@ -1,6 +1,6 @@
 use crate::{
     House, HouseID, Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Lot, LotID,
-    ParkingSpotID, ParkingSpots, Road, RoadID, RoadSegmentKind, SpatialMap,
+    ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap,
 };
 use geom::splines::Spline;
 use geom::Vec2;
@@ -14,40 +14,6 @@ pub type Lanes = DenseSlotMap<LaneID, Lane>;
 pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 pub type Houses = DenseSlotMap<HouseID, House>;
 pub type Lots = DenseSlotMap<LotID, Lot>;
-
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
-pub enum ProjectKind {
-    Inter(IntersectionID),
-    Road(RoadID),
-    House(HouseID),
-    Lot(LotID),
-    Ground,
-}
-
-macro_rules! impl_from_pk {
-    ($t: ty, $e: expr) => {
-        impl From<$t> for ProjectKind {
-            fn from(x: $t) -> Self {
-                $e(x)
-            }
-        }
-    };
-}
-
-impl_from_pk!(IntersectionID, ProjectKind::Inter);
-impl_from_pk!(RoadID, ProjectKind::Road);
-impl_from_pk!(HouseID, ProjectKind::House);
-impl_from_pk!(LotID, ProjectKind::Lot);
-
-impl ProjectKind {
-    pub fn to_lot(self) -> Option<LotID> {
-        if let ProjectKind::Lot(id) = self {
-            Some(id)
-        } else {
-            None
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy)]
 pub struct MapProject {

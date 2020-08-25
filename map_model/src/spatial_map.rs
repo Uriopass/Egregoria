@@ -1,10 +1,44 @@
-use crate::ProjectKind;
+use crate::{HouseID, IntersectionID, LotID, RoadID};
 use flat_spatial::shape::AABB;
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
 use geom::rect::Rect;
 use geom::Vec2;
 use std::collections::HashMap;
+
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+pub enum ProjectKind {
+    Inter(IntersectionID),
+    Road(RoadID),
+    House(HouseID),
+    Lot(LotID),
+    Ground,
+}
+
+macro_rules! impl_from_pk {
+    ($t: ty, $e: expr) => {
+        impl From<$t> for ProjectKind {
+            fn from(x: $t) -> Self {
+                $e(x)
+            }
+        }
+    };
+}
+
+impl_from_pk!(IntersectionID, ProjectKind::Inter);
+impl_from_pk!(RoadID, ProjectKind::Road);
+impl_from_pk!(HouseID, ProjectKind::House);
+impl_from_pk!(LotID, ProjectKind::Lot);
+
+impl ProjectKind {
+    pub fn to_lot(self) -> Option<LotID> {
+        if let ProjectKind::Lot(id) = self {
+            Some(id)
+        } else {
+            None
+        }
+    }
+}
 
 pub struct SpatialMap {
     grid: ShapeGrid<ProjectKind, AABB>,
