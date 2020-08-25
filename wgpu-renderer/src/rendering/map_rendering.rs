@@ -132,11 +132,11 @@ impl RoadRenderer {
             }
         }
 
-        for house in map.houses().values() {
+        for building in map.buildings().values() {
             tess.set_color(Color::gray(0.3));
-            tess.draw_filled_polygon(house.walkway.as_slice(), Z_WALKWAY);
+            tess.draw_filled_polygon(building.walkway.as_slice(), Z_WALKWAY);
             tess.set_color(Color::gray(0.4));
-            tess.draw_filled_polygon(house.exterior.as_slice(), Z_HOUSE);
+            tess.draw_filled_polygon(building.exterior.as_slice(), Z_HOUSE);
         }
 
         for lot in map.lots().values() {

@@ -1,4 +1,4 @@
-use crate::{HouseID, IntersectionID, LotID, RoadID};
+use crate::{BuildingID, IntersectionID, LotID, RoadID};
 use flat_spatial::shape::AABB;
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
@@ -10,7 +10,7 @@ use std::collections::HashMap;
 pub enum ProjectKind {
     Inter(IntersectionID),
     Road(RoadID),
-    House(HouseID),
+    Building(BuildingID),
     Lot(LotID),
     Ground,
 }
@@ -27,7 +27,7 @@ macro_rules! impl_from_pk {
 
 impl_from_pk!(IntersectionID, ProjectKind::Inter);
 impl_from_pk!(RoadID, ProjectKind::Road);
-impl_from_pk!(HouseID, ProjectKind::House);
+impl_from_pk!(BuildingID, ProjectKind::Building);
 impl_from_pk!(LotID, ProjectKind::Lot);
 
 impl ProjectKind {

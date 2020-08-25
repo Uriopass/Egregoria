@@ -80,8 +80,8 @@ impl<'a> System<'a> for BulldozerSystem {
 
                     data.map.remove_road(id);
                 }
-                ProjectKind::House(id) => {
-                    data.map.remove_house(id);
+                ProjectKind::Building(id) => {
+                    data.map.remove_building(id);
                 }
                 ProjectKind::Ground | ProjectKind::Lot(_) => {}
             }

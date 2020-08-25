@@ -1,26 +1,26 @@
-use crate::{Houses, Lot, Roads, SpatialMap};
+use crate::{Buildings, Lot, Roads, SpatialMap};
 use geom::polygon::Polygon;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
 new_key_type! {
-    pub struct HouseID;
+    pub struct BuildingID;
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct House {
-    pub id: HouseID,
+pub struct Building {
+    pub id: BuildingID,
     pub exterior: Polygon,
     pub walkway: Polygon,
 }
 
-impl House {
+impl Building {
     pub fn make(
-        houses: &mut Houses,
+        buildings: &mut Buildings,
         spatial_map: &mut SpatialMap,
         roads: &Roads,
         lot: Lot,
-    ) -> Option<HouseID> {
+    ) -> Option<BuildingID> {
         let at = lot.shape.center();
         let axis = lot.road_edge.vec().perpendicular().normalize();
 
@@ -39,7 +39,7 @@ impl House {
         );
 
         let bbox = exterior.bbox();
-        let id = houses.insert_with_key(move |id| Self {
+        let id = buildings.insert_with_key(move |id| Self {
             id,
             exterior,
             walkway,
