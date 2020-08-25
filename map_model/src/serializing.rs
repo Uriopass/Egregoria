@@ -1,4 +1,4 @@
-use crate::{Houses, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap, Workplaces};
+use crate::{Houses, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default)]
@@ -9,7 +9,6 @@ pub struct SerializedMap {
     pub(crate) lanes: Lanes,
     pub(crate) parking: ParkingSpots,
     pub(crate) lots: Lots,
-    pub(crate) workplace: Workplaces,
 }
 
 impl From<&Map> for SerializedMap {
@@ -25,7 +24,6 @@ impl From<&Map> for SerializedMap {
             lanes: m.lanes.clone(),
             parking: m.parking.clone(),
             lots: m.lots.clone(),
-            workplace: m.workplaces.clone(),
         }
     }
 }
@@ -45,7 +43,6 @@ impl Into<Map> for SerializedMap {
             spatial_map,
             lots: self.lots,
             parking: self.parking,
-            workplaces: self.workplace,
             dirty: false,
         }
     }
@@ -53,9 +50,6 @@ impl Into<Map> for SerializedMap {
 
 fn mk_spatial_map(m: &SerializedMap) -> SpatialMap {
     let mut sm = SpatialMap::default();
-    for w in m.workplace.values() {
-        //        sm.insert(w.id, w.exterior.bbox());
-    }
     for h in m.houses.values() {
         sm.insert(h.id, h.exterior.bbox());
     }
