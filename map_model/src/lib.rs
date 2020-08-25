@@ -26,6 +26,7 @@ mod traffic_control;
 mod traversable;
 mod turn;
 mod turn_policy;
+mod workplace;
 
 // Use self or else it would be ambiguous with "pathfinding" crate
 pub use self::pathfinding::*;
@@ -44,5 +45,6 @@ pub use traffic_control::*;
 pub use traversable::*;
 pub use turn::*;
 pub use turn_policy::*;
+pub use workplace::*;
 
 pub const CROSSWALK_WIDTH: f32 = 4.0;
