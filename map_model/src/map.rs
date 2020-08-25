@@ -1,6 +1,6 @@
 use crate::{
     House, HouseID, Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Lot, LotID,
-    ParkingSpotID, ParkingSpots, Road, RoadID, RoadSegmentKind, SpatialMap, Workplace, WorkplaceID,
+    ParkingSpotID, ParkingSpots, Road, RoadID, RoadSegmentKind, SpatialMap,
 };
 use geom::splines::Spline;
 use geom::Vec2;
@@ -14,7 +14,6 @@ pub type Lanes = DenseSlotMap<LaneID, Lane>;
 pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 pub type Houses = DenseSlotMap<HouseID, House>;
 pub type Lots = DenseSlotMap<LotID, Lot>;
-pub type Workplaces = DenseSlotMap<WorkplaceID, Workplace>;
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub enum ProjectKind {
@@ -61,7 +60,6 @@ pub struct Map {
     pub(crate) lanes: Lanes,
     pub(crate) intersections: Intersections,
     pub(crate) houses: Houses,
-    pub(crate) workplaces: Workplaces,
     pub(crate) lots: Lots,
     pub(crate) spatial_map: SpatialMap,
     pub parking: ParkingSpots,
@@ -82,7 +80,6 @@ impl Map {
             intersections: Intersections::default(),
             parking: ParkingSpots::default(),
             houses: Houses::default(),
-            workplaces: Workplaces::default(),
             lots: Lots::default(),
             dirty: true,
             spatial_map: SpatialMap::default(),
