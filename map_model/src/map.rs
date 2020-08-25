@@ -1,6 +1,6 @@
 use crate::{
-    House, HouseID, Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Lot, LotID,
-    ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap,
+    Building, BuildingID, Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Lot,
+    LotID, ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap,
 };
 use geom::splines::Spline;
 use geom::Vec2;
@@ -12,7 +12,7 @@ use slotmap::DenseSlotMap;
 pub type Roads = DenseSlotMap<RoadID, Road>;
 pub type Lanes = DenseSlotMap<LaneID, Lane>;
 pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
-pub type Houses = DenseSlotMap<HouseID, House>;
+pub type Buildings = DenseSlotMap<BuildingID, Building>;
 pub type Lots = DenseSlotMap<LotID, Lot>;
 
 #[derive(Debug, Clone, Copy)]
@@ -25,7 +25,7 @@ pub struct Map {
     pub(crate) roads: Roads,
     pub(crate) lanes: Lanes,
     pub(crate) intersections: Intersections,
-    pub(crate) houses: Houses,
+    pub(crate) buildings: Buildings,
     pub(crate) lots: Lots,
     pub(crate) spatial_map: SpatialMap,
     pub parking: ParkingSpots,
@@ -45,7 +45,7 @@ impl Map {
             lanes: Lanes::default(),
             intersections: Intersections::default(),
             parking: ParkingSpots::default(),
-            houses: Houses::default(),
+            buildings: Buildings::default(),
             lots: Lots::default(),
             dirty: true,
             spatial_map: SpatialMap::default(),
@@ -106,13 +106,15 @@ impl Map {
         self.intersections.remove(src);
     }
 
-    pub fn remove_house(&mut self, h: HouseID) -> Option<House> {
-        let h = self.houses.remove(h);
-        if let Some(h) = &h {
-            self.spatial_map.remove(h.id)
+    pub fn remove_building(&mut self, b: BuildingID) -> Option<Building> {
+        info!("remove_building {:?}", b);
+
+        let b = self.buildings.remove(b);
+        if let Some(b) = &b {
+            self.spatial_map.remove(b.id)
         }
-        self.dirty |= h.is_some();
-        h
+        self.dirty |= b.is_some();
+        b
     }
 
     pub fn split_road(&mut self, id: RoadID, pos: Vec2) -> IntersectionID {
@@ -194,14 +196,14 @@ impl Map {
         id
     }
 
-    pub fn build_houses(&mut self) {
-        info!("build houses");
+    pub fn build_buildings(&mut self) {
+        info!("build buildings");
         for (id, lot) in self.lots.drain() {
             let rlots = &mut self.roads[lot.parent].lots;
             rlots.remove(rlots.iter().position(|&x| x == id).unwrap());
             self.spatial_map.remove(id);
 
-            House::make(&mut self.houses, &mut self.spatial_map, &self.roads, lot);
+            Building::make(&mut self.buildings, &mut self.spatial_map, &self.roads, lot);
         }
         self.dirty = true;
     }
@@ -275,15 +277,15 @@ impl Map {
                         qroad = Some((id, projected));
                     }
                 },
-                ProjectKind::House(id) => {
-                    if self.houses
+                ProjectKind::Building(id) => {
+                    if self.buildings
                         .get(id)
-                        .expect("House does not exist anymore, you seem to have forgotten to remove it from the spatial map.")
+                        .expect("building does not exist anymore, you seem to have forgotten to remove it from the spatial map.")
                         .exterior
                         .contains(pos) {
-                        return mk_proj(ProjectKind::House(id));
+                        return mk_proj(ProjectKind::Building(id));
                     }
-                },
+                }
                 _ => {},
             }
         }
@@ -311,8 +313,8 @@ impl Map {
     pub fn intersections(&self) -> &Intersections {
         &self.intersections
     }
-    pub fn houses(&self) -> &Houses {
-        &self.houses
+    pub fn buildings(&self) -> &Buildings {
+        &self.buildings
     }
     pub fn lots(&self) -> &Lots {
         &self.lots

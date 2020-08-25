@@ -173,7 +173,7 @@ fn make_connection(
         Ground => map.add_intersection(proj.pos),
         Inter(id) => id,
         Road(id) => map.split_road(id, proj.pos),
-        House(_) | Lot(_) => unreachable!(),
+        Building(_) | Lot(_) => unreachable!(),
     };
 
     let from = mk_inter(from);

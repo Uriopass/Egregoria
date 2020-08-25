@@ -416,7 +416,7 @@ impl Gui {
                 let map: &mut Map = &mut world.write_resource::<Map>();
 
                 if ui.small_button(im_str!("build houses")) {
-                    map.build_houses();
+                    map.build_buildings();
                 }
 
                 if ui.small_button(im_str!("load Paris map")) {
