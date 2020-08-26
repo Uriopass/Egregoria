@@ -1,6 +1,7 @@
 use crate::{
-    Building, BuildingID, Intersection, IntersectionID, Lane, LaneID, LaneKind, LanePattern, Lot,
-    LotID, ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap,
+    Building, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID, LaneKind,
+    LanePattern, Lot, LotID, ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID,
+    RoadSegmentKind, SpatialMap,
 };
 use geom::splines::Spline;
 use geom::Vec2;
@@ -203,7 +204,17 @@ impl Map {
             rlots.remove(rlots.iter().position(|&x| x == id).unwrap());
             self.spatial_map.remove(id);
 
-            Building::make(&mut self.buildings, &mut self.spatial_map, &self.roads, lot);
+            Building::make(
+                &mut self.buildings,
+                &mut self.spatial_map,
+                &self.roads,
+                lot,
+                if rand::random::<f32>() < 0.1 {
+                    BuildingKind::Workplace
+                } else {
+                    BuildingKind::House
+                },
+            );
         }
         self.dirty = true;
     }
