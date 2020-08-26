@@ -7,11 +7,18 @@ new_key_type! {
     pub struct BuildingID;
 }
 
+#[derive(Copy, Clone, Serialize, Deserialize)]
+pub enum BuildingKind {
+    House,
+    Workplace,
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Building {
     pub id: BuildingID,
     pub exterior: Polygon,
     pub walkway: Polygon,
+    pub kind: BuildingKind,
 }
 
 impl Building {
@@ -20,15 +27,19 @@ impl Building {
         spatial_map: &mut SpatialMap,
         roads: &Roads,
         lot: Lot,
+        kind: BuildingKind,
     ) -> Option<BuildingID> {
         let at = lot.shape.center();
-        let axis = lot.road_edge.vec().perpendicular().normalize();
+        let axis = lot.road_edge.vec().normalize();
 
-        let mut exterior = Self::gen_exterior(lot.size);
+        let (mut exterior, walkway_seg) = match kind {
+            BuildingKind::House => Self::gen_exterior_house(lot.size),
+            BuildingKind::Workplace => Self::gen_exterior_workplace(lot.size),
+        };
 
-        exterior.rotate(-axis).translate(at);
+        exterior.rotate(axis).translate(at);
 
-        let mut ext = exterior.segment(exterior.0.len() - 1);
+        let mut ext = exterior.segment(walkway_seg);
         ext.resize(3.0);
 
         let mut walkway = ext.to_polygon();
@@ -43,16 +54,33 @@ impl Building {
             id,
             exterior,
             walkway,
+            kind,
         });
         spatial_map.insert(id, bbox);
         Some(id)
     }
 
-    pub fn gen_exterior(size: f32) -> Polygon {
-        fn rand_in(min: f32, max: f32) -> f32 {
-            min + rand::random::<f32>() * (max - min)
-        }
+    pub fn gen_exterior_workplace(size: f32) -> (Polygon, usize) {
+        let a = rand_in(15.0, 20.0);
+        let b = rand_in(15.0, 20.0);
 
+        let w = f32::max(a, b) * (size / 40.0) * 1.5;
+        let h = f32::min(a, b) * (size / 40.0);
+
+        let mut p = Polygon::rect(w, h);
+        let corn_coeff = rand_in(0.2, 0.3);
+
+        p.split_segment(0, corn_coeff);
+        p.split_segment(1, 1.0 - corn_coeff / (1.0 - corn_coeff));
+        let e = rand_in(h * 0.3, h * 0.4);
+        p.extrude(2, e);
+        p.extrude(0, e);
+
+        p.translate(-p.barycenter());
+        (p, 3)
+    }
+
+    pub fn gen_exterior_house(size: f32) -> (Polygon, usize) {
         let a = rand_in(15.0, 20.0);
         let b = rand_in(15.0, 20.0);
 
@@ -67,6 +95,10 @@ impl Building {
         p.extrude(seg, rand_in(5.0, 10.0));
 
         p.translate(-p.barycenter());
-        p
+        (p, if seg == 0 { 1 } else { 0 })
     }
+}
+
+fn rand_in(min: f32, max: f32) -> f32 {
+    min + rand::random::<f32>() * (max - min)
 }
