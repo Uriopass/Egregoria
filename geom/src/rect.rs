@@ -9,7 +9,6 @@ pub struct Rect {
     pub h: f32,
 }
 
-#[allow(dead_code)]
 impl Rect {
     /// Create a new `Rect`.
     pub const fn new(x: f32, y: f32, w: f32, h: f32) -> Self {

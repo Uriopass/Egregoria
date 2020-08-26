@@ -9,7 +9,6 @@ use winit::{
     window::WindowBuilder,
 };
 
-#[allow(dead_code)]
 pub struct Context {
     pub gfx: GfxContext,
     pub input: InputContext,
