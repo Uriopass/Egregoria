@@ -422,11 +422,13 @@ impl Gui {
                 if ui.small_button(im_str!("load Paris map")) {
                     map.clear();
                     map_model::load_parismap(map);
+                    map.build_buildings();
                 }
 
                 if ui.small_button(im_str!("load test field")) {
                     map.clear();
                     map_model::load_testfield(map);
+                    map.build_buildings();
                 }
 
                 if ui.small_button(im_str!("clear the map")) {
