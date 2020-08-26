@@ -119,10 +119,11 @@ fn state_update(
         VehicleState::ParkedToRoad => {
             // Check the distance to the first traverseable, i.e. the start of the path, and if we're
             // close enough then exit unparking mode.
-            let target = it
-                .get_travers()
-                .expect("Should have a traverse when unparking")
-                .points(map);
+            let target = unwrap_or!(it.get_travers(), {
+                vehicle.state = VehicleState::Driving;
+                return;
+            })
+            .points(map);
             let dist2 = target.project_dist2(trans.position());
 
             if dist2 < DISTANCE_FOR_UNPARKING.powi(2) {
