@@ -14,7 +14,7 @@ env:
   # Space separated paths to include in the archive.
   # Start relative paths with a dot if you don't want
   # paths to be preserved. Use "/" as a delimiter.
-  RELEASE_ADDS: README.md LICENSE scripts resources
+  RELEASE_ADDS: README.md LICENSE lua resources
 
 
 jobs:
