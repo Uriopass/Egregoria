@@ -13,7 +13,6 @@ use wgpu::{
 };
 use winit::window::Window;
 
-#[allow(dead_code)]
 pub struct GfxContext {
     pub surface: Surface,
     pub size: (u32, u32),

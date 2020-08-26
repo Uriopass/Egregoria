@@ -47,11 +47,6 @@ impl Camera {
                             self.offset.x, self.offset.y, 0.0, 1.0])
     }
 
-    #[allow(dead_code)]
-    pub fn project(&self, world_coords: Vec2) -> Vec2 {
-        world_coords * self.scale + self.offset
-    }
-
     pub fn set_viewport(&mut self, viewport_width: f32, viewport_height: f32) {
         self.viewport = vec2(viewport_width, viewport_height);
         self.update()

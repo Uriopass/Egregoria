@@ -59,7 +59,6 @@ impl InspectFieldArgs for InspectFieldArgsStruct {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct InspectArgsStruct {
     //TODO: Default to true

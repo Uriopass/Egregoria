@@ -118,7 +118,6 @@ pub struct MeshRender {
     pub z: f32,
 }
 
-#[allow(dead_code)]
 impl MeshRender {
     pub fn empty(z: f32) -> Self {
         MeshRender {

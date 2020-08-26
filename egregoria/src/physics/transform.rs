@@ -9,7 +9,6 @@ pub struct Transform {
     cossin: Vec2,
 }
 
-#[allow(dead_code)]
 impl Transform {
     pub fn zero() -> Self {
         Transform::new([0.0, 0.0])

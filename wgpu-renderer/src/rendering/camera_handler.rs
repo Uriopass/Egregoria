@@ -4,7 +4,6 @@ use egregoria::engine_interaction::{KeyCode, MouseButton};
 use geom::rect::Rect;
 use geom::{vec2, Vec2};
 
-#[allow(dead_code)]
 pub struct CameraHandler {
     pub camera: Camera,
     last_pos: Vec2,
@@ -12,7 +11,6 @@ pub struct CameraHandler {
 
 const CAMERA_KEY_MOVESPEED: f32 = 300.0;
 
-#[allow(dead_code)]
 impl CameraHandler {
     pub fn new(width: f32, height: f32, zoom: f32) -> CameraHandler {
         CameraHandler {
@@ -23,12 +21,6 @@ impl CameraHandler {
 
     pub fn zoom(&self) -> f32 {
         self.camera.zoom
-    }
-
-    pub fn center_camera(&mut self, ctx: &mut Context) {
-        self.camera.position.x = 0.0;
-        self.camera.position.y = 0.0;
-        self.update(ctx);
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
@@ -51,10 +43,6 @@ impl CameraHandler {
 
     pub fn culled_tesselator(&self) -> Tesselator {
         Tesselator::new(Some(self.get_screen_box()), self.zoom())
-    }
-
-    pub fn projection(&self) -> mint::ColumnMatrix4<f32> {
-        self.camera.projection()
     }
 
     pub fn resize(&mut self, ctx: &mut Context, width: f32, height: f32) {

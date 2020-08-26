@@ -22,7 +22,6 @@ impl Tesselator {
     }
 }
 
-#[allow(dead_code)]
 impl Tesselator {
     pub fn draw_circle(&mut self, p: Vec2, z: f32, r: f32) -> bool {
         let n_points = ((6.0 * (r * self.zoom).cbrt()) as usize).max(4);
@@ -155,11 +154,6 @@ impl Tesselator {
 
     pub fn set_color(&mut self, color: impl Into<LinearColor>) {
         self.color = color.into();
-    }
-
-    pub fn reset(&mut self) {
-        self.meshbuilder = MeshBuilder::new();
-        self.color = LinearColor::WHITE;
     }
 
     pub fn draw_rect_cos_sin(
