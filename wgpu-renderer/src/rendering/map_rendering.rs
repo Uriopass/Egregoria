@@ -6,7 +6,9 @@ use crate::geometry::Tesselator;
 use egregoria::rendering::{from_srgb, Color, LinearColor};
 use egregoria::utils::Restrict;
 use geom::vec2;
-use map_model::{Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
+use map_model::{
+    BuildingKind, Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
+};
 use std::ops::Mul;
 
 #[derive(Clone, Copy)]
@@ -135,7 +137,12 @@ impl RoadRenderer {
         for building in map.buildings().values() {
             tess.set_color(Color::gray(0.3));
             tess.draw_filled_polygon(building.walkway.as_slice(), Z_WALKWAY);
-            tess.set_color(Color::gray(0.4));
+
+            let col = match building.kind {
+                BuildingKind::House => Color::from_hex(0x5e8a62),
+                BuildingKind::Workplace => Color::from_hex(0x5c5f98),
+            };
+            tess.set_color(col);
             tess.draw_filled_polygon(building.exterior.as_slice(), Z_HOUSE);
         }
 
