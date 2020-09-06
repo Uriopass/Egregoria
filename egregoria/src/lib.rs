@@ -10,7 +10,7 @@ use crate::interaction::{
     SelectableSystem,
 };
 use crate::interaction::{IntersectionComponent, RoadBuildResource, RoadBuildSystem};
-use crate::map_interaction::{ItinerarySystem, ParkingManagement};
+use crate::map_dynamic::{ItinerarySystem, ParkingManagement};
 use crate::pedestrians::PedestrianDecision;
 use crate::physics::systems::KinematicsApply;
 use crate::physics::CollisionWorld;
@@ -37,7 +37,7 @@ pub mod gui;
 pub mod engine_interaction;
 pub mod interaction;
 pub mod lua;
-pub mod map_interaction;
+pub mod map_dynamic;
 pub mod pedestrians;
 pub mod physics;
 pub mod rand_provider;

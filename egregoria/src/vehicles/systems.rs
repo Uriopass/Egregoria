@@ -1,6 +1,6 @@
 use crate::engine_interaction::TimeInfo;
 use crate::frame_log::FrameLog;
-use crate::map_interaction::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
+use crate::map_dynamic::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::physics::{Kinematics, Transform};
 use crate::utils::Restrict;
