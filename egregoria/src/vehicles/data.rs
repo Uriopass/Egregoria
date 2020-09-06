@@ -60,13 +60,6 @@ impl VehicleKind {
         }
     }
 
-    pub fn height(self) -> f32 {
-        match self {
-            VehicleKind::Car => 2.0,
-            VehicleKind::Bus => 2.0,
-        }
-    }
-
     pub fn acceleration(self) -> f32 {
         match self {
             VehicleKind::Car => 3.0,
