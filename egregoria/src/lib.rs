@@ -34,6 +34,7 @@ pub mod frame_log;
 #[macro_use]
 pub mod gui;
 
+mod companies;
 pub mod engine_interaction;
 pub mod interaction;
 pub mod lua;
