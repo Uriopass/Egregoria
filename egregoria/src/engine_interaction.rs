@@ -26,8 +26,6 @@ impl Default for TimeInfo {
     }
 }
 
-pub const MAX_LAYERS: u32 = 20;
-
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub enum MouseButton {
     Left,
