@@ -42,7 +42,7 @@ impl ImguiWrapper {
                 }),
             }]);
 
-        let renderer = Renderer::new(&mut imgui, &gfx.device, &mut gfx.queue, gfx.sc_desc.format);
+        let renderer = Renderer::new(&mut imgui, &gfx.device, &gfx.queue, gfx.sc_desc.format);
         Self {
             imgui,
             renderer,
