@@ -3,6 +3,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::engine_interaction::{KeyboardInfo, RenderStats, TimeInfo};
+use crate::frame_log::FrameLog;
 use crate::gui::Gui;
 use crate::interaction::{
     BulldozerResource, BulldozerSystem, DeletedEvent, FollowEntity, InspectedAuraSystem,
@@ -10,17 +11,22 @@ use crate::interaction::{
     SelectableSystem,
 };
 use crate::interaction::{IntersectionComponent, RoadBuildResource, RoadBuildSystem};
+use crate::lua::scenario_runner::{RunningScenario, RunningScenarioSystem};
 use crate::map_dynamic::{ItinerarySystem, ParkingManagement};
 use crate::pedestrians::PedestrianDecision;
 use crate::physics::systems::KinematicsApply;
 use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Transform};
 use crate::rendering::assets::AssetRender;
+use crate::rendering::immediate::ImmediateDraw;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::systems::VehicleDecision;
+use map_model::{Map, SerializedMap};
+use rand_provider::RandProvider;
 use specs::shrev::EventChannel;
 use specs::world::EntitiesRes;
 use specs::{Dispatcher, DispatcherBuilder, LazyUpdate, World, WorldExt};
+use std::io::Write;
 
 #[macro_use]
 extern crate log as extern_log;
@@ -41,19 +47,13 @@ pub mod lua;
 pub mod map_dynamic;
 mod pedestrians;
 pub mod physics;
-mod rand_provider;
+pub mod rand_provider;
 pub mod rendering;
 mod saveload;
 mod vehicles;
 
-use crate::frame_log::FrameLog;
-use crate::lua::scenario_runner::{RunningScenario, RunningScenarioSystem};
-use crate::rendering::immediate::ImmediateDraw;
 pub use imgui;
-use map_model::{Map, SerializedMap};
-pub use rand_provider::RandProvider;
 pub use specs;
-use std::io::Write;
 
 pub struct EgregoriaState {
     pub world: World,
