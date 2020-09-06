@@ -29,7 +29,7 @@ extern crate log as extern_log;
 pub mod utils;
 
 #[macro_use]
-pub mod frame_log;
+mod frame_log;
 
 #[macro_use]
 pub mod gui;
@@ -39,12 +39,12 @@ pub mod engine_interaction;
 pub mod interaction;
 pub mod lua;
 pub mod map_dynamic;
-pub mod pedestrians;
+mod pedestrians;
 pub mod physics;
-pub mod rand_provider;
+mod rand_provider;
 pub mod rendering;
 mod saveload;
-pub mod vehicles;
+mod vehicles;
 
 use crate::frame_log::FrameLog;
 use crate::lua::scenario_runner::{RunningScenario, RunningScenarioSystem};
