@@ -50,8 +50,10 @@ pub mod physics;
 pub mod rand_provider;
 pub mod rendering;
 mod saveload;
+mod souls;
 mod vehicles;
 
+use crate::souls::Souls;
 pub use imgui;
 pub use specs;
 
@@ -91,6 +93,7 @@ impl EgregoriaState {
         world.insert(FrameLog::default());
         world.insert(RunningScenario::default());
         world.insert(ImmediateDraw::default());
+        world.insert(Souls::default());
 
         world.register::<Transform>();
         world.register::<Collider>();
