@@ -5,7 +5,7 @@ use egregoria::engine_interaction::{MouseInfo, TimeInfo};
 use egregoria::imgui::im_str;
 use egregoria::imgui::Ui;
 use egregoria::interaction::{InspectedEntity, Movable, Selectable};
-use egregoria::map_interaction::Itinerary;
+use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::{CollisionWorld, Transform};
 use egregoria::rendering::{Color, LinearColor};
 use egregoria::specs::prelude::*;
@@ -208,7 +208,7 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut World) -> Option<()> 
         tess.draw_stroke(p, pos, 1.0, 1.0);
     }
 
-    if let egregoria::map_interaction::ItineraryKind::Route(r) = itinerary.kind() {
+    if let egregoria::map_dynamic::ItineraryKind::Route(r) = itinerary.kind() {
         tess.color = LinearColor::RED;
         for l in &r.reversed_route {
             tess.draw_polyline(l.raw_points(map).as_slice(), 1.0, 3.0);

@@ -1,5 +1,5 @@
 use crate::engine_interaction::TimeInfo;
-use crate::map_interaction::Itinerary;
+use crate::map_dynamic::Itinerary;
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
 use crate::rendering::meshrender_component::MeshRender;

@@ -1,4 +1,4 @@
-use crate::map_interaction::Itinerary;
+use crate::map_dynamic::Itinerary;
 use crate::physics::Transform;
 use crate::rendering::immediate::ImmediateDraw;
 use crate::rendering::Color;

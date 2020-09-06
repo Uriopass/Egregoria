@@ -1,6 +1,6 @@
 use crate::interaction::IntersectionComponent;
 use crate::interaction::{FollowEntity, Movable, MovedEvent};
-use crate::map_interaction::Itinerary;
+use crate::map_dynamic::Itinerary;
 use crate::pedestrians::PedestrianComponent;
 use crate::physics::{Collider, Kinematics, Transform};
 use crate::rendering::assets::AssetRender;

@@ -1,4 +1,4 @@
-use crate::map_interaction::ParkingManagement;
+use crate::map_dynamic::ParkingManagement;
 use crate::physics::{Collider, CollisionWorld};
 use crate::vehicles::VehicleComponent;
 use specs::{Entity, World, WorldExt};

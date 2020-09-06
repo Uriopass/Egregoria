@@ -1,4 +1,4 @@
-use crate::map_interaction::Itinerary;
+use crate::map_dynamic::Itinerary;
 use crate::physics::Transform;
 use crate::vehicles::VehicleComponent;
 use specs::{Join, World, WorldExt};

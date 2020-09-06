@@ -1,5 +1,5 @@
 use crate::interaction::{Movable, Selectable};
-use crate::map_interaction::Itinerary;
+use crate::map_dynamic::Itinerary;
 use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
 };

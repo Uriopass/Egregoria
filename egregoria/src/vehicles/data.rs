@@ -1,7 +1,7 @@
 use crate::engine_interaction::TimeInfo;
 use crate::gui::InspectDragf;
 use crate::interaction::Selectable;
-use crate::map_interaction::{Itinerary, ParkingManagement};
+use crate::map_dynamic::{Itinerary, ParkingManagement};
 use crate::physics::{
     Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
 };
