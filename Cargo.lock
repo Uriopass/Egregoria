@@ -895,7 +895,6 @@ dependencies = [
  "geom 0.1.0",
  "imgui 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-inspect-derive 0.4.1",
- "specs 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
