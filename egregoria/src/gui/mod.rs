@@ -4,6 +4,7 @@ use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
 use crate::pedestrians::{spawn_pedestrian, PedestrianComponent};
 use crate::utils::delete_entity;
 use crate::vehicles::{spawn_parked_vehicle, VehicleComponent};
+use geom::Vec2;
 use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
@@ -413,7 +414,7 @@ impl Gui {
                     }
                 }
 
-                let map: &mut Map = &mut world.write_resource::<Map>();
+                let mut map = world.write_resource::<Map>();
 
                 if ui.small_button(im_str!("build houses")) {
                     map.build_buildings();
@@ -421,18 +422,28 @@ impl Gui {
 
                 if ui.small_button(im_str!("load Paris map")) {
                     map.clear();
-                    map_model::load_parismap(map);
+                    map_model::load_parismap(&mut map);
                     map.build_buildings();
                 }
 
                 if ui.small_button(im_str!("load test field")) {
                     map.clear();
-                    map_model::load_testfield(map);
+                    map_model::load_testfield(&mut map);
                     map.build_buildings();
                 }
 
                 if ui.small_button(im_str!("clear the map")) {
                     map.clear();
+                }
+
+                if ui.small_button(im_str!("benchmark")) {
+                    map.clear();
+                    map_model::add_grid(Vec2::ZERO, &mut map, 30);
+                    drop(map);
+                    for _ in 0..10000 {
+                        spawn_parked_vehicle(world);
+                        spawn_pedestrian(world);
+                    }
                 }
 
                 ui.text(im_str!(

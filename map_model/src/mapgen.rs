@@ -196,8 +196,8 @@ pub fn add_grid(pos: Vec2, m: &mut Map, size: usize) {
 
     let pat = LanePatternBuilder::new().build();
     for x in 0..size - 1 {
-        m.connect_straight(grid[9][x], grid[9][x + 1], &pat);
-        m.connect_straight(grid[x][9], grid[x + 1][9], &pat);
+        m.connect_straight(grid[size - 1][x], grid[size - 1][x + 1], &pat);
+        m.connect_straight(grid[x][size - 1], grid[x + 1][size - 1], &pat);
 
         for y in 0..size - 1 {
             m.connect_straight(grid[y][x], grid[y][x + 1], &pat);
