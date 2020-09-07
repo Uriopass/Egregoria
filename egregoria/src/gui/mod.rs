@@ -276,8 +276,15 @@ impl Gui {
             .position([300.0, 50.0], imgui::Condition::FirstUseEver)
             .opened(&mut self.show_debug_info)
             .build(&ui, || {
-                ui.text(im_str!("Update time: {:.1}ms", stats.update_time * 1000.0));
-                ui.text(im_str!("Render time: {:.1}ms", stats.render_time * 1000.0));
+                ui.text("Averaged over last 10 frames: ");
+                ui.text(im_str!(
+                    "Update time: {:.1}ms",
+                    stats.update_time_avg() * 1000.0
+                ));
+                ui.text(im_str!(
+                    "Render time: {:.1}ms",
+                    stats.render_time_avg() * 1000.0
+                ));
                 ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
                 ui.separator();
                 ui.text("Frame log");

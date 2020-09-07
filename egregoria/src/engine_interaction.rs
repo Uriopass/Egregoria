@@ -3,8 +3,28 @@ use std::collections::HashSet;
 
 #[derive(Default)]
 pub struct RenderStats {
-    pub update_time: f32,
-    pub render_time: f32,
+    pub(crate) update_time: [f32; 10], // over the last 10 frames
+    pub(crate) render_time: [f32; 10],
+}
+
+impl RenderStats {
+    pub fn add_update_time(&mut self, update_time: f32) {
+        self.update_time.as_mut().rotate_right(1);
+        self.update_time[0] = update_time;
+    }
+
+    pub fn add_render_time(&mut self, render_time: f32) {
+        self.render_time.as_mut().rotate_right(1);
+        self.render_time[0] = render_time;
+    }
+
+    pub fn update_time_avg(&self) -> f32 {
+        (&self.update_time).iter().sum::<f32>() / (self.update_time.len() as f32)
+    }
+
+    pub fn render_time_avg(&self) -> f32 {
+        (&self.render_time).iter().sum::<f32>() / (self.render_time.len() as f32)
+    }
 }
 
 #[derive(Clone, Copy)]

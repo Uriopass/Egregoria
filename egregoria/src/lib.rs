@@ -71,7 +71,9 @@ impl EgregoriaState {
         self.dispatcher.dispatch_seq(&self.world);
         self.dispatcher.dispatch_thread_local(&self.world);
         self.world.maintain();
-        self.world.write_resource::<RenderStats>().update_time = t.elapsed().as_secs_f32();
+        self.world
+            .write_resource::<RenderStats>()
+            .add_update_time(t.elapsed().as_secs_f32());
     }
 
     pub fn init() -> EgregoriaState {

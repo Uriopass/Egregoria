@@ -142,8 +142,10 @@ impl State {
             ctx.draw(x)
         }
 
-        self.state.world.write_resource::<RenderStats>().render_time =
-            start.elapsed().as_secs_f32();
+        self.state
+            .world
+            .write_resource::<RenderStats>()
+            .add_render_time(start.elapsed().as_secs_f32());
     }
 
     pub fn render_gui(&mut self, ctx: GuiRenderContext) {
