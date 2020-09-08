@@ -1,10 +1,15 @@
-use glsl_to_spirv::{ShaderType, SpirvOutput};
 use std::fs::File;
 use std::io::Read;
-use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use wgpu::ShaderModuleSource;
+
+#[derive(Copy, Clone)]
+#[non_exhaustive]
+pub enum ShaderType {
+    Vertex,
+    Fragment,
+}
 
 pub struct CompiledShader(pub ShaderModuleSource<'static>, pub ShaderType);
 
@@ -60,9 +65,9 @@ fn find_in_cache(
     }
 }
 
-fn save_to_cache(compiled_path: &PathBuf, spirv: &mut SpirvOutput) -> Option<()> {
+fn save_to_cache(compiled_path: &PathBuf, spirv: &[u8]) -> Option<()> {
     std::fs::create_dir_all(compiled_path.parent()?).ok()?;
-    std::io::copy(spirv, &mut File::create(compiled_path).ok()?).ok()?;
+    std::fs::write(compiled_path, spirv).ok()?;
     Some(())
 }
 
@@ -78,8 +83,8 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
             let extension = p.extension().expect("invalid shader extension");
 
             match extension.to_string_lossy().into_owned().as_ref() {
-                "frag" | "glslf" => glsl_to_spirv::ShaderType::Fragment,
-                "vert" | "glslv" => glsl_to_spirv::ShaderType::Vertex,
+                "frag" | "glslf" => ShaderType::Fragment,
+                "vert" | "glslv" => ShaderType::Vertex,
                 _ => panic!(
                     "Unexpected shader extension: {}",
                     &extension.to_string_lossy()
@@ -93,7 +98,7 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
     let cache_state =
         if let Some(last_modified) = sfile.metadata().ok().and_then(|x| x.modified().ok()) {
             if let Some(x) = &compiled_name {
-                find_in_cache(x, stype.clone(), last_modified)
+                find_in_cache(x, stype, last_modified)
             } else {
                 CacheState::Nofile
             }
@@ -130,28 +135,74 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
         )
     });
 
-    let mut spirv = match fileread.and_then(|_| {
-        catch_unwind(|| glsl_to_spirv::compile(&src, stype.clone()).unwrap()).map_err(|_| {})
-    }) {
-        Ok(x) => {
+    let spirv = match fileread.ok().and_then(|_| compile(&src, stype)) {
+        Some(x) => {
             log::info!("successfully compiled {}", p.to_string_lossy().into_owned());
             x
         }
-        Err(_) => {
+        None => {
             return outdated
                 .expect("couldn't compile glsl and no outdated spirv found in cache, aborting.");
         }
     };
 
-    let _ = compiled_name.and_then(|x| save_to_cache(&x, &mut spirv));
+    let _ = compiled_name.and_then(|x| save_to_cache(&x, &spirv));
 
-    let mut data = vec![];
-    spirv
-        .read_to_end(&mut data)
-        .expect("Couldn't read compiled spirv");
-
-    let leaked = Box::leak(Box::new(data));
+    let leaked = Box::leak(Box::new(spirv));
 
     let data = wgpu::util::make_spirv(leaked);
     CompiledShader(data, stype)
+}
+
+#[cfg(not(any(feature = "spirv_g2s", features = "spirv_naga")))]
+fn compile(_src: &str, _stype: ShaderType) -> Option<Vec<u8>> {
+    None
+}
+
+#[cfg(feature = "spirv_g2s")]
+fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
+    std::panic::catch_unwind(|| {
+        glsl_to_spirv::compile(
+            &src,
+            match stype {
+                ShaderType::Vertex => glsl_to_spirv::ShaderType::Vertex,
+                ShaderType::Fragment => glsl_to_spirv::ShaderType::Fragment,
+            },
+        )
+        .unwrap()
+    })
+    .ok()
+    .map(|mut f| {
+        let mut data = vec![];
+        f.read_to_end(&mut data)
+            .expect("Couldn't read compiled spirv");
+        data
+    })
+}
+
+#[cfg(feature = "spirv_naga")]
+fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
+    let glsl = naga::front::glsl::parse_str(
+        &src,
+        String::from("main"),
+        match stype {
+            ShaderType::Vertex => naga::ShaderStage::Vertex,
+            ShaderType::Fragment => naga::ShaderStage::Fragment {
+                early_depth_test: None,
+            },
+        },
+    )
+    .map_err(|e| log::error!("{}", e))
+    .ok()?;
+
+    let spirv = naga::back::spv::Writer::new(&glsl.header, naga::WriterFlags::DEBUG).write(&glsl);
+
+    Some(
+        spirv
+            .iter()
+            .fold(Vec::with_capacity(spirv.len() * 4), |mut v, w| {
+                v.extend_from_slice(&w.to_le_bytes());
+                v
+            }),
+    )
 }
