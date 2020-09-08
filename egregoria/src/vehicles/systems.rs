@@ -32,59 +32,53 @@ pub fn vehicle_cleanup(
 pub fn vehicle_decision(
     #[resource] map: &Map,
     #[resource] time: &TimeInfo,
-    #[resource] parking: &ParkingManagement,
     #[resource] cow: &CollisionWorld,
-    #[resource] buf: &ParCommandBuffer,
-    ent: &Entity,
     it: &mut Itinerary,
     trans: &mut Transform,
     kin: &mut Kinematics,
     vehicle: &mut VehicleComponent,
-    collider: Option<&Collider>,
+    collider: &Collider,
 ) {
-    state_update(trans, vehicle, kin, it, *ent, buf, parking, map, time);
+    let (_, self_obj) = cow.get(collider.0).expect("Handle not in collision world");
+    let danger_length = (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
+    let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
+    let objs = neighbors.map(|(id, pos)| {
+        (
+            Vec2::from(pos),
+            cow.get(id).expect("Handle not in collision world").1,
+        )
+    });
 
-    if let Some(collider) = collider {
-        let (_, self_obj) = cow.get(collider.0).expect("Handle not in collision world");
-        let danger_length =
-            (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
-        let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
-        let objs = neighbors.map(|(id, pos)| {
-            (
-                Vec2::from(pos),
-                cow.get(id).expect("Handle not in collision world").1,
-            )
-        });
+    let (desired_speed, desired_dir) =
+        calc_decision(vehicle, &map, &time, trans, self_obj, it, objs);
 
-        let (desired_speed, desired_dir) =
-            calc_decision(vehicle, &map, &time, trans, self_obj, it, objs);
-
-        physics(
-            trans,
-            kin,
-            vehicle,
-            &time,
-            self_obj,
-            &map,
-            desired_speed,
-            desired_dir,
-        );
-    }
+    physics(
+        trans,
+        kin,
+        vehicle,
+        &time,
+        self_obj,
+        &map,
+        desired_speed,
+        desired_dir,
+    );
 }
 
 /// Decides whether a vehicle should change states, from parked to unparking to driving etc
-fn state_update(
-    trans: &geom::Transform,
+#[system(for_each)]
+pub fn vehicle_state_update(
+    #[resource] buf: &ParCommandBuffer,
+    #[resource] parking: &ParkingManagement,
+    #[resource] map: &Map,
+    #[resource] time: &TimeInfo,
+    trans: &Transform,
     vehicle: &mut VehicleComponent,
     kin: &mut Kinematics,
     it: &mut Itinerary,
-    ent: Entity,
-    buf: &ParCommandBuffer,
-    parking: &ParkingManagement,
-    map: &Map,
-    time: &TimeInfo,
+    ent: &Entity,
 ) {
     let trans = *trans;
+    let ent = *ent;
 
     match vehicle.state {
         VehicleState::ParkedToRoad => {

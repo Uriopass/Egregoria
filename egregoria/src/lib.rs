@@ -21,7 +21,9 @@ use crate::physics::Collider;
 use crate::physics::CollisionWorld;
 use crate::rendering::immediate::ImmediateDraw;
 use crate::souls::Souls;
-use crate::vehicles::systems::{vehicle_cleanup_system, vehicle_decision_system};
+use crate::vehicles::systems::{
+    vehicle_cleanup_system, vehicle_decision_system, vehicle_state_update_system,
+};
 use crate::vehicles::VehicleComponent;
 pub use imgui;
 use legion::storage::Component;
@@ -117,6 +119,7 @@ impl Egregoria {
 
         // Dispatcher init
         let schedule = Schedule::builder()
+            .add_system(vehicle_state_update_system())
             .add_system(vehicle_decision_system())
             .add_system(selectable_select_system())
             .add_system(selectable_cleanup_system())
