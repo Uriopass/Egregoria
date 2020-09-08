@@ -58,6 +58,7 @@ mod saveload;
 mod souls;
 mod vehicles;
 
+use crate::par_command_buffer::Deleted;
 pub use legion;
 
 pub struct Egregoria {
@@ -65,14 +66,6 @@ pub struct Egregoria {
     resources: Resources,
     schedule: Schedule,
 }
-
-pub struct Deleted<T>(Vec<T>);
-impl<T> Default for Deleted<T> {
-    fn default() -> Self {
-        Self(vec![])
-    }
-}
-
 const RNG_SEED: u64 = 123;
 
 impl Egregoria {

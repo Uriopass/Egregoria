@@ -1,9 +1,22 @@
 use crate::physics::Collider;
 use crate::vehicles::VehicleComponent;
-use crate::{Deleted, Egregoria};
+use crate::Egregoria;
 use legion::storage::Component;
 use legion::Entity;
 use std::sync::Mutex;
+
+pub struct Deleted<T>(Vec<T>);
+impl<T> Default for Deleted<T> {
+    fn default() -> Self {
+        Self(vec![])
+    }
+}
+
+impl<T> Deleted<T> {
+    pub fn drain(&mut self) -> impl Iterator<Item = T> + '_ {
+        self.0.drain(..)
+    }
+}
 
 #[derive(Default)]
 pub struct ParCommandBuffer {

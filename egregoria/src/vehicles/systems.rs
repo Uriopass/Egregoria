@@ -21,7 +21,7 @@ pub fn vehicle_cleanup(
     #[resource] evts: &mut Deleted<VehicleComponent>,
     #[resource] pm: &mut ParkingManagement,
 ) {
-    for comp in evts.0.drain(..) {
+    for comp in evts.drain() {
         if let Some(id) = comp.park_spot {
             pm.free(id)
         }

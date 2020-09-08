@@ -37,7 +37,7 @@ pub fn coworld_maintain(
     #[resource] evts: &mut Deleted<Collider>,
 ) {
     time_it!(flog, "Coworld maintain");
-    for Collider(handle) in evts.0.drain(..) {
+    for Collider(handle) in evts.drain() {
         coworld.remove(handle);
     }
 
