@@ -28,7 +28,7 @@ use crate::vehicles::VehicleComponent;
 pub use imgui;
 use legion::storage::Component;
 use legion::systems::Resource;
-use legion::{Entity, IntoQuery, Resources, Schedule, World};
+use legion::{Entity, IntoQuery, Resources, World};
 use map_model::{Map, SerializedMap};
 pub(crate) use par_command_buffer::ParCommandBuffer;
 use rand_provider::RandProvider;
@@ -57,16 +57,18 @@ pub mod physics;
 pub mod rand_provider;
 pub mod rendering;
 mod saveload;
+mod scheduler;
 mod souls;
 mod vehicles;
 
 use crate::par_command_buffer::Deleted;
 pub use legion;
+use scheduler::SeqSchedule;
 
 pub struct Egregoria {
     pub world: World,
     resources: Resources,
-    schedule: Schedule,
+    schedule: SeqSchedule,
 }
 const RNG_SEED: u64 = 123;
 
@@ -118,7 +120,8 @@ impl Egregoria {
         resources.insert(s);
 
         // Dispatcher init
-        let schedule = Schedule::builder()
+        let mut schedule = SeqSchedule::default();
+        schedule
             .add_system(vehicle_state_update_system())
             .add_system(vehicle_decision_system())
             .add_system(selectable_select_system())
@@ -134,9 +137,7 @@ impl Egregoria {
             .add_system(kinematics_apply_system())
             .add_system(coworld_synchronize_system())
             .add_system(coworld_maintain_system())
-            .add_system(inspected_aura_system(InspectedAura::new(&mut world)))
-            .build();
-
+            .add_system(inspected_aura_system(InspectedAura::new(&mut world)));
         Self {
             world,
             resources,
