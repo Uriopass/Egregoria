@@ -4,6 +4,7 @@ mod slider;
 
 pub use default::*;
 pub use imgui;
+pub use scale::*;
 pub use slider::*;
 
 /// Options for rendering a value as a struct (i.e. draw all of its subfields)

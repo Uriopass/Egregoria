@@ -41,7 +41,7 @@ impl MeshRenderer {
                     MeshRenderEnum::LineTo(x) => {
                         tess.color = x.color.into();
                         let e = x.to;
-                        if let Some(trans2) = <&Transform>::query().get(&goria.world, e).ok() {
+                        if let Some(trans2) = goria.comp::<Transform>(e) {
                             tess.draw_stroke(
                                 trans.position(),
                                 trans2.position(),

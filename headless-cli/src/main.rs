@@ -1,6 +1,5 @@
 use argh::FromArgs;
 use egregoria::engine_interaction::TimeInfo;
-use egregoria::specs::WorldExt;
 use egregoria::Egregoria;
 use log::LevelFilter;
 use std::path::Path;
@@ -70,7 +69,7 @@ const TIME_STEP: f64 = 1.0 / 30.0;
 
 fn step(state: &mut Egregoria) {
     {
-        let mut time = state.world.write_resource::<TimeInfo>();
+        let mut time = state.write::<TimeInfo>();
         time.delta = TIME_STEP as f32;
         time.time_speed = 1.0;
         time.time += TIME_STEP;

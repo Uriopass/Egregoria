@@ -96,18 +96,15 @@ impl VehicleKind {
 pub fn spawn_parked_vehicle(goria: &mut Egregoria) {
     let r: f64 = rand_world(goria);
 
-    let map = goria.read_resource::<Map>();
+    let map = goria.read::<Map>();
 
-    let time = goria.read_resource::<TimeInfo>().time;
+    let time = goria.read::<TimeInfo>().time;
     let it = Itinerary::wait_until(time + r * 5.0);
 
-    let pm = goria.read_resource::<ParkingManagement>();
+    let pm = goria.read::<ParkingManagement>();
 
     let rl = unwrap_or!(
-        map.get_random_lane(
-            LaneKind::Parking,
-            &mut goria.write_resource::<RandProvider>().rng
-        ),
+        map.get_random_lane(LaneKind::Parking, &mut goria.write::<RandProvider>().rng),
         return
     );
     let spot_id = unwrap_or!(
@@ -159,7 +156,7 @@ pub fn make_vehicle_entity(
     ));
 
     if mk_collider {
-        let c = Collider(world.write_resource::<CollisionWorld>().insert(
+        let c = Collider(world.write::<CollisionWorld>().insert(
             trans.position(),
             PhysicsObject {
                 dir: trans.direction(),

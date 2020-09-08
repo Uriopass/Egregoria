@@ -39,7 +39,7 @@ pub fn set_scenario(goria: &mut Egregoria, name: &str) {
         super::add_egregoria_lua_stdlib(&l, goria);
         mods::eval_f(&l, "Init");
         goria
-            .write_resource::<RunningScenario>()
+            .write::<RunningScenario>()
             .l
             .replace(Mutex::new(l))
             .map(|old| mods::eval_f(&old.lock().unwrap(), "Cleanup"));

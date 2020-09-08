@@ -12,7 +12,7 @@ pub fn rand_world<T>(world: &mut Egregoria) -> T
 where
     rand_distr::Standard: rand_distr::Distribution<T>,
 {
-    world.write_resource::<crate::RandProvider>().random()
+    world.write::<crate::RandProvider>().random()
 }
 
 pub trait Restrict {

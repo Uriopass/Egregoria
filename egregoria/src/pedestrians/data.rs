@@ -17,27 +17,24 @@ pub struct PedestrianComponent {
     pub walk_anim: f32,
 }
 
-pub fn spawn_pedestrian(world: &mut Egregoria) {
-    let map = world.read_resource::<Map>();
+pub fn spawn_pedestrian(goria: &mut Egregoria) {
+    let map = goria.read::<Map>();
 
     let lane = unwrap_or!(
-        map.get_random_lane(
-            LaneKind::Walking,
-            &mut world.write_resource::<RandProvider>().rng
-        ),
+        map.get_random_lane(LaneKind::Walking, &mut goria.write::<RandProvider>().rng),
         return
     );
 
     let pos: Vec2 = if let [a, b, ..] = *lane.points.as_slice() {
         drop(map);
-        a + (b - a) * rand_world::<f32>(world)
+        a + (b - a) * rand_world::<f32>(goria)
     } else {
         return;
     };
 
     let size = 0.5;
 
-    let h = world.write_resource::<CollisionWorld>().insert(
+    let h = goria.write::<CollisionWorld>().insert(
         pos,
         PhysicsObject {
             radius: size * 0.6,
@@ -47,7 +44,7 @@ pub fn spawn_pedestrian(world: &mut Egregoria) {
     );
     let color = random_pedestrian_shirt_color();
 
-    world.world.push((
+    goria.world.push((
         Transform::new(pos),
         PedestrianComponent::default(),
         Itinerary::none(),
