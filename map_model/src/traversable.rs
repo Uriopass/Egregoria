@@ -33,26 +33,19 @@ impl Traversable {
         Self { kind, dir }
     }
 
-    /// Invariant: Should only be called on valid traversables
-    pub fn points(&self, m: &Map) -> PolyLine {
-        let p = self.raw_points(m);
+    pub fn points(&self, m: &Map) -> Option<PolyLine> {
+        let p = self.raw_points(m)?;
 
         match self.dir {
-            TraverseDirection::Forward => p.clone(),
-            TraverseDirection::Backward => PolyLine::new(p.iter().copied().rev().collect()),
+            TraverseDirection::Forward => Some(p.clone()),
+            TraverseDirection::Backward => Some(PolyLine::new(p.iter().copied().rev().collect())),
         }
     }
 
-    /// Invariant: Should only be called on valid traversables
-    pub fn raw_points<'a>(&self, m: &'a Map) -> &'a PolyLine {
+    pub fn raw_points<'a>(&self, m: &'a Map) -> Option<&'a PolyLine> {
         match self.kind {
-            TraverseKind::Lane(id) => &m.lanes[id].points,
-            TraverseKind::Turn(id) => {
-                &m.intersections[id.parent]
-                    .find_turn(id)
-                    .expect("Traversable isn't valid")
-                    .points
-            }
+            TraverseKind::Lane(id) => Some(&m.lanes.get(id)?.points),
+            TraverseKind::Turn(id) => Some(&m.intersections.get(id.parent)?.find_turn(id)?.points),
         }
     }
 
@@ -60,18 +53,6 @@ impl Traversable {
         match self.kind {
             TraverseKind::Lane(id) => !lanes[id].control.get_behavior(time).is_red(),
             TraverseKind::Turn(_) => true,
-        }
-    }
-
-    pub fn is_valid(&self, m: &Map) -> bool {
-        let lanes = &m.lanes;
-        match self.kind {
-            TraverseKind::Lane(id) => lanes.contains_key(id),
-            TraverseKind::Turn(id) => {
-                m.intersections.contains_key(id.parent)
-                    && lanes.contains_key(id.src)
-                    && lanes.contains_key(id.dst)
-            }
         }
     }
 

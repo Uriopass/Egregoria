@@ -288,10 +288,13 @@ impl Gui {
                 ui.separator();
                 ui.text("Frame log");
                 let flog = goria.read::<FrameLog>();
-                let fl = flog.get_frame_log();
-                for s in &*fl {
-                    ui.text(im_str!("{}", s));
+                {
+                    let fl = flog.get_frame_log();
+                    for s in &*fl {
+                        ui.text(im_str!("{}", s));
+                    }
                 }
+                flog.clear();
             });
     }
 

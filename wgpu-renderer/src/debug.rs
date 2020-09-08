@@ -151,7 +151,9 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<
     if let egregoria::map_dynamic::ItineraryKind::Route(r) = itinerary.kind() {
         tess.color = LinearColor::RED;
         for l in &r.reversed_route {
-            tess.draw_polyline(l.raw_points(map).as_slice(), 1.0, 3.0);
+            if let Some(l) = l.raw_points(map) {
+                tess.draw_polyline(l.as_slice(), 1.0, 3.0);
+            }
         }
         tess.color = LinearColor::MAGENTA;
         tess.draw_circle(r.end_pos, 1.0, 1.0);
