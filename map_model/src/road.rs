@@ -2,11 +2,11 @@ use crate::{
     IntersectionID, Intersections, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
     LotID, Map, ParkingSpots,
 };
-use geom::obb::OBB;
-use geom::polyline::PolyLine;
-use geom::rect::Rect;
-use geom::splines::Spline;
+use geom::PolyLine;
+use geom::Rect;
+use geom::Spline;
 use geom::Vec2;
+use geom::OBB;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 

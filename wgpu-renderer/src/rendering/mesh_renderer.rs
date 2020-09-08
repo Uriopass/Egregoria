@@ -1,16 +1,14 @@
 use crate::geometry::Tesselator;
-use egregoria::physics::Transform;
+use egregoria::legion::IntoQuery;
 use egregoria::rendering::meshrender_component::{MeshRender, MeshRenderEnum};
-use egregoria::specs::{Join, World, WorldExt};
+use egregoria::Egregoria;
+use geom::Transform;
 
 pub struct MeshRenderer;
 
 impl MeshRenderer {
-    pub fn render(world: &mut World, tess: &mut Tesselator) {
-        let transforms = world.read_component::<Transform>();
-        let mesh_render = world.read_component::<MeshRender>();
-
-        for (trans, mr) in (&transforms, &mesh_render).join() {
+    pub fn render(goria: &mut Egregoria, tess: &mut Tesselator) {
+        for (trans, mr) in <(&Transform, &MeshRender)>::query().iter(&goria.world) {
             if mr.hide {
                 continue;
             }
@@ -43,7 +41,7 @@ impl MeshRenderer {
                     MeshRenderEnum::LineTo(x) => {
                         tess.color = x.color.into();
                         let e = x.to;
-                        if let Some(trans2) = transforms.get(e) {
+                        if let Some(trans2) = <&Transform>::query().get(&goria.world, e).ok() {
                             tess.draw_stroke(
                                 trans.position(),
                                 trans2.position(),

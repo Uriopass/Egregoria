@@ -15,7 +15,8 @@ rand          = { version = "0.7", default-features = false, features = ["std", 
 rand_distr    = "0.2.2"
 bincode       = "1.2.1"
 serde         = "1.0"
-specs         = { version = "0.16", default-features = false, features = ["parallel", "shred-derive", "specs-derive", "serde"] }
+legion        = "0.3.0"
+crossbeam     = "0.7.3"
 flat_spatial  = "0.3.5"
 mint          = "0.5.5"
 log           = "0.4.11"

@@ -1,27 +1,23 @@
 use crate::interaction::{Movable, Selectable};
 use crate::map_dynamic::Itinerary;
-use crate::physics::{
-    Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
-};
+use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::Color;
 use crate::utils::rand_world;
-use crate::RandProvider;
-use geom::{vec2, Vec2};
+use crate::{Egregoria, RandProvider};
+use geom::{vec2, Transform, Vec2};
 use imgui_inspect_derive::*;
 use map_model::{LaneKind, Map};
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
-use specs::{Builder, World, WorldExt};
-use specs::{Component, DenseVecStorage};
 
-#[derive(Serialize, Deserialize, Component, Inspect)]
+#[derive(Serialize, Deserialize, Inspect)]
 pub struct PedestrianComponent {
     pub walking_speed: f32,
     pub walk_anim: f32,
 }
 
-pub fn spawn_pedestrian(world: &mut World) {
+pub fn spawn_pedestrian(world: &mut Egregoria) {
     let map = world.read_resource::<Map>();
 
     let lane = unwrap_or!(
@@ -51,14 +47,13 @@ pub fn spawn_pedestrian(world: &mut World) {
     );
     let color = random_pedestrian_shirt_color();
 
-    world
-        .create_entity()
-        .with(Transform::new(pos))
-        .with(PedestrianComponent::default())
-        .with(Itinerary::none())
-        .with(Kinematics::from_mass(80.0))
-        .with(Movable)
-        .with({
+    world.world.push((
+        Transform::new(pos),
+        PedestrianComponent::default(),
+        Itinerary::none(),
+        Kinematics::from_mass(80.0),
+        Movable,
+        {
             MeshRender::empty(0.35)
                 .add(RectRender {
                     // Arm 1
@@ -88,10 +83,10 @@ pub fn spawn_pedestrian(world: &mut World) {
                     ..Default::default()
                 })
                 .build()
-        })
-        .with(Collider(h))
-        .with(Selectable::new(0.5))
-        .build();
+        },
+        Collider(h),
+        Selectable::new(0.5),
+    ));
 }
 
 impl Default for PedestrianComponent {

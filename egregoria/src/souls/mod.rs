@@ -1,6 +1,6 @@
+use legion::Entity;
 use map_model::BuildingID;
 use slotmap::DenseSlotMap;
-use specs::Entity;
 
 slotmap::new_key_type! {
     pub struct SoulID;

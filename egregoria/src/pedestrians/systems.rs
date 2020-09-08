@@ -1,67 +1,41 @@
 use crate::engine_interaction::TimeInfo;
 use crate::map_dynamic::Itinerary;
 use crate::pedestrians::PedestrianComponent;
-use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject, Transform};
+use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::Restrict;
-use geom::{angle_lerp, Vec2};
+use geom::{angle_lerp, Transform, Vec2};
+use legion::system;
 use map_model::{LaneKind, Map, PedestrianPath, Traversable, TraverseDirection, TraverseKind};
-use specs::prelude::*;
-use specs::shred::PanicHandler;
-use std::borrow::Borrow;
 
-#[derive(Default)]
-pub struct PedestrianDecision;
+#[system(for_each)]
+pub fn pedestrian_decision(
+    #[resource] cow: &CollisionWorld,
+    #[resource] map: &Map,
+    #[resource] time: &TimeInfo,
+    coll: &Collider,
+    it: &mut Itinerary,
+    trans: &mut Transform,
+    kin: &mut Kinematics,
+    pedestrian: &mut PedestrianComponent,
+    mr: &mut MeshRender,
+) {
+    objective_update(it, trans, map, time);
 
-#[derive(SystemData)]
-pub struct PedestrianDecisionData<'a> {
-    cow: Read<'a, CollisionWorld, PanicHandler>,
-    map: Read<'a, Map, PanicHandler>,
-    time: Read<'a, TimeInfo>,
-    colliders: ReadStorage<'a, Collider>,
-    itinerarys: WriteStorage<'a, Itinerary>,
-    transforms: WriteStorage<'a, Transform>,
-    kinematics: WriteStorage<'a, Kinematics>,
-    pedestrians: WriteStorage<'a, PedestrianComponent>,
-    mr: WriteStorage<'a, MeshRender>,
-}
+    let (_, my_obj) = cow.get(coll.0).expect("Handle not in collision world");
+    let neighbors = cow.query_around(trans.position(), 10.0);
 
-impl<'a> System<'a> for PedestrianDecision {
-    type SystemData = PedestrianDecisionData<'a>;
-
-    fn run(&mut self, mut data: Self::SystemData) {
-        let cow: &CollisionWorld = data.cow.borrow();
-        let map: &Map = data.map.borrow();
-        let time: &TimeInfo = data.time.borrow();
+    let objs = neighbors.map(|(id, pos)| {
         (
-            &data.colliders,
-            &mut data.itinerarys,
-            &mut data.transforms,
-            &mut data.kinematics,
-            &mut data.pedestrians,
-            &mut data.mr,
+            Vec2::from(pos),
+            cow.get(id).expect("Handle not in collision world").1,
         )
-            .join()
-            .for_each(|(coll, it, trans, kin, pedestrian, mr)| {
-                objective_update(it, trans, map, time);
+    });
 
-                let (_, my_obj) = cow.get(coll.0).expect("Handle not in collision world");
-                let neighbors = cow.query_around(trans.position(), 10.0);
+    let (desired_v, desired_dir) = calc_decision(pedestrian, trans, kin, map, my_obj, it, objs);
 
-                let objs = neighbors.map(|(id, pos)| {
-                    (
-                        Vec2::from(pos),
-                        cow.get(id).expect("Handle not in collision world").1,
-                    )
-                });
-
-                let (desired_v, desired_dir) =
-                    calc_decision(pedestrian, trans, kin, map, my_obj, it, objs);
-
-                walk_anim(pedestrian, mr, time, kin);
-                physics(kin, trans, time, desired_v, desired_dir);
-            });
-    }
+    walk_anim(pedestrian, mr, time, kin);
+    physics(kin, trans, time, desired_v, desired_dir);
 }
 
 pub fn walk_anim(

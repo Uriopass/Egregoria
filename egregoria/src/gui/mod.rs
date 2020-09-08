@@ -2,17 +2,16 @@ use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
 use crate::frame_log::FrameLog;
 use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
 use crate::pedestrians::{spawn_pedestrian, PedestrianComponent};
-use crate::utils::delete_entity;
 use crate::vehicles::{spawn_parked_vehicle, VehicleComponent};
+use crate::{Egregoria, ParCommandBuffer};
 use geom::Vec2;
 use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 pub use inspect::*;
+use legion::{Entity, IntoQuery};
 use map_model::{LanePatternBuilder, Map};
 use serde::{Deserialize, Serialize};
-use specs::world::World;
-use specs::{Entity, Join, WorldExt};
 use std::time::{Duration, Instant};
 
 #[macro_use]
@@ -92,27 +91,27 @@ impl Default for Gui {
 }
 
 impl Gui {
-    pub fn render(&mut self, ui: &Ui, world: &mut World) {
-        self.inspector(ui, world);
+    pub fn render(&mut self, ui: &Ui, goria: &mut Egregoria) {
+        self.inspector(ui, goria);
 
-        self.menu_bar(ui, world);
+        self.menu_bar(ui, goria);
 
-        self.map_ui(ui, world);
+        self.map_ui(ui, goria);
 
-        self.info(ui, world);
+        self.info(ui, goria);
 
         self.tips(ui);
 
-        self.toolbox(ui, world);
+        self.toolbox(ui, goria);
 
-        self.time_controls(ui, world);
+        self.time_controls(ui, goria);
 
-        self.auto_save(world);
+        self.auto_save(goria);
 
-        self.scenario(ui, world);
+        self.scenario(ui, goria);
     }
 
-    pub fn scenario(&mut self, ui: &Ui, world: &mut World) {
+    pub fn scenario(&mut self, ui: &Ui, goria: &mut Egregoria) {
         if !self.show_scenarios {
             return;
         }
@@ -124,7 +123,7 @@ impl Gui {
                 for scenario in scenarios.iter() {
                     if ui.small_button(&im_str!("{}", scenario)) {
                         crate::lua::scenario_runner::set_scenario(
-                            world,
+                            goria,
                             &format!("lua/scenarios/{}", scenario),
                         );
                     }
@@ -135,17 +134,17 @@ impl Gui {
             });
     }
 
-    pub fn auto_save(&mut self, world: &mut World) {
+    pub fn auto_save(&mut self, goria: &mut Egregoria) {
         if let Some(every) = self.auto_save_every.into() {
             let now = Instant::now();
             if now.duration_since(self.last_save) > every {
-                crate::save_to_disk(world);
+                crate::save_to_disk(goria);
                 self.last_save = now;
             }
         }
     }
 
-    pub fn toolbox(&mut self, ui: &Ui, world: &mut World) {
+    pub fn toolbox(&mut self, ui: &Ui, goria: &mut Egregoria) {
         let [w, h] = ui.io().display_size;
         let tok = ui.push_style_vars(&[
             StyleVar::WindowPadding([0.0, 0.0]),
@@ -165,7 +164,7 @@ impl Gui {
             .collapsible(false)
             .resizable(false)
             .build(&ui, || {
-                let cur_tool: &mut Tool = &mut world.write_resource::<Tool>();
+                let cur_tool: &mut Tool = &mut goria.write_resource::<Tool>();
 
                 let tools = [
                     (im_str!("Hand"), Tool::Hand),
@@ -188,7 +187,7 @@ impl Gui {
                 }
             });
         if matches!(
-            *world.read_resource::<Tool>(),
+            *goria.read_resource::<Tool>(),
             Tool::RoadbuildStraight | Tool::RoadbuildCurved
         ) {
             Window::new(im_str!("Road Properties"))
@@ -203,7 +202,7 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .build(&ui, || {
-                    let mut pattern = world.write_resource::<RoadBuildResource>().pattern_builder;
+                    let mut pattern = goria.write_resource::<RoadBuildResource>().pattern_builder;
 
                     <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
                         &mut [&mut pattern],
@@ -220,15 +219,15 @@ impl Gui {
                         pattern.parking = false;
                     }
 
-                    world.write_resource::<RoadBuildResource>().pattern_builder = pattern;
+                    goria.write_resource::<RoadBuildResource>().pattern_builder = pattern;
                 });
         }
 
         tok.pop(ui);
     }
 
-    pub fn inspector(&mut self, ui: &Ui, world: &mut World) {
-        let mut inspected = *world.read_resource::<InspectedEntity>();
+    pub fn inspector(&mut self, ui: &Ui, goria: &mut Egregoria) {
+        let mut inspected = *goria.read_resource::<InspectedEntity>();
         let e = unwrap_or!(inspected.e, return);
 
         let mut is_open = true;
@@ -238,17 +237,17 @@ impl Gui {
             .opened(&mut is_open)
             .build(&ui, || {
                 inspected.dirty =
-                    crate::gui::inspect::InspectRenderer { entity: e }.render(world, ui);
+                    crate::gui::inspect::InspectRenderer { entity: e }.render(goria, ui);
             });
         if !is_open {
             inspected.e = None;
             inspected.dirty = false;
         }
-        *world.write_resource::<InspectedEntity>() = inspected;
+        *goria.write_resource::<InspectedEntity>() = inspected;
     }
 
-    pub fn time_controls(&mut self, ui: &Ui, world: &mut World) {
-        let mut time_info = world.write_resource::<TimeInfo>();
+    pub fn time_controls(&mut self, ui: &Ui, goria: &mut Egregoria) {
+        let mut time_info = goria.write_resource::<TimeInfo>();
         let [w, h] = ui.io().display_size;
         Window::new(im_str!("Time controls"))
             .size([230.0, 40.0], imgui::Condition::Always)
@@ -266,12 +265,12 @@ impl Gui {
             });
     }
 
-    pub fn info(&mut self, ui: &Ui, world: &mut World) {
+    pub fn info(&mut self, ui: &Ui, goria: &mut Egregoria) {
         if !self.show_debug_info {
             return;
         }
-        let stats = world.read_resource::<RenderStats>();
-        let mouse = world.read_resource::<MouseInfo>().unprojected;
+        let stats = goria.read_resource::<RenderStats>();
+        let mouse = goria.read_resource::<MouseInfo>().unprojected;
         Window::new(im_str!("Debug Info"))
             .position([300.0, 50.0], imgui::Condition::FirstUseEver)
             .opened(&mut self.show_debug_info)
@@ -288,7 +287,7 @@ impl Gui {
                 ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
                 ui.separator();
                 ui.text("Frame log");
-                let flog = world.read_resource::<FrameLog>();
+                let flog = goria.read_resource::<FrameLog>();
                 let fl = flog.get_frame_log();
                 for s in &*fl {
                     ui.text(im_str!("{}", s));
@@ -312,7 +311,7 @@ impl Gui {
             });
     }
 
-    pub fn menu_bar(&mut self, ui: &Ui, world: &mut World) {
+    pub fn menu_bar(&mut self, ui: &Ui, goria: &mut Egregoria) {
         ui.main_menu_bar(|| {
             ui.menu(im_str!("Show"), true, || {
                 if imgui::MenuItem::new(im_str!("Map")).build(&ui) {
@@ -351,12 +350,12 @@ impl Gui {
                 }
             });
             if ui.small_button(im_str!("Save")) {
-                crate::save_to_disk(world);
+                crate::save_to_disk(goria);
             }
         });
     }
 
-    pub fn map_ui(&mut self, ui: &Ui, world: &mut World) {
+    pub fn map_ui(&mut self, ui: &Ui, goria: &mut Egregoria) {
         if !self.show_map_ui {
             return;
         }
@@ -376,7 +375,7 @@ impl Gui {
                 ui.same_line(0.0);
                 if ui.small_button(im_str!("spawn cars")) {
                     for _ in 0..self.n_cars {
-                        spawn_parked_vehicle(world);
+                        spawn_parked_vehicle(goria);
                     }
                 }
 
@@ -389,39 +388,25 @@ impl Gui {
                 ui.same_line(0.0);
                 if ui.small_button(im_str!("spawn pedestrians")) {
                     for _ in 0..self.n_pedestrians {
-                        spawn_pedestrian(world);
+                        spawn_pedestrian(goria);
                     }
                 }
 
                 if ui.small_button(im_str!("destroy all cars")) {
-                    let to_delete: Vec<Entity> = (
-                        &world.entities(),
-                        &world.read_component::<VehicleComponent>(),
-                    )
-                        .join()
-                        .map(|(e, _)| e)
-                        .collect();
-
-                    for e in to_delete {
-                        delete_entity(world, e);
+                    let gy = goria.write_resource::<ParCommandBuffer>();
+                    for (e, _) in <(&Entity, &VehicleComponent)>::query().iter(&goria.world) {
+                        gy.kill(*e);
                     }
                 }
 
                 if ui.small_button(im_str!("kill all pedestrians")) {
-                    let to_delete: Vec<Entity> = (
-                        &world.entities(),
-                        &world.read_component::<PedestrianComponent>(),
-                    )
-                        .join()
-                        .map(|(e, _)| e)
-                        .collect();
-
-                    for e in to_delete {
-                        delete_entity(world, e);
+                    let gy = goria.write_resource::<ParCommandBuffer>();
+                    for (e, _) in <(&Entity, &PedestrianComponent)>::query().iter(&goria.world) {
+                        gy.kill(*e);
                     }
                 }
 
-                let mut map = world.write_resource::<Map>();
+                let mut map = goria.write_resource::<Map>();
 
                 if ui.small_button(im_str!("build houses")) {
                     map.build_buildings();
@@ -448,18 +433,18 @@ impl Gui {
                     map_model::add_grid(Vec2::ZERO, &mut map, 30);
                     drop(map);
                     for _ in 0..10000 {
-                        spawn_parked_vehicle(world);
-                        spawn_pedestrian(world);
+                        spawn_parked_vehicle(goria);
+                        spawn_pedestrian(goria);
                     }
                 }
 
                 ui.text(im_str!(
                     "{} pedestrians",
-                    world.read_component::<PedestrianComponent>().join().count()
+                    <&PedestrianComponent>::query().iter(&goria.world).count()
                 ));
                 ui.text(im_str!(
                     "{} vehicles",
-                    world.read_component::<VehicleComponent>().join().count()
+                    <&VehicleComponent>::query().iter(&goria.world).count()
                 ));
             });
         self.show_map_ui = opened;

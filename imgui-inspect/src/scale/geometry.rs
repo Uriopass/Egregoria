@@ -1,6 +1,6 @@
 use crate::default::InspectArgsDefault;
 use crate::default::InspectRenderDefault;
-use geom::{polyline::PolyLine, Vec2};
+use geom::{PolyLine, Vec2};
 use imgui::im_str;
 
 impl InspectRenderDefault<Vec2> for Vec2 {

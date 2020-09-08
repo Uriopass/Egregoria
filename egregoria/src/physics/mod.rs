@@ -4,15 +4,12 @@ use geom::Vec2;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
-use specs::{Component, VecStorage};
 
 pub mod systems;
 
 mod kinematics;
-mod transform;
 
 pub use kinematics::*;
-pub use transform::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum PhysicsGroup {
@@ -46,8 +43,7 @@ impl Default for PhysicsObject {
 
 pub type CollisionWorld = flat_spatial::SparseGrid<PhysicsObject>;
 
-#[derive(Clone, Component, Debug)]
-#[storage(VecStorage)]
+#[derive(Clone, Debug)]
 pub struct Collider(pub GridHandle);
 
 impl InspectRenderDefault<Collider> for Collider {

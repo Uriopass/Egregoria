@@ -1,14 +1,23 @@
-pub mod circle;
-pub mod intersections;
-pub mod obb;
-pub mod polygon;
-pub mod polyline;
-pub mod rect;
-pub mod segment;
-pub mod splines;
-
+mod circle;
+mod intersections;
+mod obb;
+mod polygon;
+mod polyline;
+mod rect;
+mod segment;
+mod splines;
+mod transform;
 mod v2;
 
+pub use circle::*;
+pub use intersections::*;
+pub use obb::*;
+pub use polygon::*;
+pub use polyline::*;
+pub use rect::*;
+pub use segment::*;
+pub use splines::*;
+pub use transform::*;
 pub use v2::*;
 
 pub fn minmax(x: &[Vec2]) -> Option<(Vec2, Vec2)> {

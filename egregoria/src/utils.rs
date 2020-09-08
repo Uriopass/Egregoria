@@ -1,7 +1,4 @@
-use crate::map_dynamic::ParkingManagement;
-use crate::physics::{Collider, CollisionWorld};
-use crate::vehicles::VehicleComponent;
-use specs::{Entity, World, WorldExt};
+use crate::Egregoria;
 macro_rules! unwrap_or {
     ($e: expr, $t: expr) => {
         match $e {
@@ -11,7 +8,7 @@ macro_rules! unwrap_or {
     };
 }
 
-pub fn rand_world<T>(world: &mut specs::World) -> T
+pub fn rand_world<T>(world: &mut Egregoria) -> T
 where
     rand_distr::Standard: rand_distr::Distribution<T>,
 {
@@ -31,23 +28,5 @@ impl<T: PartialOrd> Restrict for T {
         } else {
             self
         }
-    }
-}
-
-pub fn delete_entity(world: &mut World, e: Entity) {
-    if let Some(&Collider(handle)) = world.read_component::<Collider>().get(e) {
-        let mut coworld = world.write_resource::<CollisionWorld>();
-        coworld.remove(handle);
-    }
-    if let Some(id) = world
-        .read_component::<VehicleComponent>()
-        .get(e)
-        .and_then(|x| x.park_spot)
-    {
-        world.write_resource::<ParkingManagement>().free(id);
-    }
-    match world.delete_entity(e) {
-        Ok(()) => {}
-        Err(_) => log::warn!("Trying to remove nonexistent entity"),
     }
 }

@@ -1,6 +1,6 @@
 use crate::{IntersectionID, LaneID, Lanes};
-use geom::polyline::PolyLine;
-use geom::splines::Spline;
+use geom::PolyLine;
+use geom::Spline;
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
 

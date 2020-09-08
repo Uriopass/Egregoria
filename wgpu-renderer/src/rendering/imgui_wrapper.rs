@@ -56,7 +56,7 @@ impl ImguiWrapper {
     pub fn render(
         &mut self,
         gfx: GuiRenderContext,
-        world: &mut egregoria::specs::World,
+        goria: &mut egregoria::Egregoria,
         gui: &mut egregoria::gui::Gui,
     ) {
         let now = Instant::now();
@@ -72,7 +72,7 @@ impl ImguiWrapper {
             .expect("Failed to prepare frame");
 
         let ui: egregoria::imgui::Ui = self.imgui.frame();
-        gui.render(&ui, world);
+        gui.render(&ui, goria);
         crate::debug::debug_menu(gui, &ui);
 
         self.last_mouse_captured = ui.io().want_capture_mouse;

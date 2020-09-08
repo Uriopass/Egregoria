@@ -2,10 +2,10 @@ use crate::{
     Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, SpatialMap, TraverseDirection, Turn,
     TurnID, TurnPolicy,
 };
-use geom::polygon::Polygon;
 use geom::pseudo_angle;
-use geom::rect::Rect;
-use geom::splines::Spline;
+use geom::Polygon;
+use geom::Rect;
+use geom::Spline;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};

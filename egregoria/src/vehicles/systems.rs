@@ -1,120 +1,91 @@
 use crate::engine_interaction::TimeInfo;
-use crate::frame_log::FrameLog;
 use crate::map_dynamic::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
+use crate::physics::Kinematics;
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
-use crate::physics::{Kinematics, Transform};
 use crate::utils::Restrict;
 use crate::vehicles::{VehicleComponent, VehicleState, DISTANCE_FOR_UNPARKING, TIME_TO_PARK};
-use geom::intersections::{both_dist_to_inter, Ray};
-use geom::splines::Spline;
+use crate::{Deleted, ParCommandBuffer};
 use geom::{angle_lerp, Vec2};
+use geom::{both_dist_to_inter, Ray};
+use geom::{Spline, Transform};
+use legion::system;
+use legion::Entity;
 use map_model::{
     DirectionalPath, LaneKind, Map, ParkingSpotID, TrafficBehavior, Traversable, TraverseDirection,
     TraverseKind,
 };
 use rand::thread_rng;
-use specs::prelude::*;
-use specs::shred::PanicHandler;
-use std::sync::Mutex;
 
-#[derive(Default)]
-pub struct VehicleDecision;
-
-#[derive(SystemData)]
-pub struct VehicleDecisionSystemData<'a> {
-    entities: Entities<'a>,
-    map: Read<'a, Map>,
-    time: Read<'a, TimeInfo>,
-    parking: Read<'a, ParkingManagement>,
-    flog: Read<'a, FrameLog>,
-    coworld: Write<'a, CollisionWorld, PanicHandler>,
-    colliders: WriteStorage<'a, Collider>,
-    transforms: WriteStorage<'a, Transform>,
-    kinematics: WriteStorage<'a, Kinematics>,
-    vehicles: WriteStorage<'a, VehicleComponent>,
-    itinerarys: WriteStorage<'a, Itinerary>,
+#[system]
+pub fn vehicle_cleanup(
+    #[resource] evts: &mut Deleted<VehicleComponent>,
+    #[resource] pm: &mut ParkingManagement,
+) {
+    for comp in evts.0.drain(..) {
+        if let Some(id) = comp.park_spot {
+            pm.free(id)
+        }
+    }
 }
 
-impl<'a> System<'a> for VehicleDecision {
-    type SystemData = VehicleDecisionSystemData<'a>;
+#[system(for_each)]
+pub fn vehicle_decision(
+    #[resource] map: &Map,
+    #[resource] time: &TimeInfo,
+    #[resource] parking: &ParkingManagement,
+    #[resource] cow: &CollisionWorld,
+    #[resource] buf: &ParCommandBuffer,
+    ent: &Entity,
+    it: &mut Itinerary,
+    trans: &mut Transform,
+    kin: &mut Kinematics,
+    vehicle: &mut VehicleComponent,
+    collider: Option<&Collider>,
+) {
+    state_update(trans, vehicle, kin, it, *ent, buf, parking, map, time);
 
-    fn run(&mut self, mut data: Self::SystemData) {
-        time_it!(data.flog, "Vehicle update");
-
-        let mut cow = data.coworld;
-        let map = data.map;
-        let time = data.time;
-        let parking = data.parking;
-
-        {
-            let colliders = Mutex::new(&mut data.colliders);
-            let cowtex = Mutex::new(&mut *cow);
-
+    if let Some(collider) = collider {
+        let (_, self_obj) = cow.get(collider.0).expect("Handle not in collision world");
+        let danger_length =
+            (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
+        let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
+        let objs = neighbors.map(|(id, pos)| {
             (
-                &data.transforms,
-                &mut data.kinematics,
-                &mut data.vehicles,
-                &mut data.itinerarys,
-                &data.entities,
+                Vec2::from(pos),
+                cow.get(id).expect("Handle not in collision world").1,
             )
-                .par_join()
-                .for_each(|(trans, kin, vehicle, it, ent)| {
-                    state_update(
-                        vehicle, kin, it, &cowtex, &colliders, ent, &parking, trans, &map, &time,
-                    );
-                });
-        }
+        });
 
-        (
-            &mut data.transforms,
-            &mut data.kinematics,
-            &mut data.vehicles,
-            &data.itinerarys,
-            &data.colliders,
-        )
-            .par_join()
-            .for_each(|(trans, kin, vehicle, it, collider)| {
-                let (_, self_obj) = cow.get(collider.0).expect("Handle not in collision world");
-                let danger_length =
-                    (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
-                let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
-                let objs = neighbors.map(|(id, pos)| {
-                    (
-                        Vec2::from(pos),
-                        cow.get(id).expect("Handle not in collision world").1,
-                    )
-                });
+        let (desired_speed, desired_dir) =
+            calc_decision(vehicle, &map, &time, trans, self_obj, it, objs);
 
-                let (desired_speed, desired_dir) =
-                    calc_decision(vehicle, &map, &time, trans, self_obj, it, objs);
-
-                physics(
-                    trans,
-                    kin,
-                    vehicle,
-                    &time,
-                    self_obj,
-                    &map,
-                    desired_speed,
-                    desired_dir,
-                );
-            });
+        physics(
+            trans,
+            kin,
+            vehicle,
+            &time,
+            self_obj,
+            &map,
+            desired_speed,
+            desired_dir,
+        );
     }
 }
 
 /// Decides whether a vehicle should change states, from parked to unparking to driving etc
 fn state_update(
+    trans: &geom::Transform,
     vehicle: &mut VehicleComponent,
     kin: &mut Kinematics,
     it: &mut Itinerary,
-    cow: &Mutex<&mut CollisionWorld>,
-    colliders: &Mutex<&mut WriteStorage<Collider>>,
     ent: Entity,
+    buf: &ParCommandBuffer,
     parking: &ParkingManagement,
-    trans: &Transform,
     map: &Map,
     time: &TimeInfo,
 ) {
+    let trans = *trans;
+
     match vehicle.state {
         VehicleState::ParkedToRoad => {
             // Check the distance to the first traverseable, i.e. the start of the path, and if we're
@@ -140,12 +111,7 @@ fn state_update(
                     vehicle.state = VehicleState::Driving;
                     return;
                 });
-                {
-                    let mut colliders = colliders.lock().unwrap();
-                    let h = colliders.get(ent).expect("Driving car has no collider");
-                    cow.lock().unwrap().remove(h.0);
-                    colliders.remove(ent);
-                }
+                buf.remove_component::<Collider>(ent);
                 kin.velocity = Vec2::ZERO;
 
                 vehicle.state = VehicleState::Parked(spot);
@@ -201,20 +167,23 @@ fn state_update(
                     // Create some points along the spline and repack the itin with the new points.
                     itin.prepend_local_path(s.points(8).collect());
 
-                    let h = Collider(cow.lock().unwrap().insert(
-                        trans.position(),
-                        PhysicsObject {
-                            dir: trans.direction(),
-                            group: PhysicsGroup::Vehicles,
-                            radius: vehicle.kind.width() * 0.5,
-                            speed: 0.0,
-                        },
-                    ));
-                    colliders
-                        .lock()
-                        .unwrap()
-                        .insert(ent, h)
-                        .expect("Invalid entity ?");
+                    let w = vehicle.kind.width();
+                    buf.exec(move |goria| {
+                        let mut cow = goria.resources.get_mut::<CollisionWorld>().unwrap();
+                        let h = Collider(cow.insert(
+                            pos,
+                            PhysicsObject {
+                                dir: trans.direction(),
+                                group: PhysicsGroup::Vehicles,
+                                radius: w * 0.5,
+                                speed: 0.0,
+                            },
+                        ));
+
+                        goria.world.entry(ent).map(|mut v| {
+                            v.add_component(h);
+                        });
+                    });
 
                     *it = itin;
                     vehicle.park_spot = Some(park);

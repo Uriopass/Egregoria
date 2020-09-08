@@ -2,7 +2,7 @@ use crate::{BuildingID, IntersectionID, LotID, RoadID};
 use flat_spatial::shape::AABB;
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
-use geom::rect::Rect;
+use geom::Rect;
 use geom::Vec2;
 use std::collections::HashMap;
 

@@ -5,8 +5,8 @@ use imgui::Ui;
 use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
+use legion::Entity;
 use serde::{Deserialize, Serialize};
-use specs::{Component, DenseVecStorage, Entity};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MeshRenderEnum {
@@ -111,7 +111,7 @@ mk_from_mr!(LineRender; |x| MeshRenderEnum::Line(x));
 mk_from_mr!(LineToRender; |x| MeshRenderEnum::LineTo(x));
 mk_from_mr!(AbsoluteLineRender; |x| MeshRenderEnum::AbsoluteLine(x));
 
-#[derive(Clone, Serialize, Deserialize, Component)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MeshRender {
     pub orders: Vec<MeshRenderEnum>,
     pub hide: bool,

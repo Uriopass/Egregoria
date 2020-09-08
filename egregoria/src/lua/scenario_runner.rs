@@ -1,5 +1,6 @@
+use crate::Egregoria;
+use legion::system;
 use mods::mlua::Lua;
-use specs::prelude::*;
 use std::sync::Mutex;
 
 #[derive(Default)]
@@ -7,41 +8,37 @@ pub struct RunningScenario {
     pub l: Option<Mutex<Lua>>,
 }
 
-pub struct RunningScenarioSystem;
-impl<'a> System<'a> for RunningScenarioSystem {
-    type SystemData = Write<'a, RunningScenario>;
+#[system]
+pub fn run_scenario(#[resource] scenario: &mut RunningScenario) {
+    if let Some(l) = &scenario.l {
+        let l = l.lock().unwrap();
+        mods::eval_f(&l, "Draw");
 
-    fn run(&mut self, mut scenario: Self::SystemData) {
-        if let Some(l) = &scenario.l {
-            let l = l.lock().unwrap();
-            mods::eval_f(&l, "Draw");
-
-            let r: Option<bool> = mods::call_f(&l, "Success");
-            let is_success = match r {
-                Some(x) => x,
-                None => {
-                    drop(l);
-
-                    scenario.l.take();
-                    return;
-                }
-            };
-            if is_success {
-                info!("scenario success");
-                mods::eval_f(&l, "Cleanup");
-
+        let r: Option<bool> = mods::call_f(&l, "Success");
+        let is_success = match r {
+            Some(x) => x,
+            None => {
                 drop(l);
+
                 scenario.l.take();
+                return;
             }
+        };
+        if is_success {
+            info!("scenario success");
+            mods::eval_f(&l, "Cleanup");
+
+            drop(l);
+            scenario.l.take();
         }
     }
 }
 
-pub fn set_scenario(world: &mut World, name: &str) {
+pub fn set_scenario(goria: &mut Egregoria, name: &str) {
     if let Some(l) = mods::load(name) {
-        super::add_egregoria_lua_stdlib(&l, world);
+        super::add_egregoria_lua_stdlib(&l, goria);
         mods::eval_f(&l, "Init");
-        world
+        goria
             .write_resource::<RunningScenario>()
             .l
             .replace(Mutex::new(l))

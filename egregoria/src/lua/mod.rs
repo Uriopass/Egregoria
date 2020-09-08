@@ -1,18 +1,18 @@
 use crate::map_dynamic::Itinerary;
-use crate::physics::Transform;
 use crate::rendering::immediate::ImmediateDraw;
 use crate::rendering::Color;
-use crate::utils::delete_entity;
 use crate::vehicles::{make_vehicle_entity, VehicleComponent, VehicleKind, VehicleState};
+use crate::{Egregoria, ParCommandBuffer};
+use geom::Transform;
 use geom::Vec2;
+use legion::{Entity, Resources};
 use mods::mlua::{Lua, ToLua, UserData, UserDataMethods, Value};
 use mods::LuaVec2;
-use specs::{Entity, World, WorldExt};
 
 pub mod scenario_runner;
 
 struct LuaWorld {
-    w: *mut World,
+    w: *mut Egregoria,
 }
 
 unsafe impl Send for LuaWorld {}
@@ -40,21 +40,31 @@ impl UserData for LuaWorld {
         );
 
         methods.add_method("pos", |l: &Lua, sel: &Self, e: LuaEntity| unsafe {
-            Ok(match (*sel.w).read_storage::<Transform>().get(e.0) {
-                Some(t) => LuaVec2(t.position()).to_lua(l).unwrap(),
-                None => Value::Nil,
-            })
+            Ok(
+                match (*sel.w)
+                    .world
+                    .entry(e.0)
+                    .and_then(|x| x.get_component::<Transform>().ok().cloned())
+                {
+                    Some(t) => LuaVec2(t.position()).to_lua(l).unwrap(),
+                    None => Value::Nil,
+                },
+            )
         });
 
         methods.add_method("remove", |_: &Lua, sel: &Self, e: LuaEntity| unsafe {
-            delete_entity(&mut (*sel.w), e.0);
+            &mut (*sel.w)
+                .resources
+                .get_mut::<ParCommandBuffer>()
+                .unwrap()
+                .kill(e.0);
             Ok(())
         });
     }
 }
 
 struct LuaDraw {
-    w: *mut World,
+    w: *mut Resources,
     col: Color,
 }
 
@@ -64,7 +74,8 @@ impl UserData for LuaDraw {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method_mut("circle", |_, sel, (pos, size): (LuaVec2, f32)| unsafe {
             (*sel.w)
-                .write_resource::<ImmediateDraw>()
+                .get_mut::<ImmediateDraw>()
+                .unwrap()
                 .circle(pos.0, size)
                 .color(sel.col);
             Ok(())
@@ -89,15 +100,20 @@ fn color(_: &Lua, (r, g, b, a): (f32, f32, f32, f32)) -> mods::mlua::Result<LuaC
     Ok(LuaColor(Color { r, g, b, a }))
 }
 
-pub fn add_egregoria_lua_stdlib(lua: &Lua, w: &mut World) {
+pub fn add_egregoria_lua_stdlib(lua: &Lua, w: &mut Egregoria) {
     lua.globals()
-        .set("world", LuaWorld { w: w as *mut World })
+        .set(
+            "world",
+            LuaWorld {
+                w: w as *mut Egregoria,
+            },
+        )
         .unwrap();
     lua.globals()
         .set(
             "draw",
             LuaDraw {
-                w: w as *mut World,
+                w: &mut w.resources as *mut Resources,
                 col: Color::WHITE,
             },
         )

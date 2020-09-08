@@ -1,7 +1,8 @@
 use crate::engine::{FrameContext, GfxContext, InstanceRaw, SpriteBatchBuilder, Texture};
-use egregoria::physics::Transform;
+use egregoria::legion::query::*;
 use egregoria::rendering::assets::AssetRender;
-use egregoria::specs::{Join, World, WorldExt};
+use egregoria::Egregoria;
+use geom::Transform;
 
 pub struct InstancedRender {
     pub texs: Vec<SpriteBatchBuilder>,
@@ -15,15 +16,12 @@ impl InstancedRender {
         InstancedRender { texs }
     }
 
-    pub fn render(&mut self, world: &mut World, fctx: &mut FrameContext) {
-        let transforms = world.read_component::<Transform>();
-        let ass_render = world.write_component::<AssetRender>();
-
+    pub fn render(&mut self, goria: &mut Egregoria, fctx: &mut FrameContext) {
         for x in &mut self.texs {
             x.instances.clear();
         }
 
-        for (trans, ar) in (&transforms, &ass_render).join() {
+        for (trans, ar) in <(&Transform, &AssetRender)>::query().iter(&goria.world) {
             if ar.hide {
                 continue;
             }

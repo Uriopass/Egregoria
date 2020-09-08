@@ -1,14 +1,13 @@
 use crate::engine_interaction::TimeInfo;
 use crate::gui::InspectVec;
-use crate::physics::Transform;
+use geom::Transform;
 use geom::Vec2;
 use imgui_inspect_derive::*;
+use legion::system;
 use map_model::{LaneID, Map, Pathfinder, Traversable, TraverseKind};
 use serde::{Deserialize, Serialize};
-use specs::prelude::*;
-use specs::Component;
 
-#[derive(Component, Debug, Default, Inspect, Serialize, Deserialize)]
+#[derive(Debug, Default, Inspect, Serialize, Deserialize)]
 pub struct Itinerary {
     kind: ItineraryKind,
     #[inspect(proxy_type = "InspectVec<Vec2>")]
@@ -236,24 +235,12 @@ impl Default for ItineraryKind {
 
 enum_inspect_impl!(ItineraryKind; ItineraryKind::None, ItineraryKind::Simple, ItineraryKind::WaitUntil(_), ItineraryKind::Route(_));
 
-pub struct ItinerarySystem;
-
-#[derive(SystemData)]
-pub struct ItinerarySystemData<'a> {
-    time: Read<'a, TimeInfo>,
-    map: Read<'a, Map>,
-    trans: ReadStorage<'a, Transform>,
-    itinerarys: WriteStorage<'a, Itinerary>,
-}
-
-impl<'a> System<'a> for ItinerarySystem {
-    type SystemData = ItinerarySystemData<'a>;
-
-    fn run(&mut self, mut data: Self::SystemData) {
-        let time = &data.time;
-        let map = &data.map;
-        (&data.trans, &mut data.itinerarys)
-            .par_join()
-            .for_each(|(trans, it)| it.update(trans.position(), time, map));
-    }
+#[system(for_each)]
+pub fn itinerary_update(
+    #[resource] time: &TimeInfo,
+    #[resource] map: &Map,
+    trans: &Transform,
+    it: &mut Itinerary,
+) {
+    it.update(trans.position(), time, map)
 }

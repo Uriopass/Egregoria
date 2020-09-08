@@ -4,14 +4,14 @@ use crate::geometry::Tesselator;
 use egregoria::engine_interaction::{MouseInfo, TimeInfo};
 use egregoria::imgui::im_str;
 use egregoria::imgui::Ui;
-use egregoria::interaction::{InspectedEntity, Movable, Selectable};
+use egregoria::interaction::InspectedEntity;
 use egregoria::map_dynamic::Itinerary;
-use egregoria::physics::{CollisionWorld, Transform};
+use egregoria::physics::CollisionWorld;
 use egregoria::rendering::{Color, LinearColor};
-use egregoria::specs::prelude::*;
-use geom::obb::OBB;
-use geom::splines::Spline;
+use egregoria::Egregoria;
+use geom::OBB;
 use geom::{vec2, Vec2};
+use geom::{Spline, Transform};
 use lazy_static::*;
 use map_model::{Map, RoadSegmentKind};
 use std::sync::Mutex;
@@ -21,7 +21,7 @@ lazy_static! {
         Vec<(
             bool,
             &'static str,
-            Box<dyn Send + Fn(&mut Tesselator, &mut World) -> Option<()>>
+            Box<dyn Send + Fn(&mut Tesselator, &mut Egregoria) -> Option<()>>
         )>,
     > = Mutex::new(vec![
         (false, "Debug pathfinder", Box::new(debug_pathfinder)),
@@ -47,66 +47,7 @@ pub fn debug_menu(gui: &mut egregoria::gui::Gui, ui: &Ui) {
         })
 }
 
-#[derive(Clone)]
-pub struct DbgSplineState {
-    pub from: Entity,
-    pub to: Entity,
-    pub from_der: Entity,
-    pub to_der: Entity,
-}
-
-pub fn debug_spline(tess: &mut Tesselator, world: &mut World) -> Option<()> {
-    if world.try_fetch::<DbgSplineState>().is_none() {
-        let from = world
-            .create_entity()
-            .with(Transform::new([0.0, 0.0]))
-            .with(Movable)
-            .with(Selectable::new(3.0))
-            .build();
-
-        let to = world
-            .create_entity()
-            .with(Transform::new([10.0, 10.0]))
-            .with(Movable)
-            .with(Selectable::new(3.0))
-            .build();
-
-        let from_der = world
-            .create_entity()
-            .with(Transform::new([0.0, 2.0]))
-            .with(Movable)
-            .with(Selectable::new(3.0))
-            .build();
-
-        let to_der = world
-            .create_entity()
-            .with(Transform::new([12.0, 10.0]))
-            .with(Movable)
-            .with(Selectable::new(3.0))
-            .build();
-
-        world.insert(DbgSplineState {
-            from,
-            to,
-            from_der,
-            to_der,
-        });
-    }
-    let st = world.write_resource::<DbgSplineState>();
-
-    let tr_st = world.read_storage::<Transform>();
-
-    let from = tr_st.get(st.from).unwrap().position();
-    let to = tr_st.get(st.to).unwrap().position();
-    let sp = Spline {
-        from,
-        to,
-        from_derivative: tr_st.get(st.from_der).unwrap().position() - from,
-        to_derivative: tr_st.get(st.to_der).unwrap().position() - to,
-    };
-
-    draw_spline(tess, &sp);
-
+pub fn debug_spline(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
     for road in world.read_resource::<Map>().roads().values() {
         if let RoadSegmentKind::Curved((fr_dr, to_der)) = road.segment {
             let fr = road.src_point;
@@ -146,7 +87,7 @@ fn draw_spline(tess: &mut Tesselator, sp: &Spline) {
     tess.draw_circle(sp.to + sp.to_derivative, 1.0, 1.0);
 }
 
-fn debug_coworld(tess: &mut Tesselator, world: &mut World) -> Option<()> {
+fn debug_coworld(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
     let coworld = world.read_resource::<CollisionWorld>();
 
     tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
@@ -157,7 +98,7 @@ fn debug_coworld(tess: &mut Tesselator, world: &mut World) -> Option<()> {
     Some(())
 }
 
-pub fn debug_obb(tess: &mut Tesselator, world: &mut World) -> Option<()> {
+pub fn debug_obb(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
     let time = world.read_resource::<TimeInfo>();
     let mouse = world.read_resource::<MouseInfo>().unprojected;
 
@@ -193,12 +134,15 @@ pub fn debug_obb(tess: &mut Tesselator, world: &mut World) -> Option<()> {
     Some(())
 }
 
-pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut World) -> Option<()> {
+pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
     let map: &Map = &world.read_resource::<Map>();
     let selected = world.read_resource::<InspectedEntity>().e?;
-    let pos = world.read_storage::<Transform>().get(selected)?.position();
+    let pos = world
+        .read_component::<Transform>()
+        .get(selected)?
+        .position();
 
-    let stor = world.read_storage::<Itinerary>();
+    let mut stor = world.read_component::<Itinerary>();
     let itinerary = stor.get(selected)?;
 
     tess.color = LinearColor::GREEN;
@@ -219,14 +163,14 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut World) -> Option<()> 
     Some(())
 }
 
-pub fn debug_rays(tess: &mut Tesselator, world: &mut World) -> Option<()> {
+pub fn debug_rays(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
     let time = world.read_resource::<TimeInfo>();
     let time = time.time * 0.2;
     let c = time.cos() as f32;
     let s = time.sin() as f32;
     let mouse = world.read_resource::<MouseInfo>().unprojected;
 
-    let r = geom::intersections::Ray {
+    let r = geom::Ray {
         from: 10.0 * vec2(c, s),
         dir: vec2(
             (time * 2.3 + 1.0).cos() as f32,
@@ -234,7 +178,7 @@ pub fn debug_rays(tess: &mut Tesselator, world: &mut World) -> Option<()> {
         ),
     };
 
-    let r2 = geom::intersections::Ray {
+    let r2 = geom::Ray {
         from: mouse,
         dir: vec2((time * 3.0).cos() as f32, (time * 3.0).sin() as f32),
     };
@@ -243,7 +187,7 @@ pub fn debug_rays(tess: &mut Tesselator, world: &mut World) -> Option<()> {
     tess.draw_line(r.from, r.from + r.dir * 50.0, 0.5);
     tess.draw_line(r2.from, r2.from + r2.dir * 50.0, 0.5);
 
-    let inter = geom::intersections::intersection_point(r, r2);
+    let inter = geom::intersection_point(r, r2);
     if let Some(v) = inter {
         tess.color = LinearColor::RED;
 
@@ -253,7 +197,7 @@ pub fn debug_rays(tess: &mut Tesselator, world: &mut World) -> Option<()> {
     Some(())
 }
 
-pub fn debug_spatialmap(tess: &mut Tesselator, world: &mut World) -> Option<()> {
+pub fn debug_spatialmap(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
     let map: &Map = &world.read_resource::<Map>();
     for r in map.spatial_map().debug_grid() {
         tess.set_color(LinearColor {
