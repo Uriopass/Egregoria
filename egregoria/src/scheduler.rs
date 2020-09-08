@@ -15,19 +15,21 @@ impl SeqSchedule {
     }
 
     pub fn execute(&mut self, world: &mut World, res: &mut Resources) {
-        for s in &mut self.systems {
+        for sys in &mut self.systems {
             let start = Instant::now();
-            s.prepare(world);
-            s.run(world, res);
-            if let Some(cb) = s.command_buffer_mut(world.id()) {
+
+            sys.prepare(world);
+            sys.run(world, res);
+            if let Some(cb) = sys.command_buffer_mut(world.id()) {
                 cb.flush(world);
             }
-            let time = start.elapsed();
+
+            let elapsed = start.elapsed();
 
             let s = format!(
                 "system {} took {:.2}ms",
-                s.name().unwrap(),
-                time.as_secs_f32() * 1000.0
+                sys.name().unwrap(),
+                elapsed.as_secs_f32() * 1000.0
             );
             res.get::<FrameLog>().unwrap().log_frame(s);
         }
