@@ -40,24 +40,14 @@ impl UserData for LuaWorld {
         );
 
         methods.add_method("pos", |l: &Lua, sel: &Self, e: LuaEntity| unsafe {
-            Ok(
-                match (*sel.w)
-                    .world
-                    .entry(e.0)
-                    .and_then(|x| x.get_component::<Transform>().ok().cloned())
-                {
-                    Some(t) => LuaVec2(t.position()).to_lua(l).unwrap(),
-                    None => Value::Nil,
-                },
-            )
+            Ok(match (*sel.w).comp::<Transform>(e.0) {
+                Some(t) => LuaVec2(t.position()).to_lua(l).unwrap(),
+                None => Value::Nil,
+            })
         });
 
         methods.add_method("remove", |_: &Lua, sel: &Self, e: LuaEntity| unsafe {
-            &mut (*sel.w)
-                .resources
-                .get_mut::<ParCommandBuffer>()
-                .unwrap()
-                .kill(e.0);
+            &mut (*sel.w).write::<ParCommandBuffer>().kill(e.0);
             Ok(())
         });
     }

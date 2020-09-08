@@ -1,1 +1,2 @@
-pub mod geometry;
+mod geometry;
+pub use geometry::*;

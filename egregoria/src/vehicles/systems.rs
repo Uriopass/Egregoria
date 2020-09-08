@@ -169,7 +169,7 @@ fn state_update(
 
                     let w = vehicle.kind.width();
                     buf.exec(move |goria| {
-                        let mut cow = goria.resources.get_mut::<CollisionWorld>().unwrap();
+                        let mut cow = goria.write::<CollisionWorld>();
                         let h = Collider(cow.insert(
                             pos,
                             PhysicsObject {
@@ -179,6 +179,7 @@ fn state_update(
                                 speed: 0.0,
                             },
                         ));
+                        drop(cow);
 
                         goria.world.entry(ent).map(|mut v| {
                             v.add_component(h);

@@ -60,8 +60,7 @@ impl State {
         );
 
         if !self.gui.last_mouse_captured {
-            self.state.write_resource::<MouseInfo>().unprojected =
-                self.unproject(ctx.input.mouse.screen);
+            self.state.write::<MouseInfo>().unprojected = self.unproject(ctx.input.mouse.screen);
         }
 
         self.state.run();
@@ -84,9 +83,9 @@ impl State {
             tess.draw_grid(10.0, Color::new(gray_maj, gray_maj, gray_maj, 1.0));
         }
 
-        let time: TimeInfo = *self.state.read_resource::<TimeInfo>();
+        let time: TimeInfo = *self.state.read::<TimeInfo>();
         self.road_renderer.render(
-            &mut self.state.write_resource::<Map>(),
+            &mut self.state.write::<Map>(),
             time.time_seconds,
             &mut tess,
             ctx,
@@ -106,7 +105,7 @@ impl State {
         }
 
         {
-            let immediate = &mut *self.state.write_resource::<ImmediateDraw>();
+            let immediate = &mut *self.state.write::<ImmediateDraw>();
             for (order, col) in immediate
                 .persistent_orders
                 .iter()
@@ -130,19 +129,19 @@ impl State {
         }
 
         self.state
-            .write_resource::<RenderStats>()
+            .write::<RenderStats>()
             .add_render_time(start.elapsed().as_secs_f32());
     }
 
     pub fn render_gui(&mut self, ctx: GuiRenderContext) {
-        let mut gui = (*self.state.read_resource::<Gui>()).clone();
+        let mut gui = (*self.state.read::<Gui>()).clone();
         self.gui.render(ctx, &mut self.state, &mut gui);
-        *self.state.write_resource::<Gui>() = gui;
+        *self.state.write::<Gui>() = gui;
     }
 
     fn manage_time(&mut self, delta: f64) {
         const MAX_TIMESTEP: f64 = 1.0 / 10.0;
-        let mut time = self.state.write_resource::<TimeInfo>();
+        let mut time = self.state.write::<TimeInfo>();
 
         let delta = (delta * time.time_speed as f64).min(MAX_TIMESTEP);
         time.delta = delta as f32;
@@ -151,39 +150,29 @@ impl State {
     }
 
     fn manage_entity_follow(&mut self) {
-        if !self
-            .state
-            .read_resource::<MouseInfo>()
-            .just_pressed
-            .is_empty()
-        {
-            self.state.write_resource::<FollowEntity>().0.take();
+        if !self.state.read::<MouseInfo>().just_pressed.is_empty() {
+            self.state.write::<FollowEntity>().0.take();
         }
 
-        if let Some(e) = self.state.read_resource::<FollowEntity>().0 {
-            if let Some(pos) = self
-                .state
-                .read_component::<Transform>()
-                .get(e)
-                .map(|x| x.position())
-            {
+        if let Some(e) = self.state.read::<FollowEntity>().0 {
+            if let Some(pos) = self.state.comp::<Transform>(e).map(|x| x.position()) {
                 self.camera.camera.position = [pos.x, pos.y].into();
             }
         }
     }
 
     fn manage_io(&mut self, ctx: &Context) {
-        *self.state.write_resource::<KeyboardInfo>() = ctx.input.keyboard.clone();
-        *self.state.write_resource::<MouseInfo>() = ctx.input.mouse.clone();
+        *self.state.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
+        *self.state.write::<MouseInfo>() = ctx.input.mouse.clone();
 
         if self.gui.last_kb_captured {
-            let kb: &mut KeyboardInfo = &mut self.state.write_resource::<KeyboardInfo>();
+            let kb: &mut KeyboardInfo = &mut self.state.write::<KeyboardInfo>();
             kb.just_pressed.clear();
             kb.is_pressed.clear();
         }
 
         if self.gui.last_mouse_captured {
-            let mouse: &mut MouseInfo = &mut self.state.write_resource::<MouseInfo>();
+            let mouse: &mut MouseInfo = &mut self.state.write::<MouseInfo>();
             mouse.just_pressed.clear();
             mouse.buttons.clear();
             mouse.wheel_delta = 0.0;

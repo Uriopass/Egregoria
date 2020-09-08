@@ -48,7 +48,7 @@ pub fn debug_menu(gui: &mut egregoria::gui::Gui, ui: &Ui) {
 }
 
 pub fn debug_spline(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
-    for road in world.read_resource::<Map>().roads().values() {
+    for road in world.read::<Map>().roads().values() {
         if let RoadSegmentKind::Curved((fr_dr, to_der)) = road.segment {
             let fr = road.src_point;
             let to = road.dst_point;
@@ -88,7 +88,7 @@ fn draw_spline(tess: &mut Tesselator, sp: &Spline) {
 }
 
 fn debug_coworld(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
-    let coworld = world.read_resource::<CollisionWorld>();
+    let coworld = world.read::<CollisionWorld>();
 
     tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
     for h in coworld.handles() {
@@ -99,8 +99,8 @@ fn debug_coworld(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
 }
 
 pub fn debug_obb(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
-    let time = world.read_resource::<TimeInfo>();
-    let mouse = world.read_resource::<MouseInfo>().unprojected;
+    let time = world.read::<TimeInfo>();
+    let mouse = world.read::<MouseInfo>().unprojected;
 
     let time = time.time * 0.2;
     let c = time.cos() as f32;
@@ -135,15 +135,11 @@ pub fn debug_obb(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
 }
 
 pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
-    let map: &Map = &world.read_resource::<Map>();
-    let selected = world.read_resource::<InspectedEntity>().e?;
-    let pos = world
-        .read_component::<Transform>()
-        .get(selected)?
-        .position();
+    let map: &Map = &world.read::<Map>();
+    let selected = world.read::<InspectedEntity>().e?;
+    let pos = world.comp::<Transform>(selected)?.position();
 
-    let mut stor = world.read_component::<Itinerary>();
-    let itinerary = stor.get(selected)?;
+    let itinerary = world.comp::<Itinerary>(selected)?;
 
     tess.color = LinearColor::GREEN;
     tess.draw_polyline(&itinerary.local_path(), 1.0, 1.0);
@@ -164,11 +160,11 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<
 }
 
 pub fn debug_rays(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
-    let time = world.read_resource::<TimeInfo>();
+    let time = world.read::<TimeInfo>();
     let time = time.time * 0.2;
     let c = time.cos() as f32;
     let s = time.sin() as f32;
-    let mouse = world.read_resource::<MouseInfo>().unprojected;
+    let mouse = world.read::<MouseInfo>().unprojected;
 
     let r = geom::Ray {
         from: 10.0 * vec2(c, s),
@@ -198,7 +194,7 @@ pub fn debug_rays(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
 }
 
 pub fn debug_spatialmap(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
-    let map: &Map = &world.read_resource::<Map>();
+    let map: &Map = &world.read::<Map>();
     for r in map.spatial_map().debug_grid() {
         tess.set_color(LinearColor {
             a: 0.1,

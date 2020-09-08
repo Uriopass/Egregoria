@@ -1,7 +1,43 @@
 use crate::default::InspectArgsDefault;
 use crate::default::InspectRenderDefault;
-use geom::{PolyLine, Vec2};
-use imgui::im_str;
+use geom::{PolyLine, Transform, Vec2};
+use imgui::{im_str, Ui};
+
+impl InspectRenderDefault<Transform> for Transform {
+    fn render(data: &[&Transform], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+        let mut t = data[0].clone();
+        Self::render_mut(&mut [&mut t], label, ui, args);
+    }
+
+    fn render_mut(
+        data: &mut [&mut Transform],
+        _: &'static str,
+        ui: &Ui,
+        _: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = &mut data[0];
+        let mut position = x.position();
+        let mut direction = x.direction();
+        let mut changed = <Vec2 as InspectRenderDefault<Vec2>>::render_mut(
+            &mut [&mut position],
+            "position",
+            ui,
+            &InspectArgsDefault::default(),
+        );
+        changed |= <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
+            &mut [&mut direction],
+            "direction",
+            ui,
+            &InspectArgsDefault::default(),
+        );
+        x.set_direction(direction);
+        x.set_position(position);
+        changed
+    }
+}
 
 impl InspectRenderDefault<Vec2> for Vec2 {
     fn render(data: &[&Vec2], label: &'static str, ui: &imgui::Ui, _: &InspectArgsDefault) {
@@ -68,6 +104,40 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
             ui.unindent();
         }
 
+        changed
+    }
+}
+
+pub struct InspectVec2Rotation;
+impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
+    fn render(data: &[&Vec2], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = data[0];
+        let ang = x.angle(Vec2::UNIT_Y);
+        ui.text(&im_str!("{} {}", label, ang));
+    }
+
+    fn render_mut(
+        data: &mut [&mut Vec2],
+        label: &'static str,
+
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = &mut data[0];
+        let mut ang = f32::atan2(x.y, x.x);
+
+        let changed = ui
+            .drag_float(&im_str!("{}", label), &mut ang)
+            .speed(-args.step.unwrap_or(0.1))
+            .build();
+        x.x = ang.cos();
+        x.y = ang.sin();
         changed
     }
 }

@@ -8,7 +8,7 @@ use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::VehicleComponent;
 use crate::Egregoria;
 use geom::Transform;
-use geom::{vec2, Vec2};
+use geom::Vec2;
 use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -95,40 +95,6 @@ impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
         }
         Self::render(&[&*data[0]], label, ui, args);
         false
-    }
-}
-
-pub struct InspectVec2Rotation;
-impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
-    fn render(data: &[&Vec2], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
-        if data.len() != 1 {
-            unimplemented!();
-        }
-        let x = data[0];
-        let ang = x.angle(vec2(0.0, 1.0));
-        ui.text(&im_str!("{} {}", label, ang));
-    }
-
-    fn render_mut(
-        data: &mut [&mut Vec2],
-        label: &'static str,
-
-        ui: &Ui,
-        args: &InspectArgsDefault,
-    ) -> bool {
-        if data.len() != 1 {
-            unimplemented!();
-        }
-        let x = &mut data[0];
-        let mut ang = f32::atan2(x.y, x.x);
-
-        let changed = ui
-            .drag_float(&im_str!("{}", label), &mut ang)
-            .speed(-args.step.unwrap_or(0.1))
-            .build();
-        x.x = ang.cos();
-        x.y = ang.sin();
-        changed
     }
 }
 
@@ -297,10 +263,9 @@ fn modify<T: Component>(
     goria: &mut Egregoria,
     entity: Entity,
     f: impl FnOnce(&mut T) -> bool,
-) -> bool {
-    let mut storage = goria.write_component::<T>();
-    let c = unwrap_or!(storage.get_mut(entity), return false);
-    f(c)
+) -> Option<bool> {
+    let c = goria.comp_mut::<T>(entity)?;
+    Some(f(c))
 }
 
 impl InspectRenderer {
@@ -317,31 +282,13 @@ impl InspectRenderer {
                 &InspectArgsDefault::default(),
             )
         })
+        .unwrap_or(false)
     }
 
     pub fn render(&self, goria: &mut Egregoria, ui: &Ui) -> bool {
         let mut dirty = false;
-        let entity = self.entity;
-        dirty |= modify(goria, entity, |x: &mut Transform| -> bool {
-            let mut position = x.position();
-            let mut direction = x.direction();
-            let mut changed = <Vec2 as InspectRenderDefault<Vec2>>::render_mut(
-                &mut [&mut position],
-                "position",
-                ui,
-                &InspectArgsDefault::default(),
-            );
-            changed |= <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
-                &mut [&mut direction],
-                "direction",
-                ui,
-                &InspectArgsDefault::default(),
-            );
-            x.set_direction(direction);
-            x.set_position(position);
-            changed
-        });
 
+        dirty |= self.inspect_component::<Transform>(goria, ui);
         dirty |= self.inspect_component::<VehicleComponent>(goria, ui);
         dirty |= self.inspect_component::<PedestrianComponent>(goria, ui);
         dirty |= self.inspect_component::<AssetRender>(goria, ui);
@@ -352,7 +299,7 @@ impl InspectRenderer {
         dirty |= self.inspect_component::<IntersectionComponent>(goria, ui);
         dirty |= self.inspect_component::<Itinerary>(goria, ui);
 
-        let follow = &mut goria.write_resource::<FollowEntity>().0;
+        let follow = &mut goria.write::<FollowEntity>().0;
         if follow.is_none() {
             if ui.small_button(im_str!("Follow")) {
                 follow.replace(self.entity);

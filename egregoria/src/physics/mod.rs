@@ -1,8 +1,8 @@
-use crate::gui::{InspectDragf, InspectVec2Rotation};
+use crate::gui::InspectDragf;
 use flat_spatial::grid::GridHandle;
 use geom::Vec2;
 use imgui::Ui;
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault, InspectVec2Rotation};
 use imgui_inspect_derive::*;
 
 pub mod systems;

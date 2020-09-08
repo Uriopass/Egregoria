@@ -164,7 +164,7 @@ impl Gui {
             .collapsible(false)
             .resizable(false)
             .build(&ui, || {
-                let cur_tool: &mut Tool = &mut goria.write_resource::<Tool>();
+                let cur_tool: &mut Tool = &mut goria.write::<Tool>();
 
                 let tools = [
                     (im_str!("Hand"), Tool::Hand),
@@ -187,7 +187,7 @@ impl Gui {
                 }
             });
         if matches!(
-            *goria.read_resource::<Tool>(),
+            *goria.read::<Tool>(),
             Tool::RoadbuildStraight | Tool::RoadbuildCurved
         ) {
             Window::new(im_str!("Road Properties"))
@@ -202,7 +202,7 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .build(&ui, || {
-                    let mut pattern = goria.write_resource::<RoadBuildResource>().pattern_builder;
+                    let mut pattern = goria.write::<RoadBuildResource>().pattern_builder;
 
                     <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
                         &mut [&mut pattern],
@@ -219,7 +219,7 @@ impl Gui {
                         pattern.parking = false;
                     }
 
-                    goria.write_resource::<RoadBuildResource>().pattern_builder = pattern;
+                    goria.write::<RoadBuildResource>().pattern_builder = pattern;
                 });
         }
 
@@ -227,7 +227,7 @@ impl Gui {
     }
 
     pub fn inspector(&mut self, ui: &Ui, goria: &mut Egregoria) {
-        let mut inspected = *goria.read_resource::<InspectedEntity>();
+        let mut inspected = *goria.read::<InspectedEntity>();
         let e = unwrap_or!(inspected.e, return);
 
         let mut is_open = true;
@@ -243,11 +243,11 @@ impl Gui {
             inspected.e = None;
             inspected.dirty = false;
         }
-        *goria.write_resource::<InspectedEntity>() = inspected;
+        *goria.write::<InspectedEntity>() = inspected;
     }
 
     pub fn time_controls(&mut self, ui: &Ui, goria: &mut Egregoria) {
-        let mut time_info = goria.write_resource::<TimeInfo>();
+        let mut time_info = goria.write::<TimeInfo>();
         let [w, h] = ui.io().display_size;
         Window::new(im_str!("Time controls"))
             .size([230.0, 40.0], imgui::Condition::Always)
@@ -269,8 +269,8 @@ impl Gui {
         if !self.show_debug_info {
             return;
         }
-        let stats = goria.read_resource::<RenderStats>();
-        let mouse = goria.read_resource::<MouseInfo>().unprojected;
+        let stats = goria.read::<RenderStats>();
+        let mouse = goria.read::<MouseInfo>().unprojected;
         Window::new(im_str!("Debug Info"))
             .position([300.0, 50.0], imgui::Condition::FirstUseEver)
             .opened(&mut self.show_debug_info)
@@ -287,7 +287,7 @@ impl Gui {
                 ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
                 ui.separator();
                 ui.text("Frame log");
-                let flog = goria.read_resource::<FrameLog>();
+                let flog = goria.read::<FrameLog>();
                 let fl = flog.get_frame_log();
                 for s in &*fl {
                     ui.text(im_str!("{}", s));
@@ -393,20 +393,20 @@ impl Gui {
                 }
 
                 if ui.small_button(im_str!("destroy all cars")) {
-                    let gy = goria.write_resource::<ParCommandBuffer>();
+                    let gy = goria.write::<ParCommandBuffer>();
                     for (e, _) in <(&Entity, &VehicleComponent)>::query().iter(&goria.world) {
                         gy.kill(*e);
                     }
                 }
 
                 if ui.small_button(im_str!("kill all pedestrians")) {
-                    let gy = goria.write_resource::<ParCommandBuffer>();
+                    let gy = goria.write::<ParCommandBuffer>();
                     for (e, _) in <(&Entity, &PedestrianComponent)>::query().iter(&goria.world) {
                         gy.kill(*e);
                     }
                 }
 
-                let mut map = goria.write_resource::<Map>();
+                let mut map = goria.write::<Map>();
 
                 if ui.small_button(im_str!("build houses")) {
                     map.build_buildings();
