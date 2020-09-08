@@ -1,9 +1,9 @@
+use crate::engine::ShaderType;
 use crate::engine::{
     CompiledShader, Drawable, Mesh, PreparedPipeline, SpriteBatch, Texture, TexturedMesh, Uniform,
 };
 use crate::game_loop::State;
 use crate::rendering::imgui_wrapper::GuiRenderContext;
-use glsl_to_spirv::ShaderType;
 use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
