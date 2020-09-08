@@ -84,11 +84,10 @@ pub fn vehicle_state_update(
         VehicleState::ParkedToRoad => {
             // Check the distance to the first traverseable, i.e. the start of the path, and if we're
             // close enough then exit unparking mode.
-            let target = unwrap_or!(it.get_travers(), {
+            let target = unwrap_or!(it.get_travers().and_then(|x| x.points(map)), {
                 vehicle.state = VehicleState::Driving;
                 return;
-            })
-            .points(map);
+            });
             let dist2 = target.project_dist2(trans.position());
 
             if dist2 < DISTANCE_FOR_UNPARKING.powi(2) {
@@ -146,7 +145,7 @@ pub fn vehicle_state_update(
                 {
                     parking.free(spot);
 
-                    let points = itin.get_travers().unwrap().points(map); // Unwrap ok: just got itinerary
+                    let points = itin.get_travers().unwrap().points(map).unwrap(); // Unwraps ok: just got itinerary
                     let d = points.distance_along(points.project(trans.position()));
 
                     let (pos, dir) = points.point_dir_along(d + 5.0);
@@ -271,7 +270,7 @@ fn next_objective(
 
     Itinerary::route(
         pos,
-        *last_travers.filter(|t| t.is_valid(map))?,
+        *last_travers.filter(|t| t.raw_points(map).is_some())?,
         (l.id, l.points.point_along(dist - 5.0)),
         map,
         &DirectionalPath,

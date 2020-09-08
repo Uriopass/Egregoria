@@ -61,7 +61,7 @@ impl Itinerary {
         map: &Map,
         pather: &impl Pathfinder,
     ) -> Option<Itinerary> {
-        let points = cur.points(map);
+        let points = cur.points(map)?;
         let (_, segid) = points.project_segment(pos);
 
         if let TraverseKind::Lane(id) = cur.kind {
@@ -122,11 +122,7 @@ impl Itinerary {
             if let ItineraryKind::Route(r) = &mut self.kind {
                 r.cur = r.reversed_route.pop()?;
 
-                if !r.cur.is_valid(map) {
-                    return v;
-                }
-
-                let points = r.cur.points(map);
+                let points = r.cur.points(map)?;
                 if r.reversed_route.is_empty() {
                     let (_, id) = points.project_segment(r.end_pos);
                     self.local_path.extend(&points.as_slice()[..id]);
@@ -140,8 +136,6 @@ impl Itinerary {
     }
 
     pub fn update(&mut self, position: Vec2, time: &TimeInfo, map: &Map) {
-        self.check_validity(map);
-
         if let Some(p) = self.get_point() {
             let dist = p.distance2(position);
             if self.is_terminal() {
@@ -152,18 +146,20 @@ impl Itinerary {
             }
 
             if dist < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
-                let k = self.get_travers().unwrap(); // Unwrap ok: We just called check_validity and get_point
-                if self.remaining_points() > 1 || k.can_pass(time.time_seconds, map.lanes()) {
+                if self.remaining_points() > 1 {
+                    self.advance(map);
+                    return;
+                }
+
+                let k = unwrap_or!(self.get_travers(), {
+                    *self = Itinerary::none();
+                    return;
+                });
+
+                if k.can_pass(time.time_seconds, map.lanes()) {
                     self.advance(map);
                 }
             }
-        }
-    }
-
-    pub fn check_validity(&mut self, map: &Map) {
-        if let Some(false) = self.get_travers().map(|x| x.is_valid(map)) {
-            self.kind = ItineraryKind::None;
-            self.local_path.clear();
         }
     }
 
