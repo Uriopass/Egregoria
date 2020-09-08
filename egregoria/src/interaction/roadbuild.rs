@@ -1,51 +1,39 @@
 use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use crate::interaction::{Tool, Z_TOOL};
-use crate::physics::Transform;
 use crate::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
 use crate::rendering::Color;
-use geom::splines::Spline;
+use geom::Spline;
+use geom::Transform;
 use geom::Vec2;
+use legion::system;
+use legion::world::SubWorld;
+use legion::{Entity, IntoQuery, World};
 use map_model::{
     IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
 };
-use specs::prelude::*;
-use specs::shred::PanicHandler;
 
 pub struct RoadBuildSystem;
 
 impl RoadBuildResource {
     pub fn new(world: &mut World) -> Self {
-        world.setup::<RoadBuildData>();
-
         Self {
             build_state: BuildState::Hover,
 
-            project_entity: world
-                .create_entity()
-                .with(Transform::zero())
-                .with(MeshRender::simple(
+            project_entity: world.push((
+                Transform::zero(),
+                MeshRender::simple(
                     CircleRender {
                         radius: 2.0,
                         color: Color::BLUE,
                         ..Default::default()
                     },
                     Z_TOOL,
-                ))
-                .build(),
+                ),
+            )),
 
             pattern_builder: LanePatternBuilder::new(),
         }
     }
-}
-
-#[derive(SystemData)]
-pub struct RoadBuildData<'a> {
-    kbinfo: Read<'a, KeyboardInfo>,
-    mouseinfo: Read<'a, MouseInfo>,
-    tool: Read<'a, Tool>,
-    self_r: Write<'a, RoadBuildResource, PanicHandler>,
-    map: Write<'a, Map, PanicHandler>,
-    meshrender: WriteStorage<'a, MeshRender>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -62,95 +50,92 @@ pub struct RoadBuildResource {
     pub pattern_builder: LanePatternBuilder,
 }
 
-impl<'a> System<'a> for RoadBuildSystem {
-    type SystemData = RoadBuildData<'a>;
+#[system]
+#[write_component(MeshRender)]
+pub fn roadbuild(
+    #[resource] state: &mut RoadBuildResource,
+    #[resource] kbinfo: &KeyboardInfo,
+    #[resource] mouseinfo: &MouseInfo,
+    #[resource] tool: &Tool,
+    #[resource] map: &mut Map,
+    sw: &mut SubWorld,
+) {
+    let mr = <&mut MeshRender>::query()
+        .get_mut(sw, state.project_entity)
+        .unwrap(); // Unwrap ok: mr defined in new
 
-    fn run(&mut self, mut data: Self::SystemData) {
-        let state = &mut data.self_r;
+    if !matches!(*tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
+        mr.hide = true;
+        state.build_state = BuildState::Hover;
+        return;
+    }
+    mr.hide = false;
 
-        let mr = data.meshrender.get_mut(state.project_entity).unwrap(); // Unwrap ok: mr defined in new
+    if kbinfo.just_pressed.contains(&KeyCode::Escape) {
+        state.build_state = BuildState::Hover;
+    }
 
-        if !matches!(*data.tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
-            mr.hide = true;
-            state.build_state = BuildState::Hover;
-            return;
-        }
-        mr.hide = false;
+    let cur_proj = map.project(mouseinfo.unprojected);
 
-        if data.kbinfo.just_pressed.contains(&KeyCode::Escape) {
-            state.build_state = BuildState::Hover;
-        }
+    state.update_drawing(mr, cur_proj.pos, state.pattern_builder.width());
 
-        let map: &mut Map = &mut data.map;
-
-        let cur_proj = map.project(data.mouseinfo.unprojected);
-
-        state.update_drawing(
-            &mut data.meshrender,
-            cur_proj.pos,
-            state.pattern_builder.width(),
+    if mouseinfo.just_pressed.contains(&MouseButton::Left) {
+        info!(
+            "left clicked with state {:?} and {:?}",
+            state.build_state, cur_proj.kind
         );
+        use BuildState::*;
+        use ProjectKind::*;
 
-        if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
-            info!(
-                "left clicked with state {:?} and {:?}",
-                state.build_state, cur_proj.kind
-            );
-            use BuildState::*;
-            use ProjectKind::*;
-
-            // FIXME: Use or patterns when stable
-            match (state.build_state, cur_proj.kind, *data.tool) {
-                (Hover, ProjectKind::Ground, _)
-                | (Hover, ProjectKind::Road(_), _)
-                | (Hover, ProjectKind::Inter(_), _) => {
-                    // Hover selection
-                    state.build_state = BuildState::Start(cur_proj);
-                }
-                (Start(v), Ground, Tool::RoadbuildCurved) => {
-                    // Set interpolation point
-                    state.build_state = BuildState::Interpolation(data.mouseinfo.unprojected, v);
-                }
-                (Start(selected_proj), _, _)
-                    if compatible(map, cur_proj.kind, selected_proj.kind) =>
-                {
-                    // Straight connection to something
-                    let selected_after = make_connection(
-                        map,
-                        selected_proj,
-                        cur_proj,
-                        None,
-                        &state.pattern_builder.build(),
-                    );
-
-                    let hover = MapProject {
-                        pos: data.map.intersections()[selected_after].pos,
-                        kind: ProjectKind::Inter(selected_after),
-                    };
-
-                    state.build_state = BuildState::Start(hover);
-                }
-                (Interpolation(interpoint, selected_proj), _, _)
-                    if compatible(map, cur_proj.kind, selected_proj.kind) =>
-                {
-                    // Interpolated connection to something
-                    let selected_after = make_connection(
-                        map,
-                        selected_proj,
-                        cur_proj,
-                        Some(interpoint),
-                        &state.pattern_builder.build(),
-                    );
-
-                    let hover = MapProject {
-                        pos: data.map.intersections()[selected_after].pos,
-                        kind: ProjectKind::Inter(selected_after),
-                    };
-
-                    state.build_state = BuildState::Start(hover);
-                }
-                _ => {}
+        // FIXME: Use or patterns when stable
+        match (state.build_state, cur_proj.kind, *tool) {
+            (Hover, ProjectKind::Ground, _)
+            | (Hover, ProjectKind::Road(_), _)
+            | (Hover, ProjectKind::Inter(_), _) => {
+                // Hover selection
+                state.build_state = BuildState::Start(cur_proj);
             }
+            (Start(v), Ground, Tool::RoadbuildCurved) => {
+                // Set interpolation point
+                state.build_state = BuildState::Interpolation(mouseinfo.unprojected, v);
+            }
+            (Start(selected_proj), _, _) if compatible(map, cur_proj.kind, selected_proj.kind) => {
+                // Straight connection to something
+                let selected_after = make_connection(
+                    map,
+                    selected_proj,
+                    cur_proj,
+                    None,
+                    &state.pattern_builder.build(),
+                );
+
+                let hover = MapProject {
+                    pos: map.intersections()[selected_after].pos,
+                    kind: ProjectKind::Inter(selected_after),
+                };
+
+                state.build_state = BuildState::Start(hover);
+            }
+            (Interpolation(interpoint, selected_proj), _, _)
+                if compatible(map, cur_proj.kind, selected_proj.kind) =>
+            {
+                // Interpolated connection to something
+                let selected_after = make_connection(
+                    map,
+                    selected_proj,
+                    cur_proj,
+                    Some(interpoint),
+                    &state.pattern_builder.build(),
+                );
+
+                let hover = MapProject {
+                    pos: map.intersections()[selected_after].pos,
+                    kind: ProjectKind::Inter(selected_after),
+                };
+
+                state.build_state = BuildState::Start(hover);
+            }
+            _ => {}
         }
     }
 }
@@ -202,8 +187,7 @@ fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
 }
 
 impl RoadBuildResource {
-    pub fn update_drawing(&self, mr: &mut WriteStorage<MeshRender>, proj_pos: Vec2, patwidth: f32) {
-        let mr = mr.get_mut(self.project_entity).unwrap(); // Unwrap ok: Defined in new
+    pub fn update_drawing(&self, mr: &mut MeshRender, proj_pos: Vec2, patwidth: f32) {
         mr.orders.clear();
 
         let transparent_blue = Color {

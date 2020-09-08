@@ -2,19 +2,16 @@ use crate::engine_interaction::TimeInfo;
 use crate::gui::InspectDragf;
 use crate::interaction::Selectable;
 use crate::map_dynamic::{Itinerary, ParkingManagement};
-use crate::physics::{
-    Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject, Transform,
-};
+use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::rendering::assets::{AssetID, AssetRender};
 use crate::rendering::Color;
 use crate::utils::rand_world;
-use crate::RandProvider;
-use geom::splines::Spline;
+use crate::{Egregoria, RandProvider};
+use geom::{Spline, Transform};
 use imgui_inspect_derive::*;
+use legion::Entity;
 use map_model::{LaneKind, Map, ParkingSpotID};
 use serde::{Deserialize, Serialize};
-use specs::{Builder, Entity, World, WorldExt};
-use specs::{Component, DenseVecStorage};
 
 /// How close a vehicle should be to the start of its itinerary before it decides it's good enough and starts driving.
 pub const DISTANCE_FOR_UNPARKING: f32 = 2.5;
@@ -38,7 +35,7 @@ pub enum VehicleKind {
     Bus,
 }
 
-#[derive(Component, Debug, Inspect, Serialize, Deserialize)]
+#[derive(Clone, Debug, Inspect, Serialize, Deserialize)]
 pub struct VehicleComponent {
     #[inspect(proxy_type = "InspectDragf")]
     pub ang_velocity: f32,
@@ -96,20 +93,20 @@ impl VehicleKind {
     }
 }
 
-pub fn spawn_parked_vehicle(world: &mut World) {
-    let r: f64 = rand_world(world);
+pub fn spawn_parked_vehicle(goria: &mut Egregoria) {
+    let r: f64 = rand_world(goria);
 
-    let map = world.read_resource::<Map>();
+    let map = goria.read_resource::<Map>();
 
-    let time = world.read_resource::<TimeInfo>().time;
+    let time = goria.read_resource::<TimeInfo>().time;
     let it = Itinerary::wait_until(time + r * 5.0);
 
-    let pm = world.read_resource::<ParkingManagement>();
+    let pm = goria.read_resource::<ParkingManagement>();
 
     let rl = unwrap_or!(
         map.get_random_lane(
             LaneKind::Parking,
-            &mut world.write_resource::<RandProvider>().rng
+            &mut goria.write_resource::<RandProvider>().rng
         ),
         return
     );
@@ -125,11 +122,12 @@ pub fn spawn_parked_vehicle(world: &mut World) {
 
     let spot = map.parking.get(spot_id).unwrap(); // Unwrap ok: Gotten using reserve_near
     let pos = Transform::new_cos_sin(spot.pos, spot.orientation);
+
     drop(map);
     drop(pm);
 
     make_vehicle_entity(
-        world,
+        goria,
         pos,
         VehicleComponent::new(VehicleKind::Car, spot_id),
         it,
@@ -138,28 +136,27 @@ pub fn spawn_parked_vehicle(world: &mut World) {
 }
 
 pub fn make_vehicle_entity(
-    world: &mut World,
+    world: &mut Egregoria,
     trans: Transform,
     vehicle: VehicleComponent,
     it: Itinerary,
     mk_collider: bool,
 ) -> Entity {
     let w = vehicle.kind.width();
-    let e = world
-        .create_entity()
-        .with(AssetRender {
+    let e = world.world.push((
+        AssetRender {
             id: AssetID::CAR,
             hide: false,
             scale: 4.5,
             tint: get_random_car_color(),
             z: 0.7,
-        })
-        .with(trans)
-        .with(Kinematics::from_mass(1000.0))
-        .with(Selectable::default())
-        .with(vehicle)
-        .with(it)
-        .build();
+        },
+        trans,
+        Kinematics::from_mass(1000.0),
+        Selectable::default(),
+        vehicle,
+        it,
+    ));
 
     if mk_collider {
         let c = Collider(world.write_resource::<CollisionWorld>().insert(
@@ -171,10 +168,7 @@ pub fn make_vehicle_entity(
                 group: PhysicsGroup::Vehicles,
             },
         ));
-        world
-            .write_storage::<Collider>()
-            .insert(e, c)
-            .expect("Invalid ID ?");
+        world.world.entry(e).unwrap().add_component(c);
     }
 
     e

@@ -1,40 +1,16 @@
 use crate::interaction::InspectedEntity;
-use crate::physics::Transform;
 use crate::rendering::meshrender_component::{MeshRender, StrokeCircleRender};
 use crate::rendering::Color;
-use specs::prelude::*;
-use specs::shred::DynamicSystemData;
+use geom::Transform;
+use legion::world::SubWorld;
+use legion::{system, Entity, EntityStore, IntoQuery, World};
 
-#[derive(Default)]
-pub struct InspectedAuraSystem {
-    aura: Option<Entity>,
+pub struct InspectedAura {
+    aura: Entity,
 }
 
-impl<'a> System<'a> for InspectedAuraSystem {
-    type SystemData = (
-        Read<'a, InspectedEntity>,
-        WriteStorage<'a, Transform>,
-        WriteStorage<'a, MeshRender>,
-    );
-
-    fn run(&mut self, (inspected, mut transforms, mut meshrenders): Self::SystemData) {
-        let mr = meshrenders.get_mut(self.aura.unwrap()).unwrap(); // Unwrap ok: defined in new
-        mr.hide = true;
-
-        if let Some(pos) = inspected
-            .e
-            .and_then(|sel| transforms.get(sel).map(|x| x.position()))
-        {
-            transforms
-                .get_mut(self.aura.unwrap()) // Unwrap ok: defined in new
-                .unwrap() // Unwrap ok: defined in new
-                .set_position(pos);
-            mr.hide = false;
-        }
-    }
-
-    fn setup(&mut self, world: &mut World) {
-        <Self::SystemData as DynamicSystemData>::setup(&self.accessor(), world);
+impl InspectedAura {
+    pub fn new(world: &mut World) -> InspectedAura {
         let mut mr = MeshRender::simple(
             StrokeCircleRender {
                 offset: [0.0, 0.0].into(),
@@ -45,12 +21,36 @@ impl<'a> System<'a> for InspectedAuraSystem {
             0.9,
         );
         mr.hide = true;
-        self.aura = Some(
-            world
-                .create_entity()
-                .with(Transform::zero())
-                .with(mr)
-                .build(),
-        );
+        InspectedAura {
+            aura: world.push((Transform::zero(), mr)),
+        }
+    }
+}
+
+#[system]
+#[write_component(Transform)]
+#[write_component(MeshRender)]
+pub fn inspected_aura(
+    #[state] aura: &InspectedAura,
+    #[resource] inspected: &mut InspectedEntity,
+    sw: &mut SubWorld,
+) {
+    let mr = <&mut MeshRender>::query().get_mut(sw, aura.aura).unwrap(); // Unwrap ok: defined in new
+    mr.hide = true;
+
+    if let Some(sel) = inspected.e {
+        if let Some(pos) = sw
+            .entry_mut(sel)
+            .unwrap()
+            .get_component::<Transform>()
+            .ok()
+            .map(|x| x.position())
+        {
+            let (mr, trans) = <(&mut MeshRender, &mut Transform)>::query()
+                .get_mut(sw, aura.aura)
+                .unwrap(); // Unwrap ok: defined in new
+            trans.set_position(pos);
+            mr.hide = false;
+        }
     }
 }

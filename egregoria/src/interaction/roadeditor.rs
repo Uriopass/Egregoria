@@ -1,17 +1,17 @@
 use crate::engine_interaction::{MouseButton, MouseInfo};
 use crate::interaction::{InspectedEntity, Tool, Z_TOOL};
-use crate::physics::Transform;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::Color;
+use geom::Transform;
 use imgui_inspect_derive::*;
+use legion::systems::CommandBuffer;
+use legion::world::SubWorld;
+use legion::{system, EntityStore, IntoQuery};
+use legion::{Entity, World};
 use map_model::{IntersectionID, LightPolicy, TurnPolicy};
 use map_model::{Map, ProjectKind};
-use specs::prelude::*;
-use specs::shred::PanicHandler;
-use specs::{storage::BTreeStorage, Component};
 
-#[derive(Component, Clone, Inspect)]
-#[storage(BTreeStorage)]
+#[derive(Clone, Inspect)]
 pub struct IntersectionComponent {
     #[inspect(skip = true)]
     pub id: IntersectionID,
@@ -22,91 +22,79 @@ pub struct IntersectionComponent {
 pub struct RoadEditorSystem;
 
 pub struct RoadEditorResource {
-    inspect_e: Entity,
+    inspect_e: Option<Entity>,
     project_entity: Entity,
 }
 
 impl RoadEditorResource {
     pub fn new(world: &mut World) -> Self {
-        let e = world.create_entity().build();
-
         Self {
-            inspect_e: e,
-            project_entity: world
-                .create_entity()
-                .with(Transform::zero())
-                .with(MeshRender::simple(
+            inspect_e: None,
+            project_entity: world.push((
+                Transform::zero(),
+                MeshRender::simple(
                     CircleRender {
                         radius: 2.0,
                         color: Color::BLUE,
                         ..Default::default()
                     },
                     Z_TOOL,
-                ))
-                .build(),
+                ),
+            )),
         }
     }
 }
 
-#[derive(SystemData)]
-pub struct RoadEditorData<'a> {
-    tool: Read<'a, Tool>,
-    map: Write<'a, Map>,
-    mouseinfo: Read<'a, MouseInfo>,
-    self_r: Write<'a, RoadEditorResource, PanicHandler>,
-    inspected: Write<'a, InspectedEntity>,
-    intersections: WriteStorage<'a, IntersectionComponent>,
-    meshrender: WriteStorage<'a, MeshRender>,
-    trans: WriteStorage<'a, Transform>,
-}
+#[system]
+#[read_component(IntersectionComponent)]
+#[write_component(Transform)]
+#[write_component(MeshRender)]
+pub fn roadeditor(
+    #[resource] tool: &Tool,
+    #[resource] map: &mut Map,
+    #[resource] mouseinfo: &MouseInfo,
+    #[resource] state: &mut RoadEditorResource,
+    #[resource] inspected: &mut InspectedEntity,
+    sw: &mut SubWorld,
+    buf: &mut CommandBuffer,
+) {
+    let mut entry = sw.entry_mut(state.project_entity).unwrap();
+    let mr = entry.get_component_mut::<MeshRender>().unwrap(); // Unwrap ok: defined in new
 
-impl<'a> System<'a> for RoadEditorSystem {
-    type SystemData = RoadEditorData<'a>;
-
-    fn run(&mut self, mut data: Self::SystemData) {
-        let state: &mut RoadEditorResource = &mut data.self_r;
-
-        let mr = data.meshrender.get_mut(state.project_entity).unwrap(); // Unwrap ok: defined in new
-
-        if !matches!(*data.tool, Tool::RoadEditor) {
-            mr.hide = true;
-            if data.inspected.e == Some(state.inspect_e) {
-                data.inspected.e = None;
-                data.inspected.dirty = false;
-            }
-            data.intersections.remove(state.inspect_e);
-            return;
+    if !matches!(*tool, Tool::RoadEditor) {
+        mr.hide = true;
+        if inspected.e == state.inspect_e {
+            inspected.e = None;
+            inspected.dirty = false;
         }
+        state.inspect_e.map(|e| buf.remove(e));
+        return;
+    }
 
-        mr.hide = false;
+    mr.hide = false;
 
-        let cur_proj = data.map.project(data.mouseinfo.unprojected);
+    let cur_proj = map.project(mouseinfo.unprojected);
 
-        data.trans
-            .get_mut(state.project_entity)
-            .unwrap() // Unwrap ok: defined in new
-            .set_position(cur_proj.pos);
+    entry
+        .get_component_mut::<Transform>()
+        .unwrap() // Unwrap ok: defined in new
+        .set_position(cur_proj.pos);
 
-        if data.mouseinfo.just_pressed.contains(&MouseButton::Left) {
-            if let ProjectKind::Inter(id) = cur_proj.kind {
-                let inter = &data.map.intersections()[id];
-                data.intersections
-                    .insert(
-                        state.inspect_e,
-                        IntersectionComponent {
-                            id,
-                            turn_policy: inter.turn_policy,
-                            light_policy: inter.light_policy,
-                        },
-                    )
-                    .unwrap(); // Unwrap ok: inspect_e is never deleted
-                data.inspected.e = Some(state.inspect_e);
-            }
+    if mouseinfo.just_pressed.contains(&MouseButton::Left) {
+        if let ProjectKind::Inter(id) = cur_proj.kind {
+            let inter = &map.intersections()[id];
+            state.inspect_e = Some(buf.push((IntersectionComponent {
+                id,
+                turn_policy: inter.turn_policy,
+                light_policy: inter.light_policy,
+            },)));
         }
+    }
 
-        if data.inspected.e == Some(state.inspect_e) && data.inspected.dirty {
-            let selected_interc = data.intersections.get(state.inspect_e).unwrap(); // Unwrap ok: defined in new
-            data.map.update_intersection(selected_interc.id, |inter| {
+    if let Some(insp) = state.inspect_e {
+        if inspected.e == Some(insp) && inspected.dirty {
+            let selected_interc = <&IntersectionComponent>::query().get(sw, insp).unwrap();
+            map.update_intersection(selected_interc.id, |inter| {
                 inter.turn_policy = selected_interc.turn_policy;
                 inter.light_policy = selected_interc.light_policy;
             });

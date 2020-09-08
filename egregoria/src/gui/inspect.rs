@@ -1,17 +1,19 @@
 use crate::interaction::IntersectionComponent;
-use crate::interaction::{FollowEntity, Movable, MovedEvent};
+use crate::interaction::{FollowEntity, Movable};
 use crate::map_dynamic::Itinerary;
 use crate::pedestrians::PedestrianComponent;
-use crate::physics::{Collider, Kinematics, Transform};
+use crate::physics::{Collider, Kinematics};
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::VehicleComponent;
+use crate::Egregoria;
+use geom::Transform;
 use geom::{vec2, Vec2};
 use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
-use specs::shrev::EventChannel;
-use specs::{Component, Entity, World, WorldExt};
+use legion::storage::Component;
+use legion::Entity;
 use std::marker::PhantomData;
 
 pub struct InspectDragf;
@@ -291,8 +293,12 @@ pub struct InspectRenderer {
 
 /// Avoids Cloning by mutably aliasing the component inside the world
 /// Unsound if the inspector also try to get the component using the world borrow
-fn modify<T: Component>(world: &mut World, entity: Entity, f: impl FnOnce(&mut T) -> bool) -> bool {
-    let mut storage = world.write_component::<T>();
+fn modify<T: Component>(
+    goria: &mut Egregoria,
+    entity: Entity,
+    f: impl FnOnce(&mut T) -> bool,
+) -> bool {
+    let mut storage = goria.write_component::<T>();
     let c = unwrap_or!(storage.get_mut(entity), return false);
     f(c)
 }
@@ -300,7 +306,7 @@ fn modify<T: Component>(world: &mut World, entity: Entity, f: impl FnOnce(&mut T
 impl InspectRenderer {
     fn inspect_component<T: Component + InspectRenderDefault<T>>(
         &self,
-        world: &mut World,
+        world: &mut Egregoria,
         ui: &Ui,
     ) -> bool {
         modify(world, self.entity, |x| -> bool {
@@ -313,28 +319,18 @@ impl InspectRenderer {
         })
     }
 
-    pub fn render(&self, world: &mut World, ui: &Ui) -> bool {
-        let mut event = None;
+    pub fn render(&self, goria: &mut Egregoria, ui: &Ui) -> bool {
         let mut dirty = false;
         let entity = self.entity;
-        dirty |= modify(world, entity, |x: &mut Transform| -> bool {
+        dirty |= modify(goria, entity, |x: &mut Transform| -> bool {
             let mut position = x.position();
             let mut direction = x.direction();
-            let old_pos = position;
             let mut changed = <Vec2 as InspectRenderDefault<Vec2>>::render_mut(
                 &mut [&mut position],
                 "position",
                 ui,
                 &InspectArgsDefault::default(),
             );
-
-            if changed {
-                event = Some(MovedEvent {
-                    entity,
-                    new_pos: position,
-                    delta_pos: position - old_pos,
-                });
-            }
             changed |= <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
                 &mut [&mut direction],
                 "direction",
@@ -346,22 +342,17 @@ impl InspectRenderer {
             changed
         });
 
-        if let Some(ev) = event {
-            world
-                .write_resource::<EventChannel<MovedEvent>>()
-                .single_write(ev);
-        }
-        dirty |= self.inspect_component::<VehicleComponent>(world, ui);
-        dirty |= self.inspect_component::<PedestrianComponent>(world, ui);
-        dirty |= self.inspect_component::<AssetRender>(world, ui);
-        dirty |= self.inspect_component::<MeshRender>(world, ui);
-        dirty |= self.inspect_component::<Kinematics>(world, ui);
-        dirty |= self.inspect_component::<Collider>(world, ui);
-        dirty |= self.inspect_component::<Movable>(world, ui);
-        dirty |= self.inspect_component::<IntersectionComponent>(world, ui);
-        dirty |= self.inspect_component::<Itinerary>(world, ui);
+        dirty |= self.inspect_component::<VehicleComponent>(goria, ui);
+        dirty |= self.inspect_component::<PedestrianComponent>(goria, ui);
+        dirty |= self.inspect_component::<AssetRender>(goria, ui);
+        dirty |= self.inspect_component::<MeshRender>(goria, ui);
+        dirty |= self.inspect_component::<Kinematics>(goria, ui);
+        dirty |= self.inspect_component::<Collider>(goria, ui);
+        dirty |= self.inspect_component::<Movable>(goria, ui);
+        dirty |= self.inspect_component::<IntersectionComponent>(goria, ui);
+        dirty |= self.inspect_component::<Itinerary>(goria, ui);
 
-        let follow = &mut world.write_resource::<FollowEntity>().0;
+        let follow = &mut goria.write_resource::<FollowEntity>().0;
         if follow.is_none() {
             if ui.small_button(im_str!("Follow")) {
                 follow.replace(self.entity);

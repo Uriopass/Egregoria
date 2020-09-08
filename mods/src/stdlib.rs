@@ -1,4 +1,4 @@
-use geom::polygon::Polygon;
+use geom::Polygon;
 use geom::Vec2;
 use mlua::prelude::LuaResult;
 use mlua::{FromLuaMulti, Lua, MetaMethod, ToLuaMulti, UserData, UserDataMethods};

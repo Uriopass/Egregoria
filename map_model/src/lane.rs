@@ -1,5 +1,5 @@
 use crate::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
-use geom::polyline::PolyLine;
+use geom::PolyLine;
 use geom::Vec2;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};

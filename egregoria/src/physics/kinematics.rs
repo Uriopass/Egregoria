@@ -1,10 +1,8 @@
 use geom::Vec2;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
-use specs::{Component, VecStorage};
 
-#[derive(Component, Debug, Inspect, Clone, Serialize, Deserialize)]
-#[storage(VecStorage)]
+#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
 pub struct Kinematics {
     pub velocity: Vec2,
     #[inspect(proxy_type = "InspectVec2", skip = true)]

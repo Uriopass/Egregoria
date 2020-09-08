@@ -1,5 +1,5 @@
 use crate::{IntersectionID, LaneID, Lanes, Map, TurnID};
-use geom::polyline::PolyLine;
+use geom::PolyLine;
 use imgui_inspect::imgui;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};

@@ -1,8 +1,8 @@
 use crate::{Intersections, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
-use geom::obb::OBB;
-use geom::polygon::Polygon;
-use geom::segment::Segment;
+use geom::Polygon;
+use geom::Segment;
 use geom::Vec2;
+use geom::OBB;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;

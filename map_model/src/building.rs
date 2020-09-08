@@ -1,5 +1,5 @@
 use crate::{Buildings, Lot, Roads, SpatialMap};
-use geom::polygon::Polygon;
+use geom::Polygon;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 

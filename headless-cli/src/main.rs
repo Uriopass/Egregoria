@@ -1,7 +1,7 @@
 use argh::FromArgs;
 use egregoria::engine_interaction::TimeInfo;
 use egregoria::specs::WorldExt;
-use egregoria::EgregoriaState;
+use egregoria::Egregoria;
 use log::LevelFilter;
 use std::path::Path;
 
@@ -25,17 +25,17 @@ fn main() {
     for scenario in args.scenario {
         if let Ok(r) = std::fs::read_dir(&scenario) {
             for p in r.filter_map(|x| x.ok()) {
-                let state = egregoria::EgregoriaState::init();
+                let state = egregoria::Egregoria::init();
                 run(state, p.path().as_path())
             }
         } else {
-            let state = egregoria::EgregoriaState::init();
+            let state = egregoria::Egregoria::init();
             run(state, scenario.as_str().as_ref())
         }
     }
 }
 
-fn run(mut state: EgregoriaState, name: &Path) {
+fn run(mut state: Egregoria, name: &Path) {
     let l = match mods::load(name) {
         Some(l) => l,
         None => {
@@ -43,7 +43,7 @@ fn run(mut state: EgregoriaState, name: &Path) {
         }
     };
 
-    egregoria::lua::add_egregoria_lua_stdlib(&l, &mut state.world);
+    egregoria::lua::add_egregoria_lua_stdlib(&l, &mut state);
     mods::eval_f(&l, "Init");
 
     for i in 1..1000 {
@@ -68,7 +68,7 @@ fn run(mut state: EgregoriaState, name: &Path) {
 
 const TIME_STEP: f64 = 1.0 / 30.0;
 
-fn step(state: &mut EgregoriaState) {
+fn step(state: &mut Egregoria) {
     {
         let mut time = state.world.write_resource::<TimeInfo>();
         time.delta = TIME_STEP as f32;

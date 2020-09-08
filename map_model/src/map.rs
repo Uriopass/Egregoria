@@ -3,7 +3,7 @@ use crate::{
     LanePattern, Lot, LotID, ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID,
     RoadSegmentKind, SpatialMap,
 };
-use geom::splines::Spline;
+use geom::Spline;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use rand::prelude::IteratorRandom;

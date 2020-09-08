@@ -1,73 +1,49 @@
 use crate::engine_interaction::TimeInfo;
 use crate::frame_log::FrameLog;
-use crate::interaction::DeletedEvent;
-use crate::physics::{Collider, Kinematics, Transform};
-use crate::CollisionWorld;
-use geom::Vec2;
-use specs::prelude::{ParallelIterator, ResourceId};
-use specs::shrev::EventChannel;
-use specs::{
-    Join, ParJoin, Read, ReadStorage, ReaderId, System, SystemData, World, WorldExt, Write,
-    WriteStorage,
-};
+use crate::physics::{Collider, Kinematics};
+use crate::{CollisionWorld, Deleted};
+use geom::{Transform, Vec2};
+use legion::system;
+use legion::systems::Builder;
 
-pub struct KinematicsApply {
-    reader: ReaderId<DeletedEvent>,
+#[system(for_each)]
+pub fn kinematics_apply(
+    #[resource] time: &TimeInfo,
+    transform: &mut Transform,
+    kin: &mut Kinematics,
+) {
+    kin.velocity += kin.acceleration * time.delta;
+    transform.translate(kin.velocity * time.delta);
+    kin.acceleration = Vec2::ZERO;
 }
 
-impl KinematicsApply {
-    pub fn new(world: &mut World) -> KinematicsApply {
-        let reader = world
-            .write_resource::<EventChannel<DeletedEvent>>()
-            .register_reader();
+#[system(for_each)]
+pub fn coworld_synchronize(
+    #[resource] coworld: &mut CollisionWorld,
+    transform: &Transform,
+    kin: &Kinematics,
+    collider: &Collider,
+) {
+    coworld.set_position(collider.0, transform.position());
+    let (_, po) = coworld.get_mut(collider.0).unwrap(); // Unwrap ok: handle is deleted only when entity is deleted too
+    po.dir = transform.direction();
+    po.speed = kin.velocity.magnitude();
+}
 
-        Self { reader }
+#[system]
+pub fn coworld_maintain(
+    #[resource] flog: &mut FrameLog,
+    #[resource] coworld: &mut CollisionWorld,
+    #[resource] evts: &mut Deleted<Collider>,
+) {
+    time_it!(flog, "Coworld maintain");
+    for Collider(handle) in evts.0.drain(..) {
+        coworld.remove(handle);
     }
+
+    coworld.maintain();
 }
 
-#[derive(SystemData)]
-pub struct KinematicsApplyData<'a> {
-    time: Read<'a, TimeInfo>,
-    flog: Read<'a, FrameLog>,
-    deleted: Read<'a, EventChannel<DeletedEvent>>,
-    coworld: Write<'a, CollisionWorld, specs::shred::PanicHandler>,
-    colliders: ReadStorage<'a, Collider>,
-    transforms: WriteStorage<'a, Transform>,
-    kinematics: WriteStorage<'a, Kinematics>,
-}
-
-impl<'a> System<'a> for KinematicsApply {
-    type SystemData = KinematicsApplyData<'a>;
-
-    fn run(&mut self, mut data: Self::SystemData) {
-        time_it!(data.flog, "Kinematics update");
-
-        let delta = data.time.delta;
-
-        (&mut data.transforms, &mut data.kinematics)
-            .par_join()
-            .for_each(|(transform, kin)| {
-                kin.velocity += kin.acceleration * delta;
-                transform.translate(kin.velocity * delta);
-                kin.acceleration = Vec2::ZERO;
-            });
-
-        for (transform, kin, collider) in
-            (&mut data.transforms, &mut data.kinematics, &data.colliders).join()
-        {
-            data.coworld.set_position(collider.0, transform.position());
-            let (_, po) = data.coworld.get_mut(collider.0).unwrap(); // Unwrap ok: handle is deleted only when entity is deleted too
-            po.dir = transform.direction();
-            po.speed = kin.velocity.magnitude();
-        }
-
-        for event in data.deleted.read(&mut self.reader) {
-            if let Some(v) = data.colliders.get(event.e) {
-                data.coworld.remove(v.0);
-            }
-        }
-
-        time_it!(data.flog, "Coworld maintain");
-        data.coworld.maintain();
-    }
+pub fn add_physics_systems(schedule: &mut Builder) -> &mut Builder {
+    schedule
 }
