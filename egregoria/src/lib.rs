@@ -3,7 +3,6 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
-use crate::frame_log::FrameLog;
 use crate::gui::Gui;
 use crate::interaction::{
     bulldozer_system, movable_system, roadbuild_system, roadeditor_system,
@@ -30,10 +29,11 @@ use legion::storage::Component;
 use legion::systems::Resource;
 use legion::{Entity, IntoQuery, Resources, World};
 use map_model::{Map, SerializedMap};
-pub(crate) use par_command_buffer::ParCommandBuffer;
-use rand_provider::RandProvider;
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
+use utils::frame_log::FrameLog;
+pub(crate) use utils::par_command_buffer::ParCommandBuffer;
+use utils::rand_provider::RandProvider;
 
 #[macro_use]
 extern crate log as extern_log;
@@ -42,28 +42,22 @@ extern crate log as extern_log;
 pub mod utils;
 
 #[macro_use]
-mod frame_log;
-
-#[macro_use]
 pub mod gui;
 
 pub mod engine_interaction;
 pub mod interaction;
 pub mod lua;
 pub mod map_dynamic;
-mod par_command_buffer;
 mod pedestrians;
 pub mod physics;
-pub mod rand_provider;
 pub mod rendering;
-mod saveload;
-mod scheduler;
 mod souls;
 mod vehicles;
 
-use crate::par_command_buffer::Deleted;
 pub use legion;
-use scheduler::SeqSchedule;
+use utils::par_command_buffer::Deleted;
+use utils::saveload;
+use utils::scheduler::SeqSchedule;
 
 pub struct Egregoria {
     pub world: World,

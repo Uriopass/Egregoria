@@ -1,4 +1,4 @@
-use crate::frame_log::FrameLog;
+use crate::utils::frame_log::FrameLog;
 use legion::systems::Runnable;
 use legion::{Resources, World};
 use std::time::Instant;
