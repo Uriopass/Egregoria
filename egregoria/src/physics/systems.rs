@@ -1,10 +1,8 @@
 use crate::engine_interaction::TimeInfo;
-use crate::frame_log::FrameLog;
 use crate::physics::{Collider, Kinematics};
 use crate::{CollisionWorld, Deleted};
 use geom::{Transform, Vec2};
 use legion::system;
-use legion::systems::Builder;
 
 #[system(for_each)]
 pub fn kinematics_apply(
@@ -32,18 +30,12 @@ pub fn coworld_synchronize(
 
 #[system]
 pub fn coworld_maintain(
-    #[resource] flog: &mut FrameLog,
     #[resource] coworld: &mut CollisionWorld,
     #[resource] evts: &mut Deleted<Collider>,
 ) {
-    time_it!(flog, "Coworld maintain");
     for Collider(handle) in evts.drain() {
         coworld.remove(handle);
     }
 
     coworld.maintain();
-}
-
-pub fn add_physics_systems(schedule: &mut Builder) -> &mut Builder {
-    schedule
 }

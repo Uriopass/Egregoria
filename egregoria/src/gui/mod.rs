@@ -1,7 +1,7 @@
 use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
-use crate::frame_log::FrameLog;
 use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
 use crate::pedestrians::{spawn_pedestrian, PedestrianComponent};
+use crate::utils::frame_log::FrameLog;
 use crate::vehicles::{spawn_parked_vehicle, VehicleComponent};
 use crate::{Egregoria, ParCommandBuffer};
 use geom::Vec2;

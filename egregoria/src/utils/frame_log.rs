@@ -28,6 +28,7 @@ impl FrameLog {
     }
 }
 
+/*
 macro_rules! time_it {
     ($l: expr, $s: expr) => {
         let _guard = $l.time_guard($s, 0);
@@ -54,3 +55,4 @@ impl<'a> Drop for LogTimeGuard<'a> {
         });
     }
 }
+*/
