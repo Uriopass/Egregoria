@@ -168,7 +168,7 @@ impl Drawable for SpriteBatch {
         let layouts = vec![Texture::bindgroup_layout(&gfx.device)];
 
         let pipeline = gfx.basic_pipeline(
-            &[&layouts[0], &gfx.projection_layout],
+            &[&layouts[0], &gfx.projection.layout],
             &[UvVertex::desc(), InstanceRaw::desc()],
             vert,
             frag,

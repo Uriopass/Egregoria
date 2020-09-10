@@ -29,3 +29,9 @@ impl ToU8Slice for [mint::ColumnMatrix4<f32>] {
         bytemuck::cast_slice(v)
     }
 }
+
+impl ToU8Slice for [f32] {
+    fn to_slice(&self) -> &[u8] {
+        bytemuck::cast_slice(self)
+    }
+}

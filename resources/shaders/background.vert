@@ -5,10 +5,17 @@ layout(location=1) in vec2 in_uv;
 
 layout(location=0) out vec2 out_uv;
 layout(location=1) out vec2 out_wv;
+layout(location=2) out float out_zoom;
+layout(location=3) out float out_time;
 
 layout(set=0, binding=0)
-uniform Uniforms {
+uniform Proj {
     mat4 inv_view_proj;
+};
+
+layout(set=1, binding=0)
+uniform Time {
+    float in_time;
 };
 
 void main() {
@@ -16,4 +23,6 @@ void main() {
 
     out_wv = (inv_view_proj * vec4(in_pos, 1.0)).xy;
     out_uv = in_uv.xy;
+    out_zoom = 1.0 / inv_view_proj[0][0];
+    out_time = in_time;
 }

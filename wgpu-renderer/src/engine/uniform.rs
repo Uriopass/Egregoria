@@ -1,8 +1,10 @@
 use crate::engine::ToU8Slice;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use wgpu::ShaderStage;
 
 pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
+    pub layout: wgpu::BindGroupLayout,
     pub bindgroup: wgpu::BindGroup,
     pub value: T,
 }
@@ -11,7 +13,9 @@ impl<T: Copy> Uniform<T>
 where
     [T]: ToU8Slice,
 {
-    pub fn new(value: T, device: &wgpu::Device, layout: &wgpu::BindGroupLayout) -> Self {
+    pub fn new(value: T, device: &wgpu::Device) -> Self {
+        let layout = Self::bindgroup_layout(&device, ShaderStage::VERTEX);
+
         let r = [value];
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
@@ -20,7 +24,7 @@ where
         });
 
         let bindgroup = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout,
+            layout: &layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: wgpu::BindingResource::Buffer(buffer.slice(..)),
@@ -38,6 +42,7 @@ where
             buffer,
             bindgroup,
             value,
+            layout,
         }
     }
 
@@ -51,12 +56,11 @@ where
 impl<T> Uniform<T> {
     pub fn bindgroup_layout(
         device: &wgpu::Device,
-        binding: u32,
         visibility: wgpu::ShaderStage,
     ) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
-                binding,
+                binding: 0,
                 visibility,
                 ty: wgpu::BindingType::UniformBuffer {
                     dynamic: false, // The dynamic field indicates whether this buffer will change size or not. This is useful if we want to store an array of things in our uniforms.

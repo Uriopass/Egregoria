@@ -25,7 +25,7 @@ pub struct State {
 
 impl State {
     pub fn new(ctx: &mut Context) -> Self {
-        let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 3.0);
+        let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 0.05);
 
         let wrapper = ImguiWrapper::new(&mut ctx.gfx);
 
@@ -50,7 +50,7 @@ impl State {
         let delta = self.last_time.elapsed().as_secs_f64();
         self.last_time = Instant::now();
 
-        self.manage_time(delta);
+        self.manage_time(delta, &mut ctx.gfx);
 
         self.manage_io(ctx);
 
@@ -143,7 +143,7 @@ impl State {
         *self.state.write::<Gui>() = gui;
     }
 
-    fn manage_time(&mut self, delta: f64) {
+    fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {
         const MAX_TIMESTEP: f64 = 1.0 / 10.0;
         let mut time = self.state.write::<TimeInfo>();
 
@@ -151,6 +151,8 @@ impl State {
         time.delta = delta as f32;
         time.time += time.delta as f64;
         time.time_seconds = time.time as u64;
+
+        gfx.set_time(time.time as f32);
     }
 
     fn manage_entity_follow(&mut self) {
