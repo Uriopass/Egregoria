@@ -25,7 +25,7 @@ log           = "0.4.11"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 winit         = "0.22"
 glsl-to-spirv = { version = "0.1.7", optional = true }
-naga          = { git = "https://github.com/gfx-rs/naga", features = ["glsl", "spirv-out"], optional = true}
+naga          = { git = "https://github.com/gfx-rs/naga", features = ["glsl-in", "spirv-out"], optional = true}
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 #winit         = { version = "0.22", features=["stdweb"] }
