@@ -154,7 +154,7 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
     CompiledShader(data, stype)
 }
 
-#[cfg(not(any(feature = "spirv_g2s", features = "spirv_naga")))]
+#[cfg(not(any(feature = "spirv_g2s", feature = "spirv_naga")))]
 fn compile(_src: &str, _stype: ShaderType) -> Option<Vec<u8>> {
     None
 }
@@ -195,7 +195,8 @@ fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
     .map_err(|e| log::error!("{}", e))
     .ok()?;
 
-    let spirv = naga::back::spv::Writer::new(&glsl.header, naga::WriterFlags::DEBUG).write(&glsl);
+    let spirv = naga::back::spv::Writer::new(&glsl.header, naga::back::spv::WriterFlags::DEBUG)
+        .write(&glsl);
 
     Some(
         spirv
