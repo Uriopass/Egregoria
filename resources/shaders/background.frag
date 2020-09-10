@@ -70,17 +70,18 @@ void main() {
 
     float dnoise = disturbed_noise(noise);
 
-    if (noise < 0.05) { // deep water
-        out_color = vec4(0.02, 0.02, 0.5 - noise, 1.0);
-    } else if (noise < 0.09 + sin(time * 0.1) * 0.01) { // shallow water
-        out_color = vec4(0.1, 0.3, 0.7 - dnoise, 1.0);
+    if (noise < 0.1) { // deep water
+        float lol = fnoise(0.0002);
+        out_color =  (0.2 + dnoise * 3.0) * vec4(0.1, 0.3 + 0.1 * abs(lol), 0.6 + 0.1 * abs(lol), 1.0);
     } else if (noise < 0.12) { // sand
         out_color = (1.0 - dnoise) * vec4(0.95, 0.9, 0.3, 1.0);
-    } else if (noise < 0.6) { // grass
-        out_color = vec4(dnoise * 0.2, dnoise, dnoise * 0.1, 1.0);
+    } else if (noise < 0.58) { // grass
+        out_color = 0.8 * vec4(dnoise * 0.2, dnoise * 0.8, dnoise * 0.1, 1.0);
     } else { // mountain
-        noise -= 0.1;
-        noise *= 1.4;
+        dnoise -= 0.25;
+        dnoise *= 1.4;
         out_color = vec4(dnoise, dnoise, dnoise, 1.0);
     }
+
+    out_color.a = 1.0;
 }
