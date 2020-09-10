@@ -1079,6 +1079,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "inline_tweak"
+version = "1.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fc63a18949e36809e819de0b17d85eacbb00fce15884f3795d691bb5fb88baf"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
 name = "inplace_it"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2445,6 +2454,7 @@ dependencies = [
  "image",
  "imgui-wgpu",
  "imgui-winit-support",
+ "inline_tweak",
  "lazy_static",
  "log",
  "map_model",
