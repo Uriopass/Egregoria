@@ -72,7 +72,7 @@ void main() {
 
     if (noise < 0.05) { // deep water
         out_color = vec4(0.02, 0.02, 0.5 - noise, 1.0);
-    } else if (noise < 0.1 + sin(time * 0.1) * 0.01) { // shallow water
+    } else if (noise < 0.09 + sin(time * 0.1) * 0.01) { // shallow water
         out_color = vec4(0.1, 0.3, 0.7 - dnoise, 1.0);
     } else if (noise < 0.12) { // sand
         out_color = (1.0 - dnoise) * vec4(0.95, 0.9, 0.3, 1.0);
