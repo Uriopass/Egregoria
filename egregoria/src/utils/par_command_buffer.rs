@@ -1,5 +1,5 @@
 use crate::physics::Collider;
-use crate::vehicles::VehicleComponent;
+use crate::vehicles::Vehicle;
 use crate::Egregoria;
 use legion::storage::Component;
 use legion::Entity;
@@ -72,7 +72,7 @@ impl ParCommandBuffer {
         );
         for entity in deleted {
             Self::parse_del::<Collider>(goria, entity);
-            Self::parse_del::<VehicleComponent>(goria, entity);
+            Self::parse_del::<Vehicle>(goria, entity);
             goria.world.remove(entity);
         }
 

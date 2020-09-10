@@ -12,7 +12,7 @@ use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Inspect)]
-pub struct PedestrianComponent {
+pub struct Pedestrian {
     pub walking_speed: f32,
     pub walk_anim: f32,
 }
@@ -46,7 +46,7 @@ pub fn spawn_pedestrian(goria: &mut Egregoria) {
 
     goria.world.push((
         Transform::new(pos),
-        PedestrianComponent::default(),
+        Pedestrian::default(),
         Itinerary::none(),
         Kinematics::from_mass(80.0),
         Movable,
@@ -86,7 +86,7 @@ pub fn spawn_pedestrian(goria: &mut Egregoria) {
     ));
 }
 
-impl Default for PedestrianComponent {
+impl Default for Pedestrian {
     fn default() -> Self {
         Self {
             walking_speed: rand_distr::Normal::new(1.34f32, 0.26) // https://arxiv.org/pdf/cond-mat/9805244.pdf

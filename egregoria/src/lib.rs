@@ -12,7 +12,7 @@ use crate::interaction::{
 use crate::interaction::{inspected_aura_system, MovableSystem, RoadBuildResource};
 use crate::lua::scenario_runner::{run_scenario_system, RunningScenario};
 use crate::map_dynamic::{itinerary_update_system, Itinerary, ParkingManagement};
-use crate::pedestrians::{pedestrian_decision_system, PedestrianComponent};
+use crate::pedestrians::{pedestrian_decision_system, Pedestrian};
 use crate::physics::systems::{
     coworld_maintain_system, coworld_synchronize_system, kinematics_apply_system,
 };
@@ -23,7 +23,7 @@ use crate::souls::Souls;
 use crate::vehicles::systems::{
     vehicle_cleanup_system, vehicle_decision_system, vehicle_state_update_system,
 };
-use crate::vehicles::VehicleComponent;
+use crate::vehicles::Vehicle;
 pub use imgui;
 use legion::storage::Component;
 use legion::systems::Resource;
@@ -105,7 +105,7 @@ impl Egregoria {
         resources.insert(Tool::default());
         resources.insert(RunningScenario::default());
         resources.insert(Deleted::<Collider>::default());
-        resources.insert(Deleted::<VehicleComponent>::default());
+        resources.insert(Deleted::<Vehicle>::default());
         resources.insert(ParCommandBuffer::default());
 
         // Systems state init
@@ -190,8 +190,8 @@ fn registry() -> Registry<u64> {
     register!(registry, AssetRender);
     register!(registry, Kinematics);
     register!(registry, Selectable);
-    register!(registry, VehicleComponent);
-    register!(registry, PedestrianComponent);
+    register!(registry, Vehicle);
+    register!(registry, Pedestrian);
     register!(registry, Itinerary);
     register!(registry, Collider);
     register!(registry, MeshRender);

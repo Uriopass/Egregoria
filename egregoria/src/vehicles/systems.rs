@@ -3,7 +3,7 @@ use crate::map_dynamic::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
 use crate::physics::Kinematics;
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::utils::Restrict;
-use crate::vehicles::{VehicleComponent, VehicleState, DISTANCE_FOR_UNPARKING, TIME_TO_PARK};
+use crate::vehicles::{Vehicle, VehicleState, DISTANCE_FOR_UNPARKING, TIME_TO_PARK};
 use crate::{Deleted, ParCommandBuffer};
 use geom::{angle_lerp, Vec2};
 use geom::{both_dist_to_inter, Ray};
@@ -18,7 +18,7 @@ use rand::thread_rng;
 
 #[system]
 pub fn vehicle_cleanup(
-    #[resource] evts: &mut Deleted<VehicleComponent>,
+    #[resource] evts: &mut Deleted<Vehicle>,
     #[resource] pm: &mut ParkingManagement,
 ) {
     for comp in evts.drain() {
@@ -36,7 +36,7 @@ pub fn vehicle_decision(
     it: &mut Itinerary,
     trans: &mut Transform,
     kin: &mut Kinematics,
-    vehicle: &mut VehicleComponent,
+    vehicle: &mut Vehicle,
     collider: &Collider,
 ) {
     let (_, self_obj) = cow.get(collider.0).expect("Handle not in collision world");
@@ -72,7 +72,7 @@ pub fn vehicle_state_update(
     #[resource] map: &Map,
     #[resource] time: &TimeInfo,
     trans: &Transform,
-    vehicle: &mut VehicleComponent,
+    vehicle: &mut Vehicle,
     kin: &mut Kinematics,
     it: &mut Itinerary,
     ent: &Entity,
@@ -194,7 +194,7 @@ pub fn vehicle_state_update(
 fn physics(
     trans: &mut Transform,
     kin: &mut Kinematics,
-    vehicle: &mut VehicleComponent,
+    vehicle: &mut Vehicle,
     time: &TimeInfo,
     obj: &PhysicsObject,
     map: &Map,
@@ -280,7 +280,7 @@ fn next_objective(
 
 /// Decide the appropriate velocity and direction to aim for.
 pub fn calc_decision<'a>(
-    vehicle: &mut VehicleComponent,
+    vehicle: &mut Vehicle,
     map: &Map,
     time: &TimeInfo,
     trans: &Transform,
@@ -371,7 +371,7 @@ pub fn calc_decision<'a>(
 /// It can be another car or a pedestrian, or it can be a potential collision point from a
 /// car coming perpendicularly.
 fn calc_front_dist<'a>(
-    vehicle: &mut VehicleComponent,
+    vehicle: &mut Vehicle,
     trans: &Transform,
     self_obj: &PhysicsObject,
     it: &Itinerary,

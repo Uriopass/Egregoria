@@ -1,11 +1,11 @@
 use crate::interaction::IntersectionComponent;
 use crate::interaction::{FollowEntity, Movable};
 use crate::map_dynamic::Itinerary;
-use crate::pedestrians::PedestrianComponent;
+use crate::pedestrians::Pedestrian;
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
-use crate::vehicles::VehicleComponent;
+use crate::vehicles::Vehicle;
 use crate::Egregoria;
 use geom::Transform;
 use geom::Vec2;
@@ -289,8 +289,8 @@ impl InspectRenderer {
         let mut dirty = false;
 
         dirty |= self.inspect_component::<Transform>(goria, ui);
-        dirty |= self.inspect_component::<VehicleComponent>(goria, ui);
-        dirty |= self.inspect_component::<PedestrianComponent>(goria, ui);
+        dirty |= self.inspect_component::<Vehicle>(goria, ui);
+        dirty |= self.inspect_component::<Pedestrian>(goria, ui);
         dirty |= self.inspect_component::<AssetRender>(goria, ui);
         dirty |= self.inspect_component::<MeshRender>(goria, ui);
         dirty |= self.inspect_component::<Kinematics>(goria, ui);
