@@ -13,6 +13,7 @@ fn main() {
     env_logger::builder()
         .filter(None, LevelFilter::Info)
         .filter(Some("wgpu_core"), LevelFilter::Warn)
+        .filter(Some("gfx_memory"), LevelFilter::Off)
         .filter(Some("gfx_backend_vulkan"), LevelFilter::Warn)
         .format(move |f, r| {
             let t = Instant::now().duration_since(start).as_micros();

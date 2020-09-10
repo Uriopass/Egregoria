@@ -28,21 +28,21 @@ impl From<&Map> for SerializedMap {
     }
 }
 
-impl Into<Map> for SerializedMap {
-    fn into(mut self) -> Map {
-        for inter in self.intersections.values_mut() {
-            inter.update_polygon(&self.roads);
+impl From<SerializedMap> for Map {
+    fn from(mut sel: SerializedMap) -> Self {
+        for inter in sel.intersections.values_mut() {
+            inter.update_polygon(&sel.roads);
         }
 
-        let spatial_map = mk_spatial_map(&self);
+        let spatial_map = mk_spatial_map(&sel);
         Map {
-            roads: self.roads,
-            lanes: self.lanes,
-            intersections: self.intersections,
-            buildings: self.buildings,
+            roads: sel.roads,
+            lanes: sel.lanes,
+            intersections: sel.intersections,
+            buildings: sel.buildings,
             spatial_map,
-            lots: self.lots,
-            parking: self.parking,
+            lots: sel.lots,
+            parking: sel.parking,
             dirty: false,
         }
     }

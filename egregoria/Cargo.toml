@@ -15,7 +15,7 @@ rand          = { version = "0.7", default-features = false, features = ["std", 
 rand_distr    = "0.2.2"
 bincode       = "1.2.1"
 serde         = "1.0"
-legion        = { version = "0.3.0", default-features = false, features = ["codegen"] }
+legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize"] }
 crossbeam     = "0.7.3"
 flat_spatial  = "0.3.5"
 mint          = "0.5.5"
@@ -26,6 +26,7 @@ geom          = { path = "../geom" }
 map_model     = { path = "../map_model" }
 mods          = { path = "../mods" }
 slotmap       = "0.4.0"
+serde_json = "1.0.57"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 imgui = "0.4"

@@ -13,7 +13,7 @@ impl AssetID {
     pub const PEDESTRIAN: AssetID = AssetID { id: 1 };
 }
 
-#[derive(Clone, Copy, Inspect)]
+#[derive(Clone, Copy, Inspect, Serialize, Deserialize)]
 pub struct AssetRender {
     pub id: AssetID,
     pub hide: bool,
