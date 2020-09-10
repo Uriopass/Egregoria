@@ -198,6 +198,8 @@ fn registry() -> Registry<u64> {
     registry
 }
 
+pub struct NoSerialize;
+
 pub fn load_from_disk(goria: &mut Egregoria) {
     goria.insert(Map::from(saveload::load_or_default::<
         map_model::SerializedMap,
@@ -222,7 +224,9 @@ pub fn save_to_disk(goria: &mut Egregoria) {
 
     let registry = registry();
 
-    let s = goria.world.as_serializable(legion::any(), &registry);
+    let s = goria
+        .world
+        .as_serializable(!legion::query::component::<NoSerialize>(), &registry);
     crate::saveload::save(&s, "world");
 
     serialize_colliders(goria);
