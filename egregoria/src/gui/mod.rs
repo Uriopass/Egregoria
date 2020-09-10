@@ -1,8 +1,8 @@
 use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
 use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
-use crate::pedestrians::{spawn_pedestrian, PedestrianComponent};
+use crate::pedestrians::{spawn_pedestrian, Pedestrian};
 use crate::utils::frame_log::FrameLog;
-use crate::vehicles::{spawn_parked_vehicle, VehicleComponent};
+use crate::vehicles::{spawn_parked_vehicle, Vehicle};
 use crate::{Egregoria, ParCommandBuffer};
 use geom::Vec2;
 use imgui::{im_str, StyleVar};
@@ -397,14 +397,14 @@ impl Gui {
 
                 if ui.small_button(im_str!("destroy all cars")) {
                     let gy = goria.write::<ParCommandBuffer>();
-                    for (e, _) in <(&Entity, &VehicleComponent)>::query().iter(&goria.world) {
+                    for (e, _) in <(&Entity, &Vehicle)>::query().iter(&goria.world) {
                         gy.kill(*e);
                     }
                 }
 
                 if ui.small_button(im_str!("kill all pedestrians")) {
                     let gy = goria.write::<ParCommandBuffer>();
-                    for (e, _) in <(&Entity, &PedestrianComponent)>::query().iter(&goria.world) {
+                    for (e, _) in <(&Entity, &Pedestrian)>::query().iter(&goria.world) {
                         gy.kill(*e);
                     }
                 }
@@ -443,11 +443,11 @@ impl Gui {
 
                 ui.text(im_str!(
                     "{} pedestrians",
-                    <&PedestrianComponent>::query().iter(&goria.world).count()
+                    <&Pedestrian>::query().iter(&goria.world).count()
                 ));
                 ui.text(im_str!(
                     "{} vehicles",
-                    <&VehicleComponent>::query().iter(&goria.world).count()
+                    <&Vehicle>::query().iter(&goria.world).count()
                 ));
             });
         self.show_map_ui = opened;

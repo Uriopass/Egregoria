@@ -36,7 +36,7 @@ pub enum VehicleKind {
 }
 
 #[derive(Clone, Debug, Inspect, Serialize, Deserialize)]
-pub struct VehicleComponent {
+pub struct Vehicle {
     #[inspect(proxy_type = "InspectDragf")]
     pub ang_velocity: f32,
     #[inspect(proxy_type = "InspectDragf")]
@@ -126,7 +126,7 @@ pub fn spawn_parked_vehicle(goria: &mut Egregoria) {
     make_vehicle_entity(
         goria,
         pos,
-        VehicleComponent::new(VehicleKind::Car, spot_id),
+        Vehicle::new(VehicleKind::Car, spot_id),
         it,
         false,
     );
@@ -135,7 +135,7 @@ pub fn spawn_parked_vehicle(goria: &mut Egregoria) {
 pub fn make_vehicle_entity(
     world: &mut Egregoria,
     trans: Transform,
-    vehicle: VehicleComponent,
+    vehicle: Vehicle,
     it: Itinerary,
     mk_collider: bool,
 ) -> Entity {
@@ -197,8 +197,8 @@ pub fn get_random_car_color() -> Color {
     unreachable!();
 }
 
-impl VehicleComponent {
-    pub fn new(kind: VehicleKind, spot: ParkingSpotID) -> VehicleComponent {
+impl Vehicle {
+    pub fn new(kind: VehicleKind, spot: ParkingSpotID) -> Vehicle {
         Self {
             ang_velocity: 0.0,
             wait_time: 0.0,

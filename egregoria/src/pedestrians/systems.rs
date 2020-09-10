@@ -1,6 +1,6 @@
 use crate::engine_interaction::TimeInfo;
 use crate::map_dynamic::Itinerary;
-use crate::pedestrians::PedestrianComponent;
+use crate::pedestrians::Pedestrian;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::Restrict;
@@ -17,7 +17,7 @@ pub fn pedestrian_decision(
     it: &mut Itinerary,
     trans: &mut Transform,
     kin: &mut Kinematics,
-    pedestrian: &mut PedestrianComponent,
+    pedestrian: &mut Pedestrian,
     mr: &mut MeshRender,
 ) {
     objective_update(it, trans, map, time);
@@ -39,7 +39,7 @@ pub fn pedestrian_decision(
 }
 
 pub fn walk_anim(
-    pedestrian: &mut PedestrianComponent,
+    pedestrian: &mut Pedestrian,
     mr: &mut MeshRender,
     time: &TimeInfo,
     kin: &Kinematics,
@@ -80,7 +80,7 @@ pub fn physics(
 }
 
 pub fn calc_decision<'a>(
-    pedestrian: &mut PedestrianComponent,
+    pedestrian: &mut Pedestrian,
     trans: &Transform,
     kin: &Kinematics,
     map: &Map,
