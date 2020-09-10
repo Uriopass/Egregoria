@@ -7,17 +7,17 @@ use crate::gui::Gui;
 use crate::interaction::{
     bulldozer_system, movable_system, roadbuild_system, roadeditor_system,
     selectable_cleanup_system, selectable_select_system, BulldozerResource, FollowEntity,
-    InspectedAura, InspectedEntity, RoadEditorResource, Tool,
+    InspectedAura, InspectedEntity, RoadEditorResource, Selectable, Tool,
 };
 use crate::interaction::{inspected_aura_system, MovableSystem, RoadBuildResource};
 use crate::lua::scenario_runner::{run_scenario_system, RunningScenario};
-use crate::map_dynamic::{itinerary_update_system, ParkingManagement};
-use crate::pedestrians::pedestrian_decision_system;
+use crate::map_dynamic::{itinerary_update_system, Itinerary, ParkingManagement};
+use crate::pedestrians::{pedestrian_decision_system, PedestrianComponent};
 use crate::physics::systems::{
     coworld_maintain_system, coworld_synchronize_system, kinematics_apply_system,
 };
-use crate::physics::Collider;
-use crate::physics::CollisionWorld;
+use crate::physics::{deserialize_colliders, serialize_colliders, CollisionWorld};
+use crate::physics::{Collider, Kinematics};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::souls::Souls;
 use crate::vehicles::systems::{
@@ -27,7 +27,7 @@ use crate::vehicles::VehicleComponent;
 pub use imgui;
 use legion::storage::Component;
 use legion::systems::Resource;
-use legion::{Entity, IntoQuery, Resources, World};
+use legion::{any, Entity, IntoQuery, Registry, Resources, World};
 use map_model::{Map, SerializedMap};
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
@@ -54,7 +54,12 @@ pub mod rendering;
 mod souls;
 mod vehicles;
 
+use crate::rendering::assets::AssetRender;
+use crate::rendering::meshrender_component::MeshRender;
+use geom::Transform;
 pub use legion;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use utils::par_command_buffer::Deleted;
 use utils::saveload;
 use utils::scheduler::SeqSchedule;
@@ -164,14 +169,61 @@ impl Egregoria {
     }
 }
 
+fn my_hash<T>(obj: T) -> u64
+where
+    T: Hash,
+{
+    let mut hasher = DefaultHasher::new();
+    obj.hash(&mut hasher);
+    hasher.finish()
+}
+
+macro_rules! register {
+    ($r: expr, $t: ty) => {
+        $r.register::<$t>(my_hash(stringify!($t)))
+    };
+}
+
+fn registry() -> Registry<u64> {
+    let mut registry = Registry::default();
+    register!(registry, Transform);
+    register!(registry, AssetRender);
+    register!(registry, Kinematics);
+    register!(registry, Selectable);
+    register!(registry, VehicleComponent);
+    register!(registry, PedestrianComponent);
+    register!(registry, Itinerary);
+    register!(registry, Collider);
+    register!(registry, MeshRender);
+    registry
+}
+
 pub fn load_from_disk(goria: &mut Egregoria) {
-    let map: Map = saveload::load_or_default::<map_model::SerializedMap>("map").into();
-    goria.insert(map);
+    goria.insert(Map::from(saveload::load_or_default::<
+        map_model::SerializedMap,
+    >("map")));
+
     goria.insert(crate::saveload::load_or_default::<Gui>("gui"));
+
+    let registry = registry();
+
+    let _ = saveload::load_seed("world", registry.as_deserialize()).map(|mut w: World| {
+        log::info!("successfully loaded world with {} entities", w.len());
+        goria.world.move_from(&mut w, &any());
+    });
+
+    deserialize_colliders(goria);
 }
 
 pub fn save_to_disk(goria: &mut Egregoria) {
     let _ = std::io::stdout().flush();
     crate::saveload::save(&*goria.read::<Gui>(), "gui");
     crate::saveload::save(&SerializedMap::from(&*goria.read::<Map>()), "map");
+
+    let registry = registry();
+
+    let s = goria.world.as_serializable(legion::any(), &registry);
+    crate::saveload::save(&s, "world");
+
+    serialize_colliders(goria);
 }

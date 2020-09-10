@@ -4,14 +4,18 @@ use geom::Vec2;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault, InspectVec2Rotation};
 use imgui_inspect_derive::*;
+use serde::{Deserialize, Serialize};
 
 pub mod systems;
 
 mod kinematics;
 
+use crate::Egregoria;
 pub use kinematics::*;
+use legion::IntoQuery;
+use std::collections::HashMap;
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PhysicsGroup {
     Unknown,
     Vehicles,
@@ -20,7 +24,7 @@ pub enum PhysicsGroup {
 
 enum_inspect_impl!(PhysicsGroup; PhysicsGroup::Unknown, PhysicsGroup::Vehicles, PhysicsGroup::Pedestrians);
 
-#[derive(Clone, Copy, Inspect)]
+#[derive(Clone, Copy, Inspect, Serialize, Deserialize)]
 pub struct PhysicsObject {
     #[inspect(proxy_type = "InspectVec2Rotation")]
     pub dir: Vec2,
@@ -43,7 +47,7 @@ impl Default for PhysicsObject {
 
 pub type CollisionWorld = flat_spatial::SparseGrid<PhysicsObject>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Collider(pub GridHandle);
 
 impl InspectRenderDefault<Collider> for Collider {
@@ -64,4 +68,36 @@ impl InspectRenderDefault<Collider> for Collider {
         ui.text(format!("{:?} {}", d.0, label));
         false
     }
+}
+
+type SerPhysicsObj<'a> = (GridHandle, ([f32; 2], PhysicsObject));
+
+pub fn serialize_colliders(state: &mut Egregoria) {
+    let coworld = &*state.read::<CollisionWorld>();
+
+    let mut objs: Vec<SerPhysicsObj> = vec![];
+    for &h in <&Collider>::query().iter(&state.world) {
+        let (pos, pobj) = unwrap_or!(coworld.get(h.0), return);
+        objs.push((h.0, ([pos.x, pos.y], *pobj)));
+    }
+    crate::saveload::save(&objs, "coworld");
+}
+
+pub fn deserialize_colliders<'de>(state: &mut Egregoria) -> Option<()> {
+    let objs: Vec<SerPhysicsObj> = crate::saveload::load("coworld")?;
+
+    let coworld: &mut CollisionWorld = &mut *state.resources.get_mut::<CollisionWorld>().unwrap();
+
+    let mut handle_map: HashMap<GridHandle, GridHandle> = HashMap::default();
+
+    for (e, (p, obj)) in objs {
+        let h = coworld.insert(p, obj);
+        handle_map.insert(e, h);
+    }
+
+    for c in <&mut Collider>::query().iter_mut(&mut state.world) {
+        c.0 = handle_map[&c.0];
+    }
+
+    Some(())
 }
