@@ -2,6 +2,7 @@ use crate::engine_interaction::{MouseButton, MouseInfo};
 use crate::interaction::Tool;
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::Color;
+use crate::NoSerialize;
 use geom::Transform;
 use geom::Vec2;
 use legion::world::SubWorld;
@@ -25,7 +26,7 @@ impl BulldozerResource {
         );
         mr.hide = true;
 
-        let e = world.push((Transform::zero(), mr));
+        let e = world.push((Transform::zero(), mr, NoSerialize));
         Self { project: e }
     }
 }

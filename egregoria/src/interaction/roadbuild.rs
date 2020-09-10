@@ -2,6 +2,7 @@ use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use crate::interaction::{Tool, Z_TOOL};
 use crate::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
 use crate::rendering::Color;
+use crate::NoSerialize;
 use geom::Spline;
 use geom::Transform;
 use geom::Vec2;
@@ -29,6 +30,7 @@ impl RoadBuildResource {
                     },
                     Z_TOOL,
                 ),
+                NoSerialize,
             )),
 
             pattern_builder: LanePatternBuilder::new(),

@@ -2,6 +2,7 @@ use crate::engine_interaction::{MouseButton, MouseInfo};
 use crate::interaction::{InspectedEntity, Tool, Z_TOOL};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender};
 use crate::rendering::Color;
+use crate::NoSerialize;
 use geom::Transform;
 use imgui_inspect_derive::*;
 use legion::systems::CommandBuffer;
@@ -40,6 +41,7 @@ impl RoadEditorResource {
                     },
                     Z_TOOL,
                 ),
+                NoSerialize,
             )),
         }
     }
