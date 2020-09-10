@@ -33,6 +33,8 @@ impl State {
 
         load_from_disk(&mut state);
 
+        crate::rendering::prepare_background(&mut ctx.gfx);
+
         Self {
             camera,
             gui: wrapper,
@@ -71,6 +73,8 @@ impl State {
 
     pub fn render(&mut self, ctx: &mut FrameContext) {
         let start = Instant::now();
+
+        crate::rendering::draw_background(ctx);
 
         let mut tess = self.camera.culled_tesselator();
         // Render grid

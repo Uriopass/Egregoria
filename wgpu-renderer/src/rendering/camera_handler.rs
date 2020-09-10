@@ -25,6 +25,7 @@ impl CameraHandler {
     pub fn update(&mut self, ctx: &mut Context) {
         self.camera.update();
         ctx.gfx.set_proj(self.camera.projection());
+        ctx.gfx.set_inv_proj(self.camera.inv_projection());
     }
 
     pub fn get_screen_box(&self) -> Rect {

@@ -42,9 +42,18 @@ impl Camera {
     #[rustfmt::skip]
     pub fn projection(&self) -> ColumnMatrix4<f32> {
         ColumnMatrix4::from([self.scale.x, 0.0, 0.0, 0.0,
-                            0.0, self.scale.y, 0.0, 0.0,
-                            0.0, 0.0, 0.1, 0.0,
-                            self.offset.x, self.offset.y, 0.0, 1.0])
+            0.0, self.scale.y, 0.0, 0.0,
+            0.0, 0.0, 0.1, 0.0,
+            self.offset.x, self.offset.y, 0.0, 1.0])
+    }
+
+
+    #[rustfmt::skip]
+    pub fn inv_projection(&self) -> ColumnMatrix4<f32> {
+        ColumnMatrix4::from([1.0 / self.scale.x, 0.0, 0.0, 0.0,
+            0.0, 1.0 / self.scale.y, 0.0, 0.0,
+            0.0, 0.0, 0.1, 0.0,
+            -self.offset.x / self.scale.x, -self.offset.y / self.scale.y, 0.0, 1.0])
     }
 
     pub fn set_viewport(&mut self, viewport_width: f32, viewport_height: f32) {

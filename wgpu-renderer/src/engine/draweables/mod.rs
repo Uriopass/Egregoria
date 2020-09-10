@@ -1,15 +1,22 @@
-use crate::engine::GfxContext;
+use crate::engine::{CompiledShader, GfxContext};
 use wgpu::{BindGroupLayout, RenderPass};
 
 mod mesh;
 mod shaded_batch;
+mod shaded_quad;
 mod spritebatch;
 mod textured_mesh;
 
 pub use mesh::*;
 pub use shaded_batch::*;
+pub use shaded_quad::*;
 pub use spritebatch::*;
 pub use textured_mesh::*;
+
+pub trait Shaders: 'static {
+    fn vert_shader() -> CompiledShader;
+    fn frag_shader() -> CompiledShader;
+}
 
 pub type IndexType = u32;
 
