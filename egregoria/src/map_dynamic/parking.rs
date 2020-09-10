@@ -1,9 +1,10 @@
 use geom::Vec2;
 use map_model::{LaneID, Map, ParkingSpotID};
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::Mutex;
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct ParkingManagement {
     reserved_spots: Mutex<HashSet<ParkingSpotID>>, // todo: use chashmap if it becomes a performance issue
 }

@@ -1,15 +1,10 @@
-use crate::engine::{CompiledShader, Drawable, GfxContext, IndexType, UvVertex, VBDesc};
+use crate::engine::{Drawable, GfxContext, IndexType, Shaders, UvVertex, VBDesc};
 
 use geom::Vec2;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{RenderPass, VertexBufferDescriptor};
-
-pub trait Shaders {
-    fn vert_shader() -> CompiledShader;
-    fn frag_shader() -> CompiledShader;
-}
 
 pub struct ShadedBatchBuilder<T: Shaders> {
     pub instances: Vec<ShadedInstanceRaw>,

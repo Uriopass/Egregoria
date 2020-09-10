@@ -26,6 +26,7 @@ pub struct GfxContext {
     pub pipelines: HashMap<TypeId, PreparedPipeline>,
     pub queue_buffer: Vec<CommandBuffer>,
     pub projection: Uniform<mint::ColumnMatrix4<f32>>,
+    pub inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub projection_layout: wgpu::BindGroupLayout,
     pub samples: u32,
     pub multi_frame: wgpu::TextureView,
@@ -85,6 +86,12 @@ impl GfxContext {
             &projection_layout,
         );
 
+        let inv_projection = Uniform::new(
+            mint::ColumnMatrix4::from([0.0; 16]),
+            &device,
+            &projection_layout,
+        );
+
         let multi_frame = Self::create_multisampled_framebuffer(&sc_desc, &device, samples);
 
         let mut me = Self {
@@ -100,6 +107,7 @@ impl GfxContext {
             window,
             queue_buffer: vec![],
             projection,
+            inv_projection,
             projection_layout,
             samples,
             multi_frame,
@@ -114,6 +122,10 @@ impl GfxContext {
 
     pub fn set_proj(&mut self, proj: mint::ColumnMatrix4<f32>) {
         self.projection.value = proj;
+    }
+
+    pub fn set_inv_proj(&mut self, proj: mint::ColumnMatrix4<f32>) {
+        self.inv_projection.value = proj;
     }
 
     fn create_multisampled_framebuffer(
@@ -154,6 +166,7 @@ impl GfxContext {
             });
 
         self.projection.upload_to_gpu(&self.queue);
+        self.inv_projection.upload_to_gpu(&self.queue);
 
         let mut objs = vec![];
 
