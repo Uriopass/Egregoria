@@ -126,7 +126,7 @@ impl<T: 'static + Shaders> Drawable for ShadedBatch<T> {
         let frag = T::frag_shader();
 
         let pipeline = gfx.basic_pipeline(
-            &[&gfx.projection_layout],
+            &[&gfx.projection.layout],
             &[UvVertex::desc(), ShadedInstanceRaw::desc()],
             vert,
             frag,

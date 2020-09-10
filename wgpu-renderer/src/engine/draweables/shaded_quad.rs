@@ -64,8 +64,12 @@ impl<T: 'static + Shaders> Drawable for ShadedQuad<T> {
         let vert = T::vert_shader();
         let frag = T::frag_shader();
 
-        let pipeline =
-            gfx.basic_pipeline(&[&gfx.projection_layout], &[UvVertex::desc()], vert, frag);
+        let pipeline = gfx.basic_pipeline(
+            &[&gfx.projection.layout, &gfx.time_uni.layout],
+            &[UvVertex::desc()],
+            vert,
+            frag,
+        );
 
         super::PreparedPipeline {
             pipeline,
@@ -77,6 +81,7 @@ impl<T: 'static + Shaders> Drawable for ShadedQuad<T> {
         let pipeline = &gfx.get_pipeline::<Self>();
         rp.set_pipeline(&pipeline.pipeline);
         rp.set_bind_group(0, &gfx.inv_projection.bindgroup, &[]);
+        rp.set_bind_group(1, &gfx.time_uni.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..));
         rp.draw_indexed(0..self.n_indices, 0, 0..1);

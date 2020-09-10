@@ -8,7 +8,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
     Adapter, BindGroupLayout, CommandBuffer, CommandEncoderDescriptor, Device, Queue,
-    RenderPipeline, ShaderStage, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
+    RenderPipeline, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
     VertexBufferDescriptor,
 };
 use winit::window::Window;
@@ -27,7 +27,7 @@ pub struct GfxContext {
     pub queue_buffer: Vec<CommandBuffer>,
     pub projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
-    pub projection_layout: wgpu::BindGroupLayout,
+    pub time_uni: Uniform<f32>,
     pub samples: u32,
     pub multi_frame: wgpu::TextureView,
 }
@@ -78,19 +78,11 @@ impl GfxContext {
         let swapchain = device.create_swap_chain(&surface, &sc_desc);
         let depth_texture = Texture::create_depth_texture(&device, &sc_desc, samples);
 
-        let projection_layout =
-            Uniform::<mint::ColumnMatrix4<f32>>::bindgroup_layout(&device, 0, ShaderStage::VERTEX);
-        let projection = Uniform::new(
-            mint::ColumnMatrix4::from([0.0; 16]),
-            &device,
-            &projection_layout,
-        );
+        let projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
 
-        let inv_projection = Uniform::new(
-            mint::ColumnMatrix4::from([0.0; 16]),
-            &device,
-            &projection_layout,
-        );
+        let inv_projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
+
+        let time_uni = Uniform::new(0.0, &device);
 
         let multi_frame = Self::create_multisampled_framebuffer(&sc_desc, &device, samples);
 
@@ -108,7 +100,7 @@ impl GfxContext {
             queue_buffer: vec![],
             projection,
             inv_projection,
-            projection_layout,
+            time_uni,
             samples,
             multi_frame,
         };
@@ -118,6 +110,10 @@ impl GfxContext {
         me.register_pipeline::<SpriteBatch>();
 
         me
+    }
+
+    pub fn set_time(&mut self, time: f32) {
+        self.time_uni.value = time;
     }
 
     pub fn set_proj(&mut self, proj: mint::ColumnMatrix4<f32>) {
@@ -167,6 +163,7 @@ impl GfxContext {
 
         self.projection.upload_to_gpu(&self.queue);
         self.inv_projection.upload_to_gpu(&self.queue);
+        self.time_uni.upload_to_gpu(&self.queue);
 
         let mut objs = vec![];
 

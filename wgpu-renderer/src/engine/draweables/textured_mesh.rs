@@ -87,7 +87,7 @@ impl Drawable for TexturedMesh {
         let frag = compile_shader("resources/shaders/textured_mesh_shader.frag", None);
 
         let pipeline = gfx.basic_pipeline(
-            &[&layouts[0], &gfx.projection_layout],
+            &[&layouts[0], &gfx.projection.layout],
             &[ColoredUvVertex::desc()],
             vert,
             frag,

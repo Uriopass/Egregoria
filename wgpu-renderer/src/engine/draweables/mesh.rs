@@ -81,7 +81,7 @@ impl Drawable for Mesh {
         let frag = compile_shader("resources/shaders/mesh_shader.frag", None);
 
         let pipeline = gfx.basic_pipeline(
-            &[&gfx.projection_layout],
+            &[&gfx.projection.layout],
             &[ColoredVertex::desc()],
             vert,
             frag,
