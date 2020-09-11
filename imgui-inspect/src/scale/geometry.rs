@@ -39,6 +39,33 @@ impl InspectRenderDefault<Transform> for Transform {
     }
 }
 
+pub struct InspectVec2Immutable;
+impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
+    fn render(data: &[&Vec2], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = data[0];
+        imgui::InputFloat2::new(ui, &im_str!("{}", label), &mut [x.x, x.y])
+            .always_insert_mode(false)
+            .build();
+    }
+
+    fn render_mut(
+        data: &mut [&mut Vec2],
+        label: &'static str,
+
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        Self::render(&[&*data[0]], label, ui, args);
+        false
+    }
+}
+
 impl InspectRenderDefault<Vec2> for Vec2 {
     fn render(data: &[&Vec2], label: &'static str, ui: &imgui::Ui, _: &InspectArgsDefault) {
         if data.len() != 1 {

@@ -2,23 +2,24 @@ use crate::engine::{Context, FrameContext, GfxContext};
 use crate::rendering::imgui_wrapper::{GuiRenderContext, ImguiWrapper};
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
-use egregoria::gui::Gui;
 use egregoria::interaction::FollowEntity;
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
 use egregoria::{load_from_disk, Egregoria};
 use geom::Vec2;
 use geom::{Camera, Transform};
+use gui::Gui;
 use map_model::Map;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
 pub struct State {
     camera: CameraHandler,
-    gui: ImguiWrapper,
+    imgui_render: ImguiWrapper,
     state: Egregoria,
     last_time: Instant,
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
+    gui: Gui,
 }
 
 impl State {
@@ -37,11 +38,12 @@ impl State {
 
         Self {
             camera,
-            gui: wrapper,
+            imgui_render: wrapper,
             state,
             last_time: Instant::now(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
+            gui: Gui::default(),
         }
     }
 
@@ -56,12 +58,12 @@ impl State {
         self.camera.easy_camera_movement(
             ctx,
             delta as f32,
-            !self.gui.last_mouse_captured,
-            !self.gui.last_kb_captured,
+            !self.imgui_render.last_mouse_captured,
+            !self.imgui_render.last_kb_captured,
         );
         *self.state.write::<Camera>() = self.camera.camera.clone();
 
-        if !self.gui.last_mouse_captured {
+        if !self.imgui_render.last_mouse_captured {
             self.state.write::<MouseInfo>().unprojected = self.unproject(ctx.input.mouse.screen);
         }
 
@@ -129,9 +131,8 @@ impl State {
     }
 
     pub fn render_gui(&mut self, ctx: GuiRenderContext) {
-        let mut gui = (*self.state.read::<Gui>()).clone();
-        self.gui.render(ctx, &mut self.state, &mut gui);
-        *self.state.write::<Gui>() = gui;
+        self.imgui_render
+            .render(ctx, &mut self.state, &mut self.gui);
     }
 
     fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {
@@ -162,13 +163,13 @@ impl State {
         *self.state.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
         *self.state.write::<MouseInfo>() = ctx.input.mouse.clone();
 
-        if self.gui.last_kb_captured {
+        if self.imgui_render.last_kb_captured {
             let kb: &mut KeyboardInfo = &mut self.state.write::<KeyboardInfo>();
             kb.just_pressed.clear();
             kb.is_pressed.clear();
         }
 
-        if self.gui.last_mouse_captured {
+        if self.imgui_render.last_mouse_captured {
             let mouse: &mut MouseInfo = &mut self.state.write::<MouseInfo>();
             mouse.just_pressed.clear();
             mouse.buttons.clear();
@@ -177,7 +178,7 @@ impl State {
     }
 
     pub fn event(&mut self, gfx: &GfxContext, event: &winit::event::Event<()>) {
-        self.gui.handle_event(gfx, event);
+        self.imgui_render.handle_event(gfx, event);
     }
 
     pub fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {

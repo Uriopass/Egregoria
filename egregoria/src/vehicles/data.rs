@@ -1,5 +1,4 @@
 use crate::engine_interaction::TimeInfo;
-use crate::gui::InspectDragf;
 use crate::interaction::Selectable;
 use crate::map_dynamic::{Itinerary, ParkingManagement};
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
@@ -8,6 +7,7 @@ use crate::rendering::Color;
 use crate::utils::rand_world;
 use crate::{Egregoria, RandProvider};
 use geom::{Spline, Transform};
+use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
 use legion::Entity;
 use map_model::{LaneKind, Map, ParkingSpotID};

@@ -1,8 +1,8 @@
-use crate::gui::{ImEntity, InspectDragf, InspectVec};
 use crate::rendering::colors::*;
 use geom::Vec2;
 use imgui::Ui;
 use imgui_inspect::InspectArgsDefault;
+use imgui_inspect::InspectDragf;
 use imgui_inspect::InspectRenderDefault;
 use imgui_inspect_derive::*;
 use legion::Entity;
@@ -147,9 +147,15 @@ impl MeshRender {
 
 impl InspectRenderDefault<MeshRender> for MeshRender {
     fn render(data: &[&MeshRender], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
-        let mapped: Vec<&Vec<MeshRenderEnum>> = data.iter().map(|x| &x.orders).collect();
-        <InspectVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
-            &mapped, label, ui, args,
+        if data.len() != 1 {
+            unimplemented!()
+        }
+        let mapped = &data[0].orders;
+        <Vec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
+            &[&mapped],
+            label,
+            ui,
+            args,
         );
     }
 
@@ -162,7 +168,7 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
     ) -> bool {
         let mut mapped: Vec<&mut Vec<MeshRenderEnum>> =
             data.iter_mut().map(|x| &mut x.orders).collect();
-        <InspectVec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
+        <Vec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render_mut(
             &mut mapped,
             label,
             ui,
@@ -233,7 +239,7 @@ impl Default for RectRender {
 
 #[derive(Debug, Inspect, Clone)]
 pub struct LineToRender {
-    #[inspect(proxy_type = "ImEntity")]
+    #[inspect(skip)]
     pub to: Entity,
     pub color: Color,
     #[inspect(proxy_type = "InspectDragf")]

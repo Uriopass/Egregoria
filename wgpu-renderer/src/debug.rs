@@ -34,7 +34,7 @@ lazy_static! {
     ]);
 }
 
-pub fn debug_menu(gui: &mut egregoria::gui::Gui, ui: &Ui) {
+pub fn debug_menu(gui: &mut gui::Gui, ui: &Ui) {
     if !gui.show_debug_layers {
         return;
     }

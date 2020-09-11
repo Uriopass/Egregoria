@@ -66,3 +66,100 @@ fn get_same_or_none_mut<T: PartialEq + Clone>(data: &mut [&mut T]) -> Option<T> 
 
     Some(first)
 }
+
+#[rustfmt::skip]
+#[macro_export]
+macro_rules! empty_inspect_impl {
+    ($x : ty) => {
+        impl imgui_inspect::InspectRenderDefault<$x> for $x {
+            fn render(_: &[&$x], _: &'static str, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault) {
+                ui.text(std::stringify!($x))
+            }
+
+            fn render_mut(_: &mut [&mut $x], _: &'static str, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault) -> bool {
+                ui.text(std::stringify!($x));
+                false
+            }
+        }
+    };
+}
+
+#[rustfmt::skip]
+#[macro_export]
+macro_rules! debug_inspect_impl {
+    ($t: ty) => {
+        impl imgui_inspect::InspectRenderDefault<$t> for $t {
+            fn render(
+                data: &[&$t],
+                label: &'static str,
+                ui: &imgui::Ui,
+                _: &imgui_inspect::InspectArgsDefault,
+            ) {
+                if data.len() != 1 {
+                    unimplemented!()
+                }
+                let d = &data[0];
+                ui.text(imgui::im_str!("{:?} {}", d, label));
+            }
+
+            fn render_mut(
+                data: &mut [&mut $t],
+                label: &'static str,
+                ui: &imgui::Ui,
+                _: &imgui_inspect::InspectArgsDefault,
+            ) -> bool {
+                if data.len() != 1 {
+                    unimplemented!()
+                }
+                let d = &data[0];
+                ui.text(imgui::im_str!("{:?} {}", d, label));
+                false
+            }
+        }
+    };
+}
+
+#[rustfmt::skip]
+#[macro_export]
+macro_rules! enum_inspect_impl {
+    ($t: ty; $($x: pat),+) => {
+        impl imgui_inspect::InspectRenderDefault<$t> for $t {
+            fn render(data: &[&$t], label: &'static str, ui: &imgui::Ui, _: &imgui_inspect::InspectArgsDefault,
+            ) {
+                if data.len() != 1 {
+                    unimplemented!()
+                }
+                let d = &data[0];
+                let mut aha = "No match";
+                $(
+                    if let $x = d {
+                        aha = stringify!($x);
+                    }
+                )+
+
+                ui.text(imgui::im_str!("{} {}", &aha, label));
+            }
+
+            fn render_mut(
+                data: &mut [&mut $t],
+                label: &'static str,
+                ui: &imgui::Ui,
+                _: &imgui_inspect::InspectArgsDefault,
+            ) -> bool {
+                if data.len() != 1 {
+                    unimplemented!()
+                }
+                let d = &mut data[0];
+                let mut aha = "No match";
+                $(
+                    if let $x = d {
+                        aha = stringify!($x);
+                    }
+                )+
+
+                ui.text(imgui::im_str!("{} {}", &aha, label));
+                false
+            }
+        }
+    };
+}

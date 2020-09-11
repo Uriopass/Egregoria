@@ -932,6 +932,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "gui"
+version = "0.1.0"
+dependencies = [
+ "egregoria",
+ "geom",
+ "imgui",
+ "imgui-inspect",
+ "legion",
+ "map_model",
+ "serde",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1176,6 +1189,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "64e6d62cbfa46b1a96dc9110e617d44c2eef5216520e2fb631f88167b647e06b"
 dependencies = [
  "bit-set",
+ "crossbeam-channel",
  "derivative",
  "downcast-rs",
  "erased-serde",
@@ -1183,6 +1197,7 @@ dependencies = [
  "legion_codegen",
  "parking_lot 0.11.0",
  "paste",
+ "rayon",
  "serde",
  "smallvec",
  "thiserror",
@@ -1550,6 +1565,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "num_cpus"
+version = "1.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05499f3756671c15885fee9034446956fff3f243d6077b91e5767df161f766b3"
+dependencies = [
+ "hermit-abi",
+ "libc",
+]
+
+[[package]]
 name = "num_enum"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1894,6 +1919,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0a441a7a6c80ad6473bd4b74ec1c9a4c951794285bf941c2126f607c72e48211"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "rayon"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfd016f0c045ad38b5251be2c9c0ab806917f82da4d36b2a327e5166adad9270"
+dependencies = [
+ "autocfg",
+ "crossbeam-deque",
+ "either",
+ "rayon-core",
+]
+
+[[package]]
+name = "rayon-core"
+version = "1.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91739a34c4355b5434ce54c9086c5895604a9c278586d1f1aa95e04f66b525a0"
+dependencies = [
+ "crossbeam-channel",
+ "crossbeam-deque",
+ "crossbeam-utils",
+ "lazy_static",
+ "num_cpus",
 ]
 
 [[package]]
@@ -2451,6 +2501,7 @@ dependencies = [
  "futures",
  "geom",
  "glsl-to-spirv",
+ "gui",
  "image",
  "imgui-wgpu",
  "imgui-winit-support",
