@@ -1,5 +1,28 @@
 use geom::Vec2;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+
+#[derive(Default, Clone, Serialize, Deserialize)]
+pub struct Movable;
+
+empty_inspect_impl!(Movable);
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Selectable {
+    pub radius: f32,
+}
+
+impl Selectable {
+    pub fn new(radius: f32) -> Self {
+        Self { radius }
+    }
+}
+
+impl Default for Selectable {
+    fn default() -> Self {
+        Self { radius: 5.0 }
+    }
+}
 
 #[derive(Default)]
 pub struct RenderStats {

@@ -1,5 +1,4 @@
-use crate::engine_interaction::TimeInfo;
-use crate::interaction::Selectable;
+use crate::engine_interaction::{Selectable, TimeInfo};
 use crate::map_dynamic::{Itinerary, ParkingManagement};
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::rendering::assets::{AssetID, AssetRender};

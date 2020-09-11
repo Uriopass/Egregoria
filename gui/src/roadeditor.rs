@@ -1,8 +1,9 @@
-use crate::engine_interaction::{MouseButton, MouseInfo};
-use crate::interaction::{InspectedEntity, Tool, Z_TOOL};
-use crate::rendering::meshrender_component::{CircleRender, MeshRender};
-use crate::rendering::Color;
-use crate::NoSerialize;
+use crate::selectable::InspectedEntity;
+use crate::{Tool, Z_TOOL};
+use egregoria::engine_interaction::{MouseButton, MouseInfo};
+use egregoria::rendering::meshrender_component::{CircleRender, MeshRender};
+use egregoria::rendering::Color;
+use egregoria::NoSerialize;
 use geom::Transform;
 use imgui_inspect_derive::*;
 use legion::systems::CommandBuffer;
@@ -19,8 +20,6 @@ pub struct IntersectionComponent {
     pub turn_policy: TurnPolicy,
     pub light_policy: LightPolicy,
 }
-
-pub struct RoadEditorSystem;
 
 pub struct RoadEditorResource {
     inspect_e: Option<Entity>,

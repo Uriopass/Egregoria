@@ -1,5 +1,6 @@
-use egregoria::interaction::IntersectionComponent;
-use egregoria::interaction::{FollowEntity, Movable};
+use crate::follow::FollowEntity;
+use crate::roadeditor::IntersectionComponent;
+use egregoria::engine_interaction::Movable;
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::Pedestrian;
 use egregoria::physics::{Collider, Kinematics};

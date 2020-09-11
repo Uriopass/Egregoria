@@ -1,8 +1,8 @@
-use crate::engine_interaction::{MouseButton, MouseInfo};
-use crate::interaction::Tool;
-use crate::rendering::meshrender_component::{CircleRender, MeshRender};
-use crate::rendering::Color;
-use crate::NoSerialize;
+use crate::Tool;
+use egregoria::engine_interaction::{MouseButton, MouseInfo};
+use egregoria::rendering::meshrender_component::{CircleRender, MeshRender};
+use egregoria::rendering::Color;
+use egregoria::NoSerialize;
 use geom::Transform;
 use geom::Vec2;
 use legion::world::SubWorld;
@@ -58,7 +58,7 @@ pub fn bulldozer(
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
         let mut potentially_empty = Vec::new();
-        info!("bulldozer {:?}", cur_proj);
+        log::info!("bulldozer {:?}", cur_proj);
         match cur_proj.kind {
             ProjectKind::Inter(id) => {
                 potentially_empty.extend(map.intersections()[id].neighbors(map.roads()));

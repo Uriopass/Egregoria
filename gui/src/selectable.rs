@@ -1,30 +1,12 @@
-use crate::engine_interaction::KeyCode;
-use crate::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
-use crate::interaction::Tool;
-use crate::ParCommandBuffer;
+use crate::Tool;
+use egregoria::engine_interaction::{KeyCode, Selectable};
+use egregoria::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
+use egregoria::ParCommandBuffer;
 use geom::Transform;
 use legion::world::SubWorld;
 use legion::Entity;
 use legion::{system, EntityStore};
-use serde::{Deserialize, Serialize};
 use std::f32;
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Selectable {
-    pub radius: f32,
-}
-
-impl Selectable {
-    pub fn new(radius: f32) -> Self {
-        Self { radius }
-    }
-}
-
-impl Default for Selectable {
-    fn default() -> Self {
-        Self { radius: 5.0 }
-    }
-}
 
 #[derive(Default, Debug, Clone, Copy)]
 pub struct InspectedEntity {

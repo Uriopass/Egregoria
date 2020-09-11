@@ -1,8 +1,8 @@
-use crate::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use crate::interaction::{Tool, Z_TOOL};
-use crate::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
-use crate::rendering::Color;
-use crate::NoSerialize;
+use crate::{Tool, Z_TOOL};
+use egregoria::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
+use egregoria::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
+use egregoria::rendering::Color;
+use egregoria::NoSerialize;
 use geom::Spline;
 use geom::Transform;
 use geom::Vec2;
@@ -12,8 +12,6 @@ use legion::{Entity, IntoQuery, World};
 use map_model::{
     IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
 };
-
-pub struct RoadBuildSystem;
 
 impl RoadBuildResource {
     pub fn new(world: &mut World) -> Self {
@@ -82,9 +80,10 @@ pub fn roadbuild(
     state.update_drawing(mr, cur_proj.pos, state.pattern_builder.width());
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
-        info!(
+        log::info!(
             "left clicked with state {:?} and {:?}",
-            state.build_state, cur_proj.kind
+            state.build_state,
+            cur_proj.kind
         );
         use BuildState::*;
         use ProjectKind::*;
