@@ -3,7 +3,6 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
-use crate::gui::Gui;
 use crate::interaction::{
     bulldozer_system, movable_system, roadbuild_system, roadeditor_system,
     selectable_cleanup_system, selectable_select_system, BulldozerResource, FollowEntity,
@@ -32,8 +31,11 @@ use map_model::{Map, SerializedMap};
 use std::io::Write;
 use std::ops::{Deref, DerefMut};
 use utils::frame_log::FrameLog;
-pub(crate) use utils::par_command_buffer::ParCommandBuffer;
+pub use utils::par_command_buffer::ParCommandBuffer;
 use utils::rand_provider::RandProvider;
+
+#[macro_use]
+extern crate imgui_inspect;
 
 #[macro_use]
 extern crate log as extern_log;
@@ -41,18 +43,15 @@ extern crate log as extern_log;
 #[macro_use]
 pub mod utils;
 
-#[macro_use]
-pub mod gui;
-
 pub mod engine_interaction;
 pub mod interaction;
 pub mod lua;
 pub mod map_dynamic;
-mod pedestrians;
+pub mod pedestrians;
 pub mod physics;
 pub mod rendering;
 mod souls;
-mod vehicles;
+pub mod vehicles;
 
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
@@ -205,7 +204,6 @@ pub fn load_from_disk(goria: &mut Egregoria) {
         map_model::SerializedMap,
     >("map")));
 
-    goria.insert(crate::saveload::load_or_default::<Gui>("gui"));
     goria.insert(crate::saveload::load_or_default::<ParkingManagement>(
         "parking",
     ));
@@ -222,7 +220,6 @@ pub fn load_from_disk(goria: &mut Egregoria) {
 
 pub fn save_to_disk(goria: &mut Egregoria) {
     let _ = std::io::stdout().flush();
-    crate::saveload::save(&*goria.read::<Gui>(), "gui");
     crate::saveload::save(&*goria.read::<ParkingManagement>(), "parking");
     crate::saveload::save(&SerializedMap::from(&*goria.read::<Map>()), "map");
 

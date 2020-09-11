@@ -1,5 +1,4 @@
 use crate::engine_interaction::TimeInfo;
-use crate::gui::InspectVec;
 use geom::Transform;
 use geom::Vec2;
 use imgui_inspect_derive::*;
@@ -10,7 +9,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Inspect, Serialize, Deserialize)]
 pub struct Itinerary {
     kind: ItineraryKind,
-    #[inspect(proxy_type = "InspectVec<Vec2>")]
     local_path: Vec<Vec2>,
 }
 

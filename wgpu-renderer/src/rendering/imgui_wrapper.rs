@@ -57,7 +57,7 @@ impl ImguiWrapper {
         &mut self,
         gfx: GuiRenderContext,
         goria: &mut egregoria::Egregoria,
-        gui: &mut egregoria::gui::Gui,
+        gui: &mut gui::Gui,
     ) {
         let now = Instant::now();
         let delta = now - self.last_frame;

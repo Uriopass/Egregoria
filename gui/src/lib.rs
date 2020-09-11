@@ -1,9 +1,9 @@
-use crate::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
-use crate::interaction::{InspectedEntity, RoadBuildResource, Tool};
-use crate::pedestrians::{spawn_pedestrian, Pedestrian};
-use crate::utils::frame_log::FrameLog;
-use crate::vehicles::{spawn_parked_vehicle, Vehicle};
-use crate::{Egregoria, ParCommandBuffer};
+use egregoria::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
+use egregoria::interaction::{InspectedEntity, RoadBuildResource, Tool};
+use egregoria::pedestrians::{spawn_pedestrian, Pedestrian};
+use egregoria::utils::frame_log::FrameLog;
+use egregoria::vehicles::{spawn_parked_vehicle, Vehicle};
+use egregoria::{Egregoria, ParCommandBuffer};
 use geom::Vec2;
 use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};
@@ -14,7 +14,6 @@ use map_model::{LanePatternBuilder, Map};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
-#[macro_use]
 mod inspect;
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
@@ -122,7 +121,7 @@ impl Gui {
             .build(&ui, || {
                 for scenario in scenarios.iter() {
                     if ui.small_button(&im_str!("{}", scenario)) {
-                        crate::lua::scenario_runner::set_scenario(
+                        egregoria::scenarios::scenario_runner::set_scenario(
                             goria,
                             &format!("lua/scenarios/{}", scenario),
                         );
@@ -138,7 +137,7 @@ impl Gui {
         if let Some(every) = self.auto_save_every.into() {
             let now = Instant::now();
             if now.duration_since(self.last_save) > every {
-                crate::save_to_disk(goria);
+                egregoria::save_to_disk(goria);
                 self.last_save = now;
             }
         }
@@ -228,7 +227,10 @@ impl Gui {
 
     pub fn inspector(&mut self, ui: &Ui, goria: &mut Egregoria) {
         let mut inspected = *goria.read::<InspectedEntity>();
-        let e = unwrap_or!(inspected.e, return);
+        let e = match inspected.e {
+            Some(x) => x,
+            None => return,
+        };
 
         let mut is_open = true;
         Window::new(im_str!("Inspect"))
@@ -236,8 +238,7 @@ impl Gui {
             .position([30.0, 160.0], imgui::Condition::FirstUseEver)
             .opened(&mut is_open)
             .build(&ui, || {
-                inspected.dirty =
-                    crate::gui::inspect::InspectRenderer { entity: e }.render(goria, ui);
+                inspected.dirty = crate::inspect::InspectRenderer { entity: e }.render(goria, ui);
             });
         if !is_open {
             inspected.e = None;
@@ -353,7 +354,7 @@ impl Gui {
                 }
             });
             if ui.small_button(im_str!("Save")) {
-                crate::save_to_disk(goria);
+                egregoria::save_to_disk(goria);
             }
         });
     }

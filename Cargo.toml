@@ -1,13 +1,14 @@
 [workspace]
 members = [
     "egregoria",
+    "gui",
     "geom",
-    "map_model",
-    "mods",
+    "headless-cli",
     "imgui-inspect",
     "imgui-inspect-derive",
+    "map_model",
+    "mods",
     "wgpu-renderer",
-    "headless-cli"
 ]
 
 default-members = ["wgpu-renderer"]
