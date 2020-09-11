@@ -34,7 +34,7 @@ impl Scanner {
 
 pub fn load_parismap(map: &mut Map) {
     let t = std::time::Instant::now();
-    let file = unwrap_or!(File::open("resources/paris_54000.txt").ok(), {
+    let file = unwrap_or!(File::open("assets/paris_54000.txt").ok(), {
         error!("Couldn't open parismap file");
         return;
     });

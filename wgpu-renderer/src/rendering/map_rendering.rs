@@ -16,11 +16,11 @@ struct Crosswalk;
 
 impl Shaders for Crosswalk {
     fn vert_shader() -> CompiledShader {
-        compile_shader("resources/shaders/crosswalk.vert", None)
+        compile_shader("assets/shaders/crosswalk.vert", None)
     }
 
     fn frag_shader() -> CompiledShader {
-        compile_shader("resources/shaders/crosswalk.frag", None)
+        compile_shader("assets/shaders/crosswalk.frag", None)
     }
 }
 
@@ -47,7 +47,7 @@ const MID_GRAY_V: f32 = 0.5;
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext) -> Self {
         let arrow_builder = SpriteBatchBuilder::new(
-            Texture::from_path(gfx, "resources/arrow_one_way.png", Some("arrow")).unwrap(), // Unwrap ok: File is there
+            Texture::from_path(gfx, "assets/arrow_one_way.png", Some("arrow")).unwrap(), // Unwrap ok: File is there
         );
 
         gfx.register_pipeline::<ShadedBatch<Crosswalk>>();

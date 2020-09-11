@@ -6,11 +6,11 @@ struct Background;
 
 impl Shaders for Background {
     fn vert_shader() -> CompiledShader {
-        compile_shader("resources/shaders/background.vert", None)
+        compile_shader("assets/shaders/background.vert", None)
     }
 
     fn frag_shader() -> CompiledShader {
-        compile_shader("resources/shaders/background.frag", None)
+        compile_shader("assets/shaders/background.frag", None)
     }
 }
 
