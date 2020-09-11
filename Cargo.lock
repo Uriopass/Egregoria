@@ -939,7 +939,9 @@ dependencies = [
  "geom",
  "imgui",
  "imgui-inspect",
+ "imgui-inspect-derive",
  "legion",
+ "log",
  "map_model",
  "serde",
 ]

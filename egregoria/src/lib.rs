@@ -2,13 +2,9 @@
 #![allow(clippy::block_in_if_condition_stmt)]
 #![allow(clippy::too_many_arguments)]
 
-use crate::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
-use crate::interaction::{
-    bulldozer_system, movable_system, roadbuild_system, roadeditor_system,
-    selectable_cleanup_system, selectable_select_system, BulldozerResource, FollowEntity,
-    InspectedAura, InspectedEntity, RoadEditorResource, Selectable, Tool,
+use crate::engine_interaction::{
+    KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable, TimeInfo,
 };
-use crate::interaction::{inspected_aura_system, MovableSystem, RoadBuildResource};
 use crate::map_dynamic::{itinerary_update_system, Itinerary, ParkingManagement};
 use crate::pedestrians::{pedestrian_decision_system, Pedestrian};
 use crate::physics::systems::{
@@ -44,7 +40,6 @@ extern crate log as extern_log;
 pub mod utils;
 
 pub mod engine_interaction;
-pub mod interaction;
 pub mod map_dynamic;
 pub mod pedestrians;
 pub mod physics;
@@ -65,8 +60,8 @@ use utils::scheduler::SeqSchedule;
 
 pub struct Egregoria {
     pub world: World,
+    pub schedule: SeqSchedule,
     resources: Resources,
-    schedule: SeqSchedule,
 }
 const RNG_SEED: u64 = 123;
 
@@ -81,7 +76,7 @@ impl Egregoria {
     }
 
     pub fn init() -> Egregoria {
-        let mut world = World::default();
+        let world = World::default();
         let mut resources = Resources::default();
 
         info!("Seed is {}", RNG_SEED);
@@ -91,8 +86,6 @@ impl Egregoria {
         resources.insert(CollisionWorld::new(50));
         resources.insert(KeyboardInfo::default());
         resources.insert(MouseInfo::default());
-        resources.insert(InspectedEntity::default());
-        resources.insert(FollowEntity::default());
         resources.insert(RenderStats::default());
         resources.insert(RandProvider::new(RNG_SEED));
         resources.insert(ParkingManagement::default());
@@ -101,39 +94,22 @@ impl Egregoria {
         resources.insert(ImmediateDraw::default());
         resources.insert(Souls::default());
         resources.insert(ParCommandBuffer::default());
-        resources.insert(Tool::default());
         resources.insert(Deleted::<Collider>::default());
         resources.insert(Deleted::<Vehicle>::default());
-
-        // Systems state init
-        let s = RoadBuildResource::new(&mut world);
-        resources.insert(s);
-
-        let s = RoadEditorResource::new(&mut world);
-        resources.insert(s);
-
-        let s = BulldozerResource::new(&mut world);
-        resources.insert(s);
 
         // Dispatcher init
         let mut schedule = SeqSchedule::default();
         schedule
             .add_system(vehicle_state_update_system())
             .add_system(vehicle_decision_system())
-            .add_system(selectable_select_system())
-            .add_system(selectable_cleanup_system())
-            .add_system(roadbuild_system())
-            .add_system(roadeditor_system())
-            .add_system(bulldozer_system())
             .add_system(itinerary_update_system())
             .add_system(vehicle_cleanup_system())
             .add_system(pedestrian_decision_system())
             .add_system(run_scenario_system())
-            .add_system(movable_system(MovableSystem::default()))
             .add_system(kinematics_apply_system())
             .add_system(coworld_synchronize_system())
-            .add_system(coworld_maintain_system())
-            .add_system(inspected_aura_system(InspectedAura::new(&mut world)));
+            .add_system(coworld_maintain_system());
+
         Self {
             world,
             resources,
@@ -187,6 +163,7 @@ fn registry() -> Registry<u64> {
     register!(registry, AssetRender);
     register!(registry, Kinematics);
     register!(registry, Selectable);
+    register!(registry, Movable);
     register!(registry, Vehicle);
     register!(registry, Pedestrian);
     register!(registry, Itinerary);

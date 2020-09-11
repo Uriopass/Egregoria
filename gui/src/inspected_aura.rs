@@ -1,6 +1,6 @@
-use crate::interaction::InspectedEntity;
-use crate::rendering::meshrender_component::{MeshRender, StrokeCircleRender};
-use crate::rendering::Color;
+use crate::selectable::InspectedEntity;
+use egregoria::rendering::meshrender_component::{MeshRender, StrokeCircleRender};
+use egregoria::rendering::Color;
 use geom::Transform;
 use legion::world::SubWorld;
 use legion::{system, Entity, EntityStore, IntoQuery, World};

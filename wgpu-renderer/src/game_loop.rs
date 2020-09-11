@@ -2,12 +2,11 @@ use crate::engine::{Context, FrameContext, GfxContext};
 use crate::rendering::imgui_wrapper::{GuiRenderContext, ImguiWrapper};
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
-use egregoria::interaction::FollowEntity;
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
 use egregoria::{load_from_disk, Egregoria};
 use geom::Vec2;
 use geom::{Camera, Transform};
-use gui::Gui;
+use gui::{FollowEntity, Gui};
 use map_model::Map;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
@@ -31,6 +30,7 @@ impl State {
         let mut state = egregoria::Egregoria::init();
 
         load_from_disk(&mut state);
+        gui::add_gui_systems(&mut state);
 
         crate::rendering::prepare_background(&mut ctx.gfx);
 

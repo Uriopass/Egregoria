@@ -1,15 +1,9 @@
-use crate::engine_interaction::{MouseButton, MouseInfo, TimeInfo};
-use crate::interaction::InspectedEntity;
-use crate::physics::Kinematics;
+use crate::selectable::InspectedEntity;
+use egregoria::engine_interaction::{MouseButton, MouseInfo, Movable, TimeInfo};
+use egregoria::physics::Kinematics;
 use geom::{Transform, Vec2};
 use legion::world::SubWorld;
 use legion::{system, EntityStore};
-use serde::{Deserialize, Serialize};
-
-#[derive(Default, Clone, Serialize, Deserialize)]
-pub struct Movable;
-
-empty_inspect_impl!(Movable);
 
 #[derive(Default)]
 pub struct MovableSystem {
