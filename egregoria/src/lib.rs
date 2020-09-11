@@ -9,7 +9,6 @@ use crate::interaction::{
     InspectedAura, InspectedEntity, RoadEditorResource, Selectable, Tool,
 };
 use crate::interaction::{inspected_aura_system, MovableSystem, RoadBuildResource};
-use crate::lua::scenario_runner::{run_scenario_system, RunningScenario};
 use crate::map_dynamic::{itinerary_update_system, Itinerary, ParkingManagement};
 use crate::pedestrians::{pedestrian_decision_system, Pedestrian};
 use crate::physics::systems::{
@@ -18,6 +17,7 @@ use crate::physics::systems::{
 use crate::physics::{deserialize_colliders, serialize_colliders, CollisionWorld};
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::immediate::ImmediateDraw;
+use crate::scenarios::scenario_runner::{run_scenario_system, RunningScenario};
 use crate::souls::Souls;
 use crate::vehicles::systems::{
     vehicle_cleanup_system, vehicle_decision_system, vehicle_state_update_system,
@@ -45,11 +45,11 @@ pub mod utils;
 
 pub mod engine_interaction;
 pub mod interaction;
-pub mod lua;
 pub mod map_dynamic;
 pub mod pedestrians;
 pub mod physics;
 pub mod rendering;
+pub mod scenarios;
 mod souls;
 pub mod vehicles;
 
@@ -102,10 +102,8 @@ impl Egregoria {
         resources.insert(Souls::default());
         resources.insert(ParCommandBuffer::default());
         resources.insert(Tool::default());
-        resources.insert(RunningScenario::default());
         resources.insert(Deleted::<Collider>::default());
         resources.insert(Deleted::<Vehicle>::default());
-        resources.insert(ParCommandBuffer::default());
 
         // Systems state init
         let s = RoadBuildResource::new(&mut world);
