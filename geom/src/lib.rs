@@ -1,3 +1,4 @@
+mod camera;
 mod circle;
 mod intersections;
 mod obb;
@@ -9,6 +10,7 @@ mod splines;
 mod transform;
 mod v2;
 
+pub use camera::*;
 pub use circle::*;
 pub use intersections::*;
 pub use obb::*;

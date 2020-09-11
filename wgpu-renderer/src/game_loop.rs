@@ -5,10 +5,9 @@ use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeIn
 use egregoria::gui::Gui;
 use egregoria::interaction::FollowEntity;
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
-use egregoria::rendering::Color;
 use egregoria::{load_from_disk, Egregoria};
-use geom::Transform;
 use geom::Vec2;
+use geom::{Camera, Transform};
 use map_model::Map;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
@@ -20,7 +19,6 @@ pub struct State {
     last_time: Instant,
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
-    grid: bool,
 }
 
 impl State {
@@ -35,6 +33,8 @@ impl State {
 
         crate::rendering::prepare_background(&mut ctx.gfx);
 
+        state.insert(camera.camera.clone());
+
         Self {
             camera,
             gui: wrapper,
@@ -42,7 +42,6 @@ impl State {
             last_time: Instant::now(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
-            grid: true,
         }
     }
 
@@ -60,6 +59,7 @@ impl State {
             !self.gui.last_mouse_captured,
             !self.gui.last_kb_captured,
         );
+        *self.state.write::<Camera>() = self.camera.camera.clone();
 
         if !self.gui.last_mouse_captured {
             self.state.write::<MouseInfo>().unprojected = self.unproject(ctx.input.mouse.screen);
@@ -77,15 +77,6 @@ impl State {
         crate::rendering::draw_background(ctx);
 
         let mut tess = self.camera.culled_tesselator();
-        // Render grid
-        if self.grid && self.camera.zoom() > 3.0 {
-            let gray_maj = (self.camera.zoom() / 40.0).min(0.2);
-            let gray_min = gray_maj * 0.5;
-            if self.camera.zoom() > 6.0 {
-                tess.draw_grid(1.0, Color::new(gray_min, gray_min, gray_min, 1.0));
-            }
-            tess.draw_grid(10.0, Color::new(gray_maj, gray_maj, gray_maj, 1.0));
-        }
 
         let time: TimeInfo = *self.state.read::<TimeInfo>();
         self.road_renderer.render(

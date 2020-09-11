@@ -1,6 +1,7 @@
-use geom::{vec2, Vec2};
+use crate::{vec2, Vec2};
 use mint::ColumnMatrix4;
 
+#[derive(Clone)]
 pub struct Camera {
     pub viewport: Vec2,
     pub position: Vec2,
