@@ -9,8 +9,8 @@ use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::CollisionWorld;
 use egregoria::rendering::{Color, LinearColor};
 use egregoria::Egregoria;
-use geom::OBB;
 use geom::{vec2, Vec2};
+use geom::{Camera, OBB};
 use geom::{Spline, Transform};
 use lazy_static::*;
 use map_model::{Map, RoadSegmentKind};
@@ -29,7 +29,8 @@ lazy_static! {
         (false, "Debug collision world", Box::new(debug_coworld)),
         (false, "Debug OBBs", Box::new(debug_obb)),
         (false, "Debug rays", Box::new(debug_rays)),
-        (false, "Debug splines", Box::new(debug_spline))
+        (false, "Debug splines", Box::new(debug_spline)),
+        (false, "Show grid", Box::new(show_grid))
     ]);
 }
 
@@ -45,6 +46,22 @@ pub fn debug_menu(gui: &mut egregoria::gui::Gui, ui: &Ui) {
                 ui.checkbox(&im_str!("{}", *name), val);
             }
         })
+}
+
+pub fn show_grid(tess: &mut Tesselator, state: &mut Egregoria) -> Option<()> {
+    let cam = &*state.read::<Camera>();
+
+    if cam.zoom < 1.0 {
+        return Some(());
+    }
+
+    let gray_maj = 0.5;
+    let gray_min = 0.3;
+    if cam.zoom > 6.0 {
+        tess.draw_grid(1.0, Color::new(gray_min, gray_min, gray_min, 0.5));
+    }
+    tess.draw_grid(10.0, Color::new(gray_maj, gray_maj, gray_maj, 0.5));
+    Some(())
 }
 
 pub fn debug_spline(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
