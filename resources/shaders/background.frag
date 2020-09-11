@@ -43,7 +43,6 @@ float fnoise(float ampl) {
 
     float noise = 0.0;
     float amplitude = 0.6;
-    float freq = 0.0;
 
     for (int i = 0; i < 8; i++) {
         noise += amplitude * (snoise(dec) + 1.0) * FBM_MAG;
@@ -65,13 +64,14 @@ float disturbed_noise(float noise) {
 void main() {
     float noise = fnoise(0.00002);
 
+    float before = noise;
     noise -= length(in_wv - vec2(0.0, 10000.0)) * 0.00002;
     noise = max(noise, 0);
 
     float dnoise = disturbed_noise(noise);
 
     if (noise < 0.1) { // deep water
-        float lol = fnoise(0.0002);
+        float lol = before;
         out_color =  (0.2 + dnoise * 3.0) * vec4(0.1, 0.3 + 0.1 * abs(lol), 0.6 + 0.1 * abs(lol), 1.0);
     } else if (noise < 0.12) { // sand
         out_color = (1.0 - dnoise) * vec4(0.95, 0.9, 0.3, 1.0);
