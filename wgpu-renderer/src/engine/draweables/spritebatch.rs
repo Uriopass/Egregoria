@@ -162,8 +162,8 @@ impl SpriteBatchBuilder {
 
 impl Drawable for SpriteBatch {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
-        let vert = compile_shader("resources/shaders/spritebatch.vert", None);
-        let frag = compile_shader("resources/shaders/spritebatch.frag", None);
+        let vert = compile_shader("assets/shaders/spritebatch.vert", None);
+        let frag = compile_shader("assets/shaders/spritebatch.frag", None);
 
         let layouts = vec![Texture::bindgroup_layout(&gfx.device)];
 

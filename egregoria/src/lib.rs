@@ -86,7 +86,7 @@ impl Egregoria {
 
         info!("Seed is {}", RNG_SEED);
 
-        // Basic resources init
+        // Basic assets init
         resources.insert(TimeInfo::default());
         resources.insert(CollisionWorld::new(50));
         resources.insert(KeyboardInfo::default());

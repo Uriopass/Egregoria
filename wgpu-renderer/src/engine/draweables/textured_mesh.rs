@@ -83,8 +83,8 @@ impl Drawable for TexturedMesh {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
         let layouts = vec![Texture::bindgroup_layout(&gfx.device)];
 
-        let vert = compile_shader("resources/shaders/textured_mesh_shader.vert", None);
-        let frag = compile_shader("resources/shaders/textured_mesh_shader.frag", None);
+        let vert = compile_shader("assets/shaders/textured_mesh_shader.vert", None);
+        let frag = compile_shader("assets/shaders/textured_mesh_shader.frag", None);
 
         let pipeline = gfx.basic_pipeline(
             &[&layouts[0], &gfx.projection.layout],
