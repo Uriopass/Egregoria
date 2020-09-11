@@ -42,7 +42,7 @@ fn run(mut state: Egregoria, name: &Path) {
         }
     };
 
-    egregoria::lua::add_egregoria_lua_stdlib(&l, &mut state);
+    egregoria::scenarios::add_egregoria_lua_stdlib(&l, &mut state);
     mods::eval_f(&l, "Init");
 
     for i in 1..1000 {
