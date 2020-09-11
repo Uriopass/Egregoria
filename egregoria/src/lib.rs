@@ -206,6 +206,9 @@ pub fn load_from_disk(goria: &mut Egregoria) {
     >("map")));
 
     goria.insert(crate::saveload::load_or_default::<Gui>("gui"));
+    goria.insert(crate::saveload::load_or_default::<ParkingManagement>(
+        "parking",
+    ));
 
     let registry = registry();
 
@@ -220,6 +223,7 @@ pub fn load_from_disk(goria: &mut Egregoria) {
 pub fn save_to_disk(goria: &mut Egregoria) {
     let _ = std::io::stdout().flush();
     crate::saveload::save(&*goria.read::<Gui>(), "gui");
+    crate::saveload::save(&*goria.read::<ParkingManagement>(), "parking");
     crate::saveload::save(&SerializedMap::from(&*goria.read::<Map>()), "map");
 
     let registry = registry();
