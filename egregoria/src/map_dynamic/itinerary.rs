@@ -133,7 +133,7 @@ impl Itinerary {
         v
     }
 
-    pub fn update(&mut self, position: Vec2, time: &TimeInfo, map: &Map) {
+    pub fn update(&mut self, position: Vec2, time: u64, map: &Map) {
         if let Some(p) = self.get_point() {
             let dist = p.distance2(position);
             if self.is_terminal() {
@@ -154,7 +154,7 @@ impl Itinerary {
                     return;
                 });
 
-                if k.can_pass(time.time_seconds, map.lanes()) {
+                if k.can_pass(time, map.lanes()) {
                     self.advance(map);
                 }
             }
@@ -203,8 +203,6 @@ impl Itinerary {
     }
 
     /// Does a logical prepend for a series of points to the local path vector.
-    /// If local is sorted soon to later, then it is also a physical prepend.
-    /// Otherwise it would actually be an append.
     pub fn prepend_local_path(&mut self, points: Vec<Vec2>) {
         self.local_path.splice(0..0, points.into_iter());
     }
@@ -236,5 +234,5 @@ pub fn itinerary_update(
     trans: &Transform,
     it: &mut Itinerary,
 ) {
-    it.update(trans.position(), time, map)
+    it.update(trans.position(), time.time_seconds, map)
 }
