@@ -54,7 +54,7 @@ pub fn selectable_cleanup(
         inspected.dist2 = std::f32::INFINITY;
 
         if kbinfo.just_pressed.contains(&KeyCode::Backspace) {
-            gy.kill(e); // Unwrap ok: checked is_alive just before
+            gy.kill(e);
             inspected.e = None;
         }
     }
