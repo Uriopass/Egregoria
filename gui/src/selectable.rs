@@ -37,7 +37,7 @@ pub fn selectable_select(
 }
 
 #[system]
-#[read_component(())] // fixme: check if alive works
+#[read_component(())]
 pub fn selectable_cleanup(
     #[resource] inspected: &mut InspectedEntity,
     #[resource] gy: &mut ParCommandBuffer,
