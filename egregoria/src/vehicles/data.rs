@@ -12,16 +12,12 @@ use legion::Entity;
 use map_model::{LaneKind, Map, ParkingSpotID};
 use serde::{Deserialize, Serialize};
 
-/// How close a vehicle should be to the start of its itinerary before it decides it's good enough and starts driving.
-pub const DISTANCE_FOR_UNPARKING: f32 = 2.5;
-
 /// The duration for the parking animation.
 pub const TIME_TO_PARK: f32 = 4.0;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum VehicleState {
     Parked(ParkingSpotID),
-    ParkedToRoad,
     Driving,
     RoadToPark(Spline, f32),
 }
