@@ -1,6 +1,6 @@
 use crate::{InspectedEntity, RoadBuildResource, Tool};
 use egregoria::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
-use egregoria::pedestrians::{spawn_pedestrian, Pedestrian};
+use egregoria::pedestrians::Pedestrian;
 use egregoria::utils::frame_log::FrameLog;
 use egregoria::vehicles::{spawn_parked_vehicle, Vehicle};
 use egregoria::{Egregoria, ParCommandBuffer};
@@ -77,7 +77,7 @@ impl Default for Gui {
             show_tips: false,
             show_debug_layers: false,
             show_scenarios: false,
-            auto_save_every: AutoSaveEvery::OneMinute,
+            auto_save_every: AutoSaveEvery::Never,
             last_save: Instant::now(),
             available_scenarios: available_scenarios(),
             n_cars: 100,
@@ -380,29 +380,9 @@ impl Gui {
                     }
                 }
 
-                ui.set_next_item_width(70.0);
-                imgui::DragInt::new(&ui, im_str!("n pedestrians"), &mut self.n_pedestrians)
-                    .min(1)
-                    .max(1000)
-                    .build();
-
-                ui.same_line(0.0);
-                if ui.small_button(im_str!("spawn pedestrians")) {
-                    for _ in 0..self.n_pedestrians {
-                        spawn_pedestrian(goria);
-                    }
-                }
-
                 if ui.small_button(im_str!("destroy all cars")) {
                     let gy = goria.write::<ParCommandBuffer>();
                     for (e, _) in <(&Entity, &Vehicle)>::query().iter(&goria.world) {
-                        gy.kill(*e);
-                    }
-                }
-
-                if ui.small_button(im_str!("kill all pedestrians")) {
-                    let gy = goria.write::<ParCommandBuffer>();
-                    for (e, _) in <(&Entity, &Pedestrian)>::query().iter(&goria.world) {
                         gy.kill(*e);
                     }
                 }
@@ -435,7 +415,6 @@ impl Gui {
                     drop(map);
                     for _ in 0..10000 {
                         spawn_parked_vehicle(goria);
-                        spawn_pedestrian(goria);
                     }
                 }
 

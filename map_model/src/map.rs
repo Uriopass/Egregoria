@@ -53,7 +53,7 @@ impl Map {
         }
     }
 
-    pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection) -> ()) {
+    pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection)) {
         info!("update_intersection {:?}", id);
         let inter = unwrap_or!(self.intersections.get_mut(id), return);
         f(inter);
@@ -334,7 +334,7 @@ impl Map {
         &self.spatial_map
     }
 
-    pub fn get_random_lane<R: Rng>(&self, filter: LaneKind, r: &mut R) -> Option<&Lane> {
+    pub fn random_lane<R: Rng>(&self, filter: LaneKind, r: &mut R) -> Option<&Lane> {
         self.roads
             .iter()
             .choose(r)?
@@ -344,6 +344,14 @@ impl Map {
             .map(|(id, _)| id)
             .choose(r)
             .map(|x| &self.lanes[x])
+    }
+
+    pub fn random_building<R: Rng>(&self, filter: BuildingKind, r: &mut R) -> Option<&Building> {
+        self.buildings
+            .iter()
+            .filter(|(_, b)| b.kind == filter)
+            .choose(r)
+            .map(|x| x.1)
     }
 
     pub fn find_road(&self, src: IntersectionID, dst: IntersectionID) -> Option<RoadID> {
@@ -356,7 +364,7 @@ impl Map {
         None
     }
 
-    pub fn closest_lane(&self, p: Vec2, kind: LaneKind) -> Option<LaneID> {
+    pub fn nearest_lane(&self, p: Vec2, kind: LaneKind) -> Option<LaneID> {
         self.lanes
             .iter()
             .filter(|(_, x)| x.kind == kind)

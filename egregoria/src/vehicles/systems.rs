@@ -10,11 +10,7 @@ use geom::{both_dist_to_inter, Ray};
 use geom::{Spline, Transform};
 use legion::system;
 use legion::Entity;
-use map_model::{
-    DirectionalPath, LaneKind, Map, ParkingSpotID, TrafficBehavior, Traversable, TraverseDirection,
-    TraverseKind,
-};
-use rand::thread_rng;
+use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
 
 #[system]
 pub fn vehicle_cleanup(
@@ -68,7 +64,6 @@ pub fn vehicle_decision(
 #[system(for_each)]
 pub fn vehicle_state_update(
     #[resource] buf: &ParCommandBuffer,
-    #[resource] parking: &ParkingManagement,
     #[resource] map: &Map,
     #[resource] time: &TimeInfo,
     trans: &Transform,
@@ -115,13 +110,14 @@ pub fn vehicle_state_update(
                 kin.velocity = Vec2::ZERO;
             }
         }
-        VehicleState::Parked(spot) => {
+        VehicleState::Parked(_) => {
             // Wait until it's time to start driving again, then set a route and unpark.
+            /*
             if it.has_ended(time.time) {
                 let mut lane = map.parking_to_drive(spot);
 
                 if lane.is_none() {
-                    lane = map.closest_lane(trans.position(), LaneKind::Driving);
+                    lane = map.nearest_lane(trans.position(), LaneKind::Driving);
                 }
 
                 let travers: Option<Traversable> = lane
@@ -161,9 +157,9 @@ pub fn vehicle_state_update(
                         ));
                         drop(cow);
 
-                        goria.world.entry(ent).map(|mut v| {
+                        if let Some(mut v) = goria.world.entry(ent) {
                             v.add_component(h);
-                        });
+                        }
                     });
 
                     *it = itin;
@@ -173,6 +169,7 @@ pub fn vehicle_state_update(
                     *it = Itinerary::wait_until(time.time + 10.0);
                 }
             }
+             */
         }
     }
 }
@@ -230,38 +227,6 @@ fn physics(
     ));
 
     kin.velocity = trans.direction() * speed;
-}
-
-fn next_objective(
-    pos: Vec2,
-    parking: &ParkingManagement,
-    map: &Map,
-    last_travers: Option<&Traversable>,
-) -> Option<(Itinerary, ParkingSpotID)> {
-    let rlane = map.get_random_lane(LaneKind::Driving, &mut thread_rng())?;
-    let spot_id = parking.reserve_near(
-        rlane.id,
-        rlane
-            .points
-            .point_along(rand::random::<f32>() * rlane.points.length()),
-        map,
-    )?;
-
-    let l = &map.lanes()[map.parking_to_drive(spot_id)?];
-
-    let spot = map.parking.get(spot_id).unwrap(); // Unwrap ok: gotten using reserve_near
-
-    let p = l.points.project(spot.pos);
-    let dist = l.points.distance_along(p);
-
-    Itinerary::route(
-        pos,
-        *last_travers.filter(|t| t.raw_points(map).is_some())?,
-        (l.id, l.points.point_along(dist - 5.0)),
-        map,
-        &DirectionalPath,
-    )
-    .map(move |it| (it, spot_id))
 }
 
 /// Decide the appropriate velocity and direction to aim for.

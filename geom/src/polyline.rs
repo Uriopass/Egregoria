@@ -4,7 +4,7 @@ use crate::segment::Segment;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
-use std::ops::{Index, RangeBounds};
+use std::ops::{Index, Range, RangeBounds};
 use std::slice::{Iter, IterMut, Windows};
 
 /// An ordered list of at least one point forming a broken line
@@ -277,10 +277,18 @@ impl PolyLine {
     }
 }
 
+impl Index<Range<usize>> for PolyLine {
+    type Output = [Vec2];
+
+    fn index(&self, r: Range<usize>) -> &[Vec2] {
+        &self.0[r]
+    }
+}
+
 impl Index<usize> for PolyLine {
     type Output = Vec2;
 
-    fn index(&self, index: usize) -> &Self::Output {
+    fn index(&self, index: usize) -> &Vec2 {
         &self.0[index]
     }
 }

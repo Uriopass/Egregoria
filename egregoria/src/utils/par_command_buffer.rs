@@ -18,10 +18,12 @@ impl<T> Deleted<T> {
     }
 }
 
+type ExecType = Box<dyn for<'a> FnOnce(&'a mut Egregoria) + Send>;
+
 #[derive(Default)]
 pub struct ParCommandBuffer {
     to_kill: Mutex<Vec<Entity>>,
-    execs: Mutex<Vec<Box<dyn for<'a> FnOnce(&'a mut Egregoria) -> () + Send>>>,
+    execs: Mutex<Vec<ExecType>>,
 }
 
 impl ParCommandBuffer {
@@ -32,7 +34,7 @@ impl ParCommandBuffer {
         self.to_kill.lock().unwrap().extend_from_slice(e);
     }
 
-    pub fn exec(&self, f: impl for<'a> FnOnce(&'a mut Egregoria) -> () + 'static + Send) {
+    pub fn exec(&self, f: impl for<'a> FnOnce(&'a mut Egregoria) + 'static + Send) {
         self.execs.lock().unwrap().push(Box::new(f));
     }
 
@@ -48,16 +50,16 @@ impl ParCommandBuffer {
         self.exec(move |w| {
             Self::parse_del::<T>(w, e);
             if let Some(mut x) = w.world.entry(e) {
-                x.remove_component::<T>()
+                x.remove_component::<T>();
             }
         })
     }
 
     fn parse_del<T: Component + Clone>(goria: &mut Egregoria, entity: Entity) {
         if let Some(v) = goria.comp::<T>(entity).cloned() {
-            goria
-                .try_write::<Deleted<T>>()
-                .map(move |mut x| x.0.push(v));
+            if let Some(mut x) = goria.try_write::<Deleted<T>>() {
+                x.0.push(v)
+            }
         }
     }
 
@@ -76,7 +78,7 @@ impl ParCommandBuffer {
             goria.world.remove(entity);
         }
 
-        let funs: Vec<Box<dyn for<'a> FnOnce(&'a mut Egregoria) -> () + Send>> = std::mem::take(
+        let funs: Vec<ExecType> = std::mem::take(
             goria
                 .write::<ParCommandBuffer>()
                 .execs

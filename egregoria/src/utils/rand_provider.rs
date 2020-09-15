@@ -1,8 +1,26 @@
-use rand::{Rng, SeedableRng};
+use rand::{Error, Rng, RngCore, SeedableRng};
 use rand_distr::{Distribution, Float, Standard, StandardNormal};
 
 pub struct RandProvider {
-    pub rng: rand::rngs::SmallRng,
+    rng: rand::rngs::SmallRng,
+}
+
+impl RngCore for RandProvider {
+    fn next_u32(&mut self) -> u32 {
+        self.rng.next_u32()
+    }
+
+    fn next_u64(&mut self) -> u64 {
+        self.rng.next_u64()
+    }
+
+    fn fill_bytes(&mut self, dest: &mut [u8]) {
+        self.rng.fill_bytes(dest)
+    }
+
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
+        self.rng.try_fill_bytes(dest)
+    }
 }
 
 impl RandProvider {

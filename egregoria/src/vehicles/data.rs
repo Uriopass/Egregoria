@@ -99,7 +99,7 @@ pub fn spawn_parked_vehicle(goria: &mut Egregoria) {
     let pm = goria.read::<ParkingManagement>();
 
     let rl = unwrap_or!(
-        map.get_random_lane(LaneKind::Parking, &mut goria.write::<RandProvider>().rng),
+        map.random_lane(LaneKind::Parking, &mut *goria.write::<RandProvider>()),
         return
     );
     let spot_id = unwrap_or!(

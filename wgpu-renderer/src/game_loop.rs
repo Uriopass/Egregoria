@@ -8,6 +8,7 @@ use geom::Vec2;
 use geom::{Camera, Transform};
 use gui::{FollowEntity, Gui};
 use map_model::Map;
+use souls::Souls;
 use std::time::Instant;
 use winit::dpi::PhysicalSize;
 
@@ -19,21 +20,28 @@ pub struct State {
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
     gui: Gui,
+    souls: Souls,
 }
 
 impl State {
     pub fn new(ctx: &mut Context) -> Self {
-        let camera = CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 0.05);
+        let camera = egregoria::utils::saveload::load("camera")
+            .map(|camera| CameraHandler {
+                camera,
+                last_pos: Vec2::ZERO,
+            })
+            .unwrap_or_else(|| {
+                CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 0.05)
+            });
 
         let wrapper = ImguiWrapper::new(&mut ctx.gfx);
+
+        crate::rendering::prepare_background(&mut ctx.gfx);
 
         let mut state = egregoria::Egregoria::init();
 
         load_from_disk(&mut state);
         gui::add_gui_systems(&mut state);
-
-        crate::rendering::prepare_background(&mut ctx.gfx);
-
         state.insert(camera.camera.clone());
 
         Self {
@@ -44,6 +52,7 @@ impl State {
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
             gui: Gui::default(),
+            souls: Souls::default(),
         }
     }
 
@@ -68,6 +77,9 @@ impl State {
         }
 
         self.state.run();
+
+        self.souls.add_souls_to_empty_buildings(&mut self.state);
+        self.souls.update(&mut self.state);
 
         self.manage_entity_follow();
         self.camera.update(ctx);

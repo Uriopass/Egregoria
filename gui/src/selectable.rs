@@ -46,7 +46,7 @@ pub fn selectable_cleanup(
     sw: &SubWorld,
 ) {
     if let Some(e) = inspected.e {
-        if !sw.entry_ref(e).is_ok() {
+        if sw.entry_ref(e).is_err() {
             inspected.e = None;
             return;
         }

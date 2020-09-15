@@ -26,10 +26,7 @@ impl MeshBuilder {
     }
 
     #[inline(always)]
-    pub fn extend_with(
-        &mut self,
-        f: impl Fn(&mut Vec<ColoredVertex>, &mut dyn FnMut(IndexType)) -> (),
-    ) {
+    pub fn extend_with(&mut self, f: impl Fn(&mut Vec<ColoredVertex>, &mut dyn FnMut(IndexType))) {
         let offset = self.vertices.len() as IndexType;
         let vertices = &mut self.vertices;
         let indices = &mut self.indices;

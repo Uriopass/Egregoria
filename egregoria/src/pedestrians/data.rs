@@ -1,13 +1,14 @@
+use crate::api::Location;
 use crate::engine_interaction::{Movable, Selectable};
-use crate::map_dynamic::Itinerary;
+use crate::map_dynamic::{BuildingInfos, Itinerary};
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::rendering::Color;
-use crate::utils::rand_world;
-use crate::{Egregoria, RandProvider};
+use crate::Egregoria;
 use geom::{vec2, Transform, Vec2};
 use imgui_inspect_derive::*;
-use map_model::{LaneKind, Map};
+use legion::Entity;
+use map_model::BuildingID;
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 
@@ -17,35 +18,14 @@ pub struct Pedestrian {
     pub walk_anim: f32,
 }
 
-pub fn spawn_pedestrian(goria: &mut Egregoria) {
-    let map = goria.read::<Map>();
+const PED_SIZE: f32 = 0.5;
 
-    let lane = unwrap_or!(
-        map.get_random_lane(LaneKind::Walking, &mut goria.write::<RandProvider>().rng),
-        return
-    );
-
-    let pos: Vec2 = if let [a, b, ..] = *lane.points.as_slice() {
-        drop(map);
-        a + (b - a) * rand_world::<f32>(goria)
-    } else {
-        return;
-    };
-
-    let size = 0.5;
-
-    let h = goria.write::<CollisionWorld>().insert(
-        pos,
-        PhysicsObject {
-            radius: size * 0.6,
-            group: PhysicsGroup::Pedestrians,
-            ..Default::default()
-        },
-    );
+pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Entity {
     let color = random_pedestrian_shirt_color();
 
-    goria.world.push((
-        Transform::new(pos),
+    let e = goria.world.push((
+        Transform::new(Vec2::ZERO),
+        Location::Building(house),
         Pedestrian::default(),
         Itinerary::none(),
         Kinematics::from_mass(80.0),
@@ -55,21 +35,21 @@ pub fn spawn_pedestrian(goria: &mut Egregoria) {
                 .add(RectRender {
                     // Arm 1
                     height: 0.14,
-                    width: size * 0.4,
-                    offset: vec2(0.0, size * 0.6),
+                    width: PED_SIZE * 0.4,
+                    offset: vec2(0.0, PED_SIZE * 0.6),
                     color: Color::from_hex(0xFFCCA8), // Skin color (beige)
                 })
                 .add(RectRender {
                     // Arm 2
                     height: 0.14,
-                    width: size * 0.4,
-                    offset: vec2(0.0, -size * 0.6),
+                    width: PED_SIZE * 0.4,
+                    offset: vec2(0.0, -PED_SIZE * 0.6),
                     color: Color::from_hex(0xFFCCA8),
                 })
                 .add(RectRender {
                     // Body
-                    height: size,
-                    width: size * 0.5,
+                    height: PED_SIZE,
+                    width: PED_SIZE * 0.5,
                     color,
                     ..Default::default()
                 })
@@ -79,11 +59,25 @@ pub fn spawn_pedestrian(goria: &mut Egregoria) {
                     color: Color::BLACK,
                     ..Default::default()
                 })
+                .hidden()
                 .build()
         },
-        Collider(h),
         Selectable::new(0.5),
     ));
+
+    goria.write::<BuildingInfos>().get_in(house, e);
+    e
+}
+
+pub fn put_pedestrian_in_coworld(goria: &mut Egregoria, pos: Vec2) -> Collider {
+    Collider(goria.write::<CollisionWorld>().insert(
+        pos,
+        PhysicsObject {
+            radius: PED_SIZE * 0.6,
+            group: PhysicsGroup::Pedestrians,
+            ..Default::default()
+        },
+    ))
 }
 
 impl Default for Pedestrian {

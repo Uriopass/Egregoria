@@ -47,7 +47,7 @@ impl UserData for LuaWorld {
         });
 
         methods.add_method("remove", |_: &Lua, sel: &Self, e: LuaEntity| unsafe {
-            &mut (*sel.w).write::<ParCommandBuffer>().kill(e.0);
+            (*sel.w).write::<ParCommandBuffer>().kill(e.0);
             Ok(())
         });
     }

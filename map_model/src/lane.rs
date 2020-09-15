@@ -245,6 +245,10 @@ impl Lane {
         self.points.last()
     }
 
+    pub fn proj(&self, p: Vec2) -> Vec2 {
+        self.points.project(p)
+    }
+
     pub fn dist2_to(&self, p: Vec2) -> f32 {
         self.points.project_dist2(p)
     }

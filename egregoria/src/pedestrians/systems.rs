@@ -6,7 +6,7 @@ use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::Restrict;
 use geom::{angle_lerp, Transform, Vec2};
 use legion::system;
-use map_model::{LaneKind, Map, PedestrianPath, Traversable, TraverseDirection, TraverseKind};
+use map_model::{Map, TraverseDirection};
 
 #[system(for_each)]
 pub fn pedestrian_decision(
@@ -20,8 +20,6 @@ pub fn pedestrian_decision(
     pedestrian: &mut Pedestrian,
     mr: &mut MeshRender,
 ) {
-    objective_update(it, trans, map, time);
-
     let (_, my_obj) = cow.get(coll.0).expect("Handle not in collision world");
     let neighbors = cow.query_around(trans.position(), 10.0);
 
@@ -121,11 +119,20 @@ pub fn calc_decision<'a>(
     }
 
     if !it.is_terminal() {
-        if let Some(points) = it.get_travers().and_then(|x| x.raw_points(map)) {
+        if let Some((dir, points)) = it
+            .get_travers()
+            .and_then(|x| x.raw_points(map).map(|v| (x.dir, v)))
+        {
             // Fixme: performance heavy on long curved roads which can have many points
-            let projected = points.project(position);
-            let lane_force = projected - trans.position();
+            let (projected, proj_dir) = points.project_dir(position);
+            let walk_side = match dir {
+                TraverseDirection::Forward => 1.0,
+                TraverseDirection::Backward => -1.0,
+            };
+
+            let lane_force = (projected + proj_dir.perpendicular() * walk_side) - trans.position();
             let m = lane_force.magnitude();
+
             desired_v += lane_force * m * 0.1;
         }
     }
@@ -135,34 +142,4 @@ pub fn calc_decision<'a>(
     let desired_dir = (dir_to_pos + kin.velocity).normalize();
 
     (desired_v, desired_dir)
-}
-
-pub fn objective_update(itinerary: &mut Itinerary, trans: &Transform, map: &Map, time: &TimeInfo) {
-    if itinerary.has_ended(time.time) {
-        let mut last_travers = itinerary.get_travers().copied();
-        if last_travers.is_none() {
-            last_travers = map
-                .closest_lane(trans.position(), LaneKind::Walking)
-                .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
-        }
-
-        *itinerary = next_objective(trans.position(), map, last_travers.as_ref())
-            .unwrap_or_else(|| Itinerary::wait_until(time.time + 10.0));
-    }
-}
-
-fn next_objective(pos: Vec2, map: &Map, last_travers: Option<&Traversable>) -> Option<Itinerary> {
-    let l = map.get_random_lane(LaneKind::Walking, &mut rand::thread_rng())?;
-
-    Itinerary::route(
-        pos,
-        *last_travers?,
-        (
-            l.id,
-            l.points
-                .point_along(rand::random::<f32>() * l.points.length()),
-        ),
-        map,
-        &PedestrianPath,
-    )
 }

@@ -29,7 +29,6 @@ pub fn movable(
                 None => {
                     if let Ok(kin) = entry.get_component_mut::<Kinematics>() {
                         kin.velocity = Vec2::ZERO;
-                        kin.acceleration = Vec2::ZERO;
                     }
                     sself.clicked_at = Some(mouse.unprojected);
                 }
@@ -44,7 +43,6 @@ pub fn movable(
                         p.set_position(new_pos);
                         if let Ok(kin) = entry.get_component_mut::<Kinematics>() {
                             kin.velocity = Vec2::ZERO;
-                            kin.acceleration = Vec2::ZERO;
                         }
                     }
                 }

@@ -1,11 +1,11 @@
 #![allow(clippy::unreadable_literal)]
-#![allow(clippy::block_in_if_condition_stmt)]
+#![allow(clippy::blocks_in_if_conditions)]
 #![allow(clippy::too_many_arguments)]
 
 use crate::engine_interaction::{
     KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable, TimeInfo,
 };
-use crate::map_dynamic::{itinerary_update_system, Itinerary, ParkingManagement};
+use crate::map_dynamic::{itinerary_update_system, BuildingInfos, Itinerary, ParkingManagement};
 use crate::pedestrians::{pedestrian_decision_system, Pedestrian};
 use crate::physics::systems::{
     coworld_maintain_system, coworld_synchronize_system, kinematics_apply_system,
@@ -14,7 +14,6 @@ use crate::physics::{deserialize_colliders, serialize_colliders, CollisionWorld}
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::scenarios::scenario_runner::{run_scenario_system, RunningScenario};
-use crate::souls::Souls;
 use crate::vehicles::systems::{
     vehicle_cleanup_system, vehicle_decision_system, vehicle_state_update_system,
 };
@@ -39,24 +38,28 @@ extern crate log as extern_log;
 #[macro_use]
 pub mod utils;
 
+pub mod api;
 pub mod engine_interaction;
 pub mod map_dynamic;
 pub mod pedestrians;
 pub mod physics;
 pub mod rendering;
 pub mod scenarios;
-mod souls;
 pub mod vehicles;
 
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
-use geom::Transform;
+use geom::{Transform, Vec2};
 pub use legion;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use utils::par_command_buffer::Deleted;
 use utils::saveload;
 use utils::scheduler::SeqSchedule;
+
+slotmap::new_key_type! {
+    pub struct SoulID;
+}
 
 pub struct Egregoria {
     pub world: World,
@@ -89,10 +92,10 @@ impl Egregoria {
         resources.insert(RenderStats::default());
         resources.insert(RandProvider::new(RNG_SEED));
         resources.insert(ParkingManagement::default());
+        resources.insert(BuildingInfos::default());
         resources.insert(FrameLog::default());
         resources.insert(RunningScenario::default());
         resources.insert(ImmediateDraw::default());
-        resources.insert(Souls::default());
         resources.insert(ParCommandBuffer::default());
         resources.insert(Deleted::<Collider>::default());
         resources.insert(Deleted::<Vehicle>::default());
@@ -123,6 +126,10 @@ impl Egregoria {
 
     pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
         <&mut T>::query().get_mut(&mut self.world, e).ok()
+    }
+
+    pub fn position(&self, e: Entity) -> Option<Vec2> {
+        self.comp::<Transform>(e).map(|x| x.position())
     }
 
     pub fn try_write<T: Resource>(&self) -> Option<impl DerefMut<Target = T> + '_> {

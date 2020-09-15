@@ -8,6 +8,8 @@ pub struct Vec2 {
     pub y: f32,
 }
 
+impl Eq for Vec2 {}
+
 pub const fn vec2(x: f32, y: f32) -> Vec2 {
     Vec2 { x, y }
 }
