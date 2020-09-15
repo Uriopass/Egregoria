@@ -47,4 +47,8 @@ impl Segment {
     pub fn to_polygon(self) -> Polygon {
         Polygon(vec![self.src, self.dst])
     }
+
+    pub fn center(&self) -> Vec2 {
+        (self.src + self.dst) * 0.5
+    }
 }

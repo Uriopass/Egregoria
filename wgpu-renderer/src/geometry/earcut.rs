@@ -257,7 +257,7 @@ fn calc_invsize(minx: f32, miny: f32, maxx: f32, maxy: f32) -> f32 {
 fn earcut_linked_hashed(
     ll: &mut LinkedLists,
     mut ear_idx: NodeIdx,
-    on_triangle: &mut impl FnMut(usize, usize, usize) -> (),
+    on_triangle: &mut impl FnMut(usize, usize, usize),
     pass: usize,
 ) {
     // interlink polygon nodes in z-order
@@ -307,7 +307,7 @@ fn earcut_linked_hashed(
 fn earcut_linked_unhashed(
     ll: &mut LinkedLists,
     mut ear_idx: NodeIdx,
-    on_triangle: &mut impl FnMut(usize, usize, usize) -> (),
+    on_triangle: &mut impl FnMut(usize, usize, usize),
     pass: usize,
 ) {
     // iterate through ears, slicing them one by one
@@ -662,7 +662,7 @@ fn point_in_triangle(a: &Node, b: &Node, c: &Node, p: &Node) -> bool {
         && ((b.x - p.x) * (c.y - p.y) - (c.x - p.x) * (b.y - p.y) >= 0.0)
 }
 
-pub fn earcut(data: &[f32], mut on_triangle: impl FnMut(usize, usize, usize) -> ()) {
+pub fn earcut(data: &[f32], mut on_triangle: impl FnMut(usize, usize, usize)) {
     let (mut ll, outer_node) = linked_list(data, 0, data.len(), true);
     if ll.nodes.len() == 1 {
         return;
@@ -702,7 +702,7 @@ algorithm itself.*/
 fn cure_local_intersections(
     ll: &mut LinkedLists,
     instart: NodeIdx,
-    on_triangle: &mut impl FnMut(usize, usize, usize) -> (),
+    on_triangle: &mut impl FnMut(usize, usize, usize),
 ) -> NodeIdx {
     let mut p = instart;
     let mut start = instart;
@@ -760,7 +760,7 @@ fn cure_local_intersections(
 fn split_earcut(
     ll: &mut LinkedLists,
     start_idx: NodeIdx,
-    on_triangle: &mut impl FnMut(usize, usize, usize) -> (),
+    on_triangle: &mut impl FnMut(usize, usize, usize),
 ) {
     // look for a valid diagonal that divides the polygon into two
     let mut a = start_idx;

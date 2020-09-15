@@ -127,6 +127,11 @@ impl MeshRender {
         }
     }
 
+    pub fn hidden(&mut self) -> &mut Self {
+        self.hide = true;
+        self
+    }
+
     pub fn add<T: Into<MeshRenderEnum>>(&mut self, x: T) -> &mut Self {
         self.orders.push(x.into());
         self

@@ -1,7 +1,8 @@
+use crate::api::Location;
 use crate::engine_interaction::TimeInfo;
 use crate::physics::{Collider, Kinematics};
 use crate::{CollisionWorld, Deleted};
-use geom::{Transform, Vec2};
+use geom::Transform;
 use legion::system;
 
 #[system(for_each)]
@@ -10,9 +11,7 @@ pub fn kinematics_apply(
     transform: &mut Transform,
     kin: &mut Kinematics,
 ) {
-    kin.velocity += kin.acceleration * time.delta;
     transform.translate(kin.velocity * time.delta);
-    kin.acceleration = Vec2::ZERO;
 }
 
 #[system(for_each)]
@@ -38,4 +37,11 @@ pub fn coworld_maintain(
     }
 
     coworld.maintain();
+}
+
+#[system(for_each)]
+fn location_update(transform: &Transform, loc: &mut Location) {
+    if let Location::Outside(p) = loc {
+        *p = transform.position();
+    }
 }

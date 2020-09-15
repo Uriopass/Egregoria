@@ -68,7 +68,9 @@ pub fn roadeditor(
             inspected.e = None;
             inspected.dirty = false;
         }
-        state.inspect_e.map(|e| buf.remove(e));
+        if let Some(e) = state.inspect_e {
+            buf.remove(e)
+        }
         return;
     }
 

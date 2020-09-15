@@ -33,7 +33,7 @@ impl Scanner {
 }
 
 pub fn load_parismap(map: &mut Map) {
-    let t = std::time::Instant::now();
+    let time = std::time::Instant::now();
     let file = unwrap_or!(File::open("assets/paris_54000.txt").ok(), {
         error!("Couldn't open parismap file");
         return;
@@ -41,8 +41,8 @@ pub fn load_parismap(map: &mut Map) {
 
     let mut scanner = Scanner::new(BufReader::new(file));
 
-    let n = scanner.next::<i32>();
-    let m = scanner.next::<i32>();
+    let n_inters = scanner.next::<i32>();
+    let n_roads = scanner.next::<i32>();
     let _ = scanner.next::<i32>();
     let _ = scanner.next::<i32>();
     let _ = scanner.next::<i32>();
@@ -57,33 +57,33 @@ pub fn load_parismap(map: &mut Map) {
 
     let mut g = SparseGrid::new(50);
 
-    for _ in 0..n {
+    for _ in 0..n_inters {
         let mut long = scanner.next::<f64>();
         let mut lat = scanner.next::<f64>();
 
         long = (long - CENTER_B) * scale / f64::cos(long / 180.0 * std::f64::consts::PI);
         lat = (lat - CENTER_A) * scale;
 
-        let p = vec2(lat as f32, long as f32);
+        let pos = vec2(lat as f32, long as f32);
 
-        let n = g.query_around(p, 50.0).next();
+        let n = g.query_around(pos, 50.0).next();
         if let Some((h, _)) = n {
             let (_, close_id) = g.get(h).unwrap();
             ids.push(*close_id);
-            let newpos = (map.intersections[*close_id].pos + p) * 0.5;
+            let newpos = (map.intersections[*close_id].pos + pos) * 0.5;
             map.update_intersection(*close_id, |i| i.pos = newpos);
             g.set_position(h, newpos);
             g.maintain();
             continue;
         }
-        let id = map.add_intersection(p);
+        let id = map.add_intersection(pos);
         ids.push(id);
-        g.insert(p, id);
+        g.insert(pos, id);
     }
 
     let mut already = HashSet::new();
     //Parse junctions
-    for _ in 0..m {
+    for _ in 0..n_roads {
         let src = scanner.next::<usize>();
         let dst = scanner.next::<usize>();
         let n_lanes = scanner.next::<usize>();
@@ -127,7 +127,7 @@ pub fn load_parismap(map: &mut Map) {
 
     info!(
         "loading parismap took {}ms",
-        t.elapsed().as_secs_f32() * 1000.0
+        time.elapsed().as_secs_f32() * 1000.0
     );
 
     print_stats(map);

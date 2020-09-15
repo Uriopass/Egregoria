@@ -5,7 +5,7 @@ use imgui::{im_str, Ui};
 
 impl InspectRenderDefault<Transform> for Transform {
     fn render(data: &[&Transform], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
-        let mut t = data[0].clone();
+        let mut t = *data[0];
         Self::render_mut(&mut [&mut t], label, ui, args);
     }
 

@@ -17,15 +17,19 @@ fn open_file(path: &str) -> Option<File> {
 }
 
 pub fn save<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
+    save_silent(x, name);
+    info!("successfully saved {}", name);
+    Some(())
+}
+
+pub fn save_silent<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
     let _ = std::fs::create_dir("world");
 
     let file = create_file(&filename(name))?;
 
     let w = BufWriter::new(file);
 
-    let _ =
-        bincode::serialize_into(w, x).map_err(|err| error!("failed serializing {}: {}", name, err));
-    info!("successfully saved {}", name);
+    let _ = bincode::serialize_into(w, x);
     Some(())
 }
 

@@ -3,7 +3,7 @@ use geom::Transform;
 use geom::Vec2;
 use imgui_inspect_derive::*;
 use legion::system;
-use map_model::{LaneID, Map, Pathfinder, Traversable, TraverseKind};
+use map_model::{Map, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Inspect, Serialize, Deserialize)]
@@ -28,7 +28,7 @@ pub struct Route {
     pub cur: Traversable,
 }
 
-pub const OBJECTIVE_OK_DIST: f32 = 4.0;
+pub const OBJECTIVE_OK_DIST: f32 = 3.0;
 
 impl Itinerary {
     pub fn none() -> Self {
@@ -52,54 +52,43 @@ impl Itinerary {
         }
     }
 
-    pub fn route(
-        pos: Vec2,
-        cur: Traversable,
-        (l_obj, obj): (LaneID, Vec2),
-        map: &Map,
-        pather: &impl Pathfinder,
-    ) -> Option<Itinerary> {
-        let points = cur.points(map)?;
-        let (_, segid) = points.project_segment(pos);
+    pub fn route(start: Vec2, end: Vec2, map: &Map, pather: &impl Pathfinder) -> Option<Itinerary> {
+        let start_lane = pather.nearest_lane(map, start)?;
+        let end_lane = pather.nearest_lane(map, end)?;
 
-        if let TraverseKind::Lane(id) = cur.kind {
-            if id == l_obj {
-                // start lane is objective lane
-
-                let (_, segid_obj) = points.project_segment(obj);
-
-                if segid_obj > segid
-                    || (segid_obj == segid
-                        && points[segid - 1].distance2(pos) < points[segid - 1].distance2(obj))
-                {
-                    let kind = ItineraryKind::Route(Route {
-                        reversed_route: vec![],
-                        end_pos: obj,
-                        cur,
-                    });
-
-                    let mut local_path = vec![];
-                    local_path.extend(&points.as_slice()[segid..segid_obj]);
-                    local_path.push(obj);
-
-                    return Some(Itinerary { kind, local_path });
-                }
-            }
+        if start_lane == end_lane {
+            let p = pather.local_route(map, start_lane, start, end)?;
+            return Some(Itinerary::simple(p.into_vec()));
         }
 
-        let mut points = points.into_vec();
-        points.drain(..segid - 1);
+        let mut cur = Traversable::new(TraverseKind::Lane(start_lane), TraverseDirection::Forward);
 
         let mut reversed_route: Vec<Traversable> =
-            pather.path(map, cur, l_obj)?.into_iter().rev().collect();
+            pather.path(map, cur, end_lane)?.into_iter().rev().collect();
 
         reversed_route.pop(); // Remove start
 
+        if let Some(&Traversable {
+            kind: TraverseKind::Lane(id),
+            ..
+        }) = reversed_route.last()
+        {
+            if id == start_lane {
+                cur = reversed_route.pop().unwrap();
+            }
+        }
+
         let kind = ItineraryKind::Route(Route {
             reversed_route,
-            end_pos: obj,
+            end_pos: end,
             cur,
         });
+
+        let points = cur.points(map).unwrap();
+        let (_, segid) = points.project_segment(start);
+
+        let mut points = points.into_vec();
+        points.drain(..segid - 1);
 
         let mut it = Self {
             kind,
@@ -122,8 +111,9 @@ impl Itinerary {
 
                 let points = r.cur.points(map)?;
                 if r.reversed_route.is_empty() {
-                    let (_, id) = points.project_segment(r.end_pos);
+                    let (proj_pos, id) = points.project_segment(r.end_pos);
                     self.local_path.extend(&points.as_slice()[..id]);
+                    self.local_path.push(proj_pos);
                     self.local_path.push(r.end_pos);
                 } else {
                     self.local_path = points.into_vec();
@@ -137,7 +127,7 @@ impl Itinerary {
         if let Some(p) = self.get_point() {
             let dist = p.distance2(position);
             if self.is_terminal() {
-                if dist < 1.0 {
+                if dist < OBJECTIVE_OK_DIST {
                     self.advance(map);
                 }
                 return;

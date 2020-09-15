@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 macro_rules! unwrap_or {
     ($e: expr, $t: expr) => {
         match $e {

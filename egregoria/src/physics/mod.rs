@@ -1,19 +1,18 @@
+use crate::Egregoria;
 use flat_spatial::grid::GridHandle;
 use geom::Vec2;
 use imgui::Ui;
 use imgui_inspect::InspectDragf;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault, InspectVec2Rotation};
 use imgui_inspect_derive::*;
+use legion::IntoQuery;
 use serde::{Deserialize, Serialize};
-
-pub mod systems;
+use std::collections::HashMap;
 
 mod kinematics;
+pub mod systems;
 
-use crate::Egregoria;
 pub use kinematics::*;
-use legion::IntoQuery;
-use std::collections::HashMap;
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PhysicsGroup {
@@ -83,7 +82,7 @@ pub fn serialize_colliders(state: &mut Egregoria) {
     crate::saveload::save(&objs, "coworld");
 }
 
-pub fn deserialize_colliders<'de>(state: &mut Egregoria) -> Option<()> {
+pub fn deserialize_colliders(state: &mut Egregoria) -> Option<()> {
     let objs: Vec<SerPhysicsObj> = crate::saveload::load("coworld")?;
 
     let coworld: &mut CollisionWorld = &mut *state.resources.get_mut::<CollisionWorld>().unwrap();

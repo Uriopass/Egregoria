@@ -1,10 +1,13 @@
 #![allow(clippy::or_fun_call)]
-use crate::{LaneID, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
+use crate::{LaneID, LaneKind, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
+use geom::{PolyLine, Vec2};
 use ordered_float::OrderedFloat;
 use slotmap::Key;
 
 pub trait Pathfinder {
     fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>>;
+    fn nearest_lane(&self, map: &Map, pos: Vec2) -> Option<LaneID>;
+    fn local_route(&self, map: &Map, lane: LaneID, start: Vec2, end: Vec2) -> Option<PolyLine>;
 }
 
 pub struct PedestrianPath;
@@ -53,11 +56,29 @@ impl Pathfinder for PedestrianPath {
         pathfinding::directed::astar::astar(&start, successors, heuristic, has_arrived)
             .map(|(v, _)| v)
     }
+
+    fn nearest_lane(&self, map: &Map, pos: Vec2) -> Option<LaneID> {
+        map.nearest_lane(pos, LaneKind::Walking)
+    }
+
+    fn local_route(&self, map: &Map, lane: LaneID, start: Vec2, end: Vec2) -> Option<PolyLine> {
+        let lane = &map.lanes[lane];
+        let (p_start, seg_start) = lane.points.project_segment(start);
+        let (p_end, seg_end) = lane.points.project_segment(end);
+
+        let segs = &lane.points[seg_start.min(seg_end)..seg_start.max(seg_end)];
+        let mut v = Vec::with_capacity(3 + segs.len());
+        v.push(p_start);
+        v.extend_from_slice(segs);
+        v.push(p_end);
+        v.push(end);
+        Some(PolyLine::new(v))
+    }
 }
 
-pub struct DirectionalPath;
+pub struct CarPath;
 
-impl Pathfinder for DirectionalPath {
+impl Pathfinder for CarPath {
     fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
         let inters = &map.intersections;
         let lanes = &map.lanes;
@@ -111,5 +132,30 @@ impl Pathfinder for DirectionalPath {
             last_id = lane;
         }
         Some(path)
+    }
+
+    fn nearest_lane(&self, map: &Map, pos: Vec2) -> Option<LaneID> {
+        map.nearest_lane(pos, LaneKind::Driving)
+    }
+
+    fn local_route(&self, map: &Map, lane: LaneID, start: Vec2, end: Vec2) -> Option<PolyLine> {
+        let lane = &map.lanes[lane];
+        let (p_start, seg_start) = lane.points.project_segment(start);
+        let (p_end, seg_end) = lane.points.project_segment(end);
+
+        if seg_end < seg_start
+            || (seg_end == seg_start
+                && lane.points[seg_end].distance2(p_start) > lane.points[seg_end].distance2(p_end))
+        {
+            return None;
+        }
+
+        let segs = &lane.points[seg_start..seg_end];
+        let mut v = Vec::with_capacity(3 + segs.len());
+        v.push(p_start);
+        v.extend_from_slice(segs);
+        v.push(p_end);
+        v.push(end);
+        Some(PolyLine::new(v))
     }
 }

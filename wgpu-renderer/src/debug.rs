@@ -24,7 +24,7 @@ lazy_static! {
             Box<dyn Send + Fn(&mut Tesselator, &mut Egregoria) -> Option<()>>
         )>,
     > = Mutex::new(vec![
-        (false, "Debug pathfinder", Box::new(debug_pathfinder)),
+        (true, "Debug pathfinder", Box::new(debug_pathfinder)),
         (false, "Debug spatialmap", Box::new(debug_spatialmap)),
         (false, "Debug collision world", Box::new(debug_coworld)),
         (false, "Debug OBBs", Box::new(debug_obb)),
@@ -172,7 +172,12 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<
                 tess.draw_polyline(l.as_slice(), 1.0, 3.0);
             }
         }
-        tess.color = LinearColor::MAGENTA;
+        tess.color = if itinerary.has_ended(0.0) {
+            LinearColor::GREEN
+        } else {
+            LinearColor::MAGENTA
+        };
+
         tess.draw_circle(r.end_pos, 1.0, 1.0);
     }
     Some(())
