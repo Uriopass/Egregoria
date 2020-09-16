@@ -15,10 +15,11 @@ pub enum Location {
     Building(BuildingID),
 }
 
-#[derive(Eq, PartialEq)]
 pub enum Action {
     DoNothing,
-    WalkTo(Entity, Location),
+    GetOutBuilding(Entity, BuildingID),
+    GetInBuilding(Entity, BuildingID),
+    Navigate(Entity, Itinerary),
 }
 
 impl Default for Action {
@@ -28,41 +29,59 @@ impl Default for Action {
 }
 
 impl Action {
+    pub fn walk_to(goria: &Egregoria, body: Entity, loc: Location) -> Action {
+        match loc {
+            Location::Building(build_id) => match *goria.comp::<Location>(body).unwrap() {
+                Location::Outside(pos) => {
+                    let itin = goria.comp::<Itinerary>(body).unwrap();
+
+                    if itin.is_none() {
+                        let map = goria.read::<Map>();
+
+                        let door_pos = map.buildings()[build_id].door_pos;
+
+                        let itin = unwrap_or!(
+                            Itinerary::route(pos, door_pos, &*map, &PedestrianPath),
+                            return Action::DoNothing
+                        );
+
+                        return Action::Navigate(body, itin);
+                    }
+
+                    if itin.has_ended(goria.read::<TimeInfo>().time) {
+                        return Action::GetInBuilding(body, build_id);
+                    }
+                }
+                Location::Building(cur_build) => {
+                    if cur_build == build_id {
+                        return Action::DoNothing;
+                    }
+                    return Action::GetOutBuilding(body, cur_build);
+                }
+                Location::Car(_) => unimplemented!(),
+            },
+            Location::Outside(_) => unimplemented!(),
+            Location::Car(_) => unimplemented!(),
+        };
+        Action::DoNothing
+    }
+
     pub fn apply(self, goria: &mut Egregoria) -> Option<()> {
         match self {
-            Action::WalkTo(body, Location::Building(build_id)) => {
-                match *goria.comp::<Location>(body).unwrap() {
-                    Location::Outside(pos) => {
-                        let itin = goria.comp::<Itinerary>(body).unwrap();
-                        if itin.is_none() {
-                            let map = goria.read::<Map>();
-
-                            let door_pos = map.buildings()[build_id].door_pos;
-
-                            let itin = Itinerary::route(pos, door_pos, &*map, &PedestrianPath)?;
-                            drop(map);
-
-                            *goria.comp_mut::<Itinerary>(body).unwrap() = itin;
-                            return Some(());
-                        }
-
-                        if itin.has_ended(goria.read::<TimeInfo>().time) {
-                            walk_in(goria, body, build_id);
-                            *goria.comp_mut::<Itinerary>(body).unwrap() = Itinerary::none();
-                        }
-                    }
-                    Location::Building(current_building_id) => {
-                        if current_building_id == build_id {
-                            return Some(());
-                        }
-
-                        walk_out(goria, body, current_building_id)
-                    }
-                    Location::Car(_) => unimplemented!(),
+            Action::DoNothing => {}
+            Action::GetOutBuilding(body, building) => {
+                walk_out(goria, body, building);
+            }
+            Action::GetInBuilding(body, building) => {
+                walk_in(goria, body, building);
+            }
+            Action::Navigate(e, itin) => {
+                if let Some(v) = goria.comp_mut(e) {
+                    *v = itin;
+                } else {
+                    log::warn!("Called navigate on entity that doesn't have itinerary component");
                 }
             }
-            Action::WalkTo(_, Location::Outside(_)) => {}
-            _ => {}
         }
         Some(())
     }
@@ -75,6 +94,7 @@ fn walk_in(goria: &mut Egregoria, body: Entity, building: BuildingID) {
         .read::<ParCommandBuffer>()
         .remove_component::<Collider>(body);
     goria.comp_mut::<Kinematics>(body).unwrap().velocity = Vec2::ZERO;
+    *goria.comp_mut::<Itinerary>(body).unwrap() = Itinerary::none();
     *goria.comp_mut::<Location>(body).unwrap() = Location::Building(building);
 }
 

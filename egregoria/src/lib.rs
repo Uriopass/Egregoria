@@ -57,15 +57,19 @@ use utils::par_command_buffer::Deleted;
 use utils::saveload;
 use utils::scheduler::SeqSchedule;
 
-slotmap::new_key_type! {
-    pub struct SoulID;
-}
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub struct SoulID(pub u64);
 
 pub struct Egregoria {
     pub world: World,
     pub schedule: SeqSchedule,
     resources: Resources,
 }
+
+// Safety: Resources must be Send+Sync
+// World is Send+Sync and SeqSchedule too
+unsafe impl Sync for Egregoria {}
+
 const RNG_SEED: u64 = 123;
 
 impl Egregoria {
@@ -75,7 +79,8 @@ impl Egregoria {
         self.schedule.execute(&mut self.world, &mut self.resources);
         ParCommandBuffer::apply(self);
         self.write::<RenderStats>()
-            .add_update_time(t.elapsed().as_secs_f32());
+            .world_update
+            .add_time(t.elapsed().as_secs_f32());
     }
 
     pub fn init() -> Egregoria {
@@ -144,8 +149,8 @@ impl Egregoria {
         self.resources.get().unwrap()
     }
 
-    pub fn insert<T: Resource>(&mut self, value: T) {
-        self.resources.insert(value)
+    pub fn insert<T: Resource + Send + Sync>(&mut self, res: T) {
+        self.resources.insert(res)
     }
 }
 

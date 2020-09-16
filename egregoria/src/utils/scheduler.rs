@@ -1,15 +1,15 @@
 use crate::utils::frame_log::FrameLog;
-use legion::systems::Runnable;
+use legion::systems::ParallelRunnable;
 use legion::{Resources, World};
 use std::time::Instant;
 
 #[derive(Default)]
 pub struct SeqSchedule {
-    systems: Vec<Box<dyn Runnable>>,
+    systems: Vec<Box<dyn ParallelRunnable>>,
 }
 
 impl SeqSchedule {
-    pub fn add_system(&mut self, s: impl Runnable + 'static) -> &mut Self {
+    pub fn add_system(&mut self, s: impl ParallelRunnable + 'static) -> &mut Self {
         self.systems.push(Box::new(s));
         self
     }

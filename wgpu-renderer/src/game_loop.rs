@@ -139,7 +139,8 @@ impl State {
 
         self.state
             .write::<RenderStats>()
-            .add_render_time(start.elapsed().as_secs_f32());
+            .render
+            .add_time(start.elapsed().as_secs_f32());
     }
 
     pub fn render_gui(&mut self, ctx: GuiRenderContext) {
