@@ -39,7 +39,7 @@ float snoise(vec2 v){
 const float FBM_MAG = 0.4;
 
 float fnoise(float ampl) {
-    vec2 dec = 0.1 + in_wv.xy * ampl;
+    vec2 dec = 1.0 + in_wv.xy* ampl;
 
     float noise = 0.0;
     float amplitude = 0.6;
@@ -62,10 +62,10 @@ float disturbed_noise(float noise) {
 }
 
 void main() {
-    float noise = fnoise(0.00002);
+    float noise = fnoise(0.00007);
 
     float before = noise;
-    noise -= length(in_wv - vec2(0.0, 10000.0)) * 0.00002;
+    noise -= length(in_wv) * 0.000045;
     noise = max(noise, 0);
 
     float dnoise = disturbed_noise(noise);
@@ -75,13 +75,9 @@ void main() {
         out_color =  (0.2 + dnoise * 1.0) * vec4(0.1, 0.3 + 0.1 * abs(lol), 0.6 + 0.1 * abs(lol), 1.0);
     } else if (noise < 0.12) { // sand
         out_color = (1.0 - dnoise) * vec4(0.9, 0.8, 0.3, 1.0);
-    } else if (noise < 0.60) { // grass
+    } else { // grass
         dnoise = (dnoise + 0.1) * 0.3;
         out_color = vec4(dnoise * 0.2, dnoise * 0.35, dnoise * 0.15, 1.0);
-    } else { // mountain
-        float c = (noise - 0.58) * 10.0;
-        dnoise = 0.3 + dnoise * c;
-        out_color = vec4(dnoise, dnoise, dnoise, 1.0);
     }
 
     out_color.a = 1.0;
