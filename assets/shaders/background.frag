@@ -56,7 +56,7 @@ float fnoise(float ampl) {
 float disturbed_noise(float noise) {
     float noise2 = fnoise(0.007);
 
-    float zoom = clamp(log(in_zoom) * 0.01 + 0.1, 0.0, 0.2);
+    float zoom = clamp(log(in_zoom) * 0.01 + 0.15, 0.0, 1.0);
 
     return noise * (1.0 - zoom) + noise2 * zoom;
 }
@@ -72,14 +72,15 @@ void main() {
 
     if (noise < 0.1) { // deep water
         float lol = before;
-        out_color =  (0.2 + dnoise * 3.0) * vec4(0.1, 0.3 + 0.1 * abs(lol), 0.6 + 0.1 * abs(lol), 1.0);
+        out_color =  (0.2 + dnoise * 1.0) * vec4(0.1, 0.3 + 0.1 * abs(lol), 0.6 + 0.1 * abs(lol), 1.0);
     } else if (noise < 0.12) { // sand
-        out_color = (1.0 - dnoise) * vec4(0.95, 0.9, 0.3, 1.0);
-    } else if (noise < 0.58) { // grass
-        out_color = 0.8 * vec4(dnoise * 0.2, dnoise * 0.8, dnoise * 0.1, 1.0);
+        out_color = (1.0 - dnoise) * vec4(0.9, 0.8, 0.3, 1.0);
+    } else if (noise < 0.60) { // grass
+        dnoise = (dnoise + 0.1) * 0.3;
+        out_color = vec4(dnoise * 0.2, dnoise * 0.35, dnoise * 0.15, 1.0);
     } else { // mountain
-        dnoise -= 0.25;
-        dnoise *= 1.4;
+        float c = (noise - 0.58) * 10.0;
+        dnoise = 0.3 + dnoise * c;
         out_color = vec4(dnoise, dnoise, dnoise, 1.0);
     }
 
