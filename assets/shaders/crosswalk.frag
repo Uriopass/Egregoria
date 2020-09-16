@@ -11,6 +11,9 @@ float lerp(float a, float b, float w)
     return a + w*(b-a);
 }
 
+const float bg = 0.12;
+const float fg = 0.8;
+
 void main() {
     float fw = min(0.25, 0.5 * fwidth(in_uv.x) * in_l);
     float invfw = 1.0 / fw;
@@ -19,18 +22,18 @@ void main() {
     float gray;
 
     if (proj < fw) {
-        gray = lerp(0.21404114, 1.0, proj * invfw);
+        gray = lerp(bg, fg, proj * invfw);
     } else if (proj < 0.5 + fw) {
-        gray = 1.0;
+        gray = fg;
     } else if (proj < 0.5 + fw * 2.0) {
-        gray = lerp(1.0, 0.21404114, (proj - 0.5 - fw) * invfw);
+        gray = lerp(fg, bg, (proj - 0.5 - fw) * invfw);
     } else {
-        gray = 0.21404114;
+        gray = bg;
     }
 
     if (fw == 0.25) {
-        gray = 0.8;
+        gray = fg * 0.8;
     }
 
-    out_color = vec4(gray, gray, gray, 1.0);
+    out_color = 0.8 * vec4(gray, gray, gray, 1.0);
 }
