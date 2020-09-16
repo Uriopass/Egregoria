@@ -27,7 +27,7 @@ impl Desire for Home {
             as f32
     }
 
-    fn apply(&self, _goria: &Egregoria) -> Action {
-        Action::WalkTo(self.body, Location::Building(self.house))
+    fn apply(&self, goria: &Egregoria) -> Action {
+        Action::walk_to(goria, self.body, Location::Building(self.house))
     }
 }

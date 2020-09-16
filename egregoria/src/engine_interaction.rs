@@ -25,29 +25,27 @@ impl Default for Selectable {
 }
 
 #[derive(Default)]
-pub struct RenderStats {
-    pub(crate) update_time: [f32; 10], // over the last 10 frames
-    pub(crate) render_time: [f32; 10],
+pub struct History {
+    values: [f32; 10],
 }
 
-impl RenderStats {
-    pub fn add_update_time(&mut self, update_time: f32) {
-        self.update_time.as_mut().rotate_right(1);
-        self.update_time[0] = update_time;
+impl History {
+    pub fn add_time(&mut self, time: f32) {
+        self.values.as_mut().rotate_right(1);
+        self.values[0] = time;
     }
 
-    pub fn add_render_time(&mut self, render_time: f32) {
-        self.render_time.as_mut().rotate_right(1);
-        self.render_time[0] = render_time;
+    pub fn time_avg(&self) -> f32 {
+        (&self.values).iter().sum::<f32>() / (self.values.len() as f32)
     }
+}
 
-    pub fn update_time_avg(&self) -> f32 {
-        (&self.update_time).iter().sum::<f32>() / (self.update_time.len() as f32)
-    }
-
-    pub fn render_time_avg(&self) -> f32 {
-        (&self.render_time).iter().sum::<f32>() / (self.render_time.len() as f32)
-    }
+#[derive(Default)]
+pub struct RenderStats {
+    pub world_update: History,
+    pub render: History,
+    pub souls_desires: History,
+    pub souls_apply: History,
 }
 
 #[derive(Clone, Copy)]

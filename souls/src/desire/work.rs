@@ -26,7 +26,7 @@ impl Desire for Work {
         (goria.read::<TimeInfo>().time / 100.0 + self.offset as f64).cos() as f32
     }
 
-    fn apply(&self, _goria: &Egregoria) -> Action {
-        Action::WalkTo(self.body, Location::Building(self.workplace))
+    fn apply(&self, goria: &Egregoria) -> Action {
+        Action::walk_to(goria, self.body, Location::Building(self.workplace))
     }
 }

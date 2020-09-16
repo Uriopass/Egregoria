@@ -1,18 +1,21 @@
 use crate::desire::{Desire, Home, Work};
 use egregoria::api::Action;
+use egregoria::engine_interaction::RenderStats;
 use egregoria::map_dynamic::BuildingInfos;
 use egregoria::pedestrians::spawn_pedestrian;
 use egregoria::utils::rand_provider::RandProvider;
 use egregoria::{Egregoria, SoulID};
 use map_model::{BuildingID, BuildingKind, Map};
 use ordered_float::OrderedFloat;
-use slotmap::DenseSlotMap;
+use rayon::iter::IntoParallelRefIterator;
+use rayon::iter::ParallelIterator;
+use std::time::Instant;
 
 mod desire;
 
 #[derive(Default)]
 pub struct Souls {
-    pub souls: DenseSlotMap<SoulID, Soul>,
+    souls: Vec<Soul>,
 }
 
 impl Souls {
@@ -32,27 +35,40 @@ impl Souls {
         drop(infos);
 
         for house in empty_buildings {
-            let id = self.souls.insert_with_key(Soul::empty);
+            let id = SoulID(self.souls.len() as u64);
 
             if let Some(soul) = Soul::human_soul(id, house, goria) {
-                self.souls[id] = soul;
-            } else {
-                self.souls.remove(id);
+                self.souls.push(soul);
             }
         }
     }
 
     pub fn update(&mut self, goria: &mut Egregoria) {
+        let refgoria = PlsNoModify(&*goria);
+        let t = Instant::now();
         let actions: Vec<_> = self
             .souls
-            .iter_mut()
-            .map(|(_, x)| x.decision(goria))
+            .par_iter()
+            .map(|x| x.decision(refgoria.0))
             .collect();
+
+        goria
+            .write::<RenderStats>()
+            .souls_desires
+            .add_time(t.elapsed().as_secs_f32());
+
+        let t = Instant::now();
         for action in actions {
             let _ = action.apply(goria);
         }
+        goria
+            .write::<RenderStats>()
+            .souls_apply
+            .add_time(t.elapsed().as_secs_f32());
     }
 }
+
+struct PlsNoModify<'a>(&'a Egregoria);
 
 pub struct Soul {
     pub id: SoulID,
@@ -89,7 +105,7 @@ impl Soul {
         })
     }
 
-    pub fn decision(&mut self, goria: &Egregoria) -> Action {
+    pub fn decision(&self, goria: &Egregoria) -> Action {
         self.desires
             .iter()
             .max_by_key(|d| OrderedFloat(d.score(goria)))
