@@ -23,7 +23,7 @@ pub struct Work {
 
 impl Desire for Work {
     fn score(&self, goria: &Egregoria) -> f32 {
-        (goria.read::<TimeInfo>().time / 100.0 + self.offset as f64).cos() as f32
+        (goria.read::<TimeInfo>().time / 500.0 + self.offset as f64).cos() as f32
     }
 
     fn apply(&self, goria: &Egregoria) -> Action {
