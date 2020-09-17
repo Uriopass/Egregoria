@@ -68,10 +68,10 @@ impl Intersection {
         let turns = self.turn_policy.generate_turns(self, lanes, roads);
 
         self.turns
-            .retain(|t| turns.iter().any(|(id2, _)| *id2 == t.id));
+            .retain(|t| turns.iter().any(|(id2, k)| *id2 == t.id && *k == t.kind));
 
         for (turn_id, kind) in turns {
-            if self.turns.iter().all(|x| x.id != turn_id) {
+            if self.turns.iter().all(|x| x.id != turn_id || x.kind != kind) {
                 self.turns.push(Turn::new(turn_id, kind))
             }
         }
