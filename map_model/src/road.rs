@@ -83,7 +83,7 @@ impl Road {
             length: 1.0,
             lanes_forward: vec![],
             lanes_backward: vec![],
-            generated_points: unsafe { PolyLine::new_unchecked(vec![]) },
+            generated_points: PolyLine::new(vec![Vec2::ZERO]),
             lots: vec![],
         });
         let road = &mut map.roads[id];

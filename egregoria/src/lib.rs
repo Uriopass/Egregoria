@@ -9,6 +9,7 @@ use crate::map_dynamic::{itinerary_update_system, BuildingInfos, Itinerary, Park
 use crate::pedestrians::{pedestrian_decision_system, Pedestrian};
 use crate::physics::systems::{
     coworld_maintain_system, coworld_synchronize_system, kinematics_apply_system,
+    location_update_system,
 };
 use crate::physics::{deserialize_colliders, serialize_colliders, CollisionWorld};
 use crate::physics::{Collider, Kinematics};
@@ -60,14 +61,16 @@ use utils::scheduler::SeqSchedule;
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct SoulID(pub u64);
 
+#[derive(Default)]
 pub struct Egregoria {
     pub world: World,
     pub schedule: SeqSchedule,
     resources: Resources,
 }
 
-// Safety: Resources must be Send+Sync
-// World is Send+Sync and SeqSchedule too
+/// Safety: Resources must be Send+Sync.
+/// Guaranteed by Egregoria::insert.
+/// World is Send+Sync and SeqSchedule too
 unsafe impl Sync for Egregoria {}
 
 const RNG_SEED: u64 = 123;
@@ -84,30 +87,29 @@ impl Egregoria {
     }
 
     pub fn init() -> Egregoria {
-        let world = World::default();
-        let mut resources = Resources::default();
+        let mut state = Egregoria::default();
 
         info!("Seed is {}", RNG_SEED);
 
         // Basic assets init
-        resources.insert(TimeInfo::default());
-        resources.insert(CollisionWorld::new(50));
-        resources.insert(KeyboardInfo::default());
-        resources.insert(MouseInfo::default());
-        resources.insert(RenderStats::default());
-        resources.insert(RandProvider::new(RNG_SEED));
-        resources.insert(ParkingManagement::default());
-        resources.insert(BuildingInfos::default());
-        resources.insert(FrameLog::default());
-        resources.insert(RunningScenario::default());
-        resources.insert(ImmediateDraw::default());
-        resources.insert(ParCommandBuffer::default());
-        resources.insert(Deleted::<Collider>::default());
-        resources.insert(Deleted::<Vehicle>::default());
+        state.insert(TimeInfo::default());
+        state.insert(CollisionWorld::new(50));
+        state.insert(KeyboardInfo::default());
+        state.insert(MouseInfo::default());
+        state.insert(RenderStats::default());
+        state.insert(RandProvider::new(RNG_SEED));
+        state.insert(ParkingManagement::default());
+        state.insert(BuildingInfos::default());
+        state.insert(FrameLog::default());
+        state.insert(RunningScenario::default());
+        state.insert(ImmediateDraw::default());
+        state.insert(ParCommandBuffer::default());
+        state.insert(Deleted::<Collider>::default());
+        state.insert(Deleted::<Vehicle>::default());
 
         // Dispatcher init
-        let mut schedule = SeqSchedule::default();
-        schedule
+        state
+            .schedule
             .add_system(vehicle_state_update_system())
             .add_system(vehicle_decision_system())
             .add_system(itinerary_update_system())
@@ -116,13 +118,10 @@ impl Egregoria {
             .add_system(run_scenario_system())
             .add_system(kinematics_apply_system())
             .add_system(coworld_synchronize_system())
-            .add_system(coworld_maintain_system());
+            .add_system(coworld_maintain_system())
+            .add_system(location_update_system());
 
-        Self {
-            world,
-            resources,
-            schedule,
-        }
+        state
     }
 
     pub fn comp<T: Component>(&self, e: Entity) -> Option<&T> {

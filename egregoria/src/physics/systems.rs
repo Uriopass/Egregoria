@@ -40,7 +40,7 @@ pub fn coworld_maintain(
 }
 
 #[system(for_each)]
-fn location_update(transform: &Transform, loc: &mut Location) {
+pub fn location_update(transform: &Transform, loc: &mut Location) {
     if let Location::Outside(p) = loc {
         *p = transform.position();
     }
