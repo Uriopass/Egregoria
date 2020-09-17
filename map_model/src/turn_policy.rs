@@ -177,7 +177,7 @@ impl TurnPolicy {
 
                 // Crosswalk for each lane
                 if let (Some(incoming), Some(outgoing_in)) = (a.incoming, a.outgoing) {
-                    if n_roads > 2 {
+                    if n_roads >= 2 {
                         turns.push((
                             TurnID::new(inter.id, incoming, outgoing_in, true),
                             TurnKind::Crosswalk,
