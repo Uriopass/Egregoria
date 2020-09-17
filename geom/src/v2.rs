@@ -75,13 +75,6 @@ impl Vec2 {
     }
 
     #[inline]
-    pub fn cossin_angle(self, other: Vec2) -> Vec2 {
-        let s = self.normalize();
-        let o = other.normalize();
-        s * o - s * o.perpendicular()
-    }
-
-    #[inline]
     pub fn angle(self, other: Vec2) -> f32 {
         f32::atan2(Self::perp_dot(self, other), Self::dot(self, other))
     }
