@@ -23,7 +23,7 @@ impl Home {
 
 impl Desire for Home {
     fn score(&self, goria: &Egregoria) -> f32 {
-        (goria.read::<TimeInfo>().time / 30.0 + std::f64::consts::PI + self.offset as f64).cos()
+        (goria.read::<TimeInfo>().time / 100.0 + std::f64::consts::PI + self.offset as f64).cos()
             as f32
     }
 

@@ -44,12 +44,12 @@ impl Souls {
     }
 
     pub fn update(&mut self, goria: &mut Egregoria) {
-        let refgoria = PlsNoModify(&*goria);
+        let refgoria = &*goria;
         let t = Instant::now();
         let actions: Vec<_> = self
             .souls
             .par_iter()
-            .map(|x| x.decision(refgoria.0))
+            .map(move |x| x.decision(refgoria))
             .collect();
 
         goria
@@ -67,8 +67,6 @@ impl Souls {
             .add_time(t.elapsed().as_secs_f32());
     }
 }
-
-struct PlsNoModify<'a>(&'a Egregoria);
 
 pub struct Soul {
     pub id: SoulID,

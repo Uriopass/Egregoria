@@ -15,6 +15,7 @@ pub enum Location {
     Building(BuildingID),
 }
 
+#[derive(Debug)]
 pub enum Action {
     DoNothing,
     GetOutBuilding(Entity, BuildingID),
@@ -34,24 +35,22 @@ impl Action {
             Location::Building(build_id) => match *goria.comp::<Location>(body).unwrap() {
                 Location::Outside(pos) => {
                     let map = goria.read::<Map>();
-                    if map.buildings()[build_id].door_pos.distance2()
+                    let door_pos = map.buildings()[build_id].door_pos;
+
+                    if door_pos.is_close(pos, 5.0) {
+                        return Action::GetInBuilding(body, build_id);
+                    }
 
                     let itin = goria.comp::<Itinerary>(body).unwrap();
 
-                    if itin.is_none() {
-
-                        let door_pos = map.buildings()[build_id].door_pos;
-
+                    let time = goria.read::<TimeInfo>().time;
+                    if itin.has_ended(time) {
                         let itin = unwrap_or!(
                             Itinerary::route(pos, door_pos, &*map, &PedestrianPath),
-                            return Action::DoNothing
+                            Itinerary::wait_until(time + 5.0)
                         );
 
                         return Action::Navigate(body, itin);
-                    }
-
-                    if itin.has_ended(goria.read::<TimeInfo>().time) {
-                        return Action::GetInBuilding(body, build_id);
                     }
                 }
                 Location::Building(cur_build) => {
@@ -72,9 +71,11 @@ impl Action {
         match self {
             Action::DoNothing => {}
             Action::GetOutBuilding(body, building) => {
+                log::info!("{:?}", self);
                 walk_out(goria, body, building);
             }
             Action::GetInBuilding(body, building) => {
+                log::info!("{:?}", self);
                 walk_in(goria, body, building);
             }
             Action::Navigate(e, itin) => {
