@@ -43,7 +43,7 @@ impl From<SerializedMap> for Map {
             spatial_map,
             lots: sel.lots,
             parking: sel.parking,
-            dirty: false,
+            dirty: true,
         }
     }
 }

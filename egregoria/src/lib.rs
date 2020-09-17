@@ -187,9 +187,11 @@ fn registry() -> Registry<u64> {
 pub struct NoSerialize;
 
 pub fn load_from_disk(goria: &mut Egregoria) {
-    goria.insert(Map::from(saveload::load_or_default::<
-        map_model::SerializedMap,
-    >("map")));
+    goria.insert::<Map>(
+        saveload::load::<map_model::SerializedMap>("map")
+            .map(|x| x.into())
+            .unwrap_or_default(),
+    );
 
     goria.insert(crate::saveload::load_or_default::<ParkingManagement>(
         "parking",

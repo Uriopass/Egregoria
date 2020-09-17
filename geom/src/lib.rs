@@ -9,6 +9,7 @@ mod segment;
 mod splines;
 mod transform;
 mod v2;
+mod v3;
 
 pub use camera::*;
 pub use circle::*;
@@ -21,6 +22,7 @@ pub use segment::*;
 pub use splines::*;
 pub use transform::*;
 pub use v2::*;
+pub use v3::*;
 
 pub fn minmax(x: &[Vec2]) -> Option<(Vec2, Vec2)> {
     let mut min: Vec2 = *x.get(0)?;
