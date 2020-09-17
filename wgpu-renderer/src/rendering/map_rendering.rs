@@ -1,6 +1,6 @@
 use crate::engine::{
     compile_shader, CompiledShader, FrameContext, GfxContext, InstanceRaw, Mesh, ShadedBatch,
-    ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Texture,
+    ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder,
 };
 use crate::geometry::Tesselator;
 use egregoria::rendering::{Color, LinearColor};
@@ -44,9 +44,7 @@ const Z_SIGNAL: f32 = 0.29;
 
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext) -> Self {
-        let arrow_builder = SpriteBatchBuilder::new(
-            Texture::from_path(gfx, "assets/arrow_one_way.png", Some("arrow")).unwrap(), // Unwrap ok: File is there
-        );
+        let arrow_builder = SpriteBatchBuilder::from_path(gfx, "assets/arrow_one_way.png");
 
         gfx.register_pipeline::<ShadedBatch<Crosswalk>>();
 
@@ -296,7 +294,7 @@ impl RoadRenderer {
         tess: &mut Tesselator,
         ctx: &mut FrameContext,
     ) {
-        if map.dirty || self.map_mesh.is_none() {
+        if map.dirty {
             self.map_mesh = self.map_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
             self.arrows = self.arrows(map, &ctx.gfx);
             self.crosswalks = self.crosswalks(map, &ctx.gfx);

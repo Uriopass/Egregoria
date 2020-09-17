@@ -13,6 +13,7 @@ macro_rules! unwrap_or {
 extern crate log;
 
 mod building;
+pub mod heightmap;
 mod intersection;
 mod lane;
 mod light_policy;

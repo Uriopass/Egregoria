@@ -1,6 +1,7 @@
 use crate::engine::{compile_shader, Drawable, GfxContext, IndexType, Texture, UvVertex, VBDesc};
 
 use geom::Vec2;
+use std::path::Path;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{RenderPass, VertexBufferDescriptor};
@@ -76,6 +77,13 @@ const UV_VERTICES: &[UvVertex] = &[
 const UV_INDICES: &[IndexType] = &[0, 1, 2, 0, 2, 3];
 
 impl SpriteBatchBuilder {
+    pub fn from_path(ctx: &GfxContext, path: impl AsRef<Path>) -> Self {
+        Self {
+            tex: Texture::from_path(ctx, path, None).unwrap(),
+            instances: vec![],
+        }
+    }
+
     pub fn new(tex: Texture) -> Self {
         Self {
             tex,

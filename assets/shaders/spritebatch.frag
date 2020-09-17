@@ -13,7 +13,7 @@ void main() {
 
     out_color = col * in_color;
 
-    if (out_color.a < 0.1) {
+    if (out_color.a == 0) {
         discard;
     }
 }
