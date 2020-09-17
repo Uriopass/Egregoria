@@ -125,16 +125,8 @@ impl Itinerary {
 
     pub fn update(&mut self, position: Vec2, time: u64, map: &Map) {
         if let Some(p) = self.get_point() {
-            let dist = p.distance2(position);
-            if self.is_terminal() {
-                if dist < OBJECTIVE_OK_DIST {
-                    self.advance(map);
-                }
-                return;
-            }
-
-            if dist < OBJECTIVE_OK_DIST * OBJECTIVE_OK_DIST {
-                if self.remaining_points() > 1 {
+            if position.is_close(p, OBJECTIVE_OK_DIST) {
+                if self.is_terminal() || self.remaining_points() > 1 {
                     self.advance(map);
                     return;
                 }

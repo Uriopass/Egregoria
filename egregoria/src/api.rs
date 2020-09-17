@@ -33,10 +33,12 @@ impl Action {
         match loc {
             Location::Building(build_id) => match *goria.comp::<Location>(body).unwrap() {
                 Location::Outside(pos) => {
+                    let map = goria.read::<Map>();
+                    if map.buildings()[build_id].door_pos.distance2()
+
                     let itin = goria.comp::<Itinerary>(body).unwrap();
 
                     if itin.is_none() {
-                        let map = goria.read::<Map>();
 
                         let door_pos = map.buildings()[build_id].door_pos;
 
