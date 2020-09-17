@@ -60,6 +60,10 @@ impl Vec2 {
         self.dot(rhs.perpendicular())
     }
 
+    pub fn is_close(self, other: Self, close_dist: f32) -> bool {
+        self.distance2(other) < close_dist * close_dist
+    }
+
     #[inline]
     pub fn distance2(self, rhs: Self) -> f32 {
         (self - rhs).magnitude2()

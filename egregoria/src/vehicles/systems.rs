@@ -266,8 +266,7 @@ pub fn calc_decision<'a>(
     let stop_dist = time_to_stop * speed * 0.5;
 
     if let Some(pos) = terminal_pos {
-        // Close to terminal objective
-        if pos.distance(trans.position()) < 1.0 + stop_dist {
+        if pos.is_close(trans.position(), 1.0 + stop_dist) {
             return (0.0, dir_to_pos);
         }
     }
@@ -278,20 +277,21 @@ pub fn calc_decision<'a>(
     }) = it.get_travers()
     {
         if let Some(l) = map.lanes().get(*l_id) {
-            let dist_to_light = l.control_point().distance(position);
+            let light = l.control_point();
             match l.control.get_behavior(time.time_seconds) {
                 TrafficBehavior::RED | TrafficBehavior::ORANGE => {
-                    if dist_to_light
-                        < OBJECTIVE_OK_DIST * 1.05
+                    if light.is_close(
+                        position,
+                        OBJECTIVE_OK_DIST * 1.05
                             + 2.0
                             + stop_dist
-                            + (vehicle.kind.width() * 0.5 - OBJECTIVE_OK_DIST).max(0.0)
-                    {
+                            + (vehicle.kind.width() * 0.5 - OBJECTIVE_OK_DIST).max(0.0),
+                    ) {
                         return (0.0, dir_to_pos);
                     }
                 }
                 TrafficBehavior::STOP => {
-                    if dist_to_light < OBJECTIVE_OK_DIST * 0.95 + stop_dist {
+                    if light.is_close(position, OBJECTIVE_OK_DIST * 0.95 + stop_dist) {
                         return (0.0, dir_to_pos);
                     }
                 }

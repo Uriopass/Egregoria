@@ -284,7 +284,7 @@ impl Map {
                         .expect("Road does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
                     let projected = road.generated_points.project(pos);
-                    if projected.distance(pos) < road.width * 0.5 {
+                    if projected.is_close(pos, road.width * 0.5) {
                         qroad = Some((id, projected));
                     }
                 },
