@@ -1,12 +1,11 @@
 use crate::desire::Desire;
-use egregoria::api::{Action, Location};
+use egregoria::api::{Action, Location, PedestrianID};
 use egregoria::engine_interaction::TimeInfo;
 use egregoria::Egregoria;
-use legion::Entity;
 use map_model::BuildingID;
 
 impl Work {
-    pub fn new(body: Entity, workplace: BuildingID, offset: f32) -> Self {
+    pub fn new(body: PedestrianID, workplace: BuildingID, offset: f32) -> Self {
         Work {
             body,
             workplace,
@@ -16,7 +15,7 @@ impl Work {
 }
 
 pub struct Work {
-    body: Entity,
+    body: PedestrianID,
     workplace: BuildingID,
     offset: f32,
 }
@@ -27,6 +26,6 @@ impl Desire for Work {
     }
 
     fn apply(&self, goria: &Egregoria) -> Action {
-        Action::walk_to(goria, self.body, Location::Building(self.workplace))
+        Action::go_to(goria, self.body, Location::Building(self.workplace))
     }
 }

@@ -2112,7 +2112,6 @@ version = "0.1.0"
 dependencies = [
  "egregoria",
  "geom",
- "legion",
  "log",
  "map_model",
  "ordered-float 2.0.0",

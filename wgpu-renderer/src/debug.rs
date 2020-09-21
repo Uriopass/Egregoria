@@ -154,7 +154,7 @@ pub fn debug_obb(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
 pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
     let map: &Map = &world.read::<Map>();
     let selected = world.read::<InspectedEntity>().e?;
-    let pos = world.comp::<Transform>(selected)?.position();
+    let pos = world.pos(selected)?;
 
     let itinerary = world.comp::<Itinerary>(selected)?;
 

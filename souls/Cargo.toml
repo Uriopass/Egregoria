@@ -10,7 +10,6 @@ edition = "2018"
 egregoria = { path = "../egregoria" }
 geom = { path = "../geom" }
 map_model = { path = "../map_model" }
-legion = { version = "0.3.0", default-features = false, features = [] }
 serde = "1.0.115"
 log = "0.4.11"
 ordered-float = "2.0.0"

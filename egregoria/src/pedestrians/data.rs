@@ -1,4 +1,4 @@
-use crate::api::Location;
+use crate::api::{Location, PedestrianID};
 use crate::engine_interaction::{Movable, Selectable};
 use crate::map_dynamic::{BuildingInfos, Itinerary};
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
@@ -7,7 +7,6 @@ use crate::rendering::Color;
 use crate::Egregoria;
 use geom::{vec2, Transform, Vec2};
 use imgui_inspect_derive::*;
-use legion::Entity;
 use map_model::BuildingID;
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
@@ -20,10 +19,10 @@ pub struct Pedestrian {
 
 const PED_SIZE: f32 = 0.5;
 
-pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Entity {
+pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> PedestrianID {
     let color = random_pedestrian_shirt_color();
 
-    let e = goria.world.push((
+    let e = PedestrianID(goria.world.push((
         Transform::new(Vec2::ZERO),
         Location::Building(house),
         Pedestrian::default(),
@@ -63,7 +62,7 @@ pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Entity {
                 .build()
         },
         Selectable::new(0.5),
-    ));
+    )));
 
     goria.write::<BuildingInfos>().get_in(house, e);
     e

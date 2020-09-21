@@ -143,6 +143,15 @@ impl Itinerary {
         }
     }
 
+    pub fn end_pos(&self) -> Option<Vec2> {
+        match &self.kind {
+            ItineraryKind::None => None,
+            ItineraryKind::WaitUntil(_) => None,
+            ItineraryKind::Simple => self.local_path.last().copied(),
+            ItineraryKind::Route(r) => Some(r.end_pos),
+        }
+    }
+
     pub fn remaining_points(&self) -> usize {
         self.local_path.len()
     }
