@@ -9,7 +9,6 @@ use crate::map_dynamic::{itinerary_update_system, BuildingInfos, Itinerary, Park
 use crate::pedestrians::{pedestrian_decision_system, Pedestrian};
 use crate::physics::systems::{
     coworld_maintain_system, coworld_synchronize_system, kinematics_apply_system,
-    location_update_system,
 };
 use crate::physics::{deserialize_colliders, serialize_colliders, CollisionWorld};
 use crate::physics::{Collider, Kinematics};
@@ -118,10 +117,13 @@ impl Egregoria {
             .add_system(run_scenario_system())
             .add_system(kinematics_apply_system())
             .add_system(coworld_synchronize_system())
-            .add_system(coworld_maintain_system())
-            .add_system(location_update_system());
+            .add_system(coworld_maintain_system());
 
         state
+    }
+
+    pub fn pos(&self, e: Entity) -> Option<Vec2> {
+        self.comp::<Transform>(e).map(|x| x.position())
     }
 
     pub fn comp<T: Component>(&self, e: Entity) -> Option<&T> {
@@ -130,10 +132,6 @@ impl Egregoria {
 
     pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
         <&mut T>::query().get_mut(&mut self.world, e).ok()
-    }
-
-    pub fn position(&self, e: Entity) -> Option<Vec2> {
-        self.comp::<Transform>(e).map(|x| x.position())
     }
 
     pub fn try_write<T: Resource>(&self) -> Option<impl DerefMut<Target = T> + '_> {

@@ -166,7 +166,7 @@ impl State {
         }
 
         if let Some(e) = self.state.read::<FollowEntity>().0 {
-            if let Some(pos) = self.state.comp::<Transform>(e).map(|x| x.position()) {
+            if let Some(pos) = self.state.pos(e) {
                 self.camera.camera.position = [pos.x, pos.y].into();
             }
         }

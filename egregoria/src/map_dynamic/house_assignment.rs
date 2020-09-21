@@ -1,11 +1,11 @@
+use crate::api::PedestrianID;
 use crate::SoulID;
-use legion::Entity;
 use map_model::BuildingID;
 use slotmap::SecondaryMap;
 
 pub struct BuildingInfo {
     pub owners: Vec<SoulID>,
-    pub inside: Vec<Entity>,
+    pub inside: Vec<PedestrianID>,
 }
 
 #[derive(Default)]
@@ -33,7 +33,7 @@ impl BuildingInfos {
         self.get_info_mut(building).owners.push(soul);
     }
 
-    pub fn get_in(&mut self, building: BuildingID, e: Entity) {
+    pub fn get_in(&mut self, building: BuildingID, e: PedestrianID) {
         if cfg!(debug_assertions) && self.get_info_mut(building).inside.contains(&e) {
             log::warn!(
                 "called get_in({:?}, {:?}) but it was already inside",
@@ -44,7 +44,7 @@ impl BuildingInfos {
         self.get_info_mut(building).inside.push(e);
     }
 
-    pub fn get_out(&mut self, building: BuildingID, e: Entity) {
+    pub fn get_out(&mut self, building: BuildingID, e: PedestrianID) {
         let inside = &mut self.get_info_mut(building).inside;
         if let Some(i) = inside.iter().position(|v| *v == e) {
             inside.swap_remove(i);

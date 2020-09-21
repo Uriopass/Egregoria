@@ -1,18 +1,17 @@
 use crate::desire::Desire;
-use egregoria::api::{Action, Location};
+use egregoria::api::{Action, Location, PedestrianID};
 use egregoria::engine_interaction::TimeInfo;
 use egregoria::Egregoria;
-use legion::Entity;
 use map_model::BuildingID;
 
 pub struct Home {
-    body: Entity,
+    body: PedestrianID,
     house: BuildingID,
     offset: f32,
 }
 
 impl Home {
-    pub fn new(body: Entity, house: BuildingID, offset: f32) -> Self {
+    pub fn new(body: PedestrianID, house: BuildingID, offset: f32) -> Self {
         Home {
             body,
             house,
@@ -28,6 +27,6 @@ impl Desire for Home {
     }
 
     fn apply(&self, goria: &Egregoria) -> Action {
-        Action::walk_to(goria, self.body, Location::Building(self.house))
+        Action::go_to(goria, self.body, Location::Building(self.house))
     }
 }

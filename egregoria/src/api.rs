@@ -6,21 +6,33 @@ use crate::rendering::meshrender_component::MeshRender;
 use crate::{Egregoria, ParCommandBuffer};
 use geom::{Transform, Vec2};
 use legion::Entity;
-use map_model::{BuildingID, Map, PedestrianPath};
+use map_model::{BuildingID, Map, ParkingSpotID, PedestrianPath};
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct PedestrianID(pub Entity);
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct VehicleID(pub Entity);
 
 #[derive(Eq, PartialEq)]
 pub enum Location {
-    Outside(Vec2),
-    Car(Entity),
+    Outside,
+    Car(VehicleID),
     Building(BuildingID),
+}
+
+#[derive(Debug)]
+pub enum RoutingStep {
+    WalkTo(Itinerary),
+    DriveTo(VehicleID, Itinerary, ParkingSpotID),
 }
 
 #[derive(Debug)]
 pub enum Action {
     DoNothing,
-    GetOutBuilding(Entity, BuildingID),
-    GetInBuilding(Entity, BuildingID),
-    Navigate(Entity, Itinerary),
+    GetOutBuilding(PedestrianID, BuildingID),
+    GetInBuilding(PedestrianID, BuildingID),
+    Navigate(PedestrianID, Vec<RoutingStep>),
 }
 
 impl Default for Action {
@@ -30,41 +42,42 @@ impl Default for Action {
 }
 
 impl Action {
-    pub fn walk_to(goria: &Egregoria, body: Entity, loc: Location) -> Action {
-        match loc {
-            Location::Building(build_id) => match *goria.comp::<Location>(body).unwrap() {
-                Location::Outside(pos) => {
-                    let map = goria.read::<Map>();
-                    let door_pos = map.buildings()[build_id].door_pos;
+    pub fn go_to(goria: &Egregoria, body: PedestrianID, obj: Vec2) -> Action {
+        match *goria.comp::<Location>(body.0).unwrap() {
+            Location::Outside => {
+                let pos = goria.pos(body.0).unwrap();
 
-                    if door_pos.is_close(pos, 5.0) {
-                        return Action::GetInBuilding(body, build_id);
-                    }
+                let map = goria.read::<Map>();
 
-                    let itin = goria.comp::<Itinerary>(body).unwrap();
-
-                    let time = goria.read::<TimeInfo>().time;
-                    if itin.has_ended(time) {
-                        let itin = unwrap_or!(
-                            Itinerary::route(pos, door_pos, &*map, &PedestrianPath),
-                            Itinerary::wait_until(time + 5.0)
-                        );
-
-                        return Action::Navigate(body, itin);
-                    }
+                let itin = goria.comp::<Itinerary>(body.0).unwrap();
+                if itin.end_pos().map(|x| x.approx_eq(obj)).unwrap_or(false) {
+                    return Action::DoNothing;
                 }
-                Location::Building(cur_build) => {
-                    if cur_build == build_id {
-                        return Action::DoNothing;
-                    }
-                    return Action::GetOutBuilding(body, cur_build);
+
+                if let Some(itin) = Itinerary::route(pos, obj, &*map, &PedestrianPath) {
+                    return Action::Navigate(body, vec![RoutingStep::WalkTo(itin)]);
                 }
-                Location::Car(_) => unimplemented!(),
-            },
-            Location::Outside(_) => unimplemented!(),
+            }
+            Location::Building(cur_build) => {
+                return Action::GetOutBuilding(body, cur_build);
+            }
             Location::Car(_) => unimplemented!(),
         };
         Action::DoNothing
+    }
+
+    pub fn go_to_building(goria: &Egregoria, body: PedestrianID, obj: BuildingID) -> Action {
+        if let Location::Building(id) = *goria.comp::<Location>(body.0).unwrap() {
+            if id == obj {
+                return Action::DoNothing;
+            }
+        }
+        let bpos = goria.read::<Map>().buildings()[obj].door_pos;
+        if bpos.is_close(goria.pos(body.0).unwrap(), 3.0) {
+            return Action::GetInBuilding(body, obj);
+        }
+
+        Action::go_to(goria, body, bpos)
     }
 
     pub fn apply(self, goria: &mut Egregoria) -> Option<()> {
@@ -79,7 +92,7 @@ impl Action {
                 walk_in(goria, body, building);
             }
             Action::Navigate(e, itin) => {
-                if let Some(v) = goria.comp_mut(e) {
+                if let Some(v) = goria.comp_mut(e.0) {
                     *v = itin;
                 } else {
                     log::warn!("Called navigate on entity that doesn't have itinerary component");
@@ -90,9 +103,11 @@ impl Action {
     }
 }
 
-fn walk_in(goria: &mut Egregoria, body: Entity, building: BuildingID) {
-    goria.comp_mut::<MeshRender>(body).unwrap().hide = true;
+fn walk_in(goria: &mut Egregoria, body: PedestrianID, building: BuildingID) {
     goria.write::<BuildingInfos>().get_in(building, body);
+
+    let body = body.0;
+    goria.comp_mut::<MeshRender>(body).unwrap().hide = true;
     goria
         .read::<ParCommandBuffer>()
         .remove_component::<Collider>(body);
@@ -101,8 +116,10 @@ fn walk_in(goria: &mut Egregoria, body: Entity, building: BuildingID) {
     *goria.comp_mut::<Location>(body).unwrap() = Location::Building(building);
 }
 
-fn walk_out(goria: &mut Egregoria, body: Entity, building: BuildingID) {
+fn walk_out(goria: &mut Egregoria, body: PedestrianID, building: BuildingID) {
     goria.write::<BuildingInfos>().get_out(building, body);
+
+    let body = body.0;
     let wpos = goria.read::<Map>().buildings()[building].door_pos;
 
     *goria.comp_mut::<Location>(body).unwrap() = Location::Outside(wpos);
