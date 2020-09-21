@@ -4,8 +4,8 @@ use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRendere
 use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
 use egregoria::{load_from_disk, Egregoria};
+use geom::Camera;
 use geom::Vec2;
-use geom::{Camera, Transform};
 use gui::{FollowEntity, Gui};
 use map_model::Map;
 use souls::Souls;
