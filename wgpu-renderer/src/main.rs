@@ -16,25 +16,26 @@ fn main() {
         .filter(Some("gfx_memory"), LevelFilter::Off)
         .filter(Some("gfx_backend_vulkan"), LevelFilter::Warn)
         .format(move |f, r| {
-            let t = Instant::now().duration_since(start).as_micros();
-            let mp = r.module_path_static();
+            let time = Instant::now().duration_since(start).as_micros();
             if r.level() > Level::Warn {
-                let mp = mp.and_then(|x| x.split(':').last());
+                let module_path = r
+                    .module_path_static()
+                    .and_then(|x| x.split(':').last())
+                    .unwrap_or_default();
                 writeln!(
                     f,
-                    "[{:9} {:5} {:15}] {}",
-                    t,
+                    "[{:9} {:5} {:12}] {}",
+                    time,
                     r.metadata().level().to_string(),
-                    mp.unwrap_or_default(),
+                    module_path,
                     r.args()
                 )
             } else {
                 writeln!(
                     f,
-                    "[{:9} {:5} {:15} {}:{}] {}",
-                    t,
+                    "[{:9} {:5} {}:{}] {}",
+                    time,
                     r.metadata().level().to_string(),
-                    mp.unwrap_or_default(),
                     r.file().unwrap_or_default(),
                     r.line().unwrap_or_default(),
                     r.args()
