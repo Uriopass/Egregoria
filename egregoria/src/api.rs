@@ -1,22 +1,18 @@
 use crate::map_dynamic::{BuildingInfos, Itinerary, ParkingManagement};
+use crate::pedestrians::data::PedestrianID;
 use crate::pedestrians::put_pedestrian_in_coworld;
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::meshrender_component::MeshRender;
+use crate::vehicles::{put_vehicle_in_coworld, Vehicle, VehicleID, VehicleState};
 use crate::{Egregoria, ParCommandBuffer};
-use geom::{Transform, Vec2};
+use geom::{Spline, Transform, Vec2};
 use legion::Entity;
-use map_model::{BuildingID, Map, ParkingSpotID, PedestrianPath};
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct PedestrianID(pub Entity);
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct VehicleID(pub Entity);
+use map_model::{BuildingID, CarPath, Map, ParkingSpotID, PedestrianPath};
 
 #[derive(Eq, PartialEq)]
 pub enum Location {
     Outside,
-    Car(VehicleID),
+    Vehicle(VehicleID),
     Building(BuildingID),
 }
 
@@ -29,7 +25,9 @@ pub enum Destination {
 #[derive(Debug)]
 pub enum RoutingStep {
     WalkTo(Vec2),
-    DriveTo(VehicleID, ParkingSpotID),
+    DriveTo(VehicleID, Vec2),
+    Park(VehicleID, ParkingSpotID),
+    Unpark(VehicleID),
     GetInVehicle(VehicleID),
     GetOutVehicle(VehicleID),
     GetInBuilding(BuildingID),
@@ -42,10 +40,15 @@ impl RoutingStep {
         match self {
             RoutingStep::WalkTo(_) => true,
             RoutingStep::DriveTo(_, _) => true,
-            RoutingStep::GetInVehicle(vehicle) => goria.pos(vehicle.0).unwrap().is_close(pos, 3.0),
-            RoutingStep::GetOutVehicle(vehicle) => {
+            RoutingStep::Park(vehicle, _) => {
                 goria.comp::<Itinerary>(vehicle.0).unwrap().has_ended(0.0)
             }
+            RoutingStep::Unpark(_) => true,
+            RoutingStep::GetInVehicle(vehicle) => goria.pos(vehicle.0).unwrap().is_close(pos, 3.0),
+            RoutingStep::GetOutVehicle(vehicle) => matches!(
+                goria.comp::<Vehicle>(vehicle.0).unwrap().state,
+                VehicleState::Parked(_)
+            ),
             &RoutingStep::GetInBuilding(build) => goria.read::<Map>().buildings()[build]
                 .door_pos
                 .is_close(pos, 3.0),
@@ -65,9 +68,21 @@ impl RoutingStep {
                     Action::DoNothing
                 }
             }
-            RoutingStep::DriveTo(_, _) => unimplemented!(),
-            RoutingStep::GetInVehicle(_) => unimplemented!(),
-            RoutingStep::GetOutVehicle(_) => unimplemented!(),
+            RoutingStep::DriveTo(vehicle, obj) => {
+                let pos = goria.pos(body.0).unwrap();
+
+                let map = goria.read::<Map>();
+
+                if let Some(itin) = Itinerary::route(pos, obj, &*map, &CarPath) {
+                    Action::Navigate(vehicle.0, itin)
+                } else {
+                    Action::DoNothing
+                }
+            }
+            RoutingStep::Park(vehicle, spot) => Action::Park(vehicle, spot),
+            RoutingStep::Unpark(vehicle) => Action::Unpark(vehicle),
+            RoutingStep::GetInVehicle(vehicle) => Action::GetInVehicle(body, vehicle),
+            RoutingStep::GetOutVehicle(vehicle) => Action::GetOutVehicle(body, vehicle),
             RoutingStep::GetInBuilding(build) => Action::GetInBuilding(body, build),
             RoutingStep::GetOutBuilding(build) => Action::GetOutBuilding(body, build),
         }
@@ -91,7 +106,7 @@ impl Router {
 
     fn clear_steps(&mut self, goria: &Egregoria) {
         for s in self.steps.drain(..) {
-            if let RoutingStep::DriveTo(_, spot) = s {
+            if let RoutingStep::Park(_, spot) = s {
                 goria.read::<ParkingManagement>().free(spot);
             }
         }
@@ -151,7 +166,11 @@ pub enum Action {
     DoNothing,
     GetOutBuilding(PedestrianID, BuildingID),
     GetInBuilding(PedestrianID, BuildingID),
+    GetOutVehicle(PedestrianID, VehicleID),
+    GetInVehicle(PedestrianID, VehicleID),
     Navigate(Entity, Itinerary),
+    Park(VehicleID, ParkingSpotID),
+    Unpark(VehicleID),
 }
 
 impl Default for Action {
@@ -166,11 +185,29 @@ impl Action {
             Action::DoNothing => {}
             Action::GetOutBuilding(body, building) => {
                 log::info!("{:?}", self);
-                walk_out(goria, body, building);
+                goria.write::<BuildingInfos>().get_out(building, body);
+                let wpos = goria.read::<Map>().buildings()[building].door_pos;
+                walk_outside(goria, body, wpos);
             }
             Action::GetInBuilding(body, building) => {
                 log::info!("{:?}", self);
-                walk_in(goria, body, building);
+                goria.write::<BuildingInfos>().get_in(building, body);
+                *goria.comp_mut::<Location>(body.0).unwrap() = Location::Building(building);
+                walk_inside(goria, body);
+            }
+            Action::GetOutVehicle(body, vehicle) => {
+                log::info!("{:?}", self);
+                let trans = *goria.comp::<Transform>(vehicle.0).unwrap();
+                walk_outside(
+                    goria,
+                    body,
+                    trans.position() + trans.direction().perpendicular() * 2.0,
+                );
+            }
+            Action::GetInVehicle(body, vehicle) => {
+                log::info!("{:?}", self);
+                *goria.comp_mut::<Location>(body.0).unwrap() = Location::Vehicle(vehicle);
+                walk_inside(goria, body);
             }
             Action::Navigate(e, itin) => {
                 log::info!("Navigate {:?}", e);
@@ -180,14 +217,37 @@ impl Action {
                     log::warn!("Called navigate on entity that doesn't have itinerary component");
                 }
             }
+            Action::Park(vehicle, spot_id) => {
+                let trans = goria.comp::<Transform>(vehicle.0).unwrap();
+                let spot = *goria.read::<Map>().parking.get(spot_id).unwrap();
+
+                let s = Spline {
+                    from: trans.position(),
+                    to: spot.trans.position(),
+                    from_derivative: trans.direction() * 2.0,
+                    to_derivative: spot.trans.direction() * 2.0,
+                };
+
+                goria.comp_mut::<Vehicle>(vehicle.0).unwrap().state =
+                    VehicleState::RoadToPark(s, 0.0, spot_id);
+                goria.comp_mut::<Kinematics>(vehicle.0).unwrap().velocity = Vec2::ZERO;
+            }
+            Action::Unpark(vehicle) => {
+                let v = goria.comp::<Vehicle>(vehicle.0).unwrap();
+                let w = v.kind.width();
+
+                if let VehicleState::Parked(spot) = v.state {
+                    goria.read::<ParkingManagement>().free(spot);
+                }
+                put_vehicle_in_coworld(goria, w, *goria.comp::<Transform>(vehicle.0).unwrap());
+                goria.comp_mut::<Vehicle>(vehicle.0).unwrap().state = VehicleState::Driving;
+            }
         }
         Some(())
     }
 }
 
-fn walk_in(goria: &mut Egregoria, body: PedestrianID, building: BuildingID) {
-    goria.write::<BuildingInfos>().get_in(building, body);
-
+fn walk_inside(goria: &mut Egregoria, body: PedestrianID) {
     let body = body.0;
     goria.comp_mut::<MeshRender>(body).unwrap().hide = true;
     goria
@@ -195,21 +255,13 @@ fn walk_in(goria: &mut Egregoria, body: PedestrianID, building: BuildingID) {
         .remove_component::<Collider>(body);
     goria.comp_mut::<Kinematics>(body).unwrap().velocity = Vec2::ZERO;
     *goria.comp_mut::<Itinerary>(body).unwrap() = Itinerary::none();
-    *goria.comp_mut::<Location>(body).unwrap() = Location::Building(building);
 }
 
-fn walk_out(goria: &mut Egregoria, body: PedestrianID, building: BuildingID) {
-    goria.write::<BuildingInfos>().get_out(building, body);
-
+fn walk_outside(goria: &mut Egregoria, body: PedestrianID, pos: Vec2) {
     let body = body.0;
-    let wpos = goria.read::<Map>().buildings()[building].door_pos;
-
     *goria.comp_mut::<Location>(body).unwrap() = Location::Outside;
-    goria
-        .comp_mut::<Transform>(body)
-        .unwrap()
-        .set_position(wpos);
+    goria.comp_mut::<Transform>(body).unwrap().set_position(pos);
     goria.comp_mut::<MeshRender>(body).unwrap().hide = false;
-    let coll = put_pedestrian_in_coworld(goria, wpos);
+    let coll = put_pedestrian_in_coworld(goria, pos);
     goria.read::<ParCommandBuffer>().add_component(body, coll);
 }

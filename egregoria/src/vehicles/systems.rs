@@ -5,9 +5,9 @@ use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::utils::Restrict;
 use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::{Deleted, ParCommandBuffer};
+use geom::Transform;
 use geom::{angle_lerp, Vec2};
 use geom::{both_dist_to_inter, Ray};
-use geom::{Spline, Transform};
 use legion::system;
 use legion::Entity;
 use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
@@ -18,7 +18,7 @@ pub fn vehicle_cleanup(
     #[resource] pm: &mut ParkingManagement,
 ) {
     for comp in evts.drain() {
-        if let Some(id) = comp.park_spot {
+        if let VehicleState::Parked(id) | VehicleState::RoadToPark(_, _, id) = comp.state {
             pm.free(id)
         }
     }
@@ -64,112 +64,19 @@ pub fn vehicle_decision(
 #[system(for_each)]
 pub fn vehicle_state_update(
     #[resource] buf: &ParCommandBuffer,
-    #[resource] map: &Map,
     #[resource] time: &TimeInfo,
-    trans: &Transform,
     vehicle: &mut Vehicle,
     kin: &mut Kinematics,
-    it: &mut Itinerary,
     ent: &Entity,
 ) {
-    let trans = *trans;
-    let ent = *ent;
+    if let VehicleState::RoadToPark(_, ref mut t, spot) = vehicle.state {
+        // Vehicle is on rails when parking.
+        *t += time.delta / TIME_TO_PARK;
 
-    match vehicle.state {
-        VehicleState::RoadToPark(_, ref mut t) => {
-            // Vehicle is on rails when parking.
-
-            *t += time.delta / TIME_TO_PARK;
-
-            if *t >= 1.0 {
-                let spot = unwrap_or!(vehicle.park_spot, {
-                    vehicle.state = VehicleState::Driving;
-                    return;
-                });
-                buf.remove_component::<Collider>(ent);
-                kin.velocity = Vec2::ZERO;
-
-                vehicle.state = VehicleState::Parked(spot);
-            }
-        }
-        VehicleState::Driving => {
-            if it.has_ended(time.time) {
-                *it = Itinerary::wait_until(time.time + 20.0);
-                let spot = vehicle.park_spot.and_then(|id| map.parking.get(id));
-
-                let spot = unwrap_or!(spot, return);
-
-                let s = Spline {
-                    from: trans.position(),
-                    to: spot.pos,
-                    from_derivative: trans.direction() * 2.0,
-                    to_derivative: spot.orientation * 2.0,
-                };
-
-                vehicle.state = VehicleState::RoadToPark(s, 0.0);
-                kin.velocity = Vec2::ZERO;
-            }
-        }
-        VehicleState::Parked(_) => {
-            // Wait until it's time to start driving again, then set a route and unpark.
-            /*
-            if it.has_ended(time.time) {
-                let mut lane = map.parking_to_drive(spot);
-
-                if lane.is_none() {
-                    lane = map.nearest_lane(trans.position(), LaneKind::Driving);
-                }
-
-                let travers: Option<Traversable> = lane
-                    .map(|x| Traversable::new(TraverseKind::Lane(x), TraverseDirection::Forward));
-
-                if let Some((mut itin, park)) =
-                    next_objective(trans.position(), parking, map, travers.as_ref())
-                {
-                    parking.free(spot);
-
-                    let points = itin.get_travers().unwrap().points(map).unwrap(); // Unwraps ok: just got itinerary
-                    let d = points.distance_along(points.project(trans.position()));
-
-                    let (pos, dir) = points.point_dir_along(d + 5.0);
-
-                    let s = Spline {
-                        from: trans.position(),
-                        to: pos,
-                        from_derivative: trans.direction() * 2.0,
-                        to_derivative: dir * 2.0,
-                    };
-
-                    // Create some points along the spline and repack the itin with the new points.
-                    itin.prepend_local_path(s.split_at(0.8).0.points(8).collect());
-
-                    let w = vehicle.kind.width();
-                    buf.exec(move |goria| {
-                        let mut cow = goria.write::<CollisionWorld>();
-                        let h = Collider(cow.insert(
-                            pos,
-                            PhysicsObject {
-                                dir: trans.direction(),
-                                group: PhysicsGroup::Vehicles,
-                                radius: w * 0.5,
-                                speed: 0.0,
-                            },
-                        ));
-                        drop(cow);
-
-                        if let Some(mut v) = goria.world.entry(ent) {
-                            v.add_component(h);
-                        }
-                    });
-
-                    *it = itin;
-                    vehicle.park_spot = Some(park);
-                    vehicle.state = VehicleState::Driving;
-                } else {
-                    *it = Itinerary::wait_until(time.time + 10.0);
-                }
-            }
-             */
+        if *t >= 1.0 {
+            buf.remove_component::<Collider>(*ent);
+            kin.velocity = Vec2::ZERO;
+            vehicle.state = VehicleState::Parked(spot);
         }
     }
 }
@@ -188,11 +95,10 @@ fn physics(
     match vehicle.state {
         VehicleState::Parked(id) => {
             let spot = unwrap_or!(map.parking.get(id), return);
-            trans.set_position(spot.pos);
-            trans.set_direction(spot.orientation);
+            *trans = spot.trans;
             return;
         }
-        VehicleState::RoadToPark(spline, t) => {
+        VehicleState::RoadToPark(spline, t, _) => {
             trans.set_position(spline.get(t));
             trans.set_direction(spline.derivative(t).normalize());
             return;

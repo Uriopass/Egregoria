@@ -28,7 +28,6 @@ impl UserData for LuaWorld {
                     Vehicle {
                         ang_velocity: 0.0,
                         wait_time: 0.0,
-                        park_spot: None,
                         state: VehicleState::Driving,
                         kind: VehicleKind::Car,
                     },

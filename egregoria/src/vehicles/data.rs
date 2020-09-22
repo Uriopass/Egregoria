@@ -15,11 +15,14 @@ use serde::{Deserialize, Serialize};
 /// The duration for the parking animation.
 pub const TIME_TO_PARK: f32 = 4.0;
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct VehicleID(pub Entity);
+
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum VehicleState {
     Parked(ParkingSpotID),
     Driving,
-    RoadToPark(Spline, f32),
+    RoadToPark(Spline, f32, ParkingSpotID),
 }
 
 debug_inspect_impl!(VehicleState);
@@ -37,11 +40,20 @@ pub struct Vehicle {
     #[inspect(proxy_type = "InspectDragf")]
     pub wait_time: f32,
 
-    #[inspect(skip)]
-    pub park_spot: Option<ParkingSpotID>,
-
     pub state: VehicleState,
     pub kind: VehicleKind,
+}
+
+pub fn put_vehicle_in_coworld(goria: &mut Egregoria, w: f32, trans: Transform) -> Collider {
+    Collider(goria.write::<CollisionWorld>().insert(
+        trans.position(),
+        PhysicsObject {
+            dir: trans.direction(),
+            speed: 0.0,
+            radius: w * 0.5,
+            group: PhysicsGroup::Vehicles,
+        },
+    ))
 }
 
 impl VehicleKind {
@@ -112,8 +124,7 @@ pub fn spawn_parked_vehicle(goria: &mut Egregoria) {
         return
     );
 
-    let spot = map.parking.get(spot_id).unwrap(); // Unwrap ok: Gotten using reserve_near
-    let pos = Transform::new_cos_sin(spot.pos, spot.orientation);
+    let pos = map.parking.get(spot_id).unwrap().trans; // Unwrap ok: Gotten using reserve_near
 
     drop(map);
     drop(pm);
@@ -128,18 +139,18 @@ pub fn spawn_parked_vehicle(goria: &mut Egregoria) {
 }
 
 pub fn make_vehicle_entity(
-    world: &mut Egregoria,
+    goria: &mut Egregoria,
     trans: Transform,
     vehicle: Vehicle,
     it: Itinerary,
     mk_collider: bool,
 ) -> Entity {
     let w = vehicle.kind.width();
-    let e = world.world.push((
+    let e = goria.world.push((
         AssetRender {
             id: AssetID::CAR,
             hide: false,
-            scale: 4.5,
+            scale: w,
             tint: get_random_car_color(),
             z: 0.7,
         },
@@ -151,16 +162,8 @@ pub fn make_vehicle_entity(
     ));
 
     if mk_collider {
-        let c = Collider(world.write::<CollisionWorld>().insert(
-            trans.position(),
-            PhysicsObject {
-                dir: trans.direction(),
-                speed: 0.0,
-                radius: w * 0.5,
-                group: PhysicsGroup::Vehicles,
-            },
-        ));
-        world.world.entry(e).unwrap().add_component(c);
+        let c = put_vehicle_in_coworld(goria, w, trans);
+        goria.world.entry(e).unwrap().add_component(c);
     }
 
     e
@@ -197,7 +200,6 @@ impl Vehicle {
         Self {
             ang_velocity: 0.0,
             wait_time: 0.0,
-            park_spot: Some(spot),
             state: VehicleState::Parked(spot),
             kind,
         }
