@@ -26,7 +26,7 @@ geom          = { path = "../geom" }
 map_model     = { path = "../map_model" }
 mods          = { path = "../mods" }
 slotmap       = "0.4.0"
-serde_json = "1.0.57"
+dashmap       = { version = "4.0.0-rc6", features = ["serde"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 imgui = "0.4"

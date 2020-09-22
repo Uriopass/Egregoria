@@ -50,17 +50,20 @@ impl Souls {
         drop(map);
         drop(infos);
 
-        let n_souls_before = self.human_souls.len();
+        let mut n_souls_added = 0;
 
         for house in empty_buildings {
             let id = SoulID(self.human_souls.len() as u64);
 
             if let Some(soul) = Human::soul(id, house, goria) {
                 self.human_souls.push(soul);
+                n_souls_added += 1;
+                if n_souls_added > 100 {
+                    break;
+                }
             }
         }
 
-        let n_souls_added = self.human_souls.len() - n_souls_before;
         if n_souls_added > 0 {
             log::info!("{} souls added", n_souls_added);
         }

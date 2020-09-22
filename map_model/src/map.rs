@@ -382,9 +382,12 @@ impl Map {
             .roads
             .get(park_lane.parent)
             .expect("Lane has no parent >:(");
-        road.outgoing_lanes_from(park_lane.src)
-            .iter()
-            .rfind(|&&(_, kind)| kind == LaneKind::Driving)
-            .map(|&(id, _)| id)
+        Some(
+            road.outgoing_lanes_from(park_lane.src)
+                .iter()
+                .rfind(|&&(_, kind)| kind == LaneKind::Driving)
+                .map(|&(id, _)| id)
+                .expect("Road with parking lane doesn't have driving lane >:("),
+        )
     }
 }
