@@ -2,13 +2,12 @@ use crate::{InspectedEntity, RoadBuildResource, Tool};
 use egregoria::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
 use egregoria::pedestrians::Pedestrian;
 use egregoria::utils::frame_log::FrameLog;
-use egregoria::vehicles::{spawn_parked_vehicle, Vehicle};
-use egregoria::{Egregoria, ParCommandBuffer};
-use geom::Vec2;
+use egregoria::vehicles::Vehicle;
+use egregoria::Egregoria;
 use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
-use legion::{Entity, IntoQuery};
+use legion::IntoQuery;
 use map_model::{LanePatternBuilder, Map};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
@@ -375,26 +374,6 @@ impl Gui {
             .position([30.0, 30.0], imgui::Condition::FirstUseEver)
             .opened(&mut opened)
             .build(&ui, || {
-                ui.set_next_item_width(70.0);
-                imgui::DragInt::new(&ui, im_str!("n cars"), &mut self.n_cars)
-                    .min(1)
-                    .max(1000)
-                    .build();
-
-                ui.same_line(0.0);
-                if ui.small_button(im_str!("spawn cars")) {
-                    for _ in 0..self.n_cars {
-                        spawn_parked_vehicle(goria);
-                    }
-                }
-
-                if ui.small_button(im_str!("destroy all cars")) {
-                    let gy = goria.write::<ParCommandBuffer>();
-                    for (e, _) in <(&Entity, &Vehicle)>::query().iter(&goria.world) {
-                        gy.kill(*e);
-                    }
-                }
-
                 let mut map = goria.write::<Map>();
 
                 if ui.small_button(im_str!("build houses")) {
@@ -415,15 +394,6 @@ impl Gui {
 
                 if ui.small_button(im_str!("clear the map")) {
                     map.clear();
-                }
-
-                if ui.small_button(im_str!("benchmark")) {
-                    map.clear();
-                    map_model::add_grid(Vec2::ZERO, &mut map, 30);
-                    drop(map);
-                    for _ in 0..10000 {
-                        spawn_parked_vehicle(goria);
-                    }
                 }
 
                 ui.text(im_str!(

@@ -124,7 +124,7 @@ pub fn calc_decision<'a>(
             .and_then(|x| x.raw_points(map).map(|v| (x.dir, v)))
         {
             // Fixme: performance heavy on long curved roads which can have many points
-            let (projected, proj_dir) = points.project_dir(position);
+            let (projected, _, proj_dir) = points.project_segment_dir(position);
             let walk_side = match dir {
                 TraverseDirection::Forward => 1.0,
                 TraverseDirection::Backward => -1.0,

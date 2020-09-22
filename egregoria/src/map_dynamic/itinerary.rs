@@ -28,7 +28,7 @@ pub struct Route {
     pub cur: Traversable,
 }
 
-pub const OBJECTIVE_OK_DIST: f32 = 3.0;
+pub const OBJECTIVE_OK_DIST: f32 = 4.0;
 
 impl Itinerary {
     pub fn none() -> Self {
@@ -57,8 +57,9 @@ impl Itinerary {
         let end_lane = pather.nearest_lane(map, end)?;
 
         if start_lane == end_lane {
-            let p = pather.local_route(map, start_lane, start, end)?;
-            return Some(Itinerary::simple(p.into_vec()));
+            if let Some(p) = pather.local_route(map, start_lane, start, end) {
+                return Some(Itinerary::simple(p.into_vec()));
+            }
         }
 
         let mut cur = Traversable::new(TraverseKind::Lane(start_lane), TraverseDirection::Forward);
@@ -85,16 +86,16 @@ impl Itinerary {
         });
 
         let points = cur.points(map).unwrap();
-        let (_, segid) = points.project_segment(start);
+        let (proj, segid, dir) = points.project_segment_dir(start);
 
         let mut points = points.into_vec();
-        points.drain(..segid - 1);
+        points.drain(..segid);
 
         let mut it = Self {
             kind,
             local_path: points,
         };
-        it.advance(map);
+        it.prepend_local_path([proj + dir * 3.5].iter().copied());
         Some(it)
     }
 
@@ -125,8 +126,12 @@ impl Itinerary {
 
     pub fn update(&mut self, position: Vec2, time: u64, map: &Map) {
         if let Some(p) = self.get_point() {
-            if position.is_close(p, OBJECTIVE_OK_DIST) {
-                if self.is_terminal() || self.remaining_points() > 1 {
+            let term = self.is_terminal();
+            if position.is_close(p, 2.0) && term {
+                self.advance(map);
+            }
+            if position.is_close(p, OBJECTIVE_OK_DIST) && !term {
+                if self.remaining_points() > 1 {
                     self.advance(map);
                     return;
                 }
@@ -194,7 +199,7 @@ impl Itinerary {
     }
 
     /// Does a logical prepend for a series of points to the local path vector.
-    pub fn prepend_local_path(&mut self, points: Vec<Vec2>) {
+    pub fn prepend_local_path(&mut self, points: impl IntoIterator<Item = Vec2>) {
         self.local_path.splice(0..0, points.into_iter());
     }
 

@@ -106,11 +106,12 @@ impl PolyLine {
         self.project_segment(p).0
     }
 
-    pub fn project_dir(&self, p: Vec2) -> (Vec2, Vec2) {
+    pub fn project_segment_dir(&self, p: Vec2) -> (Vec2, usize, Vec2) {
         let (pos, segm) = self.project_segment(p);
         (
             pos,
-            self.segment_vec(segm)
+            segm,
+            self.segment_vec(segm - 1)
                 .and_then(|x| x.try_normalize())
                 .unwrap_or(Vec2::UNIT_X),
         )
