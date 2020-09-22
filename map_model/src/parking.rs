@@ -4,7 +4,6 @@ use ordered_float::OrderedFloat;
 use rand::seq::IteratorRandom;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
-use std::collections::HashSet;
 
 new_key_type! {
     pub struct ParkingSpotID;
@@ -91,14 +90,14 @@ impl ParkingSpots {
         &self,
         lane: LaneID,
         near: Vec2,
-        reserved_spots: &HashSet<ParkingSpotID>,
+        is_reserved: impl Fn(&ParkingSpotID) -> bool,
     ) -> Option<ParkingSpotID> {
         debug_assert!(self.lane_spots.contains_key(lane));
         let spots = &self.spots;
         self.lane_spots
             .get(lane)?
             .iter()
-            .filter(|&p| !reserved_spots.contains(p))
+            .filter(|&p| !is_reserved(p))
             .min_by_key(|&&id| OrderedFloat(spots[id].trans.position().distance2(near)))
             .copied()
     }

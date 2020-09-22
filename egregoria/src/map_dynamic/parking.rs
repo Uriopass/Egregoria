@@ -1,27 +1,22 @@
+use dashmap::DashMap;
 use geom::Vec2;
 use map_model::{LaneKind, Map, ParkingSpotID};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use std::sync::Mutex;
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct ParkingManagement {
-    reserved_spots: Mutex<HashSet<ParkingSpotID>>, // todo: use chashmap if it becomes a performance issue
+    reserved_spots: DashMap<ParkingSpotID, ()>,
 }
 
 impl ParkingManagement {
     pub fn free(&self, spot: ParkingSpotID) {
-        assert!(
-            self.reserved_spots.lock().unwrap().remove(&spot), // Unwrap ok: Mutex lives in the main thread
-            "spot wasn't reserved"
-        );
+        assert!(self.reserved_spots.remove(&spot), "spot wasn't reserved");
     }
 
     pub fn reserve_near(&self, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
         let lane = map.nearest_lane(near, LaneKind::Parking)?;
         let lane = map.lanes().get(lane)?;
 
-        let mut reserved_spots = self.reserved_spots.lock().unwrap(); // Unwrap ok: Mutex lives in the main thread
         let depth = 3;
 
         let mut potential = vec![lane];
@@ -31,11 +26,12 @@ impl ParkingManagement {
             for lane in potential.drain(..) {
                 let parent = unwrap_or!(map.roads().get(lane.parent), continue);
 
-                let p = parent
-                    .parking_next_to(lane)
-                    .and_then(|x| map.parking.closest_available_spot(x, near, &reserved_spots));
+                let p = parent.parking_next_to(lane).and_then(|x| {
+                    map.parking
+                        .closest_available_spot(x, near, |p| self.reserved_spots.contains_key(p))
+                });
                 if let Some(spot) = p {
-                    reserved_spots.insert(spot);
+                    self.reserved_spots.insert(spot, ());
                     return Some(spot);
                 }
 

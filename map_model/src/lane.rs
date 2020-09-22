@@ -151,7 +151,9 @@ impl LanePatternBuilder {
         let mut forward: Vec<_> = (0..self.n_lanes).map(|_| LaneKind::Driving).collect();
 
         if self.parking {
-            backward.push(LaneKind::Parking);
+            if !self.one_way {
+                backward.push(LaneKind::Parking);
+            }
             forward.push(LaneKind::Parking);
         }
 
