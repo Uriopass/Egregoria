@@ -152,15 +152,20 @@ impl Router {
 
         if let Some(car) = self.car {
             let map = goria.read::<Map>();
-            if let Some(spot) = goria.read::<ParkingManagement>().reserve_near(obj, &map) {
+            if let Some(spot_id) = goria.read::<ParkingManagement>().reserve_near(obj, &map) {
+                let lane = map.parking_to_drive(spot_id).unwrap();
+                let spot = *goria.read::<Map>().parking.get(spot_id).unwrap();
+
+                let (pos, _, dir) = map.lanes()[lane]
+                    .points
+                    .project_segment_dir(spot.trans.position());
+                let parking_pos = pos - dir * 4.0;
+
                 steps.push(RoutingStep::WalkTo(goria.pos(car.0).unwrap()));
                 steps.push(RoutingStep::GetInVehicle(car));
                 steps.push(RoutingStep::Unpark(car));
-                steps.push(RoutingStep::DriveTo(
-                    car,
-                    map.parking.get(spot).unwrap().trans.position(),
-                ));
-                steps.push(RoutingStep::Park(car, spot));
+                steps.push(RoutingStep::DriveTo(car, parking_pos));
+                steps.push(RoutingStep::Park(car, spot_id));
                 steps.push(RoutingStep::GetOutVehicle(car));
             }
         }
