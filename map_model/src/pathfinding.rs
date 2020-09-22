@@ -145,7 +145,7 @@ impl Pathfinder for CarPath {
 
         if seg_end < seg_start
             || (seg_end == seg_start
-                && lane.points[seg_end].distance2(p_start) > lane.points[seg_end].distance2(p_end))
+                && lane.points[seg_end].distance2(p_start) < lane.points[seg_end].distance2(p_end))
         {
             return None;
         }

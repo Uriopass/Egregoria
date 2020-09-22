@@ -1,5 +1,5 @@
 use geom::Vec2;
-use map_model::{LaneID, Map, ParkingSpotID};
+use map_model::{LaneKind, Map, ParkingSpotID};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::Mutex;
@@ -17,7 +17,8 @@ impl ParkingManagement {
         );
     }
 
-    pub fn reserve_near(&self, lane: LaneID, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
+    pub fn reserve_near(&self, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
+        let lane = map.nearest_lane(near, LaneKind::Parking)?;
         let lane = map.lanes().get(lane)?;
 
         let mut reserved_spots = self.reserved_spots.lock().unwrap(); // Unwrap ok: Mutex lives in the main thread

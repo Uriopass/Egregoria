@@ -80,7 +80,7 @@ impl RoutingStep {
                 }
             }
             RoutingStep::Park(vehicle, spot) => Action::Park(vehicle, spot),
-            RoutingStep::Unpark(vehicle) => Action::Unpark(vehicle),
+            RoutingStep::Unpark(vehicle) => Action::UnPark(vehicle),
             RoutingStep::GetInVehicle(vehicle) => Action::GetInVehicle(body, vehicle),
             RoutingStep::GetOutVehicle(vehicle) => Action::GetOutVehicle(body, vehicle),
             RoutingStep::GetInBuilding(build) => Action::GetInBuilding(body, build),
@@ -91,15 +91,17 @@ impl RoutingStep {
 
 pub struct Router {
     body: PedestrianID,
+    car: Option<VehicleID>,
     steps: Vec<RoutingStep>,
     dest: Option<Destination>,
 }
 
 impl Router {
-    pub fn new(body: PedestrianID) -> Self {
+    pub fn new(body: PedestrianID, car: Option<VehicleID>) -> Self {
         Self {
             body,
             steps: vec![],
+            car,
             dest: None,
         }
     }
@@ -121,7 +123,7 @@ impl Router {
 
         self.clear_steps(goria);
         match dest {
-            Destination::Outside(pos) => self.steps = Self::steps_to(goria, self.body, pos),
+            Destination::Outside(pos) => self.steps = self.steps_to(goria, pos),
             Destination::Building(build) => {
                 let loc = goria.comp::<Location>(self.body.0).unwrap();
                 if let Location::Building(cur_build) = loc {
@@ -131,7 +133,7 @@ impl Router {
                 }
 
                 let door_pos = goria.read::<Map>().buildings()[build].door_pos;
-                self.steps = Self::steps_to(goria, self.body, door_pos);
+                self.steps = self.steps_to(goria, door_pos);
                 self.steps.push(RoutingStep::GetInBuilding(build));
             }
         }
@@ -141,12 +143,28 @@ impl Router {
         self.action(goria)
     }
 
-    fn steps_to(goria: &Egregoria, body: PedestrianID, obj: Vec2) -> Vec<RoutingStep> {
+    fn steps_to(&self, goria: &Egregoria, obj: Vec2) -> Vec<RoutingStep> {
         let mut steps = vec![];
-        let loc = goria.comp::<Location>(body.0).unwrap();
+        let loc = goria.comp::<Location>(self.body.0).unwrap();
         if let Location::Building(cur_build) = loc {
             steps.push(RoutingStep::GetOutBuilding(*cur_build));
         }
+
+        if let Some(car) = self.car {
+            let map = goria.read::<Map>();
+            if let Some(spot) = goria.read::<ParkingManagement>().reserve_near(obj, &map) {
+                steps.push(RoutingStep::WalkTo(goria.pos(car.0).unwrap()));
+                steps.push(RoutingStep::GetInVehicle(car));
+                steps.push(RoutingStep::Unpark(car));
+                steps.push(RoutingStep::DriveTo(
+                    car,
+                    map.parking.get(spot).unwrap().trans.position(),
+                ));
+                steps.push(RoutingStep::Park(car, spot));
+                steps.push(RoutingStep::GetOutVehicle(car));
+            }
+        }
+
         steps.push(RoutingStep::WalkTo(obj));
         steps
     }
@@ -170,7 +188,7 @@ pub enum Action {
     GetInVehicle(PedestrianID, VehicleID),
     Navigate(Entity, Itinerary),
     Park(VehicleID, ParkingSpotID),
-    Unpark(VehicleID),
+    UnPark(VehicleID),
 }
 
 impl Default for Action {
@@ -218,6 +236,7 @@ impl Action {
                 }
             }
             Action::Park(vehicle, spot_id) => {
+                log::info!("{:?}", self);
                 let trans = goria.comp::<Transform>(vehicle.0).unwrap();
                 let spot = *goria.read::<Map>().parking.get(spot_id).unwrap();
 
@@ -232,14 +251,20 @@ impl Action {
                     VehicleState::RoadToPark(s, 0.0, spot_id);
                 goria.comp_mut::<Kinematics>(vehicle.0).unwrap().velocity = Vec2::ZERO;
             }
-            Action::Unpark(vehicle) => {
+            Action::UnPark(vehicle) => {
+                log::info!("{:?}", self);
                 let v = goria.comp::<Vehicle>(vehicle.0).unwrap();
                 let w = v.kind.width();
 
                 if let VehicleState::Parked(spot) = v.state {
                     goria.read::<ParkingManagement>().free(spot);
                 }
-                put_vehicle_in_coworld(goria, w, *goria.comp::<Transform>(vehicle.0).unwrap());
+                let coll =
+                    put_vehicle_in_coworld(goria, w, *goria.comp::<Transform>(vehicle.0).unwrap());
+                goria
+                    .read::<ParCommandBuffer>()
+                    .add_component(vehicle.0, coll);
+
                 goria.comp_mut::<Vehicle>(vehicle.0).unwrap().state = VehicleState::Driving;
             }
         }

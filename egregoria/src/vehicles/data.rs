@@ -4,12 +4,12 @@ use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, Physics
 use crate::rendering::assets::{AssetID, AssetRender};
 use crate::rendering::Color;
 use crate::utils::rand_world;
-use crate::{Egregoria, RandProvider};
-use geom::{Spline, Transform};
+use crate::Egregoria;
+use geom::{Spline, Transform, Vec2};
 use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
 use legion::Entity;
-use map_model::{LaneKind, Map, ParkingSpotID};
+use map_model::{Map, ParkingSpotID};
 use serde::{Deserialize, Serialize};
 
 /// The duration for the parking animation.
@@ -44,6 +44,7 @@ pub struct Vehicle {
     pub kind: VehicleKind,
 }
 
+#[must_use]
 pub fn put_vehicle_in_coworld(goria: &mut Egregoria, w: f32, trans: Transform) -> Collider {
     Collider(goria.write::<CollisionWorld>().insert(
         trans.position(),
@@ -87,7 +88,7 @@ impl VehicleKind {
 
     pub fn cruising_speed(self) -> f32 {
         match self {
-            VehicleKind::Car => 15.0,
+            VehicleKind::Car => 12.0,
             VehicleKind::Bus => 10.0,
         }
     }
@@ -100,7 +101,7 @@ impl VehicleKind {
     }
 }
 
-pub fn spawn_parked_vehicle(goria: &mut Egregoria) {
+pub fn spawn_parked_vehicle(goria: &mut Egregoria, near: Vec2) -> Option<VehicleID> {
     let r: f64 = rand_world(goria);
 
     let map = goria.read::<Map>();
@@ -110,32 +111,20 @@ pub fn spawn_parked_vehicle(goria: &mut Egregoria) {
 
     let pm = goria.read::<ParkingManagement>();
 
-    let rl = unwrap_or!(
-        map.random_lane(LaneKind::Parking, &mut *goria.write::<RandProvider>()),
-        return
-    );
-    let spot_id = unwrap_or!(
-        pm.reserve_near(
-            rl.id,
-            rl.points
-                .point_along(rand::random::<f32>() * rl.points.length()),
-            &map
-        ),
-        return
-    );
+    let spot_id = pm.reserve_near(near, &map)?;
 
     let pos = map.parking.get(spot_id).unwrap().trans; // Unwrap ok: Gotten using reserve_near
 
     drop(map);
     drop(pm);
 
-    make_vehicle_entity(
+    Some(VehicleID(make_vehicle_entity(
         goria,
         pos,
         Vehicle::new(VehicleKind::Car, spot_id),
         it,
         false,
-    );
+    )))
 }
 
 pub fn make_vehicle_entity(
