@@ -1,4 +1,4 @@
-use crate::api::{Location, PedestrianID};
+use crate::api::Location;
 use crate::engine_interaction::{Movable, Selectable};
 use crate::map_dynamic::{BuildingInfos, Itinerary};
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
@@ -7,9 +7,13 @@ use crate::rendering::Color;
 use crate::Egregoria;
 use geom::{vec2, Transform, Vec2};
 use imgui_inspect_derive::*;
+use legion::Entity;
 use map_model::BuildingID;
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct PedestrianID(pub Entity);
 
 #[derive(Serialize, Deserialize, Inspect)]
 pub struct Pedestrian {

@@ -1,4 +1,4 @@
-use crate::api::PedestrianID;
+use crate::pedestrians::data::PedestrianID;
 use crate::SoulID;
 use map_model::BuildingID;
 use slotmap::SecondaryMap;

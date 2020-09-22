@@ -1,5 +1,5 @@
 use crate::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
-use geom::Vec2;
+use geom::{Transform, Vec2};
 use ordered_float::OrderedFloat;
 use rand::seq::IteratorRandom;
 use serde::{Deserialize, Serialize};
@@ -15,8 +15,7 @@ pub const PARKING_SPOT_LENGTH: f32 = 6.0;
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct ParkingSpot {
     pub parent: LaneID,
-    pub pos: Vec2,
-    pub orientation: Vec2,
+    pub trans: Transform,
 }
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -69,8 +68,7 @@ impl ParkingSpots {
                 .map(move |(pos, dir)| {
                     spots.insert(ParkingSpot {
                         parent,
-                        pos,
-                        orientation: dir,
+                        trans: Transform::new_cos_sin(pos, dir),
                     })
                 }),
         );
@@ -101,7 +99,7 @@ impl ParkingSpots {
             .get(lane)?
             .iter()
             .filter(|&p| !reserved_spots.contains(p))
-            .min_by_key(|&&id| OrderedFloat(spots[id].pos.distance2(near)))
+            .min_by_key(|&&id| OrderedFloat(spots[id].trans.position().distance2(near)))
             .copied()
     }
 }
