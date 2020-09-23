@@ -15,6 +15,7 @@ geom          = { path = "../geom" }
 gui           = { path = "../gui" }
 souls         = { path = "../souls" }
 wgpu_engine   = { path = "../wgpu_engine" }
+common        = { path = "../common" }
 mint          = "0.5.5"
 imgui-wgpu    = "0.9.0"
 imgui-winit-support = "0.4.0"
@@ -24,6 +25,7 @@ env_logger    = "0.7.1"
 log           = "0.4.11"
 inline_tweak  = "1.0.6"
 imgui         = "0.4.0"
+legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize", "extended-tuple-impls"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 winit         = "0.22"

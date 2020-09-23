@@ -14,6 +14,7 @@ mod roadbuild;
 mod roadeditor;
 mod selectable;
 mod topgui;
+mod windows;
 
 pub use crate::follow::FollowEntity;
 pub use crate::selectable::InspectedEntity;
@@ -21,7 +22,7 @@ pub use crate::selectable::InspectedEntity;
 pub use inspect::*;
 pub use topgui::*;
 
-pub fn add_gui_systems(goria: &mut Egregoria) {
+pub fn setup_gui(goria: &mut Egregoria) {
     goria
         .schedule
         .add_system(selectable::selectable_select_system())

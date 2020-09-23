@@ -281,6 +281,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "common"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "log",
+ "serde",
+]
+
+[[package]]
 name = "copyless"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -547,7 +556,7 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 name = "egregoria"
 version = "0.1.0"
 dependencies = [
- "bincode",
+ "common",
  "crossbeam",
  "dashmap",
  "flat_spatial",
@@ -1480,6 +1489,7 @@ name = "native_app"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "common",
  "egregoria",
  "env_logger",
  "futures",
@@ -1491,6 +1501,7 @@ dependencies = [
  "imgui-winit-support",
  "inline_tweak",
  "lazy_static",
+ "legion",
  "log",
  "map_model",
  "mint",
@@ -2127,6 +2138,7 @@ version = "0.1.0"
 dependencies = [
  "egregoria",
  "geom",
+ "imgui",
  "log",
  "map_model",
  "ordered-float 2.0.0",
