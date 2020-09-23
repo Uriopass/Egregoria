@@ -93,7 +93,12 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
         }
     };
 
-    let mut sfile = File::open(p).unwrap_or_else(|_| panic!("Failed to open {:?} shader file", p));
+    let mut sfile = File::open(p).unwrap_or_else(|_| {
+        panic!(
+            "Failed to open {:?}. Did you run the binary next to the assets ?",
+            p
+        )
+    });
 
     let cache_state =
         if let Some(last_modified) = sfile.metadata().ok().and_then(|x| x.modified().ok()) {
@@ -184,12 +189,10 @@ fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
 fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
     let glsl = naga::front::glsl::parse_str(
         &src,
-        String::from("main"),
+        "main",
         match stype {
             ShaderType::Vertex => naga::ShaderStage::Vertex,
-            ShaderType::Fragment => naga::ShaderStage::Fragment {
-                early_depth_test: None,
-            },
+            ShaderType::Fragment => naga::ShaderStage::Fragment,
         },
     )
     .map_err(|e| log::error!("{}", e))
