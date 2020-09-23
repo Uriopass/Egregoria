@@ -13,7 +13,6 @@ edition = "2018"
 ordered-float = { version = "2.0", features = ["serde"] }
 rand          = { version = "0.7", default-features = false, features = ["std", "small_rng"] }
 rand_distr    = "0.2.2"
-bincode       = "1.2.1"
 serde         = "1.0"
 legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize", "extended-tuple-impls"] }
 crossbeam     = "0.7.3"
@@ -25,6 +24,7 @@ imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 geom          = { path = "../geom" }
 map_model     = { path = "../map_model" }
 mods          = { path = "../mods" }
+common        = { path = "../common" }
 slotmap       = "0.4.0"
 dashmap       = { version = "4.0.0-rc6", features = ["serde"] }
 

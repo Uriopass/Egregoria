@@ -1,14 +1,12 @@
+use crate::windows::ImguiWindows;
 use crate::{InspectedEntity, RoadBuildResource, Tool};
-use egregoria::engine_interaction::{MouseInfo, RenderStats, TimeInfo};
-use egregoria::pedestrians::Pedestrian;
-use egregoria::utils::frame_log::FrameLog;
-use egregoria::vehicles::Vehicle;
+use egregoria::engine_interaction::TimeInfo;
+
 use egregoria::Egregoria;
 use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
-use legion::IntoQuery;
-use map_model::{LanePatternBuilder, Map};
+use map_model::LanePatternBuilder;
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
@@ -39,46 +37,25 @@ impl AsRef<str> for AutoSaveEvery {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct Gui {
-    pub show_map_ui: bool,
-    pub show_debug_info: bool,
-    pub show_tips: bool,
-    pub show_debug_layers: bool,
-    pub show_scenarios: bool,
+    #[serde(skip)]
+    pub windows: ImguiWindows,
     pub auto_save_every: AutoSaveEvery,
     #[serde(skip)]
     pub last_save: Instant,
     #[serde(skip)]
-    pub available_scenarios: Vec<String>,
     pub n_cars: i32,
     pub n_pedestrians: i32,
-}
-
-fn available_scenarios() -> Vec<String> {
-    let mut available_scenarios = vec![];
-    for file in std::fs::read_dir("lua/scenarios")
-        .into_iter()
-        .flatten()
-        .filter_map(|x| x.ok())
-    {
-        available_scenarios.push(file.file_name().to_string_lossy().into_owned());
-    }
-    available_scenarios
 }
 
 impl Default for Gui {
     fn default() -> Self {
         Self {
-            show_map_ui: true,
-            show_debug_info: false,
-            show_tips: false,
-            show_debug_layers: false,
-            show_scenarios: false,
+            windows: ImguiWindows::default(),
             auto_save_every: AutoSaveEvery::Never,
             last_save: Instant::now(),
-            available_scenarios: available_scenarios(),
             n_cars: 100,
             n_pedestrians: 100,
         }
@@ -89,44 +66,15 @@ impl Gui {
     pub fn render(&mut self, ui: &Ui, goria: &mut Egregoria) {
         self.inspector(ui, goria);
 
+        self.windows.render(ui, goria);
+
         self.menu_bar(ui, goria);
-
-        self.map_ui(ui, goria);
-
-        self.info(ui, goria);
-
-        self.tips(ui);
 
         self.toolbox(ui, goria);
 
         self.time_controls(ui, goria);
 
         self.auto_save(goria);
-
-        self.scenario(ui, goria);
-    }
-
-    pub fn scenario(&mut self, ui: &Ui, goria: &mut Egregoria) {
-        if !self.show_scenarios {
-            return;
-        }
-        let scenarios = &mut self.available_scenarios;
-        Window::new(im_str!("Scenarios"))
-            .position([300.0, 300.0], imgui::Condition::FirstUseEver)
-            .opened(&mut self.show_scenarios)
-            .build(&ui, || {
-                for scenario in scenarios.iter() {
-                    if ui.small_button(&im_str!("{}", scenario)) {
-                        egregoria::scenarios::scenario_runner::set_scenario(
-                            goria,
-                            &format!("lua/scenarios/{}", scenario),
-                        );
-                    }
-                }
-                if ui.small_button(im_str!("reload scenario list")) {
-                    *scenarios = available_scenarios();
-                }
-            });
     }
 
     pub fn auto_save(&mut self, goria: &mut Egregoria) {
@@ -262,82 +210,10 @@ impl Gui {
             });
     }
 
-    pub fn info(&mut self, ui: &Ui, goria: &mut Egregoria) {
-        if !self.show_debug_info {
-            return;
-        }
-        let stats = goria.read::<RenderStats>();
-        let mouse = goria.read::<MouseInfo>().unprojected;
-        Window::new(im_str!("Debug Info"))
-            .position([300.0, 50.0], imgui::Condition::FirstUseEver)
-            .opened(&mut self.show_debug_info)
-            .build(&ui, || {
-                ui.text("Averaged over last 10 frames: ");
-                ui.text(im_str!(
-                    "World update time: {:.1}ms",
-                    stats.world_update.time_avg() * 1000.0
-                ));
-                ui.text(im_str!(
-                    "Render time: {:.1}ms",
-                    stats.render.time_avg() * 1000.0
-                ));
-                ui.text(im_str!(
-                    "Souls desires time: {:.1}ms",
-                    stats.souls_desires.time_avg() * 1000.0
-                ));
-                ui.text(im_str!(
-                    "Souls apply time: {:.1}ms",
-                    stats.souls_apply.time_avg() * 1000.0
-                ));
-                ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
-                ui.separator();
-                ui.text("Frame log");
-                let flog = goria.read::<FrameLog>();
-                {
-                    let fl = flog.get_frame_log();
-                    for s in &*fl {
-                        ui.text(im_str!("{}", s));
-                    }
-                }
-                flog.clear();
-            });
-    }
-
-    pub fn tips(&mut self, ui: &Ui) {
-        if !self.show_tips {
-            return;
-        }
-        Window::new(im_str!("Tips"))
-            .size([280.0, 200.0], imgui::Condition::FirstUseEver)
-            .position([30.0, 470.0], imgui::Condition::FirstUseEver)
-            .opened(&mut self.show_tips)
-            .build(&ui, || {
-                ui.text(im_str!("Select: Left click"));
-                ui.text(im_str!("Move: Left drag"));
-                ui.text(im_str!("Deselect: Escape"));
-                ui.text(im_str!("Pan: Right click or Arrow keys"));
-            });
-    }
-
     pub fn menu_bar(&mut self, ui: &Ui, goria: &mut Egregoria) {
         ui.main_menu_bar(|| {
-            ui.menu(im_str!("Show"), true, || {
-                if imgui::MenuItem::new(im_str!("Map")).build(&ui) {
-                    self.show_map_ui = true;
-                }
-                if imgui::MenuItem::new(im_str!("Tips")).build(&ui) {
-                    self.show_tips = true;
-                }
-                if imgui::MenuItem::new(im_str!("Scenarios")).build(&ui) {
-                    self.show_scenarios = true;
-                }
-                if imgui::MenuItem::new(im_str!("Debug Info")).build(&ui) {
-                    self.show_debug_info = true;
-                }
-                if imgui::MenuItem::new(im_str!("Debug Layers")).build(&ui) {
-                    self.show_debug_layers = true;
-                }
-            });
+            self.windows.menu(ui);
+
             ui.menu(im_str!("Settings"), true, || {
                 ui.text("Auto save every");
                 ui.same_line(0.0);
@@ -361,50 +237,5 @@ impl Gui {
                 egregoria::save_to_disk(goria);
             }
         });
-    }
-
-    pub fn map_ui(&mut self, ui: &Ui, goria: &mut Egregoria) {
-        if !self.show_map_ui {
-            return;
-        }
-
-        let mut opened = self.show_map_ui;
-        Window::new(im_str!("Map"))
-            .size([200.0, 140.0], imgui::Condition::FirstUseEver)
-            .position([30.0, 30.0], imgui::Condition::FirstUseEver)
-            .opened(&mut opened)
-            .build(&ui, || {
-                let mut map = goria.write::<Map>();
-
-                if ui.small_button(im_str!("build houses")) {
-                    map.build_buildings();
-                }
-
-                if ui.small_button(im_str!("load Paris map")) {
-                    map.clear();
-                    map_model::load_parismap(&mut map);
-                    map.build_buildings();
-                }
-
-                if ui.small_button(im_str!("load test field")) {
-                    map.clear();
-                    map_model::load_testfield(&mut map);
-                    map.build_buildings();
-                }
-
-                if ui.small_button(im_str!("clear the map")) {
-                    map.clear();
-                }
-
-                ui.text(im_str!(
-                    "{} pedestrians",
-                    <&Pedestrian>::query().iter(&goria.world).count()
-                ));
-                ui.text(im_str!(
-                    "{} vehicles",
-                    <&Vehicle>::query().iter(&goria.world).count()
-                ));
-            });
-        self.show_map_ui = opened;
     }
 }

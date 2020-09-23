@@ -1,7 +1,7 @@
-use egregoria::legion::IntoQuery;
 use egregoria::rendering::meshrender_component::{MeshRender, MeshRenderEnum};
 use egregoria::Egregoria;
 use geom::Transform;
+use legion::IntoQuery;
 use wgpu_engine::Tesselator;
 
 pub struct MeshRenderer;

@@ -66,7 +66,7 @@ impl CameraHandler {
             self.camera.position.x -= p.x - self.last_pos.x;
             self.camera.position.y -= p.y - self.last_pos.y;
             self.camera.update();
-            egregoria::utils::saveload::save_silent(&self.camera, "camera");
+            common::saveload::save_silent(&self.camera, "camera");
         }
 
         if mouse_enabled {
@@ -85,22 +85,22 @@ impl CameraHandler {
             if is_pressed.contains(&KeyCode::Right) {
                 self.camera.position.x += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
                 self.camera.update();
-                egregoria::utils::saveload::save_silent(&self.camera, "camera");
+                common::saveload::save_silent(&self.camera, "camera");
             }
             if is_pressed.contains(&KeyCode::Left) {
                 self.camera.position.x -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
                 self.camera.update();
-                egregoria::utils::saveload::save_silent(&self.camera, "camera");
+                common::saveload::save_silent(&self.camera, "camera");
             }
             if is_pressed.contains(&KeyCode::Up) {
                 self.camera.position.y += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
                 self.camera.update();
-                egregoria::utils::saveload::save_silent(&self.camera, "camera");
+                common::saveload::save_silent(&self.camera, "camera");
             }
             if is_pressed.contains(&KeyCode::Down) {
                 self.camera.position.y -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
                 self.camera.update();
-                egregoria::utils::saveload::save_silent(&self.camera, "camera");
+                common::saveload::save_silent(&self.camera, "camera");
             }
 
             let just_pressed = &ctx.input.keyboard.just_pressed;
@@ -125,6 +125,6 @@ impl CameraHandler {
         self.camera.position.x -= after.x - self.last_pos.x;
         self.camera.position.y -= after.y - self.last_pos.y;
         self.update(ctx);
-        egregoria::utils::saveload::save_silent(&self.camera, "camera");
+        common::saveload::save_silent(&self.camera, "camera");
     }
 }

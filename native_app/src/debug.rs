@@ -1,8 +1,6 @@
 #![allow(clippy::type_complexity)]
 
 use egregoria::engine_interaction::{MouseInfo, TimeInfo};
-use egregoria::imgui::im_str;
-use egregoria::imgui::Ui;
 use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::CollisionWorld;
 use egregoria::rendering::{Color, LinearColor};
@@ -11,6 +9,8 @@ use geom::Spline;
 use geom::{vec2, Vec2};
 use geom::{Camera, OBB};
 use gui::InspectedEntity;
+use imgui::im_str;
+use imgui::Ui;
 use lazy_static::*;
 use map_model::{Map, RoadSegmentKind};
 use std::sync::Mutex;
@@ -34,18 +34,16 @@ lazy_static! {
     ]);
 }
 
-pub fn debug_menu(gui: &mut gui::Gui, ui: &Ui) {
-    if !gui.show_debug_layers {
-        return;
-    }
-    egregoria::imgui::Window::new(im_str!("Debug layers"))
-        .opened(&mut gui.show_debug_layers)
-        .build(&ui, || {
+pub fn add_debug_menu(gui: &mut gui::Gui) {
+    gui.windows.insert(
+        im_str!("Debug layers"),
+        |ui: &Ui, _goria: &mut Egregoria| {
             let mut objs = DEBUG_OBJS.lock().unwrap();
             for (val, name, _) in &mut *objs {
                 ui.checkbox(&im_str!("{}", *name), val);
             }
-        })
+        },
+    );
 }
 
 pub fn show_grid(tess: &mut Tesselator, state: &mut Egregoria) -> Option<()> {

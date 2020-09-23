@@ -14,7 +14,7 @@ pub struct ImguiWrapper {
 
 impl ImguiWrapper {
     pub fn new(gfx: &mut GfxContext, window: &Window) -> Self {
-        let mut imgui = egregoria::imgui::Context::create();
+        let mut imgui = imgui::Context::create();
 
         let mut platform = imgui_winit_support::WinitPlatform::init(&mut imgui);
         platform.attach_window(
@@ -26,8 +26,8 @@ impl ImguiWrapper {
         let font_size = 13.0 as f32;
         imgui
             .fonts()
-            .add_font(&[egregoria::imgui::FontSource::DefaultFontData {
-                config: Some(egregoria::imgui::FontConfig {
+            .add_font(&[imgui::FontSource::DefaultFontData {
+                config: Some(imgui::FontConfig {
                     oversample_h: 1,
                     pixel_snap_h: true,
                     size_pixels: font_size,
@@ -65,9 +65,8 @@ impl ImguiWrapper {
             .prepare_frame(self.imgui.io_mut(), window)
             .expect("Failed to prepare frame");
 
-        let ui: egregoria::imgui::Ui = self.imgui.frame();
+        let ui: imgui::Ui = self.imgui.frame();
         gui.render(&ui, goria);
-        crate::debug::debug_menu(gui, &ui);
 
         self.last_mouse_captured = ui.io().want_capture_mouse;
         self.last_kb_captured = ui.io().want_capture_keyboard;

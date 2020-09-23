@@ -9,7 +9,7 @@ fn filename(name: &'static str) -> String {
 }
 
 fn create_file(path: &str) -> Option<File> {
-    File::create(path).map_err(|e| error!("{}", e)).ok()
+    File::create(path).map_err(|e| log::error!("{}", e)).ok()
 }
 
 fn open_file(path: &str) -> Option<File> {
@@ -18,7 +18,7 @@ fn open_file(path: &str) -> Option<File> {
 
 pub fn save<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
     save_silent(x, name);
-    info!("successfully saved {}", name);
+    log::info!("successfully saved {}", name);
     Some(())
 }
 
@@ -39,9 +39,9 @@ pub fn load_or_default<T: DeserializeOwned + Default>(name: &'static str) -> T {
 
 pub fn load<T: DeserializeOwned>(name: &'static str) -> Option<T> {
     bincode::deserialize_from(load_reader(name)?)
-        .map_err(|err| error!("failed deserializing {}: {}", name, err))
+        .map_err(|err| log::error!("failed deserializing {}: {}", name, err))
         .map(|x| {
-            info!("successfully loaded {}", name);
+            log::info!("successfully loaded {}", name);
             x
         })
         .ok()
@@ -54,9 +54,9 @@ pub fn load_seed<S: DeserializeSeed<'static>>(name: &'static str, seed: S) -> Op
             .allow_trailing_bytes()
             .with_fixint_encoding(),
     ))
-    .map_err(|err| error!("failed deserializing {}: {}", name, err))
+    .map_err(|err| log::error!("failed deserializing {}: {}", name, err))
     .map(|x| {
-        info!("successfully loaded {}", name);
+        log::info!("successfully loaded {}", name);
         x
     })
     .ok()

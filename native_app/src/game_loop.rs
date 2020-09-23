@@ -1,4 +1,5 @@
 use crate::context::Context;
+use crate::debug::add_debug_menu;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
@@ -27,7 +28,7 @@ pub struct State {
 
 impl State {
     pub fn new(ctx: &mut Context) -> Self {
-        let camera = egregoria::utils::saveload::load("camera")
+        let camera = common::saveload::load("camera")
             .map(|camera| CameraHandler {
                 camera,
                 last_pos: Vec2::ZERO,
@@ -43,7 +44,11 @@ impl State {
         let mut state = egregoria::Egregoria::init();
 
         load_from_disk(&mut state);
-        gui::add_gui_systems(&mut state);
+        gui::setup_gui(&mut state);
+
+        let mut gui = Gui::default();
+        add_debug_menu(&mut gui);
+
         state.insert(camera.camera.clone());
 
         Self {
@@ -53,7 +58,7 @@ impl State {
             last_time: Instant::now(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
-            gui: Gui::default(),
+            gui,
             souls: Souls::default(),
         }
     }

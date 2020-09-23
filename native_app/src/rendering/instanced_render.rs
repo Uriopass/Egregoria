@@ -1,7 +1,7 @@
-use egregoria::legion::query::*;
 use egregoria::rendering::assets::AssetRender;
 use egregoria::Egregoria;
 use geom::Transform;
+use legion::query::*;
 use wgpu_engine::{FrameContext, GfxContext, InstanceRaw, SpriteBatchBuilder, Texture};
 
 pub struct InstancedRender {

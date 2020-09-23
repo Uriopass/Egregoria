@@ -79,11 +79,11 @@ pub fn serialize_colliders(state: &mut Egregoria) {
         let (pos, pobj) = unwrap_or!(coworld.get(h.0), return);
         objs.push((h.0, ([pos.x, pos.y], *pobj)));
     }
-    crate::saveload::save(&objs, "coworld");
+    common::saveload::save(&objs, "coworld");
 }
 
 pub fn deserialize_colliders(state: &mut Egregoria) -> Option<()> {
-    let objs: Vec<SerPhysicsObj> = crate::saveload::load("coworld")?;
+    let objs: Vec<SerPhysicsObj> = common::saveload::load("coworld")?;
 
     let coworld: &mut CollisionWorld = &mut *state.resources.get_mut::<CollisionWorld>().unwrap();
 
