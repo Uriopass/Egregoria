@@ -8,12 +8,12 @@ members = [
     "imgui-inspect-derive",
     "map_model",
     "mods",
-    "wgpu-renderer",
+    "native_app",
     "wgpu_engine",
     "souls",
 ]
 
-default-members = ["wgpu-renderer"]
+default-members = ["native_app"]
 
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]
@@ -28,7 +28,7 @@ opt-level = 0
 [profile.dev.package.map_model]
 opt-level = 0
 
-[profile.dev.package.wgpu-renderer]
+[profile.dev.package.native_app]
 opt-level = 0
 
 [profile.dev.package.imgui-inspect]

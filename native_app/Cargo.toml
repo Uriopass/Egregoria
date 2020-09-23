@@ -1,5 +1,5 @@
 [package]
-name = "wgpu-renderer"
+name = "native_app"
 version = "0.1.0"
 authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
 edition = "2018"
