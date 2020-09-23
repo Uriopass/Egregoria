@@ -1,0 +1,16 @@
+[package]
+name = "wgpu_engine"
+version = "0.1.0"
+authors = ["Paris DOUADY <paris.douady@hotmail.fr>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+geom      = { path = "../geom" }
+wgpu      = "0.6.0"
+bytemuck  = "1.4.1"
+mint      = "0.5.5"
+image     = { version = "0.23.4", default-features = false, features = ["png"] }
+log       = "0.4.11"
+raw-window-handle = "0.3.3"

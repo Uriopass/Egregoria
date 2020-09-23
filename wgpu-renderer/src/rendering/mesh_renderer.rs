@@ -1,8 +1,8 @@
-use crate::geometry::Tesselator;
 use egregoria::legion::IntoQuery;
 use egregoria::rendering::meshrender_component::{MeshRender, MeshRenderEnum};
 use egregoria::Egregoria;
 use geom::Transform;
+use wgpu_engine::Tesselator;
 
 pub struct MeshRenderer;
 

@@ -1,9 +1,10 @@
-use crate::engine::GfxContext;
 use imgui_wgpu::Renderer;
 use std::time::Instant;
+use wgpu_engine::{GfxContext, GuiRenderContext};
+use winit::window::Window;
 
 pub struct ImguiWrapper {
-    pub imgui: egregoria::imgui::Context,
+    pub imgui: imgui::Context,
     renderer: imgui_wgpu::Renderer,
     last_frame: Instant,
     platform: imgui_winit_support::WinitPlatform,
@@ -11,22 +12,14 @@ pub struct ImguiWrapper {
     pub last_kb_captured: bool,
 }
 
-pub struct GuiRenderContext<'a> {
-    pub device: &'a wgpu::Device,
-    pub encoder: &'a mut wgpu::CommandEncoder,
-    pub queue: &'a wgpu::Queue,
-    pub frame_view: &'a wgpu::TextureView,
-    pub window: &'a winit::window::Window,
-}
-
 impl ImguiWrapper {
-    pub fn new(gfx: &mut GfxContext) -> Self {
+    pub fn new(gfx: &mut GfxContext, window: &Window) -> Self {
         let mut imgui = egregoria::imgui::Context::create();
 
         let mut platform = imgui_winit_support::WinitPlatform::init(&mut imgui);
         platform.attach_window(
             imgui.io_mut(),
-            &gfx.window,
+            window,
             imgui_winit_support::HiDpiMode::Default,
         );
 
@@ -55,7 +48,8 @@ impl ImguiWrapper {
 
     pub fn render(
         &mut self,
-        gfx: GuiRenderContext,
+        mut gfx: GuiRenderContext,
+        window: &Window,
         goria: &mut egregoria::Egregoria,
         gui: &mut gui::Gui,
     ) {
@@ -68,7 +62,7 @@ impl ImguiWrapper {
 
         // Prepare
         self.platform
-            .prepare_frame(self.imgui.io_mut(), gfx.window)
+            .prepare_frame(self.imgui.io_mut(), window)
             .expect("Failed to prepare frame");
 
         let ui: egregoria::imgui::Ui = self.imgui.frame();
@@ -78,28 +72,16 @@ impl ImguiWrapper {
         self.last_mouse_captured = ui.io().want_capture_mouse;
         self.last_kb_captured = ui.io().want_capture_keyboard;
 
-        self.platform.prepare_render(&ui, gfx.window);
+        self.platform.prepare_render(&ui, window);
 
-        let mut rpass = gfx.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &gfx.frame_view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
-                    store: true,
-                },
-            }],
-            depth_stencil_attachment: None,
-        });
-
+        let mut rpass = gfx.rpass.take().unwrap();
         let _ = self
             .renderer
             .render(ui.render(), gfx.queue, gfx.device, &mut rpass)
             .map_err(|err| log::error!("Error rendering the UI: {:?}", err));
     }
 
-    pub fn handle_event(&mut self, gfx: &GfxContext, e: &winit::event::Event<()>) {
-        self.platform
-            .handle_event(self.imgui.io_mut(), &gfx.window, e);
+    pub fn handle_event(&mut self, window: &Window, e: &winit::event::Event<()>) {
+        self.platform.handle_event(self.imgui.io_mut(), window, e);
     }
 }

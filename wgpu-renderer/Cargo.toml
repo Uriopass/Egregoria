@@ -8,14 +8,13 @@ edition = "2018"
 
 [dependencies]
 
-wgpu          = "0.6.0"
 futures       = { version = "0.3.4", default-features = false, features = ["executor"] }
 bytemuck      = "1.2.0"
-image         = { version = "0.23.4", default-features = false, features = ["png"] }
 egregoria     = { path = "../egregoria" }
 geom          = { path = "../geom" }
 gui           = { path = "../gui" }
 souls         = { path = "../souls" }
+wgpu_engine   = { path = "../wgpu_engine" }
 mint          = "0.5.5"
 imgui-wgpu    = "0.9.0"
 imgui-winit-support = "0.4.0"
@@ -24,6 +23,7 @@ lazy_static   = "1.4.0"
 env_logger    = "0.7.1"
 log           = "0.4.11"
 inline_tweak  = "1.0.6"
+imgui         = "0.4.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 winit         = "0.22"

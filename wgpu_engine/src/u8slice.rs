@@ -7,7 +7,7 @@ macro_rules! u8slice_impl {
     ($t: ty) => {
         unsafe impl bytemuck::Pod for $t {}
         unsafe impl bytemuck::Zeroable for $t {}
-        impl crate::engine::ToU8Slice for [$t] {
+        impl crate::ToU8Slice for [$t] {
             fn to_slice(&self) -> &[u8] {
                 bytemuck::cast_slice(self)
             }

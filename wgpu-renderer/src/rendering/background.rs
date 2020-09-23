@@ -1,6 +1,4 @@
-use crate::engine::{
-    compile_shader, CompiledShader, FrameContext, GfxContext, ShadedQuad, Shaders,
-};
+use wgpu_engine::{compile_shader, CompiledShader, FrameContext, GfxContext, ShadedQuad, Shaders};
 
 struct Background;
 

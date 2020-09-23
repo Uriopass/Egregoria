@@ -1,11 +1,13 @@
+use crate::context::Context;
 use log::{Level, LevelFilter};
 use std::io::Write;
 use std::time::Instant;
 
+mod audio;
+mod context;
 mod debug;
-mod engine;
 mod game_loop;
-mod geometry;
+mod input;
 mod rendering;
 
 fn main() {
@@ -44,7 +46,7 @@ fn main() {
         })
         .init();
 
-    let mut ctx = engine::Context::new();
+    let mut ctx = Context::new();
 
     let state = game_loop::State::new(&mut ctx);
     ctx.start(state);

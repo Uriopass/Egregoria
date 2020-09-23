@@ -1,4 +1,4 @@
-use crate::engine::{CompiledShader, GfxContext};
+use crate::{CompiledShader, GfxContext};
 use wgpu::{BindGroupLayout, RenderPass};
 
 mod mesh;

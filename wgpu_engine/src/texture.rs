@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::engine::GfxContext;
+use crate::GfxContext;
 use image::GenericImageView;
 use std::fs::File;
 use std::io::Read;

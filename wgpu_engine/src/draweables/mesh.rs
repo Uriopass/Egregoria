@@ -1,10 +1,11 @@
-use crate::engine::{
+use crate::{
     compile_shader, ColoredVertex, Drawable, GfxContext, IndexType, PreparedPipeline, VBDesc,
 };
 use std::rc::Rc;
 use wgpu::util::DeviceExt;
 use wgpu::RenderPass;
 
+#[derive(Default)]
 pub struct MeshBuilder {
     pub vertices: Vec<ColoredVertex>,
     pub indices: Vec<IndexType>,

@@ -250,7 +250,7 @@ impl InspectRenderDefault<Color> for Color {
 
 impl Into<[f32; 4]> for Color {
     fn into(self) -> [f32; 4] {
-        [self.r, self.g, self.b, self.a]
+        LinearColor::from(self).into()
     }
 }
 

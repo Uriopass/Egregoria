@@ -1,8 +1,3 @@
-use crate::engine::{
-    compile_shader, CompiledShader, FrameContext, GfxContext, InstanceRaw, Mesh, ShadedBatch,
-    ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder,
-};
-use crate::geometry::Tesselator;
 use egregoria::rendering::{Color, LinearColor};
 use egregoria::utils::Restrict;
 use geom::vec2;
@@ -10,6 +5,10 @@ use map_model::{
     BuildingKind, Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
 };
 use std::ops::Mul;
+use wgpu_engine::{
+    compile_shader, CompiledShader, FrameContext, GfxContext, InstanceRaw, Mesh, ShadedBatch,
+    ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Tesselator,
+};
 
 #[derive(Clone, Copy)]
 struct Crosswalk;
@@ -67,7 +66,7 @@ impl RoadRenderer {
         let gray_line = LinearColor::gray(0.3);
 
         for l in lanes.values() {
-            tess.color = gray_line;
+            tess.set_color(gray_line);
 
             let or_src = l.orientation_from(l.src);
             let or_dst = -l.orientation_from(l.dst);
@@ -75,11 +74,11 @@ impl RoadRenderer {
             let w = l.width + 0.5;
             tess.draw_polyline_with_dir(l.points.as_slice(), or_src, or_dst, Z_LANE_BG, w);
 
-            tess.color = match l.kind {
+            tess.set_color(match l.kind {
                 LaneKind::Walking => hi_gray,
                 LaneKind::Parking => lo_gray,
                 _ => mi_gray,
-            };
+            });
             let z = match l.kind {
                 LaneKind::Walking => Z_SIDEWALK,
                 _ => Z_LANE,
@@ -91,15 +90,15 @@ impl RoadRenderer {
         let mut p = Vec::with_capacity(8);
         for inter in inters.values() {
             if inter.roads.is_empty() {
-                tess.color = gray_line;
+                tess.set_color(gray_line);
                 tess.draw_circle(inter.pos, Z_LANE_BG, 5.5);
 
-                tess.color = mi_gray;
+                tess.set_color(mi_gray);
                 tess.draw_circle(inter.pos, Z_LANE, 5.0);
                 continue;
             }
 
-            tess.color = mi_gray;
+            tess.set_color(mi_gray);
             tess.draw_filled_polygon(inter.polygon.as_slice(), Z_INTER_BG);
 
             for turn in inter
@@ -107,7 +106,7 @@ impl RoadRenderer {
                 .iter()
                 .filter(|turn| matches!(turn.kind, TurnKind::WalkingCorner))
             {
-                tess.color = gray_line;
+                tess.set_color(gray_line);
                 let id = turn.id;
 
                 let w = lanes[id.src].width;
@@ -120,7 +119,7 @@ impl RoadRenderer {
 
                 tess.draw_polyline_with_dir(&p, first_dir, last_dir, Z_LANE_BG, w + 0.5);
 
-                tess.color = hi_gray;
+                tess.set_color(hi_gray);
 
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
@@ -161,10 +160,10 @@ impl RoadRenderer {
         let r_center = n.points.last() + dir_perp * 2.5 + dir * 2.5;
 
         if n.control.is_stop_sign() {
-            sr.color = LinearColor::WHITE;
+            sr.set_color(LinearColor::WHITE);
             sr.draw_regular_polygon(r_center, Z_SIGNAL, 0.5, 8, std::f32::consts::FRAC_PI_8);
 
-            sr.color = LinearColor::RED;
+            sr.set_color(LinearColor::RED);
             sr.draw_regular_polygon(r_center, Z_SIGNAL, 0.4, 8, std::f32::consts::FRAC_PI_8);
             return;
         }
@@ -177,11 +176,11 @@ impl RoadRenderer {
         for i in -1..2 {
             sr.draw_circle(r_center + i as f32 * dir_perp * size, Z_SIGNAL, size * 0.5);
         }
-        sr.color = match n.control.get_behavior(time) {
+        sr.set_color(match n.control.get_behavior(time) {
             TrafficBehavior::RED | TrafficBehavior::STOP => LinearColor::RED,
             TrafficBehavior::ORANGE => LinearColor::ORANGE,
             TrafficBehavior::GREEN => LinearColor::GREEN,
-        };
+        });
 
         let offset = match n.control.get_behavior(time) {
             TrafficBehavior::RED => -size,

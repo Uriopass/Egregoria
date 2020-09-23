@@ -1,4 +1,4 @@
-use crate::engine::{compile_shader, Drawable, GfxContext, IndexType, Texture, UvVertex, VBDesc};
+use crate::{compile_shader, Drawable, GfxContext, IndexType, Texture, UvVertex, VBDesc};
 
 use geom::Vec2;
 use std::path::Path;

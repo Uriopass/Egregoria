@@ -1,4 +1,4 @@
-use crate::engine::{Drawable, GfxContext, IndexType, Shaders, UvVertex, VBDesc};
+use crate::{Drawable, GfxContext, IndexType, Shaders, UvVertex, VBDesc};
 
 use geom::Vec2;
 use std::marker::PhantomData;
@@ -6,6 +6,7 @@ use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{RenderPass, VertexBufferDescriptor};
 
+#[derive(Default)]
 pub struct ShadedBatchBuilder<T: Shaders> {
     pub instances: Vec<ShadedInstanceRaw>,
     _phantom: PhantomData<T>,
