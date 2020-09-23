@@ -65,16 +65,12 @@ impl Intersection {
     }
 
     pub fn update_turns(&mut self, lanes: &Lanes, roads: &Roads) {
-        let turns = self.turn_policy.generate_turns(self, lanes, roads);
-
-        self.turns
-            .retain(|t| turns.iter().any(|(id2, k)| *id2 == t.id && *k == t.kind));
-
-        for (turn_id, kind) in turns {
-            if self.turns.iter().all(|x| x.id != turn_id || x.kind != kind) {
-                self.turns.push(Turn::new(turn_id, kind))
-            }
-        }
+        self.turns = self
+            .turn_policy
+            .generate_turns(self, lanes, roads)
+            .into_iter()
+            .map(|(id, kind)| Turn::new(id, kind))
+            .collect();
 
         for turn in self.turns.iter_mut() {
             turn.make_points(lanes);
