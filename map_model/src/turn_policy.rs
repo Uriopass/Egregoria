@@ -8,6 +8,7 @@ use std::iter::{Extend, Iterator};
 pub struct TurnPolicy {
     pub back_turns: bool,
     pub left_turns: bool,
+    pub crosswalks: bool,
 }
 
 impl Default for TurnPolicy {
@@ -15,6 +16,7 @@ impl Default for TurnPolicy {
         Self {
             back_turns: false,
             left_turns: true,
+            crosswalks: true,
         }
     }
 }
@@ -167,7 +169,6 @@ impl TurnPolicy {
             .windows(2)
         {
             if let [a, b] = *w {
-                // Corners between lanes
                 if let (Some(incoming), Some(outgoing)) = (a.incoming, b.outgoing) {
                     turns.push((
                         TurnID::new(inter.id, incoming, outgoing, true),
@@ -175,9 +176,8 @@ impl TurnPolicy {
                     ));
                 }
 
-                // Crosswalk for each lane
-                if let (Some(incoming), Some(outgoing_in)) = (a.incoming, a.outgoing) {
-                    if n_roads >= 2 {
+                if self.crosswalks && n_roads >= 2 {
+                    if let (Some(incoming), Some(outgoing_in)) = (a.incoming, a.outgoing) {
                         turns.push((
                             TurnID::new(inter.id, incoming, outgoing_in, true),
                             TurnKind::Crosswalk,

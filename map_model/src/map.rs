@@ -61,6 +61,7 @@ impl Map {
         let inter = &mut self.intersections[id];
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
+        self.dirty = true;
     }
 
     fn invalidate(&mut self, id: IntersectionID) {
