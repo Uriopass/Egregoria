@@ -87,6 +87,7 @@ impl RoadRenderer {
             tess.draw_polyline_with_dir(l.points.as_slice(), or_src, or_dst, z, l.width - 0.5);
         }
 
+        // Intersections
         let mut p = Vec::with_capacity(8);
         for inter in inters.values() {
             if inter.roads.is_empty() {
@@ -101,6 +102,7 @@ impl RoadRenderer {
             tess.set_color(mi_gray);
             tess.draw_filled_polygon(inter.polygon.as_slice(), Z_INTER_BG);
 
+            // Walking corners
             for turn in inter
                 .turns()
                 .iter()
@@ -130,6 +132,7 @@ impl RoadRenderer {
             }
         }
 
+        // Buildings
         for building in map.buildings().values() {
             tess.set_color(Color::gray(0.3));
             tess.draw_filled_polygon(building.walkway.as_slice(), Z_WALKWAY);
@@ -142,6 +145,7 @@ impl RoadRenderer {
             tess.draw_filled_polygon(building.exterior.as_slice(), Z_HOUSE);
         }
 
+        // Lots
         for lot in map.lots().values() {
             tess.set_color(Color::new(0.2, 0.6, 0.25, 1.0));
             tess.draw_filled_polygon(&lot.shape.corners, Z_LOT);
@@ -157,8 +161,9 @@ impl RoadRenderer {
         let dir = n.orientation_from(n.dst);
         let dir_perp = dir.perpendicular();
 
-        let r_center = n.points.last() + dir_perp * 2.5 + dir * 2.5;
+        let r_center = n.points.last() + dir_perp * -3.5 + dir * -1.0;
 
+        // Stop sign
         if n.control.is_stop_sign() {
             sr.set_color(LinearColor::WHITE);
             sr.draw_regular_polygon(r_center, Z_SIGNAL, 0.5, 8, std::f32::consts::FRAC_PI_8);
@@ -168,9 +173,10 @@ impl RoadRenderer {
             return;
         }
 
+        // Traffic light
         let size = 0.5; // light size
 
-        sr.color = Color::gray(0.3).into();
+        sr.color = Color::gray(0.2).into();
         sr.draw_rect_cos_sin(r_center, Z_SIGNAL, size + 0.1, size * 3.0 + 0.1, dir);
 
         for i in -1..2 {
