@@ -51,7 +51,10 @@ impl Traversable {
 
     pub fn can_pass(&self, time: u64, lanes: &Lanes) -> bool {
         match self.kind {
-            TraverseKind::Lane(id) => !lanes[id].control.get_behavior(time).is_red(),
+            TraverseKind::Lane(id) => {
+                let l = unwrap_or!(lanes.get(id), return true);
+                !l.control.get_behavior(time).is_red()
+            }
             TraverseKind::Turn(_) => true,
         }
     }

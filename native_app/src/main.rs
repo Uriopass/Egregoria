@@ -16,7 +16,8 @@ fn main() {
         .filter(None, LevelFilter::Info)
         .filter(Some("wgpu_core"), LevelFilter::Warn)
         .filter(Some("gfx_memory"), LevelFilter::Off)
-        .filter(Some("gfx_backend_vulkan"), LevelFilter::Warn)
+        .filter(Some("gfx_backend_vulkan"), LevelFilter::Off)
+        .filter(Some("gfx_descriptor"), LevelFilter::Off)
         .format(move |f, r| {
             let time = Instant::now().duration_since(start).as_micros();
             if r.level() > Level::Warn {
