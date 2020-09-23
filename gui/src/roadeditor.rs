@@ -91,6 +91,7 @@ pub fn roadeditor(
                 turn_policy: inter.turn_policy,
                 light_policy: inter.light_policy,
             },)));
+            inspected.e = state.inspect_e;
         }
     }
 

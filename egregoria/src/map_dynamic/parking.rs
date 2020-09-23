@@ -10,7 +10,9 @@ pub struct ParkingManagement {
 
 impl ParkingManagement {
     pub fn free(&self, spot: ParkingSpotID) {
-        assert!(self.reserved_spots.remove(&spot), "spot wasn't reserved");
+        if !self.reserved_spots.remove(&spot) {
+            log::warn!("{:?} wasn't reserved", spot);
+        }
     }
 
     pub fn reserve_near(&self, near: Vec2, map: &Map) -> Option<ParkingSpotID> {

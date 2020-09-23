@@ -263,7 +263,10 @@ impl Action {
 
                 if let VehicleState::Parked(spot) = v.state {
                     goria.read::<ParkingManagement>().free(spot);
+                } else {
+                    log::warn!("Trying to unpark {:?} that wasn't parked", vehicle);
                 }
+
                 let coll =
                     put_vehicle_in_coworld(goria, w, *goria.comp::<Transform>(vehicle.0).unwrap());
                 goria
