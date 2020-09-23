@@ -1,4 +1,4 @@
-use crate::engine::ToU8Slice;
+use crate::ToU8Slice;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::ShaderStage;
 

@@ -1,6 +1,5 @@
 #![allow(clippy::type_complexity)]
 
-use crate::geometry::Tesselator;
 use egregoria::engine_interaction::{MouseInfo, TimeInfo};
 use egregoria::imgui::im_str;
 use egregoria::imgui::Ui;
@@ -15,6 +14,7 @@ use gui::InspectedEntity;
 use lazy_static::*;
 use map_model::{Map, RoadSegmentKind};
 use std::sync::Mutex;
+use wgpu_engine::Tesselator;
 
 lazy_static! {
     pub static ref DEBUG_OBJS: Mutex<
@@ -58,9 +58,11 @@ pub fn show_grid(tess: &mut Tesselator, state: &mut Egregoria) -> Option<()> {
     let gray_maj = 0.5;
     let gray_min = 0.3;
     if cam.zoom > 6.0 {
-        tess.draw_grid(1.0, Color::new(gray_min, gray_min, gray_min, 0.5));
+        tess.set_color(Color::new(gray_min, gray_min, gray_min, 0.5));
+        tess.draw_grid(1.0);
     }
-    tess.draw_grid(10.0, Color::new(gray_maj, gray_maj, gray_maj, 0.5));
+    tess.set_color(Color::new(gray_maj, gray_maj, gray_maj, 0.5));
+    tess.draw_grid(10.0);
     Some(())
 }
 
@@ -158,7 +160,7 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<
 
     let itinerary = world.comp::<Itinerary>(selected)?;
 
-    tess.color = LinearColor::GREEN;
+    tess.set_color(LinearColor::GREEN);
     tess.draw_polyline(&itinerary.local_path(), 1.0, 1.0);
 
     if let Some(p) = itinerary.get_point() {
@@ -166,17 +168,17 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<
     }
 
     if let egregoria::map_dynamic::ItineraryKind::Route(r) = itinerary.kind() {
-        tess.color = LinearColor::RED;
+        tess.set_color(LinearColor::RED);
         for l in &r.reversed_route {
             if let Some(l) = l.raw_points(map) {
                 tess.draw_polyline(l.as_slice(), 1.0, 3.0);
             }
         }
-        tess.color = if itinerary.has_ended(0.0) {
+        tess.set_color(if itinerary.has_ended(0.0) {
             LinearColor::GREEN
         } else {
             LinearColor::MAGENTA
-        };
+        });
 
         tess.draw_circle(r.end_pos, 1.0, 1.0);
     }
@@ -203,13 +205,13 @@ pub fn debug_rays(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
         dir: vec2((time * 3.0).cos() as f32, (time * 3.0).sin() as f32),
     };
 
-    tess.color = LinearColor::WHITE;
+    tess.set_color(LinearColor::WHITE);
     tess.draw_line(r.from, r.from + r.dir * 50.0, 0.5);
     tess.draw_line(r2.from, r2.from + r2.dir * 50.0, 0.5);
 
     let inter = geom::intersection_point(r, r2);
     if let Some(v) = inter {
-        tess.color = LinearColor::RED;
+        tess.set_color(LinearColor::RED);
 
         tess.draw_circle(v, 0.5, 2.0);
     }

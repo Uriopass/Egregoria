@@ -2507,7 +2507,7 @@ dependencies = [
  "geom",
  "glsl-to-spirv",
  "gui",
- "image",
+ "imgui",
  "imgui-wgpu",
  "imgui-winit-support",
  "inline_tweak",
@@ -2517,7 +2517,7 @@ dependencies = [
  "mint",
  "naga 0.2.0 (git+https://github.com/gfx-rs/naga)",
  "souls",
- "wgpu",
+ "wgpu_engine",
  "winit",
 ]
 
@@ -2528,6 +2528,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e3529528e608b54838ee618c3923b0f46e6db0334cfc6c42a16cf4ceb3bdb57"
 dependencies = [
  "bitflags",
+]
+
+[[package]]
+name = "wgpu_engine"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "geom",
+ "image",
+ "log",
+ "mint",
+ "raw-window-handle",
+ "wgpu",
 ]
 
 [[package]]

@@ -1,7 +1,9 @@
-use crate::engine::{AudioContext, GfxContext, InputContext};
+use crate::audio::AudioContext;
 use crate::game_loop;
+use crate::input::InputContext;
 use futures::executor;
-use wgpu::{Color, SwapChainFrame};
+use wgpu_engine::GfxContext;
+use winit::window::Window;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
@@ -13,6 +15,7 @@ pub struct Context {
     pub gfx: GfxContext,
     pub input: InputContext,
     pub audio: AudioContext,
+    pub window: Window,
     pub el: Option<EventLoop<()>>,
 }
 
@@ -31,7 +34,11 @@ impl Context {
             .build(&el)
             .expect("Failed to create window");
 
-        let gfx = executor::block_on(GfxContext::new(window));
+        let gfx = executor::block_on(GfxContext::new(
+            &window,
+            window.inner_size().width,
+            window.inner_size().height,
+        ));
         let input = InputContext::default();
         let audio = AudioContext::new();
 
@@ -39,24 +46,18 @@ impl Context {
             gfx,
             input,
             audio,
+            window,
             el: Some(el),
         }
     }
 
     pub fn start(mut self, mut state: game_loop::State) {
-        let clear_color = Color {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 1.0,
-        };
-
-        let mut frame: Option<SwapChainFrame> = None;
+        let mut frame: Option<_> = None;
         let mut new_size: Option<PhysicalSize<u32>> = None;
 
         self.el.take().unwrap().run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Poll;
-            state.event(&self.gfx, &event);
+            state.event(&self.window, &event);
             match event {
                 Event::WindowEvent { event, .. } => {
                     let managed = self.input.handle(&event);
@@ -74,7 +75,7 @@ impl Context {
                 Event::MainEventsCleared => match frame.take() {
                     None => {
                         if let Some(new_size) = new_size.take() {
-                            self.gfx.resize(new_size);
+                            self.gfx.resize(new_size.width, new_size.height);
                             state.resized(&mut self, new_size);
                         }
                         frame = Some(
@@ -89,7 +90,11 @@ impl Context {
 
                         state.update(&mut self);
 
-                        self.gfx.render_frame(&mut state, &clear_color, sco);
+                        let window = &self.window;
+                        let enc = self.gfx.start_frame(|fc| state.render(fc), &sco);
+
+                        self.gfx
+                            .finish_frame(enc, sco, |gctx| state.render_gui(window, gctx));
 
                         self.input.end_frame();
                     }

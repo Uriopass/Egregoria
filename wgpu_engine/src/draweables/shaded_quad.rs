@@ -1,4 +1,4 @@
-use crate::engine::{Drawable, GfxContext, IndexType, Shaders, UvVertex, VBDesc};
+use crate::{Drawable, GfxContext, IndexType, Shaders, UvVertex, VBDesc};
 
 use std::marker::PhantomData;
 use std::rc::Rc;

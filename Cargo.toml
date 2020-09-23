@@ -9,6 +9,7 @@ members = [
     "map_model",
     "mods",
     "wgpu-renderer",
+    "wgpu_engine",
     "souls",
 ]
 

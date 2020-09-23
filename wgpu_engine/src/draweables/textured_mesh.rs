@@ -1,10 +1,9 @@
 #![allow(dead_code)]
-use crate::engine::{
-    compile_shader, ColoredUvVertex, Drawable, GfxContext, IndexType, Texture, VBDesc,
-};
+use crate::{compile_shader, ColoredUvVertex, Drawable, GfxContext, IndexType, Texture, VBDesc};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::RenderPass;
 
+#[derive(Default)]
 pub struct TexturedMeshBuilder {
     vertices: Vec<ColoredUvVertex>,
     indices: Vec<IndexType>,

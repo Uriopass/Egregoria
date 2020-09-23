@@ -1,22 +1,19 @@
-use crate::engine::ShaderType;
-use crate::engine::{
+use crate::ShaderType;
+use crate::{
     CompiledShader, Drawable, Mesh, PreparedPipeline, SpriteBatch, Texture, TexturedMesh, Uniform,
 };
-use crate::game_loop::State;
-use crate::rendering::imgui_wrapper::GuiRenderContext;
+use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
-    Adapter, BindGroupLayout, CommandBuffer, CommandEncoderDescriptor, Device, Queue,
-    RenderPipeline, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
-    VertexBufferDescriptor,
+    Adapter, BindGroupLayout, Color, CommandBuffer, CommandEncoder, CommandEncoderDescriptor,
+    Device, Queue, RenderPipeline, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
+    SwapChainFrame, VertexBufferDescriptor,
 };
-use winit::window::Window;
 
 pub struct GfxContext {
     pub surface: Surface,
     pub size: (u32, u32),
-    pub window: Window,
     pub adapter: Adapter,
     pub device: Device,
     pub queue: Queue,
@@ -32,6 +29,12 @@ pub struct GfxContext {
     pub multi_frame: wgpu::TextureView,
 }
 
+pub struct GuiRenderContext<'a, 'b> {
+    pub device: &'a wgpu::Device,
+    pub queue: &'a wgpu::Queue,
+    pub rpass: Option<wgpu::RenderPass<'b>>,
+}
+
 pub struct FrameContext<'a> {
     pub gfx: &'a GfxContext,
     pub objs: &'a mut Vec<Box<dyn Drawable>>,
@@ -44,11 +47,10 @@ impl<'a> FrameContext<'a> {
 }
 
 impl GfxContext {
-    pub async fn new(window: Window) -> Self {
+    pub async fn new<W: HasRawWindowHandle>(window: &W, win_width: u32, win_height: u32) -> Self {
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
 
-        let (win_width, win_height) = (window.inner_size().width, window.inner_size().height);
-        let surface = unsafe { instance.create_surface(&window) };
+        let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::Default,
@@ -96,7 +98,6 @@ impl GfxContext {
             depth_texture,
             surface,
             pipelines: HashMap::new(),
-            window,
             queue_buffer: vec![],
             projection,
             inv_projection,
@@ -149,12 +150,18 @@ impl GfxContext {
             .create_view(&wgpu::TextureViewDescriptor::default())
     }
 
-    pub fn render_frame(
+    pub fn start_frame(
         &mut self,
-        state: &mut State,
-        clear_color: &wgpu::Color,
-        frame: wgpu::SwapChainFrame,
-    ) {
+        mut prepare: impl for<'a> FnMut(&'a mut FrameContext),
+        frame: &SwapChainFrame,
+    ) -> CommandEncoder {
+        let clear_color = Color {
+            r: 0.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
+        };
+
         let mut encoder = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor {
@@ -199,25 +206,43 @@ impl GfxContext {
                 objs: &mut objs,
                 gfx: &self,
             };
-            state.render(&mut fc);
+            prepare(&mut fc);
             for obj in fc.objs {
                 obj.draw(&self, &mut render_pass);
             }
         }
-
-        state.render_gui(GuiRenderContext {
-            device: &self.device,
-            encoder: &mut encoder,
-            queue: &self.queue,
-            frame_view: &frame.output.view,
-            window: &self.window,
-        });
-
-        self.queue.submit(vec![encoder.finish()]);
+        encoder
     }
 
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        self.size = (new_size.width.max(1), new_size.height.max(1));
+    pub fn finish_frame(
+        &mut self,
+        mut encoder: CommandEncoder,
+        frame: SwapChainFrame,
+        render_gui: impl FnOnce(GuiRenderContext),
+    ) {
+        let rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: &frame.output.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: true,
+                },
+            }],
+            depth_stencil_attachment: None,
+        });
+
+        render_gui(GuiRenderContext {
+            device: &self.device,
+            queue: &self.queue,
+            rpass: Some(rpass),
+        });
+
+        self.queue.submit(Some(encoder.finish()));
+    }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.size = (width, height);
         self.sc_desc.width = self.size.0;
         self.sc_desc.height = self.size.1;
         self.swapchain = self.device.create_swap_chain(&self.surface, &self.sc_desc);

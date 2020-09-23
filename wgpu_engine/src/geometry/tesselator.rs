@@ -1,10 +1,9 @@
-use crate::engine::{ColoredVertex, MeshBuilder};
 use crate::geometry::earcut::earcut;
-use egregoria::rendering::{Color, LinearColor};
+use crate::{ColoredVertex, MeshBuilder};
 use geom::{vec2, Rect, Vec2};
 
 pub struct Tesselator {
-    pub color: LinearColor,
+    pub color: [f32; 4],
     pub meshbuilder: MeshBuilder,
     pub cull_rect: Option<Rect>,
     pub zoom: f32,
@@ -13,7 +12,7 @@ pub struct Tesselator {
 impl Tesselator {
     pub fn new(cull_rect: Option<Rect>, zoom: f32) -> Self {
         Tesselator {
-            color: LinearColor::WHITE,
+            color: [0.0, 0.0, 0.0, 1.0],
             meshbuilder: MeshBuilder::new(),
             cull_rect,
             zoom,
@@ -40,7 +39,7 @@ impl Tesselator {
             return false;
         }
 
-        let color = self.color.into();
+        let color = self.color;
         let n_pointsu32 = n_points as u32;
 
         self.meshbuilder.extend_with(|vertices, index_push| {
@@ -77,7 +76,7 @@ impl Tesselator {
             return false;
         }
 
-        let color: [f32; 4] = self.color.into();
+        let color: [f32; 4] = self.color;
         self.meshbuilder.extend_with(|vertices, index_push| {
             vertices.extend(points.iter().map(|p| ColoredVertex {
                 position: [p.x, p.y, z],
@@ -105,7 +104,7 @@ impl Tesselator {
         let n_points = ((6.0 * (r * self.zoom).cbrt()) as usize).max(4);
         let n_pointsu32 = n_points as u32;
 
-        let color = self.color.into();
+        let color = self.color;
         self.meshbuilder.extend_with(|vertices, index_push| {
             vertices.push(ColoredVertex {
                 position: [p.x + r + halfthick, p.y, z],
@@ -151,7 +150,7 @@ impl Tesselator {
         true
     }
 
-    pub fn set_color(&mut self, color: impl Into<LinearColor>) {
+    pub fn set_color(&mut self, color: impl Into<[f32; 4]>) {
         self.color = color.into();
     }
 
@@ -175,7 +174,7 @@ impl Tesselator {
 
         let points: [Vec2; 4] = [a + b + pxy, a - b + pxy, -a - b + pxy, -a + b + pxy];
 
-        let color: [f32; 4] = self.color.into();
+        let color: [f32; 4] = self.color;
 
         let verts: [ColoredVertex; 4] = [
             ColoredVertex {
@@ -216,7 +215,7 @@ impl Tesselator {
 
         let points: [Vec2; 4] = [p1 + perp, p1 - perp, p2 - perp, p2 + perp];
 
-        let color: [f32; 4] = self.color.into();
+        let color: [f32; 4] = self.color;
 
         let verts: [ColoredVertex; 4] = [
             ColoredVertex {
@@ -267,7 +266,7 @@ impl Tesselator {
 
         let halfthick = thickness * 0.5;
 
-        let color = self.color.into();
+        let color = self.color;
 
         self.meshbuilder.extend_with(move |verts, index_push| {
             let nor: Vec2 = halfthick * vec2(-first_dir.y, first_dir.x);
@@ -375,13 +374,12 @@ impl Tesselator {
         self.draw_stroke(p1, p2, z, 1.5 / self.zoom)
     }
 
-    pub fn draw_grid(&mut self, grid_size: f32, color: Color) {
+    pub fn draw_grid(&mut self, grid_size: f32) {
         let screen = self
             .cull_rect
             .expect("Cannot draw grid when not culling since I do not know where is the screen");
 
         let startx = (screen.x / grid_size).ceil() * grid_size;
-        self.set_color(color);
         for x in 0..(screen.w / grid_size) as i32 {
             let x = startx + x as f32 * grid_size;
             self.draw_line(vec2(x, screen.y), vec2(x, screen.y + screen.h), 0.01);

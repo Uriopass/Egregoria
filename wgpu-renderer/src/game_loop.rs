@@ -1,5 +1,5 @@
-use crate::engine::{Context, FrameContext, GfxContext};
-use crate::rendering::imgui_wrapper::{GuiRenderContext, ImguiWrapper};
+use crate::context::Context;
+use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
@@ -10,7 +10,9 @@ use gui::{FollowEntity, Gui};
 use map_model::Map;
 use souls::Souls;
 use std::time::Instant;
+use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext};
 use winit::dpi::PhysicalSize;
+use winit::window::Window;
 
 pub struct State {
     camera: CameraHandler,
@@ -34,7 +36,7 @@ impl State {
                 CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 0.05)
             });
 
-        let wrapper = ImguiWrapper::new(&mut ctx.gfx);
+        let wrapper = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
         crate::rendering::prepare_background(&mut ctx.gfx);
 
@@ -143,9 +145,9 @@ impl State {
             .add_time(start.elapsed().as_secs_f32());
     }
 
-    pub fn render_gui(&mut self, ctx: GuiRenderContext) {
+    pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
         self.imgui_render
-            .render(ctx, &mut self.state, &mut self.gui);
+            .render(ctx, window, &mut self.state, &mut self.gui);
     }
 
     fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {
@@ -190,8 +192,8 @@ impl State {
         }
     }
 
-    pub fn event(&mut self, gfx: &GfxContext, event: &winit::event::Event<()>) {
-        self.imgui_render.handle_event(gfx, event);
+    pub fn event(&mut self, window: &Window, event: &winit::event::Event<()>) {
+        self.imgui_render.handle_event(window, event);
     }
 
     pub fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {

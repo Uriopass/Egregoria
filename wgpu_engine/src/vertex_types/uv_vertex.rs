@@ -1,4 +1,4 @@
-use crate::engine::VBDesc;
+use crate::VBDesc;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]

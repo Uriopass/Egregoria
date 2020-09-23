@@ -1,8 +1,8 @@
-use crate::engine::{FrameContext, GfxContext, InstanceRaw, SpriteBatchBuilder, Texture};
 use egregoria::legion::query::*;
 use egregoria::rendering::assets::AssetRender;
 use egregoria::Egregoria;
 use geom::Transform;
+use wgpu_engine::{FrameContext, GfxContext, InstanceRaw, SpriteBatchBuilder, Texture};
 
 pub struct InstancedRender {
     pub texs: Vec<SpriteBatchBuilder>,
