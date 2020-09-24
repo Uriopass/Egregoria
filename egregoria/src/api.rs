@@ -90,7 +90,7 @@ impl RoutingStep {
 }
 
 pub struct Router {
-    body: PedestrianID,
+    pub body: PedestrianID,
     car: Option<VehicleID>,
     steps: Vec<RoutingStep>,
     dest: Option<Destination>,

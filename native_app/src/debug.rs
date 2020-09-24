@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity)]
 
+use common::inspect::InspectedEntity;
 use egregoria::engine_interaction::{MouseInfo, TimeInfo};
 use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::CollisionWorld;
@@ -8,7 +9,6 @@ use egregoria::Egregoria;
 use geom::Spline;
 use geom::{vec2, Vec2};
 use geom::{Camera, OBB};
-use gui::InspectedEntity;
 use imgui::im_str;
 use imgui::Ui;
 use lazy_static::*;
@@ -43,6 +43,7 @@ pub fn add_debug_menu(gui: &mut gui::Gui) {
                 ui.checkbox(&im_str!("{}", *name), val);
             }
         },
+        false,
     );
 }
 

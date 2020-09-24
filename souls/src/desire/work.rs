@@ -16,6 +16,10 @@ pub struct Work {
 }
 
 impl<T: Routed> Desire<T> for Work {
+    fn name(&self) -> &'static str {
+        "Work"
+    }
+
     fn score(&self, goria: &Egregoria, _soul: &T) -> f32 {
         (goria.read::<TimeInfo>().time / 500.0 + self.offset as f64).cos() as f32
     }

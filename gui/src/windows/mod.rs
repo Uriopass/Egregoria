@@ -32,20 +32,29 @@ pub struct ImguiWindows {
 impl Default for ImguiWindows {
     fn default() -> Self {
         let mut s = Self { windows: vec![] };
-        s.insert(imgui::im_str!("Infos"), info::info);
-        s.insert(imgui::im_str!("Map"), map::map);
-        s.insert(imgui::im_str!("Scenarios"), scenarios::Scenarios::default());
-        s.insert(imgui::im_str!("Tips"), tips::tips);
+        s.insert(imgui::im_str!("Infos"), info::info, false);
+        s.insert(imgui::im_str!("Map"), map::map, true);
+        s.insert(
+            imgui::im_str!("Scenarios"),
+            scenarios::Scenarios::default(),
+            false,
+        );
+        s.insert(imgui::im_str!("Tips"), tips::tips, false);
         s
     }
 }
 
 impl ImguiWindows {
-    pub fn insert(&mut self, name: &'static imgui::ImStr, w: impl ImguiWindow + 'static) {
+    pub fn insert(
+        &mut self,
+        name: &'static imgui::ImStr,
+        w: impl ImguiWindow + 'static,
+        opened: bool,
+    ) {
         self.windows.push(ImguiWindowStruct {
             w: Box::new(w),
             name,
-            opened: false,
+            opened,
         })
     }
 

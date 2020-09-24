@@ -1,4 +1,4 @@
-use crate::selectable::InspectedEntity;
+use common::inspect::InspectedEntity;
 use egregoria::engine_interaction::{MouseButton, MouseInfo, Movable, TimeInfo};
 use egregoria::physics::Kinematics;
 use geom::{Transform, Vec2};

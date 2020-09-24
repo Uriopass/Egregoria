@@ -17,8 +17,8 @@ mod topgui;
 mod windows;
 
 pub use crate::follow::FollowEntity;
-pub use crate::selectable::InspectedEntity;
 
+use common::inspect::InspectedEntity;
 pub use inspect::*;
 pub use topgui::*;
 

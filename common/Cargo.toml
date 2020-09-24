@@ -10,3 +10,4 @@ edition = "2018"
 bincode       = "1.2.1"
 serde         = "1.0"
 log           = "0.4.11"
+legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize", "extended-tuple-impls"] }

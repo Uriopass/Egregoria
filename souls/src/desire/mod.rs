@@ -8,6 +8,7 @@ pub use home::*;
 pub use work::*;
 
 pub trait Desire<T>: Send + Sync {
+    fn name(&self) -> &'static str;
     fn score(&self, goria: &Egregoria, soul: &T) -> f32;
     fn apply(&mut self, goria: &Egregoria, soul: &mut T) -> Action;
 }

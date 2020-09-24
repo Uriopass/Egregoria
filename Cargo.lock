@@ -285,6 +285,7 @@ name = "common"
 version = "0.1.0"
 dependencies = [
  "bincode",
+ "legion",
  "log",
  "serde",
 ]
@@ -954,6 +955,7 @@ dependencies = [
 name = "gui"
 version = "0.1.0"
 dependencies = [
+ "common",
  "egregoria",
  "geom",
  "imgui",
@@ -2136,6 +2138,7 @@ dependencies = [
 name = "souls"
 version = "0.1.0"
 dependencies = [
+ "common",
  "egregoria",
  "geom",
  "imgui",
