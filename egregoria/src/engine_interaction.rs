@@ -26,16 +26,16 @@ impl Default for Selectable {
 
 #[derive(Default)]
 pub struct History {
-    values: [f32; 10],
+    pub values: [f32; 10],
 }
 
 impl History {
-    pub fn add_time(&mut self, time: f32) {
+    pub fn add_value(&mut self, value: f32) {
         self.values.as_mut().rotate_right(1);
-        self.values[0] = time;
+        self.values[0] = value;
     }
 
-    pub fn time_avg(&self) -> f32 {
+    pub fn avg(&self) -> f32 {
         (&self.values).iter().sum::<f32>() / (self.values.len() as f32)
     }
 }
@@ -54,6 +54,14 @@ pub struct TimeInfo {
     pub time: f64,
     pub time_seconds: u64,
     pub time_speed: f32,
+}
+
+impl TimeInfo {
+    /// Returns true every freq seconds
+    pub fn tick(&self, freq: u64) -> bool {
+        let time_near = self.time_seconds / freq * freq + freq;
+        self.time < time_near as f64 && self.time + self.delta as f64 > time_near as f64
+    }
 }
 
 impl Default for TimeInfo {

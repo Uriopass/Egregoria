@@ -12,6 +12,7 @@ geom = { path = "../geom" }
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 map_model = { path = "../map_model" }
+common =  { path = "../common" }
 legion = { version = "0.3.0", default-features = false, features = ["codegen", "serialize"] }
 imgui = "0.4.0"
 serde = "1.0.115"

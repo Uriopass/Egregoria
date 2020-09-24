@@ -55,7 +55,7 @@ use utils::par_command_buffer::Deleted;
 use utils::scheduler::SeqSchedule;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
-pub struct SoulID(pub u64);
+pub struct SoulID(pub usize);
 
 #[derive(Default)]
 pub struct Egregoria {
@@ -79,7 +79,7 @@ impl Egregoria {
         ParCommandBuffer::apply(self);
         self.write::<RenderStats>()
             .world_update
-            .add_time(t.elapsed().as_secs_f32());
+            .add_value(t.elapsed().as_secs_f32());
     }
 
     pub fn init() -> Egregoria {
@@ -129,6 +129,10 @@ impl Egregoria {
 
     pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
         <&mut T>::query().get_mut(&mut self.world, e).ok()
+    }
+
+    pub fn write_or_default<T: Resource + Default>(&mut self) -> impl DerefMut<Target = T> + '_ {
+        self.resources.get_mut_or_insert_with(T::default)
     }
 
     pub fn try_write<T: Resource>(&self) -> Option<impl DerefMut<Target = T> + '_> {

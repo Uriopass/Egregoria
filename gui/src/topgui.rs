@@ -1,7 +1,8 @@
 use crate::windows::ImguiWindows;
-use crate::{InspectedEntity, RoadBuildResource, Tool};
+use crate::{RoadBuildResource, Tool};
 use egregoria::engine_interaction::TimeInfo;
 
+use common::inspect::InspectedEntity;
 use egregoria::Egregoria;
 use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};

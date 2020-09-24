@@ -10,19 +10,16 @@ pub fn info(ui: &Ui, goria: &mut Egregoria) {
     ui.text("Averaged over last 10 frames: ");
     ui.text(im_str!(
         "World update time: {:.1}ms",
-        stats.world_update.time_avg() * 1000.0
+        stats.world_update.avg() * 1000.0
     ));
-    ui.text(im_str!(
-        "Render time: {:.1}ms",
-        stats.render.time_avg() * 1000.0
-    ));
+    ui.text(im_str!("Render time: {:.1}ms", stats.render.avg() * 1000.0));
     ui.text(im_str!(
         "Souls desires time: {:.1}ms",
-        stats.souls_desires.time_avg() * 1000.0
+        stats.souls_desires.avg() * 1000.0
     ));
     ui.text(im_str!(
         "Souls apply time: {:.1}ms",
-        stats.souls_apply.time_avg() * 1000.0
+        stats.souls_apply.avg() * 1000.0
     ));
     ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
     ui.separator();

@@ -1,5 +1,5 @@
-use crate::selectable::InspectedEntity;
 use crate::{Tool, Z_TOOL};
+use common::inspect::InspectedEntity;
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
 use egregoria::rendering::meshrender_component::{CircleRender, MeshRender};
 use egregoria::rendering::Color;

@@ -48,6 +48,8 @@ impl State {
 
         let mut gui = Gui::default();
         add_debug_menu(&mut gui);
+        gui.windows
+            .insert(imgui::im_str!("Debug souls"), souls::debug_souls, false);
 
         state.insert(camera.camera.clone());
 
@@ -147,7 +149,7 @@ impl State {
         self.state
             .write::<RenderStats>()
             .render
-            .add_time(start.elapsed().as_secs_f32());
+            .add_value(start.elapsed().as_secs_f32());
     }
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {

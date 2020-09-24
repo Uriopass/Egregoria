@@ -1,4 +1,4 @@
-use crate::selectable::InspectedEntity;
+use common::inspect::InspectedEntity;
 use egregoria::rendering::meshrender_component::{MeshRender, StrokeCircleRender};
 use egregoria::rendering::Color;
 use geom::Transform;

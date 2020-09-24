@@ -1,4 +1,5 @@
 use crate::Tool;
+use common::inspect::InspectedEntity;
 use egregoria::engine_interaction::{KeyCode, Selectable};
 use egregoria::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
 use egregoria::ParCommandBuffer;
@@ -6,14 +7,6 @@ use geom::Transform;
 use legion::world::SubWorld;
 use legion::Entity;
 use legion::{system, EntityStore};
-use std::f32;
-
-#[derive(Default, Debug, Clone, Copy)]
-pub struct InspectedEntity {
-    pub e: Option<Entity>,
-    pub dirty: bool, // Modified by inspection
-    pub dist2: f32,
-}
 
 #[system(for_each)]
 pub fn selectable_select(

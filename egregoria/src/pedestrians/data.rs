@@ -12,7 +12,7 @@ use map_model::BuildingID;
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct PedestrianID(pub Entity);
 
 #[derive(Serialize, Deserialize, Inspect)]
