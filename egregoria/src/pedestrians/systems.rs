@@ -1,12 +1,35 @@
+use crate::api::Location;
 use crate::engine_interaction::TimeInfo;
 use crate::map_dynamic::Itinerary;
 use crate::pedestrians::Pedestrian;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::Restrict;
+use crate::vehicles::VehicleID;
 use geom::{angle_lerp, Transform, Vec2};
-use legion::system;
+use legion::world::SubWorld;
+use legion::{system, Entity, EntityStore};
 use map_model::{Map, TraverseDirection};
+
+#[system(for_each)]
+#[write_component(Transform)]
+pub fn pedestrian_synchro(e: &Entity, loc: &Location, sw: &mut SubWorld) {
+    match *loc {
+        Location::Outside => {}
+        Location::Vehicle(VehicleID(v_e)) => {
+            let car_pos = *sw
+                .entry_ref(v_e)
+                .unwrap()
+                .get_component::<Transform>()
+                .unwrap();
+            *sw.entry_mut(*e)
+                .unwrap()
+                .get_component_mut::<Transform>()
+                .unwrap() = car_pos;
+        }
+        Location::Building(_) => {}
+    }
+}
 
 #[system(par_for_each)]
 pub fn pedestrian_decision(
