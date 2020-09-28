@@ -1461,7 +1461,7 @@ dependencies = [
 [[package]]
 name = "naga"
 version = "0.2.0"
-source = "git+https://github.com/gfx-rs/naga#7ce99774d57d83bd92a408fefbaa129db10c2e25"
+source = "git+https://github.com/gfx-rs/naga#541d1dcb8b01d9e1389d9b3cf6a1f9c9db3dc120"
 dependencies = [
  "bitflags",
  "fxhash",
@@ -1496,7 +1496,6 @@ dependencies = [
  "env_logger",
  "futures",
  "geom",
- "glsl-to-spirv",
  "gui",
  "imgui",
  "imgui-wgpu",
@@ -1507,7 +1506,6 @@ dependencies = [
  "log",
  "map_model",
  "mint",
- "naga 0.2.0 (git+https://github.com/gfx-rs/naga)",
  "souls",
  "wgpu_engine",
  "winit",
@@ -2551,9 +2549,11 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "geom",
+ "glsl-to-spirv",
  "image",
  "log",
  "mint",
+ "naga 0.2.0 (git+https://github.com/gfx-rs/naga)",
  "raw-window-handle",
  "wgpu",
 ]
