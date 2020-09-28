@@ -8,6 +8,8 @@ use egregoria::vehicles::spawn_parked_vehicle;
 use egregoria::{Egregoria, SoulID};
 use map_model::{BuildingID, BuildingKind, Map};
 
+pub type HumanSoul = Soul<Human, (Work, Home)>;
+
 pub struct Human {
     pub(crate) router: Router,
 }
@@ -19,7 +21,7 @@ impl Routed for Human {
 }
 
 impl Human {
-    pub fn soul(id: SoulID, house: BuildingID, goria: &mut Egregoria) -> Option<Soul<Human>> {
+    pub fn soul(id: SoulID, house: BuildingID, goria: &mut Egregoria) -> Option<HumanSoul> {
         let map = goria.read::<Map>();
         let work = map
             .random_building(BuildingKind::Workplace, &mut *goria.write::<RandProvider>())?
@@ -38,10 +40,7 @@ impl Human {
 
         Some(Soul {
             id,
-            desires: vec![
-                Box::new(Work::new(work, offset)),
-                Box::new(Home::new(house, offset)),
-            ],
+            desires: (Work::new(work, offset), Home::new(house, offset)),
             extra: Human { router },
         })
     }
