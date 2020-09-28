@@ -28,15 +28,13 @@ impl ParkingManagement {
             for lane in potential.drain(..) {
                 let parent = unwrap_or!(map.roads().get(lane.parent), continue);
 
-                let p = parent.parking_next_to(lane).and_then(|x| {
-                    map.parking
-                        .closest_available_spot(x, near, |p| self.reserved_spots.contains_key(p))
-                });
-                if let Some(spot) = p {
-                    self.reserved_spots.insert(spot, ());
-                    return Some(spot);
-                }
+                let plane = unwrap_or!(parent.parking_next_to(lane), continue);
 
+                for spot in map.parking.closest_spots(plane, near) {
+                    if !self.reserved_spots.insert(spot, ()) {
+                        return Some(spot);
+                    }
+                }
                 next.extend(
                     map.intersections()[lane.dst]
                         .turns_from(lane.id)

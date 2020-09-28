@@ -81,19 +81,13 @@ impl ParkingSpots {
             .flatten()
     }
 
-    pub fn closest_available_spot(
-        &self,
-        lane: LaneID,
-        near: Vec2,
-        is_reserved: impl Fn(&ParkingSpotID) -> bool,
-    ) -> Option<ParkingSpotID> {
-        debug_assert!(self.lane_spots.contains_key(lane));
+    // Fixme: Instead of allocating a vec and sorting it, somehow sort the parking spots beforehand and iterate in spiral around the projected `near`
+    pub fn closest_spots(&self, lane: LaneID, near: Vec2) -> impl Iterator<Item = ParkingSpotID> {
         let spots = &self.spots;
-        self.lane_spots
-            .get(lane)?
-            .iter()
-            .filter(|&p| !is_reserved(p))
-            .min_by_key(|&&id| OrderedFloat(spots[id].trans.position().distance2(near)))
-            .copied()
+        let mut lspots = self.lane_spots.get(lane).cloned();
+        if let Some(lspots) = &mut lspots {
+            lspots.sort_by_key(|&id| OrderedFloat(spots[id].trans.position().distance2(near)))
+        }
+        lspots.into_iter().flatten()
     }
 }
