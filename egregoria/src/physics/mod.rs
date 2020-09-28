@@ -14,14 +14,14 @@ pub mod systems;
 
 pub use kinematics::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Debug)]
 pub enum PhysicsGroup {
     Unknown,
     Vehicles,
     Pedestrians,
 }
 
-enum_inspect_impl!(PhysicsGroup; PhysicsGroup::Unknown, PhysicsGroup::Vehicles, PhysicsGroup::Pedestrians);
+debug_inspect_impl!(PhysicsGroup);
 
 #[derive(Clone, Copy, Inspect, Serialize, Deserialize)]
 pub struct PhysicsObject {

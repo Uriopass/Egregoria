@@ -9,7 +9,7 @@ use egregoria::{Egregoria, SoulID};
 use map_model::{BuildingID, BuildingKind, Map};
 
 pub struct Human {
-    router: Router,
+    pub(crate) router: Router,
 }
 
 impl Routed for Human {

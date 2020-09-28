@@ -1,6 +1,8 @@
 use crate::engine_interaction::TimeInfo;
 use geom::Transform;
 use geom::Vec2;
+use imgui::Ui;
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
 use legion::system;
 use map_model::{Map, Pathfinder, Traversable, TraverseDirection, TraverseKind};
@@ -20,7 +22,7 @@ pub enum ItineraryKind {
     Route(Route),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Inspect)]
 pub struct Route {
     /// Route is reversed, allows for efficient popping
     pub reversed_route: Vec<Traversable>,
@@ -221,7 +223,38 @@ impl Default for ItineraryKind {
     }
 }
 
-enum_inspect_impl!(ItineraryKind; ItineraryKind::None, ItineraryKind::Simple, ItineraryKind::WaitUntil(_), ItineraryKind::Route(_));
+impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
+    fn render(_: &[&ItineraryKind], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
+        unimplemented!()
+    }
+
+    fn render_mut(
+        data: &mut [&mut ItineraryKind],
+        label: &'static str,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!()
+        }
+        let d = &mut *data[0];
+        use imgui::im_str;
+        match d {
+            ItineraryKind::None => ui.text(im_str!("None {}", label)),
+            ItineraryKind::WaitUntil(time) => ui.text(im_str!("WaitUntil({}) {}", time, label)),
+            ItineraryKind::Simple => ui.text(im_str!("Simple {}", label)),
+            ItineraryKind::Route(r) => {
+                return <Route as InspectRenderDefault<Route>>::render_mut(
+                    &mut [r],
+                    label,
+                    ui,
+                    args,
+                );
+            }
+        };
+        false
+    }
+}
 
 #[system(for_each)]
 pub fn itinerary_update(

@@ -122,6 +122,8 @@ impl Souls {
                     }
                     dbg.scores[i].1.add_value(score);
                 }
+
+                dbg.router = Some(soul.extra.router.clone());
             }
         } else {
             goria.write::<DebugSoul>().cur_inspect = None;

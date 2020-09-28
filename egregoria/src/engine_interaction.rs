@@ -2,10 +2,10 @@ use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-#[derive(Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Movable;
 
-empty_inspect_impl!(Movable);
+debug_inspect_impl!(Movable);
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Selectable {
@@ -31,8 +31,8 @@ pub struct History {
 
 impl History {
     pub fn add_value(&mut self, value: f32) {
-        self.values.as_mut().rotate_right(1);
-        self.values[0] = value;
+        self.values.as_mut().rotate_left(1);
+        self.values[self.values.len() - 1] = value;
     }
 
     pub fn avg(&self) -> f32 {

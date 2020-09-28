@@ -2140,6 +2140,8 @@ dependencies = [
  "egregoria",
  "geom",
  "imgui",
+ "imgui-inspect",
+ "imgui-inspect-derive",
  "log",
  "map_model",
  "ordered-float 2.0.0",
