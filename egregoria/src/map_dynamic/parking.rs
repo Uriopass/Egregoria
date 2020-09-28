@@ -10,7 +10,7 @@ pub struct ParkingManagement {
 
 impl ParkingManagement {
     pub fn free(&self, spot: ParkingSpotID) {
-        if !self.reserved_spots.remove(&spot) {
+        if self.reserved_spots.remove(&spot).is_none() {
             log::warn!("{:?} wasn't reserved", spot);
         }
     }
@@ -31,7 +31,7 @@ impl ParkingManagement {
                 let plane = unwrap_or!(parent.parking_next_to(lane), continue);
 
                 for spot in map.parking.closest_spots(plane, near) {
-                    if !self.reserved_spots.insert(spot, ()) {
+                    if self.reserved_spots.insert(spot, ()).is_none() {
                         return Some(spot);
                     }
                 }
