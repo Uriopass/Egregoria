@@ -1,5 +1,5 @@
-use crate::desire::{Desire, Routed};
-use crate::souls::human::Human;
+use crate::desire::{Desires, Routed};
+use crate::souls::human::{Human, HumanSoul};
 use crate::DebugSoul;
 use common::inspect::InspectedEntity;
 use egregoria::api::Action;
@@ -8,7 +8,6 @@ use egregoria::map_dynamic::BuildingInfos;
 use egregoria::pedestrians::{Pedestrian, PedestrianID};
 use egregoria::{Egregoria, SoulID};
 use map_model::{BuildingKind, Map};
-use ordered_float::OrderedFloat;
 use rayon::iter::IntoParallelRefMutIterator;
 use rayon::iter::ParallelIterator;
 use std::collections::HashMap;
@@ -16,26 +15,15 @@ use std::time::Instant;
 
 mod human;
 
-pub struct Soul<T> {
+pub struct Soul<T, D: Desires<T>> {
     pub id: SoulID,
-    desires: Vec<Box<dyn Desire<T>>>,
+    desires: D,
     extra: T,
-}
-
-impl<T> Soul<T> {
-    pub fn decision(&mut self, goria: &Egregoria) -> Action {
-        let extra = &mut self.extra;
-        self.desires
-            .iter_mut()
-            .max_by_key(|d| OrderedFloat(d.score(goria, extra)))
-            .map(move |d| d.apply(goria, extra))
-            .unwrap_or_default()
-    }
 }
 
 #[derive(Default)]
 pub struct Souls {
-    human_souls: Vec<Soul<Human>>,
+    human_souls: Vec<HumanSoul>,
     body_map: HashMap<PedestrianID, SoulID>,
 }
 
@@ -82,7 +70,7 @@ impl Souls {
         let actions: Vec<Action> = self
             .human_souls
             .par_iter_mut()
-            .map(move |x: &mut Soul<Human>| x.decision(refgoria))
+            .map(move |x: &mut HumanSoul| x.desires.decision(&mut x.extra, refgoria))
             .collect();
 
         goria
@@ -115,10 +103,10 @@ impl Souls {
                 }
                 dbg.cur_inspect = Some(PedestrianID(x));
 
-                for (i, desire) in soul.desires.iter().enumerate() {
-                    let score = desire.score(goria, &soul.extra);
+                for (i, (score, name)) in soul.desires.scores_names(goria, &soul.extra).enumerate()
+                {
                     if i >= dbg.scores.len() {
-                        dbg.scores.push((desire.name(), History::default()));
+                        dbg.scores.push((name, History::default()));
                     }
                     dbg.scores[i].1.add_value(score);
                 }
