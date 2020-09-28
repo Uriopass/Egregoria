@@ -16,13 +16,15 @@ pub enum Location {
     Building(BuildingID),
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Destination {
     Outside(Vec2),
     Building(BuildingID),
 }
 
-#[derive(Debug)]
+debug_inspect_impl!(Destination);
+
+#[derive(Copy, Clone, Debug)]
 pub enum RoutingStep {
     WalkTo(Vec2),
     DriveTo(VehicleID, Vec2),
@@ -33,6 +35,8 @@ pub enum RoutingStep {
     GetInBuilding(BuildingID),
     GetOutBuilding(BuildingID),
 }
+
+debug_inspect_impl!(RoutingStep);
 
 impl RoutingStep {
     pub fn ready(&self, goria: &Egregoria, body: PedestrianID) -> bool {
@@ -89,6 +93,9 @@ impl RoutingStep {
     }
 }
 
+use imgui_inspect_derive::*;
+
+#[derive(Inspect, Clone)]
 pub struct Router {
     pub body: PedestrianID,
     car: Option<VehicleID>,

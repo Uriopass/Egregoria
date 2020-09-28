@@ -1,7 +1,6 @@
 use crate::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
 use geom::{Transform, Vec2};
 use ordered_float::OrderedFloat;
-use rand::seq::IteratorRandom;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
 
@@ -26,10 +25,6 @@ pub struct ParkingSpots {
 impl ParkingSpots {
     pub fn get(&self, spot: ParkingSpotID) -> Option<&ParkingSpot> {
         self.spots.get(spot)
-    }
-
-    pub fn random_spot(&self) -> Option<ParkingSpotID> {
-        self.spots.keys().choose(&mut rand::thread_rng())
     }
 
     pub fn remove_spots(&mut self, lane: LaneID) {

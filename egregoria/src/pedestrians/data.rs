@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct PedestrianID(pub Entity);
 
+debug_inspect_impl!(PedestrianID);
+
 #[derive(Serialize, Deserialize, Inspect)]
 pub struct Pedestrian {
     pub walking_speed: f32,

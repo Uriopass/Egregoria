@@ -220,6 +220,6 @@ fn print_stats(map: &Map) {
 }
 
 pub fn load_testfield(map: &mut Map) {
-    add_doublecircle([0.0, 0.0].into(), map);
+    //add_doublecircle([0.0, 0.0].into(), map);
     add_grid([0.0, 350.0].into(), map, 10);
 }

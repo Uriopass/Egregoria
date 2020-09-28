@@ -18,6 +18,8 @@ pub const TIME_TO_PARK: f32 = 4.0;
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct VehicleID(pub Entity);
 
+debug_inspect_impl!(VehicleID);
+
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum VehicleState {
     Parked(ParkingSpotID),
@@ -195,4 +197,4 @@ impl Vehicle {
     }
 }
 
-enum_inspect_impl!(VehicleKind; VehicleKind::Car, VehicleKind::Bus);
+debug_inspect_impl!(VehicleKind);

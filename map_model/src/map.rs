@@ -335,18 +335,6 @@ impl Map {
         &self.spatial_map
     }
 
-    pub fn random_lane<R: Rng>(&self, filter: LaneKind, r: &mut R) -> Option<&Lane> {
-        self.roads
-            .iter()
-            .choose(r)?
-            .1
-            .lanes_iter()
-            .filter(|&(_, kind)| kind == filter)
-            .map(|(id, _)| id)
-            .choose(r)
-            .map(|x| &self.lanes[x])
-    }
-
     pub fn random_building<R: Rng>(&self, filter: BuildingKind, r: &mut R) -> Option<&Building> {
         self.buildings
             .iter()
