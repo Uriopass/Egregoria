@@ -147,6 +147,13 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
         }
         None => {
             return outdated
+                .map(|x| {
+                    log::warn!(
+                        "couldn't compile {}: using outdated shader",
+                        p.to_string_lossy().into_owned()
+                    );
+                    x
+                })
                 .expect("couldn't compile glsl and no outdated spirv found in cache, aborting.");
         }
     };
@@ -161,11 +168,14 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
 
 #[cfg(not(any(feature = "spirv_g2s", feature = "spirv_naga")))]
 fn compile(_src: &str, _stype: ShaderType) -> Option<Vec<u8>> {
+    log::info!("No compiler enabled");
     None
 }
 
 #[cfg(feature = "spirv_g2s")]
 fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
+    log::info!("Using glsl_to_spirv compiler");
+
     std::panic::catch_unwind(|| {
         glsl_to_spirv::compile(
             &src,
@@ -187,6 +197,7 @@ fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
 
 #[cfg(feature = "spirv_naga")]
 fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
+    log::info!("Using naga compiler");
     let glsl = naga::front::glsl::parse_str(
         &src,
         "main",

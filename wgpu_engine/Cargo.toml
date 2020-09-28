@@ -14,3 +14,10 @@ mint      = "0.5.5"
 image     = { version = "0.23.4", default-features = false, features = ["png"] }
 log       = "0.4.11"
 raw-window-handle = "0.3.3"
+glsl-to-spirv = { version = "0.1.7", optional = true }
+naga          = { git = "https://github.com/gfx-rs/naga", features = ["glsl-in", "spv-out"], optional = true}
+
+[features]
+default = []
+spirv_g2s = ["glsl-to-spirv"]
+spirv_naga = ["naga"]
