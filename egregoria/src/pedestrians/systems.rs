@@ -8,7 +8,7 @@ use geom::{angle_lerp, Transform, Vec2};
 use legion::system;
 use map_model::{Map, TraverseDirection};
 
-#[system(for_each)]
+#[system(par_for_each)]
 pub fn pedestrian_decision(
     #[resource] cow: &CollisionWorld,
     #[resource] map: &Map,

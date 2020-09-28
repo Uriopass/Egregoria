@@ -1216,6 +1216,7 @@ dependencies = [
  "legion_codegen",
  "parking_lot 0.11.0",
  "paste",
+ "rayon",
  "serde",
  "smallvec",
  "thiserror",

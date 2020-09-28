@@ -24,7 +24,7 @@ pub fn vehicle_cleanup(
     }
 }
 
-#[system(for_each)]
+#[system(par_for_each)]
 pub fn vehicle_decision(
     #[resource] map: &Map,
     #[resource] time: &TimeInfo,
