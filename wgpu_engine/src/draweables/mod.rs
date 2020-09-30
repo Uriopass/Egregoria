@@ -1,5 +1,5 @@
 use crate::{CompiledShader, GfxContext};
-use wgpu::{BindGroupLayout, RenderPass};
+use wgpu::RenderPass;
 
 mod mesh;
 mod shaded_batch;
@@ -20,10 +20,7 @@ pub trait Shaders: 'static {
 
 pub type IndexType = u32;
 
-pub struct PreparedPipeline {
-    pub pipeline: wgpu::RenderPipeline,
-    pub bindgroupslayouts: Vec<BindGroupLayout>,
-}
+pub struct PreparedPipeline(pub wgpu::RenderPipeline);
 
 pub trait Drawable {
     fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline
