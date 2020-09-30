@@ -133,15 +133,12 @@ impl<T: 'static + Shaders> Drawable for ShadedBatch<T> {
             frag,
         );
 
-        super::PreparedPipeline {
-            pipeline,
-            bindgroupslayouts: vec![],
-        }
+        super::PreparedPipeline(pipeline)
     }
 
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
-        rp.set_pipeline(&pipeline.pipeline);
+        rp.set_pipeline(&pipeline.0);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));

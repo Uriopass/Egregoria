@@ -85,14 +85,11 @@ impl Drawable for Mesh {
             frag,
         );
 
-        PreparedPipeline {
-            pipeline,
-            bindgroupslayouts: vec![],
-        }
+        PreparedPipeline(pipeline)
     }
 
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        rp.set_pipeline(&gfx.get_pipeline::<Self>().pipeline);
+        rp.set_pipeline(&gfx.get_pipeline::<Self>().0);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..));
