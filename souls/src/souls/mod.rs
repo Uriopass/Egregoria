@@ -1,4 +1,5 @@
 use crate::desire::{Desires, Routed};
+use crate::economy::Market;
 use crate::souls::human::{Human, HumanSoul};
 use crate::DebugSoul;
 use common::inspect::InspectedEntity;
@@ -21,13 +22,21 @@ pub struct Soul<T, D: Desires<T>> {
     extra: T,
 }
 
-#[derive(Default)]
 pub struct Souls {
     human_souls: Vec<HumanSoul>,
     body_map: HashMap<PedestrianID, SoulID>,
 }
 
 impl Souls {
+    pub fn new(goria: &mut Egregoria) -> Souls {
+        goria.insert(Market::default());
+
+        Souls {
+            human_souls: vec![],
+            body_map: Default::default(),
+        }
+    }
+
     pub fn add_souls_to_empty_buildings(&mut self, goria: &mut Egregoria) {
         let map = goria.read::<Map>();
         let mut infos = goria.write::<BuildingInfos>();
@@ -65,6 +74,7 @@ impl Souls {
     }
 
     pub fn update(&mut self, goria: &mut Egregoria) {
+        goria.read_only = true;
         let refgoria = &*goria;
         let t = Instant::now();
         let actions: Vec<Action> = self
@@ -72,6 +82,7 @@ impl Souls {
             .par_iter_mut()
             .map(move |x: &mut HumanSoul| x.desires.decision(&mut x.extra, refgoria))
             .collect();
+        goria.read_only = false;
 
         goria
             .write::<RenderStats>()

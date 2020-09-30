@@ -54,7 +54,7 @@ use std::hash::{Hash, Hasher};
 use utils::par_command_buffer::Deleted;
 use utils::scheduler::SeqSchedule;
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct SoulID(pub usize);
 
 #[derive(Default)]
@@ -62,6 +62,7 @@ pub struct Egregoria {
     pub world: World,
     pub schedule: SeqSchedule,
     resources: Resources,
+    pub read_only: bool,
 }
 
 /// Safety: Resources must be Send+Sync.
@@ -137,10 +138,12 @@ impl Egregoria {
     }
 
     pub fn try_write<T: Resource>(&self) -> Option<impl DerefMut<Target = T> + '_> {
+        debug_assert!(!self.read_only);
         self.resources.get_mut()
     }
 
     pub fn write<T: Resource>(&self) -> impl DerefMut<Target = T> + '_ {
+        debug_assert!(!self.read_only);
         self.resources.get_mut().unwrap()
     }
 

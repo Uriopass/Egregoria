@@ -1,12 +1,14 @@
-pub mod desire;
-pub mod souls;
-
 use egregoria::api::Router;
 use egregoria::engine_interaction::History;
 use egregoria::pedestrians::PedestrianID;
 use egregoria::Egregoria;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+
+pub(crate) mod desire;
+pub(crate) mod economy;
+mod souls;
+
 pub use souls::*;
 
 #[derive(Default)]

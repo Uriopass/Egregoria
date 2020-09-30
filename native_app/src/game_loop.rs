@@ -18,7 +18,7 @@ use winit::window::Window;
 pub struct State {
     camera: CameraHandler,
     imgui_render: ImguiWrapper,
-    state: Egregoria,
+    goria: Egregoria,
     last_time: Instant,
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
@@ -37,31 +37,33 @@ impl State {
                 CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 0.05)
             });
 
-        let wrapper = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
+        let imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
         crate::rendering::prepare_background(&mut ctx.gfx);
 
-        let mut state = egregoria::Egregoria::init();
+        let mut goria = egregoria::Egregoria::init();
 
-        load_from_disk(&mut state);
-        gui::setup_gui(&mut state);
+        load_from_disk(&mut goria);
+        gui::setup_gui(&mut goria);
 
         let mut gui = Gui::default();
         add_debug_menu(&mut gui);
         gui.windows
             .insert(imgui::im_str!("Debug souls"), souls::debug_souls, false);
 
-        state.insert(camera.camera.clone());
+        goria.insert(camera.camera.clone());
+
+        let souls = Souls::new(&mut goria);
 
         Self {
             camera,
-            imgui_render: wrapper,
-            state,
+            imgui_render,
+            goria,
             last_time: Instant::now(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
             gui,
-            souls: Souls::default(),
+            souls,
         }
     }
 
@@ -79,16 +81,16 @@ impl State {
             !self.imgui_render.last_mouse_captured,
             !self.imgui_render.last_kb_captured,
         );
-        *self.state.write::<Camera>() = self.camera.camera.clone();
+        *self.goria.write::<Camera>() = self.camera.camera.clone();
 
         if !self.imgui_render.last_mouse_captured {
-            self.state.write::<MouseInfo>().unprojected = self.unproject(ctx.input.mouse.screen);
+            self.goria.write::<MouseInfo>().unprojected = self.unproject(ctx.input.mouse.screen);
         }
 
-        self.state.run();
+        self.goria.run();
 
-        self.souls.add_souls_to_empty_buildings(&mut self.state);
-        self.souls.update(&mut self.state);
+        self.souls.add_souls_to_empty_buildings(&mut self.goria);
+        self.souls.update(&mut self.goria);
 
         self.manage_entity_follow();
         self.camera.update(ctx);
@@ -101,29 +103,29 @@ impl State {
 
         let mut tess = self.camera.culled_tesselator();
 
-        let time: TimeInfo = *self.state.read::<TimeInfo>();
+        let time: TimeInfo = *self.goria.read::<TimeInfo>();
         self.road_renderer.render(
-            &mut self.state.write::<Map>(),
+            &mut self.goria.write::<Map>(),
             time.time_seconds,
             &mut tess,
             ctx,
         );
 
-        self.instanced_renderer.render(&mut self.state, ctx);
+        self.instanced_renderer.render(&mut self.goria, ctx);
 
-        MeshRenderer::render(&mut self.state, &mut tess);
+        MeshRenderer::render(&mut self.goria, &mut tess);
 
         {
             let objs = crate::debug::DEBUG_OBJS.lock().unwrap();
             for (val, _, obj) in &*objs {
                 if *val {
-                    obj(&mut tess, &mut self.state);
+                    obj(&mut tess, &mut self.goria);
                 }
             }
         }
 
         {
-            let immediate = &mut *self.state.write::<ImmediateDraw>();
+            let immediate = &mut *self.goria.write::<ImmediateDraw>();
             for (order, col) in immediate
                 .persistent_orders
                 .iter()
@@ -146,7 +148,7 @@ impl State {
             ctx.draw(x)
         }
 
-        self.state
+        self.goria
             .write::<RenderStats>()
             .render
             .add_value(start.elapsed().as_secs_f32());
@@ -154,12 +156,12 @@ impl State {
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
         self.imgui_render
-            .render(ctx, window, &mut self.state, &mut self.gui);
+            .render(ctx, window, &mut self.goria, &mut self.gui);
     }
 
     fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {
         const MAX_TIMESTEP: f64 = 1.0 / 10.0;
-        let mut time = self.state.write::<TimeInfo>();
+        let mut time = self.goria.write::<TimeInfo>();
 
         let delta = (delta * time.time_speed as f64).min(MAX_TIMESTEP);
         time.delta = delta as f32;
@@ -170,29 +172,29 @@ impl State {
     }
 
     fn manage_entity_follow(&mut self) {
-        if !self.state.read::<MouseInfo>().just_pressed.is_empty() {
-            self.state.write::<FollowEntity>().0.take();
+        if !self.goria.read::<MouseInfo>().just_pressed.is_empty() {
+            self.goria.write::<FollowEntity>().0.take();
         }
 
-        if let Some(e) = self.state.read::<FollowEntity>().0 {
-            if let Some(pos) = self.state.pos(e) {
+        if let Some(e) = self.goria.read::<FollowEntity>().0 {
+            if let Some(pos) = self.goria.pos(e) {
                 self.camera.camera.position = [pos.x, pos.y].into();
             }
         }
     }
 
     fn manage_io(&mut self, ctx: &Context) {
-        *self.state.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
-        *self.state.write::<MouseInfo>() = ctx.input.mouse.clone();
+        *self.goria.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
+        *self.goria.write::<MouseInfo>() = ctx.input.mouse.clone();
 
         if self.imgui_render.last_kb_captured {
-            let kb: &mut KeyboardInfo = &mut self.state.write::<KeyboardInfo>();
+            let kb: &mut KeyboardInfo = &mut self.goria.write::<KeyboardInfo>();
             kb.just_pressed.clear();
             kb.is_pressed.clear();
         }
 
         if self.imgui_render.last_mouse_captured {
-            let mouse: &mut MouseInfo = &mut self.state.write::<MouseInfo>();
+            let mouse: &mut MouseInfo = &mut self.goria.write::<MouseInfo>();
             mouse.just_pressed.clear();
             mouse.buttons.clear();
             mouse.wheel_delta = 0.0;
