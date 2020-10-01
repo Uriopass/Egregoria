@@ -256,7 +256,7 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
     }
 }
 
-#[system(for_each)]
+#[system(par_for_each)]
 pub fn itinerary_update(
     #[resource] time: &TimeInfo,
     #[resource] map: &Map,
