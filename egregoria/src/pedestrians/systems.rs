@@ -8,24 +8,22 @@ use crate::utils::Restrict;
 use crate::vehicles::VehicleID;
 use geom::{angle_lerp, Transform, Vec2};
 use legion::world::SubWorld;
-use legion::{system, Entity, EntityStore};
+use legion::{system, EntityStore};
 use map_model::{Map, TraverseDirection};
 
-#[system(for_each)]
-#[write_component(Transform)]
-pub fn pedestrian_synchro(e: &Entity, loc: &Location, sw: &mut SubWorld) {
+#[system(par_for_each)]
+#[read_component(Transform)]
+pub fn pedestrian_synchro(trans: &mut Transform, loc: &Location, sw: &SubWorld) {
     match *loc {
         Location::Outside => {}
         Location::Vehicle(VehicleID(v_e)) => {
-            let car_pos = *sw
+            if let Some(x) = sw
                 .entry_ref(v_e)
-                .unwrap()
-                .get_component::<Transform>()
-                .unwrap();
-            *sw.entry_mut(*e)
-                .unwrap()
-                .get_component_mut::<Transform>()
-                .unwrap() = car_pos;
+                .ok()
+                .and_then(|x| x.get_component::<Transform>().ok().copied())
+            {
+                *trans = x;
+            }
         }
         Location::Building(_) => {}
     }

@@ -90,7 +90,7 @@ impl Egregoria {
 
         // Basic assets init
         state.insert(TimeInfo::default());
-        state.insert(CollisionWorld::new(50));
+        state.insert(CollisionWorld::new(100));
         state.insert(KeyboardInfo::default());
         state.insert(MouseInfo::default());
         state.insert(RenderStats::default());
