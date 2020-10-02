@@ -11,6 +11,7 @@ new_key_type! {
 pub enum BuildingKind {
     House,
     Workplace,
+    Supermarket,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -36,6 +37,7 @@ impl Building {
         let (mut exterior, walkway_seg) = match kind {
             BuildingKind::House => Self::gen_exterior_house(lot.size),
             BuildingKind::Workplace => Self::gen_exterior_workplace(lot.size),
+            BuildingKind::Supermarket => Self::gen_exterior_supermarket(lot.size),
         };
 
         exterior.rotate(axis).translate(at);
@@ -99,6 +101,19 @@ impl Building {
 
         p.translate(-p.barycenter());
         (p, if seg == 0 { 1 } else { 0 })
+    }
+
+    pub fn gen_exterior_supermarket(size: f32) -> (Polygon, usize) {
+        let mut h = rand_in(25.0, 30.0);
+        let mut w = h + rand_in(5.0, 10.0);
+
+        w *= size / 40.0;
+        h *= size / 40.0;
+
+        let mut p = Polygon::rect(w, h);
+
+        p.translate(-p.barycenter());
+        (p, 0)
     }
 }
 

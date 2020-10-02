@@ -27,6 +27,7 @@ mods          = { path = "../mods" }
 common        = { path = "../common" }
 slotmap       = "0.4.0"
 dashmap       = { version = "3.11.10", features = ["serde"] }
+derive_more = { version = "0.99.0", default-features = false, features = ["add", "add_assign"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 imgui = "0.4"

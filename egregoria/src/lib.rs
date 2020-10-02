@@ -38,6 +38,7 @@ extern crate log as extern_log;
 pub mod utils;
 
 pub mod api;
+pub mod economy;
 pub mod engine_interaction;
 pub mod map_dynamic;
 pub mod pedestrians;
@@ -46,6 +47,7 @@ pub mod rendering;
 pub mod scenarios;
 pub mod vehicles;
 
+use crate::economy::Market;
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use geom::{Transform, Vec2};
@@ -54,7 +56,7 @@ use std::hash::{Hash, Hasher};
 use utils::par_command_buffer::Deleted;
 use utils::scheduler::SeqSchedule;
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct SoulID(pub usize);
 
 #[derive(Default)]
@@ -62,7 +64,7 @@ pub struct Egregoria {
     pub world: World,
     pub schedule: SeqSchedule,
     resources: Resources,
-    pub read_only: bool,
+    read_only: bool,
 }
 
 /// Safety: Resources must be Send+Sync.
@@ -84,28 +86,29 @@ impl Egregoria {
     }
 
     pub fn init() -> Egregoria {
-        let mut state = Egregoria::default();
+        let mut goria = Egregoria::default();
 
         info!("Seed is {}", RNG_SEED);
 
         // Basic assets init
-        state.insert(TimeInfo::default());
-        state.insert(CollisionWorld::new(100));
-        state.insert(KeyboardInfo::default());
-        state.insert(MouseInfo::default());
-        state.insert(RenderStats::default());
-        state.insert(RandProvider::new(RNG_SEED));
-        state.insert(ParkingManagement::default());
-        state.insert(BuildingInfos::default());
-        state.insert(FrameLog::default());
-        state.insert(RunningScenario::default());
-        state.insert(ImmediateDraw::default());
-        state.insert(ParCommandBuffer::default());
-        state.insert(Deleted::<Collider>::default());
-        state.insert(Deleted::<Vehicle>::default());
+        goria.insert(TimeInfo::default());
+        goria.insert(CollisionWorld::new(100));
+        goria.insert(KeyboardInfo::default());
+        goria.insert(MouseInfo::default());
+        goria.insert(RenderStats::default());
+        goria.insert(RandProvider::new(RNG_SEED));
+        goria.insert(ParkingManagement::default());
+        goria.insert(BuildingInfos::default());
+        goria.insert(FrameLog::default());
+        goria.insert(RunningScenario::default());
+        goria.insert(ImmediateDraw::default());
+        goria.insert(ParCommandBuffer::default());
+        goria.insert(Deleted::<Collider>::default());
+        goria.insert(Deleted::<Vehicle>::default());
+        goria.insert(Market::default());
 
         // Dispatcher init
-        state
+        goria
             .schedule
             .add_system(vehicle_state_update_system())
             .add_system(vehicle_decision_system())
@@ -118,7 +121,7 @@ impl Egregoria {
             .add_system(coworld_synchronize_system())
             .add_system(coworld_maintain_system());
 
-        state
+        goria
     }
 
     pub fn pos(&self, e: Entity) -> Option<Vec2> {
@@ -127,6 +130,10 @@ impl Egregoria {
 
     pub fn comp<T: Component>(&self, e: Entity) -> Option<&T> {
         <&T>::query().get(&self.world, e).ok()
+    }
+
+    pub fn set_read_only(&mut self, read_only: bool) {
+        self.read_only = read_only;
     }
 
     pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {

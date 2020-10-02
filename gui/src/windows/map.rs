@@ -1,3 +1,4 @@
+use egregoria::map_dynamic::BuildingInfos;
 use egregoria::pedestrians::Pedestrian;
 use egregoria::vehicles::Vehicle;
 use egregoria::Egregoria;
@@ -9,19 +10,20 @@ pub fn map(ui: &Ui, goria: &mut Egregoria) {
     let mut map = goria.write::<Map>();
 
     if ui.small_button(im_str!("build houses")) {
-        map.build_buildings();
+        let mut infos = goria.write::<BuildingInfos>();
+        for build in map.build_buildings() {
+            infos.insert(build);
+        }
     }
 
     if ui.small_button(im_str!("load Paris map")) {
         map.clear();
         map_model::load_parismap(&mut map);
-        map.build_buildings();
     }
 
     if ui.small_button(im_str!("load test field")) {
         map.clear();
         map_model::load_testfield(&mut map);
-        map.build_buildings();
     }
 
     if ui.small_button(im_str!("clear the map")) {

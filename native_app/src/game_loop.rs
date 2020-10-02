@@ -53,8 +53,6 @@ impl State {
 
         goria.insert(camera.camera.clone());
 
-        let souls = Souls::new(&mut goria);
-
         Self {
             camera,
             imgui_render,
@@ -63,7 +61,7 @@ impl State {
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
             gui,
-            souls,
+            souls: Souls::default(),
         }
     }
 

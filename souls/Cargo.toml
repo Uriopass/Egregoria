@@ -20,4 +20,3 @@ rand = "0.7.3"
 slotmap = "0.4.0"
 rayon = "1.4.0"
 imgui = "0.4.0"
-derive_more = { version = "0.99.0", default-features = false, features = ["add", "add_assign"] }

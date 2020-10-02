@@ -2,9 +2,10 @@ use crate::pedestrians::data::PedestrianID;
 use crate::SoulID;
 use map_model::BuildingID;
 use slotmap::SecondaryMap;
+use std::ops::{Index, IndexMut};
 
 pub struct BuildingInfo {
-    pub owners: Vec<SoulID>,
+    pub owner: Option<SoulID>,
     pub inside: Vec<PedestrianID>,
 }
 
@@ -14,38 +15,43 @@ pub struct BuildingInfos {
 }
 
 impl BuildingInfos {
-    pub fn get_info_mut(&mut self, building: BuildingID) -> &mut BuildingInfo {
-        if self.assignment.contains_key(building) {
-            return self.assignment.get_mut(building).unwrap();
-        }
-
+    pub fn insert(&mut self, building: BuildingID) {
         self.assignment.insert(
             building,
             BuildingInfo {
-                owners: vec![],
+                owner: None,
                 inside: vec![],
             },
         );
-        self.assignment.get_mut(building).unwrap()
     }
 
-    pub fn add_owner(&mut self, building: BuildingID, soul: SoulID) {
-        self.get_info_mut(building).owners.push(soul);
+    pub fn get(&self, building: BuildingID) -> Option<&BuildingInfo> {
+        self.assignment.get(building)
+    }
+
+    pub fn get_mut(&mut self, building: BuildingID) -> Option<&mut BuildingInfo> {
+        self.assignment.get_mut(building)
+    }
+
+    pub fn set_owner(&mut self, building: BuildingID, soul: SoulID) {
+        if let Some(x) = self.get_mut(building) {
+            x.owner = Some(soul)
+        }
     }
 
     pub fn get_in(&mut self, building: BuildingID, e: PedestrianID) {
-        if cfg!(debug_assertions) && self.get_info_mut(building).inside.contains(&e) {
+        if cfg!(debug_assertions) && self[building].inside.contains(&e) {
             log::warn!(
                 "called get_in({:?}, {:?}) but it was already inside",
                 building,
                 e
             );
         }
-        self.get_info_mut(building).inside.push(e);
+        self[building].inside.push(e);
     }
 
     pub fn get_out(&mut self, building: BuildingID, e: PedestrianID) {
-        let inside = &mut self.get_info_mut(building).inside;
+        let inside = &mut self[building].inside;
         if let Some(i) = inside.iter().position(|v| *v == e) {
             inside.swap_remove(i);
         } else {
@@ -55,5 +61,19 @@ impl BuildingInfos {
                 e
             );
         }
+    }
+}
+
+impl Index<BuildingID> for BuildingInfos {
+    type Output = BuildingInfo;
+
+    fn index(&self, index: BuildingID) -> &Self::Output {
+        &self.assignment[index]
+    }
+}
+
+impl IndexMut<BuildingID> for BuildingInfos {
+    fn index_mut(&mut self, index: BuildingID) -> &mut Self::Output {
+        &mut self.assignment[index]
     }
 }

@@ -1,4 +1,5 @@
-use crate::desire::{Desire, Routed};
+use crate::desire::Desire;
+use crate::souls::human::Human;
 use egregoria::api::{Action, Destination};
 use egregoria::engine_interaction::TimeInfo;
 use egregoria::Egregoria;
@@ -15,17 +16,17 @@ pub struct Work {
     offset: f32,
 }
 
-impl<T: Routed> Desire<T> for Work {
+impl Desire<Human> for Work {
     fn name(&self) -> &'static str {
         "Work"
     }
 
-    fn score(&self, goria: &Egregoria, _soul: &T) -> f32 {
-        (goria.read::<TimeInfo>().time / 500.0 + self.offset as f64).cos() as f32
+    fn score(&self, goria: &Egregoria, _soul: &Human) -> f32 {
+        ((goria.read::<TimeInfo>().time / 500.0) as f32 + self.offset).cos()
     }
 
-    fn apply(&mut self, goria: &Egregoria, soul: &mut T) -> Action {
-        soul.router_mut()
+    fn apply(&mut self, goria: &Egregoria, soul: &mut Human) -> Action {
+        soul.router
             .go_to(goria, Destination::Building(self.workplace))
     }
 }

@@ -8,7 +8,7 @@ use crate::Egregoria;
 use geom::{vec2, Transform, Vec2};
 use imgui_inspect_derive::*;
 use legion::Entity;
-use map_model::BuildingID;
+use map_model::{BuildingID, Map};
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 
@@ -28,8 +28,10 @@ const PED_SIZE: f32 = 0.5;
 pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> PedestrianID {
     let color = random_pedestrian_shirt_color();
 
+    let hpos = goria.read::<Map>().buildings()[house].door_pos;
+
     let e = PedestrianID(goria.world.push((
-        Transform::new(Vec2::ZERO),
+        Transform::new(hpos),
         Location::Building(house),
         Pedestrian::default(),
         Itinerary::none(),
