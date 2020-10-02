@@ -1,6 +1,7 @@
-use crate::desire::{Desires, Routed};
-use crate::economy::Market;
+use crate::desire::Desires;
 use crate::souls::human::{Human, HumanSoul};
+use crate::souls::supermarket::SupermarketSoul;
+use crate::supermarket::Supermarket;
 use crate::DebugSoul;
 use common::inspect::InspectedEntity;
 use egregoria::api::Action;
@@ -9,62 +10,76 @@ use egregoria::map_dynamic::BuildingInfos;
 use egregoria::pedestrians::{Pedestrian, PedestrianID};
 use egregoria::{Egregoria, SoulID};
 use map_model::{BuildingKind, Map};
-use rayon::iter::IntoParallelRefMutIterator;
 use rayon::iter::ParallelIterator;
+use rayon::iter::{IntoParallelRefMutIterator, ParallelExtend};
 use std::collections::HashMap;
 use std::time::Instant;
 
-mod human;
+pub mod human;
+pub mod supermarket;
 
 pub struct Soul<T, D: Desires<T>> {
-    pub id: SoulID,
     desires: D,
     extra: T,
 }
 
+#[derive(Default)]
 pub struct Souls {
-    human_souls: Vec<HumanSoul>,
+    pub growing: usize,
+    human_souls: HashMap<SoulID, HumanSoul>,
+    supermarket_souls: HashMap<SoulID, SupermarketSoul>,
     body_map: HashMap<PedestrianID, SoulID>,
 }
 
 impl Souls {
-    pub fn new(goria: &mut Egregoria) -> Souls {
-        goria.insert(Market::default());
-
-        Souls {
-            human_souls: vec![],
-            body_map: Default::default(),
-        }
+    pub fn fresh_id(&mut self) -> SoulID {
+        let id = SoulID(self.growing);
+        self.growing += 1;
+        id
     }
 
     pub fn add_souls_to_empty_buildings(&mut self, goria: &mut Egregoria) {
         let map = goria.read::<Map>();
-        let mut infos = goria.write::<BuildingInfos>();
+        let infos = goria.read::<BuildingInfos>();
         let mut empty_buildings = vec![];
         for (id, building) in map.buildings() {
-            if building.kind != BuildingKind::House {
+            if !matches!(
+                building.kind,
+                BuildingKind::House | BuildingKind::Supermarket
+            ) {
                 continue;
             }
-            if infos.get_info_mut(id).owners.is_empty() {
-                empty_buildings.push(id);
+            if infos[id].owner.is_none() {
+                empty_buildings.push((id, building.kind));
             }
         }
-        drop(map);
         drop(infos);
+        drop(map);
 
         let mut n_souls_added = 0;
 
-        for house in empty_buildings {
-            let id = SoulID(self.human_souls.len());
+        for (build_id, kind) in empty_buildings {
+            let id = self.fresh_id();
 
-            if let Some(mut soul) = Human::soul(id, house, goria) {
-                self.body_map.insert(soul.extra.router_mut().body, id);
-                self.human_souls.push(soul);
+            match kind {
+                BuildingKind::House => {
+                    if let Some(soul) = Human::soul(goria, id, build_id) {
+                        self.body_map.insert(soul.extra.router.body, id);
+                        self.human_souls.insert(id, soul);
 
-                n_souls_added += 1;
-                if n_souls_added > 100 {
-                    break;
+                        n_souls_added += 1;
+                    }
                 }
+                BuildingKind::Supermarket => {
+                    let soul = Supermarket::soul(goria, id, build_id);
+                    self.supermarket_souls.insert(id, soul);
+                    n_souls_added += 1;
+                }
+                _ => unreachable!(),
+            }
+
+            if n_souls_added > 100 {
+                break;
             }
         }
 
@@ -74,15 +89,23 @@ impl Souls {
     }
 
     pub fn update(&mut self, goria: &mut Egregoria) {
-        goria.read_only = true;
+        goria.set_read_only(true);
         let refgoria = &*goria;
         let t = Instant::now();
-        let actions: Vec<Action> = self
-            .human_souls
-            .par_iter_mut()
-            .map(move |x: &mut HumanSoul| x.desires.decision(&mut x.extra, refgoria))
-            .collect();
-        goria.read_only = false;
+        let mut actions: Vec<Action> = vec![];
+
+        actions.par_extend(
+            self.human_souls
+                .par_iter_mut()
+                .map(move |(_, x): (_, &mut HumanSoul)| x.desires.decision(&mut x.extra, refgoria)),
+        );
+
+        #[allow(clippy::unit_arg)] // Fixme: remove this when supermarket's soul gets a desire
+        actions.par_extend(self.supermarket_souls.par_iter_mut().map(
+            move |(_, x): (_, &mut SupermarketSoul)| x.desires.decision(&mut x.extra, refgoria),
+        ));
+
+        goria.set_read_only(false);
 
         goria
             .write::<RenderStats>()
@@ -106,7 +129,7 @@ impl Souls {
                     .body_map
                     .get(&PedestrianID(x))
                     .expect("soul with pedestrian wasn't added to body_map");
-                let soul = &self.human_souls[soul_id.0];
+                let soul = &self.human_souls[&soul_id];
 
                 let dbg: &mut DebugSoul = &mut *goria.write::<DebugSoul>();
                 if dbg.cur_inspect.map(|p| p.0 != x).unwrap_or(true) {

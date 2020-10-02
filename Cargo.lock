@@ -602,6 +602,7 @@ dependencies = [
  "common",
  "crossbeam",
  "dashmap",
+ "derive_more",
  "flat_spatial",
  "geom",
  "imgui",
@@ -2180,7 +2181,6 @@ name = "souls"
 version = "0.1.0"
 dependencies = [
  "common",
- "derive_more",
  "egregoria",
  "geom",
  "imgui",

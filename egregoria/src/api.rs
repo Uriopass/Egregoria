@@ -4,7 +4,7 @@ use crate::pedestrians::put_pedestrian_in_coworld;
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::{put_vehicle_in_coworld, Vehicle, VehicleID, VehicleState};
-use crate::{Egregoria, ParCommandBuffer};
+use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::{Spline, Transform, Vec2};
 use legion::Entity;
 use map_model::{BuildingID, CarPath, Map, ParkingSpotID, PedestrianPath};
@@ -93,6 +93,7 @@ impl RoutingStep {
     }
 }
 
+use crate::economy::{Market, Transaction};
 use imgui_inspect_derive::*;
 
 #[derive(Inspect, Clone)]
@@ -111,6 +112,18 @@ impl Router {
             car,
             dest: None,
         }
+    }
+
+    pub fn arrived(&self, destination: Destination) -> bool {
+        if let Some(dest) = self.dest {
+            dest == destination && self.steps.is_empty()
+        } else {
+            false
+        }
+    }
+
+    pub fn body_pos(&self, goria: &Egregoria) -> Vec2 {
+        goria.pos(self.body.0).unwrap()
     }
 
     fn clear_steps(&mut self, goria: &Egregoria) {
@@ -201,6 +214,11 @@ pub enum Action {
     Navigate(Entity, Itinerary),
     Park(VehicleID, ParkingSpotID),
     UnPark(VehicleID),
+    Buy {
+        buyer: SoulID,
+        seller: SoulID,
+        trans: Transaction,
+    },
 }
 
 impl Default for Action {
@@ -281,6 +299,14 @@ impl Action {
                     .add_component(vehicle.0, coll);
 
                 goria.comp_mut::<Vehicle>(vehicle.0).unwrap().state = VehicleState::Driving;
+            }
+            Action::Buy {
+                buyer,
+                seller,
+                trans,
+            } => {
+                log::info!("{:?}", self);
+                goria.write::<Market>().apply(buyer, seller, trans);
             }
         }
         Some(())

@@ -140,6 +140,7 @@ impl RoadRenderer {
             let col = match building.kind {
                 BuildingKind::House => Color::new(0.5, 0.52, 0.5, 1.0),
                 BuildingKind::Workplace => Color::new(0.48, 0.48, 0.5, 1.0),
+                BuildingKind::Supermarket => Color::new(0.52, 0.5, 0.50, 1.0),
             };
             tess.set_color(col);
             tess.draw_filled_polygon(building.exterior.as_slice(), Z_HOUSE);

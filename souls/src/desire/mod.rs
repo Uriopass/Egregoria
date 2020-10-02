@@ -1,10 +1,12 @@
-use egregoria::api::{Action, Router};
+use egregoria::api::Action;
 use egregoria::Egregoria;
 use ordered_float::OrderedFloat;
 
+mod buyfood;
 mod home;
 mod work;
 
+pub use buyfood::*;
 pub use home::*;
 pub use work::*;
 
@@ -12,10 +14,6 @@ pub trait Desire<T>: Send + Sync {
     fn name(&self) -> &'static str;
     fn score(&self, goria: &Egregoria, soul: &T) -> f32;
     fn apply(&mut self, goria: &Egregoria, soul: &mut T) -> Action;
-}
-
-pub trait Routed {
-    fn router_mut(&mut self) -> &mut Router;
 }
 
 pub trait Desires<T> {

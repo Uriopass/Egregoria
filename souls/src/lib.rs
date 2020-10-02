@@ -6,7 +6,6 @@ use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
 pub(crate) mod desire;
-pub(crate) mod economy;
 mod souls;
 
 pub use souls::*;

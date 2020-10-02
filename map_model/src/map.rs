@@ -198,26 +198,31 @@ impl Map {
         id
     }
 
-    pub fn build_buildings(&mut self) {
+    pub fn build_buildings(&mut self) -> impl Iterator<Item = BuildingID> + '_ {
         info!("build buildings");
-        for (id, lot) in self.lots.drain() {
-            let rlots = &mut self.roads[lot.parent].lots;
-            rlots.remove(rlots.iter().position(|&x| x == id).unwrap());
-            self.spatial_map.remove(id);
-
-            Building::make(
-                &mut self.buildings,
-                &mut self.spatial_map,
-                &self.roads,
-                lot,
-                if rand::random::<f32>() < 0.1 {
-                    BuildingKind::Workplace
-                } else {
-                    BuildingKind::House
-                },
-            );
-        }
         self.dirty = true;
+
+        let roads = &mut self.roads;
+        let buildings = &mut self.buildings;
+        let spatial_map = &mut self.spatial_map;
+
+        self.lots.drain().filter_map(move |(id, lot)| {
+            let rlots = &mut roads[lot.parent].lots;
+            rlots.remove(rlots.iter().position(|&x| x == id).unwrap());
+            spatial_map.remove(id);
+
+            let r = rand::random::<f32>();
+
+            let kind = if r < 0.1 {
+                BuildingKind::Workplace
+            } else if r < 0.2 {
+                BuildingKind::Supermarket
+            } else {
+                BuildingKind::House
+            };
+
+            Building::make(buildings, spatial_map, roads, lot, kind)
+        })
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {

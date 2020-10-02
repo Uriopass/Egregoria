@@ -1,4 +1,5 @@
-use crate::desire::{Desire, Routed};
+use crate::desire::Desire;
+use crate::human::Human;
 use egregoria::api::{Action, Destination};
 use egregoria::engine_interaction::TimeInfo;
 use egregoria::Egregoria;
@@ -15,18 +16,16 @@ impl Home {
     }
 }
 
-impl<T: Routed> Desire<T> for Home {
+impl Desire<Human> for Home {
     fn name(&self) -> &'static str {
         "Home"
     }
 
-    fn score(&self, goria: &Egregoria, _soul: &T) -> f32 {
-        (goria.read::<TimeInfo>().time / 500.0 + std::f64::consts::PI + self.offset as f64).cos()
-            as f32
+    fn score(&self, goria: &Egregoria, _soul: &Human) -> f32 {
+        ((goria.read::<TimeInfo>().time / 500.0) as f32 + std::f32::consts::PI + self.offset).cos()
     }
 
-    fn apply(&mut self, goria: &Egregoria, soul: &mut T) -> Action {
-        soul.router_mut()
-            .go_to(goria, Destination::Building(self.house))
+    fn apply(&mut self, goria: &Egregoria, soul: &mut Human) -> Action {
+        soul.router.go_to(goria, Destination::Building(self.house))
     }
 }
