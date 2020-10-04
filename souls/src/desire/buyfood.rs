@@ -42,20 +42,20 @@ impl Desire<Human> for BuyFood {
 
         if let Some(id) = self.supermarket {
             if soul.router.arrived(Destination::Building(id)) {
-                let owner = goria.read::<BuildingInfos>()[id].owner.unwrap();
+                if let Some(owner) = goria.read::<BuildingInfos>()[id].owner {
+                    let trans = goria.read::<Market>().want(owner, Goods { food: 1 });
+                    if trans.is_none() {
+                        log::warn!("No food in this supermarket :( {:?}", id);
+                        return Action::DoNothing;
+                    }
 
-                let trans = goria.read::<Market>().want(owner, Goods { food: 1 });
-                if trans.is_none() {
-                    log::warn!("No food in this supermarket :( {:?}", id);
-                    return Action::DoNothing;
+                    let trans = trans.unwrap();
+                    return Action::Buy {
+                        buyer: soul.id,
+                        seller: owner,
+                        trans,
+                    };
                 }
-
-                let trans = trans.unwrap();
-                return Action::Buy {
-                    buyer: soul.id,
-                    seller: owner,
-                    trans,
-                };
             }
 
             soul.router.go_to(goria, Destination::Building(id))
