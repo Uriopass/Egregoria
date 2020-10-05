@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::{compile_shader, ColoredUvVertex, Drawable, GfxContext, IndexType, Texture, VBDesc};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::RenderPass;
+use wgpu::{RenderPass, TextureComponentType};
 
 #[derive(Default)]
 pub struct TexturedMeshBuilder {
@@ -80,7 +80,10 @@ impl TexturedMeshBuilder {
 
 impl Drawable for TexturedMesh {
     fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
-        let layouts = vec![Texture::bindgroup_layout(&gfx.device)];
+        let layouts = vec![Texture::bindgroup_layout(
+            &gfx.device,
+            TextureComponentType::Uint,
+        )];
 
         let vert = compile_shader("assets/shaders/textured_mesh_shader.vert", None);
         let frag = compile_shader("assets/shaders/textured_mesh_shader.frag", None);

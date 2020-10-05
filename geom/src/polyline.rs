@@ -176,6 +176,18 @@ impl PolyLine {
         self.points_dirs_along(std::iter::once(l)).next().unwrap() // Unwrap ok: std::iter::once
     }
 
+    pub fn equipoints_dir<'a>(&'a self, d: f32) -> impl Iterator<Item = (Vec2, Vec2)> + 'a {
+        let l = self.length();
+        let n_step = (l / d) as i32;
+        let step = l / (n_step as f32 + 1.0);
+
+        self.points_dirs_along(
+            (0..=n_step)
+                .map(move |i| i as f32 * step)
+                .chain(std::iter::once(l)),
+        )
+    }
+
     /// dists should be in ascending order
     pub fn points_dirs_along<'a>(
         &'a self,

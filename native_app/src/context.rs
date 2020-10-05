@@ -91,10 +91,21 @@ impl Context {
                         state.update(&mut self);
 
                         let window = &self.window;
-                        let enc = self.gfx.start_frame(|fc| state.render(fc), &sco);
+                        let mut enc = self.gfx.start_frame();
+
+                        self.gfx.render_objs(&mut enc, &sco, |fc| state.render(fc));
+
+                        wgpu_engine::lighting::render_lights(
+                            &self.gfx,
+                            &mut enc,
+                            &sco,
+                            &state.lights(),
+                        );
 
                         self.gfx
-                            .finish_frame(enc, sco, |gctx| state.render_gui(window, gctx));
+                            .render_gui(&mut enc, &sco, |gctx| state.render_gui(window, gctx));
+
+                        self.gfx.finish_frame(enc);
 
                         self.input.end_frame();
                     }
