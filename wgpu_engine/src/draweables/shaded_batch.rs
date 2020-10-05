@@ -32,17 +32,6 @@ pub struct ShadedInstanceRaw {
     tint: [f32; 4],
 }
 
-impl ShadedInstanceRaw {
-    pub fn new(pos: Vec2, z: f32, cossin: Vec2, scale: Vec2, tint: [f32; 4]) -> Self {
-        Self {
-            pos: [pos.x, pos.y, z],
-            rot: cossin.into(),
-            scale: scale.into(),
-            tint,
-        }
-    }
-}
-
 u8slice_impl!(ShadedInstanceRaw);
 
 impl VBDesc for ShadedInstanceRaw {
@@ -53,6 +42,17 @@ impl VBDesc for ShadedInstanceRaw {
             attributes: Box::leak(Box::new(
                 wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float2, 5 => Float4],
             )),
+        }
+    }
+}
+
+impl ShadedInstanceRaw {
+    pub fn new(pos: Vec2, z: f32, cossin: Vec2, scale: Vec2, tint: [f32; 4]) -> Self {
+        Self {
+            pos: [pos.x, pos.y, z],
+            rot: cossin.into(),
+            scale: scale.into(),
+            tint,
         }
     }
 }

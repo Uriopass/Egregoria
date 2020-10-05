@@ -1,3 +1,4 @@
+use crate::lighting::prepare_lighting;
 use crate::ShaderType;
 use crate::{
     CompiledShader, Drawable, Mesh, PreparedPipeline, SpriteBatch, Texture, TexturedMesh, Uniform,
@@ -6,9 +7,9 @@ use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
-    Adapter, BindGroupLayout, Color, CommandBuffer, CommandEncoder, CommandEncoderDescriptor,
-    Device, Queue, RenderPipeline, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
-    SwapChainFrame, VertexBufferDescriptor,
+    Adapter, BindGroupLayout, CommandBuffer, CommandEncoder, CommandEncoderDescriptor, Device,
+    Queue, RenderPipeline, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
+    SwapChainFrame, TextureView, VertexBufferDescriptor,
 };
 
 pub struct GfxContext {
@@ -19,6 +20,7 @@ pub struct GfxContext {
     pub queue: Queue,
     pub swapchain: SwapChain,
     pub depth_texture: Texture,
+    pub light_texture: Texture,
     pub sc_desc: SwapChainDescriptor,
     pub pipelines: HashMap<TypeId, PreparedPipeline>,
     pub queue_buffer: Vec<CommandBuffer>,
@@ -77,16 +79,14 @@ impl GfxContext {
             present_mode: wgpu::PresentMode::Fifo,
         };
         let samples = 4;
-        let swapchain = device.create_swap_chain(&surface, &sc_desc);
-        let depth_texture = Texture::create_depth_texture(&device, &sc_desc, samples);
+        let (swapchain, depth_texture, light_texture, multi_frame) =
+            Self::create_textures(&device, &surface, &sc_desc, samples);
 
         let projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
 
         let inv_projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
 
         let time_uni = Uniform::new(0.0, &device);
-
-        let multi_frame = Self::create_multisampled_framebuffer(&sc_desc, &device, samples);
 
         let mut me = Self {
             size: (win_width, win_height),
@@ -96,6 +96,7 @@ impl GfxContext {
             sc_desc,
             adapter,
             depth_texture,
+            light_texture,
             surface,
             pipelines: HashMap::new(),
             queue_buffer: vec![],
@@ -109,6 +110,8 @@ impl GfxContext {
         me.register_pipeline::<Mesh>();
         me.register_pipeline::<TexturedMesh>();
         me.register_pipeline::<SpriteBatch>();
+
+        prepare_lighting(&mut me);
 
         me
     }
@@ -150,19 +153,8 @@ impl GfxContext {
             .create_view(&wgpu::TextureViewDescriptor::default())
     }
 
-    pub fn start_frame(
-        &mut self,
-        mut prepare: impl for<'a> FnMut(&'a mut FrameContext),
-        frame: &SwapChainFrame,
-    ) -> CommandEncoder {
-        let clear_color = Color {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 1.0,
-        };
-
-        let mut encoder = self
+    pub fn start_frame(&mut self) -> CommandEncoder {
+        let encoder = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor {
                 label: Some("Render encoder"),
@@ -172,53 +164,56 @@ impl GfxContext {
         self.inv_projection.upload_to_gpu(&self.queue);
         self.time_uni.upload_to_gpu(&self.queue);
 
-        let mut objs = vec![];
-
-        {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &self.multi_frame,
-                    resolve_target: Some(&frame.output.view),
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: clear_color.r,
-                            g: clear_color.g,
-                            b: clear_color.b,
-                            a: clear_color.a,
-                        }),
-                        store: true,
-                    },
-                }],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &self.depth_texture.view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(0.0),
-                        store: true,
-                    }),
-                    stencil_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(0),
-                        store: true,
-                    }),
-                }),
-            });
-
-            let mut fc = FrameContext {
-                objs: &mut objs,
-                gfx: &self,
-            };
-            prepare(&mut fc);
-            for obj in fc.objs {
-                obj.draw(&self, &mut render_pass);
-            }
-        }
         encoder
     }
 
-    pub fn finish_frame(
+    pub fn render_objs(
         &mut self,
-        mut encoder: CommandEncoder,
-        frame: SwapChainFrame,
-        render_gui: impl FnOnce(GuiRenderContext),
+        encoder: &mut CommandEncoder,
+        frame: &SwapChainFrame,
+        mut prepare: impl for<'a> FnMut(&'a mut FrameContext),
+    ) {
+        let mut objs = vec![];
+
+        let mut fc = FrameContext {
+            objs: &mut objs,
+            gfx: &self,
+        };
+
+        prepare(&mut fc);
+
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: &self.multi_frame,
+                resolve_target: Some(&frame.output.view),
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    store: true,
+                },
+            }],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                attachment: &self.depth_texture.view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(0.0),
+                    store: true,
+                }),
+                stencil_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(0),
+                    store: true,
+                }),
+            }),
+        });
+
+        for obj in fc.objs {
+            obj.draw(&self, &mut render_pass);
+        }
+    }
+
+    pub fn render_gui(
+        &mut self,
+        encoder: &mut CommandEncoder,
+        frame: &SwapChainFrame,
+        mut render_gui: impl FnMut(GuiRenderContext),
     ) {
         let rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -237,19 +232,38 @@ impl GfxContext {
             queue: &self.queue,
             rpass: Some(rpass),
         });
+    }
 
+    pub fn finish_frame(&mut self, encoder: CommandEncoder) {
         self.queue.submit(Some(encoder.finish()));
+    }
+
+    pub fn create_textures(
+        device: &Device,
+        surface: &Surface,
+        desc: &SwapChainDescriptor,
+        samples: u32,
+    ) -> (SwapChain, Texture, Texture, TextureView) {
+        (
+            device.create_swap_chain(surface, desc),
+            Texture::create_depth_texture(device, desc, samples),
+            Texture::create_light_texture(device, desc),
+            Self::create_multisampled_framebuffer(desc, device, samples),
+        )
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
         self.size = (width, height);
         self.sc_desc.width = self.size.0;
         self.sc_desc.height = self.size.1;
-        self.swapchain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
-        self.depth_texture =
-            Texture::create_depth_texture(&self.device, &self.sc_desc, self.samples);
-        self.multi_frame =
-            Self::create_multisampled_framebuffer(&self.sc_desc, &self.device, self.samples);
+
+        let (swapchain, depth, light, multi) =
+            Self::create_textures(&self.device, &self.surface, &self.sc_desc, self.samples);
+
+        self.swapchain = swapchain;
+        self.depth_texture = depth;
+        self.light_texture = light;
+        self.multi_frame = multi;
     }
 
     pub fn basic_pipeline(

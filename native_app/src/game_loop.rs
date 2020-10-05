@@ -10,7 +10,9 @@ use geom::Vec2;
 use gui::{FollowEntity, Gui};
 use map_model::Map;
 use souls::Souls;
+use std::borrow::Cow;
 use std::time::Instant;
+use wgpu_engine::lighting::LightInstance;
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
@@ -25,7 +27,6 @@ pub struct State {
     gui: Gui,
     souls: Souls,
 }
-
 impl State {
     pub fn new(ctx: &mut Context) -> Self {
         let camera = common::saveload::load("camera")
@@ -150,6 +151,31 @@ impl State {
             .write::<RenderStats>()
             .render
             .add_value(start.elapsed().as_secs_f32());
+    }
+
+    pub fn lights(&self) -> Cow<[LightInstance]> {
+        let mut lights = vec![];
+
+        let map = self.goria.read::<Map>();
+        for x in map.roads().values() {
+            let w = x.width * 0.5 - 5.0;
+            for (point, dir) in x.generated_points().equipoints_dir(50.0) {
+                lights.push(LightInstance {
+                    pos: (point + dir.perpendicular() * w).into(),
+                    scale: 50.0,
+                });
+                lights.push(LightInstance {
+                    pos: (point).into(),
+                    scale: 50.0,
+                });
+                lights.push(LightInstance {
+                    pos: (point - dir.perpendicular() * w).into(),
+                    scale: 50.0,
+                });
+            }
+        }
+
+        Cow::Owned(lights)
     }
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {

@@ -4,7 +4,7 @@ use geom::Vec2;
 use std::path::Path;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{RenderPass, VertexBufferDescriptor};
+use wgpu::{RenderPass, TextureComponentType, VertexBufferDescriptor};
 
 pub struct SpriteBatchBuilder {
     pub tex: Texture,
@@ -173,7 +173,10 @@ impl Drawable for SpriteBatch {
         let vert = compile_shader("assets/shaders/spritebatch.vert", None);
         let frag = compile_shader("assets/shaders/spritebatch.frag", None);
 
-        let layouts = vec![Texture::bindgroup_layout(&gfx.device)];
+        let layouts = vec![Texture::bindgroup_layout(
+            &gfx.device,
+            TextureComponentType::Uint,
+        )];
 
         let pipeline = gfx.basic_pipeline(
             &[&layouts[0], &gfx.projection.layout],
