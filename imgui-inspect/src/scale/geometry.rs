@@ -88,10 +88,9 @@ impl InspectRenderDefault<Vec2> for Vec2 {
         }
         let x = &mut data[0];
         let mut conv = [x.x, x.y];
-        let changed = ui
-            .drag_float2(&im_str!("{}", label), &mut conv)
+        let changed = imgui::Drag::new(&im_str!("{}", label))
             .speed(args.step.unwrap_or(0.1))
-            .build();
+            .build_array(ui, &mut conv);
         x.x = conv[0];
         x.y = conv[1];
         changed
@@ -159,10 +158,9 @@ impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
         let x = &mut data[0];
         let mut ang = f32::atan2(x.y, x.x);
 
-        let changed = ui
-            .drag_float(&im_str!("{}", label), &mut ang)
+        let changed = imgui::Drag::new(&im_str!("{}", label))
             .speed(-args.step.unwrap_or(0.1))
-            .build();
+            .build(ui, &mut ang);
         x.x = ang.cos();
         x.y = ang.sin();
         changed

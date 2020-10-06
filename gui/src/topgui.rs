@@ -211,12 +211,11 @@ impl Gui {
                 ));
                 ui.same_line(0.0);
                 let tok = ui.push_item_width(60.0);
-                imgui::DragFloat::new(&ui, im_str!("Time warp"), &mut warp.0)
-                    .min(0.0)
-                    .max(1000.0)
+                imgui::Drag::new(im_str!("Time warp"))
+                    .range(0.0..=50.0)
                     .speed(0.1)
                     .display_format(im_str!("%.1f"))
-                    .build();
+                    .build(ui, &mut warp.0);
                 tok.pop(ui);
             });
     }
