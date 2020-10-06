@@ -1,15 +1,15 @@
 use crate::lighting::prepare_lighting;
-use crate::ShaderType;
 use crate::{
     CompiledShader, Drawable, Mesh, PreparedPipeline, SpriteBatch, Texture, TexturedMesh, Uniform,
 };
+use crate::{MultisampledTexture, ShaderType};
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
     Adapter, BindGroupLayout, CommandBuffer, CommandEncoder, CommandEncoderDescriptor, Device,
     Queue, RenderPipeline, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
-    SwapChainFrame, TextureView, VertexBufferDescriptor,
+    SwapChainFrame, VertexBufferDescriptor,
 };
 
 pub struct GfxContext {
@@ -21,6 +21,7 @@ pub struct GfxContext {
     pub swapchain: SwapChain,
     pub depth_texture: Texture,
     pub light_texture: Texture,
+    pub color_texture: MultisampledTexture,
     pub sc_desc: SwapChainDescriptor,
     pub pipelines: HashMap<TypeId, PreparedPipeline>,
     pub queue_buffer: Vec<CommandBuffer>,
@@ -28,7 +29,6 @@ pub struct GfxContext {
     pub inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub time_uni: Uniform<f32>,
     pub samples: u32,
-    pub multi_frame: wgpu::TextureView,
 }
 
 pub struct GuiRenderContext<'a, 'b> {
@@ -79,7 +79,7 @@ impl GfxContext {
             present_mode: wgpu::PresentMode::Fifo,
         };
         let samples = 4;
-        let (swapchain, depth_texture, light_texture, multi_frame) =
+        let (swapchain, depth_texture, light_texture, color) =
             Self::create_textures(&device, &surface, &sc_desc, samples);
 
         let projection = Uniform::new(
@@ -112,7 +112,7 @@ impl GfxContext {
             inv_projection,
             time_uni,
             samples,
-            multi_frame,
+            color_texture: color,
         };
 
         me.register_pipeline::<Mesh>();
@@ -136,31 +136,6 @@ impl GfxContext {
         self.inv_projection.value = proj;
     }
 
-    fn create_multisampled_framebuffer(
-        sc_desc: &wgpu::SwapChainDescriptor,
-        device: &wgpu::Device,
-        sample_count: u32,
-    ) -> wgpu::TextureView {
-        let multisampled_texture_extent = wgpu::Extent3d {
-            width: sc_desc.width,
-            height: sc_desc.height,
-            depth: 1,
-        };
-        let multisampled_frame_descriptor = &wgpu::TextureDescriptor {
-            size: multisampled_texture_extent,
-            mip_level_count: 1,
-            sample_count,
-            dimension: wgpu::TextureDimension::D2,
-            format: sc_desc.format,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-            label: Some("multisampled frame descriptor"),
-        };
-
-        device
-            .create_texture(multisampled_frame_descriptor)
-            .create_view(&wgpu::TextureViewDescriptor::default())
-    }
-
     pub fn start_frame(&mut self) -> CommandEncoder {
         let encoder = self
             .device
@@ -178,7 +153,6 @@ impl GfxContext {
     pub fn render_objs(
         &mut self,
         encoder: &mut CommandEncoder,
-        frame: &SwapChainFrame,
         mut prepare: impl for<'a> FnMut(&'a mut FrameContext),
     ) {
         let mut objs = vec![];
@@ -192,8 +166,8 @@ impl GfxContext {
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &self.multi_frame,
-                resolve_target: Some(&frame.output.view),
+                attachment: &self.color_texture.multisampled_buffer,
+                resolve_target: Some(&self.color_texture.target.view),
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: true,
@@ -251,12 +225,12 @@ impl GfxContext {
         surface: &Surface,
         desc: &SwapChainDescriptor,
         samples: u32,
-    ) -> (SwapChain, Texture, Texture, TextureView) {
+    ) -> (SwapChain, Texture, Texture, MultisampledTexture) {
         (
             device.create_swap_chain(surface, desc),
             Texture::create_depth_texture(device, desc, samples),
             Texture::create_light_texture(device, desc),
-            Self::create_multisampled_framebuffer(desc, device, samples),
+            Texture::create_color_texture(device, desc, samples),
         )
     }
 
@@ -265,13 +239,13 @@ impl GfxContext {
         self.sc_desc.width = self.size.0;
         self.sc_desc.height = self.size.1;
 
-        let (swapchain, depth, light, multi) =
+        let (swapchain, depth, light, color) =
             Self::create_textures(&self.device, &self.surface, &self.sc_desc, self.samples);
 
         self.swapchain = swapchain;
         self.depth_texture = depth;
         self.light_texture = light;
-        self.multi_frame = multi;
+        self.color_texture = color;
     }
 
     pub fn basic_pipeline(
@@ -296,7 +270,7 @@ impl GfxContext {
         let fs_module = self.device.create_shader_module(frag_shader.0);
 
         let color_states = [wgpu::ColorStateDescriptor {
-            format: self.sc_desc.format,
+            format: self.color_texture.target.format,
             color_blend: wgpu::BlendDescriptor {
                 src_factor: wgpu::BlendFactor::SrcAlpha,
                 dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,

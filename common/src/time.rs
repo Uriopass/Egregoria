@@ -131,6 +131,9 @@ impl DayTime {
 }
 
 impl GameTime {
+    pub const HOUR: i32 = SECONDS_PER_HOUR;
+    pub const DAY: i32 = SECONDS_PER_DAY;
+
     pub fn new(delta: f32, timestamp: f64) -> GameTime {
         if timestamp > 1e9 {
             log::warn!("Time went too fast, approaching limit.");
@@ -149,5 +152,9 @@ impl GameTime {
     pub fn tick(&self, freq: u32) -> bool {
         let time_near = (self.seconds / freq * freq + freq) as f64;
         self.timestamp > time_near && (self.timestamp - self.delta as f64) <= time_near
+    }
+
+    pub fn daysec(&self) -> f64 {
+        self.timestamp % Self::DAY as f64
     }
 }

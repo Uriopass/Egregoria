@@ -284,7 +284,7 @@ impl Vec3 {
     }
 
     #[inline]
-    pub const fn broadcast(v: f32) -> Self {
+    pub const fn splat(v: f32) -> Self {
         Self { x: v, y: v, z: v }
     }
 
@@ -308,6 +308,10 @@ impl Vec3 {
         y: 0.0,
         z: 1.0,
     };
+
+    pub fn lerp(self, other: Vec3, c: f32) -> Self {
+        self * (1.0 - c) + other * c
+    }
 
     #[inline]
     pub fn cross(self, other: Vec3) -> Self {

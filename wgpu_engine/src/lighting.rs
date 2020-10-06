@@ -5,8 +5,8 @@ use crate::{
 use geom::Vec3;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    BlendFactor, CommandEncoder, RenderPass, StencilStateDescriptor, SwapChainFrame,
-    TextureComponentType, VertexBufferDescriptor,
+    BlendFactor, CommandEncoder, RenderPass, SwapChainFrame, TextureComponentType,
+    VertexBufferDescriptor,
 };
 
 struct LightBlit;
@@ -85,6 +85,7 @@ impl Drawable for LightMultiply {
                     label: Some("basic pipeline"),
                     bind_group_layouts: &[
                         &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
+                        &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
                         &Uniform::<Vec3>::bindgroup_layout(
                             &gfx.device,
                             wgpu::ShaderStage::FRAGMENT,
@@ -102,11 +103,7 @@ impl Drawable for LightMultiply {
 
         let color_states = [wgpu::ColorStateDescriptor {
             format: gfx.sc_desc.format,
-            color_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::DstColor,
-                dst_factor: wgpu::BlendFactor::Zero,
-                operation: wgpu::BlendOperation::Add,
-            },
+            color_blend: wgpu::BlendDescriptor::REPLACE,
             alpha_blend: wgpu::BlendDescriptor::REPLACE,
             write_mask: wgpu::ColorWrite::ALL,
         }];
@@ -125,22 +122,12 @@ impl Drawable for LightMultiply {
             rasterization_state: None,
             primitive_topology: wgpu::PrimitiveTopology::TriangleList,
             color_states: &color_states,
-            depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
-                format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::GreaterEqual,
-                stencil: StencilStateDescriptor {
-                    front: wgpu::StencilStateFaceDescriptor::IGNORE,
-                    back: wgpu::StencilStateFaceDescriptor::IGNORE,
-                    read_mask: 0,
-                    write_mask: 0,
-                },
-            }),
+            depth_stencil_state: None,
             vertex_state: wgpu::VertexStateDescriptor {
                 index_format: wgpu::IndexFormat::Uint32,
                 vertex_buffers: &[UvVertex::desc()],
             },
-            sample_count: gfx.samples,
+            sample_count: 1,
             sample_mask: !0,
             alpha_to_coverage_enabled: false,
         };
@@ -272,53 +259,44 @@ pub fn render_lights(
         usage: wgpu::BufferUsage::VERTEX,
     });
 
-    let tex_bind_group = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
-        layout: &gfx
-            .get_pipeline::<LightMultiply>()
+    let light_tex_bind_group = gfx.light_texture.bindgroup(
+        &gfx.device,
+        &gfx.get_pipeline::<LightMultiply>()
             .0
             .get_bind_group_layout(0),
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(&gfx.light_texture.view),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: wgpu::BindingResource::Sampler(&gfx.light_texture.sampler),
-            },
-        ],
-        label: Some("Light texture bindgroup"),
-    });
+    );
 
-    let ambiant_uni = Uniform::new(ambiant, &gfx.device, wgpu::ShaderStage::FRAGMENT);
+    let color_tex_bind_group = gfx.color_texture.target.bindgroup(
+        &gfx.device,
+        &gfx.get_pipeline::<LightMultiply>()
+            .0
+            .get_bind_group_layout(1),
+    );
+
+    let ambiant_uni = Uniform::new(
+        [ambiant.x, ambiant.y, ambiant.z, gfx.time_uni.value],
+        &gfx.device,
+        wgpu::ShaderStage::FRAGMENT,
+    );
 
     ambiant_uni.upload_to_gpu(&gfx.queue);
 
     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-            attachment: &gfx.multi_frame,
-            resolve_target: Some(&frame.output.view),
+            attachment: &frame.output.view,
+            resolve_target: None,
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Load,
                 store: true,
             },
         }],
-        depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-            attachment: &gfx.depth_texture.view,
-            depth_ops: Some(wgpu::Operations {
-                load: wgpu::LoadOp::Load,
-                store: false,
-            }),
-            stencil_ops: Some(wgpu::Operations {
-                load: wgpu::LoadOp::Load,
-                store: false,
-            }),
-        }),
+        depth_stencil_attachment: None,
     });
 
     rpass.set_pipeline(&gfx.get_pipeline::<LightMultiply>().0);
-    rpass.set_bind_group(0, &tex_bind_group, &[]);
-    rpass.set_bind_group(1, &ambiant_uni.bindgroup, &[]);
+    rpass.set_bind_group(0, &light_tex_bind_group, &[]);
+    rpass.set_bind_group(1, &color_tex_bind_group, &[]);
+    rpass.set_bind_group(2, &ambiant_uni.bindgroup, &[]);
     rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
     rpass.set_index_buffer(index_buffer.slice(..));
     rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
