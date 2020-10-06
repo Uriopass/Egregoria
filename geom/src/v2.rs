@@ -19,7 +19,7 @@ impl Vec2 {
     }
 
     #[inline]
-    pub const fn broadcast(v: f32) -> Self {
+    pub const fn splat(v: f32) -> Self {
         Self { x: v, y: v }
     }
 

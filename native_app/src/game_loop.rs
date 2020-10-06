@@ -6,8 +6,8 @@ use common::GameTime;
 use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeWarp};
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
 use egregoria::{load_from_disk, Egregoria};
-use geom::Camera;
-use geom::Vec2;
+use geom::{vec3, Vec2};
+use geom::{Camera, Vec3};
 use gui::{FollowEntity, Gui};
 use map_model::Map;
 use souls::Souls;
@@ -150,7 +150,7 @@ impl State {
             .add_value(start.elapsed().as_secs_f32());
     }
 
-    pub fn lights(&self) -> Cow<[LightInstance]> {
+    pub fn lights(&self) -> (Cow<[LightInstance]>, Vec3) {
         let mut lights = vec![];
 
         let map = self.goria.read::<Map>();
@@ -178,7 +178,28 @@ impl State {
             });
         }
 
-        Cow::Owned(lights)
+        let time = self.goria.read::<GameTime>();
+        let daysec = time.daysec();
+
+        let dark = vec3(0.1, 0.1, 0.1);
+        let bright = Vec3::splat(1.0);
+
+        let col = match time.daytime.hour {
+            0..=5 => dark,
+            6..=6 => {
+                let c = daysec / GameTime::HOUR as f64 - 6.0;
+                dark.lerp(bright, c as f32)
+            }
+            7..=18 => bright,
+            19..=19 => {
+                let c = daysec / GameTime::HOUR as f64 - 19.0;
+                bright.lerp(dark, c as f32)
+            }
+            20..=24 => dark,
+            _ => dark,
+        };
+
+        (Cow::Owned(lights), col)
     }
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
@@ -187,7 +208,8 @@ impl State {
     }
 
     fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {
-        const MAX_TIMESTEP: f64 = 1.0 / 10.0;
+        //        const MAX_TIMESTEP: f64 = 1.0 / 10.0;
+        const MAX_TIMESTEP: f64 = 10.0;
 
         let mut time = self.goria.write::<GameTime>();
         let warp = self.goria.read::<TimeWarp>().0;

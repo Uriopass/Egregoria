@@ -2,7 +2,6 @@ use crate::audio::AudioContext;
 use crate::game_loop;
 use crate::input::InputContext;
 use futures::executor;
-use geom::Vec3;
 use wgpu_engine::GfxContext;
 use winit::window::Window;
 use winit::{
@@ -94,14 +93,15 @@ impl Context {
                         let window = &self.window;
                         let mut enc = self.gfx.start_frame();
 
-                        self.gfx.render_objs(&mut enc, &sco, |fc| state.render(fc));
+                        self.gfx.render_objs(&mut enc, |fc| state.render(fc));
 
+                        let (lights, ambiant_col) = state.lights();
                         wgpu_engine::lighting::render_lights(
                             &self.gfx,
                             &mut enc,
                             &sco,
-                            &state.lights(),
-                            Vec3::new(0.7, 0.7, 1.0),
+                            &lights,
+                            ambiant_col,
                         );
 
                         self.gfx

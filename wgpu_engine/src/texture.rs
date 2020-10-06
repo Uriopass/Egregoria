@@ -7,7 +7,8 @@ use std::io::Read;
 use std::path::Path;
 use std::rc::Rc;
 use wgpu::{
-    TextureComponentType, TextureCopyView, TextureDataLayout, TextureFormat, TextureViewDescriptor,
+    BindGroup, BindGroupLayout, Device, Sampler, TextureComponentType, TextureCopyView,
+    TextureDataLayout, TextureFormat, TextureViewDescriptor,
 };
 
 #[derive(Clone)]
@@ -18,6 +19,12 @@ pub struct Texture {
     pub view: Rc<wgpu::TextureView>,
     pub sampler: Rc<wgpu::Sampler>,
     pub format: TextureFormat,
+}
+
+#[derive(Clone)]
+pub struct MultisampledTexture {
+    pub target: Texture,
+    pub multisampled_buffer: Rc<wgpu::TextureView>,
 }
 
 impl Texture {
@@ -34,6 +41,22 @@ impl Texture {
     pub fn from_bytes(ctx: &GfxContext, bytes: &[u8], label: Option<&'static str>) -> Option<Self> {
         let img = image::load_from_memory(bytes).ok()?;
         Self::from_image(ctx, &img, label)
+    }
+
+    fn default_sampler(device: &Device) -> Sampler {
+        device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            lod_min_clamp: -100.0,
+            lod_max_clamp: 100.0,
+            compare: None,
+            anisotropy_clamp: None,
+        })
     }
 
     pub fn from_image(
@@ -80,19 +103,7 @@ impl Texture {
         );
 
         let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = ctx.device.create_sampler(&wgpu::SamplerDescriptor {
-            label,
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
-            compare: None,
-            anisotropy_clamp: None,
-        });
+        let sampler = Self::default_sampler(&ctx.device);
 
         Some(Self {
             texture: Rc::new(texture),
@@ -126,19 +137,7 @@ impl Texture {
         let texture = device.create_texture(&desc);
 
         let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: None,
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
-            compare: None,
-            anisotropy_clamp: None,
-        });
+        let sampler = Self::default_sampler(&device);
 
         Self {
             width: sc_desc.width as f32,
@@ -154,7 +153,7 @@ impl Texture {
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
     ) -> Self {
-        let format = wgpu::TextureFormat::R16Float;
+        let format = wgpu::TextureFormat::R32Float;
         let desc = wgpu::TextureDescriptor {
             format,
             usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::SAMPLED,
@@ -171,19 +170,7 @@ impl Texture {
         let texture = device.create_texture(&desc);
 
         let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: None,
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
-            compare: None,
-            anisotropy_clamp: None,
-        });
+        let sampler = Self::default_sampler(&device);
 
         Self {
             width: sc_desc.width as f32,
@@ -195,10 +182,65 @@ impl Texture {
         }
     }
 
+    pub fn create_color_texture(
+        device: &wgpu::Device,
+        sc_desc: &wgpu::SwapChainDescriptor,
+        samples: u32,
+    ) -> MultisampledTexture {
+        let size = wgpu::Extent3d {
+            width: sc_desc.width,
+            height: sc_desc.height,
+            depth: 1,
+        };
+        let format = wgpu::TextureFormat::Rgba32Float;
+
+        let desc = &wgpu::TextureDescriptor {
+            format,
+            size,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::SAMPLED,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            label: Some("color texture"),
+        };
+
+        let texture = device.create_texture(&desc);
+        let view = texture.create_view(&TextureViewDescriptor::default());
+        let sampler = Self::default_sampler(&device);
+
+        let target = Self {
+            width: size.width as f32,
+            height: size.height as f32,
+            texture: Rc::new(texture),
+            view: Rc::new(view),
+            sampler: Rc::new(sampler),
+            format,
+        };
+
+        let multisample_desc = &wgpu::TextureDescriptor {
+            format,
+            size,
+            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            mip_level_count: 1,
+            sample_count: samples,
+            dimension: wgpu::TextureDimension::D2,
+            label: Some("color texture"),
+        };
+
+        MultisampledTexture {
+            target,
+            multisampled_buffer: Rc::new(
+                device
+                    .create_texture(multisample_desc)
+                    .create_view(&TextureViewDescriptor::default()),
+            ),
+        }
+    }
+
     pub fn bindgroup_layout(
         device: &wgpu::Device,
         component_type: TextureComponentType,
-    ) -> wgpu::BindGroupLayout {
+    ) -> BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -219,6 +261,23 @@ impl Texture {
                 },
             ],
             label: Some("Texture bindgroup layout"),
+        })
+    }
+
+    pub fn bindgroup(&self, device: &Device, layout: &BindGroupLayout) -> BindGroup {
+        device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&self.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+            ],
+            label: None,
         })
     }
 }
