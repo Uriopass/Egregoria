@@ -4,12 +4,14 @@ layout(location=0) in vec2 in_uv;
 
 layout(location=0) out vec4 out_color;
 
-const float LIGHT_HEIGHT = 0.1;
-const float LIGHT_DECAY = LIGHT_HEIGHT / sqrt(LIGHT_HEIGHT * LIGHT_HEIGHT + 1.0);
+const float H = 0.3;
+const float H2 = 0.09;
+const float H4 = 0.0081;
+const float DECAY = H4 / ((H2 + 1.0) * (H2 + 1.0));
 
 void main() {
-    vec2 d = in_uv;
-    float strength = LIGHT_HEIGHT / sqrt(LIGHT_HEIGHT * LIGHT_HEIGHT + dot(d, d)) - LIGHT_DECAY;
+    float v = H2 + dot(in_uv, in_uv);
+    float strength = H4 / (v * v * (1.0 - DECAY)) - DECAY;
 
     out_color.r = clamp(strength, 0.0, 1.0);
 }
