@@ -313,6 +313,10 @@ impl Vec3 {
         self * (1.0 - c) + other * c
     }
 
+    pub fn smoothstep(self, other: Vec3, t: f32) -> Self {
+        self.lerp(other, t * t * (3.0 - t * 2.0))
+    }
+
     #[inline]
     pub fn cross(self, other: Vec3) -> Self {
         Self {

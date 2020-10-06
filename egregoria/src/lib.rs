@@ -94,7 +94,7 @@ impl Egregoria {
         // Basic assets init
         goria.insert(GameTime::new(
             0.0,
-            SECONDS_PER_DAY as f64 + 6.0 * SECONDS_PER_HOUR as f64,
+            SECONDS_PER_DAY as f64 + 5.0 * SECONDS_PER_HOUR as f64,
         ));
         goria.insert(CollisionWorld::new(100));
         goria.insert(KeyboardInfo::default());
