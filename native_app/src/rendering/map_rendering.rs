@@ -154,7 +154,7 @@ impl RoadRenderer {
         tess.meshbuilder.build(gfx)
     }
 
-    fn render_lane_signals(n: &Lane, sr: &mut Tesselator, time: u64) {
+    fn render_lane_signals(n: &Lane, sr: &mut Tesselator, time: u32) {
         if n.control.is_always() {
             return;
         }
@@ -199,7 +199,7 @@ impl RoadRenderer {
         sr.draw_circle(r_center + offset * dir_perp, Z_SIGNAL, size * 0.5);
     }
 
-    fn signals_render(map: &Map, time: u64, sr: &mut Tesselator) {
+    fn signals_render(map: &Map, time: u32, sr: &mut Tesselator) {
         match sr.cull_rect {
             Some(rect) => {
                 if rect.w.max(rect.h) > 1500.0 {
@@ -296,7 +296,7 @@ impl RoadRenderer {
     pub fn render(
         &mut self,
         map: &mut Map,
-        time: u64,
+        time: u32,
         tess: &mut Tesselator,
         ctx: &mut FrameContext,
     ) {

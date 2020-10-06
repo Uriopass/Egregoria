@@ -1,7 +1,8 @@
 #![allow(clippy::type_complexity)]
 
 use common::inspect::InspectedEntity;
-use egregoria::engine_interaction::{MouseInfo, TimeInfo};
+use common::GameTime;
+use egregoria::engine_interaction::MouseInfo;
 use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::CollisionWorld;
 use egregoria::rendering::{Color, LinearColor};
@@ -117,10 +118,10 @@ fn debug_coworld(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
 }
 
 pub fn debug_obb(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
-    let time = world.read::<TimeInfo>();
+    let time = world.read::<GameTime>();
     let mouse = world.read::<MouseInfo>().unprojected;
 
-    let time = time.time * 0.2;
+    let time = time.timestamp * 0.2;
     let c = time.cos() as f32;
     let s = time.sin() as f32;
 
@@ -185,8 +186,8 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<
 }
 
 pub fn debug_rays(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
-    let time = world.read::<TimeInfo>();
-    let time = time.time * 0.2;
+    let time = world.read::<GameTime>();
+    let time = time.timestamp * 0.2;
     let c = time.cos() as f32;
     let s = time.sin() as f32;
     let mouse = world.read::<MouseInfo>().unprojected;

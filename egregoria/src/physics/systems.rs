@@ -1,12 +1,12 @@
-use crate::engine_interaction::TimeInfo;
 use crate::physics::{Collider, Kinematics};
 use crate::{CollisionWorld, Deleted};
+use common::GameTime;
 use geom::Transform;
 use legion::system;
 
 #[system(for_each)]
 pub fn kinematics_apply(
-    #[resource] time: &TimeInfo,
+    #[resource] time: &GameTime,
     transform: &mut Transform,
     kin: &mut Kinematics,
 ) {

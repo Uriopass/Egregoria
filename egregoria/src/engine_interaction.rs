@@ -24,6 +24,14 @@ impl Default for Selectable {
     }
 }
 
+pub struct TimeWarp(pub f32);
+
+impl Default for TimeWarp {
+    fn default() -> Self {
+        Self(1.0)
+    }
+}
+
 #[derive(Default)]
 pub struct History {
     pub values: [f32; 10],
@@ -46,33 +54,6 @@ pub struct RenderStats {
     pub render: History,
     pub souls_desires: History,
     pub souls_apply: History,
-}
-
-#[derive(Clone, Copy)]
-pub struct TimeInfo {
-    pub delta: f32,
-    pub time: f64,
-    pub time_seconds: u64,
-    pub time_speed: f32,
-}
-
-impl TimeInfo {
-    /// Returns true every freq seconds
-    pub fn tick(&self, freq: u64) -> bool {
-        let time_near = self.time_seconds / freq * freq + freq;
-        self.time < time_near as f64 && self.time + self.delta as f64 > time_near as f64
-    }
-}
-
-impl Default for TimeInfo {
-    fn default() -> Self {
-        Self {
-            delta: 0.0,
-            time: 0.0,
-            time_seconds: 0,
-            time_speed: 1.0,
-        }
-    }
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy)]

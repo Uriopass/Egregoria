@@ -1,6 +1,8 @@
 use crate::{
-    compile_shader, Drawable, GfxContext, IndexType, PreparedPipeline, Texture, UvVertex, VBDesc,
+    compile_shader, Drawable, GfxContext, IndexType, PreparedPipeline, Texture, Uniform, UvVertex,
+    VBDesc,
 };
+use geom::Vec3;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BlendFactor, CommandEncoder, RenderPass, StencilStateDescriptor, SwapChainFrame,
@@ -83,7 +85,10 @@ impl Drawable for LightMultiply {
                     label: Some("basic pipeline"),
                     bind_group_layouts: &[
                         &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
-                        &gfx.projection.layout,
+                        &Uniform::<Vec3>::bindgroup_layout(
+                            &gfx.device,
+                            wgpu::ShaderStage::FRAGMENT,
+                        ),
                     ],
                     push_constant_ranges: &[],
                 });
@@ -216,6 +221,7 @@ pub fn render_lights(
     encoder: &mut CommandEncoder,
     frame: &SwapChainFrame,
     lights: &[LightInstance],
+    ambiant: Vec3,
 ) {
     let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
         label: None,
@@ -266,7 +272,7 @@ pub fn render_lights(
         usage: wgpu::BufferUsage::VERTEX,
     });
 
-    let bind_group = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    let tex_bind_group = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
         layout: &gfx
             .get_pipeline::<LightMultiply>()
             .0
@@ -283,6 +289,10 @@ pub fn render_lights(
         ],
         label: Some("Light texture bindgroup"),
     });
+
+    let ambiant_uni = Uniform::new(ambiant, &gfx.device, wgpu::ShaderStage::FRAGMENT);
+
+    ambiant_uni.upload_to_gpu(&gfx.queue);
 
     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -307,8 +317,8 @@ pub fn render_lights(
     });
 
     rpass.set_pipeline(&gfx.get_pipeline::<LightMultiply>().0);
-    rpass.set_bind_group(0, &bind_group, &[]);
-    rpass.set_bind_group(1, &gfx.projection.bindgroup, &[]);
+    rpass.set_bind_group(0, &tex_bind_group, &[]);
+    rpass.set_bind_group(1, &ambiant_uni.bindgroup, &[]);
     rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
     rpass.set_index_buffer(index_buffer.slice(..));
     rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);

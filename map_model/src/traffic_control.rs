@@ -55,11 +55,11 @@ impl TrafficControl {
         matches!(self, TrafficControl::Light(_))
     }
 
-    pub fn get_behavior(&self, time_seconds: u64) -> TrafficBehavior {
+    pub fn get_behavior(&self, seconds: u32) -> TrafficBehavior {
         match self {
             TrafficControl::Always => TrafficBehavior::GREEN,
             TrafficControl::Light(schedule) => {
-                let remainder = (time_seconds as usize + schedule.offset) % schedule.period;
+                let remainder = (seconds as usize + schedule.offset) % schedule.period;
                 if remainder < schedule.green {
                     TrafficBehavior::GREEN
                 } else if remainder < schedule.green + schedule.orange {

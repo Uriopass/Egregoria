@@ -13,8 +13,8 @@ impl<T: Copy> Uniform<T>
 where
     [T]: ToU8Slice,
 {
-    pub fn new(value: T, device: &wgpu::Device) -> Self {
-        let layout = Self::bindgroup_layout(&device, ShaderStage::VERTEX);
+    pub fn new(value: T, device: &wgpu::Device, visibility: ShaderStage) -> Self {
+        let layout = Self::bindgroup_layout(&device, visibility);
 
         let r = [value];
         let buffer = device.create_buffer_init(&BufferInitDescriptor {

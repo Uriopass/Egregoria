@@ -4,8 +4,9 @@ use crate::souls::supermarket::SupermarketSoul;
 use crate::supermarket::Supermarket;
 use crate::DebugSoul;
 use common::inspect::InspectedEntity;
+use common::GameTime;
 use egregoria::api::Action;
-use egregoria::engine_interaction::{History, RenderStats, TimeInfo};
+use egregoria::engine_interaction::{History, RenderStats};
 use egregoria::map_dynamic::BuildingInfos;
 use egregoria::pedestrians::{Pedestrian, PedestrianID};
 use egregoria::{Egregoria, SoulID};
@@ -124,7 +125,7 @@ impl Souls {
         goria.write_or_default::<DebugSoul>();
 
         if let Some(x) = goria.read::<InspectedEntity>().e {
-            if goria.comp::<Pedestrian>(x).is_some() && goria.read::<TimeInfo>().tick(1) {
+            if goria.comp::<Pedestrian>(x).is_some() && goria.read::<GameTime>().tick(1) {
                 let soul_id = self
                     .body_map
                     .get(&PedestrianID(x))

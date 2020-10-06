@@ -2,6 +2,7 @@ use crate::audio::AudioContext;
 use crate::game_loop;
 use crate::input::InputContext;
 use futures::executor;
+use geom::Vec3;
 use wgpu_engine::GfxContext;
 use winit::window::Window;
 use winit::{
@@ -100,6 +101,7 @@ impl Context {
                             &mut enc,
                             &sco,
                             &state.lights(),
+                            Vec3::new(0.7, 0.7, 1.0),
                         );
 
                         self.gfx

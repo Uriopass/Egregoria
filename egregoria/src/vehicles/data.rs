@@ -1,10 +1,11 @@
-use crate::engine_interaction::{Selectable, TimeInfo};
+use crate::engine_interaction::Selectable;
 use crate::map_dynamic::{Itinerary, ParkingManagement};
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::rendering::assets::{AssetID, AssetRender};
 use crate::rendering::Color;
 use crate::utils::rand_world;
 use crate::Egregoria;
+use common::GameTime;
 use geom::{Spline, Transform, Vec2};
 use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
@@ -108,7 +109,7 @@ pub fn spawn_parked_vehicle(goria: &mut Egregoria, near: Vec2) -> Option<Vehicle
 
     let map = goria.read::<Map>();
 
-    let time = goria.read::<TimeInfo>().time;
+    let time = goria.read::<GameTime>().timestamp;
     let it = Itinerary::wait_until(time + r * 5.0);
 
     let pm = goria.read::<ParkingManagement>();

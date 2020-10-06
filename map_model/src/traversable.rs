@@ -49,7 +49,7 @@ impl Traversable {
         }
     }
 
-    pub fn can_pass(&self, time: u64, lanes: &Lanes) -> bool {
+    pub fn can_pass(&self, time: u32, lanes: &Lanes) -> bool {
         match self.kind {
             TraverseKind::Lane(id) => {
                 let l = unwrap_or!(lanes.get(id), return true);

@@ -82,11 +82,19 @@ impl GfxContext {
         let (swapchain, depth_texture, light_texture, multi_frame) =
             Self::create_textures(&device, &surface, &sc_desc, samples);
 
-        let projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
+        let projection = Uniform::new(
+            mint::ColumnMatrix4::from([0.0; 16]),
+            &device,
+            wgpu::ShaderStage::VERTEX,
+        );
 
-        let inv_projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
+        let inv_projection = Uniform::new(
+            mint::ColumnMatrix4::from([0.0; 16]),
+            &device,
+            wgpu::ShaderStage::VERTEX,
+        );
 
-        let time_uni = Uniform::new(0.0, &device);
+        let time_uni = Uniform::new(0.0, &device, wgpu::ShaderStage::VERTEX);
 
         let mut me = Self {
             size: (win_width, win_height),

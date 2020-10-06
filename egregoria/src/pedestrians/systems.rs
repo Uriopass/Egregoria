@@ -1,11 +1,11 @@
 use crate::api::Location;
-use crate::engine_interaction::TimeInfo;
 use crate::map_dynamic::Itinerary;
 use crate::pedestrians::Pedestrian;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::Restrict;
 use crate::vehicles::VehicleID;
+use common::GameTime;
 use geom::{angle_lerp, Transform, Vec2};
 use legion::world::SubWorld;
 use legion::{system, EntityStore};
@@ -33,7 +33,7 @@ pub fn pedestrian_synchro(trans: &mut Transform, loc: &Location, sw: &SubWorld) 
 pub fn pedestrian_decision(
     #[resource] cow: &CollisionWorld,
     #[resource] map: &Map,
-    #[resource] time: &TimeInfo,
+    #[resource] time: &GameTime,
     coll: &Collider,
     it: &mut Itinerary,
     trans: &mut Transform,
@@ -60,7 +60,7 @@ pub fn pedestrian_decision(
 pub fn walk_anim(
     pedestrian: &mut Pedestrian,
     mr: &mut MeshRender,
-    time: &TimeInfo,
+    time: &GameTime,
     kin: &Kinematics,
 ) {
     let speed = kin.velocity.magnitude();
@@ -79,7 +79,7 @@ const PEDESTRIAN_ACC: f32 = 1.0;
 pub fn physics(
     kin: &mut Kinematics,
     trans: &mut Transform,
-    time: &TimeInfo,
+    time: &GameTime,
     desired_velocity: Vec2,
     desired_dir: Vec2,
 ) {

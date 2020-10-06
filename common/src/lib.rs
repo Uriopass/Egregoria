@@ -2,6 +2,9 @@ use std::collections::HashMap;
 
 pub mod inspect;
 pub mod saveload;
+pub mod time;
+
+pub use time::*;
 
 pub fn get_mut_pair<'a, K, V>(
     conns: &'a mut HashMap<K, V>,

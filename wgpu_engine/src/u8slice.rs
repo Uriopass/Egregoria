@@ -1,3 +1,5 @@
+use geom::Vec3;
+
 /// Trait is needed to use bytemuck's conversion on external types
 pub trait ToU8Slice {
     fn to_slice(&self) -> &[u8];
@@ -26,6 +28,20 @@ impl ToU8Slice for [mint::ColumnMatrix4<f32>] {
     fn to_slice<'a>(&'a self) -> &'a [u8] {
         let v: &'a [Matrix4NT] =
             unsafe { &*(self as *const [mint::ColumnMatrix4<f32>] as *const [Matrix4NT]) };
+        bytemuck::cast_slice(v)
+    }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy)]
+struct Vec3NT(Vec3);
+
+unsafe impl bytemuck::Pod for Vec3NT {}
+unsafe impl bytemuck::Zeroable for Vec3NT {}
+
+impl ToU8Slice for [Vec3] {
+    fn to_slice<'a>(&'a self) -> &'a [u8] {
+        let v: &'a [Vec3NT] = unsafe { &*(self as *const [Vec3] as *const [Vec3NT]) };
         bytemuck::cast_slice(v)
     }
 }

@@ -1,8 +1,8 @@
 use crate::windows::ImguiWindows;
 use crate::{RoadBuildResource, Tool};
-use egregoria::engine_interaction::TimeInfo;
-
 use common::inspect::InspectedEntity;
+use common::GameTime;
+use egregoria::engine_interaction::TimeWarp;
 use egregoria::Egregoria;
 use imgui::{im_str, StyleVar};
 use imgui::{Ui, Window};
@@ -193,7 +193,8 @@ impl Gui {
     }
 
     pub fn time_controls(&mut self, ui: &Ui, goria: &mut Egregoria) {
-        let mut time_info = goria.write::<TimeInfo>();
+        let mut warp = goria.write::<TimeWarp>();
+        let time = goria.read::<GameTime>().daytime;
         let [w, h] = ui.io().display_size;
         Window::new(im_str!("Time controls"))
             .size([230.0, 40.0], imgui::Condition::Always)
@@ -202,12 +203,21 @@ impl Gui {
             .collapsible(false)
             .resizable(false)
             .build(&ui, || {
-                imgui::DragFloat::new(&ui, im_str!("Time warp"), &mut time_info.time_speed)
+                ui.text(im_str!(
+                    "Day {} {:02}:{:02}",
+                    time.day,
+                    time.hour,
+                    time.second
+                ));
+                ui.same_line(0.0);
+                let tok = ui.push_item_width(60.0);
+                imgui::DragFloat::new(&ui, im_str!("Time warp"), &mut warp.0)
                     .min(0.0)
                     .max(1000.0)
                     .speed(0.1)
                     .display_format(im_str!("%.1f"))
                     .build();
+                tok.pop(ui);
             });
     }
 
