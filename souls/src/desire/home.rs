@@ -16,7 +16,7 @@ impl Home {
             house,
             home_inter: RecTimeInterval::new(
                 (19, (offset * SECONDS_PER_HOUR as f32) as i32),
-                (7, 00),
+                (6, (offset * SECONDS_PER_HOUR as f32) as i32),
             ),
         }
     }
@@ -29,7 +29,7 @@ impl Desire<Human> for Home {
 
     fn score(&self, goria: &Egregoria, _soul: &Human) -> f32 {
         let time = goria.read::<GameTime>();
-        0.5 - self.home_inter.dist_until(time.daytime) as f32 * 0.01
+        1.0 - self.home_inter.dist_until(time.daytime) as f32 * 0.01
     }
 
     fn apply(&mut self, goria: &Egregoria, soul: &mut Human) -> Action {

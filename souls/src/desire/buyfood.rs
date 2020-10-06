@@ -29,7 +29,7 @@ impl Desire<Human> for BuyFood {
 
     fn score(&self, goria: &Egregoria, soul: &Human) -> f32 {
         if goria.read::<Market>().agents[&soul.id].goods.food < self.min_level {
-            1.0
+            0.8
         } else {
             -100.0
         }

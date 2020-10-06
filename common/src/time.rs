@@ -80,13 +80,13 @@ impl RecTimeInterval {
         let mut start_dt = DayTime {
             day: t.day,
             hour: self.start_hour,
-            second: self.end_hour,
+            second: self.start_second,
         };
 
         let end_dt = DayTime {
             day: t.day,
-            hour: self.start_hour,
-            second: self.end_hour,
+            hour: self.end_hour,
+            second: self.end_second,
         };
 
         if !self.overlap {
@@ -150,7 +150,7 @@ impl GameTime {
 
     /// Returns true every freq seconds
     pub fn tick(&self, freq: u32) -> bool {
-        let time_near = (self.seconds / freq * freq + freq) as f64;
+        let time_near = (self.seconds / freq * freq) as f64;
         self.timestamp > time_near && (self.timestamp - self.delta as f64) <= time_near
     }
 

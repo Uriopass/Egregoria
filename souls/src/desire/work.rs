@@ -10,7 +10,7 @@ impl Work {
         Work {
             workplace,
             work_inter: RecTimeInterval::new(
-                (8, 00),
+                (8, (offset * SECONDS_PER_HOUR as f32) as i32),
                 (18, (offset * SECONDS_PER_HOUR as f32) as i32),
             ),
         }
