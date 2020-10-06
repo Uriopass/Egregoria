@@ -153,9 +153,19 @@ impl State {
     pub fn lights(&self) -> (Cow<[LightInstance]>, Vec3) {
         let mut lights = vec![];
 
+        let time = self.goria.read::<GameTime>();
+        let daysec = time.daysec();
+        let one_h = GameTime::HOUR as f64;
+
         let map = self.goria.read::<Map>();
         for x in map.roads().values() {
             let w = x.width * 0.5 - 5.0;
+            let r_open = 0.5 + 0.1 * common::rand::rand2(x.src_point.x, x.src_point.y) as f64;
+
+            if daysec > 8.0 * one_h + r_open * one_h && daysec < 18.5 * one_h + r_open * one_h {
+                continue;
+            }
+
             for (point, dir) in x
                 .generated_points()
                 .equipoints_dir(inline_tweak::tweak!(45.0))
@@ -172,30 +182,33 @@ impl State {
         }
 
         for i in map.intersections().values() {
+            let r_open = 0.5 + 0.1 * common::rand::rand2(i.pos.x, i.pos.y) as f64;
+
+            if daysec > 8.0 * one_h + r_open * one_h && daysec < 18.5 * one_h + r_open * one_h {
+                continue;
+            }
+
             lights.push(LightInstance {
                 pos: (i.pos).into(),
                 scale: 60.0,
             });
         }
 
-        let time = self.goria.read::<GameTime>();
-        let daysec = time.daysec();
-
         let dark = vec3(0.1, 0.1, 0.1);
         let bright = Vec3::splat(1.0);
 
         let col = match time.daytime.hour {
             0..=5 => dark,
-            6..=6 => {
-                let c = daysec / GameTime::HOUR as f64 - 6.0;
+            6..=9 => {
+                let c = (daysec / GameTime::HOUR as f64 - 6.0) / 4.0;
                 dark.lerp(bright, c as f32)
             }
-            7..=18 => bright,
-            19..=19 => {
-                let c = daysec / GameTime::HOUR as f64 - 19.0;
+            10..=15 => bright,
+            16..=20 => {
+                let c = (daysec / GameTime::HOUR as f64 - 16.0) / 5.0;
                 bright.lerp(dark, c as f32)
             }
-            20..=24 => dark,
+            21..=24 => dark,
             _ => dark,
         };
 
@@ -209,7 +222,7 @@ impl State {
 
     fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {
         //        const MAX_TIMESTEP: f64 = 1.0 / 10.0;
-        const MAX_TIMESTEP: f64 = 10.0;
+        const MAX_TIMESTEP: f64 = 1.0;
 
         let mut time = self.goria.write::<GameTime>();
         let warp = self.goria.read::<TimeWarp>().0;

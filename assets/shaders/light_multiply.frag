@@ -50,6 +50,6 @@ void main() {
 
     float randv = random(floatBitsToUint(vec3(in_uv, time))) / 256.0;
 
-    vec3 yellow =  light * (vec3(0.9, 0.9, 0.7) + randv);
-    out_color   =  (color + randv) * vec4(ambiant + yellow, 1.0);
+    vec3 yellow =  (light + randv) * vec3(0.9, 0.9, 0.7);
+    out_color   =  (color + randv) * vec4(clamp(ambiant + yellow, 0.0, 1.0), 1.0);
 }

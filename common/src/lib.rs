@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 pub mod inspect;
+pub mod rand;
 pub mod saveload;
 pub mod time;
 
