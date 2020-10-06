@@ -18,7 +18,7 @@ use crate::vehicles::systems::{
     vehicle_cleanup_system, vehicle_decision_system, vehicle_state_update_system,
 };
 use crate::vehicles::Vehicle;
-use common::GameTime;
+use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 use legion::storage::Component;
 use legion::systems::Resource;
 use legion::{any, Entity, IntoQuery, Registry, Resources, World};
@@ -92,7 +92,10 @@ impl Egregoria {
         info!("Seed is {}", RNG_SEED);
 
         // Basic assets init
-        goria.insert(GameTime::new(0.0, 0.0));
+        goria.insert(GameTime::new(
+            0.0,
+            SECONDS_PER_DAY as f64 + 6.0 * SECONDS_PER_HOUR as f64,
+        ));
         goria.insert(CollisionWorld::new(100));
         goria.insert(KeyboardInfo::default());
         goria.insert(MouseInfo::default());

@@ -141,7 +141,7 @@ impl GameTime {
             timestamp,
             delta,
             seconds,
-            daytime: DayTime::new((seconds % SECONDS_PER_DAY as u32) as i32),
+            daytime: DayTime::new(seconds as i32),
         }
     }
 
