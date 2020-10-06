@@ -2,7 +2,8 @@ use crate::context::Context;
 use crate::debug::add_debug_menu;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
-use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeInfo};
+use common::GameTime;
+use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeWarp};
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
 use egregoria::{load_from_disk, Egregoria};
 use geom::Camera;
@@ -102,13 +103,9 @@ impl State {
 
         let mut tess = self.camera.culled_tesselator();
 
-        let time: TimeInfo = *self.goria.read::<TimeInfo>();
-        self.road_renderer.render(
-            &mut self.goria.write::<Map>(),
-            time.time_seconds,
-            &mut tess,
-            ctx,
-        );
+        let time: GameTime = *self.goria.read::<GameTime>();
+        self.road_renderer
+            .render(&mut self.goria.write::<Map>(), time.seconds, &mut tess, ctx);
 
         self.instanced_renderer.render(&mut self.goria, ctx);
 
@@ -191,14 +188,15 @@ impl State {
 
     fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {
         const MAX_TIMESTEP: f64 = 1.0 / 10.0;
-        let mut time = self.goria.write::<TimeInfo>();
 
-        let delta = (delta * time.time_speed as f64).min(MAX_TIMESTEP);
-        time.delta = delta as f32;
-        time.time += time.delta as f64;
-        time.time_seconds = time.time as u64;
+        let mut time = self.goria.write::<GameTime>();
+        let warp = self.goria.read::<TimeWarp>().0;
 
-        gfx.set_time(time.time as f32);
+        let delta = (delta * warp as f64).min(MAX_TIMESTEP);
+
+        *time = GameTime::new(delta as f32, time.timestamp + delta);
+
+        gfx.set_time(time.timestamp as f32);
     }
 
     fn manage_entity_follow(&mut self) {

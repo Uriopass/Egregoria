@@ -3,7 +3,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::engine_interaction::{
-    KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable, TimeInfo,
+    KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable, TimeWarp,
 };
 use crate::map_dynamic::{itinerary_update_system, BuildingInfos, Itinerary, ParkingManagement};
 use crate::pedestrians::{pedestrian_decision_system, pedestrian_synchro_system, Pedestrian};
@@ -18,6 +18,7 @@ use crate::vehicles::systems::{
     vehicle_cleanup_system, vehicle_decision_system, vehicle_state_update_system,
 };
 use crate::vehicles::Vehicle;
+use common::GameTime;
 use legion::storage::Component;
 use legion::systems::Resource;
 use legion::{any, Entity, IntoQuery, Registry, Resources, World};
@@ -91,7 +92,7 @@ impl Egregoria {
         info!("Seed is {}", RNG_SEED);
 
         // Basic assets init
-        goria.insert(TimeInfo::default());
+        goria.insert(GameTime::new(0.0, 0.0));
         goria.insert(CollisionWorld::new(100));
         goria.insert(KeyboardInfo::default());
         goria.insert(MouseInfo::default());
@@ -106,6 +107,7 @@ impl Egregoria {
         goria.insert(Deleted::<Collider>::default());
         goria.insert(Deleted::<Vehicle>::default());
         goria.insert(Market::default());
+        goria.insert(TimeWarp::default());
 
         // Dispatcher init
         goria
@@ -151,11 +153,15 @@ impl Egregoria {
 
     pub fn write<T: Resource>(&self) -> impl DerefMut<Target = T> + '_ {
         debug_assert!(!self.read_only);
-        self.resources.get_mut().unwrap()
+        self.resources
+            .get_mut()
+            .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
     pub fn read<T: Resource>(&self) -> impl Deref<Target = T> + '_ {
-        self.resources.get().unwrap()
+        self.resources
+            .get()
+            .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
     pub fn insert<T: Resource + Send + Sync>(&mut self, res: T) {

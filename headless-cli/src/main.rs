@@ -1,5 +1,5 @@
 use argh::FromArgs;
-use egregoria::engine_interaction::TimeInfo;
+use common::TimeInfo;
 use egregoria::Egregoria;
 use log::LevelFilter;
 use std::path::Path;

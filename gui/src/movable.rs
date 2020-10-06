@@ -1,5 +1,6 @@
 use common::inspect::InspectedEntity;
-use egregoria::engine_interaction::{MouseButton, MouseInfo, Movable, TimeInfo};
+use common::GameTime;
+use egregoria::engine_interaction::{MouseButton, MouseInfo, Movable};
 use egregoria::physics::Kinematics;
 use geom::{Transform, Vec2};
 use legion::world::SubWorld;
@@ -17,7 +18,7 @@ pub struct MovableSystem {
 pub fn movable(
     #[state] sself: &mut MovableSystem,
     #[resource] mouse: &MouseInfo,
-    #[resource] time: &TimeInfo,
+    #[resource] time: &GameTime,
     #[resource] inspected: &InspectedEntity,
     sw: &mut SubWorld,
 ) {

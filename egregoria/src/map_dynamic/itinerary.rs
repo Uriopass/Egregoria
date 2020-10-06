@@ -1,4 +1,4 @@
-use crate::engine_interaction::TimeInfo;
+use common::GameTime;
 use geom::Transform;
 use geom::Vec2;
 use imgui::Ui;
@@ -126,7 +126,7 @@ impl Itinerary {
         v
     }
 
-    pub fn update(&mut self, position: Vec2, time: u64, map: &Map) {
+    pub fn update(&mut self, position: Vec2, time: u32, map: &Map) {
         if let Some(p) = self.get_point() {
             let term = self.is_terminal();
             if position.is_close(p, 2.0) && term {
@@ -258,10 +258,10 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
 
 #[system(par_for_each)]
 pub fn itinerary_update(
-    #[resource] time: &TimeInfo,
+    #[resource] time: &GameTime,
     #[resource] map: &Map,
     trans: &Transform,
     it: &mut Itinerary,
 ) {
-    it.update(trans.position(), time.time_seconds, map)
+    it.update(trans.position(), time.seconds, map)
 }

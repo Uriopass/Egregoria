@@ -1,10 +1,10 @@
-use crate::engine_interaction::TimeInfo;
 use crate::map_dynamic::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
 use crate::physics::Kinematics;
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::utils::Restrict;
 use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::{Deleted, ParCommandBuffer};
+use common::GameTime;
 use geom::Transform;
 use geom::{angle_lerp, Vec2};
 use geom::{both_dist_to_inter, Ray};
@@ -27,7 +27,7 @@ pub fn vehicle_cleanup(
 #[system(par_for_each)]
 pub fn vehicle_decision(
     #[resource] map: &Map,
-    #[resource] time: &TimeInfo,
+    #[resource] time: &GameTime,
     #[resource] cow: &CollisionWorld,
     it: &mut Itinerary,
     trans: &mut Transform,
@@ -64,7 +64,7 @@ pub fn vehicle_decision(
 #[system(for_each)]
 pub fn vehicle_state_update(
     #[resource] buf: &ParCommandBuffer,
-    #[resource] time: &TimeInfo,
+    #[resource] time: &GameTime,
     vehicle: &mut Vehicle,
     kin: &mut Kinematics,
     ent: &Entity,
@@ -86,7 +86,7 @@ fn physics(
     trans: &mut Transform,
     kin: &mut Kinematics,
     vehicle: &mut Vehicle,
-    time: &TimeInfo,
+    time: &GameTime,
     obj: &PhysicsObject,
     map: &Map,
     desired_speed: f32,
@@ -139,7 +139,7 @@ fn physics(
 pub fn calc_decision<'a>(
     vehicle: &mut Vehicle,
     map: &Map,
-    time: &TimeInfo,
+    time: &GameTime,
     trans: &Transform,
     self_obj: &PhysicsObject,
     it: &Itinerary,
@@ -184,7 +184,7 @@ pub fn calc_decision<'a>(
     {
         if let Some(l) = map.lanes().get(*l_id) {
             let light = l.control_point();
-            match l.control.get_behavior(time.time_seconds) {
+            match l.control.get_behavior(time.seconds) {
                 TrafficBehavior::RED | TrafficBehavior::ORANGE => {
                     if light.is_close(
                         position,
