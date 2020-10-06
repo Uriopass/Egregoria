@@ -24,11 +24,11 @@ impl Default for Selectable {
     }
 }
 
-pub struct TimeWarp(pub f32);
+pub struct TimeWarp(pub u32);
 
 impl Default for TimeWarp {
     fn default() -> Self {
-        Self(1.0)
+        Self(1)
     }
 }
 

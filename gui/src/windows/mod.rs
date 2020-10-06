@@ -5,6 +5,7 @@ mod tips;
 
 use egregoria::Egregoria;
 use imgui::Ui;
+use serde::{Deserialize, Serialize};
 
 pub trait ImguiWindow: Send + Sync {
     fn render(&mut self, ui: &Ui, goria: &mut Egregoria);
@@ -22,16 +23,22 @@ where
 struct ImguiWindowStruct {
     w: Box<dyn ImguiWindow>,
     name: &'static imgui::ImStr,
-    opened: bool,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(default)]
 pub struct ImguiWindows {
+    #[serde(skip)]
     windows: Vec<ImguiWindowStruct>,
+    opened: Vec<bool>,
 }
 
 impl Default for ImguiWindows {
     fn default() -> Self {
-        let mut s = Self { windows: vec![] };
+        let mut s = Self {
+            windows: vec![],
+            opened: vec![],
+        };
         s.insert(imgui::im_str!("Infos"), info::info, false);
         s.insert(imgui::im_str!("Map"), map::map, true);
         s.insert(
@@ -54,27 +61,26 @@ impl ImguiWindows {
         self.windows.push(ImguiWindowStruct {
             w: Box::new(w),
             name,
-            opened,
-        })
+        });
+        if self.opened.len() < self.windows.len() {
+            self.opened.push(opened)
+        }
     }
 
     pub fn menu(&mut self, ui: &Ui) {
         ui.menu(imgui::im_str!("Show"), true, || {
-            for v in &mut self.windows {
-                v.opened |= imgui::MenuItem::new(v.name).build(ui);
+            for (opened, w) in self.opened.iter_mut().zip(self.windows.iter()) {
+                *opened |= imgui::MenuItem::new(w.name).build(ui);
             }
         });
     }
 
     pub fn render(&mut self, ui: &Ui, goria: &mut Egregoria) {
-        for v in &mut self.windows {
-            if v.opened {
-                let w = &mut v.w;
-                imgui::Window::new(v.name)
-                    .opened(&mut v.opened)
-                    .build(&ui, || {
-                        w.render(ui, goria);
-                    });
+        for (ws, opened) in self.windows.iter_mut().zip(self.opened.iter_mut()) {
+            if *opened {
+                imgui::Window::new(ws.name).opened(opened).build(&ui, || {
+                    ws.w.render(ui, goria);
+                });
             }
         }
     }
