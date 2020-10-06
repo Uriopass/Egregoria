@@ -159,20 +159,26 @@ impl State {
         let map = self.goria.read::<Map>();
         for x in map.roads().values() {
             let w = x.width * 0.5 - 5.0;
-            for (point, dir) in x.generated_points().equipoints_dir(50.0) {
+            for (point, dir) in x
+                .generated_points()
+                .equipoints_dir(inline_tweak::tweak!(45.0))
+            {
                 lights.push(LightInstance {
                     pos: (point + dir.perpendicular() * w).into(),
-                    scale: 50.0,
-                });
-                lights.push(LightInstance {
-                    pos: (point).into(),
-                    scale: 50.0,
+                    scale: 60.0,
                 });
                 lights.push(LightInstance {
                     pos: (point - dir.perpendicular() * w).into(),
-                    scale: 50.0,
+                    scale: 60.0,
                 });
             }
+        }
+
+        for i in map.intersections().values() {
+            lights.push(LightInstance {
+                pos: (i.pos).into(),
+                scale: 60.0,
+            });
         }
 
         Cow::Owned(lights)
