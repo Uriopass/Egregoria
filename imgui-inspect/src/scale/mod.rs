@@ -26,9 +26,9 @@ impl InspectRenderDefault<f32> for InspectDragf {
         if data.len() != 1 {
             unimplemented!();
         }
-        ui.drag_float(&im_str!("{}", label), data[0])
+        imgui::Drag::new(&im_str!("{}", label))
             .speed(args.step.unwrap_or(0.1))
-            .build()
+            .build(ui, data[0])
     }
 }
 
@@ -51,10 +51,9 @@ impl InspectRenderDefault<f64> for InspectDragf {
             unimplemented!();
         }
         let mut cp = *data[0] as f32;
-        let changed = ui
-            .drag_float(&im_str!("{}", label), &mut cp)
+        let changed = imgui::Drag::new(&im_str!("{}", label))
             .speed(args.step.unwrap_or(0.1))
-            .build();
+            .build(ui, &mut cp);
         *data[0] = cp as f64;
         changed
     }

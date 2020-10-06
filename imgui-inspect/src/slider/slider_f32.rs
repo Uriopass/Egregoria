@@ -42,11 +42,9 @@ impl InspectRenderSlider<f32> for f32 {
         }
 
         let mut changed = false;
-        if imgui::Slider::new(
-            &imgui::im_str!("{}", label),
-            std::ops::RangeInclusive::new(min, max),
-        )
-        .build(ui, &mut value)
+        if imgui::Slider::new(&imgui::im_str!("{}", label))
+            .range(min..=max)
+            .build(ui, &mut value)
         {
             for d in data {
                 **d = value;
