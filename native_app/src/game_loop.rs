@@ -48,7 +48,7 @@ impl State {
         load_from_disk(&mut goria);
         gui::setup_gui(&mut goria);
 
-        let mut gui = Gui::default();
+        let mut gui: Gui = common::saveload::load("gui").unwrap_or_default();
         add_debug_menu(&mut gui);
         gui.windows
             .insert(imgui::im_str!("Debug souls"), souls::debug_souls, false);

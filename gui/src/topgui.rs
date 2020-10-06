@@ -2,9 +2,9 @@ use crate::windows::ImguiWindows;
 use crate::{RoadBuildResource, Tool};
 use common::inspect::InspectedEntity;
 use common::GameTime;
-use egregoria::engine_interaction::TimeWarp;
+use egregoria::engine_interaction::{KeyCode, KeyboardInfo, TimeWarp};
 use egregoria::Egregoria;
-use imgui::{im_str, StyleVar};
+use imgui::{im_str, StyleColor, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 use map_model::LanePatternBuilder;
@@ -41,7 +41,6 @@ impl AsRef<str> for AutoSaveEvery {
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct Gui {
-    #[serde(skip)]
     pub windows: ImguiWindows,
     pub auto_save_every: AutoSaveEvery,
     #[serde(skip)]
@@ -49,6 +48,7 @@ pub struct Gui {
     #[serde(skip)]
     pub n_cars: i32,
     pub n_pedestrians: i32,
+    pub depause_warp: u32,
 }
 
 impl Default for Gui {
@@ -59,6 +59,7 @@ impl Default for Gui {
             last_save: Instant::now(),
             n_cars: 100,
             n_pedestrians: 100,
+            depause_warp: 1,
         }
     }
 }
@@ -195,29 +196,82 @@ impl Gui {
     pub fn time_controls(&mut self, ui: &Ui, goria: &mut Egregoria) {
         let mut warp = goria.write::<TimeWarp>();
         let time = goria.read::<GameTime>().daytime;
-        let [w, h] = ui.io().display_size;
+
+        if goria
+            .read::<KeyboardInfo>()
+            .just_pressed
+            .contains(&KeyCode::Space)
+        {
+            if warp.0 == 0 {
+                warp.0 = self.depause_warp;
+            } else {
+                self.depause_warp = warp.0;
+                warp.0 = 0;
+            }
+        }
+
+        let [_, h] = ui.io().display_size;
+        let tok = ui.push_style_vars(&[
+            StyleVar::WindowRounding(0.0),
+            StyleVar::ItemSpacing([10.0, 7.0]),
+        ]);
         Window::new(im_str!("Time controls"))
-            .size([230.0, 40.0], imgui::Condition::Always)
-            .position([w * 0.5 - 100.0, h - 30.0], imgui::Condition::Always)
+            .size([165.0, 55.0], imgui::Condition::Always)
+            .position([-1.0, h - 50.0], imgui::Condition::Always)
             .no_decoration()
             .collapsible(false)
             .resizable(false)
             .build(&ui, || {
-                ui.text(im_str!(
-                    "Day {} {:02}:{:02}",
-                    time.day,
-                    time.hour,
-                    time.second
-                ));
+                ui.text(im_str!(" Day {}", time.day));
+
+                ui.same_line(115.0);
+
+                ui.text(im_str!("{:02}:{:02}", time.hour, time.second));
+
+                let red = ui.push_style_color(StyleColor::Header, [0.7, 0.2, 0.2, 0.5]);
+
+                if imgui::Selectable::new(im_str!(" ||"))
+                    .size([29.0, 15.0])
+                    .selected(warp.0 == 0)
+                    .build(ui)
+                {
+                    self.depause_warp = warp.0;
+                    warp.0 = 0;
+                }
+
+                red.pop(ui);
+
                 ui.same_line(0.0);
-                let tok = ui.push_item_width(60.0);
-                imgui::Drag::new(im_str!("Time warp"))
-                    .range(0.0..=50.0)
-                    .speed(0.1)
-                    .display_format(im_str!("%.1f"))
-                    .build(ui, &mut warp.0);
-                tok.pop(ui);
+
+                if imgui::Selectable::new(im_str!(" 1x"))
+                    .size([27.0, 15.0])
+                    .selected(warp.0 == 1)
+                    .build(ui)
+                {
+                    warp.0 = 1;
+                }
+
+                ui.same_line(0.0);
+
+                if imgui::Selectable::new(im_str!(" 3x"))
+                    .size([27.0, 15.0])
+                    .selected(warp.0 == 3)
+                    .build(ui)
+                {
+                    warp.0 = 3;
+                }
+
+                ui.same_line(0.0);
+
+                if imgui::Selectable::new(im_str!(" Max"))
+                    .size([33.0, 15.0])
+                    .selected(warp.0 == 1000)
+                    .build(ui)
+                {
+                    warp.0 = 1000;
+                }
             });
+        tok.pop(ui);
     }
 
     pub fn menu_bar(&mut self, ui: &Ui, goria: &mut Egregoria) {
@@ -245,6 +299,7 @@ impl Gui {
             });
             if ui.small_button(im_str!("Save")) {
                 egregoria::save_to_disk(goria);
+                common::saveload::save(self, "gui");
             }
         });
     }
