@@ -155,7 +155,6 @@ impl State {
 
         let time = self.goria.read::<GameTime>();
         let daysec = time.daysec();
-        let one_h = GameTime::HOUR as f64;
 
         let map = self.goria.read::<Map>();
         for x in map.roads().values() {
