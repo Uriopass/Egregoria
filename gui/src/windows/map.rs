@@ -18,12 +18,12 @@ pub fn map(ui: &Ui, goria: &mut Egregoria) {
 
     if ui.small_button(im_str!("load Paris map")) {
         map.clear();
-        map_model::load_parismap(&mut map);
+        map_model::procgen::load_parismap(&mut map);
     }
 
     if ui.small_button(im_str!("load test field")) {
         map.clear();
-        map_model::load_testfield(&mut map);
+        map_model::procgen::load_testfield(&mut map);
     }
 
     if ui.small_button(im_str!("clear the map")) {
