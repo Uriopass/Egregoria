@@ -32,14 +32,14 @@ mod objects {
 
 pub use objects::*;
 
-mod procgen {
+pub mod procgen {
+    mod building;
     pub mod heightmap;
     mod presets;
 
+    pub use building::*;
     pub use presets::*;
 }
-
-pub use procgen::*;
 
 mod light_policy;
 mod map;
