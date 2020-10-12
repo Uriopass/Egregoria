@@ -1,14 +1,16 @@
 #![allow(dead_code)]
 
-use crate::GfxContext;
+use crate::{compile_shader, GfxContext};
 use image::GenericImageView;
 use std::fs::File;
 use std::io::Read;
+use std::num::NonZeroU32;
 use std::path::Path;
 use std::rc::Rc;
 use wgpu::{
-    BindGroup, BindGroupLayout, Device, Sampler, TextureComponentType, TextureCopyView,
-    TextureDataLayout, TextureFormat, TextureViewDescriptor,
+    BindGroup, BindGroupLayout, CommandEncoderDescriptor, Device, PipelineLayoutDescriptor,
+    Sampler, TextureComponentType, TextureCopyView, TextureDataLayout, TextureFormat, TextureUsage,
+    TextureViewDescriptor,
 };
 
 #[derive(Clone)]
@@ -40,7 +42,7 @@ impl Texture {
     }
     pub fn from_bytes(ctx: &GfxContext, bytes: &[u8], label: Option<&'static str>) -> Option<Self> {
         let img = image::load_from_memory(bytes).ok()?;
-        Self::from_image(ctx, &img, label)
+        Some(Self::from_image(ctx, &img, label))
     }
 
     fn default_sampler(device: &Device) -> Sampler {
@@ -63,7 +65,7 @@ impl Texture {
         ctx: &GfxContext,
         img: &image::DynamicImage,
         label: Option<&'static str>,
-    ) -> Option<Self> {
+    ) -> Self {
         let rgba = img
             .as_rgba8()
             .expect("Trying to use non rgha8 image as texture");
@@ -77,14 +79,15 @@ impl Texture {
 
         let format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
+        let mip_level_count = 7;
         let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
             label,
             size,
-            mip_level_count: 1,
+            mip_level_count,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+            usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST | TextureUsage::OUTPUT_ATTACHMENT,
         });
 
         ctx.queue.write_texture(
@@ -102,17 +105,19 @@ impl Texture {
             size,
         );
 
+        generate_mipmaps(&ctx.device, &ctx.queue, &texture, format, mip_level_count);
+
         let view = texture.create_view(&TextureViewDescriptor::default());
         let sampler = Self::default_sampler(&ctx.device);
 
-        Some(Self {
+        Self {
             texture: Rc::new(texture),
             view: Rc::new(view),
             sampler: Rc::new(sampler),
             width: dimensions.0 as f32,
             height: dimensions.1 as f32,
             format,
-        })
+        }
     }
 
     pub fn create_depth_texture(
@@ -123,7 +128,7 @@ impl Texture {
         let format = wgpu::TextureFormat::Depth32Float;
         let desc = wgpu::TextureDescriptor {
             format,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            usage: TextureUsage::OUTPUT_ATTACHMENT,
             size: wgpu::Extent3d {
                 width: sc_desc.width,
                 height: sc_desc.height,
@@ -156,7 +161,7 @@ impl Texture {
         let format = wgpu::TextureFormat::R32Float;
         let desc = wgpu::TextureDescriptor {
             format,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::SAMPLED,
+            usage: TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
             size: wgpu::Extent3d {
                 width: sc_desc.width,
                 height: sc_desc.height,
@@ -197,7 +202,7 @@ impl Texture {
         let desc = &wgpu::TextureDescriptor {
             format,
             size,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT | wgpu::TextureUsage::SAMPLED,
+            usage: TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -220,7 +225,7 @@ impl Texture {
         let multisample_desc = &wgpu::TextureDescriptor {
             format,
             size,
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            usage: TextureUsage::OUTPUT_ATTACHMENT,
             mip_level_count: 1,
             sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
@@ -279,5 +284,118 @@ impl Texture {
             ],
             label: None,
         })
+    }
+}
+
+fn generate_mipmaps(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    texture: &wgpu::Texture,
+    format: wgpu::TextureFormat,
+    mip_count: u32,
+) {
+    let vs_module =
+        device.create_shader_module(compile_shader("assets/shaders/mipmap.vert", None).0);
+    let fs_module =
+        device.create_shader_module(compile_shader("assets/shaders/mipmap.frag", None).0);
+
+    let bglayout = Texture::bindgroup_layout(&device, TextureComponentType::Uint);
+
+    let layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+        label: None,
+        bind_group_layouts: &[&bglayout],
+        push_constant_ranges: &[],
+    });
+
+    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("mipmaps"),
+        layout: Some(&layout),
+        vertex_stage: wgpu::ProgrammableStageDescriptor {
+            module: &vs_module,
+            entry_point: "main",
+        },
+        fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
+            module: &fs_module,
+            entry_point: "main",
+        }),
+        rasterization_state: Some(wgpu::RasterizationStateDescriptor {
+            front_face: wgpu::FrontFace::Ccw,
+            cull_mode: wgpu::CullMode::None,
+            ..Default::default()
+        }),
+        primitive_topology: wgpu::PrimitiveTopology::TriangleStrip,
+        color_states: &[format.into()],
+        depth_stencil_state: None,
+        vertex_state: wgpu::VertexStateDescriptor {
+            index_format: wgpu::IndexFormat::Uint16,
+            vertex_buffers: &[],
+        },
+        sample_count: 1,
+        sample_mask: !0,
+        alpha_to_coverage_enabled: false,
+    });
+
+    let bind_group_layout = pipeline.get_bind_group_layout(0);
+
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("mip"),
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::FilterMode::Nearest,
+        ..Default::default()
+    });
+
+    let views = (0..mip_count)
+        .map(|mip| {
+            texture.create_view(&wgpu::TextureViewDescriptor {
+                label: Some("mip"),
+                format: None,
+                dimension: None,
+                aspect: wgpu::TextureAspect::All,
+                base_mip_level: mip,
+                level_count: NonZeroU32::new(1),
+                base_array_layer: 0,
+                array_layer_count: None,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    for target_mip in 1..mip_count as usize {
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&views[target_mip - 1]),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+            label: None,
+        });
+
+        let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
+        {
+            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &views[target_mip],
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            });
+            rpass.set_pipeline(&pipeline);
+            rpass.set_bind_group(0, &bind_group, &[]);
+            rpass.draw(0..4, 0..1);
+        }
+        queue.submit(Some(encoder.finish()));
     }
 }
