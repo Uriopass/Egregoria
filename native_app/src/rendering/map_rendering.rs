@@ -1,6 +1,6 @@
 use egregoria::rendering::{Color, LinearColor};
 use egregoria::utils::Restrict;
-use geom::vec2;
+use geom::{vec2, Vec2};
 use map_model::{
     BuildingKind, Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
 };
@@ -27,6 +27,10 @@ pub struct RoadRenderer {
     map_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
     arrow_builder: SpriteBatchBuilder,
+    tree_shadows: Option<SpriteBatch>,
+    tree_shadows_builder: SpriteBatchBuilder,
+    trees: Option<SpriteBatch>,
+    tree_builder: SpriteBatchBuilder,
     crosswalks: Option<ShadedBatch<Crosswalk>>,
 }
 
@@ -40,6 +44,7 @@ const Z_ARROW: f32 = 0.24;
 const Z_CROSSWALK: f32 = 0.25;
 const Z_HOUSE: f32 = 0.28;
 const Z_SIGNAL: f32 = 0.29;
+const Z_TREE: f32 = 0.295;
 
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext) -> Self {
@@ -47,10 +52,17 @@ impl RoadRenderer {
 
         gfx.register_pipeline::<ShadedBatch<Crosswalk>>();
 
+        let tree_builder = SpriteBatchBuilder::from_path(gfx, "assets/tree.png");
+        let tree_shadow_builder = SpriteBatchBuilder::from_path(gfx, "assets/tree_shadow.png");
+
         RoadRenderer {
             map_mesh: None,
             arrows: None,
             arrow_builder,
+            tree_shadows: None,
+            tree_shadows_builder: tree_shadow_builder,
+            trees: None,
+            tree_builder,
             crosswalks: None,
         }
     }
@@ -293,6 +305,38 @@ impl RoadRenderer {
         builder.build(&gfx)
     }
 
+    pub fn trees(&mut self, map: &mut Map, gfx: &GfxContext) -> Option<SpriteBatch> {
+        self.tree_builder.instances.clear();
+
+        for (pos, t) in map.trees.trees() {
+            self.tree_builder.instances.push(InstanceRaw::new(
+                pos,
+                t.dir,
+                Z_TREE + t.size * 0.001,
+                Color::new(t.col * 0.32, t.col * 0.45, t.col * 0.42, 1.0).into(),
+                t.size,
+            ));
+        }
+
+        self.tree_builder.build(gfx)
+    }
+
+    pub fn tree_shadows(&mut self, map: &mut Map, gfx: &GfxContext) -> Option<SpriteBatch> {
+        self.tree_shadows_builder.instances.clear();
+
+        for (pos, t) in map.trees.trees() {
+            self.tree_shadows_builder.instances.push(InstanceRaw::new(
+                pos + vec2(1.0, -1.0),
+                t.dir,
+                Z_TREE,
+                [1.0, 1.0, 1.0],
+                t.size,
+            ));
+        }
+
+        self.tree_shadows_builder.build(gfx)
+    }
+
     pub fn render(
         &mut self,
         map: &mut Map,
@@ -304,6 +348,8 @@ impl RoadRenderer {
             self.map_mesh = self.map_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
             self.arrows = self.arrows(map, &ctx.gfx);
             self.crosswalks = self.crosswalks(map, &ctx.gfx);
+            self.tree_shadows = self.tree_shadows(map, &ctx.gfx);
+            self.trees = self.trees(map, &ctx.gfx);
 
             map.dirty = false;
         }
@@ -317,6 +363,14 @@ impl RoadRenderer {
         }
 
         if let Some(x) = self.crosswalks.clone() {
+            ctx.draw(x);
+        }
+
+        if let Some(x) = self.tree_shadows.clone() {
+            ctx.draw(x);
+        }
+
+        if let Some(x) = self.trees.clone() {
             ctx.draw(x);
         }
 

@@ -1,4 +1,5 @@
 use geom::Polygon;
+use rand::Rng;
 
 pub fn gen_exterior_workplace(size: f32) -> (Polygon, usize) {
     let a = rand_in(15.0, 20.0);
@@ -52,5 +53,57 @@ pub fn gen_exterior_supermarket(size: f32) -> (Polygon, usize) {
 }
 
 fn rand_in(min: f32, max: f32) -> f32 {
-    min + rand::random::<f32>() * (max - min)
+    rand::thread_rng().gen_range(min, max)
 }
+
+fn randi_in(min: i32, max: i32) -> i32 {
+    rand::thread_rng().gen_range(min, max)
+}
+
+// How to gen a house
+// Idea: Make everything out of rectangles
+// 1. Make exterior
+//    - pick random rectangle
+//    - add random rectangle along this rectangle (or not)
+//    - add random rectangle along this rectangle (or not)
+// 3. Merge the rectangles in one shape
+// 3. Recursively split the shape horizontally and vertically
+// 4. Score the resulting house based on "rectanglicity" and size of resulting regions
+//    - rectanglicity: area of region divided by area of smallest surrounding bbox
+// 5. Put holes in between regions for the doors
+// 6. Put a outgoing door somwhere
+// 7. Assign rooms somehow
+//  necessary:
+//    - bedroom
+//    - kitchen
+//    - toilets
+//  optional:
+//    - dining room
+//    - office
+//    - playroom
+// 8. Score the room assignment based on some rules: kitchen next to bedrooms, small toilet and big bedroom etc
+
+/*
+const SIZE: usize = 200; // 20 meters
+
+type Idx = (usize, usize);
+
+struct HGrid([[u8; SIZE]; SIZE]);
+
+struct GeneratedHouse {
+    exterior: Polygon,
+    //    rooms: Vec<(RoomType, Polygon)>,
+    //    walls: Vec<>
+}
+
+impl HGrid {
+    fn v(&self, pos: Idx) -> u8 {
+        self.0[pos.1][pos.0]
+    }
+
+    fn add_rectangle(&mut self, near: Idx) {
+        let w = randi_in(10, 50);
+    }
+}
+*/
+//fn gen_house

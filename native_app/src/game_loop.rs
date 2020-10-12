@@ -182,7 +182,7 @@ impl State {
         }
 
         let dark = vec3(0.1, 0.1, 0.1);
-        let bright = vec3(0.8, 0.8, 0.95);
+        let bright = vec3(1.0, 1.0, 1.0);
 
         let col = match time.daytime.hour {
             0..=5 => dark,

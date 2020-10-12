@@ -1,3 +1,4 @@
+use crate::procgen::Trees;
 use crate::{
     Building, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID, LaneKind,
     LanePattern, Lot, LotID, ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID,
@@ -29,6 +30,7 @@ pub struct Map {
     pub(crate) buildings: Buildings,
     pub(crate) lots: Lots,
     pub(crate) spatial_map: SpatialMap,
+    pub trees: Trees,
     pub parking: ParkingSpots,
     pub dirty: bool,
 }
@@ -48,6 +50,7 @@ impl Map {
             parking: ParkingSpots::default(),
             buildings: Buildings::default(),
             lots: Lots::default(),
+            trees: Trees::default(),
             dirty: true,
             spatial_map: SpatialMap::default(),
         }

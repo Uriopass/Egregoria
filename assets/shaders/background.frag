@@ -65,7 +65,7 @@ void main() {
     float noise = fnoise(0.00007);
 
     float before = noise;
-    noise -= length(in_wv) * 0.000045;
+    noise -= length(in_wv) * 0.00009;
     noise = max(noise, 0);
 
     float dnoise = disturbed_noise(noise);

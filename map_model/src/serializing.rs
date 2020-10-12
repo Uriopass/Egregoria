@@ -1,4 +1,6 @@
+use crate::procgen::{Tree, Trees};
 use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap};
+use geom::Vec2;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Default)]
@@ -9,6 +11,7 @@ pub struct SerializedMap {
     pub(crate) lanes: Lanes,
     pub(crate) parking: ParkingSpots,
     pub(crate) lots: Lots,
+    pub(crate) trees: Vec<(Vec2, Tree)>,
 }
 
 impl From<&Map> for SerializedMap {
@@ -24,6 +27,7 @@ impl From<&Map> for SerializedMap {
             lanes: m.lanes.clone(),
             parking: m.parking.clone(),
             lots: m.lots.clone(),
+            trees: m.trees.trees().collect(),
         }
     }
 }
@@ -43,6 +47,7 @@ impl From<SerializedMap> for Map {
             spatial_map,
             lots: sel.lots,
             parking: sel.parking,
+            trees: Trees::from_positions(sel.trees),
             dirty: true,
         }
     }
