@@ -16,5 +16,7 @@ geom          = { path = "../geom" }
 rand          = { version = "0.7", default-features = false, features = ["std", "small_rng"] }
 pathfinding   = { git = "https://github.com/samueltardieu/pathfinding" }
 mods          = { path = "../mods" }
+common        = { path = "../common" }
 flat_spatial  = "0.3.5"
 log           = "0.4.11"
+poisson       = "0.10.1"

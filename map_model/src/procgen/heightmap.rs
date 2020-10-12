@@ -10,7 +10,7 @@ const CZ: Vec2 = Vec2::new(-0.577_350_26, -0.577_350_26);
 const CW: Vec3 = Vec3::new(0.024_390_243, 0.024_390_243, 0.024_390_243);
 
 #[allow(clippy::many_single_char_names)]
-fn simplex_noise(pos: Vec2) -> f32 {
+pub fn simplex_noise(pos: Vec2) -> f32 {
     let mut i: Vec2 = Vec2::floor(pos + Vec2::splat(Vec2::dot(pos, CY)));
     let x0: Vec2 = pos - i + Vec2::splat(Vec2::dot(i, CX));
     let i1 = if x0.x > x0.y {
@@ -65,6 +65,6 @@ pub fn height(mut p: Vec2) -> f32 {
 
     let mut noise = fnoise(0.00007, p);
 
-    noise -= p.magnitude() * 0.000045;
+    noise -= p.magnitude() * 0.00009;
     noise.max(0.0)
 }

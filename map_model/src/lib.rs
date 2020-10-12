@@ -36,9 +36,11 @@ pub mod procgen {
     mod building;
     pub mod heightmap;
     mod presets;
+    mod trees;
 
     pub use building::*;
     pub use presets::*;
+    pub use trees::*;
 }
 
 mod light_policy;

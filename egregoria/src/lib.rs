@@ -5,7 +5,9 @@
 use crate::engine_interaction::{
     KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable, TimeWarp,
 };
-use crate::map_dynamic::{itinerary_update_system, BuildingInfos, Itinerary, ParkingManagement};
+use crate::map_dynamic::{
+    add_trees_system, itinerary_update_system, BuildingInfos, Itinerary, ParkingManagement,
+};
 use crate::pedestrians::{pedestrian_decision_system, pedestrian_synchro_system, Pedestrian};
 use crate::physics::systems::{
     coworld_maintain_system, coworld_synchronize_system, kinematics_apply_system,
@@ -94,7 +96,7 @@ impl Egregoria {
         // Basic assets init
         goria.insert(GameTime::new(
             0.0,
-            SECONDS_PER_DAY as f64 + 5.0 * SECONDS_PER_HOUR as f64,
+            SECONDS_PER_DAY as f64 + 10.0 * SECONDS_PER_HOUR as f64,
         ));
         goria.insert(CollisionWorld::new(100));
         goria.insert(KeyboardInfo::default());
@@ -118,6 +120,7 @@ impl Egregoria {
             .add_system(vehicle_state_update_system())
             .add_system(vehicle_decision_system())
             .add_system(itinerary_update_system())
+            .add_system(add_trees_system())
             .add_system(vehicle_cleanup_system())
             .add_system(pedestrian_decision_system())
             .add_system(pedestrian_synchro_system())

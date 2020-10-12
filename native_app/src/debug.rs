@@ -1,7 +1,7 @@
 #![allow(clippy::type_complexity)]
 
 use common::inspect::InspectedEntity;
-use common::GameTime;
+use common::{GameTime, SECONDS_PER_DAY};
 use egregoria::engine_interaction::MouseInfo;
 use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::CollisionWorld;
@@ -38,10 +38,32 @@ lazy_static! {
 pub fn add_debug_menu(gui: &mut gui::Gui) {
     gui.windows.insert(
         im_str!("Debug layers"),
-        |ui: &Ui, _goria: &mut Egregoria| {
+        |ui: &Ui, goria: &mut Egregoria| {
             let mut objs = DEBUG_OBJS.lock().unwrap();
             for (val, name, _) in &mut *objs {
                 ui.checkbox(&im_str!("{}", *name), val);
+            }
+            drop(objs);
+            let time = goria.read::<GameTime>().timestamp;
+            let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
+
+            if ui.small_button(&im_str!("set night")) {
+                *goria.write::<GameTime>() = GameTime::new(0.1, time + daysecleft as f64);
+            }
+
+            if ui.small_button(&im_str!("set morning")) {
+                *goria.write::<GameTime>() =
+                    GameTime::new(0.1, time + daysecleft as f64 + 7.0 * GameTime::HOUR as f64);
+            }
+
+            if ui.small_button(&im_str!("set day")) {
+                *goria.write::<GameTime>() =
+                    GameTime::new(0.1, time + daysecleft as f64 + 12.0 * GameTime::HOUR as f64);
+            }
+
+            if ui.small_button(&im_str!("set dawn")) {
+                *goria.write::<GameTime>() =
+                    GameTime::new(0.1, time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64);
             }
         },
         false,
