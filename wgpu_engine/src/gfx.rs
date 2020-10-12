@@ -7,8 +7,8 @@ use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::{
-    Adapter, BindGroupLayout, CommandBuffer, CommandEncoder, CommandEncoderDescriptor, Device,
-    Queue, RenderPipeline, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
+    Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, Device, Queue,
+    RenderPipeline, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
     SwapChainFrame, VertexBufferDescriptor,
 };
 
@@ -24,7 +24,6 @@ pub struct GfxContext {
     pub color_texture: MultisampledTexture,
     pub sc_desc: SwapChainDescriptor,
     pub pipelines: HashMap<TypeId, PreparedPipeline>,
-    pub queue_buffer: Vec<CommandBuffer>,
     pub projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub time_uni: Uniform<f32>,
@@ -107,7 +106,6 @@ impl GfxContext {
             light_texture,
             surface,
             pipelines: HashMap::new(),
-            queue_buffer: vec![],
             projection,
             inv_projection,
             time_uni,
