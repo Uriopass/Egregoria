@@ -1397,6 +1397,7 @@ dependencies = [
  "geom",
  "imgui-inspect",
  "imgui-inspect-derive",
+ "inline_tweak",
  "log",
  "mods",
  "ordered-float 2.0.0",
