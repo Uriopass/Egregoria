@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::ops::Mul;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Color {
@@ -214,6 +215,19 @@ impl From<Color> for LinearColor {
             g: from_srgb(color.g),
             b: from_srgb(color.b),
             a: color.a,
+        }
+    }
+}
+
+impl Mul<LinearColor> for f32 {
+    type Output = LinearColor;
+
+    fn mul(self, rhs: LinearColor) -> Self::Output {
+        LinearColor {
+            r: self * rhs.r,
+            g: self * rhs.g,
+            b: self * rhs.b,
+            a: 1.0,
         }
     }
 }

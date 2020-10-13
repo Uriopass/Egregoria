@@ -1,3 +1,4 @@
+mod config;
 mod info;
 mod map;
 mod scenarios;
@@ -47,6 +48,7 @@ impl Default for ImguiWindows {
             false,
         );
         s.insert(imgui::im_str!("Tips"), tips::tips, false);
+        s.insert(imgui::im_str!("Config"), config::config, false);
         s
     }
 }

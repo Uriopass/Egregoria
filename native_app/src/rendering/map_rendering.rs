@@ -319,6 +319,7 @@ impl RoadRenderer {
     pub fn trees(&mut self, map: &mut Map, gfx: &GfxContext) -> Option<MultiSpriteBatch> {
         self.tree_builder.clear();
 
+        let tree_col = common::config().tree_color;
         for (pos, t) in map.trees.trees() {
             self.tree_builder.push(
                 (common::rand::rand3(pos.x, pos.y, 10.0) * self.tree_builder.n_texs() as f32)
@@ -327,7 +328,7 @@ impl RoadRenderer {
                     pos,
                     t.dir,
                     Z_TREE,
-                    Color::new(t.col * 0.32, t.col * 0.45, t.col * 0.42, 1.0).into(),
+                    t.col * LinearColor::from(tree_col),
                     t.size,
                 ),
             );

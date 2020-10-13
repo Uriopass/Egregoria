@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
+pub mod config;
 pub mod inspect;
 pub mod rand;
 pub mod saveload;
 pub mod time;
 
+pub use config::*;
 pub use time::*;
 
 pub fn get_mut_pair<'a, K, V>(
