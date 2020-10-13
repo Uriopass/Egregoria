@@ -1,4 +1,5 @@
 use crate::procgen::heightmap::height;
+use crate::{Map, RoadID};
 use flat_spatial::SparseGrid;
 use geom::{vec2, Vec2};
 use ordered_float::OrderedFloat;
@@ -26,6 +27,39 @@ impl Default for Trees {
 }
 
 impl Trees {
+    pub fn remove_nearby_trees(map: &mut Map, id: RoadID) {
+        let trees = &mut map.trees;
+        let r = &map.roads[id];
+
+        let d = r.width + 50.0;
+        let mut bbox = r.bbox();
+        bbox.x -= d;
+        bbox.y -= d;
+        bbox.w += d + d;
+        bbox.h += d + d;
+
+        let mut to_remove = vec![];
+        for (h, tree) in trees
+            .grid
+            .query_aabb([bbox.x, bbox.y], [bbox.x + bbox.w, bbox.y + bbox.h])
+        {
+            let rd = common::rand::rand3(tree.x, tree.y, 391.0) * 20.0;
+
+            if r.generated_points
+                .project(tree.into())
+                .is_close(tree.into(), d - rd)
+            {
+                to_remove.push(h);
+            }
+        }
+
+        for h in to_remove {
+            trees.grid.remove(h);
+        }
+
+        trees.grid.maintain();
+    }
+
     pub fn add_forest(&mut self) -> bool {
         if self.counter == 1 {
             let mut trees = self.trees().collect::<Vec<_>>();
