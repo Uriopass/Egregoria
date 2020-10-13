@@ -1,5 +1,6 @@
 mod camera;
 mod circle;
+mod color;
 mod intersections;
 mod obb;
 mod polygon;
@@ -13,6 +14,7 @@ mod v3;
 
 pub use camera::*;
 pub use circle::*;
+pub use color::*;
 pub use intersections::*;
 pub use obb::*;
 pub use polygon::*;

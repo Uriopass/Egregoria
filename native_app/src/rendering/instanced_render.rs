@@ -30,7 +30,7 @@ impl InstancedRender {
                 trans.position(),
                 trans.direction(),
                 ar.z,
-                [ar.tint.r, ar.tint.g, ar.tint.b],
+                ar.tint.into(),
                 ar.scale,
             );
 

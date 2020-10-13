@@ -1,5 +1,4 @@
-use crate::rendering::colors::*;
-use geom::Vec2;
+use geom::{Color, Vec2};
 use imgui::Ui;
 use imgui_inspect::InspectArgsDefault;
 use imgui_inspect::InspectDragf;

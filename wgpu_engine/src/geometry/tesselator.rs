@@ -1,9 +1,9 @@
 use crate::geometry::earcut::earcut;
 use crate::{ColoredVertex, MeshBuilder};
-use geom::{vec2, Rect, Vec2};
+use geom::{vec2, LinearColor, Rect, Vec2};
 
 pub struct Tesselator {
-    pub color: [f32; 4],
+    pub color: LinearColor,
     pub meshbuilder: MeshBuilder,
     pub cull_rect: Option<Rect>,
     pub zoom: f32,
@@ -12,7 +12,7 @@ pub struct Tesselator {
 impl Tesselator {
     pub fn new(cull_rect: Option<Rect>, zoom: f32) -> Self {
         Tesselator {
-            color: [0.0, 0.0, 0.0, 1.0],
+            color: LinearColor::BLACK,
             meshbuilder: MeshBuilder::new(),
             cull_rect,
             zoom,
@@ -39,7 +39,7 @@ impl Tesselator {
             return false;
         }
 
-        let color = self.color;
+        let color = self.color.into();
         let n_pointsu32 = n_points as u32;
 
         self.meshbuilder.extend_with(|vertices, index_push| {
@@ -76,7 +76,7 @@ impl Tesselator {
             return false;
         }
 
-        let color: [f32; 4] = self.color;
+        let color: [f32; 4] = self.color.into();
         self.meshbuilder.extend_with(|vertices, index_push| {
             vertices.extend(points.iter().map(|p| ColoredVertex {
                 position: [p.x, p.y, z],
@@ -104,7 +104,7 @@ impl Tesselator {
         let n_points = ((6.0 * (r * self.zoom).cbrt()) as usize).max(4);
         let n_pointsu32 = n_points as u32;
 
-        let color = self.color;
+        let color = self.color.into();
         self.meshbuilder.extend_with(|vertices, index_push| {
             vertices.push(ColoredVertex {
                 position: [p.x + r + halfthick, p.y, z],
@@ -150,7 +150,7 @@ impl Tesselator {
         true
     }
 
-    pub fn set_color(&mut self, color: impl Into<[f32; 4]>) {
+    pub fn set_color(&mut self, color: impl Into<LinearColor>) {
         self.color = color.into();
     }
 
@@ -174,7 +174,7 @@ impl Tesselator {
 
         let points: [Vec2; 4] = [a + b + pxy, a - b + pxy, -a - b + pxy, -a + b + pxy];
 
-        let color: [f32; 4] = self.color;
+        let color: [f32; 4] = self.color.into();
 
         let verts: [ColoredVertex; 4] = [
             ColoredVertex {
@@ -215,7 +215,7 @@ impl Tesselator {
 
         let points: [Vec2; 4] = [p1 + perp, p1 - perp, p2 - perp, p2 + perp];
 
-        let color: [f32; 4] = self.color;
+        let color: [f32; 4] = self.color.into();
 
         let verts: [ColoredVertex; 4] = [
             ColoredVertex {
@@ -266,7 +266,7 @@ impl Tesselator {
 
         let halfthick = thickness * 0.5;
 
-        let color = self.color;
+        let color = self.color.into();
 
         self.meshbuilder.extend_with(move |verts, index_push| {
             let nor: Vec2 = halfthick * vec2(-first_dir.y, first_dir.x);

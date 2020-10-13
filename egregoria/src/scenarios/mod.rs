@@ -1,8 +1,8 @@
 use crate::map_dynamic::Itinerary;
 use crate::rendering::immediate::ImmediateDraw;
-use crate::rendering::Color;
 use crate::vehicles::{make_vehicle_entity, Vehicle, VehicleKind, VehicleState};
 use crate::{Egregoria, ParCommandBuffer};
+use geom::Color;
 use geom::Transform;
 use geom::Vec2;
 use legion::{Entity, Resources};

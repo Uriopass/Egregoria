@@ -1,8 +1,8 @@
 use crate::{Tool, Z_TOOL};
 use egregoria::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use egregoria::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
-use egregoria::rendering::Color;
 use egregoria::NoSerialize;
+use geom::Color;
 use geom::Spline;
 use geom::Transform;
 use geom::Vec2;

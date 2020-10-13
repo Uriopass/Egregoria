@@ -1,6 +1,6 @@
 use crate::{Drawable, GfxContext, IndexType, Shaders, UvVertex, VBDesc};
 
-use geom::Vec2;
+use geom::{LinearColor, Vec2};
 use std::marker::PhantomData;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
@@ -47,12 +47,12 @@ impl VBDesc for ShadedInstanceRaw {
 }
 
 impl ShadedInstanceRaw {
-    pub fn new(pos: Vec2, z: f32, cossin: Vec2, scale: Vec2, tint: [f32; 4]) -> Self {
+    pub fn new(pos: Vec2, z: f32, cossin: Vec2, scale: Vec2, tint: LinearColor) -> Self {
         Self {
             pos: [pos.x, pos.y, z],
             rot: cossin.into(),
             scale: scale.into(),
-            tint,
+            tint: tint.into(),
         }
     }
 }

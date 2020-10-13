@@ -1,5 +1,3 @@
-use imgui::{im_str, ColorEdit, EditableColor, Ui};
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -111,6 +109,7 @@ impl Color {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[repr(C)]
 pub struct LinearColor {
     pub r: f32,
     pub g: f32,
@@ -219,43 +218,8 @@ impl From<Color> for LinearColor {
     }
 }
 
-impl InspectRenderDefault<Color> for Color {
-    fn render(_: &[&Color], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
-        unimplemented!()
-    }
-
-    fn render_mut(
-        data: &mut [&mut Color],
-        label: &'static str,
-        ui: &Ui,
-        _args: &InspectArgsDefault,
-    ) -> bool {
-        if data.len() != 1 {
-            unimplemented!();
-        }
-
-        let c = &mut data[0];
-        let mut color_arr = [c.r, c.g, c.b, c.a];
-        if ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui) {
-            c.r = color_arr[0];
-            c.g = color_arr[1];
-            c.b = color_arr[2];
-            c.a = color_arr[3];
-            true
-        } else {
-            false
-        }
-    }
-}
-
 impl Into<[f32; 4]> for Color {
     fn into(self) -> [f32; 4] {
-        LinearColor::from(self).into()
-    }
-}
-
-impl Into<[f32; 3]> for Color {
-    fn into(self) -> [f32; 3] {
         LinearColor::from(self).into()
     }
 }
@@ -263,11 +227,5 @@ impl Into<[f32; 3]> for Color {
 impl Into<[f32; 4]> for LinearColor {
     fn into(self) -> [f32; 4] {
         [self.r, self.g, self.b, self.a]
-    }
-}
-
-impl Into<[f32; 3]> for LinearColor {
-    fn into(self) -> [f32; 3] {
-        [self.r, self.g, self.b]
     }
 }

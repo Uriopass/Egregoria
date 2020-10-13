@@ -1,6 +1,6 @@
 use common::inspect::InspectedEntity;
 use egregoria::rendering::meshrender_component::{MeshRender, StrokeCircleRender};
-use egregoria::rendering::Color;
+use geom::Color;
 use geom::Transform;
 use legion::world::SubWorld;
 use legion::{system, Entity, EntityStore, IntoQuery, World};

@@ -1,5 +1,4 @@
-pub use crate::rendering::Color;
-use geom::Vec2;
+use geom::{Color, Vec2};
 
 #[derive(Copy, Clone)]
 pub enum ImmediateOrder {

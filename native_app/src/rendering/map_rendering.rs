@@ -1,6 +1,5 @@
-use egregoria::rendering::{Color, LinearColor};
 use egregoria::utils::Restrict;
-use geom::vec2;
+use geom::{vec2, Color, LinearColor};
 use map_model::{
     BuildingKind, Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
 };
@@ -273,7 +272,7 @@ impl RoadRenderer {
                         mid,
                         dir,
                         Z_ARROW,
-                        [0.3 + fade * 0.1; 3],
+                        LinearColor::gray(0.3 + fade * 0.1),
                         4.0,
                     ));
                 }
@@ -309,7 +308,7 @@ impl RoadRenderer {
                         Z_CROSSWALK,
                         dir,
                         vec2(height, CROSSWALK_WIDTH),
-                        LinearColor::WHITE.into(),
+                        LinearColor::WHITE,
                     ));
                 }
             }
@@ -345,7 +344,7 @@ impl RoadRenderer {
                 pos + vec2(1.0, -1.0),
                 t.dir,
                 Z_TREE,
-                [1.0, 1.0, 1.0],
+                LinearColor::WHITE,
                 t.size,
             ));
         }
