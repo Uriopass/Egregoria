@@ -23,6 +23,9 @@ opt-level = 1
 [profile.dev.package."*"]
 opt-level = 2
 
+[profile.dev.package.common]
+opt-level = 2
+
 [profile.dev.package.egregoria]
 opt-level = 0
 
