@@ -1,4 +1,4 @@
-use imgui_wgpu::Renderer;
+use imgui_wgpu::{Renderer, RendererConfig};
 use std::time::Instant;
 use wgpu_engine::{GfxContext, GuiRenderContext};
 use winit::window::Window;
@@ -35,7 +35,9 @@ impl ImguiWrapper {
                 }),
             }]);
 
-        let renderer = Renderer::new(&mut imgui, &gfx.device, &gfx.queue, gfx.sc_desc.format);
+        let renderer = RendererConfig::new()
+            .set_texture_format(gfx.sc_desc.format)
+            .build(&mut imgui, &gfx.device, &gfx.queue);
         Self {
             imgui,
             renderer,
