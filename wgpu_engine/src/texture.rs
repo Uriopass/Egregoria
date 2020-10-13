@@ -79,7 +79,7 @@ impl Texture {
 
         let format = wgpu::TextureFormat::Rgba8UnormSrgb;
 
-        let mip_level_count = 7;
+        let mip_level_count = 5;
         let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
             label,
             size,
