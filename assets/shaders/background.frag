@@ -76,8 +76,8 @@ void main() {
     } else if (noise < 0.12) { // sand
         out_color = (1.0 - dnoise) * vec4(0.9, 0.8, 0.3, 1.0);
     } else { // grass
-        dnoise = (dnoise + 0.1) * 0.3;
-        out_color = vec4(dnoise * 0.2, dnoise * 0.35, dnoise * 0.15, 1.0);
+        dnoise = dnoise * 0.3 + 0.1;
+        out_color = vec4(dnoise * 0.2, dnoise * 0.45, dnoise * 0.15, 1.0);
     }
 
     out_color.a = 1.0;

@@ -1,13 +1,14 @@
 use egregoria::rendering::{Color, LinearColor};
 use egregoria::utils::Restrict;
-use geom::{vec2, Vec2};
+use geom::vec2;
 use map_model::{
     BuildingKind, Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
 };
 use std::ops::Mul;
 use wgpu_engine::{
-    compile_shader, CompiledShader, FrameContext, GfxContext, InstanceRaw, Mesh, ShadedBatch,
-    ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Tesselator,
+    compile_shader, CompiledShader, FrameContext, GfxContext, InstanceRaw, Mesh, MultiSpriteBatch,
+    MultiSpriteBatchBuilder, ShadedBatch, ShadedBatchBuilder, ShadedInstanceRaw, Shaders,
+    SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 
 #[derive(Clone, Copy)]
@@ -29,8 +30,8 @@ pub struct RoadRenderer {
     arrow_builder: SpriteBatchBuilder,
     tree_shadows: Option<SpriteBatch>,
     tree_shadows_builder: SpriteBatchBuilder,
-    trees: Option<SpriteBatch>,
-    tree_builder: SpriteBatchBuilder,
+    trees: Option<MultiSpriteBatch>,
+    tree_builder: MultiSpriteBatchBuilder,
     crosswalks: Option<ShadedBatch<Crosswalk>>,
 }
 
@@ -52,7 +53,18 @@ impl RoadRenderer {
 
         gfx.register_pipeline::<ShadedBatch<Crosswalk>>();
 
-        let tree_builder = SpriteBatchBuilder::from_path(gfx, "assets/tree.png");
+        let tree_builder = MultiSpriteBatchBuilder::from_paths(
+            gfx,
+            &[
+                "assets/tree.png",
+                "assets/tree2.png",
+                "assets/tree3.png",
+                "assets/tree4.png",
+                "assets/tree5.png",
+                "assets/tree6.png",
+                "assets/tree7.png",
+            ],
+        );
         let tree_shadow_builder = SpriteBatchBuilder::from_path(gfx, "assets/tree_shadow.png");
 
         RoadRenderer {
@@ -305,17 +317,21 @@ impl RoadRenderer {
         builder.build(&gfx)
     }
 
-    pub fn trees(&mut self, map: &mut Map, gfx: &GfxContext) -> Option<SpriteBatch> {
-        self.tree_builder.instances.clear();
+    pub fn trees(&mut self, map: &mut Map, gfx: &GfxContext) -> Option<MultiSpriteBatch> {
+        self.tree_builder.clear();
 
         for (pos, t) in map.trees.trees() {
-            self.tree_builder.instances.push(InstanceRaw::new(
-                pos,
-                t.dir,
-                Z_TREE + t.size * 0.001,
-                Color::new(t.col * 0.32, t.col * 0.45, t.col * 0.42, 1.0).into(),
-                t.size,
-            ));
+            self.tree_builder.push(
+                (common::rand::rand3(pos.x, pos.y, 10.0) * self.tree_builder.n_texs() as f32)
+                    as usize,
+                InstanceRaw::new(
+                    pos,
+                    t.dir,
+                    Z_TREE,
+                    Color::new(t.col * 0.32, t.col * 0.45, t.col * 0.42, 1.0).into(),
+                    t.size,
+                ),
+            );
         }
 
         self.tree_builder.build(gfx)
