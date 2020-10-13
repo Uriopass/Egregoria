@@ -1,7 +1,36 @@
 use crate::default::InspectArgsDefault;
 use crate::default::InspectRenderDefault;
-use geom::{PolyLine, Transform, Vec2};
-use imgui::{im_str, Ui};
+use geom::{Color, PolyLine, Transform, Vec2};
+use imgui::{im_str, ColorEdit, EditableColor, Ui};
+
+impl InspectRenderDefault<Color> for Color {
+    fn render(_: &[&Color], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
+        unimplemented!()
+    }
+
+    fn render_mut(
+        data: &mut [&mut Color],
+        label: &'static str,
+        ui: &Ui,
+        _args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+
+        let c = &mut data[0];
+        let mut color_arr = [c.r, c.g, c.b, c.a];
+        if ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui) {
+            c.r = color_arr[0];
+            c.g = color_arr[1];
+            c.b = color_arr[2];
+            c.a = color_arr[3];
+            true
+        } else {
+            false
+        }
+    }
+}
 
 impl InspectRenderDefault<Transform> for Transform {
     fn render(data: &[&Transform], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {

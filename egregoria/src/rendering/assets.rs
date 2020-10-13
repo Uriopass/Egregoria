@@ -1,4 +1,4 @@
-use crate::rendering::Color;
+use geom::Color;
 use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};

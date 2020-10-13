@@ -1,10 +1,8 @@
 use crate::Tool;
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
 use egregoria::rendering::meshrender_component::{CircleRender, MeshRender};
-use egregoria::rendering::Color;
 use egregoria::NoSerialize;
-use geom::Transform;
-use geom::Vec2;
+use geom::{Color, Transform, Vec2};
 use legion::world::SubWorld;
 use legion::{system, IntoQuery};
 use legion::{Entity, World};

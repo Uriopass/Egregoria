@@ -1,6 +1,5 @@
 use crate::{compile_shader, Drawable, GfxContext, IndexType, Texture, UvVertex, VBDesc};
-
-use geom::Vec2;
+use geom::{LinearColor, Vec2};
 use std::path::Path;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
@@ -32,11 +31,11 @@ pub struct InstanceRaw {
 }
 
 impl InstanceRaw {
-    pub fn new(pos: Vec2, direction: Vec2, z: f32, tint: [f32; 3], scale: f32) -> InstanceRaw {
+    pub fn new(pos: Vec2, direction: Vec2, z: f32, col: LinearColor, scale: f32) -> InstanceRaw {
         Self {
             pos: [pos.x, pos.y, z],
             dir: [direction.x * scale, direction.y * scale],
-            tint,
+            tint: [col.r, col.g, col.b],
         }
     }
 }
