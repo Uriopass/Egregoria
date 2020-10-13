@@ -46,6 +46,8 @@ pub struct Gui {
     #[serde(skip)]
     pub last_save: Instant,
     #[serde(skip)]
+    pub last_gui_save: Instant,
+    #[serde(skip)]
     pub n_cars: i32,
     pub n_pedestrians: i32,
     pub depause_warp: u32,
@@ -57,6 +59,7 @@ impl Default for Gui {
             windows: ImguiWindows::default(),
             auto_save_every: AutoSaveEvery::Never,
             last_save: Instant::now(),
+            last_gui_save: Instant::now(),
             n_cars: 100,
             n_pedestrians: 100,
             depause_warp: 1,
@@ -81,11 +84,15 @@ impl Gui {
 
     pub fn auto_save(&mut self, goria: &mut Egregoria) {
         if let Some(every) = self.auto_save_every.into() {
-            let now = Instant::now();
-            if now.duration_since(self.last_save) > every {
+            if self.last_save.elapsed() > every {
                 egregoria::save_to_disk(goria);
-                self.last_save = now;
+                self.last_save = Instant::now();
             }
+        }
+
+        if self.last_gui_save.elapsed() > Duration::from_secs(1) {
+            common::saveload::save_silent(self, "gui");
+            self.last_gui_save = Instant::now();
         }
     }
 
@@ -299,7 +306,6 @@ impl Gui {
             });
             if ui.small_button(im_str!("Save")) {
                 egregoria::save_to_disk(goria);
-                common::saveload::save(self, "gui");
             }
         });
     }
