@@ -1,4 +1,4 @@
-use crate::{Intersections, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
+use crate::{Buildings, Intersections, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
 use geom::Polygon;
 use geom::Segment;
 use geom::Vec2;
@@ -26,6 +26,7 @@ impl Lot {
         spatial: &mut SpatialMap,
         roads: &Roads,
         inters: &Intersections,
+        buildings: &Buildings,
         parent: RoadID,
         at: Vec2,
         axis: Vec2,
@@ -53,7 +54,13 @@ impl Lot {
                         return None;
                     }
                 }
-                _ => {}
+                ProjectKind::Building(id) => {
+                    let b = &buildings[id];
+                    if b.exterior.intersects(&Polygon(shape.corners.to_vec())) {
+                        return None;
+                    }
+                }
+                ProjectKind::Ground => {}
             }
         }
 
@@ -94,6 +101,7 @@ impl Lot {
                     &mut map.spatial_map,
                     &map.roads,
                     &map.intersections,
+                    &map.buildings,
                     road,
                     pos + axis * (w + 1.0),
                     axis,

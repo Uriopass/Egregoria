@@ -197,6 +197,7 @@ impl Map {
 
         Lot::remove_intersecting_lots(self, id);
         Lot::generate_along_road(self, id);
+        Trees::remove_nearby_trees(self, id);
 
         id
     }
