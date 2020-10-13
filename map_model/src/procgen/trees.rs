@@ -65,7 +65,7 @@ impl Trees {
 
             let r3 = common::rand::rand3(sample.x, sample.y, 2.0);
 
-            let delta_elev = (height(sample) - elev).abs() * 100.0;
+            let delta_elev = (height(sample) - elev).abs() * 50.0;
 
             if r3 < sample.distance(forest_pos) / span + delta_elev {
                 active.remove(idx);
@@ -76,19 +76,21 @@ impl Trees {
                 let theta = 2.0 * std::f32::consts::PI * common::rand::rand3(i, j as f32, k as f32);
                 let dist = common::rand::rand3(i, j as f32, k as f32 + 10.0);
 
-                let pos = sample + Vec2::from_angle(theta) * (6.0 + dist * 30.0);
+                let srand = common::rand::rand3(sample.x as f32, sample.y, k as f32);
+                let scale = 10.0 + 6.0 * srand;
 
-                if self.grid.query_around(pos, 6.0).next().is_some() {
+                let pos = sample + Vec2::from_angle(theta) * (scale * 0.5 * (1.0 + dist));
+
+                if self.grid.query_around(pos, scale * 0.5).next().is_some() {
                     continue;
                 }
 
-                let srand = common::rand::rand2(pos.x as f32 + 0.391, pos.y as f32 + 0.9381);
+                let crand = common::rand::rand3(pos.x as f32, pos.y, 1.0);
 
-                let colscale = 0.7 - 0.2 * srand;
-                let scale = 10.0 + 6.0 * srand;
+                let colscale = 0.7 - 0.2 * crand;
                 let angle = 2.0
                     * std::f32::consts::PI
-                    * common::rand::rand2(pos.x as f32 + 0.31, pos.y as f32 + 31.9381);
+                    * common::rand::rand3(pos.x as f32, pos.y as f32, 2.0);
 
                 self.grid.insert(
                     pos,
