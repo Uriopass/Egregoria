@@ -1,6 +1,7 @@
 use crate::{CompiledShader, GfxContext};
 use wgpu::RenderPass;
 
+mod blit_linear;
 mod mesh;
 mod multispritebatch;
 mod shaded_batch;
@@ -8,6 +9,7 @@ mod shaded_quad;
 mod spritebatch;
 mod textured_mesh;
 
+pub use blit_linear::*;
 pub use mesh::*;
 pub use multispritebatch::*;
 pub use shaded_batch::*;
