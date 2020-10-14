@@ -8,9 +8,9 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use std::rc::Rc;
 use wgpu::{
-    BindGroup, BindGroupLayout, CommandEncoderDescriptor, Device, PipelineLayoutDescriptor,
-    Sampler, TextureComponentType, TextureCopyView, TextureDataLayout, TextureFormat, TextureUsage,
-    TextureViewDescriptor,
+    BindGroup, BindGroupLayout, CommandEncoderDescriptor, Device, Extent3d,
+    PipelineLayoutDescriptor, Sampler, TextureComponentType, TextureCopyView, TextureDataLayout,
+    TextureFormat, TextureUsage, TextureViewDescriptor,
 };
 
 #[derive(Clone)]
@@ -120,22 +120,23 @@ impl Texture {
         }
     }
 
-    pub fn create_depth_texture(
+    pub fn create_fbo(
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
-        samples: u32,
-    ) -> Self {
-        let format = wgpu::TextureFormat::Depth32Float;
+        format: wgpu::TextureFormat,
+        usage: TextureUsage,
+        samples: Option<u32>,
+    ) -> Texture {
         let desc = wgpu::TextureDescriptor {
             format,
-            usage: TextureUsage::OUTPUT_ATTACHMENT,
+            usage,
             size: wgpu::Extent3d {
                 width: sc_desc.width,
                 height: sc_desc.height,
                 depth: 1,
             },
             mip_level_count: 1,
-            sample_count: samples,
+            sample_count: samples.unwrap_or(1),
             dimension: wgpu::TextureDimension::D2,
             label: Some("depth texture"),
         };
@@ -154,37 +155,41 @@ impl Texture {
         }
     }
 
+    pub fn create_depth_texture(
+        device: &wgpu::Device,
+        sc_desc: &wgpu::SwapChainDescriptor,
+        samples: u32,
+    ) -> Self {
+        Self::create_fbo(
+            device,
+            sc_desc,
+            TextureFormat::Depth32Float,
+            TextureUsage::OUTPUT_ATTACHMENT,
+            Some(samples),
+        )
+    }
+
     pub fn create_light_texture(
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
     ) -> Self {
-        let format = wgpu::TextureFormat::R32Float;
-        let desc = wgpu::TextureDescriptor {
-            format,
-            usage: TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
-            size: wgpu::Extent3d {
-                width: sc_desc.width,
-                height: sc_desc.height,
-                depth: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            label: Some("light texture"),
-        };
-        let texture = device.create_texture(&desc);
+        Self::create_fbo(
+            device,
+            sc_desc,
+            TextureFormat::R32Float,
+            TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
+            None,
+        )
+    }
 
-        let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = Self::default_sampler(&device);
-
-        Self {
-            width: sc_desc.width as f32,
-            height: sc_desc.height as f32,
-            texture: Rc::new(texture),
-            view: Rc::new(view),
-            sampler: Rc::new(sampler),
-            format,
-        }
+    pub fn create_ui_texture(device: &wgpu::Device, sc_desc: &wgpu::SwapChainDescriptor) -> Self {
+        Self::create_fbo(
+            device,
+            sc_desc,
+            TextureFormat::Rgba8Unorm,
+            TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
+            None,
+        )
     }
 
     pub fn create_color_texture(
@@ -192,39 +197,21 @@ impl Texture {
         sc_desc: &wgpu::SwapChainDescriptor,
         samples: u32,
     ) -> MultisampledTexture {
-        let size = wgpu::Extent3d {
-            width: sc_desc.width,
-            height: sc_desc.height,
-            depth: 1,
-        };
-        let format = wgpu::TextureFormat::Rgba32Float;
-
-        let desc = &wgpu::TextureDescriptor {
-            format,
-            size,
-            usage: TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            label: Some("color texture"),
-        };
-
-        let texture = device.create_texture(&desc);
-        let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = Self::default_sampler(&device);
-
-        let target = Self {
-            width: size.width as f32,
-            height: size.height as f32,
-            texture: Rc::new(texture),
-            view: Rc::new(view),
-            sampler: Rc::new(sampler),
-            format,
-        };
+        let target = Self::create_fbo(
+            device,
+            sc_desc,
+            TextureFormat::Rgba32Float,
+            TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
+            None,
+        );
 
         let multisample_desc = &wgpu::TextureDescriptor {
-            format,
-            size,
+            format: target.format,
+            size: Extent3d {
+                width: sc_desc.width,
+                height: sc_desc.height,
+                depth: 1,
+            },
             usage: TextureUsage::OUTPUT_ATTACHMENT,
             mip_level_count: 1,
             sample_count: samples,

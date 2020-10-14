@@ -35,8 +35,8 @@ impl ImguiWrapper {
                 }),
             }]);
 
-        let renderer = RendererConfig::new()
-            .set_texture_format(gfx.sc_desc.format)
+        let renderer = RendererConfig::new_srgb()
+            .set_texture_format(gfx.ui_texture.format)
             .build(&mut imgui, &gfx.device, &gfx.queue);
         Self {
             imgui,

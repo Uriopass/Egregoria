@@ -1,11 +1,14 @@
+use crate::draweables::BlitLinear;
 use crate::lighting::prepare_lighting;
 use crate::{
-    CompiledShader, Drawable, Mesh, PreparedPipeline, SpriteBatch, Texture, TexturedMesh, Uniform,
+    CompiledShader, Drawable, IndexType, Mesh, PreparedPipeline, SpriteBatch, Texture,
+    TexturedMesh, Uniform, UvVertex,
 };
 use crate::{MultisampledTexture, ShaderType};
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
 use std::collections::HashMap;
+use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, Device, Queue,
     RenderPipeline, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
@@ -22,6 +25,7 @@ pub struct GfxContext {
     pub depth_texture: Texture,
     pub light_texture: Texture,
     pub color_texture: MultisampledTexture,
+    pub ui_texture: Texture,
     pub sc_desc: SwapChainDescriptor,
     pub pipelines: HashMap<TypeId, PreparedPipeline>,
     pub projection: Uniform<mint::ColumnMatrix4<f32>>,
@@ -78,7 +82,7 @@ impl GfxContext {
             present_mode: wgpu::PresentMode::Fifo,
         };
         let samples = 4;
-        let (swapchain, depth_texture, light_texture, color) =
+        let (swapchain, depth_texture, light_texture, color_texture, ui_texture) =
             Self::create_textures(&device, &surface, &sc_desc, samples);
 
         let projection = Uniform::new(
@@ -103,19 +107,21 @@ impl GfxContext {
             sc_desc,
             adapter,
             depth_texture,
+            color_texture,
             light_texture,
+            ui_texture,
             surface,
             pipelines: HashMap::new(),
             projection,
             inv_projection,
             time_uni,
             samples,
-            color_texture: color,
         };
 
         me.register_pipeline::<Mesh>();
         me.register_pipeline::<TexturedMesh>();
         me.register_pipeline::<SpriteBatch>();
+        me.register_pipeline::<BlitLinear>();
 
         prepare_lighting(&mut me);
 
@@ -197,10 +203,10 @@ impl GfxContext {
     ) {
         let rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &frame.output.view,
+                attachment: &self.ui_texture.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
+                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                     store: true,
                 },
             }],
@@ -212,6 +218,41 @@ impl GfxContext {
             queue: &self.queue,
             rpass: Some(rpass),
         });
+
+        let vertex_buffer = self.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(SCREEN_UV_VERTICES),
+            usage: wgpu::BufferUsage::VERTEX,
+        });
+
+        let index_buffer = self.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(UV_INDICES),
+            usage: wgpu::BufferUsage::INDEX,
+        });
+
+        let pipeline = &self.get_pipeline::<BlitLinear>().0;
+        let bg = self
+            .ui_texture
+            .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
+
+        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                attachment: &frame.output.view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: true,
+                },
+            }],
+            depth_stencil_attachment: None,
+        });
+
+        rpass.set_pipeline(pipeline);
+        rpass.set_bind_group(0, &bg, &[]);
+        rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
+        rpass.set_index_buffer(index_buffer.slice(..));
+        rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
     }
 
     pub fn finish_frame(&mut self, encoder: CommandEncoder) {
@@ -223,12 +264,13 @@ impl GfxContext {
         surface: &Surface,
         desc: &SwapChainDescriptor,
         samples: u32,
-    ) -> (SwapChain, Texture, Texture, MultisampledTexture) {
+    ) -> (SwapChain, Texture, Texture, MultisampledTexture, Texture) {
         (
             device.create_swap_chain(surface, desc),
             Texture::create_depth_texture(device, desc, samples),
             Texture::create_light_texture(device, desc),
             Texture::create_color_texture(device, desc, samples),
+            Texture::create_ui_texture(device, desc),
         )
     }
 
@@ -237,13 +279,14 @@ impl GfxContext {
         self.sc_desc.width = self.size.0;
         self.sc_desc.height = self.size.1;
 
-        let (swapchain, depth, light, color) =
+        let (swapchain, depth, light, color, ui) =
             Self::create_textures(&self.device, &self.surface, &self.sc_desc, self.samples);
 
         self.swapchain = swapchain;
         self.depth_texture = depth;
         self.light_texture = light;
         self.color_texture = color;
+        self.ui_texture = ui;
     }
 
     pub fn basic_pipeline(
@@ -326,3 +369,24 @@ impl GfxContext {
             .insert(std::any::TypeId::of::<T>(), T::create_pipeline(self));
     }
 }
+
+const SCREEN_UV_VERTICES: &[UvVertex] = &[
+    UvVertex {
+        position: [-1.0, -1.0, 0.0],
+        uv: [0.0, 1.0],
+    },
+    UvVertex {
+        position: [1.0, -1.0, 0.0],
+        uv: [1.0, 1.0],
+    },
+    UvVertex {
+        position: [1.0, 1.0, 0.0],
+        uv: [1.0, 0.0],
+    },
+    UvVertex {
+        position: [-1.0, 1.0, 0.0],
+        uv: [0.0, 0.0],
+    },
+];
+
+const UV_INDICES: &[IndexType] = &[0, 1, 2, 0, 2, 3];
