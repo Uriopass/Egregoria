@@ -8,9 +8,10 @@ use std::io::{BufReader, BufWriter};
 use std::sync::Arc;
 
 #[derive(Inspect, Clone, Serialize, Deserialize)]
-#[serde(default)]
 pub struct Config {
     pub tree_color: Color,
+    pub gui_bg_color: Color,
+    pub gui_title_color: Color,
 }
 
 fn load_config_start() -> Config {
@@ -34,15 +35,6 @@ fn save_config(config: &Config) {
         config,
     )
     .expect("could not serialize config");
-}
-
-/// Only used when adding new fields so that serde knows which values to get. Automatically updates the json after.
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            tree_color: Color::WHITE,
-        }
-    }
 }
 
 lazy_static! {

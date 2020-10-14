@@ -32,6 +32,7 @@ pub struct RoadRenderer {
     trees: Option<MultiSpriteBatch>,
     tree_builder: MultiSpriteBatchBuilder,
     crosswalks: Option<ShadedBatch<Crosswalk>>,
+    last_tree_color: Color,
 }
 
 const Z_LOT: f32 = 0.2;
@@ -75,6 +76,7 @@ impl RoadRenderer {
             trees: None,
             tree_builder,
             crosswalks: None,
+            last_tree_color: common::config().tree_color,
         }
     }
 
@@ -368,6 +370,11 @@ impl RoadRenderer {
             self.trees = self.trees(map, &ctx.gfx);
 
             map.dirty = false;
+        }
+
+        if self.last_tree_color != common::config().tree_color {
+            self.trees = self.trees(map, &ctx.gfx);
+            self.last_tree_color = common::config().tree_color;
         }
 
         if let Some(x) = self.map_mesh.clone() {

@@ -1,6 +1,6 @@
 use crate::default::InspectArgsDefault;
 use crate::default::InspectRenderDefault;
-use geom::{Color, PolyLine, Transform, Vec2};
+use geom::{from_srgb, Color, LinearColor, PolyLine, Transform, Vec2};
 use imgui::{im_str, ColorEdit, EditableColor, Ui};
 
 impl InspectRenderDefault<Color> for Color {
@@ -25,6 +25,36 @@ impl InspectRenderDefault<Color> for Color {
             c.g = color_arr[1];
             c.b = color_arr[2];
             c.a = color_arr[3];
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl InspectRenderDefault<LinearColor> for LinearColor {
+    fn render(_: &[&LinearColor], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
+        unimplemented!()
+    }
+
+    fn render_mut(
+        data: &mut [&mut LinearColor],
+        label: &'static str,
+        ui: &Ui,
+        _args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+
+        let lc = &mut data[0];
+        let c: Color = (**lc).into();
+        let mut color_arr = [c.r, c.g, c.b, c.a];
+        if ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui) {
+            lc.r = from_srgb(color_arr[0]);
+            lc.g = from_srgb(color_arr[1]);
+            lc.b = from_srgb(color_arr[2]);
+            lc.a = color_arr[3];
             true
         } else {
             false
