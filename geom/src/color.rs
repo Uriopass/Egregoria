@@ -1,12 +1,18 @@
 use serde::{Deserialize, Serialize};
 use std::ops::Mul;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Color {
     pub r: f32,
     pub g: f32,
     pub b: f32,
     pub a: f32,
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Self::BLACK
+    }
 }
 
 impl Color {
@@ -118,6 +124,12 @@ pub struct LinearColor {
     pub a: f32,
 }
 
+impl Default for LinearColor {
+    fn default() -> Self {
+        Self::BLACK
+    }
+}
+
 impl LinearColor {
     pub fn gray(level: f32) -> Self {
         Self {
@@ -208,6 +220,15 @@ pub fn from_srgb(component: f32) -> f32 {
     }
 }
 
+pub fn to_srgb(component: f32) -> f32 {
+    let a = 0.055;
+    if component <= 0.00031308 {
+        component * 12.92
+    } else {
+        component.powf(0.416666) * (1.0 + a) - a
+    }
+}
+
 impl From<Color> for LinearColor {
     fn from(color: Color) -> Self {
         LinearColor {
@@ -215,6 +236,17 @@ impl From<Color> for LinearColor {
             g: from_srgb(color.g),
             b: from_srgb(color.b),
             a: color.a,
+        }
+    }
+}
+
+impl From<LinearColor> for Color {
+    fn from(lcolor: LinearColor) -> Self {
+        Color {
+            r: to_srgb(lcolor.r),
+            g: to_srgb(lcolor.g),
+            b: to_srgb(lcolor.b),
+            a: lcolor.a,
         }
     }
 }
@@ -234,7 +266,7 @@ impl Mul<LinearColor> for f32 {
 
 impl Into<[f32; 4]> for Color {
     fn into(self) -> [f32; 4] {
-        LinearColor::from(self).into()
+        [self.r, self.g, self.b, self.a]
     }
 }
 

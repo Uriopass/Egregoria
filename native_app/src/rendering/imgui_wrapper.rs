@@ -1,4 +1,4 @@
-use imgui_wgpu::{Renderer, RendererConfig};
+use imgui_wgpu::RendererConfig;
 use std::time::Instant;
 use wgpu_engine::{GfxContext, GuiRenderContext};
 use winit::window::Window;

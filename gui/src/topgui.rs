@@ -69,6 +69,11 @@ impl Default for Gui {
 
 impl Gui {
     pub fn render(&mut self, ui: &Ui, goria: &mut Egregoria) {
+        let tok = ui.push_style_colors(&[
+            (StyleColor::WindowBg, common::config().gui_bg_color.into()),
+            (StyleColor::TitleBg, common::config().gui_title_color.into()),
+        ]);
+
         self.inspector(ui, goria);
 
         self.windows.render(ui, goria);
@@ -80,6 +85,8 @@ impl Gui {
         self.time_controls(ui, goria);
 
         self.auto_save(goria);
+
+        tok.pop(ui);
     }
 
     pub fn auto_save(&mut self, goria: &mut Egregoria) {
