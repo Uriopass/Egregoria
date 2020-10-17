@@ -11,8 +11,8 @@ use std::collections::HashMap;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, Device, Queue,
-    RenderPipeline, StencilStateDescriptor, Surface, SwapChain, SwapChainDescriptor,
-    SwapChainFrame, VertexBufferDescriptor,
+    RenderPassColorAttachmentDescriptor, RenderPipeline, StencilStateDescriptor, Surface,
+    SwapChain, SwapChainDescriptor, SwapChainFrame, VertexBufferDescriptor,
 };
 
 pub struct GfxContext {
@@ -25,6 +25,7 @@ pub struct GfxContext {
     pub depth_texture: Texture,
     pub light_texture: Texture,
     pub color_texture: MultisampledTexture,
+    pub normal_texture: MultisampledTexture,
     pub ui_texture: Texture,
     pub sc_desc: SwapChainDescriptor,
     pub pipelines: HashMap<TypeId, PreparedPipeline>,
@@ -82,7 +83,7 @@ impl GfxContext {
             present_mode: wgpu::PresentMode::Fifo,
         };
         let samples = 4;
-        let (swapchain, depth_texture, light_texture, color_texture, ui_texture) =
+        let (swapchain, depth_texture, light_texture, color_texture, ui_texture, normal_texture) =
             Self::create_textures(&device, &surface, &sc_desc, samples);
 
         let projection = Uniform::new(
@@ -110,6 +111,7 @@ impl GfxContext {
             color_texture,
             light_texture,
             ui_texture,
+            normal_texture,
             surface,
             pipelines: HashMap::new(),
             projection,
@@ -169,14 +171,24 @@ impl GfxContext {
         prepare(&mut fc);
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &self.color_texture.multisampled_buffer,
-                resolve_target: Some(&self.color_texture.target.view),
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                    store: true,
+            color_attachments: &[
+                wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &self.color_texture.multisampled_buffer,
+                    resolve_target: Some(&self.color_texture.target.view),
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: true,
+                    },
                 },
-            }],
+                RenderPassColorAttachmentDescriptor {
+                    attachment: &self.normal_texture.multisampled_buffer,
+                    resolve_target: Some(&self.normal_texture.target.view),
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                        store: true,
+                    },
+                },
+            ],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                 attachment: &self.depth_texture.view,
                 depth_ops: Some(wgpu::Operations {
@@ -264,13 +276,21 @@ impl GfxContext {
         surface: &Surface,
         desc: &SwapChainDescriptor,
         samples: u32,
-    ) -> (SwapChain, Texture, Texture, MultisampledTexture, Texture) {
+    ) -> (
+        SwapChain,
+        Texture,
+        Texture,
+        MultisampledTexture,
+        Texture,
+        MultisampledTexture,
+    ) {
         (
             device.create_swap_chain(surface, desc),
             Texture::create_depth_texture(device, desc, samples),
             Texture::create_light_texture(device, desc),
             Texture::create_color_texture(device, desc, samples),
             Texture::create_ui_texture(device, desc),
+            Texture::create_color_texture(device, desc, samples),
         )
     }
 
@@ -279,7 +299,7 @@ impl GfxContext {
         self.sc_desc.width = self.size.0;
         self.sc_desc.height = self.size.1;
 
-        let (swapchain, depth, light, color, ui) =
+        let (swapchain, depth, light, color, ui, normal) =
             Self::create_textures(&self.device, &self.surface, &self.sc_desc, self.samples);
 
         self.swapchain = swapchain;
@@ -287,6 +307,7 @@ impl GfxContext {
         self.light_texture = light;
         self.color_texture = color;
         self.ui_texture = ui;
+        self.normal_texture = normal;
     }
 
     pub fn basic_pipeline(
@@ -310,16 +331,28 @@ impl GfxContext {
         let vs_module = self.device.create_shader_module(vert_shader.0);
         let fs_module = self.device.create_shader_module(frag_shader.0);
 
-        let color_states = [wgpu::ColorStateDescriptor {
-            format: self.color_texture.target.format,
-            color_blend: wgpu::BlendDescriptor {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
+        let color_states = [
+            wgpu::ColorStateDescriptor {
+                format: self.color_texture.target.format,
+                color_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                write_mask: wgpu::ColorWrite::ALL,
             },
-            alpha_blend: wgpu::BlendDescriptor::REPLACE,
-            write_mask: wgpu::ColorWrite::ALL,
-        }];
+            wgpu::ColorStateDescriptor {
+                format: self.normal_texture.target.format,
+                color_blend: wgpu::BlendDescriptor {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                write_mask: wgpu::ColorWrite::ALL,
+            },
+        ];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
             label: None,

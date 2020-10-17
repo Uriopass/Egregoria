@@ -3,14 +3,24 @@ use crate::{
     VBDesc,
 };
 use geom::Vec3;
+use mint::ColumnMatrix4;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BlendFactor, CommandEncoder, RenderPass, SwapChainFrame, TextureComponentType,
     VertexBufferDescriptor,
 };
 
+#[derive(Copy, Clone)]
+#[repr(C)]
+struct LightUniform {
+    ambiant: Vec3,
+    time: f32,
+    inv_proj: ColumnMatrix4<f32>,
+}
+
+u8slice_impl!(LightUniform);
+
 struct LightBlit;
-struct LightMultiply;
 
 impl Drawable for LightBlit {
     fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline
@@ -74,6 +84,7 @@ impl Drawable for LightBlit {
     }
 }
 
+struct LightMultiply;
 impl Drawable for LightMultiply {
     fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline
     where
@@ -86,9 +97,10 @@ impl Drawable for LightMultiply {
                     bind_group_layouts: &[
                         &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
                         &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
-                        &Uniform::<Vec3>::bindgroup_layout(
+                        &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
+                        &Uniform::<LightUniform>::bindgroup_layout(
                             &gfx.device,
-                            wgpu::ShaderStage::FRAGMENT,
+                            wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::VERTEX,
                         ),
                     ],
                     push_constant_ranges: &[],
@@ -273,10 +285,21 @@ pub fn render_lights(
             .get_bind_group_layout(1),
     );
 
-    let ambiant_uni = Uniform::new(
-        [ambiant.x, ambiant.y, ambiant.z, gfx.time_uni.value],
+    let normal_tex_bind_group = gfx.normal_texture.target.bindgroup(
         &gfx.device,
-        wgpu::ShaderStage::FRAGMENT,
+        &gfx.get_pipeline::<LightMultiply>()
+            .0
+            .get_bind_group_layout(2),
+    );
+
+    let ambiant_uni = Uniform::new(
+        LightUniform {
+            ambiant,
+            time: gfx.time_uni.value,
+            inv_proj: gfx.inv_projection.value,
+        },
+        &gfx.device,
+        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
     );
 
     ambiant_uni.upload_to_gpu(&gfx.queue);
@@ -286,7 +309,7 @@ pub fn render_lights(
             attachment: &frame.output.view,
             resolve_target: None,
             ops: wgpu::Operations {
-                load: wgpu::LoadOp::Load,
+                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                 store: true,
             },
         }],
@@ -296,7 +319,8 @@ pub fn render_lights(
     rpass.set_pipeline(&gfx.get_pipeline::<LightMultiply>().0);
     rpass.set_bind_group(0, &light_tex_bind_group, &[]);
     rpass.set_bind_group(1, &color_tex_bind_group, &[]);
-    rpass.set_bind_group(2, &ambiant_uni.bindgroup, &[]);
+    rpass.set_bind_group(2, &normal_tex_bind_group, &[]);
+    rpass.set_bind_group(3, &ambiant_uni.bindgroup, &[]);
     rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
     rpass.set_index_buffer(index_buffer.slice(..));
     rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);

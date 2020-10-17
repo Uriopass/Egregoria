@@ -215,7 +215,7 @@ impl State {
 
         let delta = (delta * warp as f64).min(MAX_TIMESTEP);
 
-        *time = GameTime::new(delta as f32, time.timestamp + delta);
+        *time = GameTime::new(delta as f32, time.timestamp + delta * 20.0);
 
         gfx.set_time(time.timestamp as f32);
     }

@@ -78,12 +78,13 @@ impl Context {
                             self.gfx.resize(new_size.width, new_size.height);
                             state.resized(&mut self, new_size);
                         }
-                        frame = Some(
-                            self.gfx
-                                .swapchain
-                                .get_current_frame()
-                                .expect("Error getting swapchain frame"),
-                        );
+
+                        match self.gfx.swapchain.get_current_frame() {
+                            Ok(swapchainframe) => {
+                                frame = Some(swapchainframe);
+                            }
+                            Err(e) => panic!("error getting swapchain: {}", e),
+                        };
                     }
                     Some(sco) => {
                         self.input.mouse.unprojected = state.unproject(self.input.mouse.screen);
@@ -92,7 +93,6 @@ impl Context {
 
                         let window = &self.window;
                         let mut enc = self.gfx.start_frame();
-
                         self.gfx.render_objs(&mut enc, |fc| state.render(fc));
 
                         let (lights, ambiant_col) = state.lights();
@@ -106,7 +106,6 @@ impl Context {
 
                         self.gfx
                             .render_gui(&mut enc, &sco, |gctx| state.render_gui(window, gctx));
-
                         self.gfx.finish_frame(enc);
 
                         self.input.end_frame();

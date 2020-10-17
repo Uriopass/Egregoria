@@ -6,79 +6,147 @@ layout(location=2) in float in_zoom;
 layout(location=3) in float time;
 
 layout(location=0) out vec4 out_color;
+layout(location=1) out vec4 out_normal;
 
-vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+float permute(float x) {
+    return mod((34.0 * x + 1.0)*x, 289.0);
+}
 
-float snoise(vec2 v){
-    const vec4 C = vec4(0.211324865405187, 0.366025403784439,
-    -0.577350269189626, 0.024390243902439);
-    vec2 i  = floor(v + dot(v, C.yy));
-    vec2 x0 = v -   i + dot(i, C.xx);
-    vec2 i1;
-    i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-    vec4 x12 = x0.xyxy + C.xxzz;
-    x12.xy -= i1;
+// Gradient mapping with an extra rotation.
+vec2 grad2(vec2 p, float rot) {
+    // Map from a line to a diamond such that a shift maps to a rotation.
+    float u = permute(permute(p.x) + p.y) * 0.0243902439 + rot;// Rotate by shift
+    u = 4.0 * fract(u) - 2.0;
+    return vec2(abs(u)-1.0, abs(abs(u+1.0)-2.0)-1.0);
+}
+
+float srdnoise(in vec2 v, in float rot, out vec2 grad) {
+    const vec3 C = vec3(0.211324865405187, 0.366025403784439,
+    -0.577350269189626);
+
+    vec2 i = floor(v + dot(v, C.yy));
+    vec2 x0 = v - i + dot(i, C.xx);
+
+    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2 (0.0, 1.0);
+
+    // Determine the offsets for the other two corners
+    vec2 v1 = x0 - i1 + C.x;
+    vec2 v2 = x0 - 1.0 + 2.0 * C.x;
+
+    // Wrap coordinates at 289 to avoid float precision problems
     i = mod(i, 289.0);
-    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0))
-    + i.x + vec3(0.0, i1.x, 1.0));
-    vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy),
-    dot(x12.zw, x12.zw)), 0.0);
-    m = m*m;
-    m = m*m;
-    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-    vec3 h = abs(x) - 0.5;
-    vec3 ox = floor(x + 0.5);
-    vec3 a0 = x - ox;
-    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
-    vec3 g;
-    g.x  = a0.x  * x0.x  + h.x  * x0.y;
-    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-    return 130.0 * dot(m, g);
+
+    // Calculate the circularly symmetric part of each noise wiggle
+    vec3 t = max(0.5 - vec3(dot(x0, x0), dot(v1, v1), dot(v2, v2)), 0.0);
+    vec3 t2 = t*t;
+    vec3 t4 = t2*t2;
+
+    // Calculate the gradients for the three corners
+    vec2 g0 = grad2(i, rot);
+    vec2 g1 = grad2(i + i1, rot);
+    vec2 g2 = grad2(i + 1.0, rot);
+
+    // Compute noise contributions from each corner
+    vec3 gv = vec3(dot(g0, x0), dot(g1, v1), dot(g2, v2));// ramp: g dot v
+
+    // Compute partial derivatives in x and y
+    vec3 temp = t2 * t * gv;
+    grad.x = -8.0 * dot(temp, vec3(x0.x, v1.x, v2.x));
+    grad.y = -8.0 * dot(temp, vec3(x0.y, v1.y, v2.y));
+    grad.x += dot(t4, vec3(g0.x, g1.x, g2.x));
+    grad.y += dot(t4, vec3(g0.y, g1.y, g2.y));
+    grad *= 103.0;
+
+    // Add contributions from the three corners and return
+    return 103.0 * dot(t4, gv);
 }
 
 const float FBM_MAG = 0.4;
 
-float fnoise(float ampl) {
-    vec2 dec = 1.0 + in_wv.xy* ampl;
+float fnoise(vec2 pos, float ampl, out vec2 acc_grad) {
+    vec2 dec = 70.69 + pos * ampl;
 
     float noise = 0.0;
-    float amplitude = 0.6;
+    float amplitude = 0.7;
+    acc_grad = vec2(0.0);
 
     for (int i = 0; i < 8; i++) {
-        noise += amplitude * (snoise(dec) + 1.0) * FBM_MAG;
+        vec2 grad;
+        float v = srdnoise(dec, 0.0, grad);
+        noise += amplitude * v;
+        acc_grad += amplitude * grad;
+
         dec *= 1.0 / FBM_MAG;
         amplitude *= FBM_MAG;
     }
 
+    acc_grad *= ampl;
+
     return noise;
 }
 
-float disturbed_noise(float noise) {
-    float noise2 = fnoise(0.007);
+/*
+float disturbed_noise(vec2 pos, float noise) {
+    vec2 grad;
+    float noise2 = fnoise(pos, 0.05, grad);
 
-    float zoom = clamp(log(in_zoom) * 0.01 + 0.15, 0.0, 1.0);
+    float zoom = clamp(log(in_zoom) * 0.014 + 0.15, 0.0, 1.0);
 
     return noise * (1.0 - zoom) + noise2 * zoom;
 }
+*/
 
 void main() {
-    float noise = fnoise(0.00007);
+    vec2 grad;
+    float noise = 0.55 * fnoise(in_wv.xy, 0.00003, grad);
 
     float before = noise;
-    noise -= length(in_wv) * 0.00009;
-    noise = max(noise, 0);
 
-    float dnoise = disturbed_noise(noise);
+    grad *= 0.00003;
 
-    if (noise < 0.1) { // deep water
+    //    noise = 1.0;
+    //    grad *= 0.0;
+
+    noise -= (in_wv.x * in_wv.x + in_wv.y * in_wv.y) * 0.000000004;
+    grad -= 2.0 * in_wv * 0.000000004;
+
+    grad *= 4000.0;
+
+    if (noise < 0) {
+        noise = 0;
+    }
+
+    if(noise < 0.1) {
+        grad = -in_wv * 0.000005;
+    } else {
+        grad *= 5.0 * noise;
+    }
+
+    vec3 normal = cross(vec3(1.0, 0.0, grad.x), vec3(0.0, 1.0, grad.y));
+    normal = normal / length(normal);
+
+    if (noise < 0.0) {
+        out_color = vec4(0.0, 0.0, 0.0, 1.0);
+    } else if (noise < 0.1) { // deep water
         float lol = before;
-        out_color =  (0.2 + dnoise * 1.0) * vec4(0.1, 0.3 + 0.1 * abs(lol), 0.6 + 0.1 * abs(lol), 1.0);
-    } else if (noise < 0.12) { // sand
-        out_color = (1.0 - dnoise) * vec4(0.9, 0.8, 0.3, 1.0);
-    } else { // grass
-        dnoise = dnoise * 0.3 + 0.1;
-        out_color = vec4(dnoise * 0.2, dnoise * 0.45, dnoise * 0.15, 1.0);
+        out_color =  0.2 * vec4(0.1, 0.3 + 0.1 * abs(lol), 0.6 + 0.1 * abs(lol), 1.0);
+    } else if (noise < 0.11) { // sand
+        out_color = 1.2 * vec4(0.4, 0.3, 0.1, 1.0);
+    } else {
+//        float dnoise = disturbed_noise(in_wv.xy, noise);
+        // grass
+//        dnoise = dnoise * 0.3 + 0.1;
+
+//        dnoise = (dnoise - 0.12) * 5.0;
+
+        //out_color = vec4(grad.x, grad.y, 0.0, 1.0);
+        //out_color = vec4(light, light, light, 1.0);
+        //out_color = vec4(dnoise, dnoise, dnoise, 1.0);
+        out_color = (0.1 + noise) * 0.2 * vec4(0.1, 0.4, 0.2, 1.0);
     }
 
     out_color.a = 1.0;
+
+    out_normal.xyz = normal;
+    out_normal.a = 1.0;
 }

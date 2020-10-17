@@ -1,7 +1,14 @@
-use geom::Polygon;
+use geom::{Polygon, Vec3};
 use rand::Rng;
+use serde::{Deserialize, Serialize};
 
-pub fn gen_exterior_workplace(size: f32) -> (Polygon, usize) {
+#[derive(Clone, Serialize, Deserialize)]
+pub struct RoofFace {
+    pub poly: Polygon,
+    pub normal: Vec3,
+}
+
+pub fn gen_exterior_workplace(size: f32) -> (Polygon, usize, Option<Vec<RoofFace>>) {
     let a = rand_in(15.0, 20.0);
     let b = rand_in(15.0, 20.0);
 
@@ -18,10 +25,10 @@ pub fn gen_exterior_workplace(size: f32) -> (Polygon, usize) {
     p.extrude(0, extrude);
 
     p.translate(-p.barycenter());
-    (p, 3)
+    (p, 3, None)
 }
 
-pub fn gen_exterior_house(size: f32) -> (Polygon, usize) {
+pub fn gen_exterior_house(size: f32) -> (Polygon, usize, Option<Vec<RoofFace>>) {
     let a = rand_in(15.0, 20.0);
     let b = rand_in(15.0, 20.0);
 
@@ -36,10 +43,10 @@ pub fn gen_exterior_house(size: f32) -> (Polygon, usize) {
     p.extrude(seg, rand_in(5.0, 10.0));
 
     p.translate(-p.barycenter());
-    (p, if seg == 0 { 1 } else { 0 })
+    (p, if seg == 0 { 1 } else { 0 }, None)
 }
 
-pub fn gen_exterior_supermarket(size: f32) -> (Polygon, usize) {
+pub fn gen_exterior_supermarket(size: f32) -> (Polygon, usize, Option<Vec<RoofFace>>) {
     let mut h = rand_in(25.0, 30.0);
     let mut w = h + rand_in(5.0, 10.0);
 
@@ -49,7 +56,7 @@ pub fn gen_exterior_supermarket(size: f32) -> (Polygon, usize) {
     let mut p = Polygon::rect(w, h);
 
     p.translate(-p.barycenter());
-    (p, 0)
+    (p, 0, None)
 }
 
 fn rand_in(min: f32, max: f32) -> f32 {
