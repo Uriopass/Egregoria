@@ -1,3 +1,4 @@
+use crate::procgen::RoofFace;
 use crate::{Buildings, Lot, Roads, SpatialMap};
 use geom::{Polygon, Vec2};
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,7 @@ pub struct Building {
     pub id: BuildingID,
     pub exterior: Polygon,
     pub walkway: Polygon,
+    pub roofs: Option<Vec<RoofFace>>,
     pub door_pos: Vec2,
     pub kind: BuildingKind,
 }
@@ -34,7 +36,7 @@ impl Building {
         let at = lot.shape.center();
         let axis = lot.road_edge.vec().normalize();
 
-        let (mut exterior, walkway_seg) = match kind {
+        let (mut exterior, walkway_seg, roofs) = match kind {
             BuildingKind::House => crate::procgen::gen_exterior_house(lot.size),
             BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(lot.size),
             BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(lot.size),
@@ -60,6 +62,7 @@ impl Building {
             walkway,
             kind,
             door_pos,
+            roofs,
         });
         spatial_map.insert(id, bbox);
         Some(id)

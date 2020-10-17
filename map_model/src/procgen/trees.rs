@@ -79,7 +79,9 @@ impl Trees {
         let r2 = common::rand::rand2(i, 1.0);
         let r3 = common::rand::rand2(i, 2.0);
 
-        let forest_pos = vec2(-600.0, -1500.0) + vec2(10000.0 * r1, 9000.0 * r2);
+        let ll = vec2(-6500.0, -6100.0);
+        let ur = vec2(5700.0, 3200.0);
+        let forest_pos = ll + vec2((ur.x - ll.x) * r1, (ur.y - ll.y) * r2);
         let elev = height(forest_pos);
         if elev - 0.15 < r3 * r3 {
             return false;

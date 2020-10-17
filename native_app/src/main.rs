@@ -15,10 +15,13 @@ fn main() {
     env_logger::builder()
         .filter(None, LevelFilter::Info)
         .filter(Some("wgpu_core"), LevelFilter::Warn)
-        .filter(Some("gfx_memory"), LevelFilter::Off)
-        .filter(Some("gfx_backend_vulkan"), LevelFilter::Off)
-        .filter(Some("gfx_descriptor"), LevelFilter::Off)
+        .filter(Some("gfx_memory"), LevelFilter::Warn)
+        .filter(Some("gfx_backend_vulkan"), LevelFilter::Warn)
+        .filter(Some("gfx_descriptor"), LevelFilter::Warn)
         .format(move |f, r| {
+            if std::thread::panicking() {
+                return Ok(());
+            }
             let time = Instant::now().duration_since(start).as_micros();
             if r.level() > Level::Warn {
                 let module_path = r
