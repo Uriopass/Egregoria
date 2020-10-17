@@ -55,24 +55,24 @@ float srdnoise(in vec2 v, in float rot, out vec2 grad) {
     grad.y = -8.0 * dot(temp, vec3(x0.y, v1.y, v2.y));
     grad.x += dot(t4, vec3(g0.x, g1.x, g2.x));
     grad.y += dot(t4, vec3(g0.y, g1.y, g2.y));
-    grad *= 103.0;
+    grad *= 40.0;
 
     // Add contributions from the three corners and return
-    return 103.0 * dot(t4, gv);
+    return 40.0 * dot(t4, gv);
 }
 
 const float FBM_MAG = 0.4;
 
-float fnoise(vec2 pos, float ampl, out vec2 acc_grad) {
+float fnoise(vec2 pos, float ampl, float rot, out vec2 acc_grad) {
     vec2 dec = 70.69 + pos * ampl;
 
     float noise = 0.0;
-    float amplitude = 0.7;
+    float amplitude = 1.0;
     acc_grad = vec2(0.0);
 
     for (int i = 0; i < 8; i++) {
         vec2 grad;
-        float v = srdnoise(dec, 0.0, grad);
+        float v = srdnoise(dec, rot, grad);
         noise += amplitude * v;
         acc_grad += amplitude * grad;
 
@@ -85,29 +85,24 @@ float fnoise(vec2 pos, float ampl, out vec2 acc_grad) {
     return noise;
 }
 
-/*
-float disturbed_noise(vec2 pos, float noise) {
+float disturbed_noise(vec2 pos, float rot, float noise) {
     vec2 grad;
-    float noise2 = fnoise(pos, 0.05, grad);
+    float noise2 = fnoise(pos, 0.005, rot, grad) + 1.0;
 
-    float zoom = clamp(log(in_zoom) * 0.014 + 0.15, 0.0, 1.0);
+    float zoom = clamp(log(in_zoom) * 0.01 + 0.2, 0.0, 1.0);
 
     return noise * (1.0 - zoom) + noise2 * zoom;
 }
-*/
 
 void main() {
     vec2 grad;
-    float noise = 0.55 * fnoise(in_wv.xy, 0.00003, grad);
+    float noise = fnoise(in_wv, 0.00003, 0.0, grad);
 
     float before = noise;
 
     grad *= 0.00003;
 
-    //    noise = 1.0;
-    //    grad *= 0.0;
-
-    noise -= (in_wv.x * in_wv.x + in_wv.y * in_wv.y) * 0.000000004;
+    noise -= dot(in_wv, in_wv) * 0.000000004;
     grad -= 2.0 * in_wv * 0.000000004;
 
     grad *= 4000.0;
@@ -128,21 +123,15 @@ void main() {
     if (noise < 0.0) {
         out_color = vec4(0.0, 0.0, 0.0, 1.0);
     } else if (noise < 0.1) { // deep water
+        float dnoise = disturbed_noise(in_wv, time * 0.05, noise);
         float lol = before;
-        out_color =  0.2 * vec4(0.1, 0.3 + 0.1 * abs(lol), 0.6 + 0.1 * abs(lol), 1.0);
+        out_color =  (0.1 + 0.2 * dnoise) * vec4(0.1, 0.3 + 0.1 * abs(lol), 0.6 + 0.1 * abs(lol), 1.0);
     } else if (noise < 0.11) { // sand
         out_color = 1.2 * vec4(0.4, 0.3, 0.1, 1.0);
     } else {
-//        float dnoise = disturbed_noise(in_wv.xy, noise);
-        // grass
-//        dnoise = dnoise * 0.3 + 0.1;
+        float dnoise = disturbed_noise(in_wv * 3.0, 0.0, noise);
 
-//        dnoise = (dnoise - 0.12) * 5.0;
-
-        //out_color = vec4(grad.x, grad.y, 0.0, 1.0);
-        //out_color = vec4(light, light, light, 1.0);
-        //out_color = vec4(dnoise, dnoise, dnoise, 1.0);
-        out_color = (0.1 + noise) * 0.2 * vec4(0.1, 0.4, 0.2, 1.0);
+        out_color = (0.1 + noise + (dnoise - noise) * 0.3) * 0.5 * vec4(0.1, 0.4, 0.1, 1.0);
     }
 
     out_color.a = 1.0;
