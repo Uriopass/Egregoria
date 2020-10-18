@@ -2,6 +2,7 @@
 
 layout(location=0) in vec2 in_uv;
 layout(location=1) in vec2 in_wv;
+layout(location=2) in vec3 sun;
 
 layout(location=0) out vec4 out_color;
 
@@ -110,7 +111,7 @@ float cloud(vec2 pos, float ampl) {
         amplitude *= FBM_MAG;
     }
 
-    return 0.8 + 0.2 * clamp(noise, 0.0, 1.0);
+    return 1.0 + 0.25 * clamp(noise, 0.0, 1.0);
 }
 
 void main() {
@@ -119,11 +120,7 @@ void main() {
     vec3  normal = texture(sampler2D(t_normal, s_normal), in_uv).xyz;
     float cloud = cloud(in_wv.xy + time * 100.0, 0.0001);
 
-    float t = 2.0 * 3.1415 * (time - 800.0) / 2400.0;
-    vec3 sun = vec3(cos(t), sin(t), sin(t) + 0.5);
-    sun = sun / length(sun);
-
-    float sun_mult = 1.5 * cloud * clamp(dot(normal, sun), 0.2, 1.0);
+    float sun_mult = cloud * clamp(dot(normal, sun), 0.1, 1.0);
 
     vec3 real_ambiant = vec3(sun_mult);
 

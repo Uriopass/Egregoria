@@ -76,7 +76,7 @@ impl RoadRenderer {
             trees: None,
             tree_builder,
             crosswalks: None,
-            last_tree_color: common::config().tree_color,
+            last_tree_color: common::config().tree_col,
         }
     }
 
@@ -321,7 +321,7 @@ impl RoadRenderer {
     pub fn trees(&mut self, map: &mut Map, gfx: &GfxContext) -> Option<MultiSpriteBatch> {
         self.tree_builder.clear();
 
-        let tree_col = common::config().tree_color;
+        let tree_col = common::config().tree_col;
         for (pos, t) in map.trees.trees() {
             self.tree_builder.push(
                 (common::rand::rand3(pos.x, pos.y, 10.0) * self.tree_builder.n_texs() as f32)
@@ -372,9 +372,9 @@ impl RoadRenderer {
             map.dirty = false;
         }
 
-        if self.last_tree_color != common::config().tree_color {
+        if self.last_tree_color != common::config().tree_col {
             self.trees = self.trees(map, &ctx.gfx);
-            self.last_tree_color = common::config().tree_color;
+            self.last_tree_color = common::config().tree_col;
         }
 
         if let Some(x) = self.map_mesh.clone() {

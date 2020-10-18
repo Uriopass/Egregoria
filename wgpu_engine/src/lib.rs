@@ -1,5 +1,5 @@
 #[macro_use]
-mod u8slice;
+pub mod u8slice;
 
 mod draweables;
 mod geometry;

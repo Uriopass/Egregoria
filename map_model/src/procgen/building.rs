@@ -63,9 +63,11 @@ fn rand_in(min: f32, max: f32) -> f32 {
     rand::thread_rng().gen_range(min, max)
 }
 
+/*
 fn randi_in(min: i32, max: i32) -> i32 {
     rand::thread_rng().gen_range(min, max)
 }
+ */
 
 // How to gen a house
 // Idea: Make everything out of rectangles
