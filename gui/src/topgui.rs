@@ -70,8 +70,8 @@ impl Default for Gui {
 impl Gui {
     pub fn render(&mut self, ui: &Ui, goria: &mut Egregoria) {
         let tok = ui.push_style_colors(&[
-            (StyleColor::WindowBg, common::config().gui_bg_color.into()),
-            (StyleColor::TitleBg, common::config().gui_title_color.into()),
+            (StyleColor::WindowBg, common::config().gui_bg_col.into()),
+            (StyleColor::TitleBg, common::config().gui_title_col.into()),
         ]);
 
         self.inspector(ui, goria);

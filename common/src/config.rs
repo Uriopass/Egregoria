@@ -9,9 +9,12 @@ use std::sync::Arc;
 
 #[derive(Inspect, Clone, Serialize, Deserialize)]
 pub struct Config {
-    pub tree_color: Color,
-    pub gui_bg_color: Color,
-    pub gui_title_color: Color,
+    pub tree_col: Color,
+    pub ground_base_col: Color,
+    pub sand_col: Color,
+    pub water_col: Color,
+    pub gui_bg_col: Color,
+    pub gui_title_col: Color,
 }
 
 fn load_config_start() -> Config {

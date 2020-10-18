@@ -98,10 +98,7 @@ impl Drawable for LightMultiply {
                         &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
                         &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
                         &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
-                        &Uniform::<LightUniform>::bindgroup_layout(
-                            &gfx.device,
-                            wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::VERTEX,
-                        ),
+                        &Uniform::<LightUniform>::bindgroup_layout(&gfx.device),
                     ],
                     push_constant_ranges: &[],
                 });
@@ -299,7 +296,6 @@ pub fn render_lights(
             inv_proj: gfx.inv_projection.value,
         },
         &gfx.device,
-        wgpu::ShaderStage::VERTEX | wgpu::ShaderStage::FRAGMENT,
     );
 
     ambiant_uni.upload_to_gpu(&gfx.queue);

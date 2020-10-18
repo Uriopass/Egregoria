@@ -11,15 +11,15 @@ pub struct Uniform<T> {
 
 impl<T: Copy> Uniform<T>
 where
-    [T]: ToU8Slice,
+    T: ToU8Slice,
 {
-    pub fn new(value: T, device: &wgpu::Device, visibility: ShaderStage) -> Self {
-        let layout = Self::bindgroup_layout(&device, visibility);
+    pub fn new(value: T, device: &wgpu::Device) -> Self {
+        let layout = Self::bindgroup_layout(&device);
 
         let r = [value];
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
-            contents: ToU8Slice::to_slice(r.as_ref()),
+            contents: ToU8Slice::cast_slice(r.as_ref()),
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         });
 
@@ -48,20 +48,17 @@ where
 
     pub fn upload_to_gpu(&self, queue: &wgpu::Queue) {
         let r = [self.value];
-        let data = ToU8Slice::to_slice(r.as_ref());
+        let data = ToU8Slice::cast_slice(r.as_ref());
         queue.write_buffer(&self.buffer, 0, data);
     }
 }
 
 impl<T> Uniform<T> {
-    pub fn bindgroup_layout(
-        device: &wgpu::Device,
-        visibility: wgpu::ShaderStage,
-    ) -> wgpu::BindGroupLayout {
+    pub fn bindgroup_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility,
+                visibility: ShaderStage::VERTEX | ShaderStage::FRAGMENT,
                 ty: wgpu::BindingType::UniformBuffer {
                     dynamic: false, // The dynamic field indicates whether this buffer will change size or not. This is useful if we want to store an array of things in our uniforms.
                     min_binding_size: None,

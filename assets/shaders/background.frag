@@ -3,10 +3,17 @@
 layout(location=0) in vec2 in_uv;
 layout(location=1) in vec2 in_wv;
 layout(location=2) in float in_zoom;
-layout(location=3) in float time;
 
 layout(location=0) out vec4 out_color;
 layout(location=1) out vec4 out_normal;
+
+layout(set = 1, binding = 0) uniform BGParams {
+    vec4 sea_color;
+    vec4 grass_color;
+    vec4 sand_color;
+    float time;
+    vec3 pad;
+};
 
 float permute(float x) {
     return mod((34.0 * x + 1.0)*x, 289.0);
@@ -125,13 +132,13 @@ void main() {
     } else if (noise < 0.1) { // deep water
         float dnoise = disturbed_noise(in_wv, time * 0.05, noise);
         float lol = before;
-        out_color =  (0.1 + 0.2 * dnoise) * vec4(0.1, 0.3 + 0.1 * abs(lol), 0.6 + 0.1 * abs(lol), 1.0);
+        out_color =  (0.6 + 0.4 * dnoise) * (sea_color + 0.02 * vec4(0.0, abs(lol), abs(lol), 1.0));
     } else if (noise < 0.11) { // sand
-        out_color = 1.2 * vec4(0.4, 0.3, 0.1, 1.0);
+        out_color = sand_color;
     } else {
         float dnoise = disturbed_noise(in_wv * 3.0, 0.0, noise);
 
-        out_color = (0.1 + noise + (dnoise - noise) * 0.3) * 0.5 * vec4(0.1, 0.4, 0.1, 1.0);
+        out_color = (0.1 + noise + (dnoise - noise) * 0.3) * grass_color;
     }
 
     out_color.a = 1.0;
