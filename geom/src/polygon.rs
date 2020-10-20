@@ -5,6 +5,7 @@ use crate::{vec2, Vec2};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
+use std::ops::Index;
 
 #[derive(Clone, Serialize, Deserialize, Default, Debug)]
 pub struct Polygon(pub Vec<Vec2>);
@@ -182,6 +183,14 @@ impl Polygon {
         Vec<Vec2>: Extend<A>,
     {
         self.0.extend(s);
+    }
+}
+
+impl Index<usize> for Polygon {
+    type Output = Vec2;
+
+    fn index(&self, index: usize) -> &Vec2 {
+        &self.0[index]
     }
 }
 
