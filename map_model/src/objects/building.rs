@@ -36,24 +36,29 @@ impl Building {
         let at = lot.shape.center();
         let axis = lot.road_edge.vec().normalize();
 
-        let (mut exterior, walkway_seg, roofs) = match kind {
+        let (mut exterior, mut door_pos, mut roofs) = match kind {
             BuildingKind::House => crate::procgen::gen_exterior_house(lot.size),
             BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(lot.size),
             BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(lot.size),
         };
 
         exterior.rotate(axis).translate(at);
+        door_pos = door_pos.rotated_by(axis) + at;
 
-        let mut ext = exterior.segment(walkway_seg);
-        let door_pos = ext.center();
-        ext.resize(3.0);
+        for v in roofs.iter_mut().flatten() {
+            v.poly.rotate(axis).translate(at);
+            v.normal = v.normal.rotate_z(axis);
+        }
 
-        let mut walkway = ext.to_polygon();
         let r = &roads[lot.parent];
-        walkway.extrude(
-            0,
-            r.generated_points.project_dist(ext.src) - r.width * 0.5 + 3.0,
-        );
+        let (rpos, _, dir) = r.generated_points.project_segment_dir(door_pos);
+
+        let walkway = Polygon(vec![
+            rpos + dir * 1.5,
+            rpos - dir * 1.5,
+            door_pos - dir * 1.5,
+            door_pos + dir * 1.5,
+        ]);
 
         let bbox = exterior.bbox();
         let id = buildings.insert_with_key(move |id| Self {

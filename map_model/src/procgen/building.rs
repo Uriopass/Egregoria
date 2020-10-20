@@ -1,4 +1,4 @@
-use geom::{Polygon, Vec3};
+use geom::{vec2, vec3, Polygon, Vec2, Vec3};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +8,7 @@ pub struct RoofFace {
     pub normal: Vec3,
 }
 
-pub fn gen_exterior_workplace(size: f32) -> (Polygon, usize, Option<Vec<RoofFace>>) {
+pub fn gen_exterior_workplace(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>>) {
     let a = rand_in(15.0, 20.0);
     let b = rand_in(15.0, 20.0);
 
@@ -25,28 +25,90 @@ pub fn gen_exterior_workplace(size: f32) -> (Polygon, usize, Option<Vec<RoofFace
     p.extrude(0, extrude);
 
     p.translate(-p.barycenter());
-    (p, 3, None)
+    let door_pos = (p[3] + p[4]) * 0.5;
+    (p, door_pos, None)
 }
 
-pub fn gen_exterior_house(size: f32) -> (Polygon, usize, Option<Vec<RoofFace>>) {
-    let a = rand_in(15.0, 20.0);
-    let b = rand_in(15.0, 20.0);
-
-    let width = f32::max(a, b) * (size / 40.0);
-    let height = f32::min(a, b) * (size / 40.0);
+///
+/// Generates the exterior of a house with the roofs too
+///
+///   6       5
+///   |----a----|
+///   |    |    |
+///   | r4 | r3 | 4     3
+///   |    |    |-------v
+/// h |    |  /    r2   |
+///   |    b------------c
+///   |  /    r1        |
+///   |---------.-------|
+///   0         1      2
+///            w
+///
+pub fn gen_exterior_house(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>>) {
+    let width = rand_in(10.0, 15.0) * (size / 40.0);
+    let height = rand_in(15.0, 20.0) * (size / 40.0);
 
     let mut p = Polygon::rect(width, height);
     let corn_coeff = rand_in(0.5, 0.75);
-    let seg = rand_in(0.0, 3.99) as usize;
+    p.split_segment(1, corn_coeff);
+    p.extrude(1, rand_in(5.0, 10.0));
 
-    p.split_segment(seg, corn_coeff);
-    p.extrude(seg, rand_in(5.0, 10.0));
+    let a = vec2(width * 0.5, height);
+    let c = (p[3] + p[2]) / 2.0;
+    let b = vec2(a.x, c.y);
 
-    p.translate(-p.barycenter());
-    (p, if seg == 0 { 1 } else { 0 }, None)
+    let r1 = Polygon(vec![p[0], p[2], c, b]);
+    let r2 = Polygon(vec![b, c, p[3], p[4]]);
+    let r3 = Polygon(vec![b, p[4], p[5], a]);
+    let r4 = Polygon(vec![p[0], b, a, p[6]]);
+
+    let h = 0.5;
+
+    let mut roofs = vec![
+        RoofFace {
+            poly: r1,
+            normal: vec3(0.0, -1.0, h).normalize(),
+        },
+        RoofFace {
+            poly: r2,
+            normal: vec3(0.0, 1.0, h).normalize(),
+        },
+        RoofFace {
+            poly: r3,
+            normal: vec3(1.0, 0.0, h).normalize(),
+        },
+        RoofFace {
+            poly: r4,
+            normal: vec3(-1.0, 0.0, h).normalize(),
+        },
+    ];
+
+    let mut door_pos = vec2(width * 0.5, 0.0);
+    let off = -p.barycenter();
+
+    door_pos += off;
+    p.translate(off);
+
+    let mut r = vec2(1.0, 0.0);
+    if rand_in(0.0, 1.0) < 0.5 {
+        r = r.perpendicular();
+    }
+    if rand_in(0.0, 1.0) < 0.5 {
+        r = -r;
+    }
+
+    p.rotate(r);
+
+    for roof in roofs.iter_mut() {
+        roof.poly.translate(off);
+        roof.poly.rotate(r);
+        roof.normal = roof.normal.rotate_z(r);
+    }
+
+    (p, door_pos, Some(roofs))
 }
 
-pub fn gen_exterior_supermarket(size: f32) -> (Polygon, usize, Option<Vec<RoofFace>>) {
+pub fn gen_exterior_supermarket(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>>) {
     let mut h = rand_in(25.0, 30.0);
     let mut w = h + rand_in(5.0, 10.0);
 
@@ -55,8 +117,13 @@ pub fn gen_exterior_supermarket(size: f32) -> (Polygon, usize, Option<Vec<RoofFa
 
     let mut p = Polygon::rect(w, h);
 
-    p.translate(-p.barycenter());
-    (p, 0, None)
+    let mut door_pos = vec2(w * 0.5, 0.0);
+    let off = -p.barycenter();
+
+    door_pos += off;
+    p.translate(off);
+
+    (p, door_pos, None)
 }
 
 fn rand_in(min: f32, max: f32) -> f32 {
