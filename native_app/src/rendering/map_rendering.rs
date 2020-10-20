@@ -1,5 +1,5 @@
 use egregoria::utils::Restrict;
-use geom::{vec2, Color, LinearColor};
+use geom::{vec2, vec3, Color, LinearColor};
 use map_model::{
     BuildingKind, Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
 };
@@ -157,6 +157,8 @@ impl RoadRenderer {
             }
         }
 
+        let roof_col = common::config().roof_col;
+
         // Buildings
         for building in map.buildings().values() {
             tess.set_color(Color::gray(0.3));
@@ -169,6 +171,13 @@ impl RoadRenderer {
             };
             tess.set_color(col);
             tess.draw_filled_polygon(building.exterior.as_slice(), Z_HOUSE);
+
+            let r = common::rand::rand2(building.door_pos.x, building.door_pos.y);
+            for roof in building.roofs.iter().flatten() {
+                let test = 0.8 + 0.2 * vec3(0.7, 0.3, 0.5).normalize().dot(roof.normal);
+                tess.set_color(test * LinearColor::from(roof_col) + 0.02 * r * LinearColor::ORANGE);
+                tess.draw_filled_polygon(roof.poly.as_slice(), Z_HOUSE);
+            }
         }
 
         // Lots
