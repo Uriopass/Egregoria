@@ -257,7 +257,8 @@ impl Map {
 
     pub fn clear(&mut self) {
         info!("clear");
-        *self = Self::empty();
+        let before = std::mem::take(self);
+        self.trees = before.trees;
     }
 
     pub fn project(&self, pos: Vec2) -> MapProject {
