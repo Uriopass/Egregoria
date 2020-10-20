@@ -12,6 +12,7 @@ pub struct Tree {
     pub dir: Vec2,
 }
 
+#[derive(Clone)]
 pub struct Trees {
     grid: SparseGrid<Tree>,
     pub counter: usize,
