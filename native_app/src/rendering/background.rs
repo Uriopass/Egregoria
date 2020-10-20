@@ -36,8 +36,8 @@ pub fn draw_background(fctx: &mut FrameContext) {
         fctx.gfx,
         Uniform::new(
             BackgroundUniform {
-                sea_color: common::config().water_col.into(),
-                grass_color: common::config().ground_base_col.into(),
+                sea_color: common::config().sea_col.into(),
+                grass_color: common::config().grass_col.into(),
                 sand_color: common::config().sand_col.into(),
                 time: fctx.gfx.time_uni.value,
                 _pad: Vec3::ZERO,

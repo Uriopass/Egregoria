@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::ops::Mul;
+use std::ops::{Add, Mul};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Color {
@@ -209,6 +209,19 @@ impl LinearColor {
         b: 0.01,
         a: 1.0,
     };
+}
+
+impl Add for LinearColor {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            r: self.r + rhs.r,
+            g: self.g + rhs.g,
+            b: self.b + rhs.b,
+            a: self.a + rhs.a,
+        }
+    }
 }
 
 pub fn from_srgb(component: f32) -> f32 {

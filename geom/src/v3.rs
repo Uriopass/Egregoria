@@ -1,3 +1,4 @@
+use crate::{vec2, Vec2};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
@@ -11,6 +12,7 @@ pub struct Vec3 {
 
 impl Eq for Vec3 {}
 
+#[inline]
 pub const fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
     Vec3 { x, y, z }
 }
@@ -309,12 +311,21 @@ impl Vec3 {
         z: 1.0,
     };
 
+    #[inline]
     pub fn lerp(self, other: Vec3, c: f32) -> Self {
         self * (1.0 - c) + other * c
     }
 
+    #[inline]
     pub fn smoothstep(self, other: Vec3, t: f32) -> Self {
         self.lerp(other, t * t * (3.0 - t * 2.0))
+    }
+
+    #[inline]
+    pub fn rotate_z(self, cossin: Vec2) -> Self {
+        let xy = vec2(self.x, self.y);
+        let xy = xy.rotated_by(cossin);
+        vec3(xy.x, xy.y, self.z)
     }
 
     #[inline]

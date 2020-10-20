@@ -5,14 +5,16 @@ use lazy_static::*;
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 #[derive(Inspect, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub tree_col: Color,
-    pub ground_base_col: Color,
+    pub grass_col: Color,
     pub sand_col: Color,
-    pub water_col: Color,
+    pub sea_col: Color,
+    pub roof_col: Color,
     pub gui_bg_col: Color,
     pub gui_title_col: Color,
 }
@@ -42,13 +44,19 @@ fn save_config(config: &Config) {
 
 lazy_static! {
     static ref CONFIG: ArcSwap<Config> = ArcSwap::from_pointee(load_config_start());
+    static ref CONFIG_ID: AtomicUsize = AtomicUsize::new(0);
 }
 
 pub fn config() -> Guard<'static, Arc<Config>> {
     CONFIG.load()
 }
 
+pub fn config_id() -> usize {
+    CONFIG_ID.load(Ordering::Relaxed)
+}
+
 pub fn update_config(new_config: Config) {
+    CONFIG_ID.fetch_add(1, Ordering::Relaxed);
     save_config(&new_config);
     CONFIG.store(Arc::new(new_config));
 }

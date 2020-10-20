@@ -32,7 +32,7 @@ pub struct RoadRenderer {
     trees: Option<MultiSpriteBatch>,
     tree_builder: MultiSpriteBatchBuilder,
     crosswalks: Option<ShadedBatch<Crosswalk>>,
-    last_tree_color: Color,
+    last_config: usize,
 }
 
 const Z_LOT: f32 = 0.2;
@@ -76,7 +76,7 @@ impl RoadRenderer {
             trees: None,
             tree_builder,
             crosswalks: None,
-            last_tree_color: common::config().tree_col,
+            last_config: common::config_id(),
         }
     }
 
@@ -362,19 +362,15 @@ impl RoadRenderer {
         tess: &mut Tesselator,
         ctx: &mut FrameContext,
     ) {
-        if map.dirty {
+        if map.dirty || self.last_config != common::config_id() {
             self.map_mesh = self.map_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
             self.arrows = self.arrows(map, &ctx.gfx);
             self.crosswalks = self.crosswalks(map, &ctx.gfx);
             self.tree_shadows = self.tree_shadows(map, &ctx.gfx);
             self.trees = self.trees(map, &ctx.gfx);
 
+            self.last_config = common::config_id();
             map.dirty = false;
-        }
-
-        if self.last_tree_color != common::config().tree_col {
-            self.trees = self.trees(map, &ctx.gfx);
-            self.last_tree_color = common::config().tree_col;
         }
 
         if let Some(x) = self.map_mesh.clone() {
