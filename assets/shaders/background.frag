@@ -12,7 +12,6 @@ layout(set = 1, binding = 0) uniform BGParams {
     vec4 grass_color;
     vec4 sand_color;
     float time;
-    vec3 pad;
 };
 
 float permute(float x) {
