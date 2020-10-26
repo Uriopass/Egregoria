@@ -89,20 +89,24 @@ pub fn gen_exterior_house(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>>) {
     door_pos += off;
     p.translate(off);
 
-    let mut r = vec2(1.0, 0.0);
-    if rand_in(0.0, 1.0) < 0.5 {
-        r = r.perpendicular();
-    }
-    if rand_in(0.0, 1.0) < 0.5 {
-        r = -r;
-    }
+    let rot = rand_in(0.0, 4.0) as usize;
 
-    p.rotate(r);
+    let rv = [
+        vec2(1.0, 0.0),
+        vec2(0.0, 1.0),
+        vec2(-1.0, 0.0),
+        vec2(0.0, -1.0),
+    ][rot];
+
+    p.rotate(rv);
+
+    let rseg = [0, 6, 5, 2][rot];
+    let door_pos = p.segment(rseg).center();
 
     for roof in roofs.iter_mut() {
         roof.poly.translate(off);
-        roof.poly.rotate(r);
-        roof.normal = roof.normal.rotate_z(r);
+        roof.poly.rotate(rv);
+        roof.normal = roof.normal.rotate_z(rv);
     }
 
     (p, door_pos, Some(roofs))
