@@ -206,7 +206,7 @@ impl State {
     }
 
     fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {
-        const MAX_TIMESTEP: f64 = 1.0 / 10.0;
+        const MAX_TIMESTEP: f64 = 1.0 / 15.0;
 
         let mut time = self.goria.write::<GameTime>();
         let warp = self.goria.read::<TimeWarp>().0;
