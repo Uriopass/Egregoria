@@ -12,10 +12,11 @@ futures       = { version = "0.3.4", default-features = false, features = ["exec
 bytemuck      = "1.2.0"
 egregoria     = { path = "../egregoria" }
 geom          = { path = "../geom" }
-gui           = { path = "../gui" }
 wgpu_engine   = { path = "../wgpu_engine" }
 common        = { path = "../common" }
-mint = {git = "https://github.com/Uriopass/mint"}
+mint          = {git = "https://github.com/Uriopass/mint"}
+imgui-inspect = { path = "../imgui-inspect" }
+imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 imgui-wgpu    = { git = "https://github.com/Yatekii/imgui-wgpu-rs" }
 imgui-winit-support = "0.5.0"
 map_model     = { path = "../map_model" }
@@ -26,6 +27,7 @@ inline_tweak  = "1.0.6"
 imgui         = "0.5.0"
 legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize", "extended-tuple-impls"] }
 ordered-float = "2.0.0"
+serde = "1.0.117"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 winit         = "0.22"

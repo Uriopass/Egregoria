@@ -1,5 +1,5 @@
-use crate::windows::ImguiWindows;
-use crate::{RoadBuildResource, Tool};
+use crate::gui::windows::ImguiWindows;
+use crate::gui::{RoadBuildResource, Tool};
 use common::inspect::InspectedEntity;
 use common::GameTime;
 use egregoria::engine_interaction::{KeyCode, KeyboardInfo, TimeWarp};
@@ -198,7 +198,8 @@ impl Gui {
             .position([30.0, 160.0], imgui::Condition::FirstUseEver)
             .opened(&mut is_open)
             .build(&ui, || {
-                inspected.dirty = crate::inspect::InspectRenderer { entity: e }.render(goria, ui);
+                inspected.dirty =
+                    crate::gui::inspect::InspectRenderer { entity: e }.render(goria, ui);
             });
         if !is_open {
             inspected.e = None;

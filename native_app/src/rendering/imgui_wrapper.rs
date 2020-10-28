@@ -1,3 +1,4 @@
+use crate::gui::Gui;
 use imgui_wgpu::{Renderer, RendererConfig};
 use std::time::Instant;
 use wgpu_engine::{GfxContext, GuiRenderContext};
@@ -57,7 +58,7 @@ impl ImguiWrapper {
         mut gfx: GuiRenderContext,
         window: &Window,
         goria: &mut egregoria::Egregoria,
-        gui: &mut gui::Gui,
+        gui: &mut Gui,
     ) {
         let now = Instant::now();
         let delta = now - self.last_frame;

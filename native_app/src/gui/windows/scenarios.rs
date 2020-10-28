@@ -1,4 +1,4 @@
-use crate::windows::ImguiWindow;
+use crate::gui::windows::ImguiWindow;
 use egregoria::Egregoria;
 use imgui::{im_str, Ui};
 

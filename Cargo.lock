@@ -1105,22 +1105,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gui"
-version = "0.1.0"
-dependencies = [
- "common",
- "egregoria",
- "geom",
- "imgui",
- "imgui-inspect",
- "imgui-inspect-derive",
- "legion",
- "log",
- "map_model",
- "serde",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1664,8 +1648,9 @@ dependencies = [
  "env_logger",
  "futures",
  "geom",
- "gui",
  "imgui",
+ "imgui-inspect",
+ "imgui-inspect-derive",
  "imgui-wgpu",
  "imgui-winit-support",
  "inline_tweak",
@@ -1675,6 +1660,7 @@ dependencies = [
  "map_model",
  "mint",
  "ordered-float 2.0.0",
+ "serde",
  "wgpu_engine",
  "winit",
 ]
