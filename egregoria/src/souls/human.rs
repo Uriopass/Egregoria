@@ -1,12 +1,12 @@
-use crate::desire::{BuyFood, Home, Work};
+use crate::api::Router;
+use crate::economy::{EconomicAgent, Goods, Market, Money};
+use crate::map_dynamic::BuildingInfos;
+use crate::pedestrians::spawn_pedestrian;
+use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::Soul;
-use egregoria::api::Router;
-use egregoria::economy::{EconomicAgent, Goods, Market, Money};
-use egregoria::map_dynamic::BuildingInfos;
-use egregoria::pedestrians::spawn_pedestrian;
-use egregoria::utils::rand_provider::RandProvider;
-use egregoria::vehicles::spawn_parked_vehicle;
-use egregoria::{Egregoria, SoulID};
+use crate::utils::rand_provider::RandProvider;
+use crate::vehicles::spawn_parked_vehicle;
+use crate::{Egregoria, SoulID};
 use map_model::{BuildingID, BuildingKind, Map};
 
 pub type HumanSoul = Soul<Human, (Work, Home, BuyFood)>;

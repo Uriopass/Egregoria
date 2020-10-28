@@ -5,12 +5,12 @@ use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRendere
 use common::GameTime;
 use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeWarp};
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
+use egregoria::souls::Souls;
 use egregoria::{load_from_disk, Egregoria};
 use geom::{vec3, Vec2};
 use geom::{Camera, Vec3};
 use gui::{FollowEntity, Gui};
 use map_model::Map;
-use souls::Souls;
 use std::borrow::Cow;
 use std::time::Instant;
 use wgpu_engine::lighting::LightInstance;
@@ -50,8 +50,6 @@ impl State {
 
         let mut gui: Gui = common::saveload::load("gui").unwrap_or_default();
         add_debug_menu(&mut gui);
-        gui.windows
-            .insert(imgui::im_str!("Debug souls"), souls::debug_souls, false);
 
         goria.insert(camera.camera.clone());
 

@@ -1,9 +1,9 @@
-use crate::desire::Desire;
+use crate::api::{Action, Destination};
+use crate::economy::{Goods, Market};
+use crate::map_dynamic::BuildingInfos;
+use crate::souls::desire::Desire;
 use crate::souls::human::Human;
-use egregoria::api::{Action, Destination};
-use egregoria::economy::{Goods, Market};
-use egregoria::map_dynamic::BuildingInfos;
-use egregoria::Egregoria;
+use crate::Egregoria;
 use geom::Vec2;
 use map_model::{BuildingID, BuildingKind, Map};
 use ordered_float::OrderedFloat;

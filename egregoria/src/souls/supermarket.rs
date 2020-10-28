@@ -1,7 +1,7 @@
-use crate::Soul;
-use egregoria::economy::{EconomicAgent, Goods, Market, Money, Transaction};
-use egregoria::map_dynamic::BuildingInfos;
-use egregoria::{Egregoria, SoulID};
+use crate::economy::{EconomicAgent, Goods, Market, Money, Transaction};
+use crate::map_dynamic::BuildingInfos;
+use crate::souls::Soul;
+use crate::{Egregoria, SoulID};
 use map_model::BuildingID;
 
 pub type SupermarketSoul = Soul<Supermarket, ()>;
