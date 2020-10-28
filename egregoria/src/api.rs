@@ -10,12 +10,14 @@ use legion::Entity;
 use map_model::{BuildingID, CarPath, Map, ParkingSpotID, PedestrianPath};
 use serde::{Deserialize, Serialize};
 
-#[derive(Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Serialize, Deserialize, Debug)]
 pub enum Location {
     Outside,
     Vehicle(VehicleID),
     Building(BuildingID),
 }
+
+debug_inspect_impl!(Location);
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub enum Destination {
