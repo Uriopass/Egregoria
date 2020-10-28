@@ -1,8 +1,8 @@
-use crate::desire::Desire;
+use crate::api::{Action, Destination};
+use crate::souls::desire::Desire;
 use crate::souls::human::Human;
+use crate::Egregoria;
 use common::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
-use egregoria::api::{Action, Destination};
-use egregoria::Egregoria;
 use map_model::BuildingID;
 
 impl Work {

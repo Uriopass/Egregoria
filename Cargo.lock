@@ -705,6 +705,7 @@ dependencies = [
  "ordered-float 2.0.0",
  "rand 0.7.3",
  "rand_distr",
+ "rayon",
  "serde",
  "slotmap",
 ]
@@ -1674,7 +1675,6 @@ dependencies = [
  "map_model",
  "mint",
  "ordered-float 2.0.0",
- "souls",
  "wgpu_engine",
  "winit",
 ]
@@ -2463,25 +2463,6 @@ dependencies = [
  "nix",
  "wayland-client",
  "wayland-protocols",
-]
-
-[[package]]
-name = "souls"
-version = "0.1.0"
-dependencies = [
- "common",
- "egregoria",
- "geom",
- "imgui",
- "imgui-inspect",
- "imgui-inspect-derive",
- "log",
- "map_model",
- "ordered-float 2.0.0",
- "rand 0.7.3",
- "rayon",
- "serde",
- "slotmap",
 ]
 
 [[package]]

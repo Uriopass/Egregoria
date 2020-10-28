@@ -1,11 +1,13 @@
 use crate::follow::FollowEntity;
 use crate::roadeditor::IntersectionComponent;
+use egregoria::api::Router;
 use egregoria::engine_interaction::Movable;
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::Pedestrian;
 use egregoria::physics::{Collider, Kinematics};
 use egregoria::rendering::assets::AssetRender;
 use egregoria::rendering::meshrender_component::MeshRender;
+use egregoria::souls::DebugSoul;
 use egregoria::vehicles::Vehicle;
 use egregoria::Egregoria;
 use geom::Transform;
@@ -61,18 +63,48 @@ impl InspectRenderer {
         dirty |= self.inspect_component::<IntersectionComponent>(goria, ui);
         dirty |= self.inspect_component::<Itinerary>(goria, ui);
 
-        let follow = &mut goria.write::<FollowEntity>().0;
-        if follow.is_none() {
-            if ui.small_button(im_str!("Follow")) {
-                follow.replace(self.entity);
+        {
+            let follow = &mut goria.write::<FollowEntity>().0;
+            if follow.is_none() {
+                if ui.small_button(im_str!("Follow")) {
+                    follow.replace(self.entity);
+                }
+            } else if ui.small_button(im_str!("Unfollow")) {
+                follow.take();
             }
-        } else if ui.small_button(im_str!("Unfollow")) {
-            follow.take();
         }
 
         if dirty {
             ui.text("dirty");
         }
+
+        if goria.comp::<Pedestrian>(self.entity).is_some() {
+            debug_souls(ui, goria);
+        }
+
         dirty
+    }
+}
+
+pub fn debug_souls(ui: &Ui, goria: &mut Egregoria) {
+    let mut dsoul = goria.write::<DebugSoul>();
+    if let Some(v) = dsoul.cur_inspect {
+        ui.text(format!("{:?}", v));
+
+        for (name, h) in &dsoul.scores {
+            ui.plot_lines(&imgui::im_str!("{}", name), &h.values)
+                .build();
+        }
+
+        if let Some(router) = dsoul.router.as_mut() {
+            <Router as InspectRenderDefault<Router>>::render_mut(
+                &mut [router],
+                "router",
+                ui,
+                &InspectArgsDefault::default(),
+            );
+        }
+    } else {
+        ui.text("No pedestrian selected");
     }
 }

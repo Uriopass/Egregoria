@@ -1,21 +1,28 @@
-use crate::desire::Desires;
+use crate::api::{Action, Router};
+use crate::engine_interaction::{History, RenderStats};
+use crate::map_dynamic::BuildingInfos;
+use crate::pedestrians::{Pedestrian, PedestrianID};
+use crate::souls::desire::Desires;
 use crate::souls::human::{Human, HumanSoul};
+use crate::souls::supermarket::Supermarket;
 use crate::souls::supermarket::SupermarketSoul;
-use crate::supermarket::Supermarket;
-use crate::DebugSoul;
+use crate::{Egregoria, SoulID};
 use common::inspect::InspectedEntity;
 use common::GameTime;
-use egregoria::api::Action;
-use egregoria::engine_interaction::{History, RenderStats};
-use egregoria::map_dynamic::BuildingInfos;
-use egregoria::pedestrians::{Pedestrian, PedestrianID};
-use egregoria::{Egregoria, SoulID};
 use map_model::{BuildingKind, Map};
 use rayon::iter::ParallelIterator;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelExtend};
 use std::collections::HashMap;
 use std::time::Instant;
 
+#[derive(Default)]
+pub struct DebugSoul {
+    pub cur_inspect: Option<PedestrianID>,
+    pub scores: Vec<(&'static str, History)>,
+    pub router: Option<Router>,
+}
+
+pub mod desire;
 pub mod human;
 pub mod supermarket;
 

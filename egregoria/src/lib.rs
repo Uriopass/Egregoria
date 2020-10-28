@@ -48,6 +48,7 @@ pub mod pedestrians;
 pub mod physics;
 pub mod rendering;
 pub mod scenarios;
+pub mod souls;
 pub mod vehicles;
 
 use crate::economy::Market;

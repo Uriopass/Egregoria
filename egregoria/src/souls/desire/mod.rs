@@ -1,5 +1,5 @@
-use egregoria::api::Action;
-use egregoria::Egregoria;
+use crate::api::Action;
+use crate::Egregoria;
 use ordered_float::OrderedFloat;
 
 mod buyfood;

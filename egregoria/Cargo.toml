@@ -17,7 +17,7 @@ serde         = "1.0"
 legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize", "extended-tuple-impls", "parallel"] }
 crossbeam     = "0.7.3"
 flat_spatial  = { git = "https://github.com/Uriopass/flat_spatial", features = ["serde"] }
-mint = {git = "https://github.com/Uriopass/mint"}
+mint          = {git = "https://github.com/Uriopass/mint"}
 log           = "0.4.11"
 imgui-inspect = { path = "../imgui-inspect"}
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
@@ -27,5 +27,6 @@ mods          = { path = "../mods" }
 common        = { path = "../common" }
 slotmap       = "0.4.0"
 dashmap       = { version = "3.11.10", features = ["serde"] }
-derive_more = { version = "0.99.0", default-features = false, features = ["add", "add_assign"] }
-imgui = "0.5"
+derive_more   = { version = "0.99.0", default-features = false, features = ["add", "add_assign"] }
+imgui         = "0.5"
+rayon         = "1.5.0"

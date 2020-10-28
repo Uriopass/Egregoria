@@ -13,7 +13,6 @@ bytemuck      = "1.2.0"
 egregoria     = { path = "../egregoria" }
 geom          = { path = "../geom" }
 gui           = { path = "../gui" }
-souls         = { path = "../souls" }
 wgpu_engine   = { path = "../wgpu_engine" }
 common        = { path = "../common" }
 mint = {git = "https://github.com/Uriopass/mint"}
