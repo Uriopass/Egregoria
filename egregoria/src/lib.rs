@@ -10,7 +10,7 @@ use crate::engine_interaction::{
 use crate::map_dynamic::{
     add_trees_system, itinerary_update_system, BuildingInfos, Itinerary, ParkingManagement,
 };
-use crate::pedestrians::{pedestrian_decision_system, pedestrian_synchro_system, Pedestrian};
+use crate::pedestrians::{pedestrian_decision_system, Pedestrian};
 use crate::physics::systems::{
     coworld_maintain_system, coworld_synchronize_system, kinematics_apply_system,
 };
@@ -124,7 +124,6 @@ impl Egregoria {
             .add_system(add_trees_system())
             .add_system(vehicle_cleanup_system())
             .add_system(pedestrian_decision_system())
-            .add_system(pedestrian_synchro_system())
             .add_system(run_scenario_system())
             .add_system(kinematics_apply_system())
             .add_system(coworld_synchronize_system())
