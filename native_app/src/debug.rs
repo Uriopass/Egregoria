@@ -32,7 +32,7 @@ lazy_static! {
     ]);
 }
 
-pub fn add_debug_menu(gui: &mut gui::Gui) {
+pub fn add_debug_menu(gui: &mut crate::gui::Gui) {
     gui.windows.insert(
         im_str!("Debug layers"),
         |ui: &Ui, goria: &mut Egregoria| {

@@ -1,4 +1,4 @@
-use crate::{Tool, Z_TOOL};
+use crate::gui::{Tool, Z_TOOL};
 use egregoria::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use egregoria::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
 use egregoria::NoSerialize;

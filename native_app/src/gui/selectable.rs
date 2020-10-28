@@ -1,4 +1,4 @@
-use crate::Tool;
+use crate::gui::Tool;
 use common::inspect::InspectedEntity;
 use egregoria::engine_interaction::{KeyCode, Selectable};
 use egregoria::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};

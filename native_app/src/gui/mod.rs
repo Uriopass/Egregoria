@@ -1,9 +1,9 @@
-use crate::bulldozer::BulldozerResource;
-use crate::movable::MovableSystem;
-use crate::roadbuild::RoadBuildResource;
-use crate::roadeditor::RoadEditorResource;
+use bulldozer::BulldozerResource;
 use egregoria::Egregoria;
 use inspected_aura::InspectedAura;
+use movable::MovableSystem;
+use roadbuild::RoadBuildResource;
+use roadeditor::RoadEditorResource;
 
 mod bulldozer;
 mod follow;
@@ -16,7 +16,7 @@ mod selectable;
 mod topgui;
 mod windows;
 
-pub use crate::follow::FollowEntity;
+pub use follow::FollowEntity;
 
 use common::inspect::InspectedEntity;
 pub use inspect::*;

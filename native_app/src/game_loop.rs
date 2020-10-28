@@ -1,5 +1,6 @@
 use crate::context::Context;
 use crate::debug::add_debug_menu;
+use crate::gui::{setup_gui, FollowEntity, Gui};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use common::GameTime;
@@ -9,7 +10,6 @@ use egregoria::souls::Souls;
 use egregoria::{load_from_disk, Egregoria};
 use geom::{vec3, Vec2};
 use geom::{Camera, Vec3};
-use gui::{FollowEntity, Gui};
 use map_model::Map;
 use std::borrow::Cow;
 use std::time::Instant;
@@ -46,7 +46,7 @@ impl State {
         let mut goria = egregoria::Egregoria::init();
 
         load_from_disk(&mut goria);
-        gui::setup_gui(&mut goria);
+        setup_gui(&mut goria);
 
         let mut gui: Gui = common::saveload::load("gui").unwrap_or_default();
         add_debug_menu(&mut gui);

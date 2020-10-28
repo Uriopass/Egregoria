@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "egregoria",
-    "gui",
     "geom",
     "headless-cli",
     "imgui-inspect",

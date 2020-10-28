@@ -1,5 +1,5 @@
-use crate::follow::FollowEntity;
-use crate::roadeditor::IntersectionComponent;
+use crate::gui::follow::FollowEntity;
+use crate::gui::roadeditor::IntersectionComponent;
 use egregoria::api::{Location, Router};
 use egregoria::engine_interaction::Movable;
 use egregoria::map_dynamic::Itinerary;

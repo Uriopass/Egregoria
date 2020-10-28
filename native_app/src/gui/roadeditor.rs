@@ -1,4 +1,4 @@
-use crate::{Tool, Z_TOOL};
+use crate::gui::{Tool, Z_TOOL};
 use common::inspect::InspectedEntity;
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
 use egregoria::rendering::meshrender_component::{CircleRender, MeshRender};

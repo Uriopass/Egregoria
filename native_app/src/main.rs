@@ -7,6 +7,7 @@ mod audio;
 mod context;
 mod debug;
 mod game_loop;
+mod gui;
 mod input;
 mod rendering;
 
