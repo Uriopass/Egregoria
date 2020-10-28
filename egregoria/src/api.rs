@@ -8,15 +8,16 @@ use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::{Spline, Transform, Vec2};
 use legion::Entity;
 use map_model::{BuildingID, CarPath, Map, ParkingSpotID, PedestrianPath};
+use serde::{Deserialize, Serialize};
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Serialize, Deserialize)]
 pub enum Location {
     Outside,
     Vehicle(VehicleID),
     Building(BuildingID),
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
 pub enum Destination {
     Outside(Vec2),
     Building(BuildingID),

@@ -1,28 +1,24 @@
 use crate::pedestrians::data::PedestrianID;
 use crate::SoulID;
 use map_model::BuildingID;
+use serde::{Deserialize, Serialize};
 use slotmap::SecondaryMap;
 use std::ops::{Index, IndexMut};
 
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub struct BuildingInfo {
     pub owner: Option<SoulID>,
     pub inside: Vec<PedestrianID>,
 }
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 pub struct BuildingInfos {
     assignment: SecondaryMap<BuildingID, BuildingInfo>,
 }
 
 impl BuildingInfos {
     pub fn insert(&mut self, building: BuildingID) {
-        self.assignment.insert(
-            building,
-            BuildingInfo {
-                owner: None,
-                inside: vec![],
-            },
-        );
+        self.assignment.insert(building, BuildingInfo::default());
     }
 
     pub fn get(&self, building: BuildingID) -> Option<&BuildingInfo> {

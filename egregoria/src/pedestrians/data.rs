@@ -12,7 +12,7 @@ use map_model::{BuildingID, Map};
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, Serialize, Deserialize, Debug, Eq, PartialEq, Hash)]
 pub struct PedestrianID(pub Entity);
 
 debug_inspect_impl!(PedestrianID);
