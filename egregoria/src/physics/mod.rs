@@ -1,13 +1,10 @@
-use crate::Egregoria;
 use flat_spatial::grid::GridHandle;
 use geom::Vec2;
 use imgui::Ui;
 use imgui_inspect::InspectDragf;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault, InspectVec2Rotation};
 use imgui_inspect_derive::*;
-use legion::IntoQuery;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 mod kinematics;
 pub mod systems;
@@ -68,7 +65,7 @@ impl InspectRenderDefault<Collider> for Collider {
         false
     }
 }
-
+/*
 type SerPhysicsObj<'a> = (GridHandle, ([f32; 2], PhysicsObject));
 
 pub fn serialize_colliders(state: &mut Egregoria) {
@@ -100,3 +97,4 @@ pub fn deserialize_colliders(state: &mut Egregoria) -> Option<()> {
 
     Some(())
 }
+*/

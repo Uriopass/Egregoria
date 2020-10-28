@@ -29,7 +29,9 @@ pub fn save_silent<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
 
     let w = BufWriter::new(file);
 
-    let _ = bincode::serialize_into(w, x);
+    bincode::serialize_into(w, x)
+        .map_err(|e| log::error!("failed serializing: {}", e))
+        .ok()?;
     Some(())
 }
 
@@ -65,4 +67,57 @@ pub fn load_seed<S: DeserializeSeed<'static>>(name: &'static str, seed: S) -> Op
 pub fn load_reader(name: &'static str) -> Option<BufReader<File>> {
     let file = open_file(&filename(name))?;
     Some(BufReader::new(file))
+}
+
+fn filename_json(name: &'static str) -> String {
+    format!("world/{}.json", name)
+}
+
+pub fn load_reader_json(name: &'static str) -> Option<BufReader<File>> {
+    let file = open_file(&filename_json(name))?;
+    Some(BufReader::new(file))
+}
+
+pub fn load_seed_json<S: DeserializeSeed<'static>>(
+    name: &'static str,
+    seed: S,
+) -> Option<S::Value> {
+    seed.deserialize(&mut serde_json::Deserializer::from_reader(
+        load_reader_json(name)?,
+    ))
+    .map_err(|err| log::error!("failed deserializing {}: {}", name, err))
+    .map(|x| {
+        log::info!("successfully loaded {}", name);
+        x
+    })
+    .ok()
+}
+
+pub fn save_json<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
+    save_silent_json(x, name);
+    log::info!("successfully saved {}", name);
+    Some(())
+}
+
+pub fn save_silent_json<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
+    let _ = std::fs::create_dir("world");
+
+    let file = create_file(&filename_json(name))?;
+
+    let w = BufWriter::new(file);
+
+    serde_json::to_writer_pretty(w, x)
+        .map_err(|e| log::error!("failed serializing: {}", e))
+        .ok()?;
+    Some(())
+}
+
+pub fn load_json<T: DeserializeOwned>(name: &'static str) -> Option<T> {
+    serde_json::from_reader(load_reader_json(name)?)
+        .map_err(|err| log::error!("failed deserializing {}: {}", name, err))
+        .map(|x| {
+            log::info!("successfully loaded {}", name);
+            x
+        })
+        .ok()
 }

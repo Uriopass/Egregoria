@@ -10,7 +10,7 @@ edition = "2018"
 geom      = { path = "../geom" }
 wgpu      = "0.6.0"
 bytemuck  = "1.4.1"
-mint      = "0.5.5"
+mint = {git = "https://github.com/Uriopass/mint"}
 image     = { version = "0.23.4", default-features = false, features = ["png"] }
 log       = "0.4.11"
 raw-window-handle = "0.3.3"

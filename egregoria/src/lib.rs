@@ -2,6 +2,7 @@
 #![allow(clippy::blocks_in_if_conditions)]
 #![allow(clippy::too_many_arguments)]
 
+use crate::api::Location;
 use crate::engine_interaction::{
     KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable, TimeWarp,
 };
@@ -12,7 +13,7 @@ use crate::pedestrians::{pedestrian_decision_system, pedestrian_synchro_system, 
 use crate::physics::systems::{
     coworld_maintain_system, coworld_synchronize_system, kinematics_apply_system,
 };
-use crate::physics::{deserialize_colliders, serialize_colliders, CollisionWorld};
+use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::scenarios::scenario_runner::{run_scenario_system, RunningScenario};
@@ -25,7 +26,6 @@ use legion::storage::Component;
 use legion::systems::Resource;
 use legion::{any, Entity, IntoQuery, Registry, Resources, World};
 use map_model::{Map, SerializedMap};
-use std::io::Write;
 use std::ops::{Deref, DerefMut};
 use utils::frame_log::FrameLog;
 pub use utils::par_command_buffer::ParCommandBuffer;
@@ -54,12 +54,13 @@ use crate::economy::Market;
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use geom::{Transform, Vec2};
+use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use utils::par_command_buffer::Deleted;
 use utils::scheduler::SeqSchedule;
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Debug)]
 pub struct SoulID(pub usize);
 
 #[derive(Default)]
@@ -185,60 +186,96 @@ where
 }
 
 macro_rules! register {
-    ($r: expr, $t: ty) => {
-        $r.register::<$t>(my_hash(stringify!($t)))
+    ($r: expr; $($t: ty),+,) => {
+        $(
+            $r.register::<$t>(my_hash(stringify!($t)))
+        );+
     };
-}
-
-fn registry() -> Registry<u64> {
-    let mut registry = Registry::default();
-    register!(registry, Transform);
-    register!(registry, AssetRender);
-    register!(registry, Kinematics);
-    register!(registry, Selectable);
-    register!(registry, Movable);
-    register!(registry, Vehicle);
-    register!(registry, Pedestrian);
-    register!(registry, Itinerary);
-    register!(registry, Collider);
-    register!(registry, MeshRender);
-    registry
 }
 
 pub struct NoSerialize;
 
-pub fn load_from_disk(goria: &mut Egregoria) {
-    goria.insert::<Map>(
-        common::saveload::load::<map_model::SerializedMap>("map")
-            .map(|x| x.into())
-            .unwrap_or_default(),
-    );
+macro_rules! mk_save {
+    ($($res: ty,)*) => {
+        fn registry() -> Registry<u64> {
+            let mut registry = Registry::default();
+            register!(registry; Transform,
+              AssetRender,
+              Kinematics,
+              Selectable,
+              Movable,
+              Vehicle,
+              Pedestrian,
+              Itinerary,
+              Collider,
+              MeshRender,
+              Location,
+              $($res,)*
+            );
+            registry
+        }
 
-    goria.insert(common::saveload::load_or_default::<ParkingManagement>(
-        "parking",
-    ));
+        pub fn load_from_disk(goria: &mut Egregoria) {
+            let registry = registry();
 
-    let registry = registry();
+            let _ = common::saveload::load_seed("world", registry.as_deserialize()).map(|mut w: World| {
+                log::info!("successfully loaded world with {} entities", w.len());
+                goria.world.move_from(&mut w, &any());
+            });
 
-    let _ = common::saveload::load_seed("world", registry.as_deserialize()).map(|mut w: World| {
-        log::info!("successfully loaded world with {} entities", w.len());
-        goria.world.move_from(&mut w, &any());
-    });
+            $(
+            extract_resource::<$res>(goria);
+            )*
 
-    deserialize_colliders(goria);
+            goria.insert::<Map>(
+                common::saveload::load::<map_model::SerializedMap>("map")
+                    .map(|x| x.into())
+                    .unwrap_or_default(),
+            );
+        }
+
+        pub fn save_to_disk(goria: &mut Egregoria) {
+            let registry = registry();
+
+            let to_remove = vec![
+                $(
+                insert_resource::<$res>(goria),
+                )*
+            ];
+
+            let s = goria
+                .world
+                .as_serializable(!legion::query::component::<NoSerialize>(), &registry);
+
+            common::saveload::save(&s, "world");
+            common::saveload::save(&SerializedMap::from(&*goria.read::<Map>()), "map");
+
+            for ent in to_remove {
+                goria.world.remove(ent);
+            }
+        }
+    }
 }
 
-pub fn save_to_disk(goria: &mut Egregoria) {
-    let _ = std::io::stdout().flush();
-    common::saveload::save(&*goria.read::<ParkingManagement>(), "parking");
-    common::saveload::save(&SerializedMap::from(&*goria.read::<Map>()), "map");
+mk_save!(CollisionWorld, ParkingManagement, BuildingInfos,);
 
-    let registry = registry();
+fn extract_resource<T: Resource + Clone + Sync + Send>(goria: &mut Egregoria) {
+    let (ent, res): (&Entity, &T) = match <(Entity, &T)>::query().iter(&goria.world).next() {
+        Some(x) => x,
+        None => {
+            info!("Resource {} was not serialized", std::any::type_name::<T>());
+            return;
+        }
+    };
 
-    let s = goria
-        .world
-        .as_serializable(!legion::query::component::<NoSerialize>(), &registry);
-    common::saveload::save(&s, "world");
+    let (ent, res) = (*ent, res.clone());
 
-    serialize_colliders(goria);
+    goria.world.remove(ent);
+
+    goria.resources.insert(res);
+}
+
+fn insert_resource<T: Resource + Clone + Sync + Send>(goria: &mut Egregoria) -> Entity {
+    let res: T = goria.read::<T>().clone();
+    goria.world.push((res,))
 }

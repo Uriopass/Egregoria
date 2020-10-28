@@ -1,4 +1,5 @@
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::many_single_char_names)]
 
 macro_rules! unwrap_or {
     ($e: expr, $t: expr) => {
