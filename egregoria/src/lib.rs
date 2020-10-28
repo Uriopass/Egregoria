@@ -3,6 +3,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::api::Location;
+use crate::economy::Market;
 use crate::engine_interaction::{
     KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable, TimeWarp,
 };
@@ -15,21 +16,29 @@ use crate::physics::systems::{
 };
 use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Kinematics};
+use crate::rendering::assets::AssetRender;
 use crate::rendering::immediate::ImmediateDraw;
+use crate::rendering::meshrender_component::MeshRender;
 use crate::scenarios::scenario_runner::{run_scenario_system, RunningScenario};
 use crate::vehicles::systems::{
     vehicle_cleanup_system, vehicle_decision_system, vehicle_state_update_system,
 };
 use crate::vehicles::Vehicle;
 use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
+use geom::{Transform, Vec2};
 use legion::storage::Component;
 use legion::systems::Resource;
 use legion::{any, Entity, IntoQuery, Registry, Resources, World};
 use map_model::{Map, SerializedMap};
+use serde::{Deserialize, Serialize};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
 use utils::frame_log::FrameLog;
+use utils::par_command_buffer::Deleted;
 pub use utils::par_command_buffer::ParCommandBuffer;
 use utils::rand_provider::RandProvider;
+use utils::scheduler::SeqSchedule;
 
 #[macro_use]
 extern crate imgui_inspect;
@@ -50,16 +59,6 @@ pub mod rendering;
 pub mod scenarios;
 pub mod souls;
 pub mod vehicles;
-
-use crate::economy::Market;
-use crate::rendering::assets::AssetRender;
-use crate::rendering::meshrender_component::MeshRender;
-use geom::{Transform, Vec2};
-use serde::{Deserialize, Serialize};
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-use utils::par_command_buffer::Deleted;
-use utils::scheduler::SeqSchedule;
 
 #[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Debug)]
 pub struct SoulID(pub usize);
