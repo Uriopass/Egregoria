@@ -1,5 +1,4 @@
 use crate::context::Context;
-use crate::debug::add_debug_menu;
 use crate::gui::{setup_gui, FollowEntity, Gui};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
@@ -48,8 +47,7 @@ impl State {
         load_from_disk(&mut goria);
         setup_gui(&mut goria);
 
-        let mut gui: Gui = common::saveload::load("gui").unwrap_or_default();
-        add_debug_menu(&mut gui);
+        let gui: Gui = common::saveload::load("gui").unwrap_or_default();
 
         goria.insert(camera.camera.clone());
 
@@ -110,7 +108,7 @@ impl State {
         MeshRenderer::render(&mut self.goria, &mut tess);
 
         {
-            let objs = crate::debug::DEBUG_OBJS.lock().unwrap();
+            let objs = crate::gui::windows::debug::DEBUG_OBJS.lock().unwrap();
             for (val, _, obj) in &*objs {
                 if *val {
                     obj(&mut tess, &mut self.goria);

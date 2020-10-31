@@ -14,7 +14,7 @@ mod roadbuild;
 mod roadeditor;
 mod selectable;
 mod topgui;
-mod windows;
+pub mod windows;
 
 pub use follow::FollowEntity;
 
