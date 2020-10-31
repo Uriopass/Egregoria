@@ -2,9 +2,10 @@
 
 use common::inspect::InspectedEntity;
 use common::{GameTime, SECONDS_PER_DAY};
-use egregoria::engine_interaction::MouseInfo;
+use egregoria::engine_interaction::{MouseInfo, RenderStats};
 use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::CollisionWorld;
+use egregoria::utils::frame_log::FrameLog;
 use egregoria::Egregoria;
 use geom::{vec2, Camera, Color, LinearColor, Spline, Vec2, OBB};
 use imgui::im_str;
@@ -33,39 +34,62 @@ lazy_static! {
     ]);
 }
 
-pub fn add_debug_menu(gui: &mut crate::gui::Gui) {
-    gui.windows.insert(
-        im_str!("Debug layers"),
-        |ui: &Ui, goria: &mut Egregoria| {
-            let mut objs = DEBUG_OBJS.lock().unwrap();
-            for (val, name, _) in &mut *objs {
-                ui.checkbox(&im_str!("{}", *name), val);
-            }
-            drop(objs);
-            let time = goria.read::<GameTime>().timestamp;
-            let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
+pub fn debug(ui: &Ui, goria: &mut Egregoria) {
+    let mut objs = DEBUG_OBJS.lock().unwrap();
+    for (val, name, _) in &mut *objs {
+        ui.checkbox(&im_str!("{}", *name), val);
+    }
+    drop(objs);
+    let time = goria.read::<GameTime>().timestamp;
+    let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
 
-            if ui.small_button(&im_str!("set night")) {
-                *goria.write::<GameTime>() = GameTime::new(0.1, time + daysecleft as f64);
-            }
+    if ui.small_button(&im_str!("set night")) {
+        *goria.write::<GameTime>() = GameTime::new(0.1, time + daysecleft as f64);
+    }
 
-            if ui.small_button(&im_str!("set morning")) {
-                *goria.write::<GameTime>() =
-                    GameTime::new(0.1, time + daysecleft as f64 + 7.0 * GameTime::HOUR as f64);
-            }
+    if ui.small_button(&im_str!("set morning")) {
+        *goria.write::<GameTime>() =
+            GameTime::new(0.1, time + daysecleft as f64 + 7.0 * GameTime::HOUR as f64);
+    }
 
-            if ui.small_button(&im_str!("set day")) {
-                *goria.write::<GameTime>() =
-                    GameTime::new(0.1, time + daysecleft as f64 + 12.0 * GameTime::HOUR as f64);
-            }
+    if ui.small_button(&im_str!("set day")) {
+        *goria.write::<GameTime>() =
+            GameTime::new(0.1, time + daysecleft as f64 + 12.0 * GameTime::HOUR as f64);
+    }
 
-            if ui.small_button(&im_str!("set dawn")) {
-                *goria.write::<GameTime>() =
-                    GameTime::new(0.1, time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64);
-            }
-        },
-        false,
-    );
+    if ui.small_button(&im_str!("set dawn")) {
+        *goria.write::<GameTime>() =
+            GameTime::new(0.1, time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64);
+    }
+
+    let stats = goria.read::<RenderStats>();
+    let mouse = goria.read::<MouseInfo>().unprojected;
+
+    ui.text("Averaged over last 10 frames: ");
+    ui.text(im_str!(
+        "World update time: {:.1}ms",
+        stats.world_update.avg() * 1000.0
+    ));
+    ui.text(im_str!("Render time: {:.1}ms", stats.render.avg() * 1000.0));
+    ui.text(im_str!(
+        "Souls desires time: {:.1}ms",
+        stats.souls_desires.avg() * 1000.0
+    ));
+    ui.text(im_str!(
+        "Souls apply time: {:.1}ms",
+        stats.souls_apply.avg() * 1000.0
+    ));
+    ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
+    ui.separator();
+    ui.text("Frame log");
+    let flog = goria.read::<FrameLog>();
+    {
+        let fl = flog.get_frame_log();
+        for s in &*fl {
+            ui.text(im_str!("{}", s));
+        }
+    }
+    flog.clear();
 }
 
 pub fn show_grid(tess: &mut Tesselator, state: &mut Egregoria) -> Option<()> {

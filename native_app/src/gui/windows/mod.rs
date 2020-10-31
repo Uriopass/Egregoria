@@ -1,8 +1,7 @@
 mod config;
-mod info;
+pub mod debug;
 mod map;
 mod scenarios;
-mod tips;
 
 use egregoria::Egregoria;
 use imgui::Ui;
@@ -40,15 +39,14 @@ impl Default for ImguiWindows {
             windows: vec![],
             opened: vec![],
         };
-        s.insert(imgui::im_str!("Infos"), info::info, false);
         s.insert(imgui::im_str!("Map"), map::map, true);
         s.insert(
             imgui::im_str!("Scenarios"),
             scenarios::Scenarios::default(),
             false,
         );
-        s.insert(imgui::im_str!("Tips"), tips::tips, false);
         s.insert(imgui::im_str!("Config"), config::config, false);
+        s.insert(imgui::im_str!("Debug"), debug::debug, false);
         s
     }
 }
