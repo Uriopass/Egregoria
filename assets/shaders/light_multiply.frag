@@ -103,7 +103,7 @@ float cloud(vec2 pos, float ampl) {
     float noise = 0.0;
     float amplitude = 0.7;
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 4; i++) {
         float v = srdnoise(dec, time * 0.0002);
         noise += amplitude * v;
 
@@ -111,21 +111,23 @@ float cloud(vec2 pos, float ampl) {
         amplitude *= FBM_MAG;
     }
 
-    return 1.0 + 0.25 * clamp(noise, 0.0, 1.0);
+    return 0.1 * clamp(noise - 0.4, 0.0, 1.0);
 }
 
 void main() {
     float street_light = clamp(texture(sampler2D(t_light, s_light), in_uv).r, 0.0, 1.0);
-    vec4  color = vec4(texture(sampler2D(t_color, s_color), in_uv).rgb, 1.0);
+    vec3  color = texture(sampler2D(t_color, s_color), in_uv).rgb;
     vec3  normal = texture(sampler2D(t_normal, s_normal), in_uv).xyz;
     float cloud = cloud(in_wv.xy + time * 100.0, 0.0001);
 
-    float sun_mult = cloud * clamp(dot(normal, sun), 0.1, 1.0);
+    float sun_mult =  clamp(1.2 * dot(normal, sun), 0.1, 1.0);
+
+    color += cloud;
 
     vec3 real_ambiant = vec3(sun_mult);
 
     float randv = random(floatBitsToUint(vec3(in_uv, time))) / 256.0;
 
     vec3 yellow =  (street_light + randv) * vec3(0.9, 0.9, 0.7);
-    out_color   =  (color + randv) * vec4(clamp(real_ambiant + yellow, 0.0, 1.0), 1.0);
+    out_color   =  vec4((color + randv) * clamp(real_ambiant + yellow, 0.0, 1.0), 1.0);
 }
