@@ -81,17 +81,16 @@ impl RoadRenderer {
     }
 
     fn map_mesh(&self, map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
-        let lo_gray: LinearColor = Color::gray(0.2).into();
-        let mi_gray: LinearColor = Color::gray(0.25).into();
-        let hi_gray: LinearColor = Color::gray(0.42).into();
+        let low_col: LinearColor = common::config().road_low_col.into();
+        let mid_col: LinearColor = common::config().road_mid_col.into();
+        let hig_col: LinearColor = common::config().road_hig_col.into();
+        let line_col: LinearColor = common::config().road_line_col.into();
 
         let inters = map.intersections();
         let lanes = map.lanes();
 
-        let gray_line = LinearColor::gray(0.3);
-
         for l in lanes.values() {
-            tess.set_color(gray_line);
+            tess.set_color(line_col);
 
             let or_src = l.orientation_from(l.src);
             let or_dst = -l.orientation_from(l.dst);
@@ -100,9 +99,9 @@ impl RoadRenderer {
             tess.draw_polyline_with_dir(l.points.as_slice(), or_src, or_dst, Z_LANE_BG, w);
 
             tess.set_color(match l.kind {
-                LaneKind::Walking => hi_gray,
-                LaneKind::Parking => lo_gray,
-                _ => mi_gray,
+                LaneKind::Walking => hig_col,
+                LaneKind::Parking => low_col,
+                _ => mid_col,
             });
             let z = match l.kind {
                 LaneKind::Walking => Z_SIDEWALK,
@@ -116,15 +115,15 @@ impl RoadRenderer {
         let mut p = Vec::with_capacity(8);
         for inter in inters.values() {
             if inter.roads.is_empty() {
-                tess.set_color(gray_line);
+                tess.set_color(line_col);
                 tess.draw_circle(inter.pos, Z_LANE_BG, 5.5);
 
-                tess.set_color(mi_gray);
+                tess.set_color(mid_col);
                 tess.draw_circle(inter.pos, Z_LANE, 5.0);
                 continue;
             }
 
-            tess.set_color(mi_gray);
+            tess.set_color(mid_col);
             tess.draw_filled_polygon(inter.polygon.as_slice(), Z_INTER_BG);
 
             // Walking corners
@@ -133,7 +132,7 @@ impl RoadRenderer {
                 .iter()
                 .filter(|turn| matches!(turn.kind, TurnKind::WalkingCorner))
             {
-                tess.set_color(gray_line);
+                tess.set_color(line_col);
                 let id = turn.id;
 
                 let w = lanes[id.src].width;
@@ -146,7 +145,7 @@ impl RoadRenderer {
 
                 tess.draw_polyline_with_dir(&p, first_dir, last_dir, Z_LANE_BG, w + 0.5);
 
-                tess.set_color(hi_gray);
+                tess.set_color(hig_col);
 
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
@@ -180,9 +179,9 @@ impl RoadRenderer {
             }
         }
 
+        tess.set_color(common::config().lot_col);
         // Lots
         for lot in map.lots().values() {
-            tess.set_color(Color::new(0.2, 0.6, 0.25, 1.0));
             tess.draw_filled_polygon(&lot.shape.corners, Z_LOT);
         }
         tess.meshbuilder.build(gfx)

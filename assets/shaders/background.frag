@@ -130,14 +130,13 @@ void main() {
         out_color = vec4(0.0, 0.0, 0.0, 1.0);
     } else if (noise < 0.1) { // deep water
         float dnoise = disturbed_noise(in_wv, time * 0.05, noise);
-        float lol = before;
-        out_color =  (0.6 + 0.4 * dnoise) * (sea_color + 0.02 * vec4(0.0, abs(lol), abs(lol), 1.0));
+        out_color =  (1.0 - 0.4 * dnoise + 3.0 * clamp(noise, 0.0, 1.0)) * sea_color;
     } else if (noise < 0.11) { // sand
         out_color = sand_color;
     } else {
         float dnoise = disturbed_noise(in_wv * 3.0, 0.0, noise);
 
-        out_color = (0.1 + noise + (dnoise - noise) * 0.3) * grass_color;
+        out_color = (0.4 + 2.0 * noise + (dnoise - noise) * 0.6 ) * grass_color;
     }
 
     out_color.a = 1.0;

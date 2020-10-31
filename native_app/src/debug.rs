@@ -28,6 +28,7 @@ lazy_static! {
         (false, "Debug OBBs", Box::new(debug_obb)),
         (false, "Debug rays", Box::new(debug_rays)),
         (false, "Debug splines", Box::new(debug_spline)),
+        (false, "Debug turns", Box::new(debug_turns)),
         (false, "Show grid", Box::new(show_grid))
     ]);
 }
@@ -98,6 +99,25 @@ pub fn debug_spline(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> 
                     from_derivative: fr_dr,
                     to_derivative: to_der,
                 },
+            );
+        }
+    }
+
+    Some(())
+}
+
+pub fn debug_turns(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
+    let map = world.read::<Map>();
+    let lanes = map.lanes();
+    tess.set_color(LinearColor::RED);
+    for inter in map.intersections().values() {
+        for turn in inter.turns() {
+            tess.draw_polyline_with_dir(
+                turn.points.as_slice(),
+                -lanes[turn.id.src].orientation_from(inter.id),
+                lanes[turn.id.dst].orientation_from(inter.id),
+                1.0,
+                1.0,
             );
         }
     }
