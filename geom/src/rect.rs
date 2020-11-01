@@ -70,6 +70,17 @@ impl Rect {
         self.w * self.h
     }
 
+    pub fn union(self, other: Rect) -> Rect {
+        let x = self.x.min(other.x);
+        let y = self.y.min(other.y);
+        Rect {
+            x,
+            y,
+            w: (self.x + self.w).max(other.x + other.w) - x,
+            h: (self.y + self.h).max(other.y + other.h) - y,
+        }
+    }
+
     pub fn intersects_line_within(&self, p1: Vec2, p2: Vec2, tolerance: f32) -> bool {
         let outcode0 = self.compute_code(p1, tolerance);
         let outcode1 = self.compute_code(p2, tolerance);
