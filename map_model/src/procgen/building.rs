@@ -1,4 +1,4 @@
-use geom::{vec2, vec3, Polygon, Vec2, Vec3};
+use geom::{vec2, vec3, Color, LinearColor, Polygon, Vec2, Vec3};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +8,7 @@ pub struct RoofFace {
     pub normal: Vec3,
 }
 
-pub fn gen_exterior_workplace(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>>) {
+pub fn gen_exterior_workplace(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
     let a = rand_in(15.0, 20.0);
     let b = rand_in(15.0, 20.0);
 
@@ -26,7 +26,7 @@ pub fn gen_exterior_workplace(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>
 
     p.translate(-p.barycenter());
     let door_pos = (p[3] + p[4]) * 0.5;
-    (p, door_pos, None)
+    (vec![(p, Color::new(0.48, 0.48, 0.5, 1.0).into())], door_pos)
 }
 
 ///
@@ -44,7 +44,7 @@ pub fn gen_exterior_workplace(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>
 ///   0         1      2
 ///            w
 ///
-pub fn gen_exterior_house(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>>) {
+pub fn gen_exterior_house(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
     let width = rand_in(10.0, 15.0) * (size / 40.0);
     let height = rand_in(15.0, 20.0) * (size / 40.0);
 
@@ -64,7 +64,7 @@ pub fn gen_exterior_house(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>>) {
 
     let h = 0.5;
 
-    let mut roofs = vec![
+    let roofs = vec![
         RoofFace {
             poly: r1,
             normal: vec3(0.0, -1.0, h).normalize(),
@@ -103,16 +103,25 @@ pub fn gen_exterior_house(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>>) {
     let rseg = [0, 6, 5, 2][rot];
     let door_pos = p.segment(rseg).center();
 
-    for roof in roofs.iter_mut() {
+    let r = common::rand::rand2(door_pos.x, door_pos.y);
+    let roof_col = common::config().roof_col;
+
+    let mut polys = Vec::with_capacity(roofs.len());
+
+    for mut roof in roofs {
         roof.poly.translate(off);
         roof.poly.rotate(rv);
-        roof.normal = roof.normal.rotate_z(rv);
+        let normal = roof.normal.rotate_z(rv);
+
+        let luminosity = 0.8 + 0.2 * vec3(0.7, 0.3, 0.5).normalize().dot(normal);
+        let col = luminosity * LinearColor::from(roof_col) + 0.02 * r * LinearColor::ORANGE;
+        polys.push((roof.poly, col));
     }
 
-    (p, door_pos, Some(roofs))
+    (polys, door_pos)
 }
 
-pub fn gen_exterior_supermarket(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFace>>) {
+pub fn gen_exterior_supermarket(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
     let mut h = rand_in(25.0, 30.0);
     let mut w = h + rand_in(5.0, 10.0);
 
@@ -127,7 +136,7 @@ pub fn gen_exterior_supermarket(size: f32) -> (Polygon, Vec2, Option<Vec<RoofFac
     door_pos += off;
     p.translate(off);
 
-    (p, door_pos, None)
+    (vec![(p, Color::new(0.52, 0.5, 0.50, 1.0).into())], door_pos)
 }
 
 fn rand_in(min: f32, max: f32) -> f32 {
