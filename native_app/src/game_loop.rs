@@ -126,8 +126,8 @@ impl State {
             {
                 tess.color = color.into();
                 match kind {
-                    OrderKind::Circle { pos, size } => {
-                        tess.draw_circle(pos, z, size);
+                    OrderKind::Circle { pos, radius } => {
+                        tess.draw_circle(pos, z, radius);
                     }
                     OrderKind::Line {
                         from,
@@ -135,6 +135,13 @@ impl State {
                         thickness,
                     } => {
                         tess.draw_stroke(from, to, z, thickness);
+                    }
+                    OrderKind::StrokeCircle {
+                        pos,
+                        radius,
+                        thickness,
+                    } => {
+                        tess.draw_stroke_circle(pos, z, radius, thickness);
                     }
                 }
             }

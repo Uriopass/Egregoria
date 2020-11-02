@@ -4,7 +4,12 @@ use geom::{Color, Vec2};
 pub enum OrderKind {
     Circle {
         pos: Vec2,
-        size: f32,
+        radius: f32,
+    },
+    StrokeCircle {
+        pos: Vec2,
+        radius: f32,
+        thickness: f32,
     },
     Line {
         from: Vec2,
@@ -60,11 +65,11 @@ impl<'a> Drop for ImmediateBuilder<'a> {
 }
 
 impl ImmediateDraw {
-    pub fn circle(&mut self, pos: Vec2, size: f32) -> ImmediateBuilder {
+    pub fn circle(&mut self, pos: Vec2, radius: f32) -> ImmediateBuilder {
         ImmediateBuilder {
             draw: self,
             order: ImmediateOrder {
-                kind: OrderKind::Circle { pos, size },
+                kind: OrderKind::Circle { pos, radius },
                 color: Color::WHITE,
                 z: 3.0,
             },
@@ -79,6 +84,22 @@ impl ImmediateDraw {
                 kind: OrderKind::Line {
                     from,
                     to,
+                    thickness,
+                },
+                color: Color::WHITE,
+                z: 3.0,
+            },
+            persistent: false,
+        }
+    }
+
+    pub fn stroke_circle(&mut self, pos: Vec2, radius: f32, thickness: f32) -> ImmediateBuilder {
+        ImmediateBuilder {
+            draw: self,
+            order: ImmediateOrder {
+                kind: OrderKind::StrokeCircle {
+                    pos,
+                    radius,
                     thickness,
                 },
                 color: Color::WHITE,
