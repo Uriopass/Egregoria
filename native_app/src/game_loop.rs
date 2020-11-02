@@ -4,7 +4,7 @@ use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use common::GameTime;
 use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeWarp};
-use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder};
+use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder, OrderKind};
 use egregoria::souls::Souls;
 use egregoria::{load_from_disk, Egregoria};
 use geom::{vec3, Vec2};
@@ -118,19 +118,19 @@ impl State {
 
         {
             let immediate = &mut *self.goria.write::<ImmediateDraw>();
-            for (order, col) in immediate
+            for ImmediateOrder { kind, color, z } in immediate
                 .persistent_orders
                 .iter()
                 .copied()
                 .chain(immediate.orders.drain(..))
             {
-                tess.color = col.into();
-                match order {
-                    ImmediateOrder::Circle { pos, size } => {
-                        tess.draw_circle(pos, 3.0, size);
+                tess.color = color.into();
+                match kind {
+                    OrderKind::Circle { pos, size } => {
+                        tess.draw_circle(pos, z, size);
                     }
-                    ImmediateOrder::Line { from, to } => {
-                        tess.draw_line(from, to, 3.0);
+                    OrderKind::Line { from, to } => {
+                        tess.draw_line(from, to, z);
                     }
                 }
             }
