@@ -1,7 +1,7 @@
 use crate::procgen::Trees;
 use crate::{
     Building, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID, LaneKind,
-    LanePattern, Lot, LotID, ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID,
+    LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID,
     RoadSegmentKind, SpatialMap,
 };
 use geom::Spline;
@@ -207,12 +207,15 @@ impl Map {
 
             let r = rand::random::<f32>();
 
-            let kind = if r < 0.1 {
-                BuildingKind::Workplace
-            } else if r < 0.2 {
-                BuildingKind::Supermarket
-            } else {
-                BuildingKind::House
+            let kind = match lot.kind {
+                LotKind::Residential => BuildingKind::House,
+                LotKind::Commercial => {
+                    if r < 0.5 {
+                        BuildingKind::Supermarket
+                    } else {
+                        BuildingKind::Workplace
+                    }
+                }
             };
 
             Building::make(buildings, spatial_map, roads, lot, kind)

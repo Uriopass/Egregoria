@@ -21,7 +21,8 @@ pub struct Config {
     pub road_mid_col: Color,
     pub road_hig_col: Color,
     pub road_line_col: Color,
-    pub lot_col: Color,
+    pub lot_residential_col: Color,
+    pub lot_commercial_col: Color,
 }
 
 fn load_config_start() -> Config {
