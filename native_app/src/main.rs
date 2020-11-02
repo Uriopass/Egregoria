@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use crate::context::Context;
 use log::{Level, LevelFilter};
 use std::io::Write;
