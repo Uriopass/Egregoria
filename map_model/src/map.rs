@@ -248,6 +248,16 @@ impl Map {
         Some(road)
     }
 
+    pub fn set_lot_kind(&mut self, lot: LotID, kind: LotKind) {
+        match self.lots.get_mut(lot) {
+            Some(lot) => {
+                lot.kind = kind;
+                self.dirty = true;
+            }
+            None => log::warn!("trying to set kind of non-existing lot {:?}", lot),
+        }
+    }
+
     pub fn clear(&mut self) {
         info!("clear");
         let before = std::mem::take(self);

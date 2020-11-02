@@ -16,6 +16,7 @@ pub struct Tree {
 pub struct Trees {
     grid: SparseGrid<Tree>,
     pub counter: usize,
+    pub dirty: bool,
 }
 
 impl Default for Trees {
@@ -23,6 +24,7 @@ impl Default for Trees {
         Self {
             grid: SparseGrid::new(10),
             counter: 1000,
+            dirty: true,
         }
     }
 }
@@ -56,6 +58,7 @@ impl Trees {
 
         for h in to_remove {
             trees.grid.remove(h);
+            trees.dirty = true;
         }
 
         trees.grid.maintain();
@@ -74,6 +77,7 @@ impl Trees {
         if self.counter <= 1 {
             return false;
         }
+        self.dirty = true;
         self.counter -= 1;
         let i = self.counter as f32;
         let r1 = common::rand::rand2(i, 0.0);
@@ -150,7 +154,11 @@ impl Trees {
         for (v, t) in pos {
             grid.insert(v, t);
         }
-        Self { grid, counter: 0 }
+        Self {
+            grid,
+            counter: 0,
+            dirty: true,
+        }
     }
 
     pub fn trees(&self) -> impl Iterator<Item = (Vec2, Tree)> + '_ {

@@ -85,6 +85,19 @@ impl SpatialMap {
         }
     }
 
+    pub fn query_around(
+        &self,
+        center: Vec2,
+        radius: f32,
+    ) -> impl Iterator<Item = ProjectKind> + '_ {
+        self.grid
+            .query(flat_spatial::shape::Circle {
+                center: center.into(),
+                radius,
+            })
+            .map(|(_, _, k)| *k)
+    }
+
     pub fn query_rect(&self, r: Rect) -> impl Iterator<Item = ProjectKind> + '_ {
         self.grid.query(rect_to_aabb(r)).map(|(_, _, k)| *k)
     }

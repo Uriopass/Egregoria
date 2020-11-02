@@ -1,5 +1,5 @@
 use crate::rect::Rect;
-use crate::Vec2;
+use crate::{Segment, Vec2};
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 
@@ -99,5 +99,33 @@ impl OBB {
         let ok2 = (self.corners[3] - self.corners[2]).dot(p - self.corners[2]) > 0.0;
         let ok3 = (self.corners[0] - self.corners[3]).dot(p - self.corners[3]) > 0.0;
         ok0 & ok1 & ok2 & ok3
+    }
+
+    pub fn is_close(&self, p: Vec2, dist: f32) -> bool {
+        if self.contains(p) {
+            return true;
+        }
+        let d = Segment {
+            src: self.corners[3],
+            dst: self.corners[0],
+        }
+        .project(p)
+        .is_close(p, dist);
+
+        if d {
+            return true;
+        }
+        for i in 0..3 {
+            let d = Segment {
+                src: self.corners[i],
+                dst: self.corners[i + 1],
+            }
+            .project(p)
+            .is_close(p, dist);
+            if d {
+                return true;
+            }
+        }
+        false
     }
 }

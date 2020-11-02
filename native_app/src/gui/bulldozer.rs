@@ -2,14 +2,11 @@ use super::Tool;
 use crate::gui::Z_TOOL;
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
 use egregoria::rendering::immediate::ImmediateDraw;
-use egregoria::rendering::meshrender_component::MeshRender;
-use geom::{Color, Transform};
+use geom::Color;
 use legion::system;
 use map_model::{Map, ProjectKind};
 
 #[system]
-#[write_component(MeshRender)]
-#[write_component(Transform)]
 pub fn bulldozer(
     #[resource] tool: &Tool,
     #[resource] mouseinfo: &MouseInfo,

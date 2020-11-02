@@ -362,9 +362,11 @@ impl RoadRenderer {
             self.map_mesh = self.map_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
             self.arrows = self.arrows(map, &ctx.gfx);
             self.crosswalks = self.crosswalks(map, &ctx.gfx);
-            self.tree_shadows = self.tree_shadows(map, &ctx.gfx);
-            self.trees = self.trees(map, &ctx.gfx);
-
+            if map.trees.dirty {
+                self.tree_shadows = self.tree_shadows(map, &ctx.gfx);
+                self.trees = self.trees(map, &ctx.gfx);
+                map.trees.dirty = false;
+            }
             self.last_config = common::config_id();
             map.dirty = false;
         }
