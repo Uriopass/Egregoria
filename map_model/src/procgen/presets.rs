@@ -1,4 +1,4 @@
-use crate::{IntersectionID, LanePatternBuilder, Map};
+use crate::{IntersectionID, LanePatternBuilder, Map, RoadSegmentKind};
 use flat_spatial::SparseGrid;
 use geom::{vec2, Vec2};
 use std::collections::HashSet;
@@ -102,23 +102,25 @@ pub fn load_parismap(map: &mut Map) {
         already.insert((src, dst));
         if already.contains(&(dst, src)) {
             map.remove_road(map.find_road(dst, src).unwrap());
-            map.connect_straight(
+            map.connect(
                 src,
                 dst,
                 &LanePatternBuilder::new()
                     .one_way(false)
                     .parking(true)
                     .build(),
+                RoadSegmentKind::Straight,
             );
             continue;
         }
-        map.connect_straight(
+        map.connect(
             src,
             dst,
             &LanePatternBuilder::new()
                 .one_way(n_lanes == 1)
                 .parking(true)
                 .build(),
+            RoadSegmentKind::Straight,
         );
         if n_lanes != 1 {
             already.insert((dst, src));
@@ -147,39 +149,48 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
     }
 
     for x in first_circle.windows(2) {
-        m.connect_straight(
+        m.connect(
             x[0],
             x[1],
             &LanePatternBuilder::new()
                 .one_way(true)
                 .parking(false)
                 .build(),
+            RoadSegmentKind::Straight,
         );
     }
-    m.connect_straight(
+    m.connect(
         *first_circle.last().unwrap(), // Unwrap ok: n_points > 0
         first_circle[0],
         &LanePatternBuilder::new().one_way(true).build(),
+        RoadSegmentKind::Straight,
     );
 
     for x in second_circle.windows(2) {
-        m.connect_straight(
+        m.connect(
             x[1],
             x[0],
             &LanePatternBuilder::new()
                 .one_way(true)
                 .parking(false)
                 .build(),
+            RoadSegmentKind::Straight,
         );
     }
-    m.connect_straight(
+    m.connect(
         second_circle[0],
         *second_circle.last().unwrap(), // Unwrap ok: n_points > 0
         &LanePatternBuilder::new().one_way(true).build(),
+        RoadSegmentKind::Straight,
     );
 
     for (a, b) in first_circle.into_iter().zip(second_circle) {
-        m.connect_straight(a, b, &LanePatternBuilder::new().build());
+        m.connect(
+            a,
+            b,
+            &LanePatternBuilder::new().build(),
+            RoadSegmentKind::Straight,
+        );
     }
 }
 
@@ -195,13 +206,14 @@ pub fn add_grid(pos: Vec2, m: &mut Map, size: usize) {
     }
 
     let pat = LanePatternBuilder::new().build();
-    for x in 0..size - 1 {
-        m.connect_straight(grid[size - 1][x], grid[size - 1][x + 1], &pat);
-        m.connect_straight(grid[x][size - 1], grid[x + 1][size - 1], &pat);
+    let l = size - 1;
+    for x in 0..l {
+        m.connect(grid[l][x], grid[l][x + 1], &pat, RoadSegmentKind::Straight);
+        m.connect(grid[x][l], grid[x + 1][l], &pat, RoadSegmentKind::Straight);
 
-        for y in 0..size - 1 {
-            m.connect_straight(grid[y][x], grid[y][x + 1], &pat);
-            m.connect_straight(grid[y][x], grid[y + 1][x], &pat);
+        for y in 0..l {
+            m.connect(grid[y][x], grid[y][x + 1], &pat, RoadSegmentKind::Straight);
+            m.connect(grid[y][x], grid[y + 1][x], &pat, RoadSegmentKind::Straight);
         }
     }
 }

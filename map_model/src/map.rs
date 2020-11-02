@@ -165,16 +165,6 @@ impl Map {
         id
     }
 
-    // todo: remove in favor of connect(..., RoadSegmentKind::Straight)
-    pub fn connect_straight(
-        &mut self,
-        src: IntersectionID,
-        dst: IntersectionID,
-        pattern: &LanePattern,
-    ) -> RoadID {
-        self.connect(src, dst, pattern, RoadSegmentKind::Straight)
-    }
-
     pub fn connect(
         &mut self,
         src: IntersectionID,
