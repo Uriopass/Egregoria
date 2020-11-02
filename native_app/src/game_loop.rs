@@ -129,8 +129,12 @@ impl State {
                     OrderKind::Circle { pos, size } => {
                         tess.draw_circle(pos, z, size);
                     }
-                    OrderKind::Line { from, to } => {
-                        tess.draw_line(from, to, z);
+                    OrderKind::Line {
+                        from,
+                        to,
+                        thickness,
+                    } => {
+                        tess.draw_stroke(from, to, z, thickness);
                     }
                 }
             }

@@ -1,33 +1,11 @@
 use super::Tool;
+use crate::gui::Z_TOOL;
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
-use egregoria::rendering::meshrender_component::{CircleRender, MeshRender};
-use egregoria::NoSerialize;
-use geom::{Color, Transform, Vec2};
-use legion::world::SubWorld;
-use legion::{system, IntoQuery};
-use legion::{Entity, World};
+use egregoria::rendering::immediate::ImmediateDraw;
+use egregoria::rendering::meshrender_component::MeshRender;
+use geom::{Color, Transform};
+use legion::system;
 use map_model::{Map, ProjectKind};
-
-pub struct BulldozerResource {
-    project: Entity,
-}
-
-impl BulldozerResource {
-    pub fn new(world: &mut World) -> Self {
-        let mut mr = MeshRender::simple(
-            CircleRender {
-                offset: Vec2::ZERO,
-                radius: 2.0,
-                color: Color::RED,
-            },
-            0.9,
-        );
-        mr.hide = true;
-
-        let e = world.push((Transform::zero(), mr, NoSerialize));
-        Self { project: e }
-    }
-}
 
 #[system]
 #[write_component(MeshRender)]
@@ -36,23 +14,15 @@ pub fn bulldozer(
     #[resource] tool: &Tool,
     #[resource] mouseinfo: &MouseInfo,
     #[resource] map: &mut Map,
-    #[resource] self_r: &BulldozerResource,
-    sw: &mut SubWorld,
+    #[resource] draw: &mut ImmediateDraw,
 ) {
-    let (mr, transform): (&mut MeshRender, &mut Transform) =
-        <(&mut MeshRender, &mut Transform)>::query()
-            .get_mut(sw, self_r.project)
-            .unwrap();
-
     if !matches!(*tool, Tool::Bulldozer) {
-        mr.hide = true;
         return;
     }
-    mr.hide = false;
 
     let cur_proj = map.project(mouseinfo.unprojected);
 
-    transform.set_position(cur_proj.pos);
+    draw.circle(cur_proj.pos, 2.0).color(Color::RED).z(Z_TOOL);
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
         let mut potentially_empty = Vec::new();

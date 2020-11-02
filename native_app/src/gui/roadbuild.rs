@@ -1,40 +1,14 @@
 use crate::gui::{Tool, Z_TOOL};
 use egregoria::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use egregoria::rendering::meshrender_component::{AbsoluteLineRender, CircleRender, MeshRender};
-use egregoria::NoSerialize;
+use egregoria::rendering::immediate::ImmediateDraw;
+use egregoria::rendering::meshrender_component::MeshRender;
 use geom::Color;
 use geom::Spline;
-use geom::Transform;
 use geom::Vec2;
 use legion::system;
-use legion::world::SubWorld;
-use legion::{Entity, IntoQuery, World};
 use map_model::{
     IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
 };
-
-impl RoadBuildResource {
-    pub fn new(world: &mut World) -> Self {
-        Self {
-            build_state: BuildState::Hover,
-
-            project_entity: world.push((
-                Transform::zero(),
-                MeshRender::simple(
-                    CircleRender {
-                        radius: 2.0,
-                        color: Color::BLUE,
-                        ..Default::default()
-                    },
-                    Z_TOOL,
-                ),
-                NoSerialize,
-            )),
-
-            pattern_builder: LanePatternBuilder::new(),
-        }
-    }
-}
 
 #[derive(Clone, Copy, Debug)]
 enum BuildState {
@@ -43,10 +17,15 @@ enum BuildState {
     Interpolation(Vec2, MapProject),
 }
 
+impl Default for BuildState {
+    fn default() -> Self {
+        BuildState::Hover
+    }
+}
+
+#[derive(Default)]
 pub struct RoadBuildResource {
     build_state: BuildState,
-
-    pub project_entity: Entity,
     pub pattern_builder: LanePatternBuilder,
 }
 
@@ -58,18 +37,12 @@ pub fn roadbuild(
     #[resource] mouseinfo: &MouseInfo,
     #[resource] tool: &Tool,
     #[resource] map: &mut Map,
-    sw: &mut SubWorld,
+    #[resource] immdraw: &mut ImmediateDraw,
 ) {
-    let mr = <&mut MeshRender>::query()
-        .get_mut(sw, state.project_entity)
-        .unwrap(); // Unwrap ok: mr defined in new
-
     if !matches!(*tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
-        mr.hide = true;
         state.build_state = BuildState::Hover;
         return;
     }
-    mr.hide = false;
 
     if kbinfo.just_pressed.contains(&KeyCode::Escape) {
         state.build_state = BuildState::Hover;
@@ -77,7 +50,7 @@ pub fn roadbuild(
 
     let cur_proj = map.project(mouseinfo.unprojected);
 
-    state.update_drawing(mr, cur_proj.pos, state.pattern_builder.width());
+    state.update_drawing(immdraw, cur_proj.pos, state.pattern_builder.width());
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
         log::info!(
@@ -188,9 +161,7 @@ fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
 }
 
 impl RoadBuildResource {
-    pub fn update_drawing(&self, mr: &mut MeshRender, proj_pos: Vec2, patwidth: f32) {
-        mr.orders.clear();
-
+    pub fn update_drawing(&self, immdraw: &mut ImmediateDraw, proj_pos: Vec2, patwidth: f32) {
         let transparent_blue = Color {
             r: 0.3,
             g: 0.3,
@@ -200,29 +171,24 @@ impl RoadBuildResource {
 
         match self.build_state {
             BuildState::Hover => {
-                mr.add(CircleRender {
-                    offset: proj_pos,
-                    radius: 2.0,
-                    color: transparent_blue,
-                });
+                immdraw
+                    .circle(proj_pos, 2.0)
+                    .color(transparent_blue)
+                    .z(Z_TOOL);
             }
             BuildState::Start(x) => {
-                mr.add(CircleRender {
-                    offset: proj_pos,
-                    radius: patwidth * 0.5,
-                    color: transparent_blue,
-                })
-                .add(CircleRender {
-                    offset: x.pos,
-                    radius: patwidth * 0.5,
-                    color: transparent_blue,
-                })
-                .add(AbsoluteLineRender {
-                    src: proj_pos,
-                    dst: x.pos,
-                    thickness: patwidth,
-                    color: transparent_blue,
-                });
+                immdraw
+                    .circle(proj_pos, patwidth * 0.5)
+                    .color(transparent_blue)
+                    .z(Z_TOOL);
+                immdraw
+                    .circle(x.pos, patwidth * 0.5)
+                    .color(transparent_blue)
+                    .z(Z_TOOL);
+                immdraw
+                    .line(proj_pos, x.pos, patwidth)
+                    .color(transparent_blue)
+                    .z(Z_TOOL);
             }
             BuildState::Interpolation(p, x) => {
                 let sp = Spline {
@@ -233,19 +199,16 @@ impl RoadBuildResource {
                 };
                 let mut points = sp.smart_points(1.0, 0.0, 1.0).peekable();
                 while let Some(v) = points.next() {
-                    mr.add(CircleRender {
-                        offset: v,
-                        radius: patwidth * 0.5,
-                        color: transparent_blue,
-                    });
+                    immdraw
+                        .circle(v, patwidth * 0.5)
+                        .color(transparent_blue)
+                        .z(Z_TOOL);
 
                     if let Some(peek) = points.peek() {
-                        mr.add(AbsoluteLineRender {
-                            src: v,
-                            dst: *peek,
-                            thickness: patwidth,
-                            color: transparent_blue,
-                        });
+                        immdraw
+                            .line(v, *peek, patwidth)
+                            .color(transparent_blue)
+                            .z(Z_TOOL);
                     }
                 }
             }
