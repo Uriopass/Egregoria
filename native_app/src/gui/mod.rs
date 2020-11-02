@@ -1,5 +1,4 @@
 use egregoria::Egregoria;
-use inspected_aura::InspectedAura;
 use movable::MovableSystem;
 use roadbuild::RoadBuildResource;
 use roadeditor::RoadEditorResource;
@@ -29,9 +28,7 @@ pub fn setup_gui(goria: &mut Egregoria) {
         .add_system(roadbuild::roadbuild_system())
         .add_system(roadeditor::roadeditor_system())
         .add_system(bulldozer::bulldozer_system())
-        .add_system(inspected_aura::inspected_aura_system(InspectedAura::new(
-            &mut goria.world,
-        )))
+        .add_system(inspected_aura::inspected_aura_system())
         .add_system(movable::movable_system(MovableSystem::default()));
 
     goria.insert(InspectedEntity::default());
