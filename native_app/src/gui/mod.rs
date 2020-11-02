@@ -1,4 +1,6 @@
+use common::inspect::InspectedEntity;
 use egregoria::Egregoria;
+use map_model::LotKind;
 use movable::MovableSystem;
 use roadbuild::RoadBuildResource;
 use roadeditor::RoadEditorResource;
@@ -7,6 +9,7 @@ mod bulldozer;
 mod follow;
 mod inspect;
 mod inspected_aura;
+mod lotbrush;
 mod movable;
 mod roadbuild;
 mod roadeditor;
@@ -16,7 +19,6 @@ pub mod windows;
 
 pub use follow::FollowEntity;
 
-use common::inspect::InspectedEntity;
 pub use inspect::*;
 pub use topgui::*;
 
@@ -28,6 +30,7 @@ pub fn setup_gui(goria: &mut Egregoria) {
         .add_system(roadbuild::roadbuild_system())
         .add_system(roadeditor::roadeditor_system())
         .add_system(bulldozer::bulldozer_system())
+        .add_system(lotbrush::lotbrush_system())
         .add_system(inspected_aura::inspected_aura_system())
         .add_system(movable::movable_system(MovableSystem::default()));
 
@@ -39,13 +42,14 @@ pub fn setup_gui(goria: &mut Egregoria) {
     goria.insert(RoadEditorResource::default());
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone)]
 pub enum Tool {
     Hand,
     RoadbuildStraight,
     RoadbuildCurved,
     RoadEditor,
     Bulldozer,
+    LotBrush(LotKind),
 }
 
 const Z_TOOL: f32 = 0.9;

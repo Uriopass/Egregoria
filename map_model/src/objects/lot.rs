@@ -11,7 +11,7 @@ new_key_type! {
     pub struct LotID;
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub enum LotKind {
     Residential,
     Commercial,

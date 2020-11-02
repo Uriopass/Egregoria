@@ -1,7 +1,6 @@
 use crate::gui::{Tool, Z_TOOL};
 use egregoria::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
 use egregoria::rendering::immediate::ImmediateDraw;
-use egregoria::rendering::meshrender_component::MeshRender;
 use geom::Color;
 use geom::Spline;
 use geom::Vec2;
@@ -30,7 +29,6 @@ pub struct RoadBuildResource {
 }
 
 #[system]
-#[write_component(MeshRender)]
 pub fn roadbuild(
     #[resource] state: &mut RoadBuildResource,
     #[resource] kbinfo: &KeyboardInfo,

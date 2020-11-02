@@ -1,4 +1,5 @@
 use crate::gui::windows::ImguiWindows;
+use crate::gui::Tool::LotBrush;
 use crate::gui::{RoadBuildResource, Tool};
 use common::inspect::InspectedEntity;
 use common::GameTime;
@@ -7,7 +8,7 @@ use egregoria::Egregoria;
 use imgui::{im_str, StyleColor, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
-use map_model::LanePatternBuilder;
+use map_model::{LanePatternBuilder, LotKind};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
@@ -114,8 +115,20 @@ impl Gui {
 
         let toolbox_w = 120.0;
 
+        let tools = [
+            (im_str!("Hand"), Tool::Hand),
+            (im_str!("Straight Road"), Tool::RoadbuildStraight),
+            (im_str!("Curved Road"), Tool::RoadbuildCurved),
+            (im_str!("Road Editor"), Tool::RoadEditor),
+            (im_str!("Bulldozer"), Tool::Bulldozer),
+            (im_str!("Lot Brush"), Tool::LotBrush(LotKind::Residential)),
+        ];
+
         Window::new(im_str!("Toolbox"))
-            .size([toolbox_w, 30.0 * 5.0 + 20.0], imgui::Condition::Always)
+            .size(
+                [toolbox_w, 30.0 * (tools.len() as f32) + 20.0],
+                imgui::Condition::Always,
+            )
             .position([w - toolbox_w, h * 0.5 - 30.0], imgui::Condition::Always)
             .scroll_bar(false)
             .title_bar(true)
@@ -125,20 +138,14 @@ impl Gui {
             .build(&ui, || {
                 let cur_tool: &mut Tool = &mut goria.write::<Tool>();
 
-                let tools = [
-                    (im_str!("Hand"), Tool::Hand),
-                    (im_str!("Straight Road"), Tool::RoadbuildStraight),
-                    (im_str!("Curved Road"), Tool::RoadbuildCurved),
-                    (im_str!("Road Editor"), Tool::RoadEditor),
-                    (im_str!("Bulldozer"), Tool::Bulldozer),
-                ];
-
                 for (name, tool) in &tools {
-                    let tok = ui.push_style_var(StyleVar::Alpha(if tool == cur_tool {
-                        1.0
-                    } else {
-                        0.5
-                    }));
+                    let tok = ui.push_style_var(StyleVar::Alpha(
+                        if std::mem::discriminant(tool) == std::mem::discriminant(cur_tool) {
+                            1.0
+                        } else {
+                            0.5
+                        },
+                    ));
                     if ui.button(name, [toolbox_w, 30.0]) {
                         *cur_tool = *tool;
                     }
@@ -179,6 +186,49 @@ impl Gui {
                     }
 
                     goria.write::<RoadBuildResource>().pattern_builder = pattern;
+                });
+        }
+
+        let brushes = [
+            (im_str!("Residential"), LotKind::Residential),
+            (im_str!("Commercial"), LotKind::Commercial),
+        ];
+
+        if matches!(*goria.read::<Tool>(), Tool::LotBrush(_)) {
+            Window::new(im_str!("Lot Brush"))
+                .size(
+                    [toolbox_w, brushes.len() as f32 * 30.0 + 20.0],
+                    imgui::Condition::Always,
+                )
+                .position(
+                    [w - toolbox_w - toolbox_w, h * 0.5 - 30.0],
+                    imgui::Condition::Always,
+                )
+                .scroll_bar(false)
+                .title_bar(true)
+                .movable(false)
+                .collapsible(false)
+                .resizable(false)
+                .build(&ui, || {
+                    let cur_tool = &mut *goria.write::<Tool>();
+                    let cur_brush = match cur_tool {
+                        LotBrush(k) => *k,
+                        _ => return,
+                    };
+
+                    for (name, brush) in &brushes {
+                        let tok = ui.push_style_var(StyleVar::Alpha(
+                            if std::mem::discriminant(brush) == std::mem::discriminant(&cur_brush) {
+                                1.0
+                            } else {
+                                0.5
+                            },
+                        ));
+                        if ui.button(name, [toolbox_w, 30.0]) {
+                            *cur_tool = LotBrush(*brush);
+                        }
+                        tok.pop(ui);
+                    }
                 });
         }
 
