@@ -2,8 +2,15 @@ use geom::{Color, Vec2};
 
 #[derive(Copy, Clone)]
 pub enum OrderKind {
-    Circle { pos: Vec2, size: f32 },
-    Line { from: Vec2, to: Vec2 },
+    Circle {
+        pos: Vec2,
+        size: f32,
+    },
+    Line {
+        from: Vec2,
+        to: Vec2,
+        thickness: f32,
+    },
 }
 
 #[derive(Copy, Clone)]
@@ -65,11 +72,15 @@ impl ImmediateDraw {
         }
     }
 
-    pub fn line(&mut self, from: Vec2, to: Vec2) -> ImmediateBuilder {
+    pub fn line(&mut self, from: Vec2, to: Vec2, thickness: f32) -> ImmediateBuilder {
         ImmediateBuilder {
             draw: self,
             order: ImmediateOrder {
-                kind: OrderKind::Line { from, to },
+                kind: OrderKind::Line {
+                    from,
+                    to,
+                    thickness,
+                },
                 color: Color::WHITE,
                 z: 3.0,
             },

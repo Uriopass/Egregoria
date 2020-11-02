@@ -1,15 +1,13 @@
 use crate::gui::{Tool, Z_TOOL};
 use common::inspect::InspectedEntity;
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
-use egregoria::rendering::meshrender_component::{CircleRender, MeshRender};
-use egregoria::NoSerialize;
+use egregoria::rendering::immediate::ImmediateDraw;
 use geom::Color;
-use geom::Transform;
 use imgui_inspect_derive::*;
 use legion::systems::CommandBuffer;
 use legion::world::SubWorld;
-use legion::{system, EntityStore, IntoQuery};
-use legion::{Entity, World};
+use legion::Entity;
+use legion::{system, IntoQuery};
 use map_model::{IntersectionID, LightPolicy, TurnPolicy};
 use map_model::{Map, ProjectKind};
 
@@ -21,49 +19,24 @@ pub struct IntersectionComponent {
     pub light_policy: LightPolicy,
 }
 
+#[derive(Default)]
 pub struct RoadEditorResource {
     inspect_e: Option<Entity>,
-    project_entity: Entity,
-}
-
-impl RoadEditorResource {
-    pub fn new(world: &mut World) -> Self {
-        Self {
-            inspect_e: None,
-            project_entity: world.push((
-                Transform::zero(),
-                MeshRender::simple(
-                    CircleRender {
-                        radius: 2.0,
-                        color: Color::BLUE,
-                        ..Default::default()
-                    },
-                    Z_TOOL,
-                ),
-                NoSerialize,
-            )),
-        }
-    }
 }
 
 #[system]
 #[read_component(IntersectionComponent)]
-#[write_component(Transform)]
-#[write_component(MeshRender)]
 pub fn roadeditor(
     #[resource] tool: &Tool,
     #[resource] map: &mut Map,
     #[resource] mouseinfo: &MouseInfo,
     #[resource] state: &mut RoadEditorResource,
     #[resource] inspected: &mut InspectedEntity,
-    sw: &mut SubWorld,
+    #[resource] imm_draw: &mut ImmediateDraw,
+    sw: &SubWorld,
     buf: &mut CommandBuffer,
 ) {
-    let mut entry = sw.entry_mut(state.project_entity).unwrap();
-    let mr = entry.get_component_mut::<MeshRender>().unwrap(); // Unwrap ok: defined in new
-
     if !matches!(*tool, Tool::RoadEditor) {
-        mr.hide = true;
         if inspected.e == state.inspect_e {
             inspected.e = None;
             inspected.dirty = false;
@@ -74,14 +47,11 @@ pub fn roadeditor(
         return;
     }
 
-    mr.hide = false;
-
     let cur_proj = map.project(mouseinfo.unprojected);
-
-    entry
-        .get_component_mut::<Transform>()
-        .unwrap() // Unwrap ok: defined in new
-        .set_position(cur_proj.pos);
+    imm_draw
+        .circle(cur_proj.pos, 2.0)
+        .color(Color::BLUE)
+        .z(Z_TOOL);
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
         if let ProjectKind::Inter(id) = cur_proj.kind {

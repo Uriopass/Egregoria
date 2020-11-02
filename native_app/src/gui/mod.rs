@@ -1,4 +1,3 @@
-use bulldozer::BulldozerResource;
 use egregoria::Egregoria;
 use inspected_aura::InspectedAura;
 use movable::MovableSystem;
@@ -39,14 +38,8 @@ pub fn setup_gui(goria: &mut Egregoria) {
     goria.insert(FollowEntity::default());
     goria.insert(Tool::default());
 
-    let s = RoadBuildResource::new(&mut goria.world);
-    goria.insert(s);
-
-    let s = RoadEditorResource::new(&mut goria.world);
-    goria.insert(s);
-
-    let s = BulldozerResource::new(&mut goria.world);
-    goria.insert(s);
+    goria.insert(RoadBuildResource::default());
+    goria.insert(RoadEditorResource::default());
 }
 
 #[derive(Copy, Clone, Eq, PartialEq)]
