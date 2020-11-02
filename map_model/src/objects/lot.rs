@@ -12,9 +12,16 @@ new_key_type! {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+pub enum LotKind {
+    Residential,
+    Commercial,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Lot {
     pub id: LotID,
     pub parent: RoadID,
+    pub kind: LotKind,
     pub shape: OBB,
     pub road_edge: Segment,
     pub size: f32,
@@ -67,11 +74,20 @@ impl Lot {
             }
         }
 
+        let r = common::rand::rand2(at.x, at.y);
+
+        let kind = if r < 0.2 {
+            LotKind::Commercial
+        } else {
+            LotKind::Residential
+        };
+
         let road_edge = Segment::new(shape.corners[0], shape.corners[1]);
 
         let id = lots.insert_with_key(move |id| Lot {
             id,
             parent,
+            kind,
             shape,
             size,
             road_edge,

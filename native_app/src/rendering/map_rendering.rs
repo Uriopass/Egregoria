@@ -1,6 +1,8 @@
 use egregoria::utils::Restrict;
 use geom::{vec2, Color, LinearColor};
-use map_model::{Lane, LaneKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH};
+use map_model::{
+    Lane, LaneKind, LotKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
+};
 use std::ops::Mul;
 use wgpu_engine::{
     compile_shader, CompiledShader, FrameContext, GfxContext, InstanceRaw, Mesh, MultiSpriteBatch,
@@ -161,9 +163,13 @@ impl RoadRenderer {
             }
         }
 
-        tess.set_color(common::config().lot_col);
         // Lots
         for lot in map.lots().values() {
+            let col = match lot.kind {
+                LotKind::Residential => common::config().lot_residential_col,
+                LotKind::Commercial => common::config().lot_commercial_col,
+            };
+            tess.set_color(col);
             tess.draw_filled_polygon(&lot.shape.corners, Z_LOT);
         }
         tess.meshbuilder.build(gfx)
