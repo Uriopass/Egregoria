@@ -62,8 +62,8 @@ impl RoutingStep {
             RoutingStep::GetOutBuilding(_) => true,
         }
     }
-    pub fn action(self, goria: &Egregoria, body: PedestrianID) -> Action {
-        match self {
+    pub fn action(self, goria: &Egregoria, body: PedestrianID) -> Option<Action> {
+        Some(match self {
             RoutingStep::WalkTo(obj) => {
                 let pos = goria.pos(body.0).unwrap();
 
@@ -76,7 +76,7 @@ impl RoutingStep {
                 }
             }
             RoutingStep::DriveTo(vehicle, obj) => {
-                let pos = goria.pos(body.0).unwrap();
+                let pos = goria.pos(vehicle.0).unwrap();
 
                 let map = goria.read::<Map>();
 
@@ -86,13 +86,18 @@ impl RoutingStep {
                     Action::DoNothing
                 }
             }
-            RoutingStep::Park(vehicle, spot) => Action::Park(vehicle, spot),
+            RoutingStep::Park(vehicle, spot) => {
+                if !goria.read::<Map>().parking.contains(spot) {
+                    return None;
+                }
+                Action::Park(vehicle, spot)
+            }
             RoutingStep::Unpark(vehicle) => Action::UnPark(vehicle),
             RoutingStep::GetInVehicle(vehicle) => Action::GetInVehicle(body, vehicle),
             RoutingStep::GetOutVehicle(vehicle) => Action::GetOutVehicle(body, vehicle),
             RoutingStep::GetInBuilding(build) => Action::GetInBuilding(body, build),
             RoutingStep::GetOutBuilding(build) => Action::GetOutBuilding(body, build),
-        }
+        })
     }
 }
 
@@ -139,7 +144,9 @@ impl Router {
 
     pub fn go_to(&mut self, goria: &Egregoria, dest: Destination) -> Action {
         if self.dest.map(|x| x == dest).unwrap_or(false) {
-            return self.action(goria);
+            if let Some(action) = self.action(goria) {
+                return action;
+            }
         }
 
         self.dest = Some(dest);
@@ -163,7 +170,7 @@ impl Router {
 
         self.steps.reverse();
 
-        self.action(goria)
+        self.action(goria).unwrap_or(Action::DoNothing)
     }
 
     fn steps_to(&self, goria: &Egregoria, obj: Vec2) -> Vec<RoutingStep> {
@@ -184,9 +191,12 @@ impl Router {
                     .project_segment_dir(spot.trans.position());
                 let parking_pos = pos - dir * 4.0;
 
-                steps.push(RoutingStep::WalkTo(goria.pos(car.0).unwrap()));
-                steps.push(RoutingStep::GetInVehicle(car));
-                steps.push(RoutingStep::Unpark(car));
+                if !matches!(loc, Location::Vehicle(_)) {
+                    steps.push(RoutingStep::WalkTo(goria.pos(car.0).unwrap()));
+                    steps.push(RoutingStep::GetInVehicle(car));
+                    steps.push(RoutingStep::Unpark(car));
+                }
+
                 steps.push(RoutingStep::DriveTo(car, parking_pos));
                 steps.push(RoutingStep::Park(car, spot_id));
                 steps.push(RoutingStep::GetOutVehicle(car));
@@ -197,13 +207,13 @@ impl Router {
         steps
     }
 
-    pub fn action(&mut self, goria: &Egregoria) -> Action {
-        let step = unwrap_or!(self.steps.last(), return Action::DoNothing);
+    pub fn action(&mut self, goria: &Egregoria) -> Option<Action> {
+        let step = unwrap_or!(self.steps.last(), return Some(Action::DoNothing));
         if step.ready(goria, self.body) {
             let step = self.steps.pop().unwrap();
             return step.action(goria, self.body);
         }
-        Action::DoNothing
+        Some(Action::DoNothing)
     }
 }
 
@@ -271,7 +281,14 @@ impl Action {
             Action::Park(vehicle, spot_id) => {
                 log::info!("{:?}", self);
                 let trans = goria.comp::<Transform>(vehicle.0).unwrap();
-                let spot = *goria.read::<Map>().parking.get(spot_id).unwrap();
+                let map = goria.read::<Map>();
+                let spot = match map.parking.get(spot_id) {
+                    Some(x) => x,
+                    None => {
+                        log::warn!("Couldn't park at {:?} because it doesn't exist", spot_id);
+                        return None;
+                    }
+                };
 
                 let s = Spline {
                     from: trans.position(),
@@ -279,6 +296,7 @@ impl Action {
                     from_derivative: trans.direction() * 2.0,
                     to_derivative: spot.trans.direction() * 2.0,
                 };
+                drop(map);
 
                 goria.comp_mut::<Vehicle>(vehicle.0).unwrap().state =
                     VehicleState::RoadToPark(s, 0.0, spot_id);

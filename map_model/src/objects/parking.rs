@@ -27,6 +27,10 @@ impl ParkingSpots {
         self.spots.get(spot)
     }
 
+    pub fn contains(&self, spot: ParkingSpotID) -> bool {
+        self.spots.contains_key(spot)
+    }
+
     pub fn remove_spots(&mut self, lane: LaneID) {
         if let Some(spots) = self.lane_spots.remove(lane) {
             for spot in spots {
