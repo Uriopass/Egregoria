@@ -260,7 +260,7 @@ impl RoadRenderer {
 
             for (id, _) in r_lanes {
                 let lane = &lanes[id];
-                let l = lane.points.length();
+                let l = lane.length;
                 for i in 0..n_arrows {
                     let (mid, dir) = lane
                         .points
