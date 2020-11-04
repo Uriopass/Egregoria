@@ -16,7 +16,7 @@ rand_distr    = "0.2.2"
 serde         = "1.0"
 legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize", "extended-tuple-impls", "parallel"] }
 crossbeam     = "0.7.3"
-flat_spatial  = { git = "https://github.com/Uriopass/flat_spatial", features = ["serde"] }
+flat_spatial  = { version = "0.3.7", features = ["serde"] }
 mint          = {git = "https://github.com/Uriopass/mint"}
 log           = "0.4.11"
 imgui-inspect = { path = "../imgui-inspect"}

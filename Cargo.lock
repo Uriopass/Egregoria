@@ -700,7 +700,7 @@ dependencies = [
  "legion",
  "log",
  "map_model",
- "mint",
+ "mint 0.5.5",
  "mods",
  "ordered-float 2.0.0",
  "rand 0.7.3",
@@ -752,10 +752,11 @@ checksum = "4e08c8bc7575d7e091fe0706963bd22e2a4be6a64da995f03b2a5a57d66ad015"
 
 [[package]]
 name = "flat_spatial"
-version = "0.3.6"
-source = "git+https://github.com/Uriopass/flat_spatial#98b827d16f1f6d8164caacde536aab0ad540aa4b"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9538579d6266f906a7f887fef957a3dbfe53a00e07671340e3e732c20979cc52"
 dependencies = [
- "mint",
+ "mint 0.5.6",
  "serde",
  "slotmap",
 ]
@@ -920,7 +921,7 @@ dependencies = [
 name = "geom"
 version = "0.1.0"
 dependencies = [
- "mint",
+ "mint 0.5.6",
  "ordered-float 2.0.0",
  "serde",
 ]
@@ -1532,6 +1533,12 @@ dependencies = [
 name = "mint"
 version = "0.5.5"
 source = "git+https://github.com/Uriopass/mint#40639a5dfb15d1fdd7ac843a5d731b4a699315dd"
+
+[[package]]
+name = "mint"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "519df8d6856dcd4b40519947737b408f81be051fc032590659cae5d77d664185"
 dependencies = [
  "serde",
 ]
@@ -1658,7 +1665,7 @@ dependencies = [
  "legion",
  "log",
  "map_model",
- "mint",
+ "mint 0.5.6",
  "ordered-float 2.0.0",
  "serde",
  "wgpu_engine",
@@ -2870,7 +2877,7 @@ dependencies = [
  "glsl-to-spirv",
  "image",
  "log",
- "mint",
+ "mint 0.5.6",
  "naga 0.2.0 (git+https://github.com/gfx-rs/naga)",
  "raw-window-handle",
  "wgpu",
