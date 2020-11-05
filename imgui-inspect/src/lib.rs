@@ -8,7 +8,7 @@ pub use scale::*;
 pub use slider::*;
 
 /// Options for rendering a value as a struct (i.e. draw all of its subfields)
-#[derive(Debug, Default)]
+#[derive(Default, Debug)]
 pub struct InspectArgsStruct {
     pub header: Option<bool>,
     pub indent_children: Option<bool>,

@@ -5,7 +5,7 @@ use quote::quote;
 //
 // Slider arg handling
 //
-#[derive(Debug, FromField, Clone)]
+#[derive(Clone, Debug, FromField)]
 #[darling(attributes(inspect_slider))]
 pub struct InspectFieldArgsSlider {
     ident: Option<syn::Ident>,

@@ -2,7 +2,7 @@ use geom::Vec2;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Inspect)]
 pub struct Kinematics {
     pub velocity: Vec2,
     pub mass: f32,

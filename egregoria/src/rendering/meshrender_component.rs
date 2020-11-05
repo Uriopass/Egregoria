@@ -7,7 +7,7 @@ use imgui_inspect_derive::*;
 use legion::Entity;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum MeshRenderEnum {
     StrokeCircle(StrokeCircleRender),
     Circle(CircleRender),
@@ -181,7 +181,7 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
     }
 }
 
-#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Inspect)]
 pub struct CircleRender {
     pub offset: Vec2,
     #[inspect(proxy_type = "InspectDragf")]
@@ -199,7 +199,7 @@ impl Default for CircleRender {
     }
 }
 
-#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Inspect)]
 pub struct StrokeCircleRender {
     pub offset: Vec2,
     #[inspect(proxy_type = "InspectDragf")]
@@ -220,7 +220,7 @@ impl Default for StrokeCircleRender {
     }
 }
 
-#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Inspect)]
 pub struct RectRender {
     pub offset: Vec2,
     #[inspect(proxy_type = "InspectDragf")]
@@ -241,7 +241,7 @@ impl Default for RectRender {
     }
 }
 
-#[derive(Debug, Inspect, Clone)]
+#[derive(Clone, Debug, Inspect)]
 pub struct LineToRender {
     #[inspect(skip)]
     pub to: Entity,
@@ -250,7 +250,7 @@ pub struct LineToRender {
     pub thickness: f32,
 }
 
-#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Inspect)]
 pub struct LineRender {
     pub offset: Vec2,
     pub color: Color,
@@ -258,7 +258,7 @@ pub struct LineRender {
     pub thickness: f32,
 }
 
-#[derive(Debug, Inspect, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Inspect)]
 pub struct AbsoluteLineRender {
     pub src: Vec2,
     pub dst: Vec2,

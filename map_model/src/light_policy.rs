@@ -6,7 +6,7 @@ use imgui_inspect::{
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LightPolicy {
     NoLights,
     StopSigns,

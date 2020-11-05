@@ -5,10 +5,10 @@ mod market;
 
 pub use market::*;
 
-#[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Add, Sub, AddAssign, SubAssign)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Add, AddAssign, Sub, SubAssign)]
 pub struct Money(pub i32);
 
-#[derive(Copy, Clone, Debug, Default, Add, Sub, AddAssign, SubAssign)]
+#[derive(Copy, Clone, Default, Debug, Add, AddAssign, Sub, SubAssign)]
 pub struct Goods {
     pub food: i32,
 }

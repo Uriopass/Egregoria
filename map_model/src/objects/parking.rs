@@ -16,7 +16,7 @@ pub struct ParkingSpot {
     pub trans: Transform,
 }
 
-#[derive(Clone, Serialize, Deserialize, Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ParkingSpots {
     spots: SlotMap<ParkingSpotID, ParkingSpot>,
     lane_spots: SecondaryMap<LaneID, Vec<ParkingSpotID>>,

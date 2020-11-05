@@ -8,7 +8,7 @@ use std::io::{BufReader, BufWriter};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-#[derive(Inspect, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Inspect)]
 pub struct Config {
     pub tree_col: Color,
     pub grass_col: Color,

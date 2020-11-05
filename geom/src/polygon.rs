@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 use std::ops::Index;
 
-#[derive(Clone, Serialize, Deserialize, Default, Debug)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
 pub struct Polygon(pub Vec<Vec2>);
 
 impl Polygon {

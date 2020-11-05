@@ -12,7 +12,7 @@ use legion::Entity;
 use map_model::{BuildingID, CarPath, Map, ParkingSpotID, PedestrianPath};
 use serde::{Deserialize, Serialize};
 
-#[derive(Eq, PartialEq, Serialize, Deserialize, Debug)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Location {
     Outside,
     Vehicle(VehicleID),
@@ -21,7 +21,7 @@ pub enum Location {
 
 debug_inspect_impl!(Location);
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Destination {
     Outside(Vec2),
     Building(BuildingID),
@@ -103,7 +103,7 @@ impl RoutingStep {
     }
 }
 
-#[derive(Inspect, Clone)]
+#[derive(Clone, Inspect)]
 pub struct Router {
     pub body: PedestrianID,
     car: Option<VehicleID>,

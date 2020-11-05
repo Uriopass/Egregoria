@@ -23,7 +23,7 @@ pub struct SpriteBatch {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct InstanceRaw {
     pos: [f32; 3],
     dir: [f32; 2],

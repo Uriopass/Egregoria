@@ -4,13 +4,13 @@ use imgui_inspect::imgui;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum TraverseDirection {
     Forward,
     Backward,
 }
 
-#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum TraverseKind {
     Lane(LaneID),
     Turn(TurnID),
@@ -22,7 +22,7 @@ impl TraverseKind {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize, Inspect)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash, Inspect)]
 pub struct Traversable {
     pub kind: TraverseKind,
     pub dir: TraverseDirection,

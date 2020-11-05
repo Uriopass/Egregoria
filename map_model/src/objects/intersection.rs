@@ -21,7 +21,7 @@ impl IntersectionID {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Intersection {
     pub id: IntersectionID,
     pub pos: Vec2,

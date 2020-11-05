@@ -8,7 +8,7 @@ use std::ops::{Index, Range, RangeBounds};
 use std::slice::{Iter, IterMut, Windows};
 
 /// An ordered list of at least one point forming a broken line
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PolyLine(Vec<Vec2>);
 
 impl From<Vec<Vec2>> for PolyLine {

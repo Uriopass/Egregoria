@@ -2,7 +2,7 @@ use crate::{vec2, Vec2};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
-#[derive(Copy, Clone, PartialEq, Default, Serialize, Deserialize, Debug)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[repr(C)]
 pub struct Vec3 {
     pub x: f32,

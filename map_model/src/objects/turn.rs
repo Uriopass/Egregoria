@@ -4,7 +4,7 @@ use geom::Spline;
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Serialize, PartialOrd, Ord, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub struct TurnID {
     pub parent: IntersectionID,
     pub src: LaneID,
@@ -23,7 +23,7 @@ impl TurnID {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialOrd, Ord, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum TurnKind {
     Crosswalk,
     WalkingCorner,
@@ -36,7 +36,7 @@ impl TurnKind {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Turn {
     pub id: TurnID,
     pub points: PolyLine,

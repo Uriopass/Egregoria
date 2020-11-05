@@ -6,7 +6,7 @@ use geom::Rect;
 use geom::Vec2;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ProjectKind {
     Inter(IntersectionID),
     Road(RoadID),

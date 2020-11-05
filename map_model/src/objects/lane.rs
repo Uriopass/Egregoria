@@ -9,7 +9,7 @@ new_key_type! {
     pub struct LaneID;
 }
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum LaneKind {
     Driving,
     Biking,
@@ -38,7 +38,7 @@ impl LaneKind {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LaneDirection {
     Forward,
     Backward,
@@ -65,7 +65,7 @@ pub struct Lane {
     pub length: f32,
 }
 
-#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LanePattern {
     pub lanes_forward: Vec<LaneKind>,
     pub lanes_backward: Vec<LaneKind>,
@@ -84,7 +84,7 @@ impl LanePattern {
     }
 }
 
-#[derive(Clone, Copy, Inspect)]
+#[derive(Copy, Clone, Inspect)]
 pub struct LanePatternBuilder {
     pub n_lanes: u32,
     pub sidewalks: bool,

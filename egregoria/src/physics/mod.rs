@@ -11,7 +11,7 @@ pub mod systems;
 
 pub use kinematics::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PhysicsGroup {
     Unknown,
     Vehicles,
@@ -20,7 +20,7 @@ pub enum PhysicsGroup {
 
 debug_inspect_impl!(PhysicsGroup);
 
-#[derive(Clone, Copy, Inspect, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize, Inspect)]
 pub struct PhysicsObject {
     #[inspect(proxy_type = "InspectVec2Rotation")]
     pub dir: Vec2,
@@ -43,7 +43,7 @@ impl Default for PhysicsObject {
 
 pub type CollisionWorld = flat_spatial::DenseGrid<PhysicsObject>;
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Collider(pub GridHandle);
 
 impl InspectRenderDefault<Collider> for Collider {

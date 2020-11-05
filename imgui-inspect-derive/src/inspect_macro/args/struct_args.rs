@@ -5,7 +5,7 @@ use quote::quote;
 //
 // Struct arg handling
 //
-#[derive(Debug, FromField, Clone)]
+#[derive(Clone, Debug, FromField)]
 #[darling(attributes(inspect_struct))]
 pub struct InspectFieldArgsStruct {
     ident: Option<syn::Ident>,

@@ -5,13 +5,13 @@ use serde::{Deserialize, Serialize};
 use slotmap::SecondaryMap;
 use std::ops::{Index, IndexMut};
 
-#[derive(Default, Serialize, Deserialize, Clone)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct BuildingInfo {
     pub owner: Option<SoulID>,
     pub inside: Vec<PedestrianID>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct BuildingInfos {
     assignment: SecondaryMap<BuildingID, BuildingInfo>,
 }

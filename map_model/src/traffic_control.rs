@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub enum TrafficBehavior {
     RED,
     ORANGE,
@@ -14,7 +14,7 @@ impl TrafficBehavior {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct TrafficLightSchedule {
     period: usize,
     green: usize,
@@ -35,7 +35,7 @@ impl TrafficLightSchedule {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum TrafficControl {
     Always,
     Light(TrafficLightSchedule),
