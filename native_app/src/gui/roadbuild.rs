@@ -9,6 +9,8 @@ use map_model::{
     IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
 };
 
+const MAX_TURN_ANGLE: f32 = 30.0 * std::f32::consts::PI / 180.0;
+
 #[derive(Copy, Clone, Debug)]
 enum BuildState {
     Hover,
@@ -28,6 +30,9 @@ pub struct RoadBuildResource {
     pub pattern_builder: LanePatternBuilder,
 }
 
+use BuildState::*;
+use ProjectKind::*;
+
 #[system]
 pub fn roadbuild(
     #[resource] state: &mut RoadBuildResource,
@@ -46,32 +51,59 @@ pub fn roadbuild(
         state.build_state = BuildState::Hover;
     }
 
-    let cur_proj = map.project(mouseinfo.unprojected);
+    let mut cur_proj = map.project(mouseinfo.unprojected);
+    if matches!(cur_proj.kind, ProjectKind::Lot(_)) {
+        cur_proj.kind = ProjectKind::Ground;
+    }
 
-    state.update_drawing(immdraw, cur_proj.pos, state.pattern_builder.width());
+    let is_valid = match (state.build_state, cur_proj.kind) {
+        (Hover, Building(_)) => false,
+        (Start(selected_proj), _) => {
+            compatible(map, cur_proj.kind, selected_proj.kind)
+                && check_angle(map, selected_proj, cur_proj.pos)
+                && check_angle(map, cur_proj, selected_proj.pos)
+        }
+        (Interpolation(interpoint, selected_proj), _) => {
+            let sp = Spline {
+                from: selected_proj.pos,
+                to: cur_proj.pos,
+                from_derivative: (interpoint - selected_proj.pos) * std::f32::consts::FRAC_1_SQRT_2,
+                to_derivative: (cur_proj.pos - interpoint) * std::f32::consts::FRAC_1_SQRT_2,
+            };
 
-    if mouseinfo.just_pressed.contains(&MouseButton::Left) {
+            compatible(map, cur_proj.kind, selected_proj.kind)
+                && check_angle(map, selected_proj, interpoint)
+                && check_angle(map, cur_proj, interpoint)
+                && !sp.is_steep(state.pattern_builder.width())
+        }
+        _ => true,
+    };
+
+    state.update_drawing(
+        immdraw,
+        cur_proj.pos,
+        state.pattern_builder.width(),
+        is_valid,
+    );
+
+    if is_valid && mouseinfo.just_pressed.contains(&MouseButton::Left) {
         log::info!(
             "left clicked with state {:?} and {:?}",
             state.build_state,
             cur_proj.kind
         );
-        use BuildState::*;
-        use ProjectKind::*;
 
         // FIXME: Use or patterns when stable
         match (state.build_state, cur_proj.kind, *tool) {
-            (Hover, ProjectKind::Ground, _)
-            | (Hover, ProjectKind::Road(_), _)
-            | (Hover, ProjectKind::Inter(_), _) => {
+            (Hover, Ground, _) | (Hover, Road(_), _) | (Hover, Inter(_), _) => {
                 // Hover selection
-                state.build_state = BuildState::Start(cur_proj);
+                state.build_state = Start(cur_proj);
             }
             (Start(v), Ground, Tool::RoadbuildCurved) => {
                 // Set interpolation point
-                state.build_state = BuildState::Interpolation(mouseinfo.unprojected, v);
+                state.build_state = Interpolation(mouseinfo.unprojected, v);
             }
-            (Start(selected_proj), _, _) if compatible(map, cur_proj.kind, selected_proj.kind) => {
+            (Start(selected_proj), _, _) => {
                 // Straight connection to something
                 let selected_after = make_connection(
                     map,
@@ -83,14 +115,12 @@ pub fn roadbuild(
 
                 let hover = MapProject {
                     pos: map.intersections()[selected_after].pos,
-                    kind: ProjectKind::Inter(selected_after),
+                    kind: Inter(selected_after),
                 };
 
-                state.build_state = BuildState::Start(hover);
+                state.build_state = Start(hover);
             }
-            (Interpolation(interpoint, selected_proj), _, _)
-                if compatible(map, cur_proj.kind, selected_proj.kind) =>
-            {
+            (Interpolation(interpoint, selected_proj), _, _) => {
                 // Interpolated connection to something
                 let selected_after = make_connection(
                     map,
@@ -102,10 +132,10 @@ pub fn roadbuild(
 
                 let hover = MapProject {
                     pos: map.intersections()[selected_after].pos,
-                    kind: ProjectKind::Inter(selected_after),
+                    kind: Inter(selected_after),
                 };
 
-                state.build_state = BuildState::Start(hover);
+                state.build_state = Start(hover);
             }
             _ => {}
         }
@@ -140,6 +170,34 @@ fn make_connection(
     to
 }
 
+fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
+    match from.kind {
+        Inter(i) => {
+            let inter = &map.intersections()[i];
+            let dir = (to - inter.pos).normalize();
+            for &road in &inter.roads {
+                let road = &map.roads()[road];
+                let v = road.orientation_from(i);
+                if v.angle(dir).abs() < MAX_TURN_ANGLE {
+                    return false;
+                }
+            }
+            true
+        }
+        Road(r) => {
+            let r = &map.roads()[r];
+            let (proj, _, rdir1) = r.generated_points().project_segment_dir(from.pos);
+            let rdir2 = -rdir1;
+            let dir = (to - proj).normalize();
+            if rdir1.angle(dir).abs() < MAX_TURN_ANGLE || rdir2.angle(dir).abs() < MAX_TURN_ANGLE {
+                return false;
+            }
+            true
+        }
+        _ => true,
+    }
+}
+
 fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
     use ProjectKind::*;
     match (x, y) {
@@ -159,34 +217,40 @@ fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
 }
 
 impl RoadBuildResource {
-    pub fn update_drawing(&self, immdraw: &mut ImmediateDraw, proj_pos: Vec2, patwidth: f32) {
-        let transparent_blue = Color {
-            r: 0.3,
-            g: 0.3,
-            b: 1.0,
-            a: 1.0,
+    pub fn update_drawing(
+        &self,
+        immdraw: &mut ImmediateDraw,
+        proj_pos: Vec2,
+        patwidth: f32,
+        is_valid: bool,
+    ) {
+        let col = if is_valid {
+            Color {
+                r: 0.3,
+                g: 0.3,
+                b: 1.0,
+                a: 1.0,
+            }
+        } else {
+            Color {
+                r: 0.85,
+                g: 0.3,
+                b: 0.3,
+                a: 1.0,
+            }
         };
 
         match self.build_state {
             BuildState::Hover => {
-                immdraw
-                    .circle(proj_pos, 2.0)
-                    .color(transparent_blue)
-                    .z(Z_TOOL);
+                immdraw.circle(proj_pos, 2.0).color(col).z(Z_TOOL);
             }
             BuildState::Start(x) => {
                 immdraw
                     .circle(proj_pos, patwidth * 0.5)
-                    .color(transparent_blue)
+                    .color(col)
                     .z(Z_TOOL);
-                immdraw
-                    .circle(x.pos, patwidth * 0.5)
-                    .color(transparent_blue)
-                    .z(Z_TOOL);
-                immdraw
-                    .line(proj_pos, x.pos, patwidth)
-                    .color(transparent_blue)
-                    .z(Z_TOOL);
+                immdraw.circle(x.pos, patwidth * 0.5).color(col).z(Z_TOOL);
+                immdraw.line(proj_pos, x.pos, patwidth).color(col).z(Z_TOOL);
             }
             BuildState::Interpolation(p, x) => {
                 let sp = Spline {
@@ -195,20 +259,18 @@ impl RoadBuildResource {
                     from_derivative: (p - x.pos) * std::f32::consts::FRAC_1_SQRT_2,
                     to_derivative: (proj_pos - p) * std::f32::consts::FRAC_1_SQRT_2,
                 };
-                let mut points = sp.smart_points(1.0, 0.0, 1.0).peekable();
-                while let Some(v) = points.next() {
-                    immdraw
-                        .circle(v, patwidth * 0.5)
-                        .color(transparent_blue)
-                        .z(Z_TOOL);
+                let points: Vec<_> = sp.smart_points(1.0, 0.0, 1.0).collect();
 
-                    if let Some(peek) = points.peek() {
-                        immdraw
-                            .line(v, *peek, patwidth)
-                            .color(transparent_blue)
-                            .z(Z_TOOL);
-                    }
-                }
+                immdraw.polyline(points, patwidth).color(col).z(Z_TOOL);
+
+                immdraw
+                    .circle(sp.get(0.0), patwidth * 0.5)
+                    .color(col)
+                    .z(Z_TOOL);
+                immdraw
+                    .circle(sp.get(1.0), patwidth * 0.5)
+                    .color(col)
+                    .z(Z_TOOL);
             }
         }
     }

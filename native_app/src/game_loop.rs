@@ -121,11 +121,11 @@ impl State {
             for ImmediateOrder { kind, color, z } in immediate
                 .persistent_orders
                 .iter()
-                .copied()
-                .chain(immediate.orders.drain(..))
+                .chain(immediate.orders.iter())
             {
-                tess.color = color.into();
-                match kind {
+                let z = *z;
+                tess.color = (*color).into();
+                match *kind {
                     OrderKind::Circle { pos, radius } => {
                         tess.draw_circle(pos, z, radius);
                     }
@@ -143,8 +143,15 @@ impl State {
                     } => {
                         tess.draw_stroke_circle(pos, z, radius, thickness);
                     }
+                    OrderKind::PolyLine {
+                        ref points,
+                        thickness,
+                    } => {
+                        tess.draw_polyline(points, z, thickness);
+                    }
                 }
             }
+            immediate.orders.clear();
         }
 
         if let Some(x) = tess.meshbuilder.build(ctx.gfx) {

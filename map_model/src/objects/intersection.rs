@@ -11,8 +11,6 @@ use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
-const MAX_TURN_ANGLE: f32 = 25.0 * 180.0 * std::f32::consts::FRAC_1_PI; // 30 deg
-
 new_key_type! {
     pub struct IntersectionID;
 }
@@ -109,11 +107,7 @@ impl Intersection {
 
             let ang = dir1.angle(dir2).abs();
 
-            let min_dist = w * 1.1
-                / ang
-                    .max(MAX_TURN_ANGLE)
-                    .min(std::f32::consts::FRAC_PI_2)
-                    .sin();
+            let min_dist = w * 1.1 / ang.max(0.1).min(std::f32::consts::FRAC_PI_2).sin();
             roads[r1_id].max_interface(self.id, min_dist);
             roads[r2_id].max_interface(self.id, min_dist);
         }

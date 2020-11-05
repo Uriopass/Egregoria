@@ -2,6 +2,7 @@ use super::Vec2;
 use crate::polyline::PolyLine;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
+use std::iter::Peekable;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Spline {
@@ -42,6 +43,39 @@ impl Spline {
             + (18.0 * t - 12.0) * (self.from + self.from_derivative)
             + (6.0 - 18.0 * t) * (self.to - self.to_derivative)
             + 6.0 * t * self.to
+    }
+
+    pub fn is_steep(&self, thickness: f32) -> bool {
+        let mut points = self
+            .smart_points_t(0.3, 0.0, 1.0)
+            .map(|t| (t, self.get(t)))
+            .peekable();
+        while let Some((t, t_pos)) = points.next() {
+            let (t_next, t_pos_next) = match points.peek() {
+                Some(x) => *x,
+                None => break,
+            };
+
+            let d = self.derivative(t).normalize();
+            let d_next = self.derivative(t_next).normalize();
+
+            let off1 = t_pos + thickness * d.perpendicular();
+            let off1_next = t_pos_next + thickness * d_next.perpendicular();
+            let off1_d = (off1_next - off1).normalize();
+
+            if off1_d.dot(d) < 0.0 {
+                return true;
+            }
+
+            let off2 = t_pos - thickness * d.perpendicular();
+            let off2_next = t_pos_next - thickness * d_next.perpendicular();
+            let off2_d = (off2_next - off2).normalize();
+
+            if off2_d.dot(d) < 0.0 {
+                return true;
+            }
+        }
+        false
     }
 
     #[allow(non_snake_case)]
