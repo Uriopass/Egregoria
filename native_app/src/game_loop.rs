@@ -1,4 +1,5 @@
 use crate::context::Context;
+use crate::gui::windows::debug::DebugObjs;
 use crate::gui::{setup_gui, FollowEntity, Gui};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
@@ -108,10 +109,10 @@ impl State {
         MeshRenderer::render(&mut self.goria, &mut tess);
 
         {
-            let objs = crate::gui::windows::debug::DEBUG_OBJS.lock().unwrap();
-            for (val, _, obj) in &*objs {
+            let objs = self.goria.read::<DebugObjs>();
+            for (val, _, obj) in &objs.0 {
                 if *val {
-                    obj(&mut tess, &mut self.goria);
+                    obj(&mut tess, &self.goria);
                 }
             }
         }

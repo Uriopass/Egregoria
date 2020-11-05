@@ -2,7 +2,6 @@ use super::Vec2;
 use crate::polyline::PolyLine;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use std::iter::Peekable;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Spline {
