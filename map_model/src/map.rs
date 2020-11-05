@@ -218,7 +218,7 @@ impl Map {
                 }
             };
 
-            Building::make(buildings, spatial_map, roads, lot, kind)
+            Building::make(buildings, spatial_map, &roads[lot.parent], lot.shape, kind)
         })
     }
 
