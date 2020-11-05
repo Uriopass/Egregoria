@@ -1,6 +1,7 @@
 use geom::{Color, Vec2};
+use std::mem::MaybeUninit;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum OrderKind {
     Circle {
         pos: Vec2,
@@ -16,9 +17,13 @@ pub enum OrderKind {
         to: Vec2,
         thickness: f32,
     },
+    PolyLine {
+        points: Vec<Vec2>,
+        thickness: f32,
+    },
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct ImmediateOrder {
     pub kind: OrderKind,
     pub color: Color,
@@ -56,10 +61,13 @@ impl<'a> ImmediateBuilder<'a> {
 
 impl<'a> Drop for ImmediateBuilder<'a> {
     fn drop(&mut self) {
+        let order = std::mem::replace(&mut self.order, unsafe {
+            MaybeUninit::zeroed().assume_init()
+        });
         if self.persistent {
-            self.draw.persistent_orders.push(self.order)
+            self.draw.persistent_orders.push(order)
         } else {
-            self.draw.orders.push(self.order)
+            self.draw.orders.push(order)
         }
     }
 }
@@ -84,6 +92,21 @@ impl ImmediateDraw {
                 kind: OrderKind::Line {
                     from,
                     to,
+                    thickness,
+                },
+                color: Color::WHITE,
+                z: 3.0,
+            },
+            persistent: false,
+        }
+    }
+
+    pub fn polyline(&mut self, points: impl Into<Vec<Vec2>>, thickness: f32) -> ImmediateBuilder {
+        ImmediateBuilder {
+            draw: self,
+            order: ImmediateOrder {
+                kind: OrderKind::PolyLine {
+                    points: points.into(),
                     thickness,
                 },
                 color: Color::WHITE,

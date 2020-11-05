@@ -75,6 +75,7 @@ impl Vec2 {
         (self - rhs).magnitude()
     }
 
+    /// Returns the angle between self and other in range [-pi; pi]
     #[inline]
     pub fn angle(self, other: Vec2) -> f32 {
         f32::atan2(Self::perp_dot(self, other), Self::dot(self, other))
