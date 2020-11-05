@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 
 /// Oriented bounding box
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct OBB {
     pub corners: [Vec2; 4],
 }

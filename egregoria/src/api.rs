@@ -1,3 +1,4 @@
+use crate::economy::{Market, Transaction};
 use crate::map_dynamic::{BuildingInfos, Itinerary, ParkingManagement};
 use crate::pedestrians::data::PedestrianID;
 use crate::pedestrians::put_pedestrian_in_coworld;
@@ -6,6 +7,7 @@ use crate::rendering::meshrender_component::MeshRender;
 use crate::vehicles::{put_vehicle_in_coworld, Vehicle, VehicleID, VehicleState};
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::{Spline, Transform, Vec2};
+use imgui_inspect_derive::*;
 use legion::Entity;
 use map_model::{BuildingID, CarPath, Map, ParkingSpotID, PedestrianPath};
 use serde::{Deserialize, Serialize};
@@ -100,9 +102,6 @@ impl RoutingStep {
         })
     }
 }
-
-use crate::economy::{Market, Transaction};
-use imgui_inspect_derive::*;
 
 #[derive(Inspect, Clone)]
 pub struct Router {
