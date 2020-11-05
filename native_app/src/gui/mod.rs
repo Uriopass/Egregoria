@@ -19,6 +19,7 @@ pub mod windows;
 
 pub use follow::FollowEntity;
 
+use crate::gui::windows::debug::DebugObjs;
 pub use inspect::*;
 pub use topgui::*;
 
@@ -37,6 +38,7 @@ pub fn setup_gui(goria: &mut Egregoria) {
     goria.insert(InspectedEntity::default());
     goria.insert(FollowEntity::default());
     goria.insert(Tool::default());
+    goria.insert(DebugObjs::default());
 
     goria.insert(RoadBuildResource::default());
     goria.insert(RoadEditorResource::default());

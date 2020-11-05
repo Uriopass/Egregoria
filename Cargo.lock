@@ -1543,7 +1543,6 @@ dependencies = [
  "imgui-wgpu",
  "imgui-winit-support",
  "inline_tweak",
- "lazy_static",
  "legion",
  "log",
  "map_model",

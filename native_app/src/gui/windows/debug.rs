@@ -10,33 +10,35 @@ use egregoria::Egregoria;
 use geom::{vec2, Camera, Color, LinearColor, Spline, Vec2, OBB};
 use imgui::im_str;
 use imgui::Ui;
-use lazy_static::*;
 use map_model::{Map, RoadSegmentKind};
-use std::sync::Mutex;
 use wgpu_engine::Tesselator;
 
-lazy_static! {
-    pub static ref DEBUG_OBJS: Mutex<
-        Vec<(
-            bool,
-            &'static str,
-            Box<dyn Send + Fn(&mut Tesselator, &mut Egregoria) -> Option<()>>
-        )>,
-    > = Mutex::new(vec![
-        (true, "Debug pathfinder", Box::new(debug_pathfinder)),
-        (false, "Debug spatialmap", Box::new(debug_spatialmap)),
-        (false, "Debug collision world", Box::new(debug_coworld)),
-        (false, "Debug OBBs", Box::new(debug_obb)),
-        (false, "Debug rays", Box::new(debug_rays)),
-        (false, "Debug splines", Box::new(debug_spline)),
-        (false, "Debug turns", Box::new(debug_turns)),
-        (false, "Show grid", Box::new(show_grid))
-    ]);
+pub struct DebugObjs(
+    pub  Vec<(
+        bool,
+        &'static str,
+        fn(&mut Tesselator, &Egregoria) -> Option<()>,
+    )>,
+);
+
+impl Default for DebugObjs {
+    fn default() -> Self {
+        DebugObjs(vec![
+            (true, "Debug pathfinder", debug_pathfinder),
+            (false, "Debug spatialmap", debug_spatialmap),
+            (false, "Debug collision world", debug_coworld),
+            (false, "Debug OBBs", debug_obb),
+            (false, "Debug rays", debug_rays),
+            (false, "Debug splines", debug_spline),
+            (false, "Debug turns", debug_turns),
+            (false, "Show grid", show_grid),
+        ])
+    }
 }
 
 pub fn debug(ui: &Ui, goria: &mut Egregoria) {
-    let mut objs = DEBUG_OBJS.lock().unwrap();
-    for (val, name, _) in &mut *objs {
+    let mut objs = goria.write::<DebugObjs>();
+    for (val, name, _) in &mut objs.0 {
         ui.checkbox(&im_str!("{}", *name), val);
     }
     drop(objs);
@@ -92,7 +94,7 @@ pub fn debug(ui: &Ui, goria: &mut Egregoria) {
     flog.clear();
 }
 
-pub fn show_grid(tess: &mut Tesselator, state: &mut Egregoria) -> Option<()> {
+pub fn show_grid(tess: &mut Tesselator, state: &Egregoria) -> Option<()> {
     let cam = &*state.read::<Camera>();
 
     if cam.zoom < 1.0 {
@@ -110,7 +112,7 @@ pub fn show_grid(tess: &mut Tesselator, state: &mut Egregoria) -> Option<()> {
     Some(())
 }
 
-pub fn debug_spline(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
+pub fn debug_spline(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     for road in world.read::<Map>().roads().values() {
         if let RoadSegmentKind::Curved((fr_dr, to_der)) = road.segment {
             let fr = road.src_point;
@@ -130,7 +132,7 @@ pub fn debug_spline(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> 
     Some(())
 }
 
-pub fn debug_turns(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
+pub fn debug_turns(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     let map = world.read::<Map>();
     let lanes = map.lanes();
     tess.set_color(LinearColor::RED);
@@ -169,7 +171,7 @@ fn draw_spline(tess: &mut Tesselator, sp: &Spline) {
     tess.draw_circle(sp.to + sp.to_derivative, 1.0, 1.0);
 }
 
-fn debug_coworld(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
+fn debug_coworld(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     let coworld = world.read::<CollisionWorld>();
 
     tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
@@ -180,7 +182,7 @@ fn debug_coworld(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
     Some(())
 }
 
-pub fn debug_obb(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
+pub fn debug_obb(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     let time = world.read::<GameTime>();
     let mouse = world.read::<MouseInfo>().unprojected;
 
@@ -216,7 +218,7 @@ pub fn debug_obb(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
     Some(())
 }
 
-pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
+pub fn debug_pathfinder(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     let map: &Map = &world.read::<Map>();
     let selected = world.read::<InspectedEntity>().e?;
     let pos = world.pos(selected)?;
@@ -248,7 +250,7 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &mut Egregoria) -> Option<
     Some(())
 }
 
-pub fn debug_rays(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
+pub fn debug_rays(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     let time = world.read::<GameTime>();
     let time = time.timestamp * 0.2;
     let c = time.cos() as f32;
@@ -282,7 +284,7 @@ pub fn debug_rays(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
     Some(())
 }
 
-pub fn debug_spatialmap(tess: &mut Tesselator, world: &mut Egregoria) -> Option<()> {
+pub fn debug_spatialmap(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     let map: &Map = &world.read::<Map>();
     for r in map.spatial_map().debug_grid() {
         tess.set_color(LinearColor {
