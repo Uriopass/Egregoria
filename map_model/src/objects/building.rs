@@ -7,7 +7,7 @@ new_key_type! {
     pub struct BuildingID;
 }
 
-#[derive(Eq, PartialEq, Copy, Clone, Serialize, Deserialize)]
+#[derive(Eq, PartialEq, Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum BuildingKind {
     House,
     Workplace,
@@ -25,6 +25,55 @@ pub struct Building {
 
 impl Building {
     pub fn make(
+        buildings: &mut Buildings,
+        spatial_map: &mut SpatialMap,
+        roads: &Roads,
+        lot: Lot,
+        kind: BuildingKind,
+    ) -> Option<BuildingID> {
+        let at = lot.shape.center();
+        let axis = lot.road_edge.vec().normalize();
+
+        let (mut draw, mut door_pos) = match kind {
+            BuildingKind::House => crate::procgen::gen_exterior_house(lot.size),
+            BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(lot.size),
+            BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(lot.size),
+            kind => {
+                log::warn!("tried to build invalid kind {:?} on lot {:?}", kind, lot);
+                return None;
+            }
+        };
+
+        assert!(!draw.is_empty());
+
+        for (poly, _) in &mut draw {
+            poly.rotate(axis).translate(at);
+        }
+        door_pos = door_pos.rotated_by(axis) + at;
+
+        let r = &roads[lot.parent];
+        let (rpos, _, dir) = r.generated_points.project_segment_dir(door_pos);
+
+        let walkway = Polygon(vec![
+            rpos + (door_pos - rpos).normalize() * (r.width * 0.5 + 0.25) + dir * 1.5,
+            rpos + (door_pos - rpos).normalize() * (r.width * 0.5 + 0.25) - dir * 1.5,
+            door_pos - dir * 1.5,
+            door_pos + dir * 1.5,
+        ]);
+
+        draw.push((walkway, Color::gray(0.4).into()));
+
+        let id = buildings.insert_with_key(move |id| Self {
+            id,
+            draw,
+            kind,
+            door_pos,
+        });
+        spatial_map.insert(id, buildings[id].bbox());
+        Some(id)
+    }
+
+    pub fn make_special(
         buildings: &mut Buildings,
         spatial_map: &mut SpatialMap,
         roads: &Roads,

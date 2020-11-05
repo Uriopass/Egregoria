@@ -2,7 +2,7 @@ use super::Vec2;
 use crate::polygon::Polygon;
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Segment {
     pub src: Vec2,
     pub dst: Vec2,
