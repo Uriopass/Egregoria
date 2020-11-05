@@ -28,7 +28,7 @@ impl UserData for LuaPolygon {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone)]
 pub struct LuaVec2(pub Vec2);
 
 impl UserData for LuaVec2 {

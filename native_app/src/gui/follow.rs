@@ -1,4 +1,4 @@
 use legion::Entity;
 
-#[derive(Default, Clone, Copy)]
+#[derive(Copy, Clone, Default)]
 pub struct FollowEntity(pub Option<Entity>);

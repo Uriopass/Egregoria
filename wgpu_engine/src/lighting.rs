@@ -194,7 +194,7 @@ pub fn prepare_lighting(gfx: &mut GfxContext) {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct LightInstance {
     pub pos: [f32; 2],
     pub scale: f32,

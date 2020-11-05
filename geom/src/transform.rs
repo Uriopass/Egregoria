@@ -1,7 +1,7 @@
 use crate::{vec2, Vec2};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Copy)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Transform {
     position: Vec2,
     cossin: Vec2,

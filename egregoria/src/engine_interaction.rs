@@ -2,7 +2,7 @@ use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-#[derive(Default, Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Default, Debug, Serialize, Deserialize)]
 pub struct Movable;
 
 debug_inspect_impl!(Movable);
@@ -56,7 +56,7 @@ pub struct RenderStats {
     pub souls_apply: History,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MouseButton {
     Left,
     Right,
@@ -103,7 +103,7 @@ impl Default for KeyboardInfo {
 }
 
 /// Symbolic name for a keyboard key.
-#[derive(Debug, Hash, Ord, PartialOrd, PartialEq, Eq, Clone, Copy)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u32)]
 pub enum KeyCode {
     /// The '1' key over the letters.

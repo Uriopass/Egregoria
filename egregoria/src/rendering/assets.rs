@@ -3,7 +3,7 @@ use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Serialize, Deserialize, Inspect)]
+#[derive(Copy, Clone, Serialize, Deserialize, Inspect)]
 pub struct AssetID {
     pub id: u16,
 }
@@ -13,7 +13,7 @@ impl AssetID {
     pub const PEDESTRIAN: AssetID = AssetID { id: 1 };
 }
 
-#[derive(Clone, Copy, Inspect, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize, Inspect)]
 pub struct AssetRender {
     pub id: AssetID,
     pub hide: bool,

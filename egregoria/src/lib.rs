@@ -60,7 +60,7 @@ pub mod scenarios;
 pub mod souls;
 pub mod vehicles;
 
-#[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub struct SoulID(pub usize);
 
 #[derive(Default)]

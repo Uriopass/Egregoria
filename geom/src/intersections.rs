@@ -1,6 +1,6 @@
 use super::Vec2;
 
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone)]
 pub struct Ray {
     pub from: Vec2,
     pub dir: Vec2,

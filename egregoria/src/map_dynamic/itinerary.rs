@@ -8,7 +8,7 @@ use legion::system;
 use map_model::{Map, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Inspect, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, Inspect)]
 pub struct Itinerary {
     kind: ItineraryKind,
     local_path: Vec<Vec2>,

@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 /// The duration for the parking animation.
 pub const TIME_TO_PARK: f32 = 4.0;
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct VehicleID(pub Entity);
 
 debug_inspect_impl!(VehicleID);
@@ -30,13 +30,13 @@ pub enum VehicleState {
 
 debug_inspect_impl!(VehicleState);
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum VehicleKind {
     Car,
     Bus,
 }
 
-#[derive(Clone, Debug, Inspect, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Inspect)]
 pub struct Vehicle {
     #[inspect(proxy_type = "InspectDragf")]
     pub ang_velocity: f32,

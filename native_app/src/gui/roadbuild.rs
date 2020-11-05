@@ -9,7 +9,7 @@ use map_model::{
     IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
 };
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Copy, Clone, Debug)]
 enum BuildState {
     Hover,
     Start(MapProject),

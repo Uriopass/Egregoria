@@ -4,7 +4,7 @@ pub const SECONDS_PER_HOUR: i32 = 100;
 pub const HOURS_PER_DAY: i32 = 24;
 pub const SECONDS_PER_DAY: i32 = SECONDS_PER_HOUR * HOURS_PER_DAY;
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct GameTime {
     /// Precise time in seconds elapsed since the start of the game
     pub timestamp: f64,
@@ -19,7 +19,7 @@ pub struct GameTime {
     pub daytime: DayTime,
 }
 
-#[derive(Clone, Copy, PartialOrd, Ord, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct DayTime {
     /// Days elapsed since the start of the game
     pub day: i32,
@@ -31,7 +31,7 @@ pub struct DayTime {
     pub second: i32,
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct TimeInterval {
     pub start: DayTime,
     pub end: DayTime,

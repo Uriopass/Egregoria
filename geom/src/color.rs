@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Mul};
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Color {
     pub r: f32,
     pub g: f32,
@@ -115,7 +115,7 @@ impl Color {
     };
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 #[repr(C)]
 pub struct LinearColor {
     pub r: f32,

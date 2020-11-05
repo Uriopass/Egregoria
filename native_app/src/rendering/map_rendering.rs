@@ -10,7 +10,7 @@ use wgpu_engine::{
     SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone)]
 struct Crosswalk;
 
 impl Shaders for Crosswalk {

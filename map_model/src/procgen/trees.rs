@@ -5,7 +5,7 @@ use geom::{vec2, Vec2};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Deserialize, Serialize)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Tree {
     pub size: f32,
     pub col: f32,

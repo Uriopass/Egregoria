@@ -11,13 +11,13 @@ new_key_type! {
     pub struct LotID;
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum LotKind {
     Residential,
     Commercial,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Lot {
     pub id: LotID,
     pub parent: RoadID,

@@ -3,7 +3,7 @@ use crate::polyline::PolyLine;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Spline {
     pub from: Vec2,
     pub to: Vec2,

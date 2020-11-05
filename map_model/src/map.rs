@@ -17,7 +17,7 @@ pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 pub type Buildings = DenseSlotMap<BuildingID, Building>;
 pub type Lots = DenseSlotMap<LotID, Lot>;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Copy, Clone, Debug)]
 pub struct MapProject {
     pub pos: Vec2,
     pub kind: ProjectKind,

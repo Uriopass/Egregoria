@@ -18,7 +18,7 @@ pub use super::*;
 ///
 /// Marking a struct element with something like `#[inspect(min_value = 5.0, max_value = 53.0)]`
 /// will make the widget for that member default to those values.
-#[derive(Debug, Default, Clone)]
+#[derive(Clone, Default, Debug)]
 pub struct InspectArgsDefault {
     /// If true, the struct will have a visual/expandable header added to it. This defaults to true.
     ///

@@ -24,7 +24,7 @@ pub struct ShadedBatch<T: Shaders> {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct ShadedInstanceRaw {
     pos: [f32; 3],
     rot: [f32; 2],

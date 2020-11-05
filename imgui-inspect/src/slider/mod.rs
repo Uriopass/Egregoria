@@ -6,7 +6,7 @@ pub use super::*;
 ///
 /// Marking a struct member will give it a default rendering behavior. For example,
 /// `#[inspect_slider(min_value = 5.0, max_value = 53.0)]`
-#[derive(Debug, Default)]
+#[derive(Default, Debug)]
 pub struct InspectArgsSlider {
     /// The minimum value for the slider
     pub min_value: Option<f32>,

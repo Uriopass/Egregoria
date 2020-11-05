@@ -76,11 +76,11 @@ impl UserData for LuaDraw {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone)]
 struct LuaColor(Color);
 impl UserData for LuaColor {}
 
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone)]
 struct LuaEntity(Entity);
 
 impl UserData for LuaEntity {}

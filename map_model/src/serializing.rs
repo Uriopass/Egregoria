@@ -3,7 +3,7 @@ use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, Spa
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct SerializedMap {
     pub(crate) roads: Roads,
     pub(crate) intersections: Intersections,
