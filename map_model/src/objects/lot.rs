@@ -1,6 +1,5 @@
 use crate::{Buildings, Intersections, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
 use geom::Polygon;
-use geom::Segment;
 use geom::Vec2;
 use geom::OBB;
 use rand::seq::SliceRandom;
@@ -23,7 +22,6 @@ pub struct Lot {
     pub parent: RoadID,
     pub kind: LotKind,
     pub shape: OBB,
-    pub road_edge: Segment,
     pub size: f32,
 }
 
@@ -82,15 +80,12 @@ impl Lot {
             LotKind::Residential
         };
 
-        let road_edge = Segment::new(shape.corners[0], shape.corners[1]);
-
         let id = lots.insert_with_key(move |id| Lot {
             id,
             parent,
             kind,
             shape,
             size,
-            road_edge,
         });
         spatial.insert(id, shape.bbox());
         Some(id)
