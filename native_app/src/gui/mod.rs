@@ -19,6 +19,7 @@ pub mod windows;
 
 pub use follow::FollowEntity;
 
+use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::windows::debug::DebugObjs;
 pub use inspect::*;
 pub use topgui::*;
@@ -42,6 +43,7 @@ pub fn setup_gui(goria: &mut Egregoria) {
 
     goria.insert(RoadBuildResource::default());
     goria.insert(RoadEditorResource::default());
+    goria.insert(LotBrushResource::default());
 }
 
 #[derive(Copy, Clone)]
@@ -51,7 +53,7 @@ pub enum Tool {
     RoadbuildCurved,
     RoadEditor,
     Bulldozer,
-    LotBrush(LotKind),
+    LotBrush,
 }
 
 const Z_TOOL: f32 = 0.9;
