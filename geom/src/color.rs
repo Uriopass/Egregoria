@@ -16,7 +16,7 @@ impl Default for Color {
 }
 
 impl Color {
-    pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
+    pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self { r, g, b, a }
     }
     pub const fn gray(level: f32) -> Self {
@@ -25,6 +25,31 @@ impl Color {
             g: level,
             b: level,
             a: 1.0,
+        }
+    }
+
+    /// hue: [0-360]
+    /// saturation: [0-1]
+    /// value: [0-1]
+    pub fn hsv(hue: f32, sat: f32, val: f32, a: f32) -> Self {
+        let c = sat * val;
+        let x = c * (1.0 - ((hue / 60.0) % 2.0 - 1.0).abs());
+
+        let (r, g, b) = match hue as i32 / 60 {
+            0 => (c, x, 0.0),
+            1 => (x, c, 0.0),
+            2 => (0.0, c, x),
+            3 => (0.0, x, c),
+            4 => (x, 0.0, c),
+            _ => (c, 0.0, x),
+        };
+
+        let m = val - c;
+        Self {
+            r: (r + m),
+            g: (g + m),
+            b: (b + m),
+            a,
         }
     }
 

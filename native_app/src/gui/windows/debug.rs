@@ -138,6 +138,13 @@ pub fn debug_turns(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     tess.set_color(LinearColor::RED);
     for inter in map.intersections().values() {
         for turn in inter.turns() {
+            let p = match turn.points.get(turn.points.n_points() / 2) {
+                Some(x) => x,
+                None => continue,
+            };
+            let r = common::rand::rand2(p.x, p.y);
+            tess.set_color(Color::hsv(r * 360.0, 0.8, 0.6, 0.5));
+
             tess.draw_polyline_with_dir(
                 turn.points.as_slice(),
                 -lanes[turn.id.src].orientation_from(inter.id),
