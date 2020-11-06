@@ -122,8 +122,10 @@ impl TurnPolicy {
             _ => {}
         }
 
-        for road1 in &inter.roads {
-            for road2 in &inter.roads {
+        let n_roads = inter.roads.len();
+
+        for (i1, road1) in inter.roads.iter().enumerate() {
+            for (i2, road2) in inter.roads.iter().enumerate() {
                 if road1 == road2 && !self.back_turns {
                     continue;
                 }
@@ -143,7 +145,10 @@ impl TurnPolicy {
                         let incoming_right = vec2(incoming_dir.y, -incoming_dir.x);
                         let id = TurnID::new(inter.id, incoming.id, outgoing.id, false);
 
-                        if self.left_turns || incoming_right.dot(outgoing_dir) >= -0.3 {
+                        if self.left_turns
+                            || incoming_right.dot(outgoing_dir) <= -0.1
+                            || i2 == (i1 + 1) % n_roads
+                        {
                             turns.push((id, TurnKind::Driving));
                         }
                     }
