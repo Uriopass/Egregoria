@@ -298,7 +298,7 @@ impl RoadRenderer {
                     }
 
                     let dir = (to - from) / l;
-                    let pos = from + dir * 2.25;
+                    let pos = from + dir * 2.25 + dir.perpendicular() * CROSSWALK_WIDTH * 0.5;
                     let height = l - 4.5;
 
                     builder.instances.push(ShadedInstanceRaw::new(
