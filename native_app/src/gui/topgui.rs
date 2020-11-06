@@ -1,3 +1,4 @@
+use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::windows::ImguiWindows;
 use crate::gui::Tool::LotBrush;
 use crate::gui::{RoadBuildResource, Tool};
@@ -121,7 +122,7 @@ impl Gui {
             (im_str!("Curved Road"), Tool::RoadbuildCurved),
             (im_str!("Road Editor"), Tool::RoadEditor),
             (im_str!("Bulldozer"), Tool::Bulldozer),
-            (im_str!("Lot Brush"), Tool::LotBrush(LotKind::Residential)),
+            (im_str!("Lot Brush"), Tool::LotBrush),
         ];
 
         Window::new(im_str!("Toolbox"))
@@ -194,7 +195,7 @@ impl Gui {
             (im_str!("Commercial"), LotKind::Commercial),
         ];
 
-        if matches!(*goria.read::<Tool>(), Tool::LotBrush(_)) {
+        if matches!(*goria.read::<Tool>(), Tool::LotBrush) {
             Window::new(im_str!("Lot Brush"))
                 .size(
                     [toolbox_w, brushes.len() as f32 * 30.0 + 20.0],
@@ -210,22 +211,20 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .build(&ui, || {
-                    let cur_tool = &mut *goria.write::<Tool>();
-                    let cur_brush = match cur_tool {
-                        LotBrush(k) => *k,
-                        _ => return,
-                    };
+                    let mut cur_brush = goria.write::<LotBrushResource>();
 
                     for (name, brush) in &brushes {
                         let tok = ui.push_style_var(StyleVar::Alpha(
-                            if std::mem::discriminant(brush) == std::mem::discriminant(&cur_brush) {
+                            if std::mem::discriminant(brush)
+                                == std::mem::discriminant(&cur_brush.kind)
+                            {
                                 1.0
                             } else {
                                 0.5
                             },
                         ));
                         if ui.button(name, [toolbox_w, 30.0]) {
-                            *cur_tool = LotBrush(*brush);
+                            cur_brush.kind = *brush;
                         }
                         tok.pop(ui);
                     }
