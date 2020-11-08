@@ -31,6 +31,7 @@ impl Default for DebugObjs {
             (false, "Debug rays", debug_rays),
             (false, "Debug splines", debug_spline),
             (false, "Debug turns", debug_turns),
+            (false, "Debug road points", debug_road_points),
             (false, "Show grid", show_grid),
         ])
     }
@@ -129,6 +130,15 @@ pub fn debug_spline(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
         }
     }
 
+    Some(())
+}
+
+pub fn debug_road_points(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
+    let map = world.read::<Map>();
+    tess.set_color(Color::RED);
+    for (_, road) in map.roads() {
+        tess.draw_polyline(road.generated_points().as_slice(), 1.0, 0.1);
+    }
     Some(())
 }
 
