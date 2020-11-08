@@ -15,6 +15,15 @@ pub enum BuildingKind {
     Farm,
 }
 
+impl BuildingKind {
+    pub fn size(&self) -> f32 {
+        match self {
+            BuildingKind::Farm => 80.0,
+            _ => 30.0,
+        }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Building {
     pub id: BuildingID,
@@ -30,7 +39,7 @@ impl Building {
         road: &Road,
         obb: OBB,
         kind: BuildingKind,
-    ) -> Option<BuildingID> {
+    ) -> BuildingID {
         let at = obb.center();
         let axis = (obb.corners[1] - obb.corners[0]).normalize();
         let size = obb.corners[0].distance(obb.corners[1]);
@@ -39,7 +48,7 @@ impl Building {
             BuildingKind::House => crate::procgen::gen_exterior_house(size),
             BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(size),
             BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(size),
-            _ => unimplemented!(),
+            BuildingKind::Farm => crate::procgen::gen_exterior_farm(size),
         };
 
         assert!(!draw.is_empty());
@@ -67,7 +76,7 @@ impl Building {
             door_pos,
         });
         spatial_map.insert(id, buildings[id].bbox());
-        Some(id)
+        id
     }
 
     pub fn bbox(&self) -> Rect {

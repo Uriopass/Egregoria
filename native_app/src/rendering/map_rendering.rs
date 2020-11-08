@@ -94,8 +94,13 @@ impl RoadRenderer {
             let or_src = l.orientation_from(l.src);
             let or_dst = -l.orientation_from(l.dst);
 
-            let w = l.width + 0.5;
-            tess.draw_polyline_with_dir(l.points.as_slice(), or_src, or_dst, Z_LANE_BG, w);
+            tess.draw_polyline_with_dir(
+                l.points.as_slice(),
+                or_src,
+                or_dst,
+                Z_LANE_BG,
+                l.width + 0.5,
+            );
 
             tess.set_color(match l.kind {
                 LaneKind::Walking => hig_col,

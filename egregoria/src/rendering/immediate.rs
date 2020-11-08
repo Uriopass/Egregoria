@@ -1,4 +1,4 @@
-use geom::{Color, Vec2};
+use geom::{Color, Vec2, OBB};
 use std::mem::MaybeUninit;
 
 #[derive(Clone)]
@@ -21,6 +21,7 @@ pub enum OrderKind {
         points: Vec<Vec2>,
         thickness: f32,
     },
+    OBB(OBB),
 }
 
 #[derive(Clone)]
@@ -73,63 +74,46 @@ impl<'a> Drop for ImmediateBuilder<'a> {
 }
 
 impl ImmediateDraw {
-    pub fn circle(&mut self, pos: Vec2, radius: f32) -> ImmediateBuilder {
+    fn builder(&mut self, kind: OrderKind) -> ImmediateBuilder {
         ImmediateBuilder {
             draw: self,
             order: ImmediateOrder {
-                kind: OrderKind::Circle { pos, radius },
+                kind,
                 color: Color::WHITE,
                 z: 3.0,
             },
             persistent: false,
         }
+    }
+    pub fn circle(&mut self, pos: Vec2, radius: f32) -> ImmediateBuilder {
+        self.builder(OrderKind::Circle { pos, radius })
     }
 
     pub fn line(&mut self, from: Vec2, to: Vec2, thickness: f32) -> ImmediateBuilder {
-        ImmediateBuilder {
-            draw: self,
-            order: ImmediateOrder {
-                kind: OrderKind::Line {
-                    from,
-                    to,
-                    thickness,
-                },
-                color: Color::WHITE,
-                z: 3.0,
-            },
-            persistent: false,
-        }
+        self.builder(OrderKind::Line {
+            from,
+            to,
+            thickness,
+        })
     }
 
     pub fn polyline(&mut self, points: impl Into<Vec<Vec2>>, thickness: f32) -> ImmediateBuilder {
-        ImmediateBuilder {
-            draw: self,
-            order: ImmediateOrder {
-                kind: OrderKind::PolyLine {
-                    points: points.into(),
-                    thickness,
-                },
-                color: Color::WHITE,
-                z: 3.0,
-            },
-            persistent: false,
-        }
+        self.builder(OrderKind::PolyLine {
+            points: points.into(),
+            thickness,
+        })
     }
 
     pub fn stroke_circle(&mut self, pos: Vec2, radius: f32, thickness: f32) -> ImmediateBuilder {
-        ImmediateBuilder {
-            draw: self,
-            order: ImmediateOrder {
-                kind: OrderKind::StrokeCircle {
-                    pos,
-                    radius,
-                    thickness,
-                },
-                color: Color::WHITE,
-                z: 3.0,
-            },
-            persistent: false,
-        }
+        self.builder(OrderKind::StrokeCircle {
+            pos,
+            radius,
+            thickness,
+        })
+    }
+
+    pub fn obb(&mut self, obb: OBB) -> ImmediateBuilder {
+        self.builder(OrderKind::OBB(obb))
     }
 
     pub fn clear_persistent(&mut self) {

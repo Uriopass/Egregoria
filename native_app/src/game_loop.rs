@@ -125,7 +125,7 @@ impl State {
                 .chain(immediate.orders.iter())
             {
                 let z = *z;
-                tess.color = (*color).into();
+                tess.set_color(*color);
                 match *kind {
                     OrderKind::Circle { pos, radius } => {
                         tess.draw_circle(pos, z, radius);
@@ -149,6 +149,16 @@ impl State {
                         thickness,
                     } => {
                         tess.draw_polyline(points, z, thickness);
+                    }
+                    OrderKind::OBB(obb) => {
+                        let [ax1, ax2] = obb.axis();
+                        tess.draw_rect_cos_sin(
+                            obb.center(),
+                            z,
+                            ax1.magnitude(),
+                            ax2.magnitude(),
+                            ax1.normalize(),
+                        );
                     }
                 }
             }

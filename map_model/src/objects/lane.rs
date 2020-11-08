@@ -138,7 +138,7 @@ impl LanePatternBuilder {
             w += LaneKind::Parking.width() * 2.0;
         }
         w += self.n_lanes as f32 * 2.0 * LaneKind::Driving.width();
-        w
+        w + 0.5
     }
 
     pub fn build(self) -> LanePattern {
