@@ -1,6 +1,5 @@
 use common::inspect::InspectedEntity;
 use egregoria::Egregoria;
-use map_model::LotKind;
 use movable::MovableSystem;
 use roadbuild::RoadBuildResource;
 use roadeditor::RoadEditorResource;
@@ -14,12 +13,14 @@ mod movable;
 mod roadbuild;
 mod roadeditor;
 mod selectable;
+mod specialbuilding;
 mod topgui;
 pub mod windows;
 
 pub use follow::FollowEntity;
 
 use crate::gui::lotbrush::LotBrushResource;
+use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::debug::DebugObjs;
 pub use inspect::*;
 pub use topgui::*;
@@ -34,6 +35,7 @@ pub fn setup_gui(goria: &mut Egregoria) {
         .add_system(bulldozer::bulldozer_system())
         .add_system(lotbrush::lotbrush_system())
         .add_system(inspected_aura::inspected_aura_system())
+        .add_system(specialbuilding::special_building_system())
         .add_system(movable::movable_system(MovableSystem::default()));
 
     goria.insert(InspectedEntity::default());
@@ -44,6 +46,7 @@ pub fn setup_gui(goria: &mut Egregoria) {
     goria.insert(RoadBuildResource::default());
     goria.insert(RoadEditorResource::default());
     goria.insert(LotBrushResource::default());
+    goria.insert(SpecialBuildingResource::default());
 }
 
 #[derive(Copy, Clone)]
@@ -54,6 +57,7 @@ pub enum Tool {
     RoadEditor,
     Bulldozer,
     LotBrush,
+    SpecialBuilding,
 }
 
 const Z_TOOL: f32 = 0.9;

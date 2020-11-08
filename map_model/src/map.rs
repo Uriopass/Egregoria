@@ -4,8 +4,8 @@ use crate::{
     LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID,
     RoadSegmentKind, SpatialMap,
 };
-use geom::Spline;
 use geom::Vec2;
+use geom::{Spline, OBB};
 use ordered_float::OrderedFloat;
 use rand::prelude::IteratorRandom;
 use rand::Rng;
@@ -192,6 +192,51 @@ impl Map {
         id
     }
 
+    fn cleanup_lot(roads: &mut Roads, spatial_map: &mut SpatialMap, lot: Lot) {
+        let rlots = &mut roads[lot.parent].lots;
+        rlots.remove(rlots.iter().position(|&x| x == lot.id).unwrap());
+        spatial_map.remove(lot.id);
+    }
+
+    pub fn build_special_building(
+        &mut self,
+        road: RoadID,
+        shape: OBB,
+        kind: BuildingKind,
+    ) -> BuildingID {
+        dbg!("build special {} on {} with shape {}", kind, road, shape);
+        self.dirty = true;
+        let to_clean: Vec<_> = self
+            .spatial_map
+            .query_rect(shape.bbox())
+            .filter_map(|obj| {
+                if let ProjectKind::Lot(id) = obj {
+                    if self.lots[id].shape.intersects(shape) {
+                        return Some(id);
+                    }
+                }
+                None
+            })
+            .collect();
+        for id in to_clean {
+            Self::cleanup_lot(
+                &mut self.roads,
+                &mut self.spatial_map,
+                self.lots
+                    .remove(id)
+                    .expect("Lot was present in spatial map but not in Lots struct"),
+            )
+        }
+
+        Building::make(
+            &mut self.buildings,
+            &mut self.spatial_map,
+            &self.roads[road],
+            shape,
+            kind,
+        )
+    }
+
     pub fn build_buildings(&mut self) -> impl Iterator<Item = BuildingID> + '_ {
         info!("build buildings");
         self.dirty = true;
@@ -200,14 +245,15 @@ impl Map {
         let buildings = &mut self.buildings;
         let spatial_map = &mut self.spatial_map;
 
-        self.lots.drain().filter_map(move |(id, lot)| {
-            let rlots = &mut roads[lot.parent].lots;
-            rlots.remove(rlots.iter().position(|&x| x == id).unwrap());
-            spatial_map.remove(id);
+        self.lots.drain().map(move |(_, lot)| {
+            let parent = lot.parent;
+            let obb = lot.shape;
+            let lotkind = lot.kind;
+            Self::cleanup_lot(roads, spatial_map, lot);
 
             let r = rand::random::<f32>();
 
-            let kind = match lot.kind {
+            let kind = match lotkind {
                 LotKind::Residential => BuildingKind::House,
                 LotKind::Commercial => {
                     if r < 0.5 {
@@ -218,7 +264,7 @@ impl Map {
                 }
             };
 
-            Building::make(buildings, spatial_map, &roads[lot.parent], lot.shape, kind)
+            Building::make(buildings, spatial_map, &roads[parent], obb, kind)
         })
     }
 

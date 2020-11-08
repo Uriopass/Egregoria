@@ -1,6 +1,6 @@
 use crate::gui::lotbrush::LotBrushResource;
+use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::ImguiWindows;
-use crate::gui::Tool::LotBrush;
 use crate::gui::{RoadBuildResource, Tool};
 use common::inspect::InspectedEntity;
 use common::GameTime;
@@ -9,7 +9,7 @@ use egregoria::Egregoria;
 use imgui::{im_str, StyleColor, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
-use map_model::{LanePatternBuilder, LotKind};
+use map_model::{BuildingKind, LanePatternBuilder, LotKind};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
@@ -123,6 +123,7 @@ impl Gui {
             (im_str!("Road Editor"), Tool::RoadEditor),
             (im_str!("Bulldozer"), Tool::Bulldozer),
             (im_str!("Lot Brush"), Tool::LotBrush),
+            (im_str!("Buildings"), Tool::SpecialBuilding),
         ];
 
         Window::new(im_str!("Toolbox"))
@@ -225,6 +226,44 @@ impl Gui {
                         ));
                         if ui.button(name, [toolbox_w, 30.0]) {
                             cur_brush.kind = *brush;
+                        }
+                        tok.pop(ui);
+                    }
+                });
+        }
+
+        let special_buildings = [(im_str!("Farm"), BuildingKind::Farm)];
+
+        if matches!(*goria.read::<Tool>(), Tool::SpecialBuilding) {
+            Window::new(im_str!("Special buildings"))
+                .size(
+                    [toolbox_w, special_buildings.len() as f32 * 30.0 + 20.0],
+                    imgui::Condition::Always,
+                )
+                .position(
+                    [w - toolbox_w - toolbox_w, h * 0.5 - 30.0],
+                    imgui::Condition::Always,
+                )
+                .scroll_bar(false)
+                .title_bar(true)
+                .movable(false)
+                .collapsible(false)
+                .resizable(false)
+                .build(&ui, || {
+                    let mut cur_build = goria.write::<SpecialBuildingResource>();
+
+                    for (name, build) in &special_buildings {
+                        let tok = ui.push_style_var(StyleVar::Alpha(
+                            if std::mem::discriminant(build)
+                                == std::mem::discriminant(&cur_build.kind)
+                            {
+                                1.0
+                            } else {
+                                0.5
+                            },
+                        ));
+                        if ui.button(name, [toolbox_w, 30.0]) {
+                            cur_build.kind = *build;
                         }
                         tok.pop(ui);
                     }

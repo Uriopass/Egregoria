@@ -139,6 +139,44 @@ pub fn gen_exterior_supermarket(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2
     (vec![(p, Color::new(0.52, 0.5, 0.50, 1.0).into())], door_pos)
 }
 
+///  -------------------
+///  -------------------
+///  -------------------
+///  -------------------
+///  -------------------
+///           
+///  XXXXX   
+///  XXXXX   
+///    XXX   
+///     |    
+pub fn gen_exterior_farm(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
+    let h_size = 30.0;
+    let (mut polys, mut door_pos) = gen_exterior_house(h_size);
+
+    let mut off = Vec2::splat(h_size * 0.5 - size * 0.5);
+    off.x += rand_in(0.0, size - h_size);
+    for p in &mut polys {
+        p.0.translate(off);
+    }
+    door_pos += off;
+
+    polys.splice(
+        0..0,
+        vec![(
+            Polygon::centered_rect(size, size),
+            Color::new(0.75, 0.60, 0.35, 1.0).into(),
+        )],
+    );
+
+    for i in -1..5 {
+        let mut p = Polygon::centered_rect(size - 5.0, 3.0);
+        p.translate(vec2(0.0, i as f32 * 8.5));
+        polys.push((p, Color::new(0.62, 0.5, 0.29, 1.0).into()))
+    }
+
+    (polys, door_pos)
+}
+
 fn rand_in(min: f32, max: f32) -> f32 {
     rand::thread_rng().gen_range(min, max)
 }

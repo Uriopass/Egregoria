@@ -15,6 +15,15 @@ impl Polygon {
         Self(vec![Vec2::ZERO, vec2(w, 0.0), vec2(w, h), vec2(0.0, h)])
     }
 
+    pub fn centered_rect(w: f32, h: f32) -> Self {
+        Self(vec![
+            vec2(-w * 0.5, -h * 0.5),
+            vec2(w * 0.5, -h * 0.5),
+            vec2(w * 0.5, h * 0.5),
+            vec2(-w * 0.5, h * 0.5),
+        ])
+    }
+
     pub fn translate(&mut self, p: Vec2) -> &mut Self {
         for x in self.0.iter_mut() {
             *x += p
