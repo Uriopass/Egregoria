@@ -6,7 +6,7 @@ use winit::window::Window;
 
 pub struct ImguiWrapper {
     pub imgui: imgui::Context,
-    renderer: imgui_wgpu::Renderer,
+    pub renderer: imgui_wgpu::Renderer,
     last_frame: Instant,
     platform: imgui_winit_support::WinitPlatform,
     pub last_mouse_captured: bool,
