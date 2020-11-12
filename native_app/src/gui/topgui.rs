@@ -1,7 +1,7 @@
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::ImguiWindows;
-use crate::gui::{RoadBuildResource, Tool};
+use crate::gui::{RoadBuildResource, Tool, UiTex, UiTextures};
 use common::inspect::InspectedEntity;
 use common::GameTime;
 use egregoria::engine_interaction::{KeyCode, KeyboardInfo, TimeWarp};
@@ -114,16 +114,15 @@ impl Gui {
             StyleVar::ItemSpacing([0.0, 0.0]),
         ]);
 
-        let toolbox_w = 120.0;
+        let toolbox_w = 80.0;
 
         let tools = [
-            (im_str!("Hand"), Tool::Hand),
-            (im_str!("Straight Road"), Tool::RoadbuildStraight),
-            (im_str!("Curved Road"), Tool::RoadbuildCurved),
-            (im_str!("Road Editor"), Tool::RoadEditor),
-            (im_str!("Bulldozer"), Tool::Bulldozer),
-            (im_str!("Lot Brush"), Tool::LotBrush),
-            (im_str!("Buildings"), Tool::SpecialBuilding),
+            (UiTex::Road, Tool::RoadbuildStraight),
+            (UiTex::Curved, Tool::RoadbuildCurved),
+            (UiTex::RoadEdit, Tool::RoadEditor),
+            (UiTex::LotBrush, Tool::LotBrush),
+            (UiTex::Buildings, Tool::SpecialBuilding),
+            (UiTex::Bulldozer, Tool::Bulldozer),
         ];
 
         Window::new(im_str!("Toolbox"))
@@ -145,10 +144,16 @@ impl Gui {
                         if std::mem::discriminant(tool) == std::mem::discriminant(cur_tool) {
                             1.0
                         } else {
-                            0.5
+                            0.6
                         },
                     ));
-                    if ui.button(name, [toolbox_w, 30.0]) {
+                    if imgui::ImageButton::new(
+                        goria.read::<UiTextures>().get(*name),
+                        [toolbox_w, 30.0],
+                    )
+                    .frame_padding(0)
+                    .build(ui)
+                    {
                         *cur_tool = *tool;
                     }
                     tok.pop(ui);

@@ -13,14 +13,21 @@ use wgpu::{
     TextureFormat, TextureUsage, TextureViewDescriptor,
 };
 
+pub struct OwnedTexture {
+    pub texture: wgpu::Texture,
+    pub view: wgpu::TextureView,
+    pub sampler: wgpu::Sampler,
+    pub format: TextureFormat,
+    pub extent: Extent3d,
+}
+
 #[derive(Clone)]
 pub struct Texture {
-    pub width: f32,
-    pub height: f32,
     pub texture: Rc<wgpu::Texture>,
     pub view: Rc<wgpu::TextureView>,
     pub sampler: Rc<wgpu::Sampler>,
     pub format: TextureFormat,
+    pub extent: Extent3d,
 }
 
 #[derive(Clone)]
@@ -30,6 +37,17 @@ pub struct MultisampledTexture {
 }
 
 impl Texture {
+    pub fn read_image(p: impl AsRef<Path>) -> Option<(Vec<u8>, u32, u32)> {
+        let mut buf = vec![];
+        let mut f = File::open(p).ok()?;
+        f.read_to_end(&mut buf).ok()?;
+        image::load_from_memory(&*buf).ok().map(|x| {
+            let w = x.width();
+            let h = x.height();
+            (x.into_rgba().into_raw(), w, h)
+        })
+    }
+
     pub fn from_path(
         ctx: &GfxContext,
         p: impl AsRef<Path>,
@@ -40,25 +58,10 @@ impl Texture {
         f.read_to_end(&mut buf).ok()?;
         Texture::from_bytes(&ctx, &buf, label)
     }
+
     pub fn from_bytes(ctx: &GfxContext, bytes: &[u8], label: Option<&'static str>) -> Option<Self> {
         let img = image::load_from_memory(bytes).ok()?;
         Some(Self::from_image(ctx, &img, label))
-    }
-
-    fn default_sampler(device: &Device) -> Sampler {
-        device.create_sampler(&wgpu::SamplerDescriptor {
-            label: None,
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
-            compare: None,
-            anisotropy_clamp: None,
-        })
     }
 
     pub fn from_image(
@@ -71,7 +74,7 @@ impl Texture {
             .expect("Trying to use non rgha8 image as texture");
         let dimensions = img.dimensions();
 
-        let size = wgpu::Extent3d {
+        let extent = wgpu::Extent3d {
             width: dimensions.0,
             height: dimensions.1,
             depth: 1,
@@ -82,7 +85,7 @@ impl Texture {
         let mip_level_count = 6;
         let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
             label,
-            size,
+            size: extent,
             mip_level_count,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -99,10 +102,10 @@ impl Texture {
             &rgba,
             TextureDataLayout {
                 offset: 0,
-                bytes_per_row: 4 * dimensions.0,
-                rows_per_image: dimensions.1,
+                bytes_per_row: 4 * extent.width,
+                rows_per_image: extent.height,
             },
-            size,
+            extent,
         );
 
         generate_mipmaps(&ctx.device, &ctx.queue, &texture, format, mip_level_count);
@@ -114,9 +117,8 @@ impl Texture {
             texture: Rc::new(texture),
             view: Rc::new(view),
             sampler: Rc::new(sampler),
-            width: dimensions.0 as f32,
-            height: dimensions.1 as f32,
             format,
+            extent,
         }
     }
 
@@ -127,14 +129,15 @@ impl Texture {
         usage: TextureUsage,
         samples: Option<u32>,
     ) -> Texture {
+        let extent = wgpu::Extent3d {
+            width: sc_desc.width,
+            height: sc_desc.height,
+            depth: 1,
+        };
         let desc = wgpu::TextureDescriptor {
             format,
             usage,
-            size: wgpu::Extent3d {
-                width: sc_desc.width,
-                height: sc_desc.height,
-                depth: 1,
-            },
+            size: extent,
             mip_level_count: 1,
             sample_count: samples.unwrap_or(1),
             dimension: wgpu::TextureDimension::D2,
@@ -146,12 +149,11 @@ impl Texture {
         let sampler = Self::default_sampler(&device);
 
         Self {
-            width: sc_desc.width as f32,
-            height: sc_desc.height as f32,
             texture: Rc::new(texture),
             view: Rc::new(view),
             sampler: Rc::new(sampler),
             format,
+            extent,
         }
     }
 
@@ -293,6 +295,10 @@ impl Texture {
         })
     }
 
+    pub fn bindgroup_layout_float(device: &wgpu::Device) -> BindGroupLayout {
+        Self::bindgroup_layout(device, TextureComponentType::Float)
+    }
+
     pub fn bindgroup(&self, device: &Device, layout: &BindGroupLayout) -> BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout,
@@ -307,6 +313,36 @@ impl Texture {
                 },
             ],
             label: None,
+        })
+    }
+
+    fn default_sampler(device: &Device) -> Sampler {
+        device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            lod_min_clamp: -100.0,
+            lod_max_clamp: 100.0,
+            compare: None,
+            anisotropy_clamp: None,
+        })
+    }
+
+    pub fn srgb_format() -> TextureFormat {
+        TextureFormat::Rgba8UnormSrgb
+    }
+
+    pub fn into_owned(self) -> Option<OwnedTexture> {
+        Some(OwnedTexture {
+            texture: Rc::<wgpu::Texture>::try_unwrap(self.texture).ok()?,
+            view: std::rc::Rc::<wgpu::TextureView>::try_unwrap(self.view).ok()?,
+            sampler: std::rc::Rc::<wgpu::Sampler>::try_unwrap(self.sampler).ok()?,
+            format: TextureFormat::R8Unorm,
+            extent: Default::default(),
         })
     }
 }

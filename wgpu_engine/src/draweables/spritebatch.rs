@@ -93,10 +93,10 @@ impl SpriteBatchBuilder {
     pub fn build(&self, gfx: &GfxContext) -> Option<SpriteBatch> {
         let pipeline = gfx.get_pipeline::<SpriteBatch>();
 
-        let m = self.tex.width.max(self.tex.height);
+        let m = self.tex.extent.width.max(self.tex.extent.height) as f32;
 
-        let x = self.tex.width / (2.0 * m);
-        let y = self.tex.height / (2.0 * m);
+        let x = self.tex.extent.width as f32 / (2.0 * m);
+        let y = self.tex.extent.height as f32 / (2.0 * m);
 
         let v = [
             UvVertex {

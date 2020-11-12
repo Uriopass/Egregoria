@@ -1,6 +1,6 @@
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
-use crate::gui::{setup_gui, FollowEntity, Gui};
+use crate::gui::{setup_gui, FollowEntity, Gui, UiTextures};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use common::GameTime;
@@ -39,11 +39,13 @@ impl State {
                 CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 0.05)
             });
 
-        let imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
+        let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
         crate::rendering::prepare_background(&mut ctx.gfx);
 
         let mut goria = egregoria::Egregoria::init();
+
+        goria.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));
 
         load_from_disk(&mut goria);
         setup_gui(&mut goria);
