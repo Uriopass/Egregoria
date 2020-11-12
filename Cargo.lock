@@ -1502,20 +1502,6 @@ dependencies = [
 [[package]]
 name = "naga"
 version = "0.2.0"
-source = "git+https://github.com/gfx-rs/naga#6480370a19a0f32cf87323b83b97d65833b1590e"
-dependencies = [
- "bitflags",
- "fxhash",
- "log",
- "num-traits",
- "pomelo",
- "spirv_headers",
- "thiserror",
-]
-
-[[package]]
-name = "naga"
-version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0873deb76cf44b7454fba7b2ba6a89d3de70c08aceffd2c489379b3d9d08e661"
 dependencies = [
@@ -1523,6 +1509,20 @@ dependencies = [
  "fxhash",
  "log",
  "num-traits",
+ "spirv_headers",
+ "thiserror",
+]
+
+[[package]]
+name = "naga"
+version = "0.2.0"
+source = "git+https://github.com/gfx-rs/naga#6480370a19a0f32cf87323b83b97d65833b1590e"
+dependencies = [
+ "bitflags",
+ "fxhash",
+ "log",
+ "num-traits",
+ "pomelo",
  "spirv_headers",
  "thiserror",
 ]
