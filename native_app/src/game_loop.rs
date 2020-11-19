@@ -1,3 +1,4 @@
+use crate::audio::AudioHandle;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::{setup_gui, FollowEntity, Gui, UiTextures};
@@ -5,7 +6,7 @@ use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use common::GameTime;
 use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeWarp};
-use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder, OrderKind};
+use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound, OrderKind};
 use egregoria::souls::Souls;
 use egregoria::{load_from_disk, Egregoria};
 use geom::{vec3, Vec2};
@@ -27,7 +28,9 @@ pub struct State {
     road_renderer: RoadRenderer,
     gui: Gui,
     souls: Souls,
+    music_h: AudioHandle,
 }
+
 impl State {
     pub fn new(ctx: &mut Context) -> Self {
         let camera = common::saveload::load("camera")
@@ -53,6 +56,7 @@ impl State {
         let gui: Gui = common::saveload::load("gui").unwrap_or_default();
 
         goria.insert(camera.camera.clone());
+        let music_h = ctx.audio.play_with_control("music1");
 
         Self {
             camera,
@@ -63,12 +67,17 @@ impl State {
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
             gui,
             souls: Souls::default(),
+            music_h,
         }
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
         let delta = self.last_time.elapsed().as_secs_f64();
         self.last_time = Instant::now();
+
+        for sound in self.goria.write::<ImmediateSound>().orders.drain(..) {
+            ctx.audio.play(sound)
+        }
 
         self.manage_time(delta, &mut ctx.gfx);
 

@@ -1,6 +1,6 @@
 use crate::gui::{Tool, Z_TOOL};
-use egregoria::engine_interaction::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
-use egregoria::rendering::immediate::ImmediateDraw;
+use egregoria::engine_interaction::{MouseButton, MouseInfo};
+use egregoria::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use geom::Color;
 use geom::Spline;
 use geom::Vec2;
@@ -36,18 +36,18 @@ use ProjectKind::*;
 #[system]
 pub fn roadbuild(
     #[resource] state: &mut RoadBuildResource,
-    #[resource] kbinfo: &KeyboardInfo,
     #[resource] mouseinfo: &MouseInfo,
     #[resource] tool: &Tool,
     #[resource] map: &mut Map,
     #[resource] immdraw: &mut ImmediateDraw,
+    #[resource] immsound: &mut ImmediateSound,
 ) {
     if !matches!(*tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
         state.build_state = BuildState::Hover;
         return;
     }
 
-    if kbinfo.just_pressed.contains(&KeyCode::Escape) {
+    if mouseinfo.just_pressed.contains(&MouseButton::Right) {
         state.build_state = BuildState::Hover;
     }
 
@@ -105,6 +105,7 @@ pub fn roadbuild(
             }
             (Start(selected_proj), _, _) => {
                 // Straight connection to something
+                immsound.play("road_lay");
                 let selected_after = make_connection(
                     map,
                     selected_proj,
@@ -122,6 +123,7 @@ pub fn roadbuild(
             }
             (Interpolation(interpoint, selected_proj), _, _) => {
                 // Interpolated connection to something
+                immsound.play("road_lay");
                 let selected_after = make_connection(
                     map,
                     selected_proj,
@@ -227,7 +229,7 @@ impl RoadBuildResource {
         let col = if is_valid {
             Color {
                 r: 0.3,
-                g: 0.3,
+                g: 0.4,
                 b: 1.0,
                 a: 1.0,
             }
