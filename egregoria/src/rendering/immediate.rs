@@ -1,6 +1,17 @@
 use geom::{Color, Vec2, OBB};
 use std::mem::MaybeUninit;
 
+#[derive(Default)]
+pub struct ImmediateSound {
+    pub orders: Vec<&'static str>,
+}
+
+impl ImmediateSound {
+    pub fn play(&mut self, sound: &'static str) {
+        self.orders.push(sound)
+    }
+}
+
 #[derive(Clone)]
 pub enum OrderKind {
     Circle {

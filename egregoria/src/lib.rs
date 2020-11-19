@@ -17,7 +17,7 @@ use crate::physics::systems::{
 use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::assets::AssetRender;
-use crate::rendering::immediate::ImmediateDraw;
+use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::scenarios::scenario_runner::{run_scenario_system, RunningScenario};
 use crate::vehicles::systems::{
@@ -109,6 +109,7 @@ impl Egregoria {
         goria.insert(FrameLog::default());
         goria.insert(RunningScenario::default());
         goria.insert(ImmediateDraw::default());
+        goria.insert(ImmediateSound::default());
         goria.insert(ParCommandBuffer::default());
         goria.insert(Deleted::<Collider>::default());
         goria.insert(Deleted::<Vehicle>::default());

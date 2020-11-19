@@ -51,7 +51,6 @@ fn main() {
             }
         })
         .init();
-
     let mut ctx = Context::new();
 
     let state = game_loop::State::new(&mut ctx);

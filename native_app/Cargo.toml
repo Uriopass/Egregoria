@@ -26,10 +26,7 @@ inline_tweak  = "1.0.6"
 imgui         = "0.5.0"
 legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize", "extended-tuple-impls"] }
 ordered-float = "2.0.0"
-serde = "1.0.117"
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+serde         = "1.0.117"
+rodio         = { version = "0.13.0", default-features = false, features = ["vorbis"] }
+slotmap       = "0.4.0"
 winit         = "0.22"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-#winit         = { version = "0.22", features=["stdweb"] }
