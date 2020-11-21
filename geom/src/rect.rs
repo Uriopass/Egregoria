@@ -46,6 +46,20 @@ impl Rect {
         Self::new(0.0, 0.0, 1.0, 1.0)
     }
 
+    pub fn ll(&self) -> Vec2 {
+        Vec2 {
+            x: self.x,
+            y: self.y,
+        }
+    }
+
+    pub fn ur(&self) -> Vec2 {
+        Vec2 {
+            x: self.x + self.w,
+            y: self.y + self.h,
+        }
+    }
+
     /// Returns the left edge of the `Rect`
     pub const fn left(&self) -> f32 {
         self.x

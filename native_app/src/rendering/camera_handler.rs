@@ -1,6 +1,6 @@
 use crate::context::Context;
 use egregoria::engine_interaction::{KeyCode, MouseButton};
-use geom::{vec2, Camera, Rect, Vec2, Vec3};
+use geom::{vec2, Camera, Vec2, Vec3};
 use wgpu_engine::Tesselator;
 
 pub struct CameraHandler {
@@ -24,21 +24,11 @@ impl CameraHandler {
         ctx.gfx.set_inv_proj(self.camera.inv_projection());
     }
 
-    pub fn get_screen_box(&self) -> Rect {
-        let upleft = self.camera.unproject([0.0, 0.0].into());
-        let downright = self
-            .camera
-            .unproject([self.camera.viewport.x, self.camera.viewport.y].into());
-        Rect {
-            x: upleft.x,
-            y: downright.y,
-            w: downright.x - upleft.x,
-            h: upleft.y - downright.y,
-        }
-    }
-
     pub fn culled_tesselator(&self) -> Tesselator {
-        Tesselator::new(Some(self.get_screen_box()), 1000.0 / self.camera.position.z)
+        Tesselator::new(
+            Some(self.camera.get_screen_box()),
+            1000.0 / self.camera.position.z,
+        )
     }
 
     pub fn resize(&mut self, ctx: &mut Context, width: f32, height: f32) {

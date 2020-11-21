@@ -67,8 +67,10 @@ pub fn debug(ui: &Ui, goria: &mut Egregoria) {
 
     let stats = goria.read::<RenderStats>();
     let mouse = goria.read::<MouseInfo>().unprojected;
+    let cam = goria.read::<Camera>().position;
 
     ui.text("Averaged over last 10 frames: ");
+    ui.text(im_str!("Total time: {:.1}ms", stats.all.avg() * 1000.0));
     ui.text(im_str!(
         "World update time: {:.1}ms",
         stats.world_update.avg() * 1000.0
@@ -83,6 +85,7 @@ pub fn debug(ui: &Ui, goria: &mut Egregoria) {
         stats.souls_apply.avg() * 1000.0
     ));
     ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
+    ui.text(im_str!("Cam   pos: {:.1} {:.1} {:.1}", cam.x, cam.y, cam.z));
     ui.separator();
     ui.text("Frame log");
     let flog = goria.read::<FrameLog>();
