@@ -1,6 +1,6 @@
 use crate::context::Context;
 use egregoria::engine_interaction::{KeyCode, MouseButton};
-use geom::{vec2, Camera, Rect, Vec2};
+use geom::{vec2, Camera, Rect, Vec2, Vec3};
 use wgpu_engine::Tesselator;
 
 pub struct CameraHandler {
@@ -11,15 +11,11 @@ pub struct CameraHandler {
 const CAMERA_KEY_MOVESPEED: f32 = 300.0;
 
 impl CameraHandler {
-    pub fn new(width: f32, height: f32, zoom: f32) -> CameraHandler {
+    pub fn new(width: f32, height: f32, position: Vec3) -> CameraHandler {
         CameraHandler {
-            camera: Camera::new(width, height, zoom),
+            camera: Camera::new(width, height, position),
             last_pos: vec2(0.0, 0.0),
         }
-    }
-
-    pub fn zoom(&self) -> f32 {
-        self.camera.zoom
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
@@ -42,7 +38,7 @@ impl CameraHandler {
     }
 
     pub fn culled_tesselator(&self) -> Tesselator {
-        Tesselator::new(Some(self.get_screen_box()), self.zoom())
+        Tesselator::new(Some(self.get_screen_box()), 1000.0 / self.camera.position.z)
     }
 
     pub fn resize(&mut self, ctx: &mut Context, width: f32, height: f32) {
@@ -71,10 +67,10 @@ impl CameraHandler {
 
         if mouse_enabled {
             self.last_pos = self.unproject_mouse_click(ctx.input.mouse.screen);
-            if ctx.input.mouse.wheel_delta > 0.0 {
+            if ctx.input.mouse.wheel_delta < 0.0 {
                 self.zoom_by(ctx, 1.1);
             }
-            if ctx.input.mouse.wheel_delta < 0.0 {
+            if ctx.input.mouse.wheel_delta > 0.0 {
                 self.zoom_by(ctx, 1.0 / 1.1);
             }
         }
@@ -83,22 +79,22 @@ impl CameraHandler {
             let is_pressed = &ctx.input.keyboard.is_pressed;
 
             if is_pressed.contains(&KeyCode::Right) {
-                self.camera.position.x += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+                self.camera.position.x += delta * CAMERA_KEY_MOVESPEED * self.camera.position.z;
                 self.camera.update();
                 common::saveload::save_silent(&self.camera, "camera");
             }
             if is_pressed.contains(&KeyCode::Left) {
-                self.camera.position.x -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+                self.camera.position.x -= delta * CAMERA_KEY_MOVESPEED * self.camera.position.z;
                 self.camera.update();
                 common::saveload::save_silent(&self.camera, "camera");
             }
             if is_pressed.contains(&KeyCode::Up) {
-                self.camera.position.y += delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+                self.camera.position.y += delta * CAMERA_KEY_MOVESPEED * self.camera.position.z;
                 self.camera.update();
                 common::saveload::save_silent(&self.camera, "camera");
             }
             if is_pressed.contains(&KeyCode::Down) {
-                self.camera.position.y -= delta * CAMERA_KEY_MOVESPEED / self.camera.zoom;
+                self.camera.position.y -= delta * CAMERA_KEY_MOVESPEED * self.camera.position.z;
                 self.camera.update();
                 common::saveload::save_silent(&self.camera, "camera");
             }
@@ -118,7 +114,7 @@ impl CameraHandler {
     }
 
     fn zoom_by(&mut self, ctx: &mut Context, multiply: f32) {
-        self.camera.zoom *= multiply;
+        self.camera.position.z *= multiply;
 
         self.update(ctx);
         let after = self.unproject_mouse_click(ctx.input.mouse.screen);
