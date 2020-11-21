@@ -1,24 +1,22 @@
-use crate::{vec2, Vec2};
+use crate::{vec2, Vec2, Vec3};
 use mint::ColumnMatrix4;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Camera {
     pub viewport: Vec2,
-    pub position: Vec2,
-    pub zoom: f32,
+    pub position: Vec3,
     scale: Vec2,
     offset: Vec2,
 }
 
 impl Camera {
-    pub fn new(viewport_width: f32, viewport_height: f32, zoom: f32) -> Camera {
+    pub fn new(viewport_width: f32, viewport_height: f32, position: Vec3) -> Camera {
         let mut c = Camera {
             viewport: vec2(viewport_width, viewport_height),
-            position: Vec2::ZERO,
+            position,
             scale: Vec2::ZERO,
             offset: Vec2::ZERO,
-            zoom,
         };
         c.update();
         c
@@ -29,8 +27,8 @@ impl Camera {
         // If you have rendering problem on mac os, it doesnt come from the projection
         // but don't forget to do cam.update at least once (dont suppose resize will be called)
 
-        self.scale = 2.0 * self.zoom / self.viewport;
-        self.offset = -2.0 * self.zoom * self.position / self.viewport;
+        self.scale = 2.0 * 1000.0 / (self.position.z * self.viewport);
+        self.offset = -2.0 * 1000.0 * vec2(self.position.x, self.position.y) / (self.position.z * self.viewport);
     }
 
     pub fn unproject(&self, screen_coords: Vec2) -> Vec2 {

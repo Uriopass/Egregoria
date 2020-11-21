@@ -39,7 +39,11 @@ impl State {
                 last_pos: Vec2::ZERO,
             })
             .unwrap_or_else(|| {
-                CameraHandler::new(ctx.gfx.size.0 as f32, ctx.gfx.size.1 as f32, 0.05)
+                CameraHandler::new(
+                    ctx.gfx.size.0 as f32,
+                    ctx.gfx.size.1 as f32,
+                    vec3(0.0, 0.0, 20.0),
+                )
             });
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
@@ -260,7 +264,8 @@ impl State {
 
         if let Some(e) = self.goria.read::<FollowEntity>().0 {
             if let Some(pos) = self.goria.pos(e) {
-                self.camera.camera.position = [pos.x, pos.y].into();
+                self.camera.camera.position.x = pos.x;
+                self.camera.camera.position.y = pos.y;
             }
         }
     }

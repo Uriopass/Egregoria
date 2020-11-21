@@ -98,13 +98,14 @@ pub fn debug(ui: &Ui, goria: &mut Egregoria) {
 pub fn show_grid(tess: &mut Tesselator, state: &Egregoria) -> Option<()> {
     let cam = &*state.read::<Camera>();
 
-    if cam.zoom < 1.0 {
+    dbg!(cam.position.z);
+    if cam.position.z > 1000.0 {
         return Some(());
     }
 
     let gray_maj = 0.5;
     let gray_min = 0.3;
-    if cam.zoom > 6.0 {
+    if cam.position.z < 300.0 {
         tess.set_color(Color::new(gray_min, gray_min, gray_min, 0.5));
         tess.draw_grid(1.0);
     }
