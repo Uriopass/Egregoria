@@ -50,6 +50,7 @@ impl History {
 
 #[derive(Default)]
 pub struct RenderStats {
+    pub all: History,
     pub world_update: History,
     pub render: History,
     pub souls_desires: History,

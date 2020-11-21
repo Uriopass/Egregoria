@@ -14,7 +14,7 @@ pub struct Tree {
 
 #[derive(Clone)]
 pub struct Trees {
-    grid: SparseGrid<Tree>,
+    pub grid: SparseGrid<Tree>,
     pub counter: usize,
     pub dirty: bool,
 }
@@ -22,7 +22,7 @@ pub struct Trees {
 impl Default for Trees {
     fn default() -> Self {
         Self {
-            grid: SparseGrid::new(10),
+            grid: SparseGrid::new(50),
             counter: 1000,
             dirty: true,
         }
@@ -42,10 +42,7 @@ impl Trees {
         bbox.h += d + d;
 
         let mut to_remove = vec![];
-        for (h, tree) in trees
-            .grid
-            .query_aabb([bbox.x, bbox.y], [bbox.x + bbox.w, bbox.y + bbox.h])
-        {
+        for (h, tree) in trees.grid.query_aabb(bbox.ll(), bbox.ur()) {
             let rd = common::rand::rand3(tree.x, tree.y, 391.0) * 20.0;
 
             if r.generated_points

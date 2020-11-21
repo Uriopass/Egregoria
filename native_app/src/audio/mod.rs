@@ -1,3 +1,5 @@
+pub mod ambiant_audio;
+
 use rodio::{OutputStream, OutputStreamHandle, Sink, Source};
 use slotmap::{new_key_type, DenseSlotMap};
 use std::collections::hash_map::Entry;
@@ -80,12 +82,16 @@ impl AudioContext {
         }
     }
 
-    pub fn play_with_control(&mut self, name: &'static str) -> AudioHandle {
+    pub fn play_with_control(&mut self, name: &'static str, repeat: bool) -> AudioHandle {
         if let Some(ref h) = self.out_handle {
             if let Some(x) = Self::get(&mut self.cache, name) {
                 let dec = rodio::Decoder::new(std::io::Cursor::new(x)).unwrap();
                 let sink = rodio::Sink::try_new(h).unwrap();
-                sink.append(dec);
+                if repeat {
+                    sink.append(dec.repeat_infinite());
+                } else {
+                    sink.append(dec);
+                }
                 return self.sinks.insert(sink);
             }
         }
@@ -93,9 +99,20 @@ impl AudioContext {
     }
 
     pub fn set_volume(&self, handle: AudioHandle, volume: f32) {
-        let _ = self
-            .sinks
-            .get(handle)
-            .map(|x| x.set_volume(volume.max(0.0).min(2.0)));
+        if let Some(x) = self.sinks.get(handle) {
+            let volume = volume.max(0.0).min(2.0);
+            x.set_volume(volume);
+        }
+    }
+
+    pub fn set_volume_smooth(&self, handle: AudioHandle, volume: f32, max_change: f32) {
+        if let Some(x) = self.sinks.get(handle) {
+            let cur_volume = x.volume();
+            let volume = volume.max(0.0).min(2.0);
+            self.set_volume(
+                handle,
+                cur_volume + (volume - cur_volume).max(-max_change).min(max_change),
+            )
+        }
     }
 }

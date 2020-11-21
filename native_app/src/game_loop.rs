@@ -1,4 +1,4 @@
-use crate::audio::AudioHandle;
+use crate::audio::ambiant_audio::AmbientAudio;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::{setup_gui, FollowEntity, Gui, UiTextures};
@@ -20,15 +20,20 @@ use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
 pub struct State {
-    camera: CameraHandler,
-    imgui_render: ImguiWrapper,
     goria: Egregoria,
+
+    camera: CameraHandler,
+
+    imgui_render: ImguiWrapper,
     last_time: Instant,
+
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
     gui: Gui,
+
     souls: Souls,
-    music_h: AudioHandle,
+
+    ambient: AmbientAudio,
 }
 
 impl State {
@@ -60,18 +65,19 @@ impl State {
         let gui: Gui = common::saveload::load("gui").unwrap_or_default();
 
         goria.insert(camera.camera.clone());
-        let music_h = ctx.audio.play_with_control("music1");
+        let music_h = ctx.audio.play_with_control("music1", false);
+        ctx.audio.set_volume(music_h, 0.0);
 
         Self {
+            goria,
             camera,
             imgui_render,
-            goria,
             last_time: Instant::now(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
             gui,
             souls: Souls::default(),
-            music_h,
+            ambient: AmbientAudio::new(&mut ctx.audio),
         }
     }
 
@@ -79,9 +85,16 @@ impl State {
         let delta = self.last_time.elapsed().as_secs_f64();
         self.last_time = Instant::now();
 
+        self.goria
+            .write::<RenderStats>()
+            .all
+            .add_value(delta as f32);
+
         for sound in self.goria.write::<ImmediateSound>().orders.drain(..) {
             ctx.audio.play(sound)
         }
+        self.ambient
+            .update(&mut self.goria, &mut ctx.audio, delta as f32);
 
         self.manage_time(delta, &mut ctx.gfx);
 

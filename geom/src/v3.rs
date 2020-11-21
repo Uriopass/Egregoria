@@ -355,6 +355,13 @@ impl Vec3 {
         }
     }
 
+    pub fn xy(self) -> Vec2 {
+        Vec2 {
+            x: self.x,
+            y: self.y,
+        }
+    }
+
     pub fn modulo(self, v: f32) -> Self {
         Self {
             x: self.x % v,

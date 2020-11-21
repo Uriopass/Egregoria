@@ -115,7 +115,7 @@ impl SpatialMap {
 }
 
 fn rect_to_aabb(r: Rect) -> AABB {
-    AABB::new([r.x, r.y].into(), [r.x + r.w, r.y + r.h].into())
+    AABB::new(r.ll().into(), r.ur().into())
 }
 
 fn aabb_to_rect(r: AABB) -> Rect {
