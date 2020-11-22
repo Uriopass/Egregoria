@@ -19,6 +19,8 @@ pub use u8slice::*;
 pub use uniform::*;
 pub use vertex_types::*;
 
+pub use wgpu;
+
 trait VBDesc {
     fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a>;
 }

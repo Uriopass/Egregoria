@@ -131,6 +131,10 @@ impl Vec2 {
         }
     }
 
+    pub fn lerp(self, other: Self, coeff: f32) -> Self {
+        self * (1.0 - coeff) + other * coeff
+    }
+
     #[inline]
     pub fn min(self, other: Vec2) -> Vec2 {
         Vec2 {

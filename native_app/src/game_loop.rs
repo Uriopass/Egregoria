@@ -1,7 +1,8 @@
 use crate::audio::ambiant_audio::AmbientAudio;
+use crate::audio::music::Music;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
-use crate::gui::{setup_gui, FollowEntity, Gui, UiTextures};
+use crate::gui::{setup_gui, AudioSettings, FollowEntity, Gui, UiTextures, VideoSettings};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use common::GameTime;
@@ -17,7 +18,7 @@ use std::time::Instant;
 use wgpu_engine::lighting::LightInstance;
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext};
 use winit::dpi::PhysicalSize;
-use winit::window::Window;
+use winit::window::{Fullscreen, Window};
 
 pub struct State {
     goria: Egregoria,
@@ -34,6 +35,7 @@ pub struct State {
     souls: Souls,
 
     ambient: AmbientAudio,
+    music: Music,
 }
 
 impl State {
@@ -62,11 +64,9 @@ impl State {
         load_from_disk(&mut goria);
         setup_gui(&mut goria);
 
-        let gui: Gui = common::saveload::load("gui").unwrap_or_default();
+        let gui: Gui = common::saveload::load_json("gui").unwrap_or_default();
 
         goria.insert(camera.camera.clone());
-        let music_h = ctx.audio.play_with_control("music1", false);
-        ctx.audio.set_volume(music_h, 0.0);
 
         Self {
             goria,
@@ -78,6 +78,7 @@ impl State {
             gui,
             souls: Souls::default(),
             ambient: AmbientAudio::new(&mut ctx.audio),
+            music: Music::new(),
         }
     }
 
@@ -90,11 +91,14 @@ impl State {
             .all
             .add_value(delta as f32);
 
-        for sound in self.goria.write::<ImmediateSound>().orders.drain(..) {
-            ctx.audio.play(sound)
+        for (sound, kind) in self.goria.write::<ImmediateSound>().orders.drain(..) {
+            ctx.audio.play(sound, kind);
         }
         self.ambient
             .update(&mut self.goria, &mut ctx.audio, delta as f32);
+        self.music.update(&mut ctx.audio);
+
+        self.manage_settings(ctx, self.gui.video_settings, self.gui.audio_settings);
 
         self.manage_time(delta, &mut ctx.gfx);
 
@@ -255,6 +259,18 @@ impl State {
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
         self.imgui_render
             .render(ctx, window, &mut self.goria, &mut self.gui);
+    }
+
+    fn manage_settings(&mut self, ctx: &mut Context, video: VideoSettings, audio: AudioSettings) {
+        if video.fullscreen && ctx.window.fullscreen().is_none() {
+            ctx.window
+                .set_fullscreen(Some(Fullscreen::Borderless(ctx.window.current_monitor())))
+        }
+        if !video.fullscreen && ctx.window.fullscreen().is_some() {
+            ctx.window.set_fullscreen(None);
+        }
+
+        ctx.audio.set_settings(audio);
     }
 
     fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {

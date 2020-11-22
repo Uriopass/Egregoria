@@ -65,6 +65,7 @@ impl Context {
                     if !managed {
                         match event {
                             WindowEvent::Resized(physical_size) => {
+                                log::info!("resized: {:?}", physical_size);
                                 new_size = Some(physical_size);
                             }
                             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
@@ -79,9 +80,15 @@ impl Context {
                             state.resized(&mut self, new_size);
                         }
 
+                        let size = self.gfx.size;
                         match self.gfx.swapchain.get_current_frame() {
                             Ok(swapchainframe) => {
                                 frame = Some(swapchainframe);
+                            }
+                            Err(wgpu_engine::wgpu::SwapChainError::Outdated)
+                            | Err(wgpu_engine::wgpu::SwapChainError::Lost) => {
+                                self.gfx.resize(size.0, size.1);
+                                state.resized(&mut self, PhysicalSize::new(size.0, size.1));
                             }
                             Err(e) => panic!("error getting swapchain: {}", e),
                         };

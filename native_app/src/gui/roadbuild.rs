@@ -30,6 +30,7 @@ pub struct RoadBuildResource {
     pub pattern_builder: LanePatternBuilder,
 }
 
+use common::AudioKind;
 use BuildState::*;
 use ProjectKind::*;
 
@@ -105,7 +106,7 @@ pub fn roadbuild(
             }
             (Start(selected_proj), _, _) => {
                 // Straight connection to something
-                immsound.play("road_lay");
+                immsound.play("road_lay", AudioKind::Ui);
                 let selected_after = make_connection(
                     map,
                     selected_proj,
@@ -123,7 +124,7 @@ pub fn roadbuild(
             }
             (Interpolation(interpoint, selected_proj), _, _) => {
                 // Interpolated connection to something
-                immsound.play("road_lay");
+                immsound.play("road_lay", AudioKind::Ui);
                 let selected_after = make_connection(
                     map,
                     selected_proj,
