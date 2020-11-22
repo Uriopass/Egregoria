@@ -9,6 +9,13 @@ pub mod time;
 pub use config::*;
 pub use time::*;
 
+#[derive(Copy, Clone)]
+pub enum AudioKind {
+    Music,
+    Effect,
+    Ui,
+}
+
 pub fn get_mut_pair<'a, K, V>(
     conns: &'a mut HashMap<K, V>,
     a: &K,

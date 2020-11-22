@@ -1,14 +1,15 @@
+use common::AudioKind;
 use geom::{Color, Vec2, OBB};
 use std::mem::MaybeUninit;
 
 #[derive(Default)]
 pub struct ImmediateSound {
-    pub orders: Vec<&'static str>,
+    pub orders: Vec<(&'static str, AudioKind)>,
 }
 
 impl ImmediateSound {
-    pub fn play(&mut self, sound: &'static str) {
-        self.orders.push(sound)
+    pub fn play(&mut self, sound: &'static str, kind: AudioKind) {
+        self.orders.push((sound, kind))
     }
 }
 
