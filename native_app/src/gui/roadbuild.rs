@@ -57,6 +57,28 @@ pub fn roadbuild(
         cur_proj.kind = ProjectKind::Ground;
     }
 
+    let patwidth = state.pattern_builder.width();
+
+    if let ProjectKind::Road(r_id) = cur_proj.kind {
+        let r = &map.roads()[r_id];
+        if r.src_point
+            .is_close(cur_proj.pos, r.src_interface + patwidth * 0.5)
+        {
+            cur_proj = MapProject {
+                kind: ProjectKind::Inter(r.src),
+                pos: r.src_point,
+            };
+        } else if r
+            .dst_point
+            .is_close(cur_proj.pos, r.dst_interface + patwidth * 0.5)
+        {
+            cur_proj = MapProject {
+                kind: ProjectKind::Inter(r.dst),
+                pos: r.dst_point,
+            };
+        }
+    }
+
     let is_valid = match (state.build_state, cur_proj.kind) {
         (Hover, Building(_)) => false,
         (Start(selected_proj), _) => {
@@ -80,12 +102,7 @@ pub fn roadbuild(
         _ => true,
     };
 
-    state.update_drawing(
-        immdraw,
-        cur_proj.pos,
-        state.pattern_builder.width(),
-        is_valid,
-    );
+    state.update_drawing(immdraw, cur_proj.pos, patwidth, is_valid);
 
     if is_valid && mouseinfo.just_pressed.contains(&MouseButton::Left) {
         log::info!(
@@ -245,7 +262,10 @@ impl RoadBuildResource {
 
         match self.build_state {
             BuildState::Hover => {
-                immdraw.circle(proj_pos, 2.0).color(col).z(Z_TOOL);
+                immdraw
+                    .circle(proj_pos, patwidth * 0.5)
+                    .color(col)
+                    .z(Z_TOOL);
             }
             BuildState::Start(x) => {
                 immdraw
