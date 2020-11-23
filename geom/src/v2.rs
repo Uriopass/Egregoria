@@ -100,6 +100,22 @@ impl Vec2 {
     }
 
     #[inline]
+    pub fn flipy(self) -> Vec2 {
+        Self {
+            x: self.x,
+            y: -self.y,
+        }
+    }
+
+    #[inline]
+    pub fn flipx(self) -> Vec2 {
+        Self {
+            x: -self.x,
+            y: self.y,
+        }
+    }
+
+    #[inline]
     pub fn normalize(self) -> Vec2 {
         let m = self.magnitude();
         self / m
