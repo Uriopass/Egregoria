@@ -3,7 +3,7 @@ use common::AudioKind;
 use rodio::Source;
 use std::time::{Duration, Instant};
 
-const TRACKS: &[&str] = &["music1", "music2"];
+const TRACKS: &[&str] = &["music2", "music1"];
 
 pub struct Music {
     track_id: usize,
@@ -16,7 +16,7 @@ impl Music {
     pub fn new() -> Self {
         Self {
             track_id: 0,
-            time_between_tracks: Duration::new(120, 0),
+            time_between_tracks: Duration::new(5, 0),
             last_played: Instant::now(),
             cur_track: None,
         }
@@ -34,7 +34,7 @@ impl Music {
             self.track_id = (self.track_id + 1) % TRACKS.len();
             self.cur_track = Some(ctx.play_with_control(
                 TRACKS[self.track_id],
-                |s| s.fade_in(Duration::new(5, 0)),
+                |s| s.fade_in(Duration::new(5, 0)).amplify(0.5),
                 AudioKind::Music,
             ));
             log::info!("playing soundtrack {}", TRACKS[self.track_id]);
