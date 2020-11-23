@@ -48,7 +48,9 @@ impl CameraHandler {
         keyboard_enabled: bool,
     ) {
         let p = ctx.input.mouse.unprojected;
-        if mouse_enabled && ctx.input.mouse.buttons.contains(&MouseButton::Right) {
+        if mouse_enabled && ctx.input.mouse.buttons.contains(&MouseButton::Right)
+            || ctx.input.mouse.buttons.contains(&MouseButton::Middle)
+        {
             self.camera.position.x -= p.x - self.last_pos.x;
             self.camera.position.y -= p.y - self.last_pos.y;
             self.camera.update();
