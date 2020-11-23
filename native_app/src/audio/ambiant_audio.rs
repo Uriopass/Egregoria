@@ -33,7 +33,7 @@ impl AmbientAudio {
 
         // Forest
         let bbox = camera.get_screen_box();
-        let mut volume = lerp(0.2, 0.0, h / 600.0);
+        let mut volume = lerp(0.4, 0.0, h / 600.0);
 
         let ll = bbox.ll();
         let ur = bbox.ur();
@@ -54,6 +54,6 @@ impl AmbientAudio {
         if h > 1000.0 || matches < 3 {
             volume = 0.0;
         }
-        ctx.set_volume_smooth(self.forest, volume, delta * 0.05);
+        ctx.set_volume_smooth(self.forest, volume, delta * 0.2);
     }
 }
