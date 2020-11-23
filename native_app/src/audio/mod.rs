@@ -4,7 +4,7 @@ pub mod music;
 mod unique_sink;
 
 use crate::audio::unique_sink::UniqueSink;
-use crate::gui::AudioSettings;
+use crate::gui::Settings;
 use common::AudioKind;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sample, Source};
 use slotmap::{new_key_type, DenseSlotMap};
@@ -171,7 +171,7 @@ impl AudioContext {
         }
     }
 
-    pub fn set_settings(&mut self, settings: AudioSettings) {
+    pub fn set_settings(&mut self, settings: Settings) {
         let mut changed = false;
 
         let ui_volume = settings.ui_volume_percent / 100.0;

@@ -2,7 +2,7 @@ use crate::audio::ambiant_audio::AmbientAudio;
 use crate::audio::music::Music;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
-use crate::gui::{setup_gui, AudioSettings, FollowEntity, Gui, UiTextures, VideoSettings};
+use crate::gui::{setup_gui, FollowEntity, Gui, Settings, UiTextures};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use common::GameTime;
@@ -44,6 +44,7 @@ impl State {
             .map(|camera| CameraHandler {
                 camera,
                 last_pos: Vec2::ZERO,
+                movespeed: 1.0,
             })
             .unwrap_or_else(|| {
                 CameraHandler::new(
@@ -98,13 +99,14 @@ impl State {
             .update(&mut self.goria, &mut ctx.audio, delta as f32);
         self.music.update(&mut ctx.audio);
 
-        self.manage_settings(ctx, self.gui.video_settings, self.gui.audio_settings);
+        self.manage_settings(ctx, self.gui.settings);
 
         self.manage_time(delta, &mut ctx.gfx);
 
         self.manage_io(ctx);
 
-        self.camera.easy_camera_movement(
+        self.camera.movespeed = self.gui.settings.camera_sensibility / 100.0;
+        self.camera.camera_movement(
             ctx,
             delta as f32,
             !self.imgui_render.last_mouse_captured,
@@ -261,16 +263,16 @@ impl State {
             .render(ctx, window, &mut self.goria, &mut self.gui);
     }
 
-    fn manage_settings(&mut self, ctx: &mut Context, video: VideoSettings, audio: AudioSettings) {
-        if video.fullscreen && ctx.window.fullscreen().is_none() {
+    fn manage_settings(&mut self, ctx: &mut Context, settings: Settings) {
+        if settings.fullscreen && ctx.window.fullscreen().is_none() {
             ctx.window
                 .set_fullscreen(Some(Fullscreen::Borderless(ctx.window.current_monitor())))
         }
-        if !video.fullscreen && ctx.window.fullscreen().is_some() {
+        if !settings.fullscreen && ctx.window.fullscreen().is_some() {
             ctx.window.set_fullscreen(None);
         }
 
-        ctx.audio.set_settings(audio);
+        ctx.audio.set_settings(settings);
     }
 
     fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {

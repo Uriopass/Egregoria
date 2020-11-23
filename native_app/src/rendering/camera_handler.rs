@@ -6,15 +6,15 @@ use wgpu_engine::Tesselator;
 pub struct CameraHandler {
     pub camera: Camera,
     pub last_pos: Vec2,
+    pub movespeed: f32,
 }
-
-const CAMERA_KEY_MOVESPEED: f32 = 300.0;
 
 impl CameraHandler {
     pub fn new(width: f32, height: f32, position: Vec3) -> CameraHandler {
         CameraHandler {
             camera: Camera::new(width, height, position),
             last_pos: vec2(0.0, 0.0),
+            movespeed: 0.8,
         }
     }
 
@@ -40,7 +40,7 @@ impl CameraHandler {
         self.camera.unproject(pos)
     }
 
-    pub fn easy_camera_movement(
+    pub fn camera_movement(
         &mut self,
         ctx: &mut Context,
         delta: f32,
@@ -48,16 +48,18 @@ impl CameraHandler {
         keyboard_enabled: bool,
     ) {
         let p = ctx.input.mouse.unprojected;
-        if mouse_enabled && ctx.input.mouse.buttons.contains(&MouseButton::Right)
-            || ctx.input.mouse.buttons.contains(&MouseButton::Middle)
-        {
-            self.camera.position.x -= p.x - self.last_pos.x;
-            self.camera.position.y -= p.y - self.last_pos.y;
-            self.camera.update();
-            common::saveload::save_silent(&self.camera, "camera");
-        }
+        let screenpos = ctx.input.mouse.screen;
 
         if mouse_enabled {
+            if ctx.input.mouse.buttons.contains(&MouseButton::Right)
+                || ctx.input.mouse.buttons.contains(&MouseButton::Middle)
+            {
+                self.camera.position.x -= p.x - self.last_pos.x;
+                self.camera.position.y -= p.y - self.last_pos.y;
+                self.camera.update();
+                common::saveload::save_silent(&self.camera, "camera");
+            }
+
             self.last_pos = self.unproject_mouse_click(ctx.input.mouse.screen);
             if ctx.input.mouse.wheel_delta < 0.0 {
                 self.zoom_by(ctx, 1.1);
@@ -66,29 +68,33 @@ impl CameraHandler {
                 self.zoom_by(ctx, 1.0 / 1.1);
             }
         }
+        if screenpos.x < 2.0 {
+            self.translate_smooth(delta, vec2(-1.0, 0.0));
+        }
+        if screenpos.x > self.camera.viewport.x - 2.0 {
+            self.translate_smooth(delta, vec2(1.0, 0.0));
+        }
+        if screenpos.y < 2.0 {
+            self.translate_smooth(delta, vec2(0.0, 1.0));
+        }
+        if screenpos.y > self.camera.viewport.y - 2.0 {
+            self.translate_smooth(delta, vec2(0.0, -1.0));
+        }
 
         if keyboard_enabled {
             let is_pressed = &ctx.input.keyboard.is_pressed;
 
             if is_pressed.contains(&KeyCode::Right) {
-                self.camera.position.x += delta * CAMERA_KEY_MOVESPEED * self.camera.position.z;
-                self.camera.update();
-                common::saveload::save_silent(&self.camera, "camera");
+                self.translate_smooth(delta, vec2(1.0, 0.0));
             }
             if is_pressed.contains(&KeyCode::Left) {
-                self.camera.position.x -= delta * CAMERA_KEY_MOVESPEED * self.camera.position.z;
-                self.camera.update();
-                common::saveload::save_silent(&self.camera, "camera");
+                self.translate_smooth(delta, vec2(-1.0, 0.0));
             }
             if is_pressed.contains(&KeyCode::Up) {
-                self.camera.position.y += delta * CAMERA_KEY_MOVESPEED * self.camera.position.z;
-                self.camera.update();
-                common::saveload::save_silent(&self.camera, "camera");
+                self.translate_smooth(delta, vec2(0.0, 1.0));
             }
             if is_pressed.contains(&KeyCode::Down) {
-                self.camera.position.y -= delta * CAMERA_KEY_MOVESPEED * self.camera.position.z;
-                self.camera.update();
-                common::saveload::save_silent(&self.camera, "camera");
+                self.translate_smooth(delta, vec2(0.0, -1.0));
             }
 
             let just_pressed = &ctx.input.keyboard.just_pressed;
@@ -103,6 +109,14 @@ impl CameraHandler {
         }
 
         self.last_pos = self.unproject_mouse_click(ctx.input.mouse.screen);
+    }
+
+    fn translate_smooth(&mut self, delta: f32, dir: Vec2) {
+        let m = delta * self.movespeed * self.camera.position.z * dir;
+        self.camera.position.x += m.x;
+        self.camera.position.y += m.y;
+        self.camera.update();
+        common::saveload::save_silent(&self.camera, "camera");
     }
 
     fn zoom_by(&mut self, ctx: &mut Context, multiply: f32) {

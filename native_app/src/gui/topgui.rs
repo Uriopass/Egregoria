@@ -14,30 +14,25 @@ use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
-pub struct AudioSettings {
+pub struct Settings {
+    pub camera_sensibility: f32,
+
+    pub fullscreen: bool,
+
     pub music_volume_percent: f32,
     pub effects_volume_percent: f32,
     pub ui_volume_percent: f32,
 }
 
-impl Default for AudioSettings {
+impl Default for Settings {
     fn default() -> Self {
         Self {
+            camera_sensibility: 80.0,
             music_volume_percent: 100.0,
             effects_volume_percent: 100.0,
             ui_volume_percent: 100.0,
+            fullscreen: true,
         }
-    }
-}
-
-#[derive(Copy, Clone, Serialize, Deserialize)]
-pub struct VideoSettings {
-    pub fullscreen: bool,
-}
-
-impl Default for VideoSettings {
-    fn default() -> Self {
-        Self { fullscreen: true }
     }
 }
 
@@ -81,8 +76,7 @@ pub struct Gui {
     pub n_cars: i32,
     pub n_pedestrians: i32,
     pub depause_warp: u32,
-    pub video_settings: VideoSettings,
-    pub audio_settings: AudioSettings,
+    pub settings: Settings,
 }
 
 impl Default for Gui {
@@ -95,8 +89,7 @@ impl Default for Gui {
             n_cars: 100,
             n_pedestrians: 100,
             depause_warp: 1,
-            video_settings: VideoSettings::default(),
-            audio_settings: AudioSettings::default(),
+            settings: Settings::default(),
         }
     }
 }
@@ -436,10 +429,12 @@ impl Gui {
                     }
                     tok.end(ui);
                 }
-                ui.checkbox(im_str!("Fullscreen"), &mut self.video_settings.fullscreen);
-                imgui::Slider::new(im_str!("Music volume")).range(0.0..=100.0).display_format(im_str!("%.0f")).build(ui, &mut self.audio_settings.music_volume_percent);
-                imgui::Slider::new(im_str!("Effects volume")).range(0.0..=100.0).display_format(im_str!("%.0f")).build(ui, &mut self.audio_settings.effects_volume_percent);
-                imgui::Slider::new(im_str!("Ui volume")).range(0.0..=100.0).display_format(im_str!("%.0f")).build(ui, &mut self.audio_settings.ui_volume_percent);
+                imgui::Slider::new(im_str!("Camera sensibility")).range(10.0..=200.0).display_format(im_str!("%.0f")).build(ui, &mut self.settings.camera_sensibility);
+
+                ui.checkbox(im_str!("Fullscreen"), &mut self.settings.fullscreen);
+                imgui::Slider::new(im_str!("Music volume")).range(0.0..=100.0).display_format(im_str!("%.0f")).build(ui, &mut self.settings.music_volume_percent);
+                imgui::Slider::new(im_str!("Effects volume")).range(0.0..=100.0).display_format(im_str!("%.0f")).build(ui, &mut self.settings.effects_volume_percent);
+                imgui::Slider::new(im_str!("Ui volume")).range(0.0..=100.0).display_format(im_str!("%.0f")).build(ui, &mut self.settings.ui_volume_percent);
             });
             if ui.small_button(im_str!("Save")) {
                 egregoria::save_to_disk(goria);
