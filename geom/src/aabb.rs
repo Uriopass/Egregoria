@@ -85,8 +85,8 @@ impl AABB {
     pub fn contains_within(&self, point: Vec2, tolerance: f32) -> bool {
         point.x >= self.ll.x - tolerance
             && point.x <= self.ur.x + tolerance
-            && point.y <= self.ll.y + tolerance
-            && point.y >= self.ur.y - tolerance
+            && point.y <= self.ur.y + tolerance
+            && point.y >= self.ll.y - tolerance
     }
 
     pub fn segments(&self) -> impl Iterator<Item = Segment> {
