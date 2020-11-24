@@ -95,25 +95,13 @@ macro_rules! nextref {
         }
     };
 }
-macro_rules! prev {
-    ($ll:expr,$idx:expr) => {
-        unsafe {
-            $ll.nodes
-                .get_unchecked($ll.nodes.get_unchecked($idx).prev_idx)
-        }
-    };
-}
+
 macro_rules! prevref {
     ($ll:expr,$idx:expr) => {
         unsafe {
             &$ll.nodes
                 .get_unchecked($ll.nodes.get_unchecked($idx).prev_idx)
         }
-    };
-}
-macro_rules! prevz {
-    ($ll:expr,$idx:expr) => {
-        &$ll.nodes[$ll.nodes[$idx].prevz_idx]
     };
 }
 
@@ -365,7 +353,7 @@ fn index_curve(ll: &mut LinkedLists, start: NodeIdx) {
         }
     }
 
-    let pzi = prevz!(ll, start).idx;
+    let pzi = ll.nodes[ll.nodes[start].prevz_idx].idx;
     nodemut!(ll, pzi).nextz_idx = 0;
     nodemut!(ll, start).prevz_idx = 0;
     sort_linked(ll, start);
@@ -797,7 +785,12 @@ fn split_earcut(
 // polygon interior)
 fn is_valid_diagonal(ll: &LinkedLists, a: &Node, b: &Node) -> bool {
     next!(ll, a.idx).i != b.i
-        && prev!(ll, a.idx).i != b.i
+        && unsafe {
+            ll.nodes
+                .get_unchecked(ll.nodes.get_unchecked(a.idx).prev_idx)
+                .i
+                != b.i
+        }
         && !intersects_polygon(ll, a, b)
         && locally_inside(ll, a, b)
         && locally_inside(ll, b, a)
