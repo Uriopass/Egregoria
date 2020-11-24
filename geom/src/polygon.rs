@@ -1,7 +1,7 @@
+use crate::aabb::AABB;
 use crate::circle::Circle;
-use crate::rect::Rect;
 use crate::segment::Segment;
-use crate::{vec2, Vec2};
+use crate::{vec2, Intersect, Vec2};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
@@ -93,7 +93,7 @@ impl Polygon {
         let mybbox = self.bbox();
         let his_bbox = other.bbox();
 
-        mybbox.overlaps(&his_bbox)
+        mybbox.intersects(his_bbox)
             && (self
                 .0
                 .iter()
@@ -104,14 +104,13 @@ impl Polygon {
                     .any(|&point| mybbox.contains(point) && self.contains(point)))
     }
 
-    pub fn bbox(&self) -> Rect {
+    pub fn bbox(&self) -> AABB {
         let (min, max) = match super::minmax(&self.0) {
             Some(x) => x,
-            None => return Rect::zero(),
+            None => return AABB::zero(),
         };
 
-        let diff = max - min;
-        Rect::new(min.x, min.y, diff.x, diff.y)
+        AABB::new(min, max)
     }
 
     pub fn project(&self, pos: Vec2) -> Vec2 {

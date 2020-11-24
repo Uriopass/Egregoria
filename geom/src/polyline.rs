@@ -1,5 +1,5 @@
 use super::Vec2;
-use crate::rect::Rect;
+use crate::aabb::AABB;
 use crate::segment::Segment;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -235,14 +235,13 @@ impl PolyLine {
         }
     }
 
-    pub fn bbox(&self) -> Rect {
+    pub fn bbox(&self) -> AABB {
         let (min, max) = match super::minmax(&self.0) {
             Some(x) => x,
             None => unsafe { unreachable_unchecked() },
         };
 
-        let diff = max - min;
-        Rect::new(min.x, min.y, diff.x, diff.y)
+        AABB::new(min, max)
     }
 
     pub fn length(&self) -> f32 {

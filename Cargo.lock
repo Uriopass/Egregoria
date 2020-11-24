@@ -908,10 +908,8 @@ checksum = "4e08c8bc7575d7e091fe0706963bd22e2a4be6a64da995f03b2a5a57d66ad015"
 [[package]]
 name = "flat_spatial"
 version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9538579d6266f906a7f887fef957a3dbfe53a00e07671340e3e732c20979cc52"
 dependencies = [
- "mint",
+ "geom",
  "serde",
  "slotmap",
 ]
@@ -1804,9 +1802,6 @@ name = "mint"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "519df8d6856dcd4b40519947737b408f81be051fc032590659cae5d77d664185"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "mio"

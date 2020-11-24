@@ -10,6 +10,7 @@ members = [
     "common",
     "native_app",
     "wgpu_engine",
+    "flat_spatial"
 ]
 
 default-members = ["native_app"]

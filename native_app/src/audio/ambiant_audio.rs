@@ -35,8 +35,8 @@ impl AmbientAudio {
         let bbox = camera.get_screen_box();
         let mut volume = lerp(0.4, 0.0, h / 600.0);
 
-        let ll = bbox.ll();
-        let ur = bbox.ur();
+        let ll = bbox.ll;
+        let ur = bbox.ur;
         let ul = vec2(ll.x, ur.y);
         let lr = vec2(ur.x, ll.y);
         let tree_check = [

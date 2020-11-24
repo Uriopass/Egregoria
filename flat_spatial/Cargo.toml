@@ -1,0 +1,17 @@
+[package]
+name = "flat_spatial"
+version = "0.3.7"
+authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
+edition = "2018"
+keywords = ["algorithms", "spatial", "geometry", "grid", "data-structures"]
+description = "Flat spatial partitionning algorithms and data structures"
+license = "MIT"
+readme = "README.md"
+categories = ["algorithms", "graphics", "data-structures", "game-engines"]
+exclude = ["img/*"]
+repository = "https://github.com/Uriopass/flat_spatial"
+
+[dependencies]
+slotmap = { version = "0.4", default-features = false }
+serde   = { version = "1.0", features = ["derive"] }
+geom    = { path = "../geom" }

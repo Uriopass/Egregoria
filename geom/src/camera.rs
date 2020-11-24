@@ -1,4 +1,4 @@
-use crate::{vec2, Rect, Vec2, Vec3};
+use crate::{vec2, Vec2, Vec3, AABB};
 use mint::ColumnMatrix4;
 use serde::{Deserialize, Serialize};
 
@@ -56,15 +56,10 @@ impl Camera {
             -self.offset.x / self.scale.x, -self.offset.y / self.scale.y, 0.0, 1.0])
     }
 
-    pub fn get_screen_box(&self) -> Rect {
-        let upleft = self.unproject([0.0, 0.0].into());
-        let downright = self.unproject([self.viewport.x, self.viewport.y].into());
-        Rect {
-            x: upleft.x,
-            y: downright.y,
-            w: downright.x - upleft.x,
-            h: upleft.y - downright.y,
-        }
+    pub fn get_screen_box(&self) -> AABB {
+        let ll = self.unproject([0.0, self.viewport.y].into());
+        let ur = self.unproject([self.viewport.x, 0.0].into());
+        AABB { ll, ur }
     }
 
     pub fn set_viewport(&mut self, viewport_width: f32, viewport_height: f32) {

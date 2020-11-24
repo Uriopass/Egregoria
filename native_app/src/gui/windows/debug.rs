@@ -312,13 +312,7 @@ pub fn debug_spatialmap(tess: &mut Tesselator, world: &Egregoria) -> Option<()> 
             a: 0.1,
             ..LinearColor::BLUE
         });
-        tess.draw_rect_cos_sin(
-            vec2(r.x + r.w * 0.5, r.y + r.h * 0.5),
-            1.0,
-            r.w,
-            r.h,
-            Vec2::UNIT_X,
-        );
+        tess.draw_rect_cos_sin((r.ll + r.ur) * 0.5, 1.0, r.w(), r.h(), Vec2::UNIT_X);
     }
 
     Some(())
