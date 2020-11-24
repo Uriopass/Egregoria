@@ -1,6 +1,6 @@
 use crate::procgen::{Tree, Trees};
 use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap};
-use geom::Vec2;
+use geom::{Shape, Vec2};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize)]

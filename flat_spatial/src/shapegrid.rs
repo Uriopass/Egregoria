@@ -1,6 +1,6 @@
 use crate::cell::ShapeGridCell;
 use crate::storage::{cell_range, SparseStorage, Storage};
-use geom::{Circle, Intersect, Shape, Vec2};
+use geom::{Circle, Intersect, Shape, Vec2, AABB};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 use slotmap::SlotMap;
@@ -60,46 +60,17 @@ pub struct StoreObject<O: Copy, S: Shape> {
 /// }, ());
 /// // Use handle however you want
 /// ```
-///
-/// ## Examples
-/// Here is a basic example that shows most of its capabilities:
-/// ```rust
-/// use flat_spatial::ShapeGrid;
-/// use geom::Circle;
-///
-/// let mut g: ShapeGrid<i32, Circle> = ShapeGrid::new(10); // Creates a new grid with a cell width of 10 with an integer as extra data
-/// let a = g.insert(Circle {
-///      center: [2.0, 2.0].into(),
-///      radius: 3.0,
-/// }, 0); // Inserts a new circle with data: 0
-///
-/// {
-///     let mut before = g.query_around([0.0, 0.0], 5.0).map(|(id, _shape, _obj)| id); // Queries for circles intersecting around a given point
-///     assert_eq!(before.next(), Some(a));
-///     assert_eq!(g.get(a).unwrap().1, &0);
-/// }
-/// let b = g.insert(Circle {
-///      center: [1.0, 1.0].into(),
-///      radius: 3.0,
-/// }, 1); // Inserts a new element, assigning a new unique and stable handle, with data: 1
-///
-/// g.remove(a); // Removes a value using the handle given by `insert`
-///
-/// assert_eq!(g.handles().collect::<Vec<_>>(), vec![b]); // We check that the "a" object has been removed
-///
-/// let after: Vec<_> = g.query_around([0.0, 0.0], 5.0).map(|(id, _shape, _obj)| id).collect(); // And that b is query-able
-/// assert_eq!(after, vec![b]);
-///
-/// assert_eq!(g.get(b).unwrap().1, &1); // We also check that b still has his data associated
-/// assert!(g.get(a).is_none()); // But that a doesn't exist anymore
-/// ```
 #[derive(Clone, Deserialize, Serialize)]
-pub struct ShapeGrid<O: Copy, S: Shape, ST: Storage<ShapeGridCell> = SparseStorage<ShapeGridCell>> {
+pub struct ShapeGrid<
+    O: Copy,
+    S: Shape + Intersect<AABB>,
+    ST: Storage<ShapeGridCell> = SparseStorage<ShapeGridCell>,
+> {
     storage: ST,
     objects: ShapeGridObjects<O, S>,
 }
 
-impl<S: Shape, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST> {
+impl<S: Shape + Intersect<AABB>, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST> {
     /// Creates an empty grid.   
     /// The cell size should be about the same magnitude as your queries size.
     pub fn new(cell_size: i32) -> Self {
@@ -210,7 +181,7 @@ impl<S: Shape, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST> {
     }
 
     /// Queries for objects intersecting a given shape.
-    pub fn query<QS: Shape + Intersect<S> + 'static>(
+    pub fn query<QS: Shape + Intersect<AABB> + Intersect<S> + 'static>(
         &self,
         shape: QS,
     ) -> impl Iterator<Item = (ShapeGridHandle, &S, &O)> + '_ {
@@ -223,7 +194,7 @@ impl<S: Shape, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST> {
     }
 
     /// Queries for all objects in the cells intersecting the given shape
-    pub fn query_broad<QS: Shape + 'static>(
+    pub fn query_broad<QS: Shape + Intersect<AABB> + 'static>(
         &self,
         shape: QS,
     ) -> impl Iterator<Item = ShapeGridHandle> + '_ {
@@ -258,7 +229,7 @@ impl<S: Shape, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST> {
     }
 }
 
-impl<S: Shape, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST>
+impl<S: Shape + Intersect<AABB>, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST>
 where
     Circle: Intersect<S>,
 {

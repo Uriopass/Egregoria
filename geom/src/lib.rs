@@ -28,26 +28,26 @@ pub use transform::*;
 pub use v2::*;
 pub use v3::*;
 
-pub trait Intersect<T: Shape> {
+pub trait Intersect<T: Shape>: Shape {
     fn intersects(&self, shape: T) -> bool;
 }
 
-pub trait Shape: Copy + Intersect<AABB> {
+pub trait Shape: Copy {
     fn bbox(&self) -> AABB;
 }
 
-impl Shape for [f32; 2] {
+impl Shape for Vec2 {
     fn bbox(&self) -> AABB {
         AABB {
-            ll: (*self).into(),
-            ur: (*self).into(),
+            ll: (*self),
+            ur: (*self),
         }
     }
 }
 
-impl Intersect<AABB> for [f32; 2] {
+impl Intersect<AABB> for Vec2 {
     fn intersects(&self, aabb: AABB) -> bool {
-        aabb.contains((*self).into())
+        aabb.contains(*self)
     }
 }
 

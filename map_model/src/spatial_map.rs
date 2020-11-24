@@ -1,7 +1,7 @@
 use crate::{BuildingID, IntersectionID, LotID, RoadID};
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
-use geom::{Circle, Vec2, AABB};
+use geom::{Circle, Intersect, Vec2, AABB};
 use std::collections::HashMap;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -96,12 +96,11 @@ impl SpatialMap {
             .map(|(_, _, k)| *k)
     }
 
-    pub fn query_rect(&self, r: AABB) -> impl Iterator<Item = ProjectKind> + '_ {
+    pub fn query(
+        &self,
+        r: impl Intersect<AABB> + 'static,
+    ) -> impl Iterator<Item = ProjectKind> + '_ {
         self.grid.query(r).map(|(_, _, k)| *k)
-    }
-
-    pub fn query_point(&self, p: Vec2) -> impl Iterator<Item = ProjectKind> + '_ {
-        self.grid.query([p.x, p.y]).map(|(_, _, k)| *k)
     }
 
     pub fn debug_grid(&self) -> impl Iterator<Item = AABB> + '_ {

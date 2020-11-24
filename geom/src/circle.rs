@@ -41,13 +41,8 @@ impl Intersect<Segment> for Circle {
     }
 }
 
-impl Intersect<[f32; 2]> for Circle {
-    fn intersects(&self, p: [f32; 2]) -> bool {
-        let diff = Vec2 {
-            x: self.center.x - p[0],
-            y: self.center.y - p[1],
-        };
-
-        diff.magnitude2() < self.radius * self.radius
+impl Intersect<Vec2> for Circle {
+    fn intersects(&self, p: Vec2) -> bool {
+        self.center.is_close(p, self.radius)
     }
 }

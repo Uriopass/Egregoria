@@ -1,5 +1,5 @@
 use crate::aabb::AABB;
-use crate::{Segment, Vec2};
+use crate::{vec2, Intersect, Segment, Shape, Vec2};
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 
@@ -79,19 +79,6 @@ impl OBB {
         true
     }
 
-    pub fn bbox(&self) -> AABB {
-        let (min, max) = match super::minmax(&self.corners) {
-            Some(x) => x,
-            None => unsafe { unreachable_unchecked() },
-        };
-
-        AABB::new(min, max)
-    }
-
-    pub fn intersects(&self, other: OBB) -> bool {
-        self.intersects1way(&other) && other.intersects1way(self)
-    }
-
     pub fn contains(&self, p: Vec2) -> bool {
         let ok0 = (self.corners[1] - self.corners[0]).dot(p - self.corners[0]) > 0.0;
         let ok1 = (self.corners[2] - self.corners[1]).dot(p - self.corners[1]) > 0.0;
@@ -126,5 +113,42 @@ impl OBB {
             }
         }
         false
+    }
+}
+
+impl Shape for OBB {
+    fn bbox(&self) -> AABB {
+        let (min, max) = match super::minmax(&self.corners) {
+            Some(x) => x,
+            None => unsafe { unreachable_unchecked() },
+        };
+
+        AABB::new(min, max)
+    }
+}
+
+impl Intersect<Vec2> for OBB {
+    fn intersects(&self, p: Vec2) -> bool {
+        self.contains(p)
+    }
+}
+
+impl Intersect<OBB> for OBB {
+    fn intersects(&self, other: OBB) -> bool {
+        self.intersects1way(&other) && other.intersects1way(self)
+    }
+}
+
+impl Intersect<AABB> for OBB {
+    fn intersects(&self, shape: AABB) -> bool {
+        OBB {
+            corners: [
+                shape.ur,
+                vec2(shape.ll.x, shape.ur.y),
+                shape.ll,
+                vec2(shape.ur.x, shape.ll.y),
+            ],
+        }
+        .intersects(*self)
     }
 }

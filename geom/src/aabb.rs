@@ -138,8 +138,8 @@ impl Intersect<Segment> for AABB {
     }
 }
 
-impl Intersect<[f32; 2]> for AABB {
-    fn intersects(&self, p: [f32; 2]) -> bool {
-        self.contains(p.into())
+impl Intersect<Vec2> for AABB {
+    fn intersects(&self, p: Vec2) -> bool {
+        self.contains(p)
     }
 }
