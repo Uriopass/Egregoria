@@ -1,5 +1,6 @@
 #![allow(clippy::many_single_char_names)]
 
+mod aabb;
 mod camera;
 mod circle;
 mod color;
@@ -7,13 +8,13 @@ mod intersections;
 mod obb;
 mod polygon;
 mod polyline;
-mod rect;
 mod segment;
 mod splines;
 mod transform;
 mod v2;
 mod v3;
 
+pub use aabb::*;
 pub use camera::*;
 pub use circle::*;
 pub use color::*;
@@ -21,12 +22,34 @@ pub use intersections::*;
 pub use obb::*;
 pub use polygon::*;
 pub use polyline::*;
-pub use rect::*;
 pub use segment::*;
 pub use splines::*;
 pub use transform::*;
 pub use v2::*;
 pub use v3::*;
+
+pub trait Intersect<T: Shape> {
+    fn intersects(&self, shape: T) -> bool;
+}
+
+pub trait Shape: Copy + Intersect<AABB> {
+    fn bbox(&self) -> AABB;
+}
+
+impl Shape for [f32; 2] {
+    fn bbox(&self) -> AABB {
+        AABB {
+            ll: (*self).into(),
+            ur: (*self).into(),
+        }
+    }
+}
+
+impl Intersect<AABB> for [f32; 2] {
+    fn intersects(&self, aabb: AABB) -> bool {
+        aabb.contains((*self).into())
+    }
+}
 
 pub fn minmax(x: &[Vec2]) -> Option<(Vec2, Vec2)> {
     let mut min: Vec2 = *x.get(0)?;

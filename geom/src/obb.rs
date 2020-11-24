@@ -1,4 +1,4 @@
-use crate::rect::Rect;
+use crate::aabb::AABB;
 use crate::{Segment, Vec2};
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
@@ -79,14 +79,13 @@ impl OBB {
         true
     }
 
-    pub fn bbox(&self) -> Rect {
+    pub fn bbox(&self) -> AABB {
         let (min, max) = match super::minmax(&self.corners) {
             Some(x) => x,
             None => unsafe { unreachable_unchecked() },
         };
 
-        let diff = max - min;
-        Rect::new(min.x, min.y, diff.x, diff.y)
+        AABB::new(min, max)
     }
 
     pub fn intersects(&self, other: OBB) -> bool {

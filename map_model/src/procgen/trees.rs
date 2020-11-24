@@ -36,13 +36,13 @@ impl Trees {
 
         let d = r.width + 50.0;
         let mut bbox = r.bbox();
-        bbox.x -= d;
-        bbox.y -= d;
-        bbox.w += d + d;
-        bbox.h += d + d;
+        bbox.ll.x -= d;
+        bbox.ll.y -= d;
+        bbox.ur.x += d;
+        bbox.ur.y += d;
 
         let mut to_remove = vec![];
-        for (h, tree) in trees.grid.query_aabb(bbox.ll(), bbox.ur()) {
+        for (h, tree) in trees.grid.query_aabb(bbox.ll, bbox.ur) {
             let rd = common::rand::rand3(tree.x, tree.y, 391.0) * 20.0;
 
             if r.generated_points

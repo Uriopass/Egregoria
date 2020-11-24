@@ -3,9 +3,9 @@ use crate::{
     LotID, Map, ParkingSpots,
 };
 use geom::PolyLine;
-use geom::Rect;
 use geom::Spline;
 use geom::Vec2;
+use geom::AABB;
 use geom::OBB;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -196,12 +196,12 @@ impl Road {
         }
     }
 
-    pub fn bbox(&self) -> Rect {
+    pub fn bbox(&self) -> AABB {
         let mut bbox = self.generated_points.bbox();
-        bbox.x -= self.width * 0.5;
-        bbox.y -= self.width * 0.5;
-        bbox.w += self.width;
-        bbox.h += self.width;
+        bbox.ll.x -= self.width * 0.5;
+        bbox.ll.y -= self.width * 0.5;
+        bbox.ur.x += self.width * 0.5;
+        bbox.ur.y += self.width * 0.5;
         bbox
     }
 

@@ -1,9 +1,7 @@
 use crate::{BuildingID, IntersectionID, LotID, RoadID};
-use flat_spatial::shape::AABB;
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
-use geom::Rect;
-use geom::Vec2;
+use geom::{Circle, Vec2, AABB};
 use std::collections::HashMap;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -55,9 +53,9 @@ impl Default for SpatialMap {
 }
 
 impl SpatialMap {
-    pub fn insert<T: Into<ProjectKind>>(&mut self, p: T, bbox: Rect) {
+    pub fn insert<T: Into<ProjectKind>>(&mut self, p: T, bbox: AABB) {
         let kind = p.into();
-        let handle = self.grid.insert(rect_to_aabb(bbox), kind);
+        let handle = self.grid.insert(bbox, kind);
         self.ids.insert(kind, handle);
     }
 
@@ -73,10 +71,10 @@ impl SpatialMap {
         }
     }
 
-    pub fn update<T: Into<ProjectKind>>(&mut self, p: T, bbox: Rect) {
+    pub fn update<T: Into<ProjectKind>>(&mut self, p: T, bbox: AABB) {
         let kind = p.into();
         if let Some(id) = self.ids.get(&kind) {
-            self.grid.set_shape(*id, rect_to_aabb(bbox));
+            self.grid.set_shape(*id, bbox);
         } else {
             warn!(
                 "trying to update shape {:?} from spatial map but it wasn't present",
@@ -91,33 +89,25 @@ impl SpatialMap {
         radius: f32,
     ) -> impl Iterator<Item = ProjectKind> + '_ {
         self.grid
-            .query(flat_spatial::shape::Circle {
+            .query(Circle {
                 center: center.into(),
                 radius,
             })
             .map(|(_, _, k)| *k)
     }
 
-    pub fn query_rect(&self, r: Rect) -> impl Iterator<Item = ProjectKind> + '_ {
-        self.grid.query(rect_to_aabb(r)).map(|(_, _, k)| *k)
+    pub fn query_rect(&self, r: AABB) -> impl Iterator<Item = ProjectKind> + '_ {
+        self.grid.query(r).map(|(_, _, k)| *k)
     }
 
     pub fn query_point(&self, p: Vec2) -> impl Iterator<Item = ProjectKind> + '_ {
         self.grid.query([p.x, p.y]).map(|(_, _, k)| *k)
     }
 
-    pub fn debug_grid(&self) -> impl Iterator<Item = Rect> + '_ {
+    pub fn debug_grid(&self) -> impl Iterator<Item = AABB> + '_ {
         self.grid
             .handles()
             .filter_map(move |x| self.grid.get(x))
-            .map(|(aabb, _)| aabb_to_rect(*aabb))
+            .map(|(aabb, _)| *aabb)
     }
-}
-
-fn rect_to_aabb(r: Rect) -> AABB {
-    AABB::new(r.ll().into(), r.ur().into())
-}
-
-fn aabb_to_rect(r: AABB) -> Rect {
-    Rect::new(r.ll.x, r.ll.y, r.ur.x - r.ll.x, r.ur.y - r.ll.y)
 }

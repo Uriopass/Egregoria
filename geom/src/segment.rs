@@ -1,5 +1,6 @@
 use super::Vec2;
 use crate::polygon::Polygon;
+use crate::{Circle, Intersect, Shape, AABB};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -50,5 +51,42 @@ impl Segment {
 
     pub fn center(&self) -> Vec2 {
         (self.src + self.dst) * 0.5
+    }
+}
+
+impl Shape for Segment {
+    fn bbox(&self) -> AABB {
+        AABB::new(self.src, self.dst)
+    }
+}
+
+impl Intersect<AABB> for Segment {
+    fn intersects(&self, aabb: AABB) -> bool {
+        aabb.contains(self.src)
+            || aabb.contains(self.dst)
+            || aabb.segments().any(|s| s.intersects(*self))
+    }
+}
+
+fn ccw(a: Vec2, b: Vec2, c: Vec2) -> bool {
+    (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x)
+}
+
+impl Intersect<Segment> for Segment {
+    fn intersects(&self, s: Segment) -> bool {
+        ccw(self.src, s.src, s.dst) != ccw(self.dst, s.src, s.dst)
+            && ccw(self.src, self.dst, s.src) != ccw(self.src, self.dst, s.dst)
+    }
+}
+
+impl Intersect<Circle> for Segment {
+    fn intersects(&self, c: Circle) -> bool {
+        c.intersects(*self)
+    }
+}
+
+impl Intersect<[f32; 2]> for Segment {
+    fn intersects(&self, _p: [f32; 2]) -> bool {
+        false
     }
 }

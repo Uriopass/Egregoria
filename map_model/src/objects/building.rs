@@ -1,5 +1,5 @@
 use crate::{Buildings, Road, SpatialMap};
-use geom::{Color, LinearColor, Polygon, Rect, Vec2, OBB};
+use geom::{Color, LinearColor, Polygon, Vec2, AABB, OBB};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -79,7 +79,7 @@ impl Building {
         id
     }
 
-    pub fn bbox(&self) -> Rect {
+    pub fn bbox(&self) -> AABB {
         let mut bbox = self.draw.first().unwrap().0.bbox();
         for (poly, _) in self.draw.iter().skip(1) {
             bbox = bbox.union(poly.bbox());

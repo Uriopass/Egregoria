@@ -1,16 +1,16 @@
 use crate::geometry::earcut::earcut;
 use crate::{ColoredVertex, MeshBuilder};
-use geom::{vec2, LinearColor, Rect, Vec2};
+use geom::{vec2, LinearColor, Vec2, AABB};
 
 pub struct Tesselator {
     pub color: LinearColor,
     pub meshbuilder: MeshBuilder,
-    pub cull_rect: Option<Rect>,
+    pub cull_rect: Option<AABB>,
     pub zoom: f32,
 }
 
 impl Tesselator {
-    pub fn new(cull_rect: Option<Rect>, zoom: f32) -> Self {
+    pub fn new(cull_rect: Option<AABB>, zoom: f32) -> Self {
         Tesselator {
             color: LinearColor::BLACK,
             meshbuilder: MeshBuilder::new(),
@@ -379,16 +379,16 @@ impl Tesselator {
             .cull_rect
             .expect("Cannot draw grid when not culling since I do not know where is the screen");
 
-        let startx = (screen.x / grid_size).ceil() * grid_size;
-        for x in 0..(screen.w / grid_size) as i32 {
+        let startx = (screen.ll.x / grid_size).ceil() * grid_size;
+        for x in 0..(screen.w() / grid_size) as i32 {
             let x = startx + x as f32 * grid_size;
-            self.draw_line(vec2(x, screen.y), vec2(x, screen.y + screen.h), 0.01);
+            self.draw_line(vec2(x, screen.ll.y), vec2(x, screen.ur.y), 0.01);
         }
 
-        let starty = (screen.y / grid_size).ceil() * grid_size;
-        for y in 0..(screen.h / grid_size) as i32 {
+        let starty = (screen.ll.y / grid_size).ceil() * grid_size;
+        for y in 0..(screen.h() / grid_size) as i32 {
             let y = starty + y as f32 * grid_size;
-            self.draw_line(vec2(screen.x, y), vec2(screen.x + screen.w, y), 0.01);
+            self.draw_line(vec2(screen.ll.x, y), vec2(screen.ur.x, y), 0.01);
         }
     }
 }

@@ -228,7 +228,7 @@ impl RoadRenderer {
     fn signals_render(map: &Map, time: u32, sr: &mut Tesselator) {
         match sr.cull_rect {
             Some(rect) => {
-                if rect.w.max(rect.h) > 1500.0 {
+                if rect.w().max(rect.h()) > 1500.0 {
                     return;
                 }
                 for n in map

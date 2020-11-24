@@ -15,10 +15,10 @@ rand          = { version = "0.7", default-features = false, features = ["std", 
 rand_distr    = "0.2.2"
 serde         = "1.0"
 legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize", "extended-tuple-impls", "parallel"] }
-flat_spatial  = { version = "0.3.7", features = ["serde"] }
 log           = "0.4.11"
 imgui-inspect = { path = "../imgui-inspect"}
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
+flat_spatial  = { path = "../flat_spatial" }
 geom          = { path = "../geom" }
 map_model     = { path = "../map_model" }
 mods          = { path = "../mods" }

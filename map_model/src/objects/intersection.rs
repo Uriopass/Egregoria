@@ -4,9 +4,9 @@ use crate::{
 };
 use geom::pseudo_angle;
 use geom::Polygon;
-use geom::Rect;
 use geom::Spline;
 use geom::Vec2;
+use geom::AABB;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -48,7 +48,7 @@ impl Intersection {
             light_policy: Default::default(),
             polygon: Default::default(),
         });
-        spatial.insert(id, Rect::new(pos.x, pos.y, 0.0, 0.0));
+        spatial.insert(id, AABB::new(pos, pos));
         id
     }
 

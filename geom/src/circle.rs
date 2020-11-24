@@ -1,4 +1,4 @@
-use crate::Vec2;
+use crate::{Intersect, Segment, Shape, Vec2, AABB};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -14,5 +14,44 @@ impl Circle {
 
     pub fn overlaps(&self, other: &Self) -> bool {
         (self.center - other.center).magnitude2() < (self.radius + other.radius).powi(2)
+    }
+}
+
+impl Shape for Circle {
+    fn bbox(&self) -> AABB {
+        AABB {
+            ll: self.center - Vec2::splat(self.radius),
+            ur: self.center + Vec2::splat(self.radius),
+        }
+    }
+}
+
+impl Intersect<AABB> for Circle {
+    fn intersects(&self, b: AABB) -> bool {
+        let d = self.center.min(b.ur).max(b.ll) - self.center;
+        d.magnitude2() < self.radius * self.radius
+    }
+}
+
+impl Intersect<Circle> for Circle {
+    fn intersects(&self, c: Circle) -> bool {
+        self.center.is_close(c.center, self.radius + c.radius)
+    }
+}
+
+impl Intersect<Segment> for Circle {
+    fn intersects(&self, s: Segment) -> bool {
+        s.project(self.center).is_close(self.center, self.radius)
+    }
+}
+
+impl Intersect<[f32; 2]> for Circle {
+    fn intersects(&self, p: [f32; 2]) -> bool {
+        let diff = Vec2 {
+            x: self.center.x - p[0],
+            y: self.center.y - p[1],
+        };
+
+        diff.magnitude2() < self.radius * self.radius
     }
 }
