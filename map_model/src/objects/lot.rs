@@ -1,7 +1,7 @@
 use crate::{Buildings, Intersections, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
-use geom::Polygon;
-use geom::Vec2;
 use geom::OBB;
+use geom::{Intersect, Polygon};
+use geom::{Shape, Vec2};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -39,7 +39,7 @@ impl Lot {
     ) -> Option<LotID> {
         let shape = OBB::new(at + axis * size * 0.5, axis, size, size);
 
-        for obj in spatial.query_rect(shape.bbox()) {
+        for obj in spatial.query(shape) {
             match obj {
                 ProjectKind::Road(r) => {
                     let r = &roads[r];
@@ -148,7 +148,7 @@ impl Lot {
         let r = &map.roads[road];
         let mut to_remove = map
             .spatial_map
-            .query_rect(r.generated_points.bbox())
+            .query(r.generated_points.bbox())
             .filter_map(|kind| {
                 let id = kind.to_lot()?;
                 if r.intersects(map.lots[id].shape) {
@@ -160,7 +160,7 @@ impl Lot {
             .collect::<Vec<_>>();
 
         let mut rp = |p: &Polygon| {
-            to_remove.extend(map.spatial_map.query_rect(p.bbox()).filter_map(|kind| {
+            to_remove.extend(map.spatial_map.query(p.bbox()).filter_map(|kind| {
                 let id = kind.to_lot()?;
                 if p.intersects(&Polygon(map.lots[id].shape.corners.to_vec())) {
                     Some(id)

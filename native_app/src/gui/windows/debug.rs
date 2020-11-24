@@ -7,7 +7,7 @@ use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::CollisionWorld;
 use egregoria::utils::frame_log::FrameLog;
 use egregoria::Egregoria;
-use geom::{vec2, Camera, Color, LinearColor, Spline, Vec2, OBB};
+use geom::{vec2, Camera, Color, Intersect, LinearColor, Spline, Vec2, OBB};
 use imgui::im_str;
 use imgui::Ui;
 use map_model::{Map, RoadSegmentKind};

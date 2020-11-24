@@ -233,7 +233,7 @@ impl RoadRenderer {
                 }
                 for n in map
                     .spatial_map()
-                    .query_rect(rect)
+                    .query(rect)
                     .filter_map(|k| match k {
                         ProjectKind::Road(id) => Some(id),
                         _ => None,

@@ -85,8 +85,8 @@ impl Intersect<Circle> for Segment {
     }
 }
 
-impl Intersect<[f32; 2]> for Segment {
-    fn intersects(&self, _p: [f32; 2]) -> bool {
+impl Intersect<Vec2> for Segment {
+    fn intersects(&self, _p: Vec2) -> bool {
         false
     }
 }
