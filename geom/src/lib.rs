@@ -32,7 +32,7 @@ pub trait Intersect<T: Shape>: Shape {
     fn intersects(&self, shape: T) -> bool;
 }
 
-pub trait Shape: Copy {
+pub trait Shape {
     fn bbox(&self) -> AABB;
 }
 

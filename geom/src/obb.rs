@@ -1,5 +1,5 @@
 use crate::aabb::AABB;
-use crate::{vec2, Intersect, Segment, Shape, Vec2};
+use crate::{Intersect, Segment, Shape, Vec2};
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 
@@ -114,6 +114,15 @@ impl OBB {
         }
         false
     }
+
+    pub fn segments(&self) -> [Segment; 4] {
+        [
+            Segment::new(self.corners[0], self.corners[1]),
+            Segment::new(self.corners[1], self.corners[2]),
+            Segment::new(self.corners[2], self.corners[3]),
+            Segment::new(self.corners[3], self.corners[0]),
+        ]
+    }
 }
 
 impl Shape for OBB {
@@ -141,14 +150,6 @@ impl Intersect<OBB> for OBB {
 
 impl Intersect<AABB> for OBB {
     fn intersects(&self, shape: AABB) -> bool {
-        OBB {
-            corners: [
-                shape.ur,
-                vec2(shape.ll.x, shape.ur.y),
-                shape.ll,
-                vec2(shape.ur.x, shape.ll.y),
-            ],
-        }
-        .intersects(*self)
+        self.segments().iter().any(|s| s.intersects(shape))
     }
 }
