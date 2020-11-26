@@ -62,9 +62,7 @@ impl Shape for Segment {
 
 impl Intersect<AABB> for Segment {
     fn intersects(&self, aabb: AABB) -> bool {
-        aabb.contains(self.src)
-            || aabb.contains(self.dst)
-            || aabb.segments().any(|s| s.intersects(*self))
+        aabb.intersects_line_within(self.src, self.dst, 0.0)
     }
 }
 

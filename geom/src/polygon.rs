@@ -1,7 +1,7 @@
 use crate::aabb::AABB;
 use crate::circle::Circle;
 use crate::segment::Segment;
-use crate::{vec2, Intersect, Vec2};
+use crate::{vec2, Intersect, Shape, Vec2};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
@@ -104,15 +104,6 @@ impl Polygon {
                     .any(|&point| mybbox.contains(point) && self.contains(point)))
     }
 
-    pub fn bbox(&self) -> AABB {
-        let (min, max) = match super::minmax(&self.0) {
-            Some(x) => x,
-            None => return AABB::zero(),
-        };
-
-        AABB::new(min, max)
-    }
-
     pub fn project(&self, pos: Vec2) -> Vec2 {
         self.project_segment(pos).0
     }
@@ -123,6 +114,13 @@ impl Polygon {
 
     pub fn last(&self) -> Vec2 {
         *self.0.last().unwrap()
+    }
+
+    pub fn segments(&self) -> impl Iterator<Item = Segment> + '_ {
+        self.0
+            .windows(2)
+            .map(|w| Segment::new(w[0], w[1]))
+            .chain(Some(Segment::new(self.last(), self.first())))
     }
 
     pub fn project_segment(&self, p: Vec2) -> (Vec2, usize) {
@@ -205,5 +203,22 @@ impl Index<usize> for Polygon {
 impl From<Vec<Vec2>> for Polygon {
     fn from(v: Vec<Vec2>) -> Self {
         Self(v)
+    }
+}
+
+impl Shape for Polygon {
+    fn bbox(&self) -> AABB {
+        let (min, max) = match super::minmax(&self.0) {
+            Some(x) => x,
+            None => return AABB::zero(),
+        };
+
+        AABB::new(min, max)
+    }
+}
+
+impl Intersect<AABB> for Polygon {
+    fn intersects(&self, shape: AABB) -> bool {
+        self.segments().any(|s| s.intersects(shape))
     }
 }

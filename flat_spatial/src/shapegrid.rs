@@ -3,10 +3,10 @@ use crate::storage::{cell_range, SparseStorage, Storage};
 use geom::{Circle, Intersect, Shape, Vec2, AABB};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
-use slotmap::SlotMap;
+use slotmap::{DenseSlotMap, SlotMap};
 use std::collections::HashSet;
 
-pub type ShapeGridObjects<O, S> = SlotMap<ShapeGridHandle, StoreObject<O, S>>;
+pub type ShapeGridObjects<O, S> = DenseSlotMap<ShapeGridHandle, StoreObject<O, S>>;
 
 new_key_type! {
     /// This handle is used to modify the associated object or to update its position.
