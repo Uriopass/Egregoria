@@ -35,11 +35,7 @@ impl Trees {
         let r = &map.roads[id];
 
         let d = r.width + 50.0;
-        let mut bbox = r.bbox();
-        bbox.ll.x -= d;
-        bbox.ll.y -= d;
-        bbox.ur.x += d;
-        bbox.ur.y += d;
+        let bbox = r.bbox().expand(d);
 
         let mut to_remove = vec![];
         for (h, tree) in trees.grid.query_aabb(bbox.ll, bbox.ur) {

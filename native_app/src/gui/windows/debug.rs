@@ -7,7 +7,7 @@ use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::CollisionWorld;
 use egregoria::utils::frame_log::FrameLog;
 use egregoria::Egregoria;
-use geom::{vec2, Camera, Color, Intersect, LinearColor, Spline, Vec2, OBB};
+use geom::{vec2, Camera, Color, Intersect, LinearColor, Segment, Spline, Vec2, AABB, OBB};
 use imgui::im_str;
 use imgui::Ui;
 use map_model::{Map, RoadSegmentKind};
@@ -213,28 +213,53 @@ pub fn debug_obb(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
 
     let obb1 = OBB::new(Vec2::ZERO, vec2(c, s), 10.0, 5.0);
 
-    let obb2 = OBB::new(
+    let obbm = OBB::new(
         mouse,
         vec2((time * 3.0).cos() as f32, (time * 3.0).sin() as f32),
         8.0,
         6.0,
     );
 
-    let mut color = if obb1.intersects(obb2) {
+    let seg = Segment::new(vec2(0.0, 10.0), vec2(18.0, 14.0));
+
+    let mut color = if obb1.intersects(&obbm) {
         LinearColor::RED
     } else {
         LinearColor::BLUE
     };
 
+    if obbm.intersects(&seg) {
+        color = LinearColor::WHITE
+    }
+
     if obb1.contains(mouse) {
         color = LinearColor::CYAN
     }
+
+    let axis = obbm.axis();
+    let w = axis[0].magnitude();
+    let h = axis[1].magnitude();
+    let tr = Segment {
+        src: (seg.src - obbm.corners[0]).rotated_by(axis[0].flipy()),
+        dst: (seg.dst - obbm.corners[0]).rotated_by(axis[0].flipy()),
+    };
+    let aabb = AABB::new(Vec2::ZERO, vec2(w * w, h * w));
 
     color.a = 0.5;
 
     tess.set_color(color);
     tess.draw_filled_polygon(&obb1.corners, 0.99);
-    tess.draw_filled_polygon(&obb2.corners, 0.99);
+    tess.draw_filled_polygon(&obbm.corners, 0.99);
+
+    tess.set_color(LinearColor::gray(0.8));
+    tess.draw_line(seg.src, seg.dst, 0.99);
+    tess.set_color(LinearColor::gray(0.9));
+
+    tess.color = LinearColor::WHITE;
+    tess.color.a = if aabb.intersects(&tr) { 0.4 } else { 0.2 };
+
+    tess.draw_line(tr.src, tr.dst, 0.99);
+    tess.draw_rect_cos_sin(aabb.center(), 1.0, aabb.w(), aabb.h(), Vec2::UNIT_X);
 
     Some(())
 }
@@ -312,7 +337,7 @@ pub fn debug_spatialmap(tess: &mut Tesselator, world: &Egregoria) -> Option<()> 
             a: 0.1,
             ..LinearColor::BLUE
         });
-        tess.draw_rect_cos_sin((r.ll + r.ur) * 0.5, 1.0, r.w(), r.h(), Vec2::UNIT_X);
+        tess.draw_rect_cos_sin(r.center(), 1.0, r.w(), r.h(), Vec2::UNIT_X);
     }
 
     Some(())

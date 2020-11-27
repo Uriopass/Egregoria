@@ -1,5 +1,5 @@
 use crate::{Buildings, Road, SpatialMap};
-use geom::{Color, LinearColor, Polygon, Vec2, AABB, OBB};
+use geom::{Color, LinearColor, Polygon, Shape, Vec2, AABB, OBB};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 

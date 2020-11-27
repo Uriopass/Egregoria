@@ -1,5 +1,5 @@
 use crate::aabb::AABB;
-use crate::{Intersect, Segment, Shape, Vec2};
+use crate::{vec2, Intersect, Segment, Shape, Vec2};
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 
@@ -137,19 +137,53 @@ impl Shape for OBB {
 }
 
 impl Intersect<Vec2> for OBB {
-    fn intersects(&self, p: Vec2) -> bool {
+    fn intersects(&self, &p: &Vec2) -> bool {
         self.contains(p)
     }
 }
 
 impl Intersect<OBB> for OBB {
-    fn intersects(&self, other: OBB) -> bool {
-        self.intersects1way(&other) && other.intersects1way(self)
+    fn intersects(&self, other: &OBB) -> bool {
+        self.intersects1way(other) && other.intersects1way(self)
     }
 }
 
 impl Intersect<AABB> for OBB {
-    fn intersects(&self, shape: AABB) -> bool {
+    fn intersects(&self, shape: &AABB) -> bool {
         self.segments().iter().any(|s| s.intersects(shape))
+    }
+}
+
+impl Intersect<Segment> for OBB {
+    fn intersects(&self, shape: &Segment) -> bool {
+        let axis = self.axis();
+        let w = axis[0].magnitude();
+        let h = axis[1].magnitude();
+        let tr = Segment {
+            src: (shape.src - self.corners[0]).rotated_by(axis[0].flipy()),
+            dst: (shape.dst - self.corners[0]).rotated_by(axis[0].flipy()),
+        };
+        AABB::new(Vec2::ZERO, vec2(w * w, h * w)).intersects(&tr)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{vec2, Intersect, Segment, Vec2, OBB};
+
+    #[test]
+    fn test_segobb() {
+        let mut obb = OBB {
+            corners: [Vec2::ZERO, vec2(1.0, 0.0), vec2(1.0, 1.0), vec2(0.0, 1.0)],
+        };
+        for lol in &mut obb.corners {
+            *lol -= Vec2::splat(0.5);
+            *lol = lol.rotated_by(vec2(
+                std::f32::consts::FRAC_1_SQRT_2,
+                std::f32::consts::FRAC_1_SQRT_2,
+            ))
+        }
+        assert!(!obb.intersects(&Segment::new(vec2(-0.51, 0.0), vec2(0.0, -0.51))));
+        assert!(!obb.intersects(&Segment::new(vec2(-0.49, 0.0), vec2(0.0, -0.49))));
     }
 }

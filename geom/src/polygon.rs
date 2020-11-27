@@ -1,7 +1,7 @@
 use crate::aabb::AABB;
 use crate::circle::Circle;
 use crate::segment::Segment;
-use crate::{vec2, Intersect, Shape, Vec2};
+use crate::{vec2, Intersect, Shape, Vec2, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
@@ -87,21 +87,6 @@ impl Polygon {
             j = i;
         }
         c
-    }
-
-    pub fn intersects(&self, other: &Polygon) -> bool {
-        let mybbox = self.bbox();
-        let his_bbox = other.bbox();
-
-        mybbox.intersects(his_bbox)
-            && (self
-                .0
-                .iter()
-                .any(|&point| his_bbox.contains(point) && other.contains(point))
-                || other
-                    .0
-                    .iter()
-                    .any(|&point| mybbox.contains(point) && self.contains(point)))
     }
 
     pub fn project(&self, pos: Vec2) -> Vec2 {
@@ -218,7 +203,36 @@ impl Shape for Polygon {
 }
 
 impl Intersect<AABB> for Polygon {
-    fn intersects(&self, shape: AABB) -> bool {
+    fn intersects(&self, shape: &AABB) -> bool {
         self.segments().any(|s| s.intersects(shape))
+    }
+}
+
+impl Intersect<Vec2> for Polygon {
+    fn intersects(&self, &shape: &Vec2) -> bool {
+        self.contains(shape)
+    }
+}
+
+impl Intersect<Polygon> for Polygon {
+    fn intersects(&self, other: &Polygon) -> bool {
+        let mybbox = self.bbox();
+        let his_bbox = other.bbox();
+
+        mybbox.intersects(&his_bbox)
+            && (self
+                .0
+                .iter()
+                .any(|&point| his_bbox.contains(point) && other.contains(point))
+                || other
+                    .0
+                    .iter()
+                    .any(|&point| mybbox.contains(point) && self.contains(point)))
+    }
+}
+
+impl Intersect<OBB> for Polygon {
+    fn intersects(&self, shape: &OBB) -> bool {
+        self.segments().any(|s| shape.intersects(&s)) || self.contains(shape.corners[0])
     }
 }

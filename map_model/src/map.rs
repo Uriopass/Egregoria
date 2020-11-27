@@ -4,7 +4,7 @@ use crate::{
     LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID,
     RoadSegmentKind, SpatialMap,
 };
-use geom::{Intersect, Vec2};
+use geom::{Intersect, Shape, Vec2};
 use geom::{Spline, OBB};
 use ordered_float::OrderedFloat;
 use rand::prelude::IteratorRandom;
@@ -211,7 +211,7 @@ impl Map {
             .query(shape)
             .filter_map(|obj| {
                 if let ProjectKind::Lot(id) = obj {
-                    if self.lots[id].shape.intersects(shape) {
+                    if self.lots[id].shape.intersects(&shape) {
                         return Some(id);
                     }
                 }

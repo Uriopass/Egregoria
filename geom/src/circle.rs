@@ -23,26 +23,26 @@ impl Shape for Circle {
 }
 
 impl Intersect<AABB> for Circle {
-    fn intersects(&self, b: AABB) -> bool {
+    fn intersects(&self, b: &AABB) -> bool {
         let d = self.center.min(b.ur).max(b.ll) - self.center;
         d.magnitude2() < self.radius * self.radius
     }
 }
 
 impl Intersect<Circle> for Circle {
-    fn intersects(&self, c: Circle) -> bool {
+    fn intersects(&self, c: &Circle) -> bool {
         self.center.is_close(c.center, self.radius + c.radius)
     }
 }
 
 impl Intersect<Segment> for Circle {
-    fn intersects(&self, s: Segment) -> bool {
+    fn intersects(&self, s: &Segment) -> bool {
         s.project(self.center).is_close(self.center, self.radius)
     }
 }
 
 impl Intersect<Vec2> for Circle {
-    fn intersects(&self, p: Vec2) -> bool {
-        self.center.is_close(p, self.radius)
+    fn intersects(&self, p: &Vec2) -> bool {
+        self.center.is_close(*p, self.radius)
     }
 }

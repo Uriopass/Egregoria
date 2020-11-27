@@ -29,7 +29,7 @@ pub use v2::*;
 pub use v3::*;
 
 pub trait Intersect<T: Shape>: Shape {
-    fn intersects(&self, shape: T) -> bool;
+    fn intersects(&self, shape: &T) -> bool;
 }
 
 pub trait Shape {
@@ -46,7 +46,7 @@ impl Shape for Vec2 {
 }
 
 impl Intersect<AABB> for Vec2 {
-    fn intersects(&self, aabb: AABB) -> bool {
+    fn intersects(&self, aabb: &AABB) -> bool {
         aabb.contains(*self)
     }
 }
