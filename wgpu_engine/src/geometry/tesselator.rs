@@ -1,6 +1,6 @@
 use crate::geometry::earcut::earcut;
 use crate::{ColoredVertex, MeshBuilder};
-use geom::{vec2, LinearColor, Vec2, AABB};
+use geom::{vec2, Intersect, LinearColor, Segment, Vec2, AABB};
 
 pub struct Tesselator {
     pub color: LinearColor,
@@ -200,7 +200,7 @@ impl Tesselator {
 
     pub fn draw_stroke(&mut self, p1: Vec2, p2: Vec2, z: f32, thickness: f32) -> bool {
         if let Some(x) = self.cull_rect {
-            if !x.intersects_line_within(p1, p2, thickness * 0.5) {
+            if !x.expand(thickness * 0.5).intersects(&Segment::new(p1, p2)) {
                 return false;
             }
         }
@@ -256,8 +256,11 @@ impl Tesselator {
             return true;
         }
         if let Some(cull_rect) = self.cull_rect {
-            let window_intersects =
-                |x: &[Vec2]| cull_rect.intersects_line_within(x[0], x[1], thickness);
+            let window_intersects = |x: &[Vec2]| {
+                cull_rect
+                    .expand(thickness)
+                    .intersects(&Segment::new(x[0], x[1]))
+            };
 
             if !points.windows(2).any(window_intersects) {
                 return false;

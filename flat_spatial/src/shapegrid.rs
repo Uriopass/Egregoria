@@ -2,11 +2,10 @@ use crate::cell::ShapeGridCell;
 use crate::storage::{cell_range, SparseStorage, Storage};
 use geom::{Circle, Intersect, Shape, Vec2, AABB};
 use serde::{Deserialize, Serialize};
-use slotmap::new_key_type;
-use slotmap::{DenseSlotMap, SlotMap};
+use slotmap::{new_key_type, SlotMap};
 use std::collections::HashSet;
 
-pub type ShapeGridObjects<O, S> = DenseSlotMap<ShapeGridHandle, StoreObject<O, S>>;
+pub type ShapeGridObjects<O, S> = SlotMap<ShapeGridHandle, StoreObject<O, S>>;
 
 new_key_type! {
     /// This handle is used to modify the associated object or to update its position.
@@ -63,20 +62,20 @@ pub struct StoreObject<O: Copy, S: Shape> {
 #[derive(Clone, Deserialize, Serialize)]
 pub struct ShapeGrid<
     O: Copy,
-    S: Shape + Intersect<AABB>,
+    S: Shape + Intersect<AABB> + Copy,
     ST: Storage<ShapeGridCell> = SparseStorage<ShapeGridCell>,
 > {
     storage: ST,
     objects: ShapeGridObjects<O, S>,
 }
 
-impl<S: Shape + Intersect<AABB>, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST> {
+impl<S: Shape + Intersect<AABB> + Copy, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST> {
     /// Creates an empty grid.   
     /// The cell size should be about the same magnitude as your queries size.
     pub fn new(cell_size: i32) -> Self {
         Self {
             storage: ST::new(cell_size),
-            objects: SlotMap::with_key(),
+            objects: ShapeGridObjects::default(),
         }
     }
 
@@ -85,7 +84,7 @@ impl<S: Shape + Intersect<AABB>, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<
     pub fn with_storage(st: ST) -> Self {
         Self {
             storage: st,
-            objects: SlotMap::with_key(),
+            objects: ShapeGridObjects::default(),
         }
     }
 
@@ -94,7 +93,7 @@ impl<S: Shape + Intersect<AABB>, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<
         let ll = storage.cell_mut(bbox.ll).0;
         let ur = storage.cell_mut(bbox.ur).0;
         for id in cell_range(ll, ur) {
-            if !shape.intersects(storage.cell_aabb(id)) {
+            if !shape.intersects(&storage.cell_aabb(id)) {
                 continue;
             }
             f(storage.cell_mut_unchecked(id), ll == ur)
@@ -181,23 +180,23 @@ impl<S: Shape + Intersect<AABB>, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<
     }
 
     /// Queries for objects intersecting a given shape.
-    pub fn query<QS: Shape + Intersect<AABB> + Intersect<S> + 'static>(
-        &self,
+    pub fn query<'a, QS: 'a + Shape + Intersect<AABB> + Intersect<S> + Clone>(
+        &'a self,
         shape: QS,
-    ) -> impl Iterator<Item = (ShapeGridHandle, &S, &O)> + '_ {
-        self.query_broad(shape)
+    ) -> impl Iterator<Item = (ShapeGridHandle, &S, &O)> + 'a {
+        self.query_broad(shape.clone())
             .map(move |h| {
                 let obj = &self.objects[h];
                 (h, &obj.shape, &obj.obj)
             })
-            .filter(move |&(_, x, _)| shape.intersects(*x))
+            .filter(move |&(_, x, _)| shape.intersects(x))
     }
 
     /// Queries for all objects in the cells intersecting the given shape
-    pub fn query_broad<QS: Shape + Intersect<AABB> + 'static>(
-        &self,
+    pub fn query_broad<'a, QS: 'a + Shape + Intersect<AABB>>(
+        &'a self,
         shape: QS,
-    ) -> impl Iterator<Item = ShapeGridHandle> + '_ {
+    ) -> impl Iterator<Item = ShapeGridHandle> + 'a {
         let bbox = shape.bbox();
         let storage = &self.storage;
 
@@ -205,7 +204,7 @@ impl<S: Shape + Intersect<AABB>, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<
         let ur_id = storage.cell_id(bbox.ur);
 
         let iter = cell_range(ll_id, ur_id)
-            .filter(move |&id| shape.intersects(storage.cell_aabb(id)))
+            .filter(move |&id| shape.intersects(&storage.cell_aabb(id)))
             .flat_map(move |id| storage.cell(id))
             .flat_map(|x| x.objs.iter().copied());
 
@@ -229,7 +228,7 @@ impl<S: Shape + Intersect<AABB>, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<
     }
 }
 
-impl<S: Shape + Intersect<AABB>, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST>
+impl<S: Shape + Intersect<AABB> + Copy, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST>
 where
     Circle: Intersect<S>,
 {

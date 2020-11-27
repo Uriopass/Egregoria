@@ -61,8 +61,8 @@ impl Shape for Segment {
 }
 
 impl Intersect<AABB> for Segment {
-    fn intersects(&self, aabb: AABB) -> bool {
-        aabb.intersects_line_within(self.src, self.dst, 0.0)
+    fn intersects(&self, aabb: &AABB) -> bool {
+        aabb.intersects(self)
     }
 }
 
@@ -71,20 +71,20 @@ fn ccw(a: Vec2, b: Vec2, c: Vec2) -> bool {
 }
 
 impl Intersect<Segment> for Segment {
-    fn intersects(&self, s: Segment) -> bool {
+    fn intersects(&self, s: &Segment) -> bool {
         ccw(self.src, s.src, s.dst) != ccw(self.dst, s.src, s.dst)
             && ccw(self.src, self.dst, s.src) != ccw(self.src, self.dst, s.dst)
     }
 }
 
 impl Intersect<Circle> for Segment {
-    fn intersects(&self, c: Circle) -> bool {
-        c.intersects(*self)
+    fn intersects(&self, c: &Circle) -> bool {
+        c.intersects(self)
     }
 }
 
 impl Intersect<Vec2> for Segment {
-    fn intersects(&self, _p: Vec2) -> bool {
+    fn intersects(&self, _p: &Vec2) -> bool {
         false
     }
 }

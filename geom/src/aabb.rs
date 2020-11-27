@@ -37,40 +37,37 @@ impl AABB {
         }
     }
 
-    pub fn intersects_line_within(&self, p1: Vec2, p2: Vec2, tolerance: f32) -> bool {
-        let outcode0 = self.compute_code(p1, tolerance);
-        let outcode1 = self.compute_code(p2, tolerance);
-        if outcode0 == 0 || outcode1 == 0 {
-            return true;
-        }
-        if outcode0 & outcode1 != 0 {
-            return false;
-        }
-        true
+    pub fn center(&self) -> Vec2 {
+        self.ll * 0.5 + self.ur * 0.5
     }
 
-    fn compute_code(&self, p: Vec2, tolerance: f32) -> u8 {
+    pub fn expand(self, w: f32) -> Self {
+        Self {
+            ll: self.ll - Vec2::splat(w),
+            ur: self.ur - Vec2::splat(w),
+        }
+    }
+
+    fn compute_code(&self, p: Vec2) -> u8 {
         const INSIDE: u8 = 0; // 0000
         const LEFT: u8 = 1; // 0001
         const RIGHT: u8 = 2; // 0010
         const BOTTOM: u8 = 4; // 0100
         const TOP: u8 = 8; // 1000
         let mut code = INSIDE; // initialised as being inside of [[clip window]]
-        let x = p.x;
-        let y = p.y;
 
-        if x < self.ll.x - tolerance {
+        if p.x < self.ll.x {
             // to the left of clip window
             code |= LEFT;
-        } else if x > self.ur.x + tolerance {
+        } else if p.x > self.ur.x {
             // to the right of clip window
             code |= RIGHT;
         }
 
-        if y < self.ll.y - tolerance {
+        if p.y < self.ll.y {
             // below the clip window
             code |= BOTTOM;
-        } else if y > self.ur.y + tolerance {
+        } else if p.y > self.ur.y {
             // above the clip window
             code |= TOP;
         }
@@ -115,7 +112,7 @@ impl Shape for AABB {
 }
 
 impl Intersect<AABB> for AABB {
-    fn intersects(&self, b: AABB) -> bool {
+    fn intersects(&self, b: &AABB) -> bool {
         let a = self;
         let x =
             f32::abs((a.ll.x + a.ur.x) - (b.ll.x + b.ur.x)) <= (a.ur.x - a.ll.x + b.ur.x - b.ll.x);
@@ -127,19 +124,27 @@ impl Intersect<AABB> for AABB {
 }
 
 impl Intersect<Circle> for AABB {
-    fn intersects(&self, shape: Circle) -> bool {
-        shape.intersects(*self)
+    fn intersects(&self, c: &Circle) -> bool {
+        c.intersects(self)
     }
 }
 
 impl Intersect<Segment> for AABB {
-    fn intersects(&self, shape: Segment) -> bool {
-        shape.intersects(*self)
+    fn intersects(&self, s: &Segment) -> bool {
+        let outcode0 = self.compute_code(s.src);
+        let outcode1 = self.compute_code(s.dst);
+        if outcode0 == 0 || outcode1 == 0 {
+            return true;
+        }
+        if outcode0 & outcode1 != 0 {
+            return false;
+        }
+        self.segments().any(move |seg| seg.intersects(s))
     }
 }
 
 impl Intersect<Vec2> for AABB {
-    fn intersects(&self, p: Vec2) -> bool {
-        self.contains(p)
+    fn intersects(&self, p: &Vec2) -> bool {
+        self.contains(*p)
     }
 }

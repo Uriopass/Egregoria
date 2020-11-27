@@ -98,7 +98,7 @@ impl SpatialMap {
 
     pub fn query(
         &self,
-        r: impl Intersect<AABB> + 'static,
+        r: impl Intersect<AABB> + Copy + 'static,
     ) -> impl Iterator<Item = ProjectKind> + '_ {
         self.grid.query(r).map(|(_, _, k)| *k)
     }

@@ -49,13 +49,13 @@ impl Lot {
                 }
                 ProjectKind::Inter(i) => {
                     let i = &inters[i];
-                    if i.polygon.intersects(&Polygon(shape.corners.to_vec())) {
+                    if i.polygon.intersects(&shape) {
                         return None;
                     }
                 }
                 ProjectKind::Lot(h) => {
                     let h = &lots[h];
-                    if h.shape.intersects(shape) {
+                    if h.shape.intersects(&shape) {
                         return None;
                     }
                 }

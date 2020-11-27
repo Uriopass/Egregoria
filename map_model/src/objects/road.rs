@@ -197,12 +197,7 @@ impl Road {
     }
 
     pub fn bbox(&self) -> AABB {
-        let mut bbox = self.generated_points.bbox();
-        bbox.ll.x -= self.width * 0.5;
-        bbox.ll.y -= self.width * 0.5;
-        bbox.ur.x += self.width * 0.5;
-        bbox.ur.y += self.width * 0.5;
-        bbox
+        self.generated_points.bbox().expand(self.width * 0.5)
     }
 
     pub fn pattern(&self) -> LanePattern {
