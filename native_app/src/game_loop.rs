@@ -1,5 +1,6 @@
-use crate::audio::ambiant_audio::AmbientAudio;
+use crate::audio::ambient::Ambient;
 use crate::audio::music::Music;
+use crate::audio::GameAudio;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::{setup_gui, FollowEntity, Gui, Settings, UiTextures};
@@ -34,8 +35,7 @@ pub struct State {
 
     souls: Souls,
 
-    ambient: AmbientAudio,
-    music: Music,
+    all_audio: GameAudio,
 }
 
 impl State {
@@ -78,8 +78,7 @@ impl State {
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
             gui,
             souls: Souls::default(),
-            ambient: AmbientAudio::new(&mut ctx.audio),
-            music: Music::new(),
+            all_audio: GameAudio::new(&mut ctx.audio),
         }
     }
 
@@ -95,9 +94,8 @@ impl State {
         for (sound, kind) in self.goria.write::<ImmediateSound>().orders.drain(..) {
             ctx.audio.play(sound, kind);
         }
-        self.ambient
+        self.all_audio
             .update(&mut self.goria, &mut ctx.audio, delta as f32);
-        self.music.update(&mut ctx.audio);
 
         self.manage_settings(ctx, self.gui.settings);
 
