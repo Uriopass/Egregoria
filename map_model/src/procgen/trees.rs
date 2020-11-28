@@ -41,10 +41,7 @@ impl Trees {
         for (h, tree) in trees.grid.query_aabb(bbox.ll, bbox.ur) {
             let rd = common::rand::rand3(tree.x, tree.y, 391.0) * 20.0;
 
-            if r.generated_points
-                .project(tree.into())
-                .is_close(tree.into(), d - rd)
-            {
+            if r.generated_points.project(tree).is_close(tree, d - rd) {
                 to_remove.push(h);
             }
         }
@@ -157,7 +154,7 @@ impl Trees {
     pub fn trees(&self) -> impl Iterator<Item = (Vec2, Tree)> + '_ {
         self.grid.handles().map(move |h| {
             let v = self.grid.get(h).unwrap();
-            (v.0.into(), *v.1)
+            (v.0, *v.1)
         })
     }
 }

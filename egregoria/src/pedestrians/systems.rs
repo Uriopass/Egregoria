@@ -23,12 +23,8 @@ pub fn pedestrian_decision(
     let (_, my_obj) = cow.get(coll.0).expect("Handle not in collision world");
     let neighbors = cow.query_around(trans.position(), 10.0);
 
-    let objs = neighbors.map(|(id, pos)| {
-        (
-            Vec2::from(pos),
-            cow.get(id).expect("Handle not in collision world").1,
-        )
-    });
+    let objs =
+        neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
 
     let (desired_v, desired_dir) = calc_decision(pedestrian, trans, kin, map, my_obj, it, objs);
 

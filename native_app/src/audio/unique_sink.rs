@@ -1,5 +1,4 @@
 use rodio::{OutputStreamHandle, PlayError, Sample, Source};
-use std::iter::Peekable;
 use std::sync::atomic::Ordering;
 use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::sync::Arc;
@@ -89,7 +88,7 @@ struct SimpleSinkSource<S: Source<Item = f32>> {
 }
 
 impl<S: Source<Item = f32>> SimpleSinkSource<S> {
-    pub fn new(mut source: S, controls: Arc<Controls>) -> Self {
+    pub fn new(source: S, controls: Arc<Controls>) -> Self {
         Self {
             source,
             volume: f32::from_bits(controls.volume.load(Ordering::SeqCst)),
