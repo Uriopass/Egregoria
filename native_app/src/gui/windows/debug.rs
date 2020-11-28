@@ -198,7 +198,7 @@ fn debug_coworld(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
     for h in coworld.handles() {
         let pos = coworld.get(h).unwrap().0;
-        tess.draw_circle(pos.into(), 1.0, 3.0);
+        tess.draw_circle(pos, 1.0, 3.0);
     }
     Some(())
 }
