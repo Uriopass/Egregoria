@@ -36,6 +36,7 @@ impl Music {
                 TRACKS[self.track_id],
                 |s| s.fade_in(Duration::new(5, 0)).amplify(0.5),
                 AudioKind::Music,
+                false,
             ));
             log::info!("playing soundtrack {}", TRACKS[self.track_id]);
             self.last_played = Instant::now();

@@ -1,5 +1,3 @@
-use crate::audio::ambient::Ambient;
-use crate::audio::music::Music;
 use crate::audio::GameAudio;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
@@ -69,7 +67,7 @@ impl State {
 
         goria.insert(camera.camera.clone());
 
-        Self {
+        let mut me = Self {
             goria,
             camera,
             imgui_render,
@@ -79,7 +77,9 @@ impl State {
             gui,
             souls: Souls::default(),
             all_audio: GameAudio::new(&mut ctx.audio),
-        }
+        };
+        me.manage_settings(ctx, me.gui.settings);
+        me
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
