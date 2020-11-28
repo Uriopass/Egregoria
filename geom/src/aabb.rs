@@ -44,34 +44,20 @@ impl AABB {
     pub fn expand(self, w: f32) -> Self {
         Self {
             ll: self.ll - Vec2::splat(w),
-            ur: self.ur - Vec2::splat(w),
+            ur: self.ur + Vec2::splat(w),
         }
     }
 
-    fn compute_code(&self, p: Vec2) -> u8 {
-        const INSIDE: u8 = 0; // 0000
+    #[inline(always)]
+    pub fn compute_code(&self, p: Vec2) -> u8 {
         const LEFT: u8 = 1; // 0001
         const RIGHT: u8 = 2; // 0010
         const BOTTOM: u8 = 4; // 0100
         const TOP: u8 = 8; // 1000
-        let mut code = INSIDE; // initialised as being inside of [[clip window]]
-
-        if p.x < self.ll.x {
-            // to the left of clip window
-            code |= LEFT;
-        } else if p.x > self.ur.x {
-            // to the right of clip window
-            code |= RIGHT;
-        }
-
-        if p.y < self.ll.y {
-            // below the clip window
-            code |= BOTTOM;
-        } else if p.y > self.ur.y {
-            // above the clip window
-            code |= TOP;
-        }
-        code
+        (LEFT * (p.x < self.ll.x) as u8)
+            | (RIGHT * (p.x > self.ur.x) as u8)
+            | (BOTTOM * (p.y < self.ll.y) as u8)
+            | (TOP * (p.y > self.ur.y) as u8)
     }
 
     pub fn contains(&self, p: Vec2) -> bool {
