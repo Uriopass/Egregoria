@@ -1,11 +1,15 @@
-pub mod ambiant_audio;
+pub mod ambient;
 pub mod music;
 
+mod car_sounds;
 mod unique_sink;
 
+use crate::audio::ambient::Ambient;
+use crate::audio::music::Music;
 use crate::audio::unique_sink::UniqueSink;
 use crate::gui::Settings;
 use common::AudioKind;
+use egregoria::Egregoria;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sample, Source};
 use slotmap::{new_key_type, DenseSlotMap};
 use std::collections::hash_map::Entry;
@@ -13,6 +17,25 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read};
 use std::sync::atomic::{AtomicU32, Ordering};
+
+pub struct GameAudio {
+    music: Music,
+    ambiant: Ambient,
+}
+
+impl GameAudio {
+    pub fn new(ctx: &mut AudioContext) -> Self {
+        Self {
+            music: Music::new(),
+            ambiant: Ambient::new(ctx),
+        }
+    }
+
+    pub fn update(&mut self, goria: &mut Egregoria, ctx: &mut AudioContext, delta: f32) {
+        self.music.update(ctx);
+        self.ambiant.update(goria, ctx, delta);
+    }
+}
 
 new_key_type! {
     pub struct AudioHandle;

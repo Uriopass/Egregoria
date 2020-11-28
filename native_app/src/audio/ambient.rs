@@ -4,12 +4,12 @@ use geom::{lerp, vec2, Camera};
 use map_model::Map;
 use rodio::Source;
 
-pub struct AmbientAudio {
+pub struct Ambient {
     wind: AudioHandle,
     forest: AudioHandle,
 }
 
-impl AmbientAudio {
+impl Ambient {
     pub fn new(ctx: &mut AudioContext) -> Self {
         let wind = ctx.play_with_control("calm_wind", |s| s.repeat_infinite(), AudioKind::Effect);
         ctx.set_volume(wind, 0.0);
