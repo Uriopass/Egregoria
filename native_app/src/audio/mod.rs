@@ -1,10 +1,10 @@
-pub mod ambient;
-pub mod music;
-
+mod ambient;
 mod car_sounds;
+mod music;
 mod unique_sink;
 
 use crate::audio::ambient::Ambient;
+use crate::audio::car_sounds::CarSounds;
 use crate::audio::music::Music;
 use crate::audio::unique_sink::UniqueSink;
 use crate::gui::Settings;
@@ -21,6 +21,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 pub struct GameAudio {
     music: Music,
     ambiant: Ambient,
+    carsounds: CarSounds,
 }
 
 impl GameAudio {
@@ -28,12 +29,14 @@ impl GameAudio {
         Self {
             music: Music::new(),
             ambiant: Ambient::new(ctx),
+            carsounds: CarSounds::new(ctx),
         }
     }
 
     pub fn update(&mut self, goria: &mut Egregoria, ctx: &mut AudioContext, delta: f32) {
         self.music.update(ctx);
         self.ambiant.update(goria, ctx, delta);
+        self.carsounds.update(ctx);
     }
 }
 
@@ -45,6 +48,7 @@ pub struct PlayingSink {
     sink: UniqueSink,
     kind: AudioKind,
     volume: AtomicU32,
+    complex: bool,
 }
 
 impl PlayingSink {
@@ -52,6 +56,10 @@ impl PlayingSink {
         self.volume
             .store(volume.to_bits(), std::sync::atomic::Ordering::SeqCst);
         self.sink.set_volume(ctx.g_volume(self.kind) * volume);
+    }
+
+    pub fn set_speed(&self, ctx: &AudioContext, speed: f32) {
+        self.sink.set_speed(speed);
     }
 }
 
@@ -147,6 +155,7 @@ impl AudioContext {
         name: &'static str,
         transform: impl FnOnce(Decoder<Cursor<&'static [u8]>>) -> S,
         kind: AudioKind,
+        complex: bool,
     ) -> AudioHandle
     where
         S: Source + Send + 'static,
@@ -155,13 +164,14 @@ impl AudioContext {
         if let Some(ref h) = self.out_handle {
             if let Some(x) = Self::get(&mut self.cache, name) {
                 let dec = rodio::Decoder::new(std::io::Cursor::new(x)).unwrap();
-                let sink = UniqueSink::try_new(h, transform(dec)).unwrap();
+                let sink = UniqueSink::try_new(h, transform(dec), complex).unwrap();
 
                 sink.set_volume(self.g_volume(kind));
                 return self.sinks.insert(PlayingSink {
                     sink,
                     kind,
                     volume: 1.0f32.to_bits().into(),
+                    complex,
                 });
             }
         }
@@ -172,6 +182,17 @@ impl AudioContext {
         if let Some(x) = self.sinks.get(handle) {
             let volume = volume.max(0.0).min(2.0);
             x.set_volume(self, volume);
+        }
+    }
+
+    pub fn set_speed(&self, handle: AudioHandle, speed: f32) {
+        if let Some(x) = self.sinks.get(handle) {
+            if !x.complex {
+                log::warn!("trying to set speed of {:?} but it is not a complex sound. This won't do anything", handle);
+                return;
+            }
+            let volume = speed.max(0.0).min(2.0);
+            x.set_speed(self, volume);
         }
     }
 

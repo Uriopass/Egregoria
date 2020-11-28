@@ -11,10 +11,16 @@ pub struct Ambient {
 
 impl Ambient {
     pub fn new(ctx: &mut AudioContext) -> Self {
-        let wind = ctx.play_with_control("calm_wind", |s| s.repeat_infinite(), AudioKind::Effect);
+        let wind = ctx.play_with_control(
+            "calm_wind",
+            |s| s.repeat_infinite(),
+            AudioKind::Effect,
+            false,
+        );
         ctx.set_volume(wind, 0.0);
 
-        let forest = ctx.play_with_control("forest", |s| s.repeat_infinite(), AudioKind::Effect);
+        let forest =
+            ctx.play_with_control("forest", |s| s.repeat_infinite(), AudioKind::Effect, false);
         ctx.set_volume(forest, 0.0);
 
         Self { wind, forest }
