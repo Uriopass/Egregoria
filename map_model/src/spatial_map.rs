@@ -88,12 +88,7 @@ impl SpatialMap {
         center: Vec2,
         radius: f32,
     ) -> impl Iterator<Item = ProjectKind> + '_ {
-        self.grid
-            .query(Circle {
-                center: center.into(),
-                radius,
-            })
-            .map(|(_, _, k)| *k)
+        self.query(Circle { center, radius })
     }
 
     pub fn query(
