@@ -204,7 +204,7 @@ impl Shape for Polygon {
 
 impl Intersect<AABB> for Polygon {
     fn intersects(&self, shape: &AABB) -> bool {
-        self.segments().any(|s| s.intersects(shape))
+        self.segments().any(|s| s.intersects(shape)) || self.contains(shape.ll)
     }
 }
 
