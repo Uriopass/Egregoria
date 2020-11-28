@@ -38,12 +38,8 @@ pub fn vehicle_decision(
     let (_, self_obj) = cow.get(collider.0).expect("Handle not in collision world");
     let danger_length = (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
     let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
-    let objs = neighbors.map(|(id, pos)| {
-        (
-            Vec2::from(pos),
-            cow.get(id).expect("Handle not in collision world").1,
-        )
-    });
+    let objs =
+        neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
 
     let (desired_speed, desired_dir) =
         calc_decision(vehicle, &map, &time, trans, self_obj, it, objs);

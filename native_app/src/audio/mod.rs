@@ -58,7 +58,7 @@ impl PlayingSink {
         self.sink.set_volume(ctx.g_volume(self.kind) * volume);
     }
 
-    pub fn set_speed(&self, ctx: &AudioContext, speed: f32) {
+    pub fn set_speed(&self, speed: f32) {
         self.sink.set_speed(speed);
     }
 }
@@ -191,8 +191,8 @@ impl AudioContext {
                 log::warn!("trying to set speed of {:?} but it is not a complex sound. This won't do anything", handle);
                 return;
             }
-            let volume = speed.max(0.0).min(2.0);
-            x.set_speed(self, volume);
+            let speed = speed.max(0.0).min(2.0);
+            x.set_speed(speed);
         }
     }
 
