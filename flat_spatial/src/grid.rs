@@ -253,30 +253,9 @@ impl<ST: Storage<GridCell>, O: Copy> Grid<O, ST> {
         &self.storage
     }
 
-    /// Queries for all objects around a position within a certain radius.
-    /// Try to keep the radius asked and the cell size of similar magnitude for better performance.
-    ///
-    /// # Example
-    /// ```rust
-    /// use flat_spatial::Grid;
-    /// use geom::Vec2;
-    ///
-    /// let mut g: Grid<()> = Grid::new(10);
-    /// let a = g.insert(Vec2::ZERO, ());
-    ///
-    /// let around: Vec<_> = g.query_around([2.0, 2.0], 5.0).map(|(id, _pos)| id).collect();
-    ///
-    /// assert_eq!(vec![a], around);
-    /// ```
-    pub fn query_around(
-        &self,
-        pos: impl Into<Vec2>,
-        radius: f32,
-    ) -> impl Iterator<Item = CellObject> + '_ {
-        let pos = pos.into();
-
-        let ll = [pos.x - radius, pos.y - radius].into(); // lower left
-        let ur = [pos.x + radius, pos.y + radius].into(); // upper right
+    pub fn query_around(&self, pos: Vec2, radius: f32) -> impl Iterator<Item = CellObject> + '_ {
+        let ll = pos - Vec2::splat(radius);
+        let ur = pos + Vec2::splat(radius);
 
         let radius2 = radius * radius;
         self.query_raw(ll, ur).filter(move |(_, pos_obj)| {
@@ -286,31 +265,9 @@ impl<ST: Storage<GridCell>, O: Copy> Grid<O, ST> {
         })
     }
 
-    /// Queries for all objects in an aabb (aka a rect).
-    /// Try to keep the rect's width/height of similar magnitudes to the cell size for better performance.
-    ///
-    /// # Example
-    /// ```rust
-    /// use flat_spatial::Grid;
-    /// use geom::Vec2;
-    ///
-    /// let mut g: Grid<()> = Grid::new(10);
-    /// let a = g.insert(Vec2::ZERO, ());
-    ///
-    /// let around: Vec<_> = g.query_aabb([-1.0, -1.0], [1.0, 1.0]).map(|(id, _pos)| id).collect();
-    ///
-    /// assert_eq!(vec![a], around);
-    /// ```
-    pub fn query_aabb(
-        &self,
-        aa: impl Into<Vec2>,
-        bb: impl Into<Vec2>,
-    ) -> impl Iterator<Item = CellObject> + '_ {
-        let aa = aa.into();
-        let bb = bb.into();
-
-        let ll = [aa.x.min(bb.x), aa.y.min(bb.y)].into(); // lower left
-        let ur = [aa.x.max(bb.x), aa.y.max(bb.y)].into(); // upper right
+    pub fn query_aabb(&self, ll_: Vec2, ur_: Vec2) -> impl Iterator<Item = CellObject> + '_ {
+        let ll = ll_.min(ur_);
+        let ur = ll_.max(ur_);
 
         self.query_raw(ll, ur).filter(move |(_, pos_obj)| {
             (ll.x..=ur.x).contains(&pos_obj.x) && (ll.y..=ur.y).contains(&pos_obj.y)

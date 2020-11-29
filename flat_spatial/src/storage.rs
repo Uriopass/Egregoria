@@ -5,6 +5,8 @@ use std::collections::HashMap;
 pub type CellIdx = (i32, i32);
 
 pub fn cell_range((x1, y1): CellIdx, (x2, y2): CellIdx) -> impl Iterator<Item = CellIdx> {
+    debug_assert!(x1 <= x2);
+    debug_assert!(y1 <= y2);
     XYRange {
         x1,
         x2: x2 + 1,
