@@ -34,7 +34,7 @@ impl Ambient {
         let h = camera.position.z;
 
         // Wind
-        let volume = lerp(0.01, 0.2, (h - 100.0) / 10000.0);
+        let volume = lerp(0.05, 0.2, (h - 100.0) / 10000.0);
         ctx.set_volume_smooth(self.wind, volume, delta * 0.05);
 
         // Forest
@@ -52,13 +52,13 @@ impl Ambient {
             ul.lerp(lr, 0.75),
         ];
 
-        let matches = tree_check
-            .iter()
-            .filter_map(|&p| map.trees.grid.query_around(p, 100.0).next())
-            .count();
+        if volume > 0.0 {
+            let matches = tree_check
+                .iter()
+                .filter_map(|&p| map.trees.grid.query_around(p, h * 0.2).next())
+                .count();
 
-        if h > 1000.0 || matches < 3 {
-            volume = 0.0;
+            volume *= matches as f32 / 4.0;
         }
         ctx.set_volume_smooth(self.forest, volume, delta * 0.2);
     }
