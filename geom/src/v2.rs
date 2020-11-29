@@ -1,3 +1,4 @@
+use crate::Vec3;
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
@@ -22,6 +23,14 @@ impl Vec2 {
     #[inline]
     pub const fn splat(v: f32) -> Self {
         Self { x: v, y: v }
+    }
+
+    pub fn z(self, z: f32) -> Vec3 {
+        Vec3 {
+            x: self.x,
+            y: self.y,
+            z,
+        }
     }
 
     pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
