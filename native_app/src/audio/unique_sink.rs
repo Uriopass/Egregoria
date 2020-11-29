@@ -12,6 +12,7 @@ pub struct UniqueSink {
 struct Controls {
     volume: AtomicU32,
     speed: AtomicU32,
+    stop: AtomicBool,
     dead: AtomicBool,
 }
 
@@ -30,8 +31,9 @@ impl UniqueSink {
         S::Item: Send,
     {
         let controls = Arc::new(Controls {
-            volume: 1.0f32.to_bits().into(),
+            volume: 0.0f32.to_bits().into(),
             speed: 0.01f32.to_bits().into(),
+            stop: AtomicBool::new(false),
             dead: AtomicBool::new(false),
         });
 
@@ -76,6 +78,10 @@ impl UniqueSink {
     pub fn set_speed(&self, speed: f32) {
         self.controls.speed.store(speed.to_bits(), Ordering::SeqCst);
     }
+
+    pub fn stop(&self) {
+        self.controls.stop.store(true, Ordering::SeqCst);
+    }
 }
 
 struct SimpleSinkSource<S: Source<Item = f32>> {
@@ -89,12 +95,13 @@ struct SimpleSinkSource<S: Source<Item = f32>> {
 
 impl<S: Source<Item = f32>> SimpleSinkSource<S> {
     pub fn new(source: S, controls: Arc<Controls>) -> Self {
+        let p = ((source.sample_rate() as f32) / 44100.0 * 50.0) as u32;
         Self {
             source,
             volume: f32::from_bits(controls.volume.load(Ordering::SeqCst)),
             controls,
-            period: 50,
-            remaining: 50,
+            period: p,
+            remaining: p,
         }
     }
 }
@@ -116,11 +123,24 @@ impl<S: Source<Item = f32>> Iterator for SimpleSinkSource<S> {
             let controls = &*self.controls;
 
             let v = f32::from_bits(controls.volume.load(Ordering::SeqCst));
-            self.volume += (v - self.volume) * 0.01;
+
+            if controls.stop.load(Ordering::SeqCst) {
+                if self.volume < 0.01 {
+                    self.controls.dead.store(true, Ordering::SeqCst);
+                    return None;
+                }
+                self.volume -= self.volume * 0.02;
+            } else {
+                self.volume += (v - self.volume) * 0.01;
+            }
         }
         self.remaining -= 1;
 
         Some(v * self.volume)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.source.size_hint()
     }
 }
 
@@ -146,6 +166,7 @@ impl<S: Source<Item = f32>> ComplexSinkSource<S> {
         let s2 = source.next().unwrap_or(0.0);
         let p1 = source.next().unwrap_or(0.0);
         let p2 = source.next().unwrap_or(0.0);
+        let period = ((source.sample_rate() as f32) / 44100.0 * 50.0) as u32;
         Self {
             sample: [s1, s2],
             peek: [p1, p2],
@@ -155,8 +176,8 @@ impl<S: Source<Item = f32>> ComplexSinkSource<S> {
             speed: f32::from_bits(controls.speed.load(Ordering::SeqCst)),
             remainder: 0.0,
             controls,
-            period: 50,
-            remaining: 50,
+            period,
+            remaining: period,
         }
     }
 }
@@ -194,14 +215,27 @@ impl<S: Source<Item = f32>> Iterator for ComplexSinkSource<S> {
 
             let controls = &*self.controls;
             let v = f32::from_bits(controls.volume.load(Ordering::SeqCst));
-            self.volume += (v - self.volume) * 0.01;
 
-            let v = f32::from_bits(controls.speed.load(Ordering::SeqCst));
-            self.speed = v; // (v - self.cur_speed) * 0.01;
+            if controls.stop.load(Ordering::SeqCst) {
+                if self.volume < 0.01 {
+                    self.controls.dead.store(true, Ordering::SeqCst);
+                    return None;
+                }
+                self.volume -= self.volume * 0.04;
+            } else {
+                self.volume += (v - self.volume) * 0.02;
+
+                let v = f32::from_bits(controls.speed.load(Ordering::SeqCst));
+                self.speed = v; // (v - self.cur_speed) * 0.01;
+            }
         }
         self.remaining -= 1;
 
         Some(interp)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.source.size_hint()
     }
 }
 
