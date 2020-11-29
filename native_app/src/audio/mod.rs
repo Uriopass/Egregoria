@@ -10,6 +10,7 @@ use crate::audio::unique_sink::UniqueSink;
 use crate::gui::Settings;
 use common::AudioKind;
 use egregoria::Egregoria;
+use rodio::source::Buffered;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sample, Source};
 use slotmap::{new_key_type, DenseSlotMap};
 use std::collections::hash_map::Entry;
@@ -17,6 +18,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read};
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::time::Duration;
 
 pub struct GameAudio {
     music: Music,
@@ -36,7 +38,7 @@ impl GameAudio {
     pub fn update(&mut self, goria: &mut Egregoria, ctx: &mut AudioContext, delta: f32) {
         self.music.update(ctx);
         self.ambiant.update(goria, ctx, delta);
-        self.carsounds.update(ctx);
+        self.carsounds.update(goria, ctx, delta);
     }
 }
 
@@ -63,6 +65,8 @@ impl PlayingSink {
     }
 }
 
+type StoredAudio = Buffered<Decoder<Cursor<&'static [u8]>>>;
+
 // We allow dead_code because we need to keep OutputStream alive for it to work
 #[allow(dead_code)]
 pub struct AudioContext {
@@ -70,7 +74,7 @@ pub struct AudioContext {
     out_handle: Option<OutputStreamHandle>,
     sinks: DenseSlotMap<AudioHandle, PlayingSink>,
     dummy: AudioHandle,
-    cache: HashMap<&'static str, &'static [u8]>,
+    cache: HashMap<&'static str, StoredAudio>,
 
     music_volume: f32,
     effect_volume: f32,
@@ -130,13 +134,13 @@ impl AudioContext {
     }
 
     fn get(
-        cache: &mut HashMap<&'static str, &'static [u8]>,
+        cache: &mut HashMap<&'static str, StoredAudio>,
         name: &'static str,
-    ) -> Option<&'static [u8]> {
+    ) -> Option<StoredAudio> {
         let e = cache.entry(name);
 
         match e {
-            Entry::Occupied(x) => Some(x.get()),
+            Entry::Occupied(x) => Some(x.get().clone()),
             Entry::Vacant(v) => {
                 let mut f = match File::open(format!("assets/sounds/{}.ogg", name)) {
                     Ok(x) => x,
@@ -148,7 +152,10 @@ impl AudioContext {
 
                 let mut buf = vec![];
                 let _ = f.read_to_end(&mut buf);
-                Some(v.insert(buf.leak()))
+                let s = rodio::Decoder::new(std::io::Cursor::new(&*buf.leak()))
+                    .unwrap()
+                    .buffered();
+                Some(v.insert(s).clone())
             }
         }
     }
@@ -156,8 +163,12 @@ impl AudioContext {
     pub fn play(&mut self, name: &'static str, kind: AudioKind) {
         if let Some(ref h) = self.out_handle {
             if let Some(x) = Self::get(&mut self.cache, name) {
-                let dec = rodio::Decoder::new(std::io::Cursor::new(x)).unwrap();
-                let _ = h.play_raw(dec.convert_samples().amplify(self.g_volume(kind)));
+                log::info!("playing {}", name);
+                let _ = h.play_raw(
+                    x.convert_samples()
+                        .amplify(self.g_volume(kind))
+                        .print_on_first(),
+                );
             }
         }
     }
@@ -165,7 +176,7 @@ impl AudioContext {
     pub fn play_with_control<S>(
         &mut self,
         name: &'static str,
-        transform: impl FnOnce(Decoder<Cursor<&'static [u8]>>) -> S,
+        transform: impl FnOnce(StoredAudio) -> S,
         kind: AudioKind,
         complex: bool,
     ) -> AudioHandle
@@ -175,8 +186,7 @@ impl AudioContext {
     {
         if let Some(ref h) = self.out_handle {
             if let Some(x) = Self::get(&mut self.cache, name) {
-                let dec = rodio::Decoder::new(std::io::Cursor::new(x)).unwrap();
-                let sink = UniqueSink::try_new(h, transform(dec), complex).unwrap();
+                let sink = UniqueSink::try_new(h, transform(x), complex).unwrap();
 
                 sink.set_volume(self.g_volume(kind));
                 return self.sinks.insert(PlayingSink {
@@ -230,19 +240,19 @@ impl AudioContext {
     pub fn set_settings(&mut self, settings: Settings) {
         let mut changed = false;
 
-        let ui_volume = settings.ui_volume_percent / 100.0;
+        let ui_volume = (settings.ui_volume_percent / 100.0).powi(2);
         if (self.ui_volume - ui_volume).abs() > f32::EPSILON {
             self.ui_volume = ui_volume;
             changed = true;
         }
 
-        let music_volume = settings.music_volume_percent / 100.0;
+        let music_volume = (settings.music_volume_percent / 100.0).powi(2);
         if (self.music_volume - music_volume).abs() > f32::EPSILON {
             self.music_volume = music_volume;
             changed = true;
         }
 
-        let effect_volume = settings.effects_volume_percent / 100.0;
+        let effect_volume = (settings.effects_volume_percent / 100.0).powi(2);
         if (self.effect_volume - effect_volume).abs() > f32::EPSILON {
             self.effect_volume = effect_volume;
             changed = true;
@@ -255,5 +265,57 @@ impl AudioContext {
         for sink in self.sinks.values() {
             sink.set_volume(self, f32::from_bits(sink.volume.load(Ordering::SeqCst)));
         }
+    }
+}
+
+struct PrintOnFirstSample<S: Source<Item = f32>> {
+    s: S,
+    printed: bool,
+}
+
+trait SourceExt: Source<Item = f32> + Sized {
+    fn print_on_first(self) -> PrintOnFirstSample<Self>;
+}
+
+impl<S: Source<Item = f32>> SourceExt for S {
+    fn print_on_first(self) -> PrintOnFirstSample<S> {
+        PrintOnFirstSample {
+            s: self,
+            printed: false,
+        }
+    }
+}
+
+impl<S: Source<Item = f32>> Iterator for PrintOnFirstSample<S> {
+    type Item = f32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if !self.printed {
+            self.printed = true;
+            log::info!("first sample");
+        }
+        self.s.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.s.size_hint()
+    }
+}
+
+impl<S: Source<Item = f32>> Source for PrintOnFirstSample<S> {
+    fn current_frame_len(&self) -> Option<usize> {
+        self.s.current_frame_len()
+    }
+
+    fn channels(&self) -> u16 {
+        self.s.channels()
+    }
+
+    fn sample_rate(&self) -> u32 {
+        self.s.sample_rate()
+    }
+
+    fn total_duration(&self) -> Option<Duration> {
+        self.s.total_duration()
     }
 }

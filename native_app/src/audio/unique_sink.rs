@@ -226,7 +226,7 @@ impl<S: Source<Item = f32>> Iterator for ComplexSinkSource<S> {
                 self.volume += (v - self.volume) * 0.02;
 
                 let v = f32::from_bits(controls.speed.load(Ordering::SeqCst));
-                self.speed = v; // (v - self.cur_speed) * 0.01;
+                self.speed += (v - self.speed) * 0.01;
             }
         }
         self.remaining -= 1;
