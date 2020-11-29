@@ -116,6 +116,7 @@ impl Context {
                         self.gfx.finish_frame(enc);
 
                         self.input.end_frame();
+                        self.audio.update();
                     }
                 },
                 _ => (),

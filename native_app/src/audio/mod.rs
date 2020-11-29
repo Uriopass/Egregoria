@@ -109,6 +109,18 @@ impl AudioContext {
         }
     }
 
+    pub fn update(&mut self) {
+        let to_kill: Vec<_> = self
+            .sinks
+            .iter()
+            .filter(|(_, sink)| sink.sink.is_dead())
+            .map(|(id, _)| id)
+            .collect();
+        for v in to_kill {
+            self.sinks.remove(v);
+        }
+    }
+
     pub fn g_volume(&self, kind: AudioKind) -> f32 {
         match kind {
             AudioKind::Music => self.music_volume,
