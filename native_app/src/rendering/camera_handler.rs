@@ -68,17 +68,20 @@ impl CameraHandler {
                 self.zoom_by(ctx, 1.0 / 1.1);
             }
         }
-        if screenpos.x < 2.0 {
-            self.translate_smooth(delta, vec2(-1.0, 0.0));
-        }
-        if screenpos.x > self.camera.viewport.x - 2.0 {
-            self.translate_smooth(delta, vec2(1.0, 0.0));
-        }
-        if screenpos.y < 2.0 {
-            self.translate_smooth(delta, vec2(0.0, 1.0));
-        }
-        if screenpos.y > self.camera.viewport.y - 2.0 {
-            self.translate_smooth(delta, vec2(0.0, -1.0));
+
+        if ctx.window.fullscreen().is_some() {
+            if screenpos.x < 2.0 {
+                self.translate_smooth(delta, vec2(-1.0, 0.0));
+            }
+            if screenpos.x > self.camera.viewport.x - 2.0 {
+                self.translate_smooth(delta, vec2(1.0, 0.0));
+            }
+            if screenpos.y < 2.0 {
+                self.translate_smooth(delta, vec2(0.0, 1.0));
+            }
+            if screenpos.y > self.camera.viewport.y - 2.0 {
+                self.translate_smooth(delta, vec2(0.0, -1.0));
+            }
         }
 
         if keyboard_enabled {
