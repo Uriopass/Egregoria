@@ -91,12 +91,6 @@ impl State {
             .all
             .add_value(delta as f32);
 
-        for (sound, kind) in self.goria.write::<ImmediateSound>().orders.drain(..) {
-            ctx.audio.play(sound, kind);
-        }
-        self.all_audio
-            .update(&mut self.goria, &mut ctx.audio, delta as f32);
-
         self.manage_settings(ctx, self.gui.settings);
 
         self.manage_time(delta, &mut ctx.gfx);
@@ -120,6 +114,12 @@ impl State {
 
         self.souls.add_souls_to_empty_buildings(&mut self.goria);
         self.souls.update(&mut self.goria);
+
+        for (sound, kind) in self.goria.write::<ImmediateSound>().orders.drain(..) {
+            ctx.audio.play(sound, kind);
+        }
+        self.all_audio
+            .update(&mut self.goria, &mut ctx.audio, delta as f32);
 
         self.manage_entity_follow();
         self.camera.update(ctx);

@@ -1907,6 +1907,7 @@ dependencies = [
  "common",
  "egregoria",
  "env_logger",
+ "flat_spatial",
  "futures",
  "geom",
  "imgui",
