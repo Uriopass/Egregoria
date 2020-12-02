@@ -215,6 +215,9 @@ pub enum KeyCode {
 
     Caret,
 
+    Plus,
+    Asterisk,
+
     Numlock,
     Numpad0,
     Numpad1,

@@ -44,7 +44,7 @@ impl Texture {
         image::load_from_memory(&*buf).ok().map(|x| {
             let w = x.width();
             let h = x.height();
-            (x.into_rgba().into_raw(), w, h)
+            (x.into_rgba8().into_raw(), w, h)
         })
     }
 

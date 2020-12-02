@@ -23,7 +23,10 @@ impl Context {
     pub fn new() -> Self {
         let el = EventLoop::new();
 
-        let size = el.primary_monitor().size();
+        let size = el
+            .primary_monitor()
+            .expect("app needs a monitor to run")
+            .size();
 
         let window = WindowBuilder::new()
             .with_inner_size(PhysicalSize::new(
