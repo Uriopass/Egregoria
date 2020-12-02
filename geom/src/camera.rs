@@ -2,7 +2,7 @@ use crate::{vec2, Vec2, Vec3, AABB};
 use mint::ColumnMatrix4;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Camera {
     pub viewport: Vec2,
     pub position: Vec3,
