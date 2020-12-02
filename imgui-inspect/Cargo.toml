@@ -16,5 +16,5 @@ travis-ci = { repository = "aclysma/imgui-inspect", branch = "master" }
 maintenance = { status = "experimental" }
 
 [dependencies]
-imgui = "0.5"
+imgui = "0.6"
 geom = { path = "../geom" }

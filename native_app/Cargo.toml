@@ -18,16 +18,16 @@ mint          = "0.5.6"
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 imgui-wgpu    = { git = "https://github.com/Yatekii/imgui-wgpu-rs" }
-imgui-winit-support = "0.5.0"
+imgui-winit-support = "0.6.0"
 map_model     = { path = "../map_model" }
 flat_spatial = { path = "../flat_spatial" }
 env_logger    = "0.7.1"
 log           = "0.4.11"
 inline_tweak  = "1.0.6"
-imgui         = "0.5.0"
+imgui         = "0.6"
 legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize", "extended-tuple-impls"] }
 ordered-float = "2.0.0"
 serde         = "1.0.117"
 rodio         = { version = "0.13.0", default-features = false, features = ["vorbis"] }
 slotmap       = "0.4.0"
-winit         = "0.22"
+winit         = "0.23"
