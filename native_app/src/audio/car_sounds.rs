@@ -21,14 +21,47 @@ impl CarSounds {
         }
     }
 
-    pub fn update(&mut self, goria: &Egregoria, ctx: &mut AudioContext, delta: f32) {
+    pub fn update(&mut self, goria: &Egregoria, ctx: &mut AudioContext, _delta: f32) {
         let coworld = goria.read::<CollisionWorld>();
-        let campos = goria.read::<Camera>().position;
+        let cam = goria.read::<Camera>();
+        let campos = cam.position;
+        let cambbox = cam.get_screen_box().expand(30.0);
 
-        for h in coworld.handles() {
+        // Check too high
+        if campos.z > 150.0 {
+            for (_, (s, _)) in self.sounds.drain() {
+                ctx.stop(s);
+            }
+
+            return;
+        }
+
+        // Remove sounds outside screen
+        let mut to_remove = vec![];
+
+        for (h, _) in &self.sounds {
+            if let Some((pos, _)) = coworld.get(h) {
+                if cambbox.contains(pos) {
+                    continue;
+                }
+            }
+            to_remove.push(h);
+        }
+
+        for h in to_remove {
+            let (a_h, _) = self.sounds.remove(h).unwrap();
+            ctx.stop(a_h);
+        }
+
+        // Gather
+        for (h, _) in coworld.query_aabb(cambbox.ll, cambbox.ur) {
             let (pos, obj) = coworld.get(h).unwrap();
             if !matches!(obj.group, egregoria::physics::PhysicsGroup::Vehicles) {
                 continue;
+            }
+
+            if self.sounds.len() >= 30 {
+                break;
             }
 
             if !self.sounds.contains_key(h) {
@@ -44,8 +77,11 @@ impl CarSounds {
                 );
                 self.sounds.insert(h, (a, obj.speed));
             }
+        }
 
-            let (a_h, prev_speed) = &mut self.sounds[h];
+        // Update
+        for (h, (a_h, prev_speed)) in &mut self.sounds {
+            let (pos, obj) = coworld.get(h).unwrap(); // Unwrap ok: checked it existed before
 
             ctx.set_volume(*a_h, 1.0 / (1.0 + 0.01 * pos.z(0.0).distance2(campos)));
 
@@ -57,9 +93,5 @@ impl CarSounds {
 
             *prev_speed = obj.speed;
         }
-
-        //ctx.set_volume(self.sound, 1.0);
-        //ctx.set_speed(self.sound, ctx.ui_volume * 2.0);
-        //        let speed = inline_tweak::tweak!(1.0);
     }
 }

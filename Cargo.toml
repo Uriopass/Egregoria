@@ -32,7 +32,7 @@ opt-level = 0
 opt-level = 0
 
 [profile.dev.package.native_app]
-opt-level = 0
+opt-level = 1
 
 [profile.dev.package.imgui-inspect]
 opt-level = 1

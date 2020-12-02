@@ -59,10 +59,6 @@ impl PlayingSink {
             .store(volume.to_bits(), std::sync::atomic::Ordering::SeqCst);
         self.sink.set_volume(ctx.g_volume(self.kind) * volume);
     }
-
-    pub fn set_speed(&self, speed: f32) {
-        self.sink.set_speed(speed);
-    }
 }
 
 type StoredAudio = Buffered<Decoder<Cursor<&'static [u8]>>>;
@@ -120,6 +116,9 @@ impl AudioContext {
             .filter(|(_, sink)| sink.sink.is_dead())
             .map(|(id, _)| id)
             .collect();
+        if !to_kill.is_empty() {
+            log::info!("killed {} sounds", to_kill.len());
+        }
         for v in to_kill {
             self.sinks.remove(v);
         }
@@ -200,6 +199,12 @@ impl AudioContext {
         self.dummy
     }
 
+    pub fn stop(&self, handle: AudioHandle) {
+        if let Some(x) = self.sinks.get(handle) {
+            x.sink.stop();
+        }
+    }
+
     pub fn set_volume(&self, handle: AudioHandle, volume: f32) {
         if let Some(x) = self.sinks.get(handle) {
             let volume = volume.max(0.0).min(2.0);
@@ -214,7 +219,7 @@ impl AudioContext {
                 return;
             }
             let speed = speed.max(0.0).min(2.0);
-            x.set_speed(speed);
+            x.sink.set_speed(speed);
         }
     }
 
