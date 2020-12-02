@@ -21,6 +21,7 @@ pub struct Context {
 
 impl Context {
     pub fn new() -> Self {
+        let audio = AudioContext::new();
         let el = EventLoop::new();
 
         let size = el
@@ -43,7 +44,6 @@ impl Context {
             window.inner_size().height,
         ));
         let input = InputContext::default();
-        let audio = AudioContext::new();
 
         Self {
             gfx,
