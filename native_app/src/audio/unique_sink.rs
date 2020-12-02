@@ -88,6 +88,7 @@ struct SimpleSinkSource<S: Source<Item = f32>> {
     source: S,
     controls: Arc<Controls>,
     volume: f32,
+    dead: bool,
 
     period: u32,
     remaining: u32,
@@ -100,6 +101,7 @@ impl<S: Source<Item = f32>> SimpleSinkSource<S> {
             source,
             volume: f32::from_bits(controls.volume.load(Ordering::SeqCst)),
             controls,
+            dead: false,
             period: p,
             remaining: p,
         }
@@ -110,10 +112,15 @@ impl<S: Source<Item = f32>> Iterator for SimpleSinkSource<S> {
     type Item = f32;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.dead {
+            return None;
+        }
+
         let v = if let Some(x) = self.source.next() {
             x
         } else {
             self.controls.dead.store(true, Ordering::SeqCst);
+            self.dead = true;
             return None;
         };
 
@@ -127,6 +134,7 @@ impl<S: Source<Item = f32>> Iterator for SimpleSinkSource<S> {
             if controls.stop.load(Ordering::SeqCst) {
                 if self.volume < 0.01 {
                     self.controls.dead.store(true, Ordering::SeqCst);
+                    self.dead = true;
                     return None;
                 }
                 self.volume -= self.volume * 0.02;
@@ -147,6 +155,7 @@ impl<S: Source<Item = f32>> Iterator for SimpleSinkSource<S> {
 struct ComplexSinkSource<S: Source<Item = f32>> {
     source: S,
     controls: Arc<Controls>,
+    dead: bool,
     volume: f32,
 
     speed: f32,
@@ -171,6 +180,7 @@ impl<S: Source<Item = f32>> ComplexSinkSource<S> {
             sample: [s1, s2],
             peek: [p1, p2],
             channel_id: 0,
+            dead: false,
             source,
             volume: f32::from_bits(controls.volume.load(Ordering::SeqCst)),
             speed: f32::from_bits(controls.speed.load(Ordering::SeqCst)),
@@ -186,6 +196,10 @@ impl<S: Source<Item = f32>> Iterator for ComplexSinkSource<S> {
     type Item = f32;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.dead {
+            return None;
+        }
+
         let interp = (unsafe { self.sample.get_unchecked(self.channel_id) }
             * (1.0 - self.remainder)
             + self.remainder * unsafe { self.peek.get_unchecked(self.channel_id) })
@@ -206,6 +220,7 @@ impl<S: Source<Item = f32>> Iterator for ComplexSinkSource<S> {
                 self.peek = [peek1, peek2];
             } else {
                 self.controls.dead.store(true, Ordering::SeqCst);
+                self.dead = true;
                 return None;
             }
         }
@@ -219,6 +234,7 @@ impl<S: Source<Item = f32>> Iterator for ComplexSinkSource<S> {
             if controls.stop.load(Ordering::SeqCst) {
                 if self.volume < 0.01 {
                     self.controls.dead.store(true, Ordering::SeqCst);
+                    self.dead = true;
                     return None;
                 }
                 self.volume -= self.volume * 0.04;
@@ -232,10 +248,6 @@ impl<S: Source<Item = f32>> Iterator for ComplexSinkSource<S> {
         self.remaining -= 1;
 
         Some(interp)
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.source.size_hint()
     }
 }
 
