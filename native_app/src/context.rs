@@ -21,7 +21,6 @@ pub struct Context {
 
 impl Context {
     pub fn new() -> Self {
-        let audio = AudioContext::new();
         let el = EventLoop::new();
 
         let size = el
@@ -29,7 +28,18 @@ impl Context {
             .expect("app needs a monitor to run")
             .size();
 
-        let window = WindowBuilder::new()
+        let wb = WindowBuilder::new();
+
+        let window;
+        #[cfg(target_os = "windows")]
+        {
+            window = wb.with_drag_and_drop(false);
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            window = wb;
+        }
+        let window = window
             .with_inner_size(PhysicalSize::new(
                 size.width as f32 * 0.8,
                 size.height as f32 * 0.8,
@@ -44,6 +54,7 @@ impl Context {
             window.inner_size().height,
         ));
         let input = InputContext::default();
+        let audio = AudioContext::new();
 
         Self {
             gfx,
