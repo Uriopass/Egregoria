@@ -11,11 +11,11 @@ layout(set = 0, binding = 1) uniform sampler s_diffuse;
 
 void main() {
     vec4 col = texture(sampler2D(t_diffuse, s_diffuse), in_uv);
+    out_color = col * in_color;
+
     if (out_color.a == 0) {
         discard;
     }
-
-    out_color = col * in_color;
 
     out_normal = vec4(0.0);
 }
