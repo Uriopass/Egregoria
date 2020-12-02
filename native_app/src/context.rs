@@ -33,6 +33,7 @@ impl Context {
         let window;
         #[cfg(target_os = "windows")]
         {
+            use winit::platform::windows::WindowBuilderExtWindows;
             window = wb.with_drag_and_drop(false);
         }
         #[cfg(not(target_os = "windows"))]
