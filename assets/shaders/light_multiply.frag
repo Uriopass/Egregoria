@@ -16,9 +16,10 @@ layout(set = 2, binding = 0) uniform texture2D t_normal;
 layout(set = 2, binding = 1) uniform sampler s_normal;
 
 layout(set = 3, binding = 0) uniform LightParams {
-    vec3 ambiant;
-    float time;
     mat4 invproj;
+    vec4 ambiant;
+    float time;
+    float height;
 };
 
 // A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
@@ -122,7 +123,7 @@ void main() {
 
     float sun_mult =  clamp(1.2 * dot(normal, sun), 0.1, 1.0);
 
-    color += cloud;
+    color += mix(0.0, cloud, min(1.0, height * 0.0005 - 0.3));
 
     vec3 real_ambiant = vec3(sun_mult);
 

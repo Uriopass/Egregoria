@@ -2,7 +2,7 @@ use crate::{
     compile_shader, Drawable, GfxContext, IndexType, PreparedPipeline, Texture, Uniform, UvVertex,
     VBDesc,
 };
-use geom::Vec3;
+use geom::LinearColor;
 use mint::ColumnMatrix4;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -13,9 +13,10 @@ use wgpu::{
 #[derive(Copy, Clone)]
 #[repr(C)]
 struct LightUniform {
-    ambiant: Vec3,
-    time: f32,
     inv_proj: ColumnMatrix4<f32>,
+    ambiant: LinearColor,
+    time: f32,
+    height: f32,
 }
 
 u8slice_impl!(LightUniform);
@@ -217,7 +218,8 @@ pub fn render_lights(
     encoder: &mut CommandEncoder,
     frame: &SwapChainFrame,
     lights: &[LightInstance],
-    ambiant: Vec3,
+    ambiant: LinearColor,
+    height: f32,
 ) {
     let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
         label: None,
@@ -291,9 +293,10 @@ pub fn render_lights(
 
     let ambiant_uni = Uniform::new(
         LightUniform {
-            ambiant,
-            time: gfx.time_uni.value,
             inv_proj: gfx.inv_projection.value,
+            time: gfx.time_uni.value,
+            ambiant,
+            height,
         },
         &gfx.device,
     );

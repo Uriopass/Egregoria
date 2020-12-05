@@ -9,7 +9,7 @@ use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeWa
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound, OrderKind};
 use egregoria::souls::Souls;
 use egregoria::{load_from_disk, Egregoria};
-use geom::{vec3, Vec2};
+use geom::{vec3, LinearColor, Vec2};
 use geom::{Camera, Vec3};
 use map_model::Map;
 use std::borrow::Cow;
@@ -22,7 +22,7 @@ use winit::window::{Fullscreen, Window};
 pub struct State {
     goria: Egregoria,
 
-    camera: CameraHandler,
+    pub camera: CameraHandler,
 
     imgui_render: ImguiWrapper,
     last_time: Instant,
@@ -65,7 +65,7 @@ impl State {
 
         let gui: Gui = common::saveload::load_json("gui").unwrap_or_default();
 
-        goria.insert(camera.camera.clone());
+        goria.insert(camera.camera);
 
         let mut me = Self {
             goria,
@@ -104,10 +104,11 @@ impl State {
             !self.imgui_render.last_mouse_captured,
             !self.imgui_render.last_kb_captured,
         );
-        *self.goria.write::<Camera>() = self.camera.camera.clone();
+        *self.goria.write::<Camera>() = self.camera.camera;
 
         if !self.imgui_render.last_mouse_captured {
-            self.goria.write::<MouseInfo>().unprojected = self.unproject(ctx.input.mouse.screen);
+            self.goria.write::<MouseInfo>().unprojected =
+                self.camera.unproject(ctx.input.mouse.screen);
         }
 
         self.goria.run();
@@ -207,7 +208,7 @@ impl State {
             .add_value(start.elapsed().as_secs_f32());
     }
 
-    pub fn lights(&self) -> (Cow<[LightInstance]>, Vec3) {
+    pub fn lights(&self) -> (Cow<[LightInstance]>, LinearColor) {
         let mut lights = vec![];
 
         let time = self.goria.read::<GameTime>();
@@ -253,7 +254,10 @@ impl State {
             _ => dark,
         };
 
-        (Cow::Owned(lights), col)
+        (
+            Cow::Owned(lights),
+            LinearColor::new(col.x, col.y, col.z, 1.0),
+        )
     }
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
@@ -324,9 +328,5 @@ impl State {
     pub fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {
         self.camera
             .resize(ctx, size.width as f32, size.height as f32);
-    }
-
-    pub fn unproject(&self, pos: Vec2) -> Vec2 {
-        self.camera.unproject_mouse_click(pos)
     }
 }

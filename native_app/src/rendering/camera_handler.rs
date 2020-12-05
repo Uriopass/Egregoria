@@ -36,7 +36,7 @@ impl CameraHandler {
         self.update(ctx);
     }
 
-    pub fn unproject_mouse_click(&self, pos: Vec2) -> Vec2 {
+    pub fn unproject(&self, pos: Vec2) -> Vec2 {
         self.camera.unproject(pos)
     }
 
@@ -60,7 +60,7 @@ impl CameraHandler {
                 common::saveload::save_silent(&self.camera, "camera");
             }
 
-            self.last_pos = self.unproject_mouse_click(ctx.input.mouse.screen);
+            self.last_pos = self.unproject(ctx.input.mouse.screen);
             if ctx.input.mouse.wheel_delta < 0.0 {
                 self.zoom_by(ctx, 1.1);
             }
@@ -111,7 +111,7 @@ impl CameraHandler {
             }
         }
 
-        self.last_pos = self.unproject_mouse_click(ctx.input.mouse.screen);
+        self.last_pos = self.unproject(ctx.input.mouse.screen);
     }
 
     fn translate_smooth(&mut self, delta: f32, dir: Vec2) {
@@ -126,7 +126,7 @@ impl CameraHandler {
         self.camera.position.z *= multiply;
 
         self.update(ctx);
-        let after = self.unproject_mouse_click(ctx.input.mouse.screen);
+        let after = self.unproject(ctx.input.mouse.screen);
         self.camera.position.x -= after.x - self.last_pos.x;
         self.camera.position.y -= after.y - self.last_pos.y;
         self.update(ctx);
