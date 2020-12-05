@@ -163,11 +163,7 @@ impl AudioContext {
         if let Some(ref h) = self.out_handle {
             if let Some(x) = Self::get(&mut self.cache, name) {
                 log::info!("playing {}", name);
-                let _ = h.play_raw(
-                    x.convert_samples()
-                        .amplify(self.g_volume(kind))
-                        .print_on_first(),
-                );
+                let _ = h.play_raw(x.convert_samples().amplify(self.g_volume(kind)));
             }
         }
     }

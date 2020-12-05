@@ -1,5 +1,6 @@
 .idea/*
 .idea
+logs
 /target
 **/*.rs.bk
 *.ini
