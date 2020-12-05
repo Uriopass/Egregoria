@@ -109,7 +109,8 @@ impl Context {
                         };
                     }
                     Some(sco) => {
-                        self.input.mouse.unprojected = state.unproject(self.input.mouse.screen);
+                        self.input.mouse.unprojected =
+                            state.camera.unproject(self.input.mouse.screen);
 
                         state.update(&mut self);
 
@@ -124,6 +125,7 @@ impl Context {
                             &sco,
                             &lights,
                             ambiant_col,
+                            state.camera.camera.position.z,
                         );
 
                         self.gfx
