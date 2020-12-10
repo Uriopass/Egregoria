@@ -32,7 +32,7 @@ impl UniqueSink {
     {
         let controls = Arc::new(Controls {
             volume: 0.0f32.to_bits().into(),
-            speed: 0.01f32.to_bits().into(),
+            speed: 1.0f32.to_bits().into(),
             stop: AtomicBool::new(false),
             dead: AtomicBool::new(false),
         });

@@ -8,90 +8,136 @@ use rodio::Source;
 use slotmap::SecondaryMap;
 use std::time::Duration;
 
+pub struct CarSound {
+    road: AudioHandle,
+    engine: AudioHandle,
+}
+
 pub struct CarSounds {
-    pub speed: f32,
-    pub sounds: SecondaryMap<GridHandle, (AudioHandle, f32)>,
+    sounds: SecondaryMap<GridHandle, CarSound>,
+    generic_car_sound: AudioHandle,
 }
 
 impl CarSounds {
-    pub fn new(_ctx: &mut AudioContext) -> Self {
+    pub fn new(ctx: &mut AudioContext) -> Self {
         Self {
-            speed: 0.0,
             sounds: SecondaryMap::new(),
+            generic_car_sound: ctx.play_with_control(
+                "car_loop",
+                |x| x.repeat_infinite(),
+                AudioKind::Effect,
+                false,
+            ),
         }
     }
 
-    pub fn update(&mut self, goria: &Egregoria, ctx: &mut AudioContext, _delta: f32) {
+    pub fn update(&mut self, goria: &Egregoria, ctx: &mut AudioContext, delta: f32) {
         let coworld = goria.read::<CollisionWorld>();
         let cam = goria.read::<Camera>();
         let campos = cam.position;
-        let cambbox = cam.get_screen_box().expand(30.0);
+        let cambox = cam.get_screen_box().expand(100.0);
 
-        // Check too high
-        if campos.z > 150.0 {
-            for (_, (s, _)) in self.sounds.drain() {
-                ctx.stop(s);
-            }
+        const HEAR_RADIUS: f32 = 200.0;
 
-            return;
-        }
+        #[cfg(not(debug_assertions))]
+        const MAX_SOUNDS: usize = 30;
+        #[cfg(debug_assertions)]
+        const MAX_SOUNDS: usize = 10;
 
-        // Remove sounds outside screen
         let mut to_remove = vec![];
 
         for (h, _) in &self.sounds {
             if let Some((pos, _)) = coworld.get(h) {
-                if cambbox.contains(pos) {
+                if pos.z(0.0).is_close(campos, HEAR_RADIUS) {
                     continue;
                 }
             }
+
             to_remove.push(h);
         }
 
         for h in to_remove {
-            let (a_h, _) = self.sounds.remove(h).unwrap();
-            ctx.stop(a_h);
+            let cs = self.sounds.remove(h).unwrap();
+            ctx.stop(cs.road);
+            ctx.stop(cs.engine);
         }
 
         // Gather
-        for (h, _) in coworld.query_aabb(cambbox.ll, cambbox.ur) {
+        for (h, _) in coworld.query_around(
+            campos.xy(),
+            (HEAR_RADIUS * HEAR_RADIUS - campos.z * campos.z)
+                .max(0.0)
+                .sqrt(),
+        ) {
             let (pos, obj) = coworld.get(h).unwrap();
             if !matches!(obj.group, egregoria::physics::PhysicsGroup::Vehicles) {
                 continue;
             }
 
-            if self.sounds.len() >= 30 {
+            if self.sounds.len() >= MAX_SOUNDS {
                 break;
             }
 
             if !self.sounds.contains_key(h) {
-                let a = ctx.play_with_control(
-                    "car_loop",
+                let engine = ctx.play_with_control(
+                    "car_engine",
                     |x| {
-                        x.repeat_infinite().skip_duration(Duration::from_micros(
-                            (common::rand::rand2(pos.x, pos.y) * 10000.0) as u64,
+                        x.repeat_infinite().skip_duration(Duration::from_millis(
+                            (common::rand::rand2(pos.x, pos.y) * 1000.0) as u64,
                         ))
                     },
                     AudioKind::Effect,
                     true,
                 );
-                self.sounds.insert(h, (a, obj.speed));
+
+                let road = ctx.play_with_control(
+                    "car_loop",
+                    |x| {
+                        x.repeat_infinite().skip_duration(Duration::from_millis(
+                            (common::rand::rand2(pos.x, pos.y) * 1000.0) as u64,
+                        ))
+                    },
+                    AudioKind::Effect,
+                    true,
+                );
+
+                self.sounds.insert(h, CarSound { road, engine });
             }
         }
 
         // Update
-        for (h, (a_h, prev_speed)) in &mut self.sounds {
+        for (h, cs) in &mut self.sounds {
             let (pos, obj) = coworld.get(h).unwrap(); // Unwrap ok: checked it existed before
 
-            ctx.set_volume(*a_h, 1.0 / (1.0 + 0.01 * pos.z(0.0).distance2(campos)));
+            let his_speed = (obj.speed * obj.dir).z(0.0);
+            let dir_to_me = (campos - pos.z(campos.z * 0.5)).normalize();
 
-            let mut acc = 0.0;
-            if obj.speed > *prev_speed {
-                acc = 0.5 / (1.0 + 0.3 * obj.speed);
-            }
-            ctx.set_speed(*a_h, 0.4 + obj.speed / 40.0 + acc);
+            let speed_to_me = his_speed.dot(dir_to_me);
+            let boost = 300.0 / (300.0 - speed_to_me);
 
-            *prev_speed = obj.speed;
+            ctx.set_volume(
+                cs.road,
+                obj.speed.sqrt() * 3.0 / pos.z(0.0).distance(campos),
+            );
+            ctx.set_speed(cs.road, boost);
+
+            ctx.set_volume(cs.engine, obj.speed.sqrt() / pos.z(0.0).distance(campos));
+            ctx.set_speed(cs.engine, boost);
+        }
+
+        if campos.z < 1000.0 {
+            let cars_on_screen = coworld
+                .query_aabb(cambox.ll, cambox.ur)
+                .filter_map(|(h, _)| coworld.get(h))
+                .filter(|(_, obj)| matches!(obj.group, egregoria::physics::PhysicsGroup::Vehicles))
+                .count();
+            ctx.set_volume_smooth(
+                self.generic_car_sound,
+                ((cars_on_screen as f32).min(100.0) / 100.0 * (1.0 - campos.z / 1000.0)).min(0.03),
+                delta,
+            )
+        } else {
+            ctx.set_volume_smooth(self.generic_car_sound, 0.0, delta);
         }
     }
 }

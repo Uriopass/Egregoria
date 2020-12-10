@@ -9,8 +9,8 @@ use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeWa
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound, OrderKind};
 use egregoria::souls::Souls;
 use egregoria::{load_from_disk, Egregoria};
+use geom::Camera;
 use geom::{vec3, LinearColor, Vec2};
-use geom::{Camera, Vec3};
 use map_model::Map;
 use std::borrow::Cow;
 use std::time::Instant;

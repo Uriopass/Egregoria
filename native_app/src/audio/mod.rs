@@ -182,12 +182,10 @@ impl AudioContext {
         if let Some(ref h) = self.out_handle {
             if let Some(x) = Self::get(&mut self.cache, name) {
                 let sink = UniqueSink::try_new(h, transform(x), complex).unwrap();
-
-                sink.set_volume(self.g_volume(kind));
                 return self.sinks.insert(PlayingSink {
                     sink,
                     kind,
-                    volume: 1.0f32.to_bits().into(),
+                    volume: 0.0f32.to_bits().into(),
                     complex,
                 });
             }
