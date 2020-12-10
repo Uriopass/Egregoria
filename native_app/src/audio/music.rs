@@ -38,6 +38,7 @@ impl Music {
                 AudioKind::Music,
                 false,
             ));
+            ctx.set_volume(self.cur_track.unwrap(), 1.0);
             log::info!("playing soundtrack {}", TRACKS[self.track_id]);
             self.last_played = Instant::now();
         }

@@ -34,12 +34,12 @@ impl Ambient {
         let h = camera.position.z;
 
         // Wind
-        let volume = lerp(0.05, 0.2, (h - 100.0) / 10000.0);
+        let volume = lerp(0.1, 0.8, (h - 100.0) / 4000.0);
         ctx.set_volume_smooth(self.wind, volume, delta * 0.05);
 
         // Forest
         let bbox = camera.get_screen_box();
-        let mut volume = lerp(0.4, 0.0, h / 600.0);
+        let mut volume = lerp(1.0, 0.0, h / 600.0);
 
         let ll = bbox.ll;
         let ur = bbox.ur;

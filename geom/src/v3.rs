@@ -347,6 +347,7 @@ impl Vec3 {
         self.dot(self)
     }
 
+    #[inline]
     pub fn abs(self) -> Self {
         Self {
             x: self.x.abs(),
@@ -355,6 +356,7 @@ impl Vec3 {
         }
     }
 
+    #[inline]
     pub fn xy(self) -> Vec2 {
         Vec2 {
             x: self.x,
@@ -362,6 +364,7 @@ impl Vec3 {
         }
     }
 
+    #[inline]
     pub fn modulo(self, v: f32) -> Self {
         Self {
             x: self.x % v,
@@ -370,6 +373,7 @@ impl Vec3 {
         }
     }
 
+    #[inline]
     pub fn floor(self) -> Self {
         Self {
             x: self.x.floor(),
@@ -378,6 +382,7 @@ impl Vec3 {
         }
     }
 
+    #[inline]
     pub fn fract(self) -> Self {
         Self {
             x: self.x.fract(),
@@ -404,6 +409,11 @@ impl Vec3 {
     #[inline]
     pub fn distance(self, rhs: Self) -> f32 {
         (self - rhs).magnitude()
+    }
+
+    #[inline]
+    pub fn is_close(self, rhs: Self, dist: f32) -> bool {
+        self.distance2(rhs) < dist * dist
     }
 
     #[inline]
