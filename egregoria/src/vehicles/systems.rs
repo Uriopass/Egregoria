@@ -131,6 +131,8 @@ fn physics(
     kin.velocity = trans.direction() * speed;
 }
 
+const FRONT_DIST_CUTOFF: f32 = 1.5;
+
 /// Decide the appropriate velocity and direction to aim for.
 pub fn calc_decision<'a>(
     vehicle: &mut Vehicle,
@@ -150,10 +152,15 @@ pub fn calc_decision<'a>(
 
     let terminal_pos = it.get_terminal();
 
-    let front_dist = calc_front_dist(vehicle, trans, self_obj, it, neighs);
+    let speed = self_obj.speed;
+    let time_to_stop = speed / vehicle.kind.deceleration();
+    let stop_dist = time_to_stop * speed * 0.5;
+
+    let cutoff = (0.8 + stop_dist).min(1.5);
+
+    let front_dist = calc_front_dist(vehicle, trans, self_obj, it, neighs, cutoff);
 
     let position = trans.position();
-    let speed = self_obj.speed;
     if speed.abs() < 0.2 && front_dist < 1.5 {
         vehicle.wait_time = (position.x * 1000.0).fract().abs() * 0.5;
         return default_return;
@@ -163,9 +170,6 @@ pub fn calc_decision<'a>(
         (objective - position).try_normalize(),
         return default_return
     );
-
-    let time_to_stop = speed / vehicle.kind.deceleration();
-    let stop_dist = time_to_stop * speed * 0.5;
 
     if let Some(pos) = terminal_pos {
         if pos.is_close(trans.position(), 1.0 + stop_dist) {
@@ -224,6 +228,7 @@ fn calc_front_dist<'a>(
     self_obj: &PhysicsObject,
     it: &Itinerary,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
+    cutoff: f32,
 ) -> f32 {
     let position = trans.position();
     let direction = trans.direction();
@@ -274,6 +279,9 @@ fn calc_front_dist<'a>(
                 dist_to_obj -= 1.0;
             }
             min_front_dist = min_front_dist.min(dist_to_obj);
+            if min_front_dist < cutoff {
+                return min_front_dist;
+            }
             continue;
         }
 
