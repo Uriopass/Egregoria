@@ -22,6 +22,8 @@ pub struct Settings {
     pub music_volume_percent: f32,
     pub effects_volume_percent: f32,
     pub ui_volume_percent: f32,
+
+    pub time_warp: f32,
 }
 
 impl Default for Settings {
@@ -32,6 +34,7 @@ impl Default for Settings {
             effects_volume_percent: 100.0,
             ui_volume_percent: 100.0,
             fullscreen: true,
+            time_warp: 1.0,
         }
     }
 }
@@ -75,7 +78,7 @@ pub struct Gui {
     #[serde(skip)]
     pub n_cars: i32,
     pub n_pedestrians: i32,
-    pub depause_warp: u32,
+    pub depause_warp: f32,
     pub settings: Settings,
 }
 
@@ -88,7 +91,7 @@ impl Default for Gui {
             last_gui_save: Instant::now(),
             n_cars: 100,
             n_pedestrians: 100,
-            depause_warp: 1,
+            depause_warp: 1.0,
             settings: Settings::default(),
         }
     }
@@ -327,7 +330,6 @@ impl Gui {
     }
 
     pub fn time_controls(&mut self, ui: &Ui, goria: &mut Egregoria) {
-        let mut warp = goria.write::<TimeWarp>();
         let time = goria.read::<GameTime>().daytime;
 
         if goria
@@ -335,11 +337,11 @@ impl Gui {
             .just_pressed
             .contains(&KeyCode::Space)
         {
-            if warp.0 == 0 {
-                warp.0 = self.depause_warp;
+            if self.settings.time_warp == 0 {
+                self.settings.time_warp = self.depause_warp;
             } else {
-                self.depause_warp = warp.0;
-                warp.0 = 0;
+                self.depause_warp = self.settings.time_warp;
+                setl.settings.time_warp = 0;
             }
         }
 
