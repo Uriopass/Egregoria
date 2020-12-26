@@ -24,14 +24,6 @@ impl Default for Selectable {
     }
 }
 
-pub struct TimeWarp(pub u32);
-
-impl Default for TimeWarp {
-    fn default() -> Self {
-        Self(1)
-    }
-}
-
 #[derive(Default)]
 pub struct History {
     pub values: [f32; 10],

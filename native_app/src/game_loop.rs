@@ -281,7 +281,7 @@ impl State {
         const MAX_TIMESTEP: f64 = 1.0 / 15.0;
 
         let mut time = self.goria.write::<GameTime>();
-        let warp = self.goria.read::<TimeWarp>().0;
+        let warp = self.gui.settings.time_warp;
 
         let delta = (delta * warp as f64).min(MAX_TIMESTEP);
 
