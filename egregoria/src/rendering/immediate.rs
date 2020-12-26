@@ -74,9 +74,17 @@ impl<'a> ImmediateBuilder<'a> {
 
 impl<'a> Drop for ImmediateBuilder<'a> {
     fn drop(&mut self) {
-        let order = std::mem::replace(&mut self.order, unsafe {
-            MaybeUninit::zeroed().assume_init()
-        });
+        let order = std::mem::replace(
+            &mut self.order,
+            ImmediateOrder {
+                kind: OrderKind::Circle {
+                    pos: Vec2::ZERO,
+                    radius: 0.0,
+                },
+                color: Color::TRANSPARENT,
+                z: 0.0,
+            },
+        );
         if self.persistent {
             self.draw.persistent_orders.push(order)
         } else {
