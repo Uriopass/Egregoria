@@ -45,8 +45,6 @@ pub struct RenderStats {
     pub all: History,
     pub world_update: History,
     pub render: History,
-    pub souls_desires: History,
-    pub souls_apply: History,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]

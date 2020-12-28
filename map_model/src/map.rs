@@ -204,7 +204,12 @@ impl Map {
         shape: OBB,
         kind: BuildingKind,
     ) -> BuildingID {
-        dbg!("build special {} on {} with shape {}", kind, road, shape);
+        log::info!(
+            "build special {:?} on {:?} with shape {:?}",
+            kind,
+            road,
+            shape
+        );
         self.dirty = true;
         let to_clean: Vec<_> = self
             .spatial_map

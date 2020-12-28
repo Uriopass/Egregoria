@@ -1,4 +1,3 @@
-use crate::pedestrians::data::PedestrianID;
 use crate::SoulID;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
@@ -8,7 +7,7 @@ use std::ops::{Index, IndexMut};
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct BuildingInfo {
     pub owner: Option<SoulID>,
-    pub inside: Vec<PedestrianID>,
+    pub inside: Vec<SoulID>,
 }
 
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -35,7 +34,7 @@ impl BuildingInfos {
         }
     }
 
-    pub fn get_in(&mut self, building: BuildingID, e: PedestrianID) {
+    pub fn get_in(&mut self, building: BuildingID, e: SoulID) {
         if cfg!(debug_assertions) && self[building].inside.contains(&e) {
             log::warn!(
                 "called get_in({:?}, {:?}) but it was already inside",
@@ -46,7 +45,7 @@ impl BuildingInfos {
         self[building].inside.push(e);
     }
 
-    pub fn get_out(&mut self, building: BuildingID, e: PedestrianID) {
+    pub fn get_out(&mut self, building: BuildingID, e: SoulID) {
         let inside = &mut self[building].inside;
         if let Some(i) = inside.iter().position(|v| *v == e) {
             inside.swap_remove(i);

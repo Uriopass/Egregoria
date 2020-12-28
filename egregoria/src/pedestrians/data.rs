@@ -1,9 +1,9 @@
-use crate::api::Location;
 use crate::engine_interaction::{Movable, Selectable};
 use crate::map_dynamic::{BuildingInfos, Itinerary};
+use crate::pedestrians::Location;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
-use crate::Egregoria;
+use crate::{Egregoria, SoulID};
 use geom::Color;
 use geom::{vec2, Transform, Vec2};
 use imgui_inspect_derive::*;
@@ -11,11 +11,6 @@ use legion::Entity;
 use map_model::{BuildingID, Map};
 use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
-pub struct PedestrianID(pub Entity);
-
-debug_inspect_impl!(PedestrianID);
 
 #[derive(Serialize, Deserialize, Inspect)]
 pub struct Pedestrian {
@@ -25,12 +20,12 @@ pub struct Pedestrian {
 
 const PED_SIZE: f32 = 0.5;
 
-pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> PedestrianID {
+pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Entity {
     let color = random_pedestrian_shirt_color();
 
     let hpos = goria.read::<Map>().buildings()[house].door_pos;
 
-    let e = PedestrianID(goria.world.push((
+    let e = goria.world.push((
         Transform::new(hpos),
         Location::Building(house),
         Pedestrian::default(),
@@ -70,14 +65,14 @@ pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> PedestrianI
                 .build()
         },
         Selectable::new(0.5),
-    )));
+    ));
 
-    goria.write::<BuildingInfos>().get_in(house, e);
+    goria.write::<BuildingInfos>().get_in(house, SoulID(e));
     e
 }
 
-pub fn put_pedestrian_in_coworld(goria: &mut Egregoria, pos: Vec2) -> Collider {
-    Collider(goria.write::<CollisionWorld>().insert(
+pub fn put_pedestrian_in_coworld(coworld: &mut CollisionWorld, pos: Vec2) -> Collider {
+    Collider(coworld.insert(
         pos,
         PhysicsObject {
             radius: PED_SIZE * 0.6,

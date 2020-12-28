@@ -2,13 +2,11 @@
 #![allow(clippy::blocks_in_if_conditions)]
 #![allow(clippy::too_many_arguments)]
 
-use crate::api::Location;
-use crate::economy::Market;
-use crate::engine_interaction::{
-    KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable, TimeWarp,
-};
+use crate::economy::{Market, Wheat};
+use crate::engine_interaction::{KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable};
 use crate::map_dynamic::{
-    add_trees_system, itinerary_update_system, BuildingInfos, Itinerary, ParkingManagement,
+    add_trees_system, itinerary_update_system, routing_update_system, BuildingInfos, Itinerary,
+    ParkingManagement,
 };
 use crate::pedestrians::{pedestrian_decision_system, Pedestrian};
 use crate::physics::systems::{
@@ -20,6 +18,7 @@ use crate::rendering::assets::AssetRender;
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::scenarios::scenario_runner::{run_scenario_system, RunningScenario};
+use crate::souls::human::human_desires_system;
 use crate::vehicles::systems::{
     vehicle_cleanup_system, vehicle_decision_system, vehicle_state_update_system,
 };
@@ -30,7 +29,9 @@ use legion::storage::Component;
 use legion::systems::Resource;
 use legion::{any, Entity, IntoQuery, Registry, Resources, World};
 use map_model::{Map, SerializedMap};
+use pedestrians::Location;
 use serde::{Deserialize, Serialize};
+use souls::desire::{desire_home_system, desire_work_system};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
@@ -49,7 +50,6 @@ extern crate log as extern_log;
 #[macro_use]
 pub mod utils;
 
-pub mod api;
 pub mod economy;
 pub mod engine_interaction;
 pub mod map_dynamic;
@@ -61,14 +61,15 @@ pub mod souls;
 pub mod vehicles;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
-pub struct SoulID(pub usize);
+pub struct SoulID(pub Entity);
+
+debug_inspect_impl!(SoulID);
 
 #[derive(Default)]
 pub struct Egregoria {
     pub world: World,
     pub schedule: SeqSchedule,
     resources: Resources,
-    read_only: bool,
 }
 
 /// Safety: Resources must be Send+Sync.
@@ -113,8 +114,7 @@ impl Egregoria {
         goria.insert(ParCommandBuffer::default());
         goria.insert(Deleted::<Collider>::default());
         goria.insert(Deleted::<Vehicle>::default());
-        goria.insert(Market::default());
-        goria.insert(TimeWarp::default());
+        goria.insert(Market::<Wheat>::default());
 
         // Dispatcher init
         goria
@@ -128,6 +128,10 @@ impl Egregoria {
             .add_system(run_scenario_system())
             .add_system(kinematics_apply_system())
             .add_system(coworld_synchronize_system())
+            .add_system(routing_update_system())
+            .add_system(desire_home_system())
+            .add_system(desire_work_system())
+            .add_system(human_desires_system())
             .add_system(coworld_maintain_system());
 
         goria
@@ -137,12 +141,19 @@ impl Egregoria {
         self.comp::<Transform>(e).map(|x| x.position())
     }
 
-    pub fn comp<T: Component>(&self, e: Entity) -> Option<&T> {
-        <&T>::query().get(&self.world, e).ok()
+    pub fn add_comp(&mut self, e: Entity, c: impl Component) {
+        if self
+            .world
+            .entry(e)
+            .map(move |mut e| e.add_component(c))
+            .is_none()
+        {
+            log::error!("trying to add component to entity but it doesn't exist");
+        }
     }
 
-    pub fn set_read_only(&mut self, read_only: bool) {
-        self.read_only = read_only;
+    pub fn comp<T: Component>(&self, e: Entity) -> Option<&T> {
+        <&T>::query().get(&self.world, e).ok()
     }
 
     pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
@@ -154,12 +165,10 @@ impl Egregoria {
     }
 
     pub fn try_write<T: Resource>(&self) -> Option<impl DerefMut<Target = T> + '_> {
-        debug_assert!(!self.read_only);
         self.resources.get_mut()
     }
 
     pub fn write<T: Resource>(&self) -> impl DerefMut<Target = T> + '_ {
-        debug_assert!(!self.read_only);
         self.resources
             .get_mut()
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))

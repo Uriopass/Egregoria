@@ -1,6 +1,6 @@
 use crate::gui::Z_TOOL;
 use common::inspect::InspectedEntity;
-use egregoria::api::Location;
+use egregoria::pedestrians::Location;
 use egregoria::rendering::immediate::ImmediateDraw;
 use geom::Color;
 use geom::Transform;

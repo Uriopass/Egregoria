@@ -131,8 +131,6 @@ fn physics(
     kin.velocity = trans.direction() * speed;
 }
 
-const FRONT_DIST_CUTOFF: f32 = 1.5;
-
 /// Decide the appropriate velocity and direction to aim for.
 pub fn calc_decision<'a>(
     vehicle: &mut Vehicle,

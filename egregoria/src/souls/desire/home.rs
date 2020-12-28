@@ -1,8 +1,7 @@
-use crate::api::{Action, Destination};
+use crate::map_dynamic::{Destination, Router};
 use crate::souls::desire::Desire;
-use crate::souls::human::Human;
-use crate::Egregoria;
 use common::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
+use legion::system;
 use map_model::BuildingID;
 
 pub struct Home {
@@ -22,17 +21,12 @@ impl Home {
     }
 }
 
-impl Desire<Human> for Home {
-    fn name(&self) -> &'static str {
-        "Home"
-    }
-
-    fn score(&self, goria: &Egregoria, _soul: &Human) -> f32 {
-        let time = goria.read::<GameTime>();
-        1.0 - self.home_inter.dist_until(time.daytime) as f32 * 0.01
-    }
-
-    fn apply(&mut self, goria: &Egregoria, soul: &mut Human) -> Action {
-        soul.router.go_to(goria, Destination::Building(self.house))
-    }
+#[system(par_for_each)]
+pub fn desire_home(#[resource] time: &GameTime, router: &mut Router, d: &mut Desire<Home>) {
+    d.score_and_apply(
+        |home| 1.0 - home.home_inter.dist_until(time.daytime) as f32 * 0.01,
+        |home| {
+            router.go_to(Destination::Building(home.house));
+        },
+    );
 }
