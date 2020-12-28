@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 
 pub mod config;
+pub mod history;
 pub mod inspect;
 pub mod rand;
 pub mod saveload;
 pub mod time;
 
 pub use config::*;
+pub use history::*;
 pub use time::*;
 
 #[derive(Copy, Clone)]

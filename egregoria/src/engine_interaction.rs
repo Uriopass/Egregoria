@@ -1,3 +1,4 @@
+use common::History;
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -21,22 +22,6 @@ impl Selectable {
 impl Default for Selectable {
     fn default() -> Self {
         Self { radius: 5.0 }
-    }
-}
-
-#[derive(Default)]
-pub struct History {
-    pub values: [f32; 10],
-}
-
-impl History {
-    pub fn add_value(&mut self, value: f32) {
-        self.values.as_mut().rotate_left(1);
-        self.values[self.values.len() - 1] = value;
-    }
-
-    pub fn avg(&self) -> f32 {
-        (&self.values).iter().sum::<f32>() / (self.values.len() as f32)
     }
 }
 
