@@ -5,9 +5,9 @@ use crate::gui::{setup_gui, FollowEntity, Gui, Settings, UiTextures};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
 use common::GameTime;
-use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats, TimeWarp};
+use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats};
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound, OrderKind};
-use egregoria::souls::Souls;
+use egregoria::souls::add_souls_to_empty_buildings;
 use egregoria::{load_from_disk, Egregoria};
 use geom::Camera;
 use geom::{vec3, LinearColor, Vec2};
@@ -30,8 +30,6 @@ pub struct State {
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
     gui: Gui,
-
-    souls: Souls,
 
     all_audio: GameAudio,
 }
@@ -75,7 +73,6 @@ impl State {
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
             gui,
-            souls: Souls::default(),
             all_audio: GameAudio::new(&mut ctx.audio),
         };
         me.manage_settings(ctx, me.gui.settings);
@@ -113,8 +110,7 @@ impl State {
 
         self.goria.run();
 
-        self.souls.add_souls_to_empty_buildings(&mut self.goria);
-        self.souls.update(&mut self.goria);
+        add_souls_to_empty_buildings(&mut self.goria);
 
         for (sound, kind) in self.goria.write::<ImmediateSound>().orders.drain(..) {
             ctx.audio.play(sound, kind);

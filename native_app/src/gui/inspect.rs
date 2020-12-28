@@ -1,13 +1,11 @@
 use crate::gui::follow::FollowEntity;
 use crate::gui::roadeditor::IntersectionComponent;
-use egregoria::api::{Location, Router};
 use egregoria::engine_interaction::Movable;
 use egregoria::map_dynamic::Itinerary;
-use egregoria::pedestrians::Pedestrian;
+use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, Kinematics};
 use egregoria::rendering::assets::AssetRender;
 use egregoria::rendering::meshrender_component::MeshRender;
-use egregoria::souls::DebugSoul;
 use egregoria::vehicles::Vehicle;
 use egregoria::Egregoria;
 use geom::Transform;
@@ -79,33 +77,6 @@ impl InspectRenderer {
             ui.text("dirty");
         }
 
-        if goria.comp::<Pedestrian>(self.entity).is_some() {
-            debug_souls(ui, goria);
-        }
-
         dirty
-    }
-}
-
-pub fn debug_souls(ui: &Ui, goria: &mut Egregoria) {
-    let mut dsoul = goria.write::<DebugSoul>();
-    if let Some(v) = dsoul.cur_inspect {
-        ui.text(format!("{:?}", v));
-
-        for (name, h) in &dsoul.scores {
-            ui.plot_lines(&imgui::im_str!("{}", name), &h.values)
-                .build();
-        }
-
-        if let Some(router) = dsoul.router.as_mut() {
-            <Router as InspectRenderDefault<Router>>::render_mut(
-                &mut [router],
-                "router",
-                ui,
-                &InspectArgsDefault::default(),
-            );
-        }
-    } else {
-        ui.text("No pedestrian selected");
     }
 }

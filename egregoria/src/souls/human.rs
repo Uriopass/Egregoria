@@ -1,15 +1,10 @@
-use crate::api::Router;
-use crate::economy::{EconomicAgent, Goods, Market, Money};
-use crate::map_dynamic::BuildingInfos;
+use crate::map_dynamic::{BuildingInfos, Router};
 use crate::pedestrians::spawn_pedestrian;
-use crate::souls::desire::{BuyFood, Home, Work};
-use crate::souls::Soul;
+use crate::souls::desire::{Home, Work};
 use crate::utils::rand_provider::RandProvider;
 use crate::vehicles::spawn_parked_vehicle;
 use crate::{Egregoria, SoulID};
 use map_model::{BuildingID, BuildingKind, Map};
-
-pub type HumanSoul = Soul<Human, (Work, Home, BuyFood)>;
 
 pub struct Human {
     pub id: SoulID,
@@ -17,7 +12,7 @@ pub struct Human {
 }
 
 impl Human {
-    pub fn soul(goria: &mut Egregoria, id: SoulID, house: BuildingID) -> Option<HumanSoul> {
+    pub fn soul(goria: &mut Egregoria, house: BuildingID) -> Option<()> {
         let map = goria.read::<Map>();
         let work = map
             .random_building(BuildingKind::Workplace, &mut *goria.write::<RandProvider>())?
@@ -25,27 +20,19 @@ impl Human {
         let housepos = map.buildings()[house].door_pos;
         drop(map);
 
-        goria.write::<BuildingInfos>().set_owner(house, id);
-
-        let body = spawn_pedestrian(goria, house);
+        let human = SoulID(spawn_pedestrian(goria, house));
         let car = spawn_parked_vehicle(goria, housepos);
 
+        goria.write::<BuildingInfos>().set_owner(house, human);
+
         let offset = goria.write::<RandProvider>().random::<f32>() * 0.5;
+        let mut e = goria.world.entry(human.0).unwrap();
 
-        let router = Router::new(body, car);
-
-        goria
-            .write::<Market>()
-            .agents
-            .insert(id, EconomicAgent::new(id, Money(10000), Goods { food: 0 }));
-
-        Some(Soul {
-            desires: (
-                Work::new(work, offset),
-                Home::new(house, offset),
-                BuyFood::new(7),
-            ),
-            extra: Human { id, router },
-        })
+        e.add_component(Desire::new(Work::new(work, offset)));
+        e.add_component(Desire::new(Home::new(house, offset)));
+        e.add_component(Router::new(car));
+        Some(())
     }
 }
+
+desires_system!(human_desires, Home;0 Work;1);

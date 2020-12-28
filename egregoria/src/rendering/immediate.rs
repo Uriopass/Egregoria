@@ -1,6 +1,5 @@
 use common::AudioKind;
 use geom::{Color, Vec2, OBB};
-use std::mem::MaybeUninit;
 
 #[derive(Default)]
 pub struct ImmediateSound {

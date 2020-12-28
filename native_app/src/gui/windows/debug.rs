@@ -76,14 +76,6 @@ pub fn debug(ui: &Ui, goria: &mut Egregoria) {
         stats.world_update.avg() * 1000.0
     ));
     ui.text(im_str!("Render time: {:.1}ms", stats.render.avg() * 1000.0));
-    ui.text(im_str!(
-        "Souls desires time: {:.1}ms",
-        stats.souls_desires.avg() * 1000.0
-    ));
-    ui.text(im_str!(
-        "Souls apply time: {:.1}ms",
-        stats.souls_apply.avg() * 1000.0
-    ));
     ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
     ui.text(im_str!("Cam   pos: {:.1} {:.1} {:.1}", cam.x, cam.y, cam.z));
     ui.separator();
@@ -101,7 +93,6 @@ pub fn debug(ui: &Ui, goria: &mut Egregoria) {
 pub fn show_grid(tess: &mut Tesselator, state: &Egregoria) -> Option<()> {
     let cam = &*state.read::<Camera>();
 
-    dbg!(cam.position.z);
     if cam.position.z > 1000.0 {
         return Some(());
     }

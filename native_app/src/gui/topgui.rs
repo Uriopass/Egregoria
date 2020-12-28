@@ -4,7 +4,7 @@ use crate::gui::windows::ImguiWindows;
 use crate::gui::{RoadBuildResource, Tool, UiTex, UiTextures};
 use common::inspect::InspectedEntity;
 use common::GameTime;
-use egregoria::engine_interaction::{KeyCode, KeyboardInfo, TimeWarp};
+use egregoria::engine_interaction::{KeyCode, KeyboardInfo};
 use egregoria::Egregoria;
 use imgui::{im_str, StyleColor, StyleVar};
 use imgui::{Ui, Window};
@@ -331,17 +331,18 @@ impl Gui {
 
     pub fn time_controls(&mut self, ui: &Ui, goria: &mut Egregoria) {
         let time = goria.read::<GameTime>().daytime;
-
+        let warp = &mut self.settings.time_warp;
+        let depause_warp = &mut self.depause_warp;
         if goria
             .read::<KeyboardInfo>()
             .just_pressed
             .contains(&KeyCode::Space)
         {
-            if self.settings.time_warp == 0 {
-                self.settings.time_warp = self.depause_warp;
+            if *warp == 0.0 {
+                *warp = *depause_warp;
             } else {
-                self.depause_warp = self.settings.time_warp;
-                setl.settings.time_warp = 0;
+                *depause_warp = *warp;
+                *warp = 0.0;
             }
         }
 
@@ -367,11 +368,11 @@ impl Gui {
 
                 if imgui::Selectable::new(im_str!(" ||"))
                     .size([29.0, 15.0])
-                    .selected(warp.0 == 0)
+                    .selected(*warp == 0.0)
                     .build(ui)
                 {
-                    self.depause_warp = warp.0;
-                    warp.0 = 0;
+                    *depause_warp = *warp;
+                    *warp = 0.0;
                 }
 
                 red.pop(ui);
@@ -380,30 +381,30 @@ impl Gui {
 
                 if imgui::Selectable::new(im_str!(" 1x"))
                     .size([27.0, 15.0])
-                    .selected(warp.0 == 1)
+                    .selected(*warp == 1.0)
                     .build(ui)
                 {
-                    warp.0 = 1;
+                    *warp = 1.0;
                 }
 
                 ui.same_line(0.0);
 
                 if imgui::Selectable::new(im_str!(" 3x"))
                     .size([27.0, 15.0])
-                    .selected(warp.0 == 3)
+                    .selected(*warp == 3.0)
                     .build(ui)
                 {
-                    warp.0 = 3;
+                    *warp = 3.0;
                 }
 
                 ui.same_line(0.0);
 
                 if imgui::Selectable::new(im_str!(" Max"))
                     .size([33.0, 15.0])
-                    .selected(warp.0 == 1000)
+                    .selected(*warp == 1000.0)
                     .build(ui)
                 {
-                    warp.0 = 1000;
+                    *warp = 1000.0;
                 }
             });
         tok.pop(ui);

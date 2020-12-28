@@ -1,9 +1,13 @@
-use crate::api::{Action, Destination};
+use crate::map_dynamic::{Destination, Router};
 use crate::souls::desire::Desire;
-use crate::souls::human::Human;
-use crate::Egregoria;
 use common::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
+use legion::system;
 use map_model::BuildingID;
+
+pub struct Work {
+    workplace: BuildingID,
+    work_inter: RecTimeInterval,
+}
 
 impl Work {
     pub fn new(workplace: BuildingID, offset: f32) -> Self {
@@ -17,23 +21,12 @@ impl Work {
     }
 }
 
-pub struct Work {
-    workplace: BuildingID,
-    work_inter: RecTimeInterval,
-}
-
-impl Desire<Human> for Work {
-    fn name(&self) -> &'static str {
-        "Work"
-    }
-
-    fn score(&self, goria: &Egregoria, _soul: &Human) -> f32 {
-        let time = goria.read::<GameTime>();
-        0.5 - self.work_inter.dist_until(time.daytime) as f32 * 0.01
-    }
-
-    fn apply(&mut self, goria: &Egregoria, soul: &mut Human) -> Action {
-        soul.router
-            .go_to(goria, Destination::Building(self.workplace))
-    }
+#[system(par_for_each)]
+pub fn desire_work(#[resource] time: &GameTime, router: &mut Router, d: &mut Desire<Work>) {
+    d.score_and_apply(
+        |work| 0.5 - work.work_inter.dist_until(time.daytime) as f32 * 0.01,
+        |work| {
+            router.go_to(Destination::Building(work.workplace));
+        },
+    )
 }

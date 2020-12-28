@@ -2,7 +2,7 @@ use log::{Level, Metadata, Record};
 use std::fs::File;
 use std::io::{stdout, BufWriter, Write};
 use std::sync::Mutex;
-use std::time::{Instant, SystemTime};
+use std::time::Instant;
 
 pub struct MyLog {
     start: Instant,
@@ -12,9 +12,11 @@ pub struct MyLog {
 impl MyLog {
     pub fn new() -> Self {
         let _ = std::fs::create_dir("logs");
-        Self {
-            start: Instant::now(),
-            log_file: File::create(format!(
+        let log_file;
+        #[cfg(not(debug_assertions))]
+        {
+            use std::time::SystemTime;
+            log_file = File::create(format!(
                 "logs/log_{}.log",
                 SystemTime::now()
                     .duration_since(SystemTime::UNIX_EPOCH)
@@ -22,7 +24,17 @@ impl MyLog {
                     .as_micros()
             ))
             .ok()
-            .map(|f| Mutex::new(BufWriter::new(f))),
+            .map(|f| Mutex::new(BufWriter::new(f)));
+        }
+
+        #[cfg(debug_assertions)]
+        {
+            log_file = None;
+        }
+
+        Self {
+            start: Instant::now(),
+            log_file,
         }
     }
 }

@@ -1,5 +1,5 @@
-use crate::api::{Action, Destination};
-use crate::economy::{Goods, Market};
+/*use crate::api::{Action, Destination};
+use crate::economy::{Goods, GoodsMarket};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::Desire;
 use crate::souls::human::Human;
@@ -28,7 +28,7 @@ impl Desire<Human> for BuyFood {
     }
 
     fn score(&self, goria: &Egregoria, soul: &Human) -> f32 {
-        if goria.read::<Market>().agents[&soul.id].goods.food < self.min_level {
+        if goria.read::<GoodsMarket>().agents[&soul.id].goods.food < self.min_level {
             0.8
         } else {
             -100.0
@@ -43,7 +43,7 @@ impl Desire<Human> for BuyFood {
         if let Some(id) = self.supermarket {
             if soul.router.arrived(Destination::Building(id)) {
                 if let Some(owner) = goria.read::<BuildingInfos>()[id].owner {
-                    let trans = goria.read::<Market>().want(owner, Goods { food: 1 });
+                    let trans = goria.read::<GoodsMarket>().want(owner, Goods { food: 1 });
                     if trans.is_none() {
                         log::warn!("No food in this supermarket :( {:?}", id);
                         return Action::DoNothing;
@@ -72,3 +72,4 @@ fn find_supermarket(pos: Vec2, map: &Map) -> Option<BuildingID> {
         .min_by_key(|b| OrderedFloat(b.door_pos.distance2(pos)))
         .map(|x| x.id)
 }
+*/
