@@ -2,7 +2,9 @@
 #![allow(clippy::blocks_in_if_conditions)]
 #![allow(clippy::too_many_arguments)]
 
-use crate::economy::{Market, Wheat};
+use crate::economy::{
+    goods_market_update_system, job_market_update_system, JobApplication, Market, Wheat,
+};
 use crate::engine_interaction::{KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable};
 use crate::map_dynamic::{
     add_trees_system, itinerary_update_system, routing_update_system, BuildingInfos, Itinerary,
@@ -115,6 +117,7 @@ impl Egregoria {
         goria.insert(Deleted::<Collider>::default());
         goria.insert(Deleted::<Vehicle>::default());
         goria.insert(Market::<Wheat>::default());
+        goria.insert(Market::<JobApplication>::default());
 
         // Dispatcher init
         goria
@@ -132,6 +135,8 @@ impl Egregoria {
             .add_system(desire_home_system())
             .add_system(desire_work_system())
             .add_system(human_desires_system())
+            .add_system(job_market_update_system())
+            .add_system(goods_market_update_system())
             .add_system(coworld_maintain_system());
 
         goria

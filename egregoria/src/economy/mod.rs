@@ -1,8 +1,7 @@
+mod goods;
+mod jobs;
 mod market;
 
+pub use goods::*;
+pub use jobs::*;
 pub use market::*;
-
-pub struct Wheat;
-pub struct Flour;
-pub struct Bread;
-pub struct JobApplication;
