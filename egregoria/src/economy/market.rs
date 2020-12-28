@@ -1,75 +1,71 @@
-use crate::economy::{EconomicAgent, Goods, Transaction};
 use crate::SoulID;
+use geom::Vec2;
+use serde::export::PhantomData;
 use std::collections::HashMap;
 
-#[derive(Default)]
-pub struct Market {
-    pub agents: HashMap<SoulID, EconomicAgent>,
-    pub for_sale: HashMap<SoulID, Vec<Transaction>>,
+pub struct Market<T> {
+    pub capital: HashMap<SoulID, i32>,
+    pub buy_orders: HashMap<SoulID, (Vec2, i32)>,
+    pub sell_orders: HashMap<SoulID, (Vec2, i32)>,
+    _phantom: PhantomData<T>,
 }
 
-impl Market {
-    pub fn propose(&mut self, soul: SoulID, transactions: Vec<Transaction>) {
-        self.for_sale.insert(soul, transactions);
+impl<T> Default for Market<T> {
+    fn default() -> Self {
+        Self {
+            capital: Default::default(),
+            buy_orders: Default::default(),
+            sell_orders: Default::default(),
+            _phantom: Default::default(),
+        }
+    }
+}
+
+pub struct Trade {
+    pub buyer: SoulID,
+    pub seller: SoulID,
+    pub qty: i32,
+}
+
+impl<T> Market<T> {
+    /// Called when a new agent arrives into this market, for example a new home is built or
+    /// a new farm is made.
+    /// Must be called before any order happens.
+    pub fn add_agent(&mut self, soul: SoulID) {
+        self.capital.insert(soul, 0);
     }
 
-    pub fn want(&self, seller: SoulID, goods: Goods) -> Option<Transaction> {
-        self.for_sale
-            .get(&seller)?
-            .iter()
-            .copied()
-            .filter(|trans| trans.delta.is_smaller(&goods))
-            .min_by_key(|trans| trans.cost)
+    /// Called when an agent tells the world it wants to sell something
+    /// If an order is already placed, it will be updated.
+    pub fn sell_order(&mut self, soul: SoulID, near: Vec2, qty: i32) {
+        self.sell_orders.insert(soul, (near, qty));
     }
 
-    pub fn apply(&mut self, buyer_id: SoulID, seller_id: SoulID, transaction: Transaction) -> bool {
-        if buyer_id == seller_id {
-            log::warn!(
-                "Trying to sell {:?} to itself ({:?})",
-                transaction,
-                buyer_id
-            );
-            return false;
-        }
+    /// Called when an agent tells the world it wants to buy something
+    /// If an order is already placed, it will be updated.
+    pub fn buy_order(&mut self, soul: SoulID, near: Vec2, qty: i32) {
+        self.buy_orders.insert(soul, (near, qty));
+    }
 
-        let (buyer, seller) = match common::get_mut_pair(&mut self.agents, &buyer_id, &seller_id) {
-            Some(x) => x,
-            None => {
-                log::warn!(
-                    "Trying to apply transaction to non existing agents: {:?} and/or {:?}",
-                    buyer_id,
-                    seller_id
-                );
-                return false;
-            }
-        };
+    /// Get the capital that this agent owns
+    pub fn capital(&self, soul: SoulID) -> i32 {
+        *self.capital.get(&soul).expect("forgot to add agent")
+    }
 
-        if buyer.money < transaction.cost {
-            log::warn!(
-                "Buyer {:?} doesnt have enough {:?} to fullfill {:?}",
-                buyer.id,
-                buyer.money,
-                transaction
-            );
-            return false;
-        }
+    /// Called whenever an agent (like a farm) produces something on it's own
+    /// for example wheat is harvested or turned into flour. Returns the new quantity owned.
+    pub fn produce(&mut self, soul: SoulID, delta: i32) -> i32 {
+        let v = self.capital.get_mut(&soul).expect("forgot to add agent");
+        *v += delta;
+        *v
+    }
 
-        if !transaction.delta.is_smaller(&seller.goods) {
-            log::warn!(
-                "Seller {:?} doesn't have enough {:?} to fullfill {:?}",
-                seller.id,
-                seller.goods,
-                transaction
-            );
-            return false;
-        }
+    /// Returns a list of buy and sell orders matched together.
+    /// A trade updates the buy and sell orders from the market, and the capital of the buyers and sellers.
+    /// A trade can only be completed if the seller has enough capital.
+    pub fn make_trades(&mut self) -> Vec<Trade> {
+        let trades = vec![];
 
-        seller.money += transaction.cost;
-        seller.goods -= transaction.delta;
-
-        buyer.money -= transaction.cost;
-        buyer.goods += transaction.delta;
-
-        true
+        trades
     }
 }
