@@ -4,9 +4,18 @@ pub const SECONDS_PER_HOUR: i32 = 100;
 pub const HOURS_PER_DAY: i32 = 24;
 pub const SECONDS_PER_DAY: i32 = SECONDS_PER_HOUR * HOURS_PER_DAY;
 
+/// An in-game instant used to measure time differences
+#[derive(Copy, Clone, Serialize, Deserialize)]
+pub struct GameInstant {
+    /// Time in seconds elapsed since the start of the game
+    pub timestamp: f64,
+}
+
+/// The resource to know everything about the current in-game time
+/// GameTime is subject to timewarp
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct GameTime {
-    /// Precise time in seconds elapsed since the start of the game
+    /// Monotonic time in seconds elapsed since the start of the game.
     pub timestamp: f64,
 
     /// Time elapsed since the last frame
@@ -19,6 +28,7 @@ pub struct GameTime {
     pub daytime: DayTime,
 }
 
+/// A useful format to define intervals or points in game time
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct DayTime {
     /// Days elapsed since the start of the game
@@ -31,6 +41,7 @@ pub struct DayTime {
     pub second: i32,
 }
 
+/// An interval of in-game time
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct TimeInterval {
     pub start: DayTime,
@@ -53,6 +64,8 @@ impl TimeInterval {
     }
 }
 
+/// A periodic interval of in-game time. Used for schedules. (for example 9am -> 6pm)
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct RecTimeInterval {
     pub start_hour: i32,
     pub start_second: i32,
@@ -148,6 +161,12 @@ impl GameTime {
         }
     }
 
+    pub fn instant(&self) -> GameInstant {
+        GameInstant {
+            timestamp: self.timestamp,
+        }
+    }
+
     /// Returns true every freq seconds
     pub fn tick(&self, freq: u32) -> bool {
         let time_near = (self.seconds / freq * freq) as f64;
@@ -156,5 +175,12 @@ impl GameTime {
 
     pub fn daysec(&self) -> f64 {
         self.timestamp % Self::DAY as f64
+    }
+}
+
+impl GameInstant {
+    /// Time elapsed since instant was taken, in seconds
+    pub fn elapsed(&self, time: GameTime) -> f64 {
+        time.timestamp - self.timestamp
     }
 }
