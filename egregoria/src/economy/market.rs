@@ -1,10 +1,11 @@
+use crate::economy::Commodity;
 use crate::SoulID;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use serde::export::PhantomData;
 use std::collections::{HashMap, HashSet};
 
-pub struct Market<T> {
+pub struct Market<T: Commodity> {
     pub capital: HashMap<SoulID, i32>,
     pub buy_orders: HashMap<SoulID, (Vec2, i32)>,
     pub sell_orders: HashMap<SoulID, (Vec2, i32)>,
@@ -12,7 +13,7 @@ pub struct Market<T> {
     _phantom: PhantomData<T>,
 }
 
-impl<T> Default for Market<T> {
+impl<T: Commodity> Default for Market<T> {
     fn default() -> Self {
         Self {
             capital: Default::default(),
@@ -31,7 +32,7 @@ pub struct Trade {
     pub qty: i32,
 }
 
-impl<T> Market<T> {
+impl<T: Commodity> Market<T> {
     /// Called when a new agent arrives into this market, for example a new home is built or
     /// a new farm is made.
     /// Must be called before any order happens.
@@ -41,13 +42,13 @@ impl<T> Market<T> {
 
     /// Called when an agent tells the world it wants to sell something
     /// If an order is already placed, it will be updated.
-    pub fn sell_order(&mut self, soul: SoulID, near: Vec2, qty: i32) {
+    pub fn sell(&mut self, soul: SoulID, near: Vec2, qty: i32) {
         self.sell_orders.insert(soul, (near, qty));
     }
 
     /// Called when an agent tells the world it wants to buy something
     /// If an order is already placed, it will be updated.
-    pub fn buy_order(&mut self, soul: SoulID, near: Vec2, qty: i32) {
+    pub fn buy(&mut self, soul: SoulID, near: Vec2, qty: i32) {
         self.buy_orders.insert(soul, (near, qty));
     }
 
@@ -159,9 +160,9 @@ mod tests {
         m.produce(seller, 3);
         m.produce(seller_far, 3);
 
-        m.buy_order(buyer, Vec2::ZERO, 2);
-        m.sell_order(seller, Vec2::UNIT_X, 3);
-        m.sell_order(seller_far, vec2(10.0, 10.0), 3);
+        m.buy(buyer, Vec2::ZERO, 2);
+        m.sell(seller, Vec2::UNIT_X, 3);
+        m.sell(seller_far, vec2(10.0, 10.0), 3);
 
         let trades = m.make_trades().collect::<Vec<_>>();
 
