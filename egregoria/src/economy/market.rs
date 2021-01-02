@@ -6,9 +6,9 @@ use serde::export::PhantomData;
 use std::collections::{HashMap, HashSet};
 
 pub struct Market<T: Commodity> {
-    pub capital: HashMap<SoulID, i32>,
-    pub buy_orders: HashMap<SoulID, (Vec2, i32)>,
-    pub sell_orders: HashMap<SoulID, (Vec2, i32)>,
+    capital: HashMap<SoulID, i32>,
+    buy_orders: HashMap<SoulID, (Vec2, i32)>,
+    sell_orders: HashMap<SoulID, (Vec2, i32)>,
     potential: Vec<(f32, Trade, bool)>,
     _phantom: PhantomData<T>,
 }
@@ -30,18 +30,14 @@ pub struct Trade {
     pub buyer: SoulID,
     pub seller: SoulID,
     pub qty: i32,
+    pub sell_pos: Vec2,
+    pub buy_pos: Vec2,
 }
 
 impl<T: Commodity> Market<T> {
-    /// Called when a new agent arrives into this market, for example a new home is built or
-    /// a new farm is made.
-    /// Must be called before any order happens.
-    pub fn add_agent(&mut self, soul: SoulID) {
-        self.capital.insert(soul, 0);
-    }
-
     /// Called when an agent tells the world it wants to sell something
     /// If an order is already placed, it will be updated.
+    /// Beware that you need capital to sell anything, using produce.
     pub fn sell(&mut self, soul: SoulID, near: Vec2, qty: i32) {
         self.sell_orders.insert(soul, (near, qty));
     }
@@ -54,13 +50,13 @@ impl<T: Commodity> Market<T> {
 
     /// Get the capital that this agent owns
     pub fn capital(&self, soul: SoulID) -> i32 {
-        *self.capital.get(&soul).expect("forgot to add agent")
+        self.capital.get(&soul).copied().unwrap_or(0)
     }
 
     /// Called whenever an agent (like a farm) produces something on it's own
     /// for example wheat is harvested or turned into flour. Returns the new quantity owned.
     pub fn produce(&mut self, soul: SoulID, delta: i32) -> i32 {
-        let v = self.capital.get_mut(&soul).expect("forgot to add agent");
+        let v = self.capital.entry(soul).or_default();
         *v += delta;
         *v
     }
@@ -71,12 +67,12 @@ impl<T: Commodity> Market<T> {
     pub fn make_trades(&mut self) -> impl Iterator<Item = Trade> + '_ {
         // Naive O(n²) alg
         self.potential.clear();
-        for (&seller, &(pos_sell, qty_sell)) in &self.sell_orders {
-            let capital_sell = self.capital[&seller];
+        for (&seller, &(sell_pos, qty_sell)) in &self.sell_orders {
+            let capital_sell = self.capital(seller);
             if qty_sell > capital_sell {
                 continue;
             }
-            for (&buyer, &(pos_buy, qty_buy)) in &self.buy_orders {
+            for (&buyer, &(buy_pos, qty_buy)) in &self.buy_orders {
                 if seller == buyer {
                     log::warn!(
                         "{:?} is both selling and buying same commodity: {:?}",
@@ -86,13 +82,15 @@ impl<T: Commodity> Market<T> {
                     continue;
                 }
                 if qty_buy <= qty_sell {
-                    let score = pos_sell.distance2(pos_buy);
+                    let score = sell_pos.distance2(buy_pos);
                     self.potential.push((
                         score,
                         Trade {
                             buyer,
                             seller,
                             qty: qty_buy,
+                            sell_pos,
+                            buy_pos,
                         },
                         qty_buy == qty_sell,
                     ))
@@ -123,10 +121,10 @@ impl<T: Commodity> Market<T> {
                     *qty -= trade.qty
                 }
 
-                *capital.get_mut(&trade.buyer).expect("add_agent not called") += trade.qty;
+                *capital.entry(trade.buyer).or_default() += trade.qty;
                 *capital
                     .get_mut(&trade.seller)
-                    .expect("add_agent not called") -= trade.qty;
+                    .expect("what is this ? a 0 qty trade ?") -= trade.qty;
 
                 true
             })
@@ -152,10 +150,6 @@ mod tests {
         let buyer = SoulID(mk_ent(3));
 
         let mut m = Market::<()>::default();
-
-        m.add_agent(seller);
-        m.add_agent(seller_far);
-        m.add_agent(buyer);
 
         m.produce(seller, 3);
         m.produce(seller_far, 3);

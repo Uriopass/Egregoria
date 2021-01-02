@@ -16,7 +16,7 @@ impl Home {
 #[system(par_for_each)]
 pub fn desire_home(router: &mut Router, d: &mut Desire<Home>) {
     d.score_and_apply(
-        |home| 0.2,
+        |_| 0.2,
         |home| {
             router.go_to(Destination::Building(home.house));
         },
