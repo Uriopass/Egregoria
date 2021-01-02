@@ -1,6 +1,7 @@
 use super::Tool;
 use crate::gui::Z_TOOL;
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
+use egregoria::map_dynamic::BuildingInfos;
 use egregoria::rendering::immediate::ImmediateDraw;
 use geom::{Vec2, OBB};
 use legion::system;
@@ -22,6 +23,7 @@ impl Default for SpecialBuildingResource {
 #[system]
 pub fn special_building(
     #[resource] res: &SpecialBuildingResource,
+    #[resource] binfos: &mut BuildingInfos,
     #[resource] tool: &Tool,
     #[resource] mouseinfo: &MouseInfo,
     #[resource] map: &mut Map,
@@ -94,6 +96,7 @@ pub fn special_building(
     let rid = closest_road.id;
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
-        map.build_special_building(rid, obb, kind);
+        let b = map.build_special_building(rid, obb, kind);
+        binfos.insert(b);
     }
 }

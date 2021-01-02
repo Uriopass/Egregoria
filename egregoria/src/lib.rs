@@ -20,6 +20,7 @@ use crate::rendering::assets::AssetRender;
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::rendering::meshrender_component::MeshRender;
 use crate::scenarios::scenario_runner::{run_scenario_system, RunningScenario};
+use crate::souls::farm::{farm_assign_workers_system, farm_cereal_system};
 use crate::souls::human::human_desires_system;
 use crate::vehicles::systems::{
     vehicle_cleanup_system, vehicle_decision_system, vehicle_state_update_system,
@@ -137,6 +138,8 @@ impl Egregoria {
             .add_system(human_desires_system())
             .add_system(job_market_update_system())
             .add_system(goods_market_update_system())
+            .add_system(farm_cereal_system())
+            .add_system(farm_assign_workers_system())
             .add_system(coworld_maintain_system());
 
         goria

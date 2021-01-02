@@ -30,27 +30,35 @@ impl<T> Desire<T> {
 }
 
 macro_rules! desires_system {
-    ( $system_name: ident, $($t:tt;$idx: literal)+) => (
+    ( $system_name: ident, $marker: ty, $($t:tt;$idx: literal)+) => (
     use crate::souls::desire::Desire;
     use legion::system;
     #[system(par_for_each)]
     #[allow(non_snake_case)]
     #[allow(unused_assignments)]
-    pub fn $system_name($($t: &mut Desire<$t>),+) {
+    pub fn $system_name($(_: &$marker, mut $t: Option<&mut Desire<$t>>),+) {
         let mut max_score = f32::NEG_INFINITY;
-        let mut max_idx = 0;
+        let mut max_idx = -1;
         $(
-          let score = $t.score;
-          $t.was_max = false;
+        if let Some(ref mut v) = $t {
+          let score = v.score;
+          v.was_max = false;
           if score > max_score {
             max_score = score;
             max_idx = $idx;
           }
+        }
         )+
+
+        if max_idx == -1 {
+            return;
+        }
+
+        println!("{} {}", max_idx, max_score);
 
         match max_idx {
         $(
-            $idx => $t.was_max = true,
+            $idx => $t.unwrap().was_max = true,
         )+
         _ => unreachable!(),
         }
