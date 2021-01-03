@@ -41,8 +41,9 @@ pub fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
         .iter()
         .filter(|(_, kind)| matches!(kind, BuildingKind::Farm))
     {
-        farm_soul(goria, build_id);
-        n_souls_added += 1;
+        if farm_soul(goria, build_id).is_some() {
+            n_souls_added += 1;
+        }
     }
 
     if n_souls_added > 0 {

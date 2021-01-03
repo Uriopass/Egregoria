@@ -33,6 +33,7 @@ debug_inspect_impl!(VehicleState);
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum VehicleKind {
     Car,
+    Truck,
     Bus,
 }
 
@@ -64,6 +65,7 @@ impl VehicleKind {
     pub fn width(self) -> f32 {
         match self {
             VehicleKind::Car => 4.5,
+            VehicleKind::Truck => 6.0,
             VehicleKind::Bus => 9.0,
         }
     }
@@ -71,6 +73,7 @@ impl VehicleKind {
     pub fn acceleration(self) -> f32 {
         match self {
             VehicleKind::Car => 3.0,
+            VehicleKind::Truck => 2.5,
             VehicleKind::Bus => 2.0,
         }
     }
@@ -79,12 +82,14 @@ impl VehicleKind {
         match self {
             VehicleKind::Car => 9.0,
             VehicleKind::Bus => 9.0,
+            VehicleKind::Truck => 9.0,
         }
     }
 
     pub fn min_turning_radius(self) -> f32 {
         match self {
             VehicleKind::Car => 3.0,
+            VehicleKind::Truck => 4.0,
             VehicleKind::Bus => 5.0,
         }
     }
@@ -92,6 +97,7 @@ impl VehicleKind {
     pub fn cruising_speed(self) -> f32 {
         match self {
             VehicleKind::Car => 12.0,
+            VehicleKind::Truck => 10.0,
             VehicleKind::Bus => 10.0,
         }
     }
@@ -99,12 +105,17 @@ impl VehicleKind {
     pub fn ang_acc(self) -> f32 {
         match self {
             VehicleKind::Car => 1.0,
+            VehicleKind::Truck => 0.9,
             VehicleKind::Bus => 0.8,
         }
     }
 }
 
-pub fn spawn_parked_vehicle(goria: &mut Egregoria, near: Vec2) -> Option<VehicleID> {
+pub fn spawn_parked_vehicle(
+    goria: &mut Egregoria,
+    kind: VehicleKind,
+    near: Vec2,
+) -> Option<VehicleID> {
     let r: f64 = rand_world(goria);
 
     let map = goria.read::<Map>();
@@ -124,7 +135,7 @@ pub fn spawn_parked_vehicle(goria: &mut Egregoria, near: Vec2) -> Option<Vehicle
     Some(VehicleID(make_vehicle_entity(
         goria,
         pos,
-        Vehicle::new(VehicleKind::Car, spot_id),
+        Vehicle::new(kind, spot_id),
         it,
         false,
     )))
@@ -137,14 +148,25 @@ pub fn make_vehicle_entity(
     it: Itinerary,
     mk_collider: bool,
 ) -> Entity {
+    let asset_id = match vehicle.kind {
+        VehicleKind::Car => AssetID::CAR,
+        VehicleKind::Truck => AssetID::TRUCK,
+        VehicleKind::Bus => unreachable!(),
+    };
+
+    let tint = match vehicle.kind {
+        VehicleKind::Car => get_random_car_color(),
+        _ => Color::WHITE,
+    };
+
     let w = vehicle.kind.width();
     let e = goria.world.push((
         AssetRender {
-            id: AssetID::CAR,
+            id: asset_id,
             hide: false,
             scale: w,
-            tint: get_random_car_color(),
-            z: 0.7,
+            tint,
+            z: 0.4,
         },
         trans,
         Kinematics::from_mass(1000.0),

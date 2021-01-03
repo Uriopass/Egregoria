@@ -44,7 +44,7 @@ const Z_ARROW: f32 = 0.24;
 const Z_CROSSWALK: f32 = 0.25;
 const Z_HOUSE: f32 = 0.28;
 const Z_SIGNAL: f32 = 0.29;
-const Z_TREE: f32 = 0.295;
+const Z_TREE: f32 = 0.5;
 
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext) -> Self {

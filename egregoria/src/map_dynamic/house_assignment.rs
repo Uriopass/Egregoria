@@ -2,6 +2,7 @@ use crate::SoulID;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 use slotmap::SecondaryMap;
+use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -13,6 +14,7 @@ pub struct BuildingInfo {
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct BuildingInfos {
     assignment: SecondaryMap<BuildingID, BuildingInfo>,
+    owners: HashMap<SoulID, BuildingID>,
 }
 
 impl BuildingInfos {
@@ -28,10 +30,15 @@ impl BuildingInfos {
         self.assignment.get_mut(building)
     }
 
+    pub fn building_owned_by(&self, soul: SoulID) -> Option<BuildingID> {
+        self.owners.get(&soul).copied()
+    }
+
     pub fn set_owner(&mut self, building: BuildingID, soul: SoulID) {
         if let Some(x) = self.get_mut(building) {
             x.owner = Some(soul)
         }
+        self.owners.insert(soul, building);
     }
 
     pub fn get_in(&mut self, building: BuildingID, e: SoulID) {
