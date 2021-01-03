@@ -16,7 +16,8 @@ pub struct Router {
     steps: Vec<RoutingStep>,
     dest: Option<Destination>,
     dirty: bool,
-    car: Option<VehicleID>,
+    vehicle: Option<VehicleID>,
+    pub personal_car: Option<VehicleID>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -242,13 +243,18 @@ fn unpark(vehicle: VehicleID) -> impl FnOnce(&mut Egregoria) {
 }
 
 impl Router {
-    pub fn new(car: Option<VehicleID>) -> Self {
+    pub fn new(personal_car: Option<VehicleID>) -> Self {
         Self {
             steps: vec![],
             dest: None,
             dirty: false,
-            car,
+            personal_car,
+            vehicle: personal_car,
         }
+    }
+
+    pub fn use_vehicle(&mut self, v: Option<VehicleID>) {
+        self.vehicle = v;
     }
 
     fn clear_steps(&mut self, parking: &ParkingManagement) {
@@ -284,7 +290,7 @@ impl Router {
             steps.push(RoutingStep::GetOutBuilding(*cur_build));
         }
 
-        if let Some(car) = self.car {
+        if let Some(car) = self.vehicle {
             if let Some(spot_id) = parking.reserve_near(obj, &map) {
                 let lane = map.parking_to_drive(spot_id).unwrap();
                 let spot = *map.parking.get(spot_id).unwrap();

@@ -9,7 +9,7 @@ pub struct Market<T: Commodity> {
     capital: HashMap<SoulID, i32>,
     buy_orders: HashMap<SoulID, (Vec2, i32)>,
     sell_orders: HashMap<SoulID, (Vec2, i32)>,
-    potential: Vec<(f32, Trade, bool)>,
+    potential: Vec<(f32, Trade<T>, bool)>,
     _phantom: PhantomData<T>,
 }
 
@@ -26,12 +26,13 @@ impl<T: Commodity> Default for Market<T> {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct Trade {
+pub struct Trade<T: Commodity> {
     pub buyer: SoulID,
     pub seller: SoulID,
     pub qty: i32,
     pub sell_pos: Vec2,
     pub buy_pos: Vec2,
+    phantom: PhantomData<T>,
 }
 
 impl<T: Commodity> Market<T> {
@@ -64,9 +65,8 @@ impl<T: Commodity> Market<T> {
     /// Returns a list of buy and sell orders matched together.
     /// A trade updates the buy and sell orders from the market, and the capital of the buyers and sellers.
     /// A trade can only be completed if the seller has enough capital.
-    pub fn make_trades(&mut self) -> impl Iterator<Item = Trade> + '_ {
+    pub fn make_trades(&mut self) -> impl Iterator<Item = Trade<T>> + '_ {
         // Naive O(n²) alg
-        self.potential.clear();
         for (&seller, &(sell_pos, qty_sell)) in &self.sell_orders {
             let capital_sell = self.capital(seller);
             if qty_sell > capital_sell {
@@ -91,6 +91,7 @@ impl<T: Commodity> Market<T> {
                             qty: qty_buy,
                             sell_pos,
                             buy_pos,
+                            phantom: Default::default(),
                         },
                         qty_buy == qty_sell,
                     ))
@@ -108,7 +109,7 @@ impl<T: Commodity> Market<T> {
         } = self;
 
         self.potential
-            .iter()
+            .drain(..)
             .filter(move |(_, trade, complete)| {
                 let ok = already_sold.insert(trade.buyer) && already_sold.insert(trade.seller);
                 if !ok {
@@ -128,7 +129,7 @@ impl<T: Commodity> Market<T> {
 
                 true
             })
-            .map(|&(_, x, _)| x)
+            .map(|(_, x, _)| x)
     }
 }
 

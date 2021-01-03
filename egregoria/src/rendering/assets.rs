@@ -10,7 +10,7 @@ pub struct AssetID {
 
 impl AssetID {
     pub const CAR: AssetID = AssetID { id: 0 };
-    pub const PEDESTRIAN: AssetID = AssetID { id: 1 };
+    pub const TRUCK: AssetID = AssetID { id: 1 };
 }
 
 #[derive(Copy, Clone, Serialize, Deserialize, Inspect)]

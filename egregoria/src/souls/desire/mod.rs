@@ -9,7 +9,7 @@ pub use work::*;
 pub struct Desire<T> {
     pub score: f32,
     pub was_max: bool,
-    v: T,
+    pub v: T,
 }
 
 impl<T> Desire<T> {
@@ -53,8 +53,6 @@ macro_rules! desires_system {
         if max_idx == -1 {
             return;
         }
-
-        println!("{} {}", max_idx, max_score);
 
         match max_idx {
         $(
