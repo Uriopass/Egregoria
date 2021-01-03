@@ -7,18 +7,20 @@ new_key_type! {
     pub struct BuildingID;
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum BuildingKind {
     House,
     Workplace,
     Supermarket,
     Farm,
+    FlourFactory,
 }
 
 impl BuildingKind {
     pub fn size(&self) -> f32 {
         match self {
             BuildingKind::Farm => 80.0,
+            BuildingKind::FlourFactory => 80.0,
             _ => 30.0,
         }
     }
@@ -49,6 +51,7 @@ impl Building {
             BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(size),
             BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(size),
             BuildingKind::Farm => crate::procgen::gen_exterior_farm(size),
+            BuildingKind::FlourFactory => crate::procgen::gen_exterior_supermarket(size),
         };
 
         assert!(!draw.is_empty());

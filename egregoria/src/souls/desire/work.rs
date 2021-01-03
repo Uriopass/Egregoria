@@ -5,7 +5,7 @@ use common::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
 use legion::system;
 use map_model::BuildingID;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum DriverState {
     GoingToWork,
     WaitingForDelivery,
@@ -13,7 +13,7 @@ pub enum DriverState {
     DeliveryBack,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum WorkKind {
     Driver {
         state: DriverState,
@@ -22,7 +22,7 @@ pub enum WorkKind {
     Worker,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Work {
     workplace: BuildingID,
     work_inter: RecTimeInterval,
@@ -65,6 +65,10 @@ pub fn desire_work(#[resource] time: &GameTime, router: &mut Router, d: &mut Des
                 DriverState::GoingToWork => {
                     router.use_vehicle(router.personal_car);
                     if router.go_to(Destination::Building(work.workplace)) {
+                        log::info!(
+                            "hello I'm a driver and I arrived at {:?}. Ready to serve!",
+                            work.workplace
+                        );
                         *state = DriverState::WaitingForDelivery;
                     }
                 }
@@ -72,6 +76,7 @@ pub fn desire_work(#[resource] time: &GameTime, router: &mut Router, d: &mut Des
                 DriverState::Delivering(b) => {
                     router.use_vehicle(Some(truck));
                     if router.go_to(Destination::Building(b)) {
+                        log::info!("finished delivering to {:?} from {:?}", b, work.workplace);
                         *state = DriverState::DeliveryBack
                     }
                 }

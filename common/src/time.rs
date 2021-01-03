@@ -65,7 +65,7 @@ impl TimeInterval {
 }
 
 /// A periodic interval of in-game time. Used for schedules. (for example 9am -> 6pm)
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct RecTimeInterval {
     pub start_hour: i32,
     pub start_second: i32,

@@ -14,8 +14,9 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Inspect)]
 pub struct Router {
     steps: Vec<RoutingStep>,
+    cur_step: Option<RoutingStep>,
     dest: Option<Destination>,
-    dirty: bool,
+    reroute: bool,
     vehicle: Option<VehicleID>,
     pub personal_car: Option<VehicleID>,
 }
@@ -63,18 +64,49 @@ pub fn routing_update(
         .get_component::<Transform>()
         .unwrap();
     let pos = trans.position();
-    if !router.dirty {
-        let step = unwrap_or!(router.steps.last(), return);
+    if !router.reroute {
+        let next_step = unwrap_or!(router.steps.last(), {
+            router.cur_step = None;
+            return;
+        });
 
-        let ready = match step {
+        let mut cur_step_over = true;
+
+        if let Some(step) = router.cur_step {
+            cur_step_over = match step {
+                RoutingStep::WalkTo(_) => subworld
+                    .entry_ref(*body)
+                    .unwrap()
+                    .get_component::<Itinerary>()
+                    .unwrap()
+                    .has_ended(0.0),
+                RoutingStep::DriveTo(vehicle, _) => subworld
+                    .entry_ref(vehicle.0)
+                    .unwrap()
+                    .get_component::<Itinerary>()
+                    .unwrap()
+                    .has_ended(0.0),
+                RoutingStep::Park(vehicle, _) => matches!(
+                    subworld
+                        .entry_ref(vehicle.0)
+                        .unwrap()
+                        .get_component::<Vehicle>()
+                        .unwrap()
+                        .state,
+                    VehicleState::Parked(_)
+                ),
+                RoutingStep::Unpark(_) => true,
+                RoutingStep::GetInVehicle(_) => true,
+                RoutingStep::GetOutVehicle(_) => true,
+                RoutingStep::GetInBuilding(_) => true,
+                RoutingStep::GetOutBuilding(_) => true,
+            };
+        }
+
+        let next_step_ready = match next_step {
             RoutingStep::WalkTo(_) => true,
             RoutingStep::DriveTo(_, _) => true,
-            RoutingStep::Park(vehicle, _) => subworld
-                .entry_ref(vehicle.0)
-                .unwrap()
-                .get_component::<Itinerary>()
-                .unwrap()
-                .has_ended(0.0),
+            RoutingStep::Park(_, _) => true,
             RoutingStep::Unpark(_) => true,
             RoutingStep::GetInVehicle(vehicle) => subworld
                 .entry_ref(vehicle.0)
@@ -83,28 +115,20 @@ pub fn routing_update(
                 .unwrap()
                 .position()
                 .is_close(pos, 3.0),
-            RoutingStep::GetOutVehicle(vehicle) => matches!(
-                subworld
-                    .entry_ref(vehicle.0)
-                    .unwrap()
-                    .get_component::<Vehicle>()
-                    .unwrap()
-                    .state,
-                VehicleState::Parked(_)
-            ),
+            RoutingStep::GetOutVehicle(_) => true,
             &RoutingStep::GetInBuilding(build) => {
                 map.buildings()[build].door_pos.is_close(pos, 3.0)
             }
             RoutingStep::GetOutBuilding(_) => true,
         };
 
-        if !ready {
+        if !(next_step_ready && cur_step_over) {
             return;
         }
 
-        let step = router.steps.pop().unwrap();
+        router.cur_step = Some(router.steps.pop().unwrap());
 
-        match step {
+        match router.cur_step.unwrap() {
             RoutingStep::WalkTo(obj) => {
                 if let Some(route) = Itinerary::route(pos, obj, &*map, &PedestrianPath) {
                     cbuf.add_component(*body, route);
@@ -117,7 +141,7 @@ pub fn routing_update(
             }
             RoutingStep::Park(vehicle, spot) => {
                 if !map.parking.contains(spot) {
-                    router.dirty = true;
+                    router.reroute = true;
                     return;
                 }
 
@@ -151,7 +175,7 @@ pub fn routing_update(
         return;
     }
 
-    router.dirty = false;
+    router.reroute = false;
 
     // router is dirty
     let dest = router.dest.expect("destination is empty but dirty is true");
@@ -246,8 +270,9 @@ impl Router {
     pub fn new(personal_car: Option<VehicleID>) -> Self {
         Self {
             steps: vec![],
+            cur_step: None,
             dest: None,
-            dirty: false,
+            reroute: false,
             personal_car,
             vehicle: personal_car,
         }
@@ -269,11 +294,11 @@ impl Router {
     pub fn go_to(&mut self, dest: Destination) -> bool {
         if let Some(router_dest) = self.dest {
             if router_dest == dest {
-                return true;
+                return !self.reroute && self.steps.is_empty() && self.cur_step.is_none();
             }
         }
         self.dest = Some(dest);
-        self.dirty = true;
+        self.reroute = true;
         false
     }
 

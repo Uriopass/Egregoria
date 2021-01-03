@@ -3,6 +3,7 @@ use legion::{system, EntityStore};
 
 mod market;
 
+use crate::SoulID;
 pub use market::*;
 
 pub trait Commodity {}
@@ -10,42 +11,47 @@ impl<T> Commodity for T {}
 
 pub trait CommodityList {}
 
-pub struct Sold<T: Commodity>(pub Vec<Trade<T>>);
+#[derive(Default)]
+pub struct Sold(pub Vec<Trade>);
 
-impl<T> Default for Sold<T> {
-    fn default() -> Self {
-        Self(vec![])
+#[derive(Default)]
+pub struct Workers(pub Vec<SoulID>);
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub enum CommodityKind {
+    JobOpening,
+    Wheat,
+    Flour,
+    Bread,
+}
+
+impl CommodityKind {
+    pub fn values() -> &'static [Self] {
+        use CommodityKind::*;
+        &[JobOpening, Wheat, Flour, Bread]
     }
 }
 
-pub type Workers = Sold<JobApplication>;
+#[system]
+#[write_component(Sold)]
+#[write_component(Workers)]
+pub fn market_update(#[resource] m: &mut Market, subworld: &mut SubWorld) {
+    for trade in m.make_trades() {
+        log::info!("A trade was made! {:?}", trade);
 
-pub struct Wheat;
-pub struct Flour;
-pub struct Bread;
+        let mut ent = subworld.entry_mut(trade.seller.0).unwrap();
 
-pub struct JobApplication;
-
-macro_rules! markets_system {
-    ($($n:ident; $t: ty),+) => {
-        #[system]
-        $(
-        #[write_component(Sold<$t>)]
-        )+
-        pub fn markets_update($(#[resource] $n: &mut Market<$t>,)+ subworld: &mut SubWorld) {
-            $(
-            for trade in $n.make_trades() {
-                subworld
-                    .entry_mut(trade.seller.0)
-                    .unwrap()
-                    .get_component_mut::<Sold<$t>>()
-                    .expect("seller has no component Sold")
-                    .0
-                    .push(trade)
-            }
-            )+
+        match trade.kind {
+            CommodityKind::JobOpening => ent
+                .get_component_mut::<Workers>()
+                .expect("seller has no component Workers")
+                .0
+                .push(trade.buyer),
+            _ => ent
+                .get_component_mut::<Sold>()
+                .expect("seller has no component Sold")
+                .0
+                .push(trade),
         }
     }
 }
-
-markets_system!(a;JobApplication, b;Wheat);
