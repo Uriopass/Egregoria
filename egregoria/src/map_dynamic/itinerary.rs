@@ -200,7 +200,6 @@ impl Itinerary {
         &self.local_path
     }
 
-    /// Does a logical prepend for a series of points to the local path vector.
     pub fn prepend_local_path(&mut self, points: impl IntoIterator<Item = Vec2>) {
         self.local_path.splice(0..0, points.into_iter());
     }

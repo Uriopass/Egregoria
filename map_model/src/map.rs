@@ -250,15 +250,20 @@ impl Map {
         let buildings = &mut self.buildings;
         let spatial_map = &mut self.spatial_map;
 
-        self.lots.drain().map(move |(_, lot)| {
+        let mut built = vec![];
+
+        self.lots.retain(|_, lot| {
+            let lot = lot.clone();
             let parent = lot.parent;
             let obb = lot.shape;
             let lotkind = lot.kind;
+
             Self::cleanup_lot(roads, spatial_map, lot);
 
             let r = rand::random::<f32>();
 
             let kind = match lotkind {
+                LotKind::Unassigned => return true,
                 LotKind::Residential => BuildingKind::House,
                 LotKind::Commercial => {
                     if r < 0.5 {
@@ -269,8 +274,17 @@ impl Map {
                 }
             };
 
-            Building::make(buildings, spatial_map, &roads[parent], obb, kind)
-        })
+            built.push(Building::make(
+                buildings,
+                spatial_map,
+                &roads[parent],
+                obb,
+                kind,
+            ));
+            false
+        });
+
+        built.into_iter()
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
