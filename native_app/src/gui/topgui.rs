@@ -270,14 +270,16 @@ impl Gui {
             (im_str!("Flour factory"), BuildingKind::FlourFactory),
         ];
 
+        let pop_out_w = 130.0;
+
         if matches!(*goria.read::<Tool>(), Tool::SpecialBuilding) {
             Window::new(im_str!("Special buildings"))
                 .size(
-                    [toolbox_w, special_buildings.len() as f32 * 30.0 + 20.0],
+                    [pop_out_w, special_buildings.len() as f32 * 30.0 + 20.0],
                     imgui::Condition::Always,
                 )
                 .position(
-                    [w - toolbox_w - toolbox_w, h * 0.5 - 30.0],
+                    [w - toolbox_w - pop_out_w, h * 0.5 - 30.0],
                     imgui::Condition::Always,
                 )
                 .scroll_bar(false)
@@ -298,7 +300,7 @@ impl Gui {
                                 0.5
                             },
                         ));
-                        if ui.button(name, [toolbox_w, 30.0]) {
+                        if ui.button(name, [pop_out_w, 30.0]) {
                             cur_build.kind = *build;
                         }
                         tok.pop(ui);
