@@ -74,7 +74,7 @@ impl Lot {
 
         let r = common::rand::rand2(at.x, at.y);
 
-        let kind = if r < 0.2 {
+        let kind = if r < 0.0 {
             LotKind::Commercial
         } else {
             LotKind::Residential
