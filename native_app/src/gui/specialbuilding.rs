@@ -82,7 +82,10 @@ pub fn special_building(
         size,
     );
 
-    if proj.distance(first) < 0.5 * size || proj.distance(last) < 0.5 * size {
+    if proj.distance(first) < 0.5 * size
+        || proj.distance(last) < 0.5 * size
+        || closest_road.sidewalks(closest_road.src).incoming.is_none()
+    {
         draw.obb(obb)
             .color(common::config().special_building_invalid_col)
             .z(Z_TOOL);

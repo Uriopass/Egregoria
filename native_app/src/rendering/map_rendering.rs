@@ -171,6 +171,7 @@ impl RoadRenderer {
         // Lots
         for lot in map.lots().values() {
             let col = match lot.kind {
+                LotKind::Unassigned => common::config().lot_unassigned_col,
                 LotKind::Residential => common::config().lot_residential_col,
                 LotKind::Commercial => common::config().lot_commercial_col,
             };
