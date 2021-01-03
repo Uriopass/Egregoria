@@ -265,7 +265,10 @@ impl Gui {
                 });
         }
 
-        let special_buildings = [(im_str!("Farm"), BuildingKind::Farm)];
+        let special_buildings = [
+            (im_str!("Farm"), BuildingKind::Farm),
+            (im_str!("Flour factory"), BuildingKind::FlourFactory),
+        ];
 
         if matches!(*goria.read::<Tool>(), Tool::SpecialBuilding) {
             Window::new(im_str!("Special buildings"))

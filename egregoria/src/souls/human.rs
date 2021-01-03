@@ -1,4 +1,5 @@
-use crate::economy::{JobApplication, Market};
+use crate::economy::CommodityKind::JobOpening;
+use crate::economy::Market;
 use crate::map_dynamic::{BuildingInfos, Router};
 use crate::pedestrians::{spawn_pedestrian, Pedestrian};
 use crate::souls::desire::{Home, Work};
@@ -14,8 +15,8 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) {
     let human = SoulID(spawn_pedestrian(goria, house));
     let car = spawn_parked_vehicle(goria, VehicleKind::Car, housepos);
 
-    let mut m = goria.write::<Market<JobApplication>>();
-    m.buy(human, housepos, 1);
+    let mut m = goria.write::<Market>();
+    m.buy(human, housepos, JobOpening, 1);
     drop(m);
 
     goria.write::<BuildingInfos>().set_owner(house, human);
