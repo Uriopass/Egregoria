@@ -62,7 +62,7 @@ pub fn special_building(
 
     let (proj, _, dir) = closest_road.generated_points().project_segment_dir(mpos);
 
-    if !proj.is_close(mpos, size) {
+    if !proj.is_close(mpos, size + closest_road.width * 0.5) {
         return draw_red();
     }
 

@@ -16,6 +16,11 @@ pub struct Recipe {
     pub consumption: &'static [(CommodityKind, i32)],
     pub production: &'static [(CommodityKind, i32)],
     pub seconds_per_work: i32,
+
+    /// Quantity to store per production in terms of quantity produced. So if it takes 1ton of flour to make
+    /// 1 ton of bread. A storage multiplier of 3 means 3 tons of bread will be stored before stopping to
+    /// produce it.
+    pub storage_multiplier: i32,
 }
 
 impl Recipe {
@@ -25,10 +30,16 @@ impl Recipe {
         }
     }
 
-    pub fn consumption_avaiable(&self, soul: SoulID, market: &Market) -> bool {
+    pub fn should_produce(&self, soul: SoulID, market: &Market) -> bool {
+        // Has enough ressources
         self.consumption
             .iter()
-            .all(|&(kind, qty)| market.capital(soul, kind) >= qty)
+            .all(move |&(kind, qty)| market.capital(soul, kind) >= qty)
+            &&
+            // Has enough storage
+            self.production.iter().all(move |&(kind, qty)| {
+                market.capital(soul, kind) < qty * self.storage_multiplier
+            })
     }
 
     pub fn act(&self, soul: SoulID, near: Vec2, market: &mut Market) {
@@ -100,7 +111,7 @@ pub fn company(
     let n_workers = workers.0.len();
     let soul = SoulID(*me);
 
-    if company.recipe.consumption_avaiable(soul, market) {
+    if company.recipe.should_produce(soul, market) {
         company.progress += n_workers as f32 * time.delta / company.recipe.seconds_per_work as f32;
     }
 

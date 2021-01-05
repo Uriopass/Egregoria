@@ -59,6 +59,7 @@ pub fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
                 consumption: &[],
                 production: &[(CommodityKind::Wheat, 1)],
                 seconds_per_work: 1000,
+                storage_multiplier: 5,
             },
             building: build_id,
             workers: 10,
@@ -87,9 +88,31 @@ pub fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
                 consumption: &[(CommodityKind::Wheat, 1)],
                 production: &[(CommodityKind::Flour, 1)],
                 seconds_per_work: 1000,
+                storage_multiplier: 2,
             },
             building: build_id,
             workers: 10,
+            progress: 0.0,
+        };
+
+        company_soul(goria, comp);
+        n_souls_added += 1;
+    }
+
+    for &(build_id, _) in empty_buildings
+        .get(&BuildingKind::Bakery)
+        .unwrap_or(&vec![])
+    {
+        let comp = GoodsCompany {
+            kind: CompanyKind::Store,
+            recipe: Recipe {
+                consumption: &[(CommodityKind::Flour, 1)],
+                production: &[(CommodityKind::Bread, 1)],
+                seconds_per_work: 1000,
+                storage_multiplier: 5,
+            },
+            building: build_id,
+            workers: 3,
             progress: 0.0,
         };
 
