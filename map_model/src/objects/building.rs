@@ -14,13 +14,21 @@ pub enum BuildingKind {
     Supermarket,
     Farm,
     FlourFactory,
+    Bakery,
 }
 
 impl BuildingKind {
+    pub const SPECIAL_BUILDINGS: &'static [(&'static str, BuildingKind)] = &[
+        ("Farm", BuildingKind::Farm),
+        ("Flour factory", BuildingKind::FlourFactory),
+        ("Bakery", BuildingKind::Bakery),
+    ];
+
     pub fn size(&self) -> f32 {
         match self {
             BuildingKind::Farm => 80.0,
             BuildingKind::FlourFactory => 80.0,
+            BuildingKind::Bakery => 10.0,
             _ => 30.0,
         }
     }
@@ -52,6 +60,7 @@ impl Building {
             BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(size),
             BuildingKind::Farm => crate::procgen::gen_exterior_farm(size),
             BuildingKind::FlourFactory => crate::procgen::gen_exterior_supermarket(size),
+            BuildingKind::Bakery => crate::procgen::gen_exterior_supermarket(size),
         };
 
         assert!(!draw.is_empty());

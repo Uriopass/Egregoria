@@ -24,8 +24,8 @@ impl Shape for Circle {
 
 impl Intersect<AABB> for Circle {
     fn intersects(&self, b: &AABB) -> bool {
-        let d = self.center.min(b.ur).max(b.ll) - self.center;
-        d.magnitude2() < self.radius * self.radius
+        let proj = self.center.min(b.ur).max(b.ll);
+        self.center.is_close(proj, self.radius)
     }
 }
 

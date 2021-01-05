@@ -265,17 +265,15 @@ impl Gui {
                 });
         }
 
-        let special_buildings = [
-            (im_str!("Farm"), BuildingKind::Farm),
-            (im_str!("Flour factory"), BuildingKind::FlourFactory),
-        ];
-
         let pop_out_w = 130.0;
 
         if matches!(*goria.read::<Tool>(), Tool::SpecialBuilding) {
             Window::new(im_str!("Special buildings"))
                 .size(
-                    [pop_out_w, special_buildings.len() as f32 * 30.0 + 20.0],
+                    [
+                        pop_out_w,
+                        BuildingKind::SPECIAL_BUILDINGS.len() as f32 * 30.0 + 20.0,
+                    ],
                     imgui::Condition::Always,
                 )
                 .position(
@@ -290,7 +288,7 @@ impl Gui {
                 .build(&ui, || {
                     let mut cur_build = goria.write::<SpecialBuildingResource>();
 
-                    for (name, build) in &special_buildings {
+                    for (name, build) in BuildingKind::SPECIAL_BUILDINGS {
                         let tok = ui.push_style_var(StyleVar::Alpha(
                             if std::mem::discriminant(build)
                                 == std::mem::discriminant(&cur_build.kind)
@@ -300,7 +298,7 @@ impl Gui {
                                 0.5
                             },
                         ));
-                        if ui.button(name, [pop_out_w, 30.0]) {
+                        if ui.button(&*im_str!("{}", name), [pop_out_w, 30.0]) {
                             cur_build.kind = *build;
                         }
                         tok.pop(ui);
