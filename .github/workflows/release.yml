@@ -40,8 +40,16 @@ jobs:
         with:
           rust-version: 'stable'
 
+      - name: install deps for linux
+        run: sudo apt-get install libasound2-dev libudev-dev pkg-config
+        if: matrix.os == 'ubuntu-latest'
+
       - name: Build
         run: cargo build --verbose --release
+
+      - name: Create archive for MacOS
+        run: 7z a -tzip ./artifacts/egregoria-${{ matrix.os }}.zip ./target/release/${{ env.RELEASE_BIN }} ${{ env.RELEASE_ADDS }}
+        if: matrix.os == 'macos-latest'
 
       - name: Create artifact directory
         run: mkdir artifacts
