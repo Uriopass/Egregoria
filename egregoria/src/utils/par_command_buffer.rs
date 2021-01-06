@@ -2,6 +2,7 @@ use crate::physics::Collider;
 use crate::vehicles::Vehicle;
 use crate::Egregoria;
 use legion::storage::Component;
+use legion::systems::Resource;
 use legion::Entity;
 use std::sync::Mutex;
 
@@ -36,6 +37,10 @@ impl ParCommandBuffer {
 
     pub fn exec(&self, f: impl for<'a> FnOnce(&'a mut Egregoria) + 'static + Send) {
         self.execs.lock().unwrap().push(Box::new(f));
+    }
+
+    pub fn exec_on<T: Resource>(&self, f: impl for<'a> FnOnce(&'a mut T) + 'static + Send) {
+        self.exec(|goria| f(&mut *goria.write::<T>()))
     }
 
     pub fn add_component<T: Component>(&self, e: Entity, c: T) {

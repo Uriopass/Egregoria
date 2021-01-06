@@ -74,7 +74,7 @@ pub struct GoodsCompany {
     pub progress: f32,
 }
 
-pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) {
+pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
     let bpos = goria.read::<Map>().buildings()[company.building].door_pos;
 
     let e = goria
@@ -92,6 +92,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) {
     goria
         .write::<BuildingInfos>()
         .set_owner(company.building, soul);
+    soul
 }
 
 #[system(par_for_each)]
