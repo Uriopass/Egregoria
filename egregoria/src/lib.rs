@@ -32,7 +32,7 @@ use legion::{any, Entity, IntoQuery, Registry, Resources, World};
 use map_model::{Map, SerializedMap};
 use pedestrians::Location;
 use serde::{Deserialize, Serialize};
-use souls::desire::{desire_home_system, desire_work_system};
+use souls::desire::{desire_buy_food_system, desire_home_system, desire_work_system};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
@@ -62,6 +62,7 @@ pub mod souls;
 pub mod vehicles;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[repr(transparent)]
 pub struct SoulID(pub Entity);
 
 debug_inspect_impl!(SoulID);
@@ -132,6 +133,7 @@ impl Egregoria {
             .add_system(routing_update_system())
             .add_system(desire_home_system())
             .add_system(desire_work_system())
+            .add_system(desire_buy_food_system())
             .add_system(human_desires_system())
             .add_system(market_update_system())
             .add_system(company_system())

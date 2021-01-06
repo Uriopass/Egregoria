@@ -1,10 +1,11 @@
 use crate::economy::CommodityKind::JobOpening;
-use crate::economy::Market;
+use crate::economy::{Bought, Market};
 use crate::map_dynamic::{BuildingInfos, Router};
 use crate::pedestrians::{spawn_pedestrian, Pedestrian};
-use crate::souls::desire::{Home, Work};
+use crate::souls::desire::{BuyFood, Home, Work};
 use crate::vehicles::{spawn_parked_vehicle, VehicleKind};
 use crate::{Egregoria, SoulID};
+use common::GameTime;
 use map_model::{BuildingID, Map};
 
 pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) {
@@ -21,10 +22,14 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) {
 
     goria.write::<BuildingInfos>().set_owner(house, human);
 
+    let time = goria.read::<GameTime>().instant();
+
     let mut e = goria.world.entry(human.0).unwrap();
 
     e.add_component(Desire::new(Home::new(house)));
+    e.add_component(Desire::new(BuyFood::new(time)));
+    e.add_component(Bought::default());
     e.add_component(Router::new(car));
 }
 
-desires_system!(human_desires, Pedestrian, Home;0 Work;1);
+desires_system!(human_desires, Pedestrian, Home;0 Work;1 BuyFood;2);

@@ -1,75 +1,67 @@
-/*use crate::api::{Action, Destination};
-use crate::economy::{Goods, GoodsMarket};
-use crate::map_dynamic::BuildingInfos;
+use crate::economy::{Bought, CommodityKind, Market};
+use crate::map_dynamic::{BuildingInfos, Destination, Router};
 use crate::souls::desire::Desire;
-use crate::souls::human::Human;
-use crate::Egregoria;
-use geom::Vec2;
-use map_model::{BuildingID, BuildingKind, Map};
-use ordered_float::OrderedFloat;
+use crate::{ParCommandBuffer, SoulID};
+use common::{GameInstant, GameTime};
+use geom::Transform;
+use legion::{system, Entity};
+use map_model::BuildingID;
+
+pub enum BuyFoodState {
+    Empty,
+    WaitingForTrade,
+    BoughtAt(BuildingID),
+}
 
 pub struct BuyFood {
-    min_level: i32,
-    supermarket: Option<BuildingID>,
+    last_ate: GameInstant,
+    state: BuyFoodState,
 }
 
 impl BuyFood {
-    pub fn new(min_level: i32) -> Self {
+    pub fn new(start: GameInstant) -> Self {
         BuyFood {
-            min_level,
-            supermarket: None,
+            last_ate: start,
+            state: BuyFoodState::Empty,
         }
     }
 }
 
-impl Desire<Human> for BuyFood {
-    fn name(&self) -> &'static str {
-        "Buy food"
-    }
-
-    fn score(&self, goria: &Egregoria, soul: &Human) -> f32 {
-        if goria.read::<GoodsMarket>().agents[&soul.id].goods.food < self.min_level {
-            0.8
-        } else {
-            -100.0
-        }
-    }
-
-    fn apply(&mut self, goria: &Egregoria, soul: &mut Human) -> Action {
-        if self.supermarket.is_none() {
-            self.supermarket = find_supermarket(soul.router.body_pos(goria), &goria.read::<Map>());
-        }
-
-        if let Some(id) = self.supermarket {
-            if soul.router.arrived(Destination::Building(id)) {
-                if let Some(owner) = goria.read::<BuildingInfos>()[id].owner {
-                    let trans = goria.read::<GoodsMarket>().want(owner, Goods { food: 1 });
-                    if trans.is_none() {
-                        log::warn!("No food in this supermarket :( {:?}", id);
-                        return Action::DoNothing;
+#[system(par_for_each)]
+pub fn desire_buy_food(
+    #[resource] cbuf: &ParCommandBuffer,
+    #[resource] binfos: &BuildingInfos,
+    #[resource] time: &GameTime,
+    me: &Entity,
+    trans: &Transform,
+    router: &mut Router,
+    d: &mut Desire<BuyFood>,
+    bought: &mut Bought,
+) {
+    let soul = SoulID(*me);
+    let pos = trans.position();
+    d.score_and_apply(
+        |buy_food| buy_food.last_ate.elapsed(*time) as f32 * 0.001 - 1.0,
+        move |buy_food| match buy_food.state {
+            BuyFoodState::Empty => {
+                cbuf.exec_on(move |market: &mut Market| {
+                    market.buy(soul, pos, CommodityKind::Bread, 1)
+                });
+                buy_food.state = BuyFoodState::WaitingForTrade;
+            }
+            BuyFoodState::WaitingForTrade => {
+                for trade in bought.0.entry(CommodityKind::Bread).or_default().drain(..) {
+                    if let Some(b) = binfos.building_owned_by(trade.seller) {
+                        buy_food.state = BuyFoodState::BoughtAt(b);
                     }
-
-                    let trans = trans.unwrap();
-                    return Action::Buy {
-                        buyer: soul.id,
-                        seller: owner,
-                        trans,
-                    };
                 }
             }
-
-            soul.router.go_to(goria, Destination::Building(id))
-        } else {
-            Action::DoNothing
-        }
-    }
+            BuyFoodState::BoughtAt(b) => {
+                if router.go_to(Destination::Building(b)) {
+                    buy_food.state = BuyFoodState::Empty;
+                    buy_food.last_ate = time.instant();
+                }
+            }
+        },
+    );
 }
-
-fn find_supermarket(pos: Vec2, map: &Map) -> Option<BuildingID> {
-    map.buildings()
-        .values()
-        .filter(|x| matches!(x.kind, BuildingKind::Supermarket))
-        .min_by_key(|b| OrderedFloat(b.door_pos.distance2(pos)))
-        .map(|x| x.id)
-}
-*/

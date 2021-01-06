@@ -1,4 +1,4 @@
-use crate::economy::CommodityKind;
+use crate::economy::{CommodityKind, Market};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::goods_company::{company_soul, CompanyKind, GoodsCompany, Recipe};
 use crate::souls::human::spawn_human;
@@ -99,7 +99,7 @@ pub fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
         n_souls_added += 1;
     }
 
-    for &(build_id, _) in empty_buildings
+    for &(build_id, p) in empty_buildings
         .get(&BuildingKind::Bakery)
         .unwrap_or(&vec![])
     {
@@ -116,7 +116,7 @@ pub fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
             progress: 0.0,
         };
 
-        company_soul(goria, comp);
+        let s = company_soul(goria, comp);
         n_souls_added += 1;
     }
 
