@@ -27,29 +27,18 @@ jobs:
         include:
           - build: linux
             os: ubuntu-latest
-            rust: stable
           - build: macos
             os: macos-latest
-            rust: stable
           - build: windows
             os: windows-latest
-            rust: stable
 
     steps:
       - uses: actions/checkout@v1
 
-      - name: Install Rust (rustup)
-        run: rustup update ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
-        if: matrix.os != 'macos-latest'
-        shell: bash
-
-      - name: Install Rust (macos)
-        # As of 7.12.2019 rust is not installed on MacOS
-        # https://help.github.com/en/actions/automating-your-workflow-with-github-actions/software-installed-on-github-hosted-runners#macos-1015
-        run: |
-          curl https://sh.rustup.rs | sh -s -- -y
-          echo "##[add-path]$HOME/.cargo/bin"
-        if: matrix.os == 'macos-latest'
+      - name: Install Rust
+        uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: 'stable'
 
       - name: Build
         run: cargo build --verbose --release
