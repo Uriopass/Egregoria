@@ -5,7 +5,7 @@ pub const HOURS_PER_DAY: i32 = 24;
 pub const SECONDS_PER_DAY: i32 = SECONDS_PER_HOUR * HOURS_PER_DAY;
 
 /// An in-game instant used to measure time differences
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct GameInstant {
     /// Time in seconds elapsed since the start of the game
     pub timestamp: f64,
@@ -180,7 +180,7 @@ impl GameTime {
 
 impl GameInstant {
     /// Time elapsed since instant was taken, in seconds
-    pub fn elapsed(&self, time: GameTime) -> f64 {
+    pub fn elapsed(&self, time: &GameTime) -> f64 {
         time.timestamp - self.timestamp
     }
 }
