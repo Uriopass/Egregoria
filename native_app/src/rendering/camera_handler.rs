@@ -40,6 +40,10 @@ impl CameraHandler {
         self.camera.unproject(pos)
     }
 
+    fn save(&self) {
+        common::saveload::save_silent_json(&self.camera, "camera");
+    }
+
     pub fn camera_movement(
         &mut self,
         ctx: &mut Context,
@@ -57,7 +61,7 @@ impl CameraHandler {
                 self.camera.position.x -= p.x - self.last_pos.x;
                 self.camera.position.y -= p.y - self.last_pos.y;
                 self.camera.update();
-                common::saveload::save_silent(&self.camera, "camera");
+                self.save();
             }
 
             self.last_pos = self.unproject(ctx.input.mouse.screen);
@@ -119,7 +123,7 @@ impl CameraHandler {
         self.camera.position.x += m.x;
         self.camera.position.y += m.y;
         self.camera.update();
-        common::saveload::save_silent(&self.camera, "camera");
+        self.save();
     }
 
     fn zoom_by(&mut self, ctx: &mut Context, multiply: f32) {
@@ -130,6 +134,6 @@ impl CameraHandler {
         self.camera.position.x -= after.x - self.last_pos.x;
         self.camera.position.y -= after.y - self.last_pos.y;
         self.update(ctx);
-        common::saveload::save_silent(&self.camera, "camera");
+        self.save();
     }
 }
