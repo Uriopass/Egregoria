@@ -4,7 +4,7 @@ use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, Physics
 use crate::rendering::assets::{AssetID, AssetRender};
 use crate::utils::rand_world;
 use crate::Egregoria;
-use common::GameTime;
+use common::{GameInstant, GameTime};
 use geom::Color;
 use geom::{Spline, Transform, Vec2};
 use imgui_inspect::InspectDragf;
@@ -25,6 +25,8 @@ debug_inspect_impl!(VehicleID);
 pub enum VehicleState {
     Parked(ParkingSpotID),
     Driving,
+    /// Panicked when it notices it's in a gridlock
+    Panicking(GameInstant),
     RoadToPark(Spline, f32, ParkingSpotID),
 }
 
@@ -46,6 +48,9 @@ pub struct Vehicle {
 
     pub state: VehicleState,
     pub kind: VehicleKind,
+
+    /// Used to detect gridlock
+    pub flag: u64,
 }
 
 #[must_use]
@@ -54,9 +59,9 @@ pub fn put_vehicle_in_coworld(goria: &mut Egregoria, w: f32, trans: Transform) -
         trans.position(),
         PhysicsObject {
             dir: trans.direction(),
-            speed: 0.0,
             radius: w * 0.5,
             group: PhysicsGroup::Vehicles,
+            ..Default::default()
         },
     ))
 }
@@ -216,6 +221,7 @@ impl Vehicle {
             wait_time: 0.0,
             state: VehicleState::Parked(spot),
             kind,
+            flag: 0,
         }
     }
 }
