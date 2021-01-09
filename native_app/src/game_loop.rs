@@ -36,7 +36,7 @@ pub struct State {
 
 impl State {
     pub fn new(ctx: &mut Context) -> Self {
-        let camera = common::saveload::load("camera")
+        let camera = common::saveload::load_json("camera")
             .map(|camera| CameraHandler {
                 camera,
                 last_pos: Vec2::ZERO,
