@@ -28,6 +28,7 @@ pub struct PhysicsObject {
     #[inspect(proxy_type = "InspectDragf")]
     pub radius: f32,
     pub group: PhysicsGroup,
+    pub flag: u64,
 }
 
 impl Default for PhysicsObject {
@@ -37,6 +38,7 @@ impl Default for PhysicsObject {
             speed: 0.0,
             radius: 1.0,
             group: PhysicsGroup::Unknown,
+            flag: 0,
         }
     }
 }
@@ -65,36 +67,3 @@ impl InspectRenderDefault<Collider> for Collider {
         false
     }
 }
-/*
-type SerPhysicsObj<'a> = (GridHandle, ([f32; 2], PhysicsObject));
-
-pub fn serialize_colliders(state: &mut Egregoria) {
-    let coworld = &*state.read::<CollisionWorld>();
-
-    let mut objs: Vec<SerPhysicsObj> = vec![];
-    for &h in <&Collider>::query().iter(&state.world) {
-        let (pos, pobj) = unwrap_or!(coworld.get(h.0), return);
-        objs.push((h.0, ([pos.x, pos.y], *pobj)));
-    }
-    common::saveload::save(&objs, "coworld");
-}
-
-pub fn deserialize_colliders(state: &mut Egregoria) -> Option<()> {
-    let objs: Vec<SerPhysicsObj> = common::saveload::load("coworld")?;
-
-    let coworld: &mut CollisionWorld = &mut *state.resources.get_mut::<CollisionWorld>().unwrap();
-
-    let mut handle_map: HashMap<GridHandle, GridHandle> = HashMap::default();
-
-    for (e, (p, obj)) in objs {
-        let h = coworld.insert(p, obj);
-        handle_map.insert(e, h);
-    }
-
-    for c in <&mut Collider>::query().iter_mut(&mut state.world) {
-        c.0 = handle_map[&c.0];
-    }
-
-    Some(())
-}
-*/

@@ -30,6 +30,7 @@ impl UserData for LuaWorld {
                         wait_time: 0.0,
                         state: VehicleState::Driving,
                         kind: VehicleKind::Car,
+                        flag: 0,
                     },
                     Itinerary::simple(vec![objective.0]),
                     true,

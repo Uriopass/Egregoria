@@ -29,6 +29,7 @@ pub fn vehicle_decision(
     #[resource] map: &Map,
     #[resource] time: &GameTime,
     #[resource] cow: &CollisionWorld,
+    me: &Entity,
     it: &mut Itinerary,
     trans: &mut Transform,
     kin: &mut Kinematics,
@@ -36,13 +37,20 @@ pub fn vehicle_decision(
     collider: &Collider,
 ) {
     let (_, self_obj) = cow.get(collider.0).expect("Handle not in collision world");
-    let danger_length = (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
-    let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
-    let objs =
-        neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
 
-    let (desired_speed, desired_dir) =
-        calc_decision(vehicle, &map, &time, trans, self_obj, it, objs);
+    let mut desired_speed = 0.0;
+    let mut desired_dir = Vec2::ZERO;
+    if matches!(vehicle.state, VehicleState::Driving | VehicleState::Panicking(_)) {
+        let danger_length =
+            (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
+        let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
+        let objs =
+            neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
+
+        let (s, d) = calc_decision(*me, vehicle, &map, &time, trans, self_obj, it, objs);
+        desired_speed = s;
+        desired_dir = d;
+    }
 
     physics(
         trans,
@@ -99,7 +107,7 @@ fn physics(
             trans.set_direction(spline.derivative(t).normalize());
             return;
         }
-        VehicleState::Driving => {}
+        _ => {}
     }
 
     let speed = obj.speed;
@@ -133,6 +141,7 @@ fn physics(
 
 /// Decide the appropriate velocity and direction to aim for.
 pub fn calc_decision<'a>(
+    me: Entity,
     vehicle: &mut Vehicle,
     map: &Map,
     time: &GameTime,
@@ -156,18 +165,39 @@ pub fn calc_decision<'a>(
 
     let cutoff = (0.8 + stop_dist).min(1.5);
 
-    let front_dist = calc_front_dist(vehicle, trans, self_obj, it, neighs, cutoff);
+    let (front_dist, flag) = calc_front_dist(vehicle, trans, self_obj, it, neighs, cutoff);
 
     let position = trans.position();
-    if speed.abs() < 0.2 && front_dist < 1.5 {
-        vehicle.wait_time = (position.x * 1000.0).fract().abs() * 0.5;
-        return default_return;
-    }
-
     let dir_to_pos = unwrap_or!(
         (objective - position).try_normalize(),
         return default_return
     );
+
+    if let VehicleState::Panicking(since) = vehicle.state {
+        if since.elapsed(time) > 5.0 {
+            vehicle.state = VehicleState::Driving;
+        }
+    } else if speed.abs() < 0.2 && front_dist < 1.5 {
+        let me_u64: u64 = unsafe { std::mem::transmute(me) };
+        if me_u64 == flag {
+            vehicle.state = VehicleState::Panicking(time.instant());
+            log::info!("gridlock!")
+        }
+        vehicle.flag = if vehicle.flag | flag == 0 {
+            me_u64
+        } else {
+            flag
+        };
+        vehicle.wait_time = (position.x * 1000.0).fract().abs() * 0.5;
+        return default_return;
+    } else {
+        // Stop at 80 cm of object in front
+        if front_dist < 0.8 + stop_dist {
+            return (0.0, dir_to_pos);
+        }
+    }
+
+    vehicle.flag = 0;
 
     if let Some(pos) = terminal_pos {
         if pos.is_close(trans.position(), 1.0 + stop_dist) {
@@ -204,11 +234,6 @@ pub fn calc_decision<'a>(
         }
     }
 
-    // Stop at 80 cm of object in front
-    if front_dist < 0.8 + stop_dist {
-        return (0.0, dir_to_pos);
-    }
-
     // Not facing the objective
     if dir_to_pos.dot(trans.direction()) < 0.8 {
         return (6.0, dir_to_pos);
@@ -227,7 +252,7 @@ fn calc_front_dist<'a>(
     it: &Itinerary,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
     cutoff: f32,
-) -> f32 {
+) -> (f32, u64) {
     let position = trans.position();
     let direction = trans.direction();
 
@@ -242,7 +267,7 @@ fn calc_front_dist<'a>(
     let speed = self_obj.speed;
 
     let on_lane = it.get_travers().map_or(false, |t| t.kind.is_lane());
-
+    let mut flag = 0;
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {
         // Ignore myself
@@ -276,9 +301,12 @@ fn calc_front_dist<'a>(
             if !is_vehicle {
                 dist_to_obj -= 1.0;
             }
-            min_front_dist = min_front_dist.min(dist_to_obj);
+            if dist_to_obj < min_front_dist {
+                min_front_dist = dist_to_obj;
+                flag = nei_physics_obj.flag;
+            }
             if min_front_dist < cutoff {
-                return min_front_dist;
+                return (min_front_dist, flag);
             }
             continue;
         }
@@ -296,13 +324,21 @@ fn calc_front_dist<'a>(
 
         let (my_dist, his_dist) = unwrap_or!(both_dist_to_inter(my_ray, his_ray), continue);
 
+        if my_dist.max(his_dist) > 1000.0 {
+            continue;
+        }
+
         if my_dist - speed.min(2.5) - my_radius
             < his_dist - nei_physics_obj.speed.min(2.5) - nei_physics_obj.radius
         {
             continue;
         }
 
-        min_front_dist = min_front_dist.min(dist - my_radius - nei_physics_obj.radius - 5.0);
+        let final_dist = dist - my_radius - nei_physics_obj.radius - 5.0;
+        if final_dist < min_front_dist {
+            min_front_dist = final_dist;
+            flag = nei_physics_obj.flag;
+        }
     }
-    min_front_dist
+    (min_front_dist, flag)
 }
