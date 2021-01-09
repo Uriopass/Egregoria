@@ -4,7 +4,7 @@ use common::GameTime;
 use geom::Transform;
 use legion::system;
 
-#[system(for_each)]
+#[system(par_for_each)]
 pub fn kinematics_apply(
     #[resource] time: &GameTime,
     transform: &mut Transform,
