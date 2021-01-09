@@ -5,6 +5,7 @@ mod default_str;
 mod default_string;
 mod default_u16;
 mod default_u32;
+mod default_u64;
 mod default_usize;
 mod default_vec;
 
