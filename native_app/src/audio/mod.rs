@@ -12,7 +12,7 @@ use common::AudioKind;
 use egregoria::Egregoria;
 use rodio::source::Buffered;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sample, Source};
-use slotmap::{new_key_type, DenseSlotMap};
+use slotmap::{new_key_type, DenseSlotMap, Key};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::fs::File;

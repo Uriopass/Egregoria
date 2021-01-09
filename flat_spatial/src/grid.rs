@@ -2,8 +2,7 @@ use crate::cell::{CellObject, GridCell};
 use crate::storage::{cell_range, CellIdx, SparseStorage, Storage};
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
-use slotmap::new_key_type;
-use slotmap::SlotMap;
+use slotmap::{new_key_type, Key, SlotMap};
 
 pub type GridObjects<O> = SlotMap<GridHandle, StoreObject<O>>;
 
@@ -24,7 +23,7 @@ pub enum ObjectState {
 
 /// The actual object stored in the store
 #[derive(Clone, Copy, Deserialize, Serialize)]
-pub struct StoreObject<O: Copy> {
+pub struct StoreObject<O> {
     /// User-defined object to be associated with a value
     obj: O,
     pub state: ObjectState,
@@ -91,7 +90,7 @@ pub struct StoreObject<O: Copy> {
 /// assert_eq!(g.get(a), None); // But that a doesn't exist anymore
 /// ```
 #[derive(Clone, Deserialize, Serialize)]
-pub struct Grid<O: Copy, ST: Storage<GridCell> = SparseStorage<GridCell>> {
+pub struct Grid<O, ST: Storage<GridCell> = SparseStorage<GridCell>> {
     storage: ST,
     objects: GridObjects<O>,
     // Cache maintain vec to avoid allocating every time maintain is called

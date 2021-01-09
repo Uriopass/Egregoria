@@ -2,7 +2,7 @@ use crate::cell::ShapeGridCell;
 use crate::storage::{cell_range, SparseStorage, Storage};
 use geom::{Circle, Intersect, Shape, Vec2, AABB};
 use serde::{Deserialize, Serialize};
-use slotmap::{new_key_type, SlotMap};
+use slotmap::{new_key_type, Key, SlotMap};
 use std::collections::HashSet;
 
 pub type ShapeGridObjects<O, S> = SlotMap<ShapeGridHandle, StoreObject<O, S>>;

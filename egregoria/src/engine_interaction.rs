@@ -37,7 +37,7 @@ pub enum MouseButton {
     Left,
     Right,
     Middle,
-    Other(u8),
+    Other(u16),
 }
 
 #[derive(Clone)]
