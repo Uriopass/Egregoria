@@ -41,7 +41,7 @@ pub fn desire_buy_food(
     let soul = SoulID(*me);
     let pos = trans.position();
     d.score_and_apply(
-        |buy_food| buy_food.last_ate.elapsed(*time) as f32 * 0.001 - 1.0,
+        move |buy_food| buy_food.last_ate.elapsed(time) as f32 * 0.001 - 1.0,
         move |buy_food| match buy_food.state {
             BuyFoodState::Empty => {
                 cbuf.exec_on(move |market: &mut Market| {
