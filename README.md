@@ -28,11 +28,11 @@ I personally use Windows 10 and Mac OS 10.11 and it compiles fine once the rust 
 cargo run
 ```
 
-### Ubuntu/Debian
+### Ubuntu/Debian on x11
 There are a few libraries to install that some of my dependencies need:
 
 ```
-sudo apt-get install libasound2-dev libudev-dev pkg-config
+sudo apt-get install libasound2-dev libudev-dev pkg-config libx11-dev
 cargo run
 ```
 
