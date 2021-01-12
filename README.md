@@ -22,8 +22,18 @@ The first [milestone](https://github.com/Uriopass/Egregoria/projects/1) will int
 
 ## Building the project
 
+### Generating data
+
+Some data is generated using python3, therefore python3 and some dependencies are required.  
+I wish it could be done using Rust however no Rust straight skeleton algorithm exists. :/
+
+```bash
+# install python3 using your favorite method then run this
+python -m pip install -r assets/requirements.txt
+```
+
 ### Windows/Mac
-I personally use Windows 10 and Mac OS 10.11 and it compiles fine once the rust toolchain is installed.
+I personally use Windows 10 and Mac OS 10.11 and it compiles fine once the [rust toolchain is installed](https://www.rust-lang.org/tools/install).
 ```bash
 cargo run
 ```
