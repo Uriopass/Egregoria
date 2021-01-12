@@ -106,6 +106,7 @@ def showlithouse(skel):
         plt.fill(x, y, color=col)
         # plt.scatter(x, y)
         plt.axis('equal')
+
     for face in skel:
         n = normal(face)
         vv = 0.3 + max(0., 0.6 * dot(n, sun) + 0.1 * dot(n, l2))
@@ -115,12 +116,11 @@ def showlithouse(skel):
     plt.show()
 
 
-
 def mk_skel(poly):
     # poly = list(reversed(poly.exterior.coords[:-1]))
     poly = list(poly.exterior.coords[:-1])
 
-    skeleton = polyskel.skeletonize(poly, [])
+    skeleton = polyskel.skeletonize(poly)
 
     graph = collections.defaultdict(list)
     heights = {}
