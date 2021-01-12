@@ -8,3 +8,4 @@ world/*
 world
 *.bc
 *.exe
+__pycache__
