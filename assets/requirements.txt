@@ -1,0 +1,2 @@
+euclid3 == 0.1
+shapely
