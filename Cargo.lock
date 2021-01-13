@@ -827,7 +827,7 @@ dependencies = [
  "rand_distr",
  "rayon",
  "serde",
- "slotmap 0.4.0",
+ "slotmap",
 ]
 
 [[package]]
@@ -909,7 +909,7 @@ version = "0.3.7"
 dependencies = [
  "geom",
  "serde",
- "slotmap 1.0.1",
+ "slotmap",
 ]
 
 [[package]]
@@ -1079,6 +1079,7 @@ dependencies = [
  "mint",
  "ordered-float",
  "serde",
+ "slotmap",
 ]
 
 [[package]]
@@ -1698,7 +1699,7 @@ dependencies = [
  "pathfinding",
  "rand",
  "serde",
- "slotmap 0.4.0",
+ "slotmap",
 ]
 
 [[package]]
@@ -1896,7 +1897,7 @@ dependencies = [
  "ordered-float",
  "rodio",
  "serde",
- "slotmap 1.0.1",
+ "slotmap",
  "wgpu_engine",
  "winit",
 ]
@@ -2668,18 +2669,9 @@ checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
 name = "slotmap"
-version = "0.4.0"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c46a3482db8f247956e464d783693ece164ca056e6e67563ee5505bdb86452cd"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "slotmap"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3059d4bc9651b8515c4ab661829cc08ec3b79051bd7fbc234ac0d957eb9696b"
+checksum = "ab3003725ae562cf995f3dc82bb99e70926e09000396816765bb6d7adbe740b1"
 dependencies = [
  "serde",
  "version_check",

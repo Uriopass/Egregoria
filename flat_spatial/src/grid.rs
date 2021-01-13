@@ -2,7 +2,7 @@ use crate::cell::{CellObject, GridCell};
 use crate::storage::{cell_range, CellIdx, SparseStorage, Storage};
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
-use slotmap::{new_key_type, Key, SlotMap};
+use slotmap::{new_key_type, SlotMap};
 
 pub type GridObjects<O> = SlotMap<GridHandle, StoreObject<O>>;
 
