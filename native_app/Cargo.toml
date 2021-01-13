@@ -29,5 +29,5 @@ legion        = { version = "0.3.0", default-features = false, features = ["code
 ordered-float = "2.0.0"
 serde         = "1.0.117"
 rodio         = { version = "0.13.0", default-features = false, features = ["vorbis"] }
-slotmap       = "1.0"
+slotmap       = { version = "1.0.2", default-features = false }
 winit         = "0.24"

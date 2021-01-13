@@ -23,7 +23,7 @@ geom          = { path = "../geom" }
 map_model     = { path = "../map_model" }
 mods          = { path = "../mods" }
 common        = { path = "../common" }
-slotmap       = "0.4.0"
+slotmap       = { version = "1.0.2", default-features = false }
 dashmap       = { version = "3.11.10", features = ["serde"] }
 imgui         = "0.6"
 rayon         = "1.5.0"

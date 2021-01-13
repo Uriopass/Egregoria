@@ -12,6 +12,6 @@ exclude = ["img/*"]
 repository = "https://github.com/Uriopass/flat_spatial"
 
 [dependencies]
-slotmap = { version = "1.0", default-features = false, features=["serde"] }
+slotmap = { version = "1.0.2", default-features = false, features=["serde"] }
 serde   = { version = "1.0", features = ["derive"] }
 geom    = { path = "../geom" }
