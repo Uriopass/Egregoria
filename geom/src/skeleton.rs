@@ -187,13 +187,15 @@ impl LAVertex {
         if self.is_reflex {
             // a reflex vertex may generate a split event
             // split events happen when a vertex hits an opposite edge, splitting the polygon in two.
-            // println!("looking for split candidates for vertex {:?}", self.point);
+            #[cfg(test)]
+            println!("looking for split candidates for vertex {:?}", self.point);
 
             for edge in &slav.original_edges {
                 if edge.edge == self.edge_left || edge.edge == self.edge_right {
                     continue;
                 }
-                // println!("\t considering EDGE {:?}", edge.edge);
+                #[cfg(test)]
+                println!("\t considering EDGE {:?}", edge.edge);
 
                 // a potential b is at the intersection of between our own bisector and the bisector of the
                 // angle between the tested edge and any one of our own edges.
@@ -217,13 +219,14 @@ impl LAVertex {
                     self.edge_right
                 };
 
-                // // println!("\t\t trying {:?} against {:?}", self_edge, &edge.edge);
+                // println!("\t\t trying {:?} against {:?}", self_edge, &edge.edge);
 
                 if let Some(i) = self_edge.intersection_point(&edge.edge, true) {
                     if approx_equal_vec(i, self.point) {
                         continue;
                     }
-                    // println!("\t\t found intersection {:?}", i);
+                    #[cfg(test)]
+                    println!("\t\t found intersection {:?}", i);
 
                     let lin_vec = (self.point - i).normalize();
                     let mut ed_vec = edge.edge.vec().normalize();
@@ -262,14 +265,16 @@ impl LAVertex {
                         < EPSILON;
 
                     if !(left && right && b_edge) {
-                        // println!(
-                        //    "\t\tDiscarded candidate {:?} ({}-{}-{})",
-                        //    b, x_left, x_right, x_edge
-                        //);
+                        #[cfg(test)]
+                        println!(
+                            "\t\tDiscarded candidate {:?} ({}-{}-{})",
+                            b, left, right, b_edge
+                        );
                         continue;
                     }
 
-                    // println!("\t\tFound valid candidate {:?}", b);
+                    #[cfg(test)]
+                    println!("\t\tFound valid candidate {:?}", b);
                     events.push(Event::Split(SplitEvent::new(
                         edge.edge.project(b).distance(b),
                         b,
@@ -362,10 +367,16 @@ impl LAVertex {
             from: point,
             dir: (creator_vectors.0 + creator_vectors.1) * if is_reflex { -1.0 } else { 1.0 },
         };
-        // println!(
-        //    "created vertex {:?} {:?} {:?} {:?} {:?} {:?}",
-        //    id, point, edge_left, edge_right, is_reflex, bisector
-        //);
+        #[cfg(test)]
+        println!(
+            "created vertex ({}) {:?} {:?} {:?} {:?} {:?}",
+            if is_reflex { "reflex" } else { "convex" },
+            id,
+            point,
+            bisector,
+            edge_left,
+            edge_right,
+        );
 
         LAVertex {
             id,
@@ -405,15 +416,16 @@ impl SLAV {
         let lav = &mut lavs[va.lav.unwrap().0];
 
         if va.prev == vb.next {
-            // println!(
-            //    "{} Peak event at intersection {:?} from <{:?},{:?},{:?}> in {:?}",
-            //    event.distance,
-            //    event.intersection_point,
-            //    event.vertex_a,
-            //    event.vertex_b,
-            //    va.prev,
-            //    lav.id
-            //);
+            #[cfg(test)]
+            println!(
+                "{} Peak event at intersection {:?} from <{:?},{:?},{:?}> in {:?}",
+                event.distance,
+                event.intersection_point,
+                event.vertex_a,
+                event.vertex_b,
+                va.prev,
+                lav.id
+            );
             self.lavs
                 .remove(self.lavs.iter().position(|&x| x == lav.id).unwrap());
             for vertex in lav.iter_keys(vs) {
@@ -422,10 +434,11 @@ impl SLAV {
                 vertex.invalidate_known(lav);
             }
         } else {
-            // println!(
-            //    "{} Edge event at intersection {:?} from <{:?},{:?}> in {:?}",
-            //    event.distance, event.intersection_point, event.vertex_a, event.vertex_b, lav.id
-            //);
+            #[cfg(test)]
+            println!(
+                "{} Edge event at intersection {:?} from <{:?},{:?}> in {:?}",
+                event.distance, event.intersection_point, event.vertex_a, event.vertex_b, lav.id
+            );
 
             let new_vertex =
                 lav.unify(vs, event.vertex_a, event.vertex_b, event.intersection_point);
@@ -457,10 +470,11 @@ impl SLAV {
         event: SplitEvent,
     ) -> (Option<Subtree>, Vec<Event>) {
         let v = vs[event.vertex.0].clone();
-        // println!(
-        //    "{} Split event at intersection {:?} from vertex {:?}, for edge {:?} in {:?}",
-        //    event.distance, event.intersection_point, event.vertex, event.opposite_edge, v.lav,
-        //);
+        #[cfg(test)]
+        println!(
+            "{} Split event at intersection {:?} from vertex {:?}, for edge {:?} in {:?}",
+            event.distance, event.intersection_point, event.vertex, event.opposite_edge, v.lav,
+        );
 
         let mut sinks = vec![v.point];
         let mut vertices: Vec<VertexID> = vec![];
@@ -473,7 +487,8 @@ impl SLAV {
         for &l in &self.lavs {
             for v in lavs[l.0].iter_keys(vs) {
                 let v = &vs[v.0];
-                // println!("{:?} in {:?}", v.id, v.lav);
+                #[cfg(test)]
+                println!("{:?} in {:?}", v.id, v.lav);
 
                 if approx_equal_vec(norm, v.edge_left.vec().normalize())
                     && approx_equal_vec(event.opposite_edge.src, v.edge_left.src)
@@ -503,13 +518,14 @@ impl SLAV {
                         .cross((event.intersection_point - xx.point).normalize())
                         <= EPSILON;
 
-                    // println!(
-                    //    "Vertex {:?} holds edge as {} edge ({}, {})",
-                    //    v.id,
-                    //    if x_id == v.id { "left" } else { "right" },
-                    //    left,
-                    //    right
-                    //);
+                    #[cfg(test)]
+                    println!(
+                        "Vertex {:?} holds edge as {} edge ({}, {})",
+                        v.id,
+                        if x_id == v.id { "left" } else { "right" },
+                        left,
+                        right
+                    );
 
                     if left && right {
                         break;
@@ -522,10 +538,11 @@ impl SLAV {
         }
 
         if x.is_none() {
-            // println!(
-            //    "Failed split event {:?} (equivalent edge event is expected to follow)",
-            //    event
-            //);
+            #[cfg(test)]
+            println!(
+                "Failed split event {:?} (equivalent edge event is expected to follow)",
+                event
+            );
             return (None, vec![]);
         }
 
@@ -563,7 +580,8 @@ impl SLAV {
         let new_lavs;
         self.remove_lav(v.lav.unwrap());
 
-        // println!("v1:{:?} v2:{:?}", vs[v1].point, vs[v2].point);
+        #[cfg(test)]
+        println!("v1:{:?} v2:{:?}", vs[v1.0].point, vs[v2.0].point);
 
         if v.lav.unwrap() != vs[x.0].lav.unwrap() {
             self.remove_lav(vs[x.0].lav.unwrap());
@@ -580,12 +598,13 @@ impl SLAV {
                 self.lavs.push(l);
                 vertices.push(lavs[l.0].head.unwrap());
             } else {
-                // println!(
-                //    "LAV {:?} has collapsed into the line {:?}--{:?}",
-                //    l,
-                //    vs[lavs[l].head.unwrap()].point,
-                //    vs[vs[lavs[l].head.unwrap()].next.unwrap()].point
-                //);
+                #[cfg(test)]
+                println!(
+                    "LAV {:?} has collapsed into the line {:?}--{:?}",
+                    l,
+                    vs[lavs[l.0].head.unwrap().0].point,
+                    vs[vs[lavs[l.0].head.unwrap().0].next.unwrap().0].point
+                );
 
                 sinks.push(vs[vs[lavs[l.0].head.unwrap().0].next.unwrap().0].point);
                 for v in lavs[l.0].iter_keys(vs) {
@@ -792,7 +811,8 @@ fn merge_sources(skeleton: &mut Vec<Subtree>) {
 /// Returns the straight skeleton as a list of "subtrees", which are in the form of (source, height, sinks),
 /// where source is the highest points, height is its height, and sinks are the point connected to the source.
 pub fn skeleton(polygon: &[Vec2], holes: &[&[Vec2]]) -> Vec<Subtree> {
-    // println!("beginning skeleton {:?}", polygon);
+    #[cfg(test)]
+    println!("beginning skeleton {:?}", polygon);
 
     let mut vs = vec![];
     let mut lavs = vec![];
@@ -810,22 +830,23 @@ pub fn skeleton(polygon: &[Vec2], holes: &[&[Vec2]]) -> Vec<Subtree> {
     }
 
     while !queue.is_empty() && !slav.lavs.is_empty() {
-        //// println!("slav is {:?}", slav.lavs);
-
         let i = queue.pop().unwrap().0;
-        // println!("managing event {:?}", i);
+        #[cfg(test)]
+        println!("managing event {:?}", i);
 
         let (arc, events) = match i {
             Event::Edge(e) => {
                 if !vs[e.vertex_a.0].valid || !vs[e.vertex_b.0].valid {
-                    // println!("{} Discarded outdated event {:?}", e.distance, e);
+                    #[cfg(test)]
+                    println!("{} Discarded outdated event {:?}", e.distance, e);
                     continue;
                 }
                 slav.handle_edge_event(&mut vs, &mut lavs, e)
             }
             Event::Split(s) => {
                 if !vs[s.vertex.0].valid {
-                    // println!("{} Discarded outdated event {:?}", s.distance, s);
+                    #[cfg(test)]
+                    println!("{} Discarded outdated event {:?}", s.distance, s);
                     continue;
                 }
                 slav.handle_split_event(&mut vs, &mut lavs, s)
@@ -933,6 +954,26 @@ mod tests {
         assert!(!skeleton.is_empty());
         let faces = faces_from_skeleton(poly, &skeleton);
         assert_eq!(faces.len(), 6);
+    }
+
+    #[test]
+    fn test_half_cross() {
+        let poly = &[
+            vec2(100.0, 50.0),
+            vec2(150.0, 150.0),
+            vec2(50.0, 100.0),
+            vec2(50.0, 350.0),
+            vec2(350.0, 350.0),
+            vec2(350.0, 100.0),
+            vec2(250.0, 150.0),
+            vec2(300.0, 50.0),
+        ]
+        .iter()
+        .copied()
+        .rev()
+        .collect::<Vec<_>>();
+        let skeleton = skeleton(&poly, &[]);
+        let faces = faces_from_skeleton(&poly, &skeleton);
     }
 
     #[test]
