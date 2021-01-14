@@ -1,12 +1,37 @@
 use crate::Vec3;
+use serde::export::Formatter;
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
+use std::hash::{Hash, Hasher};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-#[derive(Copy, Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[repr(C)]
 pub struct Vec2 {
     pub x: f32,
     pub y: f32,
+}
+
+impl Debug for Vec2 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("Vec2({},{})", self.x, self.y))
+    }
+}
+
+#[allow(clippy::derive_hash_xor_eq)]
+impl Hash for Vec2 {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut x = self.x;
+        if x == 0.0 {
+            x = 0.0;
+        }
+        let mut y = self.y;
+        if y == 0.0 {
+            y = 0.0;
+        }
+        state.write_u32(x.to_bits());
+        state.write_u32(y.to_bits());
+    }
 }
 
 #[inline]
@@ -63,6 +88,11 @@ impl Vec2 {
     #[inline]
     pub fn dot(self, rhs: Self) -> f32 {
         self.x * rhs.x + self.y * rhs.y
+    }
+
+    #[inline]
+    pub fn cross(self, rhs: Self) -> f32 {
+        self.x * rhs.y - self.y * rhs.x
     }
 
     #[inline]
@@ -333,8 +363,14 @@ impl Mul<Vec2> for Vec2 {
     }
 }
 
-impl MulAssign for Vec2 {
+impl MulAssign<Vec2> for Vec2 {
     fn mul_assign(&mut self, rhs: Self) {
+        *self = *self * rhs
+    }
+}
+
+impl MulAssign<f32> for Vec2 {
+    fn mul_assign(&mut self, rhs: f32) {
         *self = *self * rhs
     }
 }

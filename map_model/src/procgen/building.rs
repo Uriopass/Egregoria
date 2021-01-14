@@ -1,4 +1,6 @@
+use geom::skeleton::{faces_from_skeleton, skeleton};
 use geom::{vec2, vec3, Color, LinearColor, Polygon, Vec2, Vec3};
+use ordered_float::OrderedFloat;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
@@ -29,96 +31,41 @@ pub fn gen_exterior_workplace(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
     (vec![(p, Color::new(0.48, 0.48, 0.5, 1.0).into())], door_pos)
 }
 
-///
-/// Generates the exterior of a house with the roofs too
-///
-///   6       5
-///   |----a----|
-///   |    |    |
-///   | r4 | r3 | 4     3
-///   |    |    |-------v
-/// h |    |  /    r2   |
-///   |    b------------c
-///   |  /    r1        |
-///   |---------.-------|
-///   0         1      2
-///            w
-///
-pub fn gen_exterior_house(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
-    let width = rand_in(10.0, 15.0) * (size / 40.0);
-    let height = rand_in(15.0, 20.0) * (size / 40.0);
+pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
+    let width = rand_in(10.0, 15.0);
+    let height = rand_in(15.0, 20.0);
 
     let mut p = Polygon::rect(width, height);
+
+    let seg = rand_in(0.0, 4.0) as usize;
+
     let corn_coeff = rand_in(0.5, 0.75);
-    p.split_segment(1, corn_coeff);
-    p.extrude(1, rand_in(5.0, 10.0));
+    p.split_segment(seg, corn_coeff);
+    p.extrude(seg, rand_in(5.0, 10.0));
 
-    let a = vec2(width * 0.5, height);
-    let c = (p[3] + p[2]) / 2.0;
-    let b = vec2(a.x, c.y);
+    p.iter_mut().for_each(|x| *x *= size / 40.0);
 
-    let r1 = Polygon(vec![p[0], p[2], c, b]);
-    let r2 = Polygon(vec![b, c, p[3], p[4]]);
-    let r3 = Polygon(vec![b, p[4], p[5], a]);
-    let r4 = Polygon(vec![p[0], b, a, p[6]]);
+    let skeleton = skeleton(p.as_slice(), &[]);
 
-    let h = 0.5;
+    let faces = faces_from_skeleton(p.as_slice(), &skeleton);
 
-    let roofs = vec![
-        RoofFace {
-            poly: r1,
-            normal: vec3(0.0, -1.0, h).normalize(),
-        },
-        RoofFace {
-            poly: r2,
-            normal: vec3(0.0, 1.0, h).normalize(),
-        },
-        RoofFace {
-            poly: r3,
-            normal: vec3(1.0, 0.0, h).normalize(),
-        },
-        RoofFace {
-            poly: r4,
-            normal: vec3(-1.0, 0.0, h).normalize(),
-        },
-    ];
-
-    let mut door_pos = vec2(width * 0.5, 0.0);
-    let off = -p.barycenter();
-
-    door_pos += off;
-    p.translate(off);
-
-    let rot = rand_in(0.0, 4.0) as usize;
-
-    let rv = [
-        vec2(1.0, 0.0),
-        vec2(0.0, 1.0),
-        vec2(-1.0, 0.0),
-        vec2(0.0, -1.0),
-    ][rot];
-
-    p.rotate(rv);
-
-    let rseg = [0, 6, 5, 2][rot];
-    let door_pos = p.segment(rseg).center();
-
-    let r = common::rand::rand2(door_pos.x, door_pos.y);
+    let mut roofs = vec![];
     let roof_col = common::config().roof_col;
 
-    let mut polys = Vec::with_capacity(roofs.len());
-
-    for mut roof in roofs {
-        roof.poly.translate(off);
-        roof.poly.rotate(rv);
-        let normal = roof.normal.rotate_z(rv);
+    for face in faces.into_iter().rev() {
+        let normal = (face[0] - face[1]).cross(face[2] - face[1]).normalize();
 
         let luminosity = 0.8 + 0.2 * vec3(0.7, 0.3, 0.5).normalize().dot(normal);
-        let col = luminosity * LinearColor::from(roof_col) + 0.02 * r * LinearColor::ORANGE;
-        polys.push((roof.poly, col));
+        let col = luminosity * LinearColor::from(roof_col);
+        roofs.push((Polygon(face.into_iter().map(|x| x.xy()).collect()), col));
     }
 
-    (polys, door_pos)
+    let lowest_segment = p
+        .segments()
+        .min_by_key(|s| OrderedFloat(s.src.y + s.dst.y))
+        .unwrap();
+
+    (roofs, lowest_segment.middle())
 }
 
 pub fn gen_exterior_supermarket(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
@@ -151,7 +98,7 @@ pub fn gen_exterior_supermarket(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2
 ///     |    
 pub fn gen_exterior_farm(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
     let h_size = 30.0;
-    let (mut polys, mut door_pos) = gen_exterior_house(h_size);
+    let (mut polys, mut door_pos) = gen_exterior_house_new(h_size);
 
     let mut off = Vec2::splat(h_size * 0.5 - size * 0.5);
     off.x += rand_in(0.0, size - h_size);

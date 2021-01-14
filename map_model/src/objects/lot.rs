@@ -76,7 +76,7 @@ impl Lot {
         let id = lots.insert_with_key(move |id| Lot {
             id,
             parent,
-            kind: LotKind::Unassigned,
+            kind: LotKind::Residential,
             shape,
             size,
         });

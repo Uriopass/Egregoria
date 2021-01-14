@@ -192,7 +192,7 @@ impl Map {
         id
     }
 
-    fn cleanup_lot(roads: &mut Roads, spatial_map: &mut SpatialMap, lot: Lot) {
+    fn cleanup_lot(roads: &mut Roads, spatial_map: &mut SpatialMap, lot: &Lot) {
         let rlots = &mut roads[lot.parent].lots;
         rlots.remove(rlots.iter().position(|&x| x == lot.id).unwrap());
         spatial_map.remove(lot.id);
@@ -227,7 +227,8 @@ impl Map {
             Self::cleanup_lot(
                 &mut self.roads,
                 &mut self.spatial_map,
-                self.lots
+                &self
+                    .lots
                     .remove(id)
                     .expect("Lot was present in spatial map but not in Lots struct"),
             )
@@ -253,12 +254,9 @@ impl Map {
         let mut built = vec![];
 
         self.lots.retain(|_, lot| {
-            let lot = lot.clone();
             let parent = lot.parent;
             let obb = lot.shape;
             let lotkind = lot.kind;
-
-            Self::cleanup_lot(roads, spatial_map, lot);
 
             let r = rand::random::<f32>();
 
@@ -273,6 +271,8 @@ impl Map {
                     }
                 }
             };
+
+            Self::cleanup_lot(roads, spatial_map, lot);
 
             built.push(Building::make(
                 buildings,

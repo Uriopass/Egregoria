@@ -9,6 +9,7 @@ mod obb;
 mod polygon;
 mod polyline;
 mod segment;
+pub mod skeleton;
 mod splines;
 mod transform;
 mod v2;

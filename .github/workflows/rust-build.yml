@@ -17,9 +17,7 @@ jobs:
       - name: Update things
         run: sudo apt-get update
       - name: install libs
-        run: sudo apt-get install libasound2-dev libudev-dev pkg-config python3 python3-pip
-      - name: install python deps
-        run: python3 -m pip install -r assets/requirements.txt
+        run: sudo apt-get install libasound2-dev libudev-dev pkg-config
       - name: Install Rust
         uses: hecrj/setup-rust-action@v1
         with:

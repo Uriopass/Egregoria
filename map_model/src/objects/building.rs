@@ -55,7 +55,7 @@ impl Building {
         let size = obb.corners[0].distance(obb.corners[1]);
 
         let (mut draw, mut door_pos) = match kind {
-            BuildingKind::House => crate::procgen::gen_exterior_house(size),
+            BuildingKind::House => crate::procgen::gen_exterior_house_new(size),
             BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(size),
             BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(size),
             BuildingKind::Farm => crate::procgen::gen_exterior_farm(size),
