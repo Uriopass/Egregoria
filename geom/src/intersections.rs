@@ -1,9 +1,15 @@
 use super::Vec2;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Ray {
     pub from: Vec2,
     pub dir: Vec2,
+}
+
+impl Ray {
+    pub fn new(from: Vec2, dir: Vec2) -> Self {
+        Ray { from, dir }
+    }
 }
 
 pub fn intersection_point(r1: Ray, r2: Ray) -> Option<Vec2> {

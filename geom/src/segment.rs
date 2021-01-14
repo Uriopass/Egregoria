@@ -3,7 +3,7 @@ use crate::polygon::Polygon;
 use crate::{Circle, Intersect, Shape, AABB};
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Segment {
     pub src: Vec2,
     pub dst: Vec2,
@@ -32,6 +32,25 @@ impl Segment {
         }
     }
 
+    pub fn intersection_point(&self, other: &Segment, as_lines: bool) -> Option<Vec2> {
+        // see https://stackoverflow.com/a/565282
+        let r = self.vec();
+        let s = other.vec();
+
+        let r_cross_s = Vec2::cross(r, s);
+        let q_minus_p = other.src - self.src;
+
+        if r_cross_s != 0.0 {
+            let t = Vec2::cross(q_minus_p, s / r_cross_s);
+            let u = Vec2::cross(q_minus_p, r / r_cross_s);
+
+            if as_lines || (0.0 <= t && t <= 1.0 && 0.0 <= u && u <= 1.0) {
+                return Some(self.src + r * t);
+            }
+        }
+        None
+    }
+
     pub fn resize(&mut self, length: f32) -> &mut Self {
         if let Some(v) = self.vec().try_normalize_to(length) {
             let mid = (self.src + self.dst) * 0.5;
@@ -49,7 +68,7 @@ impl Segment {
         Polygon(vec![self.src, self.dst])
     }
 
-    pub fn center(&self) -> Vec2 {
+    pub fn middle(&self) -> Vec2 {
         (self.src + self.dst) * 0.5
     }
 }

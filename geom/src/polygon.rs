@@ -156,8 +156,11 @@ impl Polygon {
         Circle { center, radius }
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Vec2> {
+    pub fn iter(&self) -> std::slice::Iter<Vec2> {
         self.0.iter()
+    }
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<Vec2> {
+        self.0.iter_mut()
     }
 
     pub fn as_slice(&self) -> &[Vec2] {

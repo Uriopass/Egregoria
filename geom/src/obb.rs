@@ -183,7 +183,7 @@ mod tests {
                 std::f32::consts::FRAC_1_SQRT_2,
             ))
         }
-        assert!(!obb.intersects(&Segment::new(vec2(-0.51, 0.0), vec2(0.0, -0.51))));
-        assert!(!obb.intersects(&Segment::new(vec2(-0.49, 0.0), vec2(0.0, -0.49))));
+        assert!(!obb.intersects(&Segment::new(vec2(-0.71, 0.0), vec2(0.0, -0.71))));
+        assert!(obb.intersects(&Segment::new(vec2(-0.70, 0.0), vec2(0.0, -0.70))));
     }
 }
