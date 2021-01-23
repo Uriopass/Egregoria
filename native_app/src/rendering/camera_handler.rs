@@ -128,6 +128,7 @@ impl CameraHandler {
 
     fn zoom_by(&mut self, ctx: &mut Context, multiply: f32) {
         self.camera.position.z *= multiply;
+        self.camera.position.z = self.camera.position.z.min(20000.0).max(5.0);
 
         self.update(ctx);
         let after = self.unproject(ctx.input.mouse.screen);
