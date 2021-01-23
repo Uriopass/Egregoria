@@ -862,7 +862,7 @@ pub fn skeleton(polygon: &[Vec2], holes: &[&[Vec2]]) -> Vec<Subtree> {
     output
 }
 
-pub fn faces_from_skeleton(poly: &[Vec2], skeleton: &[Subtree]) -> Vec<Vec<Vec3>> {
+pub fn faces_from_skeleton(poly: &[Vec2], skeleton: &[Subtree]) -> Option<Vec<Vec<Vec3>>> {
     let poly = normalize_contour(poly);
     let mut graph: HashMap<Vec2, Vec<_>> = HashMap::new();
     let mut heights = HashMap::new();
@@ -875,12 +875,12 @@ pub fn faces_from_skeleton(poly: &[Vec2], skeleton: &[Subtree]) -> Vec<Vec<Vec3>
 
     for tree in skeleton {
         if tree.source.magnitude2() > 1e10 {
-            return vec![];
+            return None;
         }
         heights.insert(tree.source, tree.height);
         for &v in &tree.sinks {
             if v.magnitude2() > 1e10 {
-                return vec![];
+                return None;
             }
             graph.entry(tree.source).or_default().push(v);
             graph.entry(v).or_default().push(tree.source);
@@ -933,7 +933,11 @@ pub fn faces_from_skeleton(poly: &[Vec2], skeleton: &[Subtree]) -> Vec<Vec<Vec3>
         }
     }
 
-    faces
+    if visited.len() != graph.values().map(|x| x.len()).sum() {
+        return None;
+    }
+
+    Some(faces)
 }
 
 #[cfg(test)]
@@ -952,7 +956,7 @@ mod tests {
         ];
         let skeleton = skeleton(poly, &[]);
         assert!(!skeleton.is_empty());
-        let faces = faces_from_skeleton(poly, &skeleton);
+        let faces = faces_from_skeleton(poly, &skeleton).unwrap();
         assert_eq!(faces.len(), 6);
     }
 

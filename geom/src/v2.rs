@@ -239,8 +239,7 @@ impl Vec2 {
 
     #[inline]
     pub fn approx_eq(self, other: Vec2) -> bool {
-        let m = self.distance2(other);
-        m < std::f32::EPSILON
+        (self.x - other.x).abs() < 1e-6 && (self.y - other.y).abs() < 1e-6
     }
 
     #[inline]
