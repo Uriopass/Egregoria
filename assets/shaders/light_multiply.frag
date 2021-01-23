@@ -127,7 +127,7 @@ void main() {
 
     vec3 real_ambiant = vec3(sun_mult);
 
-    float randv = 0.0;//random(floatBitsToUint(vec3(in_uv, time))) / 256.0;
+    float randv = random(floatBitsToUint(vec3(in_uv, time))) / 256.0;
 
     vec3 yellow =  (street_light + randv) * vec3(0.9, 0.9, 0.7);
     out_color   =  vec4((color + randv) * clamp(real_ambiant + yellow, 0.0, 1.0), 1.0);
