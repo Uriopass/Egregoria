@@ -256,15 +256,17 @@ impl<T: Iterator<Item = (ShapeGridHandle, bool)>> Iterator for QueryIter<T> {
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             QueryIter::Simple(x) => x.next().map(|(x, _)| x),
-            QueryIter::Dedup(seen, x) => loop {
-                let (v, sing_cell) = x.next()?;
-                if sing_cell {
-                    return Some(v);
+            QueryIter::Dedup(seen, x) => {
+                for (v, sing_cell) in x {
+                    if sing_cell {
+                        return Some(v);
+                    }
+                    if seen.insert(v) {
+                        return Some(v);
+                    }
                 }
-                if seen.insert(v) {
-                    return Some(v);
-                }
-            },
+                None
+            }
         }
     }
 }
