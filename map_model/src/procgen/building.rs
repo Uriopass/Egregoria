@@ -1,8 +1,10 @@
 use geom::skeleton::{faces_from_skeleton, skeleton};
 use geom::{vec2, vec3, Color, LinearColor, Polygon, Vec2, Vec3};
 use ordered_float::OrderedFloat;
-use rand::Rng;
+use rand::prelude::SmallRng;
+use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
+use std::panic::catch_unwind;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct RoofFace {
@@ -32,40 +34,120 @@ pub fn gen_exterior_workplace(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
 }
 
 pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
-    let width = rand_in(10.0, 15.0);
-    let height = rand_in(15.0, 20.0);
+    'retry: loop {
+        let mut rng = SmallRng::seed_from_u64(rand_in(0.0, 10000.0) as u64);
 
-    let mut p = Polygon::rect(width, height);
+        let width = rng.gen_range(10.0, 15.0);
+        let height = rng.gen_range(15.0, 20.0);
 
-    let seg = rand_in(0.0, 4.0) as usize;
+        let mut p = Polygon::rect(width, height);
 
-    let corn_coeff = rand_in(0.5, 0.75);
-    p.split_segment(seg, corn_coeff);
-    p.extrude(seg, rand_in(5.0, 10.0));
+        for _ in 0..rng.gen_range(1.0, 5.0) as usize {
+            let seg = rng.gen_range(0.0, p.len() as f32) as usize;
 
-    p.iter_mut().for_each(|x| *x *= size / 40.0);
+            let origlen = p.segment(seg).vec().magnitude();
+            if origlen < 8.0 {
+                continue;
+            }
 
-    let skeleton = skeleton(p.as_slice(), &[]);
+            let l = rng.gen_range(-0.2, 0.5);
+            let r = rng.gen_range(l + 0.4, l + 1.0);
+            if r <= 1.0 {
+                p.split_segment(seg, r);
+            }
 
-    let faces = faces_from_skeleton(p.as_slice(), &skeleton);
+            let newlen = p.segment(seg).vec().magnitude();
 
-    let mut roofs = vec![];
-    let roof_col = common::config().roof_col;
+            if l >= 0.0 {
+                p.split_segment(seg, l * origlen / newlen);
+                p.extrude(seg + 1, rng.gen_range(1.0, 8.0));
+            } else {
+                p.extrude(seg, rng.gen_range(1.0, 8.0));
+            }
 
-    for face in faces.into_iter().rev() {
-        let normal = (face[0] - face[1]).cross(face[2] - face[1]).normalize();
+            p.simplify();
+        }
 
-        let luminosity = 0.8 + 0.2 * vec3(0.7, 0.3, 0.5).normalize().dot(normal);
-        let col = luminosity * LinearColor::from(roof_col);
-        roofs.push((Polygon(face.into_iter().map(|x| x.xy()).collect()), col));
+        p.iter_mut().for_each(|x| *x *= size / 40.0);
+
+        let hook = std::panic::take_hook();
+        std::panic::set_hook(Box::new(|_| ()));
+        // have to catch because the algorithm for skeleton might fail and is quite complicated
+        let (skeleton, faces) = unwrap_or!(
+            catch_unwind(|| {
+                let skeleton = skeleton(p.as_slice(), &[]);
+                let faces = faces_from_skeleton(p.as_slice(), &skeleton)?;
+                Some((skeleton, faces))
+            })
+            .ok()
+            .flatten(),
+            {
+                std::panic::set_hook(hook);
+                continue 'retry;
+            }
+        );
+        std::panic::set_hook(hook);
+
+        for s in &skeleton {
+            if !p.contains(s.source) {
+                continue 'retry;
+            }
+        }
+
+        if faces.len() < 4 {
+            continue 'retry;
+        }
+
+        let lowest_segment = p
+            .segments()
+            .min_by_key(|s| OrderedFloat(s.src.y + s.dst.y))
+            .unwrap();
+
+        let mut roofs = vec![];
+        let roof_col = LinearColor::from(common::config().roof_col);
+
+        for face in faces.into_iter().rev() {
+            if face.len() < 3 {
+                continue 'retry;
+            }
+            let normal = (face[0] - face[1]).cross(face[2] - face[1]).normalize();
+
+            let luminosity = 0.8 + 0.2 * vec3(0.7, 0.3, 0.5).normalize().dot(normal);
+            let col = luminosity * roof_col;
+            let mut p = Polygon(face.into_iter().map(|x| x.xy()).collect());
+            p.simplify();
+            roofs.push((p, col));
+        }
+        /*
+        // debug polygon contour
+        for i in 0..p.len() {
+            let cur = *p.get(i);
+            let next = *p.get_next(i);
+
+            let v = (next - cur).normalize();
+            let d = v.perpendicular() * 0.1;
+            roofs.push((
+                Polygon(vec![cur + d, cur - d, next - d, next + d]),
+                LinearColor::gray(i as f32 / p.len() as f32),
+            ))
+        }
+
+        // debug skeleton
+        let mut i = 0;
+        for v in skeleton {
+            let cur = v.source;
+            for next in v.sinks {
+                i += 1;
+                let v = (next - cur).normalize();
+                let d = v.perpendicular() * 0.1;
+                let c = LinearColor::gray((-i as f32 * 0.1).exp());
+                roofs.push((Polygon(vec![cur + d, cur - d, next - d, next + d]), c))
+            }
+        }
+         */
+
+        return (roofs, lowest_segment.middle());
     }
-
-    let lowest_segment = p
-        .segments()
-        .min_by_key(|s| OrderedFloat(s.src.y + s.dst.y))
-        .unwrap();
-
-    (roofs, lowest_segment.middle())
 }
 
 pub fn gen_exterior_supermarket(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
