@@ -93,6 +93,52 @@ impl Polygon {
         self.project_segment(pos).0
     }
 
+    pub fn simplify(&mut self) {
+        let mut to_remove = vec![];
+        for i in (0..self.len()).rev() {
+            let prev = self.get_prev(i);
+            let cur = self.get(i);
+            let next = self.get_next(i);
+
+            if prev.approx_eq(*cur) || (cur - prev).normalize().approx_eq((next - cur).normalize())
+            {
+                to_remove.push(i);
+            }
+        }
+
+        for v in to_remove {
+            self.0.remove(v);
+        }
+    }
+
+    pub fn get_prev(&self, i: usize) -> &Vec2 {
+        if i == 0 {
+            self.get(self.len() - 1)
+        } else {
+            self.get(i - 1)
+        }
+    }
+
+    pub fn get_next(&self, i: usize) -> &Vec2 {
+        if i == self.len() - 1 {
+            self.get(0)
+        } else {
+            self.get(i + 1)
+        }
+    }
+
+    pub fn get(&self, i: usize) -> &Vec2 {
+        self.0.get(i).unwrap()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     pub fn first(&self) -> Vec2 {
         *self.0.first().unwrap()
     }
