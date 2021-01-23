@@ -179,6 +179,9 @@ impl State {
                     } => {
                         tess.draw_polyline(points, z, thickness);
                     }
+                    OrderKind::Polygon { ref poly } => {
+                        tess.draw_filled_polygon(poly.as_slice(), z);
+                    }
                     OrderKind::OBB(obb) => {
                         let [ax1, ax2] = obb.axis();
                         tess.draw_rect_cos_sin(

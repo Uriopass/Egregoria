@@ -1,5 +1,5 @@
 use common::AudioKind;
-use geom::{Color, Vec2, OBB};
+use geom::{LinearColor, Polygon, Vec2, OBB};
 
 #[derive(Default)]
 pub struct ImmediateSound {
@@ -32,13 +32,16 @@ pub enum OrderKind {
         points: Vec<Vec2>,
         thickness: f32,
     },
+    Polygon {
+        poly: Polygon,
+    },
     OBB(OBB),
 }
 
 #[derive(Clone)]
 pub struct ImmediateOrder {
     pub kind: OrderKind,
-    pub color: Color,
+    pub color: LinearColor,
     pub z: f32,
 }
 
@@ -55,8 +58,8 @@ pub struct ImmediateBuilder<'a> {
 }
 
 impl<'a> ImmediateBuilder<'a> {
-    pub fn color(&mut self, col: Color) -> &mut Self {
-        self.order.color = col;
+    pub fn color(&mut self, col: impl Into<LinearColor>) -> &mut Self {
+        self.order.color = col.into();
         self
     }
 
@@ -80,7 +83,7 @@ impl<'a> Drop for ImmediateBuilder<'a> {
                     pos: Vec2::ZERO,
                     radius: 0.0,
                 },
-                color: Color::TRANSPARENT,
+                color: LinearColor::TRANSPARENT,
                 z: 0.0,
             },
         );
@@ -98,7 +101,7 @@ impl ImmediateDraw {
             draw: self,
             order: ImmediateOrder {
                 kind,
-                color: Color::WHITE,
+                color: LinearColor::WHITE,
                 z: 3.0,
             },
             persistent: false,
@@ -121,6 +124,10 @@ impl ImmediateDraw {
             points: points.into(),
             thickness,
         })
+    }
+
+    pub fn polygon(&mut self, poly: Polygon) -> ImmediateBuilder {
+        self.builder(OrderKind::Polygon { poly })
     }
 
     pub fn stroke_circle(&mut self, pos: Vec2, radius: f32, thickness: f32) -> ImmediateBuilder {
