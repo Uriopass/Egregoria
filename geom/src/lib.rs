@@ -1,13 +1,15 @@
+#![allow(clippy::manual_range_contains)]
 #![allow(clippy::many_single_char_names)]
 
 mod aabb;
 mod camera;
 mod circle;
 mod color;
-mod intersections;
+mod line;
 mod obb;
 mod polygon;
 mod polyline;
+mod ray;
 mod segment;
 pub mod skeleton;
 mod splines;
@@ -19,10 +21,11 @@ pub use aabb::*;
 pub use camera::*;
 pub use circle::*;
 pub use color::*;
-pub use intersections::*;
+pub use line::*;
 pub use obb::*;
 pub use polygon::*;
 pub use polyline::*;
+pub use ray::*;
 pub use segment::*;
 pub use splines::*;
 pub use transform::*;
