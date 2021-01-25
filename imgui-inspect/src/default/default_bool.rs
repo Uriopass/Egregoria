@@ -34,10 +34,7 @@ impl InspectRenderDefault<bool> for bool {
     ) -> bool {
         let same_or_none_value = get_same_or_none_mut(data);
 
-        let mut value = match same_or_none_value {
-            Some(v) => v,
-            None => false, // Some reasonable default
-        };
+        let mut value = same_or_none_value.unwrap_or(false);
 
         let style_token = if same_or_none_value.is_none() {
             // If values are inconsistent, push a style

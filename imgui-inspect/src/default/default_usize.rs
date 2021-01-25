@@ -34,10 +34,7 @@ impl InspectRenderDefault<usize> for usize {
     ) -> bool {
         let same_or_none_value = get_same_or_none_mut(data);
 
-        let value = match same_or_none_value {
-            Some(v) => v,
-            None => 0, // Some reasonable default
-        };
+        let value = same_or_none_value.unwrap_or(0);
 
         // CAST
         let mut value = value as i32;
