@@ -1,5 +1,5 @@
 use geom::skeleton::{faces_from_skeleton, skeleton};
-use geom::{vec2, vec3, Color, LinearColor, Polygon, Vec2, Vec3};
+use geom::{vec2, vec3, Color, LinearColor, Polygon, Shape, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use rand::prelude::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -37,8 +37,8 @@ pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
     'retry: loop {
         let mut rng = SmallRng::seed_from_u64(rand_in(0.0, 10000.0) as u64);
 
-        let width = rng.gen_range(10.0, 15.0);
-        let height = rng.gen_range(15.0, 20.0);
+        let width = rng.gen_range(15.0, 20.0);
+        let height = rng.gen_range(20.0, 28.0);
 
         let mut p = Polygon::rect(width, height);
 
@@ -67,16 +67,40 @@ pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
 
             p.simplify();
         }
+        /*
+        let mut p = Polygon(vec![
+            vec2(179.62842, 0.0),
+            vec2(179.62842, 82.743164),
+            vec2(231.11676, 82.743164),
+            vec2(231.11676, 169.94154),
+            vec2(179.62842, 169.94154),
+            vec2(179.62842, 202.74478),
+            vec2(0.0, 202.74478),
+            vec2(0.0, 132.03107),
+            vec2(-28.707237, 132.03107),
+            vec2(-28.707237, 0.0),
+        ]);*/
 
-        p.iter_mut().for_each(|x| *x *= size / 40.0);
+        for x in p.iter_mut() {
+            *x *= size / 40.0;
+        }
 
+        let c = p.bbox().center();
+
+        for x in p.iter_mut() {
+            *x -= c - Vec2::splat(size * 0.5);
+        }
+
+        let merge_triangles = false; //rng.gen();
+
+        // silence panics
         let hook = std::panic::take_hook();
         std::panic::set_hook(Box::new(|_| ()));
         // have to catch because the algorithm for skeleton might fail and is quite complicated
         let (skeleton, faces) = unwrap_or!(
             catch_unwind(|| {
                 let skeleton = skeleton(p.as_slice(), &[]);
-                let faces = faces_from_skeleton(p.as_slice(), &skeleton)?;
+                let faces = faces_from_skeleton(p.as_slice(), &skeleton, merge_triangles)?;
                 Some((skeleton, faces))
             })
             .ok()
@@ -94,7 +118,7 @@ pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
             }
         }
 
-        if faces.len() < 4 {
+        if faces.len() < 2 {
             continue 'retry;
         }
 
@@ -144,7 +168,8 @@ pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
                 roofs.push((Polygon(vec![cur + d, cur - d, next - d, next + d]), c))
             }
         }
-         */
+
+        dbg!(&p);*/
 
         return (roofs, lowest_segment.middle());
     }
