@@ -1,6 +1,6 @@
 use super::Vec2;
 use crate::polygon::Polygon;
-use crate::{Circle, Intersect, Shape, AABB};
+use crate::{Circle, Intersect, Line, Shape, AABB};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -32,7 +32,14 @@ impl Segment {
         }
     }
 
-    pub fn intersection_point(&self, other: &Segment, as_lines: bool) -> Option<Vec2> {
+    pub fn as_line(&self) -> Line {
+        Line {
+            src: self.src,
+            dst: self.dst,
+        }
+    }
+
+    pub fn intersection_point(&self, other: &Segment) -> Option<Vec2> {
         // see https://stackoverflow.com/a/565282
         let r = self.vec();
         let s = other.vec();
@@ -44,7 +51,7 @@ impl Segment {
             let t = Vec2::cross(q_minus_p, s / r_cross_s);
             let u = Vec2::cross(q_minus_p, r / r_cross_s);
 
-            if as_lines || (0.0 <= t && t <= 1.0 && 0.0 <= u && u <= 1.0) {
+            if 0.0 <= t && t <= 1.0 && 0.0 <= u && u <= 1.0 {
                 return Some(self.src + r * t);
             }
         }
