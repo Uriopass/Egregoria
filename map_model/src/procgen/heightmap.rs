@@ -69,7 +69,7 @@ fn fnoise(ampl: f32, in_wv: Vec2) -> f32 {
 
     for _ in 0..8 {
         noise += amplitude * (simplex_noise(dec) * 2.0);
-        dec = dec * (1.0 / FBM_MAG);
+        dec *= 1.0 / FBM_MAG;
         amplitude *= FBM_MAG;
     }
 
