@@ -15,10 +15,6 @@ impl Ray {
         let t = r2.dir.perp_dot(p_diff);
         let s = self.dir.perp_dot(p_diff);
 
-        if t == 0.0 && s * div > 0.0 {
-            return Some(self.from);
-        }
-
         if t * div > 0.0 && s * div > 0.0 {
             Some(self.from + self.dir * t / div)
         } else {
