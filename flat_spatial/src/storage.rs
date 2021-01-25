@@ -141,7 +141,6 @@ impl<T: Default> Storage<T> for DenseStorage<T> {
             self.start_y -= paddown;
             self.height += paddown;
             reallocate = true;
-            paddown = paddown;
         } else if y >= up {
             padup = 1 + (y - up) / self.cell_size;
             self.height += padup;

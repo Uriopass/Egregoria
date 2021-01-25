@@ -24,7 +24,7 @@ impl ImguiWrapper {
             imgui_winit_support::HiDpiMode::Default,
         );
 
-        let font_size = 13.0 as f32;
+        let font_size = 13.0_f32;
         imgui
             .fonts()
             .add_font(&[imgui::FontSource::DefaultFontData {

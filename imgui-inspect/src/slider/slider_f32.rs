@@ -19,10 +19,7 @@ impl InspectRenderSlider<f32> for f32 {
     ) -> bool {
         let same_or_none_value = get_same_or_none_mut(data);
 
-        let mut value = match same_or_none_value {
-            Some(v) => v,
-            None => 0.0, // Some reasonable default
-        };
+        let mut value = same_or_none_value.unwrap_or(0.0);
 
         let style_token = if same_or_none_value.is_none() {
             // If values are inconsistent, push a style

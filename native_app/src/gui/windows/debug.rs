@@ -5,6 +5,7 @@ use common::{GameTime, SECONDS_PER_DAY};
 use egregoria::engine_interaction::{MouseInfo, RenderStats};
 use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::CollisionWorld;
+use egregoria::rendering::immediate::ImmediateDraw;
 use egregoria::utils::frame_log::FrameLog;
 use egregoria::Egregoria;
 use geom::{vec2, Camera, Color, Intersect, LinearColor, Segment, Spline, Vec2, AABB, OBB};
@@ -43,6 +44,23 @@ pub fn debug(ui: &Ui, goria: &mut Egregoria) {
         ui.checkbox(&im_str!("{}", *name), val);
     }
     drop(objs);
+
+    if ui.small_button(&im_str!("build one house")) {
+        let house = map_model::procgen::gen_exterior_house_new(40.0);
+
+        for (mut p, col) in house.0 {
+            for x in p.iter_mut() {
+                *x += goria.read::<Camera>().position.xy();
+            }
+
+            goria
+                .write::<ImmediateDraw>()
+                .polygon(p)
+                .color(col)
+                .persistent();
+        }
+    }
+
     let time = goria.read::<GameTime>().timestamp;
     let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
 
@@ -311,7 +329,7 @@ pub fn debug_rays(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     tess.draw_line(r.from, r.from + r.dir * 50.0, 0.5);
     tess.draw_line(r2.from, r2.from + r2.dir * 50.0, 0.5);
 
-    let inter = geom::intersection_point(r, r2);
+    let inter = r.intersection_point(&r2);
     if let Some(v) = inter {
         tess.set_color(LinearColor::RED);
 
