@@ -176,7 +176,7 @@ impl PolyLine {
         self.points_dirs_along(std::iter::once(l)).next().unwrap() // Unwrap ok: std::iter::once
     }
 
-    pub fn equipoints_dir<'a>(&'a self, d: f32) -> impl Iterator<Item = (Vec2, Vec2)> + 'a {
+    pub fn equipoints_dir(&self, d: f32) -> impl Iterator<Item = (Vec2, Vec2)> + '_ {
         let l = self.length();
         let n_step = (l / d) as i32;
         let step = l / (n_step as f32 + 1.0);
