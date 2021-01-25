@@ -1,6 +1,6 @@
 #![allow(clippy::ptr_arg)]
 
-use crate::{intersection_point, Ray, Segment, Vec2, Vec3};
+use crate::{Ray, Segment, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use std::cmp::{Ordering, Reverse};
 use std::collections::{BinaryHeap, HashMap, HashSet};
@@ -188,7 +188,11 @@ impl LAVertex {
             // a reflex vertex may generate a split event
             // split events happen when a vertex hits an opposite edge, splitting the polygon in two.
             #[cfg(test)]
-            println!("looking for split candidates for vertex {:?}", self.point);
+            {
+                println!("looking for split candidates for vertex {:?}", self.point);
+                println!("edge_left {:?}", self.edge_left);
+                println!("edge_right {:?}", self.edge_right);
+            }
 
             for edge in &slav.original_edges {
                 if edge.edge == self.edge_left || edge.edge == self.edge_right {
@@ -221,7 +225,7 @@ impl LAVertex {
 
                 // println!("\t\t trying {:?} against {:?}", self_edge, &edge.edge);
 
-                if let Some(i) = self_edge.intersection_point(&edge.edge, true) {
+                if let Some(i) = self_edge.as_line().intersection_point(&edge.edge.as_line()) {
                     if approx_equal_vec(i, self.point) {
                         continue;
                     }
@@ -239,8 +243,10 @@ impl LAVertex {
                         continue;
                     }
                     let bisector = Ray::new(i, bisect_vec);
-                    let b = intersection_point(bisector, self.bisector);
+                    let b = bisector.intersection_point(&self.bisector);
                     if b.is_none() {
+                        #[cfg(test)]
+                        println!("\t\t no bisec");
                         continue;
                     }
                     let b = b.unwrap();
@@ -276,7 +282,7 @@ impl LAVertex {
                     #[cfg(test)]
                     println!("\t\tFound valid candidate {:?}", b);
                     events.push(Event::Split(SplitEvent::new(
-                        edge.edge.project(b).distance(b),
+                        edge.edge.as_line().project(b).distance(b),
                         b,
                         self.id,
                         edge.edge,
@@ -285,12 +291,16 @@ impl LAVertex {
             }
         }
 
-        let i_prev = intersection_point(self.bisector, vs[self.prev.unwrap().0].bisector);
-        let i_next = intersection_point(self.bisector, vs[self.next.unwrap().0].bisector);
+        let i_prev = self
+            .bisector
+            .intersection_point(&vs[self.prev.unwrap().0].bisector);
+        let i_next = self
+            .bisector
+            .intersection_point(&vs[self.next.unwrap().0].bisector);
 
         if let Some(i_prev) = i_prev {
             events.push(Event::Edge(EdgeEvent::new(
-                self.edge_left.project(i_prev).distance(i_prev),
+                self.edge_left.as_line().project(i_prev).distance(i_prev),
                 i_prev,
                 self.prev.unwrap(),
                 self.id,
@@ -299,29 +309,46 @@ impl LAVertex {
 
         if let Some(i_next) = i_next {
             events.push(Event::Edge(EdgeEvent::new(
-                self.edge_right.project(i_next).distance(i_next),
+                self.edge_right.as_line().project(i_next).distance(i_next),
                 i_next,
                 self.id,
                 self.next.unwrap(),
             )));
         }
 
+        if events.is_empty() {
+            return None;
+        }
+
+        #[cfg(test)]
+        println!(
+            "choosing events between ({:?}-{:?}-{:?})",
+            vs[self.prev.unwrap().0].bisector,
+            self.bisector,
+            vs[self.next.unwrap().0].bisector
+        );
+
         let mut min_ev = None;
         let mut min_v: f32 = f32::INFINITY;
         for ev in events {
+            #[cfg(test)]
+            println!("    {:?}", &ev);
             let d = self.point.distance2(ev.intersection_point());
             if d < min_v {
                 min_v = d;
                 min_ev = Some(ev);
             }
         }
-        //if let Some(ref e) = min_ev {
-        //    println!("Generated new event for {:?}: {:?}", self.id, e)
-        //}
+        #[cfg(test)]
+        if let Some(ref e) = min_ev {
+            println!("Generated new event for {:?}: {:?}", self.id, e)
+        }
         min_ev
     }
 
     pub fn invalidate(&mut self, lavs: &mut Lavs) {
+        #[cfg(test)]
+        println!("invalidating {:?}", self.point);
         self.valid = false;
         if let Some(id) = self.lav {
             let lav = &mut lavs[id.0];
@@ -333,6 +360,9 @@ impl LAVertex {
     }
 
     pub fn invalidate_known(&mut self, lav: &mut LAV) {
+        #[cfg(test)]
+        println!("invalidating {:?}", self.point);
+
         self.valid = false;
 
         if let Some(id) = self.lav {
@@ -829,11 +859,35 @@ pub fn skeleton(polygon: &[Vec2], holes: &[&[Vec2]]) -> Vec<Subtree> {
         }
     }
 
+    #[cfg(test)]
+    let mut counter = 0;
     while !queue.is_empty() && !slav.lavs.is_empty() {
+        #[cfg(test)]
+        {
+            counter += 1;
+            println!("---- round {}", counter);
+            println!(
+                "queue is {:?}",
+                queue
+                    .iter()
+                    .map(|Reverse(x)| {
+                        (
+                            x.distance(),
+                            if matches!(x, Event::Edge(_)) {
+                                "edge"
+                            } else {
+                                "split"
+                            },
+                        )
+                    })
+                    .collect::<Vec<_>>()
+            );
+        }
+
         let i = queue.pop().unwrap().0;
+
         #[cfg(test)]
         println!("managing event {:?}", i);
-
         let (arc, events) = match i {
             Event::Edge(e) => {
                 if !vs[e.vertex_a.0].valid || !vs[e.vertex_b.0].valid {
@@ -862,7 +916,11 @@ pub fn skeleton(polygon: &[Vec2], holes: &[&[Vec2]]) -> Vec<Subtree> {
     output
 }
 
-pub fn faces_from_skeleton(poly: &[Vec2], skeleton: &[Subtree]) -> Option<Vec<Vec<Vec3>>> {
+pub fn faces_from_skeleton(
+    poly: &[Vec2],
+    skeleton: &[Subtree],
+    merge_triangles: bool,
+) -> Option<Vec<Vec<Vec3>>> {
     let poly = normalize_contour(poly);
     let mut graph: HashMap<Vec2, Vec<_>> = HashMap::new();
     let mut heights = HashMap::new();
@@ -884,6 +942,38 @@ pub fn faces_from_skeleton(poly: &[Vec2], skeleton: &[Subtree]) -> Option<Vec<Ve
             }
             graph.entry(tree.source).or_default().push(v);
             graph.entry(v).or_default().push(tree.source);
+        }
+    }
+
+    if merge_triangles {
+        let mut triangles = vec![];
+        for (_, cur, next) in window(&poly) {
+            let top = *graph.get(cur)?.last()?;
+            let top_next = *graph.get(next)?.last()?;
+
+            if top == top_next {
+                triangles.push((top, *cur, *next));
+            }
+        }
+
+        for (top, cur, next) in triangles {
+            let new_pos = (cur + next) * 0.5;
+
+            graph.get_mut(&cur).unwrap().retain(|&x| x != next);
+            graph.get_mut(&next).unwrap().retain(|&x| x != cur);
+
+            let neighs = graph.remove(&top).unwrap();
+
+            for nei in &neighs {
+                for p in graph.get_mut(nei).unwrap() {
+                    if *p == top {
+                        *p = new_pos;
+                    }
+                }
+            }
+
+            graph.insert(new_pos, neighs);
+            heights.insert(new_pos, heights[&top]);
         }
     }
 
@@ -925,9 +1015,16 @@ pub fn faces_from_skeleton(poly: &[Vec2], skeleton: &[Subtree]) -> Option<Vec<Ve
         for &edge in l {
             if !visited.contains(&(node, edge)) {
                 let face = explore(&graph, &mut visited, &heights, node, edge);
-                if face.iter().all(|v| v.z == 0.0) {
+
+                let mut sum = 0.0;
+                for (_, cur, next) in window(&face) {
+                    sum += (next.x - cur.x) * (next.y + cur.y);
+                }
+                if sum <= 0.0 {
+                    // is clockwise therefore is the contour so throw it away
                     continue;
                 }
+
                 faces.push(face);
             }
         }
@@ -947,6 +1044,29 @@ mod tests {
     use ordered_float::OrderedFloat;
 
     #[test]
+    fn test_weird() {
+        let poly = &mut [
+            vec2(179.62842, 0.0),
+            vec2(179.62842, 82.743164),
+            vec2(231.11676, 82.743164),
+            vec2(231.11676, 169.94154),
+            vec2(179.62842, 169.94154),
+            vec2(179.62842, 202.74478),
+            vec2(0.0, 202.74478),
+            vec2(0.0, 132.03107),
+            vec2(-28.707237, 132.03107),
+            vec2(-28.707237, 0.0),
+        ];
+
+        dbg!(&poly);
+
+        let skeleton = skeleton(poly, &[]);
+        assert!(!skeleton.is_empty());
+        let faces = faces_from_skeleton(poly, &skeleton, false).unwrap();
+        assert_eq!(faces.len(), 6);
+    }
+
+    #[test]
     fn test_box() {
         let poly = &[
             vec2(0.0, 0.0),
@@ -956,7 +1076,7 @@ mod tests {
         ];
         let skeleton = skeleton(poly, &[]);
         assert!(!skeleton.is_empty());
-        let faces = faces_from_skeleton(poly, &skeleton).unwrap();
+        let faces = faces_from_skeleton(poly, &skeleton, false).unwrap();
         assert_eq!(faces.len(), 6);
     }
 
@@ -977,7 +1097,7 @@ mod tests {
         .rev()
         .collect::<Vec<_>>();
         let skeleton = skeleton(&poly, &[]);
-        let faces = faces_from_skeleton(&poly, &skeleton);
+        let faces = faces_from_skeleton(&poly, &skeleton, false);
     }
 
     #[test]
