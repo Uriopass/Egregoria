@@ -5,8 +5,7 @@ use crate::utils::Restrict;
 use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::{Deleted, ParCommandBuffer};
 use common::GameTime;
-use geom::{angle_lerp, Transform, Vec2};
-use geom::{both_dist_to_inter, Ray};
+use geom::{angle_lerp, Ray, Transform, Vec2};
 use legion::system;
 use legion::Entity;
 use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
@@ -321,7 +320,7 @@ fn calc_front_dist<'a>(
             dir: nei_physics_obj.dir,
         };
 
-        let (my_dist, his_dist) = unwrap_or!(both_dist_to_inter(my_ray, his_ray), continue);
+        let (my_dist, his_dist) = unwrap_or!(my_ray.both_dist_to_inter(&his_ray), continue);
 
         if my_dist.max(his_dist) > 1000.0 {
             continue;
