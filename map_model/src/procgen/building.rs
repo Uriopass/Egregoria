@@ -1,5 +1,5 @@
 use geom::skeleton::{faces_from_skeleton, skeleton};
-use geom::{vec2, vec3, Color, LinearColor, Polygon, Shape, Vec2, Vec3};
+use geom::{vec2, vec3, Color, Intersect, LinearColor, Polygon, Segment, Shape, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use rand::prelude::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -110,16 +110,35 @@ pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
                 continue 'retry;
             }
         );
+
         std::panic::set_hook(hook);
+
+        if faces.len() < 2 {
+            continue 'retry;
+        }
+
+        let segments = skeleton
+            .iter()
+            .flat_map(|x| x.sinks.iter().map(move |&dst| Segment::new(x.source, dst)));
+
+        for mut x in segments.clone() {
+            x.scale(0.99);
+            for mut y in segments.clone() {
+                y.scale(0.99);
+                if x == y {
+                    continue;
+                }
+
+                if x.intersects(&y) {
+                    continue 'retry;
+                }
+            }
+        }
 
         for s in &skeleton {
             if !p.contains(s.source) {
                 continue 'retry;
             }
-        }
-
-        if faces.len() < 2 {
-            continue 'retry;
         }
 
         let lowest_segment = p

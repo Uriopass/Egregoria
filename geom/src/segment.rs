@@ -67,6 +67,10 @@ impl Segment {
         self
     }
 
+    pub fn scale(&mut self, scale: f32) -> &mut Self {
+        self.resize(self.vec().magnitude() * scale)
+    }
+
     pub fn vec(&self) -> Vec2 {
         self.dst - self.src
     }
