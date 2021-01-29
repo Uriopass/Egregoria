@@ -11,8 +11,8 @@ edition = "2018"
 
 [dependencies]
 ordered-float = { version = "2.0", features = ["serde"] }
-rand          = { version = "0.7", default-features = false, features = ["std", "small_rng"] }
-rand_distr    = "0.2.2"
+rand          = { version = "0.8", default-features = false, features = ["std", "small_rng", "std_rng"] }
+rand_distr    = "0.4"
 serde         = "1.0"
 legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize", "parallel"] }
 log           = "0.4.11"
@@ -24,6 +24,6 @@ map_model     = { path = "../map_model" }
 mods          = { path = "../mods" }
 common        = { path = "../common" }
 slotmap       = { version = "1.0.2", default-features = false }
-dashmap       = { version = "3.11.10", features = ["serde"] }
+dashmap       = { version = "4.0.2", features = ["serde"] }
 imgui         = "0.6"
 rayon         = "1.5.0"

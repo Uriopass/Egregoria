@@ -56,7 +56,7 @@ lazy_static! {
     static ref CONFIG_ID: AtomicUsize = AtomicUsize::new(0);
 }
 
-pub fn config() -> Guard<'static, Arc<Config>> {
+pub fn config() -> Guard<Arc<Config>> {
     CONFIG.load()
 }
 

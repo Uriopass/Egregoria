@@ -2,7 +2,6 @@
 members = [
     "egregoria",
     "geom",
-    "headless-cli",
     "imgui-inspect",
     "imgui-inspect-derive",
     "map_model",
