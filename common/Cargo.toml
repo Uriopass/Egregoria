@@ -16,4 +16,4 @@ geom          = { path = "../geom" }
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 lazy_static   = "1.4.0"
-arc-swap      = "0.4.7"
+arc-swap      = "1.2.0"

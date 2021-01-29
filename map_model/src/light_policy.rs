@@ -81,7 +81,7 @@ impl LightPolicy {
 
         let offset = inter.id.as_ffi();
         let inter_offset: usize =
-            rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0, total_length);
+            rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0..total_length);
 
         for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
             let light = TrafficControl::Light(TrafficLightSchedule::from_basic(

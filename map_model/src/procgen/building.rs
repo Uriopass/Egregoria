@@ -37,21 +37,21 @@ pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
     'retry: loop {
         let mut rng = SmallRng::seed_from_u64(rand_in(0.0, 10000.0) as u64);
 
-        let width = rng.gen_range(15.0, 20.0);
-        let height = rng.gen_range(20.0, 28.0);
+        let width = rng.gen_range(15.0..20.0);
+        let height = rng.gen_range(20.0..28.0);
 
         let mut p = Polygon::rect(width, height);
 
-        for _ in 0..rng.gen_range(1.0, 5.0) as usize {
-            let seg = rng.gen_range(0.0, p.len() as f32) as usize;
+        for _ in 0..rng.gen_range(1.0..5.0) as usize {
+            let seg = rng.gen_range(0.0..p.len() as f32) as usize;
 
             let origlen = p.segment(seg).vec().magnitude();
             if origlen < 8.0 {
                 continue;
             }
 
-            let l = rng.gen_range(-0.2, 0.5);
-            let r = rng.gen_range(l + 0.4, l + 1.0);
+            let l = rng.gen_range(-0.2..0.5);
+            let r = rng.gen_range(l + 0.4..l + 1.0);
             if r <= 1.0 {
                 p.split_segment(seg, r);
             }
@@ -60,9 +60,9 @@ pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
 
             if l >= 0.0 {
                 p.split_segment(seg, l * origlen / newlen);
-                p.extrude(seg + 1, rng.gen_range(1.0, 8.0));
+                p.extrude(seg + 1, rng.gen_range(1.0..8.0));
             } else {
-                p.extrude(seg, rng.gen_range(1.0, 8.0));
+                p.extrude(seg, rng.gen_range(1.0..8.0));
             }
 
             p.simplify();
@@ -251,7 +251,7 @@ pub fn gen_exterior_farm(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
 }
 
 fn rand_in(min: f32, max: f32) -> f32 {
-    rand::thread_rng().gen_range(min, max)
+    rand::thread_rng().gen_range(min..max)
 }
 
 /*

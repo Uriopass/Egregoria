@@ -1,5 +1,7 @@
-use rand::{Error, Rng, RngCore, SeedableRng};
-use rand_distr::{Distribution, Float, Standard, StandardNormal};
+use rand::distributions::Standard;
+use rand::{Error, RngCore, SeedableRng};
+use rand_distr::num_traits::Float;
+use rand_distr::{Distribution, StandardNormal};
 
 pub struct RandProvider {
     rng: rand::rngs::SmallRng,
@@ -34,7 +36,7 @@ impl RandProvider {
     where
         Standard: Distribution<T>,
     {
-        self.rng.gen()
+        Standard.sample(&mut self.rng)
     }
 
     pub fn rand_normal<T: Float>(&mut self, mean: T, std: T) -> T
