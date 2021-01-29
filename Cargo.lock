@@ -1079,7 +1079,6 @@ dependencies = [
  "mint",
  "ordered-float",
  "serde",
- "slotmap",
 ]
 
 [[package]]
@@ -1391,7 +1390,8 @@ dependencies = [
 [[package]]
 name = "imgui-wgpu"
 version = "0.12.0"
-source = "git+https://github.com/Yatekii/imgui-wgpu-rs#56abc7233a67dddf7045509327bc141065439f6b"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8017f74f8880049c1c3fc055868486a610178ab93ad18eadaf5b0bb52f738365"
 dependencies = [
  "bytemuck",
  "imgui",

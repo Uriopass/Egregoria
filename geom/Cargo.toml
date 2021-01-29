@@ -10,4 +10,3 @@ edition = "2018"
 mint = "0.5.6"
 ordered-float = "2.0.0"
 serde = { version = "1.0", features = ["derive"] }
-slotmap = { version = "1.0.2", default-features = false }
