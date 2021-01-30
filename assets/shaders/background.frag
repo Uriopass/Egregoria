@@ -106,29 +106,13 @@ void main() {
 
     float before = noise;
 
-    grad *= 0.00003;
+    float v = in_wv.x * 0.000013 - 0.09;
+    noise += clamp(v, -1.0, 0.5);
+    grad += float(v >= -1.0 && v <= 0.3) * 0.000013;
 
-    noise -= dot(in_wv, in_wv) * 0.000000004;
-    grad -= 2.0 * in_wv * 0.000000004;
+    noise = clamp(noise, 0.0, 1.0);
 
-    grad *= 4000.0;
-
-    if (noise < 0) {
-        noise = 0;
-    }
-
-    if(noise < 0.1) {
-        grad = -in_wv * 0.000005;
-    } else {
-        grad *= 5.0 * noise;
-    }
-
-    vec3 normal = cross(vec3(1.0, 0.0, grad.x), vec3(0.0, 1.0, grad.y));
-    normal = normal / length(normal);
-
-    if (noise < 0.0) {
-        out_color = vec4(0.0, 0.0, 0.0, 1.0);
-    } else if (noise < 0.1) { // deep water
+    if (noise < 0.1) { // deep water
         float dnoise = disturbed_noise(in_wv, time * 0.05, noise);
         out_color =  (1.0 - 0.4 * dnoise + 3.0 * clamp(noise, 0.0, 1.0)) * sea_color;
     } else if (noise < 0.11) { // sand
@@ -136,8 +120,11 @@ void main() {
     } else {
         float dnoise = disturbed_noise(in_wv * 3.0, 0.0, noise);
 
-        out_color = (0.4 + 2.0 * noise + (dnoise - noise) * 0.6 ) * grass_color;
+        out_color = (0.4 + noise + (dnoise - noise) * 0.6) * grass_color;
     }
+
+    vec3 normal = cross(vec3(1.0, 0.0, grad.x), vec3(0.0, 1.0, grad.y));
+    normal = normal / length(normal);
 
     out_color.a = 1.0;
 
