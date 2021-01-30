@@ -100,6 +100,7 @@ impl State {
             delta as f32,
             !self.imgui_render.last_mouse_captured,
             !self.imgui_render.last_kb_captured,
+            self.gui.settings.camera_lock,
         );
         *self.goria.write::<Camera>() = self.camera.camera;
 
