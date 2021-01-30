@@ -50,6 +50,7 @@ impl CameraHandler {
         delta: f32,
         mouse_enabled: bool,
         keyboard_enabled: bool,
+        lock: bool,
     ) {
         let p = ctx.input.mouse.unprojected;
         let screenpos = ctx.input.mouse.screen;
@@ -66,10 +67,10 @@ impl CameraHandler {
 
             self.last_pos = self.unproject(ctx.input.mouse.screen);
             if ctx.input.mouse.wheel_delta < 0.0 {
-                self.zoom_by(ctx, 1.1);
+                self.zoom_by(ctx, 1.1, lock);
             }
             if ctx.input.mouse.wheel_delta > 0.0 {
-                self.zoom_by(ctx, 1.0 / 1.1);
+                self.zoom_by(ctx, 1.0 / 1.1, lock);
             }
         }
 
@@ -106,12 +107,12 @@ impl CameraHandler {
 
             let just_pressed = &ctx.input.keyboard.just_pressed;
             if just_pressed.contains(&KeyCode::Add) || just_pressed.contains(&KeyCode::Equals) {
-                self.zoom_by(ctx, 1.1);
+                self.zoom_by(ctx, 1.1, lock);
             }
 
             let just_pressed = &ctx.input.keyboard.just_pressed; // cannot call zoom_by 2 lines above without reborrowing
             if just_pressed.contains(&KeyCode::Subtract) || just_pressed.contains(&KeyCode::Minus) {
-                self.zoom_by(ctx, 1.0 / 1.1);
+                self.zoom_by(ctx, 1.0 / 1.1, lock);
             }
         }
 
@@ -126,9 +127,11 @@ impl CameraHandler {
         self.save();
     }
 
-    fn zoom_by(&mut self, ctx: &mut Context, multiply: f32) {
+    fn zoom_by(&mut self, ctx: &mut Context, multiply: f32, lock: bool) {
         self.camera.position.z *= multiply;
-        self.camera.position.z = self.camera.position.z.min(20000.0).max(5.0);
+        if lock {
+            self.camera.position.z = self.camera.position.z.min(20000.0).max(5.0);
+        }
 
         self.update(ctx);
         let after = self.unproject(ctx.input.mouse.screen);

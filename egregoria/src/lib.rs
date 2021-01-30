@@ -94,7 +94,6 @@ impl Egregoria {
 
     pub fn init() -> Egregoria {
         let mut goria = Egregoria::default();
-
         info!("Seed is {}", RNG_SEED);
 
         // Basic assets init

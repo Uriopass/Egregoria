@@ -16,6 +16,7 @@ use std::time::{Duration, Instant};
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Settings {
     pub camera_sensibility: f32,
+    pub camera_lock: bool,
 
     pub fullscreen: bool,
 
@@ -30,6 +31,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             camera_sensibility: 80.0,
+            camera_lock: true,
             music_volume_percent: 100.0,
             effects_volume_percent: 100.0,
             ui_volume_percent: 100.0,
@@ -436,6 +438,7 @@ impl Gui {
                     tok.end(ui);
                 }
                 imgui::Slider::new(im_str!("Camera sensibility")).range(10.0..=200.0).display_format(im_str!("%.0f")).build(ui, &mut self.settings.camera_sensibility);
+                ui.checkbox(im_str!("Camera zoom locked"), &mut self.settings.camera_lock);
 
                 ui.checkbox(im_str!("Fullscreen"), &mut self.settings.fullscreen);
                 imgui::Slider::new(im_str!("Music volume")).range(0.0..=100.0).display_format(im_str!("%.0f")).build(ui, &mut self.settings.music_volume_percent);
