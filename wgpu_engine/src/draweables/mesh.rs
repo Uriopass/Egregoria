@@ -1,9 +1,7 @@
-use crate::{
-    compile_shader, ColoredVertex, Drawable, GfxContext, IndexType, PreparedPipeline, VBDesc,
-};
+use crate::{compile_shader, ColoredVertex, Drawable, GfxContext, IndexType, VBDesc};
 use std::rc::Rc;
 use wgpu::util::DeviceExt;
-use wgpu::RenderPass;
+use wgpu::{RenderPass, RenderPipeline};
 
 #[derive(Default)]
 pub struct MeshBuilder {
@@ -74,22 +72,20 @@ pub struct Mesh {
 }
 
 impl Drawable for Mesh {
-    fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline {
+    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
         let vert = compile_shader("assets/shaders/mesh_shader.vert", None);
         let frag = compile_shader("assets/shaders/mesh_shader.frag", None);
 
-        let pipeline = gfx.basic_pipeline(
+        gfx.basic_pipeline(
             &[&gfx.projection.layout],
             &[ColoredVertex::desc()],
             vert,
             frag,
-        );
-
-        PreparedPipeline(pipeline)
+        )
     }
 
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        rp.set_pipeline(&gfx.get_pipeline::<Self>().0);
+        rp.set_pipeline(&gfx.get_pipeline::<Self>());
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..));

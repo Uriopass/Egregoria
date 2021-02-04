@@ -3,7 +3,9 @@ use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::{setup_gui, FollowEntity, Gui, Settings, UiTextures};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
-use crate::rendering::{CameraHandler, InstancedRender, MeshRenderer, RoadRenderer};
+use crate::rendering::{
+    BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
+};
 use common::GameTime;
 use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats};
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound, OrderKind};
@@ -29,6 +31,7 @@ pub struct State {
 
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
+    bg_renderer: BackgroundRender,
     gui: Gui,
 
     all_audio: GameAudio,
@@ -52,8 +55,6 @@ impl State {
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
-        crate::rendering::prepare_background(&mut ctx.gfx);
-
         let mut goria = egregoria::Egregoria::init();
 
         goria.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));
@@ -72,6 +73,7 @@ impl State {
             last_time: Instant::now(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
+            bg_renderer: BackgroundRender::new(&mut ctx.gfx),
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
         };
@@ -126,7 +128,7 @@ impl State {
     pub fn render(&mut self, ctx: &mut FrameContext) {
         let start = Instant::now();
 
-        crate::rendering::draw_background(ctx);
+        self.bg_renderer.draw_background(ctx);
 
         let mut tess = self.camera.culled_tesselator();
 

@@ -1,9 +1,11 @@
 use crate::procgen::heightmap::height;
 use crate::{Map, RoadID};
 use flat_spatial::SparseGrid;
-use geom::{vec2, Vec2};
-use ordered_float::OrderedFloat;
+use geom::{vec2, Camera, Vec2};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+
+const CELL_SIZE: i32 = 1000;
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Tree {
@@ -12,10 +14,10 @@ pub struct Tree {
     pub dir: Vec2,
 }
 
-#[derive(Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Trees {
     pub grid: SparseGrid<Tree>,
-    pub counter: usize,
+    pub generated: HashSet<(i32, i32)>,
     pub dirty: bool,
 }
 
@@ -23,7 +25,7 @@ impl Default for Trees {
     fn default() -> Self {
         Self {
             grid: SparseGrid::new(50),
-            counter: 1000,
+            generated: Default::default(),
             dirty: true,
         }
     }
@@ -54,58 +56,54 @@ impl Trees {
         trees.grid.maintain();
     }
 
-    pub fn add_forest(&mut self) -> bool {
-        if self.counter == 1 {
-            let mut trees = self.trees().collect::<Vec<_>>();
-
-            trees.sort_by_key(|(_, t)| OrderedFloat(t.size));
-
-            *self = Self::from_positions(trees);
-            self.counter = 0;
-            return true;
+    pub fn update(&mut self, camera: Camera) {
+        let aabb = camera.get_screen_box();
+        let rpos = aabb.ll + (aabb.ur - aabb.ll) * vec2(rand::random(), rand::random());
+        let cell = (rpos.x as i32 / CELL_SIZE, rpos.y as i32 / CELL_SIZE);
+        if self.generated.insert(cell) {
+            self.add_forest(cell);
         }
-        if self.counter <= 1 {
-            return false;
+    }
+
+    fn add_forest(&mut self, (x, y): (i32, i32)) {
+        let startx = common::rand::rand3(x as f32, y as f32, 0.0);
+        let starty = common::rand::rand3(x as f32, y as f32, 1.0);
+        let r3 = common::rand::rand3(x as f32, y as f32, 4.0);
+
+        let forest_pos = vec2(
+            (x as f32 + startx) * CELL_SIZE as f32,
+            (y as f32 + starty) * CELL_SIZE as f32,
+        );
+        let elev = height(forest_pos);
+
+        if elev - 0.15 < r3 * r3 {
+            return;
         }
         self.dirty = true;
-        self.counter -= 1;
-        let i = self.counter as f32;
-        let r1 = common::rand::rand2(i, 0.0);
-        let r2 = common::rand::rand2(i, 1.0);
-        let r3 = common::rand::rand2(i, 2.0);
-
-        let ll = vec2(-6500.0, -6100.0);
-        let ur = vec2(5700.0, 3200.0);
-        let forest_pos = ll + vec2((ur.x - ll.x) * r1, (ur.y - ll.y) * r2);
-        let elev = height(forest_pos);
-        if elev - 0.15 < r3 * r3 {
-            return false;
-        }
 
         let mut active = vec![forest_pos];
 
-        let span = 1000.0;
-
-        for j in 0..2000 {
+        for j in 0..200 {
             if active.is_empty() {
                 break;
             }
-            let r4 = common::rand::rand3(i, j as f32, 3.0);
+            let r4 = common::rand::rand3(startx, j as f32, 3.0);
             let idx = (r4 * active.len() as f32) as usize;
             let sample = active[idx];
 
             let r3 = common::rand::rand3(sample.x, sample.y, 2.0);
 
-            let delta_elev = (height(sample) - elev).abs() * 50.0;
+            let delta_elev = (height(sample) - elev).abs() * 200.0;
 
-            if r3 < sample.distance(forest_pos) / span + delta_elev {
+            if r3 < delta_elev {
                 active.remove(idx);
                 continue;
             }
 
             for k in 0..10 {
-                let theta = 2.0 * std::f32::consts::PI * common::rand::rand3(i, j as f32, k as f32);
-                let dist = common::rand::rand3(i, j as f32, k as f32 + 10.0);
+                let theta =
+                    2.0 * std::f32::consts::PI * common::rand::rand3(startx, j as f32, k as f32);
+                let dist = 50.0 * common::rand::rand3(startx, j as f32, k as f32 + 10.0);
 
                 let srand = common::rand::rand3(sample.x as f32, sample.y, k as f32);
                 let scale = 10.0 + 6.0 * srand;
@@ -135,19 +133,6 @@ impl Trees {
                 active.push(pos);
             }
             active.remove(idx);
-        }
-        true
-    }
-
-    pub fn from_positions(pos: impl IntoIterator<Item = (Vec2, Tree)>) -> Self {
-        let mut grid = SparseGrid::new(20);
-        for (v, t) in pos {
-            grid.insert(v, t);
-        }
-        Self {
-            grid,
-            counter: 0,
-            dirty: true,
         }
     }
 

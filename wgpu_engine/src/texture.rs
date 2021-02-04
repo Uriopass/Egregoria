@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::{compile_shader, GfxContext};
-use image::GenericImageView;
+use image::{DynamicImage, GenericImageView};
 use std::fs::File;
 use std::io::Read;
 use std::num::NonZeroU32;
@@ -69,9 +69,6 @@ impl Texture {
         img: &image::DynamicImage,
         label: Option<&'static str>,
     ) -> Self {
-        let rgba = img
-            .as_rgba8()
-            .expect("Trying to use non rgha8 image as texture");
         let dimensions = img.dimensions();
 
         let extent = wgpu::Extent3d {
@@ -80,7 +77,11 @@ impl Texture {
             depth: 1,
         };
 
-        let format = wgpu::TextureFormat::Rgba8UnormSrgb;
+        let (format, data, pixwidth): (TextureFormat, &[u8], u32) = match img {
+            DynamicImage::ImageRgba8(img) => (wgpu::TextureFormat::Rgba8UnormSrgb, img as &[u8], 4),
+            DynamicImage::ImageLuma8(gray) => (wgpu::TextureFormat::R8Unorm, gray, 1),
+            _ => unimplemented!("unsupported format {:?}", img.color()),
+        };
 
         let mip_level_count = 6;
         let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
@@ -99,10 +100,10 @@ impl Texture {
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
-            &rgba,
+            data,
             TextureDataLayout {
                 offset: 0,
-                bytes_per_row: 4 * extent.width,
+                bytes_per_row: pixwidth * extent.width,
                 rows_per_image: extent.height,
             },
             extent,
@@ -319,9 +320,9 @@ impl Texture {
     fn default_sampler(device: &Device) -> Sampler {
         device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Linear,

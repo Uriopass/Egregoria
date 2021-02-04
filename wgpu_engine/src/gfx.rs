@@ -1,8 +1,8 @@
 use crate::draweables::BlitLinear;
 use crate::lighting::prepare_lighting;
 use crate::{
-    CompiledShader, Drawable, IndexType, Mesh, PreparedPipeline, SpriteBatch, Texture,
-    TexturedMesh, Uniform, UvVertex,
+    CompiledShader, Drawable, IndexType, Mesh, SpriteBatch, Texture, TexturedMesh, Uniform,
+    UvVertex,
 };
 use crate::{MultisampledTexture, ShaderType};
 use raw_window_handle::HasRawWindowHandle;
@@ -28,7 +28,7 @@ pub struct GfxContext {
     pub normal_texture: MultisampledTexture,
     pub ui_texture: Texture,
     pub sc_desc: SwapChainDescriptor,
-    pub pipelines: HashMap<TypeId, PreparedPipeline>,
+    pub pipelines: HashMap<TypeId, RenderPipeline>,
     pub projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub time_uni: Uniform<f32>,
@@ -235,7 +235,7 @@ impl GfxContext {
             usage: wgpu::BufferUsage::INDEX,
         });
 
-        let pipeline = &self.get_pipeline::<BlitLinear>().0;
+        let pipeline = &self.get_pipeline::<BlitLinear>();
         let bg = self
             .ui_texture
             .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
@@ -382,7 +382,7 @@ impl GfxContext {
         self.device.create_render_pipeline(&render_pipeline_desc)
     }
 
-    pub fn get_pipeline<T: 'static + Drawable>(&self) -> &PreparedPipeline {
+    pub fn get_pipeline<T: 'static + Drawable>(&self) -> &RenderPipeline {
         &self
             .pipelines
             .get(&std::any::TypeId::of::<T>())

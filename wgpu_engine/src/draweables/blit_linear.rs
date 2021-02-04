@@ -1,10 +1,10 @@
-use crate::{compile_shader, Drawable, GfxContext, PreparedPipeline, Texture, UvVertex, VBDesc};
-use wgpu::{BlendFactor, BlendOperation, RenderPass, TextureComponentType};
+use crate::{compile_shader, Drawable, GfxContext, Texture, UvVertex, VBDesc};
+use wgpu::{BlendFactor, BlendOperation, RenderPass, RenderPipeline, TextureComponentType};
 
 pub struct BlitLinear;
 
 impl Drawable for BlitLinear {
-    fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline
+    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline
     where
         Self: Sized,
     {
@@ -60,7 +60,7 @@ impl Drawable for BlitLinear {
             sample_mask: !0,
             alpha_to_coverage_enabled: false,
         };
-        PreparedPipeline(gfx.device.create_render_pipeline(&render_pipeline_desc))
+        gfx.device.create_render_pipeline(&render_pipeline_desc)
     }
 
     fn draw<'a>(&'a self, _gfx: &'a GfxContext, _rp: &mut RenderPass<'a>) {
