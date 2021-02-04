@@ -65,10 +65,10 @@ fn fnoise(ampl: f32, in_wv: Vec2) -> f32 {
     let mut dec = Vec2::splat(70.69) + in_wv * ampl;
 
     let mut noise: f32 = 0.0;
-    let mut amplitude: f32 = 0.5;
+    let mut amplitude: f32 = 1.0;
 
-    for _ in 0..8 {
-        noise += amplitude * (simplex_noise(dec) * 2.0);
+    for _ in 0..5 {
+        noise += amplitude * simplex_noise(dec);
         dec *= 1.0 / FBM_MAG;
         amplitude *= FBM_MAG;
     }
@@ -79,8 +79,6 @@ fn fnoise(ampl: f32, in_wv: Vec2) -> f32 {
 pub fn height(mut p: Vec2) -> f32 {
     p -= vec2(-2000.0, 2000.0);
 
-    let mut noise = fnoise(0.00003, p);
-
-    noise -= p.magnitude2() * 0.000000004;
-    noise.max(0.0)
+    let noise = fnoise(0.00003, p) + 0.2;
+    noise.max(0.0).min(1.0)
 }

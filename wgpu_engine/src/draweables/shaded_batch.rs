@@ -4,7 +4,7 @@ use geom::{LinearColor, Vec2};
 use std::marker::PhantomData;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{RenderPass, VertexBufferDescriptor};
+use wgpu::{RenderPass, RenderPipeline, VertexBufferDescriptor};
 
 #[derive(Default)]
 pub struct ShadedBatchBuilder<T: Shaders> {
@@ -122,23 +122,21 @@ impl<T: Shaders> ShadedBatchBuilder<T> {
 }
 
 impl<T: 'static + Shaders> Drawable for ShadedBatch<T> {
-    fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
+    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
         let vert = T::vert_shader();
         let frag = T::frag_shader();
 
-        let pipeline = gfx.basic_pipeline(
+        gfx.basic_pipeline(
             &[&gfx.projection.layout],
             &[UvVertex::desc(), ShadedInstanceRaw::desc()],
             vert,
             frag,
-        );
-
-        super::PreparedPipeline(pipeline)
+        )
     }
 
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
-        rp.set_pipeline(&pipeline.0);
+        rp.set_pipeline(&pipeline);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));

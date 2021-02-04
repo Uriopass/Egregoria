@@ -1,6 +1,6 @@
 use crate::{Drawable, GfxContext, InstanceRaw, SpriteBatch, SpriteBatchBuilder, Texture};
 use std::path::Path;
-use wgpu::RenderPass;
+use wgpu::{RenderPass, RenderPipeline};
 
 pub struct MultiSpriteBatchBuilder {
     sbs: Vec<SpriteBatchBuilder>,
@@ -48,7 +48,7 @@ impl MultiSpriteBatchBuilder {
 }
 
 impl Drawable for MultiSpriteBatch {
-    fn create_pipeline(_gfx: &GfxContext) -> super::PreparedPipeline {
+    fn create_pipeline(_gfx: &GfxContext) -> RenderPipeline {
         unimplemented!()
     }
 

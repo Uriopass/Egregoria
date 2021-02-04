@@ -3,7 +3,7 @@ use geom::{LinearColor, Vec2};
 use std::path::Path;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{RenderPass, TextureComponentType, VertexBufferDescriptor};
+use wgpu::{RenderPass, RenderPipeline, TextureComponentType, VertexBufferDescriptor};
 
 pub struct SpriteBatchBuilder {
     pub tex: Texture,
@@ -140,7 +140,7 @@ impl SpriteBatchBuilder {
         }));
 
         let bind_group = Rc::new(gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &pipeline.0.get_bind_group_layout(0),
+            layout: &pipeline.get_bind_group_layout(0),
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -168,7 +168,7 @@ impl SpriteBatchBuilder {
 }
 
 impl Drawable for SpriteBatch {
-    fn create_pipeline(gfx: &GfxContext) -> super::PreparedPipeline {
+    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
         let vert = compile_shader("assets/shaders/spritebatch.vert", None);
         let frag = compile_shader("assets/shaders/spritebatch.frag", None);
 
@@ -177,19 +177,17 @@ impl Drawable for SpriteBatch {
             TextureComponentType::Uint,
         )];
 
-        let pipeline = gfx.basic_pipeline(
+        gfx.basic_pipeline(
             &[&layouts[0], &gfx.projection.layout],
             &[UvVertex::desc(), InstanceRaw::desc()],
             vert,
             frag,
-        );
-
-        super::PreparedPipeline(pipeline)
+        )
     }
 
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
-        rp.set_pipeline(&pipeline.0);
+        rp.set_pipeline(&pipeline);
         rp.set_bind_group(0, &self.bind_group, &[]);
         rp.set_bind_group(1, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));

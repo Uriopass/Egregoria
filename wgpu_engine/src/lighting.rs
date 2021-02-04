@@ -1,12 +1,9 @@
-use crate::{
-    compile_shader, Drawable, GfxContext, IndexType, PreparedPipeline, Texture, Uniform, UvVertex,
-    VBDesc,
-};
+use crate::{compile_shader, Drawable, GfxContext, IndexType, Texture, Uniform, UvVertex, VBDesc};
 use geom::LinearColor;
 use mint::ColumnMatrix4;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    BlendFactor, CommandEncoder, RenderPass, SwapChainFrame, TextureComponentType,
+    BlendFactor, CommandEncoder, RenderPass, RenderPipeline, SwapChainFrame, TextureComponentType,
     VertexBufferDescriptor,
 };
 
@@ -24,7 +21,7 @@ u8slice_impl!(LightUniform);
 struct LightBlit;
 
 impl Drawable for LightBlit {
-    fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline
+    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline
     where
         Self: Sized,
     {
@@ -77,7 +74,7 @@ impl Drawable for LightBlit {
             alpha_to_coverage_enabled: false,
         };
 
-        PreparedPipeline(gfx.device.create_render_pipeline(&render_pipeline_desc))
+        gfx.device.create_render_pipeline(&render_pipeline_desc)
     }
 
     fn draw<'a>(&'a self, _gfx: &'a GfxContext, _rp: &mut RenderPass<'a>) {
@@ -87,7 +84,7 @@ impl Drawable for LightBlit {
 
 struct LightMultiply;
 impl Drawable for LightMultiply {
-    fn create_pipeline(gfx: &GfxContext) -> PreparedPipeline
+    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline
     where
         Self: Sized,
     {
@@ -141,7 +138,7 @@ impl Drawable for LightMultiply {
             sample_mask: !0,
             alpha_to_coverage_enabled: false,
         };
-        PreparedPipeline(gfx.device.create_render_pipeline(&render_pipeline_desc))
+        gfx.device.create_render_pipeline(&render_pipeline_desc)
     }
 
     fn draw<'a>(&'a self, _gfx: &'a GfxContext, _rp: &mut RenderPass<'a>) {
@@ -256,7 +253,7 @@ pub fn render_lights(
             }],
             depth_stencil_attachment: None,
         });
-        rpass.set_pipeline(&gfx.get_pipeline::<LightBlit>().0);
+        rpass.set_pipeline(&gfx.get_pipeline::<LightBlit>());
         rpass.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
         rpass.set_vertex_buffer(1, instance_buffer.slice(..));
@@ -272,23 +269,17 @@ pub fn render_lights(
 
     let light_tex_bind_group = gfx.light_texture.bindgroup(
         &gfx.device,
-        &gfx.get_pipeline::<LightMultiply>()
-            .0
-            .get_bind_group_layout(0),
+        &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(0),
     );
 
     let color_tex_bind_group = gfx.color_texture.target.bindgroup(
         &gfx.device,
-        &gfx.get_pipeline::<LightMultiply>()
-            .0
-            .get_bind_group_layout(1),
+        &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(1),
     );
 
     let normal_tex_bind_group = gfx.normal_texture.target.bindgroup(
         &gfx.device,
-        &gfx.get_pipeline::<LightMultiply>()
-            .0
-            .get_bind_group_layout(2),
+        &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(2),
     );
 
     let ambiant_uni = Uniform::new(
@@ -315,7 +306,7 @@ pub fn render_lights(
         depth_stencil_attachment: None,
     });
 
-    rpass.set_pipeline(&gfx.get_pipeline::<LightMultiply>().0);
+    rpass.set_pipeline(&gfx.get_pipeline::<LightMultiply>());
     rpass.set_bind_group(0, &light_tex_bind_group, &[]);
     rpass.set_bind_group(1, &color_tex_bind_group, &[]);
     rpass.set_bind_group(2, &normal_tex_bind_group, &[]);

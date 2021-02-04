@@ -1,9 +1,15 @@
 use geom::{LinearColor, Vec3};
+use std::rc::Rc;
 use wgpu_engine::{
-    compile_shader, CompiledShader, FrameContext, GfxContext, ShadedQuad, Shaders, Uniform,
+    compile_shader, CompiledShader, FrameContext, GfxContext, ShadedQuadTex, Shaders, Texture,
+    Uniform,
 };
 
 struct Background;
+
+pub struct BackgroundRender {
+    sqt: Rc<ShadedQuadTex<Background, BackgroundUniform>>,
+}
 
 impl Shaders for Background {
     fn vert_shader() -> CompiledShader {
@@ -15,7 +21,7 @@ impl Shaders for Background {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 #[repr(C)]
 struct BackgroundUniform {
     sea_color: LinearColor,
@@ -27,14 +33,22 @@ struct BackgroundUniform {
 
 wgpu_engine::u8slice_impl!(BackgroundUniform);
 
-pub fn prepare_background(gfx: &mut GfxContext) {
-    gfx.register_pipeline::<ShadedQuad<Background, BackgroundUniform>>();
-}
+impl BackgroundRender {
+    pub fn new(gfx: &mut GfxContext) -> Self {
+        gfx.register_pipeline::<ShadedQuadTex<Background, BackgroundUniform>>();
 
-pub fn draw_background(fctx: &mut FrameContext) {
-    let sq = ShadedQuad::<Background, BackgroundUniform>::new(
-        fctx.gfx,
-        Uniform::new(
+        let tex =
+            Texture::from_path(gfx, "assets/noise.png", Some("noise")).expect("noise not found");
+        let sqt = ShadedQuadTex::<Background, BackgroundUniform>::new(
+            gfx,
+            Uniform::new(BackgroundUniform::default(), &gfx.device),
+            tex,
+        );
+        Self { sqt: Rc::new(sqt) }
+    }
+
+    pub fn draw_background(&mut self, fctx: &mut FrameContext) {
+        let uni = Uniform::new(
             BackgroundUniform {
                 sea_color: common::config().sea_col.into(),
                 grass_color: common::config().grass_col.into(),
@@ -43,8 +57,10 @@ pub fn draw_background(fctx: &mut FrameContext) {
                 _pad: Vec3::ZERO,
             },
             &fctx.gfx.device,
-        ),
-    );
-
-    fctx.objs.push(Box::new(sq));
+        );
+        Rc::get_mut(&mut self.sqt)
+            .expect("last frame didnt destroy obj :(")
+            .uniform = uni;
+        fctx.objs.push(Box::new(self.sqt.clone()));
+    }
 }
