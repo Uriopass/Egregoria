@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::{compile_shader, ColoredUvVertex, Drawable, GfxContext, IndexType, Texture, VBDesc};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{RenderPass, RenderPipeline, TextureComponentType};
+use wgpu::{IndexFormat, RenderPass, RenderPipeline};
 
 #[derive(Default)]
 pub struct TexturedMeshBuilder {
@@ -80,16 +80,14 @@ impl TexturedMeshBuilder {
 
 impl Drawable for TexturedMesh {
     fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
-        let layouts = vec![Texture::bindgroup_layout(
-            &gfx.device,
-            TextureComponentType::Uint,
-        )];
-
         let vert = compile_shader("assets/shaders/textured_mesh_shader.vert", None);
         let frag = compile_shader("assets/shaders/textured_mesh_shader.frag", None);
 
         gfx.basic_pipeline(
-            &[&layouts[0], &gfx.projection.layout],
+            &[
+                &Texture::bindgroup_layout_float(&gfx.device),
+                &gfx.projection.layout,
+            ],
             &[ColoredUvVertex::desc()],
             vert,
             frag,
@@ -102,7 +100,7 @@ impl Drawable for TexturedMesh {
         rp.set_bind_group(0, &self.bind_group, &[]);
         rp.set_bind_group(1, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        rp.set_index_buffer(self.index_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);
     }
 }

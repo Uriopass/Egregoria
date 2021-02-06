@@ -10,10 +10,10 @@ pub struct UvVertex {
 u8slice_impl!(UvVertex);
 
 impl VBDesc for UvVertex {
-    fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
-        wgpu::VertexBufferDescriptor {
-            stride: mem::size_of::<UvVertex>() as wgpu::BufferAddress,
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<UvVertex>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: Box::leak(Box::new(wgpu::vertex_attr_array![0 => Float3, 1 => Float2])),
         }

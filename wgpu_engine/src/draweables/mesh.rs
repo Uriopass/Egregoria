@@ -1,7 +1,7 @@
 use crate::{compile_shader, ColoredVertex, Drawable, GfxContext, IndexType, VBDesc};
 use std::rc::Rc;
 use wgpu::util::DeviceExt;
-use wgpu::{RenderPass, RenderPipeline};
+use wgpu::{IndexFormat, RenderPass, RenderPipeline};
 
 #[derive(Default)]
 pub struct MeshBuilder {
@@ -88,7 +88,7 @@ impl Drawable for Mesh {
         rp.set_pipeline(&gfx.get_pipeline::<Self>());
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        rp.set_index_buffer(self.index_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);
     }
 }

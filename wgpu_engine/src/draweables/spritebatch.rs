@@ -3,7 +3,7 @@ use geom::{LinearColor, Vec2};
 use std::path::Path;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{RenderPass, RenderPipeline, TextureComponentType, VertexBufferDescriptor};
+use wgpu::{IndexFormat, RenderPass, RenderPipeline, VertexBufferLayout};
 
 pub struct SpriteBatchBuilder {
     pub tex: Texture,
@@ -43,9 +43,9 @@ impl InstanceRaw {
 u8slice_impl!(InstanceRaw);
 
 impl VBDesc for InstanceRaw {
-    fn desc<'a>() -> VertexBufferDescriptor<'a> {
-        wgpu::VertexBufferDescriptor {
-            stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
+    fn desc<'a>() -> VertexBufferLayout<'a> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
             attributes: Box::leak(Box::new(
                 wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float4],
@@ -174,7 +174,7 @@ impl Drawable for SpriteBatch {
 
         gfx.basic_pipeline(
             &[
-                &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Uint),
+                &Texture::bindgroup_layout_float(&gfx.device),
                 &gfx.projection.layout,
             ],
             &[UvVertex::desc(), InstanceRaw::desc()],
@@ -190,7 +190,7 @@ impl Drawable for SpriteBatch {
         rp.set_bind_group(1, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
-        rp.set_index_buffer(self.index_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..self.n_instances);
     }
 }
