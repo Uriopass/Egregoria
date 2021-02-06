@@ -17,14 +17,14 @@ common        = { path = "../common" }
 mint          = "0.5.6"
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
-imgui-wgpu    = "0.13.1"
-imgui-winit-support = "0.6.0"
+imgui-wgpu = { git = "https://github.com/4bb4/imgui-wgpu-rs.git", rev = "10e906004bb0c5598654ff54a92ed1b73dea5493" }
+imgui-winit-support = "0.7.0"
 map_model     = { path = "../map_model" }
 flat_spatial  = { path = "../flat_spatial" }
 log-panics    = { version = "2.0.0", features=["with-backtrace"] }
 log           = "0.4.11"
 inline_tweak  = "1.0.6"
-imgui         = "0.6"
+imgui         = "0.7"
 legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize"] }
 ordered-float = "2.0.0"
 serde         = "1.0.117"
