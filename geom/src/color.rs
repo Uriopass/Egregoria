@@ -160,6 +160,15 @@ impl LinearColor {
         LinearColor { r, g, b, a }
     }
 
+    pub fn a(self, v: f32) -> Self {
+        Self {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: v,
+        }
+    }
+
     pub fn gray(level: f32) -> Self {
         Self {
             r: level,
