@@ -301,7 +301,7 @@ impl Mul<LinearColor> for f32 {
             r: self * rhs.r,
             g: self * rhs.g,
             b: self * rhs.b,
-            a: 1.0,
+            a: rhs.a,
         }
     }
 }

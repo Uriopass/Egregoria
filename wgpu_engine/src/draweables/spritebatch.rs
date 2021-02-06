@@ -19,7 +19,7 @@ pub struct SpriteBatch {
     pub n_instances: u32,
     pub alpha_blend: bool,
     pub tex: Texture,
-    pub bind_group: Rc<wgpu::BindGroup>,
+    pub tex_bg: Rc<wgpu::BindGroup>,
 }
 
 #[repr(C)]
@@ -139,20 +139,10 @@ impl SpriteBatchBuilder {
             usage: wgpu::BufferUsage::VERTEX,
         }));
 
-        let bind_group = Rc::new(gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &pipeline.get_bind_group_layout(0),
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&self.tex.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.tex.sampler),
-                },
-            ],
-            label: Some("bind group for spritebatch"),
-        }));
+        let tex_bg = Rc::new(
+            self.tex
+                .bindgroup(&gfx.device, &pipeline.get_bind_group_layout(0)),
+        );
 
         Some(SpriteBatch {
             vertex_buffer,
@@ -162,7 +152,7 @@ impl SpriteBatchBuilder {
             n_instances: self.instances.len() as u32,
             alpha_blend: false,
             tex: self.tex.clone(),
-            bind_group,
+            tex_bg,
         })
     }
 }
@@ -186,7 +176,7 @@ impl Drawable for SpriteBatch {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
         rp.set_pipeline(&pipeline);
-        rp.set_bind_group(0, &self.bind_group, &[]);
+        rp.set_bind_group(0, &self.tex_bg, &[]);
         rp.set_bind_group(1, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
