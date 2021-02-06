@@ -44,6 +44,7 @@ impl Work {
     }
 }
 
+register_system!(desire_work);
 #[system(par_for_each)]
 pub fn desire_work(#[resource] time: &GameTime, router: &mut Router, d: &mut Desire<Work>) {
     d.score_and_apply(

@@ -27,6 +27,7 @@ impl BuyFood {
     }
 }
 
+register_system!(desire_buy_food);
 #[system(par_for_each)]
 pub fn desire_buy_food(
     #[resource] cbuf: &ParCommandBuffer,

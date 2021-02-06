@@ -34,6 +34,7 @@ use common::AudioKind;
 use BuildState::*;
 use ProjectKind::*;
 
+register_system!(roadbuild);
 #[system]
 pub fn roadbuild(
     #[resource] state: &mut RoadBuildResource,

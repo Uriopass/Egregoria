@@ -1,11 +1,10 @@
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::debug::DebugObjs;
-use common::inspect::InspectedEntity;
 use egregoria::engine_interaction::{KeyCode, KeyboardInfo};
 use egregoria::Egregoria;
 use imgui::TextureId;
-use legion::system;
+use legion::{system, Entity};
 use movable::MovableSystem;
 use roadbuild::RoadBuildResource;
 use roadeditor::RoadEditorResource;
@@ -29,19 +28,17 @@ pub use follow::FollowEntity;
 pub use inspect::*;
 pub use topgui::*;
 
+#[derive(Copy, Clone, Default, Debug)]
+pub struct InspectedEntity {
+    pub e: Option<Entity>,
+    pub dirty: bool, // Modified by inspection
+    pub dist2: f32,
+}
+
 pub fn setup_gui(goria: &mut Egregoria) {
     goria
         .schedule
-        .add_system(selectable::selectable_select_system())
-        .add_system(selectable::selectable_cleanup_system())
-        .add_system(roadbuild::roadbuild_system())
-        .add_system(roadeditor::roadeditor_system())
-        .add_system(bulldozer::bulldozer_system())
-        .add_system(lotbrush::lotbrush_system())
-        .add_system(inspected_aura::inspected_aura_system())
-        .add_system(specialbuilding::special_building_system())
-        .add_system(hand_reset_system())
-        .add_system(movable::movable_system(MovableSystem::default()));
+        .add_system(Box::new(movable::movable_system(MovableSystem::default())));
 
     goria.insert(InspectedEntity::default());
     goria.insert(FollowEntity::default());
@@ -54,6 +51,7 @@ pub fn setup_gui(goria: &mut Egregoria) {
     goria.insert(SpecialBuildingResource::default());
 }
 
+register_system!(hand_reset);
 #[system]
 pub fn hand_reset(#[resource] info: &KeyboardInfo, #[resource] tool: &mut Tool) {
     if info.just_pressed.contains(&KeyCode::Escape) {

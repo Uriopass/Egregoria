@@ -2,37 +2,22 @@
 #![allow(clippy::blocks_in_if_conditions)]
 #![allow(clippy::too_many_arguments)]
 
-use crate::economy::{market_update_system, Market};
-use crate::engine_interaction::{KeyboardInfo, MouseInfo, Movable, RenderStats, Selectable};
-use crate::map_dynamic::{
-    add_trees_system, itinerary_update_system, routing_update_system, BuildingInfos, Itinerary,
-    ParkingManagement,
-};
-use crate::pedestrians::{pedestrian_decision_system, Pedestrian};
-use crate::physics::systems::{
-    coworld_maintain_system, coworld_synchronize_system, kinematics_apply_system,
-};
+use crate::engine_interaction::{Movable, RenderStats, Selectable};
+use crate::map_dynamic::{BuildingInfos, Itinerary, ParkingManagement};
+use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::assets::AssetRender;
-use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::rendering::meshrender_component::MeshRender;
-use crate::scenarios::scenario_runner::{run_scenario_system, RunningScenario};
-use crate::souls::goods_company::company_system;
-use crate::souls::human::human_desires_system;
-use crate::vehicles::systems::{
-    vehicle_cleanup_system, vehicle_decision_system, vehicle_state_update_system,
-};
 use crate::vehicles::Vehicle;
 use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 use geom::{Transform, Vec2};
 use legion::storage::Component;
-use legion::systems::Resource;
+use legion::systems::{ParallelRunnable, Resource};
 use legion::{any, Entity, IntoQuery, Registry, Resources, World};
 use map_model::{Map, SerializedMap};
 use pedestrians::Location;
 use serde::{Deserialize, Serialize};
-use souls::desire::{desire_buy_food_system, desire_home_system, desire_work_system};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::ops::{Deref, DerefMut};
@@ -42,14 +27,45 @@ pub use utils::par_command_buffer::ParCommandBuffer;
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
 
+#[macro_export]
+macro_rules! register_system {
+    ($f: ident) => {
+        inventory::submit! {
+            paste::paste! {
+                $crate::GSystem::new(std::cell::RefCell::new(Some(Box::new([<$f _system >]()))))
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! init_func {
+    ($f: expr) => {
+        inventory::submit! {
+            $crate::InitFunc {
+                f: Box::new($f),
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! register_resource {
+    ($t: ty) => {
+        init_func!(|goria| {
+            goria.insert(<$t>::default());
+        });
+    };
+}
+
+#[macro_use]
+extern crate common;
+
 #[macro_use]
 extern crate imgui_inspect;
 
 #[macro_use]
 extern crate log as extern_log;
-
-#[macro_use]
-pub mod utils;
 
 pub mod economy;
 pub mod engine_interaction;
@@ -59,6 +75,7 @@ pub mod physics;
 pub mod rendering;
 pub mod scenarios;
 pub mod souls;
+pub mod utils;
 pub mod vehicles;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -73,6 +90,24 @@ pub struct Egregoria {
     pub schedule: SeqSchedule,
     resources: Resources,
 }
+
+pub struct InitFunc {
+    pub f: Box<dyn Fn(&mut Egregoria) + 'static>,
+}
+
+inventory::collect!(InitFunc);
+
+pub struct GSystem {
+    s: std::cell::RefCell<Option<Box<dyn ParallelRunnable + 'static>>>,
+}
+
+impl GSystem {
+    pub fn new(s: std::cell::RefCell<Option<Box<dyn ParallelRunnable + 'static>>>) -> Self {
+        Self { s }
+    }
+}
+
+inventory::collect!(GSystem);
 
 /// Safety: Resources must be Send+Sync.
 /// Guaranteed by Egregoria::insert.
@@ -102,41 +137,18 @@ impl Egregoria {
             SECONDS_PER_DAY as f64 + 10.0 * SECONDS_PER_HOUR as f64,
         ));
         goria.insert(CollisionWorld::new(100));
-        goria.insert(KeyboardInfo::default());
-        goria.insert(MouseInfo::default());
-        goria.insert(RenderStats::default());
         goria.insert(RandProvider::new(RNG_SEED));
-        goria.insert(ParkingManagement::default());
-        goria.insert(BuildingInfos::default());
-        goria.insert(FrameLog::default());
-        goria.insert(RunningScenario::default());
-        goria.insert(ImmediateDraw::default());
-        goria.insert(ImmediateSound::default());
-        goria.insert(ParCommandBuffer::default());
         goria.insert(Deleted::<Collider>::default());
         goria.insert(Deleted::<Vehicle>::default());
-        goria.insert(Market::default());
 
-        // Dispatcher init
-        goria
-            .schedule
-            .add_system(vehicle_state_update_system())
-            .add_system(vehicle_decision_system())
-            .add_system(itinerary_update_system())
-            .add_system(add_trees_system())
-            .add_system(vehicle_cleanup_system())
-            .add_system(pedestrian_decision_system())
-            .add_system(run_scenario_system())
-            .add_system(kinematics_apply_system())
-            .add_system(coworld_synchronize_system())
-            .add_system(routing_update_system())
-            .add_system(desire_home_system())
-            .add_system(desire_work_system())
-            .add_system(desire_buy_food_system())
-            .add_system(human_desires_system())
-            .add_system(market_update_system())
-            .add_system(company_system())
-            .add_system(coworld_maintain_system());
+        for s in inventory::iter::<InitFunc> {
+            (s.f)(&mut goria);
+        }
+
+        for s in inventory::iter::<GSystem> {
+            let s = s.s.borrow_mut().take().unwrap();
+            goria.schedule.add_system(s);
+        }
 
         goria
     }

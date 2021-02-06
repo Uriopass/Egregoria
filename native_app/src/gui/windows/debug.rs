@@ -1,6 +1,6 @@
 #![allow(clippy::type_complexity)]
 
-use common::inspect::InspectedEntity;
+use crate::gui::InspectedEntity;
 use common::{GameTime, SECONDS_PER_DAY};
 use egregoria::engine_interaction::{MouseInfo, RenderStats};
 use egregoria::map_dynamic::Itinerary;
@@ -161,10 +161,7 @@ pub fn debug_turns(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     tess.set_color(LinearColor::RED);
     for inter in map.intersections().values() {
         for turn in inter.turns() {
-            let p = match turn.points.get(turn.points.n_points() / 2) {
-                Some(x) => x,
-                None => continue,
-            };
+            let p = unwrap_or!(turn.points.get(turn.points.n_points() / 2), continue);
             let r = common::rand::rand2(p.x, p.y);
             tess.set_color(Color::hsv(r * 360.0, 0.8, 0.6, 0.5));
 

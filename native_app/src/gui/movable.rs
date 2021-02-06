@@ -1,4 +1,4 @@
-use common::inspect::InspectedEntity;
+use crate::gui::InspectedEntity;
 use common::GameTime;
 use egregoria::engine_interaction::{MouseButton, MouseInfo, Movable};
 use egregoria::physics::Kinematics;

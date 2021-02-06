@@ -3,11 +3,13 @@ use legion::system;
 use mods::mlua::Lua;
 use std::sync::Mutex;
 
+register_resource!(RunningScenario);
 #[derive(Default)]
 pub struct RunningScenario {
     pub l: Option<Mutex<Lua>>,
 }
 
+register_system!(run_scenario);
 #[system]
 pub fn run_scenario(#[resource] scenario: &mut RunningScenario) {
     if let Some(l) = &scenario.l {

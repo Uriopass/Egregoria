@@ -79,7 +79,7 @@ float fnoise(vec2 pos, float ampl) {
     float amplitude = 1.0;
 
     for (int i = 0; i < 5; i++) {
-        float v = srdnoise(dec, 0.0);
+        float v = srdnoise(dec);
         noise += amplitude * v;
 
         dec *= 1.0 / FBM_MAG;

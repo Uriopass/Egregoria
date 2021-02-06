@@ -17,6 +17,7 @@ impl SingleMarket {
     }
 }
 
+register_resource!(Market);
 pub struct Market {
     markets: HashMap<CommodityKind, SingleMarket>,
 }

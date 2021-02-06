@@ -95,6 +95,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
     soul
 }
 
+register_system!(company);
 #[system(par_for_each)]
 #[read_component(Desire<Work>)]
 pub fn company(

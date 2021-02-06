@@ -43,6 +43,7 @@ pub enum RoutingStep {
 
 debug_inspect_impl!(RoutingStep);
 
+register_system!(routing_update);
 #[system(par_for_each)]
 #[read_component(Transform)]
 #[read_component(Vehicle)]

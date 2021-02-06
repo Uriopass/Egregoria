@@ -6,6 +6,7 @@ use geom::Color;
 use legion::system;
 use map_model::{Map, ProjectKind};
 
+register_system!(bulldozer);
 #[system]
 pub fn bulldozer(
     #[resource] tool: &Tool,

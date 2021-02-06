@@ -10,6 +10,7 @@ use legion::system;
 use legion::Entity;
 use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
 
+register_system!(vehicle_cleanup);
 #[system]
 pub fn vehicle_cleanup(
     #[resource] evts: &mut Deleted<Vehicle>,
@@ -22,6 +23,7 @@ pub fn vehicle_cleanup(
     }
 }
 
+register_system!(vehicle_decision);
 #[system(par_for_each)]
 pub fn vehicle_decision(
     #[resource] map: &Map,
@@ -62,6 +64,7 @@ pub fn vehicle_decision(
     );
 }
 
+register_system!(vehicle_state_update);
 /// Decides whether a vehicle should change states, from parked to unparking to driving etc
 #[system(for_each)]
 pub fn vehicle_state_update(

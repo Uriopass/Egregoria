@@ -1,5 +1,6 @@
 use std::sync::{Mutex, MutexGuard};
 
+register_resource!(FrameLog);
 #[derive(Default)]
 pub struct FrameLog {
     logs: Mutex<Vec<String>>,
@@ -17,7 +18,7 @@ impl FrameLog {
     pub fn get_frame_log(&self) -> MutexGuard<Vec<String>> {
         self.logs.lock().unwrap()
     }
-/*
+    /*
     pub fn time_guard(&self, file: &'static str, line: u32) -> LogTimeGuard {
         LogTimeGuard {
             logger: self,

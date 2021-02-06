@@ -3,6 +3,7 @@ use geom::Vec2;
 use map_model::{LaneKind, Map, ParkingSpotID};
 use serde::{Deserialize, Serialize};
 
+register_resource!(ParkingManagement);
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ParkingManagement {
     reserved_spots: DashMap<ParkingSpotID, ()>,

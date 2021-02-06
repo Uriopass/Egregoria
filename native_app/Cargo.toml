@@ -31,3 +31,5 @@ serde         = "1.0.117"
 rodio         = { version = "0.13.0", default-features = false, features = ["vorbis"] }
 slotmap       = { version = "1.0.2", default-features = false }
 winit         = "0.24"
+inventory     = "0.1.10"
+paste         = "1.0.4"

@@ -291,15 +291,8 @@ impl Tesselator {
                 let elbow = window[1];
                 let c = window[2];
 
-                let ae = match (elbow - a).try_normalize() {
-                    Some(x) => x,
-                    None => continue,
-                };
-
-                let ce = match (elbow - c).try_normalize() {
-                    Some(x) => x,
-                    None => continue,
-                };
+                let ae = unwrap_or!((elbow - a).try_normalize(), continue);
+                let ce = unwrap_or!((elbow - c).try_normalize(), continue);
 
                 let mut dir = match (ae + ce).try_normalize() {
                     Some(x) => x,

@@ -20,6 +20,7 @@ impl Default for SpecialBuildingResource {
     }
 }
 
+register_system!(special_building);
 #[system]
 pub fn special_building(
     #[resource] res: &SpecialBuildingResource,
@@ -53,12 +54,7 @@ pub fn special_building(
             .z(Z_TOOL);
     };
 
-    let closest_road = match closest_road {
-        Some(x) => x,
-        None => {
-            return draw_red();
-        }
-    };
+    let closest_road = unwrap_or!(closest_road, return draw_red());
 
     let (proj, _, dir) = closest_road.generated_points().project_segment_dir(mpos);
 

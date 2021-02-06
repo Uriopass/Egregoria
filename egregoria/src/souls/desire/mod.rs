@@ -33,6 +33,8 @@ macro_rules! desires_system {
     ( $system_name: ident, $marker: ty, $($t:tt;$idx: literal)+) => (
     use crate::souls::desire::Desire;
     use legion::system;
+
+    register_system!($system_name);
     #[system(par_for_each)]
     #[allow(non_snake_case)]
     #[allow(unused_assignments)]
