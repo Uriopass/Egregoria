@@ -1,5 +1,5 @@
 use egregoria::utils::Restrict;
-use geom::{vec2, Color, LinearColor, AABB};
+use geom::{lerp, vec2, Color, LinearColor, AABB};
 use map_model::{
     Lane, LaneKind, LotKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
 };
@@ -337,7 +337,9 @@ impl RoadRenderer {
             );
         }
 
-        let tree_col = LinearColor::from(common::config().tree_col);
+        let alpha_cutoff = lerp(1.0, 0.0, (k - 3000.0) / 2000.0);
+
+        let tree_col = LinearColor::from(common::config().tree_col).a(alpha_cutoff);
 
         for (h, _) in map.trees.grid.query_raw(screen.ll, screen.ur) {
             let (pos, t) = map.trees.grid.get(h).unwrap();
@@ -346,7 +348,7 @@ impl RoadRenderer {
                 pos + vec2(1.0, -1.0),
                 t.dir,
                 Z_TREE,
-                LinearColor::WHITE,
+                LinearColor::WHITE.a(alpha_cutoff),
                 t.size,
             ));
 
