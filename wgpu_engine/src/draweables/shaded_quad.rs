@@ -4,7 +4,7 @@ use crate::{
 
 use std::marker::PhantomData;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{BindGroup, RenderPass, RenderPipeline, TextureComponentType};
+use wgpu::{BindGroup, IndexFormat, RenderPass, RenderPipeline};
 
 pub struct ShadedQuadTex<T: Shaders, U: ToU8Slice + 'static> {
     vertex_buffer: wgpu::Buffer,
@@ -78,7 +78,7 @@ impl<T: 'static + Shaders, U: ToU8Slice + 'static> Drawable for ShadedQuadTex<T,
             &[
                 &gfx.projection.layout,
                 &Uniform::<U>::bindgroup_layout(&gfx.device),
-                &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Uint),
+                &Texture::bindgroup_layout_float(&gfx.device),
             ],
             &[UvVertex::desc()],
             vert,
@@ -94,7 +94,7 @@ impl<T: 'static + Shaders, U: ToU8Slice + 'static> Drawable for ShadedQuadTex<T,
         rp.set_bind_group(1, &self.uniform.bindgroup, &[]);
         rp.set_bind_group(2, &self.texbg, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        rp.set_index_buffer(self.index_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);
     }
 }

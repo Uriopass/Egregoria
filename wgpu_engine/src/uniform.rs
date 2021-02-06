@@ -1,6 +1,6 @@
 use crate::ToU8Slice;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::ShaderStage;
+use wgpu::{BufferBindingType, ShaderStage};
 
 pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
@@ -27,7 +27,11 @@ where
             layout: &layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer(buffer.slice(..)),
+                resource: wgpu::BindingResource::Buffer {
+                    buffer: &buffer,
+                    offset: 0,
+                    size: None,
+                },
             }],
             label: Some(
                 format!(
@@ -59,8 +63,9 @@ impl<T> Uniform<T> {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: ShaderStage::VERTEX | ShaderStage::FRAGMENT,
-                ty: wgpu::BindingType::UniformBuffer {
-                    dynamic: false, // The dynamic field indicates whether this buffer will change size or not. This is useful if we want to store an array of things in our uniforms.
+                ty: wgpu::BindingType::Buffer {
+                    ty: BufferBindingType::Uniform,
+                    has_dynamic_offset: false, // The dynamic field indicates whether this buffer will change size or not. This is useful if we want to store an array of things in our uniforms.
                     min_binding_size: None,
                 },
                 count: None,

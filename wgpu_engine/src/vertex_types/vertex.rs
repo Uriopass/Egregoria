@@ -10,10 +10,10 @@ pub struct ColoredVertex {
 u8slice_impl!(ColoredVertex);
 
 impl VBDesc for ColoredVertex {
-    fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         use std::mem;
-        wgpu::VertexBufferDescriptor {
-            stride: mem::size_of::<ColoredVertex>() as wgpu::BufferAddress,
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<ColoredVertex>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Vertex,
             attributes: Box::leak(Box::new(wgpu::vertex_attr_array![0 => Float3, 1 => Float4])),
         }

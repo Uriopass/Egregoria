@@ -25,5 +25,5 @@ pub use vertex_types::*;
 pub use wgpu;
 
 trait VBDesc {
-    fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a>;
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a>;
 }

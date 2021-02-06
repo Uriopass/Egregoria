@@ -10,9 +10,9 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, Device, Queue,
-    RenderPassColorAttachmentDescriptor, RenderPipeline, StencilStateDescriptor, Surface,
-    SwapChain, SwapChainDescriptor, SwapChainFrame, VertexBufferDescriptor,
+    Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, Device, IndexFormat,
+    MultisampleState, PrimitiveState, Queue, RenderPassColorAttachmentDescriptor, RenderPipeline,
+    StencilState, Surface, SwapChain, SwapChainDescriptor, SwapChainFrame, VertexBufferLayout,
 };
 
 pub struct GfxContext {
@@ -67,16 +67,16 @@ impl GfxContext {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
+                    label: None,
                     features: wgpu::Features::empty(),
                     limits: wgpu::Limits::default(),
-                    shader_validation: true,
                 },
                 None,
             )
             .await
             .unwrap();
         let sc_desc = wgpu::SwapChainDescriptor {
-            usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+            usage: wgpu::TextureUsage::RENDER_ATTACHMENT | wgpu::TextureUsage::COPY_SRC,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
             width: win_width,
             height: win_height,
@@ -163,6 +163,7 @@ impl GfxContext {
         prepare(&mut fc);
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: None,
             color_attachments: &[
                 wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &self.color_texture.multisampled_buffer,
@@ -206,6 +207,7 @@ impl GfxContext {
         mut render_gui: impl FnMut(GuiRenderContext),
     ) {
         let rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: None,
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: &self.ui_texture.view,
                 resolve_target: None,
@@ -241,6 +243,7 @@ impl GfxContext {
             .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
 
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: None,
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: &frame.output.view,
                 resolve_target: None,
@@ -255,7 +258,7 @@ impl GfxContext {
         rpass.set_pipeline(pipeline);
         rpass.set_bind_group(0, &bg, &[]);
         rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
-        rpass.set_index_buffer(index_buffer.slice(..));
+        rpass.set_index_buffer(index_buffer.slice(..), IndexFormat::Uint32);
         rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
     }
 
@@ -305,7 +308,7 @@ impl GfxContext {
     pub fn basic_pipeline(
         &self,
         layouts: &[&BindGroupLayout],
-        vertex_buffers: &[VertexBufferDescriptor],
+        vertex_buffers: &[VertexBufferLayout],
         vert_shader: CompiledShader,
         frag_shader: CompiledShader,
     ) -> RenderPipeline {
@@ -320,28 +323,28 @@ impl GfxContext {
                     push_constant_ranges: &[],
                 });
 
-        let vs_module = self.device.create_shader_module(vert_shader.0);
-        let fs_module = self.device.create_shader_module(frag_shader.0);
+        let vs_module = self.device.create_shader_module(&vert_shader.0);
+        let fs_module = self.device.create_shader_module(&frag_shader.0);
 
         let color_states = [
-            wgpu::ColorStateDescriptor {
+            wgpu::ColorTargetState {
                 format: self.color_texture.target.format,
-                color_blend: wgpu::BlendDescriptor {
+                color_blend: wgpu::BlendState {
                     src_factor: wgpu::BlendFactor::SrcAlpha,
                     dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                     operation: wgpu::BlendOperation::Add,
                 },
-                alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                alpha_blend: wgpu::BlendState::REPLACE,
                 write_mask: wgpu::ColorWrite::ALL,
             },
-            wgpu::ColorStateDescriptor {
+            wgpu::ColorTargetState {
                 format: self.normal_texture.target.format,
-                color_blend: wgpu::BlendDescriptor {
+                color_blend: wgpu::BlendState {
                     src_factor: wgpu::BlendFactor::SrcAlpha,
                     dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                     operation: wgpu::BlendOperation::Add,
                 },
-                alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                alpha_blend: wgpu::BlendState::REPLACE,
                 write_mask: wgpu::ColorWrite::ALL,
             },
         ];
@@ -349,35 +352,38 @@ impl GfxContext {
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
-            vertex_stage: wgpu::ProgrammableStageDescriptor {
+            vertex: wgpu::VertexState {
                 module: &vs_module,
                 entry_point: "main",
+                buffers: vertex_buffers,
             },
-            fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
+            fragment: Some(wgpu::FragmentState {
                 module: &fs_module,
                 entry_point: "main",
+                targets: &color_states,
             }),
-            rasterization_state: None,
-            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-            color_states: &color_states,
-            depth_stencil_state: Some(wgpu::DepthStencilStateDescriptor {
+            primitive: PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                ..Default::default()
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::GreaterEqual,
-                stencil: StencilStateDescriptor {
-                    front: wgpu::StencilStateFaceDescriptor::IGNORE,
-                    back: wgpu::StencilStateFaceDescriptor::IGNORE,
+                stencil: StencilState {
+                    front: wgpu::StencilFaceState::IGNORE,
+                    back: wgpu::StencilFaceState::IGNORE,
                     read_mask: 0,
                     write_mask: 0,
                 },
+                bias: Default::default(),
+                clamp_depth: false,
             }),
-            vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers,
+            multisample: MultisampleState {
+                count: self.samples,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
             },
-            sample_count: self.samples,
-            sample_mask: !0,
-            alpha_to_coverage_enabled: false,
         };
         self.device.create_render_pipeline(&render_pipeline_desc)
     }

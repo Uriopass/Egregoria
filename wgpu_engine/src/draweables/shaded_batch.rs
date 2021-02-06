@@ -4,7 +4,7 @@ use geom::{LinearColor, Vec2};
 use std::marker::PhantomData;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{RenderPass, RenderPipeline, VertexBufferDescriptor};
+use wgpu::{IndexFormat, RenderPass, RenderPipeline, VertexBufferLayout};
 
 #[derive(Default)]
 pub struct ShadedBatchBuilder<T: Shaders> {
@@ -35,9 +35,9 @@ pub struct ShadedInstanceRaw {
 u8slice_impl!(ShadedInstanceRaw);
 
 impl VBDesc for ShadedInstanceRaw {
-    fn desc<'a>() -> VertexBufferDescriptor<'a> {
-        wgpu::VertexBufferDescriptor {
-            stride: std::mem::size_of::<ShadedInstanceRaw>() as wgpu::BufferAddress,
+    fn desc<'a>() -> VertexBufferLayout<'a> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<ShadedInstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
             attributes: Box::leak(Box::new(
                 wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float2, 5 => Float4],
@@ -140,7 +140,7 @@ impl<T: 'static + Shaders> Drawable for ShadedBatch<T> {
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
-        rp.set_index_buffer(self.index_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..self.n_instances);
     }
 }

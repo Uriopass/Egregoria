@@ -9,8 +9,8 @@ use std::path::Path;
 use std::rc::Rc;
 use wgpu::{
     BindGroup, BindGroupLayout, CommandEncoderDescriptor, Device, Extent3d,
-    PipelineLayoutDescriptor, Sampler, TextureComponentType, TextureCopyView, TextureDataLayout,
-    TextureFormat, TextureUsage, TextureViewDescriptor,
+    PipelineLayoutDescriptor, Sampler, TextureCopyView, TextureDataLayout, TextureFormat,
+    TextureSampleType, TextureUsage, TextureViewDescriptor,
 };
 
 pub struct OwnedTexture {
@@ -83,7 +83,7 @@ impl Texture {
             _ => unimplemented!("unsupported format {:?}", img.color()),
         };
 
-        let mip_level_count = 6;
+        let mip_level_count = 5;
         let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
             label,
             size: extent,
@@ -91,7 +91,7 @@ impl Texture {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST | TextureUsage::OUTPUT_ATTACHMENT,
+            usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST | TextureUsage::RENDER_ATTACHMENT,
         });
 
         ctx.queue.write_texture(
@@ -109,7 +109,9 @@ impl Texture {
             extent,
         );
 
-        generate_mipmaps(&ctx.device, &ctx.queue, &texture, format, mip_level_count);
+        if mip_level_count > 1 {
+            generate_mipmaps(&ctx.device, &ctx.queue, &texture, format, mip_level_count);
+        }
 
         let view = texture.create_view(&TextureViewDescriptor::default());
         let sampler = Self::default_sampler(&ctx.device);
@@ -167,7 +169,7 @@ impl Texture {
             device,
             sc_desc,
             TextureFormat::Depth32Float,
-            TextureUsage::OUTPUT_ATTACHMENT,
+            TextureUsage::RENDER_ATTACHMENT,
             Some(samples),
         )
     }
@@ -180,7 +182,7 @@ impl Texture {
             device,
             sc_desc,
             TextureFormat::R32Float,
-            TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
+            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
             None,
         )
     }
@@ -190,7 +192,7 @@ impl Texture {
             device,
             sc_desc,
             TextureFormat::Rgba8Unorm,
-            TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
+            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
             None,
         )
     }
@@ -204,7 +206,7 @@ impl Texture {
             device,
             sc_desc,
             TextureFormat::Rgba8UnormSrgb,
-            TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
+            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
             None,
         );
 
@@ -215,7 +217,7 @@ impl Texture {
                 height: sc_desc.height,
                 depth: 1,
             },
-            usage: TextureUsage::OUTPUT_ATTACHMENT,
+            usage: TextureUsage::RENDER_ATTACHMENT,
             mip_level_count: 1,
             sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
@@ -241,7 +243,7 @@ impl Texture {
             device,
             sc_desc,
             TextureFormat::Rgba16Float,
-            TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
+            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
             None,
         );
 
@@ -252,7 +254,7 @@ impl Texture {
                 height: sc_desc.height,
                 depth: 1,
             },
-            usage: TextureUsage::OUTPUT_ATTACHMENT,
+            usage: TextureUsage::RENDER_ATTACHMENT,
             mip_level_count: 1,
             sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
@@ -271,24 +273,27 @@ impl Texture {
 
     pub fn bindgroup_layout(
         device: &wgpu::Device,
-        component_type: TextureComponentType,
+        sample_type: TextureSampleType,
     ) -> BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::SampledTexture {
+                    ty: wgpu::BindingType::Texture {
                         multisampled: false,
-                        dimension: wgpu::TextureViewDimension::D2,
-                        component_type,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type,
                     },
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler { comparison: false },
+                    ty: wgpu::BindingType::Sampler {
+                        filtering: true,
+                        comparison: false,
+                    },
                     count: None,
                 },
             ],
@@ -297,7 +302,7 @@ impl Texture {
     }
 
     pub fn bindgroup_layout_float(device: &wgpu::Device) -> BindGroupLayout {
-        Self::bindgroup_layout(device, TextureComponentType::Float)
+        Self::bindgroup_layout(device, TextureSampleType::Float { filterable: true })
     }
 
     pub fn bindgroup(&self, device: &Device, layout: &BindGroupLayout) -> BindGroup {
@@ -330,6 +335,7 @@ impl Texture {
             lod_max_clamp: 100.0,
             compare: None,
             anisotropy_clamp: None,
+            border_color: None,
         })
     }
 
@@ -356,11 +362,11 @@ fn generate_mipmaps(
     mip_count: u32,
 ) {
     let vs_module =
-        device.create_shader_module(compile_shader("assets/shaders/mipmap.vert", None).0);
+        device.create_shader_module(&compile_shader("assets/shaders/mipmap.vert", None).0);
     let fs_module =
-        device.create_shader_module(compile_shader("assets/shaders/mipmap.frag", None).0);
+        device.create_shader_module(&compile_shader("assets/shaders/mipmap.frag", None).0);
 
-    let bglayout = Texture::bindgroup_layout(&device, TextureComponentType::Uint);
+    let bglayout = Texture::bindgroup_layout_float(&device);
 
     let layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
         label: None,
@@ -369,31 +375,30 @@ fn generate_mipmaps(
     });
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("mipmaps"),
+        label: Some(&*format!("mipmaps {:?}", format)),
         layout: Some(&layout),
-        vertex_stage: wgpu::ProgrammableStageDescriptor {
+        vertex: wgpu::VertexState {
             module: &vs_module,
             entry_point: "main",
+            buffers: &[],
         },
-        fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
+        fragment: Some(wgpu::FragmentState {
             module: &fs_module,
             entry_point: "main",
+            targets: &[format.into()],
         }),
-        rasterization_state: Some(wgpu::RasterizationStateDescriptor {
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleStrip,
             front_face: wgpu::FrontFace::Ccw,
             cull_mode: wgpu::CullMode::None,
             ..Default::default()
-        }),
-        primitive_topology: wgpu::PrimitiveTopology::TriangleStrip,
-        color_states: &[format.into()],
-        depth_stencil_state: None,
-        vertex_state: wgpu::VertexStateDescriptor {
-            index_format: wgpu::IndexFormat::Uint16,
-            vertex_buffers: &[],
         },
-        sample_count: 1,
-        sample_mask: !0,
-        alpha_to_coverage_enabled: false,
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
     });
 
     let bind_group_layout = pipeline.get_bind_group_layout(0);
@@ -443,6 +448,7 @@ fn generate_mipmaps(
         let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &views[target_mip],
                     resolve_target: None,

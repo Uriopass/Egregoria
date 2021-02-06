@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use wgpu::ShaderModuleSource;
+use wgpu::{ShaderFlags, ShaderModuleDescriptor, ShaderSource};
 
 #[derive(Copy, Clone)]
 #[non_exhaustive]
@@ -11,7 +11,7 @@ pub enum ShaderType {
     Fragment,
 }
 
-pub struct CompiledShader(pub ShaderModuleSource<'static>, pub ShaderType);
+pub struct CompiledShader(pub ShaderModuleDescriptor<'static>, pub ShaderType);
 
 pub enum CacheState {
     Nofile,
@@ -24,6 +24,14 @@ fn cache_filename(p: &Path) -> Option<PathBuf> {
     name.push_str(".spirv");
 
     Some(p.parent()?.parent()?.join("compiled_shaders").join(name))
+}
+
+fn mk_module(s: ShaderSource) -> ShaderModuleDescriptor {
+    wgpu::ShaderModuleDescriptor {
+        label: None,
+        source: s,
+        flags: ShaderFlags::VALIDATION,
+    }
 }
 
 fn find_in_cache(
@@ -40,7 +48,7 @@ fn find_in_cache(
 
     let data = wgpu::util::make_spirv(read);
 
-    let shader = CompiledShader(data, stype);
+    let shader = CompiledShader(mk_module(data), stype);
 
     let f = match File::open(compiled_path) {
         Ok(x) => x,
@@ -163,7 +171,7 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
     let leaked = Box::leak(Box::new(spirv));
 
     let data = wgpu::util::make_spirv(leaked);
-    CompiledShader(data, stype)
+    CompiledShader(mk_module(data), stype)
 }
 
 #[cfg(not(any(feature = "spirv_g2s", feature = "spirv_naga")))]
@@ -205,12 +213,18 @@ fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
             ShaderType::Vertex => naga::ShaderStage::Vertex,
             ShaderType::Fragment => naga::ShaderStage::Fragment,
         },
+        Default::default(),
     )
     .map_err(|e| log::error!("{}", e))
     .ok()?;
 
-    let spirv = naga::back::spv::Writer::new(&glsl.header, naga::back::spv::WriterFlags::DEBUG)
-        .write(&glsl);
+    let mut spirv = vec![];
+    naga::back::spv::Writer::new(
+        &glsl.header,
+        naga::back::spv::WriterFlags::DEBUG,
+        Default::default(),
+    )
+    .write(&glsl, &mut spirv);
 
     Some(
         spirv

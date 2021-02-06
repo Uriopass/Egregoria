@@ -3,8 +3,8 @@ use geom::LinearColor;
 use mint::ColumnMatrix4;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    BlendFactor, CommandEncoder, RenderPass, RenderPipeline, SwapChainFrame, TextureComponentType,
-    VertexBufferDescriptor,
+    BlendFactor, CommandEncoder, IndexFormat, MultisampleState, PrimitiveState, RenderPass,
+    RenderPipeline, SwapChainFrame, VertexBufferLayout,
 };
 
 #[derive(Copy, Clone)]
@@ -36,42 +36,43 @@ impl Drawable for LightBlit {
                     push_constant_ranges: &[],
                 });
 
-        let vs_module = gfx.device.create_shader_module(vert_shader.0);
-        let fs_module = gfx.device.create_shader_module(frag_shader.0);
+        let vs_module = gfx.device.create_shader_module(&vert_shader.0);
+        let fs_module = gfx.device.create_shader_module(&frag_shader.0);
 
-        let color_states = [wgpu::ColorStateDescriptor {
+        let color_states = [wgpu::ColorTargetState {
             format: gfx.light_texture.format,
-            color_blend: wgpu::BlendDescriptor {
+            color_blend: wgpu::BlendState {
                 src_factor: BlendFactor::One,
                 dst_factor: BlendFactor::One,
                 operation: wgpu::BlendOperation::Add,
             },
-            alpha_blend: wgpu::BlendDescriptor::REPLACE,
+            alpha_blend: wgpu::BlendState::REPLACE,
             write_mask: wgpu::ColorWrite::ALL,
         }];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
-            vertex_stage: wgpu::ProgrammableStageDescriptor {
+            vertex: wgpu::VertexState {
                 module: &vs_module,
                 entry_point: "main",
+                buffers: &[UvVertex::desc(), LightInstance::desc()],
             },
-            fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
+            fragment: Some(wgpu::FragmentState {
                 module: &fs_module,
                 entry_point: "main",
+                targets: &color_states,
             }),
-            rasterization_state: None,
-            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-            color_states: &color_states,
-            depth_stencil_state: None,
-            vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers: &[UvVertex::desc(), LightInstance::desc()],
+            primitive: PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                ..Default::default()
             },
-            sample_count: 1,
-            sample_mask: !0,
-            alpha_to_coverage_enabled: false,
+            depth_stencil: None,
+            multisample: MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
         };
 
         gfx.device.create_render_pipeline(&render_pipeline_desc)
@@ -93,9 +94,9 @@ impl Drawable for LightMultiply {
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("basic pipeline"),
                     bind_group_layouts: &[
-                        &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
-                        &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
-                        &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Float),
+                        &Texture::bindgroup_layout_float(&gfx.device),
+                        &Texture::bindgroup_layout_float(&gfx.device),
+                        &Texture::bindgroup_layout_float(&gfx.device),
                         &Uniform::<LightUniform>::bindgroup_layout(&gfx.device),
                     ],
                     push_constant_ranges: &[],
@@ -103,40 +104,41 @@ impl Drawable for LightMultiply {
 
         let vs_module = gfx
             .device
-            .create_shader_module(compile_shader("assets/shaders/light_multiply.vert", None).0);
+            .create_shader_module(&compile_shader("assets/shaders/light_multiply.vert", None).0);
         let fs_module = gfx
             .device
-            .create_shader_module(compile_shader("assets/shaders/light_multiply.frag", None).0);
+            .create_shader_module(&compile_shader("assets/shaders/light_multiply.frag", None).0);
 
-        let color_states = [wgpu::ColorStateDescriptor {
+        let color_states = [wgpu::ColorTargetState {
             format: gfx.sc_desc.format,
-            color_blend: wgpu::BlendDescriptor::REPLACE,
-            alpha_blend: wgpu::BlendDescriptor::REPLACE,
+            color_blend: wgpu::BlendState::REPLACE,
+            alpha_blend: wgpu::BlendState::REPLACE,
             write_mask: wgpu::ColorWrite::ALL,
         }];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&render_pipeline_layout),
-            vertex_stage: wgpu::ProgrammableStageDescriptor {
+            vertex: wgpu::VertexState {
                 module: &vs_module,
                 entry_point: "main",
+                buffers: &[UvVertex::desc()],
             },
-            fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
+            fragment: Some(wgpu::FragmentState {
                 module: &fs_module,
                 entry_point: "main",
+                targets: &color_states,
             }),
-            rasterization_state: None,
-            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-            color_states: &color_states,
-            depth_stencil_state: None,
-            vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint32,
-                vertex_buffers: &[UvVertex::desc()],
+            primitive: PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                ..Default::default()
             },
-            sample_count: 1,
-            sample_mask: !0,
-            alpha_to_coverage_enabled: false,
+            depth_stencil: None,
+            multisample: MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
         };
         gfx.device.create_render_pipeline(&render_pipeline_desc)
     }
@@ -201,9 +203,9 @@ pub struct LightInstance {
 u8slice_impl!(LightInstance);
 
 impl VBDesc for LightInstance {
-    fn desc<'a>() -> VertexBufferDescriptor<'a> {
-        wgpu::VertexBufferDescriptor {
-            stride: std::mem::size_of::<LightInstance>() as wgpu::BufferAddress,
+    fn desc<'a>() -> VertexBufferLayout<'a> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<LightInstance>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
             attributes: Box::leak(Box::new(wgpu::vertex_attr_array![2 => Float2, 3 => Float])),
         }
@@ -238,6 +240,7 @@ pub fn render_lights(
 
     {
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: None,
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                 attachment: &gfx.light_texture.view,
                 resolve_target: None,
@@ -257,7 +260,7 @@ pub fn render_lights(
         rpass.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
         rpass.set_vertex_buffer(1, instance_buffer.slice(..));
-        rpass.set_index_buffer(index_buffer.slice(..));
+        rpass.set_index_buffer(index_buffer.slice(..), IndexFormat::Uint32);
         rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..lights.len() as u32);
     }
 
@@ -295,6 +298,7 @@ pub fn render_lights(
     ambiant_uni.upload_to_gpu(&gfx.queue);
 
     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        label: None,
         color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
             attachment: &frame.output.view,
             resolve_target: None,
@@ -312,6 +316,6 @@ pub fn render_lights(
     rpass.set_bind_group(2, &normal_tex_bind_group, &[]);
     rpass.set_bind_group(3, &ambiant_uni.bindgroup, &[]);
     rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
-    rpass.set_index_buffer(index_buffer.slice(..));
+    rpass.set_index_buffer(index_buffer.slice(..), IndexFormat::Uint32);
     rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
 }
