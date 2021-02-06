@@ -255,6 +255,7 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
     }
 }
 
+register_system!(itinerary_update);
 #[system(par_for_each)]
 pub fn itinerary_update(
     #[resource] time: &GameTime,

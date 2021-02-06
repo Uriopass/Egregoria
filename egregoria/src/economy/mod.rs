@@ -36,6 +36,7 @@ impl CommodityKind {
     }
 }
 
+register_system!(market_update);
 #[system]
 #[write_component(Sold)]
 #[write_component(Bought)]

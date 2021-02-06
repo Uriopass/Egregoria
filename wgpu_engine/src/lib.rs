@@ -1,4 +1,7 @@
 #[macro_use]
+extern crate common;
+
+#[macro_use]
 pub mod u8slice;
 
 mod draweables;

@@ -13,6 +13,7 @@ impl Home {
     }
 }
 
+register_system!(desire_home);
 #[system(par_for_each)]
 pub fn desire_home(router: &mut Router, d: &mut Desire<Home>) {
     d.score_and_apply(

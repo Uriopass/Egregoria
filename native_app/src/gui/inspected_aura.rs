@@ -1,5 +1,4 @@
-use crate::gui::Z_TOOL;
-use common::inspect::InspectedEntity;
+use crate::gui::{InspectedEntity, Z_TOOL};
 use egregoria::pedestrians::Location;
 use egregoria::rendering::immediate::ImmediateDraw;
 use geom::Color;
@@ -8,6 +7,7 @@ use legion::world::SubWorld;
 use legion::{system, EntityStore};
 use map_model::Map;
 
+register_system!(inspected_aura);
 #[system]
 #[read_component(Location)]
 #[read_component(Transform)]

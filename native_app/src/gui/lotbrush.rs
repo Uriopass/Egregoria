@@ -19,6 +19,7 @@ impl Default for LotBrushResource {
     }
 }
 
+register_system!(lotbrush);
 #[system]
 pub fn lotbrush(
     #[resource] res: &LotBrushResource,

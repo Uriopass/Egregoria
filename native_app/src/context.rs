@@ -120,7 +120,7 @@ impl Context {
 
                         let (lights, ambiant_col) = state.lights();
                         wgpu_engine::lighting::render_lights(
-                            &mut self.gfx,
+                            &self.gfx,
                             &mut enc,
                             &sco,
                             &lights,

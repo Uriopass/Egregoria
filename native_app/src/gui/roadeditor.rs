@@ -1,5 +1,4 @@
-use crate::gui::{Tool, Z_TOOL};
-use common::inspect::InspectedEntity;
+use crate::gui::{InspectedEntity, Tool, Z_TOOL};
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
 use egregoria::rendering::immediate::ImmediateDraw;
 use geom::Color;
@@ -24,6 +23,7 @@ pub struct RoadEditorResource {
     inspect_e: Option<Entity>,
 }
 
+register_system!(roadeditor);
 #[system]
 #[read_component(IntersectionComponent)]
 pub fn roadeditor(

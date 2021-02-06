@@ -11,8 +11,8 @@ pub struct SeqSchedule {
 }
 
 impl SeqSchedule {
-    pub fn add_system(&mut self, s: impl ParallelRunnable + 'static) -> &mut Self {
-        self.systems.push((Box::new(s), History::new(600)));
+    pub fn add_system(&mut self, s: Box<dyn ParallelRunnable>) -> &mut Self {
+        self.systems.push((s, History::new(600)));
         self
     }
 

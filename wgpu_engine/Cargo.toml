@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 geom      = { path = "../geom" }
+common    = { path = "../common" }
 wgpu      = "0.6.0"
 bytemuck  = "1.4.1"
 mint      = "0.5.6"

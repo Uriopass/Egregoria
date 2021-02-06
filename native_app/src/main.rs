@@ -5,6 +5,12 @@ use crate::context::Context;
 use crate::logger::MyLog;
 use log::LevelFilter;
 
+#[macro_use]
+extern crate common;
+
+#[macro_use]
+extern crate egregoria;
+
 mod audio;
 mod context;
 mod game_loop;

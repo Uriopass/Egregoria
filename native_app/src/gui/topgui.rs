@@ -1,8 +1,7 @@
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::ImguiWindows;
-use crate::gui::{RoadBuildResource, Tool, UiTex, UiTextures};
-use common::inspect::InspectedEntity;
+use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
 use common::GameTime;
 use egregoria::engine_interaction::{KeyCode, KeyboardInfo};
 use egregoria::Egregoria;
@@ -313,10 +312,7 @@ impl Gui {
 
     pub fn inspector(&mut self, ui: &Ui, goria: &mut Egregoria) {
         let mut inspected = *goria.read::<InspectedEntity>();
-        let e = match inspected.e {
-            Some(x) => x,
-            None => return,
-        };
+        let e = unwrap_or!(inspected.e, return);
 
         let mut is_open = true;
         Window::new(im_str!("Inspect"))

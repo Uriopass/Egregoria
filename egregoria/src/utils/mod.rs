@@ -7,24 +7,6 @@ pub mod par_command_buffer;
 pub mod rand_provider;
 pub mod scheduler;
 
-macro_rules! unwrap_or {
-    ($e: expr, $t: expr) => {
-        match $e {
-            Some(x) => x,
-            None => $t,
-        }
-    };
-}
-
-macro_rules! unwrap_orr {
-    ($e: expr, $t: expr) => {
-        match $e {
-            Ok(x) => x,
-            Err(_) => $t,
-        }
-    };
-}
-
 pub fn rand_world<T>(world: &mut Egregoria) -> T
 where
     rand_distr::Standard: rand_distr::Distribution<T>,

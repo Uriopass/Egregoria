@@ -1,5 +1,4 @@
-use crate::gui::Tool;
-use common::inspect::InspectedEntity;
+use crate::gui::{InspectedEntity, Tool};
 use egregoria::engine_interaction::{KeyCode, Selectable};
 use egregoria::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
 use egregoria::ParCommandBuffer;
@@ -8,6 +7,7 @@ use legion::world::SubWorld;
 use legion::Entity;
 use legion::{system, EntityStore};
 
+register_system!(selectable_select);
 #[system(for_each)]
 pub fn selectable_select(
     #[resource] inspected: &mut InspectedEntity,
@@ -29,6 +29,7 @@ pub fn selectable_select(
     }
 }
 
+register_system!(selectable_cleanup);
 #[system]
 #[read_component(())]
 pub fn selectable_cleanup(
