@@ -1,5 +1,5 @@
 use egregoria::utils::Restrict;
-use geom::{vec2, Color, LinearColor};
+use geom::{vec2, Color, LinearColor, AABB};
 use map_model::{
     Lane, LaneKind, LotKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
 };
@@ -320,11 +320,36 @@ impl RoadRenderer {
         builder.build(&gfx)
     }
 
-    pub fn trees(&mut self, map: &mut Map, gfx: &GfxContext) -> Option<MultiSpriteBatch> {
+    pub fn trees(
+        &mut self,
+        map: &mut Map,
+        screen: AABB,
+        gfx: &GfxContext,
+    ) -> (Option<MultiSpriteBatch>, Option<SpriteBatch>) {
         self.tree_builder.clear();
+        self.tree_shadows_builder.instances.clear();
+
+        let k = screen.w().min(screen.h());
+        if k > 5000.0 {
+            return (
+                self.tree_builder.build(gfx),
+                self.tree_shadows_builder.build(gfx),
+            );
+        }
 
         let tree_col = common::config().tree_col;
-        for (pos, t) in map.trees.trees() {
+
+        for (h, _) in map.trees.grid.query_raw(screen.ll, screen.ur) {
+            let (pos, t) = map.trees.grid.get(h).unwrap();
+
+            self.tree_shadows_builder.instances.push(InstanceRaw::new(
+                pos + vec2(1.0, -1.0),
+                t.dir,
+                Z_TREE,
+                LinearColor::WHITE,
+                t.size,
+            ));
+
             self.tree_builder.push(
                 (common::rand::rand3(pos.x, pos.y, 10.0) * self.tree_builder.n_texs() as f32)
                     as usize,
@@ -338,23 +363,10 @@ impl RoadRenderer {
             );
         }
 
-        self.tree_builder.build(gfx)
-    }
-
-    pub fn tree_shadows(&mut self, map: &mut Map, gfx: &GfxContext) -> Option<SpriteBatch> {
-        self.tree_shadows_builder.instances.clear();
-
-        for (pos, t) in map.trees.trees() {
-            self.tree_shadows_builder.instances.push(InstanceRaw::new(
-                pos + vec2(1.0, -1.0),
-                t.dir,
-                Z_TREE,
-                LinearColor::WHITE,
-                t.size,
-            ));
-        }
-
-        self.tree_shadows_builder.build(gfx)
+        (
+            self.tree_builder.build(gfx),
+            self.tree_shadows_builder.build(gfx),
+        )
     }
 
     pub fn render(
@@ -373,11 +385,18 @@ impl RoadRenderer {
             map.dirty = false;
         }
 
-        if map.trees.dirty {
-            self.tree_shadows = self.tree_shadows(map, &ctx.gfx);
-            self.trees = self.trees(map, &ctx.gfx);
-            map.trees.dirty = false;
-        }
+        //        if map.trees.dirty {
+        let (trees, tree_shadows) = self.trees(
+            map,
+            tess.cull_rect
+                .expect("no cull rectangle, might render far too many trees"),
+            &ctx.gfx,
+        );
+        self.trees = trees;
+        self.tree_shadows = tree_shadows;
+
+        map.trees.dirty = false;
+        //        }
 
         if let Some(x) = self.map_mesh.clone() {
             ctx.draw(x);

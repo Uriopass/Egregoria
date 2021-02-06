@@ -27,7 +27,7 @@ pub struct SpriteBatch {
 pub struct InstanceRaw {
     pos: [f32; 3],
     dir: [f32; 2],
-    tint: [f32; 3],
+    tint: [f32; 4],
 }
 
 impl InstanceRaw {
@@ -35,7 +35,7 @@ impl InstanceRaw {
         Self {
             pos: [pos.x, pos.y, z],
             dir: [direction.x * scale, direction.y * scale],
-            tint: [col.r, col.g, col.b],
+            tint: col.into(),
         }
     }
 }
@@ -48,7 +48,7 @@ impl VBDesc for InstanceRaw {
             stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
             attributes: Box::leak(Box::new(
-                wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float3],
+                wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float4],
             )),
         }
     }
@@ -172,13 +172,11 @@ impl Drawable for SpriteBatch {
         let vert = compile_shader("assets/shaders/spritebatch.vert", None);
         let frag = compile_shader("assets/shaders/spritebatch.frag", None);
 
-        let layouts = vec![Texture::bindgroup_layout(
-            &gfx.device,
-            TextureComponentType::Uint,
-        )];
-
         gfx.basic_pipeline(
-            &[&layouts[0], &gfx.projection.layout],
+            &[
+                &Texture::bindgroup_layout(&gfx.device, TextureComponentType::Uint),
+                &gfx.projection.layout,
+            ],
             &[UvVertex::desc(), InstanceRaw::desc()],
             vert,
             frag,
