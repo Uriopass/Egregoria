@@ -325,7 +325,7 @@ impl RoadRenderer {
         map: &mut Map,
         screen: AABB,
         gfx: &GfxContext,
-    ) -> (Option<MultiSpriteBatch>, Option<SpriteBatch>) {
+    ) -> (MultiSpriteBatch, Option<SpriteBatch>) {
         self.tree_builder.clear();
         self.tree_shadows_builder.instances.clear();
 
@@ -337,7 +337,7 @@ impl RoadRenderer {
             );
         }
 
-        let tree_col = common::config().tree_col;
+        let tree_col = LinearColor::from(common::config().tree_col);
 
         for (h, _) in map.trees.grid.query_raw(screen.ll, screen.ur) {
             let (pos, t) = map.trees.grid.get(h).unwrap();
@@ -353,13 +353,7 @@ impl RoadRenderer {
             self.tree_builder.push(
                 (common::rand::rand3(pos.x, pos.y, 10.0) * self.tree_builder.n_texs() as f32)
                     as usize,
-                InstanceRaw::new(
-                    pos,
-                    t.dir,
-                    Z_TREE,
-                    t.col * LinearColor::from(tree_col),
-                    t.size,
-                ),
+                InstanceRaw::new(pos, t.dir, Z_TREE + 0.01, t.col * tree_col, t.size),
             );
         }
 
@@ -392,7 +386,7 @@ impl RoadRenderer {
                 .expect("no cull rectangle, might render far too many trees"),
             &ctx.gfx,
         );
-        self.trees = trees;
+        self.trees = Some(trees);
         self.tree_shadows = tree_shadows;
 
         map.trees.dirty = false;

@@ -31,9 +31,9 @@ impl MultiSpriteBatchBuilder {
         self.sbs.len()
     }
 
-    pub fn build(&self, gfx: &GfxContext) -> Option<MultiSpriteBatch> {
-        let sb: Option<Vec<SpriteBatch>> = self.sbs.iter().map(|sb| sb.build(gfx)).collect();
-        sb.map(|v| MultiSpriteBatch { sbs: v })
+    pub fn build(&self, gfx: &GfxContext) -> MultiSpriteBatch {
+        let sb: Vec<SpriteBatch> = self.sbs.iter().filter_map(|sb| sb.build(gfx)).collect();
+        MultiSpriteBatch { sbs: sb }
     }
 
     pub fn clear(&mut self) {
