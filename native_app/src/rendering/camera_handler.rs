@@ -26,7 +26,7 @@ impl CameraHandler {
 
     pub fn culled_tesselator(&self) -> Tesselator {
         Tesselator::new(
-            Some(self.camera.get_screen_box()),
+            Some(self.camera.screen_aabb()),
             1000.0 / self.camera.position.z,
         )
     }

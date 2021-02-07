@@ -56,7 +56,7 @@ impl Camera {
             -self.offset.x / self.scale.x, -self.offset.y / self.scale.y, 0.0, 1.0])
     }
 
-    pub fn get_screen_box(&self) -> AABB {
+    pub fn screen_aabb(&self) -> AABB {
         let ll = self.unproject([0.0, self.viewport.y].into());
         let ur = self.unproject([self.viewport.x, 0.0].into());
         AABB { ll, ur }

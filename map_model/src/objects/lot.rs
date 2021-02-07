@@ -1,3 +1,4 @@
+use crate::procgen::heightmap::height;
 use crate::{Buildings, Intersections, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
 use geom::OBB;
 use geom::{Intersect, Polygon};
@@ -39,6 +40,10 @@ impl Lot {
         size: f32,
     ) -> Option<LotID> {
         let shape = OBB::new(at + axis * size * 0.5, axis, size, size);
+
+        if height(at) < 0.12 {
+            return None;
+        }
 
         for obj in spatial.query(shape) {
             match obj {

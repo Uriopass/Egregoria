@@ -29,6 +29,7 @@ vec2 grad2(vec2 p) {
     return vec2(abs(u)-1.0, abs(abs(u+1.0)-2.0)-1.0);
 }
 
+/* return range is [-0.5; 0.5] */
 float srdnoise(vec2 v) {
     const vec3 C = vec3(0.211324865405187, 0.366025403784439,
     -0.577350269189626);
@@ -93,6 +94,10 @@ float tnoise(vec2 pos) {
     return texture(sampler2D(t_noise, s_noise), pos).r;
 }
 
+float tree_density(vec2 pos) {
+    return clamp(srdnoise(pos * 0.00003) * 2.0, 0.0, 1.0);
+}
+
 float disturbed_noise(vec2 pos, float noise) {
     float noise2 = tnoise(pos * 0.0005) * 3.0;
 
@@ -103,8 +108,9 @@ float disturbed_noise(vec2 pos, float noise) {
 
 void main() {
     float noise = fnoise(in_wv, 0.00003) + 0.2;
-
     noise = clamp(noise, 0.0, 1.0);
+
+    float tdensity = tree_density(in_wv) * (noise - 0.12);
 
     if (noise < 0.1) { // deep water
         float dnoise = disturbed_noise(in_wv, noise);
@@ -114,7 +120,7 @@ void main() {
     } else {
         float dnoise = disturbed_noise(in_wv * 3.0, noise);
 
-        out_color = (0.4 + noise * 0.5 + (dnoise - noise) * 0.6) * grass_color;
+        out_color = mix((0.4 + noise * 0.5) * (1.0 + dnoise - noise) * 0.6 * grass_color, vec4(0.013702,0.052860,0.012983, 1.0), tdensity);
     }
 
     out_color.a = 1.0;
