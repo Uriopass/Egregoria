@@ -1,11 +1,11 @@
-use crate::procgen::heightmap::height;
+use crate::procgen::heightmap::tree_density;
 use crate::{Map, RoadID};
 use flat_spatial::SparseGrid;
-use geom::{vec2, Camera, Vec2};
+use geom::{vec2, Vec2, AABB};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-const CELL_SIZE: i32 = 1000;
+const CELL_SIZE: i32 = 100;
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Tree {
@@ -39,6 +39,8 @@ impl Trees {
         let d = r.width + 50.0;
         let bbox = r.bbox().expand(d);
 
+        trees.update(bbox);
+
         let mut to_remove = vec![];
         for (h, tree) in trees.grid.query_aabb(bbox.ll, bbox.ur) {
             let rd = common::rand::rand3(tree.x, tree.y, 391.0) * 20.0;
@@ -56,34 +58,36 @@ impl Trees {
         trees.grid.maintain();
     }
 
-    pub fn update(&mut self, camera: Camera) {
-        let aabb = camera.get_screen_box();
-        let rpos = aabb.ll + (aabb.ur - aabb.ll) * vec2(rand::random(), rand::random());
-        let cell = (rpos.x as i32 / CELL_SIZE, rpos.y as i32 / CELL_SIZE);
-        if self.generated.insert(cell) {
-            self.add_forest(cell);
+    fn cell(p: Vec2) -> (i32, i32) {
+        (p.x as i32 / CELL_SIZE, p.y as i32 / CELL_SIZE)
+    }
+    pub fn update(&mut self, aabb: AABB) {
+        if aabb.h().min(aabb.w()) > 4000.0 {
+            return;
+        }
+        let ll = Self::cell(aabb.ll);
+        let ur = Self::cell(aabb.ur);
+        for y in ll.1..=ur.1 {
+            for x in ll.0..=ur.0 {
+                let cell = (x, y);
+                if self.generated.insert(cell) {
+                    self.add_forest(cell);
+                }
+            }
         }
     }
 
     fn add_forest(&mut self, (x, y): (i32, i32)) {
         let startx = common::rand::rand3(x as f32, y as f32, 0.0);
         let starty = common::rand::rand3(x as f32, y as f32, 1.0);
-        let r3 = common::rand::rand3(x as f32, y as f32, 4.0);
 
         let forest_pos = vec2(
             (x as f32 + startx) * CELL_SIZE as f32,
             (y as f32 + starty) * CELL_SIZE as f32,
         );
-        let elev = height(forest_pos);
-
-        if elev - 0.15 < r3 * r3 {
-            return;
-        }
-        self.dirty = true;
-
         let mut active = vec![forest_pos];
 
-        for j in 0..200 {
+        for j in 0..50 {
             if active.is_empty() {
                 break;
             }
@@ -91,26 +95,29 @@ impl Trees {
             let idx = (r4 * active.len() as f32) as usize;
             let sample = active[idx];
 
-            let r3 = common::rand::rand3(sample.x, sample.y, 2.0);
+            let r3 = common::rand::rand3(sample.x, sample.y, j as f32);
 
-            let delta_elev = (height(sample) - elev).abs() * 200.0;
+            let tdens = tree_density(sample);
 
-            if r3 < delta_elev {
-                active.remove(idx);
+            if r3 > tdens * 2.0 {
+                active.swap_remove(idx);
                 continue;
             }
 
-            for k in 0..10 {
-                let theta =
-                    2.0 * std::f32::consts::PI * common::rand::rand3(startx, j as f32, k as f32);
-                let dist = 50.0 * common::rand::rand3(startx, j as f32, k as f32 + 10.0);
+            for k in 0..5 {
+                if k == 9 {
+                    active.swap_remove(idx);
+                    break;
+                }
+                let theta = std::f32::consts::TAU * common::rand::rand3(startx, j as f32, k as f32);
+                let dist_coeff = 3.0 * common::rand::rand3(startx, j as f32, k as f32 + 10.0);
 
                 let srand = common::rand::rand3(sample.x as f32, sample.y, k as f32);
                 let scale = 10.0 + 6.0 * srand;
 
-                let pos = sample + Vec2::from_angle(theta) * (scale * 0.5 * (1.0 + dist));
+                let pos = sample + Vec2::from_angle(theta) * (scale * (0.75 + dist_coeff));
 
-                if self.grid.query_around(pos, scale * 0.5).next().is_some() {
+                if self.grid.query_around(pos, 0.75 * scale).next().is_some() {
                     continue;
                 }
 
@@ -129,10 +136,11 @@ impl Trees {
                         dir: Vec2::from_angle(angle),
                     },
                 );
+                self.dirty = true;
 
                 active.push(pos);
+                break;
             }
-            active.remove(idx);
         }
     }
 

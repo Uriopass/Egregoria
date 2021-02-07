@@ -35,7 +35,7 @@ impl CarSounds {
         let coworld = goria.read::<CollisionWorld>();
         let cam = goria.read::<Camera>();
         let campos = cam.position;
-        let cambox = cam.get_screen_box().expand(100.0);
+        let cambox = cam.screen_aabb().expand(100.0);
 
         const HEAR_RADIUS: f32 = 200.0;
 

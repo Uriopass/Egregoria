@@ -38,7 +38,7 @@ impl Ambient {
         ctx.set_volume_smooth(self.wind, volume, delta * 0.05);
 
         // Forest
-        let bbox = camera.get_screen_box();
+        let bbox = camera.screen_aabb();
         let mut volume = lerp(1.0, 0.0, h / 600.0);
 
         let ll = bbox.ll;
