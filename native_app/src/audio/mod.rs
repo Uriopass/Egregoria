@@ -117,7 +117,7 @@ impl AudioContext {
             .map(|(id, _)| id)
             .collect();
         if !to_kill.is_empty() {
-            log::info!("killed {} sounds", to_kill.len());
+            log::info!("garbage collected {} sounds", to_kill.len());
         }
         for v in to_kill {
             self.sinks.remove(v);
