@@ -5,7 +5,6 @@ layout(location=1) in vec3 in_pos;
 layout(location=2) in vec2 in_uv;
 
 layout(location=0) out vec4 out_color;
-layout(location=1) out vec4 out_normal;
 
 layout(set = 0, binding = 0) uniform texture2D t_diffuse;
 layout(set = 0, binding = 1) uniform sampler s_diffuse;
@@ -18,5 +17,4 @@ void main() {
     }
 
     out_color = col * in_color;
-    out_normal = vec4(0.0);
 }

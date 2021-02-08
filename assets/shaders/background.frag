@@ -5,7 +5,6 @@ layout(location=1) in vec2 in_wv;
 layout(location=2) in float in_zoom;
 
 layout(location=0) out vec4 out_color;
-layout(location=1) out vec4 out_normal;
 
 layout(set = 1, binding = 0) uniform BGParams {
     vec4 sea_color;
@@ -124,6 +123,4 @@ void main() {
     }
 
     out_color.a = 1.0;
-
-    out_normal = vec4(0.0, 0.0, 1.0, 1.0);
 }

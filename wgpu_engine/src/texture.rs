@@ -234,43 +234,6 @@ impl Texture {
         }
     }
 
-    pub fn create_normal_texture(
-        device: &wgpu::Device,
-        sc_desc: &wgpu::SwapChainDescriptor,
-        samples: u32,
-    ) -> MultisampledTexture {
-        let target = Self::create_fbo(
-            device,
-            sc_desc,
-            TextureFormat::Rgba16Float,
-            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
-            None,
-        );
-
-        let multisample_desc = &wgpu::TextureDescriptor {
-            format: target.format,
-            size: Extent3d {
-                width: sc_desc.width,
-                height: sc_desc.height,
-                depth: 1,
-            },
-            usage: TextureUsage::RENDER_ATTACHMENT,
-            mip_level_count: 1,
-            sample_count: samples,
-            dimension: wgpu::TextureDimension::D2,
-            label: Some("normal texture"),
-        };
-
-        MultisampledTexture {
-            target,
-            multisampled_buffer: Rc::new(
-                device
-                    .create_texture(multisample_desc)
-                    .create_view(&TextureViewDescriptor::default()),
-            ),
-        }
-    }
-
     pub fn bindgroup_layout_complex(
         device: &wgpu::Device,
         sample_type: TextureSampleType,
