@@ -78,7 +78,7 @@ impl<T: 'static + Shaders, U: ToU8Slice + 'static> Drawable for ShadedQuadTex<T,
             &[
                 &gfx.projection.layout,
                 &Uniform::<U>::bindgroup_layout(&gfx.device),
-                &Texture::bindgroup_layout_float(&gfx.device),
+                &Texture::bindgroup_layout(&gfx.device),
             ],
             &[UvVertex::desc()],
             vert,

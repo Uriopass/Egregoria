@@ -119,7 +119,7 @@ impl Context {
                         self.gfx.render_objs(&mut enc, |fc| state.render(fc));
 
                         let (lights, ambiant_col) = state.lights();
-                        wgpu_engine::lighting::render_lights(
+                        state.light.render_lights(
                             &self.gfx,
                             &mut enc,
                             &sco,

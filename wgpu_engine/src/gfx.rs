@@ -1,5 +1,4 @@
 use crate::draweables::BlitLinear;
-use crate::lighting::prepare_lighting;
 use crate::{
     CompiledShader, Drawable, IndexType, Mesh, SpriteBatch, Texture, TexturedMesh, Uniform,
     UvVertex,
@@ -116,8 +115,6 @@ impl GfxContext {
         me.register_pipeline::<TexturedMesh>();
         me.register_pipeline::<SpriteBatch>();
         me.register_pipeline::<BlitLinear>();
-
-        prepare_lighting(&mut me);
 
         me
     }

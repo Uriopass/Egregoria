@@ -16,7 +16,7 @@ use geom::{vec3, LinearColor, Vec2};
 use map_model::Map;
 use std::borrow::Cow;
 use std::time::Instant;
-use wgpu_engine::lighting::LightInstance;
+use wgpu_engine::lighting::{LightInstance, LightRender};
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext};
 use winit::dpi::PhysicalSize;
 use winit::window::{Fullscreen, Window};
@@ -33,6 +33,7 @@ pub struct State {
     road_renderer: RoadRenderer,
     bg_renderer: BackgroundRender,
     gui: Gui,
+    pub light: LightRender,
 
     all_audio: GameAudio,
 }
@@ -76,6 +77,7 @@ impl State {
             bg_renderer: BackgroundRender::new(&mut ctx.gfx),
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
+            light: LightRender::new(&mut ctx.gfx),
         };
         me.manage_settings(ctx, me.gui.settings);
         me

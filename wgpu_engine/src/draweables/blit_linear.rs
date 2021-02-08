@@ -14,7 +14,7 @@ impl Drawable for BlitLinear {
             gfx.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("blit pipeline"),
-                    bind_group_layouts: &[&Texture::bindgroup_layout_float(&gfx.device)],
+                    bind_group_layouts: &[&Texture::bindgroup_layout(&gfx.device)],
                     push_constant_ranges: &[],
                 });
 

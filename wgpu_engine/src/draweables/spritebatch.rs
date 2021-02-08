@@ -164,7 +164,7 @@ impl Drawable for SpriteBatch {
 
         gfx.basic_pipeline(
             &[
-                &Texture::bindgroup_layout_float(&gfx.device),
+                &Texture::bindgroup_layout(&gfx.device),
                 &gfx.projection.layout,
             ],
             &[UvVertex::desc(), InstanceRaw::desc()],
