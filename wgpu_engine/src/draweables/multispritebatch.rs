@@ -1,4 +1,4 @@
-use crate::{Drawable, GfxContext, InstanceRaw, SpriteBatch, SpriteBatchBuilder, Texture};
+use crate::{Drawable, GfxContext, SpriteBatch, SpriteBatchBuilder, Texture};
 use std::path::Path;
 use wgpu::{RenderPass, RenderPipeline};
 
@@ -38,12 +38,12 @@ impl MultiSpriteBatchBuilder {
 
     pub fn clear(&mut self) {
         for sbb in &mut self.sbs {
-            sbb.instances.clear();
+            sbb.clear();
         }
     }
 
-    pub fn push(&mut self, id: usize, instance: InstanceRaw) {
-        self.sbs[id].instances.push(instance);
+    pub fn sb(&mut self, id: usize) -> &mut SpriteBatchBuilder {
+        &mut self.sbs[id]
     }
 }
 

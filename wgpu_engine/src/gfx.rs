@@ -9,9 +9,10 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, Device, IndexFormat,
-    MultisampleState, PrimitiveState, Queue, RenderPassColorAttachmentDescriptor, RenderPipeline,
-    StencilState, Surface, SwapChain, SwapChainDescriptor, SwapChainFrame, VertexBufferLayout,
+    Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, CullMode, Device,
+    IndexFormat, MultisampleState, PrimitiveState, Queue, RenderPassColorAttachmentDescriptor,
+    RenderPipeline, StencilState, Surface, SwapChain, SwapChainDescriptor, SwapChainFrame,
+    VertexBufferLayout,
 };
 
 pub struct GfxContext {
@@ -361,6 +362,7 @@ impl GfxContext {
             }),
             primitive: PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
+                cull_mode: CullMode::None,
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
