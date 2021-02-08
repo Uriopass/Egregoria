@@ -24,7 +24,7 @@ pub struct Trees {
 impl Default for Trees {
     fn default() -> Self {
         Self {
-            grid: SparseGrid::new(50),
+            grid: SparseGrid::new(CELL_SIZE),
             generated: Default::default(),
             dirty: true,
         }
