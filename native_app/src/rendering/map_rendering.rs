@@ -5,7 +5,7 @@ use map_model::{
 };
 use std::ops::Mul;
 use wgpu_engine::{
-    compile_shader, CompiledShader, FrameContext, GfxContext, InstanceRaw, Mesh, MultiSpriteBatch,
+    compile_shader, CompiledShader, FrameContext, GfxContext, Mesh, MultiSpriteBatch,
     MultiSpriteBatchBuilder, ShadedBatch, ShadedBatchBuilder, ShadedInstanceRaw, Shaders,
     SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
@@ -254,7 +254,7 @@ impl RoadRenderer {
     }
 
     fn arrows(&mut self, map: &Map, gfx: &GfxContext) -> Option<SpriteBatch> {
-        self.arrow_builder.instances.clear();
+        self.arrow_builder.clear();
         let lanes = map.lanes();
         for road in map.roads().values() {
             let fade = (road.length - 5.0 - road.src_interface - road.dst_interface)
@@ -272,13 +272,13 @@ impl RoadRenderer {
                         .points
                         .point_dir_along(l * (1.0 + i as f32) / (1.0 + n_arrows as f32));
 
-                    self.arrow_builder.instances.push(InstanceRaw::new(
+                    self.arrow_builder.push(
                         mid,
                         dir,
                         Z_ARROW,
                         LinearColor::gray(0.3 + fade * 0.1),
                         4.0,
-                    ));
+                    );
                 }
             }
         }
@@ -327,7 +327,7 @@ impl RoadRenderer {
         gfx: &GfxContext,
     ) -> (MultiSpriteBatch, Option<SpriteBatch>) {
         self.tree_builder.clear();
-        self.tree_shadows_builder.instances.clear();
+        self.tree_shadows_builder.clear();
 
         let k = screen.w().min(screen.h());
         if k > 5000.0 {
@@ -344,19 +344,20 @@ impl RoadRenderer {
         for (h, _) in map.trees.grid.query_raw(screen.ll, screen.ur) {
             let (pos, t) = map.trees.grid.get(h).unwrap();
 
-            self.tree_shadows_builder.instances.push(InstanceRaw::new(
+            self.tree_shadows_builder.push(
                 pos + vec2(1.0, -1.0),
                 t.dir,
                 Z_TREE,
                 LinearColor::WHITE.a(alpha_cutoff),
                 t.size,
-            ));
-
-            self.tree_builder.push(
-                (common::rand::rand3(pos.x, pos.y, 10.0) * self.tree_builder.n_texs() as f32)
-                    as usize,
-                InstanceRaw::new(pos, t.dir, Z_TREE + 0.01, t.col * tree_col, t.size),
             );
+
+            self.tree_builder
+                .sb(
+                    (common::rand::rand3(pos.x, pos.y, 10.0) * self.tree_builder.n_texs() as f32)
+                        as usize,
+                )
+                .push(pos, t.dir, Z_TREE + 0.01, t.col * tree_col, t.size);
         }
 
         (

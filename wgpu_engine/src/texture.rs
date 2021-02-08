@@ -335,7 +335,7 @@ impl Texture {
         layout: &BindGroupLayout,
     ) -> BindGroup {
         let entries = texs
-            .into_iter()
+            .iter()
             .enumerate()
             .flat_map(|(i, tex)| {
                 vec![
