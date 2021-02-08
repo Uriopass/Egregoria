@@ -181,7 +181,7 @@ impl Texture {
         Self::create_fbo(
             device,
             sc_desc,
-            TextureFormat::R32Float,
+            TextureFormat::R16Float,
             TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
             None,
         )
