@@ -1,4 +1,5 @@
 use egregoria::utils::Restrict;
+use flat_spatial::storage::Storage;
 use geom::{lerp, vec2, Color, LinearColor, AABB};
 use map_model::{
     Lane, LaneKind, LotKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
@@ -29,6 +30,7 @@ pub struct RoadRenderer {
     arrow_builder: SpriteBatchBuilder,
     tree_shadows: Option<SpriteBatch>,
     tree_shadows_builder: SpriteBatchBuilder,
+    last_cam: AABB,
     trees: Option<MultiSpriteBatch>,
     tree_builder: MultiSpriteBatchBuilder,
     crosswalks: Option<ShadedBatch<Crosswalk>>,
@@ -72,6 +74,7 @@ impl RoadRenderer {
             arrow_builder,
             tree_shadows: None,
             tree_shadows_builder: tree_shadow_builder,
+            last_cam: AABB::zero(),
             trees: None,
             tree_builder,
             crosswalks: None,
@@ -326,6 +329,17 @@ impl RoadRenderer {
         screen: AABB,
         gfx: &GfxContext,
     ) -> (MultiSpriteBatch, Option<SpriteBatch>) {
+        let st = map.trees.grid.storage();
+        if !map.trees.dirty
+            && self.tree_shadows.is_some()
+            && st.cell_id(screen.ll) == st.cell_id(self.last_cam.ll)
+            && st.cell_id(screen.ur) == st.cell_id(self.last_cam.ur)
+        {
+            if let Some(trees) = self.trees.as_ref() {
+                return (trees.clone(), self.tree_shadows.clone());
+            }
+        }
+
         self.tree_builder.clear();
         self.tree_shadows_builder.clear();
 
@@ -373,6 +387,9 @@ impl RoadRenderer {
         tess: &mut Tesselator,
         ctx: &mut FrameContext,
     ) {
+        let screen = tess
+            .cull_rect
+            .expect("no cull rectangle, might render far too many trees");
         if map.dirty || self.last_config != common::config_id() {
             self.map_mesh = self.map_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
             self.arrows = self.arrows(map, &ctx.gfx);
@@ -383,12 +400,7 @@ impl RoadRenderer {
         }
 
         //        if map.trees.dirty {
-        let (trees, tree_shadows) = self.trees(
-            map,
-            tess.cull_rect
-                .expect("no cull rectangle, might render far too many trees"),
-            &ctx.gfx,
-        );
+        let (trees, tree_shadows) = self.trees(map, screen, &ctx.gfx);
         self.trees = Some(trees);
         self.tree_shadows = tree_shadows;
 
@@ -416,5 +428,7 @@ impl RoadRenderer {
         }
 
         Self::signals_render(map, time, tess);
+
+        self.last_cam = screen;
     }
 }
