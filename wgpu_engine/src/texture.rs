@@ -8,7 +8,7 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use std::rc::Rc;
 use wgpu::{
-    BindGroup, BindGroupLayout, CommandEncoderDescriptor, Device, Extent3d,
+    BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
     PipelineLayoutDescriptor, Sampler, TextureCopyView, TextureDataLayout, TextureFormat,
     TextureSampleType, TextureUsage, TextureViewDescriptor,
 };
@@ -271,38 +271,45 @@ impl Texture {
         }
     }
 
-    pub fn bindgroup_layout(
+    pub fn bindgroup_layout_complex(
         device: &wgpu::Device,
         sample_type: TextureSampleType,
+        n_tex: u32,
     ) -> BindGroupLayout {
+        let entries: Vec<BindGroupLayoutEntry> = (0..n_tex)
+            .flat_map(|i| {
+                vec![
+                    wgpu::BindGroupLayoutEntry {
+                        binding: i * 2,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: i * 2 + 1,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler {
+                            filtering: true,
+                            comparison: false,
+                        },
+                        count: None,
+                    },
+                ]
+                .into_iter()
+            })
+            .collect::<Vec<_>>();
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler {
-                        filtering: true,
-                        comparison: false,
-                    },
-                    count: None,
-                },
-            ],
+            entries: &entries,
             label: Some("Texture bindgroup layout"),
         })
     }
 
-    pub fn bindgroup_layout_float(device: &wgpu::Device) -> BindGroupLayout {
-        Self::bindgroup_layout(device, TextureSampleType::Float { filterable: true })
+    pub fn bindgroup_layout(device: &wgpu::Device) -> BindGroupLayout {
+        Self::bindgroup_layout_complex(device, TextureSampleType::Float { filterable: true }, 1)
     }
 
     pub fn bindgroup(&self, device: &Device, layout: &BindGroupLayout) -> BindGroup {
@@ -318,6 +325,34 @@ impl Texture {
                     resource: wgpu::BindingResource::Sampler(&self.sampler),
                 },
             ],
+            label: None,
+        })
+    }
+
+    pub fn multi_bindgroup(
+        texs: &[&Texture],
+        device: &Device,
+        layout: &BindGroupLayout,
+    ) -> BindGroup {
+        let entries = texs
+            .into_iter()
+            .enumerate()
+            .flat_map(|(i, tex)| {
+                vec![
+                    wgpu::BindGroupEntry {
+                        binding: (i * 2) as u32,
+                        resource: wgpu::BindingResource::TextureView(&tex.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: (i * 2 + 1) as u32,
+                        resource: wgpu::BindingResource::Sampler(&tex.sampler),
+                    },
+                ]
+            })
+            .collect::<Vec<_>>();
+        device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout,
+            entries: &entries,
             label: None,
         })
     }
@@ -366,7 +401,7 @@ fn generate_mipmaps(
     let fs_module =
         device.create_shader_module(&compile_shader("assets/shaders/mipmap.frag", None).0);
 
-    let bglayout = Texture::bindgroup_layout_float(&device);
+    let bglayout = Texture::bindgroup_layout(&device);
 
     let layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
         label: None,

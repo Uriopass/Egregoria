@@ -3,9 +3,51 @@ use geom::LinearColor;
 use mint::ColumnMatrix4;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    BlendFactor, CommandEncoder, IndexFormat, MultisampleState, PrimitiveState, RenderPass,
-    RenderPipeline, SwapChainFrame, VertexBufferLayout,
+    BlendFactor, Buffer, CommandEncoder, IndexFormat, MultisampleState, PrimitiveState, RenderPass,
+    RenderPipeline, SwapChainFrame, TextureSampleType, VertexBufferLayout,
 };
+
+pub struct LightRender {
+    noise: Texture,
+    vertex_buffer: Buffer,
+    index_buffer: Buffer,
+    screen_vertex_buffer: Buffer,
+}
+
+impl LightRender {
+    pub fn new(gfx: &mut GfxContext) -> Self {
+        let noise =
+            Texture::from_path(gfx, "assets/noise.png", None).expect("noise texture not found");
+
+        let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(UV_VERTICES),
+            usage: wgpu::BufferUsage::VERTEX,
+        });
+
+        let index_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(UV_INDICES),
+            usage: wgpu::BufferUsage::INDEX,
+        });
+
+        let screen_vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(SCREEN_UV_VERTICES),
+            usage: wgpu::BufferUsage::VERTEX,
+        });
+
+        gfx.register_pipeline::<LightBlit>();
+        gfx.register_pipeline::<LightMultiply>();
+
+        Self {
+            vertex_buffer,
+            index_buffer,
+            noise,
+            screen_vertex_buffer,
+        }
+    }
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -94,9 +136,11 @@ impl Drawable for LightMultiply {
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("basic pipeline"),
                     bind_group_layouts: &[
-                        &Texture::bindgroup_layout_float(&gfx.device),
-                        &Texture::bindgroup_layout_float(&gfx.device),
-                        &Texture::bindgroup_layout_float(&gfx.device),
+                        &Texture::bindgroup_layout_complex(
+                            &gfx.device,
+                            TextureSampleType::Float { filterable: true },
+                            4,
+                        ),
                         &Uniform::<LightUniform>::bindgroup_layout(&gfx.device),
                     ],
                     push_constant_ranges: &[],
@@ -188,11 +232,6 @@ const SCREEN_UV_VERTICES: &[UvVertex] = &[
 
 const UV_INDICES: &[IndexType] = &[0, 1, 2, 0, 2, 3];
 
-pub fn prepare_lighting(gfx: &mut GfxContext) {
-    gfx.register_pipeline::<LightBlit>();
-    gfx.register_pipeline::<LightMultiply>();
-}
-
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct LightInstance {
@@ -212,110 +251,89 @@ impl VBDesc for LightInstance {
     }
 }
 
-pub fn render_lights(
-    gfx: &GfxContext,
-    encoder: &mut CommandEncoder,
-    frame: &SwapChainFrame,
-    lights: &[LightInstance],
-    ambiant: LinearColor,
-    height: f32,
-) {
-    let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
-        label: None,
-        contents: bytemuck::cast_slice(UV_VERTICES),
-        usage: wgpu::BufferUsage::VERTEX,
-    });
+impl LightRender {
+    pub fn render_lights(
+        &self,
+        gfx: &GfxContext,
+        encoder: &mut CommandEncoder,
+        frame: &SwapChainFrame,
+        lights: &[LightInstance],
+        ambiant: LinearColor,
+        height: f32,
+    ) {
+        let instance_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(lights),
+            usage: wgpu::BufferUsage::VERTEX,
+        });
 
-    let index_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
-        label: None,
-        contents: bytemuck::cast_slice(UV_INDICES),
-        usage: wgpu::BufferUsage::INDEX,
-    });
+        {
+            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &gfx.light_texture.view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        }),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            });
+            rpass.set_pipeline(&gfx.get_pipeline::<LightBlit>());
+            rpass.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+            rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            rpass.set_vertex_buffer(1, instance_buffer.slice(..));
+            rpass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
+            rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..lights.len() as u32);
+        }
 
-    let instance_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
-        label: None,
-        contents: bytemuck::cast_slice(lights),
-        usage: wgpu::BufferUsage::VERTEX,
-    });
+        let ambiant_uni = Uniform::new(
+            LightUniform {
+                inv_proj: gfx.inv_projection.value,
+                time: gfx.time_uni.value,
+                ambiant,
+                height,
+            },
+            &gfx.device,
+        );
 
-    {
+        ambiant_uni.upload_to_gpu(&gfx.queue);
+
+        let lmultiply_tex_bg = Texture::multi_bindgroup(
+            &[
+                &gfx.light_texture,
+                &gfx.color_texture.target,
+                &gfx.normal_texture.target,
+                &self.noise,
+            ],
+            &gfx.device,
+            &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(0),
+        );
+
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &gfx.light_texture.view,
+                attachment: &frame.output.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
-                    }),
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: true,
                 },
             }],
             depth_stencil_attachment: None,
         });
-        rpass.set_pipeline(&gfx.get_pipeline::<LightBlit>());
-        rpass.set_bind_group(0, &gfx.projection.bindgroup, &[]);
-        rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
-        rpass.set_vertex_buffer(1, instance_buffer.slice(..));
-        rpass.set_index_buffer(index_buffer.slice(..), IndexFormat::Uint32);
-        rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..lights.len() as u32);
+
+        rpass.set_pipeline(&gfx.get_pipeline::<LightMultiply>());
+        rpass.set_bind_group(0, &lmultiply_tex_bg, &[]);
+        rpass.set_bind_group(1, &ambiant_uni.bindgroup, &[]);
+        rpass.set_vertex_buffer(0, self.screen_vertex_buffer.slice(..));
+        rpass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
+        rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
     }
-
-    let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
-        label: None,
-        contents: bytemuck::cast_slice(SCREEN_UV_VERTICES),
-        usage: wgpu::BufferUsage::VERTEX,
-    });
-
-    let light_tex_bind_group = gfx.light_texture.bindgroup(
-        &gfx.device,
-        &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(0),
-    );
-
-    let color_tex_bind_group = gfx.color_texture.target.bindgroup(
-        &gfx.device,
-        &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(1),
-    );
-
-    let normal_tex_bind_group = gfx.normal_texture.target.bindgroup(
-        &gfx.device,
-        &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(2),
-    );
-
-    let ambiant_uni = Uniform::new(
-        LightUniform {
-            inv_proj: gfx.inv_projection.value,
-            time: gfx.time_uni.value,
-            ambiant,
-            height,
-        },
-        &gfx.device,
-    );
-
-    ambiant_uni.upload_to_gpu(&gfx.queue);
-
-    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-        label: None,
-        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-            attachment: &frame.output.view,
-            resolve_target: None,
-            ops: wgpu::Operations {
-                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                store: true,
-            },
-        }],
-        depth_stencil_attachment: None,
-    });
-
-    rpass.set_pipeline(&gfx.get_pipeline::<LightMultiply>());
-    rpass.set_bind_group(0, &light_tex_bind_group, &[]);
-    rpass.set_bind_group(1, &color_tex_bind_group, &[]);
-    rpass.set_bind_group(2, &normal_tex_bind_group, &[]);
-    rpass.set_bind_group(3, &ambiant_uni.bindgroup, &[]);
-    rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
-    rpass.set_index_buffer(index_buffer.slice(..), IndexFormat::Uint32);
-    rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
 }

@@ -7,7 +7,7 @@ layout(location=0) out vec2 out_uv;
 layout(location=1) out vec2 out_wv;
 layout(location=2) out vec3 out_sun;
 
-layout(set = 3, binding = 0) uniform LightParams {
+layout(set = 1, binding = 0) uniform LightParams {
     mat4 invproj;
     vec4 ambiant;
     float time;
