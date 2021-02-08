@@ -5,7 +5,6 @@ layout(location=1) in vec2 in_wv;
 layout(location=2) in float in_l;
 
 layout(location=0) out vec4 out_color;
-layout(location=1) out vec4 out_normal;
 
 const float bg = 0.052;
 const float fg = 0.44;
@@ -24,5 +23,4 @@ void main() {
     gray = (fw  == 0.45)     ? fg * 0.6                          : gray;
 
     out_color = vec4(gray, gray, gray, 1.0);
-    out_normal = vec4(0.0);
 }

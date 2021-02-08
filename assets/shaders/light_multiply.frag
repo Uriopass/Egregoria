@@ -12,11 +12,8 @@ layout(set = 0, binding = 1) uniform sampler s_light;
 layout(set = 0, binding = 2) uniform texture2D t_color;
 layout(set = 0, binding = 3) uniform sampler s_color;
 
-layout(set = 0, binding = 4) uniform texture2D t_normal;
-layout(set = 0, binding = 5) uniform sampler s_normal;
-
-layout(set = 0, binding = 6) uniform texture2D t_noise;
-layout(set = 0, binding = 7) uniform sampler s_noise;
+layout(set = 0, binding = 4) uniform texture2D t_noise;
+layout(set = 0, binding = 5) uniform sampler s_noise;
 
 layout(set = 1, binding = 0) uniform LightParams {
     mat4 invproj;
@@ -76,11 +73,10 @@ float cloud(vec2 pos, float ampl) {
 void main() {
     float street_light = clamp(texture(sampler2D(t_light, s_light), in_uv).r, 0.0, 1.0);
     vec3 color = texture(sampler2D(t_color, s_color), in_uv).rgb;
-    vec3 normal = texture(sampler2D(t_normal, s_normal), in_uv).xyz;
 
     float cloud = cloud(in_wv.xy + time * 100.0, 0.0001);
 
-    float sun_mult =  clamp(1.2 * dot(normal, sun), 0.1, 1.0);
+    float sun_mult =  clamp(1.2 * sun.z, 0.1, 1.0);
 
     color += mix(0.0, cloud, clamp((height - 4000.0) * 0.0001, 0.0, 1.0));
 

@@ -139,7 +139,7 @@ impl Drawable for LightMultiply {
                         &Texture::bindgroup_layout_complex(
                             &gfx.device,
                             TextureSampleType::Float { filterable: true },
-                            4,
+                            3,
                         ),
                         &Uniform::<LightUniform>::bindgroup_layout(&gfx.device),
                     ],
@@ -306,12 +306,7 @@ impl LightRender {
         ambiant_uni.upload_to_gpu(&gfx.queue);
 
         let lmultiply_tex_bg = Texture::multi_bindgroup(
-            &[
-                &gfx.light_texture,
-                &gfx.color_texture.target,
-                &gfx.normal_texture.target,
-                &self.noise,
-            ],
+            &[&gfx.light_texture, &gfx.color_texture.target, &self.noise],
             &gfx.device,
             &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(0),
         );
