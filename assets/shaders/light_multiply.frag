@@ -47,10 +47,6 @@ float floatConstruct( uint m ) {
     float  f = uintBitsToFloat( m );       // Range [1:2]
     return f - 1.0;                        // Range [0:1]
 }
-
-// Pseudo-random value in half-open range [0:1].
-float random( float x ) { return floatConstruct(hash(floatBitsToUint(x))); }
-
 // Pseudo-random value in half-open range [0:1].
 float random( uvec3 v ) { return floatConstruct(hash(v.x ^ hash(v.y) ^ hash(v.z))); }
 
