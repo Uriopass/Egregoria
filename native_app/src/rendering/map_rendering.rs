@@ -165,7 +165,7 @@ impl RoadRenderer {
 
         // Buildings
         for building in map.buildings().values() {
-            for (p, col) in &building.draw {
+            for (p, col) in &building.mesh.faces {
                 tess.set_color(*col);
                 tess.draw_filled_polygon(p.as_slice(), Z_HOUSE);
             }

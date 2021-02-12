@@ -1,18 +1,33 @@
 use geom::skeleton::{faces_from_skeleton, skeleton};
-use geom::{vec2, vec3, Color, Intersect, LinearColor, Polygon, Segment, Shape, Vec2, Vec3};
+use geom::{vec2, vec3, Color, Intersect, LinearColor, Polygon, Segment, Shape, Vec2, AABB};
 use ordered_float::OrderedFloat;
 use rand::prelude::SmallRng;
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::panic::catch_unwind;
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct RoofFace {
-    pub poly: Polygon,
-    pub normal: Vec3,
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct ColoredMesh {
+    pub faces: Vec<(Polygon, LinearColor)>,
 }
 
-pub fn gen_exterior_workplace(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
+impl ColoredMesh {
+    pub fn bbox(&self) -> AABB {
+        let mut f = unwrap_or!(self.faces.get(0), return AABB::zero()).0.bbox();
+        for (p, _) in self.faces.iter().skip(1) {
+            f = f.union(p.bbox())
+        }
+        f
+    }
+
+    pub fn translate(&mut self, off: Vec2) {
+        for (p, _) in &mut self.faces {
+            p.translate(off);
+        }
+    }
+}
+
+pub fn gen_exterior_workplace(size: f32) -> (ColoredMesh, Vec2) {
     let a = rand_in(15.0, 20.0);
     let b = rand_in(15.0, 20.0);
 
@@ -30,12 +45,21 @@ pub fn gen_exterior_workplace(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
 
     p.translate(-p.barycenter());
     let door_pos = (p[3] + p[4]) * 0.5;
-    (vec![(p, Color::new(0.48, 0.48, 0.5, 1.0).into())], door_pos)
+
+    (
+        ColoredMesh {
+            faces: vec![(p, Color::new(0.48, 0.48, 0.5, 1.0).into())],
+        },
+        door_pos,
+    )
 }
 
-pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
+pub fn gen_exterior_house(size: f32, seed: Option<u64>) -> (ColoredMesh, Vec2) {
+    let seed = seed.unwrap_or_else(|| rand_in(0.0, 10000.0) as u64);
+    let mut retry_cnt = 0;
     'retry: loop {
-        let mut rng = SmallRng::seed_from_u64(rand_in(0.0, 10000.0) as u64);
+        let mut rng = SmallRng::seed_from_u64((retry_cnt << 32) + seed);
+        retry_cnt += 1;
 
         let width = rng.gen_range(15.0..20.0);
         let height = rng.gen_range(20.0..28.0);
@@ -67,19 +91,6 @@ pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
 
             p.simplify();
         }
-        /*
-        let mut p = Polygon(vec![
-            vec2(179.62842, 0.0),
-            vec2(179.62842, 82.743164),
-            vec2(231.11676, 82.743164),
-            vec2(231.11676, 169.94154),
-            vec2(179.62842, 169.94154),
-            vec2(179.62842, 202.74478),
-            vec2(0.0, 202.74478),
-            vec2(0.0, 132.03107),
-            vec2(-28.707237, 132.03107),
-            vec2(-28.707237, 0.0),
-        ]);*/
 
         for x in p.iter_mut() {
             *x *= size / 40.0;
@@ -91,7 +102,7 @@ pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
             *x -= c - Vec2::splat(size * 0.5);
         }
 
-        let merge_triangles = false; //rng.gen();
+        let merge_triangles = rng.gen();
 
         // silence panics
         let hook = std::panic::take_hook();
@@ -146,55 +157,40 @@ pub fn gen_exterior_house_new(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) 
             .min_by_key(|s| OrderedFloat(s.src.y + s.dst.y))
             .unwrap();
 
-        let mut roofs = vec![];
+        let mut roofs = ColoredMesh::default();
         let roof_col = LinearColor::from(common::config().roof_col);
 
-        for face in faces.into_iter().rev() {
+        for face in faces {
             if face.len() < 3 {
                 continue 'retry;
             }
-            let normal = (face[0] - face[1]).cross(face[2] - face[1]).normalize();
 
-            let luminosity = 0.8 + 0.2 * vec3(0.7, 0.3, 0.5).normalize().dot(normal);
+            let mut normal = (face[0] - face[1]).cross(face[2] - face[1]).normalize();
+
+            if normal.z < 0.0 {
+                normal = -normal;
+            }
+
+            let luminosity = 0.8
+                + 0.2
+                    * vec3(0.7, 0.3, 0.5)
+                        .normalize()
+                        .dot(normal)
+                        .min(1.0)
+                        .max(-1.0);
             let col = luminosity * roof_col;
+
             let mut p = Polygon(face.into_iter().map(|x| x.xy()).collect());
             p.simplify();
-            roofs.push((p, col));
-        }
-        /*
-        // debug polygon contour
-        for i in 0..p.len() {
-            let cur = *p.get(i);
-            let next = *p.get_next(i);
 
-            let v = (next - cur).normalize();
-            let d = v.perpendicular() * 0.1;
-            roofs.push((
-                Polygon(vec![cur + d, cur - d, next - d, next + d]),
-                LinearColor::gray(i as f32 / p.len() as f32),
-            ))
+            roofs.faces.push((p, col));
         }
-
-        // debug skeleton
-        let mut i = 0;
-        for v in skeleton {
-            let cur = v.source;
-            for next in v.sinks {
-                i += 1;
-                let v = (next - cur).normalize();
-                let d = v.perpendicular() * 0.1;
-                let c = LinearColor::gray((-i as f32 * 0.1).exp());
-                roofs.push((Polygon(vec![cur + d, cur - d, next - d, next + d]), c))
-            }
-        }
-
-        dbg!(&p);*/
 
         return (roofs, lowest_segment.middle());
     }
 }
 
-pub fn gen_exterior_supermarket(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
+pub fn gen_exterior_supermarket(size: f32) -> (ColoredMesh, Vec2) {
     let mut h = rand_in(25.0, 30.0);
     let mut w = h + rand_in(5.0, 10.0);
 
@@ -209,7 +205,12 @@ pub fn gen_exterior_supermarket(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2
     door_pos += off;
     p.translate(off);
 
-    (vec![(p, Color::new(0.52, 0.5, 0.50, 1.0).into())], door_pos)
+    (
+        ColoredMesh {
+            faces: vec![(p, Color::new(0.52, 0.5, 0.50, 1.0).into())],
+        },
+        door_pos,
+    )
 }
 
 ///  -------------------
@@ -222,32 +223,33 @@ pub fn gen_exterior_supermarket(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2
 ///  XXXXX   
 ///    XXX   
 ///     |    
-pub fn gen_exterior_farm(size: f32) -> (Vec<(Polygon, LinearColor)>, Vec2) {
+pub fn gen_exterior_farm(size: f32) -> (ColoredMesh, Vec2) {
     let h_size = 30.0;
-    let (mut polys, mut door_pos) = gen_exterior_house_new(h_size);
+    let (mut mesh, mut door_pos) = gen_exterior_house(h_size, None);
 
-    let mut off = Vec2::splat(h_size * 0.5 - size * 0.5);
-    off.x += rand_in(0.0, size - h_size);
-    for p in &mut polys {
-        p.0.translate(off);
-    }
+    let b = mesh.bbox();
+    let off = -b.ll + vec2(rand_in(0.0, size - h_size), 3.0);
+    mesh.translate(off);
     door_pos += off;
 
-    polys.splice(
+    mesh.faces.splice(
         0..0,
         vec![(
-            Polygon::centered_rect(size, size),
+            Polygon::rect(size, size),
             Color::new(0.75, 0.60, 0.35, 1.0).into(),
         )],
     );
 
+    let d_trench = size * 0.5 / 5.0;
+    // trenches
     for i in -1..5 {
-        let mut p = Polygon::centered_rect(size - 5.0, 3.0);
-        p.translate(vec2(0.0, i as f32 * 8.5));
-        polys.push((p, Color::new(0.62, 0.5, 0.29, 1.0).into()))
+        let mut p = Polygon::rect(size - 5.0, 3.0);
+        p.translate(vec2(2.5, size * 0.5 + i as f32 * d_trench));
+        mesh.faces
+            .push((p, Color::new(0.62, 0.5, 0.29, 1.0).into()))
     }
 
-    (polys, door_pos)
+    (mesh, door_pos)
 }
 
 fn rand_in(min: f32, max: f32) -> f32 {

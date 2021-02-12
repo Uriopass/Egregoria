@@ -45,22 +45,6 @@ pub fn debug(ui: &Ui, goria: &mut Egregoria) {
     }
     drop(objs);
 
-    if ui.small_button(&im_str!("build one house")) {
-        let house = map_model::procgen::gen_exterior_house_new(40.0);
-
-        for (mut p, col) in house.0 {
-            for x in p.iter_mut() {
-                *x += goria.read::<Camera>().position.xy();
-            }
-
-            goria
-                .write::<ImmediateDraw>()
-                .polygon(p)
-                .color(col)
-                .persistent();
-        }
-    }
-
     let time = goria.read::<GameTime>().timestamp;
     let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
 
