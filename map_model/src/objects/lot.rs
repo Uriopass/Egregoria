@@ -67,7 +67,8 @@ impl Lot {
                 }
                 ProjectKind::Building(id) => {
                     let b = &buildings[id];
-                    if b.draw
+                    if b.mesh
+                        .faces
                         .iter()
                         .any(|(p, _)| p.intersects(&Polygon(shape.corners.to_vec())))
                     {

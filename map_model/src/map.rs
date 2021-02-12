@@ -371,7 +371,8 @@ impl Map {
                     if self.buildings
                         .get(id)
                         .expect("building does not exist anymore, you seem to have forgotten to remove it from the spatial map.")
-                        .draw
+                        .mesh
+                        .faces
                         .iter()
                         .any(|(p, _)| p.contains(pos)) {
                         return mk_proj(ProjectKind::Building(id));

@@ -1,5 +1,6 @@
+use crate::procgen::ColoredMesh;
 use crate::{Buildings, Road, SpatialMap};
-use geom::{Color, LinearColor, Polygon, Shape, Vec2, AABB, OBB};
+use geom::{Color, Polygon, Vec2, OBB};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -39,7 +40,7 @@ pub struct Building {
     pub id: BuildingID,
     pub door_pos: Vec2,
     pub kind: BuildingKind,
-    pub draw: Vec<(Polygon, LinearColor)>,
+    pub mesh: ColoredMesh,
 }
 
 impl Building {
@@ -54,8 +55,8 @@ impl Building {
         let axis = (obb.corners[1] - obb.corners[0]).normalize();
         let size = obb.corners[0].distance(obb.corners[1]);
 
-        let (mut draw, mut door_pos) = match kind {
-            BuildingKind::House => crate::procgen::gen_exterior_house_new(size),
+        let (mut mesh, mut door_pos) = match kind {
+            BuildingKind::House => crate::procgen::gen_exterior_house(size, None),
             BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(size),
             BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(size),
             BuildingKind::Farm => crate::procgen::gen_exterior_farm(size),
@@ -63,9 +64,13 @@ impl Building {
             BuildingKind::Bakery => crate::procgen::gen_exterior_supermarket(size),
         };
 
-        assert!(!draw.is_empty());
+        let off = -mesh.bbox().center();
+        mesh.translate(off);
+        door_pos += off;
 
-        for (poly, _) in &mut draw {
+        debug_assert!(!mesh.faces.is_empty());
+
+        for (poly, _) in &mut mesh.faces {
             poly.rotate(axis).translate(at);
         }
         door_pos = door_pos.rotated_by(axis) + at;
@@ -79,23 +84,15 @@ impl Building {
             door_pos + dir * 1.5,
         ]);
 
-        draw.push((walkway, Color::gray(0.4).into()));
+        mesh.faces.push((walkway, Color::gray(0.4).into()));
 
         let id = buildings.insert_with_key(move |id| Self {
             id,
-            draw,
+            mesh,
             kind,
             door_pos,
         });
-        spatial_map.insert(id, buildings[id].bbox());
+        spatial_map.insert(id, buildings[id].mesh.bbox());
         id
-    }
-
-    pub fn bbox(&self) -> AABB {
-        let mut bbox = self.draw.first().unwrap().0.bbox();
-        for (poly, _) in self.draw.iter().skip(1) {
-            bbox = bbox.union(poly.bbox());
-        }
-        bbox
     }
 }

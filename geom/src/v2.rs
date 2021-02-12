@@ -49,6 +49,12 @@ impl Vec2 {
         Self { x: v, y: v }
     }
 
+    #[inline]
+    pub const fn x(x: f32) -> Self {
+        Self { x, y: 0.0 }
+    }
+
+    #[inline]
     pub fn z(self, z: f32) -> Vec3 {
         Vec3 {
             x: self.x,

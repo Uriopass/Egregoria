@@ -56,7 +56,7 @@ impl From<SerializedMap> for Map {
 fn mk_spatial_map(m: &SerializedMap) -> SpatialMap {
     let mut sm = SpatialMap::default();
     for h in m.buildings.values() {
-        sm.insert(h.id, h.bbox());
+        sm.insert(h.id, h.mesh.bbox());
     }
     for r in m.roads.values() {
         sm.insert(r.id, r.bbox());
