@@ -8,7 +8,7 @@ pub struct MultiSpriteBatchBuilder {
 
 #[derive(Clone)]
 pub struct MultiSpriteBatch {
-    pub sbs: Vec<SpriteBatch>,
+    sbs: Vec<SpriteBatch>,
 }
 
 impl MultiSpriteBatchBuilder {
