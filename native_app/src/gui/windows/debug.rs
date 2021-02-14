@@ -5,7 +5,6 @@ use common::{GameTime, SECONDS_PER_DAY};
 use egregoria::engine_interaction::{MouseInfo, RenderStats};
 use egregoria::map_dynamic::Itinerary;
 use egregoria::physics::CollisionWorld;
-use egregoria::rendering::immediate::ImmediateDraw;
 use egregoria::utils::frame_log::FrameLog;
 use egregoria::Egregoria;
 use geom::{vec2, Camera, Color, Intersect, LinearColor, Segment, Spline, Vec2, AABB, OBB};
