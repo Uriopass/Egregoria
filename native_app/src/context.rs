@@ -93,9 +93,15 @@ impl Context {
                         if let Some(new_size) = new_size.take() {
                             self.gfx.resize(new_size.width, new_size.height);
                             state.resized(&mut self, new_size);
+                            self.gfx.update_sc = false;
                         }
 
                         let size = self.gfx.size;
+                        if self.gfx.update_sc {
+                            self.gfx.update_sc = false;
+                            self.gfx.resize(size.0, size.1);
+                        }
+
                         match self.gfx.swapchain.get_current_frame() {
                             Ok(swapchainframe) => {
                                 frame = Some(swapchainframe);
