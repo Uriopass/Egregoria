@@ -1,4 +1,5 @@
 use crate::context::Context;
+use crate::gui::Settings;
 use egregoria::engine_interaction::{KeyCode, MouseButton};
 use geom::{vec2, Camera, Vec2, Vec3};
 use wgpu_engine::Tesselator;
@@ -50,7 +51,7 @@ impl CameraHandler {
         delta: f32,
         mouse_enabled: bool,
         keyboard_enabled: bool,
-        lock: bool,
+        settings: &Settings,
     ) {
         let p = ctx.input.mouse.unprojected;
         let screenpos = ctx.input.mouse.screen;
@@ -67,14 +68,14 @@ impl CameraHandler {
 
             self.last_pos = self.unproject(ctx.input.mouse.screen);
             if ctx.input.mouse.wheel_delta < 0.0 {
-                self.zoom_by(ctx, 1.1, lock);
+                self.zoom_by(ctx, 1.1, settings.camera_lock);
             }
             if ctx.input.mouse.wheel_delta > 0.0 {
-                self.zoom_by(ctx, 1.0 / 1.1, lock);
+                self.zoom_by(ctx, 1.0 / 1.1, settings.camera_lock);
             }
         }
 
-        if ctx.window.fullscreen().is_some() {
+        if settings.camera_border_move {
             if screenpos.x < 2.0 {
                 self.translate_smooth(delta, vec2(-1.0, 0.0));
             }
@@ -107,12 +108,12 @@ impl CameraHandler {
 
             let just_pressed = &ctx.input.keyboard.just_pressed;
             if just_pressed.contains(&KeyCode::Add) || just_pressed.contains(&KeyCode::Equals) {
-                self.zoom_by(ctx, 1.1, lock);
+                self.zoom_by(ctx, 1.1, settings.camera_lock);
             }
 
             let just_pressed = &ctx.input.keyboard.just_pressed; // cannot call zoom_by 2 lines above without reborrowing
             if just_pressed.contains(&KeyCode::Subtract) || just_pressed.contains(&KeyCode::Minus) {
-                self.zoom_by(ctx, 1.0 / 1.1, lock);
+                self.zoom_by(ctx, 1.0 / 1.1, settings.camera_lock);
             }
         }
 
