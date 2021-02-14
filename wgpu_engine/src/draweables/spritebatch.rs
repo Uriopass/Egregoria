@@ -39,7 +39,7 @@ u8slice_impl!(InstanceRaw);
 
 impl SpriteBatchBuilder {
     pub fn from_path(ctx: &GfxContext, path: impl AsRef<Path>) -> Self {
-        Self::new(Texture::from_path(ctx, path, None).expect("tex not found"))
+        Self::new(Texture::from_path(ctx, path, None))
     }
 
     pub fn clear(&mut self) {

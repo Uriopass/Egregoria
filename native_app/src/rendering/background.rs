@@ -37,8 +37,7 @@ impl BackgroundRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
         gfx.register_pipeline::<ShadedQuadTex<Background, BackgroundUniform>>();
 
-        let tex =
-            Texture::from_path(gfx, "assets/noise.png", Some("noise")).expect("noise not found");
+        let tex = Texture::from_path(gfx, "assets/noise.png", Some("noise"));
         let sqt = ShadedQuadTex::<Background, BackgroundUniform>::new(
             gfx,
             Uniform::new(BackgroundUniform::default(), &gfx.device),
