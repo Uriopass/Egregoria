@@ -26,6 +26,7 @@ pub struct GfxContext {
     pub color_texture: MultisampledTexture,
     pub ui_texture: Texture,
     pub sc_desc: SwapChainDescriptor,
+    pub update_sc: bool,
     pub pipelines: HashMap<TypeId, RenderPipeline>,
     pub projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
@@ -96,6 +97,7 @@ impl GfxContext {
             device,
             queue,
             sc_desc,
+            update_sc: false,
             adapter,
             depth_texture,
             color_texture,
@@ -115,6 +117,13 @@ impl GfxContext {
         me.register_pipeline::<BlitLinear>();
 
         me
+    }
+
+    pub fn set_present_mode(&mut self, mode: wgpu::PresentMode) {
+        if self.sc_desc.present_mode != mode {
+            self.sc_desc.present_mode = mode;
+            self.update_sc = true;
+        }
     }
 
     pub fn set_time(&mut self, time: f32) {

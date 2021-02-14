@@ -278,6 +278,8 @@ impl State {
             ctx.window.set_fullscreen(None);
         }
 
+        ctx.gfx.set_present_mode(settings.vsync.into());
+
         ctx.audio.set_settings(settings);
     }
 

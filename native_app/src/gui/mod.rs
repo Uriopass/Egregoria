@@ -20,12 +20,15 @@ mod movable;
 mod roadbuild;
 mod roadeditor;
 mod selectable;
+mod settings;
 mod specialbuilding;
 mod topgui;
+
 pub mod windows;
 
 pub use follow::FollowEntity;
 pub use inspect::*;
+pub use settings::*;
 pub use topgui::*;
 
 #[derive(Copy, Clone, Default, Debug)]

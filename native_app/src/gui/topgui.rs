@@ -1,4 +1,5 @@
 use crate::gui::lotbrush::LotBrushResource;
+use crate::gui::settings::Settings;
 use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::ImguiWindows;
 use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
@@ -12,66 +13,10 @@ use map_model::{BuildingKind, LanePatternBuilder, LotKind};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
-pub struct Settings {
-    pub camera_sensibility: f32,
-    pub camera_lock: bool,
-
-    pub fullscreen: bool,
-
-    pub music_volume_percent: f32,
-    pub effects_volume_percent: f32,
-    pub ui_volume_percent: f32,
-
-    pub time_warp: f32,
-}
-
-impl Default for Settings {
-    fn default() -> Self {
-        Self {
-            camera_sensibility: 80.0,
-            camera_lock: true,
-            music_volume_percent: 100.0,
-            effects_volume_percent: 100.0,
-            ui_volume_percent: 100.0,
-            fullscreen: true,
-            time_warp: 1.0,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Serialize, Deserialize)]
-pub enum AutoSaveEvery {
-    Never,
-    OneMinute,
-    FiveMinutes,
-}
-
-impl Into<Option<Duration>> for AutoSaveEvery {
-    fn into(self) -> Option<Duration> {
-        match self {
-            AutoSaveEvery::Never => None,
-            AutoSaveEvery::OneMinute => Some(Duration::from_secs(60)),
-            AutoSaveEvery::FiveMinutes => Some(Duration::from_secs(5 * 60)),
-        }
-    }
-}
-
-impl AsRef<str> for AutoSaveEvery {
-    fn as_ref(&self) -> &str {
-        match self {
-            AutoSaveEvery::Never => "Never",
-            AutoSaveEvery::OneMinute => "Minute",
-            AutoSaveEvery::FiveMinutes => "Five Minutes",
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct Gui {
     pub windows: ImguiWindows,
-    pub auto_save_every: AutoSaveEvery,
     #[serde(skip)]
     pub last_save: Instant,
     #[serde(skip)]
@@ -87,7 +32,6 @@ impl Default for Gui {
     fn default() -> Self {
         Self {
             windows: ImguiWindows::default(),
-            auto_save_every: AutoSaveEvery::Never,
             last_save: Instant::now(),
             last_gui_save: Instant::now(),
             n_cars: 100,
@@ -121,7 +65,7 @@ impl Gui {
     }
 
     pub fn auto_save(&mut self, goria: &mut Egregoria) {
-        if let Some(every) = self.auto_save_every.into() {
+        if let Some(every) = self.settings.auto_save_every.into() {
             if self.last_save.elapsed() > every {
                 egregoria::save_to_disk(goria);
                 self.last_save = Instant::now();
@@ -415,32 +359,7 @@ impl Gui {
         ui.main_menu_bar(|| {
             self.windows.menu(ui);
 
-            ui.menu(im_str!("Settings"), true, || {
-                ui.text("Auto save every");
-                ui.same_line(0.0);
-                let tok = imgui::ComboBox::new(im_str!(""))
-                    .preview_value(&im_str!("{}", self.auto_save_every.as_ref()))
-                    .begin(ui);
-                if let Some(tok) = tok {
-                    if imgui::Selectable::new(im_str!("Never")).build(ui) {
-                        self.auto_save_every = AutoSaveEvery::Never;
-                    }
-                    if imgui::Selectable::new(im_str!("Minute")).build(ui) {
-                        self.auto_save_every = AutoSaveEvery::OneMinute;
-                    }
-                    if imgui::Selectable::new(im_str!("Five Minutes")).build(ui) {
-                        self.auto_save_every = AutoSaveEvery::FiveMinutes;
-                    }
-                    tok.end(ui);
-                }
-                imgui::Slider::new(im_str!("Camera sensibility")).range(10.0..=200.0).display_format(im_str!("%.0f")).build(ui, &mut self.settings.camera_sensibility);
-                ui.checkbox(im_str!("Camera zoom locked"), &mut self.settings.camera_lock);
-
-                ui.checkbox(im_str!("Fullscreen"), &mut self.settings.fullscreen);
-                imgui::Slider::new(im_str!("Music volume")).range(0.0..=100.0).display_format(im_str!("%.0f")).build(ui, &mut self.settings.music_volume_percent);
-                imgui::Slider::new(im_str!("Effects volume")).range(0.0..=100.0).display_format(im_str!("%.0f")).build(ui, &mut self.settings.effects_volume_percent);
-                imgui::Slider::new(im_str!("Ui volume")).range(0.0..=100.0).display_format(im_str!("%.0f")).build(ui, &mut self.settings.ui_volume_percent);
-            });
+            ui.menu(im_str!("Settings"), true, self.settings.menu(ui));
             if ui.small_button(im_str!("Save")) {
                 egregoria::save_to_disk(goria);
             }
