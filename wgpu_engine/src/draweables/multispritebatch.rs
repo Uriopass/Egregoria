@@ -1,4 +1,5 @@
 use crate::{Drawable, GfxContext, SpriteBatch, SpriteBatchBuilder, Texture};
+use std::iter::FromIterator;
 use wgpu::{RenderPass, RenderPipeline};
 
 pub struct MultiSpriteBatchBuilder {
@@ -14,7 +15,7 @@ impl MultiSpriteBatchBuilder {
     pub fn from_paths(ctx: &GfxContext, paths: &[&'static str]) -> Self {
         Self {
             sbs: paths
-                .into_iter()
+                .iter()
                 .map(move |path| SpriteBatchBuilder::from_path(ctx, path))
                 .collect(),
         }
@@ -54,6 +55,14 @@ impl Drawable for MultiSpriteBatch {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         for v in &self.sbs {
             v.draw(gfx, rp);
+        }
+    }
+}
+
+impl FromIterator<SpriteBatch> for MultiSpriteBatch {
+    fn from_iter<T: IntoIterator<Item = SpriteBatch>>(iter: T) -> Self {
+        Self {
+            sbs: iter.into_iter().collect(),
         }
     }
 }

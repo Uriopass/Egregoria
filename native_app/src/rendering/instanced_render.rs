@@ -35,7 +35,7 @@ impl InstancedRender {
                 trans.direction(),
                 ar.z,
                 ar.tint.into(),
-                ar.scale,
+                (ar.scale, ar.scale),
             );
         }
 

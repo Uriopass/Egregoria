@@ -348,7 +348,7 @@ impl Road {
         }
     }
 
-    pub fn intersects(&self, obb: OBB) -> bool {
+    pub fn intersects(&self, obb: &OBB) -> bool {
         let c = obb.center();
         self.generated_points
             .project(c)

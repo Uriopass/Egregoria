@@ -46,11 +46,18 @@ impl SpriteBatchBuilder {
         self.instances.clear()
     }
 
-    pub fn push(&mut self, pos: Vec2, direction: Vec2, z: f32, col: LinearColor, scale: f32) {
+    pub fn push(
+        &mut self,
+        pos: Vec2,
+        direction: Vec2,
+        z: f32,
+        col: LinearColor,
+        scale: (f32, f32),
+    ) {
         self.instances.push(InstanceRaw {
             tint: col.into(),
             dir: direction.into(),
-            scale: [scale * self.stretch_x, scale * self.stretch_y],
+            scale: [scale.0 * self.stretch_x, -scale.1 * self.stretch_y],
             pos: [pos.x, pos.y, z],
             _pad: 0.0,
         })

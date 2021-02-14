@@ -187,7 +187,7 @@ impl State {
                     OrderKind::Polygon { ref poly } => {
                         tess.draw_filled_polygon(poly.as_slice(), z);
                     }
-                    OrderKind::OBB(obb) => {
+                    OrderKind::OBB(ref obb) => {
                         let [ax1, ax2] = obb.axis();
                         tess.draw_rect_cos_sin(
                             obb.center(),

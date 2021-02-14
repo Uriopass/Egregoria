@@ -91,10 +91,10 @@ impl SpatialMap {
         self.query(Circle { center, radius })
     }
 
-    pub fn query(
-        &self,
-        r: impl Intersect<AABB> + Copy + 'static,
-    ) -> impl Iterator<Item = ProjectKind> + '_ {
+    pub fn query<'a>(
+        &'a self,
+        r: impl Intersect<AABB> + Clone + 'a,
+    ) -> impl Iterator<Item = ProjectKind> + 'a {
         self.grid.query(r).map(|(_, _, k)| *k)
     }
 

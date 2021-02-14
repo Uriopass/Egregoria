@@ -45,11 +45,11 @@ impl Lot {
             return None;
         }
 
-        for obj in spatial.query(shape) {
+        for obj in spatial.query(&shape) {
             match obj {
                 ProjectKind::Road(r) => {
                     let r = &roads[r];
-                    if r.intersects(shape) {
+                    if r.intersects(&shape) {
                         return None;
                     }
                 }
@@ -79,6 +79,7 @@ impl Lot {
             }
         }
 
+        let bbox = shape.bbox();
         let id = lots.insert_with_key(move |id| Lot {
             id,
             parent,
@@ -86,7 +87,7 @@ impl Lot {
             shape,
             size,
         });
-        spatial.insert(id, shape.bbox());
+        spatial.insert(id, bbox);
         Some(id)
     }
 
@@ -150,7 +151,7 @@ impl Lot {
             .query(r.generated_points.bbox())
             .filter_map(|kind| {
                 let id = kind.to_lot()?;
-                if r.intersects(map.lots[id].shape) {
+                if r.intersects(&map.lots[id].shape) {
                     Some(id)
                 } else {
                     None

@@ -2,13 +2,15 @@ use egregoria::utils::Restrict;
 use flat_spatial::storage::Storage;
 use geom::{lerp, vec2, Color, LinearColor, AABB};
 use map_model::{
-    Lane, LaneKind, LotKind, Map, ProjectKind, TrafficBehavior, TurnKind, CROSSWALK_WIDTH,
+    BuildingKind, Lane, LaneKind, LotKind, Map, ProjectKind, TrafficBehavior, TurnKind,
+    CROSSWALK_WIDTH,
 };
+use std::collections::HashMap;
 use std::ops::Mul;
 use wgpu_engine::{
     compile_shader, CompiledShader, FrameContext, GfxContext, Mesh, MultiSpriteBatch,
     MultiSpriteBatchBuilder, ShadedBatch, ShadedBatchBuilder, ShadedInstanceRaw, Shaders,
-    SpriteBatch, SpriteBatchBuilder, Tesselator,
+    SpriteBatch, SpriteBatchBuilder, Tesselator, Texture,
 };
 
 #[derive(Copy, Clone)]
@@ -26,6 +28,8 @@ impl Shaders for Crosswalk {
 
 pub struct RoadRenderer {
     map_mesh: Option<Mesh>,
+    buildings_builder: HashMap<BuildingKind, SpriteBatchBuilder>,
+    buildings: Option<MultiSpriteBatch>,
     arrows: Option<SpriteBatch>,
     arrow_builder: SpriteBatchBuilder,
     tree_shadows: Option<SpriteBatch>,
@@ -48,6 +52,9 @@ const Z_HOUSE: f32 = 0.28;
 const Z_SIGNAL: f32 = 0.29;
 const Z_TREE: f32 = 0.5;
 
+const BSPRITES: &[(BuildingKind, &str)] =
+    &[(BuildingKind::FlourFactory, "assets/flour_factory.png")];
+
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext) -> Self {
         let arrow_builder = SpriteBatchBuilder::from_path(gfx, "assets/arrow_one_way.png");
@@ -68,8 +75,19 @@ impl RoadRenderer {
         );
         let tree_shadow_builder = SpriteBatchBuilder::from_path(gfx, "assets/tree_shadow.png");
 
+        let mut buildings_builder = HashMap::new();
+
+        for (key, path) in BSPRITES {
+            buildings_builder.insert(
+                *key,
+                SpriteBatchBuilder::new(Texture::from_path(gfx, path, Some(path))),
+            );
+        }
+
         RoadRenderer {
             map_mesh: None,
+            buildings_builder,
+            buildings: None,
             arrows: None,
             arrow_builder,
             tree_shadows: None,
@@ -163,7 +181,7 @@ impl RoadRenderer {
             }
         }
 
-        // Buildings
+        // Buildings mesh
         for building in map.buildings().values() {
             for (p, col) in &building.mesh.faces {
                 tess.set_color(*col);
@@ -182,6 +200,34 @@ impl RoadRenderer {
             tess.draw_filled_polygon(&lot.shape.corners, Z_LOT);
         }
         tess.meshbuilder.build(gfx)
+    }
+
+    fn buildings_sprites(&mut self, map: &Map, gfx: &GfxContext) -> MultiSpriteBatch {
+        for v in self.buildings_builder.values_mut() {
+            v.clear();
+        }
+
+        for building in map.buildings().values() {
+            if let Some(x) = self.buildings_builder.get_mut(&building.kind) {
+                let axis = building.obb.axis();
+                let c = building.obb.center();
+                let w = axis[0].magnitude();
+                let d = axis[0] / w;
+                let h = axis[1].magnitude();
+                x.push(
+                    c,
+                    d,
+                    Z_HOUSE - std::f32::EPSILON,
+                    LinearColor::WHITE,
+                    (w, h),
+                );
+            }
+        }
+
+        self.buildings_builder
+            .values()
+            .flat_map(|x| x.build(gfx))
+            .collect()
     }
 
     fn render_lane_signals(n: &Lane, sr: &mut Tesselator, time: u32) {
@@ -280,7 +326,7 @@ impl RoadRenderer {
                         dir,
                         Z_ARROW,
                         LinearColor::gray(0.3 + fade * 0.1),
-                        4.0,
+                        (4.0, 4.0),
                     );
                 }
             }
@@ -365,7 +411,7 @@ impl RoadRenderer {
                 t.dir,
                 Z_TREE,
                 LinearColor::WHITE.a(alpha_cutoff),
-                t.size,
+                (t.size, t.size),
             );
 
             self.tree_builder
@@ -373,7 +419,13 @@ impl RoadRenderer {
                     (common::rand::rand3(pos.x, pos.y, 10.0) * self.tree_builder.n_texs() as f32)
                         as usize,
                 )
-                .push(pos, t.dir, Z_TREE + 0.01, t.col * tree_col, t.size);
+                .push(
+                    pos,
+                    t.dir,
+                    Z_TREE + 0.01,
+                    t.col * tree_col,
+                    (t.size, t.size),
+                );
         }
 
         (
@@ -396,6 +448,7 @@ impl RoadRenderer {
             self.map_mesh = self.map_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
             self.arrows = self.arrows(map, &ctx.gfx);
             self.crosswalks = self.crosswalks(map, &ctx.gfx);
+            self.buildings = Some(self.buildings_sprites(map, &ctx.gfx));
 
             self.last_config = common::config_id();
             map.dirty = false;
@@ -404,6 +457,10 @@ impl RoadRenderer {
         let (trees, tree_shadows) = self.trees(map, screen, &ctx.gfx);
         self.trees = Some(trees);
         self.tree_shadows = tree_shadows;
+
+        if let Some(x) = self.buildings.clone() {
+            ctx.draw(x);
+        }
 
         if let Some(x) = self.map_mesh.clone() {
             ctx.draw(x);

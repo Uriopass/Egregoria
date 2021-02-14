@@ -36,8 +36,26 @@ pub trait Intersect<T: Shape>: Shape {
     fn intersects(&self, shape: &T) -> bool;
 }
 
+impl<T: Shape, U: Shape> Intersect<T> for &U
+where
+    U: Intersect<T>,
+{
+    fn intersects(&self, shape: &T) -> bool {
+        U::intersects(self, shape)
+    }
+}
+
 pub trait Shape {
     fn bbox(&self) -> AABB;
+}
+
+impl<T> Shape for &T
+where
+    T: Shape,
+{
+    fn bbox(&self) -> AABB {
+        T::bbox(self)
+    }
 }
 
 impl Shape for Vec2 {

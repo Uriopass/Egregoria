@@ -201,7 +201,7 @@ impl Map {
     pub fn build_special_building(
         &mut self,
         road: RoadID,
-        shape: OBB,
+        shape: &OBB,
         kind: BuildingKind,
     ) -> BuildingID {
         log::info!(
@@ -216,7 +216,7 @@ impl Map {
             .query(shape)
             .filter_map(|obj| {
                 if let ProjectKind::Lot(id) = obj {
-                    if self.lots[id].shape.intersects(&shape) {
+                    if self.lots[id].shape.intersects(shape) {
                         return Some(id);
                     }
                 }
@@ -238,7 +238,7 @@ impl Map {
             &mut self.buildings,
             &mut self.spatial_map,
             &self.roads[road],
-            shape,
+            *shape,
             kind,
         )
     }
@@ -255,7 +255,6 @@ impl Map {
 
         self.lots.retain(|_, lot| {
             let parent = lot.parent;
-            let obb = lot.shape;
             let lotkind = lot.kind;
 
             let r = rand::random::<f32>();
@@ -278,7 +277,7 @@ impl Map {
                 buildings,
                 spatial_map,
                 &roads[parent],
-                obb,
+                lot.shape,
                 kind,
             ));
             false
