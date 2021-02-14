@@ -346,14 +346,14 @@ impl RoadRenderer {
         self.tree_shadows_builder.clear();
 
         let k = screen.w().min(screen.h());
-        if k > 5000.0 {
+        if k > 4500.0 {
             return (
                 self.tree_builder.build(gfx),
                 self.tree_shadows_builder.build(gfx),
             );
         }
 
-        let alpha_cutoff = lerp(1.0, 0.0, (k - 3000.0) / 2000.0);
+        let alpha_cutoff = lerp(1.0, 0.0, (k - 3000.0) / 1500.0);
 
         let tree_col = LinearColor::from(common::config().tree_col).a(alpha_cutoff);
 
