@@ -127,15 +127,15 @@ impl GfxContext {
     }
 
     pub fn set_time(&mut self, time: f32) {
-        self.time_uni.value = time;
+        *self.time_uni.value_mut() = time;
     }
 
     pub fn set_proj(&mut self, proj: mint::ColumnMatrix4<f32>) {
-        self.projection.value = proj;
+        *self.projection.value_mut() = proj;
     }
 
     pub fn set_inv_proj(&mut self, proj: mint::ColumnMatrix4<f32>) {
-        self.inv_projection.value = proj;
+        *self.inv_projection.value_mut() = proj;
     }
 
     pub fn start_frame(&mut self) -> CommandEncoder {

@@ -1,4 +1,5 @@
 use crate::ToU8Slice;
+use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{BufferBindingType, ShaderStage};
 
@@ -6,20 +7,20 @@ pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
     pub layout: wgpu::BindGroupLayout,
     pub bindgroup: wgpu::BindGroup,
-    pub value: T,
+    value: T,
+    pub changed: AtomicBool,
 }
 
-impl<T: Copy> Uniform<T>
+impl<T> Uniform<T>
 where
     T: ToU8Slice,
 {
     pub fn new(value: T, device: &wgpu::Device) -> Self {
         let layout = Self::bindgroup_layout(&device);
 
-        let r = [value];
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
-            contents: ToU8Slice::cast_slice(r.as_ref()),
+            contents: ToU8Slice::cast_slice(std::slice::from_ref(&value)),
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         });
 
@@ -46,14 +47,26 @@ where
             buffer,
             bindgroup,
             value,
+            changed: AtomicBool::from(true),
             layout,
         }
     }
 
+    pub fn value(&self) -> &T {
+        &self.value
+    }
+
+    pub fn value_mut(&mut self) -> &mut T {
+        *self.changed.get_mut() = true;
+        &mut self.value
+    }
+
     pub fn upload_to_gpu(&self, queue: &wgpu::Queue) {
-        let r = [self.value];
-        let data = ToU8Slice::cast_slice(r.as_ref());
-        queue.write_buffer(&self.buffer, 0, data);
+        if self.changed.load(Ordering::SeqCst) {
+            let data = ToU8Slice::cast_slice(std::slice::from_ref(&self.value));
+            queue.write_buffer(&self.buffer, 0, data);
+            self.changed.store(false, Ordering::SeqCst);
+        }
     }
 }
 

@@ -9,7 +9,6 @@ use wgpu::{BindGroup, IndexFormat, RenderPass, RenderPipeline};
 pub struct ShadedQuadTex<T: Shaders, U: ToU8Slice + 'static> {
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
-    pub n_indices: u32,
     pub alpha_blend: bool,
     pub uniform: Uniform<U>,
     pub tex: Texture,
@@ -19,16 +18,12 @@ pub struct ShadedQuadTex<T: Shaders, U: ToU8Slice + 'static> {
 
 const UV_VERTICES: &[UvVertex] = &[
     UvVertex {
-        position: [-1.0, -1.0, 0.0],
-        uv: [0.0, 1.0],
+        position: [-1.0, -3.0, 0.0],
+        uv: [0.0, 2.0],
     },
     UvVertex {
-        position: [1.0, -1.0, 0.0],
-        uv: [1.0, 1.0],
-    },
-    UvVertex {
-        position: [1.0, 1.0, 0.0],
-        uv: [1.0, 0.0],
+        position: [3.0, 1.0, 0.0],
+        uv: [2.0, 0.0],
     },
     UvVertex {
         position: [-1.0, 1.0, 0.0],
@@ -36,7 +31,7 @@ const UV_VERTICES: &[UvVertex] = &[
     },
 ];
 
-const UV_INDICES: &[IndexType] = &[0, 1, 2, 0, 2, 3];
+const UV_INDICES: &[IndexType] = &[0, 1, 2];
 
 impl<T: Shaders, U: 'static + ToU8Slice> ShadedQuadTex<T, U> {
     pub fn new(gfx: &GfxContext, uniform: Uniform<U>, tex: Texture) -> ShadedQuadTex<T, U> {
@@ -59,7 +54,6 @@ impl<T: Shaders, U: 'static + ToU8Slice> ShadedQuadTex<T, U> {
         ShadedQuadTex {
             vertex_buffer,
             index_buffer,
-            n_indices: UV_INDICES.len() as u32,
             alpha_blend: false,
             uniform,
             texbg,
@@ -76,7 +70,7 @@ impl<T: 'static + Shaders, U: ToU8Slice + 'static> Drawable for ShadedQuadTex<T,
 
         gfx.basic_pipeline(
             &[
-                &gfx.projection.layout,
+                &gfx.inv_projection.layout,
                 &Uniform::<U>::bindgroup_layout(&gfx.device),
                 &Texture::bindgroup_layout(&gfx.device),
             ],
@@ -95,6 +89,6 @@ impl<T: 'static + Shaders, U: ToU8Slice + 'static> Drawable for ShadedQuadTex<T,
         rp.set_bind_group(2, &self.texbg, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
-        rp.draw_indexed(0..self.n_indices, 0, 0..1);
+        rp.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
     }
 }

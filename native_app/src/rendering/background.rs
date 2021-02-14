@@ -53,7 +53,7 @@ impl BackgroundRender {
                 sea_color: common::config().sea_col.into(),
                 grass_color: common::config().grass_col.into(),
                 sand_color: common::config().sand_col.into(),
-                time: fctx.gfx.time_uni.value,
+                time: *fctx.gfx.time_uni.value(),
                 _pad: Vec3::ZERO,
             },
             &fctx.gfx.device,

@@ -295,8 +295,8 @@ impl LightRender {
 
         let ambiant_uni = Uniform::new(
             LightUniform {
-                inv_proj: gfx.inv_projection.value,
-                time: gfx.time_uni.value,
+                inv_proj: *gfx.inv_projection.value(),
+                time: *gfx.time_uni.value(),
                 ambiant,
                 height,
             },
