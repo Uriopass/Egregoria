@@ -59,39 +59,43 @@ pub enum CompanyKind {
     // Buyers come to get their goods
     Store,
     // Buyers get their goods delivered to them
-    Factory {
-        truck: VehicleID,
-        driver: Option<SoulID>,
-    },
+    Factory { n_trucks: u32 },
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct GoodsCompany {
     pub kind: CompanyKind,
     pub recipe: Recipe,
     pub building: BuildingID,
     pub workers: i32,
     pub progress: f32,
+    pub driver: Option<SoulID>,
+    pub trucks: Vec<VehicleID>,
 }
 
 pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
     let bpos = goria.read::<Map>().buildings()[company.building].door_pos;
 
-    let e = goria
-        .world
-        .push((company, Workers::default(), Sold::default()));
+    let e = goria.world.push(());
 
     let soul = SoulID(e);
 
-    let m: &mut Market = &mut *goria.write::<Market>();
-    m.produce(soul, CommodityKind::JobOpening, company.workers);
-    m.sell_all(soul, bpos, CommodityKind::JobOpening);
+    {
+        let m = &mut *goria.write::<Market>();
+        m.produce(soul, CommodityKind::JobOpening, company.workers);
+        m.sell_all(soul, bpos, CommodityKind::JobOpening);
 
-    company.recipe.init(soul, bpos, m);
+        company.recipe.init(soul, bpos, m);
+    }
 
     goria
         .write::<BuildingInfos>()
         .set_owner(company.building, soul);
+
+    goria
+        .world
+        .push_with_id(e, (company, Workers::default(), Sold::default()));
+
     soul
 }
 
@@ -127,11 +131,7 @@ pub fn company(
         });
     }
 
-    if let CompanyKind::Factory {
-        driver: Some(driver),
-        ..
-    } = company.kind
-    {
+    if let Some(driver) = company.driver {
         let driver_work_kind = sw
             .entry_ref(driver.0)
             .unwrap()
@@ -168,19 +168,16 @@ pub fn company(
             .is_err()
         {
             let mut kind = WorkKind::Worker;
-            if let CompanyKind::Factory {
-                truck,
-                ref mut driver,
-            } = company.kind
+            if matches!(company.kind, CompanyKind::Factory { .. })
+                && company.driver.is_none()
+                && !company.trucks.is_empty()
             {
-                if driver.is_none() {
-                    kind = WorkKind::Driver {
-                        state: DriverState::GoingToWork,
-                        truck,
-                    };
+                kind = WorkKind::Driver {
+                    state: DriverState::GoingToWork,
+                    truck: company.trucks[0],
+                };
 
-                    *driver = Some(worker);
-                }
+                company.driver = Some(worker);
             }
 
             cbuf.add_component(

@@ -15,6 +15,49 @@ pub mod desire;
 pub mod goods_company;
 pub mod human;
 
+struct GoodsCompanyDescription {
+    bkind: BuildingKind,
+    kind: CompanyKind,
+    recipe: Recipe,
+    n_workers: i32,
+}
+
+const GOOD_BUILDINGS: &[GoodsCompanyDescription] = &[
+    GoodsCompanyDescription {
+        bkind: BuildingKind::Farm,
+        kind: CompanyKind::Factory { n_trucks: 1 },
+        recipe: Recipe {
+            consumption: &[],
+            production: &[(CommodityKind::Wheat, 1)],
+            seconds_per_work: 1000,
+            storage_multiplier: 5,
+        },
+        n_workers: 10,
+    },
+    GoodsCompanyDescription {
+        bkind: BuildingKind::FlourFactory,
+        kind: CompanyKind::Factory { n_trucks: 1 },
+        recipe: Recipe {
+            consumption: &[(CommodityKind::Wheat, 1)],
+            production: &[(CommodityKind::Flour, 1)],
+            seconds_per_work: 1000,
+            storage_multiplier: 2,
+        },
+        n_workers: 10,
+    },
+    GoodsCompanyDescription {
+        bkind: BuildingKind::Bakery,
+        kind: CompanyKind::Store,
+        recipe: Recipe {
+            consumption: &[(CommodityKind::Flour, 1)],
+            production: &[(CommodityKind::Bread, 1)],
+            seconds_per_work: 1000,
+            storage_multiplier: 5,
+        },
+        n_workers: 3,
+    },
+];
+
 pub fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
     let map = goria.read::<Map>();
     let infos = goria.read::<BuildingInfos>();
@@ -44,80 +87,33 @@ pub fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
         n_souls_added += 1;
     }
 
-    for &(build_id, pos) in empty_buildings.get(&BuildingKind::Farm).unwrap_or(&vec![]) {
-        let truck = unwrap_or!(
-            spawn_parked_vehicle(goria, VehicleKind::Truck, pos),
-            continue
-        );
+    for des in GOOD_BUILDINGS {
+        for &(build_id, pos) in empty_buildings.get(&des.bkind).unwrap_or(&vec![]) {
+            let mut trucks = vec![];
 
-        let comp = GoodsCompany {
-            kind: CompanyKind::Factory {
-                truck,
+            if let CompanyKind::Factory { n_trucks } = des.kind {
+                for _ in 0..n_trucks {
+                    trucks.extend(spawn_parked_vehicle(goria, VehicleKind::Truck, pos))
+                }
+                if trucks.is_empty() {
+                    continue;
+                }
+            }
+
+            let comp = GoodsCompany {
+                kind: des.kind,
+                building: build_id,
+                recipe: des.recipe,
+                workers: des.n_workers,
+                progress: 0.0,
                 driver: None,
-            },
-            recipe: Recipe {
-                consumption: &[],
-                production: &[(CommodityKind::Wheat, 1)],
-                seconds_per_work: 1000,
-                storage_multiplier: 5,
-            },
-            building: build_id,
-            workers: 10,
-            progress: 0.0,
-        };
+                trucks,
+            };
 
-        company_soul(goria, comp);
-        n_souls_added += 1;
-    }
+            company_soul(goria, comp);
 
-    for &(build_id, pos) in empty_buildings
-        .get(&BuildingKind::FlourFactory)
-        .unwrap_or(&vec![])
-    {
-        let truck = unwrap_or!(
-            spawn_parked_vehicle(goria, VehicleKind::Truck, pos),
-            continue
-        );
-
-        let comp = GoodsCompany {
-            kind: CompanyKind::Factory {
-                truck,
-                driver: None,
-            },
-            recipe: Recipe {
-                consumption: &[(CommodityKind::Wheat, 1)],
-                production: &[(CommodityKind::Flour, 1)],
-                seconds_per_work: 1000,
-                storage_multiplier: 2,
-            },
-            building: build_id,
-            workers: 10,
-            progress: 0.0,
-        };
-
-        company_soul(goria, comp);
-        n_souls_added += 1;
-    }
-
-    for &(build_id, _) in empty_buildings
-        .get(&BuildingKind::Bakery)
-        .unwrap_or(&vec![])
-    {
-        let comp = GoodsCompany {
-            kind: CompanyKind::Store,
-            recipe: Recipe {
-                consumption: &[(CommodityKind::Flour, 1)],
-                production: &[(CommodityKind::Bread, 1)],
-                seconds_per_work: 1000,
-                storage_multiplier: 5,
-            },
-            building: build_id,
-            workers: 3,
-            progress: 0.0,
-        };
-
-        company_soul(goria, comp);
-        n_souls_added += 1;
+            n_souls_added += 1;
+        }
     }
 
     if n_souls_added > 0 {
