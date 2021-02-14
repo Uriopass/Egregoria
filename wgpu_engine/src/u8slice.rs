@@ -1,7 +1,7 @@
 use geom::Vec3;
 
 /// Trait is needed to use bytemuck's conversion on external types
-pub trait ToU8Slice: Sized + Copy {
+pub trait ToU8Slice: Sized {
     fn cast_slice(self_slice: &[Self]) -> &[u8];
 }
 
