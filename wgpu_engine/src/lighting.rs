@@ -16,8 +16,7 @@ pub struct LightRender {
 
 impl LightRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
-        let noise =
-            Texture::from_path(gfx, "assets/noise.png", None).expect("noise texture not found");
+        let noise = Texture::from_path(gfx, "assets/noise.png", None);
 
         let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
             label: None,

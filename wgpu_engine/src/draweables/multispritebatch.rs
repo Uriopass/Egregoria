@@ -1,5 +1,4 @@
 use crate::{Drawable, GfxContext, SpriteBatch, SpriteBatchBuilder, Texture};
-use std::path::Path;
 use wgpu::{RenderPass, RenderPipeline};
 
 pub struct MultiSpriteBatchBuilder {
@@ -12,10 +11,10 @@ pub struct MultiSpriteBatch {
 }
 
 impl MultiSpriteBatchBuilder {
-    pub fn from_paths(ctx: &GfxContext, paths: &[impl AsRef<Path>]) -> Self {
+    pub fn from_paths(ctx: &GfxContext, paths: &[&'static str]) -> Self {
         Self {
             sbs: paths
-                .iter()
+                .into_iter()
                 .map(move |path| SpriteBatchBuilder::from_path(ctx, path))
                 .collect(),
         }
