@@ -49,10 +49,11 @@ impl Texture {
     }
 
     pub fn from_path(ctx: &GfxContext, p: impl AsRef<Path>, label: Option<&'static str>) -> Self {
-        if let Some(x) = Self::try_from_path(ctx, p, label) {
+        let r = p.as_ref();
+        if let Some(x) = Self::try_from_path(ctx, r, label) {
             x
         } else {
-            panic!("texture not found at path: {}", p.as_ref().display())
+            panic!("texture not found at path: {}", r.display())
         }
     }
 

@@ -88,14 +88,14 @@ pub fn special_building(
         return;
     }
 
-    draw.obb(obb)
-        .color(common::config().special_building_col)
-        .z(Z_TOOL);
-
     let rid = closest_road.id;
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
-        let b = map.build_special_building(rid, obb, kind);
+        let b = map.build_special_building(rid, &obb, kind);
         binfos.insert(b);
     }
+
+    draw.obb(obb)
+        .color(common::config().special_building_col)
+        .z(Z_TOOL);
 }

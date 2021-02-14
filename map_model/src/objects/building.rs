@@ -41,6 +41,7 @@ pub struct Building {
     pub door_pos: Vec2,
     pub kind: BuildingKind,
     pub mesh: ColoredMesh,
+    pub obb: OBB,
 }
 
 impl Building {
@@ -60,15 +61,13 @@ impl Building {
             BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(size),
             BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(size),
             BuildingKind::Farm => crate::procgen::gen_exterior_farm(size),
-            BuildingKind::FlourFactory => crate::procgen::gen_exterior_supermarket(size),
+            BuildingKind::FlourFactory => (Default::default(), Vec2::y(-size * 0.5)),
             BuildingKind::Bakery => crate::procgen::gen_exterior_supermarket(size),
         };
 
         let off = -mesh.bbox().center();
         mesh.translate(off);
         door_pos += off;
-
-        debug_assert!(!mesh.faces.is_empty());
 
         for (poly, _) in &mut mesh.faces {
             poly.rotate(axis).translate(at);
@@ -91,6 +90,7 @@ impl Building {
             mesh,
             kind,
             door_pos,
+            obb,
         });
         spatial_map.insert(id, buildings[id].mesh.bbox());
         id
