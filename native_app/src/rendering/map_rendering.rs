@@ -340,6 +340,8 @@ impl RoadRenderer {
             }
         }
 
+        map.trees.dirty = false;
+
         self.tree_builder.clear();
         self.tree_shadows_builder.clear();
 
@@ -399,13 +401,9 @@ impl RoadRenderer {
             map.dirty = false;
         }
 
-        //        if map.trees.dirty {
         let (trees, tree_shadows) = self.trees(map, screen, &ctx.gfx);
         self.trees = Some(trees);
         self.tree_shadows = tree_shadows;
-
-        map.trees.dirty = false;
-        //        }
 
         if let Some(x) = self.map_mesh.clone() {
             ctx.draw(x);
