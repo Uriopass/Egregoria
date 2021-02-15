@@ -13,26 +13,9 @@ pub enum BuildingKind {
     House,
     Workplace,
     Supermarket,
-    Farm,
-    FlourFactory,
+    CerealFarm,
+    CerealFactory,
     Bakery,
-}
-
-impl BuildingKind {
-    pub const SPECIAL_BUILDINGS: &'static [(&'static str, BuildingKind)] = &[
-        ("Farm", BuildingKind::Farm),
-        ("Flour factory", BuildingKind::FlourFactory),
-        ("Bakery", BuildingKind::Bakery),
-    ];
-
-    pub fn size(&self) -> f32 {
-        match self {
-            BuildingKind::Farm => 80.0,
-            BuildingKind::FlourFactory => 80.0,
-            BuildingKind::Bakery => 10.0,
-            _ => 30.0,
-        }
-    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -60,14 +43,10 @@ impl Building {
             BuildingKind::House => crate::procgen::gen_exterior_house(size, None),
             BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(size),
             BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(size),
-            BuildingKind::Farm => crate::procgen::gen_exterior_farm(size),
-            BuildingKind::FlourFactory => (Default::default(), Vec2::y(-size * 0.5)),
-            BuildingKind::Bakery => crate::procgen::gen_exterior_supermarket(size),
+            BuildingKind::CerealFarm => crate::procgen::gen_exterior_wheat_farm(size),
+            BuildingKind::CerealFactory => (Default::default(), Vec2::y(-size * 0.5)),
+            BuildingKind::Bakery => (Default::default(), Vec2::y(-size * 0.5)),
         };
-
-        let off = -mesh.bbox().center();
-        mesh.translate(off);
-        door_pos += off;
 
         for (poly, _) in &mut mesh.faces {
             poly.rotate(axis).translate(at);

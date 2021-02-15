@@ -24,7 +24,7 @@ pub struct Workers(pub Vec<SoulID>);
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CommodityKind {
     JobOpening,
-    Wheat,
+    Cereal,
     Flour,
     Bread,
 }
@@ -32,7 +32,7 @@ pub enum CommodityKind {
 impl CommodityKind {
     pub fn values() -> &'static [Self] {
         use CommodityKind::*;
-        &[JobOpening, Wheat, Flour, Bread]
+        &[JobOpening, Cereal, Flour, Bread]
     }
 }
 

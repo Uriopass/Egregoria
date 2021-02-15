@@ -15,37 +15,47 @@ pub mod desire;
 pub mod goods_company;
 pub mod human;
 
-struct GoodsCompanyDescription {
-    bkind: BuildingKind,
-    kind: CompanyKind,
-    recipe: Recipe,
-    n_workers: i32,
+pub struct GoodsCompanyDescription {
+    pub name: &'static str,
+    pub bkind: BuildingKind,
+    pub kind: CompanyKind,
+    pub recipe: Recipe,
+    pub n_workers: i32,
+    pub size: f32,
+    pub asset_location: &'static str,
 }
 
-const GOOD_BUILDINGS: &[GoodsCompanyDescription] = &[
+pub const GOODS_BUILDINGSS: &[GoodsCompanyDescription] = &[
     GoodsCompanyDescription {
-        bkind: BuildingKind::Farm,
+        name: "Cereal Farm",
+        bkind: BuildingKind::CerealFarm,
         kind: CompanyKind::Factory { n_trucks: 1 },
         recipe: Recipe {
             consumption: &[],
-            production: &[(CommodityKind::Wheat, 1)],
+            production: &[(CommodityKind::Cereal, 1)],
             seconds_per_work: 1000,
             storage_multiplier: 5,
         },
         n_workers: 10,
+        size: 80.0,
+        asset_location: "assets/cereal_farm.png",
     },
     GoodsCompanyDescription {
-        bkind: BuildingKind::FlourFactory,
+        name: "Cereal Factory",
+        bkind: BuildingKind::CerealFactory,
         kind: CompanyKind::Factory { n_trucks: 1 },
         recipe: Recipe {
-            consumption: &[(CommodityKind::Wheat, 1)],
+            consumption: &[(CommodityKind::Cereal, 1)],
             production: &[(CommodityKind::Flour, 1)],
             seconds_per_work: 1000,
             storage_multiplier: 2,
         },
         n_workers: 10,
+        size: 80.0,
+        asset_location: "assets/flour_factory.png",
     },
     GoodsCompanyDescription {
+        name: "Bakery",
         bkind: BuildingKind::Bakery,
         kind: CompanyKind::Store,
         recipe: Recipe {
@@ -55,6 +65,8 @@ const GOOD_BUILDINGS: &[GoodsCompanyDescription] = &[
             storage_multiplier: 5,
         },
         n_workers: 3,
+        size: 10.0,
+        asset_location: "assets/bakery.png",
     },
 ];
 
@@ -87,7 +99,7 @@ pub fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
         n_souls_added += 1;
     }
 
-    for des in GOOD_BUILDINGS {
+    for des in GOODS_BUILDINGSS {
         for &(build_id, pos) in empty_buildings.get(&des.bkind).unwrap_or(&vec![]) {
             let mut trucks = vec![];
 
