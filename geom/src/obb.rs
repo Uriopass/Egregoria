@@ -45,21 +45,20 @@ impl OBB {
         axis[0] /= axis[0].magnitude2();
         axis[1] /= axis[1].magnitude2();
 
-        let origin = [self.corners[0].dot(axis[0]), self.corners[1].dot(axis[1])];
+        for &axis in &axis {
+            let origin = self.corners[0].dot(axis);
 
-        for (&axis, &origin) in axis.iter().zip(origin.iter()) {
+            // Find the extent of box 2 on axis a
+            let mut t_min = other.corners[0].dot(axis);
+            let mut t_max = t_min;
+
             let ts = [
-                other.corners[0].dot(axis),
                 other.corners[1].dot(axis),
                 other.corners[2].dot(axis),
                 other.corners[3].dot(axis),
             ];
 
-            // Find the extent of box 2 on axis a
-            let mut t_min = ts[0];
-            let mut t_max = ts[0];
-
-            for &t in &ts[1..4] {
+            for &t in &ts {
                 t_min = t_min.min(t);
                 t_max = t_max.max(t);
             }
@@ -150,7 +149,37 @@ impl Intersect<OBB> for OBB {
 
 impl Intersect<AABB> for OBB {
     fn intersects(&self, shape: &AABB) -> bool {
-        self.segments().iter().any(|s| s.intersects(shape))
+        let Vec2 {
+            x: mut min_x,
+            y: mut min_y,
+        } = self.corners[0];
+        let mut max_x = min_x;
+        let mut max_y = min_y;
+
+        for c in &self.corners[1..4] {
+            min_x = min_x.min(c.x);
+            max_x = max_x.max(c.x);
+            min_y = min_y.min(c.y);
+            max_y = max_y.max(c.y);
+        }
+
+        let v =
+            min_x > shape.ur.x || max_x < shape.ll.x || min_y > shape.ur.y || max_y < shape.ll.y;
+
+        v || self.intersects1way(&shape.into())
+    }
+}
+
+impl From<&AABB> for OBB {
+    fn from(aabb: &AABB) -> Self {
+        Self {
+            corners: [
+                aabb.ll,
+                vec2(aabb.ur.x, aabb.ll.y),
+                aabb.ur,
+                vec2(aabb.ll.x, aabb.ur.y),
+            ],
+        }
     }
 }
 
@@ -169,7 +198,7 @@ impl Intersect<Segment> for OBB {
 
 #[cfg(test)]
 mod tests {
-    use crate::{vec2, Intersect, Segment, Vec2, OBB};
+    use crate::{vec2, Intersect, Segment, Shape, Vec2, OBB};
 
     #[test]
     fn test_segobb() {
@@ -185,5 +214,31 @@ mod tests {
         }
         assert!(!obb.intersects(&Segment::new(vec2(-0.71, 0.0), vec2(0.0, -0.71))));
         assert!(obb.intersects(&Segment::new(vec2(-0.70, 0.0), vec2(0.0, -0.70))));
+    }
+
+    #[test]
+    fn test_obbobb() {
+        let obb = OBB {
+            corners: [
+                Vec2::ZERO,
+                vec2(10.0, 0.0),
+                vec2(10.0, 10.0),
+                vec2(0.0, 10.0),
+            ],
+        };
+
+        let obb_contained = OBB {
+            corners: [
+                vec2(1.0, 1.0),
+                vec2(2.0, 1.0),
+                vec2(2.0, 2.0),
+                vec2(1.0, 2.0),
+            ],
+        };
+
+        assert!(obb.intersects(&obb_contained));
+        assert!(obb_contained.intersects(&obb));
+        assert!(obb.bbox().intersects(&obb_contained.bbox()));
+        assert!(obb_contained.bbox().intersects(&obb.bbox()));
     }
 }
