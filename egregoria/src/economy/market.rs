@@ -195,12 +195,12 @@ mod tests {
 
         let mut m = Market::default();
 
-        m.produce(seller, CommodityKind::Wheat, 3);
-        m.produce(seller_far, CommodityKind::Wheat, 3);
+        m.produce(seller, CommodityKind::Cereal, 3);
+        m.produce(seller_far, CommodityKind::Cereal, 3);
 
-        m.buy(buyer, Vec2::ZERO, CommodityKind::Wheat, 2);
-        m.sell(seller, Vec2::UNIT_X, CommodityKind::Wheat, 3);
-        m.sell(seller_far, vec2(10.0, 10.0), CommodityKind::Wheat, 3);
+        m.buy(buyer, Vec2::ZERO, CommodityKind::Cereal, 2);
+        m.sell(seller, Vec2::UNIT_X, CommodityKind::Cereal, 3);
+        m.sell(seller_far, vec2(10.0, 10.0), CommodityKind::Cereal, 3);
 
         let trades = m.make_trades().collect::<Vec<_>>();
 

@@ -41,7 +41,7 @@ pub struct RoadRenderer {
     last_config: usize,
 }
 
-const Z_LOT: f32 = 0.2;
+const Z_LOT: f32 = 0.3;
 const Z_INTER_BG: f32 = 0.208;
 const Z_LANE_BG: f32 = 0.21;
 const Z_LANE: f32 = 0.22;
@@ -51,9 +51,6 @@ const Z_CROSSWALK: f32 = 0.25;
 const Z_HOUSE: f32 = 0.28;
 const Z_SIGNAL: f32 = 0.29;
 const Z_TREE: f32 = 0.5;
-
-const BSPRITES: &[(BuildingKind, &str)] =
-    &[(BuildingKind::FlourFactory, "assets/flour_factory.png")];
 
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext) -> Self {
@@ -77,10 +74,14 @@ impl RoadRenderer {
 
         let mut buildings_builder = HashMap::new();
 
-        for (key, path) in BSPRITES {
+        for descr in egregoria::souls::GOODS_BUILDINGSS {
             buildings_builder.insert(
-                *key,
-                SpriteBatchBuilder::new(Texture::from_path(gfx, path, Some(path))),
+                descr.bkind,
+                SpriteBatchBuilder::new(Texture::from_path(
+                    gfx,
+                    descr.asset_location,
+                    Some(descr.asset_location),
+                )),
             );
         }
 

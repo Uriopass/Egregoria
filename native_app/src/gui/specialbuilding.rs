@@ -9,14 +9,12 @@ use map_model::{BuildingKind, Map, ProjectKind};
 use ordered_float::OrderedFloat;
 
 pub struct SpecialBuildingResource {
-    pub kind: BuildingKind,
+    pub opt: Option<(BuildingKind, f32)>,
 }
 
 impl Default for SpecialBuildingResource {
     fn default() -> Self {
-        Self {
-            kind: BuildingKind::Farm,
-        }
+        Self { opt: None }
     }
 }
 
@@ -33,10 +31,9 @@ pub fn special_building(
     if !matches!(tool, Tool::SpecialBuilding) {
         return;
     }
-    let kind = res.kind;
+    let (kind, size) = unwrap_or!(res.opt, return);
 
     let mpos = mouseinfo.unprojected;
-    let size = kind.size();
     let roads = map.roads();
 
     let closest_road = map

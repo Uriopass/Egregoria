@@ -9,7 +9,7 @@ use egregoria::Egregoria;
 use imgui::{im_str, StyleColor, StyleVar};
 use imgui::{Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
-use map_model::{BuildingKind, LanePatternBuilder, LotKind};
+use map_model::{LanePatternBuilder, LotKind};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
@@ -217,7 +217,7 @@ impl Gui {
                 .size(
                     [
                         pop_out_w,
-                        BuildingKind::SPECIAL_BUILDINGS.len() as f32 * 30.0 + 20.0,
+                        egregoria::souls::GOODS_BUILDINGSS.len() as f32 * 30.0 + 20.0,
                     ],
                     imgui::Condition::Always,
                 )
@@ -233,18 +233,25 @@ impl Gui {
                 .build(&ui, || {
                     let mut cur_build = goria.write::<SpecialBuildingResource>();
 
-                    for (name, build) in BuildingKind::SPECIAL_BUILDINGS {
+                    if cur_build.opt.is_none() {
+                        let d = &egregoria::souls::GOODS_BUILDINGSS[0];
+                        cur_build.opt = Some((d.bkind, d.size))
+                    }
+
+                    let (cur_kind, _) = cur_build.opt.unwrap();
+
+                    for descr in egregoria::souls::GOODS_BUILDINGSS {
                         let tok = ui.push_style_var(StyleVar::Alpha(
-                            if std::mem::discriminant(build)
-                                == std::mem::discriminant(&cur_build.kind)
+                            if std::mem::discriminant(&descr.bkind)
+                                == std::mem::discriminant(&cur_kind)
                             {
                                 1.0
                             } else {
                                 0.5
                             },
                         ));
-                        if ui.button(&*im_str!("{}", name), [pop_out_w, 30.0]) {
-                            cur_build.kind = *build;
+                        if ui.button(&im_str!("{}", descr.name), [pop_out_w, 30.0]) {
+                            cur_build.opt = Some((descr.bkind, descr.size));
                         }
                         tok.pop(ui);
                     }

@@ -99,7 +99,7 @@ pub fn gen_exterior_house(size: f32, seed: Option<u64>) -> (ColoredMesh, Vec2) {
         let c = p.bbox().center();
 
         for x in p.iter_mut() {
-            *x -= c - Vec2::splat(size * 0.5);
+            *x -= c;
         }
 
         let merge_triangles = rng.gen();
@@ -213,41 +213,18 @@ pub fn gen_exterior_supermarket(size: f32) -> (ColoredMesh, Vec2) {
     )
 }
 
-///  -------------------
-///  -------------------
-///  -------------------
-///  -------------------
-///  -------------------
-///           
 ///  XXXXX   
 ///  XXXXX   
 ///    XXX   
 ///     |    
-pub fn gen_exterior_farm(size: f32) -> (ColoredMesh, Vec2) {
+pub fn gen_exterior_wheat_farm(size: f32) -> (ColoredMesh, Vec2) {
     let h_size = 30.0;
     let (mut mesh, mut door_pos) = gen_exterior_house(h_size, None);
 
     let b = mesh.bbox();
-    let off = -b.ll + vec2(rand_in(0.0, size - h_size), 3.0);
+    let off = -b.ll - Vec2::splat(size * 0.5) + vec2(rand_in(0.0, size - h_size), 3.0);
     mesh.translate(off);
     door_pos += off;
-
-    mesh.faces.splice(
-        0..0,
-        vec![(
-            Polygon::rect(size, size),
-            Color::new(0.75, 0.60, 0.35, 1.0).into(),
-        )],
-    );
-
-    let d_trench = size * 0.5 / 5.0;
-    // trenches
-    for i in -1..5 {
-        let mut p = Polygon::rect(size - 5.0, 3.0);
-        p.translate(vec2(2.5, size * 0.5 + i as f32 * d_trench));
-        mesh.faces
-            .push((p, Color::new(0.62, 0.5, 0.29, 1.0).into()))
-    }
 
     (mesh, door_pos)
 }
