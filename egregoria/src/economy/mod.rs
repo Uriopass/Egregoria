@@ -42,8 +42,10 @@ commodity! {
     Cereal,
     Flour,
     Bread,
-    AnimalWaste,
+    Vegetables,
+    Carcass,
     RawMeat,
+    Meat,
 }
 
 register_system!(market_update);

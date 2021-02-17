@@ -27,8 +27,8 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         bkind: BuildingKind::AnimalFarm,
         kind: CompanyKind::Factory { n_trucks: 1 },
         recipe: Recipe {
-            consumption: &[],
-            production: &[(CommodityKind::AnimalWaste, 1), (CommodityKind::RawMeat, 1)],
+            consumption: &[(CommodityKind::Cereal, 1)],
+            production: &[(CommodityKind::Carcass, 1)],
             complexity: 1000,
             storage_multiplier: 5,
         },
