@@ -9,13 +9,84 @@ use common::GameTime;
 use geom::Vec2;
 use legion::world::SubWorld;
 use legion::{system, Entity, EntityStore};
-use map_model::{BuildingID, Map};
+use map_model::{BuildingID, BuildingKind, Map};
+
+pub struct GoodsCompanyDescription {
+    pub name: &'static str,
+    pub bkind: BuildingKind,
+    pub kind: CompanyKind,
+    pub recipe: Recipe,
+    pub n_workers: i32,
+    pub size: f32,
+    pub asset_location: &'static str,
+}
+
+pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
+    GoodsCompanyDescription {
+        name: "Animal Farm",
+        bkind: BuildingKind::AnimalFarm,
+        kind: CompanyKind::Factory { n_trucks: 1 },
+        recipe: Recipe {
+            consumption: &[],
+            production: &[(CommodityKind::AnimalWaste, 1), (CommodityKind::RawMeat, 1)],
+            complexity: 1000,
+            storage_multiplier: 5,
+        },
+        n_workers: 5,
+        size: 80.0,
+        asset_location: "assets/animal_farm.png",
+    },
+    GoodsCompanyDescription {
+        name: "Cereal Farm",
+        bkind: BuildingKind::CerealFarm,
+        kind: CompanyKind::Factory { n_trucks: 1 },
+        recipe: Recipe {
+            consumption: &[],
+            production: &[(CommodityKind::Cereal, 1)],
+            complexity: 1000,
+            storage_multiplier: 5,
+        },
+        n_workers: 10,
+        size: 120.0,
+        asset_location: "assets/cereal_farm.png",
+    },
+    GoodsCompanyDescription {
+        name: "Cereal Factory",
+        bkind: BuildingKind::CerealFactory,
+        kind: CompanyKind::Factory { n_trucks: 1 },
+        recipe: Recipe {
+            consumption: &[(CommodityKind::Cereal, 1)],
+            production: &[(CommodityKind::Flour, 1)],
+            complexity: 1000,
+            storage_multiplier: 2,
+        },
+        n_workers: 10,
+        size: 80.0,
+        asset_location: "assets/flour_factory.png",
+    },
+    GoodsCompanyDescription {
+        name: "Bakery",
+        bkind: BuildingKind::Bakery,
+        kind: CompanyKind::Store,
+        recipe: Recipe {
+            consumption: &[(CommodityKind::Flour, 1)],
+            production: &[(CommodityKind::Bread, 1)],
+            complexity: 1000,
+            storage_multiplier: 5,
+        },
+        n_workers: 3,
+        size: 10.0,
+        asset_location: "assets/bakery.png",
+    },
+];
 
 #[derive(Copy, Clone)]
 pub struct Recipe {
     pub consumption: &'static [(CommodityKind, i32)],
     pub production: &'static [(CommodityKind, i32)],
-    pub seconds_per_work: i32,
+
+    /// Time to execute the recipe when the facility is at full capacity, in seconds
+    pub complexity: i32,
 
     /// Quantity to store per production in terms of quantity produced. So if it takes 1ton of flour to make
     /// 1 ton of bread. A storage multiplier of 3 means 3 tons of bread will be stored before stopping to
@@ -68,9 +139,15 @@ pub struct GoodsCompany {
     pub recipe: Recipe,
     pub building: BuildingID,
     pub workers: i32,
-    pub progress: f32,
+    pub work_seconds: f32,
     pub driver: Option<SoulID>,
     pub trucks: Vec<VehicleID>,
+}
+
+impl GoodsCompany {
+    pub fn progress(&self) -> f32 {
+        self.work_seconds / (self.workers * self.recipe.complexity) as f32
+    }
 }
 
 pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
@@ -118,11 +195,11 @@ pub fn company(
     let soul = SoulID(*me);
 
     if company.recipe.should_produce(soul, market) {
-        company.progress += n_workers as f32 * time.delta / company.recipe.seconds_per_work as f32;
+        company.work_seconds += n_workers as f32 * time.delta;
     }
 
-    if company.progress >= 1.0 {
-        company.progress = 0.0;
+    if company.work_seconds >= (company.recipe.complexity * company.workers) as f32 {
+        company.work_seconds = 0.0;
         let recipe = company.recipe;
         let bpos = map.buildings()[company.building].door_pos;
 

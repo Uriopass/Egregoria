@@ -23,16 +23,20 @@ pub struct Workers(pub Vec<SoulID>);
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum CommodityKind {
+    // /!\ When adding commodity, don't forget to update values below /!\
     JobOpening,
     Cereal,
     Flour,
     Bread,
+    AnimalWaste,
+    RawMeat,
+    // /!\ When adding commodity, don't forget to update values below /!\
 }
 
 impl CommodityKind {
     pub fn values() -> &'static [Self] {
         use CommodityKind::*;
-        &[JobOpening, Cereal, Flour, Bread]
+        &[JobOpening, Cereal, Flour, Bread, AnimalWaste, RawMeat]
     }
 }
 
