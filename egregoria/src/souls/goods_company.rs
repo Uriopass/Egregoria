@@ -23,6 +23,20 @@ pub struct GoodsCompanyDescription {
 
 pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
     GoodsCompanyDescription {
+        name: "Slaughterhouse",
+        bkind: BuildingKind::SlaughterHouse,
+        kind: CompanyKind::Factory { n_trucks: 1 },
+        recipe: Recipe {
+            consumption: &[(CommodityKind::Carcass, 1)],
+            production: &[(CommodityKind::RawMeat, 1)],
+            complexity: 1000,
+            storage_multiplier: 5,
+        },
+        n_workers: 5,
+        size: 50.0,
+        asset_location: "assets/slaughterhouse.png",
+    },
+    GoodsCompanyDescription {
         name: "Animal Farm",
         bkind: BuildingKind::AnimalFarm,
         kind: CompanyKind::Factory { n_trucks: 1 },
