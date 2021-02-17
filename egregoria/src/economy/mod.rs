@@ -4,8 +4,10 @@ use legion::{system, EntityStore};
 mod market;
 
 use crate::SoulID;
+use imgui::__core::fmt::Formatter;
 pub use market::*;
 use std::collections::HashMap;
+use std::fmt::Display;
 
 pub trait Commodity {}
 impl<T> Commodity for T {}
@@ -22,30 +24,36 @@ pub struct Bought(pub HashMap<CommodityKind, Vec<Trade>>);
 pub struct Workers(pub Vec<SoulID>);
 
 macro_rules! commodity {
-    {$($member:tt),*,} => {
+    {$($member:tt => $display:literal),*,} => {
         #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
         pub enum CommodityKind {
             $($member),*
         }
-
         impl CommodityKind {
             pub fn values() -> &'static [Self] {
                 use CommodityKind::*;
                 &[$($member),*]
             }
         }
+        impl Display for CommodityKind {
+            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                match self {
+                    $(Self::$member => f.write_str($display)),*
+                }
+            }
+        }
     };
 }
 
 commodity! {
-    JobOpening,
-    Cereal,
-    Flour,
-    Bread,
-    Vegetables,
-    Carcass,
-    RawMeat,
-    Meat,
+    JobOpening => "Job opening",
+    Cereal => "Cereal",
+    Flour => "Flour",
+    Bread => "Bread",
+    Vegetables => "Vegetables",
+    Carcass => "Carcass",
+    RawMeat => "Raw meat",
+    Meat => "Meat",
 }
 
 register_system!(market_update);
