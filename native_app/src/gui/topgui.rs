@@ -406,13 +406,16 @@ impl Gui {
     }
 
     pub fn menu_bar(&mut self, ui: &Ui, goria: &mut Egregoria) {
+        let t = ui.push_style_vars(&[StyleVar::ItemSpacing([3.0, 0.0])]);
+
         ui.main_menu_bar(|| {
             self.windows.menu(ui);
 
-            ui.menu(im_str!("Settings"), true, self.settings.menu(ui));
-            if ui.small_button(im_str!("Save")) {
+            let h = ui.window_size()[1];
+            if ui.button(im_str!("Save"), [60.0, h]) {
                 egregoria::save_to_disk(goria);
             }
+            ui.menu(im_str!("Settings"), true, self.settings.menu(ui));
             ui.menu(im_str!("Help"), true, || {
                 ui.text(im_str!("Pan: Right click or Arrow keys"));
                 ui.text(im_str!("Select: Left click"));
@@ -423,5 +426,6 @@ impl Gui {
                 ui.text(im_str!("Use the \"Map\" window to build houses\nor load prebuilt maps such as Paris\n(takes a few seconds to load)"));
             });
         });
+        t.pop(ui);
     }
 }

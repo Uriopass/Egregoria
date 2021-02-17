@@ -4,7 +4,7 @@ mod map;
 mod scenarios;
 
 use egregoria::Egregoria;
-use imgui::Ui;
+use imgui::{StyleVar, Ui};
 use serde::{Deserialize, Serialize};
 
 pub trait ImguiWindow: Send + Sync {
@@ -68,11 +68,12 @@ impl ImguiWindows {
     }
 
     pub fn menu(&mut self, ui: &Ui) {
-        ui.menu(imgui::im_str!("Show"), true, || {
-            for (opened, w) in self.opened.iter_mut().zip(self.windows.iter()) {
-                *opened |= imgui::MenuItem::new(w.name).build(ui);
-            }
-        });
+        let h = ui.window_size()[1];
+        for (opened, w) in self.opened.iter_mut().zip(self.windows.iter()) {
+            let tok = ui.push_style_var(StyleVar::Alpha(if *opened { 1.0 } else { 0.5 }));
+            *opened ^= ui.button(&w.name, [80.0, h]);
+            tok.pop(ui);
+        }
     }
 
     pub fn render(&mut self, ui: &Ui, goria: &mut Egregoria) {
