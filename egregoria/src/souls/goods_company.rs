@@ -37,6 +37,20 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         asset_location: "assets/animal_farm.png",
     },
     GoodsCompanyDescription {
+        name: "Vegetable Farm",
+        bkind: BuildingKind::VegetableFarm,
+        kind: CompanyKind::Factory { n_trucks: 1 },
+        recipe: Recipe {
+            consumption: &[],
+            production: &[(CommodityKind::Vegetables, 2)],
+            complexity: 1000,
+            storage_multiplier: 5,
+        },
+        n_workers: 10,
+        size: 70.0,
+        asset_location: "assets/vegetable_farm.png",
+    },
+    GoodsCompanyDescription {
         name: "Cereal Farm",
         bkind: BuildingKind::CerealFarm,
         kind: CompanyKind::Factory { n_trucks: 1 },
