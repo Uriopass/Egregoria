@@ -99,16 +99,14 @@ impl Gui {
         ];
 
         Window::new(im_str!("Toolbox"))
-            .size(
-                [toolbox_w, 30.0 * (tools.len() as f32) + 20.0],
-                imgui::Condition::Always,
-            )
+            .size_constraints([toolbox_w, 0.0], [toolbox_w, 1000.0])
             .position([w - toolbox_w, h * 0.5 - 30.0], imgui::Condition::Always)
             .scroll_bar(false)
             .title_bar(true)
             .movable(false)
             .collapsible(false)
             .resizable(false)
+            .always_auto_resize(true)
             .build(&ui, || {
                 let cur_tool: &mut Tool = &mut goria.write::<Tool>();
 
@@ -137,7 +135,7 @@ impl Gui {
             Tool::RoadbuildStraight | Tool::RoadbuildCurved
         ) {
             Window::new(im_str!("Road Properties"))
-                .size([150.0, 100.0], imgui::Condition::Always)
+                .size_constraints([150.0, 0.0], [150.0, 10000.0])
                 .position(
                     [w - 150.0 - toolbox_w, h * 0.5 - 30.0],
                     imgui::Condition::Always,
@@ -147,6 +145,7 @@ impl Gui {
                 .movable(false)
                 .collapsible(false)
                 .resizable(false)
+                .always_auto_resize(true)
                 .build(&ui, || {
                     let mut pattern = goria.write::<RoadBuildResource>().pattern_builder;
 
@@ -175,13 +174,11 @@ impl Gui {
         ];
 
         if matches!(*goria.read::<Tool>(), Tool::LotBrush) {
+            let lbw = 130.0;
             Window::new(im_str!("Lot Brush"))
-                .size(
-                    [toolbox_w, brushes.len() as f32 * 30.0 + 20.0],
-                    imgui::Condition::Always,
-                )
+                .size_constraints([lbw, 0.0], [lbw, 1000.0])
                 .position(
-                    [w - toolbox_w - toolbox_w, h * 0.5 - 30.0],
+                    [w - toolbox_w - lbw, h * 0.5 - 30.0],
                     imgui::Condition::Always,
                 )
                 .scroll_bar(false)
@@ -189,6 +186,7 @@ impl Gui {
                 .movable(false)
                 .collapsible(false)
                 .resizable(false)
+                .always_auto_resize(true)
                 .build(&ui, || {
                     let mut cur_brush = goria.write::<LotBrushResource>();
 
@@ -202,7 +200,7 @@ impl Gui {
                                 0.5
                             },
                         ));
-                        if ui.button(name, [toolbox_w, 30.0]) {
+                        if ui.button(name, [lbw, 35.0]) {
                             cur_brush.kind = *brush;
                         }
                         tok.pop(ui);
@@ -210,15 +208,12 @@ impl Gui {
                 });
         }
 
-        let building_select_w = 130.0;
+        let building_select_w = 140.0;
         let gbuildings = egregoria::souls::goods_company::GOODS_BUILDINGS;
 
         if matches!(*goria.read::<Tool>(), Tool::SpecialBuilding) {
             Window::new(im_str!("Buildings"))
-                .size(
-                    [building_select_w, gbuildings.len() as f32 * 30.0 + 20.0],
-                    imgui::Condition::Always,
-                )
+                .size_constraints([building_select_w, 0.0], [building_select_w, 10000.0])
                 .position(
                     [w - toolbox_w - building_select_w, h * 0.5 - 30.0],
                     imgui::Condition::Always,
@@ -228,6 +223,7 @@ impl Gui {
                 .movable(false)
                 .collapsible(false)
                 .resizable(false)
+                .always_auto_resize(true)
                 .build(&ui, || {
                     let mut cur_build = goria.write::<SpecialBuildingResource>();
 
@@ -250,7 +246,7 @@ impl Gui {
                                 0.5
                             },
                         ));
-                        if ui.button(&im_str!("{}", descr.name), [building_select_w, 30.0]) {
+                        if ui.button(&im_str!("{}", descr.name), [building_select_w, 35.0]) {
                             cur_build.opt = Some((descr.bkind, descr.size));
                         }
                         tok.pop(ui);
@@ -286,15 +282,15 @@ impl Gui {
                                     for (kind, n) in descr.recipe.consumption {
                                         ui.text(im_str!("- {} x{}", kind, n));
                                     }
+                                    ui.new_line();
                                 }
-                                ui.new_line();
                                 if !descr.recipe.production.is_empty() {
                                     ui.text("production:");
                                     for (kind, n) in descr.recipe.production {
                                         ui.text(im_str!("- {} x{}", kind, n));
                                     }
+                                    ui.new_line();
                                 }
-                                ui.new_line();
                                 ui.text(im_str!("time: {}s", descr.recipe.complexity));
                                 ui.text(im_str!(
                                     "storage multiplier: {}",
@@ -352,7 +348,7 @@ impl Gui {
         ]);
         Window::new(im_str!("Time controls"))
             .size([165.0, 55.0], imgui::Condition::Always)
-            .position([-1.0, h - 50.0], imgui::Condition::Always)
+            .position([-1.0, h - 52.0], imgui::Condition::Always)
             .no_decoration()
             .collapsible(false)
             .resizable(false)
@@ -365,7 +361,7 @@ impl Gui {
 
                 let red = ui.push_style_color(StyleColor::Header, [0.7, 0.2, 0.2, 0.5]);
 
-                if imgui::Selectable::new(im_str!(" ||"))
+                if imgui::Selectable::new(im_str!("   ||"))
                     .size([29.0, 15.0])
                     .selected(*warp == 0.0)
                     .build(ui)
@@ -378,7 +374,7 @@ impl Gui {
 
                 ui.same_line(0.0);
 
-                if imgui::Selectable::new(im_str!(" 1x"))
+                if imgui::Selectable::new(im_str!("  1x"))
                     .size([27.0, 15.0])
                     .selected(*warp == 1.0)
                     .build(ui)
@@ -388,7 +384,7 @@ impl Gui {
 
                 ui.same_line(0.0);
 
-                if imgui::Selectable::new(im_str!(" 3x"))
+                if imgui::Selectable::new(im_str!("  3x"))
                     .size([27.0, 15.0])
                     .selected(*warp == 3.0)
                     .build(ui)
