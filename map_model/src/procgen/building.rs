@@ -217,7 +217,7 @@ pub fn gen_exterior_supermarket(size: f32) -> (ColoredMesh, Vec2) {
 ///  XXXXX   
 ///    XXX   
 ///     |    
-pub fn gen_exterior_wheat_farm(size: f32) -> (ColoredMesh, Vec2) {
+pub fn gen_exterior_farm(size: f32) -> (ColoredMesh, Vec2) {
     let h_size = 30.0;
     let (mut mesh, mut door_pos) = gen_exterior_house(h_size, None);
 

@@ -15,6 +15,7 @@ pub enum BuildingKind {
     Supermarket,
     CerealFarm,
     CerealFactory,
+    AnimalFarm,
     Bakery,
 }
 
@@ -43,9 +44,10 @@ impl Building {
             BuildingKind::House => crate::procgen::gen_exterior_house(size, None),
             BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(size),
             BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(size),
-            BuildingKind::CerealFarm => crate::procgen::gen_exterior_wheat_farm(size),
-            BuildingKind::CerealFactory => (Default::default(), Vec2::y(-size * 0.5)),
+            BuildingKind::CerealFarm => crate::procgen::gen_exterior_farm(size),
+            BuildingKind::CerealFactory => (Default::default(), Vec2::y(-size * 0.3)),
             BuildingKind::Bakery => (Default::default(), Vec2::y(-size * 0.5)),
+            BuildingKind::AnimalFarm => crate::procgen::gen_exterior_farm(size),
         };
 
         for (poly, _) in &mut mesh.faces {

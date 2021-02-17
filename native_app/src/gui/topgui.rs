@@ -217,7 +217,7 @@ impl Gui {
                 .size(
                     [
                         pop_out_w,
-                        egregoria::souls::GOODS_BUILDINGSS.len() as f32 * 30.0 + 20.0,
+                        egregoria::souls::goods_company::GOODS_BUILDINGS.len() as f32 * 30.0 + 20.0,
                     ],
                     imgui::Condition::Always,
                 )
@@ -234,13 +234,13 @@ impl Gui {
                     let mut cur_build = goria.write::<SpecialBuildingResource>();
 
                     if cur_build.opt.is_none() {
-                        let d = &egregoria::souls::GOODS_BUILDINGSS[0];
+                        let d = &egregoria::souls::goods_company::GOODS_BUILDINGS[0];
                         cur_build.opt = Some((d.bkind, d.size))
                     }
 
                     let (cur_kind, _) = cur_build.opt.unwrap();
 
-                    for descr in egregoria::souls::GOODS_BUILDINGSS {
+                    for descr in egregoria::souls::goods_company::GOODS_BUILDINGS {
                         let tok = ui.push_style_var(StyleVar::Alpha(
                             if std::mem::discriminant(&descr.bkind)
                                 == std::mem::discriminant(&cur_kind)

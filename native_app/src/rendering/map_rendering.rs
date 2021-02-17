@@ -74,7 +74,7 @@ impl RoadRenderer {
 
         let mut buildings_builder = HashMap::new();
 
-        for descr in egregoria::souls::GOODS_BUILDINGSS {
+        for descr in egregoria::souls::goods_company::GOODS_BUILDINGS {
             buildings_builder.insert(
                 descr.bkind,
                 SpriteBatchBuilder::new(Texture::from_path(
