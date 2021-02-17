@@ -210,19 +210,17 @@ impl Gui {
                 });
         }
 
-        let pop_out_w = 130.0;
+        let building_select_w = 130.0;
+        let gbuildings = egregoria::souls::goods_company::GOODS_BUILDINGS;
 
         if matches!(*goria.read::<Tool>(), Tool::SpecialBuilding) {
-            Window::new(im_str!("Special buildings"))
+            Window::new(im_str!("Buildings"))
                 .size(
-                    [
-                        pop_out_w,
-                        egregoria::souls::goods_company::GOODS_BUILDINGS.len() as f32 * 30.0 + 20.0,
-                    ],
+                    [building_select_w, gbuildings.len() as f32 * 30.0 + 20.0],
                     imgui::Condition::Always,
                 )
                 .position(
-                    [w - toolbox_w - pop_out_w, h * 0.5 - 30.0],
+                    [w - toolbox_w - building_select_w, h * 0.5 - 30.0],
                     imgui::Condition::Always,
                 )
                 .scroll_bar(false)
@@ -234,30 +232,79 @@ impl Gui {
                     let mut cur_build = goria.write::<SpecialBuildingResource>();
 
                     if cur_build.opt.is_none() {
-                        let d = &egregoria::souls::goods_company::GOODS_BUILDINGS[0];
+                        let d = &gbuildings[0];
                         cur_build.opt = Some((d.bkind, d.size))
                     }
 
                     let (cur_kind, _) = cur_build.opt.unwrap();
 
-                    for descr in egregoria::souls::goods_company::GOODS_BUILDINGS {
+                    let mut picked_descr = None;
+                    for descr in gbuildings {
                         let tok = ui.push_style_var(StyleVar::Alpha(
                             if std::mem::discriminant(&descr.bkind)
                                 == std::mem::discriminant(&cur_kind)
                             {
+                                picked_descr = Some(descr);
                                 1.0
                             } else {
                                 0.5
                             },
                         ));
-                        if ui.button(&im_str!("{}", descr.name), [pop_out_w, 30.0]) {
+                        if ui.button(&im_str!("{}", descr.name), [building_select_w, 30.0]) {
                             cur_build.opt = Some((descr.bkind, descr.size));
                         }
                         tok.pop(ui);
                     }
+
+                    let bdescrpt_w = 180.0;
+
+                    if let Some(descr) = picked_descr {
+                        let tok = ui.push_style_vars(&[
+                            StyleVar::WindowPadding([5.0, 5.0]),
+                            StyleVar::ItemSpacing([0.0, 3.0]),
+                        ]);
+                        Window::new(im_str!("Building description"))
+                            .size_constraints([bdescrpt_w, 10.0], [bdescrpt_w, 10000.0])
+                            .always_auto_resize(true)
+                            .position(
+                                [
+                                    w - toolbox_w - building_select_w - bdescrpt_w,
+                                    h * 0.5 - 30.0,
+                                ],
+                                imgui::Condition::Always,
+                            )
+                            .scroll_bar(false)
+                            .title_bar(true)
+                            .movable(false)
+                            .collapsible(false)
+                            .resizable(false)
+                            .build(&ui, || {
+                                ui.text(im_str!("workers: {}", descr.n_workers));
+                                ui.new_line();
+                                if !descr.recipe.consumption.is_empty() {
+                                    ui.text("consumption:");
+                                    for (kind, n) in descr.recipe.consumption {
+                                        ui.text(im_str!("- {} x{}", kind, n));
+                                    }
+                                }
+                                ui.new_line();
+                                if !descr.recipe.production.is_empty() {
+                                    ui.text("production:");
+                                    for (kind, n) in descr.recipe.production {
+                                        ui.text(im_str!("- {} x{}", kind, n));
+                                    }
+                                }
+                                ui.new_line();
+                                ui.text(im_str!("time: {}s", descr.recipe.complexity));
+                                ui.text(im_str!(
+                                    "storage multiplier: {}",
+                                    descr.recipe.storage_multiplier
+                                ));
+                            });
+                        tok.pop(ui);
+                    }
                 });
         }
-
         tok.pop(ui);
     }
 
