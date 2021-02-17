@@ -23,18 +23,30 @@ impl ImguiWrapper {
             window,
             imgui_winit_support::HiDpiMode::Default,
         );
-
-        let font_size = 13.0_f32;
-        imgui
-            .fonts()
-            .add_font(&[imgui::FontSource::DefaultFontData {
-                config: Some(imgui::FontConfig {
-                    oversample_h: 1,
-                    pixel_snap_h: true,
+        let font_size = 17.0_f32;
+        let config = imgui::FontConfig {
+            pixel_snap_h: true,
+            size_pixels: font_size,
+            ..Default::default()
+        };
+        let data = std::fs::read("assets/roboto-medium.ttf");
+        match data {
+            Ok(bold) => {
+                imgui.fonts().add_font(&[imgui::FontSource::TtfData {
+                    data: &bold,
                     size_pixels: font_size,
-                    ..Default::default()
-                }),
-            }]);
+                    config: Some(config),
+                }]);
+            }
+            Err(err) => {
+                log::error!("font not found, using default font instead: {}", err);
+                imgui
+                    .fonts()
+                    .add_font(&[imgui::FontSource::DefaultFontData {
+                        config: Some(config),
+                    }]);
+            }
+        };
 
         let renderer = Renderer::new(
             &mut imgui,
