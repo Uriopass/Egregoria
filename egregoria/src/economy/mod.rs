@@ -21,23 +21,29 @@ pub struct Bought(pub HashMap<CommodityKind, Vec<Trade>>);
 #[derive(Default)]
 pub struct Workers(pub Vec<SoulID>);
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
-pub enum CommodityKind {
-    // /!\ When adding commodity, don't forget to update values below /!\
+macro_rules! commodity {
+    {$($member:tt),*,} => {
+        #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+        pub enum CommodityKind {
+            $($member),*
+        }
+
+        impl CommodityKind {
+            pub fn values() -> &'static [Self] {
+                use CommodityKind::*;
+                &[$($member),*]
+            }
+        }
+    };
+}
+
+commodity! {
     JobOpening,
     Cereal,
     Flour,
     Bread,
     AnimalWaste,
     RawMeat,
-    // /!\ When adding commodity, don't forget to update values below /!\
-}
-
-impl CommodityKind {
-    pub fn values() -> &'static [Self] {
-        use CommodityKind::*;
-        &[JobOpening, Cereal, Flour, Bread, AnimalWaste, RawMeat]
-    }
 }
 
 register_system!(market_update);
