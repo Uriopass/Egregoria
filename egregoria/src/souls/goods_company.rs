@@ -11,6 +11,27 @@ use legion::world::SubWorld;
 use legion::{system, Entity, EntityStore};
 use map_model::{BuildingID, BuildingKind, Map};
 
+#[derive(Copy, Clone)]
+pub struct Recipe {
+    pub consumption: &'static [(CommodityKind, i32)],
+    pub production: &'static [(CommodityKind, i32)],
+
+    /// Time to execute the recipe when the facility is at full capacity, in seconds
+    pub complexity: i32,
+
+    /// Quantity to store per production in terms of quantity produced. So if it takes 1ton of flour to make
+    /// 1 ton of bread. A storage multiplier of 3 means 3 tons of bread will be stored before stopping to
+    /// produce it.
+    pub storage_multiplier: i32,
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub enum ActivitySector {
+    Primary = 0,
+    Secondary,
+    Tertiary,
+}
+
 pub struct GoodsCompanyDescription {
     pub name: &'static str,
     pub bkind: BuildingKind,
@@ -18,10 +39,26 @@ pub struct GoodsCompanyDescription {
     pub recipe: Recipe,
     pub n_workers: i32,
     pub size: f32,
+    pub sector: ActivitySector,
     pub asset_location: &'static str,
 }
 
 pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
+    GoodsCompanyDescription {
+        name: "Meat facility",
+        bkind: BuildingKind::MeatFacility,
+        kind: CompanyKind::Factory { n_trucks: 1 },
+        recipe: Recipe {
+            consumption: &[(CommodityKind::RawMeat, 1)],
+            production: &[(CommodityKind::Meat, 1)],
+            complexity: 1000,
+            storage_multiplier: 5,
+        },
+        n_workers: 10,
+        size: 80.0,
+        sector: ActivitySector::Secondary,
+        asset_location: "assets/meat_facility.png",
+    },
     GoodsCompanyDescription {
         name: "Slaughterhouse",
         bkind: BuildingKind::SlaughterHouse,
@@ -34,6 +71,7 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 5,
         size: 50.0,
+        sector: ActivitySector::Secondary,
         asset_location: "assets/slaughterhouse.png",
     },
     GoodsCompanyDescription {
@@ -48,6 +86,7 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 5,
         size: 80.0,
+        sector: ActivitySector::Primary,
         asset_location: "assets/animal_farm.png",
     },
     GoodsCompanyDescription {
@@ -62,6 +101,7 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 10,
         size: 70.0,
+        sector: ActivitySector::Primary,
         asset_location: "assets/vegetable_farm.png",
     },
     GoodsCompanyDescription {
@@ -76,6 +116,7 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 10,
         size: 120.0,
+        sector: ActivitySector::Primary,
         asset_location: "assets/cereal_farm.png",
     },
     GoodsCompanyDescription {
@@ -86,10 +127,11 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
             consumption: &[(CommodityKind::Cereal, 1)],
             production: &[(CommodityKind::Flour, 1)],
             complexity: 1000,
-            storage_multiplier: 2,
+            storage_multiplier: 5,
         },
         n_workers: 10,
         size: 80.0,
+        sector: ActivitySector::Secondary,
         asset_location: "assets/flour_factory.png",
     },
     GoodsCompanyDescription {
@@ -104,23 +146,10 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 3,
         size: 10.0,
+        sector: ActivitySector::Tertiary,
         asset_location: "assets/bakery.png",
     },
 ];
-
-#[derive(Copy, Clone)]
-pub struct Recipe {
-    pub consumption: &'static [(CommodityKind, i32)],
-    pub production: &'static [(CommodityKind, i32)],
-
-    /// Time to execute the recipe when the facility is at full capacity, in seconds
-    pub complexity: i32,
-
-    /// Quantity to store per production in terms of quantity produced. So if it takes 1ton of flour to make
-    /// 1 ton of bread. A storage multiplier of 3 means 3 tons of bread will be stored before stopping to
-    /// produce it.
-    pub storage_multiplier: i32,
-}
 
 impl Recipe {
     pub fn init(&self, soul: SoulID, near: Vec2, market: &mut Market) {
