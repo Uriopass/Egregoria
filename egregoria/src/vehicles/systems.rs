@@ -158,8 +158,6 @@ pub fn calc_decision<'a>(
     }
     let objective: Vec2 = unwrap_or!(it.get_point(), return default_return);
 
-    let terminal_pos = it.get_terminal();
-
     let speed = self_obj.speed;
     let time_to_stop = speed / vehicle.kind.deceleration();
     let stop_dist = time_to_stop * speed * 0.5;
@@ -200,7 +198,7 @@ pub fn calc_decision<'a>(
 
     vehicle.flag = 0;
 
-    if let Some(pos) = terminal_pos {
+    if let Some(pos) = it.get_terminal() {
         if pos.is_close(trans.position(), 1.0 + stop_dist) {
             return (0.0, dir_to_pos);
         }
