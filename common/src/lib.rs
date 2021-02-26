@@ -46,9 +46,9 @@ where
     K: std::fmt::Debug + Eq + std::hash::Hash,
 {
     unsafe {
-        assert_ne!(a, b, "`a` ({:?}) must not equal `b` ({:?})", a, b);
         let a = conns.get_mut(a)? as *mut _;
         let b = conns.get_mut(b)? as *mut _;
+        assert_ne!(a, b, "The two keys must not resolve to the same value");
         Some((&mut *a, &mut *b))
     }
 }
