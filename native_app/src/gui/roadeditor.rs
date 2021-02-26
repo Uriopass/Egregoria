@@ -18,6 +18,7 @@ pub struct IntersectionComponent {
     pub light_policy: LightPolicy,
 }
 
+register_resource_noserialize!(RoadEditorResource);
 #[derive(Default)]
 pub struct RoadEditorResource {
     inspect_e: Option<Entity>,

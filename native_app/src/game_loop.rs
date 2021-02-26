@@ -1,7 +1,7 @@
 use crate::audio::GameAudio;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
-use crate::gui::{setup_gui, FollowEntity, Gui, Settings, UiTextures};
+use crate::gui::{FollowEntity, Gui, Settings, UiTextures};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{
     BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
@@ -61,7 +61,6 @@ impl State {
         goria.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));
 
         load_from_disk(&mut goria);
-        setup_gui(&mut goria);
 
         let gui: Gui = common::saveload::load_json("gui").unwrap_or_default();
 

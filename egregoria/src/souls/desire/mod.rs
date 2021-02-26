@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 mod buyfood;
 mod home;
 mod work;
@@ -6,6 +8,7 @@ pub use buyfood::*;
 pub use home::*;
 pub use work::*;
 
+#[derive(Serialize, Deserialize)]
 pub struct Desire<T> {
     pub score: f32,
     pub was_max: bool,

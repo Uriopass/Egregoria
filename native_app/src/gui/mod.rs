@@ -1,13 +1,8 @@
-use crate::gui::lotbrush::LotBrushResource;
-use crate::gui::specialbuilding::SpecialBuildingResource;
-use crate::gui::windows::debug::DebugObjs;
 use egregoria::engine_interaction::{KeyCode, KeyboardInfo};
-use egregoria::Egregoria;
 use imgui::TextureId;
 use legion::{system, Entity};
-use movable::MovableSystem;
 use roadbuild::RoadBuildResource;
-use roadeditor::RoadEditorResource;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wgpu_engine::GfxContext;
 
@@ -31,27 +26,12 @@ pub use inspect::*;
 pub use settings::*;
 pub use topgui::*;
 
+register_resource_noserialize!(InspectedEntity);
 #[derive(Copy, Clone, Default, Debug)]
 pub struct InspectedEntity {
     pub e: Option<Entity>,
     pub dirty: bool, // Modified by inspection
     pub dist2: f32,
-}
-
-pub fn setup_gui(goria: &mut Egregoria) {
-    goria
-        .schedule
-        .add_system(Box::new(movable::movable_system(MovableSystem::default())));
-
-    goria.insert(InspectedEntity::default());
-    goria.insert(FollowEntity::default());
-    goria.insert(Tool::default());
-    goria.insert(DebugObjs::default());
-
-    goria.insert(RoadBuildResource::default());
-    goria.insert(RoadEditorResource::default());
-    goria.insert(LotBrushResource::default());
-    goria.insert(SpecialBuildingResource::default());
 }
 
 register_system!(hand_reset);
@@ -62,7 +42,8 @@ pub fn hand_reset(#[resource] info: &KeyboardInfo, #[resource] tool: &mut Tool) 
     }
 }
 
-#[derive(Copy, Clone)]
+register_resource!(Tool, "tool");
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub enum Tool {
     Hand,
     RoadbuildStraight,

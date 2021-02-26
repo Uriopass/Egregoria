@@ -6,17 +6,19 @@ use geom::{Transform, Vec2};
 use legion::world::SubWorld;
 use legion::{system, EntityStore};
 
+register_resource_noserialize!(MovableSystem);
 #[derive(Default)]
 pub struct MovableSystem {
     clicked_at: Option<Vec2>,
 }
 
+register_system!(movable);
 #[system]
 #[read_component(Movable)]
 #[write_component(Transform)]
 #[write_component(Kinematics)]
 pub fn movable(
-    #[state] sself: &mut MovableSystem,
+    #[resource] sself: &mut MovableSystem,
     #[resource] mouse: &MouseInfo,
     #[resource] time: &GameTime,
     #[resource] inspected: &InspectedEntity,

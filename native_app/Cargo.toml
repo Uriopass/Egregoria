@@ -25,7 +25,7 @@ log-panics    = { version = "2.0.0", features=["with-backtrace"] }
 log           = "0.4.11"
 inline_tweak  = "1.0.6"
 imgui         = "0.7"
-legion        = { version = "0.3.0", default-features = false, features = ["codegen", "serialize"] }
+legion        = { version = "0.4.0", default-features = false, features = ["codegen", "serialize"] }
 ordered-float = "2.0.0"
 serde         = "1.0.117"
 rodio         = { version = "0.13.0", default-features = false, features = ["vorbis"] }

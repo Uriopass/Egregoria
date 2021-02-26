@@ -4,7 +4,10 @@ use egregoria::engine_interaction::{MouseButton, MouseInfo};
 use egregoria::rendering::immediate::ImmediateDraw;
 use legion::system;
 use map_model::{LotKind, Map, ProjectKind};
+use serde::{Deserialize, Serialize};
 
+register_resource!(LotBrushResource, "lot_brush");
+#[derive(Serialize, Deserialize)]
 pub struct LotBrushResource {
     pub kind: LotKind,
     pub radius: f32,

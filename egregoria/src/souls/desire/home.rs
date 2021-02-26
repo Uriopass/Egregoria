@@ -2,7 +2,9 @@ use crate::map_dynamic::{Destination, Router};
 use crate::souls::desire::Desire;
 use legion::system;
 use map_model::BuildingID;
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct Home {
     house: BuildingID,
 }

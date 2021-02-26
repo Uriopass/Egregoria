@@ -1,7 +1,7 @@
 use common::AudioKind;
 use geom::{LinearColor, Polygon, Vec2, OBB};
 
-register_resource!(ImmediateSound);
+register_resource_noserialize!(ImmediateSound);
 #[derive(Default)]
 pub struct ImmediateSound {
     pub orders: Vec<(&'static str, AudioKind)>,
@@ -46,7 +46,7 @@ pub struct ImmediateOrder {
     pub z: f32,
 }
 
-register_resource!(ImmediateDraw);
+register_resource_noserialize!(ImmediateDraw);
 #[derive(Default)]
 pub struct ImmediateDraw {
     pub orders: Vec<ImmediateOrder>,

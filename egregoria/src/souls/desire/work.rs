@@ -4,8 +4,9 @@ use crate::vehicles::VehicleID;
 use common::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
 use legion::system;
 use map_model::BuildingID;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum DriverState {
     GoingToWork,
     WaitingForDelivery,
@@ -13,7 +14,7 @@ pub enum DriverState {
     DeliveryBack,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum WorkKind {
     Driver {
         state: DriverState,
@@ -22,7 +23,7 @@ pub enum WorkKind {
     Worker,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Work {
     workplace: BuildingID,
     work_inter: RecTimeInterval,

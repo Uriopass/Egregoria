@@ -11,7 +11,7 @@ use legion::{system, Entity, EntityStore};
 use map_model::{BuildingID, CarPath, Map, ParkingSpotID, PedestrianPath};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Inspect)]
+#[derive(Clone, Inspect, Serialize, Deserialize)]
 pub struct Router {
     steps: Vec<RoutingStep>,
     cur_step: Option<RoutingStep>,
@@ -29,7 +29,7 @@ pub enum Destination {
 
 debug_inspect_impl!(Destination);
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub enum RoutingStep {
     WalkTo(Vec2),
     DriveTo(VehicleID, Vec2),
@@ -53,17 +53,14 @@ pub fn routing_update(
     #[resource] cbuf: &ParCommandBuffer,
     #[resource] parking: &ParkingManagement,
     body: &Entity,
+    trans: &Transform,
+    itin: &Itinerary,
     router: &mut Router,
     loc: &mut Location,
     mr: &mut MeshRender,
     kin: &mut Kinematics,
     subworld: &SubWorld,
 ) {
-    let trans = *subworld
-        .entry_ref(*body)
-        .unwrap()
-        .get_component::<Transform>()
-        .unwrap();
     let pos = trans.position();
     if !router.reroute {
         let next_step = unwrap_or!(router.steps.last(), {
@@ -75,12 +72,7 @@ pub fn routing_update(
 
         if let Some(step) = router.cur_step {
             cur_step_over = match step {
-                RoutingStep::WalkTo(_) => subworld
-                    .entry_ref(*body)
-                    .unwrap()
-                    .get_component::<Itinerary>()
-                    .unwrap()
-                    .has_ended(0.0),
+                RoutingStep::WalkTo(_) => itin.has_ended(0.0),
                 RoutingStep::DriveTo(vehicle, _) => subworld
                     .entry_ref(vehicle.0)
                     .unwrap()

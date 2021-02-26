@@ -13,6 +13,7 @@ use imgui::Ui;
 use map_model::{Map, RoadSegmentKind};
 use wgpu_engine::Tesselator;
 
+register_resource_noserialize!(DebugObjs);
 pub struct DebugObjs(
     pub  Vec<(
         bool,

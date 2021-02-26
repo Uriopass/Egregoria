@@ -24,7 +24,7 @@ impl SeqSchedule {
             sys.prepare(world);
             sys.run(world, res);
             if let Some(cb) = sys.command_buffer_mut(world.id()) {
-                cb.flush(world);
+                cb.flush(world, res);
             }
 
             let elapsed = start.elapsed();

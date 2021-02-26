@@ -24,6 +24,7 @@ impl Default for BuildState {
     }
 }
 
+register_resource_noserialize!(RoadBuildResource);
 #[derive(Default)]
 pub struct RoadBuildResource {
     build_state: BuildState,

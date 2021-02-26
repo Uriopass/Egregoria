@@ -2,16 +2,20 @@
 #![allow(clippy::blocks_in_if_conditions)]
 #![allow(clippy::too_many_arguments)]
 
+use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Movable, RenderStats, Selectable};
-use crate::map_dynamic::{BuildingInfos, Itinerary, ParkingManagement};
+use crate::map_dynamic::{Itinerary, Router};
 use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
+use crate::souls::desire::{BuyFood, Desire, Home, Work};
 use crate::vehicles::Vehicle;
+use atomic_refcell::{AtomicRef, AtomicRefMut};
 use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 use geom::{Transform, Vec2};
+use legion::serialize::Canon;
 use legion::storage::Component;
 use legion::systems::{ParallelRunnable, Resource};
 use legion::{any, Entity, IntoQuery, Registry, Resources, World};
@@ -20,7 +24,6 @@ use pedestrians::Location;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::ops::{Deref, DerefMut};
 use utils::frame_log::FrameLog;
 use utils::par_command_buffer::Deleted;
 pub use utils::par_command_buffer::ParCommandBuffer;
@@ -51,6 +54,27 @@ macro_rules! init_func {
 
 #[macro_export]
 macro_rules! register_resource {
+    ($t: ty, $name: literal) => {
+        init_func!(|goria| {
+            goria.insert(<$t>::default());
+        });
+        inventory::submit! {
+            $crate::SaveLoadFunc {
+                save: Box::new(|goria| {
+                     common::saveload::save(&*goria.read::<$t>(), $name);
+                }),
+                load: Box::new(|goria| {
+                    if let Some(res) = common::saveload::load::<$t>($name) {
+                        goria.insert(res);
+                    }
+                })
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! register_resource_noserialize {
     ($t: ty) => {
         init_func!(|goria| {
             goria.insert(<$t>::default());
@@ -90,6 +114,12 @@ pub struct Egregoria {
     pub schedule: SeqSchedule,
     resources: Resources,
 }
+
+pub struct SaveLoadFunc {
+    pub save: Box<dyn Fn(&mut Egregoria) + 'static>,
+    pub load: Box<dyn Fn(&mut Egregoria) + 'static>,
+}
+inventory::collect!(SaveLoadFunc);
 
 pub struct InitFunc {
     pub f: Box<dyn Fn(&mut Egregoria) + 'static>,
@@ -176,21 +206,21 @@ impl Egregoria {
         <&mut T>::query().get_mut(&mut self.world, e).ok()
     }
 
-    pub fn write_or_default<T: Resource + Default>(&mut self) -> impl DerefMut<Target = T> + '_ {
+    pub fn write_or_default<T: Resource + Default>(&mut self) -> AtomicRefMut<T> {
         self.resources.get_mut_or_insert_with(T::default)
     }
 
-    pub fn try_write<T: Resource>(&self) -> Option<impl DerefMut<Target = T> + '_> {
+    pub fn try_write<T: Resource>(&self) -> Option<AtomicRefMut<T>> {
         self.resources.get_mut()
     }
 
-    pub fn write<T: Resource>(&self) -> impl DerefMut<Target = T> + '_ {
+    pub fn write<T: Resource>(&self) -> AtomicRefMut<T> {
         self.resources
             .get_mut()
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn read<T: Resource>(&self) -> impl Deref<Target = T> + '_ {
+    pub fn read<T: Resource>(&self) -> AtomicRef<T> {
         self.resources
             .get()
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
@@ -220,87 +250,71 @@ macro_rules! register {
 
 pub struct NoSerialize;
 
-macro_rules! mk_save {
-    ($($res: ty,)*) => {
-        fn registry() -> Registry<u64> {
-            let mut registry = Registry::default();
-            register!(registry; Transform,
-              AssetRender,
-              Kinematics,
-              Selectable,
-              Movable,
-              Vehicle,
-              Pedestrian,
-              Itinerary,
-              Collider,
-              MeshRender,
-              Location,
-              $($res,)*
-            );
-            registry
-        }
-
-        pub fn load_from_disk(goria: &mut Egregoria) {
-            let registry = registry();
-
-            let _ = common::saveload::load_seed("world", registry.as_deserialize()).map(|mut w: World| {
-                log::info!("successfully loaded world with {} entities", w.len());
-                goria.world.move_from(&mut w, &any());
-            });
-
-            $(
-            extract_resource::<$res>(goria);
-            )*
-
-            goria.insert::<Map>(
-                common::saveload::load::<map_model::SerializedMap>("map")
-                    .map(|x| x.into())
-                    .unwrap_or_default(),
-            );
-        }
-
-        pub fn save_to_disk(goria: &mut Egregoria) {
-            let registry = registry();
-
-            let to_remove = vec![
-                $(
-                insert_resource::<$res>(goria),
-                )*
-            ];
-
-            let s = goria
-                .world
-                .as_serializable(!legion::query::component::<NoSerialize>(), &registry);
-
-            common::saveload::save(&s, "world");
-            common::saveload::save(&SerializedMap::from(&*goria.read::<Map>()), "map");
-
-            for ent in to_remove {
-                goria.world.remove(ent);
-            }
-        }
-    }
+fn registry() -> Registry<u64> {
+    let mut registry = Registry::default();
+    register!(registry;
+      Transform,
+      AssetRender,
+      Kinematics,
+      Selectable,
+      Movable,
+      Vehicle,
+      Pedestrian,
+      Itinerary,
+      Collider,
+      MeshRender,
+      Location,
+      Desire<Home>,
+      Desire<BuyFood>,
+      Desire<Work>,
+      Bought,
+      Sold,
+      Workers,
+      Router,
+    );
+    registry
 }
 
-mk_save!(CollisionWorld, ParkingManagement, BuildingInfos,);
+pub fn save_to_disk(goria: &mut Egregoria) {
+    let registry = registry();
 
-fn extract_resource<T: Resource + Clone + Sync + Send>(goria: &mut Egregoria) {
-    let (ent, res): (&Entity, &T) = match <(Entity, &T)>::query().iter(&goria.world).next() {
-        Some(x) => x,
-        None => {
-            info!("Resource {} was not serialized", std::any::type_name::<T>());
-            return;
+    let entity_serializer = Canon::default();
+    let s = goria.world.as_serializable(
+        !legion::query::component::<NoSerialize>(),
+        &registry,
+        &entity_serializer,
+    );
+
+    common::saveload::save(&s, "world");
+    common::saveload::save(&SerializedMap::from(&*goria.read::<Map>()), "map");
+
+    legion::serialize::set_entity_serializer(&entity_serializer, || {
+        for l in inventory::iter::<SaveLoadFunc> {
+            (l.save)(goria);
         }
-    };
-
-    let (ent, res) = (*ent, res.clone());
-
-    goria.world.remove(ent);
-
-    goria.resources.insert(res);
+    });
 }
 
-fn insert_resource<T: Resource + Clone + Sync + Send>(goria: &mut Egregoria) -> Entity {
-    let res: T = goria.read::<T>().clone();
-    goria.world.push((res,))
+pub fn load_from_disk(goria: &mut Egregoria) {
+    let registry = registry();
+
+    let entity_serializer = Canon::default();
+    let _ = common::saveload::load_seed("world", registry.as_deserialize(&entity_serializer)).map(
+        |mut w: World| {
+            log::info!("successfully loaded world with {} entities", w.len());
+            goria.world.move_from(&mut w, &any());
+        },
+    );
+
+    legion::serialize::set_entity_serializer(&entity_serializer, || {
+        for l in inventory::iter::<SaveLoadFunc> {
+            (l.load)(goria);
+        }
+    });
+
+    goria.insert::<Map>(
+        common::saveload::load::<map_model::SerializedMap>("map")
+            .map(|x| x.into())
+            .unwrap_or_default(),
+    );
 }

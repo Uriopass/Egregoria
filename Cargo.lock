@@ -96,6 +96,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "atomic_refcell"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bc31dce067eab974c815a9deb95f6217806de7b53685d7fc31f8ccf3fb2539f"
+
+[[package]]
 name = "autocfg"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -746,6 +752,7 @@ checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 name = "egregoria"
 version = "0.1.0"
 dependencies = [
+ "atomic_refcell",
  "common",
  "dashmap",
  "flat_spatial",
@@ -1400,6 +1407,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37d572918e350e82412fe766d24b15e6682fb2ed2bbe018280caa810397cb319"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1491,19 +1507,20 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "legion"
-version = "0.3.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9aa40f1a5f64dfdc1830657e0e7dd2c28087c4e32a2a85fcf63a286c429edefc"
+checksum = "6bfd53bb4690a5ab2bd6d1c683461ee52763afe0d000929743708a256d9d9b1f"
 dependencies = [
+ "atomic_refcell",
  "bit-set",
- "derivative",
  "downcast-rs",
  "erased-serde",
- "itertools",
+ "itertools 0.10.0",
  "legion_codegen",
  "parking_lot",
  "paste",
  "rayon",
+ "scoped-tls-hkt",
  "serde",
  "smallvec",
  "thiserror",
@@ -1512,9 +1529,9 @@ dependencies = [
 
 [[package]]
 name = "legion_codegen"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c24e58060e656eae6b87f83f14f41080656a930fba7ef299122e40eb8ccd307f"
+checksum = "8ad5ad7a361d7b2522010335d95fa73135cb3c6816bef22cc7a5d5861587ae1b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2166,7 +2183,7 @@ source = "git+https://github.com/samueltardieu/pathfinding?branch=main#080e60417
 dependencies = [
  "fixedbitset 0.3.2",
  "indexmap",
- "itertools",
+ "itertools 0.9.0",
  "num-traits",
 ]
 
@@ -2518,6 +2535,12 @@ name = "scoped-tls"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ea6a9290e3c9cf0f18145ef7ffa62d68ee0bf5fcd651017e586dc7fd5da448c2"
+
+[[package]]
+name = "scoped-tls-hkt"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2e9d7eaddb227e8fbaaa71136ae0e1e913ca159b86c7da82f3e8f0044ad3a63"
 
 [[package]]
 name = "scopeguard"
