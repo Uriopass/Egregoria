@@ -1,6 +1,6 @@
 use std::sync::{Mutex, MutexGuard};
 
-register_resource!(FrameLog);
+register_resource_noserialize!(FrameLog);
 #[derive(Default)]
 pub struct FrameLog {
     logs: Mutex<Vec<String>>,

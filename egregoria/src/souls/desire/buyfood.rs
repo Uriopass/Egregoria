@@ -6,13 +6,16 @@ use common::{GameInstant, GameTime};
 use geom::Transform;
 use legion::{system, Entity};
 use map_model::BuildingID;
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
 pub enum BuyFoodState {
     Empty,
     WaitingForTrade,
     BoughtAt(BuildingID),
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct BuyFood {
     last_ate: GameInstant,
     state: BuyFoodState,

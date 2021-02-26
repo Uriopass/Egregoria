@@ -1,5 +1,6 @@
 use legion::world::SubWorld;
 use legion::{system, EntityStore};
+use serde::{Deserialize, Serialize};
 
 mod market;
 
@@ -14,18 +15,18 @@ impl<T> Commodity for T {}
 
 pub trait CommodityList {}
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct Sold(pub Vec<Trade>);
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct Bought(pub HashMap<CommodityKind, Vec<Trade>>);
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct Workers(pub Vec<SoulID>);
 
 macro_rules! commodity {
     {$($member:tt => $display:literal),*,} => {
-        #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+        #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
         pub enum CommodityKind {
             $($member),*
         }

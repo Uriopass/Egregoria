@@ -2,9 +2,10 @@ use crate::economy::CommodityKind;
 use crate::SoulID;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct SingleMarket {
     capital: HashMap<SoulID, i32>,
     buy_orders: HashMap<SoulID, (Vec2, i32)>,
@@ -17,7 +18,8 @@ impl SingleMarket {
     }
 }
 
-register_resource!(Market);
+register_resource!(Market, "market");
+#[derive(Serialize, Deserialize)]
 pub struct Market {
     markets: HashMap<CommodityKind, SingleMarket>,
 }
@@ -33,7 +35,7 @@ impl Default for Market {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Trade {
     pub buyer: SoulID,
     pub seller: SoulID,

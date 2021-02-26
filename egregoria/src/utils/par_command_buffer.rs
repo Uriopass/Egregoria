@@ -21,7 +21,7 @@ impl<T> Deleted<T> {
 
 type ExecType = Box<dyn for<'a> FnOnce(&'a mut Egregoria) + Send>;
 
-register_resource!(ParCommandBuffer);
+register_resource_noserialize!(ParCommandBuffer);
 #[derive(Default)]
 pub struct ParCommandBuffer {
     to_kill: Mutex<Vec<Entity>>,

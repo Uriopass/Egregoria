@@ -3,7 +3,7 @@ use legion::system;
 use mods::mlua::Lua;
 use std::sync::Mutex;
 
-register_resource!(RunningScenario);
+register_resource_noserialize!(RunningScenario);
 #[derive(Default)]
 pub struct RunningScenario {
     pub l: Option<Mutex<Lua>>,

@@ -7,7 +7,10 @@ use geom::{Vec2, OBB};
 use legion::system;
 use map_model::{BuildingKind, Map, ProjectKind};
 use ordered_float::OrderedFloat;
+use serde::{Deserialize, Serialize};
 
+register_resource!(SpecialBuildingResource, "special_building");
+#[derive(Serialize, Deserialize)]
 pub struct SpecialBuildingResource {
     pub opt: Option<(BuildingKind, f32)>,
 }

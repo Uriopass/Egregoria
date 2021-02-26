@@ -25,7 +25,7 @@ impl Default for Selectable {
     }
 }
 
-register_resource!(RenderStats);
+register_resource_noserialize!(RenderStats);
 #[derive(Default)]
 pub struct RenderStats {
     pub all: History,
@@ -41,7 +41,7 @@ pub enum MouseButton {
     Other(u16),
 }
 
-register_resource!(MouseInfo);
+register_resource_noserialize!(MouseInfo);
 #[derive(Clone)]
 pub struct MouseInfo {
     pub wheel_delta: f32,
@@ -63,7 +63,7 @@ impl Default for MouseInfo {
     }
 }
 
-register_resource!(KeyboardInfo);
+register_resource_noserialize!(KeyboardInfo);
 #[derive(Clone)]
 pub struct KeyboardInfo {
     pub just_pressed: HashSet<KeyCode>,
