@@ -346,10 +346,6 @@ impl Texture {
         })
     }
 
-    pub fn srgb_format() -> TextureFormat {
-        TextureFormat::Rgba8UnormSrgb
-    }
-
     pub fn into_owned(self) -> Option<OwnedTexture> {
         Some(OwnedTexture {
             texture: Rc::<wgpu::Texture>::try_unwrap(self.texture).ok()?,
