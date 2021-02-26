@@ -82,6 +82,7 @@ impl Context {
                             WindowEvent::Resized(physical_size) => {
                                 log::info!("resized: {:?}", physical_size);
                                 new_size = Some(physical_size);
+                                frame.take();
                             }
                             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                             _ => (),
