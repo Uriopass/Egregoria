@@ -87,6 +87,8 @@ impl Intersection {
         }
 
         if self.roads.len() == 1 {
+            let r = &mut roads[self.roads[0]];
+            r.max_interface(self.id, 1.1 * r.width * std::f32::consts::FRAC_1_SQRT_2);
             return;
         }
 
@@ -100,7 +102,7 @@ impl Intersection {
             let width1 = r1.width * 0.5;
             let width2 = r2.width * 0.5;
 
-            let w = (width1.powi(2) + width2.powi(2)).sqrt();
+            let w = width1.hypot(width2);
 
             let dir1 = r1.basic_orientation_from(self.id);
             let dir2 = r2.basic_orientation_from(self.id);
