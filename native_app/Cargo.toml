@@ -17,7 +17,7 @@ common        = { path = "../common" }
 mint          = "0.5.6"
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
-imgui-wgpu = { git = "https://github.com/4bb4/imgui-wgpu-rs.git", rev = "10e906004bb0c5598654ff54a92ed1b73dea5493" }
+imgui-wgpu    = "0.14.0"
 imgui-winit-support = "0.7.0"
 map_model     = { path = "../map_model" }
 flat_spatial  = { path = "../flat_spatial" }
@@ -27,7 +27,7 @@ inline_tweak  = "1.0.6"
 imgui         = "0.7"
 legion        = { version = "0.4.0", default-features = false, features = ["codegen", "serialize"] }
 ordered-float = "2.0.0"
-serde         = "1.0.117"
+serde         = "1.0"
 rodio         = { version = "0.13.0", default-features = false, features = ["vorbis"] }
 slotmap       = { version = "1.0.2", default-features = false }
 winit         = "0.24"
