@@ -97,7 +97,3 @@ impl ParCommandBuffer {
         }
     }
 }
-
-impl Egregoria {
-    pub fn coucou() {}
-}

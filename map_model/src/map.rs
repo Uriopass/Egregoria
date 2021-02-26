@@ -7,8 +7,6 @@ use crate::{
 use geom::{Intersect, Shape, Vec2};
 use geom::{Spline, OBB};
 use ordered_float::OrderedFloat;
-use rand::prelude::IteratorRandom;
-use rand::Rng;
 use slotmap::DenseSlotMap;
 
 pub type Roads = DenseSlotMap<RoadID, Road>;
@@ -412,14 +410,6 @@ impl Map {
     }
     pub fn spatial_map(&self) -> &SpatialMap {
         &self.spatial_map
-    }
-
-    pub fn random_building<R: Rng>(&self, filter: BuildingKind, r: &mut R) -> Option<&Building> {
-        self.buildings
-            .iter()
-            .filter(|(_, b)| b.kind == filter)
-            .choose(r)
-            .map(|x| x.1)
     }
 
     pub fn find_road(&self, src: IntersectionID, dst: IntersectionID) -> Option<RoadID> {
