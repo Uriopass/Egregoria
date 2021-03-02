@@ -1,4 +1,4 @@
-use common::AudioKind;
+use common::{AudioKind, Z_DEBUG};
 use geom::{LinearColor, Polygon, Vec2, OBB};
 
 register_resource_noserialize!(ImmediateSound);
@@ -104,7 +104,7 @@ impl ImmediateDraw {
             order: ImmediateOrder {
                 kind,
                 color: LinearColor::WHITE,
-                z: 3.0,
+                z: Z_DEBUG,
             },
             persistent: false,
         }

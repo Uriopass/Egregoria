@@ -2,6 +2,7 @@
 
 use crate::gui::InspectedEntity;
 use common::{GameTime, SECONDS_PER_DAY};
+use common::{Z_DEBUG, Z_DEBUG_BG};
 use egregoria::engine_interaction::{MouseInfo, RenderStats};
 use egregoria::map_dynamic::{Itinerary, ParkingManagement};
 use egregoria::physics::CollisionWorld;
@@ -138,7 +139,7 @@ pub fn debug_road_points(tess: &mut Tesselator, world: &Egregoria) -> Option<()>
     let map = world.read::<Map>();
     tess.set_color(Color::RED);
     for (_, road) in map.roads() {
-        tess.draw_polyline(road.generated_points().as_slice(), 1.0, 0.1);
+        tess.draw_polyline(road.generated_points().as_slice(), Z_DEBUG, 0.1);
     }
     Some(())
 }
@@ -157,7 +158,7 @@ pub fn debug_turns(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
                 turn.points.as_slice(),
                 -lanes[turn.id.src].orientation_from(inter.id),
                 lanes[turn.id.dst].orientation_from(inter.id),
-                1.0,
+                Z_DEBUG,
                 1.0,
             );
         }
@@ -170,20 +171,20 @@ fn draw_spline(tess: &mut Tesselator, sp: &Spline) {
     tess.set_color(Color::RED);
     tess.draw_polyline(
         &sp.smart_points(0.1, 0.0, 1.0).collect::<Vec<_>>(),
-        1.0,
+        Z_DEBUG,
         2.0,
     );
     tess.set_color(Color::GREEN);
 
-    tess.draw_stroke(sp.from, sp.from + sp.from_derivative, 1.0, 1.5);
-    tess.draw_stroke(sp.to, sp.to + sp.to_derivative, 1.0, 1.5);
+    tess.draw_stroke(sp.from, sp.from + sp.from_derivative, Z_DEBUG, 1.5);
+    tess.draw_stroke(sp.to, sp.to + sp.to_derivative, Z_DEBUG, 1.5);
 
     tess.set_color(Color::PURPLE);
-    tess.draw_circle(sp.from, 1.0, 1.0);
-    tess.draw_circle(sp.to, 1.0, 1.0);
+    tess.draw_circle(sp.from, Z_DEBUG, 1.0);
+    tess.draw_circle(sp.to, Z_DEBUG, 1.0);
 
-    tess.draw_circle(sp.from + sp.from_derivative, 1.0, 1.0);
-    tess.draw_circle(sp.to + sp.to_derivative, 1.0, 1.0);
+    tess.draw_circle(sp.from + sp.from_derivative, Z_DEBUG, 1.0);
+    tess.draw_circle(sp.to + sp.to_derivative, Z_DEBUG, 1.0);
 }
 
 fn debug_coworld(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
@@ -192,7 +193,7 @@ fn debug_coworld(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
     for h in coworld.handles() {
         let pos = coworld.get(h).unwrap().0;
-        tess.draw_circle(pos, 1.0, 3.0);
+        tess.draw_circle(pos, Z_DEBUG, 3.0);
     }
     Some(())
 }
@@ -242,18 +243,18 @@ pub fn debug_obb(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     color.a = 0.5;
 
     tess.set_color(color);
-    tess.draw_filled_polygon(&obb1.corners, 0.99);
-    tess.draw_filled_polygon(&obbm.corners, 0.99);
+    tess.draw_filled_polygon(&obb1.corners, Z_DEBUG_BG);
+    tess.draw_filled_polygon(&obbm.corners, Z_DEBUG_BG);
 
     tess.set_color(LinearColor::gray(0.8));
-    tess.draw_line(seg.src, seg.dst, 0.99);
+    tess.draw_line(seg.src, seg.dst, Z_DEBUG_BG);
     tess.set_color(LinearColor::gray(0.9));
 
     tess.color = LinearColor::WHITE;
     tess.color.a = if aabb.intersects(&tr) { 0.4 } else { 0.2 };
 
-    tess.draw_line(tr.src, tr.dst, 0.99);
-    tess.draw_rect_cos_sin(aabb.center(), 1.0, aabb.w(), aabb.h(), Vec2::UNIT_X);
+    tess.draw_line(tr.src, tr.dst, Z_DEBUG_BG);
+    tess.draw_rect_cos_sin(aabb.center(), Z_DEBUG, aabb.w(), aabb.h(), Vec2::UNIT_X);
 
     Some(())
 }
@@ -270,7 +271,7 @@ pub fn debug_parking(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
         };
 
         tess.set_color(color);
-        tess.draw_circle(spot.trans.position(), 1.0, 2.0);
+        tess.draw_circle(spot.trans.position(), Z_DEBUG, 2.0);
     }
 
     Some(())
@@ -284,17 +285,17 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &Egregoria) -> Option<()> 
     let itinerary = world.comp::<Itinerary>(selected)?;
 
     tess.set_color(LinearColor::GREEN);
-    tess.draw_polyline(&itinerary.local_path(), 1.0, 1.0);
+    tess.draw_polyline(&itinerary.local_path(), Z_DEBUG, 1.0);
 
     if let Some(p) = itinerary.get_point() {
-        tess.draw_stroke(p, pos, 1.0, 1.0);
+        tess.draw_stroke(p, pos, Z_DEBUG, 1.0);
     }
 
     if let egregoria::map_dynamic::ItineraryKind::Route(r) = itinerary.kind() {
         tess.set_color(LinearColor::RED);
         for l in &r.reversed_route {
             if let Some(l) = l.raw_points(map) {
-                tess.draw_polyline(l.as_slice(), 1.0, 3.0);
+                tess.draw_polyline(l.as_slice(), Z_DEBUG, 3.0);
             }
         }
         tess.set_color(if itinerary.has_ended(0.0) {
@@ -303,7 +304,7 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &Egregoria) -> Option<()> 
             LinearColor::MAGENTA
         });
 
-        tess.draw_circle(r.end_pos, 1.0, 1.0);
+        tess.draw_circle(r.end_pos, Z_DEBUG, 1.0);
     }
     Some(())
 }
@@ -329,14 +330,14 @@ pub fn debug_rays(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
     };
 
     tess.set_color(LinearColor::WHITE);
-    tess.draw_line(r.from, r.from + r.dir * 50.0, 0.5);
-    tess.draw_line(r2.from, r2.from + r2.dir * 50.0, 0.5);
+    tess.draw_line(r.from, r.from + r.dir * 50.0, Z_DEBUG);
+    tess.draw_line(r2.from, r2.from + r2.dir * 50.0, Z_DEBUG);
 
     let inter = r.intersection_point(&r2);
     if let Some(v) = inter {
         tess.set_color(LinearColor::RED);
 
-        tess.draw_circle(v, 0.5, 2.0);
+        tess.draw_circle(v, Z_DEBUG, 2.0);
     }
 
     Some(())
@@ -349,7 +350,7 @@ pub fn debug_spatialmap(tess: &mut Tesselator, world: &Egregoria) -> Option<()> 
             a: 0.1,
             ..LinearColor::BLUE
         });
-        tess.draw_rect_cos_sin(r.center(), 1.0, r.w(), r.h(), Vec2::UNIT_X);
+        tess.draw_rect_cos_sin(r.center(), Z_DEBUG, r.w(), r.h(), Vec2::UNIT_X);
     }
 
     Some(())

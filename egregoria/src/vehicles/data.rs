@@ -4,7 +4,7 @@ use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, Physics
 use crate::rendering::assets::{AssetID, AssetRender};
 use crate::utils::rand_world;
 use crate::Egregoria;
-use common::{GameInstant, GameTime};
+use common::{GameInstant, GameTime, Z_CAR};
 use geom::Color;
 use geom::{Spline, Transform, Vec2};
 use imgui_inspect::InspectDragf;
@@ -171,7 +171,7 @@ pub fn make_vehicle_entity(
             hide: false,
             scale: w,
             tint,
-            z: 0.4,
+            z: Z_CAR,
         },
         trans,
         Kinematics::from_mass(1000.0),

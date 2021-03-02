@@ -1,5 +1,6 @@
 use crate::geometry::earcut::earcut;
 use crate::{ColoredVertex, MeshBuilder};
+use common::Z_GRID;
 use geom::{vec2, Intersect, LinearColor, Segment, Vec2, AABB};
 
 pub struct Tesselator {
@@ -378,13 +379,13 @@ impl Tesselator {
         let startx = (screen.ll.x / grid_size).ceil() * grid_size;
         for x in 0..(screen.w() / grid_size) as i32 {
             let x = startx + x as f32 * grid_size;
-            self.draw_line(vec2(x, screen.ll.y), vec2(x, screen.ur.y), 0.01);
+            self.draw_line(vec2(x, screen.ll.y), vec2(x, screen.ur.y), Z_GRID);
         }
 
         let starty = (screen.ll.y / grid_size).ceil() * grid_size;
         for y in 0..(screen.h() / grid_size) as i32 {
             let y = starty + y as f32 * grid_size;
-            self.draw_line(vec2(screen.ll.x, y), vec2(screen.ur.x, y), 0.01);
+            self.draw_line(vec2(screen.ll.x, y), vec2(screen.ur.x, y), Z_GRID);
         }
     }
 }

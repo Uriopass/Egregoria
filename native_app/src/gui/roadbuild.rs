@@ -1,4 +1,4 @@
-use crate::gui::{Tool, Z_TOOL};
+use crate::gui::Tool;
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use geom::Color;
@@ -31,7 +31,7 @@ pub struct RoadBuildResource {
     pub pattern_builder: LanePatternBuilder,
 }
 
-use common::AudioKind;
+use common::{AudioKind, Z_TOOL};
 use BuildState::*;
 use ProjectKind::*;
 
