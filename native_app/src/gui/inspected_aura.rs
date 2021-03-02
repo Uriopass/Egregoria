@@ -1,4 +1,5 @@
-use crate::gui::{InspectedEntity, Z_TOOL};
+use crate::gui::InspectedEntity;
+use common::Z_TOOL;
 use egregoria::pedestrians::Location;
 use egregoria::rendering::immediate::ImmediateDraw;
 use geom::Color;

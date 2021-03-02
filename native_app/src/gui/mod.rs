@@ -54,8 +54,6 @@ pub enum Tool {
     SpecialBuilding,
 }
 
-const Z_TOOL: f32 = 0.9;
-
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]
 pub enum UiTex {
     Road,

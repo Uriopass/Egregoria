@@ -1,5 +1,5 @@
 use super::Tool;
-use crate::gui::Z_TOOL;
+use common::Z_TOOL;
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
 use egregoria::rendering::immediate::ImmediateDraw;
 use legion::system;

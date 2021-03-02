@@ -1,3 +1,7 @@
+use common::{
+    Z_ARROW, Z_CROSSWALK, Z_HOUSE, Z_INTER_BG, Z_LANE, Z_LANE_BG, Z_LOT, Z_SIDEWALK, Z_SIGNAL,
+    Z_TREE, Z_TREE_SHADOW,
+};
 use egregoria::utils::Restrict;
 use flat_spatial::storage::Storage;
 use geom::{lerp, vec2, Color, LinearColor, AABB};
@@ -40,17 +44,6 @@ pub struct RoadRenderer {
     crosswalks: Option<ShadedBatch<Crosswalk>>,
     last_config: usize,
 }
-
-const Z_LOT: f32 = 0.3;
-const Z_INTER_BG: f32 = 0.208;
-const Z_LANE_BG: f32 = 0.21;
-const Z_LANE: f32 = 0.22;
-const Z_SIDEWALK: f32 = 0.23;
-const Z_ARROW: f32 = 0.24;
-const Z_CROSSWALK: f32 = 0.25;
-const Z_HOUSE: f32 = 0.28;
-const Z_SIGNAL: f32 = 0.29;
-const Z_TREE: f32 = 0.5;
 
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext) -> Self {
@@ -410,7 +403,7 @@ impl RoadRenderer {
             self.tree_shadows_builder.push(
                 pos + vec2(1.0, -1.0),
                 t.dir,
-                Z_TREE,
+                Z_TREE_SHADOW,
                 LinearColor::WHITE.a(alpha_cutoff),
                 (t.size, t.size),
             );
@@ -420,13 +413,7 @@ impl RoadRenderer {
                     (common::rand::rand3(pos.x, pos.y, 10.0) * self.tree_builder.n_texs() as f32)
                         as usize,
                 )
-                .push(
-                    pos,
-                    t.dir,
-                    Z_TREE + 0.01,
-                    t.col * tree_col,
-                    (t.size, t.size),
-                );
+                .push(pos, t.dir, Z_TREE, t.col * tree_col, (t.size, t.size));
         }
 
         (

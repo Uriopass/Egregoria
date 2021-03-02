@@ -1,4 +1,5 @@
-use crate::gui::{InspectedEntity, Tool, Z_TOOL};
+use crate::gui::{InspectedEntity, Tool};
+use common::Z_TOOL;
 use egregoria::engine_interaction::{MouseButton, MouseInfo};
 use egregoria::rendering::immediate::ImmediateDraw;
 use geom::Color;
