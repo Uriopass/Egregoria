@@ -85,6 +85,10 @@ impl ParkingSpots {
             .flatten()
     }
 
+    pub fn all_spots(&self) -> impl Iterator<Item = (ParkingSpotID, &ParkingSpot)> + '_ {
+        self.spots.iter()
+    }
+
     // Fixme: Instead of allocating a vec and sorting it, somehow sort the parking spots beforehand and iterate in spiral around the projected `near`
     pub fn closest_spots(&self, lane: LaneID, near: Vec2) -> impl Iterator<Item = ParkingSpotID> {
         let spots = &self.spots;

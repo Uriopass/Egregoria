@@ -16,6 +16,10 @@ impl ParkingManagement {
         }
     }
 
+    pub fn is_free(&self, spot: ParkingSpotID) -> bool {
+        self.reserved_spots.contains_key(&spot)
+    }
+
     pub fn reserve_near(&self, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
         let lane = map.nearest_lane(near, LaneKind::Parking)?;
         let lane = map.lanes().get(lane)?;
