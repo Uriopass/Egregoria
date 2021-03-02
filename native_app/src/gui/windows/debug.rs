@@ -3,7 +3,7 @@
 use crate::gui::InspectedEntity;
 use common::{GameTime, SECONDS_PER_DAY};
 use egregoria::engine_interaction::{MouseInfo, RenderStats};
-use egregoria::map_dynamic::Itinerary;
+use egregoria::map_dynamic::{Itinerary, ParkingManagement};
 use egregoria::physics::CollisionWorld;
 use egregoria::utils::frame_log::FrameLog;
 use egregoria::Egregoria;
@@ -33,6 +33,7 @@ impl Default for DebugObjs {
             (false, "Debug splines", debug_spline),
             (false, "Debug turns", debug_turns),
             (false, "Debug road points", debug_road_points),
+            (false, "Debug parking", debug_parking),
             (false, "Show grid", show_grid),
         ])
     }
@@ -253,6 +254,24 @@ pub fn debug_obb(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
 
     tess.draw_line(tr.src, tr.dst, 0.99);
     tess.draw_rect_cos_sin(aabb.center(), 1.0, aabb.w(), aabb.h(), Vec2::UNIT_X);
+
+    Some(())
+}
+
+pub fn debug_parking(tess: &mut Tesselator, world: &Egregoria) -> Option<()> {
+    let map: &Map = &world.read::<Map>();
+    let pm = world.read::<ParkingManagement>();
+
+    for (id, spot) in map.parking.all_spots() {
+        let color = if pm.is_free(id) {
+            LinearColor::GREEN
+        } else {
+            LinearColor::RED
+        };
+
+        tess.set_color(color);
+        tess.draw_circle(spot.trans.position(), 1.0, 2.0);
+    }
 
     Some(())
 }
