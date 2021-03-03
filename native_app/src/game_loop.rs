@@ -1,7 +1,8 @@
 use crate::audio::GameAudio;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
-use crate::gui::{FollowEntity, Gui, Settings, UiTextures};
+use crate::gui::windows::settings::Settings;
+use crate::gui::{FollowEntity, Gui, UiTextures};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{
     BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
@@ -78,7 +79,8 @@ impl State {
             all_audio: GameAudio::new(&mut ctx.audio),
             light: LightRender::new(&mut ctx.gfx),
         };
-        me.manage_settings(ctx, me.gui.settings);
+        let s = *me.goria.read::<Settings>();
+        me.manage_settings(ctx, &s);
         me
     }
 
@@ -91,19 +93,20 @@ impl State {
             .all
             .add_value(delta as f32);
 
-        self.manage_settings(ctx, self.gui.settings);
+        let settings = *self.goria.read::<Settings>();
+        self.manage_settings(ctx, &settings);
 
         self.manage_time(delta, &mut ctx.gfx);
 
         self.manage_io(ctx);
 
-        self.camera.movespeed = self.gui.settings.camera_sensibility / 100.0;
+        self.camera.movespeed = settings.camera_sensibility / 100.0;
         self.camera.camera_movement(
             ctx,
             delta as f32,
             !self.imgui_render.last_mouse_captured,
             !self.imgui_render.last_kb_captured,
-            &self.gui.settings,
+            &settings,
         );
         *self.goria.write::<Camera>() = self.camera.camera;
 
@@ -268,7 +271,7 @@ impl State {
             .render(ctx, window, &mut self.goria, &mut self.gui);
     }
 
-    fn manage_settings(&mut self, ctx: &mut Context, settings: Settings) {
+    fn manage_settings(&mut self, ctx: &mut Context, settings: &Settings) {
         if settings.fullscreen && ctx.window.fullscreen().is_none() {
             ctx.window
                 .set_fullscreen(Some(Fullscreen::Borderless(ctx.window.current_monitor())))
@@ -286,7 +289,7 @@ impl State {
         const MAX_TIMESTEP: f64 = 1.0 / 15.0;
 
         let mut time = self.goria.write::<GameTime>();
-        let warp = self.gui.settings.time_warp;
+        let warp = self.goria.read::<Settings>().time_warp;
 
         let delta = (delta * warp as f64).min(MAX_TIMESTEP);
 

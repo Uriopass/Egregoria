@@ -54,7 +54,7 @@ macro_rules! init_func {
 
 #[macro_export]
 macro_rules! register_resource {
-    ($t: ty, $name: literal) => {
+    ($t: ty, $name: expr) => {
         init_func!(|goria| {
             goria.insert(<$t>::default());
         });

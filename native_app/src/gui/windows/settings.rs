@@ -1,6 +1,10 @@
-use imgui::im_str;
-use imgui::Ui;
+use egregoria::Egregoria;
+use imgui::{im_str, Condition, Ui};
 use std::time::Duration;
+
+const SETTINGS_SAVE_NAME: &str = "settings";
+
+register_resource!(Settings, SETTINGS_SAVE_NAME);
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Settings {
@@ -90,22 +94,31 @@ impl AsRef<str> for AutoSaveEvery {
     }
 }
 
-impl Settings {
-    pub fn menu<'a>(&'a mut self, ui: &'a Ui) -> impl FnOnce() + 'a {
-        move || {
+pub fn settings(window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
+    let mut settings = goria.write::<Settings>();
+    let [w, h] = ui.io().display_size;
+
+    window
+        .position([w * 0.5, h * 0.5], Condition::Always)
+        .position_pivot([0.5, 0.5])
+        .movable(false)
+        .resizable(false)
+        .collapsible(false)
+        .size_constraints([400.0, h * 0.6], [w * 0.6, h * 0.8])
+        .build(ui, || {
             ui.text("Gameplay");
             let tok = imgui::ComboBox::new(im_str!("Autosave"))
-                .preview_value(&im_str!("{}", self.auto_save_every.as_ref()))
+                .preview_value(&im_str!("{}", settings.auto_save_every.as_ref()))
                 .begin(ui);
             if let Some(tok) = tok {
                 if imgui::Selectable::new(im_str!("Never")).build(ui) {
-                    self.auto_save_every = AutoSaveEvery::Never;
+                    settings.auto_save_every = AutoSaveEvery::Never;
                 }
                 if imgui::Selectable::new(im_str!("Minute")).build(ui) {
-                    self.auto_save_every = AutoSaveEvery::OneMinute;
+                    settings.auto_save_every = AutoSaveEvery::OneMinute;
                 }
                 if imgui::Selectable::new(im_str!("Five Minutes")).build(ui) {
-                    self.auto_save_every = AutoSaveEvery::FiveMinutes;
+                    settings.auto_save_every = AutoSaveEvery::FiveMinutes;
                 }
                 tok.end(ui);
             }
@@ -116,30 +129,30 @@ impl Settings {
             imgui::Slider::new(im_str!("Camera sensibility"))
                 .range(10.0..=200.0)
                 .display_format(im_str!("%.0f"))
-                .build(ui, &mut self.camera_sensibility);
-            ui.checkbox(im_str!("Camera zoom locked"), &mut self.camera_lock);
+                .build(ui, &mut settings.camera_sensibility);
+            ui.checkbox(im_str!("Camera zoom locked"), &mut settings.camera_lock);
             ui.checkbox(
                 im_str!("Border screen camera movement"),
-                &mut self.camera_border_move,
+                &mut settings.camera_border_move,
             );
 
             ui.new_line();
             ui.text("Graphics");
 
-            ui.checkbox(im_str!("Fullscreen"), &mut self.fullscreen);
+            ui.checkbox(im_str!("Fullscreen"), &mut settings.fullscreen);
 
             if let Some(tok) = imgui::ComboBox::new(im_str!("VSync"))
-                .preview_value(&im_str!("{}", self.vsync.as_ref()))
+                .preview_value(&im_str!("{}", settings.vsync.as_ref()))
                 .begin(ui)
             {
                 if imgui::Selectable::new(im_str!("No VSync")).build(ui) {
-                    self.vsync = VSyncOptions::NoVsync;
+                    settings.vsync = VSyncOptions::NoVsync;
                 }
                 if imgui::Selectable::new(im_str!("VSync Enabled")).build(ui) {
-                    self.vsync = VSyncOptions::Vsync;
+                    settings.vsync = VSyncOptions::Vsync;
                 }
                 if imgui::Selectable::new(im_str!("Low latency VSync")).build(ui) {
-                    self.vsync = VSyncOptions::LowLatencyVsync;
+                    settings.vsync = VSyncOptions::LowLatencyVsync;
                 }
                 tok.end(ui);
             }
@@ -150,15 +163,16 @@ impl Settings {
             imgui::Slider::new(im_str!("Music volume"))
                 .range(0.0..=100.0)
                 .display_format(im_str!("%.0f"))
-                .build(ui, &mut self.music_volume_percent);
+                .build(ui, &mut settings.music_volume_percent);
             imgui::Slider::new(im_str!("Effects volume"))
                 .range(0.0..=100.0)
                 .display_format(im_str!("%.0f"))
-                .build(ui, &mut self.effects_volume_percent);
+                .build(ui, &mut settings.effects_volume_percent);
             imgui::Slider::new(im_str!("Ui volume"))
                 .range(0.0..=100.0)
                 .display_format(im_str!("%.0f"))
-                .build(ui, &mut self.ui_volume_percent);
-        }
-    }
+                .build(ui, &mut settings.ui_volume_percent);
+
+            common::saveload::save_silent(&*settings, SETTINGS_SAVE_NAME);
+        });
 }

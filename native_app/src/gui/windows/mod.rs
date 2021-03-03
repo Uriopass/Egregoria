@@ -1,22 +1,24 @@
+use imgui::{StyleVar, Ui};
+use serde::{Deserialize, Serialize};
+
+use egregoria::Egregoria;
+
 mod config;
 pub mod debug;
 mod map;
 mod scenarios;
-
-use egregoria::Egregoria;
-use imgui::{StyleVar, Ui};
-use serde::{Deserialize, Serialize};
+pub mod settings;
 
 pub trait ImguiWindow: Send + Sync {
-    fn render(&mut self, ui: &Ui, goria: &mut Egregoria);
+    fn render(&mut self, window: imgui::Window, ui: &Ui, goria: &mut Egregoria);
 }
 
 impl<F> ImguiWindow for F
 where
-    F: Fn(&Ui, &mut Egregoria) + Send + Sync,
+    F: Fn(imgui::Window, &Ui, &mut Egregoria) + Send + Sync,
 {
-    fn render(&mut self, ui: &Ui, goria: &mut Egregoria) {
-        self(ui, goria);
+    fn render(&mut self, window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
+        self(window, ui, goria);
     }
 }
 
@@ -47,6 +49,7 @@ impl Default for ImguiWindows {
         );
         s.insert(imgui::im_str!("Config"), config::config, false);
         s.insert(imgui::im_str!("Debug"), debug::debug, false);
+        s.insert(imgui::im_str!("Settings"), settings::settings, false);
         s
     }
 }
@@ -68,6 +71,10 @@ impl ImguiWindows {
     }
 
     pub fn menu(&mut self, ui: &Ui) {
+        if self.opened.len() < self.windows.len() {
+            self.opened
+                .extend(std::iter::repeat(false).take(self.windows.len() - self.opened.len()))
+        }
         let h = ui.window_size()[1];
         for (opened, w) in self.opened.iter_mut().zip(self.windows.iter()) {
             let tok = ui.push_style_var(StyleVar::Alpha(if *opened { 1.0 } else { 0.5 }));
@@ -79,9 +86,7 @@ impl ImguiWindows {
     pub fn render(&mut self, ui: &Ui, goria: &mut Egregoria) {
         for (ws, opened) in self.windows.iter_mut().zip(self.opened.iter_mut()) {
             if *opened {
-                imgui::Window::new(ws.name).opened(opened).build(&ui, || {
-                    ws.w.render(ui, goria);
-                });
+                ws.w.render(imgui::Window::new(ws.name).opened(opened), ui, goria);
             }
         }
     }

@@ -1,13 +1,12 @@
 use crate::gui::lotbrush::LotBrushResource;
-use crate::gui::settings::Settings;
 use crate::gui::specialbuilding::SpecialBuildingResource;
+use crate::gui::windows::settings::Settings;
 use crate::gui::windows::ImguiWindows;
 use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
 use common::GameTime;
 use egregoria::engine_interaction::{KeyCode, KeyboardInfo};
 use egregoria::Egregoria;
-use imgui::{im_str, StyleColor, StyleVar};
-use imgui::{Ui, Window};
+use imgui::{im_str, StyleColor, StyleVar, Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
 use map_model::{LanePatternBuilder, LotKind};
 use serde::{Deserialize, Serialize};
@@ -25,7 +24,6 @@ pub struct Gui {
     pub n_cars: i32,
     pub n_pedestrians: i32,
     pub depause_warp: f32,
-    pub settings: Settings,
 }
 
 impl Default for Gui {
@@ -37,7 +35,6 @@ impl Default for Gui {
             n_cars: 100,
             n_pedestrians: 100,
             depause_warp: 1.0,
-            settings: Settings::default(),
         }
     }
 }
@@ -65,7 +62,8 @@ impl Gui {
     }
 
     pub fn auto_save(&mut self, goria: &mut Egregoria) {
-        if let Some(every) = self.settings.auto_save_every.into() {
+        let every = goria.read::<Settings>().auto_save_every.into();
+        if let Some(every) = every {
             if self.last_save.elapsed() > every {
                 egregoria::save_to_disk(goria);
                 self.last_save = Instant::now();
@@ -326,7 +324,7 @@ impl Gui {
 
     pub fn time_controls(&mut self, ui: &Ui, goria: &mut Egregoria) {
         let time = goria.read::<GameTime>().daytime;
-        let warp = &mut self.settings.time_warp;
+        let warp = &mut goria.write::<Settings>().time_warp;
         let depause_warp = &mut self.depause_warp;
         if goria
             .read::<KeyboardInfo>()
@@ -412,10 +410,10 @@ impl Gui {
             self.windows.menu(ui);
 
             let h = ui.window_size()[1];
-            if ui.button(im_str!("Save"), [60.0, h]) {
+            if ui.button(im_str!("Save"), [80.0, h]) {
                 egregoria::save_to_disk(goria);
             }
-            ui.menu(im_str!("Settings"), true, self.settings.menu(ui));
+
             ui.menu(im_str!("Help"), true, || {
                 ui.text(im_str!("Pan: Right click or Arrow keys"));
                 ui.text(im_str!("Select: Left click"));

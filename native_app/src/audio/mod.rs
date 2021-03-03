@@ -7,7 +7,7 @@ use crate::audio::ambient::Ambient;
 use crate::audio::car_sounds::CarSounds;
 use crate::audio::music::Music;
 use crate::audio::unique_sink::UniqueSink;
-use crate::gui::Settings;
+use crate::gui::windows::settings::Settings;
 use common::AudioKind;
 use egregoria::Egregoria;
 use rodio::source::Buffered;
@@ -233,7 +233,7 @@ impl AudioContext {
         }
     }
 
-    pub fn set_settings(&mut self, settings: Settings) {
+    pub fn set_settings(&mut self, settings: &Settings) {
         let mut changed = false;
 
         let ui_volume = (settings.ui_volume_percent / 100.0).powi(2);

@@ -1,9 +1,14 @@
-use egregoria::engine_interaction::{KeyCode, KeyboardInfo};
+use std::collections::HashMap;
+
 use imgui::TextureId;
 use legion::{system, Entity};
-use roadbuild::RoadBuildResource;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+
+use egregoria::engine_interaction::{KeyCode, KeyboardInfo};
+pub use follow::FollowEntity;
+pub use inspect::*;
+use roadbuild::RoadBuildResource;
+pub use topgui::*;
 use wgpu_engine::GfxContext;
 
 mod bulldozer;
@@ -15,16 +20,10 @@ mod movable;
 mod roadbuild;
 mod roadeditor;
 mod selectable;
-mod settings;
 mod specialbuilding;
 mod topgui;
 
 pub mod windows;
-
-pub use follow::FollowEntity;
-pub use inspect::*;
-pub use settings::*;
-pub use topgui::*;
 
 register_resource_noserialize!(InspectedEntity);
 #[derive(Copy, Clone, Default, Debug)]

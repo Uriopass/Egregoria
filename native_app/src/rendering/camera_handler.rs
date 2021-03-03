@@ -1,5 +1,5 @@
 use crate::context::Context;
-use crate::gui::Settings;
+use crate::gui::windows::settings::Settings;
 use egregoria::engine_interaction::{KeyCode, MouseButton};
 use geom::{vec2, Camera, Vec2, Vec3};
 use wgpu_engine::Tesselator;
