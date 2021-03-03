@@ -40,61 +40,63 @@ impl Default for DebugObjs {
     }
 }
 
-pub fn debug(ui: &Ui, goria: &mut Egregoria) {
-    let mut objs = goria.write::<DebugObjs>();
-    for (val, name, _) in &mut objs.0 {
-        ui.checkbox(&im_str!("{}", *name), val);
-    }
-    drop(objs);
-
-    let time = goria.read::<GameTime>().timestamp;
-    let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
-
-    if ui.small_button(&im_str!("set night")) {
-        *goria.write::<GameTime>() = GameTime::new(0.1, time + daysecleft as f64);
-    }
-
-    if ui.small_button(&im_str!("set morning")) {
-        *goria.write::<GameTime>() =
-            GameTime::new(0.1, time + daysecleft as f64 + 7.0 * GameTime::HOUR as f64);
-    }
-
-    if ui.small_button(&im_str!("set day")) {
-        *goria.write::<GameTime>() =
-            GameTime::new(0.1, time + daysecleft as f64 + 12.0 * GameTime::HOUR as f64);
-    }
-
-    if ui.small_button(&im_str!("set dawn")) {
-        *goria.write::<GameTime>() =
-            GameTime::new(0.1, time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64);
-    }
-
-    let stats = goria.read::<RenderStats>();
-    let mouse = goria.read::<MouseInfo>().unprojected;
-    let cam = goria.read::<Camera>().position;
-
-    ui.text("Averaged over last 10 frames: ");
-    ui.text(im_str!("Total time: {:.1}ms", stats.all.avg() * 1000.0));
-    ui.text(im_str!(
-        "World update time: {:.1}ms",
-        stats.world_update.avg() * 1000.0
-    ));
-    ui.text(im_str!(
-        "Render prepare time: {:.1}ms",
-        stats.render.avg() * 1000.0
-    ));
-    ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
-    ui.text(im_str!("Cam   pos: {:.1} {:.1} {:.1}", cam.x, cam.y, cam.z));
-    ui.separator();
-    ui.text("Frame log");
-    let flog = goria.read::<FrameLog>();
-    {
-        let fl = flog.get_frame_log();
-        for s in &*fl {
-            ui.text(im_str!("{}", s));
+pub fn debug(window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
+    window.build(ui, || {
+        let mut objs = goria.write::<DebugObjs>();
+        for (val, name, _) in &mut objs.0 {
+            ui.checkbox(&im_str!("{}", *name), val);
         }
-    }
-    flog.clear();
+        drop(objs);
+
+        let time = goria.read::<GameTime>().timestamp;
+        let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
+
+        if ui.small_button(&im_str!("set night")) {
+            *goria.write::<GameTime>() = GameTime::new(0.1, time + daysecleft as f64);
+        }
+
+        if ui.small_button(&im_str!("set morning")) {
+            *goria.write::<GameTime>() =
+                GameTime::new(0.1, time + daysecleft as f64 + 7.0 * GameTime::HOUR as f64);
+        }
+
+        if ui.small_button(&im_str!("set day")) {
+            *goria.write::<GameTime>() =
+                GameTime::new(0.1, time + daysecleft as f64 + 12.0 * GameTime::HOUR as f64);
+        }
+
+        if ui.small_button(&im_str!("set dawn")) {
+            *goria.write::<GameTime>() =
+                GameTime::new(0.1, time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64);
+        }
+
+        let stats = goria.read::<RenderStats>();
+        let mouse = goria.read::<MouseInfo>().unprojected;
+        let cam = goria.read::<Camera>().position;
+
+        ui.text("Averaged over last 10 frames: ");
+        ui.text(im_str!("Total time: {:.1}ms", stats.all.avg() * 1000.0));
+        ui.text(im_str!(
+            "World update time: {:.1}ms",
+            stats.world_update.avg() * 1000.0
+        ));
+        ui.text(im_str!(
+            "Render prepare time: {:.1}ms",
+            stats.render.avg() * 1000.0
+        ));
+        ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
+        ui.text(im_str!("Cam   pos: {:.1} {:.1} {:.1}", cam.x, cam.y, cam.z));
+        ui.separator();
+        ui.text("Frame log");
+        let flog = goria.read::<FrameLog>();
+        {
+            let fl = flog.get_frame_log();
+            for s in &*fl {
+                ui.text(im_str!("{}", s));
+            }
+        }
+        flog.clear();
+    })
 }
 
 pub fn show_grid(tess: &mut Tesselator, state: &Egregoria) -> Option<()> {

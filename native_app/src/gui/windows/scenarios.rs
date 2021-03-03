@@ -27,17 +27,19 @@ impl Default for Scenarios {
 }
 
 impl ImguiWindow for Scenarios {
-    fn render(&mut self, ui: &Ui, goria: &mut Egregoria) {
-        for scenario in self.available_scenarios.iter() {
-            if ui.small_button(&im_str!("{}", scenario)) {
-                egregoria::scenarios::scenario_runner::set_scenario(
-                    goria,
-                    &format!("lua/scenarios/{}", scenario),
-                );
+    fn render(&mut self, window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
+        window.build(ui, || {
+            for scenario in self.available_scenarios.iter() {
+                if ui.small_button(&im_str!("{}", scenario)) {
+                    egregoria::scenarios::scenario_runner::set_scenario(
+                        goria,
+                        &format!("lua/scenarios/{}", scenario),
+                    );
+                }
             }
-        }
-        if ui.small_button(im_str!("reload scenario list")) {
-            self.available_scenarios = available_scenarios();
-        }
+            if ui.small_button(im_str!("reload scenario list")) {
+                self.available_scenarios = available_scenarios();
+            }
+        })
     }
 }
