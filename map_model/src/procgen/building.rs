@@ -27,33 +27,6 @@ impl ColoredMesh {
     }
 }
 
-pub fn gen_exterior_workplace(size: f32) -> (ColoredMesh, Vec2) {
-    let a = rand_in(15.0, 20.0);
-    let b = rand_in(15.0, 20.0);
-
-    let width = f32::max(a, b) * (size / 40.0) * 1.5;
-    let height = f32::min(a, b) * (size / 40.0);
-
-    let mut p = Polygon::rect(width, height);
-    let corn_coeff = rand_in(0.2, 0.3);
-
-    p.split_segment(0, corn_coeff);
-    p.split_segment(1, 1.0 - corn_coeff / (1.0 - corn_coeff));
-    let extrude = rand_in(height * 0.3, height * 0.4);
-    p.extrude(2, extrude);
-    p.extrude(0, extrude);
-
-    p.translate(-p.barycenter());
-    let door_pos = (p[3] + p[4]) * 0.5;
-
-    (
-        ColoredMesh {
-            faces: vec![(p, Color::new(0.48, 0.48, 0.5, 1.0).into())],
-        },
-        door_pos,
-    )
-}
-
 pub fn gen_exterior_house(size: f32, seed: Option<u64>) -> (ColoredMesh, Vec2) {
     let seed = seed.unwrap_or_else(|| rand_in(0.0, 10000.0) as u64);
     let mut retry_cnt = 0;
@@ -190,7 +163,7 @@ pub fn gen_exterior_house(size: f32, seed: Option<u64>) -> (ColoredMesh, Vec2) {
     }
 }
 
-pub fn gen_exterior_supermarket(size: f32) -> (ColoredMesh, Vec2) {
+pub fn gen_exterior_rect(size: f32) -> (ColoredMesh, Vec2) {
     let mut h = rand_in(25.0, 30.0);
     let mut w = h + rand_in(5.0, 10.0);
 

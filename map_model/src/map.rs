@@ -1,8 +1,8 @@
 use crate::procgen::Trees;
 use crate::{
-    Building, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID, LaneKind,
-    LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectKind, Road, RoadID,
-    RoadSegmentKind, SpatialMap,
+    Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
+    LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectKind, Road,
+    RoadID, RoadSegmentKind, SpatialMap,
 };
 use geom::{Intersect, Shape, Vec2};
 use geom::{Spline, OBB};
@@ -199,22 +199,23 @@ impl Map {
     pub fn build_special_building(
         &mut self,
         road: RoadID,
-        shape: &OBB,
+        obb: &OBB,
         kind: BuildingKind,
+        gen: BuildingGen,
     ) -> BuildingID {
         log::info!(
             "build special {:?} on {:?} with shape {:?}",
             kind,
             road,
-            shape
+            obb
         );
         self.dirty = true;
         let to_clean: Vec<_> = self
             .spatial_map
-            .query(shape)
+            .query(obb)
             .filter_map(|obj| {
                 if let ProjectKind::Lot(id) = obj {
-                    if self.lots[id].shape.intersects(shape) {
+                    if self.lots[id].shape.intersects(obb) {
                         return Some(id);
                     }
                 }
@@ -236,13 +237,14 @@ impl Map {
             &mut self.buildings,
             &mut self.spatial_map,
             &self.roads[road],
-            *shape,
+            *obb,
             kind,
+            gen,
         )
     }
 
-    pub fn build_buildings(&mut self) -> impl Iterator<Item = BuildingID> + '_ {
-        info!("build buildings");
+    pub fn build_houses(&mut self) -> impl Iterator<Item = BuildingID> + '_ {
+        info!("build houses");
         self.dirty = true;
 
         let roads = &mut self.roads;
@@ -255,18 +257,10 @@ impl Map {
             let parent = lot.parent;
             let lotkind = lot.kind;
 
-            let r = rand::random::<f32>();
-
             let kind = match lotkind {
                 LotKind::Unassigned => return true,
                 LotKind::Residential => BuildingKind::House,
-                LotKind::Commercial => {
-                    if r < 0.5 {
-                        BuildingKind::Supermarket
-                    } else {
-                        BuildingKind::Workplace
-                    }
-                }
+                LotKind::Commercial => BuildingKind::House,
             };
 
             Self::cleanup_lot(roads, spatial_map, lot);
@@ -277,6 +271,7 @@ impl Map {
                 &roads[parent],
                 lot.shape,
                 kind,
+                BuildingGen::House,
             ));
             false
         });

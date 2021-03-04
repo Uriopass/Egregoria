@@ -227,25 +227,22 @@ impl Gui {
 
                     if cur_build.opt.is_none() {
                         let d = &gbuildings[0];
-                        cur_build.opt = Some((d.bkind, d.size))
+                        cur_build.opt = Some((d.bkind, d.bgen, d.size))
                     }
 
-                    let (cur_kind, _) = cur_build.opt.unwrap();
+                    let (cur_kind, _, _) = cur_build.opt.unwrap();
 
                     let mut picked_descr = None;
                     for descr in gbuildings {
-                        let tok = ui.push_style_var(StyleVar::Alpha(
-                            if std::mem::discriminant(&descr.bkind)
-                                == std::mem::discriminant(&cur_kind)
-                            {
+                        let tok =
+                            ui.push_style_var(StyleVar::Alpha(if &descr.bkind == &cur_kind {
                                 picked_descr = Some(descr);
                                 1.0
                             } else {
                                 0.5
-                            },
-                        ));
+                            }));
                         if ui.button(&im_str!("{}", descr.name), [building_select_w, 35.0]) {
-                            cur_build.opt = Some((descr.bkind, descr.size));
+                            cur_build.opt = Some((descr.bkind, descr.bgen, descr.size));
                         }
                         tok.pop(ui);
                     }

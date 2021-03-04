@@ -12,7 +12,7 @@ pub fn map(window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
 
         if ui.small_button(im_str!("build houses")) {
             let mut infos = goria.write::<BuildingInfos>();
-            for build in map.build_buildings() {
+            for build in map.build_houses() {
                 infos.insert(build);
             }
         }
