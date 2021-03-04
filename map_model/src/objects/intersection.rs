@@ -46,7 +46,7 @@ impl Intersection {
             roads: Default::default(),
             turn_policy: Default::default(),
             light_policy: Default::default(),
-            polygon: Default::default(),
+            polygon: Polygon::centered_rect(pos, 5.0, 5.0),
         });
         spatial.insert(id, AABB::new(pos, pos));
         id
@@ -149,6 +149,10 @@ impl Intersection {
             };
 
             self.polygon.extend(spline.smart_points(1.0, 0.0, 1.0));
+        }
+
+        if self.polygon.is_empty() {
+            self.polygon = Polygon::centered_rect(self.pos, 5.0, 5.0);
         }
     }
 
