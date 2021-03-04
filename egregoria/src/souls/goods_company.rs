@@ -25,13 +25,6 @@ pub struct Recipe {
     pub storage_multiplier: i32,
 }
 
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-pub enum ActivitySector {
-    Primary = 0,
-    Secondary,
-    Tertiary,
-}
-
 pub struct GoodsCompanyDescription {
     pub name: &'static str,
     pub bkind: BuildingKind,
@@ -39,7 +32,6 @@ pub struct GoodsCompanyDescription {
     pub recipe: Recipe,
     pub n_workers: i32,
     pub size: f32,
-    pub sector: ActivitySector,
     pub asset_location: &'static str,
 }
 
@@ -56,7 +48,6 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 10,
         size: 80.0,
-        sector: ActivitySector::Secondary,
         asset_location: "assets/meat_facility.png",
     },
     GoodsCompanyDescription {
@@ -71,7 +62,6 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 5,
         size: 50.0,
-        sector: ActivitySector::Secondary,
         asset_location: "assets/slaughterhouse.png",
     },
     GoodsCompanyDescription {
@@ -86,7 +76,6 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 5,
         size: 80.0,
-        sector: ActivitySector::Primary,
         asset_location: "assets/animal_farm.png",
     },
     GoodsCompanyDescription {
@@ -101,7 +90,6 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 10,
         size: 70.0,
-        sector: ActivitySector::Primary,
         asset_location: "assets/vegetable_farm.png",
     },
     GoodsCompanyDescription {
@@ -116,7 +104,6 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 10,
         size: 120.0,
-        sector: ActivitySector::Primary,
         asset_location: "assets/cereal_farm.png",
     },
     GoodsCompanyDescription {
@@ -131,7 +118,6 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 10,
         size: 80.0,
-        sector: ActivitySector::Secondary,
         asset_location: "assets/flour_factory.png",
     },
     GoodsCompanyDescription {
@@ -146,7 +132,6 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         },
         n_workers: 3,
         size: 10.0,
-        sector: ActivitySector::Tertiary,
         asset_location: "assets/bakery.png",
     },
 ];
