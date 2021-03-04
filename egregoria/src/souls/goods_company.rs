@@ -9,7 +9,7 @@ use common::GameTime;
 use geom::Vec2;
 use legion::world::SubWorld;
 use legion::{system, Entity, EntityStore};
-use map_model::{BuildingID, BuildingKind, Map};
+use map_model::{BuildingGen, BuildingID, BuildingKind, Map};
 
 #[derive(Copy, Clone)]
 pub struct Recipe {
@@ -28,6 +28,7 @@ pub struct Recipe {
 pub struct GoodsCompanyDescription {
     pub name: &'static str,
     pub bkind: BuildingKind,
+    pub bgen: BuildingGen,
     pub kind: CompanyKind,
     pub recipe: Recipe,
     pub n_workers: i32,
@@ -37,8 +38,28 @@ pub struct GoodsCompanyDescription {
 
 pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
     GoodsCompanyDescription {
+        name: "Lumber yard",
+        bkind: BuildingKind::Company(7),
+        bgen: BuildingGen::CenteredDoor {
+            vertical_factor: 1.0,
+        },
+        kind: CompanyKind::Store,
+        recipe: Recipe {
+            consumption: &[],
+            production: &[(CommodityKind::TreeLog, 1)],
+            complexity: 100,
+            storage_multiplier: 5,
+        },
+        n_workers: 10,
+        size: 80.0,
+        asset_location: "assets/lumber_yard.png",
+    },
+    GoodsCompanyDescription {
         name: "Meat facility",
-        bkind: BuildingKind::MeatFacility,
+        bkind: BuildingKind::Company(6),
+        bgen: BuildingGen::CenteredDoor {
+            vertical_factor: 0.6,
+        },
         kind: CompanyKind::Factory { n_trucks: 1 },
         recipe: Recipe {
             consumption: &[(CommodityKind::RawMeat, 1)],
@@ -52,7 +73,10 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
     },
     GoodsCompanyDescription {
         name: "Slaughterhouse",
-        bkind: BuildingKind::SlaughterHouse,
+        bkind: BuildingKind::Company(5),
+        bgen: BuildingGen::CenteredDoor {
+            vertical_factor: 1.0,
+        },
         kind: CompanyKind::Factory { n_trucks: 1 },
         recipe: Recipe {
             consumption: &[(CommodityKind::Carcass, 1)],
@@ -66,7 +90,8 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
     },
     GoodsCompanyDescription {
         name: "Animal Farm",
-        bkind: BuildingKind::AnimalFarm,
+        bkind: BuildingKind::Company(4),
+        bgen: BuildingGen::Farm,
         kind: CompanyKind::Factory { n_trucks: 1 },
         recipe: Recipe {
             consumption: &[(CommodityKind::Cereal, 1)],
@@ -80,7 +105,8 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
     },
     GoodsCompanyDescription {
         name: "Vegetable Farm",
-        bkind: BuildingKind::VegetableFarm,
+        bkind: BuildingKind::Company(3),
+        bgen: BuildingGen::Farm,
         kind: CompanyKind::Factory { n_trucks: 1 },
         recipe: Recipe {
             consumption: &[],
@@ -94,7 +120,8 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
     },
     GoodsCompanyDescription {
         name: "Cereal Farm",
-        bkind: BuildingKind::CerealFarm,
+        bkind: BuildingKind::Company(2),
+        bgen: BuildingGen::Farm,
         kind: CompanyKind::Factory { n_trucks: 1 },
         recipe: Recipe {
             consumption: &[],
@@ -108,7 +135,10 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
     },
     GoodsCompanyDescription {
         name: "Cereal Factory",
-        bkind: BuildingKind::CerealFactory,
+        bkind: BuildingKind::Company(1),
+        bgen: BuildingGen::CenteredDoor {
+            vertical_factor: 0.6,
+        },
         kind: CompanyKind::Factory { n_trucks: 1 },
         recipe: Recipe {
             consumption: &[(CommodityKind::Cereal, 1)],
@@ -122,7 +152,10 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
     },
     GoodsCompanyDescription {
         name: "Bakery",
-        bkind: BuildingKind::Bakery,
+        bkind: BuildingKind::Company(0),
+        bgen: BuildingGen::CenteredDoor {
+            vertical_factor: 1.0,
+        },
         kind: CompanyKind::Store,
         recipe: Recipe {
             consumption: &[(CommodityKind::Flour, 1)],

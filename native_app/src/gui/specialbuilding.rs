@@ -5,14 +5,14 @@ use egregoria::map_dynamic::BuildingInfos;
 use egregoria::rendering::immediate::ImmediateDraw;
 use geom::{Vec2, OBB};
 use legion::system;
-use map_model::{BuildingKind, Map, ProjectKind};
+use map_model::{BuildingGen, BuildingKind, Map, ProjectKind};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
 register_resource!(SpecialBuildingResource, "special_building");
 #[derive(Serialize, Deserialize)]
 pub struct SpecialBuildingResource {
-    pub opt: Option<(BuildingKind, f32)>,
+    pub opt: Option<(BuildingKind, BuildingGen, f32)>,
 }
 
 impl Default for SpecialBuildingResource {
@@ -34,7 +34,7 @@ pub fn special_building(
     if !matches!(tool, Tool::SpecialBuilding) {
         return;
     }
-    let (kind, size) = unwrap_or!(res.opt, return);
+    let (kind, gen, size) = unwrap_or!(res.opt, return);
 
     let mpos = mouseinfo.unprojected;
     let roads = map.roads();
@@ -91,7 +91,7 @@ pub fn special_building(
     let rid = closest_road.id;
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
-        let b = map.build_special_building(rid, &obb, kind);
+        let b = map.build_special_building(rid, &obb, kind, gen);
         binfos.insert(b);
     }
 

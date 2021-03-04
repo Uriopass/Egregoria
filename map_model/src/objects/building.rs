@@ -11,15 +11,16 @@ new_key_type! {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum BuildingKind {
     House,
-    Workplace,
-    Supermarket,
-    CerealFarm,
-    CerealFactory,
-    AnimalFarm,
-    VegetableFarm,
-    SlaughterHouse,
-    MeatFacility,
-    Bakery,
+    Company(u32),
+}
+
+#[derive(Copy, Clone, Serialize, Deserialize)]
+pub enum BuildingGen {
+    House,
+    Farm,
+    CenteredDoor {
+        vertical_factor: f32, // 1.0 means that the door is at the bottom, just on the street
+    },
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -38,22 +39,18 @@ impl Building {
         road: &Road,
         obb: OBB,
         kind: BuildingKind,
+        gen: BuildingGen,
     ) -> BuildingID {
         let at = obb.center();
         let axis = (obb.corners[1] - obb.corners[0]).normalize();
         let size = obb.corners[0].distance(obb.corners[1]);
 
-        let (mut mesh, mut door_pos) = match kind {
-            BuildingKind::House => crate::procgen::gen_exterior_house(size, None),
-            BuildingKind::Workplace => crate::procgen::gen_exterior_workplace(size),
-            BuildingKind::Supermarket => crate::procgen::gen_exterior_supermarket(size),
-            BuildingKind::CerealFarm => crate::procgen::gen_exterior_farm(size),
-            BuildingKind::CerealFactory => (Default::default(), Vec2::y(-size * 0.3)),
-            BuildingKind::Bakery => (Default::default(), Vec2::y(-size * 0.5)),
-            BuildingKind::AnimalFarm => crate::procgen::gen_exterior_farm(size),
-            BuildingKind::VegetableFarm => crate::procgen::gen_exterior_farm(size),
-            BuildingKind::SlaughterHouse => (Default::default(), Vec2::y(-size * 0.5)),
-            BuildingKind::MeatFacility => (Default::default(), Vec2::y(-size * 0.3)),
+        let (mut mesh, mut door_pos) = match gen {
+            BuildingGen::House => crate::procgen::gen_exterior_house(size, None),
+            BuildingGen::Farm => crate::procgen::gen_exterior_farm(size),
+            BuildingGen::CenteredDoor { vertical_factor } => {
+                (Default::default(), Vec2::y(-vertical_factor * 0.5 * size))
+            }
         };
 
         for (poly, _) in &mut mesh.faces {
