@@ -84,7 +84,7 @@ pub const GOODS_BUILDINGS: &[GoodsCompanyDescription] = &[
         kind: CompanyKind::Factory { n_trucks: 1 },
         recipe: Recipe {
             consumption: &[],
-            production: &[(CommodityKind::Vegetables, 2)],
+            production: &[(CommodityKind::Vegetable, 2)],
             complexity: 1000,
             storage_multiplier: 5,
         },
