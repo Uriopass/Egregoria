@@ -234,13 +234,12 @@ impl Gui {
 
                     let mut picked_descr = None;
                     for descr in gbuildings {
-                        let tok =
-                            ui.push_style_var(StyleVar::Alpha(if &descr.bkind == &cur_kind {
-                                picked_descr = Some(descr);
-                                1.0
-                            } else {
-                                0.5
-                            }));
+                        let tok = ui.push_style_var(StyleVar::Alpha(if descr.bkind == cur_kind {
+                            picked_descr = Some(descr);
+                            1.0
+                        } else {
+                            0.5
+                        }));
                         if ui.button(&im_str!("{}", descr.name), [building_select_w, 35.0]) {
                             cur_build.opt = Some((descr.bkind, descr.bgen, descr.size));
                         }
