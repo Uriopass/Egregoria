@@ -57,7 +57,7 @@ commodity! {
     Meat => "Meat",
     TreeLog => "Tree Log",
     WoodPlank => "Wood Planks",
-    MetalOre => "Metal Ore",
+    IronOre => "Iron Ore",
     Metal => "Metal",
     RareMetal => "Rare Metal",
     HighTechProduct => "High Tech Product",
