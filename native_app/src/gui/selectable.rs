@@ -4,28 +4,41 @@ use egregoria::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
 use egregoria::ParCommandBuffer;
 use geom::Transform;
 use legion::world::SubWorld;
-use legion::Entity;
 use legion::{system, EntityStore};
+use legion::{Entity, Query};
+use std::sync::Mutex;
 
 register_system!(selectable_select);
-#[system(for_each)]
+#[system]
+#[read_component(Transform)]
+#[read_component(Selectable)]
 pub fn selectable_select(
     #[resource] inspected: &mut InspectedEntity,
     #[resource] mouse: &MouseInfo,
     #[resource] tool: &Tool,
-    trans: &Transform,
-    select: &Selectable,
-    e: &Entity,
+    world: &mut SubWorld,
+    qry: &mut Query<(Entity, &Transform, &Selectable)>,
 ) {
     if mouse.just_pressed.contains(&MouseButton::Left) && matches!(*tool, Tool::Hand) {
-        let dist2 = (trans.position() - mouse.unprojected).magnitude2();
-        if dist2 >= select.radius * select.radius
-            || (dist2 >= inspected.dist2 && inspected.e.is_some())
-        {
-            return;
-        }
-        inspected.e = Some(*e);
-        inspected.dist2 = dist2;
+        let protec = Mutex::new(inspected);
+
+        qry.par_for_each_chunk_mut(world, |chunk| {
+            let mut v = std::f32::INFINITY;
+            let mut ent = None;
+            for (e, trans, select) in chunk {
+                let dist2 = (trans.position() - mouse.unprojected).magnitude2();
+                if dist2 >= select.radius * select.radius || dist2 >= v {
+                    continue;
+                }
+                v = dist2;
+                ent = Some(*e);
+            }
+            let mut inspected = protec.lock().unwrap();
+            if inspected.dist2 >= v {
+                inspected.e = ent;
+                inspected.dist2 = v;
+            }
+        })
     }
 }
 
@@ -42,6 +55,7 @@ pub fn selectable_cleanup(
     if let Some(e) = inspected.e {
         if sw.entry_ref(e).is_err() {
             inspected.e = None;
+            inspected.dist2 = std::f32::INFINITY;
             return;
         }
 
@@ -50,10 +64,12 @@ pub fn selectable_cleanup(
         if kbinfo.just_pressed.contains(&KeyCode::Backspace) {
             gy.kill(e);
             inspected.e = None;
+            inspected.dist2 = std::f32::INFINITY;
         }
     }
 
     if kbinfo.just_pressed.contains(&KeyCode::Escape) || matches!(*tool, Tool::Bulldozer) {
         inspected.e = None;
+        inspected.dist2 = std::f32::INFINITY;
     }
 }
