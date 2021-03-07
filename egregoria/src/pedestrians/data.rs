@@ -1,4 +1,4 @@
-use crate::engine_interaction::{Movable, Selectable};
+use crate::engine_interaction::Selectable;
 use crate::map_dynamic::{BuildingInfos, Itinerary};
 use crate::pedestrians::Location;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
@@ -31,7 +31,6 @@ pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Entity {
         Pedestrian::default(),
         Itinerary::none(),
         Kinematics::from_mass(80.0),
-        Movable,
         {
             MeshRender::empty(0.35)
                 .add(RectRender {

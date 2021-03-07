@@ -1,6 +1,5 @@
 use crate::gui::follow::FollowEntity;
 use crate::gui::roadeditor::IntersectionComponent;
-use egregoria::engine_interaction::Movable;
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, Kinematics};
@@ -58,7 +57,6 @@ impl InspectRenderer {
         dirty |= self.inspect_component::<MeshRender>(goria, ui);
         dirty |= self.inspect_component::<Kinematics>(goria, ui);
         dirty |= self.inspect_component::<Collider>(goria, ui);
-        dirty |= self.inspect_component::<Movable>(goria, ui);
         dirty |= self.inspect_component::<IntersectionComponent>(goria, ui);
         dirty |= self.inspect_component::<Itinerary>(goria, ui);
 

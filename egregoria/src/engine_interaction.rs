@@ -3,11 +3,6 @@ use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize)]
-pub struct Movable;
-
-debug_inspect_impl!(Movable);
-
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Selectable {
     pub radius: f32,
