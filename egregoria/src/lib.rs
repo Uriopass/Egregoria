@@ -3,7 +3,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::economy::{Bought, Sold, Workers};
-use crate::engine_interaction::{Movable, RenderStats, Selectable};
+use crate::engine_interaction::{RenderStats, Selectable};
 use crate::map_dynamic::{Itinerary, Router};
 use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
@@ -257,7 +257,6 @@ fn registry() -> Registry<u64> {
       AssetRender,
       Kinematics,
       Selectable,
-      Movable,
       Vehicle,
       Pedestrian,
       Itinerary,

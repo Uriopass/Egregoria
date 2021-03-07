@@ -16,7 +16,6 @@ mod follow;
 mod inspect;
 mod inspected_aura;
 mod lotbrush;
-mod movable;
 mod roadbuild;
 mod roadeditor;
 mod selectable;
