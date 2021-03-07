@@ -7,6 +7,7 @@ use crate::{MultisampledTexture, ShaderType};
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, CullMode, Device,
@@ -15,23 +16,25 @@ use wgpu::{
 };
 
 pub struct GfxContext {
-    pub surface: Surface,
+    pub(crate) surface: Surface,
     pub size: (u32, u32),
-    pub adapter: Adapter,
+    #[allow(dead_code)] // keep adapter alive
+    pub(crate) adapter: Adapter,
     pub device: Device,
     pub queue: Queue,
     pub swapchain: SwapChain,
-    pub depth_texture: Texture,
-    pub light_texture: Texture,
-    pub color_texture: MultisampledTexture,
-    pub ui_texture: Texture,
-    pub sc_desc: SwapChainDescriptor,
+    pub(crate) depth_texture: Texture,
+    pub(crate) light_texture: Texture,
+    pub(crate) color_texture: MultisampledTexture,
+    pub(crate) ui_texture: Texture,
+    pub(crate) sc_desc: SwapChainDescriptor,
     pub update_sc: bool,
-    pub pipelines: HashMap<TypeId, RenderPipeline>,
-    pub projection: Uniform<mint::ColumnMatrix4<f32>>,
-    pub inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
+    pub(crate) pipelines: HashMap<TypeId, RenderPipeline>,
+    pub(crate) projection: Uniform<mint::ColumnMatrix4<f32>>,
+    pub(crate) inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub time_uni: Uniform<f32>,
-    pub samples: u32,
+    pub(crate) textures: HashMap<PathBuf, Texture>,
+    pub(crate) samples: u32,
 }
 
 pub struct GuiRenderContext<'a, 'b> {
@@ -108,6 +111,7 @@ impl GfxContext {
             projection,
             inv_projection,
             time_uni,
+            textures: HashMap::new(),
             samples,
         };
 
@@ -117,6 +121,23 @@ impl GfxContext {
         me.register_pipeline::<BlitLinear>();
 
         me
+    }
+
+    pub fn texture(&mut self, path: impl Into<PathBuf>, label: Option<&'static str>) -> Texture {
+        fn texture_inner(sel: &mut GfxContext, p: PathBuf, label: Option<&'static str>) -> Texture {
+            if let Some(tex) = sel.textures.get(&p) {
+                return tex.clone();
+            }
+            let tex = Texture::from_path(sel, &p, label);
+            sel.textures.insert(p, tex.clone());
+            tex
+        }
+
+        texture_inner(self, path.into(), label)
+    }
+
+    pub fn read_texture(&self, path: impl Into<PathBuf>) -> Option<&Texture> {
+        self.textures.get(&path.into())
     }
 
     pub fn set_present_mode(&mut self, mode: wgpu::PresentMode) {

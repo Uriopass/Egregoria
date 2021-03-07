@@ -37,6 +37,10 @@ pub enum OrderKind {
         poly: Polygon,
     },
     OBB(OBB),
+    TexturedOBB {
+        obb: OBB,
+        path: String,
+    },
 }
 
 #[derive(Clone)]
@@ -142,6 +146,10 @@ impl ImmediateDraw {
 
     pub fn obb(&mut self, obb: OBB) -> ImmediateBuilder {
         self.builder(OrderKind::OBB(obb))
+    }
+
+    pub fn textured_obb(&mut self, obb: OBB, path: String) -> ImmediateBuilder {
+        self.builder(OrderKind::TexturedOBB { obb, path })
     }
 
     pub fn clear_persistent(&mut self) {

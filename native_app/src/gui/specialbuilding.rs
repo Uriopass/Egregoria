@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 register_resource!(SpecialBuildingResource, "special_building");
 #[derive(Serialize, Deserialize)]
 pub struct SpecialBuildingResource {
-    pub opt: Option<(BuildingKind, BuildingGen, f32)>,
+    pub opt: Option<(BuildingKind, BuildingGen, f32, String)>,
 }
 
 impl Default for SpecialBuildingResource {
@@ -34,7 +34,8 @@ pub fn special_building(
     if !matches!(tool, Tool::SpecialBuilding) {
         return;
     }
-    let (kind, gen, size) = unwrap_or!(res.opt, return);
+    let (kind, gen, size, asset) = unwrap_or!(&res.opt, return);
+    let size = *size;
 
     let mpos = mouseinfo.unprojected;
     let roads = map.roads();
@@ -49,7 +50,7 @@ pub fn special_building(
         .min_by_key(move |p| OrderedFloat(p.generated_points().project_dist2(mpos)));
 
     let mut draw_red = || {
-        draw.obb(OBB::new(mpos, Vec2::UNIT_X, size, size))
+        draw.textured_obb(OBB::new(mpos, Vec2::UNIT_Y, size, size), asset.to_owned())
             .color(common::config().special_building_invalid_col)
             .z(Z_TOOL);
     };
@@ -82,7 +83,7 @@ pub fn special_building(
         || proj.distance(last) < 0.5 * size
         || closest_road.sidewalks(closest_road.src).incoming.is_none()
     {
-        draw.obb(obb)
+        draw.textured_obb(obb, asset.to_owned())
             .color(common::config().special_building_invalid_col)
             .z(Z_TOOL);
         return;
@@ -91,11 +92,11 @@ pub fn special_building(
     let rid = closest_road.id;
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
-        let b = map.build_special_building(rid, &obb, kind, gen);
+        let b = map.build_special_building(rid, &obb, *kind, *gen);
         binfos.insert(b);
     }
 
-    draw.obb(obb)
+    draw.textured_obb(obb, asset.to_owned())
         .color(common::config().special_building_col)
         .z(Z_TOOL);
 }

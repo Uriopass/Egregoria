@@ -12,7 +12,7 @@ pub struct MultiSpriteBatch {
 }
 
 impl MultiSpriteBatchBuilder {
-    pub fn from_paths(ctx: &GfxContext, paths: &[&'static str]) -> Self {
+    pub fn from_paths(ctx: &mut GfxContext, paths: &[&'static str]) -> Self {
         Self {
             sbs: paths
                 .iter()

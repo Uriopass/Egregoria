@@ -1,8 +1,7 @@
 use geom::{LinearColor, Vec3};
 use std::rc::Rc;
 use wgpu_engine::{
-    compile_shader, CompiledShader, FrameContext, GfxContext, ShadedQuadTex, Shaders, Texture,
-    Uniform,
+    compile_shader, CompiledShader, FrameContext, GfxContext, ShadedQuadTex, Shaders, Uniform,
 };
 
 struct Background;
@@ -37,7 +36,7 @@ impl BackgroundRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
         gfx.register_pipeline::<ShadedQuadTex<Background, BackgroundUniform>>();
 
-        let tex = Texture::from_path(gfx, "assets/noise.png", Some("noise"));
+        let tex = gfx.texture("assets/noise.png", Some("noise"));
         let sqt = ShadedQuadTex::<Background, BackgroundUniform>::new(
             gfx,
             Uniform::new(BackgroundUniform::default(), &gfx.device),

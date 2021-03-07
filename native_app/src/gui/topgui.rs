@@ -206,31 +206,30 @@ impl Gui {
                 });
         }
 
-        let building_select_w = 140.0;
+        let building_select_w = 160.0;
         let gbuildings = egregoria::souls::goods_company::GOODS_BUILDINGS;
 
         if matches!(*goria.read::<Tool>(), Tool::SpecialBuilding) {
             Window::new(im_str!("Buildings"))
-                .size_constraints([building_select_w, 0.0], [building_select_w, 10000.0])
+                .size_constraints([building_select_w, 0.0], [building_select_w, h * 0.5])
                 .position(
                     [w - toolbox_w - building_select_w, h * 0.5 - 30.0],
                     imgui::Condition::Always,
                 )
-                .scroll_bar(false)
                 .title_bar(true)
                 .movable(false)
                 .collapsible(false)
                 .resizable(false)
-                .always_auto_resize(true)
                 .build(&ui, || {
                     let mut cur_build = goria.write::<SpecialBuildingResource>();
 
                     if cur_build.opt.is_none() {
                         let d = &gbuildings[0];
-                        cur_build.opt = Some((d.bkind, d.bgen, d.size))
+                        cur_build.opt =
+                            Some((d.bkind, d.bgen, d.size, d.asset_location.to_string()))
                     }
 
-                    let (cur_kind, _, _) = cur_build.opt.unwrap();
+                    let cur_kind = cur_build.opt.as_ref().unwrap().0;
 
                     let mut picked_descr = None;
                     for descr in gbuildings {
@@ -240,8 +239,17 @@ impl Gui {
                         } else {
                             0.5
                         }));
-                        if ui.button(&im_str!("{}", descr.name), [building_select_w, 35.0]) {
-                            cur_build.opt = Some((descr.bkind, descr.bgen, descr.size));
+                        const SCROLLBAR_W: f32 = 10.0;
+                        if ui.button(
+                            &im_str!("{}", descr.name),
+                            [building_select_w - SCROLLBAR_W, 35.0],
+                        ) {
+                            cur_build.opt = Some((
+                                descr.bkind,
+                                descr.bgen,
+                                descr.size,
+                                descr.asset_location.to_string(),
+                            ));
                         }
                         tok.pop(ui);
                     }
