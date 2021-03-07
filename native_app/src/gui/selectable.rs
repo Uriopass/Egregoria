@@ -10,8 +10,6 @@ use std::sync::Mutex;
 
 register_system!(selectable_select);
 #[system]
-#[read_component(Transform)]
-#[read_component(Selectable)]
 pub fn selectable_select(
     #[resource] inspected: &mut InspectedEntity,
     #[resource] mouse: &MouseInfo,
