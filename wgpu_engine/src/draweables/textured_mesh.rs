@@ -78,6 +78,12 @@ impl TexturedMeshBuilder {
     }
 }
 
+impl TexturedMesh {
+    pub fn builder() -> TexturedMeshBuilder {
+        TexturedMeshBuilder::new()
+    }
+}
+
 impl Drawable for TexturedMesh {
     fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
         let vert = compile_shader("assets/shaders/textured_mesh_shader.vert", None);

@@ -326,3 +326,9 @@ impl Into<[f32; 4]> for LinearColor {
         [self.r, self.g, self.b, self.a]
     }
 }
+
+impl Into<[f32; 4]> for &LinearColor {
+    fn into(self) -> [f32; 4] {
+        [self.r, self.g, self.b, self.a]
+    }
+}

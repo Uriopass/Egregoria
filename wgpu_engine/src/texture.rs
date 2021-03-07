@@ -48,7 +48,11 @@ impl Texture {
         })
     }
 
-    pub fn from_path(ctx: &GfxContext, p: impl AsRef<Path>, label: Option<&'static str>) -> Self {
+    pub(crate) fn from_path(
+        ctx: &GfxContext,
+        p: impl AsRef<Path>,
+        label: Option<&'static str>,
+    ) -> Self {
         let r = p.as_ref();
         if let Some(x) = Self::try_from_path(ctx, r, label) {
             x
@@ -57,7 +61,7 @@ impl Texture {
         }
     }
 
-    pub fn try_from_path(
+    pub(crate) fn try_from_path(
         ctx: &GfxContext,
         p: impl AsRef<Path>,
         label: Option<&'static str>,

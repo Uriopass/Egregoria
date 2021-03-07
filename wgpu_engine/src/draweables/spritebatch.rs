@@ -1,6 +1,6 @@
 use crate::{compile_shader, Drawable, GfxContext, Texture};
 use geom::{LinearColor, Vec2};
-use std::path::Path;
+use std::path::PathBuf;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -25,6 +25,12 @@ pub struct SpriteBatch {
     pub tex_bg: Rc<BindGroup>,
 }
 
+impl SpriteBatch {
+    pub fn builder(tex: Texture) -> SpriteBatchBuilder {
+        SpriteBatchBuilder::new(tex)
+    }
+}
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 struct InstanceRaw {
@@ -38,8 +44,8 @@ struct InstanceRaw {
 u8slice_impl!(InstanceRaw);
 
 impl SpriteBatchBuilder {
-    pub fn from_path(ctx: &GfxContext, path: impl AsRef<Path>) -> Self {
-        Self::new(Texture::from_path(ctx, path, None))
+    pub fn from_path(ctx: &mut GfxContext, path: impl Into<PathBuf>) -> Self {
+        Self::new(ctx.texture(path, None))
     }
 
     pub fn clear(&mut self) {
@@ -53,14 +59,15 @@ impl SpriteBatchBuilder {
         z: f32,
         col: LinearColor,
         scale: (f32, f32),
-    ) {
+    ) -> &mut Self {
         self.instances.push(InstanceRaw {
             tint: col.into(),
             dir: direction.into(),
             scale: [scale.0 * self.stretch_x, -scale.1 * self.stretch_y],
             pos: [pos.x, pos.y, z],
             _pad: 0.0,
-        })
+        });
+        self
     }
 
     pub fn new(tex: Texture) -> Self {

@@ -14,7 +14,7 @@ use std::ops::Mul;
 use wgpu_engine::{
     compile_shader, CompiledShader, FrameContext, GfxContext, Mesh, MultiSpriteBatch,
     MultiSpriteBatchBuilder, ShadedBatch, ShadedBatchBuilder, ShadedInstanceRaw, Shaders,
-    SpriteBatch, SpriteBatchBuilder, Tesselator, Texture,
+    SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 
 #[derive(Copy, Clone)]
@@ -70,11 +70,9 @@ impl RoadRenderer {
         for descr in egregoria::souls::goods_company::GOODS_BUILDINGS {
             buildings_builder.insert(
                 descr.bkind,
-                SpriteBatchBuilder::new(Texture::from_path(
-                    gfx,
-                    descr.asset_location,
-                    Some(descr.asset_location),
-                )),
+                SpriteBatchBuilder::new(
+                    gfx.texture(descr.asset_location, Some(descr.asset_location)),
+                ),
             );
         }
 

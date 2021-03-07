@@ -18,7 +18,7 @@ use map_model::Map;
 use std::borrow::Cow;
 use std::time::Instant;
 use wgpu_engine::lighting::{LightInstance, LightRender};
-use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext};
+use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, SpriteBatch};
 use winit::dpi::PhysicalSize;
 use winit::window::{Fullscreen, Window};
 
@@ -117,6 +117,22 @@ impl State {
 
         self.goria.run();
 
+        {
+            let immediate = self.goria.read::<ImmediateDraw>();
+            for ImmediateOrder { kind, .. } in immediate
+                .persistent_orders
+                .iter()
+                .chain(immediate.orders.iter())
+            {
+                match *kind {
+                    OrderKind::TexturedOBB { ref path, .. } => {
+                        ctx.gfx.texture(path, Some("immediate tex"));
+                    }
+                    _ => {}
+                }
+            }
+        }
+
         add_souls_to_empty_buildings(&mut self.goria);
 
         for (sound, kind) in self.goria.write::<ImmediateSound>().orders.drain(..) {
@@ -198,6 +214,19 @@ impl State {
                             ax2.magnitude(),
                             ax1.normalize(),
                         );
+                    }
+                    OrderKind::TexturedOBB { obb, ref path } => {
+                        let tex = ctx
+                            .gfx
+                            .read_texture(path)
+                            .expect("texture not interned")
+                            .clone();
+                        ctx.objs.push(Box::new(
+                            SpriteBatch::builder(tex)
+                                .push(obb.center(), obb.axis()[0], z, *color, (1.0, 1.0))
+                                .build(ctx.gfx)
+                                .unwrap(),
+                        ));
                     }
                 }
             }
