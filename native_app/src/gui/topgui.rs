@@ -46,13 +46,13 @@ impl Gui {
             (StyleColor::TitleBg, common::config().gui_title_col.into()),
         ]);
 
-        self.inspector(ui, goria);
+        Self::inspector(ui, goria);
 
         self.windows.render(ui, goria);
 
         self.menu_bar(ui, goria);
 
-        self.toolbox(ui, goria);
+        Self::toolbox(ui, goria);
 
         self.time_controls(ui, goria);
 
@@ -76,7 +76,7 @@ impl Gui {
         }
     }
 
-    pub fn toolbox(&mut self, ui: &Ui, goria: &mut Egregoria) {
+    pub fn toolbox(ui: &Ui, goria: &mut Egregoria) {
         let [w, h] = ui.io().display_size;
         let tok = ui.push_style_vars(&[
             StyleVar::WindowPadding([0.0, 0.0]),
@@ -105,7 +105,7 @@ impl Gui {
             .collapsible(false)
             .resizable(false)
             .always_auto_resize(true)
-            .build(&ui, || {
+            .build(ui, || {
                 let cur_tool: &mut Tool = &mut goria.write::<Tool>();
 
                 for (name, tool) in &tools {
@@ -144,13 +144,13 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .always_auto_resize(true)
-                .build(&ui, || {
+                .build(ui, || {
                     let mut pattern = goria.write::<RoadBuildResource>().pattern_builder;
 
                     <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
                         &mut [&mut pattern],
                         "Road shape",
-                        &ui,
+                        ui,
                         &InspectArgsStruct {
                             header: Some(false),
                             indent_children: Some(false),
@@ -185,7 +185,7 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .always_auto_resize(true)
-                .build(&ui, || {
+                .build(ui, || {
                     let mut cur_brush = goria.write::<LotBrushResource>();
 
                     for (name, brush) in &brushes {
@@ -220,7 +220,7 @@ impl Gui {
                 .movable(false)
                 .collapsible(false)
                 .resizable(false)
-                .build(&ui, || {
+                .build(ui, || {
                     let mut cur_build = goria.write::<SpecialBuildingResource>();
 
                     if cur_build.opt.is_none() {
@@ -276,7 +276,7 @@ impl Gui {
                             .movable(false)
                             .collapsible(false)
                             .resizable(false)
-                            .build(&ui, || {
+                            .build(ui, || {
                                 ui.text(im_str!("workers: {}", descr.n_workers));
                                 ui.new_line();
                                 if !descr.recipe.consumption.is_empty() {
@@ -306,7 +306,7 @@ impl Gui {
         tok.pop(ui);
     }
 
-    pub fn inspector(&mut self, ui: &Ui, goria: &mut Egregoria) {
+    pub fn inspector(ui: &Ui, goria: &mut Egregoria) {
         let mut inspected = *goria.read::<InspectedEntity>();
         let e = unwrap_or!(inspected.e, return);
 
@@ -315,7 +315,7 @@ impl Gui {
             .size([300.0, 300.0], imgui::Condition::FirstUseEver)
             .position([30.0, 160.0], imgui::Condition::FirstUseEver)
             .opened(&mut is_open)
-            .build(&ui, || {
+            .build(ui, || {
                 inspected.dirty =
                     crate::gui::inspect::InspectRenderer { entity: e }.render(goria, ui);
             });
@@ -354,7 +354,7 @@ impl Gui {
             .no_decoration()
             .collapsible(false)
             .resizable(false)
-            .build(&ui, || {
+            .build(ui, || {
                 ui.text(im_str!(" Day {}", time.day));
 
                 ui.same_line(115.0);

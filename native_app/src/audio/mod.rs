@@ -15,8 +15,7 @@ use rodio::{Decoder, OutputStream, OutputStreamHandle, Sample, Source};
 use slotmap::{new_key_type, DenseSlotMap};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{Cursor, Read};
+use std::io::Cursor;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
@@ -138,7 +137,7 @@ impl AudioContext {
         match e {
             Entry::Occupied(x) => Some(x.get().clone()),
             Entry::Vacant(v) => {
-                let mut f = match File::open(format!("assets/sounds/{}.ogg", name)) {
+                let buf = match std::fs::read(format!("assets/sounds/{}.ogg", name)) {
                     Ok(x) => x,
                     Err(e) => {
                         log::error!("Could not load sound {}: {}", name, e);
@@ -146,8 +145,6 @@ impl AudioContext {
                     }
                 };
 
-                let mut buf = vec![];
-                let _ = f.read_to_end(&mut buf);
                 let s = rodio::Decoder::new(std::io::Cursor::new(&*buf.leak()))
                     .unwrap()
                     .buffered();

@@ -6,7 +6,7 @@ use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 pub fn config(window: imgui::Window, ui: &Ui, _goria: &mut Egregoria) {
     window
         .size([600.0, 500.0], Condition::FirstUseEver)
-        .build(&ui, || {
+        .build(ui, || {
             let mut config = (**common::config()).clone();
 
             let args = InspectArgsDefault {

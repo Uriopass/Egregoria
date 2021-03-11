@@ -92,7 +92,7 @@ impl RoadRenderer {
         }
     }
 
-    fn map_mesh(&self, map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
+    fn map_mesh(map: &Map, mut tess: Tesselator, gfx: &GfxContext) -> Option<Mesh> {
         let low_col: LinearColor = common::config().road_low_col.into();
         let mid_col: LinearColor = common::config().road_mid_col.into();
         let hig_col: LinearColor = common::config().road_hig_col.into();
@@ -261,7 +261,7 @@ impl RoadRenderer {
             TrafficBehavior::RED => -size,
             TrafficBehavior::ORANGE => 0.0,
             TrafficBehavior::GREEN => size,
-            _ => unreachable!(),
+            TrafficBehavior::STOP => unreachable!(),
         };
 
         sr.draw_circle(r_center + offset * dir_perp, Z_SIGNAL, size * 0.5);
@@ -326,7 +326,7 @@ impl RoadRenderer {
         self.arrow_builder.build(gfx)
     }
 
-    fn crosswalks(&mut self, map: &Map, gfx: &GfxContext) -> Option<ShadedBatch<Crosswalk>> {
+    fn crosswalks(map: &Map, gfx: &GfxContext) -> Option<ShadedBatch<Crosswalk>> {
         let mut builder = ShadedBatchBuilder::<Crosswalk>::new();
 
         let lanes = map.lanes();
@@ -358,7 +358,7 @@ impl RoadRenderer {
                 }
             }
         }
-        builder.build(&gfx)
+        builder.build(gfx)
     }
 
     pub fn trees(
@@ -431,16 +431,16 @@ impl RoadRenderer {
             .cull_rect
             .expect("no cull rectangle, might render far too many trees");
         if map.dirty || self.last_config != common::config_id() {
-            self.map_mesh = self.map_mesh(map, Tesselator::new(None, 15.0), &ctx.gfx);
-            self.arrows = self.arrows(map, &ctx.gfx);
-            self.crosswalks = self.crosswalks(map, &ctx.gfx);
-            self.buildings = Some(self.buildings_sprites(map, &ctx.gfx));
+            self.map_mesh = Self::map_mesh(map, Tesselator::new(None, 15.0), ctx.gfx);
+            self.arrows = self.arrows(map, ctx.gfx);
+            self.crosswalks = Self::crosswalks(map, ctx.gfx);
+            self.buildings = Some(self.buildings_sprites(map, ctx.gfx));
 
             self.last_config = common::config_id();
             map.dirty = false;
         }
 
-        let (trees, tree_shadows) = self.trees(map, screen, &ctx.gfx);
+        let (trees, tree_shadows) = self.trees(map, screen, ctx.gfx);
         self.trees = Some(trees);
         self.tree_shadows = tree_shadows;
 

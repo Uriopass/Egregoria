@@ -51,21 +51,21 @@ pub fn debug(window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
         let time = goria.read::<GameTime>().timestamp;
         let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
 
-        if ui.small_button(&im_str!("set night")) {
+        if ui.small_button(im_str!("set night")) {
             *goria.write::<GameTime>() = GameTime::new(0.1, time + daysecleft as f64);
         }
 
-        if ui.small_button(&im_str!("set morning")) {
+        if ui.small_button(im_str!("set morning")) {
             *goria.write::<GameTime>() =
                 GameTime::new(0.1, time + daysecleft as f64 + 7.0 * GameTime::HOUR as f64);
         }
 
-        if ui.small_button(&im_str!("set day")) {
+        if ui.small_button(im_str!("set day")) {
             *goria.write::<GameTime>() =
                 GameTime::new(0.1, time + daysecleft as f64 + 12.0 * GameTime::HOUR as f64);
         }
 
-        if ui.small_button(&im_str!("set dawn")) {
+        if ui.small_button(im_str!("set dawn")) {
             *goria.write::<GameTime>() =
                 GameTime::new(0.1, time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64);
         }
@@ -287,7 +287,7 @@ pub fn debug_pathfinder(tess: &mut Tesselator, world: &Egregoria) -> Option<()> 
     let itinerary = world.comp::<Itinerary>(selected)?;
 
     tess.set_color(LinearColor::GREEN);
-    tess.draw_polyline(&itinerary.local_path(), Z_DEBUG, 1.0);
+    tess.draw_polyline(itinerary.local_path(), Z_DEBUG, 1.0);
 
     if let Some(p) = itinerary.get_point() {
         tess.draw_stroke(p, pos, Z_DEBUG, 1.0);
