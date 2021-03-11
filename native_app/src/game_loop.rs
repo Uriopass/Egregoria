@@ -41,19 +41,20 @@ pub struct State {
 
 impl State {
     pub fn new(ctx: &mut Context) -> Self {
-        let camera = common::saveload::load_json("camera")
-            .map(|camera| CameraHandler {
-                camera,
-                last_pos: Vec2::ZERO,
-                movespeed: 1.0,
-            })
-            .unwrap_or_else(|| {
+        let camera = common::saveload::load_json("camera").map_or_else(
+            || {
                 CameraHandler::new(
                     ctx.gfx.size.0 as f32,
                     ctx.gfx.size.1 as f32,
                     vec3(0.0, 0.0, 20.0),
                 )
-            });
+            },
+            |camera| CameraHandler {
+                camera,
+                last_pos: Vec2::ZERO,
+                movespeed: 1.0,
+            },
+        );
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
@@ -67,7 +68,12 @@ impl State {
 
         goria.insert(camera.camera);
 
-        let mut me = Self {
+        {
+            let s = goria.read::<Settings>();
+            Self::manage_settings(ctx, &s);
+        }
+
+        Self {
             goria,
             camera,
             imgui_render,
@@ -78,10 +84,7 @@ impl State {
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
             light: LightRender::new(&mut ctx.gfx),
-        };
-        let s = *me.goria.read::<Settings>();
-        me.manage_settings(ctx, &s);
-        me
+        }
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
@@ -94,7 +97,7 @@ impl State {
             .add_value(delta as f32);
 
         let settings = *self.goria.read::<Settings>();
-        self.manage_settings(ctx, &settings);
+        Self::manage_settings(ctx, &settings);
 
         self.manage_time(delta, &mut ctx.gfx);
 
@@ -124,11 +127,8 @@ impl State {
                 .iter()
                 .chain(immediate.orders.iter())
             {
-                match *kind {
-                    OrderKind::TexturedOBB { ref path, .. } => {
-                        ctx.gfx.texture(path, Some("immediate tex"));
-                    }
-                    _ => {}
+                if let OrderKind::TexturedOBB { ref path, .. } = *kind {
+                    ctx.gfx.texture(path, Some("immediate tex"));
                 }
             }
         }
@@ -275,7 +275,6 @@ impl State {
         let bright = vec3(1.0, 1.0, 1.0);
 
         let col = match time.daytime.hour {
-            0..=5 => dark,
             6..=9 => {
                 let c = (daysec / GameTime::HOUR as f64 - 6.0) / 4.0;
                 dark.smoothstep(bright, c as f32)
@@ -285,7 +284,6 @@ impl State {
                 let c = (daysec / GameTime::HOUR as f64 - 16.0) / 5.0;
                 bright.smoothstep(dark, c as f32)
             }
-            21..=24 => dark,
             _ => dark,
         };
 
@@ -300,7 +298,7 @@ impl State {
             .render(ctx, window, &mut self.goria, &mut self.gui);
     }
 
-    fn manage_settings(&mut self, ctx: &mut Context, settings: &Settings) {
+    fn manage_settings(ctx: &mut Context, settings: &Settings) {
         if settings.fullscreen && ctx.window.fullscreen().is_none() {
             ctx.window
                 .set_fullscreen(Some(Fullscreen::Borderless(ctx.window.current_monitor())))

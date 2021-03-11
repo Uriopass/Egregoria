@@ -32,8 +32,8 @@ pub struct RoadBuildResource {
 }
 
 use common::{AudioKind, Z_TOOL};
-use BuildState::*;
-use ProjectKind::*;
+use BuildState::{Hover, Interpolation, Start};
+use ProjectKind::{Building, Ground, Inter, Lot, Road};
 
 register_system!(roadbuild);
 #[system]
@@ -171,8 +171,6 @@ fn make_connection(
     interpoint: Option<Vec2>,
     pattern: &LanePattern,
 ) -> IntersectionID {
-    use ProjectKind::*;
-
     let connection_segment = match interpoint {
         Some(x) => RoadSegmentKind::from_elbow(from.pos, to.pos, x),
         None => RoadSegmentKind::Straight,
@@ -221,7 +219,6 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
 }
 
 fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
-    use ProjectKind::*;
     match (x, y) {
         (Ground, Ground)
         | (Ground, Road(_))

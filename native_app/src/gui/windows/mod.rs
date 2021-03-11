@@ -78,7 +78,7 @@ impl ImguiWindows {
         let h = ui.window_size()[1];
         for (opened, w) in self.opened.iter_mut().zip(self.windows.iter()) {
             let tok = ui.push_style_var(StyleVar::Alpha(if *opened { 1.0 } else { 0.5 }));
-            *opened ^= ui.button(&w.name, [80.0, h]);
+            *opened ^= ui.button(w.name, [80.0, h]);
             tok.pop(ui);
         }
     }
