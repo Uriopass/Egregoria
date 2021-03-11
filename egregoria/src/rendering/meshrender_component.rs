@@ -36,7 +36,7 @@ impl MeshRenderEnum {
 
 impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
     fn render(_: &[&MeshRenderEnum], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
-        unimplemented!()
+        panic!()
     }
 
     fn render_mut(
@@ -152,11 +152,11 @@ impl MeshRender {
 impl InspectRenderDefault<MeshRender> for MeshRender {
     fn render(data: &[&MeshRender], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
         if data.len() != 1 {
-            unimplemented!()
+            panic!()
         }
         let mapped = &data[0].orders;
         <Vec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
-            &[&mapped],
+            &[mapped],
             label,
             ui,
             args,

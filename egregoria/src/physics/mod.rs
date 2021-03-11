@@ -50,7 +50,7 @@ pub struct Collider(pub GridHandle);
 
 impl InspectRenderDefault<Collider> for Collider {
     fn render(_: &[&Collider], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
-        unimplemented!()
+        panic!()
     }
 
     fn render_mut(
@@ -60,7 +60,7 @@ impl InspectRenderDefault<Collider> for Collider {
         _: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
-            unimplemented!()
+            panic!()
         }
         let d = &mut data[0];
         ui.text(format!("{:?} {}", d.0, label));

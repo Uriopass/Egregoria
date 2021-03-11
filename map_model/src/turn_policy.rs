@@ -54,7 +54,7 @@ impl TurnPolicy {
     ) -> Vec<(TurnID, TurnKind)> {
         incoming
             .iter()
-            .map(|lane_src| {
+            .flat_map(|lane_src| {
                 outgoing.iter().map(move |lane_dst| {
                     (
                         TurnID::new(inter_id, *lane_src, *lane_dst, false),
@@ -62,7 +62,6 @@ impl TurnPolicy {
                     )
                 })
             })
-            .flatten()
             .collect()
     }
 

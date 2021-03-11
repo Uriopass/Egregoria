@@ -47,7 +47,7 @@ pub fn vehicle_decision(
         let objs =
             neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
 
-        let (s, d) = calc_decision(*me, vehicle, &map, &time, trans, self_obj, it, objs);
+        let (s, d) = calc_decision(*me, vehicle, map, time, trans, self_obj, it, objs);
         desired_speed = s;
         desired_dir = d;
     }
@@ -56,9 +56,9 @@ pub fn vehicle_decision(
         trans,
         kin,
         vehicle,
-        &time,
+        time,
         self_obj,
-        &map,
+        map,
         desired_speed,
         desired_dir,
     );
