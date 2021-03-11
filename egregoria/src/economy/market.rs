@@ -143,7 +143,6 @@ impl Market {
                 buy_orders,
                 sell_orders,
                 capital,
-                ..
             } = market;
 
             all_trades.extend(

@@ -85,9 +85,7 @@ impl VehicleKind {
 
     pub fn deceleration(self) -> f32 {
         match self {
-            VehicleKind::Car => 9.0,
-            VehicleKind::Bus => 9.0,
-            VehicleKind::Truck => 9.0,
+            VehicleKind::Car | VehicleKind::Bus | VehicleKind::Truck => 9.0,
         }
     }
 
@@ -102,8 +100,7 @@ impl VehicleKind {
     pub fn cruising_speed(self) -> f32 {
         match self {
             VehicleKind::Car => 12.0,
-            VehicleKind::Truck => 10.0,
-            VehicleKind::Bus => 10.0,
+            VehicleKind::Truck | VehicleKind::Bus => 10.0,
         }
     }
 

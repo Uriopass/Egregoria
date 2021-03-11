@@ -309,7 +309,7 @@ impl Router {
         }
 
         if let Some(car) = self.vehicle {
-            if let Some(spot_id) = parking.reserve_near(obj, &map) {
+            if let Some(spot_id) = parking.reserve_near(obj, map) {
                 let lane = map.parking_to_drive(spot_id).unwrap();
                 let spot = *map.parking.get(spot_id).unwrap();
 

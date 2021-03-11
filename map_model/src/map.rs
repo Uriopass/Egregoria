@@ -370,7 +370,7 @@ impl Map {
                         return mk_proj(ProjectKind::Building(id));
                     }
                 }
-                _ => {},
+                ProjectKind::Ground => {}
             }
         }
 

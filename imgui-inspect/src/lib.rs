@@ -79,7 +79,7 @@ macro_rules! debug_inspect_impl {
                 _: &imgui_inspect::InspectArgsDefault,
             ) {
                 if data.len() != 1 {
-                    unimplemented!()
+                    panic!()
                 }
                 let d = &data[0];
                 ui.text(imgui::im_str!("{:?} {}", d, label));
@@ -92,7 +92,7 @@ macro_rules! debug_inspect_impl {
                 _: &imgui_inspect::InspectArgsDefault,
             ) -> bool {
                 if data.len() != 1 {
-                    unimplemented!()
+                    panic!()
                 }
                 let d = &data[0];
                 ui.text(imgui::im_str!("{:?} {}", d, label));

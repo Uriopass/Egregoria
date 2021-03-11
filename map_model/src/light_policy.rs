@@ -45,10 +45,10 @@ impl LightPolicy {
         match self {
             LightPolicy::NoLights => {}
             LightPolicy::StopSigns => {
-                self.stop_signs(in_road_lanes, lanes);
+                Self::stop_signs(in_road_lanes, lanes);
             }
             LightPolicy::Lights => {
-                self.lights(in_road_lanes, inter, lanes);
+                Self::lights(in_road_lanes, inter, lanes);
             }
             LightPolicy::Smart => {
                 if in_road_lanes.len() <= 2 {
@@ -56,15 +56,15 @@ impl LightPolicy {
                 }
 
                 if inter.turn_policy.left_turns {
-                    self.lights(in_road_lanes, inter, lanes);
+                    Self::lights(in_road_lanes, inter, lanes);
                 } else {
-                    self.stop_signs(in_road_lanes, lanes);
+                    Self::stop_signs(in_road_lanes, lanes);
                 }
             }
         }
     }
 
-    fn stop_signs(self, in_road_lanes: Vec<Vec<LaneID>>, lanes: &mut Lanes) {
+    fn stop_signs(in_road_lanes: Vec<Vec<LaneID>>, lanes: &mut Lanes) {
         for incoming_lanes in in_road_lanes {
             for lane in incoming_lanes {
                 lanes[lane].control = TrafficControl::StopSign;
@@ -72,7 +72,7 @@ impl LightPolicy {
         }
     }
 
-    fn lights(self, in_road_lanes: Vec<Vec<LaneID>>, inter: &Intersection, lanes: &mut Lanes) {
+    fn lights(in_road_lanes: Vec<Vec<LaneID>>, inter: &Intersection, lanes: &mut Lanes) {
         let n_cycles = (in_road_lanes.len() + 1) / 2;
         let cycle_size = 14;
         let orange_length = 4;
