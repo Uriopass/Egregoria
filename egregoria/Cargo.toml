@@ -11,7 +11,7 @@ edition = "2018"
 
 [dependencies]
 ordered-float = { version = "2.0", features = ["serde"] }
-rand          = { version = "0.8", default-features = false, features = ["std", "small_rng", "std_rng"] }
+rand          = { version = "0.8", default-features = false, features = ["small_rng"] }
 rand_distr    = "0.4"
 serde         = "1.0"
 legion        = { version = "0.4.0", default-features = false, features = ["codegen", "serialize", "parallel"] }

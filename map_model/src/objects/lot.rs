@@ -4,6 +4,7 @@ use geom::OBB;
 use geom::{Intersect, Polygon};
 use geom::{Shape, Vec2};
 use rand::seq::SliceRandom;
+use rand::SeedableRng;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -96,12 +97,16 @@ impl Lot {
             let r = &map.roads[road];
 
             let w = r.width * 0.5;
+            let mut rng = rand::rngs::SmallRng::seed_from_u64(
+                common::rand::rand3(
+                    r.src_point.x + r.dst_point.x,
+                    r.dst_point.y + r.src_point.y,
+                    side * r.length,
+                )
+                .to_bits() as u64,
+            );
 
-            fn picksize() -> f32 {
-                *[20.0f32, 30.0, 40.0]
-                    .choose(&mut rand::thread_rng())
-                    .unwrap()
-            }
+            let mut picksize = || *[20.0f32, 30.0, 40.0].choose(&mut rng).unwrap();
 
             let mut along = r.generated_points.points_dirs_manual();
             let mut size = picksize();

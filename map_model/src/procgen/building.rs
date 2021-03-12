@@ -1,5 +1,5 @@
 use geom::skeleton::{faces_from_skeleton, skeleton};
-use geom::{vec2, vec3, Color, Intersect, LinearColor, Polygon, Segment, Shape, Vec2, AABB};
+use geom::{vec2, vec3, Intersect, LinearColor, Polygon, Segment, Shape, Vec2, AABB};
 use ordered_float::OrderedFloat;
 use rand::prelude::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -27,8 +27,7 @@ impl ColoredMesh {
     }
 }
 
-pub fn gen_exterior_house(size: f32, seed: Option<u64>) -> (ColoredMesh, Vec2) {
-    let seed = seed.unwrap_or_else(|| rand_in(0.0, 10000.0) as u64);
+pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
     let mut retry_cnt = 0;
     'retry: loop {
         let mut rng = SmallRng::seed_from_u64((retry_cnt << 32) + seed);
@@ -163,54 +162,23 @@ pub fn gen_exterior_house(size: f32, seed: Option<u64>) -> (ColoredMesh, Vec2) {
     }
 }
 
-pub fn gen_exterior_rect(size: f32) -> (ColoredMesh, Vec2) {
-    let mut h = rand_in(25.0, 30.0);
-    let mut w = h + rand_in(5.0, 10.0);
-
-    w *= size / 40.0;
-    h *= size / 40.0;
-
-    let mut p = Polygon::rect(w, h);
-
-    let mut door_pos = vec2(w * 0.5, 0.0);
-    let off = -p.barycenter();
-
-    door_pos += off;
-    p.translate(off);
-
-    (
-        ColoredMesh {
-            faces: vec![(p, Color::new(0.52, 0.5, 0.50, 1.0).into())],
-        },
-        door_pos,
-    )
-}
-
 ///  XXXXX   
 ///  XXXXX   
 ///    XXX   
 ///     |    
-pub fn gen_exterior_farm(size: f32) -> (ColoredMesh, Vec2) {
+pub fn gen_exterior_farm(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
     let h_size = 30.0;
-    let (mut mesh, mut door_pos) = gen_exterior_house(h_size, None);
+    let (mut mesh, mut door_pos) = gen_exterior_house(h_size, seed);
+
+    let mut rng = SmallRng::seed_from_u64(seed + 7);
 
     let b = mesh.bbox();
-    let off = -b.ll - Vec2::splat(size * 0.5) + vec2(rand_in(0.0, size - h_size), 3.0);
+    let off = -b.ll - Vec2::splat(size * 0.5) + vec2(rng.gen_range(0.0..size - h_size), 3.0);
     mesh.translate(off);
     door_pos += off;
 
     (mesh, door_pos)
 }
-
-fn rand_in(min: f32, max: f32) -> f32 {
-    rand::thread_rng().gen_range(min..max)
-}
-
-/*
-fn randi_in(min: i32, max: i32) -> i32 {
-    rand::thread_rng().gen_range(min, max)
-}
- */
 
 // How to gen a house
 // Idea: Make everything out of rectangles

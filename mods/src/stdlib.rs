@@ -85,16 +85,11 @@ fn poly_rect(_: &Lua, (w, h): (f32, f32)) -> LuaResult<LuaPolygon> {
     Ok(LuaPolygon(Polygon::rect(w, h)))
 }
 
-fn rand_in(_: &Lua, (min, max): (f32, f32)) -> LuaResult<f32> {
-    Ok(min + rand::random::<f32>() * (max - min))
-}
-
 fn vec2(_: &Lua, (x, y): (f32, f32)) -> LuaResult<LuaVec2> {
     Ok(LuaVec2(Vec2 { x, y }))
 }
 
 pub fn add_std(lua: &Lua) {
     add_fn(lua, "poly_rect", poly_rect);
-    add_fn(lua, "rand_in", rand_in);
     add_fn(lua, "vec2", vec2);
 }

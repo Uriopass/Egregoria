@@ -194,14 +194,14 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
     }
 }
 
-pub fn add_grid(pos: Vec2, m: &mut Map, size: usize) {
+pub fn add_grid(pos: Vec2, m: &mut Map, size: usize, spacing: f32) {
     if size == 0 {
         return;
     }
     let mut grid: Vec<Vec<IntersectionID>> = vec![vec![]; size];
     for (y, l) in grid.iter_mut().enumerate() {
         for x in 0..size {
-            l.push(m.add_intersection(pos + vec2(x as f32 * 100.0, y as f32 * 100.0)));
+            l.push(m.add_intersection(pos + vec2(x as f32 * spacing, y as f32 * spacing)));
         }
     }
 
@@ -233,5 +233,5 @@ fn print_stats(map: &Map) {
 
 pub fn load_testfield(map: &mut Map) {
     //add_doublecircle([0.0, 0.0].into(), map);
-    add_grid([0.0, 350.0].into(), map, 10);
+    add_grid([0.0, 350.0].into(), map, 10, 180.0);
 }
