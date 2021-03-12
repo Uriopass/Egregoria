@@ -2,6 +2,7 @@ use crate::engine_interaction::Selectable;
 use crate::map_dynamic::{Itinerary, ParkingManagement};
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::rendering::assets::{AssetID, AssetRender};
+use crate::utils::rand_provider::RandProvider;
 use crate::utils::rand_world;
 use crate::Egregoria;
 use common::{GameInstant, GameTime, Z_CAR};
@@ -157,7 +158,7 @@ pub fn make_vehicle_entity(
     };
 
     let tint = match vehicle.kind {
-        VehicleKind::Car => get_random_car_color(),
+        VehicleKind::Car => get_random_car_color(&mut *goria.write::<RandProvider>()),
         _ => Color::WHITE,
     };
 
@@ -185,7 +186,7 @@ pub fn make_vehicle_entity(
     e
 }
 
-pub fn get_random_car_color() -> Color {
+pub fn get_random_car_color(r: &mut RandProvider) -> Color {
     let car_colors: [(Color, f32); 9] = [
         (Color::from_hex(0x22_22_22), 0.22),  // Black
         (Color::from_hex(0xff_ff_ff), 0.19),  // White
@@ -200,7 +201,7 @@ pub fn get_random_car_color() -> Color {
 
     let total: f32 = car_colors.iter().map(|x| x.1).sum();
 
-    let r = rand::random::<f32>() * total;
+    let r = r.random::<f32>() * total;
     let mut partial = 0.0;
     for (col, freq) in &car_colors {
         partial += freq;
