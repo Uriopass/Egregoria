@@ -1,6 +1,6 @@
 use super::Tool;
+use crate::input::{MouseButton, MouseInfo};
 use common::Z_TOOL;
-use egregoria::engine_interaction::{MouseButton, MouseInfo};
 use egregoria::rendering::immediate::ImmediateDraw;
 use legion::system;
 use map_model::{LotKind, Map, ProjectKind};

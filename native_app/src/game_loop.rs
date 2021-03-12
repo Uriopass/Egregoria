@@ -1,26 +1,29 @@
-use crate::audio::GameAudio;
-use crate::context::Context;
-use crate::gui::windows::debug::DebugObjs;
-use crate::gui::windows::settings::Settings;
-use crate::gui::{FollowEntity, Gui, UiTextures};
-use crate::rendering::imgui_wrapper::ImguiWrapper;
-use crate::rendering::{
-    BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
-};
-use common::GameTime;
-use egregoria::engine_interaction::{KeyboardInfo, MouseInfo, RenderStats};
+use std::borrow::Cow;
+use std::time::Instant;
+
+use winit::dpi::PhysicalSize;
+use winit::window::{Fullscreen, Window};
+
+use common::{GameTime, History};
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound, OrderKind};
 use egregoria::souls::add_souls_to_empty_buildings;
 use egregoria::{load_from_disk, Egregoria};
 use geom::Camera;
 use geom::{vec3, LinearColor, Vec2};
 use map_model::Map;
-use std::borrow::Cow;
-use std::time::Instant;
 use wgpu_engine::lighting::{LightInstance, LightRender};
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, SpriteBatch};
-use winit::dpi::PhysicalSize;
-use winit::window::{Fullscreen, Window};
+
+use crate::audio::GameAudio;
+use crate::context::Context;
+use crate::gui::windows::debug::DebugObjs;
+use crate::gui::windows::settings::Settings;
+use crate::gui::{FollowEntity, Gui, UiTextures};
+use crate::input::{KeyboardInfo, MouseInfo};
+use crate::rendering::imgui_wrapper::ImguiWrapper;
+use crate::rendering::{
+    BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
+};
 
 pub struct State {
     goria: Egregoria,
@@ -118,7 +121,12 @@ impl State {
                 self.camera.unproject(ctx.input.mouse.screen);
         }
 
+        let t = std::time::Instant::now();
         self.goria.run();
+        self.goria
+            .write::<RenderStats>()
+            .world_update
+            .add_value(t.elapsed().as_secs_f32());
 
         {
             let immediate = self.goria.read::<ImmediateDraw>();
@@ -364,4 +372,12 @@ impl State {
         self.camera
             .resize(ctx, size.width as f32, size.height as f32);
     }
+}
+
+register_resource_noserialize!(RenderStats);
+#[derive(Default)]
+pub struct RenderStats {
+    pub all: History,
+    pub world_update: History,
+    pub render: History,
 }

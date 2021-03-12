@@ -1,5 +1,5 @@
 use crate::gui::Tool;
-use egregoria::engine_interaction::{MouseButton, MouseInfo};
+use crate::input::{MouseButton, MouseInfo};
 use egregoria::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use geom::Color;
 use geom::Spline;
