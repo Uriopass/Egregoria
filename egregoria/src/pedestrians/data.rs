@@ -3,13 +3,13 @@ use crate::map_dynamic::{BuildingInfos, Itinerary};
 use crate::pedestrians::Location;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
+use crate::utils::rand_provider::RandProvider;
 use crate::{Egregoria, SoulID};
 use geom::Color;
 use geom::{vec2, Transform, Vec2};
 use imgui_inspect_derive::*;
 use legion::Entity;
 use map_model::{BuildingID, Map};
-use rand_distr::Distribution;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Inspect)]
@@ -21,14 +21,14 @@ pub struct Pedestrian {
 const PED_SIZE: f32 = 0.5;
 
 pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Entity {
-    let color = random_pedestrian_shirt_color();
+    let color = random_pedestrian_shirt_color(&mut *goria.write::<RandProvider>());
 
     let hpos = goria.read::<Map>().buildings()[house].door_pos;
-
+    let p = Pedestrian::new(&mut *goria.write::<RandProvider>());
     let e = goria.world.push((
         Transform::new(hpos),
         Location::Building(house),
-        Pedestrian::default(),
+        p,
         Itinerary::none(),
         Kinematics::from_mass(80.0),
         {
@@ -81,19 +81,18 @@ pub fn put_pedestrian_in_coworld(coworld: &mut CollisionWorld, pos: Vec2) -> Col
     ))
 }
 
-impl Default for Pedestrian {
-    fn default() -> Self {
+impl Pedestrian {
+    fn new(r: &mut RandProvider) -> Self {
         Self {
-            walking_speed: rand_distr::Normal::new(1.34f32, 0.26) // https://arxiv.org/pdf/cond-mat/9805244.pdf
-                .unwrap() // Unwrap ok: it is a normal distribution
-                .sample(&mut rand::thread_rng())
+            walking_speed: r
+                .rand_normal(1.34f32, 0.26) // https://arxiv.org/pdf/cond-mat/9805244.pdf
                 .max(0.5),
             walk_anim: 0.0,
         }
     }
 }
 
-pub fn random_pedestrian_shirt_color() -> Color {
+pub fn random_pedestrian_shirt_color(r: &mut RandProvider) -> Color {
     let car_colors: [(Color, f32); 7] = [
         (Color::from_hex(0xff_ff_ff), 0.1),  // White
         (Color::from_hex(0x66_66_66), 0.1),  // Gray
@@ -106,7 +105,7 @@ pub fn random_pedestrian_shirt_color() -> Color {
 
     let total: f32 = car_colors.iter().map(|x| x.1).sum();
 
-    let r = rand::random::<f32>() * total;
+    let r = r.random::<f32>() * total;
     let mut partial = 0.0;
     for (col, freq) in &car_colors {
         partial += freq;

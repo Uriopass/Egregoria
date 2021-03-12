@@ -5,7 +5,6 @@ use crate::vehicles::{spawn_parked_vehicle, VehicleKind};
 use crate::Egregoria;
 use geom::Vec2;
 use map_model::{BuildingID, BuildingKind, Map};
-use rand::seq::SliceRandom;
 use std::collections::HashMap;
 
 #[macro_use]
@@ -37,7 +36,8 @@ pub fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
     for &(build_id, _) in empty_buildings
         .get(&BuildingKind::House)
         .unwrap_or(&vec![])
-        .choose_multiple(&mut rand::thread_rng(), 100)
+        .iter()
+        .take(100)
     {
         spawn_human(goria, build_id);
         n_souls_added += 1;
