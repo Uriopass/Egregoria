@@ -13,7 +13,7 @@ serde         = { version = "1.0", features = ["derive"] }
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 geom          = { path = "../geom" }
-rand          = { version = "0.8", default-features = false, features = ["std", "small_rng", "std_rng"] }
+rand          = { version = "0.8", default-features = false, features = ["small_rng"] }
 pathfinding   = "2.1.1"
 common        = { path = "../common" }
 flat_spatial  = { path = "../flat_spatial" }

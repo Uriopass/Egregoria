@@ -45,9 +45,11 @@ impl Building {
         let axis = (obb.corners[1] - obb.corners[0]).normalize();
         let size = obb.corners[0].distance(obb.corners[1]);
 
+        let r = common::rand::rand2(obb.center().x, obb.center().y).to_bits();
+
         let (mut mesh, mut door_pos) = match gen {
-            BuildingGen::House => crate::procgen::gen_exterior_house(size, None),
-            BuildingGen::Farm => crate::procgen::gen_exterior_farm(size),
+            BuildingGen::House => crate::procgen::gen_exterior_house(size, r as u64),
+            BuildingGen::Farm => crate::procgen::gen_exterior_farm(size, r as u64),
             BuildingGen::CenteredDoor { vertical_factor } => {
                 (Default::default(), Vec2::y(-vertical_factor * 0.5 * size))
             }
