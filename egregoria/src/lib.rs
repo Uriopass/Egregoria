@@ -2,8 +2,28 @@
 #![allow(clippy::blocks_in_if_conditions)]
 #![allow(clippy::too_many_arguments)]
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
+
+use atomic_refcell::{AtomicRef, AtomicRefMut};
+use legion::serialize::Canon;
+use legion::storage::Component;
+use legion::systems::{ParallelRunnable, Resource};
+use legion::{any, Entity, IntoQuery, Registry, Resources, World};
+use serde::{Deserialize, Serialize};
+
+use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
+use geom::{Transform, Vec2};
+use map_model::{Map, SerializedMap};
+use pedestrians::Location;
+use utils::frame_log::FrameLog;
+use utils::par_command_buffer::Deleted;
+pub use utils::par_command_buffer::ParCommandBuffer;
+use utils::rand_provider::RandProvider;
+use utils::scheduler::SeqSchedule;
+
 use crate::economy::{Bought, Sold, Workers};
-use crate::engine_interaction::{RenderStats, Selectable};
+use crate::engine_interaction::Selectable;
 use crate::map_dynamic::{Itinerary, Router};
 use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
@@ -12,23 +32,6 @@ use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::souls::desire::{BuyFood, Desire, Home, Work};
 use crate::vehicles::Vehicle;
-use atomic_refcell::{AtomicRef, AtomicRefMut};
-use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
-use geom::{Transform, Vec2};
-use legion::serialize::Canon;
-use legion::storage::Component;
-use legion::systems::{ParallelRunnable, Resource};
-use legion::{any, Entity, IntoQuery, Registry, Resources, World};
-use map_model::{Map, SerializedMap};
-use pedestrians::Location;
-use serde::{Deserialize, Serialize};
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-use utils::frame_log::FrameLog;
-use utils::par_command_buffer::Deleted;
-pub use utils::par_command_buffer::ParCommandBuffer;
-use utils::rand_provider::RandProvider;
-use utils::scheduler::SeqSchedule;
 
 #[macro_export]
 macro_rules! register_system {
@@ -149,12 +152,8 @@ const RNG_SEED: u64 = 123;
 impl Egregoria {
     pub fn run(&mut self) {
         self.read::<FrameLog>().clear();
-        let t = std::time::Instant::now();
         self.schedule.execute(&mut self.world, &mut self.resources);
         ParCommandBuffer::apply(self);
-        self.write::<RenderStats>()
-            .world_update
-            .add_value(t.elapsed().as_secs_f32());
     }
 
     pub fn init() -> Egregoria {

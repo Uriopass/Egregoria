@@ -4,7 +4,7 @@ use imgui::TextureId;
 use legion::{system, Entity};
 use serde::{Deserialize, Serialize};
 
-use egregoria::engine_interaction::{KeyCode, KeyboardInfo};
+use crate::input::{KeyCode, KeyboardInfo};
 pub use follow::FollowEntity;
 pub use inspect::*;
 use roadbuild::RoadBuildResource;

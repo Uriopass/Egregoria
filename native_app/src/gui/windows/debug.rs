@@ -1,9 +1,10 @@
 #![allow(clippy::type_complexity)]
 
+use crate::game_loop::RenderStats;
 use crate::gui::InspectedEntity;
+use crate::input::MouseInfo;
 use common::{GameTime, SECONDS_PER_DAY};
 use common::{Z_DEBUG, Z_DEBUG_BG};
-use egregoria::engine_interaction::{MouseInfo, RenderStats};
 use egregoria::map_dynamic::{Itinerary, ParkingManagement};
 use egregoria::physics::CollisionWorld;
 use egregoria::utils::frame_log::FrameLog;

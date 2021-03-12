@@ -1,6 +1,6 @@
 use crate::gui::{InspectedEntity, Tool};
-use egregoria::engine_interaction::{KeyCode, Selectable};
-use egregoria::engine_interaction::{KeyboardInfo, MouseButton, MouseInfo};
+use crate::input::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
+use egregoria::engine_interaction::Selectable;
 use egregoria::ParCommandBuffer;
 use geom::Transform;
 use legion::world::SubWorld;
