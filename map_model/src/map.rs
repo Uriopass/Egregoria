@@ -185,7 +185,13 @@ impl Map {
 
         Lot::remove_intersecting_lots(self, id);
         Lot::generate_along_road(self, id);
-        Trees::remove_nearby_trees(self, id);
+
+        let r = &self.roads[id];
+        let d = r.width + 50.0;
+        self.trees.remove_near_filter(r.bbox().expand(d), |tpos| {
+            let rd = common::rand::rand3(tpos.x, tpos.y, 391.0) * 20.0;
+            r.generated_points.project(tpos).is_close(tpos, d - rd)
+        });
 
         id
     }
@@ -232,6 +238,8 @@ impl Map {
                     .expect("Lot was present in spatial map but not in Lots struct"),
             )
         }
+
+        self.trees.remove_near_filter(obb.bbox(), |_| true);
 
         Building::make(
             &mut self.buildings,

@@ -1,5 +1,4 @@
 use crate::procgen::heightmap::tree_density;
-use crate::{Map, RoadID};
 use flat_spatial::SparseGrid;
 use geom::{vec2, Vec2, AABB};
 use serde::{Deserialize, Serialize};
@@ -32,30 +31,22 @@ impl Default for Trees {
 }
 
 impl Trees {
-    pub fn remove_nearby_trees(map: &mut Map, id: RoadID) {
-        let trees = &mut map.trees;
-        let r = &map.roads[id];
+    pub fn remove_near_filter(&mut self, bbox: AABB, f: impl Fn(Vec2) -> bool) {
+        self.update(bbox);
 
-        let d = r.width + 50.0;
-        let bbox = r.bbox().expand(d);
-
-        trees.update(bbox);
-
-        let mut to_remove = vec![];
-        for (h, tree) in trees.grid.query_aabb(bbox.ll, bbox.ur) {
-            let rd = common::rand::rand3(tree.x, tree.y, 391.0) * 20.0;
-
-            if r.generated_points.project(tree).is_close(tree, d - rd) {
-                to_remove.push(h);
-            }
-        }
+        let to_remove: Vec<_> = self
+            .grid
+            .query_aabb(bbox.ll, bbox.ur)
+            .filter(|x| f(x.1))
+            .map(|x| x.0)
+            .collect();
 
         for h in to_remove {
-            trees.grid.remove(h);
-            trees.dirty = true;
+            self.grid.remove(h);
+            self.dirty = true;
         }
 
-        trees.grid.maintain();
+        self.grid.maintain();
     }
 
     fn cell(p: Vec2) -> (i32, i32) {
