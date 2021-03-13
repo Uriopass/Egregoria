@@ -1,6 +1,6 @@
-use egregoria::economy::Market;
+use egregoria::economy::{CommodityKind, Market};
 use egregoria::Egregoria;
-use imgui::{Condition, Ui};
+use imgui::{im_str, Condition, Ui};
 
 pub fn economy(window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
     let market = goria.read::<Market>();
@@ -12,26 +12,61 @@ pub fn economy(window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
         .size([600.0, h * 0.6], Condition::FirstUseEver)
         .build(ui, || {
             let inner = market.inner();
-            for (kind, market) in inner {
+
+            ui.columns(5, im_str!("Economy"), false);
+
+            ui.text("Commodity");
+            ui.next_column();
+            ui.text("Satisfaction");
+            ui.next_column();
+            ui.text("Offer");
+            ui.next_column();
+            ui.text("Demand");
+            ui.next_column();
+            ui.text("Capital");
+            ui.next_column();
+
+            for kind in CommodityKind::values() {
+                let market = unwrap_or!(inner.get(kind), {
+                    log::warn!("market does not exist for commodity {}", kind);
+                    continue;
+                });
+
                 let buy = market.buy_orders();
                 let sell = market.sell_orders();
                 let capital = market.capital_map();
                 let tot_capital = capital.values().sum::<i32>();
-                if tot_capital == 0 {
+                let offer = sell.values().map(|x| x.1).sum::<i32>();
+                let demand = buy.values().map(|x| x.1).sum::<i32>();
+
+                if tot_capital == 0 && offer == 0 && demand == 0 {
                     continue;
                 }
 
+                let diff = offer - demand;
+
                 ui.text(format!("{}", kind));
-                ui.separator();
-                ui.text(format!(
-                    "offer: {}",
-                    sell.values().map(|x| x.1).sum::<i32>()
-                ));
-                ui.text(format!(
-                    "demand: {}",
-                    buy.values().map(|x| x.1).sum::<i32>()
-                ));
-                ui.new_line();
+                ui.next_column();
+
+                if diff == 0 {
+                    ui.text_colored([0.8, 0.4, 0.2, 1.0], "±0");
+                }
+                if diff > 0 {
+                    ui.text_colored([0.0, 1.0, 0.0, 1.0], format!("+{}", diff));
+                }
+                if diff < 0 {
+                    ui.text_colored([1.0, 0.0, 0.0, 1.0], format!("{}", diff));
+                }
+                ui.next_column();
+
+                ui.text(format!("{}", offer));
+                ui.next_column();
+
+                ui.text(format!("{}", demand));
+                ui.next_column();
+
+                ui.text(format!("{}", tot_capital));
+                ui.next_column();
             }
         });
 }
