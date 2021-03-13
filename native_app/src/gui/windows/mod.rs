@@ -6,7 +6,6 @@ use egregoria::Egregoria;
 mod config;
 pub mod debug;
 mod map;
-mod scenarios;
 pub mod settings;
 
 pub trait ImguiWindow: Send + Sync {
@@ -42,11 +41,6 @@ impl Default for ImguiWindows {
             opened: vec![],
         };
         s.insert(imgui::im_str!("Map"), map::map, true);
-        s.insert(
-            imgui::im_str!("Scenarios"),
-            scenarios::Scenarios::default(),
-            false,
-        );
         s.insert(imgui::im_str!("Config"), config::config, false);
         s.insert(imgui::im_str!("Debug"), debug::debug, false);
         s.insert(imgui::im_str!("Settings"), settings::settings, false);

@@ -100,7 +100,6 @@ pub mod map_dynamic;
 pub mod pedestrians;
 pub mod physics;
 pub mod rendering;
-pub mod scenarios;
 pub mod souls;
 pub mod utils;
 pub mod vehicles;
