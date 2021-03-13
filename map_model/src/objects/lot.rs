@@ -16,7 +16,6 @@ new_key_type! {
 pub enum LotKind {
     Unassigned,
     Residential,
-    Commercial,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -84,7 +83,7 @@ impl Lot {
         let id = lots.insert_with_key(move |id| Lot {
             id,
             parent,
-            kind: LotKind::Residential,
+            kind: LotKind::Unassigned,
             shape,
             size,
         });

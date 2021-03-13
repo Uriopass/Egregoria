@@ -186,7 +186,6 @@ impl RoadRenderer {
             let col = match lot.kind {
                 LotKind::Unassigned => common::config().lot_unassigned_col,
                 LotKind::Residential => common::config().lot_residential_col,
-                LotKind::Commercial => common::config().lot_commercial_col,
             };
             tess.set_color(col);
             tess.draw_filled_polygon(&lot.shape.corners, Z_LOT);

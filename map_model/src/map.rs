@@ -260,7 +260,6 @@ impl Map {
             let kind = match lotkind {
                 LotKind::Unassigned => return true,
                 LotKind::Residential => BuildingKind::House,
-                LotKind::Commercial => BuildingKind::House,
             };
 
             Self::cleanup_lot(roads, spatial_map, lot);
