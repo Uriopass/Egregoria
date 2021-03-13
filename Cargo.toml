@@ -5,7 +5,6 @@ members = [
     "imgui-inspect",
     "imgui-inspect-derive",
     "map_model",
-    "mods",
     "common",
     "native_app",
     "wgpu_engine",

@@ -21,7 +21,6 @@ imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 flat_spatial  = { path = "../flat_spatial" }
 geom          = { path = "../geom" }
 map_model     = { path = "../map_model" }
-mods          = { path = "../mods" }
 common        = { path = "../common" }
 slotmap       = { version = "1.0.2", default-features = false }
 dashmap       = { version = "4.0.2", features = ["serde"] }
