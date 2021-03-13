@@ -37,9 +37,8 @@ pub fn lotbrush(
     let kind = res.kind;
 
     let mut col = match kind {
-        LotKind::Unassigned => unreachable!(),
+        LotKind::Unassigned => common::config().lot_unassigned_col,
         LotKind::Residential => common::config().lot_residential_col,
-        LotKind::Commercial => common::config().lot_commercial_col,
     };
 
     col.a = 0.2;

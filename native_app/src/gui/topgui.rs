@@ -167,8 +167,8 @@ impl Gui {
         }
 
         let brushes = [
+            (im_str!("Unassigned"), LotKind::Unassigned),
             (im_str!("Residential"), LotKind::Residential),
-            (im_str!("Commercial"), LotKind::Commercial),
         ];
 
         if matches!(*goria.read::<Tool>(), Tool::LotBrush) {
