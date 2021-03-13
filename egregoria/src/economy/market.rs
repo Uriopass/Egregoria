@@ -16,6 +16,16 @@ impl SingleMarket {
     pub fn capital(&self, soul: SoulID) -> i32 {
         self.capital.get(&soul).copied().unwrap_or(0)
     }
+
+    pub fn capital_map(&self) -> &HashMap<SoulID, i32> {
+        &self.capital
+    }
+    pub fn buy_orders(&self) -> &HashMap<SoulID, (Vec2, i32)> {
+        &self.buy_orders
+    }
+    pub fn sell_orders(&self) -> &HashMap<SoulID, (Vec2, i32)> {
+        &self.sell_orders
+    }
 }
 
 register_resource!(Market, "market");
@@ -173,6 +183,10 @@ impl Market {
         }
 
         all_trades.into_iter()
+    }
+
+    pub fn inner(&self) -> &HashMap<CommodityKind, SingleMarket> {
+        &self.markets
     }
 }
 

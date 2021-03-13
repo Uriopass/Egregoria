@@ -104,7 +104,7 @@ pub fn settings(window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
         .movable(false)
         .resizable(false)
         .collapsible(false)
-        .size_constraints([400.0, h * 0.6], [w * 0.6, h * 0.8])
+        .size_constraints([400.0, h * 0.6], [(w * 0.6).max(400.0), h * 0.8])
         .build(ui, || {
             ui.text("Gameplay");
             let tok = imgui::ComboBox::new(im_str!("Autosave"))
