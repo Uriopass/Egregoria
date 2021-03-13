@@ -1,8 +1,8 @@
 use super::Tool;
 use crate::input::{MouseButton, MouseInfo};
-use common::Z_TOOL;
+use common::{AudioKind, Z_TOOL};
 use egregoria::map_dynamic::BuildingInfos;
-use egregoria::rendering::immediate::ImmediateDraw;
+use egregoria::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use geom::{Vec2, OBB};
 use legion::system;
 use map_model::{BuildingGen, BuildingKind, Map, ProjectKind};
@@ -30,6 +30,7 @@ pub fn special_building(
     #[resource] mouseinfo: &MouseInfo,
     #[resource] map: &mut Map,
     #[resource] draw: &mut ImmediateDraw,
+    #[resource] sound: &mut ImmediateSound,
 ) {
     if !matches!(tool, Tool::SpecialBuilding) {
         return;
@@ -93,6 +94,7 @@ pub fn special_building(
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
         let b = map.build_special_building(rid, &obb, *kind, *gen);
+        sound.play("road_lay", AudioKind::Ui);
         binfos.insert(b);
     }
 
