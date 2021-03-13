@@ -5,6 +5,7 @@ use egregoria::Egregoria;
 
 mod config;
 pub mod debug;
+mod economy;
 mod map;
 pub mod settings;
 
@@ -41,6 +42,7 @@ impl Default for ImguiWindows {
             opened: vec![],
         };
         s.insert(imgui::im_str!("Map"), map::map, true);
+        s.insert(imgui::im_str!("Economy"), economy::economy, false);
         s.insert(imgui::im_str!("Config"), config::config, false);
         s.insert(imgui::im_str!("Debug"), debug::debug, false);
         s.insert(imgui::im_str!("Settings"), settings::settings, false);
