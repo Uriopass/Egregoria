@@ -1,4 +1,4 @@
-use crate::gui::Gui;
+use imgui::Ui;
 use imgui_wgpu::{Renderer, RendererConfig};
 use std::time::Instant;
 use wgpu_engine::{GfxContext, GuiRenderContext};
@@ -69,8 +69,7 @@ impl ImguiWrapper {
         &mut self,
         mut gfx: GuiRenderContext,
         window: &Window,
-        goria: &mut egregoria::Egregoria,
-        gui: &mut Gui,
+        ui_render: impl for<'ui> FnOnce(&'ui Ui),
     ) {
         let now = Instant::now();
         let delta = now - self.last_frame;
@@ -85,7 +84,7 @@ impl ImguiWrapper {
             .expect("Failed to prepare frame");
 
         let ui: imgui::Ui = self.imgui.frame();
-        gui.render(&ui, goria);
+        ui_render(&ui);
 
         self.last_mouse_captured = ui.io().want_capture_mouse;
         self.last_kb_captured = ui.io().want_capture_keyboard;

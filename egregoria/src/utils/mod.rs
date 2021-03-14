@@ -1,8 +1,5 @@
 use crate::Egregoria;
 
-#[macro_use]
-pub mod frame_log;
-
 pub mod par_command_buffer;
 pub mod rand_provider;
 pub mod scheduler;
