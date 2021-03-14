@@ -31,7 +31,7 @@ impl SeqSchedule {
 
             let elapsed = start.elapsed();
 
-            h.add_value(elapsed.as_secs_f32());
+            h.add_value(1000.0 * elapsed.as_secs_f32());
         }
     }
 
