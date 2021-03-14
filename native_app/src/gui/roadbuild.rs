@@ -53,7 +53,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         state.build_state = BuildState::Hover;
     }
 
-    let mut cur_proj = map.project(mouseinfo.unprojected);
+    let mut cur_proj = map.project(mouseinfo.unprojected, 0.0);
     if matches!(cur_proj.kind, ProjectKind::Lot(_)) {
         cur_proj.kind = ProjectKind::Ground;
     }

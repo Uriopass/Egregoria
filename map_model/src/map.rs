@@ -4,7 +4,7 @@ use crate::{
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectKind, Road,
     RoadID, RoadSegmentKind, SpatialMap,
 };
-use geom::{Intersect, Shape, Vec2};
+use geom::{Intersect, Shape, Vec2, AABB};
 use geom::{Spline, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -89,7 +89,13 @@ impl Map {
         inter.update_turns(&self.lanes, &self.roads);
         inter.update_polygon(&self.roads);
 
-        self.spatial_map.update(inter.id, inter.polygon.bbox());
+        self.spatial_map.update(
+            inter.id,
+            inter
+                .polygon
+                .bbox()
+                .union(AABB::centered(inter.pos, Vec2::splat(15.0))),
+        );
     }
 
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
@@ -355,18 +361,21 @@ impl Map {
         self.trees = before.trees;
     }
 
-    pub fn project(&self, pos: Vec2) -> MapProject {
+    pub fn project(&self, pos: Vec2, tolerance: f32) -> MapProject {
         let mk_proj = move |kind| MapProject { pos, kind };
 
         let mut qroad = None;
-        for obj in self.spatial_map.query(pos) {
+        for obj in self.spatial_map.query_around(pos, tolerance) {
             match obj {
                 ProjectKind::Inter(id) => {
                     let inter = self.intersections
                         .get(id)
-                        .expect("Road does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
+                        .expect("Inter does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
-                    if inter.polygon.contains(pos) {
+                    if inter.polygon
+                        .bbox()
+                        .union(AABB::centered(inter.pos, Vec2::splat(15.0)))
+                        .contains_within(pos, tolerance) {
                         return MapProject {
                             pos: inter.pos,
                             kind: obj,
@@ -378,7 +387,7 @@ impl Map {
                         .get(id)
                         .expect("Lot does not exist anymore, you seem to have forgotten to remove it from the spatial map.")
                         .shape
-                        .contains(pos) {
+                        .is_close(pos, tolerance) {
                         return mk_proj(ProjectKind::Lot(id));
                     }
                 }
@@ -389,7 +398,7 @@ impl Map {
                         .expect("Road does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
                     let projected = road.generated_points.project(pos);
-                    if projected.is_close(pos, road.width * 0.5) {
+                    if projected.is_close(pos, road.width * 0.5 + tolerance) {
                         qroad = Some((id, projected));
                     }
                 },
@@ -398,9 +407,8 @@ impl Map {
                         .get(id)
                         .expect("building does not exist anymore, you seem to have forgotten to remove it from the spatial map.")
                         .mesh
-                        .faces
-                        .iter()
-                        .any(|(p, _)| p.contains(pos)) {
+                        .bbox()
+                        .contains_within(pos, tolerance) {
                         return mk_proj(ProjectKind::Building(id));
                     }
                 }

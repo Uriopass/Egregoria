@@ -111,7 +111,7 @@ impl Vec2 {
     }
 
     pub fn is_close(self, other: Self, close_dist: f32) -> bool {
-        self.distance2(other) < close_dist * close_dist
+        self.distance2(other) <= close_dist * close_dist
     }
 
     #[inline]

@@ -18,7 +18,7 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
         return;
     }
 
-    let cur_proj = map.project(mouseinfo.unprojected);
+    let cur_proj = map.project(mouseinfo.unprojected, 0.0);
 
     draw.circle(cur_proj.pos, 2.0).color(Color::RED).z(Z_TOOL);
 

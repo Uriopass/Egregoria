@@ -196,7 +196,7 @@ impl PolyLine {
         self.points_dirs_manual().into_iter(dists)
     }
 
-    pub fn points_dirs_manual(&self) -> PointsAlongs {
+    pub fn points_dirs_manual(&self) -> PointsAlongs<'_> {
         let mut windows = self.0.windows(2);
         let (dir, dist) = windows
             .next()

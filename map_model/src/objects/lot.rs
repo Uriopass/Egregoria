@@ -1,5 +1,5 @@
 use crate::procgen::heightmap::height;
-use crate::{Buildings, Intersections, Lots, Map, ProjectKind, RoadID, Roads, SpatialMap};
+use crate::{Map, ProjectKind, RoadID};
 use geom::OBB;
 use geom::{Intersect, Polygon};
 use geom::{Shape, Vec2};
@@ -29,11 +29,7 @@ pub struct Lot {
 
 impl Lot {
     pub fn try_make(
-        lots: &mut Lots,
-        spatial: &mut SpatialMap,
-        roads: &Roads,
-        inters: &Intersections,
-        buildings: &Buildings,
+        map: &mut Map,
         parent: RoadID,
         at: Vec2,
         axis: Vec2,
@@ -45,49 +41,19 @@ impl Lot {
             return None;
         }
 
-        for obj in spatial.query(&shape) {
-            match obj {
-                ProjectKind::Road(r) => {
-                    let r = &roads[r];
-                    if r.intersects(&shape) {
-                        return None;
-                    }
-                }
-                ProjectKind::Inter(i) => {
-                    let i = &inters[i];
-                    if i.polygon.intersects(&shape) {
-                        return None;
-                    }
-                }
-                ProjectKind::Lot(h) => {
-                    let h = &lots[h];
-                    if h.shape.intersects(&shape) {
-                        return None;
-                    }
-                }
-                ProjectKind::Building(id) => {
-                    let b = &buildings[id];
-                    if b.mesh
-                        .faces
-                        .iter()
-                        .any(|(p, _)| p.intersects(&Polygon(shape.corners.to_vec())))
-                    {
-                        return None;
-                    }
-                }
-                ProjectKind::Ground => {}
-            }
+        let proj = map.project(at, size * 0.5 - 0.5);
+        if !matches!(proj.kind, ProjectKind::Ground) {
+            return None;
         }
-
         let bbox = shape.bbox();
-        let id = lots.insert_with_key(move |id| Lot {
+        let id = map.lots.insert_with_key(move |id| Lot {
             id,
             parent,
             kind: LotKind::Unassigned,
             shape,
             size,
         });
-        spatial.insert(id, bbox);
+        map.spatial_map.insert(id, bbox);
         Some(id)
     }
 
@@ -107,24 +73,15 @@ impl Lot {
 
             let mut picksize = || *[20.0f32, 30.0, 40.0].choose(&mut rng).unwrap();
 
-            let mut along = r.generated_points.points_dirs_manual();
+            let points = r.generated_points.clone();
+            let mut along = points.points_dirs_manual();
             let mut size = picksize();
             let mut d = size * 0.5;
 
             let mut lots = vec![];
             while let Some((pos, dir)) = along.next(d) {
                 let axis = side * dir.perpendicular();
-                let l = Lot::try_make(
-                    &mut map.lots,
-                    &mut map.spatial_map,
-                    &map.roads,
-                    &map.intersections,
-                    &map.buildings,
-                    road,
-                    pos + axis * (w + 1.0),
-                    axis,
-                    size,
-                );
+                let l = Lot::try_make(map, road, pos + axis * (w + 1.0), axis, size);
                 if let Some(id) = l {
                     lots.push(id);
 
