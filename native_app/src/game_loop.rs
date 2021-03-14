@@ -24,7 +24,7 @@ use crate::rendering::{
     BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
 };
 use crate::timestep::Timestep;
-use crate::uiworld::UiWorld;
+use crate::uiworld::{ReceivedCommands, UiWorld};
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
 
@@ -139,7 +139,9 @@ impl State {
         }
 
         crate::gui::run_ui_systems(&self.goria, &mut self.uiworld);
+        let commands = self.uiworld.read::<WorldCommands>().clone();
         self.uiworld.write::<WorldCommands>().apply(&mut self.goria); // mut for world commands
+        *self.uiworld.write::<ReceivedCommands>() = ReceivedCommands::new(commands);
 
         ctx.gfx
             .set_time(self.goria.read::<GameTime>().timestamp as f32);

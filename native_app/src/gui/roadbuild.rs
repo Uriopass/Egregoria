@@ -9,7 +9,7 @@ use map_model::{LanePatternBuilder, Map, MapProject, ProjectKind};
 const MAX_TURN_ANGLE: f32 = 30.0 * std::f32::consts::PI / 180.0;
 
 #[derive(Copy, Clone, Debug)]
-enum BuildState {
+pub enum BuildState {
     Hover,
     Start(MapProject),
     Interpolation(Vec2, MapProject),
@@ -24,13 +24,13 @@ impl Default for BuildState {
 register_resource_noserialize!(RoadBuildResource);
 #[derive(Default)]
 pub struct RoadBuildResource {
-    build_state: BuildState,
+    pub build_state: BuildState,
     pub pattern_builder: LanePatternBuilder,
 }
 
 use crate::uiworld::UiWorld;
 use common::{AudioKind, Z_TOOL};
-use egregoria::engine_interaction::WorldCommands;
+use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::Egregoria;
 use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};
@@ -47,6 +47,20 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     if !matches!(*tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
         state.build_state = BuildState::Hover;
         return;
+    }
+
+    for command in uiworld.received_commands().iter() {
+        if matches!(
+            *uiworld.read::<Tool>(),
+            Tool::RoadbuildCurved | Tool::RoadbuildStraight
+        ) {
+            if let WorldCommand::MapMakeConnection(_, to, _, _) = command {
+                let proj = map.project(to.pos, 0.0);
+                if matches!(proj.kind, ProjectKind::Inter(_)) {
+                    state.build_state = BuildState::Start(proj);
+                }
+            }
+        }
     }
 
     if mouseinfo.just_pressed.contains(&MouseButton::Right) {

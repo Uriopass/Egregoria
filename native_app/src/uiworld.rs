@@ -1,5 +1,5 @@
 use atomic_refcell::{AtomicRef, AtomicRefMut};
-use egregoria::engine_interaction::WorldCommands;
+use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use legion::storage::Component;
 use legion::systems::Resource;
 use legion::{Entity, IntoQuery, Resources, World};
@@ -23,6 +23,9 @@ impl UiWorld {
 
     pub fn commands(&self) -> AtomicRefMut<WorldCommands> {
         self.write::<WorldCommands>()
+    }
+    pub fn received_commands(&self) -> AtomicRef<ReceivedCommands> {
+        self.read::<ReceivedCommands>()
     }
 
     pub fn add_comp(&mut self, e: Entity, c: impl Component) {
@@ -128,4 +131,17 @@ macro_rules! register_resource_noserialize {
             uiworld.insert(<$t>::default());
         });
     };
+}
+
+#[derive(Default)]
+pub struct ReceivedCommands(WorldCommands);
+register_resource_noserialize!(ReceivedCommands);
+
+impl ReceivedCommands {
+    pub fn new(commands: WorldCommands) -> Self {
+        Self(commands)
+    }
+    pub fn iter(&self) -> impl Iterator<Item = &WorldCommand> {
+        self.0.iter()
+    }
 }

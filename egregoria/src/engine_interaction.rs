@@ -22,12 +22,12 @@ impl Default for Selectable {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct WorldCommands {
     commands: Vec<WorldCommand>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum WorldCommand {
     MapRemoveIntersection(IntersectionID),
     MapRemoveRoad(RoadID),
@@ -50,6 +50,10 @@ use geom::{Vec2, OBB};
 use WorldCommand::*;
 
 impl WorldCommands {
+    pub fn iter(&self) -> impl Iterator<Item = &WorldCommand> {
+        self.commands.iter()
+    }
+
     pub fn map_generate_trees(&mut self, trees: Vec<(i32, i32)>) {
         self.commands.push(MapGenerateTrees(trees));
     }
