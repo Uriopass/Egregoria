@@ -24,9 +24,12 @@ use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{
     BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
 };
+use egregoria::utils::scheduler::SeqSchedule;
 
 pub struct State {
     goria: Egregoria,
+    ui_schedule: SeqSchedule,
+    game_schedule: SeqSchedule,
 
     pub camera: CameraHandler,
 
@@ -61,7 +64,7 @@ impl State {
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
-        let mut goria = egregoria::Egregoria::init();
+        let (mut goria, game_schedule) = egregoria::Egregoria::init();
 
         goria.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));
 
@@ -78,6 +81,8 @@ impl State {
 
         Self {
             goria,
+            ui_schedule: crate::gui::ui_schedule(),
+            game_schedule,
             camera,
             imgui_render,
             last_time: Instant::now(),
@@ -122,11 +127,13 @@ impl State {
         }
 
         let t = std::time::Instant::now();
-        self.goria.run();
+        self.game_schedule.execute(&mut self.goria);
         self.goria
             .write::<RenderStats>()
             .world_update
             .add_value(t.elapsed().as_secs_f32());
+
+        self.ui_schedule.execute(&mut self.goria);
 
         {
             let immediate = self.goria.read::<ImmediateDraw>();

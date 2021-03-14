@@ -16,7 +16,6 @@ use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 use geom::{Transform, Vec2};
 use map_model::{Map, SerializedMap};
 use pedestrians::Location;
-use utils::frame_log::FrameLog;
 use utils::par_command_buffer::Deleted;
 pub use utils::par_command_buffer::ParCommandBuffer;
 use utils::rand_provider::RandProvider;
@@ -33,7 +32,6 @@ use crate::rendering::meshrender_component::MeshRender;
 use crate::souls::desire::{BuyFood, Desire, Home, Work};
 use crate::vehicles::Vehicle;
 
-#[macro_export]
 macro_rules! register_system {
     ($f: ident) => {
         inventory::submit! {
@@ -113,7 +111,6 @@ debug_inspect_impl!(SoulID);
 #[derive(Default)]
 pub struct Egregoria {
     pub world: World,
-    pub schedule: SeqSchedule,
     resources: Resources,
 }
 
@@ -126,10 +123,9 @@ inventory::collect!(SaveLoadFunc);
 pub struct InitFunc {
     pub f: Box<dyn Fn(&mut Egregoria) + 'static>,
 }
-
 inventory::collect!(InitFunc);
 
-pub struct GSystem {
+pub(crate) struct GSystem {
     s: std::cell::RefCell<Option<Box<dyn ParallelRunnable + 'static>>>,
 }
 
@@ -138,7 +134,6 @@ impl GSystem {
         Self { s }
     }
 }
-
 inventory::collect!(GSystem);
 
 /// Safety: Resources must be Send+Sync.
@@ -149,13 +144,7 @@ unsafe impl Sync for Egregoria {}
 const RNG_SEED: u64 = 123;
 
 impl Egregoria {
-    pub fn run(&mut self) {
-        self.read::<FrameLog>().clear();
-        self.schedule.execute(&mut self.world, &mut self.resources);
-        ParCommandBuffer::apply(self);
-    }
-
-    pub fn init() -> Egregoria {
+    pub fn init() -> (Egregoria, SeqSchedule) {
         let mut goria = Egregoria::default();
         info!("Seed is {}", RNG_SEED);
 
@@ -173,12 +162,13 @@ impl Egregoria {
             (s.f)(&mut goria);
         }
 
+        let mut schedule = SeqSchedule::default();
         for s in inventory::iter::<GSystem> {
             let s = s.s.borrow_mut().take().unwrap();
-            goria.schedule.add_system(s);
+            schedule.add_system(s);
         }
 
-        goria
+        (goria, schedule)
     }
 
     pub fn pos(&self, e: Entity) -> Option<Vec2> {

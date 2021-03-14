@@ -9,7 +9,7 @@ use map_model::{BuildingGen, BuildingKind, Map, ProjectKind};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
-register_resource!(SpecialBuildingResource, "special_building");
+register_resource_noserialize!(SpecialBuildingResource);
 #[derive(Serialize, Deserialize)]
 pub struct SpecialBuildingResource {
     pub opt: Option<(BuildingKind, BuildingGen, f32, String)>,
@@ -21,9 +21,8 @@ impl Default for SpecialBuildingResource {
     }
 }
 
-register_system!(special_building);
 #[system]
-pub fn special_building(
+pub fn specialbuilding(
     #[resource] res: &SpecialBuildingResource,
     #[resource] binfos: &mut BuildingInfos,
     #[resource] tool: &Tool,

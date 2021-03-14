@@ -5,6 +5,7 @@ use legion::{system, Entity};
 use serde::{Deserialize, Serialize};
 
 use crate::input::{KeyCode, KeyboardInfo};
+use egregoria::utils::scheduler::SeqSchedule;
 pub use follow::FollowEntity;
 pub use inspect::*;
 use roadbuild::RoadBuildResource;
@@ -24,6 +25,19 @@ mod topgui;
 
 pub mod windows;
 
+pub fn ui_schedule() -> SeqSchedule {
+    let mut schedule = SeqSchedule::default();
+    schedule.add_system(Box::new(bulldozer::bulldozer_system()));
+    schedule.add_system(Box::new(inspected_aura::inspected_aura_system()));
+    schedule.add_system(Box::new(lotbrush::lotbrush_system()));
+    schedule.add_system(Box::new(roadbuild::roadbuild_system()));
+    schedule.add_system(Box::new(roadeditor::roadeditor_system()));
+    schedule.add_system(Box::new(selectable::selectable_system()));
+    schedule.add_system(Box::new(specialbuilding::specialbuilding_system()));
+    schedule.add_system(Box::new(hand_reset_system()));
+    schedule
+}
+
 register_resource_noserialize!(InspectedEntity);
 #[derive(Copy, Clone, Default, Debug)]
 pub struct InspectedEntity {
@@ -32,7 +46,6 @@ pub struct InspectedEntity {
     pub dist2: f32,
 }
 
-register_system!(hand_reset);
 #[system]
 pub fn hand_reset(#[resource] info: &KeyboardInfo, #[resource] tool: &mut Tool) {
     if info.just_pressed.contains(&KeyCode::Escape) {

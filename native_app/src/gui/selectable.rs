@@ -8,19 +8,23 @@ use legion::{system, EntityStore};
 use legion::{Entity, Query};
 use std::sync::Mutex;
 
-register_system!(selectable_select);
 #[system]
-pub fn selectable_select(
+#[read_component(())]
+pub fn selectable(
     #[resource] inspected: &mut InspectedEntity,
+    #[resource] cb: &mut ParCommandBuffer,
     #[resource] mouse: &MouseInfo,
+    #[resource] kbinfo: &KeyboardInfo,
     #[resource] tool: &Tool,
-    world: &mut SubWorld,
+    sw: &mut SubWorld,
     qry: &mut Query<(Entity, &Transform, &Selectable)>,
 ) {
+    let mut inspected = inspected;
     if mouse.just_pressed.contains(&MouseButton::Left) && matches!(*tool, Tool::Hand) {
+        inspected.dist2 = std::f32::INFINITY;
         let protec = Mutex::new(inspected);
 
-        qry.par_for_each_chunk_mut(world, |chunk| {
+        qry.par_for_each_chunk_mut(sw, |chunk| {
             let mut v = std::f32::INFINITY;
             let mut ent = None;
             for (e, trans, select) in chunk {
@@ -36,38 +40,23 @@ pub fn selectable_select(
                 inspected.e = ent;
                 inspected.dist2 = v;
             }
-        })
+        });
+        inspected = protec.into_inner().unwrap();
     }
-}
 
-register_system!(selectable_cleanup);
-#[system]
-#[read_component(())]
-pub fn selectable_cleanup(
-    #[resource] inspected: &mut InspectedEntity,
-    #[resource] gy: &mut ParCommandBuffer,
-    #[resource] kbinfo: &KeyboardInfo,
-    #[resource] tool: &Tool,
-    sw: &SubWorld,
-) {
     if let Some(e) = inspected.e {
         if sw.entry_ref(e).is_err() {
             inspected.e = None;
-            inspected.dist2 = std::f32::INFINITY;
             return;
         }
 
-        inspected.dist2 = std::f32::INFINITY;
-
         if kbinfo.just_pressed.contains(&KeyCode::Backspace) {
-            gy.kill(e);
+            cb.kill(e);
             inspected.e = None;
-            inspected.dist2 = std::f32::INFINITY;
         }
     }
 
     if kbinfo.just_pressed.contains(&KeyCode::Escape) || matches!(*tool, Tool::Bulldozer) {
         inspected.e = None;
-        inspected.dist2 = std::f32::INFINITY;
     }
 }

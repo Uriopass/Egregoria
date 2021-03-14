@@ -35,7 +35,6 @@ use common::{AudioKind, Z_TOOL};
 use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Lot, Road};
 
-register_system!(roadbuild);
 #[system]
 pub fn roadbuild(
     #[resource] state: &mut RoadBuildResource,
