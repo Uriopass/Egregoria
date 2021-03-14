@@ -4,8 +4,10 @@ use geom::{from_srgb, Color, LinearColor, PolyLine, Transform, Vec2};
 use imgui::{im_str, ColorEdit, EditableColor, Ui};
 
 impl InspectRenderDefault<Color> for Color {
-    fn render(_: &[&Color], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
-        unimplemented!()
+    fn render(data: &[&Color], label: &'static str, ui: &Ui, _args: &InspectArgsDefault) {
+        let c = data[0];
+        let mut color_arr = [c.r, c.g, c.b, c.a];
+        ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui);
     }
 
     fn render_mut(
@@ -33,8 +35,11 @@ impl InspectRenderDefault<Color> for Color {
 }
 
 impl InspectRenderDefault<LinearColor> for LinearColor {
-    fn render(_: &[&LinearColor], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
-        unimplemented!()
+    fn render(data: &[&LinearColor], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+        let lc = data[0];
+        let c: Color = (*lc).into();
+        let mut color_arr = [c.r, c.g, c.b, c.a];
+        ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui);
     }
 
     fn render_mut(
@@ -47,8 +52,8 @@ impl InspectRenderDefault<LinearColor> for LinearColor {
             unimplemented!();
         }
 
-        let lc = &mut data[0];
-        let c: Color = (**lc).into();
+        let lc = &mut *data[0];
+        let c: Color = (*lc).into();
         let mut color_arr = [c.r, c.g, c.b, c.a];
         if ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui) {
             lc.r = from_srgb(color_arr[0]);
@@ -63,9 +68,22 @@ impl InspectRenderDefault<LinearColor> for LinearColor {
 }
 
 impl InspectRenderDefault<Transform> for Transform {
-    fn render(data: &[&Transform], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
-        let mut t = *data[0];
-        Self::render_mut(&mut [&mut t], label, ui, args);
+    fn render(data: &[&Transform], _: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+        let t = data[0];
+        let position = t.position();
+        let direction = t.direction();
+        <Vec2 as InspectRenderDefault<Vec2>>::render(
+            &[&position],
+            "position",
+            ui,
+            &InspectArgsDefault::default(),
+        );
+        <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render(
+            &[&direction],
+            "direction",
+            ui,
+            &InspectArgsDefault::default(),
+        );
     }
 
     fn render_mut(
@@ -157,13 +175,21 @@ impl InspectRenderDefault<Vec2> for Vec2 {
 }
 
 impl InspectRenderDefault<PolyLine> for PolyLine {
-    fn render(
-        _data: &[&PolyLine],
-        _label: &'static str,
-        _ui: &imgui::Ui,
-        _args: &InspectArgsDefault,
-    ) {
-        unimplemented!()
+    fn render(data: &[&PolyLine], label: &'static str, ui: &imgui::Ui, args: &InspectArgsDefault) {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+
+        let v = data[0];
+        if imgui::CollapsingHeader::new(&im_str!("{}", label)).build(&ui) {
+            ui.indent();
+            for (i, x) in v.iter().enumerate() {
+                let id = ui.push_id(i as i32);
+                <Vec2 as InspectRenderDefault<Vec2>>::render(&[x], "", ui, args);
+                id.pop(ui);
+            }
+            ui.unindent();
+        }
     }
 
     fn render_mut(
@@ -176,7 +202,7 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
             unimplemented!();
         }
 
-        let v = &mut data[0];
+        let v = &mut *data[0];
         let mut changed = false;
 
         if imgui::CollapsingHeader::new(&im_str!("{}", label)).build(&ui) {
@@ -200,8 +226,10 @@ impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
             unimplemented!();
         }
         let x = data[0];
-        let ang = x.angle(Vec2::UNIT_Y);
-        ui.text(&im_str!("{} {}", label, ang));
+        let mut ang = f32::atan2(x.y, x.x);
+        imgui::InputFloat::new(ui, &*im_str!("{}", label), &mut ang)
+            .read_only(true)
+            .build();
     }
 
     fn render_mut(

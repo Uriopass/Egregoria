@@ -1,3 +1,4 @@
+use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use imgui::{im_str, Condition, Ui};
 use std::time::Duration;
@@ -25,7 +26,7 @@ pub struct Settings {
 
 impl Default for Settings {
     fn default() -> Self {
-        Self {
+        common::saveload::load(SETTINGS_SAVE_NAME).unwrap_or(Self {
             camera_sensibility: 80.0,
             camera_lock: true,
             camera_border_move: true,
@@ -36,7 +37,7 @@ impl Default for Settings {
             vsync: VSyncOptions::Vsync,
             time_warp: 1.0,
             auto_save_every: AutoSaveEvery::Never,
-        }
+        })
     }
 }
 
@@ -94,8 +95,8 @@ impl AsRef<str> for AutoSaveEvery {
     }
 }
 
-pub fn settings(window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
-    let mut settings = goria.write::<Settings>();
+pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egregoria) {
+    let mut settings = uiworld.write::<Settings>();
     let [w, h] = ui.io().display_size;
 
     window

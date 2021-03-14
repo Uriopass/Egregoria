@@ -4,10 +4,9 @@ use std::time::Instant;
 use winit::dpi::PhysicalSize;
 use winit::window::{Fullscreen, Window};
 
+use crate::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound, OrderKind};
 use common::{GameTime, History};
-use egregoria::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound, OrderKind};
-use egregoria::souls::add_souls_to_empty_buildings;
-use egregoria::{load_from_disk, Egregoria};
+use egregoria::Egregoria;
 use geom::Camera;
 use geom::{vec3, LinearColor, Vec2};
 use map_model::Map;
@@ -25,11 +24,15 @@ use crate::rendering::{
     BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
 };
 use crate::timestep::Timestep;
+use crate::uiworld::UiWorld;
+use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
 
 pub struct State {
     goria: Egregoria,
-    ui_schedule: SeqSchedule,
+
+    uiworld: UiWorld,
+
     game_schedule: SeqSchedule,
 
     pub camera: CameraHandler,
@@ -65,24 +68,23 @@ impl State {
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
-        let (mut goria, game_schedule) = egregoria::Egregoria::init();
+        let (goria, game_schedule) = egregoria::Egregoria::init();
+        let mut uiworld = UiWorld::init();
 
-        goria.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));
-
-        load_from_disk(&mut goria);
+        uiworld.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));
 
         let gui: Gui = common::saveload::load_json("gui").unwrap_or_default();
-
-        goria.insert(camera.camera);
+        uiworld.insert(camera.camera);
+        uiworld.insert(WorldCommands::default());
 
         {
-            let s = goria.read::<Settings>();
+            let s = uiworld.read::<Settings>();
             Self::manage_settings(ctx, &s);
         }
 
         Self {
             goria,
-            ui_schedule: crate::gui::ui_schedule(),
+            uiworld,
             game_schedule,
             camera,
             imgui_render,
@@ -97,20 +99,26 @@ impl State {
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
-        let settings = *self.goria.read::<Settings>();
+        let settings = *self.uiworld.read::<Settings>();
 
-        let goria = &mut self.goria;
+        let goria = &mut self.goria; // mut for tick
         let sched = &mut self.game_schedule;
-        self.timestep
-            .go_forward(settings.time_warp, move || Self::tick(goria, sched));
+        let uiw = &mut self.uiworld;
+        self.timestep.go_forward(settings.time_warp, move || {
+            let t = Instant::now();
+            goria.tick(Timestep::DT, sched);
+            uiw.write::<Timings>()
+                .world_update
+                .add_value(t.elapsed().as_secs_f32());
+        });
+
         let real_delta = self.timestep.real_delta();
-        self.goria
+        self.uiworld
             .write::<Timings>()
             .all
             .add_value(real_delta as f32);
 
-        self.goria.write::<Timings>().per_game_system = self.game_schedule.times();
-        self.goria.write::<Timings>().per_ui_system = self.ui_schedule.times();
+        self.uiworld.write::<Timings>().per_game_system = self.game_schedule.times();
 
         Self::manage_settings(ctx, &settings);
         self.manage_io(ctx);
@@ -123,20 +131,21 @@ impl State {
             !self.imgui_render.last_kb_captured,
             &settings,
         );
-        *self.goria.write::<Camera>() = self.camera.camera;
+        *self.uiworld.write::<Camera>() = self.camera.camera;
 
         if !self.imgui_render.last_mouse_captured {
-            self.goria.write::<MouseInfo>().unprojected =
+            self.uiworld.write::<MouseInfo>().unprojected =
                 self.camera.unproject(ctx.input.mouse.screen);
         }
 
-        self.ui_schedule.execute(&mut self.goria);
+        crate::gui::run_ui_systems(&self.goria, &mut self.uiworld);
+        self.uiworld.write::<WorldCommands>().apply(&mut self.goria); // mut for world commands
 
         ctx.gfx
             .set_time(self.goria.read::<GameTime>().timestamp as f32);
 
         {
-            let immediate = self.goria.read::<ImmediateDraw>();
+            let immediate = self.uiworld.read::<ImmediateDraw>();
             for ImmediateOrder { kind, .. } in immediate
                 .persistent_orders
                 .iter()
@@ -148,31 +157,18 @@ impl State {
             }
         }
 
-        for (sound, kind) in self.goria.write::<ImmediateSound>().orders.drain(..) {
+        for (sound, kind) in self.uiworld.write::<ImmediateSound>().orders.drain(..) {
             ctx.audio.play(sound, kind);
         }
-        self.all_audio
-            .update(&mut self.goria, &mut ctx.audio, real_delta as f32);
+        self.all_audio.update(
+            &self.goria,
+            &mut self.uiworld,
+            &mut ctx.audio,
+            real_delta as f32,
+        );
 
         self.manage_entity_follow();
         self.camera.update(ctx);
-    }
-
-    pub fn tick(goria: &mut Egregoria, game_schedule: &mut SeqSchedule) {
-        let t = std::time::Instant::now();
-
-        {
-            let mut time = goria.write::<GameTime>();
-            *time = GameTime::new(Timestep::DT as f32, time.timestamp + Timestep::DT);
-        }
-
-        game_schedule.execute(goria);
-        add_souls_to_empty_buildings(goria);
-
-        goria
-            .write::<Timings>()
-            .world_update
-            .add_value(t.elapsed().as_secs_f32());
     }
 
     pub fn render(&mut self, ctx: &mut FrameContext) {
@@ -184,23 +180,23 @@ impl State {
 
         let time: GameTime = *self.goria.read::<GameTime>();
         self.road_renderer
-            .render(&mut self.goria.write::<Map>(), time.seconds, &mut tess, ctx);
+            .render(&self.goria.read::<Map>(), time.seconds, &mut tess, ctx);
 
-        self.instanced_renderer.render(&mut self.goria, ctx);
+        self.instanced_renderer.render(&self.goria, ctx);
 
-        MeshRenderer::render(&mut self.goria, &mut tess);
+        MeshRenderer::render(&self.goria, &mut tess);
 
         {
-            let objs = self.goria.read::<DebugObjs>();
+            let objs = DebugObjs::default();
             for (val, _, obj) in &objs.0 {
                 if *val {
-                    obj(&mut tess, &self.goria);
+                    obj(&mut tess, &self.goria, &mut self.uiworld);
                 }
             }
         }
 
         {
-            let immediate = &mut *self.goria.write::<ImmediateDraw>();
+            let immediate = &mut *self.uiworld.write::<ImmediateDraw>();
             for ImmediateOrder { kind, color, z } in immediate
                 .persistent_orders
                 .iter()
@@ -267,7 +263,7 @@ impl State {
             ctx.draw(x)
         }
 
-        self.goria
+        self.uiworld
             .write::<Timings>()
             .render
             .add_value(start.elapsed().as_secs_f32());
@@ -325,9 +321,11 @@ impl State {
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
         let gui = &mut self.gui;
-        let goria = &mut self.goria;
+        let goria = &self.goria;
+        let uiworld = &mut self.uiworld;
+
         self.imgui_render.render(ctx, window, |ui| {
-            gui.render(&ui, goria);
+            gui.render(&ui, uiworld, goria);
         });
     }
 
@@ -346,11 +344,11 @@ impl State {
     }
 
     fn manage_entity_follow(&mut self) {
-        if !self.goria.read::<MouseInfo>().just_pressed.is_empty() {
-            self.goria.write::<FollowEntity>().0.take();
+        if !self.uiworld.read::<MouseInfo>().just_pressed.is_empty() {
+            self.uiworld.write::<FollowEntity>().0.take();
         }
 
-        if let Some(e) = self.goria.read::<FollowEntity>().0 {
+        if let Some(e) = self.uiworld.read::<FollowEntity>().0 {
             if let Some(pos) = self.goria.pos(e) {
                 self.camera.camera.position.x = pos.x;
                 self.camera.camera.position.y = pos.y;
@@ -359,17 +357,17 @@ impl State {
     }
 
     fn manage_io(&mut self, ctx: &Context) {
-        *self.goria.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
-        *self.goria.write::<MouseInfo>() = ctx.input.mouse.clone();
+        *self.uiworld.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
+        *self.uiworld.write::<MouseInfo>() = ctx.input.mouse.clone();
 
         if self.imgui_render.last_kb_captured {
-            let kb: &mut KeyboardInfo = &mut self.goria.write::<KeyboardInfo>();
+            let kb: &mut KeyboardInfo = &mut self.uiworld.write::<KeyboardInfo>();
             kb.just_pressed.clear();
             kb.is_pressed.clear();
         }
 
         if self.imgui_render.last_mouse_captured {
-            let mouse: &mut MouseInfo = &mut self.goria.write::<MouseInfo>();
+            let mouse: &mut MouseInfo = &mut self.uiworld.write::<MouseInfo>();
             mouse.just_pressed.clear();
             mouse.buttons.clear();
             mouse.wheel_delta = 0.0;
@@ -393,5 +391,4 @@ pub struct Timings {
     pub world_update: History,
     pub render: History,
     pub per_game_system: Vec<(String, f32)>,
-    pub per_ui_system: Vec<(String, f32)>,
 }

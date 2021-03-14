@@ -13,8 +13,10 @@ impl InspectRenderDefault<f32> for InspectDragf {
         if data.len() != 1 {
             unimplemented!();
         }
-        let cp = *data[0];
-        ui.text(&im_str!("{} {}", cp, label));
+        let mut cp = *data[0];
+        imgui::InputFloat::new(ui, &*imgui::im_str!("{}", label), &mut cp)
+            .read_only(true)
+            .build();
     }
 
     fn render_mut(
@@ -37,8 +39,10 @@ impl InspectRenderDefault<f64> for InspectDragf {
         if data.len() != 1 {
             unimplemented!();
         }
-        let cp = *data[0];
-        ui.text(&im_str!("{} {}", cp, label));
+        let mut cp = *data[0] as f32;
+        imgui::InputFloat::new(ui, &*imgui::im_str!("{}", label), &mut cp)
+            .read_only(true)
+            .build();
     }
 
     fn render_mut(

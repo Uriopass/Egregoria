@@ -1,4 +1,5 @@
 use crate::audio::{AudioContext, AudioHandle, AudioKind};
+use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use geom::{lerp, vec2, Camera};
 use map_model::Map;
@@ -26,9 +27,15 @@ impl Ambient {
         Self { wind, forest }
     }
 
-    pub fn update(&self, goria: &mut Egregoria, ctx: &mut AudioContext, delta: f32) {
+    pub fn update(
+        &self,
+        goria: &Egregoria,
+        uiworld: &mut UiWorld,
+        ctx: &mut AudioContext,
+        delta: f32,
+    ) {
         let delta = delta.min(0.1);
-        let camera = goria.read::<Camera>();
+        let camera = uiworld.read::<Camera>();
         let map = goria.read::<Map>();
 
         let h = camera.position.z;

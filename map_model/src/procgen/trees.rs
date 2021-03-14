@@ -17,7 +17,7 @@ pub struct Tree {
 pub struct Trees {
     pub grid: SparseGrid<Tree>,
     pub generated: HashSet<(i32, i32)>,
-    pub dirty: bool,
+    pub dirt_id: u32,
 }
 
 impl Default for Trees {
@@ -25,14 +25,14 @@ impl Default for Trees {
         Self {
             grid: SparseGrid::new(CELL_SIZE),
             generated: Default::default(),
-            dirty: true,
+            dirt_id: 1,
         }
     }
 }
 
 impl Trees {
     pub fn remove_near_filter(&mut self, bbox: AABB, f: impl Fn(Vec2) -> bool) {
-        self.update(bbox);
+        self.gather_non_generated_chunks(bbox);
 
         let to_remove: Vec<_> = self
             .grid
@@ -41,9 +41,9 @@ impl Trees {
             .map(|x| x.0)
             .collect();
 
+        self.dirt_id += !to_remove.is_empty() as u32;
         for h in to_remove {
             self.grid.remove(h);
-            self.dirty = true;
         }
 
         self.grid.maintain();
@@ -52,23 +52,29 @@ impl Trees {
     fn cell(p: Vec2) -> (i32, i32) {
         (p.x as i32 / CELL_SIZE, p.y as i32 / CELL_SIZE)
     }
-    pub fn update(&mut self, aabb: AABB) {
+    pub fn gather_non_generated_chunks(&self, aabb: AABB) -> Vec<(i32, i32)> {
         if aabb.h().min(aabb.w()) > 4000.0 {
-            return;
+            return vec![];
         }
         let ll = Self::cell(aabb.ll);
         let ur = Self::cell(aabb.ur);
+        let mut not_generated = vec![];
         for y in ll.1..=ur.1 {
             for x in ll.0..=ur.0 {
                 let cell = (x, y);
-                if self.generated.insert(cell) {
-                    self.add_forest(cell);
+                if !self.generated.contains(&cell) {
+                    not_generated.push(cell);
                 }
             }
         }
+        not_generated
     }
 
-    fn add_forest(&mut self, (x, y): (i32, i32)) {
+    pub fn add_forest(&mut self, (x, y): (i32, i32)) {
+        if !self.generated.insert((x, y)) {
+            return;
+        }
+
         let startx = common::rand::rand3(x as f32, y as f32, 0.0);
         let starty = common::rand::rand3(x as f32, y as f32, 1.0);
 
@@ -127,7 +133,7 @@ impl Trees {
                         dir: Vec2::from_angle(angle),
                     },
                 );
-                self.dirty = true;
+                self.dirt_id += 1;
 
                 active.push(pos);
                 break;

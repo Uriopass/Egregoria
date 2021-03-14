@@ -1,5 +1,5 @@
 use crate::gui::follow::FollowEntity;
-use crate::gui::roadeditor::IntersectionComponent;
+use crate::uiworld::UiWorld;
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, Kinematics};
@@ -18,63 +18,41 @@ pub struct InspectRenderer {
     pub entity: Entity,
 }
 
-/// Avoids Cloning by mutably aliasing the component inside the world
-/// Unsound if the inspector also try to get the component using the world borrow
-fn modify<T: Component>(
-    goria: &mut Egregoria,
-    entity: Entity,
-    f: impl FnOnce(&mut T) -> bool,
-) -> Option<bool> {
-    let c = goria.comp_mut::<T>(entity)?;
-    Some(f(c))
-}
-
 impl InspectRenderer {
     fn inspect_component<T: Component + InspectRenderDefault<T>>(
         &self,
-        world: &mut Egregoria,
+        goria: &Egregoria,
         ui: &Ui,
-    ) -> bool {
-        modify(world, self.entity, |x| -> bool {
-            <T as InspectRenderDefault<T>>::render_mut(
-                &mut [x],
+    ) {
+        let c: Option<&T> = goria.comp::<T>(self.entity);
+        if let Some(x) = c {
+            <T as InspectRenderDefault<T>>::render(
+                &[x],
                 std::any::type_name::<T>().split("::").last().unwrap_or(""),
                 ui,
                 &InspectArgsDefault::default(),
             )
-        })
-        .unwrap_or(false)
+        }
     }
 
-    pub fn render(&self, goria: &mut Egregoria, ui: &Ui) -> bool {
-        let mut dirty = false;
+    pub fn render(&self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui) {
+        self.inspect_component::<Transform>(goria, ui);
+        self.inspect_component::<Vehicle>(goria, ui);
+        self.inspect_component::<Pedestrian>(goria, ui);
+        self.inspect_component::<Location>(goria, ui);
+        self.inspect_component::<AssetRender>(goria, ui);
+        self.inspect_component::<MeshRender>(goria, ui);
+        self.inspect_component::<Kinematics>(goria, ui);
+        self.inspect_component::<Collider>(goria, ui);
+        self.inspect_component::<Itinerary>(goria, ui);
 
-        dirty |= self.inspect_component::<Transform>(goria, ui);
-        dirty |= self.inspect_component::<Vehicle>(goria, ui);
-        dirty |= self.inspect_component::<Pedestrian>(goria, ui);
-        dirty |= self.inspect_component::<Location>(goria, ui);
-        dirty |= self.inspect_component::<AssetRender>(goria, ui);
-        dirty |= self.inspect_component::<MeshRender>(goria, ui);
-        dirty |= self.inspect_component::<Kinematics>(goria, ui);
-        dirty |= self.inspect_component::<Collider>(goria, ui);
-        dirty |= self.inspect_component::<IntersectionComponent>(goria, ui);
-        dirty |= self.inspect_component::<Itinerary>(goria, ui);
-
-        {
-            let follow = &mut goria.write::<FollowEntity>().0;
-            if follow.is_none() {
-                if ui.small_button(im_str!("Follow")) {
-                    follow.replace(self.entity);
-                }
-            } else if ui.small_button(im_str!("Unfollow")) {
-                follow.take();
+        let follow = &mut uiworld.write::<FollowEntity>().0;
+        if follow.is_none() {
+            if ui.small_button(im_str!("Follow")) {
+                follow.replace(self.entity);
             }
+        } else if ui.small_button(im_str!("Unfollow")) {
+            follow.take();
         }
-
-        if dirty {
-            ui.text("dirty");
-        }
-
-        dirty
     }
 }

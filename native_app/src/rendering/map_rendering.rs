@@ -43,6 +43,8 @@ pub struct RoadRenderer {
     tree_builder: MultiSpriteBatchBuilder,
     crosswalks: Option<ShadedBatch<Crosswalk>>,
     last_config: usize,
+    map_dirt_id: u32,
+    trees_dirt_id: u32,
 }
 
 impl RoadRenderer {
@@ -89,6 +91,8 @@ impl RoadRenderer {
             tree_builder,
             crosswalks: None,
             last_config: common::config_id(),
+            map_dirt_id: 0,
+            trees_dirt_id: 0,
         }
     }
 
@@ -362,12 +366,12 @@ impl RoadRenderer {
 
     pub fn trees(
         &mut self,
-        map: &mut Map,
+        map: &Map,
         screen: AABB,
         gfx: &GfxContext,
     ) -> (MultiSpriteBatch, Option<SpriteBatch>) {
         let st = map.trees.grid.storage();
-        if !map.trees.dirty
+        if map.trees.dirt_id == self.trees_dirt_id
             && self.tree_shadows.is_some()
             && st.cell_id(screen.ll) == st.cell_id(self.last_cam.ll)
             && st.cell_id(screen.ur) == st.cell_id(self.last_cam.ur)
@@ -377,7 +381,7 @@ impl RoadRenderer {
             }
         }
 
-        map.trees.dirty = false;
+        self.trees_dirt_id = map.trees.dirt_id;
 
         self.tree_builder.clear();
         self.tree_shadows_builder.clear();
@@ -419,24 +423,18 @@ impl RoadRenderer {
         )
     }
 
-    pub fn render(
-        &mut self,
-        map: &mut Map,
-        time: u32,
-        tess: &mut Tesselator,
-        ctx: &mut FrameContext,
-    ) {
+    pub fn render(&mut self, map: &Map, time: u32, tess: &mut Tesselator, ctx: &mut FrameContext) {
         let screen = tess
             .cull_rect
             .expect("no cull rectangle, might render far too many trees");
-        if map.dirty || self.last_config != common::config_id() {
+        if map.dirt_id != self.map_dirt_id || self.last_config != common::config_id() {
             self.map_mesh = Self::map_mesh(map, Tesselator::new(None, 15.0), ctx.gfx);
             self.arrows = self.arrows(map, ctx.gfx);
             self.crosswalks = Self::crosswalks(map, ctx.gfx);
             self.buildings = Some(self.buildings_sprites(map, ctx.gfx));
 
             self.last_config = common::config_id();
-            map.dirty = false;
+            self.map_dirt_id = map.dirt_id;
         }
 
         let (trees, tree_shadows) = self.trees(map, screen, ctx.gfx);

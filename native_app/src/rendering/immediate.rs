@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use common::{AudioKind, Z_DEBUG};
 use geom::{LinearColor, Polygon, Vec2, OBB};
 

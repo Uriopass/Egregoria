@@ -12,6 +12,9 @@ extern crate common;
 #[macro_use]
 extern crate egregoria;
 
+#[macro_use]
+mod uiworld;
+
 mod audio;
 mod context;
 mod game_loop;

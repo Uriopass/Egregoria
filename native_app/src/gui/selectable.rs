@@ -1,30 +1,24 @@
 use crate::gui::{InspectedEntity, Tool};
 use crate::input::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
+use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::Selectable;
-use egregoria::ParCommandBuffer;
+use egregoria::Egregoria;
 use geom::Transform;
-use legion::world::SubWorld;
-use legion::{system, EntityStore};
-use legion::{Entity, Query};
+use legion::IntoQuery;
+use legion::{Entity, EntityStore};
 use std::sync::Mutex;
 
-#[system]
-#[read_component(())]
-pub fn selectable(
-    #[resource] inspected: &mut InspectedEntity,
-    #[resource] cb: &mut ParCommandBuffer,
-    #[resource] mouse: &MouseInfo,
-    #[resource] kbinfo: &KeyboardInfo,
-    #[resource] tool: &Tool,
-    sw: &mut SubWorld,
-    qry: &mut Query<(Entity, &Transform, &Selectable)>,
-) {
-    let mut inspected = inspected;
+pub fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
+    let mut inspected = uiworld.write::<InspectedEntity>();
+    let mouse = uiworld.read::<MouseInfo>();
+    let kbinfo = uiworld.read::<KeyboardInfo>();
+    let tool = uiworld.read::<Tool>();
+
     if mouse.just_pressed.contains(&MouseButton::Left) && matches!(*tool, Tool::Hand) {
         inspected.dist2 = std::f32::INFINITY;
         let protec = Mutex::new(inspected);
 
-        qry.par_for_each_chunk_mut(sw, |chunk| {
+        <(Entity, &Transform, &Selectable)>::query().par_for_each_chunk(goria.world(), |chunk| {
             let mut v = std::f32::INFINITY;
             let mut ent = None;
             for (e, trans, select) in chunk {
@@ -45,13 +39,7 @@ pub fn selectable(
     }
 
     if let Some(e) = inspected.e {
-        if sw.entry_ref(e).is_err() {
-            inspected.e = None;
-            return;
-        }
-
-        if kbinfo.just_pressed.contains(&KeyCode::Backspace) {
-            cb.kill(e);
+        if goria.world().entry_ref(e).is_err() {
             inspected.e = None;
         }
     }

@@ -8,6 +8,7 @@ use crate::audio::car_sounds::CarSounds;
 use crate::audio::music::Music;
 use crate::audio::unique_sink::UniqueSink;
 use crate::gui::windows::settings::Settings;
+use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::Egregoria;
 use rodio::source::Buffered;
@@ -34,10 +35,16 @@ impl GameAudio {
         }
     }
 
-    pub fn update(&mut self, goria: &mut Egregoria, ctx: &mut AudioContext, delta: f32) {
+    pub fn update(
+        &mut self,
+        goria: &Egregoria,
+        uiworld: &mut UiWorld,
+        ctx: &mut AudioContext,
+        delta: f32,
+    ) {
         self.music.update(ctx);
-        self.ambiant.update(goria, ctx, delta);
-        self.carsounds.update(goria, ctx, delta);
+        self.ambiant.update(goria, uiworld, ctx, delta);
+        self.carsounds.update(goria, uiworld, ctx, delta);
     }
 }
 

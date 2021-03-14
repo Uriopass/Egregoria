@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 
 use imgui::TextureId;
-use legion::{system, Entity};
+use legion::Entity;
 use serde::{Deserialize, Serialize};
 
 use crate::input::{KeyCode, KeyboardInfo};
-use egregoria::utils::scheduler::SeqSchedule;
+use crate::uiworld::UiWorld;
+use egregoria::Egregoria;
 pub use follow::FollowEntity;
+use geom::Camera;
 pub use inspect::*;
+use map_model::Map;
 use roadbuild::RoadBuildResource;
 pub use topgui::*;
 use wgpu_engine::GfxContext;
@@ -25,35 +28,38 @@ mod topgui;
 
 pub mod windows;
 
-pub fn ui_schedule() -> SeqSchedule {
-    let mut schedule = SeqSchedule::default();
-    schedule.add_system(Box::new(bulldozer::bulldozer_system()));
-    schedule.add_system(Box::new(inspected_aura::inspected_aura_system()));
-    schedule.add_system(Box::new(lotbrush::lotbrush_system()));
-    schedule.add_system(Box::new(roadbuild::roadbuild_system()));
-    schedule.add_system(Box::new(roadeditor::roadeditor_system()));
-    schedule.add_system(Box::new(selectable::selectable_system()));
-    schedule.add_system(Box::new(specialbuilding::specialbuilding_system()));
-    schedule.add_system(Box::new(hand_reset_system()));
-    schedule
+pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
+    bulldozer::bulldozer(goria, uiworld);
+    inspected_aura::inspected_aura(goria, uiworld);
+    lotbrush::lotbrush(goria, uiworld);
+    roadbuild::roadbuild(goria, uiworld);
+    roadeditor::roadeditor(goria, uiworld);
+    selectable::selectable(goria, uiworld);
+    specialbuilding::specialbuilding(goria, uiworld);
+    hand_reset(uiworld);
+
+    let chunks = goria
+        .read::<Map>()
+        .trees
+        .gather_non_generated_chunks(uiworld.read::<Camera>().screen_aabb());
+    uiworld.commands().map_generate_trees(chunks);
 }
 
 register_resource_noserialize!(InspectedEntity);
 #[derive(Copy, Clone, Default, Debug)]
 pub struct InspectedEntity {
     pub e: Option<Entity>,
-    pub dirty: bool, // Modified by inspection
     pub dist2: f32,
 }
 
-#[system]
-pub fn hand_reset(#[resource] info: &KeyboardInfo, #[resource] tool: &mut Tool) {
+pub fn hand_reset(uiworld: &mut UiWorld) {
+    let info = uiworld.read::<KeyboardInfo>();
     if info.just_pressed.contains(&KeyCode::Escape) {
-        *tool = Tool::Hand;
+        *uiworld.write::<Tool>() = Tool::Hand;
     }
 }
 
-register_resource!(Tool, "tool");
+register_resource_noserialize!(Tool);
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub enum Tool {
     Hand,

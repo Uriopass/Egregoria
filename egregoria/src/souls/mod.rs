@@ -13,7 +13,7 @@ pub mod desire;
 pub mod goods_company;
 pub mod human;
 
-pub fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
+pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
     let map = goria.read::<Map>();
     let infos = goria.read::<BuildingInfos>();
     let mut empty_buildings: HashMap<BuildingKind, Vec<(BuildingID, Vec2)>> = HashMap::new();

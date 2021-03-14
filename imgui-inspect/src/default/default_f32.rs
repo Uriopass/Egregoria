@@ -13,7 +13,10 @@ impl InspectRenderDefault<f32> for f32 {
         match get_same_or_none(data) {
             Some(_v) => {
                 // Values are consistent
-                ui.text(&imgui::im_str!("{}: {}", label, data[0]))
+                let mut cp = *data[0];
+                imgui::InputFloat::new(ui, &*imgui::im_str!("{}", label), &mut cp)
+                    .read_only(true)
+                    .build();
             }
             None => {
                 // Values are inconsistent
