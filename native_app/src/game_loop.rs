@@ -99,16 +99,16 @@ impl State {
     pub fn update(&mut self, ctx: &mut Context) {
         let settings = *self.goria.read::<Settings>();
 
-        let ticks = self.timestep.go_forward(settings.time_warp);
+        let goria = &mut self.goria;
+        let sched = &mut self.game_schedule;
+        self.timestep
+            .go_forward(settings.time_warp, move || Self::tick(goria, sched));
         let real_delta = self.timestep.real_delta();
         self.goria
             .write::<Timings>()
             .all
             .add_value(real_delta as f32);
 
-        for _ in 0..ticks {
-            self.tick();
-        }
         self.goria.write::<Timings>().per_game_system = self.game_schedule.times();
         self.goria.write::<Timings>().per_ui_system = self.ui_schedule.times();
 
@@ -158,18 +158,18 @@ impl State {
         self.camera.update(ctx);
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(goria: &mut Egregoria, game_schedule: &mut SeqSchedule) {
         let t = std::time::Instant::now();
 
         {
-            let mut time = self.goria.write::<GameTime>();
+            let mut time = goria.write::<GameTime>();
             *time = GameTime::new(Timestep::DT as f32, time.timestamp + Timestep::DT);
         }
 
-        self.game_schedule.execute(&mut self.goria);
-        add_souls_to_empty_buildings(&mut self.goria);
+        game_schedule.execute(goria);
+        add_souls_to_empty_buildings(goria);
 
-        self.goria
+        goria
             .write::<Timings>()
             .world_update
             .add_value(t.elapsed().as_secs_f32());

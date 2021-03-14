@@ -1,3 +1,4 @@
+use imgui::__core::time::Duration;
 use std::time::Instant;
 
 pub struct Timestep {
@@ -8,7 +9,7 @@ pub struct Timestep {
 
 impl Timestep {
     pub const DT: f64 = 1.0 / 50.0;
-    const MAXTICKS: u32 = 10;
+    const MAXTIME: Duration = Duration::from_millis(25);
 
     pub fn new() -> Self {
         Self {
@@ -18,25 +19,22 @@ impl Timestep {
         }
     }
 
-    // Asks for how many ticks to simulate
-    pub fn go_forward(&mut self, warp: f64) -> u32 {
+    // returns closure returning true if you have to go forward
+    pub fn go_forward(&mut self, warp: f64, mut tick: impl FnMut()) {
         self.real_delta = self.last_time.elapsed().as_secs_f64();
         self.last_time = Instant::now();
 
-        let mut ticks = 0;
         let advance = self.real_delta * warp as f64;
-        if advance >= Self::MAXTICKS as f64 * Self::DT {
-            self.real_delta = (Self::MAXTICKS as f64 * Self::DT) / warp;
-            ticks = Self::MAXTICKS;
-            self.acc = 0.0;
-        } else {
-            self.acc += advance;
-            while self.acc >= Self::DT {
-                self.acc -= Self::DT;
-                ticks += 1;
+        self.acc += advance;
+
+        while self.acc >= Self::DT {
+            self.acc -= Self::DT;
+            tick();
+            if self.last_time.elapsed() > Self::MAXTIME {
+                self.acc = 0.0;
+                return;
             }
         }
-        ticks
     }
 
     pub fn real_delta(&self) -> f32 {
