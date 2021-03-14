@@ -1,13 +1,12 @@
 #![allow(clippy::type_complexity)]
 
-use crate::game_loop::RenderStats;
+use crate::game_loop::Timings;
 use crate::gui::InspectedEntity;
 use crate::input::MouseInfo;
 use common::{GameTime, SECONDS_PER_DAY};
 use common::{Z_DEBUG, Z_DEBUG_BG};
 use egregoria::map_dynamic::{Itinerary, ParkingManagement};
 use egregoria::physics::CollisionWorld;
-use egregoria::utils::frame_log::FrameLog;
 use egregoria::Egregoria;
 use geom::{vec2, Camera, Color, Intersect, LinearColor, Segment, Spline, Vec2, AABB, OBB};
 use imgui::im_str;
@@ -71,32 +70,48 @@ pub fn debug(window: imgui::Window, ui: &Ui, goria: &mut Egregoria) {
                 GameTime::new(0.1, time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64);
         }
 
-        let stats = goria.read::<RenderStats>();
+        let timings = goria.read::<Timings>();
         let mouse = goria.read::<MouseInfo>().unprojected;
         let cam = goria.read::<Camera>().position;
 
         ui.text("Averaged over last 10 frames: ");
-        ui.text(im_str!("Total time: {:.1}ms", stats.all.avg() * 1000.0));
+        ui.text(im_str!("Total time: {:.1}ms", timings.all.avg() * 1000.0));
         ui.text(im_str!(
             "World update time: {:.1}ms",
-            stats.world_update.avg() * 1000.0
+            timings.world_update.avg() * 1000.0
         ));
         ui.text(im_str!(
             "Render prepare time: {:.1}ms",
-            stats.render.avg() * 1000.0
+            timings.render.avg() * 1000.0
         ));
         ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
         ui.text(im_str!("Cam   pos: {:.1} {:.1} {:.1}", cam.x, cam.y, cam.z));
         ui.separator();
-        ui.text("Frame log");
-        let flog = goria.read::<FrameLog>();
-        {
-            let fl = flog.get_frame_log();
-            for s in &*fl {
-                ui.text(im_str!("{}", s));
-            }
+        ui.text("Game system times");
+
+        ui.columns(2, im_str!("game times"), false);
+        ui.text("System name");
+        ui.next_column();
+        ui.text("Time avg in ms over last 100 ticks");
+        ui.next_column();
+
+        for (name, time) in &timings.per_game_system {
+            ui.text(name);
+            ui.next_column();
+            ui.text(im_str!("{:.3}", *time));
+            ui.next_column();
         }
-        flog.clear();
+
+        ui.text("Ui system times");
+        ui.next_column();
+        ui.next_column();
+
+        for (name, time) in &timings.per_ui_system {
+            ui.text(name);
+            ui.next_column();
+            ui.text(im_str!("{:.3}", *time));
+            ui.next_column();
+        }
     })
 }
 

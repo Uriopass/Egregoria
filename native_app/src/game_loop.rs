@@ -102,13 +102,15 @@ impl State {
         let ticks = self.timestep.go_forward(settings.time_warp);
         let real_delta = self.timestep.real_delta();
         self.goria
-            .write::<RenderStats>()
+            .write::<Timings>()
             .all
             .add_value(real_delta as f32);
 
         for _ in 0..ticks {
             self.tick();
         }
+        self.goria.write::<Timings>().per_game_system = self.game_schedule.times();
+        self.goria.write::<Timings>().per_ui_system = self.ui_schedule.times();
 
         Self::manage_settings(ctx, &settings);
         self.manage_io(ctx);
@@ -168,7 +170,7 @@ impl State {
         add_souls_to_empty_buildings(&mut self.goria);
 
         self.goria
-            .write::<RenderStats>()
+            .write::<Timings>()
             .world_update
             .add_value(t.elapsed().as_secs_f32());
     }
@@ -266,7 +268,7 @@ impl State {
         }
 
         self.goria
-            .write::<RenderStats>()
+            .write::<Timings>()
             .render
             .add_value(start.elapsed().as_secs_f32());
     }
@@ -322,8 +324,11 @@ impl State {
     }
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
-        self.imgui_render
-            .render(ctx, window, &mut self.goria, &mut self.gui);
+        let gui = &mut self.gui;
+        let goria = &mut self.goria;
+        self.imgui_render.render(ctx, window, |ui| {
+            gui.render(&ui, goria);
+        });
     }
 
     fn manage_settings(ctx: &mut Context, settings: &Settings) {
@@ -381,10 +386,12 @@ impl State {
     }
 }
 
-register_resource_noserialize!(RenderStats);
+register_resource_noserialize!(Timings);
 #[derive(Default)]
-pub struct RenderStats {
+pub struct Timings {
     pub all: History,
     pub world_update: History,
     pub render: History,
+    pub per_game_system: Vec<(String, f32)>,
+    pub per_ui_system: Vec<(String, f32)>,
 }
