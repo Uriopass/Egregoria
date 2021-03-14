@@ -19,7 +19,7 @@ pub struct Settings {
     pub effects_volume_percent: f32,
     pub ui_volume_percent: f32,
 
-    pub time_warp: f32,
+    pub time_warp: f64,
     pub auto_save_every: AutoSaveEvery,
 }
 
