@@ -7,12 +7,9 @@ use serde::{Deserialize, Serialize};
 use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
-pub use follow::FollowEntity;
 use geom::Camera;
-pub use inspect::*;
 use map_model::Map;
 use roadbuild::RoadBuildResource;
-pub use topgui::*;
 use wgpu_engine::GfxContext;
 
 mod bulldozer;
@@ -27,6 +24,10 @@ mod specialbuilding;
 mod topgui;
 
 pub mod windows;
+
+pub use follow::FollowEntity;
+pub use inspect::*;
+pub use topgui::*;
 
 pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     bulldozer::bulldozer(goria, uiworld);
