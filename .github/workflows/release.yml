@@ -14,7 +14,7 @@ env:
   # Space separated paths to include in the archive.
   # Start relative paths with a dot if you don't want
   # paths to be preserved. Use "/" as a delimiter.
-  RELEASE_ADDS: README.md LICENSE lua assets
+  RELEASE_ADDS: README.md LICENSE assets
 
 
 jobs:
@@ -33,16 +33,18 @@ jobs:
             os: windows-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout github repo (+ download lfs dependencies)
+        uses: actions/checkout@v2
+        with:
+          lfs: true
+
+      - name: Checkout LFS objects
+        run: git lfs checkout
 
       - name: Install Rust
         uses: hecrj/setup-rust-action@v1
         with:
           rust-version: 'stable'
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
 
       - name: install deps for linux
         run: sudo apt-get install libasound2-dev libudev-dev pkg-config
