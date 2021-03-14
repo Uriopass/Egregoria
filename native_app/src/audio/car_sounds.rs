@@ -1,4 +1,5 @@
 use crate::audio::{AudioContext, AudioHandle};
+use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::physics::CollisionWorld;
 use egregoria::Egregoria;
@@ -31,9 +32,15 @@ impl CarSounds {
         }
     }
 
-    pub fn update(&mut self, goria: &Egregoria, ctx: &mut AudioContext, delta: f32) {
+    pub fn update(
+        &mut self,
+        goria: &Egregoria,
+        uiworld: &mut UiWorld,
+        ctx: &mut AudioContext,
+        delta: f32,
+    ) {
         let coworld = goria.read::<CollisionWorld>();
-        let cam = goria.read::<Camera>();
+        let cam = uiworld.read::<Camera>();
         let campos = cam.position;
         let cambox = cam.screen_aabb().expand(100.0);
 

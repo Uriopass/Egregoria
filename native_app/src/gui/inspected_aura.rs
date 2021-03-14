@@ -1,41 +1,24 @@
 use crate::gui::InspectedEntity;
+use crate::rendering::immediate::ImmediateDraw;
+use crate::uiworld::UiWorld;
 use common::Z_TOOL;
 use egregoria::pedestrians::Location;
-use egregoria::rendering::immediate::ImmediateDraw;
+use egregoria::Egregoria;
 use geom::Color;
-use geom::Transform;
-use legion::world::SubWorld;
-use legion::{system, EntityStore};
 use map_model::Map;
 
-#[system]
-#[read_component(Location)]
-#[read_component(Transform)]
-pub fn inspected_aura(
-    #[resource] inspected: &mut InspectedEntity,
-    #[resource] map: &Map,
-    #[resource] draw: &mut ImmediateDraw,
-    sw: &SubWorld,
-) {
-    if let Some(sel) = inspected.e {
-        let mut pos = sw
-            .entry_ref(sel)
-            .unwrap()
-            .get_component::<Transform>()
-            .ok()
-            .map(|x| x.position());
+pub fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
+    let inspected = uiworld.write::<InspectedEntity>();
+    let map = goria.read::<Map>();
+    let mut draw = uiworld.write::<ImmediateDraw>();
 
-        if let Ok(loc) = sw.entry_ref(sel).unwrap().get_component::<Location>() {
+    if let Some(sel) = inspected.e {
+        let mut pos = goria.pos(sel);
+
+        if let Some(loc) = goria.comp::<Location>(sel) {
             match *loc {
                 Location::Outside => {}
-                Location::Vehicle(v) => {
-                    pos = sw
-                        .entry_ref(v.0)
-                        .unwrap()
-                        .get_component::<Transform>()
-                        .ok()
-                        .map(|x| x.position())
-                }
+                Location::Vehicle(v) => pos = goria.pos(v.0),
                 Location::Building(b) => pos = map.buildings().get(b).map(|b| b.door_pos),
             }
         }

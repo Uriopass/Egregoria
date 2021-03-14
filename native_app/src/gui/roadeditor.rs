@@ -1,19 +1,15 @@
-use crate::gui::{InspectedEntity, Tool};
+use crate::gui::Tool;
 use crate::input::{MouseButton, MouseInfo};
+use crate::rendering::immediate::ImmediateDraw;
+use crate::uiworld::UiWorld;
 use common::Z_TOOL;
-use egregoria::rendering::immediate::ImmediateDraw;
+use egregoria::Egregoria;
 use geom::Color;
-use imgui_inspect_derive::*;
-use legion::systems::CommandBuffer;
-use legion::world::SubWorld;
-use legion::Entity;
-use legion::{system, IntoQuery};
 use map_model::{IntersectionID, LightPolicy, TurnPolicy};
 use map_model::{Map, ProjectKind};
 
-#[derive(Clone, Inspect)]
+#[derive(Clone)]
 pub struct IntersectionComponent {
-    #[inspect(skip = true)]
     pub id: IntersectionID,
     pub turn_policy: TurnPolicy,
     pub light_policy: LightPolicy,
@@ -22,29 +18,20 @@ pub struct IntersectionComponent {
 register_resource_noserialize!(RoadEditorResource);
 #[derive(Default)]
 pub struct RoadEditorResource {
-    inspect_e: Option<Entity>,
+    inspect: Option<IntersectionComponent>,
+    dirty: bool,
 }
 
-#[system]
-#[read_component(IntersectionComponent)]
-pub fn roadeditor(
-    #[resource] tool: &Tool,
-    #[resource] map: &mut Map,
-    #[resource] mouseinfo: &MouseInfo,
-    #[resource] state: &mut RoadEditorResource,
-    #[resource] inspected: &mut InspectedEntity,
-    #[resource] imm_draw: &mut ImmediateDraw,
-    sw: &SubWorld,
-    buf: &mut CommandBuffer,
-) {
+pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
+    let tool = uiworld.read::<Tool>();
+    let mouseinfo = uiworld.read::<MouseInfo>();
+    let mut state = uiworld.write::<RoadEditorResource>();
+    let mut imm_draw = uiworld.write::<ImmediateDraw>();
+    let map = goria.read::<Map>();
+    let commands = &mut *uiworld.commands();
+
     if !matches!(*tool, Tool::RoadEditor) {
-        if inspected.e == state.inspect_e {
-            inspected.e = None;
-            inspected.dirty = false;
-        }
-        if let Some(e) = state.inspect_e {
-            buf.remove(e)
-        }
+        state.inspect = None;
         return;
     }
 
@@ -57,22 +44,22 @@ pub fn roadeditor(
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
         if let ProjectKind::Inter(id) = cur_proj.kind {
             let inter = &map.intersections()[id];
-            state.inspect_e = Some(buf.push((IntersectionComponent {
+            state.inspect = Some(IntersectionComponent {
                 id,
                 turn_policy: inter.turn_policy,
                 light_policy: inter.light_policy,
-            },)));
-            inspected.e = state.inspect_e;
+            });
+            state.dirty = false;
         }
     }
 
-    if let Some(insp) = state.inspect_e {
-        if inspected.e == Some(insp) && inspected.dirty {
-            let selected_interc = <&IntersectionComponent>::query().get(sw, insp).unwrap();
-            map.update_intersection(selected_interc.id, |inter| {
-                inter.turn_policy = selected_interc.turn_policy;
-                inter.light_policy = selected_interc.light_policy;
-            });
+    if state.dirty {
+        if let Some(interc) = &state.inspect {
+            commands.map_update_intersection_policy(
+                interc.id,
+                interc.turn_policy,
+                interc.light_policy,
+            );
         }
     }
 }

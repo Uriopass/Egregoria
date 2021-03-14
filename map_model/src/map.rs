@@ -7,6 +7,7 @@ use crate::{
 use geom::{Intersect, Shape, Vec2};
 use geom::{Spline, OBB};
 use ordered_float::OrderedFloat;
+use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
 
 pub type Roads = DenseSlotMap<RoadID, Road>;
@@ -15,7 +16,7 @@ pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 pub type Buildings = DenseSlotMap<BuildingID, Building>;
 pub type Lots = DenseSlotMap<LotID, Lot>;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct MapProject {
     pub pos: Vec2,
     pub kind: ProjectKind,
@@ -30,7 +31,7 @@ pub struct Map {
     pub(crate) spatial_map: SpatialMap,
     pub trees: Trees,
     pub parking: ParkingSpots,
-    pub dirty: bool,
+    pub dirt_id: u32,
 }
 
 impl Default for Map {
@@ -49,7 +50,7 @@ impl Map {
             buildings: Buildings::default(),
             lots: Lots::default(),
             trees: Trees::default(),
-            dirty: true,
+            dirt_id: 1,
             spatial_map: SpatialMap::default(),
         }
     }
@@ -62,13 +63,13 @@ impl Map {
         let inter = &mut self.intersections[id];
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
-        self.dirty = true;
+        self.dirt_id += 1;
     }
 
     fn invalidate(&mut self, id: IntersectionID) {
         info!("invalidate {:?}", id);
 
-        self.dirty = true;
+        self.dirt_id += 1;
         let inter = &mut self.intersections[id];
         inter.update_interface_radius(&mut self.roads);
 
@@ -93,14 +94,14 @@ impl Map {
 
     pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
         info!("add_intersection {:?}", pos);
-        self.dirty = true;
+        self.dirt_id += 1;
         Intersection::make(&mut self.intersections, &mut self.spatial_map, pos)
     }
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
         info!("remove_intersection {:?}", src);
 
-        self.dirty = true;
+        self.dirt_id += 1;
         for road in self.intersections[src].roads.clone() {
             self.remove_road(road);
         }
@@ -116,7 +117,7 @@ impl Map {
         if let Some(b) = &b {
             self.spatial_map.remove(b.id)
         }
-        self.dirty |= b.is_some();
+        self.dirt_id += b.is_some() as u32;
         b
     }
 
@@ -172,7 +173,7 @@ impl Map {
     ) -> RoadID {
         info!("connect {:?} {:?} {:?} {:?}", src, dst, pattern, segment);
 
-        self.dirty = true;
+        self.dirt_id += 1;
         let id = Road::make(src, dst, segment, pattern, self);
 
         let inters = &mut self.intersections;
@@ -196,6 +197,32 @@ impl Map {
         id
     }
 
+    pub fn make_connection(
+        &mut self,
+        from: MapProject,
+        to: MapProject,
+        interpoint: Option<Vec2>,
+        pattern: LanePattern,
+    ) -> IntersectionID {
+        let connection_segment = match interpoint {
+            Some(x) => RoadSegmentKind::from_elbow(from.pos, to.pos, x),
+            None => RoadSegmentKind::Straight,
+        };
+
+        let mut mk_inter = |proj: MapProject| match proj.kind {
+            ProjectKind::Ground => self.add_intersection(proj.pos),
+            ProjectKind::Inter(id) => id,
+            ProjectKind::Road(id) => self.split_road(id, proj.pos),
+            ProjectKind::Building(_) | ProjectKind::Lot(_) => unreachable!(),
+        };
+
+        let from = mk_inter(from);
+        let to = mk_inter(to);
+
+        self.connect(from, to, &pattern, connection_segment);
+        to
+    }
+
     fn cleanup_lot(roads: &mut Roads, spatial_map: &mut SpatialMap, lot: &Lot) {
         let rlots = &mut roads[lot.parent].lots;
         rlots.remove(rlots.iter().position(|&x| x == lot.id).unwrap());
@@ -215,7 +242,7 @@ impl Map {
             road,
             obb
         );
-        self.dirty = true;
+        self.dirt_id += 1;
         let to_clean: Vec<_> = self
             .spatial_map
             .query(obb)
@@ -253,7 +280,7 @@ impl Map {
 
     pub fn build_houses(&mut self) -> impl Iterator<Item = BuildingID> + '_ {
         info!("build houses");
-        self.dirty = true;
+        self.dirt_id += 1;
 
         let roads = &mut self.roads;
         let buildings = &mut self.buildings;
@@ -289,7 +316,7 @@ impl Map {
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
         info!("remove_road {:?}", road_id);
 
-        self.dirty = true;
+        self.dirt_id += 1;
         let road = self.roads.remove(road_id)?;
 
         self.spatial_map.remove(road_id);
@@ -316,7 +343,7 @@ impl Map {
         match self.lots.get_mut(lot) {
             Some(lot) => {
                 lot.kind = kind;
-                self.dirty = true;
+                self.dirt_id += 1;
             }
             None => log::warn!("trying to set kind of non-existing lot {:?}", lot),
         }

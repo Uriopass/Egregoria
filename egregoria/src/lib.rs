@@ -29,6 +29,7 @@ use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
+use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Desire, Home, Work};
 use crate::vehicles::Vehicle;
 
@@ -42,7 +43,6 @@ macro_rules! register_system {
     };
 }
 
-#[macro_export]
 macro_rules! init_func {
     ($f: expr) => {
         inventory::submit! {
@@ -53,7 +53,6 @@ macro_rules! init_func {
     };
 }
 
-#[macro_export]
 macro_rules! register_resource {
     ($t: ty, $name: expr) => {
         init_func!(|goria| {
@@ -74,7 +73,6 @@ macro_rules! register_resource {
     };
 }
 
-#[macro_export]
 macro_rules! register_resource_noserialize {
     ($t: ty) => {
         init_func!(|goria| {
@@ -110,17 +108,17 @@ debug_inspect_impl!(SoulID);
 
 #[derive(Default)]
 pub struct Egregoria {
-    pub world: World,
+    pub(crate) world: World,
     resources: Resources,
 }
 
-pub struct SaveLoadFunc {
-    pub save: Box<dyn Fn(&mut Egregoria) + 'static>,
+pub(crate) struct SaveLoadFunc {
+    pub save: Box<dyn Fn(&Egregoria) + 'static>,
     pub load: Box<dyn Fn(&mut Egregoria) + 'static>,
 }
 inventory::collect!(SaveLoadFunc);
 
-pub struct InitFunc {
+pub(crate) struct InitFunc {
     pub f: Box<dyn Fn(&mut Egregoria) + 'static>,
 }
 inventory::collect!(InitFunc);
@@ -168,14 +166,30 @@ impl Egregoria {
             schedule.add_system(s);
         }
 
+        goria.load_from_disk();
+
         (goria, schedule)
+    }
+
+    pub fn world(&self) -> &World {
+        &self.world
+    }
+
+    pub fn tick(&mut self, dt: f64, game_schedule: &mut SeqSchedule) {
+        {
+            let mut time = self.write::<GameTime>();
+            *time = GameTime::new(dt as f32, time.timestamp + dt);
+        }
+
+        game_schedule.execute(self);
+        add_souls_to_empty_buildings(self);
     }
 
     pub fn pos(&self, e: Entity) -> Option<Vec2> {
         self.comp::<Transform>(e).map(|x| x.position())
     }
 
-    pub fn add_comp(&mut self, e: Entity, c: impl Component) {
+    pub(crate) fn add_comp(&mut self, e: Entity, c: impl Component) {
         if self
             .world
             .entry(e)
@@ -190,19 +204,15 @@ impl Egregoria {
         <&T>::query().get(&self.world, e).ok()
     }
 
-    pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
+    pub(crate) fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
         <&mut T>::query().get_mut(&mut self.world, e).ok()
     }
 
-    pub fn write_or_default<T: Resource + Default>(&mut self) -> AtomicRefMut<T> {
-        self.resources.get_mut_or_insert_with(T::default)
-    }
-
-    pub fn try_write<T: Resource>(&self) -> Option<AtomicRefMut<T>> {
+    pub(crate) fn try_write<T: Resource>(&self) -> Option<AtomicRefMut<T>> {
         self.resources.get_mut()
     }
 
-    pub fn write<T: Resource>(&self) -> AtomicRefMut<T> {
+    pub(crate) fn write<T: Resource>(&self) -> AtomicRefMut<T> {
         self.resources
             .get_mut()
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
@@ -216,6 +226,49 @@ impl Egregoria {
 
     pub fn insert<T: Resource + Send + Sync>(&mut self, res: T) {
         self.resources.insert(res)
+    }
+
+    pub fn save_to_disk(&self) {
+        let registry = registry();
+
+        let entity_serializer = Canon::default();
+        let s = self.world.as_serializable(
+            !legion::query::component::<NoSerialize>(),
+            &registry,
+            &entity_serializer,
+        );
+
+        common::saveload::save(&s, "world");
+        common::saveload::save(&SerializedMap::from(&*self.read::<Map>()), "map");
+
+        legion::serialize::set_entity_serializer(&entity_serializer, || {
+            for l in inventory::iter::<SaveLoadFunc> {
+                (l.save)(self);
+            }
+        });
+    }
+
+    fn load_from_disk(&mut self) {
+        let registry = registry();
+
+        let entity_serializer = Canon::default();
+        let _ = common::saveload::load_seed("world", registry.as_deserialize(&entity_serializer))
+            .map(|mut w: World| {
+                log::info!("successfully loaded world with {} entities", w.len());
+                self.world.move_from(&mut w, &any());
+            });
+
+        legion::serialize::set_entity_serializer(&entity_serializer, || {
+            for l in inventory::iter::<SaveLoadFunc> {
+                (l.load)(self);
+            }
+        });
+
+        self.insert::<Map>(
+            common::saveload::load::<map_model::SerializedMap>("map")
+                .map(|x| x.into())
+                .unwrap_or_default(),
+        );
     }
 }
 
@@ -260,48 +313,4 @@ fn registry() -> Registry<u64> {
       Router,
     );
     registry
-}
-
-pub fn save_to_disk(goria: &mut Egregoria) {
-    let registry = registry();
-
-    let entity_serializer = Canon::default();
-    let s = goria.world.as_serializable(
-        !legion::query::component::<NoSerialize>(),
-        &registry,
-        &entity_serializer,
-    );
-
-    common::saveload::save(&s, "world");
-    common::saveload::save(&SerializedMap::from(&*goria.read::<Map>()), "map");
-
-    legion::serialize::set_entity_serializer(&entity_serializer, || {
-        for l in inventory::iter::<SaveLoadFunc> {
-            (l.save)(goria);
-        }
-    });
-}
-
-pub fn load_from_disk(goria: &mut Egregoria) {
-    let registry = registry();
-
-    let entity_serializer = Canon::default();
-    let _ = common::saveload::load_seed("world", registry.as_deserialize(&entity_serializer)).map(
-        |mut w: World| {
-            log::info!("successfully loaded world with {} entities", w.len());
-            goria.world.move_from(&mut w, &any());
-        },
-    );
-
-    legion::serialize::set_entity_serializer(&entity_serializer, || {
-        for l in inventory::iter::<SaveLoadFunc> {
-            (l.load)(goria);
-        }
-    });
-
-    goria.insert::<Map>(
-        common::saveload::load::<map_model::SerializedMap>("map")
-            .map(|x| x.into())
-            .unwrap_or_default(),
-    );
 }

@@ -1,9 +1,10 @@
+use crate::uiworld::UiWorld;
 use common::Config;
 use egregoria::Egregoria;
 use imgui::{Condition, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
-pub fn config(window: imgui::Window, ui: &Ui, _goria: &mut Egregoria) {
+pub fn config(window: imgui::Window, ui: &Ui, _: &mut UiWorld, _: &Egregoria) {
     window
         .size([600.0, 500.0], Condition::FirstUseEver)
         .build(ui, || {

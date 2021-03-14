@@ -1,18 +1,19 @@
 use super::Tool;
 use crate::input::{MouseButton, MouseInfo};
+use crate::rendering::immediate::ImmediateDraw;
+use crate::uiworld::UiWorld;
 use common::Z_TOOL;
-use egregoria::rendering::immediate::ImmediateDraw;
+use egregoria::Egregoria;
 use geom::Color;
-use legion::system;
 use map_model::{Map, ProjectKind};
 
-#[system]
-pub fn bulldozer(
-    #[resource] tool: &Tool,
-    #[resource] mouseinfo: &MouseInfo,
-    #[resource] map: &mut Map,
-    #[resource] draw: &mut ImmediateDraw,
-) {
+pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
+    let tool: &Tool = &*uiworld.read::<Tool>();
+    let mouseinfo: &MouseInfo = &*uiworld.read::<MouseInfo>();
+    let map: &Map = &*goria.read::<Map>();
+    let draw: &mut ImmediateDraw = &mut *uiworld.write::<ImmediateDraw>();
+    let mut commands = uiworld.commands();
+
     if !matches!(*tool, Tool::Bulldozer) {
         return;
     }
@@ -27,7 +28,7 @@ pub fn bulldozer(
         match cur_proj.kind {
             ProjectKind::Inter(id) => {
                 potentially_empty.extend(map.intersections()[id].neighbors(map.roads()));
-                map.remove_intersection(id)
+                commands.map_remove_intersection(id)
             }
             ProjectKind::Road(id) => {
                 let r = &map.roads()[id];
@@ -35,17 +36,17 @@ pub fn bulldozer(
                 potentially_empty.push(r.src);
                 potentially_empty.push(r.dst);
 
-                map.remove_road(id);
+                commands.map_remove_road(id);
             }
             ProjectKind::Building(id) => {
-                map.remove_building(id);
+                commands.map_remove_building(id);
             }
             ProjectKind::Ground | ProjectKind::Lot(_) => {}
         }
 
         for id in potentially_empty {
             if map.intersections()[id].roads.is_empty() {
-                map.remove_intersection(id);
+                commands.map_remove_intersection(id);
             }
         }
     }

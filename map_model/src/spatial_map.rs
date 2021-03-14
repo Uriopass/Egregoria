@@ -2,9 +2,10 @@ use crate::{BuildingID, IntersectionID, LotID, RoadID};
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
 use geom::{Circle, Intersect, Vec2, AABB};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ProjectKind {
     Inter(IntersectionID),
     Road(RoadID),

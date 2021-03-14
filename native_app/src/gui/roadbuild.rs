@@ -1,13 +1,10 @@
 use crate::gui::Tool;
 use crate::input::{MouseButton, MouseInfo};
-use egregoria::rendering::immediate::{ImmediateDraw, ImmediateSound};
+use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use geom::Color;
 use geom::Spline;
 use geom::Vec2;
-use legion::system;
-use map_model::{
-    IntersectionID, LanePattern, LanePatternBuilder, Map, MapProject, ProjectKind, RoadSegmentKind,
-};
+use map_model::{LanePatternBuilder, Map, MapProject, ProjectKind};
 
 const MAX_TURN_ANGLE: f32 = 30.0 * std::f32::consts::PI / 180.0;
 
@@ -31,19 +28,22 @@ pub struct RoadBuildResource {
     pub pattern_builder: LanePatternBuilder,
 }
 
+use crate::uiworld::UiWorld;
 use common::{AudioKind, Z_TOOL};
+use egregoria::engine_interaction::WorldCommands;
+use egregoria::Egregoria;
 use BuildState::{Hover, Interpolation, Start};
-use ProjectKind::{Building, Ground, Inter, Lot, Road};
+use ProjectKind::{Building, Ground, Inter, Road};
 
-#[system]
-pub fn roadbuild(
-    #[resource] state: &mut RoadBuildResource,
-    #[resource] mouseinfo: &MouseInfo,
-    #[resource] tool: &Tool,
-    #[resource] map: &mut Map,
-    #[resource] immdraw: &mut ImmediateDraw,
-    #[resource] immsound: &mut ImmediateSound,
-) {
+pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
+    let state = &mut *uiworld.write::<RoadBuildResource>();
+    let immdraw = &mut *uiworld.write::<ImmediateDraw>();
+    let immsound = &mut *uiworld.write::<ImmediateSound>();
+    let mouseinfo = uiworld.read::<MouseInfo>();
+    let tool = uiworld.read::<Tool>();
+    let map = &*goria.read::<Map>();
+    let commands: &mut WorldCommands = &mut *uiworld.commands();
+
     if !matches!(*tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
         state.build_state = BuildState::Hover;
         return;
@@ -125,68 +125,30 @@ pub fn roadbuild(
             (Start(selected_proj), _, _) => {
                 // Straight connection to something
                 immsound.play("road_lay", AudioKind::Ui);
-                let selected_after = make_connection(
-                    map,
+                commands.map_make_connection(
                     selected_proj,
                     cur_proj,
                     None,
-                    &state.pattern_builder.build(),
+                    state.pattern_builder.build(),
                 );
 
-                let hover = MapProject {
-                    pos: map.intersections()[selected_after].pos,
-                    kind: Inter(selected_after),
-                };
-
-                state.build_state = Start(hover);
+                state.build_state = Hover;
             }
             (Interpolation(interpoint, selected_proj), _, _) => {
                 // Interpolated connection to something
                 immsound.play("road_lay", AudioKind::Ui);
-                let selected_after = make_connection(
-                    map,
+                commands.map_make_connection(
                     selected_proj,
                     cur_proj,
                     Some(interpoint),
-                    &state.pattern_builder.build(),
+                    state.pattern_builder.build(),
                 );
 
-                let hover = MapProject {
-                    pos: map.intersections()[selected_after].pos,
-                    kind: Inter(selected_after),
-                };
-
-                state.build_state = Start(hover);
+                state.build_state = Hover;
             }
             _ => {}
         }
     }
-}
-
-fn make_connection(
-    map: &mut Map,
-    from: MapProject,
-    to: MapProject,
-    interpoint: Option<Vec2>,
-    pattern: &LanePattern,
-) -> IntersectionID {
-    let connection_segment = match interpoint {
-        Some(x) => RoadSegmentKind::from_elbow(from.pos, to.pos, x),
-        None => RoadSegmentKind::Straight,
-    };
-
-    let mut mk_inter = |proj: MapProject| match proj.kind {
-        Ground => map.add_intersection(proj.pos),
-        Inter(id) => id,
-        Road(id) => map.split_road(id, proj.pos),
-        Building(_) | Lot(_) => unreachable!(),
-    };
-
-    let from = mk_inter(from);
-    let to = mk_inter(to);
-
-    map.connect(from, to, pattern, connection_segment);
-    to
 }
 
 fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {

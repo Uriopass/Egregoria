@@ -20,12 +20,12 @@ impl InstancedRender {
         InstancedRender { texs }
     }
 
-    pub fn render(&mut self, goria: &mut Egregoria, fctx: &mut FrameContext) {
+    pub fn render(&mut self, goria: &Egregoria, fctx: &mut FrameContext) {
         for x in &mut self.texs {
             x.clear();
         }
 
-        for (trans, ar) in <(&Transform, &AssetRender)>::query().iter(&goria.world) {
+        for (trans, ar) in <(&Transform, &AssetRender)>::query().iter(goria.world()) {
             if ar.hide {
                 continue;
             }

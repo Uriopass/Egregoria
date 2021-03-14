@@ -7,8 +7,8 @@ use wgpu_engine::Tesselator;
 pub struct MeshRenderer;
 
 impl MeshRenderer {
-    pub fn render(goria: &mut Egregoria, tess: &mut Tesselator) {
-        for (trans, mr) in <(&Transform, &MeshRender)>::query().iter(&goria.world) {
+    pub fn render(goria: &Egregoria, tess: &mut Tesselator) {
+        for (trans, mr) in <(&Transform, &MeshRender)>::query().iter(goria.world()) {
             if mr.hide {
                 continue;
             }

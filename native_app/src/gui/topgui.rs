@@ -4,6 +4,7 @@ use crate::gui::windows::settings::Settings;
 use crate::gui::windows::ImguiWindows;
 use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo};
+use crate::uiworld::UiWorld;
 use common::GameTime;
 use egregoria::Egregoria;
 use imgui::{im_str, StyleColor, StyleVar, Ui, Window};
@@ -40,32 +41,33 @@ impl Default for Gui {
 }
 
 impl Gui {
-    pub fn render(&mut self, ui: &Ui, goria: &mut Egregoria) {
+    pub fn render(&mut self, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
         let tok = ui.push_style_colors(&[
             (StyleColor::WindowBg, common::config().gui_bg_col.into()),
             (StyleColor::TitleBg, common::config().gui_title_col.into()),
         ]);
 
-        Self::inspector(ui, goria);
+        Self::inspector(ui, uiworld, goria);
 
-        self.windows.render(ui, goria);
+        self.windows.render(ui, uiworld, goria);
 
-        self.menu_bar(ui, goria);
+        self.menu_bar(ui, uiworld, goria);
 
-        Self::toolbox(ui, goria);
+        Self::toolbox(ui, uiworld);
 
-        self.time_controls(ui, goria);
+        self.time_controls(ui, uiworld, goria);
 
-        self.auto_save(goria);
+        self.auto_save(uiworld, goria);
 
         tok.pop(ui);
     }
 
-    pub fn auto_save(&mut self, goria: &mut Egregoria) {
-        let every = goria.read::<Settings>().auto_save_every.into();
+    pub fn auto_save(&mut self, uiworld: &mut UiWorld, goria: &Egregoria) {
+        let every = uiworld.read::<Settings>().auto_save_every.into();
         if let Some(every) = every {
             if self.last_save.elapsed() > every {
-                egregoria::save_to_disk(goria);
+                goria.save_to_disk();
+                uiworld.save_to_disk();
                 self.last_save = Instant::now();
             }
         }
@@ -76,7 +78,7 @@ impl Gui {
         }
     }
 
-    pub fn toolbox(ui: &Ui, goria: &mut Egregoria) {
+    pub fn toolbox(ui: &Ui, uiworld: &mut UiWorld) {
         let [w, h] = ui.io().display_size;
         let tok = ui.push_style_vars(&[
             StyleVar::WindowPadding([0.0, 0.0]),
@@ -106,7 +108,7 @@ impl Gui {
             .resizable(false)
             .always_auto_resize(true)
             .build(ui, || {
-                let cur_tool: &mut Tool = &mut goria.write::<Tool>();
+                let cur_tool: &mut Tool = &mut uiworld.write::<Tool>();
 
                 for (name, tool) in &tools {
                     let tok = ui.push_style_var(StyleVar::Alpha(
@@ -117,7 +119,7 @@ impl Gui {
                         },
                     ));
                     if imgui::ImageButton::new(
-                        goria.read::<UiTextures>().get(*name),
+                        uiworld.read::<UiTextures>().get(*name),
                         [toolbox_w, 30.0],
                     )
                     .frame_padding(0)
@@ -129,7 +131,7 @@ impl Gui {
                 }
             });
         if matches!(
-            *goria.read::<Tool>(),
+            *uiworld.read::<Tool>(),
             Tool::RoadbuildStraight | Tool::RoadbuildCurved
         ) {
             Window::new(im_str!("Road Properties"))
@@ -145,7 +147,7 @@ impl Gui {
                 .resizable(false)
                 .always_auto_resize(true)
                 .build(ui, || {
-                    let mut pattern = goria.write::<RoadBuildResource>().pattern_builder;
+                    let mut pattern = uiworld.write::<RoadBuildResource>().pattern_builder;
 
                     <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
                         &mut [&mut pattern],
@@ -162,7 +164,7 @@ impl Gui {
                         pattern.parking = false;
                     }
 
-                    goria.write::<RoadBuildResource>().pattern_builder = pattern;
+                    uiworld.write::<RoadBuildResource>().pattern_builder = pattern;
                 });
         }
 
@@ -171,7 +173,7 @@ impl Gui {
             (im_str!("Residential"), LotKind::Residential),
         ];
 
-        if matches!(*goria.read::<Tool>(), Tool::LotBrush) {
+        if matches!(*uiworld.read::<Tool>(), Tool::LotBrush) {
             let lbw = 130.0;
             Window::new(im_str!("Lot Brush"))
                 .size_constraints([lbw, 0.0], [lbw, 1000.0])
@@ -186,7 +188,7 @@ impl Gui {
                 .resizable(false)
                 .always_auto_resize(true)
                 .build(ui, || {
-                    let mut cur_brush = goria.write::<LotBrushResource>();
+                    let mut cur_brush = uiworld.write::<LotBrushResource>();
 
                     for (name, brush) in &brushes {
                         let tok = ui.push_style_var(StyleVar::Alpha(
@@ -209,7 +211,7 @@ impl Gui {
         let building_select_w = 160.0;
         let gbuildings = egregoria::souls::goods_company::GOODS_BUILDINGS;
 
-        if matches!(*goria.read::<Tool>(), Tool::SpecialBuilding) {
+        if matches!(*uiworld.read::<Tool>(), Tool::SpecialBuilding) {
             Window::new(im_str!("Buildings"))
                 .size_constraints([building_select_w, 0.0], [building_select_w, h * 0.5])
                 .position(
@@ -221,7 +223,7 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .build(ui, || {
-                    let mut cur_build = goria.write::<SpecialBuildingResource>();
+                    let mut cur_build = uiworld.write::<SpecialBuildingResource>();
 
                     if cur_build.opt.is_none() {
                         let d = &gbuildings[0];
@@ -306,8 +308,8 @@ impl Gui {
         tok.pop(ui);
     }
 
-    pub fn inspector(ui: &Ui, goria: &mut Egregoria) {
-        let mut inspected = *goria.read::<InspectedEntity>();
+    pub fn inspector(ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+        let mut inspected = *uiworld.read::<InspectedEntity>();
         let e = unwrap_or!(inspected.e, return);
 
         let mut is_open = true;
@@ -316,21 +318,19 @@ impl Gui {
             .position([30.0, 160.0], imgui::Condition::FirstUseEver)
             .opened(&mut is_open)
             .build(ui, || {
-                inspected.dirty =
-                    crate::gui::inspect::InspectRenderer { entity: e }.render(goria, ui);
+                crate::gui::inspect::InspectRenderer { entity: e }.render(uiworld, goria, ui);
             });
         if !is_open {
             inspected.e = None;
-            inspected.dirty = false;
         }
-        *goria.write::<InspectedEntity>() = inspected;
+        *uiworld.write::<InspectedEntity>() = inspected;
     }
 
-    pub fn time_controls(&mut self, ui: &Ui, goria: &mut Egregoria) {
+    pub fn time_controls(&mut self, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
         let time = goria.read::<GameTime>().daytime;
-        let warp = &mut goria.write::<Settings>().time_warp;
+        let warp = &mut uiworld.write::<Settings>().time_warp;
         let depause_warp = &mut self.depause_warp;
-        if goria
+        if uiworld
             .read::<KeyboardInfo>()
             .just_pressed
             .contains(&KeyCode::Space)
@@ -407,7 +407,7 @@ impl Gui {
         tok.pop(ui);
     }
 
-    pub fn menu_bar(&mut self, ui: &Ui, goria: &mut Egregoria) {
+    pub fn menu_bar(&mut self, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
         let t = ui.push_style_vars(&[StyleVar::ItemSpacing([3.0, 0.0])]);
 
         ui.main_menu_bar(|| {
@@ -415,7 +415,8 @@ impl Gui {
 
             let h = ui.window_size()[1];
             if ui.button(im_str!("Save"), [80.0, h]) {
-                egregoria::save_to_disk(goria);
+                goria.save_to_disk();
+                uiworld.save_to_disk();
             }
 
             ui.menu(im_str!("Help"), true, || {

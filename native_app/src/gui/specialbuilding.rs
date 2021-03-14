@@ -1,10 +1,10 @@
 use super::Tool;
 use crate::input::{MouseButton, MouseInfo};
+use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
+use crate::uiworld::UiWorld;
 use common::{AudioKind, Z_TOOL};
-use egregoria::map_dynamic::BuildingInfos;
-use egregoria::rendering::immediate::{ImmediateDraw, ImmediateSound};
+use egregoria::Egregoria;
 use geom::{Vec2, OBB};
-use legion::system;
 use map_model::{BuildingGen, BuildingKind, Map, ProjectKind};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -21,16 +21,17 @@ impl Default for SpecialBuildingResource {
     }
 }
 
-#[system]
-pub fn specialbuilding(
-    #[resource] res: &SpecialBuildingResource,
-    #[resource] binfos: &mut BuildingInfos,
-    #[resource] tool: &Tool,
-    #[resource] mouseinfo: &MouseInfo,
-    #[resource] map: &mut Map,
-    #[resource] draw: &mut ImmediateDraw,
-    #[resource] sound: &mut ImmediateSound,
-) {
+pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
+    let res = uiworld.read::<SpecialBuildingResource>();
+    let tool = *uiworld.read::<Tool>();
+    let mouseinfo = uiworld.read::<MouseInfo>();
+    let mut draw = uiworld.write::<ImmediateDraw>();
+    let mut sound = uiworld.write::<ImmediateSound>();
+
+    let map = goria.read::<Map>();
+
+    let commands = &mut *uiworld.commands();
+
     if !matches!(tool, Tool::SpecialBuilding) {
         return;
     }
@@ -92,9 +93,8 @@ pub fn specialbuilding(
     let rid = closest_road.id;
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
-        let b = map.build_special_building(rid, &obb, *kind, *gen);
+        commands.map_build_special_building(rid, obb, *kind, *gen);
         sound.play("road_lay", AudioKind::Ui);
-        binfos.insert(b);
     }
 
     draw.textured_obb(obb, asset.to_owned())

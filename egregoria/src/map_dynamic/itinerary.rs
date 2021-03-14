@@ -223,8 +223,20 @@ impl Default for ItineraryKind {
 }
 
 impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
-    fn render(_: &[&ItineraryKind], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
-        unimplemented!()
+    fn render(data: &[&ItineraryKind], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+        if data.len() != 1 {
+            unimplemented!()
+        }
+        let d = data[0];
+        use imgui::im_str;
+        match d {
+            ItineraryKind::None => ui.text(im_str!("None {}", label)),
+            ItineraryKind::WaitUntil(time) => ui.text(im_str!("WaitUntil({}) {}", time, label)),
+            ItineraryKind::Simple => ui.text(im_str!("Simple {}", label)),
+            ItineraryKind::Route(r) => {
+                <Route as InspectRenderDefault<Route>>::render(&[r], label, ui, args);
+            }
+        };
     }
 
     fn render_mut(

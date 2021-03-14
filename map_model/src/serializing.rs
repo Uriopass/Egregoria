@@ -48,7 +48,7 @@ impl From<SerializedMap> for Map {
             lots: sel.lots,
             parking: sel.parking,
             trees: sel.trees,
-            dirty: true,
+            dirt_id: 0,
         }
     }
 }
