@@ -23,7 +23,7 @@ pub struct Gui {
     #[serde(skip)]
     pub n_cars: i32,
     pub n_pedestrians: i32,
-    pub depause_warp: f32,
+    pub depause_warp: f64,
 }
 
 impl Default for Gui {

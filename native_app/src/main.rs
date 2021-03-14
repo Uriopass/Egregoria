@@ -19,6 +19,7 @@ mod gui;
 mod input;
 mod logger;
 mod rendering;
+mod timestep;
 
 fn main() {
     let leaked = Box::leak(Box::new(MyLog::new()));

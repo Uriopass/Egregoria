@@ -12,7 +12,7 @@ use geom::Camera;
 use geom::{vec3, LinearColor, Vec2};
 use map_model::Map;
 use wgpu_engine::lighting::{LightInstance, LightRender};
-use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, SpriteBatch};
+use wgpu_engine::{FrameContext, GuiRenderContext, SpriteBatch};
 
 use crate::audio::GameAudio;
 use crate::context::Context;
@@ -24,6 +24,7 @@ use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{
     BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
 };
+use crate::timestep::Timestep;
 use egregoria::utils::scheduler::SeqSchedule;
 
 pub struct State {
@@ -34,7 +35,7 @@ pub struct State {
     pub camera: CameraHandler,
 
     imgui_render: ImguiWrapper,
-    last_time: Instant,
+    timestep: Timestep,
 
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
@@ -85,7 +86,7 @@ impl State {
             game_schedule,
             camera,
             imgui_render,
-            last_time: Instant::now(),
+            timestep: Timestep::new(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
             bg_renderer: BackgroundRender::new(&mut ctx.gfx),
@@ -96,25 +97,26 @@ impl State {
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
-        let delta = self.last_time.elapsed().as_secs_f64();
-        self.last_time = Instant::now();
+        let settings = *self.goria.read::<Settings>();
 
+        let ticks = self.timestep.go_forward(settings.time_warp);
+        let real_delta = self.timestep.real_delta();
         self.goria
             .write::<RenderStats>()
             .all
-            .add_value(delta as f32);
+            .add_value(real_delta as f32);
 
-        let settings = *self.goria.read::<Settings>();
+        for _ in 0..ticks {
+            self.tick();
+        }
+
         Self::manage_settings(ctx, &settings);
-
-        self.manage_time(delta, &mut ctx.gfx);
-
         self.manage_io(ctx);
 
         self.camera.movespeed = settings.camera_sensibility / 100.0;
         self.camera.camera_movement(
             ctx,
-            delta as f32,
+            real_delta as f32,
             !self.imgui_render.last_mouse_captured,
             !self.imgui_render.last_kb_captured,
             &settings,
@@ -126,14 +128,10 @@ impl State {
                 self.camera.unproject(ctx.input.mouse.screen);
         }
 
-        let t = std::time::Instant::now();
-        self.game_schedule.execute(&mut self.goria);
-        self.goria
-            .write::<RenderStats>()
-            .world_update
-            .add_value(t.elapsed().as_secs_f32());
-
         self.ui_schedule.execute(&mut self.goria);
+
+        ctx.gfx
+            .set_time(self.goria.read::<GameTime>().timestamp as f32);
 
         {
             let immediate = self.goria.read::<ImmediateDraw>();
@@ -148,16 +146,31 @@ impl State {
             }
         }
 
-        add_souls_to_empty_buildings(&mut self.goria);
-
         for (sound, kind) in self.goria.write::<ImmediateSound>().orders.drain(..) {
             ctx.audio.play(sound, kind);
         }
         self.all_audio
-            .update(&mut self.goria, &mut ctx.audio, delta as f32);
+            .update(&mut self.goria, &mut ctx.audio, real_delta as f32);
 
         self.manage_entity_follow();
         self.camera.update(ctx);
+    }
+
+    pub fn tick(&mut self) {
+        let t = std::time::Instant::now();
+
+        {
+            let mut time = self.goria.write::<GameTime>();
+            *time = GameTime::new(Timestep::DT as f32, time.timestamp + Timestep::DT);
+        }
+
+        self.game_schedule.execute(&mut self.goria);
+        add_souls_to_empty_buildings(&mut self.goria);
+
+        self.goria
+            .write::<RenderStats>()
+            .world_update
+            .add_value(t.elapsed().as_secs_f32());
     }
 
     pub fn render(&mut self, ctx: &mut FrameContext) {
@@ -325,19 +338,6 @@ impl State {
         ctx.gfx.set_present_mode(settings.vsync.into());
 
         ctx.audio.set_settings(settings);
-    }
-
-    fn manage_time(&mut self, delta: f64, gfx: &mut GfxContext) {
-        const MAX_TIMESTEP: f64 = 1.0 / 15.0;
-
-        let mut time = self.goria.write::<GameTime>();
-        let warp = self.goria.read::<Settings>().time_warp;
-
-        let delta = (delta * warp as f64).min(MAX_TIMESTEP);
-
-        *time = GameTime::new(delta as f32, time.timestamp + delta);
-
-        gfx.set_time(time.timestamp as f32);
     }
 
     fn manage_entity_follow(&mut self) {
