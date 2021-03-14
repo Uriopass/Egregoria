@@ -14,6 +14,14 @@ impl AABB {
         AABB { ll, ur }
     }
 
+    /// Create a new `AABB`.
+    pub fn centered(pos: Vec2, size: Vec2) -> Self {
+        AABB {
+            ll: pos - size * 0.5,
+            ur: pos + size * 0.5,
+        }
+    }
+
     /// Create a new `AABB` with all values zero.
     pub const fn zero() -> Self {
         Self {

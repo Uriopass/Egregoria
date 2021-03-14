@@ -35,7 +35,7 @@ pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
         return;
     }
 
-    let cur_proj = map.project(mouseinfo.unprojected);
+    let cur_proj = map.project(mouseinfo.unprojected, 0.0);
     imm_draw
         .circle(cur_proj.pos, 2.0)
         .color(Color::BLUE)
