@@ -44,9 +44,9 @@ pub fn desire_buy_food(
 ) {
     let soul = SoulID(*me);
     let pos = trans.position();
-    d.score_and_apply(
-        move |buy_food| buy_food.last_ate.elapsed(time) as f32 * 0.001 - 1.0,
-        move |buy_food| match buy_food.state {
+    let buy_food = &mut d.v;
+    if d.was_max {
+        match buy_food.state {
             BuyFoodState::Empty => {
                 cbuf.exec_on(move |market: &mut Market| {
                     market.buy(soul, pos, CommodityKind::Bread, 1)
@@ -66,6 +66,16 @@ pub fn desire_buy_food(
                     buy_food.last_ate = time.instant();
                 }
             }
-        },
-    );
+        }
+    }
+    if matches!(buy_food.state, BuyFoodState::WaitingForTrade)
+        && bought
+            .0
+            .get(&CommodityKind::Bread)
+            .map(|x| x.is_empty())
+            .unwrap_or(true)
+    {
+        d.score = 0.0;
+    }
+    d.score = buy_food.last_ate.elapsed(time) as f32 * 0.001 - 1.0
 }
