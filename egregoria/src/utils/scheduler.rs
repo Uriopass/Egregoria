@@ -1,7 +1,7 @@
 use crate::utils::frame_log::FrameLog;
+use crate::{Egregoria, ParCommandBuffer};
 use common::History;
 use legion::systems::ParallelRunnable;
-use legion::{Resources, World};
 use ordered_float::OrderedFloat;
 use std::time::Instant;
 
@@ -16,16 +16,20 @@ impl SeqSchedule {
         self
     }
 
-    pub fn execute(&mut self, world: &mut World, res: &mut Resources) {
+    pub fn execute(&mut self, goria: &mut Egregoria) {
         let mut sys_times = vec![];
         for (sys, h) in &mut self.systems {
+            let world = &mut goria.world;
+            let res = &mut goria.resources;
             let start = Instant::now();
 
             sys.prepare(world);
             sys.run(world, res);
+
             if let Some(cb) = sys.command_buffer_mut(world.id()) {
                 cb.flush(world, res);
             }
+            ParCommandBuffer::apply(goria);
 
             let elapsed = start.elapsed();
 
@@ -37,7 +41,7 @@ impl SeqSchedule {
 
         for (name, t) in sys_times {
             let s = format!("system {} took {:.2}ms", name, t * 1000.0);
-            res.get::<FrameLog>().unwrap().log_frame(s);
+            goria.read::<FrameLog>().log_frame(s);
         }
     }
 }

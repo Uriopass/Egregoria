@@ -25,7 +25,6 @@ pub struct RoadEditorResource {
     inspect_e: Option<Entity>,
 }
 
-register_system!(roadeditor);
 #[system]
 #[read_component(IntersectionComponent)]
 pub fn roadeditor(
