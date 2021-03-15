@@ -14,8 +14,8 @@ macro_rules! gen_z {
 }
 
 gen_z! {
-    Z_GRID // 0.01
-    Z_LOT // 0.3
+    Z_GRID
+    Z_LOT
     Z_INTER_BG
     Z_LANE_BG
     Z_LANE
@@ -25,9 +25,9 @@ gen_z! {
     Z_TREE_SHADOW
     Z_HOUSE
     Z_SIGNAL
-    Z_CAR // 0.4
+    Z_CAR
     Z_TREE
-    Z_TOOL // 0.9
     Z_DEBUG_BG
-    Z_DEBUG // 1.0
+    Z_DEBUG
+    Z_TOOL
 }
