@@ -189,10 +189,10 @@ impl State {
         MeshRenderer::render(&self.goria, &mut tess);
 
         {
-            let objs = DebugObjs::default();
+            let objs = self.uiworld.read::<DebugObjs>();
             for (val, _, obj) in &objs.0 {
                 if *val {
-                    obj(&mut tess, &self.goria, &mut self.uiworld);
+                    obj(&mut tess, &self.goria, &self.uiworld);
                 }
             }
         }

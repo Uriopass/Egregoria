@@ -94,7 +94,7 @@ impl Map {
             inter
                 .polygon
                 .bbox()
-                .union(AABB::centered(inter.pos, Vec2::splat(15.0))),
+                .union(AABB::centered(inter.pos, Vec2::splat(25.0))),
         );
     }
 
@@ -372,15 +372,10 @@ impl Map {
                         .get(id)
                         .expect("Inter does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
-                    if inter.polygon
-                        .bbox()
-                        .union(AABB::centered(inter.pos, Vec2::splat(15.0)))
-                        .contains_within(pos, tolerance) {
-                        return MapProject {
-                            pos: inter.pos,
-                            kind: obj,
-                        };
-                    }
+                    return MapProject {
+                        pos: inter.pos,
+                        kind: obj,
+                    };
                 }
                 ProjectKind::Lot(id) => {
                     if self.lots
@@ -403,14 +398,7 @@ impl Map {
                     }
                 },
                 ProjectKind::Building(id) => {
-                    if self.buildings
-                        .get(id)
-                        .expect("building does not exist anymore, you seem to have forgotten to remove it from the spatial map.")
-                        .mesh
-                        .bbox()
-                        .contains_within(pos, tolerance) {
-                        return mk_proj(ProjectKind::Building(id));
-                    }
+                    return mk_proj(ProjectKind::Building(id));
                 }
                 ProjectKind::Ground => {}
             }
