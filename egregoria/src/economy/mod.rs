@@ -1,14 +1,13 @@
+use crate::SoulID;
 use legion::world::SubWorld;
 use legion::{system, EntityStore};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fmt::Display;
 
 mod market;
 
-use crate::SoulID;
-use imgui::__core::fmt::Formatter;
 pub use market::*;
-use std::collections::HashMap;
-use std::fmt::Display;
 
 pub trait Commodity {}
 impl<T> Commodity for T {}
@@ -37,7 +36,7 @@ macro_rules! commodity {
             }
         }
         impl Display for CommodityKind {
-            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 match self {
                     $(Self::$member => f.write_str($display)),*
                 }
