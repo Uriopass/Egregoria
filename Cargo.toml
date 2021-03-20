@@ -8,6 +8,7 @@ members = [
     "common",
     "native_app",
     "wgpu_engine",
+    "networking",
     "flat_spatial"
 ]
 
