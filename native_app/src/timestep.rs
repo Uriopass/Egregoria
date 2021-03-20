@@ -1,5 +1,4 @@
-use imgui::__core::time::Duration;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 pub struct Timestep {
     last_time: Instant,
