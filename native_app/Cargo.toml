@@ -14,6 +14,7 @@ egregoria     = { path = "../egregoria" }
 geom          = { path = "../geom" }
 wgpu_engine   = { path = "../wgpu_engine" }
 common        = { path = "../common" }
+networking    = { path = "../networking" }
 mint          = "0.5.6"
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
