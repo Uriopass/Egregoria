@@ -10,7 +10,7 @@ use legion::serialize::Canon;
 use legion::storage::Component;
 use legion::systems::{ParallelRunnable, Resource};
 use legion::{any, Entity, IntoQuery, Registry, Resources, World};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 use geom::{Transform, Vec2};
@@ -32,6 +32,8 @@ use crate::rendering::meshrender_component::MeshRender;
 use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Desire, Home, Work};
 use crate::vehicles::Vehicle;
+use serde::de::Error;
+use std::collections::HashMap;
 
 macro_rules! register_system {
     ($f: ident) => {
@@ -60,12 +62,15 @@ macro_rules! register_resource {
         });
         inventory::submit! {
             $crate::SaveLoadFunc {
+                name: $name,
                 save: Box::new(|goria| {
-                     common::saveload::save(&*goria.read::<$t>(), $name);
+                     common::saveload::encode(&*goria.read::<$t>()).unwrap()
                 }),
-                load: Box::new(|goria| {
-                    if let Some(res) = common::saveload::load::<$t>($name) {
-                        goria.insert(res);
+                load: Box::new(|goria, v| {
+                    if let Some(v) = v {
+                        if let Some(res) = common::saveload::decode::<$t>(&v) {
+                            goria.insert(res);
+                        }
                     }
                 })
             }
@@ -106,15 +111,15 @@ pub struct SoulID(pub Entity);
 
 debug_inspect_impl!(SoulID);
 
-#[derive(Default)]
 pub struct Egregoria {
     pub(crate) world: World,
     resources: Resources,
 }
 
 pub(crate) struct SaveLoadFunc {
-    pub save: Box<dyn Fn(&Egregoria) + 'static>,
-    pub load: Box<dyn Fn(&mut Egregoria) + 'static>,
+    pub name: &'static str,
+    pub save: Box<dyn Fn(&Egregoria) -> Vec<u8> + 'static>,
+    pub load: Box<dyn Fn(&mut Egregoria, Option<Vec<u8>>) + 'static>,
 }
 inventory::collect!(SaveLoadFunc);
 
@@ -142,8 +147,21 @@ unsafe impl Sync for Egregoria {}
 const RNG_SEED: u64 = 123;
 
 impl Egregoria {
-    pub fn init() -> (Egregoria, SeqSchedule) {
-        let mut goria = Egregoria::default();
+    pub fn schedule() -> SeqSchedule {
+        let mut schedule = SeqSchedule::default();
+        for s in inventory::iter::<GSystem> {
+            let s = s.s.borrow_mut().take().unwrap();
+            schedule.add_system(s);
+        }
+        schedule
+    }
+
+    pub fn empty() -> Egregoria {
+        let mut goria = Egregoria {
+            world: Default::default(),
+            resources: Default::default(),
+        };
+
         info!("Seed is {}", RNG_SEED);
 
         // Basic assets init
@@ -155,20 +173,13 @@ impl Egregoria {
         goria.insert(RandProvider::new(RNG_SEED));
         goria.insert(Deleted::<Collider>::default());
         goria.insert(Deleted::<Vehicle>::default());
+        goria.insert(Map::empty());
 
         for s in inventory::iter::<InitFunc> {
             (s.f)(&mut goria);
         }
 
-        let mut schedule = SeqSchedule::default();
-        for s in inventory::iter::<GSystem> {
-            let s = s.s.borrow_mut().take().unwrap();
-            schedule.add_system(s);
-        }
-
-        goria.load_from_disk();
-
-        (goria, schedule)
+        goria
     }
 
     pub fn world(&self) -> &World {
@@ -227,8 +238,13 @@ impl Egregoria {
     pub fn insert<T: Resource + Send + Sync>(&mut self, res: T) {
         self.resources.insert(res)
     }
+}
 
-    pub fn save_to_disk(&self) {
+impl Serialize for Egregoria {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
         let registry = registry();
 
         let entity_serializer = Canon::default();
@@ -238,38 +254,61 @@ impl Egregoria {
             &entity_serializer,
         );
 
-        common::saveload::save(&s, "world");
-        common::saveload::save(&SerializedMap::from(&*self.read::<Map>()), "map");
+        let world = common::saveload::encode(&s).unwrap();
+
+        let mut m: HashMap<String, Vec<u8>> = HashMap::new();
 
         legion::serialize::set_entity_serializer(&entity_serializer, || {
             for l in inventory::iter::<SaveLoadFunc> {
-                (l.save)(self);
+                let v = (l.save)(self);
+                m.insert(l.name.to_string(), v);
             }
         });
-    }
 
-    fn load_from_disk(&mut self) {
+        let ser = SerializedWorld {
+            world,
+            map: SerializedMap::from(&*self.read::<Map>()),
+            res: m,
+        };
+
+        <SerializedWorld as Serialize>::serialize(&ser, serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Egregoria {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let mut ser: SerializedWorld = <SerializedWorld as Deserialize>::deserialize(deserializer)?;
+
+        let mut goria = Self::empty();
         let registry = registry();
 
         let entity_serializer = Canon::default();
-        let _ = common::saveload::load_seed("world", registry.as_deserialize(&entity_serializer))
-            .map(|mut w: World| {
-                log::info!("successfully loaded world with {} entities", w.len());
-                self.world.move_from(&mut w, &any());
-            });
+
+        let mut w: World =
+            common::saveload::decode_seed(registry.as_deserialize(&entity_serializer), &ser.world)
+                .ok_or_else(|| <D as Deserializer>::Error::custom("error deserializing world"))?;
+
+        goria.world.move_from(&mut w, &any());
 
         legion::serialize::set_entity_serializer(&entity_serializer, || {
             for l in inventory::iter::<SaveLoadFunc> {
-                (l.load)(self);
+                (l.load)(&mut goria, ser.res.remove(l.name));
             }
         });
 
-        self.insert::<Map>(
-            common::saveload::load::<map_model::SerializedMap>("map")
-                .map(|x| x.into())
-                .unwrap_or_default(),
-        );
+        goria.insert::<Map>(ser.map.into());
+        Ok(goria)
     }
+}
+
+#[derive(Serialize, Deserialize)]
+struct SerializedWorld {
+    world: Vec<u8>,
+    map: SerializedMap,
+    res: HashMap<String, Vec<u8>>,
 }
 
 fn my_hash<T>(obj: T) -> u64

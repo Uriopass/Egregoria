@@ -16,6 +16,29 @@ fn open_file(path: &str) -> Option<File> {
     File::open(path).ok()
 }
 
+pub fn encode<T: Serialize>(x: &T) -> Option<Vec<u8>> {
+    bincode::serialize(x)
+        .map_err(|e| log::error!("failed serializing: {}", e))
+        .ok()
+}
+
+pub fn decode<T: DeserializeOwned>(x: &[u8]) -> Option<T> {
+    bincode::deserialize(x)
+        .map_err(|e| log::error!("failed deserializing: {}", e))
+        .ok()
+}
+
+pub fn decode_seed<'a, S: DeserializeSeed<'a>>(seed: S, x: &'a [u8]) -> Option<S::Value> {
+    seed.deserialize(&mut bincode::Deserializer::from_slice(
+        &x,
+        DefaultOptions::new()
+            .allow_trailing_bytes()
+            .with_fixint_encoding(),
+    ))
+    .map_err(|err| log::error!("failed deserializing: {}", err))
+    .ok()
+}
+
 pub fn save<T: Serialize>(x: &T, name: &'static str) -> Option<()> {
     save_silent(x, name);
     log::info!("successfully saved {}", name);

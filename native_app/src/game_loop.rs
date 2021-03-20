@@ -68,7 +68,9 @@ impl State {
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
-        let (goria, game_schedule) = egregoria::Egregoria::init();
+        let goria: Egregoria = common::saveload::load("world").unwrap_or_else(Egregoria::empty);
+        let game_schedule = Egregoria::schedule();
+
         let mut uiworld = UiWorld::init();
 
         uiworld.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));
