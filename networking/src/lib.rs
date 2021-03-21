@@ -1,7 +1,7 @@
-use std::ops::Add;
-
 use bincode::Options;
 use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
+use std::ops::Add;
 
 mod authent;
 mod catchup;
@@ -13,6 +13,8 @@ mod worldsend;
 
 pub use client::{Client, ConnectConf, PollResult};
 pub use server::{Server, ServerConfiguration};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 pub(crate) const MAX_CATCHUP_PACKET_SIZE: usize = 1000000; // 1000 kb ~ 125ko
 pub(crate) const MAX_WORLDSEND_PACKET_SIZE: usize = 1000000; // 1000 kb ~ 125ko
@@ -24,13 +26,13 @@ pub struct Frame(pub u32);
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
-pub(crate) struct UserID(pub u64);
+pub(crate) struct UserID(pub u32);
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 #[repr(transparent)]
 pub(crate) struct PlayerInput(pub Vec<u8>);
 
-pub(crate) type MergedInputs = Vec<PlayerInput>;
+pub(crate) type MergedInputs = Vec<(UserID, PlayerInput)>;
 
 impl Add for Frame {
     type Output = Self;
@@ -42,6 +44,9 @@ impl Add for Frame {
 impl Frame {
     pub fn incr(&mut self) {
         self.0 += 1
+    }
+    pub fn decr(&mut self) {
+        self.0 -= 1
     }
 }
 
@@ -55,4 +60,21 @@ pub(crate) fn encode<T: Serialize>(x: &T) -> Vec<u8> {
 
 pub(crate) fn decode<'a, T: Deserialize<'a>>(x: &'a [u8]) -> bincode::Result<T> {
     bincode::DefaultOptions::new().deserialize(x)
+}
+
+pub(crate) struct PhantomSendSync<T>(PhantomData<T>);
+
+unsafe impl<T> Send for PhantomSendSync<T> {}
+unsafe impl<T> Sync for PhantomSendSync<T> {}
+
+impl<T> Default for PhantomSendSync<T> {
+    fn default() -> Self {
+        Self(PhantomData::default())
+    }
+}
+
+pub(crate) fn hash_str(s: &str) -> u32 {
+    let mut hasher = DefaultHasher::new();
+    s.hash(&mut hasher);
+    hasher.finish() as u32
 }

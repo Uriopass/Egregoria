@@ -1,17 +1,15 @@
 use crate::packets::{AuthentResponse, ServerReliablePacket};
-use crate::{encode, Frame, UserID};
+use crate::{encode, hash_str, Frame, UserID};
 use message_io::network::{Endpoint, Network};
 use serde::{Deserialize, Serialize};
-use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
 use std::net::SocketAddr;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Copy, Clone, Hash)]
 #[repr(transparent)]
 pub(crate) struct AuthentID(u32);
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub(crate) enum ClientGameState {
     Downloading,
     CatchingUp,
@@ -25,6 +23,7 @@ pub(crate) struct Client {
     pub reliable: Endpoint,
     pub unreliable: Endpoint,
     pub state: ClientGameState,
+    pub lag: Frame,
 }
 
 enum ClientConnectState {
@@ -81,6 +80,7 @@ impl Authent {
                 reliable,
                 unreliable,
                 state: ClientGameState::Downloading,
+                lag: Frame(10),
             });
 
             self.n_connected_clients += 1;
@@ -177,12 +177,6 @@ impl Default for Authent {
     fn default() -> Self {
         Self::new()
     }
-}
-
-fn hash_str(s: &str) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    s.hash(&mut hasher);
-    hasher.finish()
 }
 
 impl ClientConnectState {

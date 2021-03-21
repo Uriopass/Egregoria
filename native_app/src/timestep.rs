@@ -35,8 +35,4 @@ impl Timestep {
             }
         }
     }
-
-    pub fn real_delta(&self) -> f32 {
-        self.real_delta as f32
-    }
 }

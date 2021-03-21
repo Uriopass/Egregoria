@@ -208,7 +208,7 @@ impl Map {
         from: MapProject,
         to: MapProject,
         interpoint: Option<Vec2>,
-        pattern: LanePattern,
+        pattern: &LanePattern,
     ) -> IntersectionID {
         let connection_segment = match interpoint {
             Some(x) => RoadSegmentKind::from_elbow(from.pos, to.pos, x),
@@ -225,7 +225,7 @@ impl Map {
         let from = mk_inter(from);
         let to = mk_inter(to);
 
-        self.connect(from, to, &pattern, connection_segment);
+        self.connect(from, to, pattern, connection_segment);
         to
     }
 

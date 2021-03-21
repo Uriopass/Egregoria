@@ -19,6 +19,7 @@ use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, Gui, UiTextures};
 use crate::input::{KeyboardInfo, MouseInfo};
+use crate::network::NetworkState;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{
     BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
@@ -27,18 +28,18 @@ use crate::timestep::Timestep;
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
+use networking::PollResult;
 
 pub struct State {
     goria: Egregoria,
 
-    uiworld: UiWorld,
+    uiw: UiWorld,
 
     game_schedule: SeqSchedule,
 
     pub camera: CameraHandler,
 
     imgui_render: ImguiWrapper,
-    timestep: Timestep,
 
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
@@ -86,11 +87,10 @@ impl State {
 
         Self {
             goria,
-            uiworld,
+            uiw: uiworld,
             game_schedule,
             camera,
             imgui_render,
-            timestep: Timestep::new(),
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx),
             bg_renderer: BackgroundRender::new(&mut ctx.gfx),
@@ -101,26 +101,75 @@ impl State {
     }
 
     pub fn update(&mut self, ctx: &mut Context) {
-        let settings = *self.uiworld.read::<Settings>();
+        let settings = *self.uiw.read::<Settings>();
 
-        let goria = &mut self.goria; // mut for tick
-        let sched = &mut self.game_schedule;
-        let uiw = &mut self.uiworld;
-        self.timestep.go_forward(settings.time_warp, move || {
-            let t = Instant::now();
-            goria.tick(Timestep::DT, sched);
-            uiw.write::<Timings>()
-                .world_update
-                .add_value(t.elapsed().as_secs_f32());
-        });
+        crate::gui::run_ui_systems(&self.goria, &mut self.uiw);
 
-        let real_delta = self.timestep.real_delta();
-        self.uiworld
-            .write::<Timings>()
-            .all
-            .add_value(real_delta as f32);
+        if let NetworkState::Server { ref mut server, .. } = *self.uiw.write() {
+            server.poll(&self.goria);
+        }
 
-        self.uiworld.write::<Timings>().per_game_system = self.game_schedule.times();
+        let commands = std::mem::take(&mut *self.uiw.write::<WorldCommands>());
+
+        match *self.uiw.write::<NetworkState>() {
+            NetworkState::Singleplayer(ref mut step) => {
+                *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(commands.clone());
+                let goria = &mut self.goria; // mut for tick
+                let sched = &mut self.game_schedule;
+                let mut timings = self.uiw.write::<Timings>();
+
+                let mut commands_once = Some(commands);
+                step.go_forward(settings.time_warp, move || {
+                    let t = goria.tick(
+                        Timestep::DT,
+                        sched,
+                        &commands_once.take().unwrap_or_default(),
+                    );
+                    timings.world_update.add_value(t.as_secs_f32());
+                });
+            }
+            NetworkState::Client { ref mut client }
+            | NetworkState::Server { ref mut client, .. } => match client.poll(commands) {
+                PollResult::Wait(commands) => {
+                    *self.uiw.write() = commands;
+                }
+                PollResult::Input(inputs) => {
+                    let mut merged = WorldCommands::default();
+                    for frame_commands in inputs {
+                        let commands: WorldCommands =
+                            frame_commands.iter().map(|x| x.inp.clone()).collect();
+                        let t = self
+                            .goria
+                            .tick(Timestep::DT, &mut self.game_schedule, &commands);
+                        self.uiw
+                            .write::<Timings>()
+                            .world_update
+                            .add_value(t.as_secs_f32());
+                        merged.merge(
+                            frame_commands
+                                .into_iter()
+                                .filter(|x| x.sent_by_me)
+                                .map(|x| x.inp)
+                                .collect::<WorldCommands>()
+                                .iter()
+                                .cloned(),
+                        );
+                    }
+                    *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(merged);
+                }
+                PollResult::GameWorld(goria) => {
+                    self.goria = goria;
+                }
+                PollResult::Error => {
+                    log::error!("there was an error polling the client");
+                }
+            },
+        }
+
+        let real_delta = ctx.delta;
+        self.uiw.write::<Timings>().all.add_value(real_delta as f32);
+
+        self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
 
         Self::manage_settings(ctx, &settings);
         self.manage_io(ctx);
@@ -133,23 +182,18 @@ impl State {
             !self.imgui_render.last_kb_captured,
             &settings,
         );
-        *self.uiworld.write::<Camera>() = self.camera.camera;
+        *self.uiw.write::<Camera>() = self.camera.camera;
 
         if !self.imgui_render.last_mouse_captured {
-            self.uiworld.write::<MouseInfo>().unprojected =
+            self.uiw.write::<MouseInfo>().unprojected =
                 self.camera.unproject(ctx.input.mouse.screen);
         }
-
-        crate::gui::run_ui_systems(&self.goria, &mut self.uiworld);
-        let commands = self.uiworld.read::<WorldCommands>().clone();
-        self.uiworld.write::<WorldCommands>().apply(&mut self.goria); // mut for world commands
-        *self.uiworld.write::<ReceivedCommands>() = ReceivedCommands::new(commands);
 
         ctx.gfx
             .set_time(self.goria.read::<GameTime>().timestamp as f32);
 
         {
-            let immediate = self.uiworld.read::<ImmediateDraw>();
+            let immediate = self.uiw.read::<ImmediateDraw>();
             for ImmediateOrder { kind, .. } in immediate
                 .persistent_orders
                 .iter()
@@ -161,12 +205,12 @@ impl State {
             }
         }
 
-        for (sound, kind) in self.uiworld.write::<ImmediateSound>().orders.drain(..) {
+        for (sound, kind) in self.uiw.write::<ImmediateSound>().orders.drain(..) {
             ctx.audio.play(sound, kind);
         }
         self.all_audio.update(
             &self.goria,
-            &mut self.uiworld,
+            &mut self.uiw,
             &mut ctx.audio,
             real_delta as f32,
         );
@@ -191,16 +235,16 @@ impl State {
         MeshRenderer::render(&self.goria, &mut tess);
 
         {
-            let objs = self.uiworld.read::<DebugObjs>();
+            let objs = self.uiw.read::<DebugObjs>();
             for (val, _, obj) in &objs.0 {
                 if *val {
-                    obj(&mut tess, &self.goria, &self.uiworld);
+                    obj(&mut tess, &self.goria, &self.uiw);
                 }
             }
         }
 
         {
-            let immediate = &mut *self.uiworld.write::<ImmediateDraw>();
+            let immediate = &mut *self.uiw.write::<ImmediateDraw>();
             for ImmediateOrder { kind, color, z } in immediate
                 .persistent_orders
                 .iter()
@@ -267,7 +311,7 @@ impl State {
             ctx.draw(x)
         }
 
-        self.uiworld
+        self.uiw
             .write::<Timings>()
             .render
             .add_value(start.elapsed().as_secs_f32());
@@ -326,7 +370,7 @@ impl State {
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
         let gui = &mut self.gui;
         let goria = &self.goria;
-        let uiworld = &mut self.uiworld;
+        let uiworld = &mut self.uiw;
 
         self.imgui_render.render(ctx, window, |ui| {
             gui.render(&ui, uiworld, goria);
@@ -348,11 +392,11 @@ impl State {
     }
 
     fn manage_entity_follow(&mut self) {
-        if !self.uiworld.read::<MouseInfo>().just_pressed.is_empty() {
-            self.uiworld.write::<FollowEntity>().0.take();
+        if !self.uiw.read::<MouseInfo>().just_pressed.is_empty() {
+            self.uiw.write::<FollowEntity>().0.take();
         }
 
-        if let Some(e) = self.uiworld.read::<FollowEntity>().0 {
+        if let Some(e) = self.uiw.read::<FollowEntity>().0 {
             if let Some(pos) = self.goria.pos(e) {
                 self.camera.camera.position.x = pos.x;
                 self.camera.camera.position.y = pos.y;
@@ -361,17 +405,17 @@ impl State {
     }
 
     fn manage_io(&mut self, ctx: &Context) {
-        *self.uiworld.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
-        *self.uiworld.write::<MouseInfo>() = ctx.input.mouse.clone();
+        *self.uiw.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
+        *self.uiw.write::<MouseInfo>() = ctx.input.mouse.clone();
 
         if self.imgui_render.last_kb_captured {
-            let kb: &mut KeyboardInfo = &mut self.uiworld.write::<KeyboardInfo>();
+            let kb: &mut KeyboardInfo = &mut self.uiw.write::<KeyboardInfo>();
             kb.just_pressed.clear();
             kb.is_pressed.clear();
         }
 
         if self.imgui_render.last_mouse_captured {
-            let mouse: &mut MouseInfo = &mut self.uiworld.write::<MouseInfo>();
+            let mouse: &mut MouseInfo = &mut self.uiw.write::<MouseInfo>();
             mouse.just_pressed.clear();
             mouse.buttons.clear();
             mouse.wheel_delta = 0.0;

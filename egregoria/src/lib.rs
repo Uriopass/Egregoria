@@ -22,7 +22,7 @@ use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
 
 use crate::economy::{Bought, Sold, Workers};
-use crate::engine_interaction::Selectable;
+use crate::engine_interaction::{Selectable, WorldCommands};
 use crate::map_dynamic::{Itinerary, Router};
 use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
@@ -34,6 +34,7 @@ use crate::souls::desire::{BuyFood, Desire, Home, Work};
 use crate::vehicles::Vehicle;
 use serde::de::Error;
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
 macro_rules! register_system {
     ($f: ident) => {
@@ -114,6 +115,7 @@ debug_inspect_impl!(SoulID);
 pub struct Egregoria {
     pub(crate) world: World,
     resources: Resources,
+    tick: u32,
 }
 
 pub(crate) struct SaveLoadFunc {
@@ -160,6 +162,7 @@ impl Egregoria {
         let mut goria = Egregoria {
             world: Default::default(),
             resources: Default::default(),
+            tick: 0,
         };
 
         info!("Seed is {}", RNG_SEED);
@@ -186,14 +189,31 @@ impl Egregoria {
         &self.world
     }
 
-    pub fn tick(&mut self, dt: f64, game_schedule: &mut SeqSchedule) {
+    pub fn tick(
+        &mut self,
+        dt: f64,
+        game_schedule: &mut SeqSchedule,
+        commands: &WorldCommands,
+    ) -> Duration {
+        let t = Instant::now();
+
         {
             let mut time = self.write::<GameTime>();
             *time = GameTime::new(dt as f32, time.timestamp + dt);
         }
 
+        for command in &commands.commands {
+            command.apply(self);
+        }
+
         game_schedule.execute(self);
         add_souls_to_empty_buildings(self);
+        self.tick += 1;
+        t.elapsed()
+    }
+
+    pub fn get_tick(&self) -> u32 {
+        self.tick
     }
 
     pub fn pos(&self, e: Entity) -> Option<Vec2> {
@@ -235,7 +255,7 @@ impl Egregoria {
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn insert<T: Resource + Send + Sync>(&mut self, res: T) {
+    pub fn insert<T: Resource>(&mut self, res: T) {
         self.resources.insert(res)
     }
 }
@@ -269,6 +289,7 @@ impl Serialize for Egregoria {
             world,
             map: SerializedMap::from(&*self.read::<Map>()),
             res: m,
+            tick: self.tick,
         };
 
         <SerializedWorld as Serialize>::serialize(&ser, serializer)
@@ -283,6 +304,7 @@ impl<'de> Deserialize<'de> for Egregoria {
         let mut ser: SerializedWorld = <SerializedWorld as Deserialize>::deserialize(deserializer)?;
 
         let mut goria = Self::empty();
+        goria.tick = ser.tick;
         let registry = registry();
 
         let entity_serializer = Canon::default();
@@ -309,6 +331,7 @@ struct SerializedWorld {
     world: Vec<u8>,
     map: SerializedMap,
     res: HashMap<String, Vec<u8>>,
+    tick: u32,
 }
 
 fn my_hash<T>(obj: T) -> u64

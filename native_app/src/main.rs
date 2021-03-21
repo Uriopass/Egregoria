@@ -21,6 +21,7 @@ mod game_loop;
 mod gui;
 mod input;
 mod logger;
+mod network;
 mod rendering;
 mod timestep;
 

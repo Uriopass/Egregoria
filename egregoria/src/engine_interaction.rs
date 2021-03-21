@@ -24,7 +24,7 @@ impl Default for Selectable {
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct WorldCommands {
-    commands: Vec<WorldCommand>,
+    pub(crate) commands: Vec<WorldCommand>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -50,6 +50,10 @@ use geom::{Vec2, OBB};
 use WorldCommand::*;
 
 impl WorldCommands {
+    pub fn merge(&mut self, src: impl Iterator<Item = WorldCommand>) {
+        self.commands.extend(src);
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &WorldCommand> {
         self.commands.iter()
     }
@@ -124,22 +128,16 @@ impl WorldCommands {
     ) {
         self.commands.push(MapUpdateIntersectionPolicy(id, tp, lp))
     }
-
-    pub fn apply(&mut self, goria: &mut Egregoria) {
-        for command in self.commands.drain(..) {
-            command.apply(goria);
-        }
-    }
 }
 
 impl WorldCommand {
-    pub fn apply(self, goria: &mut Egregoria) {
-        match self {
+    pub(crate) fn apply(&self, goria: &mut Egregoria) {
+        match *self {
             MapRemoveIntersection(id) => goria.write::<Map>().remove_intersection(id),
             MapRemoveRoad(id) => drop(goria.write::<Map>().remove_road(id)),
             MapRemoveBuilding(id) => drop(goria.write::<Map>().remove_building(id)),
             MapSetLotKind(id, kind) => goria.write::<Map>().set_lot_kind(id, kind),
-            MapMakeConnection(from, to, interpoint, pat) => {
+            MapMakeConnection(from, to, interpoint, ref pat) => {
                 goria
                     .write::<Map>()
                     .make_connection(from, to, interpoint, pat);
@@ -173,11 +171,19 @@ impl WorldCommand {
                 map_model::procgen::load_testfield(&mut *goria.write::<Map>())
             }
             MapClear => goria.write::<Map>().clear(),
-            MapGenerateTrees(cells) => {
+            MapGenerateTrees(ref cells) => {
                 for cell in cells {
-                    goria.write::<Map>().trees.add_forest(cell);
+                    goria.write::<Map>().trees.add_forest(*cell);
                 }
             }
+        }
+    }
+}
+
+impl std::iter::FromIterator<WorldCommands> for WorldCommands {
+    fn from_iter<T: IntoIterator<Item = WorldCommands>>(iter: T) -> Self {
+        Self {
+            commands: iter.into_iter().flat_map(|x| x.commands).collect(),
         }
     }
 }

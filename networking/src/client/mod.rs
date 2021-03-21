@@ -1,11 +1,9 @@
-use std::fmt::Debug;
 use std::io;
 use std::net::{IpAddr, SocketAddr};
 use std::time::{Duration, Instant};
 
 use message_io::events::EventQueue;
 use message_io::network::{Endpoint, NetEvent, Network, Transport};
-use serde::__private::PhantomData;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -16,13 +14,21 @@ use crate::packets::{
     ServerUnreliablePacket,
 };
 use crate::worldsend::WorldReceive;
-use crate::{decode, encode, Frame, MergedInputs, PlayerInput, DEFAULT_PORT};
+use crate::{
+    decode, encode, hash_str, Frame, MergedInputs, PhantomSendSync, PlayerInput, UserID,
+    DEFAULT_PORT,
+};
 
 mod client_playout;
 
+pub struct ServerInput<I> {
+    pub sent_by_me: bool,
+    pub inp: I,
+}
+
 pub enum PollResult<W, I> {
     Wait(I),
-    Input(Vec<Vec<I>>),
+    Input(Vec<Vec<ServerInput<I>>>),
     GameWorld(W),
     Error,
 }
@@ -31,7 +37,9 @@ pub enum PollResult<W, I> {
 enum ClientState<I> {
     Connecting,
     Downloading(WorldReceive),
-    CatchingUp { next_inputs: Option<Vec<Vec<I>>> },
+    CatchingUp {
+        next_inputs: Option<Vec<Vec<ServerInput<I>>>>,
+    },
     Playing(ClientPlayoutBuffer),
 }
 
@@ -42,13 +50,15 @@ pub struct Client<WORLD: DeserializeOwned, INPUT: Serialize + DeserializeOwned +
     udp: Endpoint,
 
     name: String,
+    id: UserID,
 
     clock: Instant,
     period: Duration,
     state: ClientState<INPUT>,
-    frame_buffer_advance: u32,
 
-    _phantom: PhantomData<(INPUT, WORLD)>,
+    pub lag_compensate: u32,
+
+    _phantom: PhantomSendSync<(INPUT, WORLD)>,
 }
 
 pub struct ConnectConf {
@@ -59,7 +69,7 @@ pub struct ConnectConf {
     pub frame_buffer_advance: u32,
 }
 
-impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default + Debug> Client<W, I> {
+impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I> {
     pub fn connect(conf: ConnectConf) -> io::Result<Self> {
         let (mut network, events) = Network::split();
         let addr = conf.addr;
@@ -73,8 +83,9 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default + Debug> Cli
             tcp,
             udp,
             state: ClientState::Connecting,
+            id: UserID(hash_str(&*conf.name)),
             name: conf.name,
-            frame_buffer_advance: conf.frame_buffer_advance,
+            lag_compensate: conf.frame_buffer_advance,
             period: conf.period,
             clock: Instant::now(),
             _phantom: Default::default(),
@@ -146,13 +157,13 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default + Debug> Cli
 
                 let advance = buffer.advance();
 
-                let fba = self.frame_buffer_advance;
+                let fba = self.lag_compensate;
                 let to_consume = match advance {
                     0 => 0,
                     _ if (1..=fba).contains(&advance) => 1,
                     _ if (fba + 1..=fba * 2).contains(&advance) => 2,
                     _ if (fba * 2 + 1..=fba * 3).contains(&advance) => 3,
-                    _ => 4,
+                    _ => advance - fba * 3,
                 };
 
                 if to_consume > 0 {
@@ -161,6 +172,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default + Debug> Cli
                     let udp = self.udp;
                     let name = &self.name;
                     let ack_frame = buffer.consumed_frame() + Frame(advance);
+                    let id = self.id;
 
                     let multi = (0..to_consume)
                         .map(move |_| {
@@ -173,7 +185,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default + Debug> Cli
                                     ack_frame,
                                 }),
                             );
-                            decode_merged(inp)
+                            decode_merged(id, inp)
                         })
                         .collect();
                     return PollResult::Input(multi);
@@ -231,7 +243,8 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default + Debug> Cli
                     ref mut next_inputs,
                 } = self.state
                 {
-                    *next_inputs = Some(inputs.into_iter().map(decode_merged).collect());
+                    let id = self.id;
+                    *next_inputs = Some(inputs.into_iter().map(|v| decode_merged(id, v)).collect());
                 } else {
                     log::error!("received catching up inputs but was not catching up.. weird");
                 }
@@ -269,8 +282,26 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default + Debug> Cli
             }
         }
     }
+
+    pub fn describe(&self) -> String {
+        match self.state {
+            ClientState::Connecting => "Connecting...".to_string(),
+            ClientState::Downloading(_) => "Downloading map...".to_string(),
+            ClientState::CatchingUp { .. } => "Catching up...".to_string(),
+            ClientState::Playing(ref buf) => {
+                format!("Playing! Buffer health: {}", buf.advance())
+            }
+        }
+    }
 }
 
-fn decode_merged<I: DeserializeOwned>(x: MergedInputs) -> Vec<I> {
-    x.into_iter().flat_map(|x| decode(&x.0).ok()).collect()
+fn decode_merged<I: DeserializeOwned>(me: UserID, x: MergedInputs) -> Vec<ServerInput<I>> {
+    x.into_iter()
+        .flat_map(|(id, x)| {
+            Some(ServerInput {
+                sent_by_me: id == me,
+                inp: decode(&x.0).ok()?,
+            })
+        })
+        .collect()
 }
