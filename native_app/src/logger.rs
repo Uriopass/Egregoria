@@ -58,9 +58,16 @@ impl log::Log for MyLog {
             return false;
         }
         match metadata.target() {
-            "wgpu_core" | "gfx_memory" | "gfx_backend_vulkan" | "gfx_descriptor" => {
-                l <= Level::Warn
-            }
+            "gpu_alloc::buddy"
+            | "gpu_alloc::linear"
+            | "gpu_alloc::allocator"
+            | "tracing::span"
+            | "wgpu_core"
+            | "wgpu_core::device"
+            | "wgpu_core::hub"
+            | "gfx_memory"
+            | "gfx_backend_vulkan"
+            | "gfx_descriptor" => l <= Level::Warn,
             _ => true,
         }
     }
@@ -86,7 +93,7 @@ impl log::Log for MyLog {
             let module_path = r
                 .module_path_static()
                 .and_then(|x| x.split(':').last())
-                .unwrap_or_default();
+                .unwrap_or_else(|| r.target());
             write_log_stdout!(
                 self.log_file,
                 "[{:9} {:5} {:12}] {}",
