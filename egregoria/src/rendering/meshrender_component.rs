@@ -35,8 +35,29 @@ impl MeshRenderEnum {
 }
 
 impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
-    fn render(_: &[&MeshRenderEnum], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
-        panic!()
+    fn render(data: &[&MeshRenderEnum], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+        let mre = data[0];
+
+        match mre {
+            MeshRenderEnum::StrokeCircle(x) => <StrokeCircleRender as InspectRenderDefault<
+                StrokeCircleRender,
+            >>::render(&[x], label, ui, args),
+            MeshRenderEnum::Circle(x) => {
+                <CircleRender as InspectRenderDefault<CircleRender>>::render(&[x], label, ui, args)
+            }
+            MeshRenderEnum::Rect(x) => {
+                <RectRender as InspectRenderDefault<RectRender>>::render(&[x], label, ui, args)
+            }
+            MeshRenderEnum::LineTo(x) => {
+                <LineToRender as InspectRenderDefault<LineToRender>>::render(&[x], label, ui, args)
+            }
+            MeshRenderEnum::Line(x) => {
+                <LineRender as InspectRenderDefault<LineRender>>::render(&[x], label, ui, args)
+            }
+            MeshRenderEnum::AbsoluteLine(x) => <AbsoluteLineRender as InspectRenderDefault<
+                AbsoluteLineRender,
+            >>::render(&[x], label, ui, args),
+        }
     }
 
     fn render_mut(
