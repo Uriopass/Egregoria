@@ -21,6 +21,7 @@ use crate::{
 
 mod client_playout;
 
+#[derive(Debug)]
 pub struct ServerInput<I> {
     pub sent_by_me: bool,
     pub inp: I,
