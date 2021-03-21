@@ -35,3 +35,4 @@ winit         = "0.24"
 inventory     = "0.1.10"
 paste         = "1.0.4"
 atomic_refcell = "0.1.6"
+tracing = { version = "0.1", features = ["log"] }
