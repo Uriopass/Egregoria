@@ -2,6 +2,7 @@ use crate::audio::AudioContext;
 use crate::game_loop;
 use crate::input::InputContext;
 use futures::executor;
+use std::time::Instant;
 use wgpu_engine::GfxContext;
 use winit::window::Window;
 use winit::{
@@ -17,6 +18,7 @@ pub struct Context {
     pub audio: AudioContext,
     pub window: Window,
     pub el: Option<EventLoop<()>>,
+    pub delta: f32,
 }
 
 impl Context {
@@ -63,12 +65,14 @@ impl Context {
             audio,
             window,
             el: Some(el),
+            delta: 0.0,
         }
     }
 
     pub fn start(mut self, mut state: game_loop::State) {
         let mut frame: Option<_> = None;
         let mut new_size: Option<PhysicalSize<u32>> = None;
+        let mut last_update = Instant::now();
 
         self.el.take().unwrap().run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Poll;
@@ -119,6 +123,9 @@ impl Context {
                         self.input.mouse.unprojected =
                             state.camera.unproject(self.input.mouse.screen);
 
+                        let d = last_update.elapsed();
+                        last_update = Instant::now();
+                        self.delta = d.as_secs_f32();
                         state.update(&mut self);
 
                         let window = &self.window;

@@ -17,6 +17,8 @@ pub(crate) struct ServerPlayoutBuffer {
     pub consumed_frame: Frame,
 }
 
+type PastInputs = Vec<(Frame, MergedInputs)>;
+
 impl ServerPlayoutBuffer {
     pub fn new(start_frame: Frame) -> Self {
         Self {
@@ -28,7 +30,7 @@ impl ServerPlayoutBuffer {
 
     pub fn insert_input(&mut self, frame: Frame, user: UserID, input: PlayerInput) -> InsertResult {
         if frame <= self.consumed_frame {
-            return InsertResult::Ok; // already consumed, safely ignore
+            return InsertResult::AlreadyConsumed; // already consumed, safely ignore
         }
         if frame.0 >= self.consumed_frame.0 + self.future.len() {
             return InsertResult::TooFarAhead;
@@ -55,7 +57,7 @@ impl ServerPlayoutBuffer {
         acknowledged: impl Iterator<Item = Frame>,
         force_consume: bool,
         n_users: usize,
-    ) -> Option<(MergedInputs, Vec<Vec<(Frame, MergedInputs)>>)> {
+    ) -> Option<(MergedInputs, Vec<PastInputs>)> {
         let next_frame = self.consumed_frame + Frame(1);
 
         if self.future.get(next_frame).len() == n_users || force_consume {
@@ -98,9 +100,10 @@ impl ServerPlayoutBuffer {
 
 pub enum InsertResult {
     TooFarAhead,
+    AlreadyConsumed,
     Ok,
 }
 
 fn merge_partial_inputs(x: &PartialInputs) -> MergedInputs {
-    x.values().cloned().collect()
+    x.iter().map(|(id, v)| (*id, v.clone())).collect()
 }

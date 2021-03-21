@@ -74,7 +74,7 @@ impl CatchUp {
         let mut size = 0;
         while size < MAX_CATCHUP_PACKET_SIZE && state.sent < state.inputs.len() {
             let d = state.inputs[state.sent].clone();
-            size += d.iter().map(|x| x.0.len()).sum::<usize>();
+            size += d.iter().map(|x| 4 + x.1 .0.len()).sum::<usize>();
             inputs.push(d);
             state.sent += 1;
         }

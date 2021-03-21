@@ -67,7 +67,7 @@ impl UiWorld {
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn insert<T: Resource + Send + Sync>(&mut self, res: T) {
+    pub fn insert<T: Resource>(&mut self, res: T) {
         self.resources.insert(res)
     }
 

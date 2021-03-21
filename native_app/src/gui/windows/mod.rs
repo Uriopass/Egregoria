@@ -8,6 +8,7 @@ mod config;
 pub mod debug;
 mod economy;
 mod map;
+mod network;
 pub mod settings;
 
 pub trait ImguiWindow: Send + Sync {
@@ -47,6 +48,7 @@ impl Default for ImguiWindows {
         s.insert(imgui::im_str!("Config"), config::config, false);
         s.insert(imgui::im_str!("Debug"), debug::debug, false);
         s.insert(imgui::im_str!("Settings"), settings::settings, false);
+        s.insert(imgui::im_str!("Network"), network::network, false);
         s
     }
 }

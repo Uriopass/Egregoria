@@ -1,5 +1,4 @@
 use std::io;
-use std::marker::PhantomData;
 use std::time::{Duration, Instant};
 
 use message_io::events::EventQueue;
@@ -14,7 +13,8 @@ use crate::packets::{
 };
 use crate::server::server_playout::{InsertResult, ServerPlayoutBuffer};
 use crate::worldsend::WorldSend;
-use crate::{decode, encode, Frame, DEFAULT_PORT};
+use crate::{decode, encode, Frame, PhantomSendSync, DEFAULT_PORT};
+use std::net::SocketAddr;
 
 mod server_playout;
 
@@ -24,7 +24,6 @@ pub struct Server<WORLD: Serialize> {
 
     authent: Authent,
     buffer: ServerPlayoutBuffer,
-    lag: Frame,
     catchup: CatchUp,
     worldsend: WorldSend,
 
@@ -32,12 +31,14 @@ pub struct Server<WORLD: Serialize> {
     period: Duration,
 
     serv_tick: Frame,
-    _phantom: PhantomData<WORLD>,
+    _phantom: PhantomSendSync<WORLD>,
+
+    tcp_addr: SocketAddr,
+    udp_addr: SocketAddr,
 }
 
 pub struct ServerConfiguration {
     pub start_frame: Frame,
-    pub lag: Frame,
     pub period: Duration,
     pub port: Option<u16>,
 }
@@ -47,13 +48,12 @@ impl<WORLD: Serialize> Server<WORLD> {
         let (mut network, events) = Network::split();
 
         let port = conf.port.unwrap_or(DEFAULT_PORT);
-        network.listen(Transport::FramedTcp, format!("127.0.0.1:{}", port))?;
-        network.listen(Transport::Udp, format!("127.0.0.1:{}", port + 1))?;
+        let (_, tcp_addr) = network.listen(Transport::FramedTcp, format!("127.0.0.1:{}", port))?;
+        let (_, udp_addr) = network.listen(Transport::Udp, format!("127.0.0.1:{}", port + 1))?;
 
         Ok(Self {
             network,
             events,
-            lag: conf.lag,
             period: conf.period,
             serv_tick: conf.start_frame,
             buffer: ServerPlayoutBuffer::new(conf.start_frame),
@@ -61,7 +61,9 @@ impl<WORLD: Serialize> Server<WORLD> {
             authent: Authent::default(),
             catchup: CatchUp::default(),
             worldsend: Default::default(),
-            _phantom: PhantomData::default(),
+            _phantom: Default::default(),
+            tcp_addr,
+            udp_addr,
         })
     }
 
@@ -146,9 +148,18 @@ impl<WORLD: Serialize> Server<WORLD> {
                 client.ack = ack_frame;
 
                 for (frame, input) in input {
-                    let res = self.buffer.insert_input(frame + self.lag, client.id, input);
+                    let res = self
+                        .buffer
+                        .insert_input(frame + client.lag, client.id, input);
                     if matches!(res, InsertResult::TooFarAhead) {
-                        log::error!("too far ahead");
+                        log::error!("{}: too far ahead. lag is {:?}", client.name, client.lag);
+                    }
+                    if matches!(res, InsertResult::AlreadyConsumed) {
+                        client.lag.incr();
+                    } else if (frame.0 + client.lag.0) - self.buffer.consumed_frame.0
+                        > client.lag.0 * 2 / 3
+                    {
+                        client.lag.decr();
                     }
                 }
             }
@@ -218,6 +229,23 @@ impl<WORLD: Serialize> Server<WORLD> {
             self.catchup.disconnected(c.id);
             self.worldsend.disconnected(c.id);
         }
+    }
+
+    pub fn describe(&self) -> String {
+        let mut s = "".to_string();
+        s += &*format!("listening to {} (tcp)\n", self.tcp_addr);
+        s += &*format!("         and {} (udp)\n", self.udp_addr);
+
+        s += "Users:\n";
+        for c in self.authent.iter() {
+            s += &*format!(
+                "{}: {:?}... estimated ping: ~{}ms\n",
+                c.name,
+                c.state,
+                c.lag.0 * self.period.as_millis() as u32
+            );
+        }
+        s
     }
 }
 
