@@ -41,10 +41,11 @@ impl Lot {
             return None;
         }
 
-        let proj = map.project(at, size * 0.5 - 0.5);
+        let proj = map.project(shape.center(), size * 0.5 - 0.5);
         if !matches!(proj.kind, ProjectKind::Ground) {
             return None;
         }
+
         let bbox = shape.bbox();
         let id = map.lots.insert_with_key(move |id| Lot {
             id,
