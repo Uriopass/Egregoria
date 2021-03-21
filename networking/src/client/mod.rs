@@ -29,7 +29,7 @@ pub struct ServerInput<I> {
 pub enum PollResult<W, I> {
     Wait(I),
     Input(Vec<Vec<ServerInput<I>>>),
-    GameWorld(W),
+    GameWorld(I, W),
     Error,
 }
 
@@ -123,7 +123,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                     self.network
                         .send(self.tcp, &*encode(&ClientReliablePacket::BeginCatchUp));
                     return match decode(&*world) {
-                        Ok(x) => PollResult::GameWorld(x),
+                        Ok(x) => PollResult::GameWorld(input, x),
                         Err(e) => {
                             log::error!("couldn't decode world: {}", e);
                             return PollResult::Error;

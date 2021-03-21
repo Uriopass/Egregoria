@@ -113,13 +113,12 @@ impl State {
 
         match *self.uiw.write::<NetworkState>() {
             NetworkState::Singleplayer(ref mut step) => {
-                *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(commands.clone());
                 let goria = &mut self.goria; // mut for tick
                 let sched = &mut self.game_schedule;
                 let mut timings = self.uiw.write::<Timings>();
 
-                let mut commands_once = Some(commands);
-                step.go_forward(settings.time_warp, move || {
+                let mut commands_once = Some(commands.clone());
+                step.go_forward(settings.time_warp, || {
                     let t = goria.tick(
                         Timestep::DT,
                         sched,
@@ -127,11 +126,17 @@ impl State {
                     );
                     timings.world_update.add_value(t.as_secs_f32());
                 });
+
+                if commands_once.is_none() {
+                    *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(commands);
+                } else {
+                    *self.uiw.write::<WorldCommands>() = commands;
+                }
             }
             NetworkState::Client { ref mut client }
             | NetworkState::Server { ref mut client, .. } => match client.poll(commands) {
                 PollResult::Wait(commands) => {
-                    *self.uiw.write() = commands;
+                    *self.uiw.write::<WorldCommands>() = commands;
                 }
                 PollResult::Input(inputs) => {
                     let mut merged = WorldCommands::default();
@@ -157,8 +162,9 @@ impl State {
                     }
                     *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(merged);
                 }
-                PollResult::GameWorld(goria) => {
+                PollResult::GameWorld(commands, goria) => {
                     self.goria = goria;
+                    *self.uiw.write::<WorldCommands>() = commands;
                 }
                 PollResult::Error => {
                     log::error!("there was an error polling the client");
