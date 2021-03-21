@@ -46,6 +46,10 @@ jobs:
         with:
           rust-version: 'stable'
 
+      - name: Update things
+        run: sudo apt-get update
+        if: matrix.os == 'ubuntu-latest'
+
       - name: install deps for linux
         run: sudo apt-get install libasound2-dev libudev-dev pkg-config
         if: matrix.os == 'ubuntu-latest'
