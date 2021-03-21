@@ -2,7 +2,7 @@ use crate::ring::Ring;
 use crate::{Frame, MergedInputs, PlayerInput, UserID};
 use std::collections::HashMap;
 
-type PartialInputs = HashMap<UserID, PlayerInput>;
+type PartialInputs = HashMap<UserID, Vec<PlayerInput>>;
 
 ///       Playback buffer
 ///  --------------------------------------
@@ -12,7 +12,8 @@ type PartialInputs = HashMap<UserID, PlayerInput>;
 /// | consumed    missing                 |
 ///  -------------------------------------
 pub(crate) struct ServerPlayoutBuffer {
-    future: Ring<PartialInputs>,
+    next: PartialInputs,
+    dedup: HashMap<UserID, Ring<bool>>,
     past: Ring<MergedInputs>,
     pub consumed_frame: Frame,
 }
@@ -22,28 +23,33 @@ type PastInputs = Vec<(Frame, MergedInputs)>;
 impl ServerPlayoutBuffer {
     pub fn new(start_frame: Frame) -> Self {
         Self {
-            future: Ring::new(),
+            next: PartialInputs::new(),
+            dedup: Default::default(),
             past: Ring::new(),
             consumed_frame: start_frame,
         }
     }
 
-    pub fn insert_input(&mut self, frame: Frame, user: UserID, input: PlayerInput) -> InsertResult {
-        if frame <= self.consumed_frame {
-            return InsertResult::AlreadyConsumed; // already consumed, safely ignore
+    pub fn insert_input(&mut self, user: UserID, frame: Frame, input: PlayerInput) {
+        if frame.0 + 128 <= self.consumed_frame.0 {
+            log::info!("input was far too late");
+            return;
         }
-        if frame.0 >= self.consumed_frame.0 + self.future.len() {
-            return InsertResult::TooFarAhead;
+        let seen = self
+            .dedup
+            .entry(user)
+            .or_insert_with(Ring::new)
+            .get_mut(frame);
+
+        if !*seen {
+            self.next.entry(user).or_default().push(input);
+            *seen = true;
         }
-        self.future.get_mut(frame).insert(user, input);
-        InsertResult::Ok
     }
 
     // call when a user has disconnected
     pub fn disconnected(&mut self, user: UserID) {
-        for v in self.future.iter_mut() {
-            v.remove(&user);
-        }
+        self.dedup.remove(&user);
     }
 
     /// acknowledge is iterator over last frame acknowledged per user
@@ -52,58 +58,47 @@ impl ServerPlayoutBuffer {
     ///   ^     ^ ^
     ///  ack cons next
     ///  lag = 2 = cons - ack
-    pub fn try_consume(
+    pub fn consume(
         &mut self,
         acknowledged: impl Iterator<Item = Frame>,
-        force_consume: bool,
-        n_users: usize,
-    ) -> Option<(MergedInputs, Vec<PastInputs>)> {
+    ) -> (MergedInputs, Vec<PastInputs>) {
         let next_frame = self.consumed_frame + Frame(1);
 
-        if self.future.get(next_frame).len() == n_users || force_consume {
-            log::info!(
-                "{}: len is {}/{} {}",
-                self.consumed_frame.0,
-                self.future.get(next_frame).len(),
-                n_users,
-                if force_consume { "force_consume" } else { "" }
-            );
-            let mut result = vec![];
-            let merged = merge_partial_inputs(self.future.get(next_frame));
-
-            for ack_frame in acknowledged {
-                debug_assert!(ack_frame <= self.consumed_frame);
-                let lag = self.consumed_frame.0 - ack_frame.0;
-                debug_assert!(lag < self.past.len());
-
-                let v = (1..=lag)
-                    .map(|i| {
-                        let frame = ack_frame + Frame(i);
-                        (frame, self.past.get(frame).clone())
-                    })
-                    .chain(std::iter::once((next_frame, merged.clone())))
-                    .collect::<Vec<_>>();
-
-                result.push(v);
-            }
-
-            // advance
-            self.consumed_frame.0 += 1;
-            *self.past.get_mut(self.consumed_frame) = merged.clone();
-            *self.future.get_mut(self.consumed_frame) = Default::default();
-
-            return Some((merged, result));
+        for v in self.dedup.values_mut() {
+            *v.get_mut(next_frame) = false;
         }
-        None
+
+        log::info!("consuming {}", next_frame.0);
+
+        let mut result = vec![];
+        let merged = merge_partial_inputs(&mut self.next);
+
+        for ack_frame in acknowledged {
+            debug_assert!(ack_frame <= self.consumed_frame);
+            let lag = self.consumed_frame.0 - ack_frame.0;
+            debug_assert!(lag < self.past.len());
+
+            let v = (1..=lag)
+                .map(|i| {
+                    let frame = ack_frame + Frame(i);
+                    (frame, self.past.get(frame).clone())
+                })
+                .chain(std::iter::once((next_frame, merged.clone())))
+                .collect::<Vec<_>>();
+
+            result.push(v);
+        }
+
+        // advance
+        self.consumed_frame.0 += 1;
+        *self.past.get_mut(self.consumed_frame) = merged.clone();
+
+        (merged, result)
     }
 }
 
-pub enum InsertResult {
-    TooFarAhead,
-    AlreadyConsumed,
-    Ok,
-}
-
-fn merge_partial_inputs(x: &PartialInputs) -> MergedInputs {
-    x.iter().map(|(id, v)| (*id, v.clone())).collect()
+fn merge_partial_inputs(x: &mut PartialInputs) -> MergedInputs {
+    x.iter_mut()
+        .flat_map(|(&id, v)| v.drain(..).map(move |v| (id, v)))
+        .collect()
 }

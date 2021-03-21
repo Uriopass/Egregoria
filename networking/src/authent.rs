@@ -23,7 +23,6 @@ pub(crate) struct Client {
     pub reliable: Endpoint,
     pub unreliable: Endpoint,
     pub state: ClientGameState,
-    pub lag: Frame,
 }
 
 enum ClientConnectState {
@@ -80,7 +79,6 @@ impl Authent {
                 reliable,
                 unreliable,
                 state: ClientGameState::Downloading,
-                lag: Frame(10),
             });
 
             self.n_connected_clients += 1;

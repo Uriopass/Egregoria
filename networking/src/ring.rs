@@ -1,7 +1,6 @@
 use crate::Frame;
 
 const RING_SIZE: usize = 128;
-#[derive(Debug)]
 pub struct Ring<T: Default> {
     ring: [T; RING_SIZE],
 }
@@ -23,6 +22,7 @@ impl<T: Default> Ring<T> {
         self.ring.len() as u32
     }
 
+    #[allow(dead_code)]
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.ring.iter_mut()
     }

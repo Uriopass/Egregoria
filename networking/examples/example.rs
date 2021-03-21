@@ -60,7 +60,7 @@ pub fn main() {
 
     let mut world: World;
     loop {
-        if let PollResult::GameWorld(w) = client2.poll(DoNothing) {
+        if let PollResult::GameWorld(_, w) = client2.poll(DoNothing) {
             log::info!(
                 "client_2 got world from server: length is {:?}",
                 w.pad.len()
@@ -74,7 +74,6 @@ pub fn main() {
     for _ in 1usize.. {
         if let PollResult::Input(inp) = client2.poll(IncrA) {
             for inp in inp {
-                world.apply(inp.clone());
                 log::info!(
                     "client_2 got input from server: {:?} w is now {} {} {}",
                     inp,
@@ -82,6 +81,7 @@ pub fn main() {
                     world.incr_b,
                     world.incr_b,
                 );
+                world.apply(inp.into_iter().map(|x| x.inp).collect());
             }
         }
         std::thread::sleep(Duration::from_millis(20));
@@ -98,7 +98,6 @@ pub fn serv_c() {
 
     let mut serv = Server::start(ServerConfiguration {
         start_frame: Frame(world.tick),
-        lag: Frame(10),
         period: Duration::from_millis(20),
         port: None,
     })
@@ -117,7 +116,6 @@ pub fn serv_c() {
         serv.poll(&world);
         if let PollResult::Input(acts) = client1.poll(IncrB) {
             for a in acts {
-                world.apply(a.clone());
                 log::info!(
                     "client_1 got input from server: {:?} w is now {} {} {}",
                     a,
@@ -125,6 +123,7 @@ pub fn serv_c() {
                     world.incr_b,
                     world.incr_b,
                 );
+                world.apply(a.into_iter().map(|x| x.inp).collect());
             }
         }
         std::thread::sleep(Duration::from_millis(1));

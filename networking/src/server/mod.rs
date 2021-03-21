@@ -11,7 +11,7 @@ use crate::packets::{
     AuthentResponse, ClientReliablePacket, ClientUnreliablePacket, ServerReliablePacket,
     ServerUnreliablePacket,
 };
-use crate::server::server_playout::{InsertResult, ServerPlayoutBuffer};
+use crate::server::server_playout::ServerPlayoutBuffer;
 use crate::worldsend::WorldSend;
 use crate::{decode, encode, Frame, PhantomSendSync, DEFAULT_PORT};
 use std::net::SocketAddr;
@@ -30,7 +30,6 @@ pub struct Server<WORLD: Serialize> {
     clock: Instant,
     period: Duration,
 
-    serv_tick: Frame,
     _phantom: PhantomSendSync<WORLD>,
 
     tcp_addr: SocketAddr,
@@ -55,7 +54,6 @@ impl<WORLD: Serialize> Server<WORLD> {
             network,
             events,
             period: conf.period,
-            serv_tick: conf.start_frame,
             buffer: ServerPlayoutBuffer::new(conf.start_frame),
             clock: Instant::now(),
             authent: Authent::default(),
@@ -102,27 +100,24 @@ impl<WORLD: Serialize> Server<WORLD> {
             return;
         }
 
-        if self.clock.elapsed() > self.period {
-            self.serv_tick.incr();
-            self.clock = Instant::now();
+        if self.clock.elapsed() < self.period {
+            return;
         }
+
+        self.clock = Instant::now();
 
         let clients_playing = self.authent.iter_playing();
 
-        if let Some((consumed_inputs, inputs)) = self.buffer.try_consume(
-            clients_playing.clone().map(|c| c.ack),
-            self.serv_tick > self.buffer.consumed_frame,
-            n_playing as usize,
-        ) {
-            for (playing, packet) in clients_playing.zip(inputs) {
-                self.network.send(
-                    playing.unreliable,
-                    &*encode(&ServerUnreliablePacket::Input(packet)),
-                );
-            }
-            self.catchup
-                .add_merged_inputs(self.buffer.consumed_frame, consumed_inputs)
+        let (consumed_inputs, inputs) = self.buffer.consume(clients_playing.clone().map(|c| c.ack));
+
+        for (playing, packet) in clients_playing.zip(inputs) {
+            self.network.send(
+                playing.unreliable,
+                &*encode(&ServerUnreliablePacket::Input(packet)),
+            );
         }
+        self.catchup
+            .add_merged_inputs(self.buffer.consumed_frame, consumed_inputs)
     }
 
     fn send_long_running(&mut self) {
@@ -148,19 +143,7 @@ impl<WORLD: Serialize> Server<WORLD> {
                 client.ack = ack_frame;
 
                 for (frame, input) in input {
-                    let res = self
-                        .buffer
-                        .insert_input(frame + client.lag, client.id, input);
-                    if matches!(res, InsertResult::TooFarAhead) {
-                        log::error!("{}: too far ahead. lag is {:?}", client.name, client.lag);
-                    }
-                    if matches!(res, InsertResult::AlreadyConsumed) {
-                        client.lag.incr();
-                    } else if (frame.0 + client.lag.0) - self.buffer.consumed_frame.0
-                        > client.lag.0 * 2 / 3
-                    {
-                        client.lag.decr();
-                    }
+                    self.buffer.insert_input(client.id, frame, input);
                 }
             }
             ClientUnreliablePacket::Connection(id) => {
@@ -238,12 +221,7 @@ impl<WORLD: Serialize> Server<WORLD> {
 
         s += "Users:\n";
         for c in self.authent.iter() {
-            s += &*format!(
-                "{}: {:?}... estimated ping: ~{}ms\n",
-                c.name,
-                c.state,
-                c.lag.0 * self.period.as_millis() as u32
-            );
+            s += &*format!("{}: {:?}...\n", c.name, c.state);
         }
         s
     }
