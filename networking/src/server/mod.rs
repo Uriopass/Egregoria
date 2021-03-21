@@ -48,8 +48,8 @@ impl<WORLD: Serialize> Server<WORLD> {
         let (mut network, events) = Network::split();
 
         let port = conf.port.unwrap_or(DEFAULT_PORT);
-        let (_, tcp_addr) = network.listen(Transport::FramedTcp, format!("127.0.0.1:{}", port))?;
-        let (_, udp_addr) = network.listen(Transport::Udp, format!("127.0.0.1:{}", port + 1))?;
+        let (_, tcp_addr) = network.listen(Transport::FramedTcp, format!("0.0.0.0:{}", port))?;
+        let (_, udp_addr) = network.listen(Transport::Udp, format!("0.0.0.0:{}", port + 1))?;
 
         Ok(Self {
             network,
