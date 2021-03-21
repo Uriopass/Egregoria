@@ -49,8 +49,12 @@ pub type CollisionWorld = flat_spatial::DenseGrid<PhysicsObject>;
 pub struct Collider(pub GridHandle);
 
 impl InspectRenderDefault<Collider> for Collider {
-    fn render(_: &[&Collider], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
-        panic!()
+    fn render(data: &[&Collider], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+        if data.len() != 1 {
+            panic!()
+        }
+        let d = data[0];
+        ui.text(format!("{:?} {}", d.0, label));
     }
 
     fn render_mut(
