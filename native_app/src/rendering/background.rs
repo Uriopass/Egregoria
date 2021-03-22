@@ -1,4 +1,4 @@
-use geom::{LinearColor, Vec3};
+use geom::LinearColor;
 use std::rc::Rc;
 use wgpu_engine::{
     compile_shader, CompiledShader, FrameContext, GfxContext, ShadedQuadTex, Shaders, Uniform,
@@ -27,7 +27,6 @@ struct BackgroundUniform {
     grass_color: LinearColor,
     sand_color: LinearColor,
     time: f32,
-    _pad: Vec3,
 }
 
 wgpu_engine::u8slice_impl!(BackgroundUniform);
@@ -52,7 +51,6 @@ impl BackgroundRender {
                 grass_color: common::config().grass_col.into(),
                 sand_color: common::config().sand_col.into(),
                 time: *fctx.gfx.time_uni.value(),
-                _pad: Vec3::ZERO,
             },
             &fctx.gfx.device,
         );

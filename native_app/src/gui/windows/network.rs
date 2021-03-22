@@ -19,7 +19,7 @@ pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Eg
     window.build(ui, || {
         let mut state = uiworld.write::<NetworkState>();
         let mut info = uiworld.write::<NetworkConnectionInfo>();
-        common::saveload::save_json(&*info, "netinfo");
+        common::saveload::save_silent_json(&*info, "netinfo");
 
         match *state {
             NetworkState::Singleplayer(_) => {
