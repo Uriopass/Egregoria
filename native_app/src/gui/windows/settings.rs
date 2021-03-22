@@ -26,7 +26,7 @@ pub struct Settings {
 
 impl Default for Settings {
     fn default() -> Self {
-        common::saveload::load(SETTINGS_SAVE_NAME).unwrap_or(Self {
+        common::saveload::load_json(SETTINGS_SAVE_NAME).unwrap_or(Self {
             camera_sensibility: 80.0,
             camera_lock: true,
             camera_border_move: true,
@@ -174,6 +174,6 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
                 .display_format(im_str!("%.0f"))
                 .build(ui, &mut settings.ui_volume_percent);
 
-            common::saveload::save_silent(&*settings, SETTINGS_SAVE_NAME);
+            common::saveload::save_silent_json(&*settings, SETTINGS_SAVE_NAME);
         });
 }
