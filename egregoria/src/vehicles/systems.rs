@@ -66,7 +66,7 @@ pub fn vehicle_decision(
 
 register_system!(vehicle_state_update);
 /// Decides whether a vehicle should change states, from parked to unparking to driving etc
-#[system(for_each)]
+#[system(par_for_each)]
 pub fn vehicle_state_update(
     #[resource] buf: &ParCommandBuffer,
     #[resource] time: &GameTime,
@@ -198,8 +198,8 @@ pub fn calc_decision<'a>(
 
     vehicle.flag = 0;
 
-    if let Some(pos) = it.get_terminal() {
-        if pos.is_close(trans.position(), 1.0 + stop_dist) {
+    if let Some(term_pos) = it.get_terminal() {
+        if term_pos.is_close(position, 1.0 + stop_dist) {
             return (0.0, dir_to_pos);
         }
     }
@@ -269,12 +269,12 @@ fn calc_front_dist<'a>(
     let mut flag = 0;
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {
-        // Ignore myself
-        if std::ptr::eq(nei_physics_obj, self_obj) {
+        let towards_vec: Vec2 = his_pos - position;
+        // Ignore myself and very close cars
+        if towards_vec.is_close(Vec2::ZERO, 1.0) {
             continue;
         }
 
-        let towards_vec: Vec2 = his_pos - position;
         let (towards_dir, dist) = unwrap_or!(towards_vec.dir_dist(), continue);
 
         // cos of angle from self to obj
