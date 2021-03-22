@@ -57,7 +57,6 @@ mod turn_policy;
 pub use self::pathfinding::*;
 pub use light_policy::*;
 pub use map::*;
-pub use serializing::*;
 pub use spatial_map::*;
 pub use traffic_control::*;
 pub use traversable::*;

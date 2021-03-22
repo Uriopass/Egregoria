@@ -1,4 +1,5 @@
 use crate::procgen::Trees;
+use crate::serializing::SerializedMap;
 use crate::{
     Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectKind, Road,
@@ -22,6 +23,9 @@ pub struct MapProject {
     pub kind: ProjectKind,
 }
 
+// can't derive Serialize because it would clone
+#[derive(Deserialize)]
+#[serde(from = "SerializedMap")]
 pub struct Map {
     pub(crate) roads: Roads,
     pub(crate) lanes: Lanes,
