@@ -4,10 +4,11 @@ use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use imgui::{im_str, ImString, Ui};
 use networking::{ConnectConf, Frame, ServerConfiguration};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::net::{Ipv4Addr, ToSocketAddrs};
 use std::time::Duration;
 
-register_resource_noserialize!(NetworkConnectionInfo);
+register_resource!(NetworkConnectionInfo, "netinfo");
 struct NetworkConnectionInfo {
     name: ImString,
     ip: ImString,
@@ -18,6 +19,7 @@ pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Eg
     window.build(ui, || {
         let mut state = uiworld.write::<NetworkState>();
         let mut info = uiworld.write::<NetworkConnectionInfo>();
+        common::saveload::save_json(&*info, "netinfo");
 
         match *state {
             NetworkState::Singleplayer(_) => {
@@ -139,5 +141,30 @@ impl Default for NetworkConnectionInfo {
             ip: ImString::with_capacity(100),
             error: String::new(),
         }
+    }
+}
+
+impl Serialize for NetworkConnectionInfo {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        (self.name.to_string(), self.ip.to_string()).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for NetworkConnectionInfo {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let (mut name, mut ip) = <(String, String) as Deserialize>::deserialize(deserializer)?;
+        name.reserve(100);
+        ip.reserve(100);
+        Ok(Self {
+            name: ImString::new(name),
+            ip: ImString::new(ip),
+            ..Default::default()
+        })
     }
 }
