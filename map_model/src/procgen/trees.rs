@@ -32,7 +32,7 @@ impl Default for Trees {
 
 impl Trees {
     pub fn remove_near_filter(&mut self, bbox: AABB, f: impl Fn(Vec2) -> bool) {
-        self.gather_non_generated_chunks(bbox);
+        self.generate_chunks(bbox);
 
         let to_remove: Vec<_> = self
             .grid
@@ -52,25 +52,39 @@ impl Trees {
     fn cell(p: Vec2) -> (i32, i32) {
         (p.x as i32 / CELL_SIZE, p.y as i32 / CELL_SIZE)
     }
-    pub fn gather_non_generated_chunks(&self, aabb: AABB) -> Vec<(i32, i32)> {
+
+    fn chunks_iter(&self, aabb: AABB) -> Option<impl Iterator<Item = (i32, i32)> + '_> {
         if aabb.h().min(aabb.w()) > 4000.0 {
-            return vec![];
+            return None;
         }
         let ll = Self::cell(aabb.ll);
         let ur = Self::cell(aabb.ur);
-        let mut not_generated = vec![];
-        for y in ll.1..=ur.1 {
-            for x in ll.0..=ur.0 {
+        Some((ll.1..=ur.1).flat_map(move |y| {
+            (ll.0..=ur.0).flat_map(move |x| {
                 let cell = (x, y);
                 if !self.generated.contains(&cell) {
-                    not_generated.push(cell);
+                    Some(cell)
+                } else {
+                    None
                 }
-            }
-        }
-        not_generated
+            })
+        }))
     }
 
-    pub fn add_forest(&mut self, (x, y): (i32, i32)) {
+    pub fn check_non_generated_chunks(&self, aabb: AABB) -> bool {
+        unwrap_or!(self.chunks_iter(aabb), return false)
+            .next()
+            .is_some()
+    }
+
+    pub fn generate_chunks(&mut self, aabb: AABB) {
+        let cells = unwrap_or!(self.chunks_iter(aabb), return).collect::<Vec<_>>();
+        for cell in cells {
+            self.add_forest(cell)
+        }
+    }
+
+    fn add_forest(&mut self, (x, y): (i32, i32)) {
         if !self.generated.insert((x, y)) {
             return;
         }
