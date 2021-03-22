@@ -2,7 +2,9 @@ use common::{
     Z_ARROW, Z_CROSSWALK, Z_HOUSE, Z_INTER_BG, Z_LANE, Z_LANE_BG, Z_LOT, Z_SIDEWALK, Z_SIGNAL,
     Z_TREE, Z_TREE_SHADOW,
 };
+use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::Restrict;
+use egregoria::Egregoria;
 use flat_spatial::storage::Storage;
 use geom::{lerp, vec2, Color, LinearColor, AABB};
 use map_model::{
@@ -48,7 +50,7 @@ pub struct RoadRenderer {
 }
 
 impl RoadRenderer {
-    pub fn new(gfx: &mut GfxContext) -> Self {
+    pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         let arrow_builder = SpriteBatchBuilder::from_path(gfx, "assets/arrow_one_way.png");
 
         gfx.register_pipeline::<ShadedBatch<Crosswalk>>();
@@ -69,7 +71,7 @@ impl RoadRenderer {
 
         let mut buildings_builder = HashMap::new();
 
-        for descr in egregoria::souls::goods_company::GOODS_BUILDINGS {
+        for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
             buildings_builder.insert(
                 descr.bkind,
                 SpriteBatchBuilder::new(
