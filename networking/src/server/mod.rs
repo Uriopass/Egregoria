@@ -87,7 +87,7 @@ impl<WORLD: Serialize> Server<WORLD> {
                         let _ = self.message_unreliable(e, packet);
                     }
                 }
-                NetEvent::Connected(e) => self.tcp_connected(e),
+                NetEvent::Connected(e, _) => self.tcp_connected(e),
                 NetEvent::Disconnected(e) => self.tcp_disconnected(e),
             }
         }

@@ -1625,14 +1625,15 @@ dependencies = [
 
 [[package]]
 name = "message-io"
-version = "0.10.2"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6511b2dc230daa94cd3b40b9909769910809d1604fa7e54e6c073fce1c931eef"
+checksum = "7534c6d858a12519cb157f5b05f8010fe313739598fff2c5892d04f034f90931"
 dependencies = [
  "crossbeam",
  "log",
  "mio 0.7.10",
  "net2",
+ "serde",
  "strum",
  "url",
 ]
