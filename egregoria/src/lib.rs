@@ -14,7 +14,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 use geom::{Transform, Vec2};
-use map_model::{Map, SerializedMap};
+use map_model::Map;
 use pedestrians::Location;
 use utils::par_command_buffer::Deleted;
 pub use utils::par_command_buffer::ParCommandBuffer;
@@ -87,6 +87,8 @@ macro_rules! register_resource_noserialize {
         });
     };
 }
+
+register_resource!(Map, "map");
 
 #[macro_use]
 extern crate common;
@@ -177,7 +179,6 @@ impl Egregoria {
         goria.insert(RandProvider::new(RNG_SEED));
         goria.insert(Deleted::<Collider>::default());
         goria.insert(Deleted::<Vehicle>::default());
-        goria.insert(Map::empty());
 
         for s in inventory::iter::<InitFunc> {
             (s.f)(&mut goria);
@@ -288,7 +289,6 @@ impl Serialize for Egregoria {
 
         let ser = SerializedWorld {
             world,
-            map: SerializedMap::from(&*self.read::<Map>()),
             res: m,
             tick: self.tick,
         };
@@ -322,7 +322,6 @@ impl<'de> Deserialize<'de> for Egregoria {
             }
         });
 
-        goria.insert::<Map>(ser.map.into());
         Ok(goria)
     }
 }
@@ -330,7 +329,6 @@ impl<'de> Deserialize<'de> for Egregoria {
 #[derive(Serialize, Deserialize)]
 struct SerializedWorld {
     world: Vec<u8>,
-    map: SerializedMap,
     res: HashMap<String, Vec<u8>>,
     tick: u32,
 }

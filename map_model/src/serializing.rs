@@ -1,18 +1,18 @@
 use crate::procgen::Trees;
 use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap};
 use geom::Shape;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Default, Serialize, Deserialize)]
-pub struct SerializedMap {
-    pub(crate) roads: Roads,
-    pub(crate) intersections: Intersections,
-    pub(crate) buildings: Buildings,
-    pub(crate) lanes: Lanes,
-    pub(crate) parking: ParkingSpots,
-    pub(crate) lots: Lots,
-    pub(crate) trees: Trees,
-    pub(crate) dirt_id: u32,
+pub(crate) struct SerializedMap {
+    pub roads: Roads,
+    pub intersections: Intersections,
+    pub buildings: Buildings,
+    pub lanes: Lanes,
+    pub parking: ParkingSpots,
+    pub lots: Lots,
+    pub trees: Trees,
+    pub dirt_id: u32,
 }
 
 impl From<&Map> for SerializedMap {
@@ -70,4 +70,13 @@ fn mk_spatial_map(m: &SerializedMap) -> SpatialMap {
         sm.insert(l.id, l.shape.bbox());
     }
     sm
+}
+
+impl Serialize for Map {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        SerializedMap::from(self).serialize(serializer)
+    }
 }
