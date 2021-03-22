@@ -105,7 +105,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                         self.message_unreliable(packet)
                     }
                 }
-                NetEvent::Connected(e) => {
+                NetEvent::Connected(e, _) => {
                     log::info!("connected {}", e)
                 }
                 NetEvent::Disconnected(e) => {

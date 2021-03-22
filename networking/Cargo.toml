@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 common = { path = "../common" }
-message-io = { version = "0.10", default-features = false, features = ["udp", "tcp"] }
+message-io = { version = "0.11", default-features = false, features = ["udp", "tcp"] }
 bincode = "1.3.2"
 serde = "1.0.124"
 log = "0.4.14"
