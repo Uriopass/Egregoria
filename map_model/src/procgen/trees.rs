@@ -1,7 +1,7 @@
 use crate::procgen::heightmap::tree_density;
 use flat_spatial::SparseGrid;
 use geom::{vec2, Vec2, AABB};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use std::collections::HashSet;
 
 const CELL_SIZE: i32 = 100;
@@ -13,7 +13,8 @@ pub struct Tree {
     pub dir: Vec2,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
+#[serde(from = "SerializedTrees")]
 pub struct Trees {
     pub grid: SparseGrid<Tree>,
     pub generated: HashSet<(i32, i32)>,
@@ -123,30 +124,13 @@ impl Trees {
                 let theta = std::f32::consts::TAU * common::rand::rand3(startx, j as f32, k as f32);
                 let dist_coeff = 3.0 * common::rand::rand3(startx, j as f32, k as f32 + 10.0);
 
-                let srand = common::rand::rand3(sample.x as f32, sample.y, k as f32);
-                let scale = 10.0 + 6.0 * srand;
+                let pos = sample + Vec2::from_angle(theta) * (13.0 * (0.75 + dist_coeff));
 
-                let pos = sample + Vec2::from_angle(theta) * (scale * (0.75 + dist_coeff));
-
-                if self.grid.query_around(pos, 0.75 * scale).next().is_some() {
+                if self.grid.query_around(pos, 10.0).next().is_some() {
                     continue;
                 }
 
-                let crand = common::rand::rand3(pos.x as f32, pos.y, 1.0);
-
-                let colscale = 0.7 - 0.2 * crand;
-                let angle = 2.0
-                    * std::f32::consts::PI
-                    * common::rand::rand3(pos.x as f32, pos.y as f32, 2.0);
-
-                self.grid.insert(
-                    pos,
-                    Tree {
-                        size: scale,
-                        col: colscale,
-                        dir: Vec2::from_angle(angle),
-                    },
-                );
+                self.grid.insert(pos, Tree::new(pos));
                 self.dirt_id += 1;
 
                 active.push(pos);
@@ -160,5 +144,89 @@ impl Trees {
             let v = self.grid.get(h).unwrap();
             (v.0, *v.1)
         })
+    }
+}
+
+impl Tree {
+    pub fn new(pos: Vec2) -> Self {
+        let crand = common::rand::rand3(pos.x as f32, pos.y, 1.0);
+
+        let colscale = 0.7 - 0.2 * crand;
+        let angle =
+            2.0 * std::f32::consts::PI * common::rand::rand3(pos.x as f32, pos.y as f32, 2.0);
+
+        let srand = common::rand::rand3(pos.x as f32, pos.y, 3.0);
+        let scale = 10.0 + 6.0 * srand;
+
+        Tree {
+            size: scale,
+            col: colscale,
+            dir: Vec2::from_angle(angle),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct SmolTree {
+    diffx: u8,
+    diffy: u8,
+}
+
+impl SmolTree {
+    pub fn new(pos: Vec2, cell: (i32, i32)) -> Self {
+        let p1 = pos.x - (cell.0 * CELL_SIZE) as f32;
+        let p2 = pos.y - (cell.1 * CELL_SIZE) as f32;
+        Self {
+            diffx: ((p1 / CELL_SIZE as f32) * 256.0) as u8,
+            diffy: ((p2 / CELL_SIZE as f32) * 256.0) as u8,
+        }
+    }
+
+    pub fn to_pos(&self, cell: (i32, i32)) -> Vec2 {
+        Vec2 {
+            x: CELL_SIZE as f32 * (cell.0 as f32 + self.diffx as f32 / 256.0),
+            y: CELL_SIZE as f32 * (cell.1 as f32 + self.diffy as f32 / 256.0),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct SerializedTrees {
+    v: Vec<((i32, i32), Vec<SmolTree>)>,
+}
+
+impl From<SerializedTrees> for Trees {
+    fn from(ser: SerializedTrees) -> Self {
+        let mut t = Self::default();
+        for (cell, v) in ser.v {
+            t.generated.insert(cell);
+            for tree in v {
+                let pos = tree.to_pos(cell);
+                t.grid.insert(pos, Tree::new(pos));
+            }
+        }
+        t
+    }
+}
+
+impl Serialize for Trees {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        let mut t = SerializedTrees { v: vec![] };
+
+        for (&cell, gcell) in self.grid.storage().cells() {
+            t.v.push((
+                cell,
+                gcell
+                    .objs
+                    .iter()
+                    .map(move |(_, pos)| SmolTree::new(*pos, cell))
+                    .collect(),
+            ))
+        }
+
+        t.serialize(serializer)
     }
 }
