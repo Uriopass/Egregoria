@@ -113,10 +113,10 @@ macro_rules! register_resource {
         inventory::submit! {
             $crate::uiworld::SaveLoadFunc {
                 save: Box::new(|uiworld| {
-                     common::saveload::save(&*uiworld.read::<$t>(), $name);
+                     common::saveload::save_json(&*uiworld.read::<$t>(), $name);
                 }),
                 load: Box::new(|uiworld| {
-                    if let Some(res) = common::saveload::load::<$t>($name) {
+                    if let Some(res) = common::saveload::load_json::<$t>($name) {
                         uiworld.insert(res);
                     }
                 })
