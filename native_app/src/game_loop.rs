@@ -57,7 +57,7 @@ impl State {
                 CameraHandler::new(
                     ctx.gfx.size.0 as f32,
                     ctx.gfx.size.1 as f32,
-                    vec3(0.0, 0.0, 20.0),
+                    vec3(0.0, 0.0, 1000.0),
                 )
             },
             |camera| CameraHandler {
