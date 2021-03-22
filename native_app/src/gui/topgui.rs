@@ -6,6 +6,7 @@ use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
 use common::GameTime;
+use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
 use imgui::{im_str, StyleColor, StyleVar, Ui, Window};
 use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
@@ -53,7 +54,7 @@ impl Gui {
 
         self.menu_bar(ui, uiworld, goria);
 
-        Self::toolbox(ui, uiworld);
+        Self::toolbox(ui, uiworld, goria);
 
         self.time_controls(ui, uiworld, goria);
 
@@ -78,7 +79,7 @@ impl Gui {
         }
     }
 
-    pub fn toolbox(ui: &Ui, uiworld: &mut UiWorld) {
+    pub fn toolbox(ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
         let [w, h] = ui.io().display_size;
         let tok = ui.push_style_vars(&[
             StyleVar::WindowPadding([0.0, 0.0]),
@@ -209,7 +210,8 @@ impl Gui {
         }
 
         let building_select_w = 160.0;
-        let gbuildings = egregoria::souls::goods_company::GOODS_BUILDINGS;
+        let registry = goria.read::<GoodsCompanyRegistry>();
+        let mut gbuildings = registry.descriptions.values().peekable();
 
         if matches!(*uiworld.read::<Tool>(), Tool::SpecialBuilding) {
             Window::new(im_str!("Buildings"))
@@ -226,7 +228,7 @@ impl Gui {
                     let mut cur_build = uiworld.write::<SpecialBuildingResource>();
 
                     if cur_build.opt.is_none() {
-                        let d = &gbuildings[0];
+                        let d = gbuildings.peek().unwrap();
                         cur_build.opt =
                             Some((d.bkind, d.bgen, d.size, d.asset_location.to_string()))
                     }
@@ -283,14 +285,14 @@ impl Gui {
                                 ui.new_line();
                                 if !descr.recipe.consumption.is_empty() {
                                     ui.text("consumption:");
-                                    for (kind, n) in descr.recipe.consumption {
+                                    for (kind, n) in &descr.recipe.consumption {
                                         ui.text(im_str!("- {} x{}", kind, n));
                                     }
                                     ui.new_line();
                                 }
                                 if !descr.recipe.production.is_empty() {
                                     ui.text("production:");
-                                    for (kind, n) in descr.recipe.production {
+                                    for (kind, n) in &descr.recipe.production {
                                         ui.text(im_str!("- {} x{}", kind, n));
                                     }
                                     ui.new_line();

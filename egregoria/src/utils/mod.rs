@@ -4,7 +4,7 @@ pub mod par_command_buffer;
 pub mod rand_provider;
 pub mod scheduler;
 
-pub fn rand_world<T>(world: &mut Egregoria) -> T
+pub fn rand_world<T>(world: &Egregoria) -> T
 where
     rand_distr::Standard: rand_distr::Distribution<T>,
 {

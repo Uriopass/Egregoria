@@ -86,17 +86,17 @@ impl State {
         }
 
         Self {
-            goria,
             uiw: uiworld,
             game_schedule,
             camera,
             imgui_render,
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
-            road_renderer: RoadRenderer::new(&mut ctx.gfx),
+            road_renderer: RoadRenderer::new(&mut ctx.gfx, &goria),
             bg_renderer: BackgroundRender::new(&mut ctx.gfx),
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
             light: LightRender::new(&mut ctx.gfx),
+            goria,
         }
     }
 

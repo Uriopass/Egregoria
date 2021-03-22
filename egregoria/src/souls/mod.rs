@@ -1,5 +1,5 @@
 use crate::map_dynamic::BuildingInfos;
-use crate::souls::goods_company::{company_soul, CompanyKind, GoodsCompany, GOODS_BUILDINGS};
+use crate::souls::goods_company::{company_soul, CompanyKind, GoodsCompany, GoodsCompanyRegistry};
 use crate::souls::human::spawn_human;
 use crate::vehicles::{spawn_parked_vehicle, VehicleKind};
 use crate::Egregoria;
@@ -43,33 +43,43 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
         n_souls_added += 1;
     }
 
-    for des in GOODS_BUILDINGS {
-        for &(build_id, pos) in empty_buildings.get(&des.bkind).unwrap_or(&vec![]) {
-            let mut trucks = vec![];
+    for (bkind, &(build_id, pos)) in empty_buildings
+        .iter()
+        .flat_map(|(bkind, v)| v.iter().map(move |x| (bkind, x)))
+    {
+        let registry = goria.read::<GoodsCompanyRegistry>();
+        let des = &unwrap_or!(registry.descriptions.get(bkind), continue);
 
-            if let CompanyKind::Factory { n_trucks } = des.kind {
+        let ckind = des.kind;
+        let mk_trucks = |goria: &mut Egregoria| {
+            let mut trucks = vec![];
+            if let CompanyKind::Factory { n_trucks } = ckind {
                 for _ in 0..n_trucks {
                     trucks.extend(spawn_parked_vehicle(goria, VehicleKind::Truck, pos))
                 }
                 if trucks.is_empty() {
-                    continue;
+                    return None;
                 }
             }
+            Some(trucks)
+        };
 
-            let comp = GoodsCompany {
-                kind: des.kind,
-                building: build_id,
-                recipe: des.recipe,
-                workers: des.n_workers,
-                work_seconds: 0.0,
-                driver: None,
-                trucks,
-            };
+        let comp = GoodsCompany {
+            kind: des.kind,
+            building: build_id,
+            recipe: des.recipe.clone(),
+            workers: des.n_workers,
+            work_seconds: 0.0,
+            driver: None,
+            trucks: {
+                drop(registry);
+                unwrap_or!(mk_trucks(goria), continue)
+            },
+        };
 
-            company_soul(goria, comp);
+        company_soul(goria, comp);
 
-            n_souls_added += 1;
-        }
+        n_souls_added += 1;
     }
 
     if n_souls_added > 0 {

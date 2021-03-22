@@ -12,6 +12,7 @@ pub struct SerializedMap {
     pub(crate) parking: ParkingSpots,
     pub(crate) lots: Lots,
     pub(crate) trees: Trees,
+    pub(crate) dirt_id: u32,
 }
 
 impl From<&Map> for SerializedMap {
@@ -28,6 +29,7 @@ impl From<&Map> for SerializedMap {
             parking: m.parking.clone(),
             lots: m.lots.clone(),
             trees: m.trees.clone(),
+            dirt_id: m.dirt_id,
         }
     }
 }
@@ -48,7 +50,7 @@ impl From<SerializedMap> for Map {
             lots: sel.lots,
             parking: sel.parking,
             trees: sel.trees,
-            dirt_id: 0,
+            dirt_id: sel.dirt_id,
         }
     }
 }

@@ -31,6 +31,7 @@ use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Desire, Home, Work};
+use crate::souls::goods_company::GoodsCompany;
 use crate::vehicles::Vehicle;
 use serde::de::Error;
 use std::collections::HashMap;
@@ -373,6 +374,7 @@ fn registry() -> Registry<u64> {
       Sold,
       Workers,
       Router,
+      GoodsCompany,
     );
     registry
 }
