@@ -39,11 +39,10 @@ pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     specialbuilding::specialbuilding(goria, uiworld);
     hand_reset(uiworld);
 
-    let chunks = goria
-        .read::<Map>()
-        .trees
-        .gather_non_generated_chunks(uiworld.read::<Camera>().screen_aabb());
-    uiworld.commands().map_generate_trees(chunks);
+    let cam = uiworld.read::<Camera>().screen_aabb();
+    if goria.read::<Map>().trees.check_non_generated_chunks(cam) {
+        uiworld.commands().map_generate_trees(cam);
+    }
 }
 
 register_resource_noserialize!(InspectedEntity);

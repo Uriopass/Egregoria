@@ -41,12 +41,12 @@ pub enum WorldCommand {
     MapLoadTestField,
     MapClear,
     SetGameTime(GameTime),
-    MapGenerateTrees(Vec<(i32, i32)>),
+    MapGenerateTrees(AABB),
 }
 
 use crate::map_dynamic::BuildingInfos;
 use common::GameTime;
-use geom::{Vec2, OBB};
+use geom::{Vec2, AABB, OBB};
 use WorldCommand::*;
 
 impl WorldCommands {
@@ -58,8 +58,8 @@ impl WorldCommands {
         self.commands.iter()
     }
 
-    pub fn map_generate_trees(&mut self, trees: Vec<(i32, i32)>) {
-        self.commands.push(MapGenerateTrees(trees));
+    pub fn map_generate_trees(&mut self, aabb: AABB) {
+        self.commands.push(MapGenerateTrees(aabb));
     }
 
     pub fn map_load_paris(&mut self) {
@@ -171,10 +171,8 @@ impl WorldCommand {
                 map_model::procgen::load_testfield(&mut *goria.write::<Map>())
             }
             MapClear => goria.write::<Map>().clear(),
-            MapGenerateTrees(ref cells) => {
-                for cell in cells {
-                    goria.write::<Map>().trees.add_forest(*cell);
-                }
+            MapGenerateTrees(aabb) => {
+                goria.write::<Map>().trees.generate_chunks(aabb);
             }
         }
     }
