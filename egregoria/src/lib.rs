@@ -33,6 +33,7 @@ use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Desire, Home, Work};
 use crate::souls::goods_company::GoodsCompany;
 use crate::vehicles::Vehicle;
+use common::saveload::Encoder;
 use serde::de::Error;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -66,11 +67,11 @@ macro_rules! register_resource {
             $crate::SaveLoadFunc {
                 name: $name,
                 save: Box::new(|goria| {
-                     common::saveload::encode(&*goria.read::<$t>()).unwrap()
+                     <common::saveload::Binary as common::saveload::Encoder>::encode(&*goria.read::<$t>()).unwrap()
                 }),
                 load: Box::new(|goria, v| {
                     if let Some(v) = v {
-                        if let Some(res) = common::saveload::decode::<$t>(&v) {
+                        if let Ok(res) = <common::saveload::Binary as common::saveload::Encoder>::decode::<$t>(&v) {
                             goria.insert(res);
                         }
                     }
@@ -276,7 +277,7 @@ impl Serialize for Egregoria {
             &entity_serializer,
         );
 
-        let world = common::saveload::encode(&s).unwrap();
+        let world = common::saveload::Binary::encode(&s).unwrap();
 
         let mut m: HashMap<String, Vec<u8>> = HashMap::new();
 
@@ -310,9 +311,13 @@ impl<'de> Deserialize<'de> for Egregoria {
 
         let entity_serializer = Canon::default();
 
-        let mut w: World =
-            common::saveload::decode_seed(registry.as_deserialize(&entity_serializer), &ser.world)
-                .ok_or_else(|| <D as Deserializer>::Error::custom("error deserializing world"))?;
+        let mut w: World = common::saveload::Binary::decode_seed(
+            registry.as_deserialize(&entity_serializer),
+            &ser.world,
+        )
+        .map_err(|e| {
+            <D as Deserializer>::Error::custom(format!("error deserializing world: {}", e))
+        })?;
 
         goria.world.move_from(&mut w, &any());
 

@@ -124,9 +124,8 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                     self.network
                         .send(self.tcp, &*encode(&ClientReliablePacket::BeginCatchUp));
                     return match decode(&*world) {
-                        Ok(x) => PollResult::GameWorld(input, x),
-                        Err(e) => {
-                            log::error!("couldn't decode world: {}", e);
+                        Some(x) => PollResult::GameWorld(input, x),
+                        None => {
                             return PollResult::Error;
                         }
                     };
@@ -301,7 +300,7 @@ fn decode_merged<I: DeserializeOwned>(me: UserID, x: MergedInputs) -> Vec<Server
         .flat_map(|(id, x)| {
             Some(ServerInput {
                 sent_by_me: id == me,
-                inp: decode(&x.0).ok()?,
+                inp: decode(&x.0)?,
             })
         })
         .collect()

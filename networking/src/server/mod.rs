@@ -73,15 +73,15 @@ impl<WORLD: Serialize> Server<WORLD> {
                 NetEvent::Message(e, data) => {
                     if is_reliable(&e) {
                         let packet = match decode::<ClientReliablePacket>(&data) {
-                            Ok(x) => x,
-                            Err(_) => break,
+                            Some(x) => x,
+                            None => break,
                         };
 
                         let _ = self.message_reliable(e, packet, world);
                     } else {
                         let packet = match decode::<ClientUnreliablePacket>(&data) {
-                            Ok(x) => x,
-                            Err(_) => break,
+                            Some(x) => x,
+                            None => break,
                         };
 
                         let _ = self.message_unreliable(e, packet);

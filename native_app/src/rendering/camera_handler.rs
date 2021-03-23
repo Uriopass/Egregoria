@@ -1,6 +1,7 @@
 use crate::context::Context;
 use crate::gui::windows::settings::Settings;
 use crate::input::{KeyCode, MouseButton};
+use common::saveload::Encoder;
 use geom::{vec2, Camera, Vec2, Vec3};
 use wgpu_engine::Tesselator;
 
@@ -42,7 +43,7 @@ impl CameraHandler {
     }
 
     fn save(&self) {
-        common::saveload::save_silent_json(&self.camera, "camera");
+        common::saveload::JSON::save_silent(&self.camera, "camera");
     }
 
     pub fn camera_movement(
