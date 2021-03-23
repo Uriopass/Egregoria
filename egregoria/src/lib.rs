@@ -117,6 +117,7 @@ register_resource!(
 );
 
 register_resource!(CollisionWorld, "coworld", CollisionWorld::new(100));
+register_resource!(RandProvider, "randprovider", RandProvider::new(RNG_SEED));
 
 #[macro_use]
 extern crate common;
@@ -199,7 +200,6 @@ impl Egregoria {
         info!("Seed is {}", RNG_SEED);
 
         // Basic assets init
-        goria.insert(RandProvider::new(RNG_SEED));
         goria.insert(Deleted::<Collider>::default());
         goria.insert(Deleted::<Vehicle>::default());
 
