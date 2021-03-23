@@ -43,7 +43,7 @@ impl Default for PhysicsObject {
     }
 }
 
-pub type CollisionWorld = flat_spatial::DenseGrid<PhysicsObject>;
+pub type CollisionWorld = flat_spatial::SparseGrid<PhysicsObject>;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Collider(pub GridHandle);

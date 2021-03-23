@@ -1,4 +1,5 @@
 use crate::procgen::heightmap::tree_density;
+use flat_spatial::storage::Storage;
 use flat_spatial::SparseGrid;
 use geom::{vec2, Vec2, AABB};
 use serde::{Deserialize, Serialize, Serializer};
@@ -166,27 +167,22 @@ impl Tree {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct SmolTree {
-    diffx: u8,
-    diffy: u8,
+type SmolTree = u16;
+
+pub fn new_smoltree(pos: Vec2, cell: (i32, i32)) -> SmolTree {
+    let diffx = pos.x - (cell.0 * CELL_SIZE) as f32;
+    let diffy = pos.y - (cell.1 * CELL_SIZE) as f32;
+
+    ((((diffx / CELL_SIZE as f32) * 256.0) as u8 as u16) << 8)
+        + ((diffy / CELL_SIZE as f32) * 256.0) as u8 as u16
 }
 
-impl SmolTree {
-    pub fn new(pos: Vec2, cell: (i32, i32)) -> Self {
-        let p1 = pos.x - (cell.0 * CELL_SIZE) as f32;
-        let p2 = pos.y - (cell.1 * CELL_SIZE) as f32;
-        Self {
-            diffx: ((p1 / CELL_SIZE as f32) * 256.0) as u8,
-            diffy: ((p2 / CELL_SIZE as f32) * 256.0) as u8,
-        }
-    }
-
-    pub fn to_pos(&self, cell: (i32, i32)) -> Vec2 {
-        Vec2 {
-            x: CELL_SIZE as f32 * (cell.0 as f32 + self.diffx as f32 / 256.0),
-            y: CELL_SIZE as f32 * (cell.1 as f32 + self.diffy as f32 / 256.0),
-        }
+pub fn to_pos(encoded: SmolTree, cell: (i32, i32)) -> Vec2 {
+    let diffx = (encoded >> 8) as u8;
+    let diffy = (encoded & 0xFF) as u8;
+    Vec2 {
+        x: CELL_SIZE as f32 * (cell.0 as f32 + diffx as f32 / 256.0),
+        y: CELL_SIZE as f32 * (cell.1 as f32 + diffy as f32 / 256.0),
     }
 }
 
@@ -201,7 +197,7 @@ impl From<SerializedTrees> for Trees {
         for (cell, v) in ser.v {
             t.generated.insert(cell);
             for tree in v {
-                let pos = tree.to_pos(cell);
+                let pos = to_pos(tree, cell);
                 t.grid.insert(pos, Tree::new(pos));
             }
         }
@@ -216,15 +212,19 @@ impl Serialize for Trees {
     {
         let mut t = SerializedTrees { v: vec![] };
 
-        for (&cell, gcell) in self.grid.storage().cells() {
-            t.v.push((
-                cell,
-                gcell
-                    .objs
-                    .iter()
-                    .map(move |(_, pos)| SmolTree::new(*pos, cell))
-                    .collect(),
-            ))
+        for &cell in &self.generated {
+            let gcell = self.grid.storage().cell(cell);
+            if let Some(x) = gcell {
+                t.v.push((
+                    cell,
+                    x.objs
+                        .iter()
+                        .map(move |(_, pos)| new_smoltree(*pos, cell))
+                        .collect(),
+                ))
+            } else {
+                t.v.push((cell, vec![]))
+            }
         }
 
         t.serialize(serializer)
