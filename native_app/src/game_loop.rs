@@ -26,6 +26,7 @@ use crate::rendering::{
 };
 use crate::timestep::Timestep;
 use crate::uiworld::{ReceivedCommands, UiWorld};
+use common::saveload::Encoder;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
 use networking::PollResult;
@@ -52,7 +53,7 @@ pub struct State {
 
 impl State {
     pub fn new(ctx: &mut Context) -> Self {
-        let camera = common::saveload::load_json("camera").map_or_else(
+        let camera = common::saveload::JSON::load("camera").map_or_else(
             || {
                 CameraHandler::new(
                     ctx.gfx.size.0 as f32,
@@ -69,14 +70,15 @@ impl State {
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
-        let goria: Egregoria = common::saveload::load("world").unwrap_or_else(Egregoria::empty);
+        let goria: Egregoria =
+            common::saveload::Binary::load("world").unwrap_or_else(Egregoria::empty);
         let game_schedule = Egregoria::schedule();
 
         let mut uiworld = UiWorld::init();
 
         uiworld.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));
 
-        let gui: Gui = common::saveload::load_json("gui").unwrap_or_default();
+        let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
         uiworld.insert(WorldCommands::default());
 

@@ -5,6 +5,7 @@ use crate::gui::windows::ImguiWindows;
 use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
+use common::saveload::Encoder;
 use common::GameTime;
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
@@ -67,14 +68,14 @@ impl Gui {
         let every = uiworld.read::<Settings>().auto_save_every.into();
         if let Some(every) = every {
             if self.last_save.elapsed() > every {
-                common::saveload::save(goria, "world");
+                common::saveload::Binary::save(goria, "world");
                 uiworld.save_to_disk();
                 self.last_save = Instant::now();
             }
         }
 
         if self.last_gui_save.elapsed() > Duration::from_secs(1) {
-            common::saveload::save_silent_json(self, "gui");
+            common::saveload::JSON::save_silent(self, "gui");
             self.last_gui_save = Instant::now();
         }
     }
@@ -417,7 +418,7 @@ impl Gui {
 
             let h = ui.window_size()[1];
             if ui.button(im_str!("Save"), [80.0, h]) {
-                common::saveload::save(goria,"world");
+                common::saveload::Binary::save(goria,"world");
                 uiworld.save_to_disk();
             }
 

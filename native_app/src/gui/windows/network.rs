@@ -1,6 +1,7 @@
 use crate::network::{Client, NetworkState, Server};
 use crate::timestep::Timestep;
 use crate::uiworld::UiWorld;
+use common::saveload::Encoder;
 use egregoria::Egregoria;
 use imgui::{im_str, ImString, Ui};
 use networking::{ConnectConf, Frame, ServerConfiguration};
@@ -19,7 +20,7 @@ pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Eg
     window.build(ui, || {
         let mut state = uiworld.write::<NetworkState>();
         let mut info = uiworld.write::<NetworkConnectionInfo>();
-        common::saveload::save_silent_json(&*info, "netinfo");
+        common::saveload::JSON::save_silent(&*info, "netinfo");
 
         match *state {
             NetworkState::Singleplayer(_) => {
