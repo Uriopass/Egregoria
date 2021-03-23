@@ -11,7 +11,8 @@ mod server;
 mod worldsend;
 
 pub use client::{Client, ConnectConf, PollResult};
-use common::saveload::{Binary, Encoder};
+use common::saveload::{Bincode, Encoder};
+use serde::de::DeserializeOwned;
 pub use server::{Server, ServerConfiguration};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -50,7 +51,7 @@ impl Frame {
     }
 }
 
-type Enc = Binary;
+type Enc = Bincode;
 
 pub(crate) fn try_encode<T: Serialize>(x: &T) -> Option<Vec<u8>> {
     Enc::encode(x).ok()
@@ -60,7 +61,7 @@ pub(crate) fn encode<T: Serialize>(x: &T) -> Vec<u8> {
     try_encode(x).expect("failed serializing")
 }
 
-pub(crate) fn decode<'a, T: Deserialize<'a>>(x: &'a [u8]) -> Option<T> {
+pub(crate) fn decode<T: DeserializeOwned>(x: &[u8]) -> Option<T> {
     Enc::decode(x).ok()
 }
 
