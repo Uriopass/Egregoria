@@ -4,8 +4,10 @@ use crate::Egregoria;
 use legion::storage::Component;
 use legion::systems::Resource;
 use legion::Entity;
+use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 
+#[derive(Serialize, Deserialize)]
 pub struct Deleted<T>(Vec<T>);
 impl<T> Default for Deleted<T> {
     fn default() -> Self {
