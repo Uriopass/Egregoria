@@ -5,22 +5,6 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use atomic_refcell::{AtomicRef, AtomicRefMut};
-use legion::serialize::Canon;
-use legion::storage::Component;
-use legion::systems::{ParallelRunnable, Resource};
-use legion::{any, Entity, IntoQuery, Registry, Resources, World};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
-use geom::{Transform, Vec2};
-use map_model::Map;
-use pedestrians::Location;
-use utils::par_command_buffer::Deleted;
-pub use utils::par_command_buffer::ParCommandBuffer;
-use utils::rand_provider::RandProvider;
-use utils::scheduler::SeqSchedule;
-
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommands};
 use crate::map_dynamic::{Itinerary, Router};
@@ -33,10 +17,25 @@ use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Desire, Home, Work};
 use crate::souls::goods_company::GoodsCompany;
 use crate::vehicles::Vehicle;
+use atomic_refcell::{AtomicRef, AtomicRefMut};
 use common::saveload::Encoder;
+use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
+use geom::{Transform, Vec2};
+use legion::serialize::Canon;
+use legion::storage::Component;
+use legion::systems::{ParallelRunnable, Resource};
+use legion::{any, Entity, IntoQuery, Registry, Resources, World};
+use map_model::Map;
+use pedestrians::Location;
 use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
+use utils::par_command_buffer::Deleted;
+use utils::rand_provider::RandProvider;
+use utils::scheduler::SeqSchedule;
+
+pub use utils::par_command_buffer::ParCommandBuffer;
 
 macro_rules! register_system {
     ($f: ident) => {
@@ -79,6 +78,26 @@ macro_rules! register_resource {
             }
         }
     };
+    ($t: ty, $name: expr, $init: expr) => {
+    init_func!(|goria| {
+        goria.insert($init);
+    });
+    inventory::submit! {
+        $crate::SaveLoadFunc {
+            name: $name,
+            save: Box::new(|goria| {
+                 <common::saveload::Binary as common::saveload::Encoder>::encode(&*goria.read::<$t>()).unwrap()
+            }),
+            load: Box::new(|goria, v| {
+                if let Some(v) = v {
+                    if let Ok(res) = <common::saveload::Binary as common::saveload::Encoder>::decode::<$t>(&v) {
+                        goria.insert(res);
+                    }
+                }
+            })
+        }
+    }
+};
 }
 
 macro_rules! register_resource_noserialize {
@@ -90,6 +109,14 @@ macro_rules! register_resource_noserialize {
 }
 
 register_resource!(Map, "map");
+
+register_resource!(
+    GameTime,
+    "game_time",
+    GameTime::new(0.0, SECONDS_PER_DAY as f64 + 10.0 * SECONDS_PER_HOUR as f64,)
+);
+
+register_resource!(CollisionWorld, "coworld", CollisionWorld::new(100));
 
 #[macro_use]
 extern crate common;
@@ -172,11 +199,6 @@ impl Egregoria {
         info!("Seed is {}", RNG_SEED);
 
         // Basic assets init
-        goria.insert(GameTime::new(
-            0.0,
-            SECONDS_PER_DAY as f64 + 10.0 * SECONDS_PER_HOUR as f64,
-        ));
-        goria.insert(CollisionWorld::new(100));
         goria.insert(RandProvider::new(RNG_SEED));
         goria.insert(Deleted::<Collider>::default());
         goria.insert(Deleted::<Vehicle>::default());
