@@ -119,6 +119,9 @@ register_resource!(
 register_resource!(CollisionWorld, "coworld", CollisionWorld::new(100));
 register_resource!(RandProvider, "randprovider", RandProvider::new(RNG_SEED));
 
+register_resource!(Deleted<Collider>, "deleted_collider");
+register_resource!(Deleted<Vehicle>, "deleted_vehicle");
+
 #[macro_use]
 extern crate common;
 
@@ -198,10 +201,6 @@ impl Egregoria {
         };
 
         info!("Seed is {}", RNG_SEED);
-
-        // Basic assets init
-        goria.insert(Deleted::<Collider>::default());
-        goria.insert(Deleted::<Vehicle>::default());
 
         for s in inventory::iter::<InitFunc> {
             (s.f)(&mut goria);
