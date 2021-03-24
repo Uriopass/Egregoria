@@ -11,7 +11,7 @@ mod server;
 mod worldsend;
 
 pub use client::{Client, ConnectConf, PollResult};
-use common::saveload::{Bincode, Encoder};
+use common::saveload::{CompressedBincode, Encoder};
 use serde::de::DeserializeOwned;
 pub use server::{Server, ServerConfiguration};
 use std::collections::hash_map::DefaultHasher;
@@ -51,7 +51,7 @@ impl Frame {
     }
 }
 
-type Enc = Bincode;
+type Enc = CompressedBincode;
 
 pub(crate) fn try_encode<T: Serialize>(x: &T) -> Option<Vec<u8>> {
     Enc::encode(x).ok()
