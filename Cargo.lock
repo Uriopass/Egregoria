@@ -359,7 +359,6 @@ dependencies = [
  "log",
  "miniz_oxide 0.4.4",
  "serde",
- "serde_cbor",
  "serde_json",
 ]
 
@@ -1167,12 +1166,6 @@ checksum = "363e3677e55ad168fef68cf9de3a4a310b53124c5e784c53a1d70e92d23f2126"
 dependencies = [
  "bitflags",
 ]
-
-[[package]]
-name = "half"
-version = "1.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62aca2aba2d62b4a7f5b33f3712cb1b0692779a56fb510499d5c0aa594daeaf3"
 
 [[package]]
 name = "hashbrown"
@@ -2440,16 +2433,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd761ff957cb2a45fbb9ab3da6512de9de55872866160b23c25f1a841e99d29f"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde_cbor"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e18acfa2f90e8b735b2836ab8d538de304cbb6729a7360729ea5a895d15a622"
-dependencies = [
- "half",
- "serde",
 ]
 
 [[package]]
