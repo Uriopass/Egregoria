@@ -86,8 +86,16 @@ impl TexturedMesh {
 
 impl Drawable for TexturedMesh {
     fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
-        let vert = compile_shader("assets/shaders/textured_mesh_shader.vert", None);
-        let frag = compile_shader("assets/shaders/textured_mesh_shader.frag", None);
+        let vert = compile_shader(
+            &gfx.device,
+            "assets/shaders/textured_mesh_shader.vert",
+            None,
+        );
+        let frag = compile_shader(
+            &gfx.device,
+            "assets/shaders/textured_mesh_shader.frag",
+            None,
+        );
 
         gfx.basic_pipeline(
             &[

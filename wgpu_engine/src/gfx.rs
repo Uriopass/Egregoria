@@ -329,9 +329,6 @@ impl GfxContext {
                     push_constant_ranges: &[],
                 });
 
-        let vs_module = self.device.create_shader_module(&vert_shader.0);
-        let fs_module = self.device.create_shader_module(&frag_shader.0);
-
         let color_states = [wgpu::ColorTargetState {
             format: self.color_texture.target.format,
             color_blend: wgpu::BlendState {
@@ -347,12 +344,12 @@ impl GfxContext {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &vs_module,
+                module: &vert_shader.0,
                 entry_point: "main",
                 buffers: vertex_buffers,
             },
             fragment: Some(wgpu::FragmentState {
-                module: &fs_module,
+                module: &frag_shader.0,
                 entry_point: "main",
                 targets: &color_states,
             }),

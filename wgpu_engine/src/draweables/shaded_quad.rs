@@ -65,8 +65,8 @@ impl<T: Shaders, U: 'static + ToU8Slice> ShadedQuadTex<T, U> {
 
 impl<T: 'static + Shaders, U: ToU8Slice + 'static> Drawable for ShadedQuadTex<T, U> {
     fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
-        let vert = T::vert_shader();
-        let frag = T::frag_shader();
+        let vert = T::vert_shader(&gfx.device);
+        let frag = T::frag_shader(&gfx.device);
 
         gfx.basic_pipeline(
             &[
