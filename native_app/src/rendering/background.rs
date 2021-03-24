@@ -11,12 +11,12 @@ pub struct BackgroundRender {
 }
 
 impl Shaders for Background {
-    fn vert_shader() -> CompiledShader {
-        compile_shader("assets/shaders/background.vert", None)
+    fn vert_shader(device: &wgpu_engine::wgpu::Device) -> CompiledShader {
+        compile_shader(device, "assets/shaders/background.vert", None)
     }
 
-    fn frag_shader() -> CompiledShader {
-        compile_shader("assets/shaders/background.frag", None)
+    fn frag_shader(device: &wgpu_engine::wgpu::Device) -> CompiledShader {
+        compile_shader(device, "assets/shaders/background.frag", None)
     }
 }
 

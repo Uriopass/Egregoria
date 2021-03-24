@@ -73,8 +73,8 @@ pub struct Mesh {
 
 impl Drawable for Mesh {
     fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
-        let vert = compile_shader("assets/shaders/mesh_shader.vert", None);
-        let frag = compile_shader("assets/shaders/mesh_shader.frag", None);
+        let vert = compile_shader(&gfx.device, "assets/shaders/mesh_shader.vert", None);
+        let frag = compile_shader(&gfx.device, "assets/shaders/mesh_shader.frag", None);
 
         gfx.basic_pipeline(
             &[&gfx.projection.layout],

@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use wgpu::{ShaderFlags, ShaderModuleDescriptor, ShaderSource};
+use wgpu::{ShaderFlags, ShaderModule, ShaderSource};
 
 #[derive(Copy, Clone)]
 #[non_exhaustive]
@@ -11,7 +11,7 @@ pub enum ShaderType {
     Fragment,
 }
 
-pub struct CompiledShader(pub ShaderModuleDescriptor<'static>, pub ShaderType);
+pub struct CompiledShader(pub ShaderModule, pub ShaderType);
 
 pub enum CacheState {
     Nofile,
@@ -26,15 +26,16 @@ fn cache_filename(p: &Path) -> Option<PathBuf> {
     Some(p.parent()?.parent()?.join("compiled_shaders").join(name))
 }
 
-fn mk_module(s: ShaderSource) -> ShaderModuleDescriptor {
-    wgpu::ShaderModuleDescriptor {
+fn mk_module(s: ShaderSource, device: &wgpu::Device) -> ShaderModule {
+    device.create_shader_module(&wgpu::ShaderModuleDescriptor {
         label: None,
         source: s,
         flags: ShaderFlags::VALIDATION,
-    }
+    })
 }
 
 fn find_in_cache(
+    device: &wgpu::Device,
     compiled_path: &PathBuf,
     stype: ShaderType,
     last_modified: SystemTime,
@@ -44,11 +45,9 @@ fn find_in_cache(
         Err(_) => return CacheState::Nofile,
     };
 
-    let read = Box::leak(Box::new(read));
+    let data = wgpu::util::make_spirv(&*read);
 
-    let data = wgpu::util::make_spirv(read);
-
-    let shader = CompiledShader(mk_module(data), stype);
+    let shader = CompiledShader(mk_module(data, device), stype);
 
     let f = match File::open(compiled_path) {
         Ok(x) => x,
@@ -80,7 +79,11 @@ fn save_to_cache(compiled_path: &PathBuf, spirv: &[u8]) -> Option<()> {
 }
 
 /// if type isn't provided it will be detected by looking at extension
-pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> CompiledShader {
+pub fn compile_shader(
+    device: &wgpu::Device,
+    p: impl AsRef<Path>,
+    stype: Option<ShaderType>,
+) -> CompiledShader {
     let p = p.as_ref();
 
     let compiled_name = cache_filename(p);
@@ -111,7 +114,7 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
     let cache_state =
         if let Some(last_modified) = sfile.metadata().ok().and_then(|x| x.modified().ok()) {
             if let Some(x) = &compiled_name {
-                find_in_cache(x, stype, last_modified)
+                find_in_cache(device, x, stype, last_modified)
             } else {
                 CacheState::Nofile
             }
@@ -168,10 +171,8 @@ pub fn compile_shader(p: impl AsRef<Path>, stype: Option<ShaderType>) -> Compile
 
     let _ = compiled_name.and_then(|x| save_to_cache(&x, &spirv));
 
-    let leaked = Box::leak(Box::new(spirv));
-
-    let data = wgpu::util::make_spirv(leaked);
-    CompiledShader(mk_module(data), stype)
+    let data = wgpu::util::make_spirv(&*spirv);
+    CompiledShader(mk_module(data, device), stype)
 }
 
 #[cfg(not(feature = "spirv_naga"))]

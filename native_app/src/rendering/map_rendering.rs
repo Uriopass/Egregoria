@@ -23,12 +23,12 @@ use wgpu_engine::{
 struct Crosswalk;
 
 impl Shaders for Crosswalk {
-    fn vert_shader() -> CompiledShader {
-        compile_shader("assets/shaders/crosswalk.vert", None)
+    fn vert_shader(device: &wgpu_engine::wgpu::Device) -> CompiledShader {
+        compile_shader(device, "assets/shaders/crosswalk.vert", None)
     }
 
-    fn frag_shader() -> CompiledShader {
-        compile_shader("assets/shaders/crosswalk.frag", None)
+    fn frag_shader(device: &wgpu_engine::wgpu::Device) -> CompiledShader {
+        compile_shader(device, "assets/shaders/crosswalk.frag", None)
     }
 }
 

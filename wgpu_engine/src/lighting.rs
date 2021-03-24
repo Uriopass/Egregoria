@@ -66,8 +66,8 @@ impl Drawable for LightBlit {
     where
         Self: Sized,
     {
-        let vert_shader = compile_shader("assets/shaders/blit_light.vert", None);
-        let frag_shader = compile_shader("assets/shaders/blit_light.frag", None);
+        let vert_shader = compile_shader(&gfx.device, "assets/shaders/blit_light.vert", None);
+        let frag_shader = compile_shader(&gfx.device, "assets/shaders/blit_light.frag", None);
 
         let render_pipeline_layout =
             gfx.device
@@ -76,9 +76,6 @@ impl Drawable for LightBlit {
                     bind_group_layouts: &[&gfx.projection.layout],
                     push_constant_ranges: &[],
                 });
-
-        let vs_module = gfx.device.create_shader_module(&vert_shader.0);
-        let fs_module = gfx.device.create_shader_module(&frag_shader.0);
 
         let color_states = [wgpu::ColorTargetState {
             format: gfx.light_texture.format,
@@ -95,12 +92,12 @@ impl Drawable for LightBlit {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &vs_module,
+                module: &vert_shader.0,
                 entry_point: "main",
                 buffers: &[UvVertex::desc(), LightInstance::desc()],
             },
             fragment: Some(wgpu::FragmentState {
-                module: &fs_module,
+                module: &frag_shader.0,
                 entry_point: "main",
                 targets: &color_states,
             }),
@@ -145,12 +142,8 @@ impl Drawable for LightMultiply {
                     push_constant_ranges: &[],
                 });
 
-        let vs_module = gfx
-            .device
-            .create_shader_module(&compile_shader("assets/shaders/light_multiply.vert", None).0);
-        let fs_module = gfx
-            .device
-            .create_shader_module(&compile_shader("assets/shaders/light_multiply.frag", None).0);
+        let vs_module = compile_shader(&gfx.device, "assets/shaders/light_multiply.vert", None).0;
+        let fs_module = compile_shader(&gfx.device, "assets/shaders/light_multiply.frag", None).0;
 
         let color_states = [wgpu::ColorTargetState {
             format: gfx.sc_desc.format,

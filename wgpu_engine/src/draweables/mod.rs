@@ -19,8 +19,8 @@ use std::rc::Rc;
 pub use textured_mesh::*;
 
 pub trait Shaders: 'static {
-    fn vert_shader() -> CompiledShader;
-    fn frag_shader() -> CompiledShader;
+    fn vert_shader(device: &wgpu::Device) -> CompiledShader;
+    fn frag_shader(device: &wgpu::Device) -> CompiledShader;
 }
 
 pub type IndexType = u32;
