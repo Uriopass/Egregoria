@@ -68,7 +68,7 @@ impl Gui {
         let every = uiworld.read::<Settings>().auto_save_every.into();
         if let Some(every) = every {
             if self.last_save.elapsed() > every {
-                common::saveload::CompressedCbor::save(goria, "world");
+                common::saveload::CompressedBincode::save(goria, "world");
                 uiworld.save_to_disk();
                 self.last_save = Instant::now();
             }
@@ -418,7 +418,7 @@ impl Gui {
 
             let h = ui.window_size()[1];
             if ui.button(im_str!("Save"), [80.0, h]) {
-                common::saveload::CompressedCbor::save(goria,"world");
+                common::saveload::CompressedBincode::save(goria,"world");
                 uiworld.save_to_disk();
             }
 

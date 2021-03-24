@@ -71,7 +71,7 @@ impl State {
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
         let goria: Egregoria =
-            common::saveload::CompressedCbor::load("world").unwrap_or_else(Egregoria::empty);
+            common::saveload::CompressedBincode::load("world").unwrap_or_else(Egregoria::empty);
         let game_schedule = Egregoria::schedule();
 
         let mut uiworld = UiWorld::init();

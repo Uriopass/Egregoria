@@ -18,10 +18,10 @@ pub trait Encoder {
 
     fn decode<T: DeserializeOwned>(x: &[u8]) -> std::io::Result<T>;
 
-    fn decode_seed<S: for<'a> DeserializeSeed<'a>>(
+    fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(
         seed: S,
         x: &[u8],
-    ) -> std::io::Result<<S as DeserializeSeed<'_>>::Value>;
+    ) -> std::io::Result<V>;
 
     fn encode_writer(x: &impl Serialize, mut w: impl Write) -> std::io::Result<()> {
         let buf = Self::encode(x)?;
@@ -96,10 +96,7 @@ impl Encoder for Bincode {
             .map_err(|x| std::io::Error::new(ErrorKind::Other, x))
     }
 
-    fn decode_seed<S: for<'a> DeserializeSeed<'a>>(
-        seed: S,
-        x: &[u8],
-    ) -> Result<<S as DeserializeSeed<'_>>::Value> {
+    fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(seed: S, x: &[u8]) -> Result<V> {
         seed.deserialize(&mut ::bincode::Deserializer::from_slice(
             &x,
             DefaultOptions::new(),
@@ -120,36 +117,14 @@ impl Encoder for Bincode {
     }
 }
 
-pub struct Cbor;
+pub struct CompressedBincode;
 
-impl Encoder for Cbor {
-    const EXTENSION: &'static str = "cbor";
-
-    fn encode(x: &impl Serialize) -> std::io::Result<Vec<u8>> {
-        serde_cbor::to_vec(x).map_err(|x| std::io::Error::new(ErrorKind::Other, x))
-    }
-
-    fn decode<T: DeserializeOwned>(x: &[u8]) -> std::io::Result<T> {
-        serde_cbor::from_slice(x).map_err(|x| std::io::Error::new(ErrorKind::Other, x))
-    }
-
-    fn decode_seed<S: for<'a> DeserializeSeed<'a>>(
-        seed: S,
-        x: &[u8],
-    ) -> std::io::Result<<S as DeserializeSeed<'_>>::Value> {
-        seed.deserialize(&mut serde_cbor::Deserializer::from_slice(x))
-            .map_err(|x| std::io::Error::new(ErrorKind::Other, x))
-    }
-}
-
-pub struct CompressedCbor;
-
-impl Encoder for CompressedCbor {
+impl Encoder for CompressedBincode {
     const EXTENSION: &'static str = "zip";
 
     fn encode(x: &impl Serialize) -> std::io::Result<Vec<u8>> {
         Ok(miniz_oxide::deflate::compress_to_vec(
-            &*serde_cbor::to_vec(x).map_err(|x| std::io::Error::new(ErrorKind::Other, x))?,
+            &*Bincode::encode(x)?,
             10,
         ))
     }
@@ -157,14 +132,16 @@ impl Encoder for CompressedCbor {
     fn decode<T: DeserializeOwned>(x: &[u8]) -> std::io::Result<T> {
         let v = &miniz_oxide::inflate::decompress_to_vec(x)
             .map_err(|_| std::io::Error::new(ErrorKind::Other, "could not decode zipped file"))?;
-        serde_cbor::from_slice(v).map_err(|x| std::io::Error::new(ErrorKind::Other, x))
+        Bincode::decode(v)
     }
 
-    fn decode_seed<S: for<'a> DeserializeSeed<'a>>(
-        _: S,
-        _: &[u8],
-    ) -> std::io::Result<<S as DeserializeSeed<'_>>::Value> {
-        unimplemented!()
+    fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(
+        seed: S,
+        data: &[u8],
+    ) -> std::io::Result<V> {
+        let v = &miniz_oxide::inflate::decompress_to_vec(data)
+            .map_err(|_| std::io::Error::new(ErrorKind::Other, "could not decode zipped file"))?;
+        Bincode::decode_seed(seed, v)
     }
 }
 
@@ -181,10 +158,10 @@ impl Encoder for JSON {
         serde_json::from_slice(x).map_err(Into::into)
     }
 
-    fn decode_seed<S: for<'a> DeserializeSeed<'a>>(
+    fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(
         seed: S,
         x: &[u8],
-    ) -> std::io::Result<<S as DeserializeSeed<'_>>::Value> {
+    ) -> std::io::Result<V> {
         seed.deserialize(&mut serde_json::Deserializer::from_slice(x))
             .map_err(Into::into)
     }

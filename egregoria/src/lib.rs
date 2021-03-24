@@ -66,11 +66,11 @@ macro_rules! register_resource {
             $crate::SaveLoadFunc {
                 name: $name,
                 save: Box::new(|goria| {
-                     <common::saveload::Cbor as common::saveload::Encoder>::encode(&*goria.read::<$t>()).unwrap()
+                     <common::saveload::Bincode as common::saveload::Encoder>::encode(&*goria.read::<$t>()).unwrap()
                 }),
                 load: Box::new(|goria, v| {
                     if let Some(v) = v {
-                        if let Ok(res) = <common::saveload::Cbor as common::saveload::Encoder>::decode::<$t>(&v) {
+                        if let Ok(res) = <common::saveload::Bincode as common::saveload::Encoder>::decode::<$t>(&v) {
                             goria.insert(res);
                         }
                     }
@@ -86,11 +86,11 @@ macro_rules! register_resource {
             $crate::SaveLoadFunc {
                 name: $name,
                 save: Box::new(|goria| {
-                     <common::saveload::Cbor as common::saveload::Encoder>::encode(&*goria.read::<$t>()).unwrap()
+                     <common::saveload::Bincode as common::saveload::Encoder>::encode(&*goria.read::<$t>()).unwrap()
                 }),
                 load: Box::new(|goria, v| {
                     if let Some(v) = v {
-                        if let Ok(res) = <common::saveload::Cbor as common::saveload::Encoder>::decode::<$t>(&v) {
+                        if let Ok(res) = <common::saveload::Bincode as common::saveload::Encoder>::decode::<$t>(&v) {
                             goria.insert(res);
                         }
                     }
@@ -298,7 +298,7 @@ impl Serialize for Egregoria {
             &entity_serializer,
         );
 
-        let world = common::saveload::Cbor::encode(&s).unwrap();
+        let world = common::saveload::Bincode::encode(&s).unwrap();
 
         let mut m: HashMap<String, Vec<u8>> = HashMap::new();
 
@@ -332,7 +332,7 @@ impl<'de> Deserialize<'de> for Egregoria {
 
         let entity_serializer = Canon::default();
 
-        let mut w: World = common::saveload::Cbor::decode_seed(
+        let mut w: World = common::saveload::Bincode::decode_seed(
             registry.as_deserialize(&entity_serializer),
             &ser.world,
         )
