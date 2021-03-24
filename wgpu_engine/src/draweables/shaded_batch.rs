@@ -4,7 +4,7 @@ use geom::{LinearColor, Vec2};
 use std::marker::PhantomData;
 use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{IndexFormat, RenderPass, RenderPipeline, VertexBufferLayout};
+use wgpu::{IndexFormat, RenderPass, RenderPipeline, VertexAttribute, VertexBufferLayout};
 
 #[derive(Default)]
 pub struct ShadedBatchBuilder<T: Shaders> {
@@ -34,14 +34,15 @@ pub struct ShadedInstanceRaw {
 
 u8slice_impl!(ShadedInstanceRaw);
 
+const ATTRS: &[VertexAttribute] =
+    &wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float2, 5 => Float4];
+
 impl VBDesc for ShadedInstanceRaw {
     fn desc<'a>() -> VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<ShadedInstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
-            attributes: Box::leak(Box::new(
-                wgpu::vertex_attr_array![2 => Float3, 3 => Float2, 4 => Float2, 5 => Float4],
-            )),
+            attributes: ATTRS,
         }
     }
 }

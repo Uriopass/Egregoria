@@ -4,7 +4,7 @@ use mint::ColumnMatrix4;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BlendFactor, Buffer, CommandEncoder, IndexFormat, MultisampleState, PrimitiveState, RenderPass,
-    RenderPipeline, SwapChainFrame, TextureSampleType, VertexBufferLayout,
+    RenderPipeline, SwapChainFrame, TextureSampleType, VertexAttribute, VertexBufferLayout,
 };
 
 pub struct LightRender {
@@ -240,12 +240,14 @@ pub struct LightInstance {
 
 u8slice_impl!(LightInstance);
 
+const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![2 => Float2, 3 => Float];
+
 impl VBDesc for LightInstance {
     fn desc<'a>() -> VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<LightInstance>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
-            attributes: Box::leak(Box::new(wgpu::vertex_attr_array![2 => Float2, 3 => Float])),
+            attributes: ATTRS,
         }
     }
 }
