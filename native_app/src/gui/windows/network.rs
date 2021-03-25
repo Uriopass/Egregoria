@@ -123,7 +123,7 @@ fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
         addr: parsed_addr.ip(),
         port: if port != 80 { Some(port) } else { None },
         period: Duration::from_secs_f64(Timestep::DT),
-        frame_buffer_advance: 12,
+        frame_buffer_advance: 8,
     }) {
         Ok(x) => x,
         Err(e) => {

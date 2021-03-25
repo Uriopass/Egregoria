@@ -70,23 +70,22 @@ impl<WORLD: Serialize> Server<WORLD> {
         self.send_long_running();
         while let Some(ev) = self.events.try_receive() {
             match ev {
-                NetEvent::Message(e, data) => {
-                    if is_reliable(&e) {
-                        let packet = match decode::<ClientReliablePacket>(&data) {
-                            Some(x) => x,
-                            None => break,
-                        };
-
-                        let _ = self.message_reliable(e, packet, world);
-                    } else {
-                        let packet = match decode::<ClientUnreliablePacket>(&data) {
-                            Some(x) => x,
-                            None => break,
-                        };
-
-                        let _ = self.message_unreliable(e, packet);
+                NetEvent::Message(e, data) => match is_reliable(&e) {
+                    true => {
+                        if let Some(packet) = decode::<ClientReliablePacket>(&data) {
+                            let _ = self.message_reliable(e, packet, world);
+                        } else {
+                            log::error!("client sent invalid reliable packet");
+                        }
                     }
-                }
+                    false => {
+                        if let Some(packet) = decode::<ClientUnreliablePacket>(&data) {
+                            let _ = self.message_unreliable(e, packet);
+                        } else {
+                            log::error!("client sent invalid unreliable packet");
+                        }
+                    }
+                },
                 NetEvent::Connected(e, _) => self.tcp_connected(e),
                 NetEvent::Disconnected(e) => self.tcp_disconnected(e),
             }
@@ -105,6 +104,17 @@ impl<WORLD: Serialize> Server<WORLD> {
         }
 
         self.clock = Instant::now();
+
+        let to_disconnect = self
+            .authent
+            .iter_playing()
+            .filter(|v| self.buffer.lag(v.ack).is_none())
+            .map(|x| x.reliable)
+            .collect::<Vec<_>>();
+
+        for e in to_disconnect {
+            self.disconnect(e);
+        }
 
         let clients_playing = self.authent.iter_playing();
 
@@ -139,7 +149,7 @@ impl<WORLD: Serialize> Server<WORLD> {
             ClientUnreliablePacket::Input { input, ack_frame } => {
                 let client = self.authent.get_client_mut(e)?;
 
-                log::info!("{}: received inputs {:?}", client.name, ack_frame);
+                //log::info!("{}: received inputs {:?}", client.name, ack_frame);
                 client.ack = ack_frame;
 
                 for (frame, input) in input {
@@ -207,11 +217,7 @@ impl<WORLD: Serialize> Server<WORLD> {
     }
 
     fn tcp_disconnected(&mut self, e: Endpoint) {
-        if let Some(c) = self.authent.tcp_disconnected(e) {
-            self.buffer.disconnected(c.id);
-            self.catchup.disconnected(c.id);
-            self.worldsend.disconnected(c.id);
-        }
+        self.disconnect(e);
     }
 
     pub fn describe(&self) -> String {
@@ -224,6 +230,19 @@ impl<WORLD: Serialize> Server<WORLD> {
             s += &*format!("{}: {:?}...\n", c.name, c.state);
         }
         s
+    }
+
+    fn disconnect(&mut self, e: Endpoint) {
+        if e.resource_id().adapter_id() == Transport::Udp.id() {
+            log::error!("trying to disconnect udp endpoint");
+            return;
+        }
+        if let Some(c) = self.authent.disconnected(e) {
+            log::info!("player {} disconnected", c.name);
+            self.buffer.disconnected(c.id);
+            self.catchup.disconnected(c.id);
+            self.worldsend.disconnected(c.id);
+        }
     }
 }
 

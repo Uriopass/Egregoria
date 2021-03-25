@@ -56,7 +56,7 @@ impl Authent {
         ack: Frame,
         name: String,
     ) -> Option<AuthentResponse> {
-        let state = self.get_client_state_mut(e).unwrap();
+        let state = self.get_client_state_mut(e)?;
 
         if let ClientConnectState::Connecting {
             reliable,
@@ -72,6 +72,7 @@ impl Authent {
                 });
             }
 
+            // Unwrap ok: already checked right before
             *self.get_client_state_mut(e).unwrap() = ClientConnectState::Connected(Client {
                 id: UserID(hash),
                 name,
@@ -117,12 +118,20 @@ impl Authent {
         net.send(e, &*encode(&ServerReliablePacket::Challenge(client_id)));
     }
 
-    pub fn tcp_disconnected(&mut self, e: Endpoint) -> Option<Client> {
-        let id = self.addr_to_client.get(&e.addr())?;
+    pub fn disconnected(&mut self, e: Endpoint) -> Option<Client> {
+        let id = self.addr_to_client.remove(&e.addr())?;
         let client = self.clients.remove(&id)?;
+
+        if let ClientConnectState::Connecting {
+            unreliable: Some(unreliable),
+            ..
+        } = client
+        {
+            self.addr_to_client.remove(&unreliable.addr());
+            return None;
+        }
         if let ClientConnectState::Connected(c) = client {
             self.addr_to_client.remove(&c.unreliable.addr());
-            self.addr_to_client.remove(&c.reliable.addr());
             self.n_connected_clients -= 1;
 
             return Some(c);

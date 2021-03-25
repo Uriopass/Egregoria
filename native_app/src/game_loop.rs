@@ -113,7 +113,8 @@ impl State {
 
         let commands = std::mem::take(&mut *self.uiw.write::<WorldCommands>());
 
-        match *self.uiw.write::<NetworkState>() {
+        let mut net_state = self.uiw.write::<NetworkState>();
+        match *net_state {
             NetworkState::Singleplayer(ref mut step) => {
                 let goria = &mut self.goria; // mut for tick
                 let sched = &mut self.game_schedule;
@@ -171,8 +172,14 @@ impl State {
                 PollResult::Error => {
                     log::error!("there was an error polling the client");
                 }
+                PollResult::Disconnect => {
+                    log::error!("got disconnected :-( continuing with server world but it's bad");
+                    *net_state = NetworkState::Singleplayer(Timestep::new());
+                }
             },
         }
+
+        drop(net_state);
 
         let real_delta = ctx.delta;
         self.uiw.write::<Timings>().all.add_value(real_delta as f32);

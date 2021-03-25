@@ -31,7 +31,7 @@ impl ServerPlayoutBuffer {
     }
 
     pub fn insert_input(&mut self, user: UserID, frame: Frame, input: PlayerInput) {
-        if frame.0 + 128 <= self.consumed_frame.0 {
+        if frame.0 + self.past.len() <= self.consumed_frame.0 {
             log::info!("input was far too late");
             return;
         }
@@ -44,6 +44,15 @@ impl ServerPlayoutBuffer {
         if !*seen {
             self.next.entry(user).or_default().push(input);
             *seen = true;
+        }
+    }
+
+    pub fn lag(&self, f: Frame) -> Option<u32> {
+        let lag = self.consumed_frame.0 - f.0;
+        if lag < self.past.len() - 1 {
+            Some(lag)
+        } else {
+            None
         }
     }
 
@@ -68,15 +77,12 @@ impl ServerPlayoutBuffer {
             *v.get_mut(next_frame) = false;
         }
 
-        log::info!("consuming {}", next_frame.0);
-
         let mut result = vec![];
         let merged = merge_partial_inputs(&mut self.next);
 
         for ack_frame in acknowledged {
+            let lag = self.lag(ack_frame).expect("lag is too big");
             debug_assert!(ack_frame <= self.consumed_frame);
-            let lag = self.consumed_frame.0 - ack_frame.0;
-            debug_assert!(lag < self.past.len());
 
             let v = (1..=lag)
                 .map(|i| {
