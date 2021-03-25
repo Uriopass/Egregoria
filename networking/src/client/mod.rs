@@ -32,6 +32,7 @@ pub enum PollResult<W, I> {
     Input(Vec<Vec<ServerInput<I>>>),
     GameWorld(I, W),
     Error,
+    Disconnect,
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -42,6 +43,7 @@ enum ClientState<I> {
         next_inputs: Option<Vec<Vec<ServerInput<I>>>>,
     },
     Playing(ClientPlayoutBuffer),
+    Disconnected,
 }
 
 pub struct Client<WORLD: DeserializeOwned, INPUT: Serialize + DeserializeOwned + Default> {
@@ -93,28 +95,36 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
         })
     }
 
+    #[allow(clippy::collapsible_if)]
     pub fn poll(&mut self, input: I) -> PollResult<W, I> {
         while let Some(x) = self.events.try_receive() {
             match x {
                 NetEvent::Message(e, m) => {
                     if e.resource_id().adapter_id() == Transport::FramedTcp.id() {
-                        let packet = decode(&*m).expect("invalid reliable packet");
-                        self.message_reliable(packet);
+                        if let Some(packet) = decode(&*m) {
+                            self.message_reliable(packet);
+                        } else {
+                            log::error!("could not decode reliable packet from server");
+                        }
                     } else {
-                        let packet = decode(&*m).expect("invalid reliable packet");
-                        self.message_unreliable(packet)
+                        if let Some(packet) = decode(&*m) {
+                            self.message_unreliable(packet)
+                        } else {
+                            log::error!("could not decode unreliable packet from server");
+                        }
                     }
                 }
                 NetEvent::Connected(e, _) => {
                     log::info!("connected {}", e)
                 }
-                NetEvent::Disconnected(e) => {
-                    log::info!("disconnected {}", e)
-                }
+                NetEvent::Disconnected(_) => self.state = ClientState::Disconnected,
             }
         }
 
         match self.state {
+            ClientState::Disconnected => {
+                return PollResult::Disconnect;
+            }
             ClientState::Connecting => {
                 return PollResult::Wait(input);
             }
@@ -157,7 +167,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
 
                 let advance = buffer.advance();
 
-                let fba = self.lag_compensate;
+                let fba = self.lag_compensate.max(1);
                 let to_consume = match advance {
                     0 => 0,
                     _ if (1..=fba).contains(&advance) => 1,
@@ -167,16 +177,16 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 };
 
                 if to_consume > 0 {
+                    assert!(to_consume <= advance);
                     self.clock = Instant::now();
                     let net = &mut self.network;
                     let udp = self.udp;
-                    let name = &self.name;
                     let ack_frame = buffer.consumed_frame() + Frame(advance);
                     let id = self.id;
 
                     let multi = (0..to_consume)
                         .map(move |_| {
-                            log::info!("{}: sending inputs to server", name);
+                            // unwrap ok: to_consume must be less than advance
                             let (inp, pack) = buffer.try_consume(&mut mk_input).unwrap();
                             net.send(
                                 udp,
@@ -268,14 +278,8 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
     fn message_unreliable(&mut self, p: ServerUnreliablePacket) {
         match p {
             ServerUnreliablePacket::Input(inp) => {
-                log::info!(
-                    "{}: received inputs from server. {}->{}",
-                    self.name,
-                    inp.first().unwrap().0 .0,
-                    inp.last().unwrap().0 .0
-                );
-                for (frame, inp) in inp {
-                    if let ClientState::Playing(ref mut buffer) = self.state {
+                if let ClientState::Playing(ref mut buffer) = self.state {
+                    for (frame, inp) in inp {
                         let _ = buffer.insert_serv_input(frame, inp);
                     }
                 }
@@ -289,8 +293,9 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
             ClientState::Downloading(_) => "Downloading map...".to_string(),
             ClientState::CatchingUp { .. } => "Catching up...".to_string(),
             ClientState::Playing(ref buf) => {
-                format!("Playing! Buffer health: {}", buf.advance())
+                format!("Playing! Buffer advance: {}", buf.advance())
             }
+            ClientState::Disconnected => "Disconnected :-(".to_string(),
         }
     }
 }

@@ -43,7 +43,9 @@ impl CatchUp {
     }
 
     pub fn ack(&mut self, c: &Client) {
-        self.frame_history.get_mut(&c.id).unwrap().ready = true;
+        if let Some(x) = self.frame_history.get_mut(&c.id) {
+            x.ready = true;
+        }
     }
 
     pub fn update(&mut self, c: &mut Client, net: &mut Network) {
