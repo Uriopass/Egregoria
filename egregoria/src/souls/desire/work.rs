@@ -31,6 +31,8 @@ pub struct Work {
     on_mission: bool,
 }
 
+debug_inspect_impl!(Work);
+
 impl Work {
     pub fn new(workplace: BuildingID, kind: WorkKind, offset: f32) -> Self {
         Work {

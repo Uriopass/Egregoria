@@ -110,7 +110,7 @@ pub fn routing_update(
                 .is_close(pos, 3.0),
             RoutingStep::GetOutVehicle(_) => true,
             &RoutingStep::GetInBuilding(build) => {
-                map.buildings()[build].door_pos.is_close(pos, 3.0)
+                map.buildings()[build].door_pos.is_close(pos, 3.0) // fixme check building exists
             }
             RoutingStep::GetOutBuilding(_) => true,
         };

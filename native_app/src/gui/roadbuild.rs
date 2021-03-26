@@ -180,7 +180,7 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
             true
         }
         Road(r) => {
-            let r = &map.roads()[r];
+            let r = &map.roads()[r]; // fixme dont crash
             let (proj, _, rdir1) = r.generated_points().project_segment_dir(from.pos);
             let rdir2 = -rdir1;
             let dir = (to - proj).normalize();

@@ -4,10 +4,12 @@ use legion::system;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Home {
     house: BuildingID,
 }
+
+debug_inspect_impl!(Home);
 
 impl Home {
     pub fn new(house: BuildingID) -> Self {

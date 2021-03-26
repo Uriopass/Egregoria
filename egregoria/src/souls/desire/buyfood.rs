@@ -8,18 +8,20 @@ use legion::{system, Entity};
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum BuyFoodState {
     Empty,
     WaitingForTrade,
     BoughtAt(BuildingID),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct BuyFood {
     last_ate: GameInstant,
     state: BuyFoodState,
 }
+
+debug_inspect_impl!(BuyFood);
 
 impl BuyFood {
     pub fn new(start: GameInstant) -> Self {
@@ -76,6 +78,7 @@ pub fn desire_buy_food(
             .unwrap_or(true)
     {
         d.score = 0.0;
+        return;
     }
     d.score = buy_food.last_ate.elapsed(time) as f32 * 0.001 - 1.0
 }
