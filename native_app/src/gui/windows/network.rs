@@ -6,6 +6,7 @@ use egregoria::Egregoria;
 use imgui::{im_str, ImString, Ui};
 use networking::{ConnectConf, Frame, ServerConfiguration};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::collections::BTreeMap;
 use std::net::{Ipv4Addr, ToSocketAddrs};
 use std::time::Duration;
 
@@ -14,6 +15,7 @@ struct NetworkConnectionInfo {
     name: ImString,
     ip: ImString,
     error: String,
+    hashes: BTreeMap<String, u64>,
 }
 
 pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
@@ -52,6 +54,7 @@ pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Eg
             }
             NetworkState::Client { ref client } => {
                 ui.text(client.describe());
+                show_hashes(ui, goria, &mut *info);
             }
             NetworkState::Server {
                 ref client,
@@ -59,12 +62,23 @@ pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Eg
             } => {
                 ui.text("Local client:");
                 ui.text(client.describe());
+                show_hashes(ui, goria, &mut *info);
                 ui.separator();
                 ui.text("Running server");
                 ui.text(server.describe());
             }
         }
     })
+}
+
+fn show_hashes(ui: &Ui, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
+    if goria.get_tick() % 100 == 0 {
+        info.hashes = goria.hashes();
+    }
+
+    for (name, hash) in &info.hashes {
+        ui.text(format!("hash {}: {}", name, hash));
+    }
 }
 
 fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<(Client, Server)> {
@@ -141,6 +155,7 @@ impl Default for NetworkConnectionInfo {
             name: ImString::with_capacity(100),
             ip: ImString::with_capacity(100),
             error: String::new(),
+            hashes: Default::default(),
         }
     }
 }

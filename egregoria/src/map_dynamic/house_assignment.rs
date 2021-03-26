@@ -1,8 +1,8 @@
 use crate::SoulID;
+use common::FastMap;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 use slotmap::SecondaryMap;
-use std::collections::HashMap;
 use std::ops::{Index, IndexMut};
 
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -15,7 +15,7 @@ register_resource!(BuildingInfos, "binfos");
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct BuildingInfos {
     assignment: SecondaryMap<BuildingID, BuildingInfo>,
-    owners: HashMap<SoulID, BuildingID>,
+    owners: FastMap<SoulID, BuildingID>,
 }
 
 impl BuildingInfos {

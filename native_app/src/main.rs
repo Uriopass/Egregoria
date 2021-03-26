@@ -1,6 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::float_cmp)]
 #![allow(elided_lifetimes_in_paths)]
+#![allow(clippy::upper_case_acronyms)]
 
 use crate::context::Context;
 use crate::logger::MyLog;

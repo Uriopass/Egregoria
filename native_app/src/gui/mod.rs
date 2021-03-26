@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use common::FastMap;
 
 use imgui::TextureId;
 use legion::Entity;
@@ -91,12 +91,12 @@ const UI_TEXTURES: &[(UiTex, &str)] = &[
 ];
 
 pub struct UiTextures {
-    textures: HashMap<UiTex, TextureId>,
+    textures: FastMap<UiTex, TextureId>,
 }
 
 impl UiTextures {
     pub fn new(gfx: &GfxContext, renderer: &mut imgui_wgpu::Renderer) -> Self {
-        let mut textures = HashMap::with_capacity(UI_TEXTURES.len());
+        let mut textures = common::fastmap_with_capacity(UI_TEXTURES.len());
         for &(name, path) in UI_TEXTURES {
             let (img, width, height) = wgpu_engine::Texture::read_image(path)
                 .expect(&*format!("Couldn't load gui texture {}", path));

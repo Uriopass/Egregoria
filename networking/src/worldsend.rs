@@ -1,8 +1,8 @@
 use crate::authent::{Client, ClientGameState};
 use crate::packets::{ClientReliablePacket, ServerReliablePacket, WorldDataFragment};
 use crate::{encode, UserID, MAX_WORLDSEND_PACKET_SIZE};
+use common::FastMap;
 use message_io::network::{Endpoint, Network};
-use std::collections::HashMap;
 
 #[derive(Eq, PartialEq)]
 enum WorldSendStatus {
@@ -20,7 +20,7 @@ struct WorldSendState {
 
 #[derive(Default)]
 pub(crate) struct WorldSend {
-    send_state: HashMap<UserID, WorldSendState>,
+    send_state: FastMap<UserID, WorldSendState>,
 }
 
 impl WorldSend {

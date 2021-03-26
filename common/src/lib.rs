@@ -36,3 +36,14 @@ pub enum AudioKind {
     Effect,
     Ui,
 }
+
+pub type FastMap<K, V> = fnv::FnvHashMap<K, V>;
+pub type FastSet<V> = fnv::FnvHashSet<V>;
+
+pub fn fastmap_with_capacity<K, V>(cap: usize) -> FastMap<K, V> {
+    FastMap::with_capacity_and_hasher(cap, fnv::FnvBuildHasher::default())
+}
+
+pub fn fastset_with_capacity<V>(cap: usize) -> FastSet<V> {
+    FastSet::with_capacity_and_hasher(cap, fnv::FnvBuildHasher::default())
+}

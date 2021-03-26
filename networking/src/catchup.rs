@@ -1,8 +1,8 @@
 use crate::authent::Client;
 use crate::packets::ServerReliablePacket;
 use crate::{encode, Frame, MergedInputs, UserID, MAX_CATCHUP_PACKET_SIZE};
+use common::FastMap;
 use message_io::network::Network;
-use std::collections::HashMap;
 
 struct CatchUpState {
     inputs: Vec<MergedInputs>,
@@ -13,7 +13,7 @@ struct CatchUpState {
 
 #[derive(Default)]
 pub(crate) struct CatchUp {
-    frame_history: HashMap<UserID, CatchUpState>,
+    frame_history: FastMap<UserID, CatchUpState>,
 }
 
 impl CatchUp {

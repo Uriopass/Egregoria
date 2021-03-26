@@ -4,9 +4,9 @@ use crate::{
     UvVertex,
 };
 use crate::{MultisampledTexture, ShaderType};
+use common::FastMap;
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
-use std::collections::HashMap;
 use std::path::PathBuf;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -29,11 +29,11 @@ pub struct GfxContext {
     pub(crate) ui_texture: Texture,
     pub(crate) sc_desc: SwapChainDescriptor,
     pub update_sc: bool,
-    pub(crate) pipelines: HashMap<TypeId, RenderPipeline>,
+    pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
     pub(crate) projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub(crate) inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub time_uni: Uniform<f32>,
-    pub(crate) textures: HashMap<PathBuf, Texture>,
+    pub(crate) textures: FastMap<PathBuf, Texture>,
     pub(crate) samples: u32,
 }
 
@@ -107,11 +107,11 @@ impl GfxContext {
             light_texture,
             ui_texture,
             surface,
-            pipelines: HashMap::new(),
+            pipelines: FastMap::default(),
             projection,
             inv_projection,
             time_uni,
-            textures: HashMap::new(),
+            textures: FastMap::default(),
             samples,
         };
 

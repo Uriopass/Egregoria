@@ -1,6 +1,7 @@
 #![allow(clippy::unreadable_literal)]
 #![allow(clippy::blocks_in_if_conditions)]
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::upper_case_acronyms)]
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -19,6 +20,7 @@ use crate::souls::goods_company::GoodsCompany;
 use crate::vehicles::Vehicle;
 use atomic_refcell::{AtomicRef, AtomicRefMut};
 use common::saveload::Encoder;
+use common::FastMap;
 use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 use geom::{Transform, Vec2};
 use legion::serialize::Canon;
@@ -29,13 +31,14 @@ use map_model::Map;
 use pedestrians::Location;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::collections::HashMap;
+use std::cmp::Ordering;
+use std::collections::BTreeMap;
+use std::num::NonZeroU64;
 use std::time::{Duration, Instant};
 use utils::par_command_buffer::Deleted;
+pub use utils::par_command_buffer::ParCommandBuffer;
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
-
-pub use utils::par_command_buffer::ParCommandBuffer;
 
 macro_rules! register_system {
     ($f: ident) => {
@@ -145,6 +148,22 @@ pub mod vehicles;
 #[repr(transparent)]
 pub struct SoulID(pub Entity);
 
+impl PartialOrd for SoulID {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        let sel: NonZeroU64 = unsafe { std::mem::transmute(self.0) };
+        let other: NonZeroU64 = unsafe { std::mem::transmute(other.0) };
+        sel.partial_cmp(&other)
+    }
+}
+
+impl Ord for SoulID {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let sel: NonZeroU64 = unsafe { std::mem::transmute(self.0) };
+        let other: NonZeroU64 = unsafe { std::mem::transmute(other.0) };
+        sel.cmp(&other)
+    }
+}
+
 debug_inspect_impl!(SoulID);
 
 pub struct Egregoria {
@@ -240,6 +259,24 @@ impl Egregoria {
         self.tick
     }
 
+    pub fn hashes(&self) -> BTreeMap<String, u64> {
+        fn hash(x: &[u8]) -> u64 {
+            let mut h = DefaultHasher::new();
+            h.write(&x);
+            h.finish()
+        }
+        let serworld = SerializedWorld::from(self);
+
+        let mut hashes = BTreeMap::new();
+        hashes.insert("tick".to_string(), serworld.tick as u64);
+        hashes.insert("world".to_string(), hash(&*serworld.world));
+        for (name, v) in serworld.res {
+            hashes.insert(name, hash(&*v));
+        }
+
+        hashes
+    }
+
     pub fn pos(&self, e: Entity) -> Option<Vec2> {
         self.comp::<Transform>(e).map(|x| x.position())
     }
@@ -284,15 +321,12 @@ impl Egregoria {
     }
 }
 
-impl Serialize for Egregoria {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
+impl From<&Egregoria> for SerializedWorld {
+    fn from(goria: &Egregoria) -> Self {
         let registry = registry();
 
         let entity_serializer = Canon::default();
-        let s = self.world.as_serializable(
+        let s = goria.world.as_serializable(
             !legion::query::component::<NoSerialize>(),
             &registry,
             &entity_serializer,
@@ -300,22 +334,29 @@ impl Serialize for Egregoria {
 
         let world = common::saveload::Bincode::encode(&s).unwrap();
 
-        let mut m: HashMap<String, Vec<u8>> = HashMap::new();
+        let mut m: FastMap<String, Vec<u8>> = FastMap::default();
 
         legion::serialize::set_entity_serializer(&entity_serializer, || {
             for l in inventory::iter::<SaveLoadFunc> {
-                let v = (l.save)(self);
+                let v = (l.save)(goria);
                 m.insert(l.name.to_string(), v);
             }
         });
 
-        let ser = SerializedWorld {
+        SerializedWorld {
             world,
             res: m,
-            tick: self.tick,
-        };
+            tick: goria.tick,
+        }
+    }
+}
 
-        <SerializedWorld as Serialize>::serialize(&ser, serializer)
+impl Serialize for Egregoria {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        <SerializedWorld as Serialize>::serialize(&self.into(), serializer)
     }
 }
 
@@ -355,7 +396,7 @@ impl<'de> Deserialize<'de> for Egregoria {
 #[derive(Serialize, Deserialize)]
 struct SerializedWorld {
     world: Vec<u8>,
-    res: HashMap<String, Vec<u8>>,
+    res: FastMap<String, Vec<u8>>,
     tick: u32,
 }
 

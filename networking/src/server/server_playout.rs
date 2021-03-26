@@ -1,8 +1,8 @@
 use crate::ring::Ring;
 use crate::{Frame, MergedInputs, PlayerInput, UserID};
-use std::collections::HashMap;
+use common::FastMap;
 
-type PartialInputs = HashMap<UserID, Vec<PlayerInput>>;
+type PartialInputs = FastMap<UserID, Vec<PlayerInput>>;
 
 ///       Playback buffer
 ///  --------------------------------------
@@ -13,7 +13,7 @@ type PartialInputs = HashMap<UserID, Vec<PlayerInput>>;
 ///  -------------------------------------
 pub(crate) struct ServerPlayoutBuffer {
     next: PartialInputs,
-    dedup: HashMap<UserID, Ring<bool>>,
+    dedup: FastMap<UserID, Ring<bool>>,
     past: Ring<MergedInputs>,
     pub consumed_frame: Frame,
 }
@@ -23,7 +23,7 @@ type PastInputs = Vec<(Frame, MergedInputs)>;
 impl ServerPlayoutBuffer {
     pub fn new(start_frame: Frame) -> Self {
         Self {
-            next: PartialInputs::new(),
+            next: PartialInputs::default(),
             dedup: Default::default(),
             past: Ring::new(),
             consumed_frame: start_frame,

@@ -1,5 +1,5 @@
+use common::FastSet;
 use geom::{vec2, Vec2};
-use std::collections::HashSet;
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 
 #[derive(Default)]
@@ -78,15 +78,15 @@ pub struct MouseInfo {
     pub wheel_delta: f32,
     pub screen: Vec2,
     pub unprojected: Vec2,
-    pub buttons: HashSet<MouseButton>,
-    pub just_pressed: HashSet<MouseButton>,
+    pub buttons: FastSet<MouseButton>,
+    pub just_pressed: FastSet<MouseButton>,
 }
 
 register_resource_noserialize!(KeyboardInfo);
 #[derive(Clone, Default)]
 pub struct KeyboardInfo {
-    pub just_pressed: HashSet<KeyCode>,
-    pub is_pressed: HashSet<KeyCode>,
+    pub just_pressed: FastSet<KeyCode>,
+    pub is_pressed: FastSet<KeyCode>,
     pub last_characters: Vec<char>,
 }
 

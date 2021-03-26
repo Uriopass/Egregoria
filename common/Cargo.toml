@@ -16,4 +16,5 @@ imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 lazy_static   = "1.4.0"
 arc-swap      = "1.2.0"
-miniz_oxide = "0.4.4"
+miniz_oxide   = "0.4.4"
+fnv           = "1.0.3"
