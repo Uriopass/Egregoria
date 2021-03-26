@@ -56,7 +56,7 @@ impl<'a> FrameContext<'a> {
 
 impl GfxContext {
     pub async fn new<W: HasRawWindowHandle>(window: &W, win_width: u32, win_height: u32) -> Self {
-        let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY | wgpu::BackendBit::SECONDARY);
+        let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
 
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance

@@ -1,4 +1,13 @@
+use imgui::Ui;
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct Desire<T> {
+    pub score: f32,
+    pub was_max: bool,
+    pub v: T,
+}
 
 mod buyfood;
 mod home;
@@ -8,14 +17,7 @@ pub use buyfood::*;
 pub use home::*;
 pub use work::*;
 
-#[derive(Serialize, Deserialize)]
-pub struct Desire<T> {
-    pub score: f32,
-    pub was_max: bool,
-    pub v: T,
-}
-
-impl<T> Desire<T> {
+impl<T: InspectRenderDefault<T>> Desire<T> {
     pub fn new(v: T) -> Self {
         Self {
             score: 0.0,
@@ -67,4 +69,25 @@ macro_rules! desires_system {
         }
     }
     );
+}
+
+impl<T: InspectRenderDefault<T>> InspectRenderDefault<Desire<T>> for Desire<T> {
+    fn render(data: &[&Desire<T>], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+        let v = data[0];
+        ui.text(format!("{} {}", v.was_max, label));
+        ui.text(format!("{} {}", v.score, label));
+        <T as InspectRenderDefault<T>>::render(&[&v.v], label, ui, args);
+    }
+
+    fn render_mut(
+        data: &mut [&mut Desire<T>],
+        label: &'static str,
+        ui: &Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        let v = &mut *data[0];
+        ui.text(format!("{} {}", v.was_max, label));
+        ui.text(format!("{} {}", v.score, label));
+        <T as InspectRenderDefault<T>>::render_mut(&mut [&mut v.v], label, ui, args)
+    }
 }

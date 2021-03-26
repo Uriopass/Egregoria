@@ -5,6 +5,7 @@ use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, Kinematics};
 use egregoria::rendering::assets::AssetRender;
 use egregoria::rendering::meshrender_component::MeshRender;
+use egregoria::souls::desire::{BuyFood, Desire, Home, Work};
 use egregoria::vehicles::Vehicle;
 use egregoria::Egregoria;
 use geom::Transform;
@@ -13,6 +14,7 @@ use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use legion::storage::Component;
 use legion::Entity;
+use serde::Serializer;
 
 pub struct InspectRenderer {
     pub entity: Entity,
@@ -45,6 +47,9 @@ impl InspectRenderer {
         self.inspect_component::<Kinematics>(goria, ui);
         self.inspect_component::<Collider>(goria, ui);
         self.inspect_component::<Itinerary>(goria, ui);
+        self.inspect_component::<Desire<Work>>(goria, ui);
+        self.inspect_component::<Desire<Home>>(goria, ui);
+        self.inspect_component::<Desire<BuyFood>>(goria, ui);
 
         let follow = &mut uiworld.write::<FollowEntity>().0;
         if follow.is_none() {
