@@ -3,13 +3,13 @@ use crate::SoulID;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct SingleMarket {
-    capital: HashMap<SoulID, i32>,
-    buy_orders: HashMap<SoulID, (Vec2, i32)>,
-    sell_orders: HashMap<SoulID, (Vec2, i32)>,
+    capital: BTreeMap<SoulID, i32>,
+    buy_orders: BTreeMap<SoulID, (Vec2, i32)>,
+    sell_orders: BTreeMap<SoulID, (Vec2, i32)>,
 }
 
 impl SingleMarket {
@@ -17,13 +17,13 @@ impl SingleMarket {
         self.capital.get(&soul).copied().unwrap_or(0)
     }
 
-    pub fn capital_map(&self) -> &HashMap<SoulID, i32> {
+    pub fn capital_map(&self) -> &BTreeMap<SoulID, i32> {
         &self.capital
     }
-    pub fn buy_orders(&self) -> &HashMap<SoulID, (Vec2, i32)> {
+    pub fn buy_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32)> {
         &self.buy_orders
     }
-    pub fn sell_orders(&self) -> &HashMap<SoulID, (Vec2, i32)> {
+    pub fn sell_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32)> {
         &self.sell_orders
     }
 }
@@ -31,7 +31,7 @@ impl SingleMarket {
 register_resource!(Market, "market");
 #[derive(Serialize, Deserialize)]
 pub struct Market {
-    markets: HashMap<CommodityKind, SingleMarket>,
+    markets: BTreeMap<CommodityKind, SingleMarket>,
 }
 
 impl Default for Market {
@@ -148,7 +148,7 @@ impl Market {
                 }
             }
             potential.sort_unstable_by_key(|(x, _, _)| OrderedFloat(*x));
-            let mut already_sold = HashSet::new();
+            let mut already_sold = BTreeSet::default();
             let SingleMarket {
                 buy_orders,
                 sell_orders,
@@ -185,7 +185,7 @@ impl Market {
         all_trades.into_iter()
     }
 
-    pub fn inner(&self) -> &HashMap<CommodityKind, SingleMarket> {
+    pub fn inner(&self) -> &BTreeMap<CommodityKind, SingleMarket> {
         &self.markets
     }
 }

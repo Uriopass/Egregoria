@@ -1,9 +1,9 @@
 use crate::{BuildingID, IntersectionID, LotID, RoadID};
+use common::FastMap;
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
 use geom::{Circle, Intersect, Vec2, AABB};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ProjectKind {
@@ -41,7 +41,7 @@ impl ProjectKind {
 
 pub struct SpatialMap {
     grid: ShapeGrid<ProjectKind, AABB>,
-    ids: HashMap<ProjectKind, ShapeGridHandle>,
+    ids: FastMap<ProjectKind, ShapeGridHandle>,
 }
 
 impl Default for SpatialMap {

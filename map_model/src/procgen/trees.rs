@@ -1,9 +1,9 @@
 use crate::procgen::heightmap::tree_density;
+use common::FastSet;
 use flat_spatial::storage::Storage;
 use flat_spatial::SparseGrid;
 use geom::{vec2, Vec2, AABB};
 use serde::{Deserialize, Serialize, Serializer};
-use std::collections::HashSet;
 
 const CELL_SIZE: i32 = 100;
 
@@ -18,7 +18,7 @@ pub struct Tree {
 #[serde(from = "SerializedTrees")]
 pub struct Trees {
     pub grid: SparseGrid<Tree>,
-    pub generated: HashSet<(i32, i32)>,
+    pub generated: FastSet<(i32, i32)>,
     pub dirt_id: u32,
 }
 
@@ -80,6 +80,8 @@ impl Trees {
     }
 
     pub fn generate_chunks(&mut self, aabb: AABB) {
+        log::info!("generating chunks for {:?}", aabb);
+
         let cells = unwrap_or!(self.chunks_iter(aabb), return).collect::<Vec<_>>();
         for cell in cells {
             self.add_forest(cell)

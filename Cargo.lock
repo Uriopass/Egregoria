@@ -352,6 +352,7 @@ version = "0.1.0"
 dependencies = [
  "arc-swap",
  "bincode",
+ "fnv",
  "geom",
  "imgui-inspect",
  "imgui-inspect-derive",
@@ -787,6 +788,7 @@ checksum = "45e780567ed7abc415d12fd464571d265eb4a5710ddc97cdb1a31a4c35bb479d"
 name = "flat_spatial"
 version = "0.3.7"
 dependencies = [
+ "common",
  "geom",
  "serde",
  "slotmap 1.0.2",
@@ -929,6 +931,7 @@ dependencies = [
 name = "geom"
 version = "0.1.0"
 dependencies = [
+ "fnv",
  "mint",
  "ordered-float",
  "serde",

@@ -1,9 +1,9 @@
 use crate::cell::ShapeGridCell;
 use crate::storage::{cell_range, SparseStorage, Storage};
+use common::FastSet;
 use geom::{Circle, Intersect, Shape, Vec2, AABB};
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
-use std::collections::HashSet;
 
 pub type ShapeGridObjects<O, S> = SlotMap<ShapeGridHandle, StoreObject<O, S>>;
 
@@ -211,7 +211,7 @@ impl<S: Shape + Intersect<AABB> + Copy, ST: Storage<ShapeGridCell>, O: Copy> Sha
         if ll_id == ur_id {
             QueryIter::Simple(iter)
         } else {
-            QueryIter::Dedup(HashSet::with_capacity(5), iter)
+            QueryIter::Dedup(common::fastset_with_capacity(5), iter)
         }
     }
 
@@ -247,7 +247,7 @@ where
 
 enum QueryIter<T: Iterator<Item = (ShapeGridHandle, bool)>> {
     Simple(T),
-    Dedup(HashSet<ShapeGridHandle>, T),
+    Dedup(FastSet<ShapeGridHandle>, T),
 }
 
 impl<T: Iterator<Item = (ShapeGridHandle, bool)>> Iterator for QueryIter<T> {

@@ -1,7 +1,7 @@
 use crate::{IntersectionID, LanePatternBuilder, Map, RoadSegmentKind};
+use common::FastSet;
 use flat_spatial::SparseGrid;
 use geom::{vec2, Vec2};
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -81,7 +81,7 @@ pub fn load_parismap(map: &mut Map) {
         g.insert(pos, id);
     }
 
-    let mut already = HashSet::new();
+    let mut already = FastSet::default();
     //Parse junctions
     for _ in 0..n_roads {
         let src = scanner.next::<usize>();

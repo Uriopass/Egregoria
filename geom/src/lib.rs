@@ -1,5 +1,6 @@
 #![allow(clippy::manual_range_contains)]
 #![allow(clippy::many_single_char_names)]
+#![allow(clippy::upper_case_acronyms)]
 
 mod aabb;
 mod camera;

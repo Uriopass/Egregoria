@@ -1,8 +1,8 @@
 use crate::packets::{AuthentResponse, ServerReliablePacket};
 use crate::{encode, hash_str, Frame, UserID};
+use common::FastMap;
 use message_io::network::{Endpoint, Network};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::net::SocketAddr;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Copy, Clone, Hash)]
@@ -34,8 +34,8 @@ enum ClientConnectState {
 }
 
 pub(crate) struct Authent {
-    clients: HashMap<AuthentID, ClientConnectState>,
-    addr_to_client: HashMap<SocketAddr, AuthentID>,
+    clients: FastMap<AuthentID, ClientConnectState>,
+    addr_to_client: FastMap<SocketAddr, AuthentID>,
     n_connected_clients: u32,
     seq: u32,
 }

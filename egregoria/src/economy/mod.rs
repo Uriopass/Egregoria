@@ -1,31 +1,26 @@
 use crate::SoulID;
+use common::FastMap;
 use legion::world::SubWorld;
 use legion::{system, EntityStore};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fmt::Display;
 
 mod market;
 
 pub use market::*;
 
-pub trait Commodity {}
-impl<T> Commodity for T {}
-
-pub trait CommodityList {}
-
 #[derive(Default, Serialize, Deserialize)]
 pub struct Sold(pub Vec<Trade>);
 
 #[derive(Default, Serialize, Deserialize)]
-pub struct Bought(pub HashMap<CommodityKind, Vec<Trade>>);
+pub struct Bought(pub FastMap<CommodityKind, Vec<Trade>>);
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct Workers(pub Vec<SoulID>);
 
 macro_rules! commodity {
     {$($member:tt => $display:literal),*,} => {
-        #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
+        #[derive(Copy, Clone, Debug, PartialOrd, Ord, Eq, PartialEq, Hash, Serialize, Deserialize)]
         pub enum CommodityKind {
             $($member),*
         }

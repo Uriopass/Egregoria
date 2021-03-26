@@ -1,3 +1,4 @@
+use common::FastMap;
 use common::{
     Z_ARROW, Z_CROSSWALK, Z_HOUSE, Z_INTER_BG, Z_LANE, Z_LANE_BG, Z_LOT, Z_SIDEWALK, Z_SIGNAL,
     Z_TREE, Z_TREE_SHADOW,
@@ -11,7 +12,6 @@ use map_model::{
     BuildingKind, Lane, LaneKind, LotKind, Map, ProjectKind, TrafficBehavior, TurnKind,
     CROSSWALK_WIDTH,
 };
-use std::collections::HashMap;
 use std::ops::Mul;
 use wgpu_engine::{
     compile_shader, CompiledShader, FrameContext, GfxContext, Mesh, MultiSpriteBatch,
@@ -34,7 +34,7 @@ impl Shaders for Crosswalk {
 
 pub struct RoadRenderer {
     map_mesh: Option<Mesh>,
-    buildings_builder: HashMap<BuildingKind, SpriteBatchBuilder>,
+    buildings_builder: FastMap<BuildingKind, SpriteBatchBuilder>,
     buildings: Option<MultiSpriteBatch>,
     arrows: Option<SpriteBatch>,
     arrow_builder: SpriteBatchBuilder,
@@ -69,7 +69,7 @@ impl RoadRenderer {
         );
         let tree_shadow_builder = SpriteBatchBuilder::from_path(gfx, "assets/tree_shadow.png");
 
-        let mut buildings_builder = HashMap::new();
+        let mut buildings_builder = FastMap::default();
 
         for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
             buildings_builder.insert(

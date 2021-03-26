@@ -10,12 +10,12 @@ use crate::audio::unique_sink::UniqueSink;
 use crate::gui::windows::settings::Settings;
 use crate::uiworld::UiWorld;
 use common::AudioKind;
+use common::FastMap;
 use egregoria::Egregoria;
 use rodio::source::Buffered;
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sample, Source};
 use slotmap::{new_key_type, DenseSlotMap};
 use std::collections::hash_map::Entry;
-use std::collections::HashMap;
 use std::io::Cursor;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
@@ -76,7 +76,7 @@ pub struct AudioContext {
     out_handle: Option<OutputStreamHandle>,
     sinks: DenseSlotMap<AudioHandle, PlayingSink>,
     dummy: AudioHandle,
-    cache: HashMap<&'static str, StoredAudio>,
+    cache: FastMap<&'static str, StoredAudio>,
 
     music_volume: f32,
     effect_volume: f32,
@@ -136,7 +136,7 @@ impl AudioContext {
     }
 
     fn get(
-        cache: &mut HashMap<&'static str, StoredAudio>,
+        cache: &mut FastMap<&'static str, StoredAudio>,
         name: &'static str,
     ) -> Option<StoredAudio> {
         let e = cache.entry(name);

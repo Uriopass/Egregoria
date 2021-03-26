@@ -3,9 +3,9 @@ use crate::souls::goods_company::{company_soul, CompanyKind, GoodsCompany, Goods
 use crate::souls::human::spawn_human;
 use crate::vehicles::{spawn_parked_vehicle, VehicleKind};
 use crate::Egregoria;
+use common::FastMap;
 use geom::Vec2;
 use map_model::{BuildingID, BuildingKind, Map};
-use std::collections::HashMap;
 
 #[macro_use]
 pub mod desire;
@@ -16,7 +16,7 @@ pub mod human;
 pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
     let map = goria.read::<Map>();
     let infos = goria.read::<BuildingInfos>();
-    let mut empty_buildings: HashMap<BuildingKind, Vec<(BuildingID, Vec2)>> = HashMap::new();
+    let mut empty_buildings: FastMap<BuildingKind, Vec<(BuildingID, Vec2)>> = FastMap::default();
 
     for (id, building) in map.buildings() {
         if infos[id].owner.is_some() {

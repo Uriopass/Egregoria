@@ -1,6 +1,6 @@
+use common::FastMap;
 use geom::{Vec2, AABB};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 pub type CellIdx = (i32, i32);
 
@@ -213,17 +213,17 @@ impl<T: Default> Storage<T> for DenseStorage<T> {
     }
 }
 
-/// SparseStorage stores cells in a HashMap to be used in a Grid.
+/// SparseStorage stores cells in a FastMap to be used in a Grid.
 /// It is Sparse because cells are eagerly allocated, and cleaned when they are empty.
 /// It implements the Storage trait.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct SparseStorage<T: Default> {
     cell_size: i32,
-    cells: HashMap<CellIdx, T>,
+    cells: FastMap<CellIdx, T>,
 }
 
 impl<T: Default> SparseStorage<T> {
-    pub fn cells(&self) -> &HashMap<CellIdx, T> {
+    pub fn cells(&self) -> &FastMap<CellIdx, T> {
         &self.cells
     }
 }

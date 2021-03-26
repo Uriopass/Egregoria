@@ -1,4 +1,10 @@
+#![allow(clippy::upper_case_acronyms)]
+
+use common::saveload::{CompressedBincode, Encoder};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::ops::Add;
 
@@ -11,11 +17,7 @@ mod server;
 mod worldsend;
 
 pub use client::{Client, ConnectConf, PollResult};
-use common::saveload::{CompressedBincode, Encoder};
-use serde::de::DeserializeOwned;
 pub use server::{Server, ServerConfiguration};
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 
 pub(crate) const MAX_CATCHUP_PACKET_SIZE: usize = 1000000; // 1000 kb ~ 125ko
 pub(crate) const MAX_WORLDSEND_PACKET_SIZE: usize = 1000000; // 1000 kb ~ 125ko

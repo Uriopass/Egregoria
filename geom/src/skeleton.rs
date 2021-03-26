@@ -3,7 +3,10 @@
 use crate::{Ray, Segment, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use std::cmp::{Ordering, Reverse};
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::collections::BinaryHeap;
+
+type FastMap<K, V> = fnv::FnvHashMap<K, V>;
+type FastSet<V> = fnv::FnvHashSet<V>;
 
 const EPSILON: f32 = 0.00001;
 
@@ -809,7 +812,7 @@ impl LAV {
 /// In highly symmetrical shapes with reflex vertices multiple sources may share the same
 /// location. This function merges those sources.
 fn merge_sources(skeleton: &mut Vec<Subtree>) {
-    let mut sources: HashMap<Vec2, usize> = HashMap::new();
+    let mut sources: FastMap<Vec2, usize> = FastMap::default();
     let mut to_remove = vec![];
     let mut to_add = vec![];
     for (i, p) in skeleton.iter().enumerate() {
@@ -922,8 +925,8 @@ pub fn faces_from_skeleton(
     merge_triangles: bool,
 ) -> Option<Vec<Vec<Vec3>>> {
     let poly = normalize_contour(poly);
-    let mut graph: HashMap<Vec2, Vec<_>> = HashMap::new();
-    let mut heights = HashMap::new();
+    let mut graph: FastMap<Vec2, Vec<_>> = FastMap::default();
+    let mut heights = FastMap::default();
 
     for (&prev, &p, _) in window(&poly) {
         graph.entry(p).or_default().push(prev);
@@ -982,9 +985,9 @@ pub fn faces_from_skeleton(
     }
 
     let mut faces = vec![];
-    let mut visited = HashSet::new();
+    let mut visited = FastSet::default();
 
-    fn next_v(graph: &HashMap<Vec2, Vec<Vec2>>, cur: Vec2, next: Vec2) -> (Vec2, Vec2) {
+    fn next_v(graph: &FastMap<Vec2, Vec<Vec2>>, cur: Vec2, next: Vec2) -> (Vec2, Vec2) {
         let l = &graph[&next];
         let i = l.iter().position(|&x| x == cur).unwrap();
         let prev = if i == 0 { l.len() - 1 } else { i - 1 };
@@ -992,9 +995,9 @@ pub fn faces_from_skeleton(
     }
 
     fn explore(
-        graph: &HashMap<Vec2, Vec<Vec2>>,
-        visited: &mut HashSet<(Vec2, Vec2)>,
-        heights: &HashMap<Vec2, f32>,
+        graph: &FastMap<Vec2, Vec<Vec2>>,
+        visited: &mut FastSet<(Vec2, Vec2)>,
+        heights: &FastMap<Vec2, f32>,
         start: Vec2,
         mut next: Vec2,
     ) -> Vec<Vec3> {
