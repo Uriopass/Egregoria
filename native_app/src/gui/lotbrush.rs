@@ -40,17 +40,12 @@ pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     if mouseinfo.buttons.contains(&MouseButton::Left) {
         let lots = map.lots();
-        let mut hits = vec![];
         for v in map.spatial_map().query_around(mpos, res.radius) {
             if let ProjectKind::Lot(id) = v {
                 if lots[id].shape.is_close(mpos, res.radius) {
-                    hits.push(id);
+                    commands.map_build_house(id);
                 }
             }
-        }
-
-        for hit in hits {
-            commands.map_set_lot_kind(hit, kind);
         }
     }
 }
