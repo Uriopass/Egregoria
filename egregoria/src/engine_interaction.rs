@@ -1,7 +1,7 @@
 use crate::Egregoria;
 use map_model::{
-    BuildingGen, BuildingID, BuildingKind, IntersectionID, LanePattern, LightPolicy, LotID,
-    LotKind, Map, MapProject, RoadID, TurnPolicy,
+    BuildingGen, BuildingID, BuildingKind, IntersectionID, LanePattern, LightPolicy, LotID, Map,
+    MapProject, RoadID, TurnPolicy,
 };
 use serde::{Deserialize, Serialize};
 
@@ -32,11 +32,10 @@ pub enum WorldCommand {
     MapRemoveIntersection(IntersectionID),
     MapRemoveRoad(RoadID),
     MapRemoveBuilding(BuildingID),
-    MapSetLotKind(LotID, LotKind),
+    MapBuildHouse(LotID),
     MapMakeConnection(MapProject, MapProject, Option<Vec2>, LanePattern),
     MapUpdateIntersectionPolicy(IntersectionID, TurnPolicy, LightPolicy),
     MapBuildSpecialBuilding(RoadID, OBB, BuildingKind, BuildingGen),
-    MapBuildHouses,
     MapLoadParis,
     MapLoadTestField,
     MapClear,
@@ -74,10 +73,6 @@ impl WorldCommands {
         self.commands.push(MapClear)
     }
 
-    pub fn map_build_houses(&mut self) {
-        self.commands.push(MapBuildHouses);
-    }
-
     pub fn set_game_time(&mut self, gt: GameTime) {
         self.commands.push(SetGameTime(gt))
     }
@@ -105,8 +100,8 @@ impl WorldCommands {
         self.commands.push(MapRemoveBuilding(id))
     }
 
-    pub fn map_set_lot_kind(&mut self, id: LotID, kind: LotKind) {
-        self.commands.push(MapSetLotKind(id, kind))
+    pub fn map_build_house(&mut self, id: LotID) {
+        self.commands.push(MapBuildHouse(id))
     }
 
     pub fn map_make_connection(
@@ -136,7 +131,12 @@ impl WorldCommand {
             MapRemoveIntersection(id) => goria.write::<Map>().remove_intersection(id),
             MapRemoveRoad(id) => drop(goria.write::<Map>().remove_road(id)),
             MapRemoveBuilding(id) => drop(goria.write::<Map>().remove_building(id)),
-            MapSetLotKind(id, kind) => goria.write::<Map>().set_lot_kind(id, kind),
+            MapBuildHouse(id) => {
+                if let Some(build) = goria.write::<Map>().build_house(id) {
+                    let mut infos = goria.write::<BuildingInfos>();
+                    infos.insert(build);
+                }
+            }
             MapMakeConnection(from, to, interpoint, ref pat) => {
                 goria
                     .write::<Map>()
@@ -155,13 +155,6 @@ impl WorldCommand {
                 goria.write::<BuildingInfos>().insert(id);
             }
             SetGameTime(gt) => *goria.write::<GameTime>() = gt,
-            MapBuildHouses => {
-                let mut infos = goria.write::<BuildingInfos>();
-                let mut map = goria.write::<Map>();
-                for build in map.build_houses() {
-                    infos.insert(build);
-                }
-            }
             MapLoadParis => {
                 goria.write::<Map>().clear();
                 map_model::procgen::load_parismap(&mut *goria.write::<Map>())

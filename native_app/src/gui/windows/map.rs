@@ -7,10 +7,6 @@ use legion::IntoQuery;
 
 pub fn map(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
     window.build(ui, || {
-        if ui.small_button(im_str!("build houses")) {
-            uiworld.commands().map_build_houses();
-        }
-
         if ui.small_button(im_str!("load Paris map")) {
             uiworld.commands().map_load_paris();
         }

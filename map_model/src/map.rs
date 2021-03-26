@@ -288,39 +288,26 @@ impl Map {
         )
     }
 
-    pub fn build_houses(&mut self) -> impl Iterator<Item = BuildingID> + '_ {
-        info!("build houses");
+    pub fn build_house(&mut self, id: LotID) -> Option<BuildingID> {
+        info!("build house on {:?}", id);
         self.dirt_id += 1;
 
         let roads = &mut self.roads;
         let buildings = &mut self.buildings;
         let spatial_map = &mut self.spatial_map;
 
-        let mut built = vec![];
+        let lot = self.lots.remove(id)?;
 
-        self.lots.retain(|_, lot| {
-            let parent = lot.parent;
-            let lotkind = lot.kind;
+        Self::cleanup_lot(roads, spatial_map, &lot);
 
-            let kind = match lotkind {
-                LotKind::Unassigned => return true,
-                LotKind::Residential => BuildingKind::House,
-            };
-
-            Self::cleanup_lot(roads, spatial_map, lot);
-
-            built.push(Building::make(
-                buildings,
-                spatial_map,
-                &roads[parent],
-                lot.shape,
-                kind,
-                BuildingGen::House,
-            ));
-            false
-        });
-
-        built.into_iter()
+        Some(Building::make(
+            buildings,
+            spatial_map,
+            &roads[lot.parent],
+            lot.shape,
+            BuildingKind::House,
+            BuildingGen::House,
+        ))
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
