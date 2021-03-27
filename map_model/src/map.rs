@@ -45,6 +45,8 @@ impl Default for Map {
 }
 
 impl Map {
+    // Public API
+
     pub fn empty() -> Self {
         Self {
             roads: Roads::default(),
@@ -66,58 +68,6 @@ impl Map {
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
         self.dirt_id += 1;
-    }
-
-    fn invalidate(&mut self, id: IntersectionID) {
-        info!("invalidate {:?}", id);
-
-        self.dirt_id += 1;
-        let inter = unwrap_ret!(self.intersections.get_mut(id));
-
-        if inter.roads.is_empty() {
-            self.remove_intersection(id);
-            return;
-        }
-
-        inter.update_interface_radius(&mut self.roads);
-
-        for x in inter.roads.clone() {
-            let road = unwrap_contlog!(
-                self.roads.get(x),
-                "intersection has unexisting road in list"
-            );
-
-            let other_end = unwrap_contlog!(
-                self.intersections.get_mut(road.other_end(id)),
-                "road is connected to unexisting intersection"
-            );
-            other_end.update_interface_radius(&mut self.roads);
-
-            #[allow(clippy::indexing_slicing)] // borrowed before
-            self.roads[x].update_lanes(&mut self.lanes, &mut self.parking);
-
-            other_end.update_polygon(&self.roads);
-        }
-
-        #[allow(clippy::indexing_slicing)] // borrowed before
-        let inter = &mut self.intersections[id];
-        inter.update_traffic_control(&mut self.lanes, &self.roads);
-        inter.update_turns(&self.lanes, &self.roads);
-        inter.update_polygon(&self.roads);
-
-        self.spatial_map.update(
-            inter.id,
-            inter
-                .polygon
-                .bbox()
-                .union(AABB::centered(inter.pos, Vec2::splat(25.0))),
-        );
-    }
-
-    pub fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
-        info!("add_intersection {:?}", pos);
-        self.dirt_id += 1;
-        Intersection::make(&mut self.intersections, &mut self.spatial_map, pos)
     }
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
@@ -143,98 +93,6 @@ impl Map {
         b
     }
 
-    pub fn split_road(&mut self, id: RoadID, pos: Vec2) -> IntersectionID {
-        info!("split_road {:?} {:?}", id, pos);
-
-        let r = self
-            .remove_road(id)
-            .expect("Trying to split unexisting road");
-        let id = self.add_intersection(pos);
-
-        let pat = r.pattern();
-        match r.segment {
-            RoadSegmentKind::Straight => {
-                self.connect(r.src, id, &pat, RoadSegmentKind::Straight);
-                self.connect(id, r.dst, &pat, RoadSegmentKind::Straight);
-            }
-            RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
-                let s = Spline {
-                    from: r.points.first(),
-                    to: r.points.last(),
-                    from_derivative,
-                    to_derivative,
-                };
-                let t_approx = s.project_t(pos, 1.0);
-
-                let (s_from, s_to) = s.split_at(t_approx);
-
-                self.connect(
-                    r.src,
-                    id,
-                    &pat,
-                    RoadSegmentKind::Curved((s_from.from_derivative, s_from.to_derivative)),
-                );
-                self.connect(
-                    id,
-                    r.dst,
-                    &pat,
-                    RoadSegmentKind::Curved((s_to.from_derivative, s_to.to_derivative)),
-                );
-            }
-        }
-
-        id
-    }
-
-    pub fn connect(
-        &mut self,
-        src_id: IntersectionID,
-        dst_id: IntersectionID,
-        pattern: &LanePattern,
-        segment: RoadSegmentKind,
-    ) -> Option<RoadID> {
-        info!(
-            "connect {:?} {:?} {:?} {:?}",
-            src_id, dst_id, pattern, segment
-        );
-        self.dirt_id += 1;
-
-        let src = self.intersections.get(src_id)?;
-        let dst = self.intersections.get(dst_id)?;
-
-        let r = Road::make(
-            src,
-            dst,
-            segment,
-            pattern,
-            &mut self.roads,
-            &mut self.lanes,
-            &mut self.parking,
-            &mut self.spatial_map,
-        );
-        let id = r.id;
-        #[allow(clippy::indexing_slicing)]
-        let r = &self.roads[id];
-
-        self.intersections.get_mut(src_id)?.add_road(&self.roads, r);
-        self.intersections.get_mut(dst_id)?.add_road(&self.roads, r);
-
-        self.invalidate(src_id);
-        self.invalidate(dst_id);
-
-        Lot::remove_intersecting_lots(self, id);
-        Lot::generate_along_road(self, id);
-
-        let r = &self.roads[id];
-        let d = r.width + 50.0;
-        self.trees.remove_near_filter(r.bbox().expand(d), |tpos| {
-            let rd = common::rand::rand3(tpos.x, tpos.y, 391.0) * 20.0;
-            r.points.project(tpos).is_close(tpos, d - rd)
-        });
-
-        Some(id)
-    }
-
     pub fn make_connection(
         &mut self,
         from: MapProject,
@@ -248,7 +106,9 @@ impl Map {
         };
 
         let mut mk_inter = |proj: MapProject| match proj.kind {
-            ProjectKind::Ground => self.add_intersection(proj.pos),
+            ProjectKind::Ground => {
+                Intersection::make(&mut self.intersections, &mut self.spatial_map, proj.pos)
+            }
             ProjectKind::Inter(id) => id,
             ProjectKind::Road(id) => self.split_road(id, proj.pos),
             ProjectKind::Building(_) | ProjectKind::Lot(_) => unreachable!(),
@@ -259,12 +119,6 @@ impl Map {
 
         self.connect(from, to, pattern, connection_segment);
         to
-    }
-
-    fn cleanup_lot(roads: &mut Roads, spatial_map: &mut SpatialMap, lot: &Lot) {
-        let rlots = &mut roads[lot.parent].lots;
-        rlots.remove(rlots.iter().position(|&x| x == lot.id).unwrap());
-        spatial_map.remove(lot.id);
     }
 
     pub fn build_special_building(
@@ -383,6 +237,154 @@ impl Map {
         let before = std::mem::take(self);
         self.trees = before.trees;
     }
+
+    // Private mutating
+
+    fn invalidate(&mut self, id: IntersectionID) {
+        info!("invalidate {:?}", id);
+
+        self.dirt_id += 1;
+        let inter = unwrap_ret!(self.intersections.get_mut(id));
+
+        if inter.roads.is_empty() {
+            self.remove_intersection(id);
+            return;
+        }
+
+        inter.update_interface_radius(&mut self.roads);
+
+        for x in inter.roads.clone() {
+            let road = unwrap_contlog!(
+                self.roads.get(x),
+                "intersection has unexisting road in list"
+            );
+
+            let other_end = unwrap_contlog!(
+                self.intersections.get_mut(road.other_end(id)),
+                "road is connected to unexisting intersection"
+            );
+            other_end.update_interface_radius(&mut self.roads);
+
+            #[allow(clippy::indexing_slicing)] // borrowed before
+            self.roads[x].update_lanes(&mut self.lanes, &mut self.parking);
+
+            other_end.update_polygon(&self.roads);
+        }
+
+        #[allow(clippy::indexing_slicing)] // borrowed before
+        let inter = &mut self.intersections[id];
+        inter.update_traffic_control(&mut self.lanes, &self.roads);
+        inter.update_turns(&self.lanes, &self.roads);
+        inter.update_polygon(&self.roads);
+
+        self.spatial_map.update(
+            inter.id,
+            inter
+                .polygon
+                .bbox()
+                .union(AABB::centered(inter.pos, Vec2::splat(25.0))),
+        );
+    }
+
+    pub(crate) fn split_road(&mut self, id: RoadID, pos: Vec2) -> IntersectionID {
+        info!("split_road {:?} {:?}", id, pos);
+
+        let r = self
+            .remove_road(id)
+            .expect("Trying to split unexisting road");
+        let id = Intersection::make(&mut self.intersections, &mut self.spatial_map, pos);
+
+        let pat = r.pattern();
+        match r.segment {
+            RoadSegmentKind::Straight => {
+                self.connect(r.src, id, &pat, RoadSegmentKind::Straight);
+                self.connect(id, r.dst, &pat, RoadSegmentKind::Straight);
+            }
+            RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
+                let s = Spline {
+                    from: r.points.first(),
+                    to: r.points.last(),
+                    from_derivative,
+                    to_derivative,
+                };
+                let t_approx = s.project_t(pos, 1.0);
+
+                let (s_from, s_to) = s.split_at(t_approx);
+
+                self.connect(
+                    r.src,
+                    id,
+                    &pat,
+                    RoadSegmentKind::Curved((s_from.from_derivative, s_from.to_derivative)),
+                );
+                self.connect(
+                    id,
+                    r.dst,
+                    &pat,
+                    RoadSegmentKind::Curved((s_to.from_derivative, s_to.to_derivative)),
+                );
+            }
+        }
+
+        id
+    }
+
+    pub(crate) fn connect(
+        &mut self,
+        src_id: IntersectionID,
+        dst_id: IntersectionID,
+        pattern: &LanePattern,
+        segment: RoadSegmentKind,
+    ) -> Option<RoadID> {
+        info!(
+            "connect {:?} {:?} {:?} {:?}",
+            src_id, dst_id, pattern, segment
+        );
+        self.dirt_id += 1;
+
+        let src = self.intersections.get(src_id)?;
+        let dst = self.intersections.get(dst_id)?;
+
+        let r = Road::make(
+            src,
+            dst,
+            segment,
+            pattern,
+            &mut self.roads,
+            &mut self.lanes,
+            &mut self.parking,
+            &mut self.spatial_map,
+        );
+        let id = r.id;
+        #[allow(clippy::indexing_slicing)]
+        let r = &self.roads[id];
+
+        self.intersections.get_mut(src_id)?.add_road(&self.roads, r);
+        self.intersections.get_mut(dst_id)?.add_road(&self.roads, r);
+
+        self.invalidate(src_id);
+        self.invalidate(dst_id);
+
+        Lot::remove_intersecting_lots(self, id);
+        Lot::generate_along_road(self, id);
+
+        let r = &self.roads[id];
+        let d = r.width + 50.0;
+        self.trees.remove_near_filter(r.bbox().expand(d), |tpos| {
+            let rd = common::rand::rand3(tpos.x, tpos.y, 391.0) * 20.0;
+            r.points.project(tpos).is_close(tpos, d - rd)
+        });
+
+        Some(id)
+    }
+
+    fn cleanup_lot(roads: &mut Roads, spatial_map: &mut SpatialMap, lot: &Lot) {
+        let rlots = &mut roads[lot.parent].lots;
+        rlots.remove(rlots.iter().position(|&x| x == lot.id).unwrap());
+        spatial_map.remove(lot.id);
+    }
+
+    // Public helpers
 
     pub fn project(&self, pos: Vec2, tolerance: f32) -> MapProject {
         let mk_proj = move |kind| MapProject { pos, kind };
