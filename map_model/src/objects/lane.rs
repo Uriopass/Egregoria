@@ -59,7 +59,6 @@ pub struct Lane {
 
     /// Always from src to dst
     pub points: PolyLine,
-    pub width: f32,
     pub dist_from_bottom: f32,
 
     /// Length from start to end
@@ -179,7 +178,7 @@ impl Lane {
     pub fn make(
         parent: &mut Road,
         store: &mut Lanes,
-        lane_type: LaneKind,
+        kind: LaneKind,
         direction: LaneDirection,
         dist_from_bottom: f32,
     ) -> LaneID {
@@ -193,9 +192,8 @@ impl Lane {
             parent: parent.id,
             src,
             dst,
-            kind: lane_type,
+            kind,
             points: parent.points().clone(),
-            width: lane_type.width(),
             dist_from_bottom,
             length: 0.0,
             control: TrafficControl::Always,
@@ -212,7 +210,7 @@ impl Lane {
 
     pub fn gen_pos(&mut self, parent_road: &Road) {
         let dist_from_bottom = self.dist_from_bottom;
-        let lane_dist = self.width * 0.5 + dist_from_bottom - parent_road.width * 0.5;
+        let lane_dist = self.kind.width() * 0.5 + dist_from_bottom - parent_road.width * 0.5;
 
         let middle_points = parent_road.interfaced_points();
 
