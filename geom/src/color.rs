@@ -315,20 +315,20 @@ impl Mul<LinearColor> for f32 {
     }
 }
 
-impl Into<[f32; 4]> for Color {
-    fn into(self) -> [f32; 4] {
-        [self.r, self.g, self.b, self.a]
+impl From<Color> for [f32; 4] {
+    fn from(x: Color) -> [f32; 4] {
+        [x.r, x.g, x.b, x.a]
     }
 }
 
-impl Into<[f32; 4]> for LinearColor {
-    fn into(self) -> [f32; 4] {
-        [self.r, self.g, self.b, self.a]
+impl From<LinearColor> for [f32; 4] {
+    fn from(x: LinearColor) -> [f32; 4] {
+        [x.r, x.g, x.b, x.a]
     }
 }
 
-impl Into<[f32; 4]> for &LinearColor {
-    fn into(self) -> [f32; 4] {
-        [self.r, self.g, self.b, self.a]
+impl From<&LinearColor> for [f32; 4] {
+    fn from(x: &LinearColor) -> [f32; 4] {
+        [x.r, x.g, x.b, x.a]
     }
 }

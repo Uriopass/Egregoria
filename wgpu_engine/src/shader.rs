@@ -36,7 +36,7 @@ fn mk_module(s: ShaderSource, device: &wgpu::Device) -> ShaderModule {
 
 fn find_in_cache(
     device: &wgpu::Device,
-    compiled_path: &PathBuf,
+    compiled_path: &Path,
     stype: ShaderType,
     last_modified: SystemTime,
 ) -> CacheState {
@@ -72,7 +72,7 @@ fn find_in_cache(
     }
 }
 
-fn save_to_cache(compiled_path: &PathBuf, spirv: &[u8]) -> Option<()> {
+fn save_to_cache(compiled_path: &Path, spirv: &[u8]) -> Option<()> {
     std::fs::create_dir_all(compiled_path.parent()?).ok()?;
     std::fs::write(compiled_path, spirv).ok()?;
     Some(())

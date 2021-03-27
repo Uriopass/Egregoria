@@ -100,17 +100,20 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
         while let Some(x) = self.events.try_receive() {
             match x {
                 NetEvent::Message(e, m) => {
-                    if e.resource_id().adapter_id() == Transport::FramedTcp.id() {
-                        if let Some(packet) = decode(&*m) {
-                            self.message_reliable(packet);
-                        } else {
-                            log::error!("could not decode reliable packet from server");
+                    match e.resource_id().adapter_id() == Transport::FramedTcp.id() {
+                        true => {
+                            if let Some(packet) = decode(&*m) {
+                                self.message_reliable(packet);
+                            } else {
+                                log::error!("could not decode reliable packet from server");
+                            }
                         }
-                    } else {
-                        if let Some(packet) = decode(&*m) {
-                            self.message_unreliable(packet)
-                        } else {
-                            log::error!("could not decode unreliable packet from server");
+                        false => {
+                            if let Some(packet) = decode(&*m) {
+                                self.message_unreliable(packet)
+                            } else {
+                                log::error!("could not decode unreliable packet from server");
+                            }
                         }
                     }
                 }

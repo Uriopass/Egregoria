@@ -208,7 +208,7 @@ fn debug_coworld(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Optio
 
     tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
     for h in coworld.handles() {
-        let pos = coworld.get(h).unwrap().0;
+        let pos = coworld.get(h)?.0;
         tess.draw_circle(pos, Z_DEBUG, 3.0);
     }
     Some(())
