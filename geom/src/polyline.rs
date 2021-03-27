@@ -3,6 +3,7 @@ use crate::aabb::AABB;
 use crate::segment::Segment;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
+use std::convert::TryInto;
 use std::hint::unreachable_unchecked;
 use std::ops::{Index, Range, RangeBounds};
 use std::slice::{Iter, IterMut, Windows};
@@ -235,6 +236,69 @@ impl PolyLine {
         }
     }
 
+    // dst is distance from start to cut
+    pub fn cut_start(&self, mut dst: f32) -> PolyLine {
+        match *self.0 {
+            [] => unsafe { unreachable_unchecked() },
+            [x] => PolyLine::new(vec![x]),
+            [f, l] => {
+                let v = l - f;
+                let m = v.magnitude();
+                dst = dst.min(m);
+
+                PolyLine::new(vec![f + v * (dst / m), l])
+            }
+            _ => {
+                let mut partial = 0.0;
+                let mut v = unsafe { PolyLine::new_unchecked(vec![]) };
+                if dst < f32::EPSILON {
+                    v.push(self.first());
+                }
+                for w in self.0.windows(2) {
+                    if v.is_empty() {
+                        let d = w[0].distance(w[1]);
+
+                        if partial + d > dst {
+                            let dir = (w[1] - w[0]).normalize();
+                            v.push(w[0] + dir * (dst - partial));
+                        }
+                        partial += d;
+                    } else {
+                        v.push(w[0]);
+                    }
+                }
+                if v.is_empty() {
+                    v.push(self.last() - self.last_dir().unwrap() * 0.001);
+                }
+                v.push(self.last());
+                v
+            }
+        }
+    }
+
+    // start is distance from start to cut
+    // end is distance from end to cut
+    pub fn cut(&self, dst_from_start: f32, dst_from_end: f32) -> PolyLine {
+        match self.n_points() {
+            0 => unsafe { unreachable_unchecked() },
+            1 => self.clone(),
+            2 => {
+                let n = self.first_dir().unwrap();
+                PolyLine::new(vec![
+                    self.first() + n * dst_from_start,
+                    self.last() - n * dst_from_end,
+                ])
+            }
+            _ => {
+                let mut s_cut = self.cut_start(dst_from_start);
+                s_cut.reverse();
+                s_cut.cut_start(dst_from_end);
+                s_cut.reverse();
+                s_cut
+            }
+        }
+    }
+
     pub fn bbox(&self) -> AABB {
         let (min, max) = match super::minmax(&self.0) {
             Some(x) => x,
@@ -280,8 +344,8 @@ impl PolyLine {
         self.0.iter_mut()
     }
 
-    pub fn windows(&self, id: usize) -> Windows<'_, Vec2> {
-        self.0.windows(id)
+    pub fn array_windows<const N: usize>(&self) -> impl Iterator<Item = &[Vec2; N]> + '_ {
+        self.0.windows(N).map(|x| x.try_into().unwrap())
     }
 
     pub fn reserve(&mut self, additional: usize) {

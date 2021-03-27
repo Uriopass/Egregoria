@@ -76,20 +76,22 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     if let ProjectKind::Road(r_id) = cur_proj.kind {
         let r = &map.roads()[r_id];
-        if r.src_point
-            .is_close(cur_proj.pos, r.src_interface + patwidth * 0.5)
+        if r.points
+            .first()
+            .is_close(cur_proj.pos, r.interface_from(r.src) + patwidth * 0.5)
         {
             cur_proj = MapProject {
                 kind: ProjectKind::Inter(r.src),
-                pos: r.src_point,
+                pos: r.points.first(),
             };
         } else if r
-            .dst_point
-            .is_close(cur_proj.pos, r.dst_interface + patwidth * 0.5)
+            .points
+            .last()
+            .is_close(cur_proj.pos, r.interface_from(r.dst) + patwidth * 0.5)
         {
             cur_proj = MapProject {
                 kind: ProjectKind::Inter(r.dst),
-                pos: r.dst_point,
+                pos: r.points.last(),
             };
         }
     }
@@ -181,7 +183,7 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
         }
         Road(r) => {
             let r = &map.roads()[r]; // fixme dont crash
-            let (proj, _, rdir1) = r.generated_points().project_segment_dir(from.pos);
+            let (proj, _, rdir1) = r.points().project_segment_dir(from.pos);
             let rdir2 = -rdir1;
             let dir = (to - proj).normalize();
             if rdir1.angle(dir).abs() < MAX_TURN_ANGLE || rdir2.angle(dir).abs() < MAX_TURN_ANGLE {

@@ -1,15 +1,10 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::many_single_char_names)]
 #![allow(clippy::upper_case_acronyms)]
+#![warn(clippy::indexing_slicing)]
 
-macro_rules! unwrap_or {
-    ($e: expr, $t: expr) => {
-        match $e {
-            Some(x) => x,
-            None => $t,
-        }
-    };
-}
+#[macro_use]
+extern crate common;
 
 #[macro_use]
 extern crate log;

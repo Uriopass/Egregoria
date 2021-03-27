@@ -1,6 +1,6 @@
 use crate::{
-    Intersections, LaneID, Lanes, LightPolicy, RoadID, Roads, SpatialMap, TraverseDirection, Turn,
-    TurnID, TurnPolicy,
+    Intersections, LaneID, Lanes, LightPolicy, Road, RoadID, Roads, SpatialMap, TraverseDirection,
+    Turn, TurnID, TurnPolicy,
 };
 use geom::pseudo_angle;
 use geom::Polygon;
@@ -52,12 +52,15 @@ impl Intersection {
         id
     }
 
-    pub fn add_road(&mut self, road_id: RoadID, roads: &Roads) {
-        self.roads.push(road_id);
+    pub fn add_road(&mut self, roads: &Roads, road: &Road) {
+        self.roads.push(road.id);
 
         let id = self.id;
-        self.roads
-            .sort_by_key(|&x| OrderedFloat(pseudo_angle(roads[x].basic_orientation_from(id))));
+        self.roads.retain(|&id| roads.contains_key(id));
+        self.roads.sort_by_key(|&road| {
+            #[allow(clippy::indexing_slicing)]
+            OrderedFloat(pseudo_angle(roads[road].basic_orientation_from(id)))
+        });
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) {

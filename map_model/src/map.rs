@@ -61,10 +61,8 @@ impl Map {
 
     pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection)) {
         info!("update_intersection {:?}", id);
-        let inter = unwrap_or!(self.intersections.get_mut(id), return);
+        let inter = unwrap_ret!(self.intersections.get_mut(id));
         f(inter);
-
-        let inter = &mut self.intersections[id];
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
         self.dirt_id += 1;
@@ -74,20 +72,29 @@ impl Map {
         info!("invalidate {:?}", id);
 
         self.dirt_id += 1;
-        let inter = &mut self.intersections[id];
+        let inter = unwrap_ret!(self.intersections.get_mut(id));
+
         inter.update_interface_radius(&mut self.roads);
 
         for x in inter.roads.clone() {
-            let other_end = &mut self.intersections[self.roads[x].other_end(id)];
+            let road = unwrap_contlog!(
+                self.roads.get(x),
+                "intersection has unexisting road in list"
+            );
+
+            let other_end = unwrap_contlog!(
+                self.intersections.get_mut(road.other_end(id)),
+                "road is connected to unexisting intersection"
+            );
             other_end.update_interface_radius(&mut self.roads);
 
-            let road = &mut self.roads[x];
-            road.gen_pos(&self.intersections, &mut self.lanes, &mut self.parking);
+            #[allow(clippy::indexing_slicing)] // borrowed before
+            self.roads[x].update_lanes(&mut self.lanes, &mut self.parking);
 
-            let other_end = &mut self.intersections[self.roads[x].other_end(id)];
             other_end.update_polygon(&self.roads);
         }
 
+        #[allow(clippy::indexing_slicing)] // borrowed before
         let inter = &mut self.intersections[id];
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
@@ -110,14 +117,14 @@ impl Map {
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
         info!("remove_intersection {:?}", src);
-
         self.dirt_id += 1;
-        for road in self.intersections[src].roads.clone() {
+
+        let inter = unwrap_ret!(self.intersections.remove(src));
+        for road in inter.roads {
             self.remove_road(road);
         }
 
         self.spatial_map.remove(src);
-        self.intersections.remove(src);
     }
 
     pub fn remove_building(&mut self, b: BuildingID) -> Option<Building> {
@@ -147,8 +154,8 @@ impl Map {
             }
             RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
                 let s = Spline {
-                    from: r.src_point,
-                    to: r.dst_point,
+                    from: r.points.first(),
+                    to: r.points.last(),
                     from_derivative,
                     to_derivative,
                 };
@@ -176,23 +183,39 @@ impl Map {
 
     pub fn connect(
         &mut self,
-        src: IntersectionID,
-        dst: IntersectionID,
+        src_id: IntersectionID,
+        dst_id: IntersectionID,
         pattern: &LanePattern,
         segment: RoadSegmentKind,
-    ) -> RoadID {
-        info!("connect {:?} {:?} {:?} {:?}", src, dst, pattern, segment);
-
+    ) -> Option<RoadID> {
+        info!(
+            "connect {:?} {:?} {:?} {:?}",
+            src_id, dst_id, pattern, segment
+        );
         self.dirt_id += 1;
-        let id = Road::make(src, dst, segment, pattern, self);
 
-        let inters = &mut self.intersections;
+        let src = self.intersections.get(src_id)?;
+        let dst = self.intersections.get(dst_id)?;
 
-        inters[src].add_road(id, &self.roads);
-        inters[dst].add_road(id, &self.roads);
+        let r = Road::make(
+            src,
+            dst,
+            segment,
+            pattern,
+            &mut self.roads,
+            &mut self.lanes,
+            &mut self.parking,
+            &mut self.spatial_map,
+        );
+        let id = r.id;
+        #[allow(clippy::indexing_slicing)]
+        let r = &self.roads[id];
 
-        self.invalidate(src);
-        self.invalidate(dst);
+        self.intersections.get_mut(src_id)?.add_road(&self.roads, r);
+        self.intersections.get_mut(dst_id)?.add_road(&self.roads, r);
+
+        self.invalidate(src_id);
+        self.invalidate(dst_id);
 
         Lot::remove_intersecting_lots(self, id);
         Lot::generate_along_road(self, id);
@@ -201,10 +224,10 @@ impl Map {
         let d = r.width + 50.0;
         self.trees.remove_near_filter(r.bbox().expand(d), |tpos| {
             let rd = common::rand::rand3(tpos.x, tpos.y, 391.0) * 20.0;
-            r.generated_points.project(tpos).is_close(tpos, d - rd)
+            r.points.project(tpos).is_close(tpos, d - rd)
         });
 
-        id
+        Some(id)
     }
 
     pub fn make_connection(
@@ -328,8 +351,12 @@ impl Map {
             self.spatial_map.remove(lot);
         }
 
-        self.intersections[road.src].remove_road(road_id);
-        self.intersections[road.dst].remove_road(road_id);
+        if let Some(i) = self.intersections.get_mut(road.src) {
+            i.remove_road(road_id);
+        }
+        if let Some(i) = self.intersections.get_mut(road.dst) {
+            i.remove_road(road_id);
+        }
 
         self.invalidate(road.src);
         self.invalidate(road.dst);
@@ -383,7 +410,7 @@ impl Map {
                         .get(id)
                         .expect("Road does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
-                    let projected = road.generated_points.project(pos);
+                    let projected = road.points.project(pos);
                     if projected.is_close(pos, road.width * 0.5 + tolerance) {
                         qroad = Some((id, projected));
                     }
@@ -457,7 +484,7 @@ impl Map {
             .get(park_lane.parent)
             .expect("Lane has no parent >:(");
         Some(
-            road.outgoing_lanes_from(park_lane.src)
+            road.outgoing_lanes_from(road.src)
                 .iter()
                 .rfind(|&&(_, kind)| kind == LaneKind::Driving)
                 .map(|&(id, _)| id)
