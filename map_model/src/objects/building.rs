@@ -60,7 +60,7 @@ impl Building {
         }
         door_pos = door_pos.rotated_by(axis) + at;
 
-        let (rpos, _, dir) = road.generated_points.project_segment_dir(door_pos);
+        let (rpos, _, dir) = road.points.project_segment_dir(door_pos);
 
         let walkway = Polygon(vec![
             rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) + dir * 1.5,
@@ -71,14 +71,15 @@ impl Building {
 
         mesh.faces.push((walkway, Color::gray(0.4).into()));
 
-        let id = buildings.insert_with_key(move |id| Self {
-            id,
-            mesh,
-            kind,
-            door_pos,
-            obb,
-        });
-        spatial_map.insert(id, buildings[id].mesh.bbox());
-        id
+        buildings.insert_with_key(move |id| {
+            spatial_map.insert(id, mesh.bbox());
+            Self {
+                id,
+                mesh,
+                kind,
+                door_pos,
+                obb,
+            }
+        })
     }
 }

@@ -134,8 +134,8 @@ pub fn show_grid(tess: &mut Tesselator, _: &Egregoria, uiworld: &UiWorld) -> Opt
 pub fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     for road in goria.read::<Map>().roads().values() {
         if let RoadSegmentKind::Curved((fr_dr, to_der)) = road.segment {
-            let fr = road.src_point;
-            let to = road.dst_point;
+            let fr = road.points.first();
+            let to = road.points.last();
             draw_spline(
                 tess,
                 &Spline {
@@ -155,7 +155,7 @@ pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
     let map = goria.read::<Map>();
     tess.set_color(Color::RED);
     for (_, road) in map.roads() {
-        tess.draw_polyline(road.generated_points().as_slice(), Z_DEBUG, 0.1);
+        tess.draw_polyline(road.points().as_slice(), Z_DEBUG, 0.1);
     }
     Some(())
 }

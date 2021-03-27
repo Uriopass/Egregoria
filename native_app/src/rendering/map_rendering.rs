@@ -303,9 +303,10 @@ impl RoadRenderer {
         self.arrow_builder.clear();
         let lanes = map.lanes();
         for road in map.roads().values() {
-            let fade = (road.length - 5.0 - road.src_interface - road.dst_interface)
-                .mul(0.2)
-                .restrict(0.0, 1.0);
+            let fade =
+                (road.length - 5.0 - road.interface_from(road.src) - road.interface_from(road.dst))
+                    .mul(0.2)
+                    .restrict(0.0, 1.0);
 
             let r_lanes = road.lanes_iter().filter(|(_, kind)| kind.vehicles());
             let n_arrows = ((road.length / 50.0) as i32).max(1);

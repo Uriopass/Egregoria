@@ -341,7 +341,7 @@ impl State {
         let map = self.goria.read::<Map>();
         for x in map.roads().values() {
             let w = x.width * 0.5 - 5.0;
-            for (point, dir) in x.generated_points().equipoints_dir(45.0) {
+            for (point, dir) in x.points().equipoints_dir(45.0) {
                 lights.push(LightInstance {
                     pos: (point + dir.perpendicular() * w).into(),
                     scale: 60.0,

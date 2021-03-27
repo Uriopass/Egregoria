@@ -60,6 +60,7 @@ pub struct Lane {
     /// Always from src to dst
     pub points: PolyLine,
     pub width: f32,
+    pub dist_from_bottom: f32,
 
     /// Length from start to end
     pub length: f32,
@@ -75,12 +76,17 @@ impl LanePattern {
     pub fn lanes(&self) -> impl Iterator<Item = (LaneKind, LaneDirection)> + '_ {
         self.lanes_forward
             .iter()
+            .rev()
             .map(|&x| (x, LaneDirection::Forward))
             .chain(
                 self.lanes_backward
                     .iter()
                     .map(|&x| (x, LaneDirection::Backward)),
             )
+    }
+
+    pub fn width(&self) -> f32 {
+        self.lanes().map(|(kind, _)| kind.width()).sum()
     }
 }
 
@@ -175,6 +181,7 @@ impl Lane {
         store: &mut Lanes,
         lane_type: LaneKind,
         direction: LaneDirection,
+        dist_from_bottom: f32,
     ) -> LaneID {
         let (src, dst) = match direction {
             LaneDirection::Forward => (parent.src, parent.dst),
@@ -187,8 +194,9 @@ impl Lane {
             src,
             dst,
             kind: lane_type,
-            points: parent.generated_points().clone(),
+            points: parent.points().clone(),
             width: lane_type.width(),
+            dist_from_bottom,
             length: 0.0,
             control: TrafficControl::Always,
         })
@@ -202,23 +210,20 @@ impl Lane {
         }
     }
 
-    pub fn gen_pos(&mut self, parent_road: &Road, dist_from_bottom: f32) {
+    pub fn gen_pos(&mut self, parent_road: &Road) {
+        let dist_from_bottom = self.dist_from_bottom;
         let lane_dist = self.width * 0.5 + dist_from_bottom - parent_road.width * 0.5;
 
-        let parent_points = parent_road.generated_points();
+        let middle_points = parent_road.interfaced_points();
 
         let src_nor = -parent_road.src_dir().perpendicular();
         self.points
-            .clear_push(parent_points[0] + src_nor * lane_dist);
-        self.points.reserve(parent_points.n_points() - 1);
+            .clear_push(middle_points.first() + src_nor * lane_dist);
+        self.points.reserve(middle_points.n_points() - 1);
 
-        for window in parent_points.windows(3) {
-            let a = window[0];
-            let elbow = window[1];
-            let c = window[2];
-
-            let x = unwrap_or!((elbow - a).try_normalize(), continue);
-            let y = unwrap_or!((elbow - c).try_normalize(), continue);
+        for [a, elbow, c] in middle_points.array_windows::<3>() {
+            let x = unwrap_contlog!((elbow - a).try_normalize(), "elbow too close to a");
+            let y = unwrap_contlog!((elbow - c).try_normalize(), "elbow too close to c");
 
             let mut dir = (x + y).try_normalize().unwrap_or(-x.perpendicular());
 
@@ -233,8 +238,7 @@ impl Lane {
         }
 
         let dst_nor = parent_road.dst_dir().perpendicular();
-        self.points
-            .push(parent_road.generated_points().last() + dst_nor * lane_dist);
+        self.points.push(middle_points.last() + dst_nor * lane_dist);
 
         if self.dir_from(parent_road.src) == TraverseDirection::Backward {
             self.points.reverse();

@@ -65,8 +65,8 @@ impl Lot {
             let w = r.width * 0.5;
             let mut rng = rand::rngs::SmallRng::seed_from_u64(
                 common::rand::rand3(
-                    r.src_point.x + r.dst_point.x,
-                    r.dst_point.y + r.src_point.y,
+                    r.points.first().x + r.points.last().x,
+                    r.points.last().y + r.points.first().y,
                     side * r.length,
                 )
                 .to_bits() as u64,
@@ -74,7 +74,7 @@ impl Lot {
 
             let mut picksize = || *[20.0f32, 30.0, 40.0].choose(&mut rng).unwrap();
 
-            let points = r.generated_points.clone();
+            let points = r.points.clone();
             let mut along = points.points_dirs_manual();
             let mut size = picksize();
             let mut d = size * 0.5;
@@ -110,7 +110,7 @@ impl Lot {
         let r = &map.roads[road];
         let mut to_remove = map
             .spatial_map
-            .query(r.generated_points.bbox())
+            .query(r.points.bbox())
             .filter_map(|kind| {
                 let id = kind.to_lot()?;
                 if r.intersects(&map.lots[id].shape) {

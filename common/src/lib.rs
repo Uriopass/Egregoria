@@ -11,11 +11,47 @@ macro_rules! unwrap_or {
 }
 
 #[macro_export]
+macro_rules! unwrap_ret {
+    ($e: expr) => {
+        match $e {
+            Some(x) => x,
+            None => return,
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! unwrap_orr {
     ($e: expr, $t: expr) => {
         match $e {
             Ok(x) => x,
             Err(_) => $t,
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! unwrap_retlog {
+    ($e: expr, $($t: expr)+) => {
+        match $e {
+            Some(x) => x,
+            None => {
+                log::error!($($t),+);
+                return;
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! unwrap_contlog {
+    ($e: expr, $($t: expr)+) => {
+        match $e {
+            Some(x) => x,
+            None => {
+                log::error!($($t),+);
+                continue;
+            }
         }
     };
 }

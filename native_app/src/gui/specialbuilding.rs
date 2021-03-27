@@ -48,7 +48,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
             ProjectKind::Road(id) => Some(&roads[id]),
             _ => None,
         })
-        .min_by_key(move |p| OrderedFloat(p.generated_points().project_dist2(mpos)));
+        .min_by_key(move |p| OrderedFloat(p.points().project_dist2(mpos)));
 
     let mut draw_red = || {
         draw.textured_obb(OBB::new(mpos, Vec2::UNIT_Y, size, size), asset.to_owned())
@@ -58,7 +58,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     let closest_road = unwrap_or!(closest_road, return draw_red());
 
-    let (proj, _, dir) = closest_road.generated_points().project_segment_dir(mpos);
+    let (proj, _, dir) = closest_road.points().project_segment_dir(mpos);
 
     if !proj.is_close(mpos, size + closest_road.width * 0.5) {
         return draw_red();
@@ -70,8 +70,8 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         -dir.perpendicular()
     };
 
-    let first = closest_road.generated_points().first();
-    let last = closest_road.generated_points().last();
+    let first = closest_road.points().first();
+    let last = closest_road.points().last();
 
     let obb = OBB::new(
         proj + side * (size + closest_road.width + 0.5) * 0.5,
