@@ -10,7 +10,10 @@ use std::slice::{Iter, IterMut, Windows};
 
 /// An ordered list of at least one point forming a broken line
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PolyLine(Vec<Vec2>);
+pub struct PolyLine {
+    points: Vec<Vec2>,
+    l: f32,
+}
 
 impl From<Vec<Vec2>> for PolyLine {
     fn from(x: Vec<Vec2>) -> Self {
@@ -19,33 +22,20 @@ impl From<Vec<Vec2>> for PolyLine {
 }
 
 impl PolyLine {
-    /// # Safety
-    /// Must have at least one element, if the vec is empty then things like first() or last() might behave very badly.
-    pub unsafe fn new_unchecked(x: Vec<Vec2>) -> Self {
-        Self(x)
-    }
-
     pub fn new(x: Vec<Vec2>) -> Self {
         if x.is_empty() {
             panic!("Vec must have at least one point")
         }
-        Self(x)
+        Self {
+            l: length(&*x),
+            points: x,
+        }
     }
 
     pub fn clear_push(&mut self, x: Vec2) {
-        self.0.clear();
-        self.0.push(x)
-    }
-
-    /// # Safety
-    /// A strong invariant of polyline is that it always contains one point, if you break it things like
-    /// `first()` will be UB.
-    pub unsafe fn clear_unchecked(&mut self) {
-        self.0.clear();
-    }
-
-    pub fn into_vec(self) -> Vec<Vec2> {
-        self.0
+        self.points.clear();
+        self.points.push(x);
+        self.l = 0.0;
     }
 
     pub fn extend<A, T>(&mut self, s: T)
@@ -53,30 +43,35 @@ impl PolyLine {
         T: IntoIterator<Item = A>,
         Vec<Vec2>: Extend<A>,
     {
-        self.0.extend(s);
+        let old_l = self.points.len();
+        self.points.extend(s);
+        self.l += length(&self.points[old_l - 1..]);
     }
 
     pub fn pop(&mut self) -> Vec2 {
-        let v = match self.0.pop() {
+        let v = match self.points.pop() {
             Some(x) => x,
             None => unsafe { unreachable_unchecked() },
         };
         self.check_empty();
+        self.l -= (v - self.last()).magnitude();
         v
     }
 
     pub fn push(&mut self, item: Vec2) {
-        self.0.push(item)
+        self.l += (self.last() - item).magnitude();
+        self.points.push(item);
     }
 
     pub fn pop_first(&mut self) -> Vec2 {
-        let v = self.0.remove(0);
+        let v = self.points.remove(0);
         self.check_empty();
+        self.l -= (self.first() - v).magnitude();
         v
     }
 
     pub fn reverse(&mut self) {
-        self.0.reverse()
+        self.points.reverse()
     }
 
     fn check_empty(&self) {
@@ -85,9 +80,8 @@ impl PolyLine {
         }
     }
 
-    pub fn drain(&mut self, r: impl RangeBounds<usize>) {
-        self.0.drain(r);
-        self.check_empty()
+    pub fn into_vec(self) -> Vec<Vec2> {
+        self.points
     }
 
     /// Distance squared from the projection to p
@@ -126,14 +120,14 @@ impl PolyLine {
             1 => (self.first(), 0),
             2 => (
                 Segment {
-                    src: self.0[0],
-                    dst: self.0[1],
+                    src: self.points[0],
+                    dst: self.points[1],
                 }
                 .project(p),
                 1,
             ),
             _ => self
-                .0
+                .points
                 .windows(2)
                 .enumerate()
                 .map(|(i, w)| {
@@ -153,7 +147,7 @@ impl PolyLine {
     }
 
     pub fn first_dir(&self) -> Option<Vec2> {
-        if self.0.len() >= 2 {
+        if self.points.len() >= 2 {
             (self[1] - self[0]).try_normalize()
         } else {
             None
@@ -161,7 +155,7 @@ impl PolyLine {
     }
 
     pub fn last_dir(&self) -> Option<Vec2> {
-        let l = self.0.len();
+        let l = self.points.len();
         if l >= 2 {
             (self[l - 1] - self[l - 2]).try_normalize()
         } else {
@@ -189,6 +183,10 @@ impl PolyLine {
         )
     }
 
+    pub fn length(&self) -> f32 {
+        self.l
+    }
+
     /// dists should be in ascending order
     pub fn points_dirs_along<'a>(
         &'a self,
@@ -198,7 +196,7 @@ impl PolyLine {
     }
 
     pub fn points_dirs_manual(&self) -> PointsAlongs<'_> {
-        let mut windows = self.0.windows(2);
+        let mut windows = self.points.windows(2);
         let (dir, dist) = windows
             .next()
             .and_then(|w| (w[1] - w[0]).dir_dist())
@@ -221,7 +219,7 @@ impl PolyLine {
             2 => self[0].distance(proj),
             _ => {
                 let mut partial = 0.0;
-                for w in self.0.windows(2) {
+                for w in self.points.windows(2) {
                     let d = w[0].distance2(w[1]);
                     let d2 = w[0].distance2(proj);
 
@@ -238,7 +236,7 @@ impl PolyLine {
 
     // dst is distance from start to cut
     pub fn cut_start(&self, mut dst: f32) -> PolyLine {
-        match *self.0 {
+        match *self.points {
             [] => unsafe { unreachable_unchecked() },
             [x] => PolyLine::new(vec![x]),
             [f, l] => {
@@ -250,28 +248,32 @@ impl PolyLine {
             }
             _ => {
                 let mut partial = 0.0;
-                let mut v = unsafe { PolyLine::new_unchecked(vec![]) };
+                let mut v = None;
                 if dst < f32::EPSILON {
-                    v.push(self.first());
+                    v = Some(PolyLine::new(vec![self.first()]));
                 }
-                for w in self.0.windows(2) {
-                    if v.is_empty() {
-                        let d = w[0].distance(w[1]);
+                for w in self.points.windows(2) {
+                    match v {
+                        None => {
+                            let d = w[0].distance(w[1]);
 
-                        if partial + d > dst {
-                            let dir = (w[1] - w[0]).normalize();
-                            v.push(w[0] + dir * (dst - partial));
+                            if partial + d > dst {
+                                let dir = (w[1] - w[0]).normalize();
+                                v = Some(PolyLine::new(vec![w[0] + dir * (dst - partial)]));
+                            }
+
+                            partial += d;
                         }
-                        partial += d;
-                    } else {
-                        v.push(w[0]);
+                        Some(ref mut v) => {
+                            v.push(w[0]);
+                        }
                     }
                 }
-                if v.is_empty() {
-                    v.push(self.last() - self.last_dir().unwrap() * 0.001);
-                }
-                v.push(self.last());
-                v
+                let mut end_poly = v.unwrap_or_else(|| {
+                    PolyLine::new(vec![self.last() - self.last_dir().unwrap() * 0.001])
+                });
+                end_poly.push(self.last());
+                end_poly
             }
         }
     }
@@ -300,7 +302,7 @@ impl PolyLine {
     }
 
     pub fn bbox(&self) -> AABB {
-        let (min, max) = match super::minmax(&self.0) {
+        let (min, max) = match super::minmax(&self.points) {
             Some(x) => x,
             None => unsafe { unreachable_unchecked() },
         };
@@ -308,48 +310,44 @@ impl PolyLine {
         AABB::new(min, max)
     }
 
-    pub fn length(&self) -> f32 {
-        self.0.windows(2).map(|x| (x[1] - x[0]).magnitude()).sum()
-    }
-
     pub fn n_points(&self) -> usize {
-        self.0.len()
+        self.points.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
+        self.points.is_empty()
     }
 
     pub fn get(&self, id: usize) -> Option<&Vec2> {
-        self.0.get(id)
+        self.points.get(id)
     }
 
     pub fn first(&self) -> Vec2 {
-        unsafe { *self.0.get_unchecked(0) }
+        unsafe { *self.points.get_unchecked(0) }
     }
 
     pub fn last(&self) -> Vec2 {
-        unsafe { *self.0.get_unchecked(self.0.len() - 1) }
+        unsafe { *self.points.get_unchecked(self.points.len() - 1) }
     }
 
     pub fn as_slice(&self) -> &[Vec2] {
-        self.0.as_slice()
+        self.points.as_slice()
     }
 
     pub fn iter(&self) -> Iter<Vec2> {
-        self.0.iter()
+        self.points.iter()
     }
 
     pub fn iter_mut(&mut self) -> IterMut<Vec2> {
-        self.0.iter_mut()
+        self.points.iter_mut()
     }
 
     pub fn array_windows<const N: usize>(&self) -> impl Iterator<Item = &[Vec2; N]> + '_ {
-        self.0.windows(N).map(|x| x.try_into().unwrap())
+        self.points.windows(N).map(|x| x.try_into().unwrap())
     }
 
     pub fn reserve(&mut self, additional: usize) {
-        self.0.reserve(additional);
+        self.points.reserve(additional);
     }
 }
 
@@ -357,7 +355,7 @@ impl Index<Range<usize>> for PolyLine {
     type Output = [Vec2];
 
     fn index(&self, r: Range<usize>) -> &[Vec2] {
-        &self.0[r]
+        &self.points[r]
     }
 }
 
@@ -365,7 +363,7 @@ impl Index<usize> for PolyLine {
     type Output = Vec2;
 
     fn index(&self, index: usize) -> &Vec2 {
-        &self.0[index]
+        &self.points[index]
     }
 }
 
@@ -396,4 +394,8 @@ impl<'a> PointsAlongs<'a> {
     ) -> impl Iterator<Item = (Vec2, Vec2)> + 'a {
         std::iter::from_fn(move || self.next(it.next()?))
     }
+}
+
+fn length(v: &[Vec2]) -> f32 {
+    v.windows(2).map(|x| (x[1] - x[0]).magnitude()).sum()
 }
