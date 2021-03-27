@@ -106,9 +106,7 @@ impl Map {
         };
 
         let mut mk_inter = |proj: MapProject| match proj.kind {
-            ProjectKind::Ground => {
-                Intersection::make(&mut self.intersections, &mut self.spatial_map, proj.pos)
-            }
+            ProjectKind::Ground => self.add_intersection(proj.pos),
             ProjectKind::Inter(id) => id,
             ProjectKind::Road(id) => self.split_road(id, proj.pos),
             ProjectKind::Building(_) | ProjectKind::Lot(_) => unreachable!(),
@@ -240,6 +238,10 @@ impl Map {
 
     // Private mutating
 
+    pub(crate) fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
+        Intersection::make(&mut self.intersections, &mut self.spatial_map, pos)
+    }
+
     fn invalidate(&mut self, id: IntersectionID) {
         info!("invalidate {:?}", id);
 
@@ -292,7 +294,7 @@ impl Map {
         let r = self
             .remove_road(id)
             .expect("Trying to split unexisting road");
-        let id = Intersection::make(&mut self.intersections, &mut self.spatial_map, pos);
+        let id = self.add_intersection(pos);
 
         let pat = r.pattern();
         match r.segment {
