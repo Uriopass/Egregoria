@@ -67,7 +67,7 @@ impl Lot {
                 common::rand::rand3(
                     r.points.first().x + r.points.last().x,
                     r.points.last().y + r.points.first().y,
-                    side * r.length,
+                    side * r.length(),
                 )
                 .to_bits() as u64,
             );

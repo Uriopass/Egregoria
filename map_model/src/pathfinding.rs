@@ -34,7 +34,7 @@ impl Pathfinder for PedestrianPath {
                     TraverseKind::Lane(lane_from_id),
                     lane_from.dir_from(inter.id),
                 ),
-                OrderedFloat(lane_from.length),
+                OrderedFloat(lane_from.length()),
             );
 
             inter
@@ -106,7 +106,7 @@ impl Pathfinder for CarPath {
             let inter = &inters[l.dst];
             inter
                 .turns_from(p)
-                .map(|(x, _)| (x.dst, OrderedFloat(lanes[x.dst].length)))
+                .map(|(x, _)| (x.dst, OrderedFloat(lanes[x.dst].length())))
         };
 
         let (v, _) =
