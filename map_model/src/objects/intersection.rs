@@ -59,7 +59,7 @@ impl Intersection {
         self.roads.retain(|&id| roads.contains_key(id));
         self.roads.sort_by_key(|&road| {
             #[allow(clippy::indexing_slicing)]
-            OrderedFloat(pseudo_angle(roads[road].basic_orientation_from(id)))
+            OrderedFloat(pseudo_angle(roads[road].dir_from(id)))
         });
     }
 
@@ -107,8 +107,8 @@ impl Intersection {
 
             let w = width1.hypot(width2);
 
-            let dir1 = r1.basic_orientation_from(self.id);
-            let dir2 = r2.basic_orientation_from(self.id);
+            let dir1 = r1.dir_from(self.id);
+            let dir2 = r2.dir_from(self.id);
 
             let ang = dir1.angle(dir2).abs();
 
@@ -125,12 +125,12 @@ impl Intersection {
             let road = &roads[road];
             let next_road = &roads[self.roads[(i + 1) % self.roads.len()]];
 
-            let src_orient = road.orientation_from(self.id);
+            let src_orient = road.dir_from(self.id);
 
             let left =
                 road.interface_point(self.id) - road.width * 0.5 * src_orient.perpendicular();
 
-            let dst_orient = next_road.orientation_from(self.id);
+            let dst_orient = next_road.dir_from(self.id);
             let next_right = next_road.interface_point(self.id)
                 + next_road.width * 0.5 * dst_orient.perpendicular();
 

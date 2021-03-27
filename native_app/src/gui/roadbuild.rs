@@ -174,7 +174,7 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
             let dir = (to - inter.pos).normalize();
             for &road in &inter.roads {
                 let road = &map.roads()[road];
-                let v = road.orientation_from(i);
+                let v = road.dir_from(i);
                 if v.angle(dir).abs() < MAX_TURN_ANGLE {
                     return false;
                 }
