@@ -74,6 +74,11 @@ impl Map {
         self.dirt_id += 1;
         let inter = unwrap_ret!(self.intersections.get_mut(id));
 
+        if inter.roads.is_empty() {
+            self.remove_intersection(id);
+            return;
+        }
+
         inter.update_interface_radius(&mut self.roads);
 
         for x in inter.roads.clone() {
