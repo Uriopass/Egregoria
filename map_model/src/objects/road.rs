@@ -285,29 +285,7 @@ impl Road {
         }
     }
 
-    pub fn basic_orientations(&self) -> (Vec2, Vec2) {
-        match &self.segment {
-            RoadSegmentKind::Straight => {
-                let d = (self.points.last() - self.points.first()).normalize();
-                (d, -d)
-            }
-            RoadSegmentKind::Curved((s, d)) => (s.normalize(), -d.normalize()),
-        }
-    }
-
-    pub fn basic_orientation_from(&self, id: IntersectionID) -> Vec2 {
-        let (src_dir, dst_dir) = self.basic_orientations();
-
-        if id == self.src {
-            src_dir
-        } else if id == self.dst {
-            dst_dir
-        } else {
-            panic!("Asking dir from from an intersection not conected to the road");
-        }
-    }
-
-    pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
+    pub fn dir_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
             self.src_dir()
         } else if id == self.dst {
