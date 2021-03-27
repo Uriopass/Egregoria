@@ -14,7 +14,6 @@ use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use legion::storage::Component;
 use legion::Entity;
-use serde::Serializer;
 
 pub struct InspectRenderer {
     pub entity: Entity,

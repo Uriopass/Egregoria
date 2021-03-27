@@ -49,9 +49,9 @@ pub enum VSyncOptions {
     LowLatencyVsync,
 }
 
-impl Into<wgpu_engine::wgpu::PresentMode> for VSyncOptions {
-    fn into(self) -> wgpu_engine::wgpu::PresentMode {
-        match self {
+impl From<VSyncOptions> for wgpu_engine::wgpu::PresentMode {
+    fn from(x: VSyncOptions) -> Self {
+        match x {
             VSyncOptions::NoVsync => wgpu_engine::wgpu::PresentMode::Immediate,
             VSyncOptions::Vsync => wgpu_engine::wgpu::PresentMode::Fifo,
             VSyncOptions::LowLatencyVsync => wgpu_engine::wgpu::PresentMode::Mailbox,
@@ -76,9 +76,9 @@ pub enum AutoSaveEvery {
     FiveMinutes,
 }
 
-impl Into<Option<Duration>> for AutoSaveEvery {
-    fn into(self) -> Option<Duration> {
-        match self {
+impl From<AutoSaveEvery> for Option<Duration> {
+    fn from(x: AutoSaveEvery) -> Option<Duration> {
+        match x {
             AutoSaveEvery::Never => None,
             AutoSaveEvery::OneMinute => Some(Duration::from_secs(60)),
             AutoSaveEvery::FiveMinutes => Some(Duration::from_secs(5 * 60)),

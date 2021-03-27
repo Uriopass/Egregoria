@@ -25,7 +25,7 @@ pub trait Encoder {
 
     fn encode_writer(x: &impl Serialize, mut w: impl Write) -> std::io::Result<()> {
         let buf = Self::encode(x)?;
-        Ok(w.write_all(&*buf)?)
+        w.write_all(&*buf)
     }
 
     fn decode_reader<T: DeserializeOwned>(mut r: impl Read) -> std::io::Result<T> {

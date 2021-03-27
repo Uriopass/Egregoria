@@ -1,3 +1,5 @@
+#![allow(clippy::upper_case_acronyms)]
+
 #[macro_export]
 macro_rules! unwrap_or {
     ($e: expr, $t: expr) => {
