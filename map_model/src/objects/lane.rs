@@ -49,20 +49,17 @@ pub struct Lane {
     pub id: LaneID,
     pub parent: RoadID,
 
-    pub kind: LaneKind,
-
-    pub control: TrafficControl,
-
     /// Src and dst implies direction
     pub src: IntersectionID,
     pub dst: IntersectionID,
 
+    pub kind: LaneKind,
+
+    pub control: TrafficControl,
+
     /// Always from src to dst
     pub points: PolyLine,
     pub dist_from_bottom: f32,
-
-    /// Length from start to end
-    pub length: f32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -195,7 +192,6 @@ impl Lane {
             kind,
             points: parent.points().clone(),
             dist_from_bottom,
-            length: 0.0,
             control: TrafficControl::Always,
         })
     }
@@ -241,8 +237,10 @@ impl Lane {
         if self.dir_from(parent_road.src) == TraverseDirection::Backward {
             self.points.reverse();
         }
+    }
 
-        self.length = self.points.length();
+    pub fn length(&self) -> f32 {
+        self.points.length()
     }
 
     pub fn control_point(&self) -> Vec2 {

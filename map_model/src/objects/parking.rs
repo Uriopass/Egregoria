@@ -46,7 +46,7 @@ impl ParkingSpots {
             Some(_) => {}
             None => {
                 let gap = CROSSWALK_WIDTH + 8.0;
-                let l = lane.length - gap * 2.0;
+                let l = lane.length() - gap * 2.0;
                 let n_spots = (l / PARKING_SPOT_LENGTH) as i32;
                 let step = l / n_spots as f32;
 

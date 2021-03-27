@@ -39,7 +39,6 @@ pub struct Road {
 
     // always from src to dst
     pub points: PolyLine,
-    pub length: f32,
     pub width: f32,
 
     src_interface: f32,
@@ -50,7 +49,6 @@ pub struct Road {
 
     pub(crate) lots: Vec<LotID>,
 }
-
 #[derive(Copy, Clone)]
 pub struct LanePair {
     pub incoming: Option<LaneID>,
@@ -70,7 +68,6 @@ impl Road {
         spatial: &mut SpatialMap,
     ) -> &'a Road {
         let points = Self::generate_points(src, dst, segment);
-        let length = points.length();
 
         let id = roads.insert_with_key(|id| Self {
             id,
@@ -80,7 +77,6 @@ impl Road {
             dst_interface: 9.0,
             segment,
             width: lane_pattern.width(),
-            length,
             lanes_forward: vec![],
             lanes_backward: vec![],
             points,
@@ -176,6 +172,10 @@ impl Road {
         }
     }
 
+    pub fn length(&self) -> f32 {
+        self.points.length()
+    }
+
     pub fn bbox(&self) -> AABB {
         self.points.bbox().expand(self.width * 0.5)
     }
@@ -239,7 +239,7 @@ impl Road {
     pub fn interface_from(&self, id: IntersectionID) -> f32 {
         let (my_interf, other_interf) = self.interfaces_from(id);
 
-        let l = self.length - 2.0;
+        let l = self.points.length() - 2.0;
         let half = l * 0.5;
 
         if my_interf + other_interf > l {
