@@ -118,7 +118,7 @@ impl RoadRenderer {
                 or_src,
                 or_dst,
                 Z_LANE_BG,
-                l.width + 0.5,
+                l.kind.width() + 0.5,
             );
 
             tess.set_color(match l.kind {
@@ -131,7 +131,13 @@ impl RoadRenderer {
                 _ => Z_LANE,
             };
 
-            tess.draw_polyline_with_dir(l.points.as_slice(), or_src, or_dst, z, l.width - 0.5);
+            tess.draw_polyline_with_dir(
+                l.points.as_slice(),
+                or_src,
+                or_dst,
+                z,
+                l.kind.width() - 0.5,
+            );
         }
 
         // Intersections
@@ -158,7 +164,7 @@ impl RoadRenderer {
                 tess.set_color(line_col);
                 let id = turn.id;
 
-                let w = lanes[id.src].width;
+                let w = lanes[id.src].kind.width();
 
                 let first_dir = -lanes[id.src].orientation_from(id.parent);
                 let last_dir = lanes[id.dst].orientation_from(id.parent);
