@@ -48,8 +48,8 @@ struct BuilderThread {
 }
 
 struct MapBuilders {
-    arrow_builder: SpriteBatchBuilder,
     buildings_builder: FastMap<BuildingKind, SpriteBatchBuilder>,
+    arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: ShadedBatchBuilder<Crosswalk>,
     tess: Tesselator,
     dirt_id: u32,
