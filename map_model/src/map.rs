@@ -332,7 +332,6 @@ impl Map {
 
         for (id, _) in road.lanes_iter() {
             self.lanes.remove(id);
-            self.parking.remove_spots(id);
         }
 
         if let Some(i) = self.intersections.get_mut(road.src) {
@@ -351,6 +350,11 @@ impl Map {
         let r = self
             .remove_raw_road(r_id)
             .expect("Trying to split unexisting road");
+
+        for (id, _) in r.lanes_iter() {
+            self.parking.remove_to_reuse(id);
+        }
+
         let id = self.add_intersection(pos);
 
         let src_id = r.src;
@@ -392,6 +396,11 @@ impl Map {
                 )
             }
         };
+
+        log::info!(
+            "{} parking spots reused when splitting",
+            self.parking.clean_reuse()
+        );
 
         let r1 = self.roads.get(r1).expect("just created roads");
         let r2 = self.roads.get(r2).expect("just created roads");
@@ -670,5 +679,7 @@ impl Map {
                 ProjectKind::Ground => {}
             }
         }
+
+        assert!(self.parking.reuse_spot.is_empty());
     }
 }

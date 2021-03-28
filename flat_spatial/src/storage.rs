@@ -19,6 +19,7 @@ pub fn cell_range((x1, y1): CellIdx, (x2, y2): CellIdx) -> impl Iterator<Item = 
 /// The storage trait, implement this if you want to use a custom point storage for the Grid.
 pub trait Storage<T> {
     fn new(cell_size: i32) -> Self;
+    fn cell_size(&self) -> i32;
 
     fn modify(&mut self, f: impl FnMut(&mut T) -> bool);
 
@@ -90,6 +91,10 @@ impl<T: Default> Storage<T> for DenseStorage<T> {
             height: 0,
             cells: vec![],
         }
+    }
+
+    fn cell_size(&self) -> i32 {
+        self.cell_size
     }
 
     fn modify(&mut self, mut f: impl FnMut(&mut T) -> bool) {
@@ -239,6 +244,10 @@ impl<T: Default> Storage<T> for SparseStorage<T> {
             cell_size,
             cells: Default::default(),
         }
+    }
+
+    fn cell_size(&self) -> i32 {
+        self.cell_size
     }
 
     fn modify(&mut self, mut f: impl FnMut(&mut T) -> bool) {
