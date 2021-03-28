@@ -294,7 +294,7 @@ impl PolyLine {
             _ => {
                 let mut s_cut = self.cut_start(dst_from_start);
                 s_cut.reverse();
-                s_cut.cut_start(dst_from_end);
+                s_cut = s_cut.cut_start(dst_from_end);
                 s_cut.reverse();
                 s_cut
             }
