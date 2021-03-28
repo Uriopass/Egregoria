@@ -166,6 +166,10 @@ impl Gui {
                         pattern.parking = false;
                     }
 
+                    if pattern.n_lanes > 10 {
+                        pattern.n_lanes = 10;
+                    }
+
                     uiworld.write::<RoadBuildResource>().pattern_builder = pattern;
                 });
         }
