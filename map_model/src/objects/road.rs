@@ -331,15 +331,13 @@ impl Road {
         -self.points.last_dir().unwrap_or(Vec2::UNIT_X)
     }
 
-    pub fn other_end(&self, my_end: IntersectionID) -> IntersectionID {
+    pub fn other_end(&self, my_end: IntersectionID) -> Option<IntersectionID> {
         if self.src == my_end {
-            return self.dst;
-        } else if self.dst == my_end {
-            return self.src;
+            return Some(self.dst);
         }
-        panic!(
-            "Asking other end of {:?} which isn't connected to {:?}",
-            self.id, my_end
-        );
+        if self.dst == my_end {
+            return Some(self.src);
+        }
+        None
     }
 }
