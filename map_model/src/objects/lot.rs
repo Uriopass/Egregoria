@@ -24,7 +24,6 @@ pub struct Lot {
     pub parent: RoadID,
     pub kind: LotKind,
     pub shape: OBB,
-    pub size: f32,
 }
 
 impl Lot {
@@ -52,15 +51,18 @@ impl Lot {
             parent,
             kind: LotKind::Unassigned,
             shape,
-            size,
         });
         map.spatial_map.insert(id, bbox);
         Some(id)
     }
 
     pub fn generate_along_road(map: &mut Map, road: RoadID) {
+        if !map.roads.contains_key(road) {
+            log::error!("trying to generate along invalid road");
+            return;
+        }
         fn gen_side(map: &mut Map, road: RoadID, side: f32) {
-            let r = &map.roads[road];
+            let r = unwrap_ret!(map.roads.get(road));
 
             let w = r.width * 0.5;
             let mut rng = rand::rngs::SmallRng::seed_from_u64(
@@ -94,10 +96,13 @@ impl Lot {
                 }
             }
 
-            map.roads[road].lots.extend_from_slice(&lots);
+            unwrap_ret!(map.roads.get_mut(road))
+                .lots
+                .extend_from_slice(&lots);
         }
 
-        let pair = map.roads[road].sidewalks(map.roads[road].src);
+        let r = unwrap_ret!(map.roads.get(road));
+        let pair = r.sidewalks(r.src);
         if pair.outgoing.is_some() {
             gen_side(map, road, 1.0);
         }
@@ -107,13 +112,13 @@ impl Lot {
     }
 
     pub fn remove_intersecting_lots(map: &mut Map, road: RoadID) {
-        let r = &map.roads[road];
+        let r = unwrap_retlog!(map.roads.get(road), "{:?} does not exist", road);
         let mut to_remove = map
             .spatial_map
             .query(r.points.bbox())
             .filter_map(|kind| {
                 let id = kind.to_lot()?;
-                if r.intersects(&map.lots[id].shape) {
+                if r.intersects(&map.lots.get(id)?.shape) {
                     Some(id)
                 } else {
                     None
@@ -124,23 +129,25 @@ impl Lot {
         let mut rp = |p: &Polygon| {
             to_remove.extend(map.spatial_map.query(p.bbox()).filter_map(|kind| {
                 let id = kind.to_lot()?;
-                if p.intersects(&Polygon(map.lots[id].shape.corners.to_vec())) {
+                if p.intersects(&Polygon(map.lots.get(id)?.shape.corners.to_vec())) {
                     Some(id)
                 } else {
                     None
                 }
             }));
         };
-        rp(&map.intersections[r.src].polygon);
-        rp(&map.intersections[r.dst].polygon);
+        rp(&unwrap_ret!(map.intersections.get(r.src)).polygon);
+        rp(&unwrap_ret!(map.intersections.get(r.dst)).polygon);
 
         for lot in to_remove {
             if let Some(l) = map.lots.remove(lot) {
-                let r = &mut map.roads[l.parent].lots;
-                if let Some(v) = r.iter().position(|&x| x == l.id) {
-                    r.swap_remove(v);
-                }
                 map.spatial_map.remove(lot);
+
+                if let Some(r) = map.roads.get_mut(l.parent).map(|x| &mut x.lots) {
+                    if let Some(v) = r.iter().position(|&x| x == l.id) {
+                        r.swap_remove(v);
+                    }
+                }
             }
         }
     }

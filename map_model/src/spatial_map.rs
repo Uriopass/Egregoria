@@ -105,4 +105,15 @@ impl SpatialMap {
             .filter_map(move |x| self.grid.get(x))
             .map(|(aabb, _)| *aabb)
     }
+
+    pub fn contains<T: Into<ProjectKind>>(&self, p: T) -> bool {
+        let kind = p.into();
+
+        let v = unwrap_ret!(self.ids.get(&kind), false);
+        self.grid.get(*v).is_some()
+    }
+
+    pub fn objects(&self) -> impl Iterator<Item = &ProjectKind> + '_ {
+        self.ids.keys()
+    }
 }
