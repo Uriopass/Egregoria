@@ -1,4 +1,4 @@
-use crate::rendering::map_mesh_async_builder::MapMeshAsyncBuilder;
+use crate::rendering::map_mesh::MapMeshHandler;
 use common::{Z_SIGNAL, Z_TREE, Z_TREE_SHADOW};
 use egregoria::Egregoria;
 use flat_spatial::storage::Storage;
@@ -11,7 +11,7 @@ use wgpu_engine::{
 };
 
 pub struct RoadRenderer {
-    meshb: MapMeshAsyncBuilder,
+    meshb: MapMeshHandler,
 
     tree_shadows: Option<Rc<SpriteBatch>>,
     tree_shadows_builder: SpriteBatchBuilder,
@@ -39,7 +39,7 @@ impl RoadRenderer {
         let tree_shadow_builder = SpriteBatchBuilder::from_path(gfx, "assets/tree_shadow.png");
 
         RoadRenderer {
-            meshb: MapMeshAsyncBuilder::new(gfx, goria),
+            meshb: MapMeshHandler::new(gfx, goria),
             tree_shadows: None,
             tree_shadows_builder: tree_shadow_builder,
             last_cam: AABB::zero(),
