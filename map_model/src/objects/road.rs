@@ -169,6 +169,7 @@ impl Road {
                 parking.generate_spots(l);
             }
         }
+        parking.clean_reuse();
     }
 
     pub fn length(&self) -> f32 {
