@@ -574,9 +574,10 @@ pub fn company(
         let recipe = company.recipe.clone();
         let bpos = map.buildings()[company.building].door_pos;
 
-        cbuf.exec(move |goria| {
+        cbuf.exec_ent(soul.0, move |goria| {
             recipe.act(soul, bpos, &mut *goria.write::<Market>());
         });
+        return;
     }
 
     if let Some(driver) = company.driver {
@@ -598,7 +599,7 @@ pub fn company(
 
                 log::info!("asked driver to deliver");
 
-                cbuf.exec(move |goria| {
+                cbuf.exec_ent(soul.0, move |goria| {
                     let w = goria.comp_mut::<Desire<Work>>(driver.0).unwrap();
                     if let WorkKind::Driver { ref mut state, .. } = w.v.kind {
                         *state = DriverState::Delivering(owner_build)
