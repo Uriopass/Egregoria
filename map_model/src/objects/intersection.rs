@@ -111,7 +111,7 @@ impl Intersection {
 
         if let [ref r] = *self.roads {
             let r = &mut roads[*r];
-            r.max_interface(id, 1.1 * r.width * std::f32::consts::FRAC_1_SQRT_2);
+            r.max_interface(id, r.width * 0.5);
             return;
         }
 

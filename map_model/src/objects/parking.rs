@@ -76,7 +76,7 @@ impl ParkingSpots {
             self.remove_to_reuse(lane.id);
         }
 
-        let gap = CROSSWALK_WIDTH + 4.0;
+        let gap = CROSSWALK_WIDTH + 1.0;
         let l = lane.length() - gap * 2.0;
         let n_spots = (l / PARKING_SPOT_LENGTH) as i32;
         if n_spots <= 0 {
