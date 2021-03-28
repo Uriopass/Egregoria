@@ -75,6 +75,7 @@ pub fn vehicle_state_update(
     #[resource] time: &GameTime,
     #[resource] map: &Map,
     vehicle: &mut Vehicle,
+    trans: &mut Transform,
     kin: &mut Kinematics,
     ent: &Entity,
 ) {
@@ -90,7 +91,11 @@ pub fn vehicle_state_update(
             }
         }
         VehicleState::Parked(ref mut spot) => {
-            if map.parking.get(*spot).is_none() {
+            if let Some(p) = map.parking.get(*spot) {
+                if p.trans != *trans {
+                    *trans = p.trans;
+                }
+            } else {
                 buf.kill(*ent);
             }
         }
