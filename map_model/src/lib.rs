@@ -2,6 +2,7 @@
 #![allow(clippy::many_single_char_names)]
 #![allow(clippy::upper_case_acronyms)]
 #![warn(clippy::indexing_slicing)]
+#![allow(clippy::collapsible_else_if)]
 
 #[macro_use]
 extern crate common;

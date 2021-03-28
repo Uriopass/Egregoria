@@ -95,10 +95,6 @@ impl Lot {
                     d += 2.0;
                 }
             }
-
-            unwrap_ret!(map.roads.get_mut(road))
-                .lots
-                .extend_from_slice(&lots);
         }
 
         let r = unwrap_ret!(map.roads.get(road));
@@ -140,15 +136,8 @@ impl Lot {
         rp(&unwrap_ret!(map.intersections.get(r.dst)).polygon);
 
         for lot in to_remove {
-            if let Some(l) = map.lots.remove(lot) {
-                map.spatial_map.remove(lot);
-
-                if let Some(r) = map.roads.get_mut(l.parent).map(|x| &mut x.lots) {
-                    if let Some(v) = r.iter().position(|&x| x == l.id) {
-                        r.swap_remove(v);
-                    }
-                }
-            }
+            map.lots.remove(lot);
+            map.spatial_map.remove(lot);
         }
     }
 }
