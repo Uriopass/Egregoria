@@ -89,7 +89,7 @@ impl ParkingSpots {
     pub fn closest_spots(&self, lane: LaneID, near: Vec2) -> impl Iterator<Item = ParkingSpotID> {
         let spots = &self.spots;
         let mut lspots = self.lane_spots.get(lane).cloned();
-        if let Some(lspots) = &mut lspots {
+        if let Some(ref mut lspots) = lspots {
             lspots.sort_by_key(|&id| OrderedFloat(spots[id].trans.position().distance2(near)))
         }
         lspots.into_iter().flatten()

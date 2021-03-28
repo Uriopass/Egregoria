@@ -83,6 +83,7 @@ impl Map {
         #[cfg(debug_assertions)]
         self.check_invariants()
     }
+
     fn remove_intersection_inner(&mut self, src: IntersectionID) {
         let inter = unwrap_ret!(self.intersections.remove(src));
 
@@ -167,14 +168,12 @@ impl Map {
             })
             .collect();
         for id in to_clean {
-            Self::cleanup_lot(
-                &mut self.roads,
-                &mut self.spatial_map,
-                &self
-                    .lots
-                    .remove(id)
-                    .expect("Lot was present in spatial map but not in Lots struct"),
-            )
+            self.spatial_map.remove(id);
+
+            unwrap_contlog!(
+                &self.lots.remove(id),
+                "Lot was present in spatial map but not in Lots struct"
+            );
         }
 
         self.trees.remove_near_filter(obb.bbox(), |_| true);
@@ -202,7 +201,7 @@ impl Map {
 
         let lot = self.lots.remove(id)?;
 
-        Self::cleanup_lot(roads, spatial_map, &lot);
+        spatial_map.remove(lot.id);
 
         let v = Some(Building::make(
             buildings,
@@ -231,26 +230,20 @@ impl Map {
     }
 
     fn remove_road_inner(&mut self, road_id: RoadID) -> Option<Road> {
-        let road = self.roads.remove(road_id)?;
-
-        self.spatial_map.remove(road_id);
+        let road = self.remove_raw_road(road_id)?;
 
         for (id, _) in road.lanes_iter() {
-            self.lanes.remove(id);
             self.parking.remove_spots(id);
         }
 
-        for &lot in &road.lots {
-            self.lots.remove(lot);
-            self.spatial_map.remove(lot);
-        }
-
-        if let Some(i) = self.intersections.get_mut(road.src) {
-            i.remove_road(road_id);
-        }
-        if let Some(i) = self.intersections.get_mut(road.dst) {
-            i.remove_road(road_id);
-        }
+        let smap = &mut self.spatial_map;
+        self.lots.retain(|_, lot| {
+            let to_remove = lot.parent == road_id;
+            if to_remove {
+                smap.remove(lot.id);
+            }
+            !to_remove
+        });
 
         self.invalidate(road.src);
         self.invalidate(road.dst);
@@ -330,20 +323,46 @@ impl Map {
         );
     }
 
-    pub(crate) fn split_road(&mut self, id: RoadID, pos: Vec2) -> IntersectionID {
-        info!("split_road {:?} {:?}", id, pos);
+    /// Only removes road from Roads and spatial map but keeps lots,
+    /// and potentially empty intersections.
+    fn remove_raw_road(&mut self, road_id: RoadID) -> Option<Road> {
+        let road = self.roads.remove(road_id)?;
+
+        self.spatial_map.remove(road_id);
+
+        for (id, _) in road.lanes_iter() {
+            self.lanes.remove(id);
+            self.parking.remove_spots(id);
+        }
+
+        if let Some(i) = self.intersections.get_mut(road.src) {
+            i.remove_road(road_id);
+        }
+        if let Some(i) = self.intersections.get_mut(road.dst) {
+            i.remove_road(road_id);
+        }
+
+        Some(road)
+    }
+
+    pub(crate) fn split_road(&mut self, r_id: RoadID, pos: Vec2) -> IntersectionID {
+        info!("split_road {:?} {:?}", r_id, pos);
 
         let r = self
-            .remove_road_inner(id)
+            .remove_raw_road(r_id)
             .expect("Trying to split unexisting road");
         let id = self.add_intersection(pos);
 
+        let src_id = r.src;
+
         let pat = r.pattern();
-        match r.segment {
-            RoadSegmentKind::Straight => {
-                self.connect(r.src, id, &pat, RoadSegmentKind::Straight);
-                self.connect(id, r.dst, &pat, RoadSegmentKind::Straight);
-            }
+        let (r1, r2) = match r.segment {
+            RoadSegmentKind::Straight => (
+                self.connect(src_id, id, &pat, RoadSegmentKind::Straight)
+                    .expect("error connecting while splitting"),
+                self.connect(id, r.dst, &pat, RoadSegmentKind::Straight)
+                    .expect("error connecting while splitting"),
+            ),
             RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
                 let s = Spline {
                     from: r.points.first(),
@@ -355,20 +374,53 @@ impl Map {
 
                 let (s_from, s_to) = s.split_at(t_approx);
 
-                self.connect(
-                    r.src,
-                    id,
-                    &pat,
-                    RoadSegmentKind::Curved((s_from.from_derivative, s_from.to_derivative)),
-                );
-                self.connect(
-                    id,
-                    r.dst,
-                    &pat,
-                    RoadSegmentKind::Curved((s_to.from_derivative, s_to.to_derivative)),
-                );
+                (
+                    self.connect(
+                        src_id,
+                        id,
+                        &pat,
+                        RoadSegmentKind::Curved((s_from.from_derivative, s_from.to_derivative)),
+                    )
+                    .expect("error connecting while splitting"),
+                    self.connect(
+                        id,
+                        r.dst,
+                        &pat,
+                        RoadSegmentKind::Curved((s_to.from_derivative, s_to.to_derivative)),
+                    )
+                    .expect("error connecting while splitting"),
+                )
             }
-        }
+        };
+
+        let r1 = self.roads.get(r1).expect("just created roads");
+        let r2 = self.roads.get(r2).expect("just created roads");
+
+        let spatial = &mut self.spatial_map;
+        self.lots.retain(|_, lot| {
+            if lot.parent != r_id {
+                return true;
+            }
+            let p: Vec2 = lot.shape.corners[0];
+            let d1 = r1.points.project(p).distance(p);
+            let d2 = r2.points.project(p).distance(p);
+            if d1 < d2 {
+                if d1 < r1.width * 0.5 + 1.0 {
+                    lot.parent = r1.id;
+                } else {
+                    spatial.remove(lot.id);
+                    return false;
+                }
+            } else {
+                if d2 < r2.width * 0.5 + 1.0 {
+                    lot.parent = r2.id;
+                } else {
+                    spatial.remove(lot.id);
+                    return false;
+                }
+            }
+            true
+        });
 
         id
     }
@@ -420,13 +472,6 @@ impl Map {
         });
 
         Some(id)
-    }
-
-    fn cleanup_lot(roads: &mut Roads, spatial_map: &mut SpatialMap, lot: &Lot) {
-        if let Some(rlots) = roads.get_mut(lot.parent).map(|x| &mut x.lots) {
-            rlots.swap_remove(rlots.iter().position(|&x| x == lot.id).unwrap());
-        }
-        spatial_map.remove(lot.id);
     }
 
     // Public helpers
@@ -591,9 +636,6 @@ impl Map {
             assert!(road.points.last().is_close(dst.pos, 0.001));
             assert!(road.interfaced_points().n_points() >= 2);
             assert!(road.length() > 0.0);
-            for lot in &road.lots {
-                assert!(self.lots.contains_key(*lot), "{:?}", lot);
-            }
             assert!(self.spatial_map.contains(road.id));
 
             for (id, _) in road.lanes_iter() {

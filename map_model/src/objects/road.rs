@@ -1,5 +1,5 @@
 use crate::{
-    Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes, LotID,
+    Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
     ParkingSpots, Roads, SpatialMap,
 };
 use geom::PolyLine;
@@ -46,8 +46,6 @@ pub struct Road {
 
     lanes_forward: Vec<(LaneID, LaneKind)>,
     lanes_backward: Vec<(LaneID, LaneKind)>,
-
-    pub(crate) lots: Vec<LotID>,
 }
 #[derive(Copy, Clone)]
 pub struct LanePair {
@@ -80,7 +78,6 @@ impl Road {
             lanes_forward: vec![],
             lanes_backward: vec![],
             points,
-            lots: vec![],
         });
         #[allow(clippy::indexing_slicing)]
         let road = &mut roads[id];
