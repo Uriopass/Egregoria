@@ -1,5 +1,4 @@
 use crate::{compile_shader, ColoredVertex, Drawable, GfxContext, IndexType, VBDesc};
-use std::rc::Rc;
 use wgpu::util::DeviceExt;
 use wgpu::{IndexFormat, RenderPass, RenderPipeline};
 
@@ -39,20 +38,20 @@ impl MeshBuilder {
         if self.vertices.is_empty() {
             return None;
         }
-        let vertex_buffer = Rc::new(ctx.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
+        let vertex_buffer = ctx
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
                 contents: bytemuck::cast_slice(&self.vertices),
                 usage: wgpu::BufferUsage::VERTEX,
-            },
-        ));
-        let index_buffer = Rc::new(ctx.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
+            });
+        let index_buffer = ctx
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
                 contents: bytemuck::cast_slice(&self.indices),
                 usage: wgpu::BufferUsage::INDEX,
-            },
-        ));
+            });
 
         Some(Mesh {
             vertex_buffer,
@@ -63,10 +62,9 @@ impl MeshBuilder {
     }
 }
 
-#[derive(Clone)]
 pub struct Mesh {
-    pub vertex_buffer: Rc<wgpu::Buffer>,
-    pub index_buffer: Rc<wgpu::Buffer>,
+    pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
     pub n_indices: u32,
     pub alpha_blend: bool,
 }

@@ -6,7 +6,6 @@ use std::fs::File;
 use std::io::Read;
 use std::num::NonZeroU32;
 use std::path::Path;
-use std::rc::Rc;
 use wgpu::{
     BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
     PipelineLayoutDescriptor, Sampler, TextureCopyView, TextureDataLayout, TextureFormat,
@@ -23,7 +22,7 @@ pub struct Texture {
 
 pub struct MultisampledTexture {
     pub target: Texture,
-    pub multisampled_buffer: Rc<wgpu::TextureView>,
+    pub multisampled_buffer: wgpu::TextureView,
 }
 
 impl Texture {
@@ -229,11 +228,9 @@ impl Texture {
 
         MultisampledTexture {
             target,
-            multisampled_buffer: Rc::new(
-                device
-                    .create_texture(multisample_desc)
-                    .create_view(&TextureViewDescriptor::default()),
-            ),
+            multisampled_buffer: device
+                .create_texture(multisample_desc)
+                .create_view(&TextureViewDescriptor::default()),
         }
     }
 

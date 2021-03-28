@@ -2,7 +2,6 @@ use crate::{Drawable, GfxContext, IndexType, Shaders, UvVertex, VBDesc};
 
 use geom::{LinearColor, Vec2};
 use std::marker::PhantomData;
-use std::rc::Rc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{IndexFormat, RenderPass, RenderPipeline, VertexAttribute, VertexBufferLayout};
 
@@ -12,11 +11,10 @@ pub struct ShadedBatchBuilder<T: Shaders> {
     _phantom: PhantomData<T>,
 }
 
-#[derive(Clone)]
 pub struct ShadedBatch<T: Shaders> {
-    vertex_buffer: Rc<wgpu::Buffer>,
-    index_buffer: Rc<wgpu::Buffer>,
-    instance_buffer: Rc<wgpu::Buffer>,
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
+    instance_buffer: wgpu::Buffer,
     pub n_indices: u32,
     pub n_instances: u32,
     pub alpha_blend: bool,
@@ -92,23 +90,23 @@ impl<T: Shaders> ShadedBatchBuilder<T> {
             return None;
         }
 
-        let vertex_buffer = Rc::new(gfx.device.create_buffer_init(&BufferInitDescriptor {
+        let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(UV_VERTICES),
             usage: wgpu::BufferUsage::VERTEX,
-        }));
+        });
 
-        let index_buffer = Rc::new(gfx.device.create_buffer_init(&BufferInitDescriptor {
+        let index_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(UV_INDICES),
             usage: wgpu::BufferUsage::INDEX,
-        }));
+        });
 
-        let instance_buffer = Rc::new(gfx.device.create_buffer_init(&BufferInitDescriptor {
+        let instance_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(&self.instances),
             usage: wgpu::BufferUsage::VERTEX,
-        }));
+        });
 
         Some(ShadedBatch {
             vertex_buffer,
