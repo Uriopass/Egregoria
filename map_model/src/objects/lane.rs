@@ -110,23 +110,22 @@ impl LanePatternBuilder {
         Default::default()
     }
 
-    pub fn n_lanes(mut self, n_lanes: u32) -> Self {
-        assert!(n_lanes > 0);
-        self.n_lanes = n_lanes;
+    pub fn n_lanes(&mut self, n_lanes: u32) -> &mut Self {
+        self.n_lanes = n_lanes.min(10);
         self
     }
 
-    pub fn sidewalks(mut self, sidewalks: bool) -> Self {
+    pub fn sidewalks(&mut self, sidewalks: bool) -> &mut Self {
         self.sidewalks = sidewalks;
         self
     }
 
-    pub fn parking(mut self, parking: bool) -> Self {
+    pub fn parking(&mut self, parking: bool) -> &mut Self {
         self.parking = parking;
         self
     }
 
-    pub fn one_way(mut self, one_way: bool) -> Self {
+    pub fn one_way(&mut self, one_way: bool) -> &mut Self {
         self.one_way = one_way;
         self
     }
@@ -143,7 +142,12 @@ impl LanePatternBuilder {
         w + 0.5
     }
 
-    pub fn build(self) -> LanePattern {
+    pub fn build(mut self) -> LanePattern {
+        if self.n_lanes == 0 {
+            self.parking = false;
+            self.sidewalks = true;
+        }
+
         let mut backward = if self.one_way {
             vec![]
         } else {
