@@ -175,6 +175,13 @@ impl<ST: Storage<GridCell>, O: Copy> Grid<O, ST> {
         Some(obj.obj)
     }
 
+    pub fn clear(&mut self) -> impl Iterator<Item = (Vec2, O)> {
+        let objects = std::mem::take(&mut self.objects);
+        self.storage = ST::new(self.storage.cell_size());
+        self.to_relocate.clear();
+        objects.into_iter().map(|(_, x)| (x.pos, x.obj))
+    }
+
     /// Maintains the world, updating all the positions (and moving them to corresponding cells)
     /// and removing necessary objects and empty cells.
     /// Runs in linear time O(N) where N is the number of objects.

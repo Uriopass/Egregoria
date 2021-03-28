@@ -1,4 +1,5 @@
 use crate::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
+use flat_spatial::ShapeGrid;
 use geom::{Transform, Vec2};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -16,10 +17,21 @@ pub struct ParkingSpot {
     pub trans: Transform,
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ParkingSpots {
     spots: SlotMap<ParkingSpotID, ParkingSpot>,
     lane_spots: SecondaryMap<LaneID, Vec<ParkingSpotID>>,
+    pub(crate) reuse_spot: ShapeGrid<ParkingSpotID, Vec2>,
+}
+
+impl Default for ParkingSpots {
+    fn default() -> Self {
+        Self {
+            spots: Default::default(),
+            lane_spots: Default::default(),
+            reuse_spot: ShapeGrid::new(10),
+        }
+    }
 }
 
 impl ParkingSpots {
@@ -39,6 +51,24 @@ impl ParkingSpots {
         }
     }
 
+    pub fn clean_reuse(&mut self) -> u32 {
+        let mut has_reused = 0;
+        for (_, spot) in self.reuse_spot.clear() {
+            self.spots.remove(spot);
+            has_reused += 1;
+        }
+        has_reused
+    }
+
+    pub fn remove_to_reuse(&mut self, lane: LaneID) {
+        if let Some(spots) = self.lane_spots.remove(lane) {
+            for spot_id in spots {
+                let spot = unwrap_cont!(self.spots.get(spot_id));
+                self.reuse_spot.insert(spot.trans.position(), spot_id);
+            }
+        }
+    }
+
     pub fn generate_spots(&mut self, lane: &Lane) {
         debug_assert!(matches!(lane.kind, LaneKind::Parking));
 
@@ -52,10 +82,27 @@ impl ParkingSpots {
 
                 let parent = lane.id;
                 let spots = &mut self.spots;
+                let reuse = &mut self.reuse_spot;
                 let spots = lane
                     .points
                     .points_dirs_along((0..n_spots).map(|x| (x as f32 + 0.5) * step + gap))
                     .map(move |(pos, dir)| {
+                        let mut iter = reuse.query_around(pos, 3.0);
+                        if let Some(h) = iter.next().map(|x| x.0) {
+                            drop(iter);
+
+                            let spot_id = reuse.remove(h).unwrap();
+                            if let Some(p) = spots.get_mut(spot_id) {
+                                *p = ParkingSpot {
+                                    parent,
+                                    trans: Transform::new_cos_sin(pos, dir),
+                                };
+                                return spot_id;
+                            } else {
+                                log::error!("found a spot in reuse that doesn't exist anymore");
+                            }
+                        }
+
                         spots.insert(ParkingSpot {
                             parent,
                             trans: Transform::new_cos_sin(pos, dir),

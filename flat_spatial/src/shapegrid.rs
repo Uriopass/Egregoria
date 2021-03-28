@@ -70,13 +70,20 @@ pub struct ShapeGrid<
 }
 
 impl<S: Shape + Intersect<AABB> + Copy, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST> {
-    /// Creates an empty grid.   
+    /// Creates an empty grid.
     /// The cell size should be about the same magnitude as your queries size.
     pub fn new(cell_size: i32) -> Self {
         Self {
             storage: ST::new(cell_size),
             objects: ShapeGridObjects::default(),
         }
+    }
+
+    /// Clears the grid.
+    pub fn clear(&mut self) -> impl Iterator<Item = (S, O)> {
+        self.storage = ST::new(self.storage.cell_size());
+        let objs = std::mem::take(&mut self.objects);
+        objs.into_iter().map(|(_, o)| (o.shape, o.obj))
     }
 
     /// Creates an empty grid.   
