@@ -34,6 +34,7 @@ impl Default for DebugObjs {
             (false, "Debug rays", debug_rays),
             (false, "Debug splines", debug_spline),
             (false, "Debug turns", debug_turns),
+            (false, "Debug lots", debug_lots),
             (false, "Debug road points", debug_road_points),
             (false, "Debug parking", debug_parking),
             (false, "Show grid", show_grid),
@@ -146,6 +147,15 @@ pub fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Op
                 },
             );
         }
+    }
+
+    Some(())
+}
+
+pub fn debug_lots(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
+    tess.set_color(Color::RED);
+    for lot in goria.read::<Map>().lots().values() {
+        tess.draw_circle(lot.shape.corners[0], Z_DEBUG, 1.0);
     }
 
     Some(())
