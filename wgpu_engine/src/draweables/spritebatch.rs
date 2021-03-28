@@ -1,7 +1,7 @@
 use crate::{compile_shader, Drawable, GfxContext, Texture};
 use geom::{LinearColor, Vec2};
 use std::path::PathBuf;
-use std::rc::Rc;
+use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
@@ -9,24 +9,25 @@ use wgpu::{
 };
 
 pub struct SpriteBatchBuilder {
-    pub tex: Texture,
+    pub tex: Arc<Texture>,
     instances: Vec<InstanceRaw>,
     stretch_x: f32,
     stretch_y: f32,
 }
 
-#[derive(Clone)]
 pub struct SpriteBatch {
-    instance_sbuffer: Rc<wgpu::Buffer>,
-    instance_bg: Rc<BindGroup>,
+    // keep alive because used in bind group ?
+    #[allow(dead_code)]
+    instance_sbuffer: wgpu::Buffer,
+    instance_bg: BindGroup,
     pub n_instances: u32,
     pub alpha_blend: bool,
-    pub tex: Texture,
-    pub tex_bg: Rc<BindGroup>,
+    pub tex: Arc<Texture>,
+    pub tex_bg: BindGroup,
 }
 
 impl SpriteBatch {
-    pub fn builder(tex: Texture) -> SpriteBatchBuilder {
+    pub fn builder(tex: Arc<Texture>) -> SpriteBatchBuilder {
         SpriteBatchBuilder::new(tex)
     }
 }
@@ -70,7 +71,7 @@ impl SpriteBatchBuilder {
         self
     }
 
-    pub fn new(tex: Texture) -> Self {
+    pub fn new(tex: Arc<Texture>) -> Self {
         let m = tex.extent.width.max(tex.extent.height) as f32;
 
         let stretch_x = tex.extent.width as f32 / m;
@@ -91,13 +92,13 @@ impl SpriteBatchBuilder {
             return None;
         }
 
-        let instance_sbuffer = Rc::new(gfx.device.create_buffer_init(&BufferInitDescriptor {
+        let instance_sbuffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
             label: Some("spritebatch instance buffer"),
             contents: bytemuck::cast_slice(&self.instances),
             usage: wgpu::BufferUsage::STORAGE,
-        }));
+        });
 
-        let instance_bg = Rc::new(gfx.device.create_bind_group(&BindGroupDescriptor {
+        let instance_bg = gfx.device.create_bind_group(&BindGroupDescriptor {
             label: Some("spritebatch instance bindgroup"),
             layout: &pipeline.get_bind_group_layout(2),
             entries: &[BindGroupEntry {
@@ -108,12 +109,11 @@ impl SpriteBatchBuilder {
                     size: None,
                 },
             }],
-        }));
+        });
 
-        let tex_bg = Rc::new(
-            self.tex
-                .bindgroup(&gfx.device, &pipeline.get_bind_group_layout(0)),
-        );
+        let tex_bg = self
+            .tex
+            .bindgroup(&gfx.device, &pipeline.get_bind_group_layout(0));
 
         Some(SpriteBatch {
             instance_sbuffer,

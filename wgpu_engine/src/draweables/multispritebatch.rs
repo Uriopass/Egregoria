@@ -1,12 +1,12 @@
 use crate::{Drawable, GfxContext, SpriteBatch, SpriteBatchBuilder, Texture};
 use std::iter::FromIterator;
+use std::sync::Arc;
 use wgpu::{RenderPass, RenderPipeline};
 
 pub struct MultiSpriteBatchBuilder {
     sbs: Vec<SpriteBatchBuilder>,
 }
 
-#[derive(Clone)]
 pub struct MultiSpriteBatch {
     sbs: Vec<SpriteBatch>,
 }
@@ -21,7 +21,7 @@ impl MultiSpriteBatchBuilder {
         }
     }
 
-    pub fn new(texs: Vec<Texture>) -> Self {
+    pub fn new(texs: Vec<Arc<Texture>>) -> Self {
         Self {
             sbs: texs.into_iter().map(SpriteBatchBuilder::new).collect(),
         }

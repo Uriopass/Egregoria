@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use crate::{compile_shader, ColoredUvVertex, Drawable, GfxContext, IndexType, Texture, VBDesc};
+use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{IndexFormat, RenderPass, RenderPipeline};
 
@@ -14,7 +15,7 @@ pub struct TexturedMesh {
     pub index_buffer: wgpu::Buffer,
     pub n_indices: u32,
     pub alpha_blend: bool,
-    pub tex: Texture,
+    pub tex: Arc<Texture>,
     pub bind_group: wgpu::BindGroup,
 }
 
@@ -33,7 +34,7 @@ impl TexturedMeshBuilder {
         self
     }
 
-    pub fn build(&self, gfx: &GfxContext, tex: Texture) -> Option<TexturedMesh> {
+    pub fn build(&self, gfx: &GfxContext, tex: Arc<Texture>) -> Option<TexturedMesh> {
         if self.vertices.is_empty() {
             return None;
         }

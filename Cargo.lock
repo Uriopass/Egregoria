@@ -1790,6 +1790,7 @@ dependencies = [
  "networking",
  "ordered-float",
  "paste",
+ "rayon",
  "rodio",
  "serde",
  "slotmap 1.0.2",

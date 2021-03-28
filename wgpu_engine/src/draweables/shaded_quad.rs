@@ -3,6 +3,7 @@ use crate::{
 };
 
 use std::marker::PhantomData;
+use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{BindGroup, IndexFormat, RenderPass, RenderPipeline};
 
@@ -11,7 +12,7 @@ pub struct ShadedQuadTex<T: Shaders, U: ToU8Slice + 'static> {
     index_buffer: wgpu::Buffer,
     pub alpha_blend: bool,
     pub uniform: Uniform<U>,
-    pub tex: Texture,
+    pub tex: Arc<Texture>,
     pub texbg: BindGroup,
     _phantom: PhantomData<T>,
 }
@@ -34,7 +35,7 @@ const UV_VERTICES: &[UvVertex] = &[
 const UV_INDICES: &[IndexType] = &[0, 1, 2];
 
 impl<T: Shaders, U: 'static + ToU8Slice> ShadedQuadTex<T, U> {
-    pub fn new(gfx: &GfxContext, uniform: Uniform<U>, tex: Texture) -> ShadedQuadTex<T, U> {
+    pub fn new(gfx: &GfxContext, uniform: Uniform<U>, tex: Arc<Texture>) -> ShadedQuadTex<T, U> {
         let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(UV_VERTICES),

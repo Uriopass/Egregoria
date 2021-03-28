@@ -8,6 +8,7 @@ use common::FastMap;
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
 use std::path::PathBuf;
+use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, CullMode, Device,
@@ -33,7 +34,7 @@ pub struct GfxContext {
     pub(crate) projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub(crate) inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub time_uni: Uniform<f32>,
-    pub(crate) textures: FastMap<PathBuf, Texture>,
+    pub(crate) textures: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) samples: u32,
 }
 
@@ -123,12 +124,20 @@ impl GfxContext {
         me
     }
 
-    pub fn texture(&mut self, path: impl Into<PathBuf>, label: Option<&'static str>) -> Texture {
-        fn texture_inner(sel: &mut GfxContext, p: PathBuf, label: Option<&'static str>) -> Texture {
+    pub fn texture(
+        &mut self,
+        path: impl Into<PathBuf>,
+        label: Option<&'static str>,
+    ) -> Arc<Texture> {
+        fn texture_inner(
+            sel: &mut GfxContext,
+            p: PathBuf,
+            label: Option<&'static str>,
+        ) -> Arc<Texture> {
             if let Some(tex) = sel.textures.get(&p) {
                 return tex.clone();
             }
-            let tex = Texture::from_path(sel, &p, label);
+            let tex = Arc::new(Texture::from_path(sel, &p, label));
             sel.textures.insert(p, tex.clone());
             tex
         }
@@ -136,7 +145,7 @@ impl GfxContext {
         texture_inner(self, path.into(), label)
     }
 
-    pub fn read_texture(&self, path: impl Into<PathBuf>) -> Option<&Texture> {
+    pub fn read_texture(&self, path: impl Into<PathBuf>) -> Option<&Arc<Texture>> {
         self.textures.get(&path.into())
     }
 
