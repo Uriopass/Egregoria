@@ -1,7 +1,7 @@
 #![allow(clippy::indexing_slicing)]
 
 use crate::{IntersectionID, LanePatternBuilder, Map, RoadSegmentKind};
-use common::FastSet;
+use common::FastMap;
 use flat_spatial::SparseGrid;
 use geom::{vec2, Vec2};
 use std::fs::File;
@@ -73,7 +73,7 @@ pub fn load_parismap(map: &mut Map) {
             let (_, close_id) = g.get(h).unwrap();
             ids.push(*close_id);
             let newpos = (map.intersections[*close_id].pos + pos) * 0.5;
-            map.update_intersection(*close_id, |i| i.pos = newpos);
+            map.intersections[*close_id].pos = newpos;
             g.set_position(h, newpos);
             g.maintain();
             continue;
@@ -83,7 +83,8 @@ pub fn load_parismap(map: &mut Map) {
         g.insert(pos, id);
     }
 
-    let mut already = FastSet::default();
+    let mut edges = FastMap::default();
+
     //Parse junctions
     for _ in 0..n_roads {
         let src = scanner.next::<usize>();
@@ -98,41 +99,38 @@ pub fn load_parismap(map: &mut Map) {
             continue;
         }
 
-        if already.contains(&(src, dst)) {
+        let mi = src.min(dst);
+        let ma = src.max(dst);
+
+        let v: &mut (bool, bool) = edges.entry((mi, ma)).or_default();
+        v.0 |= mi == src || (n_lanes != 1);
+        v.1 |= mi == dst || (n_lanes != 1);
+    }
+
+    for ((src, dst), (fw, bw)) in edges {
+        if !fw && !bw {
             continue;
         }
-        already.insert((src, dst));
-        if already.contains(&(dst, src)) {
-            map.remove_road(map.find_road(dst, src).unwrap());
-            map.connect(
-                src,
-                dst,
-                &LanePatternBuilder::new()
-                    .one_way(false)
-                    .parking(true)
-                    .build(),
-                RoadSegmentKind::Straight,
-            );
-            continue;
-        }
+        let one_way = fw && bw;
+        let (src, dst) = if fw { (src, dst) } else { (dst, src) };
         map.connect(
             src,
             dst,
             &LanePatternBuilder::new()
-                .one_way(n_lanes == 1)
+                .one_way(one_way)
                 .parking(true)
                 .build(),
             RoadSegmentKind::Straight,
-        );
-        if n_lanes != 1 {
-            already.insert((dst, src));
-        }
+        )
+        .unwrap();
     }
 
     info!(
         "loading parismap took {}ms",
         time.elapsed().as_secs_f32() * 1000.0
     );
+
+    map.check_invariants();
 
     print_stats(map);
 }
@@ -236,6 +234,7 @@ fn print_stats(map: &Map) {
 pub fn load_testfield(map: &mut Map) {
     //add_doublecircle([0.0, 0.0].into(), map);
     add_grid([0.0, 350.0].into(), map, 10, 180.0);
+    map.check_invariants();
 }
 
 #[cfg(test)]
