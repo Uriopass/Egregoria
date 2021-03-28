@@ -149,10 +149,12 @@ impl WorldCommand {
                 })
             }
             MapBuildSpecialBuilding(id, obb, kind, gen) => {
-                let id = goria
+                if let Some(id) = goria
                     .write::<Map>()
-                    .build_special_building(id, &obb, kind, gen);
-                goria.write::<BuildingInfos>().insert(id);
+                    .build_special_building(id, &obb, kind, gen)
+                {
+                    goria.write::<BuildingInfos>().insert(id);
+                }
             }
             SetGameTime(gt) => *goria.write::<GameTime>() = gt,
             MapLoadParis => {

@@ -5,7 +5,7 @@ use crate::{
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectKind, Road,
     RoadID, RoadSegmentKind, SpatialMap,
 };
-use geom::{Intersect, Shape, Vec2, AABB};
+use geom::{pseudo_angle, Intersect, Shape, Vec2, AABB};
 use geom::{Spline, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -125,7 +125,7 @@ impl Map {
         obb: &OBB,
         kind: BuildingKind,
         gen: BuildingGen,
-    ) -> BuildingID {
+    ) -> Option<BuildingID> {
         log::info!(
             "build special {:?} on {:?} with shape {:?}",
             kind,
@@ -138,7 +138,7 @@ impl Map {
             .query(obb)
             .filter_map(|obj| {
                 if let ProjectKind::Lot(id) = obj {
-                    if self.lots[id].shape.intersects(obb) {
+                    if self.lots.get(id)?.shape.intersects(obb) {
                         return Some(id);
                     }
                 }
@@ -158,14 +158,14 @@ impl Map {
 
         self.trees.remove_near_filter(obb.bbox(), |_| true);
 
-        Building::make(
+        Some(Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
-            &self.roads[road],
+            self.roads.get(road)?,
             *obb,
             kind,
             gen,
-        )
+        ))
     }
 
     pub fn build_house(&mut self, id: LotID) -> Option<BuildingID> {
@@ -183,7 +183,7 @@ impl Map {
         Some(Building::make(
             buildings,
             spatial_map,
-            &roads[lot.parent],
+            roads.get(lot.parent)?,
             lot.shape,
             BuildingKind::House,
             BuildingGen::House,
@@ -347,7 +347,7 @@ impl Map {
         let src = self.intersections.get(src_id)?;
         let dst = self.intersections.get(dst_id)?;
 
-        let r = Road::make(
+        let id = Road::make(
             src,
             dst,
             segment,
@@ -357,7 +357,6 @@ impl Map {
             &mut self.parking,
             &mut self.spatial_map,
         );
-        let id = r.id;
         #[allow(clippy::indexing_slicing)]
         let r = &self.roads[id];
 
@@ -370,6 +369,7 @@ impl Map {
         Lot::remove_intersecting_lots(self, id);
         Lot::generate_along_road(self, id);
 
+        #[allow(clippy::indexing_slicing)]
         let r = &self.roads[id];
         let d = r.width + 50.0;
         self.trees.remove_near_filter(r.bbox().expand(d), |tpos| {
@@ -381,8 +381,9 @@ impl Map {
     }
 
     fn cleanup_lot(roads: &mut Roads, spatial_map: &mut SpatialMap, lot: &Lot) {
-        let rlots = &mut roads[lot.parent].lots;
-        rlots.remove(rlots.iter().position(|&x| x == lot.id).unwrap());
+        if let Some(rlots) = roads.get_mut(lot.parent).map(|x| &mut x.lots) {
+            rlots.swap_remove(rlots.iter().position(|&x| x == lot.id).unwrap());
+        }
         spatial_map.remove(lot.id);
     }
 
@@ -465,8 +466,8 @@ impl Map {
     }
 
     pub fn find_road(&self, src: IntersectionID, dst: IntersectionID) -> Option<RoadID> {
-        for r in &self.intersections[src].roads {
-            let road = &self.roads[*r];
+        for &r in &self.intersections.get(src)?.roads {
+            let road = unwrap_cont!(self.roads.get(r));
             if road.src == src && road.dst == dst {
                 return Some(road.id);
             }
@@ -499,5 +500,91 @@ impl Map {
                 .map(|&(id, _)| id)
                 .expect("Road with parking lane doesn't have driving lane >:("),
         )
+    }
+
+    pub fn check_invariants(&self) {
+        for inter in self.intersections.values() {
+            println!("{:?}", inter.id);
+            assert!(!inter.roads.is_empty());
+
+            let mut last_angle = -f32::INFINITY;
+            for &road in &inter.roads {
+                let road = self.roads.get(road).expect("road does not exist");
+                let ang = pseudo_angle(road.dir_from(inter.id));
+                assert!(ang > last_angle);
+                last_angle = ang;
+            }
+
+            for turn in inter.turns() {
+                println!("{:?}", turn.id);
+                assert_eq!(turn.id.parent, inter.id);
+                assert!(self.lanes.contains_key(turn.id.src));
+                assert!(self.lanes.contains_key(turn.id.dst));
+                assert!(turn.points.n_points() >= 2);
+            }
+
+            assert!(inter.pos.is_finite());
+            assert!(!inter.polygon.is_empty());
+            assert!(!inter.turns().is_empty());
+            assert!(self.spatial_map.contains(inter.id));
+        }
+
+        for lane in self.lanes.values() {
+            println!("{:?}", lane.id);
+            assert!(!lane.points.is_empty());
+            assert!(self.intersections.contains_key(lane.src), "{:?}", lane.src);
+            assert!(self.intersections.contains_key(lane.dst), "{:?}", lane.dst);
+            assert!(self.roads.contains_key(lane.parent), "{:?}", lane.parent);
+        }
+
+        for road in self.roads.values() {
+            println!("{:?}", road.id);
+            let src = self.intersections.get(road.src).unwrap();
+            assert!(src.roads.contains(&road.id));
+            let dst = self.intersections.get(road.dst).unwrap();
+            assert!(dst.roads.contains(&road.id));
+            assert!(!road.points.is_empty());
+            assert!(road.lanes_iter().next().is_some());
+            assert!(road.points.first().is_close(src.pos, 0.001),);
+            assert!(road.points.last().is_close(dst.pos, 0.001));
+            assert!(road.interfaced_points().n_points() >= 2);
+            assert!(road.length() > 0.0);
+            for lot in &road.lots {
+                assert!(self.lots.contains_key(*lot), "{:?}", lot);
+            }
+            assert!(self.spatial_map.contains(road.id));
+
+            for (id, _) in road.lanes_iter() {
+                let v = self.lanes.get(id).expect("lane child does not exist");
+                assert_eq!(v.parent, road.id);
+            }
+        }
+
+        for lot in self.lots.values() {
+            println!("{:?}", lot.id);
+            assert!(lot.shape.axis().iter().all(|x| x.magnitude() > 0.0));
+            assert!(self.roads.contains_key(lot.parent), "{:?}", lot.parent);
+            assert!(self.spatial_map.contains(lot.id));
+        }
+
+        for obj in self.spatial_map.objects() {
+            assert!(self.spatial_map.contains(*obj));
+            println!("{:?}", obj);
+            match *obj {
+                ProjectKind::Inter(id) => {
+                    assert!(self.intersections.contains_key(id));
+                }
+                ProjectKind::Road(id) => {
+                    assert!(self.roads.contains_key(id));
+                }
+                ProjectKind::Building(id) => {
+                    assert!(self.buildings.contains_key(id));
+                }
+                ProjectKind::Lot(id) => {
+                    assert!(self.lots.contains_key(id));
+                }
+                ProjectKind::Ground => {}
+            }
+        }
     }
 }

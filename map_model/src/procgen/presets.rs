@@ -1,3 +1,5 @@
+#![allow(clippy::indexing_slicing)]
+
 use crate::{IntersectionID, LanePatternBuilder, Map, RoadSegmentKind};
 use common::FastSet;
 use flat_spatial::SparseGrid;
@@ -234,4 +236,22 @@ fn print_stats(map: &Map) {
 pub fn load_testfield(map: &mut Map) {
     //add_doublecircle([0.0, 0.0].into(), map);
     add_grid([0.0, 350.0].into(), map, 10, 180.0);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn testfield_valid() {
+        let mut m = Map::empty();
+        load_testfield(&mut m);
+        m.check_invariants();
+    }
+
+    #[test]
+    fn parismap_valid() {
+        let mut m = Map::empty();
+        load_parismap(&mut m);
+        m.check_invariants();
+    }
 }

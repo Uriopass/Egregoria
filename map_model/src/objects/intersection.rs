@@ -84,14 +84,34 @@ impl Intersection {
         self.light_policy.apply(self, lanes, roads);
     }
 
-    pub fn update_interface_radius(&self, roads: &mut Roads) {
+    fn check_dead_roads(&mut self, roads: &Roads) {
+        let id = self.id;
+        self.roads.retain(|x| {
+            let v = roads.contains_key(*x);
+            if !v {
+                log::error!(
+                    "{:?} contained unexisting {:?} when updating interface radius",
+                    id,
+                    x
+                );
+            }
+            v
+        });
+    }
+
+    // allow slicing since we remove all roads not in self.roads
+    #[allow(clippy::indexing_slicing)]
+    pub fn update_interface_radius(&mut self, roads: &mut Roads) {
+        let id = self.id;
+        self.check_dead_roads(roads);
+
         for &r in &self.roads {
-            roads[r].set_interface(self.id, 9.0);
+            roads[r].set_interface(id, 9.0);
         }
 
-        if self.roads.len() == 1 {
-            let r = &mut roads[self.roads[0]];
-            r.max_interface(self.id, 1.1 * r.width * std::f32::consts::FRAC_1_SQRT_2);
+        if let [ref r] = *self.roads {
+            let r = &mut roads[*r];
+            r.max_interface(id, 1.1 * r.width * std::f32::consts::FRAC_1_SQRT_2);
             return;
         }
 
@@ -107,22 +127,26 @@ impl Intersection {
 
             let w = width1.hypot(width2);
 
-            let dir1 = r1.dir_from(self.id);
-            let dir2 = r2.dir_from(self.id);
+            let dir1 = r1.dir_from(id);
+            let dir2 = r2.dir_from(id);
 
             let ang = dir1.angle(dir2).abs();
 
             let min_dist = w * 1.1 / ang.max(0.1).min(std::f32::consts::FRAC_PI_2).sin();
-            roads[r1_id].max_interface(self.id, min_dist);
-            roads[r2_id].max_interface(self.id, min_dist);
+            roads[r1_id].max_interface(id, min_dist);
+            roads[r2_id].max_interface(id, min_dist);
         }
     }
 
     pub fn update_polygon(&mut self, roads: &Roads) {
         self.polygon.clear();
+        self.check_dead_roads(roads);
 
         for (i, &road) in self.roads.iter().enumerate() {
+            #[allow(clippy::indexing_slicing)]
             let road = &roads[road];
+
+            #[allow(clippy::indexing_slicing)]
             let next_road = &roads[self.roads[(i + 1) % self.roads.len()]];
 
             let mut fp = road.interfaced_points();
@@ -169,7 +193,9 @@ impl Intersection {
     }
 
     pub fn neighbors<'a>(&'a self, roads: &'a Roads) -> impl Iterator<Item = IntersectionID> + 'a {
-        self.roads.iter().map(move |&x| roads[x].other_end(self.id))
+        self.roads
+            .iter()
+            .flat_map(move |&x| roads.get(x).map(|r| r.other_end(self.id)))
     }
 
     pub fn find_turn(&self, needle: TurnID) -> Option<&Turn> {

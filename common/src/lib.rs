@@ -11,11 +11,33 @@ macro_rules! unwrap_or {
 }
 
 #[macro_export]
+macro_rules! assert_ret {
+    ($e: expr) => {
+        if !$e {
+            return false;
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! unwrap_ret {
+    ($e: expr) => {
+        unwrap_ret!($e, ())
+    };
+    ($e: expr, $ret: expr) => {
+        match $e {
+            Some(x) => x,
+            None => return $ret,
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! unwrap_cont {
     ($e: expr) => {
         match $e {
             Some(x) => x,
-            None => return,
+            None => continue,
         }
     };
 }
@@ -32,7 +54,7 @@ macro_rules! unwrap_orr {
 
 #[macro_export]
 macro_rules! unwrap_retlog {
-    ($e: expr, $($t: expr)+) => {
+    ($e: expr, $($t: expr),+) => {
         match $e {
             Some(x) => x,
             None => {

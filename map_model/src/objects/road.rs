@@ -66,7 +66,7 @@ impl Road {
         lanes: &mut Lanes,
         parking: &mut ParkingSpots,
         spatial: &mut SpatialMap,
-    ) -> &'a Road {
+    ) -> RoadID {
         let points = Self::generate_points(src, dst, segment);
 
         let id = roads.insert_with_key(|id| Self {
@@ -100,7 +100,7 @@ impl Road {
         road.update_lanes(lanes, parking);
 
         spatial.insert(id, road.bbox());
-        road
+        road.id
     }
 
     pub fn is_one_way(&self) -> bool {
@@ -136,7 +136,8 @@ impl Road {
             &self.lanes_backward
         };
 
-        lanes[(lanes.len() - 2).max(0)..]
+        lanes
+            .get((lanes.len() - 2).max(0)..)?
             .iter()
             .find(|(_, kind)| matches!(kind, LaneKind::Parking))
             .map(|&(id, _)| id)
@@ -193,10 +194,8 @@ impl Road {
     }
 
     pub fn interfaced_points(&self) -> PolyLine {
-        self.points().cut(
-            dbg!(self.interface_from(self.src)),
-            dbg!(self.interface_from(self.dst)),
-        )
+        self.points()
+            .cut(self.interface_from(self.src), self.interface_from(self.dst))
     }
 
     fn generate_points(
