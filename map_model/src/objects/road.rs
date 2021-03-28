@@ -111,7 +111,8 @@ impl Road {
         self.lanes_backward.len() + self.lanes_forward.len()
     }
 
-    pub fn lanes_iter(&self) -> impl Iterator<Item = (LaneID, LaneKind)> + '_ {
+    /// Returns lanes in left to right order from the source
+    pub fn lanes_iter(&self) -> impl DoubleEndedIterator<Item = (LaneID, LaneKind)> + '_ {
         self.lanes_forward
             .iter()
             .rev()
@@ -192,8 +193,10 @@ impl Road {
     }
 
     pub fn interfaced_points(&self) -> PolyLine {
-        self.points()
-            .cut(self.interface_from(self.src), self.interface_from(self.dst))
+        self.points().cut(
+            dbg!(self.interface_from(self.src)),
+            dbg!(self.interface_from(self.dst)),
+        )
     }
 
     fn generate_points(
@@ -209,8 +212,6 @@ impl Road {
                 vec![from, to]
             }
             RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
-                let mut poly = vec![];
-
                 let s = Spline {
                     from: src.pos,
                     to: dst.pos,
@@ -218,10 +219,7 @@ impl Road {
                     to_derivative,
                 };
 
-                let points = s.smart_points(1.0, s.project_t(from, 0.3), s.project_t(to, 0.3));
-                poly.extend(points);
-
-                poly
+                s.smart_points(1.0, 0.0, 1.0).collect()
             }
         })
     }

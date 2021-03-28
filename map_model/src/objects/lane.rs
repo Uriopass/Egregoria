@@ -210,7 +210,11 @@ impl Lane {
 
         let middle_points = parent_road.interfaced_points();
 
-        let src_nor = -parent_road.src_dir().perpendicular();
+        let src_nor = -unwrap_retlog!(
+            middle_points.first_dir(),
+            "not enough points in interfaced points"
+        )
+        .perpendicular();
         self.points
             .clear_push(middle_points.first() + src_nor * lane_dist);
         self.points.reserve(middle_points.n_points() - 1);
@@ -231,10 +235,14 @@ impl Lane {
             self.points.push(elbow + nor);
         }
 
-        let dst_nor = parent_road.dst_dir().perpendicular();
+        let dst_nor = -unwrap_retlog!(
+            middle_points.last_dir(),
+            "not enough points in interfaced points"
+        )
+        .perpendicular();
         self.points.push(middle_points.last() + dst_nor * lane_dist);
 
-        if self.dir_from(parent_road.src) == TraverseDirection::Backward {
+        if self.dst == parent_road.src {
             self.points.reverse();
         }
     }

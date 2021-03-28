@@ -125,14 +125,23 @@ impl Intersection {
             let road = &roads[road];
             let next_road = &roads[self.roads[(i + 1) % self.roads.len()]];
 
-            let src_orient = road.dir_from(self.id);
+            let mut fp = road.interfaced_points();
 
-            let left =
-                road.interface_point(self.id) - road.width * 0.5 * src_orient.perpendicular();
+            if road.dst == self.id {
+                fp.reverse();
+            }
 
-            let dst_orient = next_road.dir_from(self.id);
-            let next_right = next_road.interface_point(self.id)
-                + next_road.width * 0.5 * dst_orient.perpendicular();
+            let src_orient = fp.first_dir().unwrap();
+            let left = fp.first() - src_orient.perpendicular() * road.width * 0.5;
+
+            let mut fp = next_road.interfaced_points();
+
+            if next_road.dst == self.id {
+                fp.reverse();
+            }
+
+            let dst_orient = fp.first_dir().unwrap();
+            let next_right = fp.first() + dst_orient.perpendicular() * next_road.width * 0.5;
 
             let ang = (-src_orient).angle(dst_orient);
 
