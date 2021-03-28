@@ -72,47 +72,49 @@ impl ParkingSpots {
     pub fn generate_spots(&mut self, lane: &Lane) {
         debug_assert!(matches!(lane.kind, LaneKind::Parking));
 
-        match self.lane_spots.get_mut(lane.id) {
-            Some(_) => {}
-            None => {
-                let gap = CROSSWALK_WIDTH + 8.0;
-                let l = lane.length() - gap * 2.0;
-                let n_spots = (l / PARKING_SPOT_LENGTH) as i32;
-                let step = l / n_spots as f32;
+        if self.lane_spots.contains_key(lane.id) {
+            self.remove_to_reuse(lane.id);
+        }
 
-                let parent = lane.id;
-                let spots = &mut self.spots;
-                let reuse = &mut self.reuse_spot;
-                let spots = lane
-                    .points
-                    .points_dirs_along((0..n_spots).map(|x| (x as f32 + 0.5) * step + gap))
-                    .map(move |(pos, dir)| {
-                        let mut iter = reuse.query_around(pos, 3.0);
-                        if let Some(h) = iter.next().map(|x| x.0) {
-                            drop(iter);
+        let gap = CROSSWALK_WIDTH + 4.0;
+        let l = lane.length() - gap * 2.0;
+        let n_spots = (l / PARKING_SPOT_LENGTH) as i32;
+        if n_spots <= 0 {
+            return;
+        }
+        let step = l / n_spots as f32;
 
-                            let spot_id = reuse.remove(h).unwrap();
-                            if let Some(p) = spots.get_mut(spot_id) {
-                                *p = ParkingSpot {
-                                    parent,
-                                    trans: Transform::new_cos_sin(pos, dir),
-                                };
-                                return spot_id;
-                            } else {
-                                log::error!("found a spot in reuse that doesn't exist anymore");
-                            }
-                        }
+        let parent = lane.id;
+        let spots = &mut self.spots;
+        let reuse = &mut self.reuse_spot;
+        let spots = lane
+            .points
+            .points_dirs_along((0..n_spots).map(|x| (x as f32 + 0.5) * step + gap))
+            .map(move |(pos, dir)| {
+                let mut iter = reuse.query_around(pos, 3.0);
+                if let Some(h) = iter.next().map(|x| x.0) {
+                    drop(iter);
 
-                        spots.insert(ParkingSpot {
+                    let spot_id = reuse.remove(h).unwrap();
+                    if let Some(p) = spots.get_mut(spot_id) {
+                        *p = ParkingSpot {
                             parent,
                             trans: Transform::new_cos_sin(pos, dir),
-                        })
-                    })
-                    .collect();
+                        };
+                        return spot_id;
+                    } else {
+                        log::error!("found a spot in reuse that doesn't exist anymore");
+                    }
+                }
 
-                self.lane_spots.insert(lane.id, spots);
-            }
-        };
+                spots.insert(ParkingSpot {
+                    parent,
+                    trans: Transform::new_cos_sin(pos, dir),
+                })
+            })
+            .collect();
+
+        self.lane_spots.insert(lane.id, spots);
     }
 
     pub fn clear(&mut self) {
