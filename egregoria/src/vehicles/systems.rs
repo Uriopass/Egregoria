@@ -40,7 +40,10 @@ pub fn vehicle_decision(
 
     let mut desired_speed = 0.0;
     let mut desired_dir = Vec2::ZERO;
-    if matches!(vehicle.state, VehicleState::Driving | VehicleState::Panicking(_)) {
+    if matches!(
+        vehicle.state,
+        VehicleState::Driving | VehicleState::Panicking(_)
+    ) {
         let danger_length =
             (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
         let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
@@ -70,19 +73,28 @@ register_system!(vehicle_state_update);
 pub fn vehicle_state_update(
     #[resource] buf: &ParCommandBuffer,
     #[resource] time: &GameTime,
+    #[resource] map: &Map,
     vehicle: &mut Vehicle,
     kin: &mut Kinematics,
     ent: &Entity,
 ) {
-    if let VehicleState::RoadToPark(_, ref mut t, spot) = vehicle.state {
-        // Vehicle is on rails when parking.
-        *t += time.delta / TIME_TO_PARK;
+    match vehicle.state {
+        VehicleState::RoadToPark(_, ref mut t, spot) => {
+            // Vehicle is on rails when parking.
+            *t += time.delta / TIME_TO_PARK;
 
-        if *t >= 1.0 {
-            buf.remove_component::<Collider>(*ent);
-            kin.velocity = Vec2::ZERO;
-            vehicle.state = VehicleState::Parked(spot);
+            if *t >= 1.0 {
+                buf.remove_component::<Collider>(*ent);
+                kin.velocity = Vec2::ZERO;
+                vehicle.state = VehicleState::Parked(spot);
+            }
         }
+        VehicleState::Parked(ref mut spot) => {
+            if map.parking.get(*spot).is_none() {
+                buf.kill(*ent);
+            }
+        }
+        _ => {}
     }
 }
 

@@ -138,10 +138,10 @@ pub fn routing_update(
                     return;
                 }
 
-                cbuf.exec(park(vehicle, spot));
+                cbuf.exec_ent(vehicle.0, park(vehicle, spot));
             }
             RoutingStep::Unpark(vehicle) => {
-                cbuf.exec(unpark(vehicle));
+                cbuf.exec_ent(vehicle.0, unpark(vehicle));
             }
             RoutingStep::GetInVehicle(vehicle) => {
                 *loc = Location::Vehicle(vehicle);
@@ -209,7 +209,7 @@ fn walk_outside(
 ) {
     mr.hide = false;
     *loc = Location::Outside;
-    cbuf.exec(move |goria| {
+    cbuf.exec_ent(body, move |goria| {
         goria.comp_mut::<Transform>(body).unwrap().set_position(pos);
         let coll = put_pedestrian_in_coworld(&mut goria.write::<CollisionWorld>(), pos);
         goria.add_comp(body, coll);
