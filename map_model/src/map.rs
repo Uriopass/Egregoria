@@ -405,14 +405,14 @@ impl Map {
             let d1 = r1.points.project(p).distance(p);
             let d2 = r2.points.project(p).distance(p);
             if d1 < d2 {
-                if d1 < r1.width * 0.5 + 1.0 {
+                if d1 < r1.width * 0.5 + 1.5 {
                     lot.parent = r1.id;
                 } else {
                     spatial.remove(lot.id);
                     return false;
                 }
             } else {
-                if d2 < r2.width * 0.5 + 1.0 {
+                if d2 < r2.width * 0.5 + 1.5 {
                     lot.parent = r2.id;
                 } else {
                     spatial.remove(lot.id);
