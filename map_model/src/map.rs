@@ -63,20 +63,33 @@ impl Map {
 
     pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection)) {
         info!("update_intersection {:?}", id);
+        self.dirt_id += 1;
+
         let inter = unwrap_ret!(self.intersections.get_mut(id));
         f(inter);
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
-        self.dirt_id += 1;
+
+        #[cfg(debug_assertions)]
+        self.check_invariants()
     }
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
         info!("remove_intersection {:?}", src);
         self.dirt_id += 1;
 
+        self.remove_intersection_inner(src);
+
+        #[cfg(debug_assertions)]
+        self.check_invariants()
+    }
+    fn remove_intersection_inner(&mut self, src: IntersectionID) {
         let inter = unwrap_ret!(self.intersections.remove(src));
+
         for road in inter.roads {
-            self.remove_road(road);
+            let r = unwrap_cont!(self.remove_road_inner(road));
+            let o = unwrap_cont!(r.other_end(src));
+            self.invalidate(o);
         }
 
         self.spatial_map.remove(src);
@@ -90,6 +103,10 @@ impl Map {
             self.spatial_map.remove(b.id)
         }
         self.dirt_id += b.is_some() as u32;
+
+        #[cfg(debug_assertions)]
+        self.check_invariants();
+
         b
     }
 
@@ -116,6 +133,10 @@ impl Map {
         let to = mk_inter(to);
 
         self.connect(from, to, pattern, connection_segment);
+
+        #[cfg(debug_assertions)]
+        self.check_invariants();
+
         to
     }
 
@@ -158,14 +179,17 @@ impl Map {
 
         self.trees.remove_near_filter(obb.bbox(), |_| true);
 
-        Some(Building::make(
+        let v = Some(Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
             self.roads.get(road)?,
             *obb,
             kind,
             gen,
-        ))
+        ));
+        #[cfg(debug_assertions)]
+        self.check_invariants();
+        v
     }
 
     pub fn build_house(&mut self, id: LotID) -> Option<BuildingID> {
@@ -180,20 +204,33 @@ impl Map {
 
         Self::cleanup_lot(roads, spatial_map, &lot);
 
-        Some(Building::make(
+        let v = Some(Building::make(
             buildings,
             spatial_map,
             roads.get(lot.parent)?,
             lot.shape,
             BuildingKind::House,
             BuildingGen::House,
-        ))
+        ));
+        #[cfg(debug_assertions)]
+        self.check_invariants();
+        v
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
         info!("remove_road {:?}", road_id);
 
         self.dirt_id += 1;
+
+        let v = self.remove_road_inner(road_id);
+
+        #[cfg(debug_assertions)]
+        self.check_invariants();
+
+        v
+    }
+
+    fn remove_road_inner(&mut self, road_id: RoadID) -> Option<Road> {
         let road = self.roads.remove(road_id)?;
 
         self.spatial_map.remove(road_id);
@@ -234,6 +271,9 @@ impl Map {
         info!("clear");
         let before = std::mem::take(self);
         self.trees = before.trees;
+
+        #[cfg(debug_assertions)]
+        self.check_invariants();
     }
 
     // Private mutating
@@ -249,7 +289,7 @@ impl Map {
         let inter = unwrap_ret!(self.intersections.get_mut(id));
 
         if inter.roads.is_empty() {
-            self.remove_intersection(id);
+            self.remove_intersection_inner(id);
             return;
         }
 
@@ -261,8 +301,10 @@ impl Map {
                 "intersection has unexisting road in list"
             );
 
+            let oend_id = unwrap_cont!(road.other_end(id));
+
             let other_end = unwrap_contlog!(
-                self.intersections.get_mut(road.other_end(id)),
+                self.intersections.get_mut(oend_id),
                 "road is connected to unexisting intersection"
             );
             other_end.update_interface_radius(&mut self.roads);
@@ -292,7 +334,7 @@ impl Map {
         info!("split_road {:?} {:?}", id, pos);
 
         let r = self
-            .remove_road(id)
+            .remove_road_inner(id)
             .expect("Trying to split unexisting road");
         let id = self.add_intersection(pos);
 
@@ -504,7 +546,7 @@ impl Map {
 
     pub fn check_invariants(&self) {
         for inter in self.intersections.values() {
-            println!("{:?}", inter.id);
+            log::debug!("{:?}", inter.id);
             assert!(!inter.roads.is_empty());
 
             let mut last_angle = -f32::INFINITY;
@@ -516,7 +558,7 @@ impl Map {
             }
 
             for turn in inter.turns() {
-                println!("{:?}", turn.id);
+                log::debug!("{:?}", turn.id);
                 assert_eq!(turn.id.parent, inter.id);
                 assert!(self.lanes.contains_key(turn.id.src));
                 assert!(self.lanes.contains_key(turn.id.dst));
@@ -530,7 +572,7 @@ impl Map {
         }
 
         for lane in self.lanes.values() {
-            println!("{:?}", lane.id);
+            log::debug!("{:?}", lane.id);
             assert!(!lane.points.is_empty());
             assert!(self.intersections.contains_key(lane.src), "{:?}", lane.src);
             assert!(self.intersections.contains_key(lane.dst), "{:?}", lane.dst);
@@ -538,7 +580,7 @@ impl Map {
         }
 
         for road in self.roads.values() {
-            println!("{:?}", road.id);
+            log::debug!("{:?}", road.id);
             let src = self.intersections.get(road.src).unwrap();
             assert!(src.roads.contains(&road.id));
             let dst = self.intersections.get(road.dst).unwrap();
@@ -561,7 +603,7 @@ impl Map {
         }
 
         for lot in self.lots.values() {
-            println!("{:?}", lot.id);
+            log::debug!("{:?}", lot.id);
             assert!(lot.shape.axis().iter().all(|x| x.magnitude() > 0.0));
             assert!(self.roads.contains_key(lot.parent), "{:?}", lot.parent);
             assert!(self.spatial_map.contains(lot.id));
@@ -569,7 +611,7 @@ impl Map {
 
         for obj in self.spatial_map.objects() {
             assert!(self.spatial_map.contains(*obj));
-            println!("{:?}", obj);
+            log::debug!("{:?}", obj);
             match *obj {
                 ProjectKind::Inter(id) => {
                     assert!(self.intersections.contains_key(id));
