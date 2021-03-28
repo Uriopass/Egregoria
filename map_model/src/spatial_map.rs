@@ -39,6 +39,7 @@ impl ProjectKind {
     }
 }
 
+#[derive(Clone)]
 pub struct SpatialMap {
     grid: ShapeGrid<ProjectKind, AABB>,
     ids: FastMap<ProjectKind, ShapeGridHandle>,

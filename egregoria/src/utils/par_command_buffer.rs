@@ -1,11 +1,11 @@
 use crate::physics::Collider;
 use crate::vehicles::Vehicle;
 use crate::Egregoria;
-use imgui::__core::any::TypeId;
 use legion::storage::Component;
 use legion::systems::Resource;
 use legion::Entity;
 use serde::{Deserialize, Serialize};
+use std::any::TypeId;
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 

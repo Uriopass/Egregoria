@@ -24,7 +24,7 @@ pub struct MapProject {
 }
 
 // can't derive Serialize because it would clone
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(from = "SerializedMap")]
 pub struct Map {
     pub(crate) roads: Roads,

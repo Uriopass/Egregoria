@@ -13,7 +13,7 @@ use wgpu::{
     TextureSampleType, TextureUsage, TextureViewDescriptor,
 };
 
-pub struct OwnedTexture {
+pub struct Texture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
@@ -21,16 +21,6 @@ pub struct OwnedTexture {
     pub extent: Extent3d,
 }
 
-#[derive(Clone)]
-pub struct Texture {
-    pub texture: Rc<wgpu::Texture>,
-    pub view: Rc<wgpu::TextureView>,
-    pub sampler: Rc<wgpu::Sampler>,
-    pub format: TextureFormat,
-    pub extent: Extent3d,
-}
-
-#[derive(Clone)]
 pub struct MultisampledTexture {
     pub target: Texture,
     pub multisampled_buffer: Rc<wgpu::TextureView>,
@@ -130,9 +120,9 @@ impl Texture {
         let sampler = Self::default_sampler(&ctx.device);
 
         Self {
-            texture: Rc::new(texture),
-            view: Rc::new(view),
-            sampler: Rc::new(sampler),
+            texture,
+            view,
+            sampler,
             format,
             extent,
         }
@@ -165,9 +155,9 @@ impl Texture {
         let sampler = Self::default_sampler(&device);
 
         Self {
-            texture: Rc::new(texture),
-            view: Rc::new(view),
-            sampler: Rc::new(sampler),
+            texture,
+            view,
+            sampler,
             format,
             extent,
         }
@@ -347,16 +337,6 @@ impl Texture {
             compare: None,
             anisotropy_clamp: None,
             border_color: None,
-        })
-    }
-
-    pub fn into_owned(self) -> Option<OwnedTexture> {
-        Some(OwnedTexture {
-            texture: Rc::<wgpu::Texture>::try_unwrap(self.texture).ok()?,
-            view: std::rc::Rc::<wgpu::TextureView>::try_unwrap(self.view).ok()?,
-            sampler: std::rc::Rc::<wgpu::Sampler>::try_unwrap(self.sampler).ok()?,
-            format: TextureFormat::R8Unorm,
-            extent: Default::default(),
         })
     }
 }
