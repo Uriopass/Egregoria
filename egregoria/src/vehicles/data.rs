@@ -3,9 +3,8 @@ use crate::map_dynamic::{Itinerary, ParkingManagement};
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::rendering::assets::{AssetID, AssetRender};
 use crate::utils::rand_provider::RandProvider;
-use crate::utils::rand_world;
 use crate::Egregoria;
-use common::{GameInstant, GameTime, Z_CAR};
+use common::{GameInstant, Z_CAR};
 use geom::Color;
 use geom::{Spline, Transform, Vec2};
 use imgui_inspect::InspectDragf;
@@ -119,12 +118,9 @@ pub fn spawn_parked_vehicle(
     kind: VehicleKind,
     near: Vec2,
 ) -> Option<VehicleID> {
-    let r: f64 = rand_world(goria);
-
     let map = goria.read::<Map>();
 
-    let time = goria.read::<GameTime>().timestamp;
-    let it = Itinerary::wait_until(time + r * 5.0);
+    let it = Itinerary::none();
 
     let pm = goria.read::<ParkingManagement>();
 

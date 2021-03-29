@@ -300,7 +300,7 @@ pub fn debug_pathfinder(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWo
         tess.draw_stroke(p, pos, Z_DEBUG, 1.0);
     }
 
-    if let egregoria::map_dynamic::ItineraryKind::Route(r) = itinerary.kind() {
+    if let egregoria::map_dynamic::ItineraryKind::Route(r, _) = itinerary.kind() {
         tess.set_color(LinearColor::RED);
         for l in &r.reversed_route {
             if let Some(l) = l.raw_points(map) {

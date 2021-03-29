@@ -5,12 +5,13 @@ use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
 use legion::system;
-use map_model::{Map, Pathfinder, Traversable, TraverseDirection, TraverseKind};
+use map_model::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Serialize, Deserialize, Inspect)]
 pub struct Itinerary {
     kind: ItineraryKind,
+    // fixme: replace local path with newtype stack to be popped in O(1)
     local_path: Vec<Vec2>,
 }
 
@@ -19,7 +20,12 @@ pub enum ItineraryKind {
     None,
     WaitUntil(f64),
     Simple,
-    Route(Route),
+    Route(Route, PathKind),
+    WaitForReroute {
+        kind: PathKind,
+        dest: Vec2,
+        wait_ticks: u16,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Inspect)]
@@ -54,20 +60,34 @@ impl Itinerary {
         }
     }
 
-    pub fn route(start: Vec2, end: Vec2, map: &Map, pather: &impl Pathfinder) -> Option<Itinerary> {
-        let start_lane = pather.nearest_lane(map, start)?;
-        let end_lane = pather.nearest_lane(map, end)?;
+    pub fn wait_for_reroute(kind: PathKind, dest: Vec2) -> Self {
+        Self {
+            kind: ItineraryKind::WaitForReroute {
+                kind,
+                dest,
+                wait_ticks: 0,
+            },
+            local_path: Default::default(),
+        }
+    }
+
+    pub fn route(start: Vec2, end: Vec2, map: &Map, pathkind: PathKind) -> Option<Itinerary> {
+        let start_lane = pathkind.nearest_lane(map, start)?;
+        let end_lane = pathkind.nearest_lane(map, end)?;
 
         if start_lane == end_lane {
-            if let Some(p) = pather.local_route(map, start_lane, start, end) {
+            if let Some(p) = pathkind.local_route(map, start_lane, start, end) {
                 return Some(Itinerary::simple(p.into_vec()));
             }
         }
 
         let mut cur = Traversable::new(TraverseKind::Lane(start_lane), TraverseDirection::Forward);
 
-        let mut reversed_route: Vec<Traversable> =
-            pather.path(map, cur, end_lane)?.into_iter().rev().collect();
+        let mut reversed_route: Vec<Traversable> = pathkind
+            .path(map, cur, end_lane)?
+            .into_iter()
+            .rev()
+            .collect();
 
         reversed_route.pop(); // Remove start
 
@@ -81,11 +101,14 @@ impl Itinerary {
             }
         }
 
-        let kind = ItineraryKind::Route(Route {
-            reversed_route,
-            end_pos: end,
-            cur,
-        });
+        let kind = ItineraryKind::Route(
+            Route {
+                reversed_route,
+                end_pos: end,
+                cur,
+            },
+            pathkind,
+        );
 
         let points = cur.points(map).unwrap();
         let (proj, segid, dir) = points.project_segment_dir(start);
@@ -101,7 +124,7 @@ impl Itinerary {
         Some(it)
     }
 
-    pub fn advance(&mut self, map: &Map) -> Option<Vec2> {
+    fn advance(&mut self, map: &Map) -> Option<Vec2> {
         let v = if self.local_path.is_empty() {
             None
         } else {
@@ -109,10 +132,17 @@ impl Itinerary {
         };
 
         if self.local_path.is_empty() {
-            if let ItineraryKind::Route(r) = &mut self.kind {
+            if let ItineraryKind::Route(ref mut r, pathkind) = self.kind {
                 r.cur = r.reversed_route.pop()?;
 
-                let points = r.cur.points(map)?;
+                let points = match r.cur.points(map) {
+                    Some(x) => x,
+                    None => {
+                        *self = Self::wait_for_reroute(pathkind, r.end_pos);
+                        return None;
+                    }
+                };
+
                 if r.reversed_route.is_empty() {
                     let (proj_pos, id) = points.project_segment(r.end_pos);
                     self.local_path.extend(&points.as_slice()[..id]);
@@ -148,14 +178,30 @@ impl Itinerary {
                 }
             }
         }
+
+        if let ItineraryKind::WaitForReroute {
+            kind,
+            dest,
+            ref mut wait_ticks,
+        } = self.kind
+        {
+            if *wait_ticks > 0 {
+                *wait_ticks -= 1;
+                return;
+            }
+            *self = unwrap_or!(Self::route(position, dest, map, kind), {
+                *wait_ticks = 200;
+                return;
+            });
+        }
     }
 
     pub fn end_pos(&self) -> Option<Vec2> {
         match &self.kind {
             ItineraryKind::None => None,
-            ItineraryKind::WaitUntil(_) => None,
+            ItineraryKind::WaitUntil(_) | ItineraryKind::WaitForReroute { .. } => None,
             ItineraryKind::Simple => self.local_path.last().copied(),
-            ItineraryKind::Route(r) => Some(r.end_pos),
+            ItineraryKind::Route(r, _) => Some(r.end_pos),
         }
     }
 
@@ -166,8 +212,9 @@ impl Itinerary {
     pub fn is_terminal(&self) -> bool {
         match &self.kind {
             ItineraryKind::None | ItineraryKind::WaitUntil(_) => true,
+            ItineraryKind::WaitForReroute { .. } => false,
             ItineraryKind::Simple => self.remaining_points() == 1,
-            ItineraryKind::Route(Route { reversed_route, .. }) => {
+            ItineraryKind::Route(Route { reversed_route, .. }, _) => {
                 reversed_route.is_empty() && self.remaining_points() == 1
             }
         }
@@ -179,16 +226,21 @@ impl Itinerary {
 
     pub fn get_terminal(&self) -> Option<Vec2> {
         match &self.kind {
-            ItineraryKind::None | ItineraryKind::WaitUntil(_) => None,
+            ItineraryKind::None
+            | ItineraryKind::WaitUntil(_)
+            | ItineraryKind::WaitForReroute { .. } => None,
             ItineraryKind::Simple => self.local_path.last().copied(),
-            ItineraryKind::Route(Route { end_pos, .. }) => Some(*end_pos),
+            ItineraryKind::Route(Route { end_pos, .. }, _) => Some(*end_pos),
         }
     }
 
     pub fn get_travers(&self) -> Option<&Traversable> {
         match &self.kind {
-            ItineraryKind::None | ItineraryKind::WaitUntil(_) | ItineraryKind::Simple => None,
-            ItineraryKind::Route(Route { cur, .. }) => Some(cur),
+            ItineraryKind::None
+            | ItineraryKind::WaitUntil(_)
+            | ItineraryKind::Simple
+            | ItineraryKind::WaitForReroute { .. } => None,
+            ItineraryKind::Route(Route { cur, .. }, _) => Some(cur),
         }
     }
 
@@ -207,6 +259,7 @@ impl Itinerary {
     pub fn has_ended(&self, time: f64) -> bool {
         match self.kind {
             ItineraryKind::WaitUntil(x) => time > x,
+            ItineraryKind::WaitForReroute { .. } => false,
             _ => self.local_path.is_empty(),
         }
     }
@@ -233,8 +286,11 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
             ItineraryKind::None => ui.text(im_str!("None {}", label)),
             ItineraryKind::WaitUntil(time) => ui.text(im_str!("WaitUntil({}) {}", time, label)),
             ItineraryKind::Simple => ui.text(im_str!("Simple {}", label)),
-            ItineraryKind::Route(r) => {
+            ItineraryKind::Route(r, _) => {
                 <Route as InspectRenderDefault<Route>>::render(&[r], label, ui, args);
+            }
+            ItineraryKind::WaitForReroute { wait_ticks, .. } => {
+                ui.text(im_str!("wait for reroute: {}", *wait_ticks));
             }
         };
     }
@@ -254,13 +310,16 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
             ItineraryKind::None => ui.text(im_str!("None {}", label)),
             ItineraryKind::WaitUntil(time) => ui.text(im_str!("WaitUntil({}) {}", time, label)),
             ItineraryKind::Simple => ui.text(im_str!("Simple {}", label)),
-            ItineraryKind::Route(r) => {
+            ItineraryKind::Route(r, _) => {
                 return <Route as InspectRenderDefault<Route>>::render_mut(
                     &mut [r],
                     label,
                     ui,
                     args,
                 );
+            }
+            ItineraryKind::WaitForReroute { wait_ticks, .. } => {
+                ui.text(im_str!("wait for reroute: {}", *wait_ticks));
             }
         };
         false

@@ -8,7 +8,7 @@ use geom::{Spline, Transform, Vec2};
 use imgui_inspect_derive::*;
 use legion::world::SubWorld;
 use legion::{system, Entity, EntityStore};
-use map_model::{BuildingID, CarPath, Map, ParkingSpotID, PedestrianPath};
+use map_model::{BuildingID, Map, ParkingSpotID, PathKind};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Inspect, Serialize, Deserialize)]
@@ -123,12 +123,12 @@ pub fn routing_update(
 
         match router.cur_step.unwrap() {
             RoutingStep::WalkTo(obj) => {
-                if let Some(route) = Itinerary::route(pos, obj, &*map, &PedestrianPath) {
+                if let Some(route) = Itinerary::route(pos, obj, &*map, PathKind::Pedestrian) {
                     cbuf.add_component(*body, route);
                 }
             }
             RoutingStep::DriveTo(vehicle, obj) => {
-                if let Some(route) = Itinerary::route(pos, obj, &*map, &CarPath) {
+                if let Some(route) = Itinerary::route(pos, obj, &*map, PathKind::Vehicle) {
                     cbuf.add_component(vehicle.0, route);
                 }
             }
