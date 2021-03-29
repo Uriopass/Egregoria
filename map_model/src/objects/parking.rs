@@ -92,10 +92,10 @@ impl ParkingSpots {
             .points_dirs_along((0..n_spots).map(|x| (x as f32 + 0.5) * step + gap))
             .map(move |(pos, dir)| {
                 let mut iter = reuse.query_around(pos, 3.0);
-                if let Some(h) = iter.next().map(|x| x.0) {
+                if let Some((h, _, &spot_id)) = iter.next() {
                     drop(iter);
 
-                    let spot_id = reuse.remove(h).unwrap();
+                    reuse.remove(h);
                     if let Some(p) = spots.get_mut(spot_id) {
                         *p = ParkingSpot {
                             parent,

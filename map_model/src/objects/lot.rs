@@ -3,8 +3,7 @@ use crate::{Map, ProjectKind, RoadID};
 use geom::OBB;
 use geom::{Intersect, Polygon};
 use geom::{Shape, Vec2};
-use rand::seq::SliceRandom;
-use rand::SeedableRng;
+use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -74,7 +73,11 @@ impl Lot {
                 .to_bits() as u64,
             );
 
-            let mut picksize = || *[20.0f32, 30.0, 40.0].choose(&mut rng).unwrap();
+            let mut picksize = || match rng.gen_range(0..3) {
+                0 => 20.0,
+                1 => 30.0,
+                _ => 40.0,
+            };
 
             let points = r.points.clone();
             let mut along = points.points_dirs_manual();

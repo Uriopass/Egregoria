@@ -124,10 +124,10 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
             }
         }
 
-        let lowest_segment = p
-            .segments()
-            .min_by_key(|s| OrderedFloat(s.src.y + s.dst.y))
-            .unwrap();
+        let lowest_segment = unwrap_or!(
+            p.segments().min_by_key(|s| OrderedFloat(s.src.y + s.dst.y)),
+            continue 'retry
+        );
 
         let mut roofs = ColoredMesh::default();
         let roof_col = LinearColor::from(common::config().roof_col);
