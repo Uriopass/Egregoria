@@ -1,7 +1,6 @@
 use crate::gui::Tool;
 use crate::input::{MouseButton, MouseInfo};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
-use geom::Color;
 use geom::Spline;
 use geom::Vec2;
 use map_model::{LanePatternBuilder, Map, MapProject, ProjectKind};
@@ -221,19 +220,9 @@ impl RoadBuildResource {
         is_valid: bool,
     ) {
         let col = if is_valid {
-            Color {
-                r: 0.3,
-                g: 0.4,
-                b: 1.0,
-                a: 1.0,
-            }
+            common::config().gui_primary
         } else {
-            Color {
-                r: 0.85,
-                g: 0.3,
-                b: 0.3,
-                a: 1.0,
-            }
+            common::config().gui_danger
         };
 
         match self.build_state {
