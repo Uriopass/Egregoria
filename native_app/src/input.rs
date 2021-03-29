@@ -52,10 +52,10 @@ impl InputContext {
                 match state {
                     ElementState::Pressed => {
                         self.mouse.just_pressed.insert(b);
-                        self.mouse.buttons.insert(b);
+                        self.mouse.pressed.insert(b);
                     }
                     ElementState::Released => {
-                        self.mouse.buttons.remove(&b);
+                        self.mouse.pressed.remove(&b);
                     }
                 };
                 true
@@ -78,7 +78,7 @@ pub struct MouseInfo {
     pub wheel_delta: f32,
     pub screen: Vec2,
     pub unprojected: Vec2,
-    pub buttons: FastSet<MouseButton>,
+    pub pressed: FastSet<MouseButton>,
     pub just_pressed: FastSet<MouseButton>,
 }
 

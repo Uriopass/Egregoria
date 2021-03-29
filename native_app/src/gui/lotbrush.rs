@@ -38,7 +38,7 @@ pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mpos = mouseinfo.unprojected;
     draw.circle(mpos, res.radius).color(col).z(Z_TOOL);
 
-    if mouseinfo.buttons.contains(&MouseButton::Left) {
+    if mouseinfo.pressed.contains(&MouseButton::Left) {
         let lots = map.lots();
         for v in map.spatial_map().query_around(mpos, res.radius) {
             if let ProjectKind::Lot(id) = v {

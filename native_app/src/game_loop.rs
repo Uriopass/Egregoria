@@ -432,7 +432,7 @@ impl State {
         if self.imgui_render.last_mouse_captured {
             let mouse: &mut MouseInfo = &mut self.uiw.write::<MouseInfo>();
             mouse.just_pressed.clear();
-            mouse.buttons.clear();
+            mouse.pressed.clear();
             mouse.wheel_delta = 0.0;
         }
     }

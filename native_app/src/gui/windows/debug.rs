@@ -33,7 +33,6 @@ impl Default for DebugObjs {
             (false, "Debug OBBs", debug_obb),
             (false, "Debug rays", debug_rays),
             (false, "Debug splines", debug_spline),
-            (false, "Debug turns", debug_turns),
             (false, "Debug lots", debug_lots),
             (false, "Debug road points", debug_road_points),
             (false, "Debug parking", debug_parking),
@@ -174,29 +173,6 @@ pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
 
         tess.draw_polyline(lane.points.as_slice(), Z_DEBUG, 0.3);
     }
-    Some(())
-}
-
-pub fn debug_turns(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
-    let map = goria.read::<Map>();
-    let lanes = map.lanes();
-    tess.set_color(LinearColor::RED);
-    for inter in map.intersections().values() {
-        for turn in inter.turns() {
-            let p = unwrap_or!(turn.points.get(turn.points.n_points() / 2), continue);
-            let r = common::rand::rand2(p.x, p.y);
-            tess.set_color(Color::hsv(r * 360.0, 0.8, 0.6, 0.5));
-
-            tess.draw_polyline_with_dir(
-                turn.points.as_slice(),
-                -lanes[turn.id.src].orientation_from(inter.id),
-                lanes[turn.id.dst].orientation_from(inter.id),
-                Z_DEBUG,
-                1.0,
-            );
-        }
-    }
-
     Some(())
 }
 
