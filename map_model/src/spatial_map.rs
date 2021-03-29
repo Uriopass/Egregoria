@@ -1,4 +1,4 @@
-use crate::{BuildingID, IntersectionID, LotID, RoadID};
+use crate::{BuildingID, IntersectionID, LotID, Map, RoadID};
 use common::FastMap;
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
@@ -35,6 +35,16 @@ impl ProjectKind {
             Some(id)
         } else {
             None
+        }
+    }
+
+    pub fn check_valid(&self, map: &Map) -> bool {
+        match *self {
+            ProjectKind::Inter(id) => map.intersections.contains_key(id),
+            ProjectKind::Road(id) => map.roads.contains_key(id),
+            ProjectKind::Building(id) => map.buildings.contains_key(id),
+            ProjectKind::Lot(id) => map.lots.contains_key(id),
+            ProjectKind::Ground => true,
         }
     }
 }

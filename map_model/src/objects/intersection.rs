@@ -155,7 +155,7 @@ impl Intersection {
                 fp.reverse();
             }
 
-            let src_orient = fp.first_dir().unwrap();
+            let src_orient = unwrap_cont!(fp.first_dir());
             let left = fp.first() - src_orient.perpendicular() * road.width * 0.5;
 
             let mut fp = next_road.interfaced_points();
@@ -164,7 +164,7 @@ impl Intersection {
                 fp.reverse();
             }
 
-            let dst_orient = fp.first_dir().unwrap();
+            let dst_orient = unwrap_cont!(fp.first_dir());
             let next_right = fp.first() + dst_orient.perpendicular() * next_road.width * 0.5;
 
             let ang = (-src_orient).angle(dst_orient);

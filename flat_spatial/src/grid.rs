@@ -221,8 +221,8 @@ impl<ST: Storage<GridCell>, O: Copy> Grid<O, ST> {
     }
 
     /// Iterate over all objects
-    pub fn objects(&self) -> impl Iterator<Item = &O> + '_ {
-        self.objects.values().map(|x| &x.obj)
+    pub fn objects(&self) -> impl Iterator<Item = (Vec2, &O)> + '_ {
+        self.objects.values().map(|x| (x.pos, &x.obj))
     }
 
     /// Returns a reference to the associated object and its position, using the handle.  

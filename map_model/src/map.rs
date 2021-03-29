@@ -99,16 +99,15 @@ impl Map {
     pub fn remove_building(&mut self, b: BuildingID) -> Option<Building> {
         info!("remove_building {:?}", b);
 
-        let b = self.buildings.remove(b);
-        if let Some(b) = &b {
-            self.spatial_map.remove(b.id)
-        }
-        self.dirt_id += b.is_some() as u32;
+        let b = self.buildings.remove(b)?;
+        self.spatial_map.remove(b.id);
+
+        self.dirt_id += 1;
 
         #[cfg(debug_assertions)]
         self.check_invariants();
 
-        b
+        Some(b)
     }
 
     pub fn make_connection(
@@ -117,28 +116,34 @@ impl Map {
         to: MapProject,
         interpoint: Option<Vec2>,
         pattern: &LanePattern,
-    ) -> IntersectionID {
+    ) -> Option<IntersectionID> {
+        if !from.kind.check_valid(self) || !to.kind.check_valid(self) {
+            return None;
+        }
+
         let connection_segment = match interpoint {
             Some(x) => RoadSegmentKind::from_elbow(from.pos, to.pos, x),
             None => RoadSegmentKind::Straight,
         };
 
-        let mut mk_inter = |proj: MapProject| match proj.kind {
-            ProjectKind::Ground => self.add_intersection(proj.pos),
-            ProjectKind::Inter(id) => id,
-            ProjectKind::Road(id) => self.split_road(id, proj.pos),
-            ProjectKind::Building(_) | ProjectKind::Lot(_) => unreachable!(),
+        let mut mk_inter = |proj: MapProject| {
+            Some(match proj.kind {
+                ProjectKind::Ground => self.add_intersection(proj.pos),
+                ProjectKind::Inter(id) => id,
+                ProjectKind::Road(id) => self.split_road(id, proj.pos)?,
+                ProjectKind::Building(_) | ProjectKind::Lot(_) => unreachable!(),
+            })
         };
 
-        let from = mk_inter(from);
-        let to = mk_inter(to);
+        let from = mk_inter(from)?;
+        let to = mk_inter(to)?;
 
         self.connect(from, to, pattern, connection_segment);
 
         #[cfg(debug_assertions)]
         self.check_invariants();
 
-        to
+        Some(to)
     }
 
     pub fn build_special_building(
@@ -344,12 +349,13 @@ impl Map {
         Some(road)
     }
 
-    pub(crate) fn split_road(&mut self, r_id: RoadID, pos: Vec2) -> IntersectionID {
+    pub(crate) fn split_road(&mut self, r_id: RoadID, pos: Vec2) -> Option<IntersectionID> {
         info!("split_road {:?} {:?}", r_id, pos);
 
-        let r = self
-            .remove_raw_road(r_id)
-            .expect("Trying to split unexisting road");
+        let r = unwrap_or!(self.remove_raw_road(r_id), {
+            log::error!("Trying to split unexisting road");
+            return None;
+        });
 
         for (id, _) in r.lanes_iter() {
             self.parking.remove_to_reuse(id);
@@ -362,10 +368,8 @@ impl Map {
         let pat = r.pattern();
         let (r1, r2) = match r.segment {
             RoadSegmentKind::Straight => (
-                self.connect(src_id, id, &pat, RoadSegmentKind::Straight)
-                    .expect("error connecting while splitting"),
-                self.connect(id, r.dst, &pat, RoadSegmentKind::Straight)
-                    .expect("error connecting while splitting"),
+                self.connect(src_id, id, &pat, RoadSegmentKind::Straight)?,
+                self.connect(id, r.dst, &pat, RoadSegmentKind::Straight)?,
             ),
             RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
                 let s = Spline {
@@ -384,15 +388,13 @@ impl Map {
                         id,
                         &pat,
                         RoadSegmentKind::Curved((s_from.from_derivative, s_from.to_derivative)),
-                    )
-                    .expect("error connecting while splitting"),
+                    )?,
                     self.connect(
                         id,
                         r.dst,
                         &pat,
                         RoadSegmentKind::Curved((s_to.from_derivative, s_to.to_derivative)),
-                    )
-                    .expect("error connecting while splitting"),
+                    )?,
                 )
             }
         };
@@ -402,8 +404,8 @@ impl Map {
             self.parking.clean_reuse()
         );
 
-        let r1 = self.roads.get(r1).expect("just created roads");
-        let r2 = self.roads.get(r2).expect("just created roads");
+        let r1 = self.roads.get(r1)?;
+        let r2 = self.roads.get(r2)?;
 
         let spatial = &mut self.spatial_map;
         self.lots.retain(|_, lot| {
@@ -431,7 +433,7 @@ impl Map {
             true
         });
 
-        id
+        Some(id)
     }
 
     pub(crate) fn connect(
@@ -489,38 +491,37 @@ impl Map {
         let mk_proj = move |kind| MapProject { pos, kind };
 
         let mut qroad = None;
-        for obj in self.spatial_map.query_around(pos, tolerance) {
-            match obj {
+        for pkind in self.spatial_map.query_around(pos, tolerance) {
+            match pkind {
                 ProjectKind::Inter(id) => {
-                    let inter = self.intersections
-                        .get(id)
-                        .expect("Inter does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
+                    let inter = unwrap_contlog!(self.intersections.get(id),
+                        "Inter does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
                     return MapProject {
                         pos: inter.pos,
-                        kind: obj,
+                        kind: pkind,
                     };
                 }
                 ProjectKind::Lot(id) => {
-                    if self.lots
-                        .get(id)
-                        .expect("Lot does not exist anymore, you seem to have forgotten to remove it from the spatial map.")
-                        .shape
-                        .is_close(pos, tolerance) {
+                    let l = unwrap_contlog!(self.lots
+                        .get(id),
+                        "Lot does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
+                    if l.shape.is_close(pos, tolerance) {
                         return mk_proj(ProjectKind::Lot(id));
                     }
                 }
                 ProjectKind::Road(id) => {
-                    if qroad.is_some() { continue; }
-                    let road = self.roads
-                        .get(id)
-                        .expect("Road does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
+                    if qroad.is_some() {
+                        continue;
+                    }
+                    let road = unwrap_contlog!(self.roads.get(id),
+                        "Road does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
                     let projected = road.points.project(pos);
                     if projected.is_close(pos, road.width * 0.5 + tolerance) {
                         qroad = Some((id, projected));
                     }
-                },
+                }
                 ProjectKind::Building(id) => {
                     return mk_proj(ProjectKind::Building(id));
                 }
@@ -581,21 +582,12 @@ impl Map {
 
     pub fn parking_to_drive(&self, spot: ParkingSpotID) -> Option<LaneID> {
         let spot = self.parking.get(spot)?;
-        let park_lane = self
-            .lanes
-            .get(spot.parent)
-            .expect("Parking spot has no parent >:(");
-        let road = self
-            .roads
-            .get(park_lane.parent)
-            .expect("Lane has no parent >:(");
-        Some(
-            road.outgoing_lanes_from(road.src)
-                .iter()
-                .rfind(|&&(_, kind)| kind == LaneKind::Driving)
-                .map(|&(id, _)| id)
-                .expect("Road with parking lane doesn't have driving lane >:("),
-        )
+        let park_lane = self.lanes.get(spot.parent)?;
+        let road = self.roads.get(park_lane.parent)?;
+        road.outgoing_lanes_from(road.src)
+            .iter()
+            .rfind(|&&(_, kind)| kind == LaneKind::Driving)
+            .map(|&(id, _)| id)
     }
 
     pub fn check_invariants(&self) {
@@ -621,7 +613,6 @@ impl Map {
 
             assert!(inter.pos.is_finite());
             assert!(!inter.polygon.is_empty());
-            assert!(!inter.turns().is_empty());
             assert!(self.spatial_map.contains(inter.id));
         }
 
@@ -651,6 +642,34 @@ impl Map {
                 let v = self.lanes.get(id).expect("lane child does not exist");
                 assert_eq!(v.parent, road.id);
             }
+
+            // Road with parking lane has driving lane (incoming)
+            let has_parking = road
+                .incoming_lanes_to(road.src)
+                .iter()
+                .any(|(_, kind)| matches!(kind, LaneKind::Parking));
+
+            if has_parking {
+                let has_driving = road
+                    .incoming_lanes_to(road.src)
+                    .iter()
+                    .any(|(_, kind)| matches!(kind, LaneKind::Driving));
+                assert!(has_driving);
+            }
+
+            // Road with parking lane has driving lane (outgoing)
+            let has_parking = road
+                .outgoing_lanes_from(road.src)
+                .iter()
+                .any(|(_, kind)| matches!(kind, LaneKind::Parking));
+
+            if has_parking {
+                let has_driving = road
+                    .outgoing_lanes_from(road.src)
+                    .iter()
+                    .any(|(_, kind)| matches!(kind, LaneKind::Driving));
+                assert!(has_driving);
+            }
         }
 
         for lot in self.lots.values() {
@@ -663,21 +682,7 @@ impl Map {
         for obj in self.spatial_map.objects() {
             assert!(self.spatial_map.contains(*obj));
             log::debug!("{:?}", obj);
-            match *obj {
-                ProjectKind::Inter(id) => {
-                    assert!(self.intersections.contains_key(id));
-                }
-                ProjectKind::Road(id) => {
-                    assert!(self.roads.contains_key(id));
-                }
-                ProjectKind::Building(id) => {
-                    assert!(self.buildings.contains_key(id));
-                }
-                ProjectKind::Lot(id) => {
-                    assert!(self.lots.contains_key(id));
-                }
-                ProjectKind::Ground => {}
-            }
+            assert!(obj.check_valid(self));
         }
 
         assert!(self.parking.reuse_spot.is_empty());

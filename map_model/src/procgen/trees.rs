@@ -143,10 +143,7 @@ impl Trees {
     }
 
     pub fn trees(&self) -> impl Iterator<Item = (Vec2, Tree)> + '_ {
-        self.grid.handles().map(move |h| {
-            let v = self.grid.get(h).unwrap();
-            (v.0, *v.1)
-        })
+        self.grid.objects().map(move |v| (v.0, *v.1))
     }
 }
 
