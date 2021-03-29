@@ -86,7 +86,7 @@ impl TurnPolicy {
     ) {
         match inter.roads.as_slice() {
             [road_id] => {
-                let road = &roads[*road_id];
+                let road = unwrap_ret!(roads.get(*road_id));
                 turns.extend(Self::zip_on_same_length(
                     inter.id,
                     &filter_vehicles(road.incoming_lanes_to(inter.id)),
@@ -95,8 +95,8 @@ impl TurnPolicy {
                 return;
             }
             [road1, road2] => {
-                let road1 = &roads[*road1];
-                let road2 = &roads[*road2];
+                let road1 = unwrap_ret!(roads.get(*road1));
+                let road2 = unwrap_ret!(roads.get(*road2));
 
                 let incoming_road1 = filter_vehicles(road1.incoming_lanes_to(inter.id));
                 let incoming_road2 = filter_vehicles(road2.incoming_lanes_to(inter.id));
@@ -129,14 +129,16 @@ impl TurnPolicy {
                     continue;
                 }
 
-                for (incoming, incoming_kind) in roads[*road1].incoming_lanes_to(inter.id) {
-                    for (outgoing, outgoing_kind) in roads[*road2].outgoing_lanes_from(inter.id) {
+                let r1 = unwrap_cont!(roads.get(*road1));
+                let r2 = unwrap_cont!(roads.get(*road2));
+                for (incoming, incoming_kind) in r1.incoming_lanes_to(inter.id) {
+                    for (outgoing, outgoing_kind) in r2.outgoing_lanes_from(inter.id) {
                         if !incoming_kind.vehicles() || !outgoing_kind.vehicles() {
                             continue;
                         }
 
-                        let incoming = &lanes[*incoming];
-                        let outgoing = &lanes[*outgoing];
+                        let incoming = unwrap_cont!(lanes.get(*incoming));
+                        let outgoing = unwrap_cont!(lanes.get(*outgoing));
 
                         let incoming_dir = incoming.orientation_from(inter.id);
                         let outgoing_dir = outgoing.orientation_from(inter.id);
@@ -168,7 +170,7 @@ impl TurnPolicy {
             .roads
             .iter()
             .chain(inter.roads.iter().take(1))
-            .map(|x| roads[*x].sidewalks(inter.id))
+            .flat_map(|x| Some(roads.get(*x)?.sidewalks(inter.id)))
             .collect::<Vec<_>>()
             .windows(2)
         {

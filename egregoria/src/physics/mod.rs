@@ -66,7 +66,7 @@ impl InspectRenderDefault<Collider> for Collider {
         if data.len() != 1 {
             panic!()
         }
-        let d = &mut data[0];
+        let d = unwrap_ret!(data.get_mut(0), false);
         ui.text(format!("{:?} {}", d.0, label));
         false
     }

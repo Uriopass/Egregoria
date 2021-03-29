@@ -59,14 +59,14 @@ impl Traversable {
         }
     }
 
-    pub fn destination_intersection(&self, lanes: &Lanes) -> IntersectionID {
-        match self.kind {
+    pub fn destination_intersection(&self, lanes: &Lanes) -> Option<IntersectionID> {
+        Some(match self.kind {
             TraverseKind::Lane(p) => match self.dir {
-                TraverseDirection::Forward => lanes[p].dst,
-                TraverseDirection::Backward => lanes[p].src,
+                TraverseDirection::Forward => lanes.get(p)?.dst,
+                TraverseDirection::Backward => lanes.get(p)?.src,
             },
             TraverseKind::Turn(id) => id.parent,
-        }
+        })
     }
 
     pub fn destination_lane(&self) -> LaneID {
@@ -88,7 +88,7 @@ macro_rules! enum_inspect_impl {
                 if data.len() != 1 {
                     unimplemented!()
                 }
-                let d = &data[0];
+                let d = unwrap_ret!(data.get(0));
                 let mut aha = "No match";
                 $(
                     if let $x = d {
@@ -108,7 +108,7 @@ macro_rules! enum_inspect_impl {
                 if data.len() != 1 {
                     unimplemented!()
                 }
-                let d = &mut data[0];
+                let d = unwrap_ret!(data.get_mut(0), false);
                 let mut aha = "No match";
                 $(
                     if let $x = d {

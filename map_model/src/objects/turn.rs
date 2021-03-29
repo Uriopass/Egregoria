@@ -58,8 +58,8 @@ impl Turn {
     }
 
     pub fn make_points(&mut self, lanes: &Lanes) {
-        let src_lane = &lanes[self.id.src];
-        let dst_lane = &lanes[self.id.dst];
+        let src_lane = unwrap_ret!(lanes.get(self.id.src));
+        let dst_lane = unwrap_ret!(lanes.get(self.id.dst));
 
         let pos_src = src_lane.get_inter_node_pos(self.id.parent);
         let pos_dst = dst_lane.get_inter_node_pos(self.id.parent);

@@ -69,7 +69,7 @@ impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
         if data.len() != 1 {
             return false;
         }
-        let mre = &mut data[0];
+        let mre = unwrap_ret!(data.get_mut(0), false);
 
         match mre {
             MeshRenderEnum::StrokeCircle(x) => <StrokeCircleRender as InspectRenderDefault<
@@ -175,7 +175,7 @@ impl InspectRenderDefault<MeshRender> for MeshRender {
         if data.len() != 1 {
             panic!()
         }
-        let mapped = &data[0].orders;
+        let mapped = &unwrap_ret!(data.get(0)).orders;
         <Vec<MeshRenderEnum> as InspectRenderDefault<Vec<MeshRenderEnum>>>::render(
             &[mapped],
             label,
