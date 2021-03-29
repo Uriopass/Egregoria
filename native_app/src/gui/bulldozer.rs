@@ -4,7 +4,6 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use common::Z_TOOL;
 use egregoria::Egregoria;
-use geom::Color;
 use map_model::{Map, ProjectKind};
 
 pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
@@ -20,7 +19,16 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     let cur_proj = map.project(mouseinfo.unprojected, 0.0);
 
-    draw.circle(cur_proj.pos, 2.0).color(Color::RED).z(Z_TOOL);
+    let col = if matches!(
+        cur_proj.kind,
+        ProjectKind::Inter(_) | ProjectKind::Road(_) | ProjectKind::Building(_)
+    ) {
+        common::config().gui_danger
+    } else {
+        common::config().gui_disabled
+    };
+
+    draw.circle(cur_proj.pos, 2.0).color(col).z(Z_TOOL);
 
     if mouseinfo.just_pressed.contains(&MouseButton::Left) {
         let mut potentially_empty = Vec::new();

@@ -11,12 +11,12 @@ pub enum LightPolicy {
     NoLights,
     StopSigns,
     Lights,
-    Smart,
+    Auto,
 }
 
 impl Default for LightPolicy {
     fn default() -> Self {
-        LightPolicy::Smart
+        LightPolicy::Auto
     }
 }
 
@@ -50,7 +50,7 @@ impl LightPolicy {
             LightPolicy::Lights => {
                 Self::lights(in_road_lanes, inter, lanes);
             }
-            LightPolicy::Smart => {
+            LightPolicy::Auto => {
                 if in_road_lanes.len() <= 2 {
                     return;
                 }
@@ -117,7 +117,7 @@ impl InspectRenderDefault<LightPolicy> for LightPolicy {
             LightPolicy::NoLights => 0,
             LightPolicy::StopSigns => 1,
             LightPolicy::Lights => 2,
-            LightPolicy::Smart => 3,
+            LightPolicy::Auto => 3,
         };
 
         let changed = imgui_inspect::imgui::ComboBox::new(&im_str!("{}", label))
@@ -128,7 +128,7 @@ impl InspectRenderDefault<LightPolicy> for LightPolicy {
                     &im_str!("No lights"),
                     &im_str!("Stop signs"),
                     &im_str!("Lights"),
-                    &im_str!("Smart"),
+                    &im_str!("Auto"),
                 ],
             );
 
@@ -137,7 +137,7 @@ impl InspectRenderDefault<LightPolicy> for LightPolicy {
                 0 => **p = LightPolicy::NoLights,
                 1 => **p = LightPolicy::StopSigns,
                 2 => **p = LightPolicy::Lights,
-                3 => **p = LightPolicy::Smart,
+                3 => **p = LightPolicy::Auto,
                 _ => unreachable!(),
             }
         }

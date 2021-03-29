@@ -53,6 +53,10 @@ impl Color {
         }
     }
 
+    pub fn a(self, a: f32) -> Self {
+        Self { a, ..self }
+    }
+
     pub fn from_hex(hex: u64) -> Self {
         Self {
             r: ((hex >> 16) & 0xFF) as f32 / 255.0,

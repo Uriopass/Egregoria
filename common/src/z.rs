@@ -29,5 +29,6 @@ gen_z! {
     Z_TREE
     Z_DEBUG_BG
     Z_DEBUG
+    Z_TOOL_BG
     Z_TOOL
 }

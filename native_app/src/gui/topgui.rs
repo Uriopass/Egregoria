@@ -1,4 +1,5 @@
 use crate::gui::lotbrush::LotBrushResource;
+use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::ImguiWindows;
@@ -10,8 +11,10 @@ use common::GameTime;
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
 use imgui::{im_str, StyleColor, StyleVar, Ui, Window};
-use imgui_inspect::{InspectArgsStruct, InspectRenderStruct};
-use map_model::{LanePatternBuilder, LotKind};
+use imgui_inspect::{
+    InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
+};
+use map_model::{LanePatternBuilder, LightPolicy, LotKind, TurnPolicy};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
@@ -132,14 +135,59 @@ impl Gui {
                     tok.pop(ui);
                 }
             });
+
+        let spacing_left = ui.push_style_var(StyleVar::WindowPadding([4.0, 4.0]));
+        if matches!(*uiworld.read::<Tool>(), Tool::RoadEditor) {
+            let state = &mut *uiworld.write::<RoadEditorResource>();
+            if let Some(ref mut v) = state.inspect {
+                let dirty = &mut state.dirty;
+                Window::new(im_str!("Road Properties"))
+                    .size([150.0, 200.0], imgui::Condition::Always)
+                    .position(
+                        [w - 150.0 - toolbox_w, h * 0.5 - 30.0],
+                        imgui::Condition::Always,
+                    )
+                    .scroll_bar(false)
+                    .title_bar(true)
+                    .movable(false)
+                    .collapsible(false)
+                    .resizable(false)
+                    .build(ui, || {
+                        ui.text("Light policy");
+                        *dirty |= <LightPolicy as InspectRenderDefault<LightPolicy>>::render_mut(
+                            &mut [&mut v.light_policy],
+                            "",
+                            ui,
+                            &InspectArgsDefault {
+                                header: Some(false),
+                                indent_children: Some(false),
+                                ..Default::default()
+                            },
+                        );
+                        ui.new_line();
+                        ui.text("Turn policy");
+                        *dirty |= <TurnPolicy as InspectRenderDefault<TurnPolicy>>::render_mut(
+                            &mut [&mut v.turn_policy],
+                            "Turn policy",
+                            ui,
+                            &InspectArgsDefault {
+                                header: Some(false),
+                                indent_children: Some(false),
+                                ..Default::default()
+                            },
+                        );
+                    });
+            }
+        }
+
         if matches!(
             *uiworld.read::<Tool>(),
             Tool::RoadbuildStraight | Tool::RoadbuildCurved
         ) {
             Window::new(im_str!("Road Properties"))
-                .size_constraints([150.0, 0.0], [150.0, 10000.0])
+                .size_constraints([180.0, 0.0], [180.0, 10000.0])
                 .position(
-                    [w - 150.0 - toolbox_w, h * 0.5 - 30.0],
+                    [w - 180.0 - toolbox_w, h * 0.5 - 30.0],
                     imgui::Condition::Always,
                 )
                 .scroll_bar(false)
@@ -147,7 +195,6 @@ impl Gui {
                 .movable(false)
                 .collapsible(false)
                 .resizable(false)
-                .always_auto_resize(true)
                 .build(ui, || {
                     let mut pattern = uiworld.write::<RoadBuildResource>().pattern_builder;
 
@@ -173,6 +220,7 @@ impl Gui {
                     uiworld.write::<RoadBuildResource>().pattern_builder = pattern;
                 });
         }
+        spacing_left.pop(ui);
 
         let brushes = [
             (im_str!("Unassigned"), LotKind::Unassigned),
