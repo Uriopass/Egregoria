@@ -20,6 +20,8 @@ gen_z! {
     Z_LANE_BG
     Z_LANE
     Z_SIDEWALK
+    Z_HIGHLIGHT_INTER
+    Z_GUITURN
     Z_ARROW
     Z_CROSSWALK
     Z_TREE_SHADOW

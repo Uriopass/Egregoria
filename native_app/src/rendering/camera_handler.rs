@@ -58,8 +58,8 @@ impl CameraHandler {
         let screenpos = ctx.input.mouse.screen;
 
         if mouse_enabled {
-            if ctx.input.mouse.buttons.contains(&MouseButton::Right)
-                || ctx.input.mouse.buttons.contains(&MouseButton::Middle)
+            if ctx.input.mouse.pressed.contains(&MouseButton::Right)
+                || ctx.input.mouse.pressed.contains(&MouseButton::Middle)
             {
                 self.camera.position.x -= p.x - self.last_pos.x;
                 self.camera.position.y -= p.y - self.last_pos.y;
