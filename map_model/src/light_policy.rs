@@ -26,11 +26,15 @@ impl LightPolicy {
             .roads
             .iter()
             .map(|&x| {
-                roads[x]
-                    .incoming_lanes_to(inter.id)
-                    .iter()
-                    .filter(|(_, kind)| kind.needs_light())
-                    .map(|&(id, _)| id)
+                roads
+                    .get(x)
+                    .into_iter()
+                    .flat_map(|r| {
+                        r.incoming_lanes_to(inter.id)
+                            .iter()
+                            .filter(|(_, kind)| kind.needs_light())
+                            .map(|&(id, _)| id)
+                    })
                     .collect::<Vec<_>>()
             })
             .filter(|v| !v.is_empty())
@@ -38,7 +42,7 @@ impl LightPolicy {
 
         for incoming_lanes in &in_road_lanes {
             for &lane in incoming_lanes {
-                lanes[lane].control = TrafficControl::Always;
+                unwrap_cont!(lanes.get_mut(lane)).control = TrafficControl::Always;
             }
         }
 
@@ -67,7 +71,7 @@ impl LightPolicy {
     fn stop_signs(in_road_lanes: Vec<Vec<LaneID>>, lanes: &mut Lanes) {
         for incoming_lanes in in_road_lanes {
             for lane in incoming_lanes {
-                lanes[lane].control = TrafficControl::StopSign;
+                unwrap_cont!(lanes.get_mut(lane)).control = TrafficControl::StopSign;
             }
         }
     }
@@ -92,7 +96,7 @@ impl LightPolicy {
             ));
 
             for lane in incoming_lanes {
-                lanes[lane].control = light;
+                unwrap_cont!(lanes.get_mut(lane)).control = light;
             }
         }
     }
@@ -112,7 +116,7 @@ impl InspectRenderDefault<LightPolicy> for LightPolicy {
         if data.len() != 1 {
             unimplemented!()
         }
-        let p = &mut data[0];
+        let p = unwrap_ret!(data.get_mut(0), false);
         let mut id = match p {
             LightPolicy::NoLights => 0,
             LightPolicy::StopSigns => 1,
@@ -120,6 +124,7 @@ impl InspectRenderDefault<LightPolicy> for LightPolicy {
             LightPolicy::Auto => 3,
         };
 
+        #[allow(clippy::indexing_slicing)]
         let changed = imgui_inspect::imgui::ComboBox::new(&im_str!("{}", label))
             .build_simple_string(
                 ui,

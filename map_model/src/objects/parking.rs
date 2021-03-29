@@ -120,6 +120,7 @@ impl ParkingSpots {
     pub fn clear(&mut self) {
         self.spots.clear();
         self.lane_spots.clear();
+        for _ in self.reuse_spot.clear() {}
     }
 
     pub fn spots(&self, lane: LaneID) -> impl Iterator<Item = &ParkingSpot> + '_ {
@@ -139,6 +140,7 @@ impl ParkingSpots {
         let spots = &self.spots;
         let mut lspots = self.lane_spots.get(lane).cloned();
         if let Some(ref mut lspots) = lspots {
+            #[allow(clippy::indexing_slicing)]
             lspots.sort_by_key(|&id| OrderedFloat(spots[id].trans.position().distance2(near)))
         }
         lspots.into_iter().flatten()

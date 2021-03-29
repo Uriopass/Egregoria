@@ -137,6 +137,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
                 continue 'retry;
             }
 
+            #[allow(clippy::indexing_slicing)]
             let mut normal = (face[0] - face[1]).cross(face[2] - face[1]).normalize();
 
             if normal.z < 0.0 {

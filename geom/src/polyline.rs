@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::hint::unreachable_unchecked;
 use std::ops::{Index, Range};
-use std::slice::{Iter, IterMut, Windows};
+use std::slice::{Iter, IterMut, SliceIndex, Windows};
 
 /// An ordered list of at least one point forming a broken line
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -318,8 +318,11 @@ impl PolyLine {
         self.points.is_empty()
     }
 
-    pub fn get(&self, id: usize) -> Option<&Vec2> {
-        self.points.get(id)
+    pub fn get<I>(&self, index: I) -> Option<&I::Output>
+    where
+        I: SliceIndex<[Vec2]>,
+    {
+        self.points.get(index)
     }
 
     pub fn first(&self) -> Vec2 {

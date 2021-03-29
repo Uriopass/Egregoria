@@ -108,7 +108,7 @@ impl Trees {
             }
             let r4 = common::rand::rand3(startx, j as f32, 3.0);
             let idx = (r4 * active.len() as f32) as usize;
-            let sample = active[idx];
+            let sample = *unwrap_or!(active.get(idx), break);
 
             let r3 = common::rand::rand3(sample.x, sample.y, j as f32);
 
