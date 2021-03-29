@@ -1,7 +1,7 @@
-#![allow(clippy::or_fun_call)]
 use crate::{LaneID, LaneKind, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
 use geom::{PolyLine, Vec2};
 use ordered_float::OrderedFloat;
+use serde::{Deserialize, Serialize};
 use slotmap::Key;
 
 pub trait Pathfinder {
@@ -10,7 +10,36 @@ pub trait Pathfinder {
     fn local_route(&self, map: &Map, lane: LaneID, start: Vec2, end: Vec2) -> Option<PolyLine>;
 }
 
-pub struct PedestrianPath;
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+pub enum PathKind {
+    Pedestrian,
+    Vehicle,
+}
+
+impl Pathfinder for PathKind {
+    fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
+        match self {
+            PathKind::Pedestrian => PedestrianPath.path(map, start, end),
+            PathKind::Vehicle => CarPath.path(map, start, end),
+        }
+    }
+
+    fn nearest_lane(&self, map: &Map, pos: Vec2) -> Option<LaneID> {
+        match self {
+            PathKind::Pedestrian => PedestrianPath.nearest_lane(map, pos),
+            PathKind::Vehicle => CarPath.nearest_lane(map, pos),
+        }
+    }
+
+    fn local_route(&self, map: &Map, lane: LaneID, start: Vec2, end: Vec2) -> Option<PolyLine> {
+        match self {
+            PathKind::Pedestrian => PedestrianPath.local_route(map, lane, start, end),
+            PathKind::Vehicle => CarPath.local_route(map, lane, start, end),
+        }
+    }
+}
+
+struct PedestrianPath;
 
 impl Pathfinder for PedestrianPath {
     fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
@@ -92,7 +121,7 @@ impl Pathfinder for PedestrianPath {
     }
 }
 
-pub struct CarPath;
+struct CarPath;
 
 impl Pathfinder for CarPath {
     fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
