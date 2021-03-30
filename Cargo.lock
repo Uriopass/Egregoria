@@ -356,6 +356,7 @@ dependencies = [
  "geom",
  "imgui-inspect",
  "imgui-inspect-derive",
+ "inline_tweak",
  "lazy_static",
  "log",
  "miniz_oxide 0.4.4",

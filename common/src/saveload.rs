@@ -123,10 +123,9 @@ impl Encoder for CompressedBincode {
     const EXTENSION: &'static str = "zip";
 
     fn encode(x: &impl Serialize) -> std::io::Result<Vec<u8>> {
-        Ok(miniz_oxide::deflate::compress_to_vec(
-            &*Bincode::encode(x)?,
-            10,
-        ))
+        let encoded = &*Bincode::encode(x)?;
+        let compressed = miniz_oxide::deflate::compress_to_vec(encoded, 1); // bigger level values take far too long and only compress a bit better (about 5%)
+        Ok(compressed)
     }
 
     fn decode<T: DeserializeOwned>(x: &[u8]) -> std::io::Result<T> {
