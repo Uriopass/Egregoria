@@ -1,5 +1,6 @@
 use crate::gui::follow::FollowEntity;
 use crate::uiworld::UiWorld;
+use egregoria::economy::Market;
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, Kinematics};
@@ -8,7 +9,7 @@ use egregoria::rendering::meshrender_component::MeshRender;
 use egregoria::souls::desire::{BuyFood, Desire, Home, Work};
 use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::vehicles::Vehicle;
-use egregoria::Egregoria;
+use egregoria::{Egregoria, SoulID};
 use geom::Transform;
 use imgui::im_str;
 use imgui::Ui;
@@ -60,6 +61,29 @@ impl InspectRenderer {
                 }
             } else if ui.small_button(im_str!("Unfollow")) {
                 follow.take();
+            }
+        }
+
+        let market = goria.read::<Market>();
+        let mut capitals = vec![];
+        for (kind, market) in market.inner() {
+            let cap = unwrap_or!(market.capital(SoulID(self.entity)), continue);
+            capitals.push((kind, cap));
+        }
+
+        if capitals.is_empty() {
+            return;
+        }
+
+        if imgui::CollapsingHeader::new(im_str!("Capital")).build(ui) {
+            ui.indent();
+            ui.columns(2, im_str!("markett"), false);
+
+            for (kind, cap) in capitals {
+                ui.text(im_str!("{}", kind));
+                ui.next_column();
+                ui.text(im_str!("{}", cap));
+                ui.next_column();
             }
         }
     }

@@ -5,8 +5,11 @@ impl<A: InspectRenderDefault<A>, B: InspectRenderDefault<B>> InspectRenderDefaul
 {
     fn render(data: &[&(A, B)], _: &'static str, ui: &imgui::Ui, args: &InspectArgsDefault) {
         let (a, b) = data[0];
-        <A as InspectRenderDefault<A>>::render(&[a], "0", ui, args);
-        <B as InspectRenderDefault<B>>::render(&[b], "1", ui, args);
+        ui.indent();
+        <A as InspectRenderDefault<A>>::render(&[a], "", ui, args);
+        <B as InspectRenderDefault<B>>::render(&[b], "", ui, args);
+        ui.unindent();
+        ui.separator();
     }
 
     fn render_mut(
@@ -17,8 +20,11 @@ impl<A: InspectRenderDefault<A>, B: InspectRenderDefault<B>> InspectRenderDefaul
     ) -> bool {
         let (a, b) = data[0];
         let mut changed = false;
-        changed |= <A as InspectRenderDefault<A>>::render_mut(&mut [a], "0", ui, args);
-        changed |= <B as InspectRenderDefault<B>>::render_mut(&mut [b], "1", ui, args);
+        ui.indent();
+        changed |= <A as InspectRenderDefault<A>>::render_mut(&mut [a], "", ui, args);
+        changed |= <B as InspectRenderDefault<B>>::render_mut(&mut [b], "", ui, args);
+        ui.unindent();
+        ui.separator();
         changed
     }
 }

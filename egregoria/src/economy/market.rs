@@ -13,8 +13,8 @@ pub struct SingleMarket {
 }
 
 impl SingleMarket {
-    pub fn capital(&self, soul: SoulID) -> i32 {
-        self.capital.get(&soul).copied().unwrap_or(0)
+    pub fn capital(&self, soul: SoulID) -> Option<i32> {
+        self.capital.get(&soul).copied()
     }
 
     pub fn capital_map(&self) -> &BTreeMap<SoulID, i32> {
@@ -94,7 +94,12 @@ impl Market {
 
     /// Get the capital that this agent owns
     pub fn capital(&self, soul: SoulID, kind: CommodityKind) -> i32 {
-        self.markets.get(&kind).unwrap().capital(soul)
+        self.markets.get(&kind).unwrap().capital(soul).unwrap_or(0)
+    }
+
+    /// Registers a soul to the market, not obligatory
+    pub fn register(&mut self, soul: SoulID, kind: CommodityKind) {
+        self.m(kind).capital.entry(soul).or_default();
     }
 
     /// Called whenever an agent (like a farm) produces something on it's own
@@ -117,7 +122,7 @@ impl Market {
         for (&kind, market) in &mut self.markets {
             // Naive O(n²) alg
             for (&seller, &(sell_pos, qty_sell)) in &market.sell_orders {
-                let capital_sell = market.capital(seller);
+                let capital_sell = unwrap_or!(market.capital(seller), continue);
                 if qty_sell > capital_sell {
                     continue;
                 }
