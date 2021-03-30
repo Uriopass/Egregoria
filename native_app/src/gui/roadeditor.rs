@@ -80,6 +80,7 @@ pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
     if mouseinfo.pressed.contains(&MouseButton::Left) {
         if let ProjectKind::Inter(id) = cur_proj.kind {
             proj_col = common::config().gui_success;
+            proj_pos = cur_proj.pos;
             let inter = &map.intersections()[id];
             state.inspect = Some(IntersectionComponent {
                 id,
