@@ -269,6 +269,7 @@ impl Map {
         info!("clear");
         let before = std::mem::take(self);
         self.trees = before.trees;
+        self.dirt_id = before.dirt_id + 1;
 
         #[cfg(debug_assertions)]
         self.check_invariants();
