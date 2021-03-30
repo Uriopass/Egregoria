@@ -472,6 +472,9 @@ impl Recipe {
         for &(kind, qty) in &self.consumption {
             market.buy_until(soul, near, kind, qty)
         }
+        for &(kind, _) in &self.production {
+            market.register(soul, kind);
+        }
     }
 
     pub fn should_produce(&self, soul: SoulID, market: &Market) -> bool {
