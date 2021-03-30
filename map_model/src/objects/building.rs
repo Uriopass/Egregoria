@@ -8,7 +8,7 @@ new_key_type! {
     pub struct BuildingID;
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum BuildingKind {
     House,
     Company(u32),
