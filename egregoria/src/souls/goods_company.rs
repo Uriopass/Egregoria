@@ -411,40 +411,8 @@ impl Default for GoodsCompanyRegistry {
                     asset_location: "assets/vegetable_farm.png",
                 },
                 GoodsCompanyDescription {
-                    name: "Cereal Farm",
-                    bkind: BuildingKind::Company(2),
-                    bgen: BuildingGen::Farm,
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![],
-                        production: vec![(CommodityKind::Cereal, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 120.0,
-                    asset_location: "assets/cereal_farm.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Cereal Factory",
-                    bkind: BuildingKind::Company(1),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 0.6,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Cereal, 1)],
-                        production: vec![(CommodityKind::Flour, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/flour_factory.png",
-                },
-                GoodsCompanyDescription {
                     name: "Bakery",
-                    bkind: BuildingKind::Company(0),
+                    bkind: BuildingKind::Company(2),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -458,6 +426,38 @@ impl Default for GoodsCompanyRegistry {
                     n_workers: 3,
                     size: 10.0,
                     asset_location: "assets/bakery.png",
+                },
+                GoodsCompanyDescription {
+                    name: "Cereal Factory",
+                    bkind: BuildingKind::Company(1),
+                    bgen: BuildingGen::CenteredDoor {
+                        vertical_factor: 0.6,
+                    },
+                    kind: CompanyKind::Factory { n_trucks: 1 },
+                    recipe: Recipe {
+                        consumption: vec![(CommodityKind::Cereal, 1)],
+                        production: vec![(CommodityKind::Flour, 10)],
+                        complexity: 200,
+                        storage_multiplier: 5,
+                    },
+                    n_workers: 10,
+                    size: 80.0,
+                    asset_location: "assets/flour_factory.png",
+                },
+                GoodsCompanyDescription {
+                    name: "Cereal Farm",
+                    bkind: BuildingKind::Company(0),
+                    bgen: BuildingGen::Farm,
+                    kind: CompanyKind::Factory { n_trucks: 1 },
+                    recipe: Recipe {
+                        consumption: vec![],
+                        production: vec![(CommodityKind::Cereal, 1)],
+                        complexity: 200,
+                        storage_multiplier: 5,
+                    },
+                    n_workers: 10,
+                    size: 120.0,
+                    asset_location: "assets/cereal_farm.png",
                 },
             ]
             .into_iter()
