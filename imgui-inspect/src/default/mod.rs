@@ -1,8 +1,10 @@
 mod default_bool;
 mod default_f32;
+mod default_i32;
 mod default_option;
 mod default_str;
 mod default_string;
+mod default_tuple;
 mod default_u16;
 mod default_u32;
 mod default_u64;

@@ -2,6 +2,7 @@ use crate::gui::InspectedEntity;
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use common::Z_TOOL;
+use egregoria::engine_interaction::Selectable;
 use egregoria::pedestrians::Location;
 use egregoria::Egregoria;
 use geom::Color;
@@ -23,8 +24,8 @@ pub fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
             }
         }
 
-        if let Some(pos) = pos {
-            draw.stroke_circle(pos, 3.0, 0.1)
+        if let Some((pos, selectable)) = pos.zip(goria.comp::<Selectable>(sel)) {
+            draw.stroke_circle(pos, selectable.radius, (selectable.radius * 0.01).max(0.1))
                 .z(Z_TOOL)
                 .color(Color::gray(0.7));
         }

@@ -1,12 +1,15 @@
 use crate::procgen::ColoredMesh;
 use crate::{Buildings, Road, SpatialMap};
 use geom::{Color, Polygon, Vec2, OBB};
+use imgui_inspect::debug_inspect_impl;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
 new_key_type! {
     pub struct BuildingID;
 }
+
+debug_inspect_impl!(BuildingID);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum BuildingKind {
