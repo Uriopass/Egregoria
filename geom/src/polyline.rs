@@ -127,16 +127,9 @@ impl PolyLine {
                 1,
             ),
             _ => self
-                .points
-                .windows(2)
+                .array_windows::<2>()
                 .enumerate()
-                .map(|(i, w)| {
-                    if let [a, b] = *w {
-                        (Segment { src: a, dst: b }.project(p), i + 1)
-                    } else {
-                        unsafe { unreachable_unchecked() } // windows(2)
-                    }
-                })
+                .map(|(i, &[a, b])| (Segment { src: a, dst: b }.project(p), i + 1))
                 .min_by_key(|&(proj, _)| OrderedFloat((p - proj).magnitude2()))
                 .unwrap(), // Unwrap ok: n_points > 2
         }
@@ -219,9 +212,9 @@ impl PolyLine {
             2 => self[0].distance(proj),
             _ => {
                 let mut partial = 0.0;
-                for w in self.points.windows(2) {
-                    let d = w[0].distance2(w[1]);
-                    let d2 = w[0].distance2(proj);
+                for &[a, b] in self.array_windows::<2>() {
+                    let d = a.distance2(b);
+                    let d2 = a.distance2(proj);
 
                     if d2 < d {
                         return partial + d2.sqrt();
@@ -252,20 +245,20 @@ impl PolyLine {
                 if dst < f32::EPSILON {
                     v = Some(PolyLine::new(vec![self.first()]));
                 }
-                for w in self.points.windows(2) {
+                for &[a, b] in self.array_windows::<2>() {
                     match v {
                         None => {
-                            let d = w[0].distance(w[1]);
+                            let d = a.distance(b);
 
                             if partial + d > dst {
-                                let dir = (w[1] - w[0]).normalize();
-                                v = Some(PolyLine::new(vec![w[0] + dir * (dst - partial)]));
+                                let dir = (b - a).normalize();
+                                v = Some(PolyLine::new(vec![a + dir * (dst - partial)]));
                             }
 
                             partial += d;
                         }
                         Some(ref mut v) => {
-                            v.push(w[0]);
+                            v.push(a);
                         }
                     }
                 }
