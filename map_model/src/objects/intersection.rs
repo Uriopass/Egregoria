@@ -130,9 +130,10 @@ impl Intersection {
             let dir1 = r1.dir_from(id);
             let dir2 = r2.dir_from(id);
 
-            let ang = dir1.angle(dir2).abs();
+            let d = dir1.dot(dir2).max(0.0).min(1.0);
+            let sin = (1.0 - d * d).sqrt();
 
-            let min_dist = w * 1.1 / ang.max(0.1).min(std::f32::consts::FRAC_PI_2).sin();
+            let min_dist = w * 1.1 / sin;
             roads[r1_id].max_interface(id, min_dist);
             roads[r2_id].max_interface(id, min_dist);
         }
