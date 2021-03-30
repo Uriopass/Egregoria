@@ -1,3 +1,4 @@
+use crate::gui::bulldozer::BulldozerState;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
@@ -256,6 +257,34 @@ impl Gui {
                         }
                         tok.pop(ui);
                     }
+                });
+        }
+
+        if matches!(*uiworld.read::<Tool>(), Tool::Bulldozer) {
+            let lbw = 80.0;
+            Window::new(im_str!("Bulldozer"))
+                .size_constraints([lbw, 0.0], [lbw, 1000.0])
+                .position(
+                    [w - toolbox_w - lbw, h * 0.5 - 30.0],
+                    imgui::Condition::Always,
+                )
+                .scroll_bar(false)
+                .title_bar(true)
+                .movable(false)
+                .collapsible(false)
+                .resizable(false)
+                .build(ui, || {
+                    let mut state = uiworld.write::<BulldozerState>();
+                    <BulldozerState as InspectRenderDefault<BulldozerState>>::render_mut(
+                        &mut [&mut *state],
+                        "Bulldozer",
+                        ui,
+                        &InspectArgsDefault {
+                            header: Some(false),
+                            indent_children: Some(false),
+                            ..Default::default()
+                        },
+                    );
                 });
         }
 

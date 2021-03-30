@@ -4,18 +4,28 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use common::Z_TOOL;
 use egregoria::Egregoria;
+use imgui_inspect_derive::*;
 use map_model::{Map, ProjectKind};
+
+register_resource_noserialize!(BulldozerState);
+
+#[derive(Default, Inspect)]
+pub struct BulldozerState {
+    hold: bool,
+}
 
 pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool: &Tool = &*uiworld.read::<Tool>();
-    let mouseinfo: &MouseInfo = &*uiworld.read::<MouseInfo>();
-    let map: &Map = &*goria.read::<Map>();
-    let draw: &mut ImmediateDraw = &mut *uiworld.write::<ImmediateDraw>();
-    let mut commands = uiworld.commands();
 
     if !matches!(*tool, Tool::Bulldozer) {
         return;
     }
+
+    let mouseinfo: &MouseInfo = &*uiworld.read::<MouseInfo>();
+    let map: &Map = &*goria.read::<Map>();
+    let draw: &mut ImmediateDraw = &mut *uiworld.write::<ImmediateDraw>();
+    let mut commands = uiworld.commands();
+    let state: &BulldozerState = &*uiworld.read::<BulldozerState>();
 
     let cur_proj = map.project(mouseinfo.unprojected, 0.0);
 
@@ -30,7 +40,9 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     draw.circle(cur_proj.pos, 2.0).color(col).z(Z_TOOL);
 
-    if mouseinfo.just_pressed.contains(&MouseButton::Left) {
+    if (!state.hold && mouseinfo.just_pressed.contains(&MouseButton::Left))
+        || (state.hold && mouseinfo.pressed.contains(&MouseButton::Left))
+    {
         let mut potentially_empty = Vec::new();
         log::info!("bulldozer {:?}", cur_proj);
         match cur_proj.kind {
