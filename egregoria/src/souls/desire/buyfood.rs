@@ -80,5 +80,5 @@ pub fn desire_buy_food(
         d.score = 0.0;
         return;
     }
-    d.score = buy_food.last_ate.elapsed(time) as f32 * 0.001 - 1.0
+    d.score = buy_food.last_ate.elapsed(time) as f32 / GameTime::DAY as f32 - 1.0
 }
