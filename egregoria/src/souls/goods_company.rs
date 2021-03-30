@@ -514,15 +514,10 @@ pub struct GoodsCompany {
     pub recipe: Recipe,
     pub building: BuildingID,
     pub max_workers: i32,
-    pub work_seconds: f32,
+    /// In [0; 1] range, to show how much has been made until new product
+    pub progress: f32,
     pub driver: Option<SoulID>,
     pub trucks: Vec<VehicleID>,
-}
-
-impl GoodsCompany {
-    pub fn progress(&self) -> f32 {
-        self.work_seconds / (self.max_workers * self.recipe.complexity) as f32
-    }
 }
 
 pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
@@ -581,11 +576,13 @@ pub fn company(
     let soul = SoulID(*me);
 
     if company.recipe.should_produce(soul, market) {
-        company.work_seconds += n_workers as f32 / company.max_workers as f32 * time.delta;
+        company.progress += n_workers as f32
+            / (company.recipe.complexity as f32 * company.max_workers as f32)
+            * time.delta;
     }
 
-    if company.work_seconds >= company.recipe.complexity as f32 {
-        company.work_seconds = 0.0;
+    if company.progress >= 1.0 {
+        company.progress = 0.0;
         log::info!("{:?} should act", me);
 
         let recipe = company.recipe.clone();
