@@ -40,6 +40,8 @@ macro_rules! commodity {
     };
 }
 
+debug_inspect_impl!(CommodityKind);
+
 commodity! {
     JobOpening => "Job opening",
     Cereal => "Cereal",

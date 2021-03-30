@@ -6,6 +6,7 @@ use egregoria::physics::{Collider, Kinematics};
 use egregoria::rendering::assets::AssetRender;
 use egregoria::rendering::meshrender_component::MeshRender;
 use egregoria::souls::desire::{BuyFood, Desire, Home, Work};
+use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::vehicles::Vehicle;
 use egregoria::Egregoria;
 use geom::Transform;
@@ -49,14 +50,17 @@ impl InspectRenderer {
         self.inspect_component::<Desire<Work>>(goria, ui);
         self.inspect_component::<Desire<Home>>(goria, ui);
         self.inspect_component::<Desire<BuyFood>>(goria, ui);
+        self.inspect_component::<GoodsCompany>(goria, ui);
 
-        let follow = &mut uiworld.write::<FollowEntity>().0;
-        if follow.is_none() {
-            if ui.small_button(im_str!("Follow")) {
-                follow.replace(self.entity);
+        if goria.comp::<Kinematics>(self.entity).is_some() {
+            let follow = &mut uiworld.write::<FollowEntity>().0;
+            if follow.is_none() {
+                if ui.small_button(im_str!("Follow")) {
+                    follow.replace(self.entity);
+                }
+            } else if ui.small_button(im_str!("Unfollow")) {
+                follow.take();
             }
-        } else if ui.small_button(im_str!("Unfollow")) {
-            follow.take();
         }
     }
 }

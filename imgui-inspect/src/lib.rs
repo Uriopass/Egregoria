@@ -75,27 +75,21 @@ macro_rules! debug_inspect_impl {
             fn render(
                 data: &[&$t],
                 label: &'static str,
-                ui: &imgui::Ui,
+                ui: &imgui_inspect::imgui::Ui,
                 _: &imgui_inspect::InspectArgsDefault,
             ) {
-                if data.len() != 1 {
-                    panic!()
-                }
-                let d = &data[0];
-                ui.text(imgui::im_str!("{:?} {}", d, label));
+                let d = match data.get(0) { Some(x) => x, None => return };
+                ui.text(imgui_inspect::imgui::im_str!("{:?} {}", d, label));
             }
 
             fn render_mut(
                 data: &mut [&mut $t],
                 label: &'static str,
-                ui: &imgui::Ui,
+                ui: &imgui_inspect::imgui::Ui,
                 _: &imgui_inspect::InspectArgsDefault,
             ) -> bool {
-                if data.len() != 1 {
-                    panic!()
-                }
-                let d = &data[0];
-                ui.text(imgui::im_str!("{:?} {}", d, label));
+                let d = match data.get(0) { Some(x) => x, None => return false };
+                ui.text(imgui_inspect::imgui::im_str!("{:?} {}", d, label));
                 false
             }
         }

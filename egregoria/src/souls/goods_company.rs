@@ -1,19 +1,21 @@
 use super::desire::Desire;
 use super::desire::Work;
 use crate::economy::{CommodityKind, Market, Sold, Workers};
+use crate::engine_interaction::Selectable;
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::{DriverState, WorkKind};
 use crate::vehicles::VehicleID;
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use common::GameTime;
-use geom::Vec2;
+use geom::{Transform, Vec2};
+use imgui_inspect_derive::*;
 use legion::world::SubWorld;
 use legion::{system, Entity, EntityStore};
 use map_model::{BuildingGen, BuildingID, BuildingKind, Map};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Inspect)]
 pub struct Recipe {
     pub consumption: Vec<(CommodityKind, i32)>,
     pub production: Vec<(CommodityKind, i32)>,
@@ -65,7 +67,7 @@ impl Default for GoodsCompanyRegistry {
                             (CommodityKind::Vegetable, 1),
                             (CommodityKind::Cereal, 1),
                         ],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -82,7 +84,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::Cloth, 1)], // TODO: actually implement stores
                         production: vec![(CommodityKind::Cloth, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -99,7 +101,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::Polyester, 1), (CommodityKind::Wool, 1)],
                         production: vec![(CommodityKind::Cloth, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -116,7 +118,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::Oil, 1)],
                         production: vec![(CommodityKind::Polyester, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 5,
@@ -133,7 +135,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![],
                         production: vec![(CommodityKind::Oil, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 5,
@@ -150,7 +152,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::Wool, 1)],
                         production: vec![(CommodityKind::Cloth, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -167,7 +169,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![],
                         production: vec![(CommodityKind::Wool, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -184,7 +186,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::Flower, 1)], // TODO: actually implement stores
                         production: vec![(CommodityKind::Flower, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -201,7 +203,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![],
                         production: vec![(CommodityKind::Flower, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 5,
@@ -218,7 +220,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::HighTechProduct, 1)], // TODO: actually implement stores
                         production: vec![(CommodityKind::HighTechProduct, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -235,7 +237,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::RareMetal, 1), (CommodityKind::Metal, 1)],
                         production: vec![(CommodityKind::HighTechProduct, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -252,7 +254,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![],
                         production: vec![(CommodityKind::RareMetal, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -269,7 +271,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::Metal, 1), (CommodityKind::WoodPlank, 1)],
                         production: vec![(CommodityKind::Furniture, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -286,7 +288,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::IronOre, 1)],
                         production: vec![(CommodityKind::Metal, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -303,7 +305,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![],
                         production: vec![(CommodityKind::IronOre, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -320,7 +322,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::TreeLog, 1)],
                         production: vec![(CommodityKind::WoodPlank, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -337,7 +339,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![],
                         production: vec![(CommodityKind::TreeLog, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -354,7 +356,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::RawMeat, 1)],
                         production: vec![(CommodityKind::Meat, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -371,7 +373,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::Carcass, 1)],
                         production: vec![(CommodityKind::RawMeat, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 5,
@@ -386,7 +388,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::Cereal, 1)],
                         production: vec![(CommodityKind::Carcass, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 5,
@@ -401,7 +403,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![],
                         production: vec![(CommodityKind::Vegetable, 2)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -416,7 +418,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![],
                         production: vec![(CommodityKind::Cereal, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -433,7 +435,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::Cereal, 1)],
                         production: vec![(CommodityKind::Flour, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
@@ -450,7 +452,7 @@ impl Default for GoodsCompanyRegistry {
                     recipe: Recipe {
                         consumption: vec![(CommodityKind::Flour, 1)],
                         production: vec![(CommodityKind::Bread, 1)],
-                        complexity: 1000,
+                        complexity: 100,
                         storage_multiplier: 5,
                     },
                     n_workers: 3,
@@ -496,7 +498,7 @@ impl Recipe {
     }
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 pub enum CompanyKind {
     // Buyers come to get their goods
     Store,
@@ -504,7 +506,9 @@ pub enum CompanyKind {
     Factory { n_trucks: u32 },
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+debug_inspect_impl!(CompanyKind);
+
+#[derive(Clone, Serialize, Deserialize, Inspect)]
 pub struct GoodsCompany {
     pub kind: CompanyKind,
     pub recipe: Recipe,
@@ -522,7 +526,11 @@ impl GoodsCompany {
 }
 
 pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
-    let bpos = goria.read::<Map>().buildings()[company.building].door_pos;
+    let map = goria.read::<Map>();
+    let b = &map.buildings()[company.building];
+    let door_pos = b.door_pos;
+    let obb = b.obb;
+    drop(map);
 
     let e = goria.world.push(());
 
@@ -531,18 +539,25 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
     {
         let m = &mut *goria.write::<Market>();
         m.produce(soul, CommodityKind::JobOpening, company.workers);
-        m.sell_all(soul, bpos, CommodityKind::JobOpening);
+        m.sell_all(soul, door_pos, CommodityKind::JobOpening);
 
-        company.recipe.init(soul, bpos, m);
+        company.recipe.init(soul, door_pos, m);
     }
 
     goria
         .write::<BuildingInfos>()
         .set_owner(company.building, soul);
 
-    goria
-        .world
-        .push_with_id(e, (company, Workers::default(), Sold::default()));
+    goria.world.push_with_id(
+        e,
+        (
+            company,
+            Workers::default(),
+            Sold::default(),
+            Transform::new(obb.center()),
+            Selectable::new(obb.axis()[0].magnitude() * 0.5),
+        ),
+    );
 
     soul
 }
@@ -571,6 +586,8 @@ pub fn company(
 
     if company.work_seconds >= (company.recipe.complexity * company.workers) as f32 {
         company.work_seconds = 0.0;
+        log::info!("{:?} should act", me);
+
         let recipe = company.recipe.clone();
         let bpos = map.buildings()[company.building].door_pos;
 
