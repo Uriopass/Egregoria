@@ -513,7 +513,7 @@ pub struct GoodsCompany {
     pub kind: CompanyKind,
     pub recipe: Recipe,
     pub building: BuildingID,
-    pub workers: i32,
+    pub max_workers: i32,
     pub work_seconds: f32,
     pub driver: Option<SoulID>,
     pub trucks: Vec<VehicleID>,
@@ -521,7 +521,7 @@ pub struct GoodsCompany {
 
 impl GoodsCompany {
     pub fn progress(&self) -> f32 {
-        self.work_seconds / (self.workers * self.recipe.complexity) as f32
+        self.work_seconds / (self.max_workers * self.recipe.complexity) as f32
     }
 }
 
@@ -538,7 +538,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
 
     {
         let m = &mut *goria.write::<Market>();
-        m.produce(soul, CommodityKind::JobOpening, company.workers);
+        m.produce(soul, CommodityKind::JobOpening, company.max_workers);
         m.sell_all(soul, door_pos, CommodityKind::JobOpening);
 
         company.recipe.init(soul, door_pos, m);
@@ -581,10 +581,10 @@ pub fn company(
     let soul = SoulID(*me);
 
     if company.recipe.should_produce(soul, market) {
-        company.work_seconds += n_workers as f32 * time.delta;
+        company.work_seconds += n_workers as f32 / company.max_workers as f32 * time.delta;
     }
 
-    if company.work_seconds >= (company.recipe.complexity * company.workers) as f32 {
+    if company.work_seconds >= company.recipe.complexity as f32 {
         company.work_seconds = 0.0;
         log::info!("{:?} should act", me);
 
