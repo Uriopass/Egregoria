@@ -69,7 +69,7 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
             building: build_id,
             recipe: des.recipe.clone(),
             max_workers: des.n_workers,
-            work_seconds: 0.0,
+            progress: 0.0,
             driver: None,
             trucks: {
                 drop(registry);
