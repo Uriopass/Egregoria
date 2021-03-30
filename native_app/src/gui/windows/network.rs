@@ -15,6 +15,7 @@ struct NetworkConnectionInfo {
     name: ImString,
     ip: ImString,
     error: String,
+    show_hashes: bool,
     hashes: BTreeMap<String, u64>,
 }
 
@@ -62,22 +63,27 @@ pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Eg
             } => {
                 ui.text("Local client:");
                 ui.text(client.describe());
-                show_hashes(ui, goria, &mut *info);
                 ui.separator();
                 ui.text("Running server");
                 ui.text(server.describe());
+                show_hashes(ui, goria, &mut *info);
             }
         }
     })
 }
 
 fn show_hashes(ui: &Ui, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
-    if goria.get_tick() % 100 == 0 {
+    ui.checkbox(im_str!("show hashes"), &mut info.show_hashes);
+    if !info.show_hashes {
+        return;
+    }
+
+    if goria.get_tick() % 100 == 0 || info.hashes.is_empty() {
         info.hashes = goria.hashes();
     }
 
     for (name, hash) in &info.hashes {
-        ui.text(format!("hash {}: {}", name, hash));
+        ui.text(format!("{}: {}", name, hash));
     }
 }
 
@@ -155,6 +161,7 @@ impl Default for NetworkConnectionInfo {
             name: ImString::with_capacity(100),
             ip: ImString::with_capacity(100),
             error: String::new(),
+            show_hashes: false,
             hashes: Default::default(),
         }
     }
