@@ -5,13 +5,13 @@ use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::{DriverState, WorkKind};
 use crate::vehicles::VehicleID;
 use crate::{Egregoria, ParCommandBuffer, SoulID};
-use common::FastMap;
 use common::GameTime;
 use geom::Vec2;
 use legion::world::SubWorld;
 use legion::{system, Entity, EntityStore};
 use map_model::{BuildingGen, BuildingID, BuildingKind, Map};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Recipe {
@@ -40,7 +40,7 @@ pub struct GoodsCompanyDescription {
 
 register_resource_noserialize!(GoodsCompanyRegistry);
 pub struct GoodsCompanyRegistry {
-    pub descriptions: FastMap<BuildingKind, GoodsCompanyDescription>,
+    pub descriptions: BTreeMap<BuildingKind, GoodsCompanyDescription>,
 }
 
 impl Default for GoodsCompanyRegistry {
