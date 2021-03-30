@@ -222,10 +222,7 @@ impl Gui {
         }
         spacing_left.pop(ui);
 
-        let brushes = [
-            (im_str!("Unassigned"), LotKind::Unassigned),
-            (im_str!("Residential"), LotKind::Residential),
-        ];
+        let brushes = [(im_str!("Residential"), LotKind::Residential)];
 
         if matches!(*uiworld.read::<Tool>(), Tool::LotBrush) {
             let lbw = 130.0;
