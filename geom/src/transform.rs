@@ -36,11 +36,6 @@ impl Transform {
         self.position += offset;
     }
 
-    pub fn set_angle(&mut self, angle: f32) {
-        self.cossin.x = angle.cos();
-        self.cossin.y = angle.sin();
-    }
-
     pub fn set_cos_sin(&mut self, cos: f32, sin: f32) {
         self.cossin.x = cos;
         self.cossin.y = sin;
