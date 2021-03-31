@@ -16,6 +16,7 @@ use wgpu_engine::{FrameContext, GuiRenderContext, SpriteBatch};
 use crate::audio::GameAudio;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
+use crate::gui::windows::network::NetworkConnectionInfo;
 use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, Gui, UiTextures};
 use crate::input::{KeyboardInfo, MouseInfo};
@@ -177,12 +178,10 @@ impl State {
                     }
                     *self.uiw.write::<WorldCommands>() = commands;
                 }
-                PollResult::Error => {
-                    log::error!("there was an error polling the client");
-                }
-                PollResult::Disconnect => {
-                    log::error!("got disconnected :-( continuing with server world but it's bad");
+                PollResult::Disconnect(reason) => {
+                    log::error!("got disconnected :-( continuing with server world but it's sad");
                     *net_state = NetworkState::Singleplayer(Timestep::default());
+                    self.uiw.write::<NetworkConnectionInfo>().error = reason;
                 }
             },
         }

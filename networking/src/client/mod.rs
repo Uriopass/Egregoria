@@ -32,8 +32,7 @@ pub enum PollResult<W, I> {
     Wait(I),
     Input(Vec<Vec<ServerInput<I>>>),
     GameWorld(I, W),
-    Error,
-    Disconnect,
+    Disconnect(String),
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -47,7 +46,9 @@ enum ClientState<I> {
         buffer: ClientPlayoutBuffer,
         final_inputs: Option<Vec<Vec<ServerInput<I>>>>,
     },
-    Disconnected,
+    Disconnected {
+        reason: String,
+    },
 }
 
 pub struct Client<WORLD: DeserializeOwned, INPUT: Serialize + DeserializeOwned + Default> {
@@ -122,13 +123,19 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 NetEvent::Connected(e, _) => {
                     log::info!("connected {}", e)
                 }
-                NetEvent::Disconnected(_) => self.state = ClientState::Disconnected,
+                NetEvent::Disconnected(_) => {
+                    if !matches!(self.state, ClientState::Disconnected { .. }) {
+                        self.state = ClientState::Disconnected {
+                            reason: "connection lost".to_string(),
+                        }
+                    }
+                }
             }
         }
 
         match self.state {
-            ClientState::Disconnected => {
-                return PollResult::Disconnect;
+            ClientState::Disconnected { ref reason } => {
+                return PollResult::Disconnect(reason.clone());
             }
             ClientState::Connecting => {
                 return PollResult::Wait(input);
@@ -141,7 +148,11 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                     return match decode(&*world) {
                         Some(x) => PollResult::GameWorld(input, x),
                         None => {
-                            return PollResult::Error;
+                            let reason = "could not decode world packet".to_string();
+                            self.state = ClientState::Disconnected {
+                                reason: reason.clone(),
+                            };
+                            return PollResult::Disconnect(reason);
                         }
                     };
                 }
@@ -257,7 +268,8 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                         .send(self.tcp, &*encode(&ClientReliablePacket::WorldAck));
                 }
                 AuthentResponse::Refused { reason } => {
-                    log::error!("authent refused :( reason: {}", reason)
+                    log::error!("authent refused :( reason: {}", reason);
+                    self.state = ClientState::Disconnected { reason };
                 }
             },
             ServerReliablePacket::CatchUp { inputs } => {
@@ -325,7 +337,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
             } => {
                 format!("Playing! Buffer advance: {}", buf.advance())
             }
-            ClientState::Disconnected => "Disconnected :-(".to_string(),
+            ClientState::Disconnected { ref reason } => reason.clone(),
         }
     }
 }
