@@ -8,7 +8,7 @@ mod config;
 pub mod debug;
 mod economy;
 mod map;
-mod network;
+pub mod network;
 pub mod settings;
 
 pub trait ImguiWindow: Send + Sync {

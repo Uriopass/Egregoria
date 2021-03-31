@@ -9,10 +9,10 @@ use std::collections::BTreeMap;
 use std::net::{Ipv4Addr, ToSocketAddrs};
 
 register_resource!(NetworkConnectionInfo, "netinfo");
-struct NetworkConnectionInfo {
+pub struct NetworkConnectionInfo {
     name: ImString,
     ip: ImString,
-    error: String,
+    pub error: String,
     show_hashes: bool,
     hashes: BTreeMap<String, u64>,
 }
