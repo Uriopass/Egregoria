@@ -65,7 +65,7 @@ impl<WORLD: Serialize> Server<WORLD> {
         })
     }
 
-    pub fn poll(&mut self, world: &WORLD) {
+    pub fn poll(&mut self, world: &impl Fn() -> WORLD) {
         self.send_merged_inputs();
         self.send_long_running();
         while let Some(ev) = self.events.try_receive() {
@@ -167,7 +167,7 @@ impl<WORLD: Serialize> Server<WORLD> {
         &mut self,
         e: Endpoint,
         packet: ClientReliablePacket,
-        world: &WORLD,
+        world: &impl Fn() -> WORLD,
     ) -> Option<()> {
         match packet {
             ClientReliablePacket::Connect { name } => {
@@ -180,7 +180,7 @@ impl<WORLD: Serialize> Server<WORLD> {
 
                 if accepted {
                     let c = self.authent.get_client(e)?;
-                    self.worldsend.begin_send(c, encode(world));
+                    self.worldsend.begin_send(c, encode(&world()));
                     self.catchup
                         .begin_remembering(self.buffer.consumed_frame, c);
 

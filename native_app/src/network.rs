@@ -1,9 +1,10 @@
-pub type Client = networking::Client<Egregoria, WorldCommands>;
-pub type Server = networking::Server<Egregoria>;
-
 use crate::timestep::Timestep;
 use egregoria::engine_interaction::WorldCommands;
-use egregoria::Egregoria;
+use egregoria::SerPreparedEgregoria;
+
+pub type Client = networking::Client<SerPreparedEgregoria, WorldCommands>;
+pub type Server = networking::Server<SerPreparedEgregoria>;
+
 register_resource_noserialize!(NetworkState);
 #[allow(clippy::large_enum_variant)]
 pub enum NetworkState {

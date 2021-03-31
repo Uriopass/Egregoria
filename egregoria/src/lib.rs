@@ -29,10 +29,10 @@ use legion::systems::{ParallelRunnable, Resource};
 use legion::{any, Entity, IntoQuery, Registry, Resources, World};
 use map_model::Map;
 use pedestrians::Location;
-use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
+use std::convert::TryFrom;
 use std::num::NonZeroU64;
 use std::time::{Duration, Instant};
 use utils::par_command_buffer::Deleted;
@@ -265,7 +265,7 @@ impl Egregoria {
             h.write(&x);
             h.finish()
         }
-        let serworld = SerializedWorld::from(self);
+        let serworld = SerPreparedEgregoria::from(self);
 
         let mut hashes = BTreeMap::new();
         hashes.insert("tick".to_string(), serworld.tick as u64);
@@ -275,6 +275,16 @@ impl Egregoria {
         }
 
         hashes
+    }
+
+    pub fn load_from_disk(save_name: &'static str) -> Option<Self> {
+        let ser: SerPreparedEgregoria = common::saveload::CompressedBincode::load(save_name)?;
+        Self::try_from(ser).ok()
+    }
+
+    pub fn save_to_disk(&self, save_name: &'static str) {
+        let ser = SerPreparedEgregoria::from(self);
+        common::saveload::CompressedBincode::save(&ser, save_name);
     }
 
     pub fn pos(&self, e: Entity) -> Option<Vec2> {
@@ -321,7 +331,7 @@ impl Egregoria {
     }
 }
 
-impl From<&Egregoria> for SerializedWorld {
+impl From<&Egregoria> for SerPreparedEgregoria {
     fn from(goria: &Egregoria) -> Self {
         let registry = registry();
 
@@ -343,7 +353,7 @@ impl From<&Egregoria> for SerializedWorld {
             }
         });
 
-        SerializedWorld {
+        SerPreparedEgregoria {
             world,
             res: m,
             tick: goria.tick,
@@ -351,22 +361,10 @@ impl From<&Egregoria> for SerializedWorld {
     }
 }
 
-impl Serialize for Egregoria {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        <SerializedWorld as Serialize>::serialize(&self.into(), serializer)
-    }
-}
+impl TryFrom<SerPreparedEgregoria> for Egregoria {
+    type Error = std::io::Error;
 
-impl<'de> Deserialize<'de> for Egregoria {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let mut ser: SerializedWorld = <SerializedWorld as Deserialize>::deserialize(deserializer)?;
-
+    fn try_from(mut ser: SerPreparedEgregoria) -> Result<Self, Self::Error> {
         let mut goria = Self::empty();
         goria.tick = ser.tick;
         let registry = registry();
@@ -376,10 +374,7 @@ impl<'de> Deserialize<'de> for Egregoria {
         let mut w: World = common::saveload::Bincode::decode_seed(
             registry.as_deserialize(&entity_serializer),
             &ser.world,
-        )
-        .map_err(|e| {
-            <D as Deserializer>::Error::custom(format!("error deserializing world: {}", e))
-        })?;
+        )?;
 
         goria.world.move_from(&mut w, &any());
 
@@ -394,7 +389,7 @@ impl<'de> Deserialize<'de> for Egregoria {
 }
 
 #[derive(Serialize, Deserialize)]
-struct SerializedWorld {
+pub struct SerPreparedEgregoria {
     world: Vec<u8>,
     res: FastMap<String, Vec<u8>>,
     tick: u32,
