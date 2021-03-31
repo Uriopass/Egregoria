@@ -24,9 +24,9 @@ use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{
     BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer,
 };
-use crate::timestep::Timestep;
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
+use common::timestep::Timestep;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
 use networking::PollResult;
@@ -121,14 +121,15 @@ impl State {
                 let mut timings = self.uiw.write::<Timings>();
 
                 let mut commands_once = Some(commands.clone());
-                step.go_forward(settings.time_warp, || {
+                step.prepare_frame(settings.time_warp);
+                while step.tick() {
                     let t = goria.tick(
-                        Timestep::DT,
+                        step.period.as_secs_f64(),
                         sched,
                         &commands_once.take().unwrap_or_default(),
                     );
                     timings.world_update.add_value(t.as_secs_f32());
-                });
+                }
 
                 if commands_once.is_none() {
                     *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(commands);
@@ -146,9 +147,11 @@ impl State {
                     for frame_commands in inputs {
                         let commands: WorldCommands =
                             frame_commands.iter().map(|x| x.inp.clone()).collect();
-                        let t = self
-                            .goria
-                            .tick(Timestep::DT, &mut self.game_schedule, &commands);
+                        let t = self.goria.tick(
+                            client.step.period.as_secs_f64(),
+                            &mut self.game_schedule,
+                            &commands,
+                        );
                         self.uiw
                             .write::<Timings>()
                             .world_update
@@ -170,7 +173,7 @@ impl State {
                         self.goria = x;
                     } else {
                         log::error!("couldn't decode serialized goria sent by server");
-                        *net_state = NetworkState::Singleplayer(Timestep::new());
+                        *net_state = NetworkState::Singleplayer(Timestep::default());
                     }
                     *self.uiw.write::<WorldCommands>() = commands;
                 }
@@ -179,7 +182,7 @@ impl State {
                 }
                 PollResult::Disconnect => {
                     log::error!("got disconnected :-( continuing with server world but it's bad");
-                    *net_state = NetworkState::Singleplayer(Timestep::new());
+                    *net_state = NetworkState::Singleplayer(Timestep::default());
                 }
             },
         }
