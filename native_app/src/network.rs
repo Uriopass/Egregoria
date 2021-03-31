@@ -1,4 +1,4 @@
-use crate::timestep::Timestep;
+use common::timestep::Timestep;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::SerPreparedEgregoria;
 
@@ -15,6 +15,6 @@ pub enum NetworkState {
 
 impl Default for NetworkState {
     fn default() -> Self {
-        Self::Singleplayer(Timestep::new())
+        Self::Singleplayer(Timestep::default())
     }
 }

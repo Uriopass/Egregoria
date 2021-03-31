@@ -1,5 +1,4 @@
 use crate::network::{Client, NetworkState, Server};
-use crate::timestep::Timestep;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
@@ -8,7 +7,6 @@ use networking::{ConnectConf, Frame, ServerConfiguration};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 use std::net::{Ipv4Addr, ToSocketAddrs};
-use std::time::Duration;
 
 register_resource!(NetworkConnectionInfo, "netinfo");
 struct NetworkConnectionInfo {
@@ -90,7 +88,7 @@ fn show_hashes(ui: &Ui, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
 fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<(Client, Server)> {
     let server = match networking::Server::start(ServerConfiguration {
         start_frame: Frame(goria.get_tick()),
-        period: Duration::from_secs_f64(Timestep::DT),
+        period: common::timestep::UP_DT,
         port: None,
     }) {
         Ok(x) => x,
@@ -104,7 +102,7 @@ fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<(
         name: format!("{}", info.name),
         addr: Ipv4Addr::LOCALHOST.into(),
         port: None,
-        period: Duration::from_secs_f64(Timestep::DT),
+        period: common::timestep::UP_DT,
         frame_buffer_advance: 1,
     }) {
         Ok(x) => x,
@@ -142,7 +140,7 @@ fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
         name: format!("{}", info.name),
         addr: parsed_addr.ip(),
         port: if port != 80 { Some(port) } else { None },
-        period: Duration::from_secs_f64(Timestep::DT),
+        period: common::timestep::UP_DT,
         frame_buffer_advance: 8,
     }) {
         Ok(x) => x,

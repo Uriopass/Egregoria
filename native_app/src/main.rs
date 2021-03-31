@@ -3,9 +3,10 @@
 #![allow(elided_lifetimes_in_paths)]
 #![allow(clippy::upper_case_acronyms)]
 
+use log::LevelFilter;
+
 use crate::context::Context;
 use crate::logger::MyLog;
-use log::LevelFilter;
 
 #[macro_use]
 extern crate common;
@@ -24,7 +25,6 @@ mod input;
 mod logger;
 mod network;
 mod rendering;
-mod timestep;
 
 fn main() {
     let leaked = Box::leak(Box::new(MyLog::new()));

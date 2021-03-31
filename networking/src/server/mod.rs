@@ -1,5 +1,5 @@
 use std::io;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use message_io::events::EventQueue;
 use message_io::network::{Endpoint, NetEvent, Network, Transport};
@@ -14,6 +14,7 @@ use crate::packets::{
 use crate::server::server_playout::ServerPlayoutBuffer;
 use crate::worldsend::WorldSend;
 use crate::{decode, encode, Frame, PhantomSendSync, DEFAULT_PORT};
+use common::timestep::Timestep;
 use std::net::SocketAddr;
 
 mod server_playout;
@@ -27,8 +28,7 @@ pub struct Server<WORLD: Serialize> {
     catchup: CatchUp,
     worldsend: WorldSend,
 
-    clock: Instant,
-    period: Duration,
+    step: Timestep,
 
     _phantom: PhantomSendSync<WORLD>,
 
@@ -53,9 +53,8 @@ impl<WORLD: Serialize> Server<WORLD> {
         Ok(Self {
             network,
             events,
-            period: conf.period,
+            step: Timestep::new(conf.period),
             buffer: ServerPlayoutBuffer::new(conf.start_frame),
-            clock: Instant::now(),
             authent: Authent::default(),
             catchup: CatchUp::default(),
             worldsend: Default::default(),
@@ -99,35 +98,35 @@ impl<WORLD: Serialize> Server<WORLD> {
             return;
         }
 
-        if self.clock.elapsed() < self.period {
-            return;
+        self.step.prepare_frame(1);
+
+        while self.step.tick() {
+            let buffer = &self.buffer;
+            let to_disconnect = self
+                .authent
+                .iter_playing()
+                .filter(|v| buffer.lag(v.ack).is_none())
+                .map(|x| x.reliable)
+                .collect::<Vec<_>>();
+
+            for e in to_disconnect {
+                self.disconnect(e);
+            }
+
+            let clients_playing = self.authent.iter_playing();
+
+            let (consumed_inputs, inputs) =
+                self.buffer.consume(clients_playing.clone().map(|c| c.ack));
+
+            for (playing, packet) in clients_playing.zip(inputs) {
+                self.network.send(
+                    playing.unreliable,
+                    &*encode(&ServerUnreliablePacket::Input(packet)),
+                );
+            }
+            self.catchup
+                .add_merged_inputs(self.buffer.consumed_frame, consumed_inputs)
         }
-
-        self.clock = Instant::now();
-
-        let to_disconnect = self
-            .authent
-            .iter_playing()
-            .filter(|v| self.buffer.lag(v.ack).is_none())
-            .map(|x| x.reliable)
-            .collect::<Vec<_>>();
-
-        for e in to_disconnect {
-            self.disconnect(e);
-        }
-
-        let clients_playing = self.authent.iter_playing();
-
-        let (consumed_inputs, inputs) = self.buffer.consume(clients_playing.clone().map(|c| c.ack));
-
-        for (playing, packet) in clients_playing.zip(inputs) {
-            self.network.send(
-                playing.unreliable,
-                &*encode(&ServerUnreliablePacket::Input(packet)),
-            );
-        }
-        self.catchup
-            .add_merged_inputs(self.buffer.consumed_frame, consumed_inputs)
     }
 
     fn send_long_running(&mut self) {

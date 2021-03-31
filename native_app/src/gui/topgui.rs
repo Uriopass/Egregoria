@@ -30,7 +30,7 @@ pub struct Gui {
     #[serde(skip)]
     pub n_cars: i32,
     pub n_pedestrians: i32,
-    pub depause_warp: f64,
+    pub depause_warp: u32,
 }
 
 impl Default for Gui {
@@ -41,7 +41,7 @@ impl Default for Gui {
             last_gui_save: Instant::now(),
             n_cars: 100,
             n_pedestrians: 100,
-            depause_warp: 1.0,
+            depause_warp: 1,
         }
     }
 }
@@ -416,11 +416,11 @@ impl Gui {
             .just_pressed
             .contains(&KeyCode::Space)
         {
-            if *warp == 0.0 {
+            if *warp == 0 {
                 *warp = *depause_warp;
             } else {
                 *depause_warp = *warp;
-                *warp = 0.0;
+                *warp = 0;
             }
         }
 
@@ -446,11 +446,11 @@ impl Gui {
 
                 if imgui::Selectable::new(im_str!("   ||"))
                     .size([29.0, 15.0])
-                    .selected(*warp == 0.0)
+                    .selected(*warp == 0)
                     .build(ui)
                 {
                     *depause_warp = *warp;
-                    *warp = 0.0;
+                    *warp = 0;
                 }
 
                 red.pop(ui);
@@ -459,30 +459,30 @@ impl Gui {
 
                 if imgui::Selectable::new(im_str!("  1x"))
                     .size([27.0, 15.0])
-                    .selected(*warp == 1.0)
+                    .selected(*warp == 1)
                     .build(ui)
                 {
-                    *warp = 1.0;
+                    *warp = 1;
                 }
 
                 ui.same_line(0.0);
 
                 if imgui::Selectable::new(im_str!("  3x"))
                     .size([27.0, 15.0])
-                    .selected(*warp == 3.0)
+                    .selected(*warp == 3)
                     .build(ui)
                 {
-                    *warp = 3.0;
+                    *warp = 3;
                 }
 
                 ui.same_line(0.0);
 
                 if imgui::Selectable::new(im_str!(" Max"))
                     .size([33.0, 15.0])
-                    .selected(*warp == 1000.0)
+                    .selected(*warp == 1000)
                     .build(ui)
                 {
-                    *warp = 1000.0;
+                    *warp = 1000;
                 }
             });
         tok.pop(ui);

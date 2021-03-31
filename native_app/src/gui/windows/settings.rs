@@ -21,7 +21,7 @@ pub struct Settings {
     pub effects_volume_percent: f32,
     pub ui_volume_percent: f32,
 
-    pub time_warp: f64,
+    pub time_warp: u32,
     pub auto_save_every: AutoSaveEvery,
 }
 
@@ -36,7 +36,7 @@ impl Default for Settings {
             ui_volume_percent: 100.0,
             fullscreen: true,
             vsync: VSyncOptions::Vsync,
-            time_warp: 1.0,
+            time_warp: 1,
             auto_save_every: AutoSaveEvery::Never,
         })
     }

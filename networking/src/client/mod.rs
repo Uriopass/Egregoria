@@ -1,6 +1,6 @@
 use std::io;
 use std::net::{IpAddr, SocketAddr};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use message_io::events::EventQueue;
 use message_io::network::{Endpoint, NetEvent, Network, Transport};
@@ -18,6 +18,7 @@ use crate::{
     decode, encode, hash_str, Frame, MergedInputs, PhantomSendSync, PlayerInput, UserID,
     DEFAULT_PORT,
 };
+use common::timestep::Timestep;
 
 mod client_playout;
 
@@ -55,11 +56,10 @@ pub struct Client<WORLD: DeserializeOwned, INPUT: Serialize + DeserializeOwned +
     name: String,
     id: UserID,
 
-    clock: Instant,
-    period: Duration,
     state: ClientState<INPUT>,
 
-    pub lag_compensate: u32,
+    pub step: Timestep,
+    lag_compensate: u32,
 
     _phantom: PhantomSendSync<(INPUT, WORLD)>,
 }
@@ -89,8 +89,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
             id: UserID(hash_str(&*conf.name)),
             name: conf.name,
             lag_compensate: conf.frame_buffer_advance,
-            period: conf.period,
-            clock: Instant::now(),
+            step: Timestep::new(conf.period),
             _phantom: Default::default(),
         })
     }
@@ -156,7 +155,8 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 return PollResult::Wait(input);
             }
             ClientState::Playing(ref mut buffer) => {
-                if self.clock.elapsed() < self.period {
+                self.step.prepare_frame(1);
+                if !self.step.tick() {
                     return PollResult::Wait(input);
                 }
 
@@ -181,7 +181,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
 
                 if to_consume > 0 {
                     assert!(to_consume <= advance);
-                    self.clock = Instant::now();
+
                     let net = &mut self.network;
                     let udp = self.udp;
                     let ack_frame = buffer.consumed_frame() + Frame(advance);
