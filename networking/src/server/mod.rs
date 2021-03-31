@@ -105,12 +105,18 @@ impl<WORLD: Serialize> Server<WORLD> {
             let to_disconnect = self
                 .authent
                 .iter_playing()
-                .filter(|v| buffer.lag(v.ack).is_none())
-                .map(|x| x.reliable)
+                .filter(|c| buffer.lag(c.ack).is_none())
+                .map(|c| (c.reliable, c.ack, c.name.clone()))
                 .collect::<Vec<_>>();
-
-            for e in to_disconnect {
-                self.disconnect(e);
+            let consumed = buffer.consumed_frame;
+            for (reliable, ack, name) in to_disconnect {
+                log::warn!(
+                    "disconnecting {} because it is too late. consumed is {:?} while he is at {:?}",
+                    name,
+                    consumed,
+                    ack,
+                );
+                self.disconnect(reliable);
             }
 
             let clients_playing = self.authent.iter_playing();
@@ -203,9 +209,6 @@ impl<WORLD: Serialize> Server<WORLD> {
                 let c = self.authent.get_client(e)?;
                 log::info!("client {} ack", c.name);
                 self.worldsend.ack(c);
-            }
-            ClientReliablePacket::ReadyToPlayAck => {
-                self.authent.get_client_mut(e)?.state = ClientGameState::Playing;
             }
         }
         Some(())

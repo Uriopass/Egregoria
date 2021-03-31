@@ -11,9 +11,14 @@ pub(crate) enum ServerUnreliablePacket {
 pub(crate) enum ServerReliablePacket {
     Challenge(AuthentID),
     ReadyForAuth,
-    ReadyToPlay { start_frame: Frame },
+    ReadyToPlay {
+        start_frame: Frame,
+        final_inputs: Vec<MergedInputs>,
+    },
     AuthentResponse(AuthentResponse),
-    CatchUp { inputs: Vec<MergedInputs> },
+    CatchUp {
+        inputs: Vec<MergedInputs>,
+    },
     WorldSend(WorldDataFragment),
 }
 
@@ -31,7 +36,6 @@ pub(crate) enum ClientReliablePacket {
     Connect { name: String },
     BeginCatchUp,
     CatchUpAck,
-    ReadyToPlayAck,
     WorldAck,
 }
 

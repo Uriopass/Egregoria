@@ -43,7 +43,10 @@ enum ClientState<I> {
     CatchingUp {
         next_inputs: Option<Vec<Vec<ServerInput<I>>>>,
     },
-    Playing(ClientPlayoutBuffer),
+    Playing {
+        buffer: ClientPlayoutBuffer,
+        final_inputs: Option<Vec<Vec<ServerInput<I>>>>,
+    },
     Disconnected,
 }
 
@@ -154,7 +157,15 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 }
                 return PollResult::Wait(input);
             }
-            ClientState::Playing(ref mut buffer) => {
+            ClientState::Playing {
+                ref mut buffer,
+                ref mut final_inputs,
+            } => {
+                if let Some(inputs) = final_inputs.take() {
+                    log::info!("{} catching up final inputs, ready to play", self.name);
+                    return PollResult::Input(inputs);
+                }
+
                 self.step.prepare_frame(1);
                 if !self.step.tick() {
                     return PollResult::Wait(input);
@@ -262,12 +273,22 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                     log::error!("received catching up inputs but was not catching up.. weird");
                 }
             }
-            ServerReliablePacket::ReadyToPlay { start_frame } => {
+            ServerReliablePacket::ReadyToPlay {
+                start_frame,
+                final_inputs,
+            } => {
                 log::info!("{}: received ready to play on {:?}", self.name, start_frame);
                 if let ClientState::CatchingUp { next_inputs: None } = self.state {
-                    self.state = ClientState::Playing(ClientPlayoutBuffer::new(start_frame, 3));
-                    self.network
-                        .send(self.tcp, &*encode(&ClientReliablePacket::ReadyToPlayAck));
+                    let id = self.id;
+                    self.state = ClientState::Playing {
+                        buffer: ClientPlayoutBuffer::new(start_frame, 3),
+                        final_inputs: Some(
+                            final_inputs
+                                .into_iter()
+                                .map(|v| decode_merged(id, v))
+                                .collect(),
+                        ),
+                    };
                 } else {
                     log::error!(
                         "received ready to play but was still catching up or connecting.. weird"
@@ -281,7 +302,11 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
     fn message_unreliable(&mut self, p: ServerUnreliablePacket) {
         match p {
             ServerUnreliablePacket::Input(inp) => {
-                if let ClientState::Playing(ref mut buffer) = self.state {
+                if let ClientState::Playing {
+                    ref mut buffer,
+                    final_inputs: None,
+                } = self.state
+                {
                     for (frame, inp) in inp {
                         let _ = buffer.insert_serv_input(frame, inp);
                     }
@@ -295,7 +320,9 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
             ClientState::Connecting => "Connecting...".to_string(),
             ClientState::Downloading(_) => "Downloading map...".to_string(),
             ClientState::CatchingUp { .. } => "Catching up...".to_string(),
-            ClientState::Playing(ref buf) => {
+            ClientState::Playing {
+                buffer: ref buf, ..
+            } => {
                 format!("Playing! Buffer advance: {}", buf.advance())
             }
             ClientState::Disconnected => "Disconnected :-(".to_string(),
