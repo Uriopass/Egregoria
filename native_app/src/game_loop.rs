@@ -6,7 +6,7 @@ use winit::window::{Fullscreen, Window};
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound, OrderKind};
 use common::{GameTime, History};
-use egregoria::Egregoria;
+use egregoria::{Egregoria, SerPreparedEgregoria};
 use geom::Camera;
 use geom::{vec3, LinearColor, Vec2};
 use map_model::Map;
@@ -30,6 +30,7 @@ use common::saveload::Encoder;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
 use networking::PollResult;
+use std::convert::TryInto;
 
 pub struct State {
     goria: Egregoria,
@@ -70,8 +71,7 @@ impl State {
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
-        let goria: Egregoria =
-            common::saveload::CompressedBincode::load("world").unwrap_or_else(Egregoria::empty);
+        let goria: Egregoria = Egregoria::load_from_disk("world").unwrap_or_else(Egregoria::empty);
         let game_schedule = Egregoria::schedule();
 
         let mut uiworld = UiWorld::init();
@@ -108,7 +108,7 @@ impl State {
         crate::gui::run_ui_systems(&self.goria, &mut self.uiw);
 
         if let NetworkState::Server { ref mut server, .. } = *self.uiw.write() {
-            server.poll(&self.goria);
+            server.poll(&|| SerPreparedEgregoria::from(&self.goria));
         }
 
         let commands = std::mem::take(&mut *self.uiw.write::<WorldCommands>());
@@ -165,8 +165,13 @@ impl State {
                     }
                     *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(merged);
                 }
-                PollResult::GameWorld(commands, goria) => {
-                    self.goria = goria;
+                PollResult::GameWorld(commands, prepared_goria) => {
+                    if let Ok(x) = prepared_goria.try_into() {
+                        self.goria = x;
+                    } else {
+                        log::error!("couldn't decode serialized goria sent by server");
+                        *net_state = NetworkState::Singleplayer(Timestep::new());
+                    }
                     *self.uiw.write::<WorldCommands>() = commands;
                 }
                 PollResult::Error => {
