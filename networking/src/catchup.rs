@@ -1,4 +1,4 @@
-use crate::authent::Client;
+use crate::authent::{Client, ClientGameState};
 use crate::packets::ServerReliablePacket;
 use crate::{encode, Frame, MergedInputs, UserID, MAX_CATCHUP_PACKET_SIZE};
 use common::FastMap;
@@ -62,16 +62,6 @@ impl CatchUp {
 
         let diff = state.inputs.len() - state.sent;
 
-        if diff <= 30 {
-            log::info!("{}: sending ready to play", c.name);
-            net.send(
-                c.reliable,
-                &*encode(&ServerReliablePacket::ReadyToPlay { start_frame: c.ack }),
-            );
-            self.frame_history.remove(&c.id);
-            return;
-        }
-
         let mut inputs = vec![];
         let mut size = 0;
         while size < MAX_CATCHUP_PACKET_SIZE && state.sent < state.inputs.len() {
@@ -81,11 +71,25 @@ impl CatchUp {
             state.sent += 1;
         }
 
+        c.ack = state.from + Frame(state.sent as u32);
+
+        if diff <= 30 {
+            log::info!("{}: sending final catch up", c.name);
+            net.send(
+                c.reliable,
+                &*encode(&ServerReliablePacket::ReadyToPlay {
+                    start_frame: c.ack,
+                    final_inputs: inputs,
+                }),
+            );
+            c.state = ClientGameState::Playing;
+            self.frame_history.remove(&c.id);
+            return;
+        }
+
         let pack = ServerReliablePacket::CatchUp { inputs };
 
         net.send(c.reliable, &*encode(&pack));
-
-        c.ack = state.from + Frame(state.sent as u32);
     }
 
     pub fn disconnected(&mut self, id: UserID) {

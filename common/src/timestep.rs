@@ -29,6 +29,9 @@ impl Timestep {
 
     pub fn prepare_frame(&mut self, warp: u32) {
         self.real_delta = self.last_time.elapsed();
+        if self.real_delta > self.period * 3 {
+            self.real_delta = self.period;
+        }
         self.last_time = Instant::now();
 
         self.acc += self.real_delta * warp;
