@@ -30,7 +30,7 @@ use common::saveload::Encoder;
 use common::timestep::Timestep;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
-use networking::PollResult;
+use networking::{Frame, PollResult, ServerPollResult};
 use std::convert::TryInto;
 
 pub struct State {
@@ -108,13 +108,11 @@ impl State {
 
         crate::gui::run_ui_systems(&self.goria, &mut self.uiw);
 
-        if let NetworkState::Server { ref mut server, .. } = *self.uiw.write() {
-            server.poll(&|| SerPreparedEgregoria::from(&self.goria));
-        }
-
         let commands = std::mem::take(&mut *self.uiw.write::<WorldCommands>());
 
         let mut net_state = self.uiw.write::<NetworkState>();
+
+        let mut inputs_to_apply = None;
         match *net_state {
             NetworkState::Singleplayer(ref mut step) => {
                 let goria = &mut self.goria; // mut for tick
@@ -138,36 +136,32 @@ impl State {
                     *self.uiw.write::<WorldCommands>() = commands;
                 }
             }
-            NetworkState::Client { ref mut client }
-            | NetworkState::Server { ref mut client, .. } => match client.poll(commands) {
+            NetworkState::Server(ref mut server) => {
+                match server.poll(
+                    &|| {
+                        (
+                            SerPreparedEgregoria::from(&self.goria),
+                            Frame(self.goria.get_tick()),
+                        )
+                    },
+                    Some(commands),
+                ) {
+                    ServerPollResult::Wait(commands) => {
+                        if let Some(commands) = commands {
+                            *self.uiw.write::<WorldCommands>() = commands;
+                        }
+                    }
+                    ServerPollResult::Input(inputs) => {
+                        inputs_to_apply = Some(inputs);
+                    }
+                }
+            }
+            NetworkState::Client(ref mut client) => match client.poll(commands) {
                 PollResult::Wait(commands) => {
                     *self.uiw.write::<WorldCommands>() = commands;
                 }
                 PollResult::Input(inputs) => {
-                    let mut merged = WorldCommands::default();
-                    for frame_commands in inputs {
-                        let commands: WorldCommands =
-                            frame_commands.iter().map(|x| x.inp.clone()).collect();
-                        let t = self.goria.tick(
-                            client.step.period.as_secs_f64(),
-                            &mut self.game_schedule,
-                            &commands,
-                        );
-                        self.uiw
-                            .write::<Timings>()
-                            .world_update
-                            .add_value(t.as_secs_f32());
-                        merged.merge(
-                            frame_commands
-                                .into_iter()
-                                .filter(|x| x.sent_by_me)
-                                .map(|x| x.inp)
-                                .collect::<WorldCommands>()
-                                .iter()
-                                .cloned(),
-                        );
-                    }
-                    *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(merged);
+                    inputs_to_apply = Some(inputs);
                 }
                 PollResult::GameWorld(commands, prepared_goria) => {
                     if let Ok(x) = prepared_goria.try_into() {
@@ -184,6 +178,38 @@ impl State {
                     self.uiw.write::<NetworkConnectionInfo>().error = reason;
                 }
             },
+        }
+
+        if let Some(inputs) = inputs_to_apply {
+            let mut merged = WorldCommands::default();
+            for frame_commands in inputs {
+                assert_eq!(frame_commands.frame.0, self.goria.get_tick() + 1);
+                let commands: WorldCommands = frame_commands
+                    .inputs
+                    .iter()
+                    .map(|x| x.inp.clone())
+                    .collect();
+                let t = self.goria.tick(
+                    common::timestep::UP_DT.as_secs_f64(),
+                    &mut self.game_schedule,
+                    &commands,
+                );
+                self.uiw
+                    .write::<Timings>()
+                    .world_update
+                    .add_value(t.as_secs_f32());
+                merged.merge(
+                    frame_commands
+                        .inputs
+                        .into_iter()
+                        .filter(|x| x.sent_by_me)
+                        .map(|x| x.inp)
+                        .collect::<WorldCommands>()
+                        .iter()
+                        .cloned(),
+                );
+            }
+            *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(merged);
         }
 
         drop(net_state);

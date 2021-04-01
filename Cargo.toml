@@ -9,7 +9,8 @@ members = [
     "native_app",
     "wgpu_engine",
     "networking",
-    "flat_spatial"
+    "flat_spatial",
+    "headless"
 ]
 
 default-members = ["native_app"]

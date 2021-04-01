@@ -1,6 +1,6 @@
 use crate::authent::{Client, ClientGameState};
 use crate::packets::ServerReliablePacket;
-use crate::{encode, Frame, MergedInputs, UserID, MAX_CATCHUP_PACKET_SIZE};
+use crate::{encode, AuthentID, Frame, MergedInputs, MAX_CATCHUP_PACKET_SIZE};
 use common::FastMap;
 use message_io::network::Network;
 
@@ -13,7 +13,7 @@ struct CatchUpState {
 
 #[derive(Default)]
 pub(crate) struct CatchUp {
-    frame_history: FastMap<UserID, CatchUpState>,
+    frame_history: FastMap<AuthentID, CatchUpState>,
 }
 
 impl CatchUp {
@@ -78,7 +78,7 @@ impl CatchUp {
             net.send(
                 c.reliable,
                 &*encode(&ServerReliablePacket::ReadyToPlay {
-                    start_frame: c.ack,
+                    final_consumed_frame: c.ack,
                     final_inputs: inputs,
                 }),
             );
@@ -92,7 +92,7 @@ impl CatchUp {
         net.send(c.reliable, &*encode(&pack));
     }
 
-    pub fn disconnected(&mut self, id: UserID) {
+    pub fn disconnected(&mut self, id: AuthentID) {
         self.frame_history.remove(&id);
     }
 }

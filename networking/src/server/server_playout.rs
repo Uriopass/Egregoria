@@ -1,8 +1,9 @@
+use crate::authent::AuthentID;
 use crate::ring::Ring;
-use crate::{Frame, MergedInputs, PlayerInput, UserID};
+use crate::{Frame, MergedInputs, PlayerInput};
 use common::FastMap;
 
-type PartialInputs = FastMap<UserID, Vec<PlayerInput>>;
+type PartialInputs = FastMap<AuthentID, Vec<PlayerInput>>;
 
 ///       Playback buffer
 ///  --------------------------------------
@@ -13,7 +14,7 @@ type PartialInputs = FastMap<UserID, Vec<PlayerInput>>;
 ///  -------------------------------------
 pub(crate) struct ServerPlayoutBuffer {
     next: PartialInputs,
-    dedup: FastMap<UserID, Ring<bool>>,
+    dedup: FastMap<AuthentID, Ring<bool>>,
     past: Ring<MergedInputs>,
     pub consumed_frame: Frame,
 }
@@ -30,19 +31,19 @@ impl ServerPlayoutBuffer {
         }
     }
 
-    pub fn insert_input(&mut self, user: UserID, frame: Frame, input: PlayerInput) {
+    pub fn insert_input(&mut self, auth: AuthentID, frame: Frame, input: PlayerInput) {
         if frame.0 + self.past.len() <= self.consumed_frame.0 {
             log::info!("input was far too late");
             return;
         }
         let seen = self
             .dedup
-            .entry(user)
+            .entry(auth)
             .or_insert_with(Ring::new)
             .get_mut(frame);
 
         if !*seen {
-            self.next.entry(user).or_default().push(input);
+            self.next.entry(auth).or_default().push(input);
             *seen = true;
         }
     }
@@ -57,7 +58,7 @@ impl ServerPlayoutBuffer {
     }
 
     // call when a user has disconnected
-    pub fn disconnected(&mut self, user: UserID) {
+    pub fn disconnected(&mut self, user: AuthentID) {
         self.dedup.remove(&user);
     }
 

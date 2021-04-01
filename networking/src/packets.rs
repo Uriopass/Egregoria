@@ -12,7 +12,7 @@ pub(crate) enum ServerReliablePacket {
     Challenge(AuthentID),
     ReadyForAuth,
     ReadyToPlay {
-        start_frame: Frame,
+        final_consumed_frame: Frame,
         final_inputs: Vec<MergedInputs>,
     },
     AuthentResponse(AuthentResponse),
@@ -25,10 +25,7 @@ pub(crate) enum ServerReliablePacket {
 #[derive(Serialize, Deserialize)]
 pub(crate) enum ClientUnreliablePacket {
     Connection(AuthentID),
-    Input {
-        input: Vec<(Frame, PlayerInput)>,
-        ack_frame: Frame,
-    },
+    Input { input: Vec<(Frame, PlayerInput)> },
 }
 
 #[derive(Serialize, Deserialize)]
@@ -41,12 +38,12 @@ pub(crate) enum ClientReliablePacket {
 
 #[derive(Serialize, Deserialize)]
 pub(crate) enum AuthentResponse {
-    Accepted,
+    Accepted { id: AuthentID },
     Refused { reason: String },
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct WorldDataFragment {
-    pub is_over: bool,
+    pub is_over: Option<Frame>,
     pub data: Vec<u8>,
 }

@@ -23,7 +23,7 @@ use common::saveload::Encoder;
 use common::FastMap;
 use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 use geom::{Transform, Vec2};
-use legion::serialize::Canon;
+use legion::serialize::{Canon, CustomEntitySerializer};
 use legion::storage::Component;
 use legion::systems::{ParallelRunnable, Resource};
 use legion::{any, Entity, IntoQuery, Registry, Resources, World};
@@ -265,14 +265,28 @@ impl Egregoria {
             h.write(&x);
             h.finish()
         }
-        let serworld = SerPreparedEgregoria::from(self);
+
+        let registry = registry();
+
+        let entity_serializer = EntityToZeroSer;
+        let s = self.world.as_serializable(
+            !legion::query::component::<NoSerialize>(),
+            &registry,
+            &entity_serializer,
+        );
+
+        let world = common::saveload::Bincode::encode(&s).unwrap();
 
         let mut hashes = BTreeMap::new();
-        hashes.insert("tick".to_string(), serworld.tick as u64);
-        hashes.insert("world".to_string(), hash(&*serworld.world));
-        for (name, v) in serworld.res {
-            hashes.insert(name, hash(&*v));
-        }
+        legion::serialize::set_entity_serializer(&entity_serializer, || {
+            for l in inventory::iter::<SaveLoadFunc> {
+                let v = (l.save)(self);
+                hashes.insert(l.name.to_string(), hash(&*v));
+            }
+        });
+
+        hashes.insert("tick".to_string(), self.tick as u64);
+        hashes.insert("world".to_string(), hash(&*world));
 
         hashes
     }
@@ -437,4 +451,18 @@ fn registry() -> Registry<u64> {
       GoodsCompany,
     );
     registry
+}
+
+struct EntityToZeroSer;
+
+impl CustomEntitySerializer for EntityToZeroSer {
+    type SerializedID = u8;
+
+    fn to_serialized(&self, _: Entity) -> Self::SerializedID {
+        0
+    }
+
+    fn from_serialized(&self, _: Self::SerializedID) -> Entity {
+        unimplemented!()
+    }
 }

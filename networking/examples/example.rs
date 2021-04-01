@@ -1,11 +1,14 @@
 use log::LevelFilter;
-use networking::{Client, ConnectConf, Frame, PollResult, Server, ServerConfiguration};
+use networking::{
+    Client, ConnectConf, Frame, PollResult, Server, ServerConfiguration, ServerPollResult,
+    VirtualClientConf,
+};
 use serde::{Deserialize, Serialize};
 use std::net::Ipv4Addr;
 use std::time::Duration;
 use Action::*;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 struct World {
     incr_a: u32,
     incr_b: u32,
@@ -39,6 +42,8 @@ impl Default for Action {
     }
 }
 
+const UP_DT: Duration = Duration::from_millis(50);
+
 pub fn main() {
     simple_logger::SimpleLogger::new()
         .with_level(LevelFilter::Info)
@@ -47,12 +52,12 @@ pub fn main() {
 
     serv_c();
 
-    std::thread::sleep(Duration::from_millis(3000));
+    std::thread::sleep(Duration::from_millis(1000));
 
     let mut client2: Client<World, Action> = Client::connect(ConnectConf {
-        name: "client_2".into(),
+        name: "client".into(),
         addr: Ipv4Addr::LOCALHOST.into(),
-        period: Duration::from_millis(20),
+        period: UP_DT,
         port: None,
         frame_buffer_advance: 10,
     })
@@ -61,10 +66,7 @@ pub fn main() {
     let mut world: World;
     loop {
         if let PollResult::GameWorld(_, w) = client2.poll(DoNothing) {
-            log::info!(
-                "client_2 got world from server: length is {:?}",
-                w.pad.len()
-            );
+            log::info!("client got world from server: length is {:?}", w.pad.len());
             world = w;
             break;
         }
@@ -75,13 +77,14 @@ pub fn main() {
         if let PollResult::Input(inp) = client2.poll(IncrA) {
             for inp in inp {
                 log::info!(
-                    "client_2 got input from server: {:?} w is now {} {} {}",
+                    "client got input from server: {:?} w is now {} {} {}",
                     inp,
                     world.tick,
-                    world.incr_b,
+                    world.incr_a,
                     world.incr_b,
                 );
-                world.apply(inp.into_iter().map(|x| x.inp).collect());
+                assert_eq!(world.tick + 1, inp.frame.0);
+                world.apply(inp.inputs.into_iter().map(|x| x.inp).collect());
             }
         }
         std::thread::sleep(Duration::from_millis(20));
@@ -98,32 +101,28 @@ pub fn serv_c() {
 
     let mut serv = Server::start(ServerConfiguration {
         start_frame: Frame(world.tick),
-        period: Duration::from_millis(20),
+        period: UP_DT,
         port: None,
-    })
-    .unwrap();
-
-    let mut client1: Client<World, Action> = Client::connect(ConnectConf {
-        name: "client_1".into(),
-        addr: Ipv4Addr::LOCALHOST.into(),
-        port: None,
-        period: Duration::from_millis(20),
-        frame_buffer_advance: 10,
+        virtual_client: Some(VirtualClientConf {
+            name: "server_virtual_client".into(),
+        }),
     })
     .unwrap();
 
     std::thread::spawn(move || loop {
-        serv.poll(&world);
-        if let PollResult::Input(acts) = client1.poll(IncrB) {
+        if let ServerPollResult::Input(acts) =
+            serv.poll(&|| (world.clone(), Frame(world.tick)), Some(IncrB))
+        {
             for a in acts {
+                assert_eq!(world.tick + 1, a.frame.0);
                 log::info!(
-                    "client_1 got input from server: {:?} w is now {} {} {}",
+                    "server_virtual_client got input from server: {:?} w is now {} {} {}",
                     a,
                     world.tick,
-                    world.incr_b,
+                    world.incr_a,
                     world.incr_b,
                 );
-                world.apply(a.into_iter().map(|x| x.inp).collect());
+                world.apply(a.inputs.into_iter().map(|x| x.inp).collect());
             }
         }
         std::thread::sleep(Duration::from_millis(1));
