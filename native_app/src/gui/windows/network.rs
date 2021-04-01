@@ -3,10 +3,10 @@ use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
 use imgui::{im_str, ImString, Ui};
-use networking::{ConnectConf, Frame, ServerConfiguration};
+use networking::{ConnectConf, Frame, ServerConfiguration, VirtualClientConf};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
-use std::net::{Ipv4Addr, ToSocketAddrs};
+use std::net::ToSocketAddrs;
 
 register_resource!(NetworkConnectionInfo, "netinfo");
 pub struct NetworkConnectionInfo {
@@ -38,8 +38,8 @@ pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Eg
                 }
 
                 if ui.small_button(im_str!("Start server")) {
-                    if let Some((client, server)) = start_server(&mut *info, goria) {
-                        *state = NetworkState::Server { server, client };
+                    if let Some(server) = start_server(&mut *info, goria) {
+                        *state = NetworkState::Server(server);
                     }
                 }
 
@@ -47,21 +47,15 @@ pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Eg
                 ui.input_text(im_str!("IP"), &mut info.ip).build();
                 if ui.small_button(im_str!("Connect")) {
                     if let Some(c) = start_client(&mut info) {
-                        *state = NetworkState::Client { client: c };
+                        *state = NetworkState::Client(c);
                     }
                 }
             }
-            NetworkState::Client { ref client } => {
+            NetworkState::Client(ref client) => {
                 ui.text(client.describe());
                 show_hashes(ui, goria, &mut *info);
             }
-            NetworkState::Server {
-                ref client,
-                ref server,
-            } => {
-                ui.text("Local client:");
-                ui.text(client.describe());
-                ui.separator();
+            NetworkState::Server(ref server) => {
                 ui.text("Running server");
                 ui.text(server.describe());
                 show_hashes(ui, goria, &mut *info);
@@ -85,11 +79,14 @@ fn show_hashes(ui: &Ui, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
     }
 }
 
-fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<(Client, Server)> {
+fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<Server> {
     let server = match networking::Server::start(ServerConfiguration {
         start_frame: Frame(goria.get_tick()),
         period: common::timestep::UP_DT,
         port: None,
+        virtual_client: Some(VirtualClientConf {
+            name: info.name.to_string(),
+        }),
     }) {
         Ok(x) => x,
         Err(e) => {
@@ -98,21 +95,7 @@ fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<(
         }
     };
 
-    let client = match networking::Client::connect(ConnectConf {
-        name: format!("{}", info.name),
-        addr: Ipv4Addr::LOCALHOST.into(),
-        port: None,
-        period: common::timestep::UP_DT,
-        frame_buffer_advance: 1,
-    }) {
-        Ok(x) => x,
-        Err(e) => {
-            info.error = format!("{}", e);
-            return None;
-        }
-    };
-
-    Some((client, server))
+    Some(server)
 }
 
 fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {

@@ -5,44 +5,62 @@ use message_io::events::EventQueue;
 use message_io::network::{Endpoint, NetEvent, Network, Transport};
 use serde::Serialize;
 
-use crate::authent::{Authent, ClientGameState};
+use crate::authent::{Authent, AuthentID, ClientGameState};
 use crate::catchup::CatchUp;
+use crate::client::FrameInputs;
 use crate::packets::{
     AuthentResponse, ClientReliablePacket, ClientUnreliablePacket, ServerReliablePacket,
     ServerUnreliablePacket,
 };
 use crate::server::server_playout::ServerPlayoutBuffer;
 use crate::worldsend::WorldSend;
-use crate::{decode, encode, Frame, PhantomSendSync, DEFAULT_PORT};
+use crate::{decode, decode_merged, encode, Frame, PhantomSendSync, PlayerInput, DEFAULT_PORT};
 use common::timestep::Timestep;
+use serde::de::DeserializeOwned;
 use std::net::SocketAddr;
 
 mod server_playout;
 
-pub struct Server<WORLD: Serialize> {
+pub struct ServerConfiguration {
+    pub start_frame: Frame,
+    pub period: Duration,
+    pub port: Option<u16>,
+    pub virtual_client: Option<VirtualClientConf>,
+}
+
+pub struct VirtualClientConf {
+    pub name: String,
+}
+
+pub enum ServerPollResult<I> {
+    Wait(Option<I>),
+    Input(Vec<FrameInputs<I>>),
+}
+
+struct VirtualClient<I> {
+    name: String,
+    next_inputs: Vec<FrameInputs<I>>,
+}
+
+pub struct Server<WORLD: Serialize, INPUT> {
     network: Network,
     events: EventQueue<NetEvent>,
 
     authent: Authent,
+    v_client: Option<VirtualClient<INPUT>>,
     buffer: ServerPlayoutBuffer,
     catchup: CatchUp,
     worldsend: WorldSend,
 
     step: Timestep,
 
-    _phantom: PhantomSendSync<WORLD>,
+    _phantom: PhantomSendSync<(WORLD, INPUT)>,
 
     tcp_addr: SocketAddr,
     udp_addr: SocketAddr,
 }
 
-pub struct ServerConfiguration {
-    pub start_frame: Frame,
-    pub period: Duration,
-    pub port: Option<u16>,
-}
-
-impl<WORLD: Serialize> Server<WORLD> {
+impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WORLD, INPUT> {
     pub fn start(conf: ServerConfiguration) -> io::Result<Self> {
         let (mut network, events) = Network::split();
 
@@ -50,12 +68,22 @@ impl<WORLD: Serialize> Server<WORLD> {
         let (_, tcp_addr) = network.listen(Transport::FramedTcp, format!("0.0.0.0:{}", port))?;
         let (_, udp_addr) = network.listen(Transport::Udp, format!("0.0.0.0:{}", port + 1))?;
 
+        let mut authent = Authent::default();
+        let v_client = conf.virtual_client.map(|c| VirtualClient {
+            name: c.name,
+            next_inputs: vec![],
+        });
+        if let Some(ref v_client) = v_client {
+            authent.register(v_client.name.clone());
+        }
+
         Ok(Self {
             network,
             events,
             step: Timestep::new(conf.period),
             buffer: ServerPlayoutBuffer::new(conf.start_frame),
-            authent: Authent::default(),
+            v_client,
+            authent,
             catchup: CatchUp::default(),
             worldsend: Default::default(),
             _phantom: Default::default(),
@@ -64,7 +92,11 @@ impl<WORLD: Serialize> Server<WORLD> {
         })
     }
 
-    pub fn poll(&mut self, world: &impl Fn() -> WORLD) {
+    pub fn poll(
+        &mut self,
+        world: &impl Fn() -> (WORLD, Frame),
+        local_inputs: Option<INPUT>,
+    ) -> ServerPollResult<INPUT> {
         self.send_merged_inputs();
         self.send_long_running();
         while let Some(ev) = self.events.try_receive() {
@@ -89,10 +121,24 @@ impl<WORLD: Serialize> Server<WORLD> {
                 NetEvent::Disconnected(e) => self.tcp_disconnected(e),
             }
         }
+
+        if let Some(ref mut v) = self.v_client {
+            if !v.next_inputs.is_empty() {
+                if let Some(inp) = local_inputs {
+                    self.buffer.insert_input(
+                        AuthentID::VIRTUAL_ID,
+                        self.buffer.consumed_frame.incred(),
+                        PlayerInput(encode(&inp)),
+                    );
+                }
+                return ServerPollResult::Input(std::mem::take(&mut v.next_inputs));
+            }
+        }
+        ServerPollResult::Wait(local_inputs)
     }
 
     fn send_merged_inputs(&mut self) {
-        let n_playing = self.authent.iter_playing().count();
+        let n_playing = self.authent.iter_playing().count() + self.v_client.is_some() as usize;
 
         if n_playing == 0 {
             return;
@@ -130,8 +176,17 @@ impl<WORLD: Serialize> Server<WORLD> {
                     &*encode(&ServerUnreliablePacket::Input(packet)),
                 );
             }
+
+            if let Some(ref mut c) = self.v_client {
+                c.next_inputs.push(decode_merged(
+                    AuthentID::VIRTUAL_ID,
+                    consumed_inputs.clone(),
+                    self.buffer.consumed_frame,
+                ))
+            }
+
             self.catchup
-                .add_merged_inputs(self.buffer.consumed_frame, consumed_inputs)
+                .add_merged_inputs(self.buffer.consumed_frame, consumed_inputs);
         }
     }
 
@@ -151,13 +206,13 @@ impl<WORLD: Serialize> Server<WORLD> {
 
     fn message_unreliable(&mut self, e: Endpoint, packet: ClientUnreliablePacket) -> Option<()> {
         match packet {
-            ClientUnreliablePacket::Input { input, ack_frame } => {
+            ClientUnreliablePacket::Input { input } => {
                 let client = self.authent.get_client_mut(e)?;
 
                 //log::info!("{}: received inputs {:?}", client.name, ack_frame);
-                client.ack = ack_frame;
 
                 for (frame, input) in input {
+                    client.ack = client.ack.max(frame);
                     self.buffer.insert_input(client.id, frame, input);
                 }
             }
@@ -172,20 +227,21 @@ impl<WORLD: Serialize> Server<WORLD> {
         &mut self,
         e: Endpoint,
         packet: ClientReliablePacket,
-        world: &impl Fn() -> WORLD,
+        world: &impl Fn() -> (WORLD, Frame),
     ) -> Option<()> {
         match packet {
             ClientReliablePacket::Connect { name } => {
                 let auth_r = self
                     .authent
                     .tcp_client_auth(e, self.buffer.consumed_frame, name)?;
-                let accepted = matches!(auth_r, AuthentResponse::Accepted);
+                let accepted = matches!(auth_r, AuthentResponse::Accepted { .. });
                 self.network
                     .send(e, &*encode(&ServerReliablePacket::AuthentResponse(auth_r)));
 
                 if accepted {
                     let c = self.authent.get_client(e)?;
-                    self.worldsend.begin_send(c, encode(&world()));
+                    let w = world();
+                    self.worldsend.begin_send(c, encode(&w.0), w.1);
                     self.catchup
                         .begin_remembering(self.buffer.consumed_frame, c);
 
@@ -207,7 +263,7 @@ impl<WORLD: Serialize> Server<WORLD> {
             }
             ClientReliablePacket::WorldAck => {
                 let c = self.authent.get_client(e)?;
-                log::info!("client {} ack", c.name);
+                log::info!("client {} world rcv acked", c.name);
                 self.worldsend.ack(c);
             }
         }
@@ -228,6 +284,9 @@ impl<WORLD: Serialize> Server<WORLD> {
         s += &*format!("         and {} (udp)\n", self.udp_addr);
 
         s += "Users:\n";
+        if let Some(ref c) = self.v_client {
+            s += &*format!("{}: Playing...\n", c.name)
+        }
         for c in self.authent.iter() {
             s += &*format!("{}: {:?}...\n", c.name, c.state);
         }

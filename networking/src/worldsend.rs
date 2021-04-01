@@ -1,8 +1,9 @@
 use crate::authent::{Client, ClientGameState};
 use crate::packets::{ClientReliablePacket, ServerReliablePacket, WorldDataFragment};
-use crate::{encode, UserID, MAX_WORLDSEND_PACKET_SIZE};
+use crate::{decode, encode, AuthentID, Frame, MAX_WORLDSEND_PACKET_SIZE};
 use common::FastMap;
 use message_io::network::{Endpoint, Network};
+use serde::de::DeserializeOwned;
 
 #[derive(Eq, PartialEq)]
 enum WorldSendStatus {
@@ -16,21 +17,23 @@ struct WorldSendState {
     data: Vec<u8>,
     sent: usize,
     status: WorldSendStatus,
+    frame: Frame,
 }
 
 #[derive(Default)]
 pub(crate) struct WorldSend {
-    send_state: FastMap<UserID, WorldSendState>,
+    send_state: FastMap<AuthentID, WorldSendState>,
 }
 
 impl WorldSend {
-    pub fn begin_send(&mut self, c: &Client, data: Vec<u8>) {
+    pub fn begin_send(&mut self, c: &Client, data: Vec<u8>, frame: Frame) {
         self.send_state.insert(
             c.id,
             WorldSendState {
                 data,
                 sent: 0,
                 status: WorldSendStatus::WaitingForAck,
+                frame,
             },
         );
     }
@@ -62,7 +65,7 @@ impl WorldSend {
             state.status = WorldSendStatus::WaitingForAck;
 
             let to_send = MAX_WORLDSEND_PACKET_SIZE.min(state.data.len() - state.sent);
-            let is_over = to_send < MAX_WORLDSEND_PACKET_SIZE;
+            let is_over = (to_send < MAX_WORLDSEND_PACKET_SIZE).then(|| state.frame);
 
             net.send(
                 c.reliable,
@@ -80,29 +83,44 @@ impl WorldSend {
         }
     }
 
-    pub fn disconnected(&mut self, id: UserID) {
+    pub fn disconnected(&mut self, id: AuthentID) {
         self.send_state.remove(&id);
     }
 }
 
-#[derive(Default)]
-pub(crate) struct WorldReceive {
-    data_so_far: Vec<u8>,
-    is_over: bool,
+pub(crate) enum WorldReceive<W> {
+    Downloading { data_so_far: Vec<u8> },
+    Finished { frame: Frame, world: W },
+    Errored,
 }
 
-impl WorldReceive {
-    pub fn handle(&mut self, fragment: WorldDataFragment, net: &mut Network, tcp: Endpoint) {
-        self.data_so_far.extend(fragment.data);
-        self.is_over = fragment.is_over;
-        net.send(tcp, &*encode(&ClientReliablePacket::WorldAck));
+impl<W> Default for WorldReceive<W> {
+    fn default() -> Self {
+        Self::Downloading {
+            data_so_far: vec![],
+        }
     }
+}
 
-    pub fn check_finished(&mut self) -> Option<Vec<u8>> {
-        if self.is_over {
-            Some(std::mem::take(&mut self.data_so_far))
-        } else {
-            None
+impl<W: DeserializeOwned> WorldReceive<W> {
+    pub fn handle(&mut self, fragment: WorldDataFragment, net: &mut Network, tcp: Endpoint) {
+        if let WorldReceive::Downloading {
+            ref mut data_so_far,
+        } = self
+        {
+            data_so_far.extend(fragment.data);
+            if let Some(frame) = fragment.is_over {
+                log::info!("received last fragment at {:?}", frame);
+                net.send(tcp, &*encode(&ClientReliablePacket::WorldAck));
+
+                let d = decode(data_so_far);
+
+                if let Some(w) = d {
+                    *self = WorldReceive::Finished { frame, world: w }
+                } else {
+                    *self = WorldReceive::Errored;
+                }
+            }
         }
     }
 }

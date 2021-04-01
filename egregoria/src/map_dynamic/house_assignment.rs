@@ -1,21 +1,21 @@
 use crate::SoulID;
-use common::FastMap;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 use slotmap::SecondaryMap;
+use std::collections::BTreeMap;
 use std::ops::{Index, IndexMut};
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize, Debug)]
 pub struct BuildingInfo {
     pub owner: Option<SoulID>,
     pub inside: Vec<SoulID>,
 }
 
 register_resource!(BuildingInfos, "binfos");
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize, Debug)]
 pub struct BuildingInfos {
     assignment: SecondaryMap<BuildingID, BuildingInfo>,
-    owners: FastMap<SoulID, BuildingID>,
+    owners: BTreeMap<SoulID, BuildingID>,
 }
 
 impl BuildingInfos {

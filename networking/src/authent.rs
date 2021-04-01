@@ -1,13 +1,17 @@
 use crate::packets::{AuthentResponse, ServerReliablePacket};
 use crate::{encode, hash_str, Frame, UserID};
-use common::FastMap;
+use common::{FastMap, FastSet};
 use message_io::network::{Endpoint, Network};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Copy, Clone, Hash)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Copy, Clone, Hash, Debug)]
 #[repr(transparent)]
 pub(crate) struct AuthentID(u32);
+
+impl AuthentID {
+    pub const VIRTUAL_ID: AuthentID = AuthentID(0);
+}
 
 #[derive(PartialEq, Eq, Debug)]
 pub(crate) enum ClientGameState {
@@ -17,7 +21,8 @@ pub(crate) enum ClientGameState {
 }
 
 pub(crate) struct Client {
-    pub id: UserID,
+    pub id: AuthentID,
+    pub uid: UserID,
     pub name: String,
     pub ack: Frame,
     pub reliable: Endpoint,
@@ -27,6 +32,7 @@ pub(crate) struct Client {
 
 enum ClientConnectState {
     Connecting {
+        id: AuthentID,
         reliable: Endpoint,
         unreliable: Option<Endpoint>,
     },
@@ -34,6 +40,7 @@ enum ClientConnectState {
 }
 
 pub(crate) struct Authent {
+    names: FastSet<String>,
     clients: FastMap<AuthentID, ClientConnectState>,
     addr_to_client: FastMap<SocketAddr, AuthentID>,
     n_connected_clients: u32,
@@ -43,11 +50,17 @@ pub(crate) struct Authent {
 impl Authent {
     pub fn new() -> Self {
         Self {
+            names: Default::default(),
             clients: Default::default(),
             addr_to_client: Default::default(),
             n_connected_clients: 0,
-            seq: 0,
+            seq: 1,
         }
+    }
+
+    /// returns true if the player was already registered
+    pub fn register(&mut self, name: String) -> bool {
+        !self.names.insert(name)
     }
 
     pub fn tcp_client_auth(
@@ -59,6 +72,7 @@ impl Authent {
         let state = self.get_client_state_mut(e)?;
 
         if let ClientConnectState::Connecting {
+            id,
             reliable,
             unreliable: Some(unreliable),
         } = *state
@@ -66,7 +80,7 @@ impl Authent {
             log::info!("client authenticated: {}@{}", name, e.addr());
             let hash = hash_str(&name);
 
-            if self.iter().any(|x| x.name == name) {
+            if self.register(name.clone()) {
                 return Some(AuthentResponse::Refused {
                     reason: format!("name is already in use: {}", name),
                 });
@@ -74,7 +88,8 @@ impl Authent {
 
             // Unwrap ok: already checked right before
             *self.get_client_state_mut(e).unwrap() = ClientConnectState::Connected(Client {
-                id: UserID(hash),
+                id,
+                uid: UserID(hash),
                 name,
                 ack,
                 reliable,
@@ -84,7 +99,7 @@ impl Authent {
 
             self.n_connected_clients += 1;
 
-            return Some(AuthentResponse::Accepted);
+            return Some(AuthentResponse::Accepted { id });
         }
         None
     }
@@ -92,6 +107,7 @@ impl Authent {
     pub fn udp_connect(&mut self, e: Endpoint, id: AuthentID, net: &mut Network) {
         self.addr_to_client.insert(e.addr(), id);
         if let Some(ClientConnectState::Connecting {
+            id: _,
             unreliable,
             reliable,
         }) = self.get_client_state_mut(e)
@@ -104,18 +120,19 @@ impl Authent {
     pub fn tcp_connected(&mut self, e: Endpoint, net: &mut Network) {
         log::info!("connected:{}", e);
 
-        let client_id = self.next_client_id();
-        self.addr_to_client.insert(e.addr(), client_id);
+        let id = self.next_auth_id();
+        self.addr_to_client.insert(e.addr(), id);
 
         self.clients.insert(
-            client_id,
+            id,
             ClientConnectState::Connecting {
+                id,
                 reliable: e,
                 unreliable: None,
             },
         );
 
-        net.send(e, &*encode(&ServerReliablePacket::Challenge(client_id)));
+        net.send(e, &*encode(&ServerReliablePacket::Challenge(id)));
     }
 
     pub fn disconnected(&mut self, e: Endpoint) -> Option<Client> {
@@ -167,7 +184,7 @@ impl Authent {
         self.iter().filter(|x| x.state == ClientGameState::Playing)
     }
 
-    fn next_client_id(&mut self) -> AuthentID {
+    fn next_auth_id(&mut self) -> AuthentID {
         self.seq += 1;
         AuthentID(self.seq)
     }
