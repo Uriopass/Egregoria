@@ -1,4 +1,4 @@
-use log::{Level, Metadata, Record};
+use log::{Level, LevelFilter, Metadata, Record};
 use std::fs::File;
 use std::io::{stdout, BufWriter, Write};
 use std::sync::Mutex;
@@ -10,7 +10,7 @@ pub struct MyLog {
 }
 
 impl MyLog {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let _ = std::fs::create_dir("logs");
         let log_file;
         #[cfg(not(debug_assertions))]
@@ -36,6 +36,13 @@ impl MyLog {
             start: Instant::now(),
             log_file,
         }
+    }
+
+    pub fn init() {
+        let leaked = Box::leak(Box::new(MyLog::new()));
+        log::set_logger(leaked).unwrap();
+        log::set_max_level(LevelFilter::Debug);
+        log_panics::init();
     }
 }
 

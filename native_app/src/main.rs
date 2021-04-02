@@ -3,10 +3,8 @@
 #![allow(elided_lifetimes_in_paths)]
 #![allow(clippy::upper_case_acronyms)]
 
-use log::LevelFilter;
-
 use crate::context::Context;
-use crate::logger::MyLog;
+use common::logger::MyLog;
 
 #[macro_use]
 extern crate common;
@@ -22,15 +20,11 @@ mod context;
 mod game_loop;
 mod gui;
 mod input;
-mod logger;
 mod network;
 mod rendering;
 
 fn main() {
-    let leaked = Box::leak(Box::new(MyLog::new()));
-    log::set_logger(leaked).unwrap();
-    log::set_max_level(LevelFilter::Debug);
-    log_panics::init();
+    MyLog::init();
 
     let mut ctx = Context::new();
 

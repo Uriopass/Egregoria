@@ -85,6 +85,7 @@ macro_rules! unwrap_contlog {
 
 pub mod config;
 pub mod history;
+pub mod logger;
 pub mod rand;
 pub mod saveload;
 pub mod time;
