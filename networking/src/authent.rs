@@ -45,16 +45,18 @@ pub(crate) struct Authent {
     addr_to_client: FastMap<SocketAddr, AuthentID>,
     n_connected_clients: u32,
     seq: u32,
+    version: String,
 }
 
 impl Authent {
-    pub fn new() -> Self {
+    pub fn new(version: String) -> Self {
         Self {
             names: Default::default(),
             clients: Default::default(),
             addr_to_client: Default::default(),
             n_connected_clients: 0,
             seq: 1,
+            version,
         }
     }
 
@@ -68,22 +70,39 @@ impl Authent {
         e: Endpoint,
         ack: Frame,
         name: String,
-    ) -> Option<AuthentResponse> {
-        let state = self.get_client_state_mut(e)?;
+        version: String,
+    ) -> AuthentResponse {
+        let v = match self.get_client_state_mut(e) {
+            Some(x) => x,
+            None => {
+                return AuthentResponse::Refused {
+                    reason: "client not found, packet was sent too early?".to_string(),
+                }
+            }
+        };
 
         if let ClientConnectState::Connecting {
             id,
             reliable,
             unreliable: Some(unreliable),
-        } = *state
+        } = *v
         {
             log::info!("client authenticated: {}@{}", name, e.addr());
             let hash = hash_str(&name);
 
             if self.register(name.clone()) {
-                return Some(AuthentResponse::Refused {
+                return AuthentResponse::Refused {
                     reason: format!("name is already in use: {}", name),
-                });
+                };
+            }
+
+            if version != self.version {
+                return AuthentResponse::Refused {
+                    reason: format!(
+                        "Incompatible versions: serv: {} vs client: {}",
+                        self.version, version
+                    ),
+                };
             }
 
             // Unwrap ok: already checked right before
@@ -99,9 +118,11 @@ impl Authent {
 
             self.n_connected_clients += 1;
 
-            return Some(AuthentResponse::Accepted { id });
+            return AuthentResponse::Accepted { id };
         }
-        None
+        AuthentResponse::Refused {
+            reason: "client was not connecting".to_string(),
+        }
     }
 
     pub fn udp_connect(&mut self, e: Endpoint, id: AuthentID, net: &mut Network) {
@@ -194,12 +215,6 @@ impl Authent {
         self.addr_to_client
             .get(&e.addr())
             .and_then(move |x| clients.get_mut(x))
-    }
-}
-
-impl Default for Authent {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

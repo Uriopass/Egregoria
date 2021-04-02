@@ -30,7 +30,7 @@ pub(crate) enum ClientUnreliablePacket {
 
 #[derive(Serialize, Deserialize)]
 pub(crate) enum ClientReliablePacket {
-    Connect { name: String },
+    Connect { name: String, version: String },
     BeginCatchUp,
     CatchUpAck,
     WorldAck,

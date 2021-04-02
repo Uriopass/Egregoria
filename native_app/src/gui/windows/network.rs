@@ -87,6 +87,7 @@ fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<S
         virtual_client: Some(VirtualClientConf {
             name: info.name.to_string(),
         }),
+        version: goria_version::VERSION.to_string(),
     }) {
         Ok(x) => x,
         Err(e) => {
@@ -125,6 +126,7 @@ fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
         port: if port != 80 { Some(port) } else { None },
         period: common::timestep::UP_DT,
         frame_buffer_advance: 8,
+        version: goria_version::VERSION.to_string(),
     }) {
         Ok(x) => x,
         Err(e) => {

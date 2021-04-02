@@ -26,6 +26,8 @@ pub struct ServerConfiguration {
     pub period: Duration,
     pub port: Option<u16>,
     pub virtual_client: Option<VirtualClientConf>,
+    /// Checks if client has same version or refuses authent otherwise
+    pub version: String,
 }
 
 pub struct VirtualClientConf {
@@ -68,7 +70,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
         let (_, tcp_addr) = network.listen(Transport::FramedTcp, format!("0.0.0.0:{}", port))?;
         let (_, udp_addr) = network.listen(Transport::Udp, format!("0.0.0.0:{}", port + 1))?;
 
-        let mut authent = Authent::default();
+        let mut authent = Authent::new(conf.version);
         let v_client = conf.virtual_client.map(|c| VirtualClient {
             name: c.name,
             next_inputs: vec![],
@@ -230,10 +232,10 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
         world: &impl Fn() -> (WORLD, Frame),
     ) -> Option<()> {
         match packet {
-            ClientReliablePacket::Connect { name } => {
-                let auth_r = self
-                    .authent
-                    .tcp_client_auth(e, self.buffer.consumed_frame, name)?;
+            ClientReliablePacket::Connect { name, version } => {
+                let auth_r =
+                    self.authent
+                        .tcp_client_auth(e, self.buffer.consumed_frame, name, version);
                 let accepted = matches!(auth_r, AuthentResponse::Accepted { .. });
                 self.network
                     .send(e, &*encode(&ServerReliablePacket::AuthentResponse(auth_r)));
