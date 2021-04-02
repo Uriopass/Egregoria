@@ -22,7 +22,6 @@ imgui-wgpu    = "0.14.0"
 imgui-winit-support = "0.7.0"
 map_model     = { path = "../map_model" }
 flat_spatial  = { path = "../flat_spatial" }
-log-panics    = { version = "2.0.0", features=["with-backtrace"] }
 log           = { version = "0.4.11", features=["max_level_debug", "release_max_level_info"] }
 inline_tweak  = "1.0.6"
 imgui         = "0.7"
