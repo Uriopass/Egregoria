@@ -69,6 +69,7 @@ pub struct Client<WORLD: DeserializeOwned, INPUT: Serialize + DeserializeOwned +
     udp: Endpoint,
 
     name: String,
+    version: String,
 
     state: ClientState<WORLD, INPUT>,
 
@@ -84,6 +85,7 @@ pub struct ConnectConf {
     pub port: Option<u16>,
     pub period: Duration,
     pub frame_buffer_advance: u32,
+    pub version: String,
 }
 
 impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I> {
@@ -104,6 +106,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
             lag_compensate: conf.frame_buffer_advance,
             step: Timestep::new(conf.period),
             _phantom: Default::default(),
+            version: conf.version,
         })
     }
 
@@ -263,6 +266,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 log::info!("{}: received ready for auth", self.name);
                 let connect = ClientReliablePacket::Connect {
                     name: self.name.clone(),
+                    version: self.version.clone(),
                 };
                 self.network.send(self.tcp, &*encode(&connect));
             }

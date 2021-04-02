@@ -10,7 +10,8 @@ members = [
     "wgpu_engine",
     "networking",
     "flat_spatial",
-    "headless"
+    "headless",
+    "goria_version"
 ]
 
 default-members = ["native_app"]
