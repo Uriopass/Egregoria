@@ -36,7 +36,7 @@ pub(crate) enum ClientReliablePacket {
     WorldAck,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) enum AuthentResponse {
     Accepted { id: AuthentID },
     Refused { reason: String },

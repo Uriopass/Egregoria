@@ -236,20 +236,26 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
                 let auth_r =
                     self.authent
                         .tcp_client_auth(e, self.buffer.consumed_frame, name, version);
-                let accepted = matches!(auth_r, AuthentResponse::Accepted { .. });
-                self.network
-                    .send(e, &*encode(&ServerReliablePacket::AuthentResponse(auth_r)));
 
-                if accepted {
-                    let c = self.authent.get_client(e)?;
-                    let w = world();
-                    self.worldsend.begin_send(c, encode(&w.0), w.1);
-                    self.catchup
-                        .begin_remembering(self.buffer.consumed_frame, c);
+                self.network.send(
+                    e,
+                    &*encode(&ServerReliablePacket::AuthentResponse(auth_r.clone())),
+                );
 
-                    self.authent.get_client_mut(e)?.state = ClientGameState::Downloading;
-                } else {
-                    self.network.remove(e.resource_id());
+                match auth_r {
+                    AuthentResponse::Accepted { .. } => {
+                        let c = self.authent.get_client(e)?;
+                        let w = world();
+                        self.worldsend.begin_send(c, encode(&w.0), w.1);
+                        self.catchup
+                            .begin_remembering(self.buffer.consumed_frame, c);
+
+                        self.authent.get_client_mut(e)?.state = ClientGameState::Downloading;
+                    }
+                    AuthentResponse::Refused { reason } => {
+                        log::error!("refused authent because: {}", reason);
+                        self.network.remove(e.resource_id());
+                    }
                 }
             }
             ClientReliablePacket::BeginCatchUp => {
