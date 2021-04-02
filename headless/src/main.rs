@@ -4,6 +4,7 @@ use common::unwrap_or;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use networking::{Frame, Server, ServerConfiguration, ServerPollResult};
+use std::time::Duration;
 use structopt::StructOpt;
 
 /// A basic example
@@ -19,7 +20,7 @@ fn main() {
     let opt = Opt::from_args();
     MyLog::init();
 
-    log::info!("starting server...");
+    log::info!("starting server with version: {}", goria_version::VERSION);
 
     let mut w = unwrap_or!(Egregoria::load_from_disk("world"), {
         log::info!("savegame not found defaulting to empty");
@@ -34,6 +35,7 @@ fn main() {
             period: UP_DT,
             port: opt.port,
             virtual_client: None,
+            version: goria_version::VERSION.to_string(),
         }) {
             Ok(x) => x,
             Err(e) => {
@@ -55,5 +57,7 @@ fn main() {
                 }
             }
         }
+
+        std::thread::sleep(Duration::from_millis(1));
     }
 }
