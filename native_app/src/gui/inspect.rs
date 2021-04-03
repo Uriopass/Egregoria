@@ -39,6 +39,7 @@ impl InspectRenderer {
     }
 
     pub fn render(&self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui) {
+        ui.text(im_str!("{:?}", self.entity));
         self.inspect_component::<Transform>(goria, ui);
         self.inspect_component::<Vehicle>(goria, ui);
         self.inspect_component::<Pedestrian>(goria, ui);
