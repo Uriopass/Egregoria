@@ -9,7 +9,6 @@ use common::{GameTime, History};
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use geom::Camera;
 use geom::{vec3, LinearColor};
-use map_model::Map;
 use wgpu_engine::lighting::{LightInstance, LightRender};
 use wgpu_engine::{FrameContext, GuiRenderContext, SpriteBatch};
 
@@ -265,7 +264,7 @@ impl State {
 
         let time: GameTime = *self.goria.read::<GameTime>();
         self.road_renderer
-            .render(&self.goria.read::<Map>(), time.seconds, &mut tess, ctx);
+            .render(&self.goria.map(), time.seconds, &mut tess, ctx);
 
         self.instanced_renderer.render(&self.goria, ctx);
 
@@ -360,7 +359,7 @@ impl State {
         let time = self.goria.read::<GameTime>();
         let daysec = time.daysec();
 
-        let map = self.goria.read::<Map>();
+        let map = self.goria.map();
         for x in map.roads().values() {
             let w = x.width * 0.5 - 5.0;
             for (point, dir) in x.points().equipoints_dir(45.0) {

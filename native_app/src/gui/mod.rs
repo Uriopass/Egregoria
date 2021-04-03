@@ -8,7 +8,6 @@ use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use geom::Camera;
-use map_model::Map;
 use roadbuild::RoadBuildResource;
 use wgpu_engine::GfxContext;
 
@@ -40,7 +39,7 @@ pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     hand_reset(uiworld);
 
     let cam = uiworld.read::<Camera>().screen_aabb();
-    if goria.read::<Map>().trees.check_non_generated_chunks(cam) {
+    if goria.map().trees.check_non_generated_chunks(cam) {
         uiworld.commands().map_generate_trees(cam);
     }
 }

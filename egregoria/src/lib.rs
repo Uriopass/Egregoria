@@ -326,6 +326,14 @@ impl Egregoria {
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
+    pub fn map(&self) -> AtomicRef<Map> {
+        self.resources.get().unwrap()
+    }
+
+    pub(crate) fn map_mut(&self) -> AtomicRefMut<Map> {
+        self.resources.get_mut().unwrap()
+    }
+
     pub fn insert<T: Resource>(&mut self, res: T) {
         self.resources.insert(res)
     }

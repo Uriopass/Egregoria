@@ -10,7 +10,7 @@ use geom::{Spline, Transform, Vec2};
 use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
 use legion::Entity;
-use map_model::{Map, ParkingSpotID};
+use map_model::ParkingSpotID;
 use serde::{Deserialize, Serialize};
 
 /// The duration for the parking animation.
@@ -118,7 +118,7 @@ pub fn spawn_parked_vehicle(
     kind: VehicleKind,
     near: Vec2,
 ) -> Option<VehicleID> {
-    let map = goria.read::<Map>();
+    let map = goria.map();
 
     let it = Itinerary::none();
 

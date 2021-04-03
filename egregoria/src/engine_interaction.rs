@@ -128,11 +128,11 @@ impl WorldCommands {
 impl WorldCommand {
     pub(crate) fn apply(&self, goria: &mut Egregoria) {
         match *self {
-            MapRemoveIntersection(id) => goria.write::<Map>().remove_intersection(id),
-            MapRemoveRoad(id) => drop(goria.write::<Map>().remove_road(id)),
-            MapRemoveBuilding(id) => drop(goria.write::<Map>().remove_building(id)),
+            MapRemoveIntersection(id) => goria.map_mut().remove_intersection(id),
+            MapRemoveRoad(id) => drop(goria.map_mut().remove_road(id)),
+            MapRemoveBuilding(id) => drop(goria.map_mut().remove_building(id)),
             MapBuildHouse(id) => {
-                if let Some(build) = goria.write::<Map>().build_house(id) {
+                if let Some(build) = goria.map_mut().build_house(id) {
                     let mut infos = goria.write::<BuildingInfos>();
                     infos.insert(build);
                 }
@@ -143,7 +143,7 @@ impl WorldCommand {
                     .make_connection(from, to, interpoint, pat);
             }
             MapUpdateIntersectionPolicy(id, tp, lp) => {
-                goria.write::<Map>().update_intersection(id, move |i| {
+                goria.map_mut().update_intersection(id, move |i| {
                     i.light_policy = lp;
                     i.turn_policy = tp;
                 })
@@ -158,16 +158,16 @@ impl WorldCommand {
             }
             SetGameTime(gt) => *goria.write::<GameTime>() = gt,
             MapLoadParis => {
-                goria.write::<Map>().clear();
-                map_model::procgen::load_parismap(&mut *goria.write::<Map>())
+                goria.map_mut().clear();
+                map_model::procgen::load_parismap(&mut *goria.map_mut())
             }
             MapLoadTestField(pos, size, spacing) => {
-                goria.write::<Map>().clear();
-                map_model::procgen::load_testfield(&mut *goria.write::<Map>(), pos, size, spacing)
+                goria.map_mut().clear();
+                map_model::procgen::load_testfield(&mut *goria.map_mut(), pos, size, spacing)
             }
-            MapClear => goria.write::<Map>().clear(),
+            MapClear => goria.map_mut().clear(),
             MapGenerateTrees(aabb) => {
-                goria.write::<Map>().trees.generate_chunks(aabb);
+                goria.map_mut().trees.generate_chunks(aabb);
             }
         }
     }

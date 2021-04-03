@@ -5,7 +5,7 @@ use crate::uiworld::UiWorld;
 use common::{AudioKind, Z_TOOL};
 use egregoria::Egregoria;
 use geom::{Vec2, OBB};
-use map_model::{BuildingGen, BuildingKind, Map, ProjectKind};
+use map_model::{BuildingGen, BuildingKind, ProjectKind};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
@@ -28,7 +28,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut draw = uiworld.write::<ImmediateDraw>();
     let mut sound = uiworld.write::<ImmediateSound>();
 
-    let map = goria.read::<Map>();
+    let map = goria.map();
 
     let commands = &mut *uiworld.commands();
 

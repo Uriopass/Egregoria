@@ -22,7 +22,7 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     let mouseinfo: &MouseInfo = &*uiworld.read::<MouseInfo>();
-    let map: &Map = &*goria.read::<Map>();
+    let map: &Map = &*goria.map();
     let draw: &mut ImmediateDraw = &mut *uiworld.write::<ImmediateDraw>();
     let mut commands = uiworld.commands();
     let state: &BulldozerState = &*uiworld.read::<BulldozerState>();

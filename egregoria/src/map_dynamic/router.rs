@@ -219,7 +219,7 @@ fn walk_outside(
 fn park(vehicle: VehicleID, spot_id: ParkingSpotID) -> impl FnOnce(&mut Egregoria) {
     move |goria| {
         let trans = goria.comp::<Transform>(vehicle.0).unwrap();
-        let map = goria.read::<Map>();
+        let map = goria.map();
         let spot = match map.parking.get(spot_id) {
             Some(x) => x,
             None => {

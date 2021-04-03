@@ -9,7 +9,7 @@ use geom::Color;
 use geom::{vec2, Transform, Vec2};
 use imgui_inspect_derive::*;
 use legion::Entity;
-use map_model::{BuildingID, Map};
+use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Inspect)]
@@ -23,7 +23,7 @@ const PED_SIZE: f32 = 0.5;
 pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Entity {
     let color = random_pedestrian_shirt_color(&mut *goria.write::<RandProvider>());
 
-    let hpos = goria.read::<Map>().buildings()[house].door_pos;
+    let hpos = goria.map().buildings()[house].door_pos;
     let p = Pedestrian::new(&mut *goria.write::<RandProvider>());
     let e = goria.world.push((
         Transform::new(hpos),

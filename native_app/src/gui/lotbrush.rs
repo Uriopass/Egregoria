@@ -4,7 +4,7 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use common::Z_TOOL;
 use egregoria::Egregoria;
-use map_model::{LotKind, Map, ProjectKind};
+use map_model::{LotKind, ProjectKind};
 use serde::{Deserialize, Serialize};
 
 register_resource!(LotBrushResource, "lot_brush");
@@ -19,7 +19,7 @@ pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = *uiworld.read::<Tool>();
     let mouseinfo = uiworld.read::<MouseInfo>();
     let mut draw = uiworld.write::<ImmediateDraw>();
-    let map = goria.read::<Map>();
+    let map = goria.map();
     let commands = &mut *uiworld.commands();
 
     if !matches!(tool, Tool::LotBrush) {

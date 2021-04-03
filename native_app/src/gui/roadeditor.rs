@@ -5,8 +5,8 @@ use crate::uiworld::UiWorld;
 use common::{Z_GUITURN, Z_HIGHLIGHT_INTER, Z_TOOL_BG};
 use egregoria::Egregoria;
 use geom::Color;
+use map_model::ProjectKind;
 use map_model::{IntersectionID, LightPolicy, TurnPolicy};
-use map_model::{Map, ProjectKind};
 
 #[derive(Clone)]
 pub struct IntersectionComponent {
@@ -27,7 +27,7 @@ pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mouseinfo = uiworld.read::<MouseInfo>();
     let mut state = uiworld.write::<RoadEditorResource>();
     let mut imm_draw = uiworld.write::<ImmediateDraw>();
-    let map = goria.read::<Map>();
+    let map = goria.map();
     let commands = &mut *uiworld.commands();
 
     if !matches!(*tool, Tool::RoadEditor) {
