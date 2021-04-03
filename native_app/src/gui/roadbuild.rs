@@ -25,6 +25,7 @@ register_resource_noserialize!(RoadBuildResource);
 pub struct RoadBuildResource {
     pub build_state: BuildState,
     pub pattern_builder: LanePatternBuilder,
+    pub snap_to_grid: bool,
 }
 
 use crate::uiworld::UiWorld;
@@ -48,6 +49,12 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         return;
     }
 
+    let mousepos = if state.snap_to_grid {
+        mouseinfo.unprojected.snap(30.0, 30.0)
+    } else {
+        mouseinfo.unprojected
+    };
+
     for command in uiworld.received_commands().iter() {
         if matches!(
             *uiworld.read::<Tool>(),
@@ -66,7 +73,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         state.build_state = BuildState::Hover;
     }
 
-    let mut cur_proj = map.project(mouseinfo.unprojected, 0.0);
+    let mut cur_proj = map.project(mousepos, 0.0);
     if matches!(cur_proj.kind, ProjectKind::Lot(_)) {
         cur_proj.kind = ProjectKind::Ground;
     }
