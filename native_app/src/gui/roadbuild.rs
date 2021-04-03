@@ -1,9 +1,15 @@
 use crate::gui::Tool;
 use crate::input::{MouseButton, MouseInfo};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
-use geom::Spline;
-use geom::Vec2;
+use crate::uiworld::UiWorld;
+use common::{AudioKind, Z_GRID, Z_TOOL};
+use egregoria::engine_interaction::{WorldCommand, WorldCommands};
+use egregoria::Egregoria;
+use geom::{vec2, Vec2};
+use geom::{Camera, Spline};
 use map_model::{LanePatternBuilder, Map, MapProject, ProjectKind};
+use BuildState::{Hover, Interpolation, Start};
+use ProjectKind::{Building, Ground, Inter, Road};
 
 const MAX_TURN_ANGLE: f32 = 30.0 * std::f32::consts::PI / 180.0;
 
@@ -28,13 +34,6 @@ pub struct RoadBuildResource {
     pub snap_to_grid: bool,
 }
 
-use crate::uiworld::UiWorld;
-use common::{AudioKind, Z_TOOL};
-use egregoria::engine_interaction::{WorldCommand, WorldCommands};
-use egregoria::Egregoria;
-use BuildState::{Hover, Interpolation, Start};
-use ProjectKind::{Building, Ground, Inter, Road};
-
 pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let state = &mut *uiworld.write::<RoadBuildResource>();
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();
@@ -43,17 +42,45 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = uiworld.read::<Tool>();
     let map = &*goria.read::<Map>();
     let commands: &mut WorldCommands = &mut *uiworld.commands();
+    let cam = &*uiworld.read::<Camera>();
 
     if !matches!(*tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
         state.build_state = BuildState::Hover;
         return;
     }
 
+    let grid_size = 30.0;
     let mousepos = if state.snap_to_grid {
-        mouseinfo.unprojected.snap(30.0, 30.0)
+        mouseinfo.unprojected.snap(grid_size, grid_size)
     } else {
         mouseinfo.unprojected
     };
+
+    let log_height = cam.position.z.log10();
+    let cutoff = inline_tweak::tweak!(3.3);
+
+    if state.snap_to_grid && log_height < cutoff {
+        let alpha = 1.0 - log_height / cutoff;
+        let col = common::config().gui_primary.a(alpha);
+        let screen = cam.screen_aabb();
+        let startx = (screen.ll.x / grid_size).ceil() * grid_size;
+        for x in 0..(screen.w() / grid_size) as i32 {
+            let x = startx + x as f32 * grid_size;
+            immdraw
+                .line(vec2(x, screen.ll.y), vec2(x, screen.ur.y), 1.0)
+                .color(col)
+                .z(Z_GRID);
+        }
+
+        let starty = (screen.ll.y / grid_size).ceil() * grid_size;
+        for y in 0..(screen.h() / grid_size) as i32 {
+            let y = starty + y as f32 * grid_size;
+            immdraw
+                .line(vec2(screen.ll.x, y), vec2(screen.ur.x, y), 1.0)
+                .color(col)
+                .z(Z_GRID);
+        }
+    }
 
     for command in uiworld.received_commands().iter() {
         if matches!(
