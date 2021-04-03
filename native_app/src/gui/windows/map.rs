@@ -23,7 +23,7 @@ pub fn map(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egrego
         let mut state = uiworld.write::<TestFieldProperties>();
 
         imgui::Drag::new(im_str!("size"))
-            .range(1..=100)
+            .range(2..=100)
             .build(ui, &mut state.size);
 
         imgui::Drag::new(im_str!("spacing"))

@@ -228,7 +228,10 @@ impl Gui {
         if matches!(*uiworld.read::<Tool>(), Tool::LotBrush) {
             let lbw = 130.0;
             Window::new(im_str!("Lot Brush"))
-                .size_constraints([lbw, 0.0], [lbw, 1000.0])
+                .size(
+                    [lbw, 50.0 + brushes.len() as f32 * 35.0],
+                    imgui::Condition::Always,
+                )
                 .position(
                     [w - toolbox_w - lbw, h * 0.5 - 30.0],
                     imgui::Condition::Always,
@@ -238,7 +241,6 @@ impl Gui {
                 .movable(false)
                 .collapsible(false)
                 .resizable(false)
-                .always_auto_resize(true)
                 .build(ui, || {
                     let mut cur_brush = uiworld.write::<LotBrushResource>();
 
@@ -257,6 +259,11 @@ impl Gui {
                         }
                         tok.pop(ui);
                     }
+
+                    imgui::Drag::new(im_str!("size"))
+                        .range(10.0..=300.0)
+                        .display_format(im_str!("%.0f"))
+                        .build(ui, &mut cur_brush.radius);
                 });
         }
 
