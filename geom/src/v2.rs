@@ -200,6 +200,13 @@ impl Vec2 {
         self * (1.0 - coeff) + other * coeff
     }
 
+    pub fn snap(self, x_period: f32, y_period: f32) -> Self {
+        Self {
+            x: (self.x / x_period).round() * x_period,
+            y: (self.y / y_period).round() * y_period,
+        }
+    }
+
     #[inline]
     pub fn min(self, other: Vec2) -> Vec2 {
         Vec2 {

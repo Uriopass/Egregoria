@@ -197,10 +197,10 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .build(ui, || {
-                    let mut pattern = uiworld.write::<RoadBuildResource>().pattern_builder;
-
+                    let mut roadbuild = uiworld.write::<RoadBuildResource>();
+                    let pat = &mut roadbuild.pattern_builder;
                     <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
-                        &mut [&mut pattern],
+                        &mut [pat],
                         "Road shape",
                         ui,
                         &InspectArgsStruct {
@@ -209,16 +209,16 @@ impl Gui {
                         },
                     );
 
-                    if pattern.n_lanes == 0 {
-                        pattern.sidewalks = true;
-                        pattern.parking = false;
+                    if pat.n_lanes == 0 {
+                        pat.sidewalks = true;
+                        pat.parking = false;
                     }
 
-                    if pattern.n_lanes > 10 {
-                        pattern.n_lanes = 10;
+                    if pat.n_lanes > 10 {
+                        pat.n_lanes = 10;
                     }
 
-                    uiworld.write::<RoadBuildResource>().pattern_builder = pattern;
+                    ui.checkbox(im_str!("snap to grid"), &mut roadbuild.snap_to_grid);
                 });
         }
         spacing_left.pop(ui);
