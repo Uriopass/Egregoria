@@ -3,12 +3,14 @@ use geom::LinearColor;
 use mint::ColumnMatrix4;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    BlendFactor, Buffer, CommandEncoder, IndexFormat, MultisampleState, PrimitiveState, RenderPass,
-    RenderPipeline, SwapChainFrame, TextureSampleType, VertexAttribute, VertexBufferLayout,
+    AddressMode, BlendFactor, Buffer, CommandEncoder, FilterMode, IndexFormat, MultisampleState,
+    PrimitiveState, RenderPass, RenderPipeline, SamplerDescriptor, SwapChainFrame,
+    TextureSampleType, VertexAttribute, VertexBufferLayout,
 };
 
 pub struct LightRender {
     noise: Texture,
+    blue_noise: Texture,
     vertex_buffer: Buffer,
     index_buffer: Buffer,
     screen_vertex_buffer: Buffer,
@@ -17,6 +19,21 @@ pub struct LightRender {
 impl LightRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
         let noise = Texture::from_path(gfx, "assets/noise.png", None);
+        let mut blue_noise = Texture::from_path(gfx, "assets/blue_noise_512.png", None);
+        blue_noise.sampler = gfx.device.create_sampler(&SamplerDescriptor {
+            label: None,
+            address_mode_u: AddressMode::Repeat,
+            address_mode_v: AddressMode::Repeat,
+            address_mode_w: AddressMode::Repeat,
+            mag_filter: FilterMode::Nearest,
+            min_filter: FilterMode::Nearest,
+            mipmap_filter: FilterMode::Nearest,
+            lod_min_clamp: 0.0,
+            lod_max_clamp: 0.0,
+            compare: None,
+            anisotropy_clamp: None,
+            border_color: None,
+        });
 
         let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
             label: None,
@@ -44,6 +61,7 @@ impl LightRender {
             index_buffer,
             noise,
             screen_vertex_buffer,
+            blue_noise,
         }
     }
 }
@@ -135,7 +153,7 @@ impl Drawable for LightMultiply {
                         &Texture::bindgroup_layout_complex(
                             &gfx.device,
                             TextureSampleType::Float { filterable: true },
-                            3,
+                            4,
                         ),
                         &Uniform::<LightUniform>::bindgroup_layout(&gfx.device),
                     ],
@@ -300,7 +318,12 @@ impl LightRender {
         ambiant_uni.upload_to_gpu(&gfx.queue);
 
         let lmultiply_tex_bg = Texture::multi_bindgroup(
-            &[&gfx.light_texture, &gfx.color_texture.target, &self.noise],
+            &[
+                &gfx.light_texture,
+                &gfx.color_texture.target,
+                &self.noise,
+                &self.blue_noise,
+            ],
             &gfx.device,
             &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(0),
         );

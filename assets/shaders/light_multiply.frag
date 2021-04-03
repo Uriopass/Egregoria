@@ -15,6 +15,9 @@ layout(set = 0, binding = 3) uniform sampler s_color;
 layout(set = 0, binding = 4) uniform texture2D t_noise;
 layout(set = 0, binding = 5) uniform sampler s_noise;
 
+layout(set = 0, binding = 6) uniform texture2D t_blue_noise;
+layout(set = 0, binding = 7) uniform sampler s_blue_noise;
+
 layout(set = 1, binding = 0) uniform LightParams {
     mat4 invproj;
     vec4 ambiant;
@@ -45,17 +48,9 @@ float cloud(vec2 pos, float ampl) {
     return 0.1 * clamp(noise - 0.55, 0.0, 1.0);
 }
 
-const int ditheringMat[16] = int[](0,  8,  2,  10,
-    12, 4,  14, 6,
-    3,  11, 1,  9,
-    15, 7,  13, 5);
-
-const float IDX_DIV = 256.0 * 16.0;
-
-float indexValue() {
-    int x = int(mod(gl_FragCoord.x, 4));
-    int y = int(mod(gl_FragCoord.y, 4));
-    return ditheringMat[(x + y * 4)];
+float dither() {
+    float color = texture(sampler2D(t_blue_noise, s_blue_noise), gl_FragCoord.xy / 512.0).r;
+    return color / 255.0;
 }
 
 void main() {
@@ -70,8 +65,6 @@ void main() {
 
     vec3 real_ambiant = vec3(sun_mult);
 
-    float v = indexValue() / IDX_DIV;
-
     vec3 yellow =  street_light * vec3(0.9, 0.9, 0.7);
-    out_color   =  vec4((color + v) * clamp(real_ambiant + yellow, 0.0, 1.0), 1.0);
+    out_color   =  vec4((color + dither()) * clamp(real_ambiant + yellow, 0.0, 1.0), 1.0);
 }
