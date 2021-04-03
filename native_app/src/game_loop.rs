@@ -8,7 +8,7 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound,
 use common::{GameTime, History};
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use geom::Camera;
-use geom::{vec3, LinearColor, Vec2};
+use geom::{vec3, LinearColor};
 use map_model::Map;
 use wgpu_engine::lighting::{LightInstance, LightRender};
 use wgpu_engine::{FrameContext, GuiRenderContext, SpriteBatch};
@@ -55,21 +55,7 @@ pub struct State {
 
 impl State {
     pub fn new(ctx: &mut Context) -> Self {
-        let camera = common::saveload::JSON::load("camera").map_or_else(
-            || {
-                CameraHandler::new(
-                    ctx.gfx.size.0 as f32,
-                    ctx.gfx.size.1 as f32,
-                    vec3(0.0, 0.0, 1000.0),
-                )
-            },
-            |camera| CameraHandler {
-                camera,
-                last_pos: Vec2::ZERO,
-                movespeed: 1.0,
-                targetpos: camera.position,
-            },
-        );
+        let camera = CameraHandler::load(ctx.gfx.size);
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
