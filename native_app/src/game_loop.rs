@@ -67,6 +67,7 @@ impl State {
                 camera,
                 last_pos: Vec2::ZERO,
                 movespeed: 1.0,
+                targetpos: camera.position,
             },
         );
 

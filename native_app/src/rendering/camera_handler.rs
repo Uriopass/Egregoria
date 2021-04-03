@@ -9,6 +9,7 @@ pub struct CameraHandler {
     pub camera: Camera,
     pub last_pos: Vec2,
     pub movespeed: f32,
+    pub targetpos: Vec3,
 }
 
 impl CameraHandler {
@@ -17,6 +18,7 @@ impl CameraHandler {
             camera: Camera::new(width, height, position),
             last_pos: vec2(0.0, 0.0),
             movespeed: 0.8,
+            targetpos: position,
         }
     }
 
@@ -54,16 +56,19 @@ impl CameraHandler {
         keyboard_enabled: bool,
         settings: &Settings,
     ) {
+        let delta = delta.min(0.1);
         let p = ctx.input.mouse.unprojected;
         let screenpos = ctx.input.mouse.screen;
+
+        self.camera.position += (self.targetpos - self.camera.position) * delta * 8.0;
+        self.update(ctx);
 
         if mouse_enabled {
             if ctx.input.mouse.pressed.contains(&MouseButton::Right)
                 || ctx.input.mouse.pressed.contains(&MouseButton::Middle)
             {
-                self.camera.position.x -= p.x - self.last_pos.x;
-                self.camera.position.y -= p.y - self.last_pos.y;
-                self.camera.update();
+                self.targetpos.x -= p.x - self.last_pos.x;
+                self.targetpos.y -= p.y - self.last_pos.y;
                 self.save();
             }
 
@@ -123,23 +128,26 @@ impl CameraHandler {
 
     fn translate_smooth(&mut self, delta: f32, dir: Vec2) {
         let m = delta * self.movespeed * self.camera.position.z * dir;
-        self.camera.position.x += m.x;
-        self.camera.position.y += m.y;
-        self.camera.update();
+        self.targetpos += m.z(0.0);
         self.save();
     }
 
     fn zoom_by(&mut self, ctx: &mut Context, multiply: f32, lock: bool) {
-        self.camera.position.z *= multiply;
+        let mut cpy = self.camera;
+        cpy.position = self.targetpos;
+        cpy.update();
+        let before = cpy.unproject(ctx.input.mouse.screen);
+
+        cpy.position.z *= multiply;
         if lock {
-            self.camera.position.z = self.camera.position.z.min(20000.0).max(5.0);
+            cpy.position.z = cpy.position.z.min(20000.0).max(5.0);
         }
 
-        self.update(ctx);
-        let after = self.unproject(ctx.input.mouse.screen);
-        self.camera.position.x -= after.x - self.last_pos.x;
-        self.camera.position.y -= after.y - self.last_pos.y;
-        self.update(ctx);
+        cpy.update();
+        let after = cpy.unproject(ctx.input.mouse.screen);
+        cpy.position += (before - after).z(0.0);
+
+        self.targetpos = cpy.position;
         self.save();
     }
 }

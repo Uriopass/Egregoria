@@ -4,15 +4,25 @@ use serde::{Deserialize, Serialize};
 
 pub type CellIdx = (i32, i32);
 
-pub fn cell_range((x1, y1): CellIdx, (x2, y2): CellIdx) -> impl Iterator<Item = CellIdx> {
-    debug_assert!(x1 <= x2);
-    debug_assert!(y1 <= y2);
+pub fn cell_range(
+    (min_x, min_y): CellIdx,
+    (max_x, max_y): CellIdx,
+) -> impl Iterator<Item = CellIdx> {
+    if min_x > max_x || min_y > max_y {
+        return XYRange {
+            min_x: 0,
+            max_x: 0,
+            max_y: 0,
+            x: 1,
+            y: 1,
+        };
+    }
     XYRange {
-        x1,
-        x2: x2 + 1,
-        y2: y2 + 1,
-        x: x1,
-        y: y1,
+        min_x,
+        max_x,
+        max_y,
+        x: min_x,
+        y: min_y,
     }
 }
 
@@ -290,9 +300,9 @@ impl<T: Default> Storage<T> for SparseStorage<T> {
 }
 
 pub struct XYRange {
-    x1: i32,
-    x2: i32,
-    y2: i32,
+    min_x: i32,
+    max_x: i32,
+    max_y: i32,
     x: i32,
     y: i32,
 }
@@ -301,14 +311,14 @@ impl Iterator for XYRange {
     type Item = (i32, i32);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.y >= self.y2 {
+        if self.y > self.max_y {
             return None;
         }
 
         let v = (self.x, self.y);
         self.x += 1;
-        if self.x == self.x2 {
-            self.x = self.x1;
+        if self.x > self.max_x {
+            self.x = self.min_x;
             self.y += 1;
         }
 
