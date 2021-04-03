@@ -6,11 +6,10 @@ use egregoria::engine_interaction::Selectable;
 use egregoria::pedestrians::Location;
 use egregoria::Egregoria;
 use geom::Color;
-use map_model::Map;
 
 pub fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
     let inspected = uiworld.write::<InspectedEntity>();
-    let map = goria.read::<Map>();
+    let map = goria.map();
     let mut draw = uiworld.write::<ImmediateDraw>();
 
     if let Some(sel) = inspected.e {

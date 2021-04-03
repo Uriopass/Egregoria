@@ -6,10 +6,10 @@ use crate::souls::desire::{BuyFood, Home, Work};
 use crate::vehicles::{spawn_parked_vehicle, VehicleKind};
 use crate::{Egregoria, SoulID};
 use common::GameTime;
-use map_model::{BuildingID, Map};
+use map_model::BuildingID;
 
 pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) {
-    let map = goria.read::<Map>();
+    let map = goria.map();
     let housepos = map.buildings()[house].door_pos;
     drop(map);
 

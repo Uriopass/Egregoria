@@ -40,7 +40,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let immsound = &mut *uiworld.write::<ImmediateSound>();
     let mouseinfo = uiworld.read::<MouseInfo>();
     let tool = uiworld.read::<Tool>();
-    let map = &*goria.read::<Map>();
+    let map = &*goria.map();
     let commands: &mut WorldCommands = &mut *uiworld.commands();
     let cam = &*uiworld.read::<Camera>();
 

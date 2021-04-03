@@ -132,7 +132,7 @@ pub fn show_grid(tess: &mut Tesselator, _: &Egregoria, uiworld: &UiWorld) -> Opt
 }
 
 pub fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
-    for road in goria.read::<Map>().roads().values() {
+    for road in goria.map().roads().values() {
         if let RoadSegmentKind::Curved((fr_dr, to_der)) = road.segment {
             let fr = road.points.first();
             let to = road.points.last();
@@ -153,7 +153,7 @@ pub fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Op
 
 pub fn debug_lots(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     tess.set_color(Color::RED);
-    for lot in goria.read::<Map>().lots().values() {
+    for lot in goria.map().lots().values() {
         tess.draw_circle(lot.shape.corners[0], Z_DEBUG, 1.0);
     }
 
@@ -161,7 +161,7 @@ pub fn debug_lots(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Opti
 }
 
 pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
-    let map = goria.read::<Map>();
+    let map = goria.map();
     tess.set_color(Color::RED);
     for (_, road) in map.roads() {
         tess.draw_polyline(road.points().as_slice(), Z_DEBUG, 0.3);
@@ -269,7 +269,7 @@ pub fn debug_obb(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) ->
 }
 
 pub fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
-    let map: &Map = &goria.read::<Map>();
+    let map: &Map = &goria.map();
     let pm = goria.read::<ParkingManagement>();
 
     for (id, spot) in map.parking.all_spots() {
@@ -287,7 +287,7 @@ pub fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> O
 }
 
 pub fn debug_pathfinder(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -> Option<()> {
-    let map: &Map = &goria.read::<Map>();
+    let map: &Map = &goria.map();
     let selected = uiworld.read::<InspectedEntity>().e?;
     let pos = goria.pos(selected)?;
 
@@ -353,7 +353,7 @@ pub fn debug_rays(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -
 }
 
 pub fn debug_spatialmap(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
-    let map: &Map = &goria.read::<Map>();
+    let map: &Map = &goria.map();
     for r in map.spatial_map().debug_grid() {
         tess.set_color(LinearColor {
             a: 0.1,

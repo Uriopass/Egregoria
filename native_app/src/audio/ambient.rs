@@ -2,7 +2,6 @@ use crate::audio::{AudioContext, AudioHandle, AudioKind};
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use geom::{lerp, vec2, Camera};
-use map_model::Map;
 use rodio::Source;
 
 pub struct Ambient {
@@ -36,7 +35,7 @@ impl Ambient {
     ) {
         let delta = delta.min(0.1);
         let camera = uiworld.read::<Camera>();
-        let map = goria.read::<Map>();
+        let map = goria.map();
 
         let h = camera.position.z;
 

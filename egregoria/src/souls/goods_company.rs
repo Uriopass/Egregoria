@@ -524,7 +524,7 @@ pub struct GoodsCompany {
 }
 
 pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
-    let map = goria.read::<Map>();
+    let map = goria.map();
     let b = &map.buildings()[company.building];
     let door_pos = b.door_pos;
     let obb = b.obb;
