@@ -225,6 +225,9 @@ impl Itinerary {
     }
 
     pub fn get_terminal(&self) -> Option<Vec2> {
+        if !self.is_terminal() {
+            return None;
+        }
         match &self.kind {
             ItineraryKind::None
             | ItineraryKind::WaitUntil(_)
