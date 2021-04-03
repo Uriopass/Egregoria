@@ -9,10 +9,12 @@ const SETTINGS_SAVE_NAME: &str = "settings";
 register_resource!(Settings, SETTINGS_SAVE_NAME);
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Settings {
     pub camera_sensibility: f32,
     pub camera_lock: bool,
     pub camera_border_move: bool,
+    pub camera_smooth: bool,
 
     pub fullscreen: bool,
     pub vsync: VSyncOptions,
@@ -27,10 +29,11 @@ pub struct Settings {
 
 impl Default for Settings {
     fn default() -> Self {
-        common::saveload::JSON::load(SETTINGS_SAVE_NAME).unwrap_or(Self {
+        Self {
             camera_sensibility: 80.0,
             camera_lock: true,
             camera_border_move: true,
+            camera_smooth: true,
             music_volume_percent: 100.0,
             effects_volume_percent: 100.0,
             ui_volume_percent: 100.0,
@@ -38,7 +41,7 @@ impl Default for Settings {
             vsync: VSyncOptions::Vsync,
             time_warp: 1,
             auto_save_every: AutoSaveEvery::Never,
-        })
+        }
     }
 }
 
@@ -137,6 +140,7 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
                 im_str!("Border screen camera movement"),
                 &mut settings.camera_border_move,
             );
+            ui.checkbox(im_str!("Camera smooth"), &mut settings.camera_smooth);
 
             ui.new_line();
             ui.text("Graphics");
