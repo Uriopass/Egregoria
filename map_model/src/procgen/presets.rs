@@ -194,10 +194,11 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
     }
 }
 
-pub fn add_grid(pos: Vec2, m: &mut Map, size: usize, spacing: f32) {
+pub fn add_grid(m: &mut Map, pos: Vec2, size: u32, spacing: f32) {
     if size == 0 {
         return;
     }
+    let size = size as usize;
     let mut grid: Vec<Vec<IntersectionID>> = vec![vec![]; size];
     for (y, l) in grid.iter_mut().enumerate() {
         for x in 0..size {
@@ -231,10 +232,11 @@ fn print_stats(map: &Map) {
     );
 }
 
-pub fn load_testfield(map: &mut Map) {
+pub fn load_testfield(map: &mut Map, pos: Vec2, size: u32, spacing: f32) {
     //add_doublecircle([0.0, 0.0].into(), map);
-    add_grid([0.0, 350.0].into(), map, 10, 180.0);
+    add_grid(map, pos, size, spacing);
     map.check_invariants();
+    print_stats(map);
 }
 
 #[cfg(test)]
@@ -243,7 +245,7 @@ mod tests {
     #[test]
     fn testfield_valid() {
         let mut m = Map::empty();
-        load_testfield(&mut m);
+        load_testfield(&mut m, Vec2::ZERO, 10, 100.0);
         m.check_invariants();
     }
 
