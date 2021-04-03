@@ -23,6 +23,8 @@ jobs:
         with:
           rust-version: 'stable'
       - name: Build
-        run: cargo build --verbose
+        run: cargo build --verbose -p native_app
+      - name: Build headless
+       run: cargo build --verbose -p headless
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --verbose -p
