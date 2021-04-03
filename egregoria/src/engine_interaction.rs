@@ -37,7 +37,7 @@ pub enum WorldCommand {
     MapUpdateIntersectionPolicy(IntersectionID, TurnPolicy, LightPolicy),
     MapBuildSpecialBuilding(RoadID, OBB, BuildingKind, BuildingGen),
     MapLoadParis,
-    MapLoadTestField,
+    MapLoadTestField(Vec2, u32, f32),
     MapClear,
     SetGameTime(GameTime),
     MapGenerateTrees(AABB),
@@ -65,8 +65,8 @@ impl WorldCommands {
         self.commands.push(MapLoadParis)
     }
 
-    pub fn map_load_testfield(&mut self) {
-        self.commands.push(MapLoadTestField)
+    pub fn map_load_testfield(&mut self, pos: Vec2, size: u32, spacing: f32) {
+        self.commands.push(MapLoadTestField(pos, size, spacing))
     }
 
     pub fn map_clear(&mut self) {
@@ -161,9 +161,9 @@ impl WorldCommand {
                 goria.write::<Map>().clear();
                 map_model::procgen::load_parismap(&mut *goria.write::<Map>())
             }
-            MapLoadTestField => {
+            MapLoadTestField(pos, size, spacing) => {
                 goria.write::<Map>().clear();
-                map_model::procgen::load_testfield(&mut *goria.write::<Map>())
+                map_model::procgen::load_testfield(&mut *goria.write::<Map>(), pos, size, spacing)
             }
             MapClear => goria.write::<Map>().clear(),
             MapGenerateTrees(aabb) => {
