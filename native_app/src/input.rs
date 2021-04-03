@@ -34,11 +34,11 @@ impl InputContext {
                 let code = KeyCode::from(*kc);
                 match state {
                     ElementState::Pressed => {
-                        self.keyboard.is_pressed.insert(code);
+                        self.keyboard.pressed.insert(code);
                         self.keyboard.just_pressed.insert(code);
                     }
                     ElementState::Released => {
-                        self.keyboard.is_pressed.remove(&code);
+                        self.keyboard.pressed.remove(&code);
                     }
                 };
                 true
@@ -86,7 +86,7 @@ register_resource_noserialize!(KeyboardInfo);
 #[derive(Clone, Default)]
 pub struct KeyboardInfo {
     pub just_pressed: FastSet<KeyCode>,
-    pub is_pressed: FastSet<KeyCode>,
+    pub pressed: FastSet<KeyCode>,
     pub last_characters: Vec<char>,
 }
 

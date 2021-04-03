@@ -206,7 +206,7 @@ impl State {
 
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
 
-        self.gui.hidden = ctx.input.keyboard.is_pressed.contains(&KeyCode::H);
+        self.gui.hidden = ctx.input.keyboard.pressed.contains(&KeyCode::H);
 
         Self::manage_settings(ctx, &settings);
         self.manage_io(ctx);
@@ -451,7 +451,7 @@ impl State {
         if self.imgui_render.last_kb_captured {
             let kb: &mut KeyboardInfo = &mut self.uiw.write::<KeyboardInfo>();
             kb.just_pressed.clear();
-            kb.is_pressed.clear();
+            kb.pressed.clear();
         }
 
         if self.imgui_render.last_mouse_captured {
