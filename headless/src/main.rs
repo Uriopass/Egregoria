@@ -4,20 +4,23 @@ use common::unwrap_or;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use networking::{Frame, Server, ServerConfiguration, ServerPollResult};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use structopt::StructOpt;
 
-/// A basic example
 #[derive(StructOpt, Debug)]
-#[structopt(name = "basic")]
+#[structopt(name = "Egregoria headless", no_version, author = "by Uriopass")]
 struct Opt {
-    /// Server port
+    /// Optional server port
     #[structopt(long)]
     port: Option<u16>,
+
+    /// Auto save frequency, in seconds
+    #[structopt(long, default_value = "300")]
+    autosave: u64,
 }
 
 fn main() {
-    let opt = Opt::from_args();
+    let opt: Opt = Opt::from_args();
     MyLog::init();
 
     log::info!("starting server with version: {}", goria_version::VERSION);
@@ -45,6 +48,8 @@ fn main() {
         };
     log::info!("server started!");
 
+    let mut last_saved = Instant::now();
+
     loop {
         if let ServerPollResult::Input(inputs) = server.poll(
             &|| (SerPreparedEgregoria::from(&w), Frame(w.get_tick())),
@@ -56,6 +61,11 @@ fn main() {
                     w.tick(UP_DT.as_secs_f64(), &mut sched, &input.inp);
                 }
             }
+        }
+
+        if last_saved.elapsed().as_secs() > opt.autosave {
+            w.save_to_disk("world");
+            last_saved = Instant::now();
         }
 
         std::thread::sleep(Duration::from_millis(1));
