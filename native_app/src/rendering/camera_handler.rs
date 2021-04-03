@@ -94,7 +94,7 @@ impl CameraHandler {
         }
 
         if keyboard_enabled {
-            let is_pressed = &ctx.input.keyboard.is_pressed;
+            let is_pressed = &ctx.input.keyboard.pressed;
 
             if is_pressed.contains(&KeyCode::Right) {
                 self.translate_movespeed(delta, vec2(1.0, 0.0));
