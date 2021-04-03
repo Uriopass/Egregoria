@@ -19,7 +19,7 @@ use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::network::NetworkConnectionInfo;
 use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, Gui, UiTextures};
-use crate::input::{KeyboardInfo, MouseInfo};
+use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::network::NetworkState;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{
@@ -205,6 +205,8 @@ impl State {
         self.uiw.write::<Timings>().all.add_value(real_delta as f32);
 
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
+
+        self.gui.hidden = ctx.input.keyboard.is_pressed.contains(&KeyCode::H);
 
         Self::manage_settings(ctx, &settings);
         self.manage_io(ctx);
@@ -404,6 +406,9 @@ impl State {
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
         let gui = &mut self.gui;
+        if gui.hidden {
+            return;
+        }
         let goria = &self.goria;
         let uiworld = &mut self.uiw;
 

@@ -29,8 +29,11 @@ pub struct Gui {
     pub last_gui_save: Instant,
     #[serde(skip)]
     pub n_cars: i32,
+    #[serde(skip)]
     pub n_pedestrians: i32,
     pub depause_warp: u32,
+    #[serde(skip)]
+    pub hidden: bool,
 }
 
 impl Default for Gui {
@@ -42,6 +45,7 @@ impl Default for Gui {
             n_cars: 100,
             n_pedestrians: 100,
             depause_warp: 1,
+            hidden: false,
         }
     }
 }
