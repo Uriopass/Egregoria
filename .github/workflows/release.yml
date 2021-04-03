@@ -178,7 +178,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
           asset_path: ./artifacts/egregoria-macos-latest-headless.zip
-          asset_name: macos.zip
+          asset_name: macos-headless.zip
           asset_content_type: application/zip
 
       - name: Upload Headless Release Asset Linux
@@ -189,7 +189,7 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
           asset_path: ./artifacts/egregoria-ubuntu-latest-headless.zip
-          asset_name: linux.zip
+          asset_name: linux-headless.zip
           asset_content_type: application/zip
 
       - name: Upload Headless Release Asset Windows
@@ -200,5 +200,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
           asset_path: ./artifacts/egregoria-windows-latest-headless.zip
-          asset_name: windows.zip
+          asset_name: windows-headless.zip
           asset_content_type: application/zip
