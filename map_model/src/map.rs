@@ -585,7 +585,7 @@ impl Map {
         let spot = self.parking.get(spot)?;
         let park_lane = self.lanes.get(spot.parent)?;
         let road = self.roads.get(park_lane.parent)?;
-        road.outgoing_lanes_from(road.src)
+        road.outgoing_lanes_from(park_lane.src)
             .iter()
             .rfind(|&&(_, kind)| kind == LaneKind::Driving)
             .map(|&(id, _)| id)

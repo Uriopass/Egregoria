@@ -22,7 +22,7 @@ impl ParkingManagement {
     }
 
     pub fn reserve_near(&self, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
-        let lane = map.nearest_lane(near, LaneKind::Parking)?;
+        let lane = map.nearest_lane(near, LaneKind::Driving)?;
         let lane = map.lanes().get(lane)?;
 
         let depth = 3;
