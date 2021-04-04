@@ -405,13 +405,10 @@ impl State {
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
         let gui = &mut self.gui;
-        if gui.hidden {
-            return;
-        }
         let goria = &self.goria;
         let uiworld = &mut self.uiw;
 
-        self.imgui_render.render(ctx, window, |ui| {
+        self.imgui_render.render(ctx, window, gui.hidden, |ui| {
             gui.render(&ui, uiworld, goria);
         });
     }

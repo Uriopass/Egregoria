@@ -69,6 +69,7 @@ impl ImguiWrapper {
         &mut self,
         mut gfx: GuiRenderContext,
         window: &Window,
+        hidden: bool,
         ui_render: impl for<'ui> FnOnce(&'ui Ui),
     ) {
         let now = Instant::now();
@@ -92,10 +93,12 @@ impl ImguiWrapper {
         self.platform.prepare_render(&ui, window);
 
         let mut rpass = gfx.rpass.take().unwrap();
-        let _ = self
-            .renderer
-            .render(ui.render(), gfx.queue, gfx.device, &mut rpass)
-            .map_err(|err| log::error!("Error rendering the UI: {:?}", err));
+        if !hidden {
+            let _ = self
+                .renderer
+                .render(ui.render(), gfx.queue, gfx.device, &mut rpass)
+                .map_err(|err| log::error!("Error rendering the UI: {:?}", err));
+        }
     }
 
     pub fn handle_event(&mut self, window: &Window, e: &winit::event::Event<()>) {
