@@ -99,8 +99,6 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
         world: &impl Fn() -> (WORLD, Frame),
         local_inputs: Option<INPUT>,
     ) -> ServerPollResult<INPUT> {
-        self.send_merged_inputs();
-        self.send_long_running();
         while let Some(ev) = self.events.try_receive() {
             match ev {
                 NetEvent::Message(e, data) => match is_reliable(&e) {
@@ -123,6 +121,9 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
                 NetEvent::Disconnected(e) => self.tcp_disconnected(e),
             }
         }
+
+        self.send_merged_inputs();
+        self.send_long_running();
 
         if let Some(ref mut v) = self.v_client {
             if !v.next_inputs.is_empty() {
@@ -245,8 +246,9 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
                 match auth_r {
                     AuthentResponse::Accepted { .. } => {
                         let c = self.authent.get_client(e)?;
-                        let w = world();
-                        self.worldsend.begin_send(c, encode(&w.0), w.1);
+                        let (w, w_frame) = world();
+                        assert_eq!(self.buffer.consumed_frame, w_frame);
+                        self.worldsend.begin_send(c, encode(&w), w_frame);
                         self.catchup
                             .begin_remembering(self.buffer.consumed_frame, c);
 

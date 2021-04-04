@@ -313,6 +313,12 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                     id,
                 } = self.state
                 {
+                    if !next_inputs.is_none() {
+                        log::error!(
+                            "some inputs were not catched up before receiving other ones!!!"
+                        );
+                    }
+                    log::info!("{:?} + {:?}", *consumed_frame, inputs.len());
                     *next_inputs = Some(
                         inputs
                             .into_iter()

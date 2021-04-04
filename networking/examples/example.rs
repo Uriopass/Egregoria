@@ -60,6 +60,7 @@ pub fn main() {
         period: UP_DT,
         port: None,
         frame_buffer_advance: 10,
+        version: "v1".to_string(),
     })
     .unwrap();
 
@@ -106,6 +107,7 @@ pub fn serv_c() {
         virtual_client: Some(VirtualClientConf {
             name: "server_virtual_client".into(),
         }),
+        version: "v1".to_string(),
     })
     .unwrap();
 

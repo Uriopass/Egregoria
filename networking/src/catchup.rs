@@ -1,6 +1,6 @@
 use crate::authent::{Client, ClientGameState};
 use crate::packets::ServerReliablePacket;
-use crate::{encode, AuthentID, Frame, MergedInputs, MAX_CATCHUP_PACKET_SIZE};
+use crate::{encode, AuthentID, Frame, MergedInputs};
 use common::FastMap;
 use message_io::network::Network;
 
@@ -62,14 +62,8 @@ impl CatchUp {
 
         let diff = state.inputs.len() - state.sent;
 
-        let mut inputs = vec![];
-        let mut size = 0;
-        while size < MAX_CATCHUP_PACKET_SIZE && state.sent < state.inputs.len() {
-            let d = state.inputs[state.sent].clone();
-            size += d.iter().map(|x| 4 + x.1 .0.len()).sum::<usize>();
-            inputs.push(d);
-            state.sent += 1;
-        }
+        let inputs = Vec::from(&state.inputs[state.sent..]);
+        state.sent += inputs.len();
 
         c.ack = state.from + Frame(state.sent as u32);
 
