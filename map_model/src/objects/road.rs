@@ -134,7 +134,6 @@ impl Road {
         };
 
         lanes
-            .get((lanes.len() - 2).max(0)..)?
             .iter()
             .find(|(_, kind)| matches!(kind, LaneKind::Parking))
             .map(|&(id, _)| id)
