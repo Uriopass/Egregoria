@@ -171,6 +171,7 @@ impl Authent {
         if let ClientConnectState::Connected(c) = client {
             self.addr_to_client.remove(&c.unreliable.addr());
             self.n_connected_clients -= 1;
+            self.names.remove(&c.name);
 
             return Some(c);
         }
