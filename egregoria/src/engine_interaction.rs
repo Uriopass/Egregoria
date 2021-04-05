@@ -157,12 +157,8 @@ impl WorldCommand {
                 }
             }
             SetGameTime(gt) => *goria.write::<GameTime>() = gt,
-            MapLoadParis => {
-                goria.map_mut().clear();
-                map_model::procgen::load_parismap(&mut *goria.map_mut())
-            }
+            MapLoadParis => map_model::procgen::load_parismap(&mut *goria.map_mut()),
             MapLoadTestField(pos, size, spacing) => {
-                goria.map_mut().clear();
                 map_model::procgen::load_testfield(&mut *goria.map_mut(), pos, size, spacing)
             }
             MapClear => goria.map_mut().clear(),
