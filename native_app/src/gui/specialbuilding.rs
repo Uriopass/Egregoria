@@ -13,16 +13,20 @@ register_resource_noserialize!(SpecialBuildingResource);
 #[derive(Serialize, Deserialize)]
 pub struct SpecialBuildingResource {
     pub opt: Option<(BuildingKind, BuildingGen, f32, String)>,
+    pub last_obb: Option<OBB>,
 }
 
 impl Default for SpecialBuildingResource {
     fn default() -> Self {
-        Self { opt: None }
+        Self {
+            opt: None,
+            last_obb: None,
+        }
     }
 }
 
 pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
-    let res = uiworld.read::<SpecialBuildingResource>();
+    let mut state = uiworld.write::<SpecialBuildingResource>();
     let tool = *uiworld.read::<Tool>();
     let mouseinfo = uiworld.read::<MouseInfo>();
     let mut draw = uiworld.write::<ImmediateDraw>();
@@ -35,7 +39,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     if !matches!(tool, Tool::SpecialBuilding) {
         return;
     }
-    let (kind, gen, size, asset) = unwrap_or!(&res.opt, return);
+    let (kind, gen, size, asset) = unwrap_or!(&state.opt, return);
     let size = *size;
 
     let mpos = mouseinfo.unprojected;
@@ -94,19 +98,21 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     if map.spatial_map().query(obb).any(|x| match x {
         ProjectKind::Building(id) => buildings[id].obb.intersects(&obb),
         _ => false,
-    }) {
+    }) || state.last_obb.map(|x| x.intersects(&obb)).unwrap_or(false)
+    {
         draw_red(obb);
         return;
     }
 
     let rid = closest_road.id;
 
-    if mouseinfo.just_pressed.contains(&MouseButton::Left) {
-        commands.map_build_special_building(rid, obb, *kind, *gen);
-        sound.play("road_lay", AudioKind::Ui);
-    }
-
     draw.textured_obb(obb, asset.to_owned())
         .color(common::config().special_building_col)
         .z(Z_TOOL);
+
+    if mouseinfo.pressed.contains(&MouseButton::Left) {
+        commands.map_build_special_building(rid, obb, *kind, *gen);
+        sound.play("road_lay", AudioKind::Ui);
+        state.last_obb = Some(obb);
+    }
 }
