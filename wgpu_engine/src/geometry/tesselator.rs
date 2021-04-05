@@ -23,6 +23,9 @@ impl Tesselator {
 
 impl Tesselator {
     pub fn draw_circle(&mut self, p: Vec2, z: f32, r: f32) -> bool {
+        if r <= 0.0 || self.cull_rect.map_or(false, |x| !x.contains_within(p, r)) {
+            return false;
+        }
         let n_points = ((6.0 * (r * self.zoom).cbrt()) as usize).max(4);
 
         self.draw_regular_polygon(p, z, r, n_points, 0.0)
