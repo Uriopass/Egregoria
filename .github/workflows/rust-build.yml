@@ -27,4 +27,4 @@ jobs:
       - name: Build headless
         run: cargo build --verbose -p headless
       - name: Run tests
-        run: cargo test --verbose -p
+        run: cargo test --verbose
