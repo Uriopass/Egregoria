@@ -1,7 +1,8 @@
-use common::FastMap;
+use common::{FastMap, PtrCmp};
 use geom::Vec2;
 use map_model::{LaneKind, Map, ParkingSpotID};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::sync::RwLock;
 
 register_resource!(ParkingManagement, "pmanagement");
@@ -25,13 +26,15 @@ impl ParkingManagement {
         let lane = map.nearest_lane(near, LaneKind::Driving)?;
         let lane = map.lanes().get(lane)?;
 
-        let depth = 5;
+        let depth = 8;
 
-        let mut potential = vec![lane];
-        let mut next = vec![];
+        let mut potential = HashSet::new();
+        potential.insert(PtrCmp(lane));
+        let mut next = HashSet::new();
 
         for _ in 0..depth {
-            for lane in potential.drain(..) {
+            for lane in potential.drain() {
+                let lane = lane.0;
                 let parent = unwrap_or!(map.roads().get(lane.parent), continue);
 
                 let plane = unwrap_or!(parent.parking_next_to(lane), continue);
@@ -50,7 +53,7 @@ impl ParkingManagement {
                 next.extend(
                     map.intersections()[lane.dst]
                         .turns_from(lane.id)
-                        .map(|(turn, _)| &map.lanes()[turn.dst]),
+                        .map(|(turn, _)| PtrCmp(&map.lanes()[turn.dst])),
                 )
             }
             std::mem::swap(&mut potential, &mut next);

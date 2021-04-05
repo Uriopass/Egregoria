@@ -2,6 +2,8 @@
 
 pub use config::*;
 pub use history::*;
+use imgui_inspect::imgui::__core::hash::Hasher;
+use std::hash::Hash;
 pub use time::*;
 pub use z::*;
 
@@ -82,6 +84,22 @@ macro_rules! unwrap_contlog {
         }
     };
 }
+
+pub struct PtrCmp<'a, T>(pub &'a T);
+
+impl<'a, T> Hash for PtrCmp<'a, T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write_usize(self.0 as *const T as usize)
+    }
+}
+
+impl<'a, T> PartialEq for PtrCmp<'a, T> {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self.0, other.0)
+    }
+}
+
+impl<'a, T> Eq for PtrCmp<'a, T> {}
 
 pub mod config;
 pub mod history;
