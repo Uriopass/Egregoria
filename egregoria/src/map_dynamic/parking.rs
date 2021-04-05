@@ -25,7 +25,7 @@ impl ParkingManagement {
         let lane = map.nearest_lane(near, LaneKind::Driving)?;
         let lane = map.lanes().get(lane)?;
 
-        let depth = 3;
+        let depth = 5;
 
         let mut potential = vec![lane];
         let mut next = vec![];
