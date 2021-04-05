@@ -50,6 +50,23 @@ impl Default for GoodsCompanyRegistry {
         Self {
             descriptions: vec![
                 GoodsCompanyDescription {
+                    name: "Useless warehouse",
+                    bkind: BuildingKind::Company(24),
+                    bgen: BuildingGen::CenteredDoor {
+                        vertical_factor: 1.0,
+                    },
+                    kind: CompanyKind::Store,
+                    recipe: Recipe {
+                        consumption: vec![],
+                        production: vec![],
+                        complexity: 1000,
+                        storage_multiplier: 0,
+                    },
+                    n_workers: 100,
+                    size: 100.0,
+                    asset_location: "assets/warehouse.png",
+                },
+                GoodsCompanyDescription {
                     name: "Supermarket",
                     bkind: BuildingKind::Company(23),
                     bgen: BuildingGen::CenteredDoor {
@@ -586,8 +603,6 @@ pub fn company(
 
     if company.progress >= 1.0 {
         company.progress = 0.0;
-        log::info!("{:?} should act", me);
-
         let recipe = company.recipe.clone();
         let bpos = map.buildings()[company.building].door_pos;
 
