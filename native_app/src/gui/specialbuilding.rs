@@ -4,7 +4,7 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use common::{AudioKind, Z_TOOL};
 use egregoria::Egregoria;
-use geom::{Vec2, OBB};
+use geom::{Intersect, Vec2, OBB};
 use map_model::{BuildingGen, BuildingKind, ProjectKind};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -50,18 +50,20 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         })
         .min_by_key(move |p| OrderedFloat(p.points().project_dist2(mpos)));
 
-    let mut draw_red = || {
-        draw.textured_obb(OBB::new(mpos, Vec2::UNIT_Y, size, size), asset.to_owned())
+    let hover_obb = OBB::new(mpos, Vec2::UNIT_Y, size, size);
+
+    let mut draw_red = |obb| {
+        draw.textured_obb(obb, asset.to_owned())
             .color(common::config().special_building_invalid_col)
             .z(Z_TOOL);
     };
 
-    let closest_road = unwrap_or!(closest_road, return draw_red());
+    let closest_road = unwrap_or!(closest_road, return draw_red(hover_obb));
 
     let (proj, _, dir) = closest_road.points().project_segment_dir(mpos);
 
     if !proj.is_close(mpos, size + closest_road.width * 0.5) {
-        return draw_red();
+        return draw_red(hover_obb);
     }
 
     let side = if (mpos - proj).dot(dir.perpendicular()) > 0.0 {
@@ -84,9 +86,16 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         || proj.distance(last) < 0.5 * size
         || closest_road.sidewalks(closest_road.src).incoming.is_none()
     {
-        draw.textured_obb(obb, asset.to_owned())
-            .color(common::config().special_building_invalid_col)
-            .z(Z_TOOL);
+        draw_red(obb);
+        return;
+    }
+
+    let buildings = map.buildings();
+    if map.spatial_map().query(obb).any(|x| match x {
+        ProjectKind::Building(id) => buildings[id].obb.intersects(&obb),
+        _ => false,
+    }) {
+        draw_red(obb);
         return;
     }
 
