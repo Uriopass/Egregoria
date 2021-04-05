@@ -153,6 +153,9 @@ impl Map {
         kind: BuildingKind,
         gen: BuildingGen,
     ) -> Option<BuildingID> {
+        if self.building_overlaps(*obb) {
+            return None;
+        }
         log::info!(
             "build special {:?} on {:?} with shape {:?}",
             kind,
@@ -561,6 +564,14 @@ impl Map {
     }
     pub fn spatial_map(&self) -> &SpatialMap {
         &self.spatial_map
+    }
+
+    pub fn building_overlaps(&self, obb: OBB) -> bool {
+        let buildings = &self.buildings;
+        self.spatial_map().query(obb).any(|x| match x {
+            ProjectKind::Building(id) => unwrap_ret!(buildings.get(id), false).obb.intersects(&obb),
+            _ => false,
+        })
     }
 
     pub fn find_road(&self, src: IntersectionID, dst: IntersectionID) -> Option<RoadID> {
