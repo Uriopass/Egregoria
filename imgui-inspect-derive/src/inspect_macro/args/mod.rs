@@ -34,6 +34,7 @@ pub trait InspectFieldArgs {
     fn ident(&self) -> &Option<syn::Ident>;
     fn ty(&self) -> &syn::Type;
     fn render_trait(&self) -> &Option<syn::Path>;
+    fn name(&self) -> &Option<syn::Ident>;
     fn proxy_type(&self) -> &Option<syn::Path>;
     fn on_set(&self) -> &Option<syn::Ident>;
     fn skip(&self) -> bool;

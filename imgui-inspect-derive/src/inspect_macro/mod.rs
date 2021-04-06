@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 use darling::FromDeriveInput;
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
@@ -139,6 +140,7 @@ fn handle_inspect_type<
 
     let render = create_render_call(
         field_args.ident().as_ref().unwrap(),
+        field_args.name(),
         field_args.ty(),
         &render_trait,
         field_args.proxy_type(),
@@ -148,6 +150,7 @@ fn handle_inspect_type<
 
     let render_mut = create_render_mut_call(
         field_args.ident().as_ref().unwrap(),
+        field_args.name(),
         field_args.ty(),
         field_args.on_set(),
         &render_trait,
@@ -165,6 +168,7 @@ fn handle_inspect_type<
 
 fn create_render_call<T: ToTokens>(
     field_name: &syn::Ident,
+    field_rename: &Option<syn::Ident>,
     field_type: &syn::Type,
     render_trait: &syn::Path,
     proxy_type: &Option<syn::Path>,
@@ -176,7 +180,7 @@ fn create_render_call<T: ToTokens>(
     let args_name2 = args_name1.clone();
 
     let field_name1 = field_name.clone();
-    let field_name2 = field_name.clone();
+    let field_name2 = field_rename.clone().unwrap_or_else(|| field_name.clone());
 
     let source_type = if let Some(w) = proxy_type {
         quote!(#w)
@@ -196,6 +200,7 @@ fn create_render_call<T: ToTokens>(
 
 fn create_render_mut_call<T: ToTokens>(
     field_name: &syn::Ident,
+    field_rename: &Option<syn::Ident>,
     field_type: &syn::Type,
     on_set: &Option<syn::Ident>,
     render_trait: &syn::Path,
@@ -208,7 +213,7 @@ fn create_render_mut_call<T: ToTokens>(
     let args_name2 = args_name1.clone();
 
     let field_name1 = field_name.clone();
-    let field_name2 = field_name.clone();
+    let field_name2 = field_rename.clone().unwrap_or_else(|| field_name.clone());
 
     let source_type = if let Some(w) = proxy_type {
         quote!(#w)

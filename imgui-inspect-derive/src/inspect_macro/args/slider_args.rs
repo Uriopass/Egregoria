@@ -1,5 +1,6 @@
 use super::*;
 use darling::FromField;
+use proc_macro2::Ident;
 use quote::quote;
 
 //
@@ -10,6 +11,9 @@ use quote::quote;
 pub struct InspectFieldArgsSlider {
     ident: Option<syn::Ident>,
     ty: syn::Type,
+
+    #[darling(default)]
+    name: Option<syn::Ident>,
 
     #[darling(default)]
     render_trait: Option<syn::Path>,
@@ -39,6 +43,9 @@ impl InspectFieldArgs for InspectFieldArgsSlider {
     }
     fn render_trait(&self) -> &Option<syn::Path> {
         &self.render_trait
+    }
+    fn name(&self) -> &Option<Ident> {
+        &self.name
     }
     fn proxy_type(&self) -> &Option<syn::Path> {
         &self.proxy_type
