@@ -28,8 +28,20 @@ impl InspectRenderDefault<f32> for InspectDragf {
         if data.len() != 1 {
             unimplemented!();
         }
+
+        let format = if args.step == Some(1.0) {
+            "%.0f"
+        } else {
+            "%.1f"
+        };
+
         imgui::Drag::new(&im_str!("{}", label))
             .speed(args.step.unwrap_or(0.1))
+            .display_format(&*im_str!("{}", format))
+            .range(
+                args.min_value.unwrap_or(f32::NEG_INFINITY)
+                    ..=args.max_value.unwrap_or(f32::INFINITY),
+            )
             .build(ui, data[0])
     }
 }
