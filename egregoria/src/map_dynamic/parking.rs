@@ -26,16 +26,17 @@ impl ParkingManagement {
         let lane = map.nearest_lane(near, LaneKind::Driving)?;
         let lane = map.lanes().get(lane)?;
 
-        let depth = 8;
+        let depth = 7;
 
         let mut potential = HashSet::new();
         potential.insert(PtrCmp(lane));
         let mut next = HashSet::new();
-
+        let intersections = map.intersections();
+        let roads = map.roads();
         for _ in 0..depth {
             for lane in potential.drain() {
                 let lane = lane.0;
-                let parent = unwrap_or!(map.roads().get(lane.parent), continue);
+                let parent = unwrap_or!(roads.get(lane.parent), continue);
 
                 let plane = unwrap_or!(parent.parking_next_to(lane), continue);
 
@@ -50,10 +51,20 @@ impl ParkingManagement {
                         return Some(spot);
                     }
                 }
+
+                let inter_dst = unwrap_or!(intersections.get(lane.dst), continue);
+                let inter_src = unwrap_or!(intersections.get(lane.src), continue);
+
                 next.extend(
-                    map.intersections()[lane.dst]
+                    inter_dst
                         .turns_from(lane.id)
                         .map(|(turn, _)| PtrCmp(&map.lanes()[turn.dst])),
+                );
+
+                next.extend(
+                    inter_src
+                        .turns_to(lane.id)
+                        .map(|(turn, _)| PtrCmp(&map.lanes()[turn.src])),
                 )
             }
             std::mem::swap(&mut potential, &mut next);
