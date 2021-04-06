@@ -40,15 +40,17 @@ impl ParkingManagement {
 
                 let plane = unwrap_or!(parent.parking_next_to(lane), continue);
 
-                for spot in map.parking.closest_spots(plane, near) {
-                    if self
-                        .reserved_spots
-                        .write()
-                        .unwrap()
-                        .insert(spot, ())
-                        .is_none()
-                    {
-                        return Some(spot);
+                if let Some(p_iter) = map.parking.closest_spots(plane, near) {
+                    for spot in p_iter {
+                        if self
+                            .reserved_spots
+                            .write()
+                            .unwrap()
+                            .insert(spot, ())
+                            .is_none()
+                        {
+                            return Some(spot);
+                        }
                     }
                 }
 

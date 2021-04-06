@@ -4,6 +4,7 @@ use geom::{Transform, Vec2};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
+use std::convert::TryFrom;
 
 new_key_type! {
     pub struct ParkingSpotID;
@@ -135,14 +136,29 @@ impl ParkingSpots {
         self.spots.iter()
     }
 
-    // Fixme: Instead of allocating a vec and sorting it, somehow sort the parking spots beforehand and iterate in spiral around the projected `near`
-    pub fn closest_spots(&self, lane: LaneID, near: Vec2) -> impl Iterator<Item = ParkingSpotID> {
+    /// Iterate in spiral around the projected `near`
+    pub fn closest_spots(
+        &self,
+        lane: LaneID,
+        near: Vec2,
+    ) -> Option<impl Iterator<Item = ParkingSpotID> + '_> {
         let spots = &self.spots;
-        let mut lspots = self.lane_spots.get(lane).cloned();
-        if let Some(ref mut lspots) = lspots {
-            #[allow(clippy::indexing_slicing)]
-            lspots.sort_by_key(|&id| OrderedFloat(spots[id].trans.position().distance2(near)))
-        }
-        lspots.into_iter().flatten()
+        let lspots = self.lane_spots.get(lane)?;
+        let (closest, _) = lspots.iter().copied().enumerate().min_by_key(|&(_, x)| {
+            let p = unwrap_ret!(spots.get(x), OrderedFloat(f32::INFINITY));
+            OrderedFloat(p.trans.position().distance2(near))
+        })?;
+
+        let closest = closest as i32;
+
+        Some(
+            (0..lspots.len() as i32 * 2)
+                .map(|i| if i & 1 == 0 { i >> 1 } else { -(i >> 1) })
+                .filter_map(move |offset| {
+                    let i = unwrap_orr!(usize::try_from(closest + offset), return None);
+                    lspots.get(i as usize)
+                })
+                .copied(),
+        )
     }
 }
