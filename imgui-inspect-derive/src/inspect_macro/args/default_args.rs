@@ -12,6 +12,9 @@ pub struct InspectFieldArgsDefault {
     ty: syn::Type,
 
     #[darling(default)]
+    name: Option<syn::Ident>,
+
+    #[darling(default)]
     render_trait: Option<syn::Path>,
 
     #[darling(default)]
@@ -50,6 +53,9 @@ impl InspectFieldArgs for InspectFieldArgsDefault {
     }
     fn render_trait(&self) -> &Option<syn::Path> {
         &self.render_trait
+    }
+    fn name(&self) -> &Option<syn::Ident> {
+        &self.name
     }
     fn proxy_type(&self) -> &Option<syn::Path> {
         &self.proxy_type
