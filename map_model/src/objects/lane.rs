@@ -1,6 +1,7 @@
 use crate::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
 use geom::PolyLine;
 use geom::Vec2;
+use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -13,8 +14,8 @@ new_key_type! {
 pub enum LaneKind {
     Driving,
     Biking,
-    Parking,
     Bus,
+    Parking,
     Construction,
     Walking,
 }
@@ -56,39 +57,48 @@ pub struct Lane {
     pub kind: LaneKind,
 
     pub control: TrafficControl,
+    pub speed_limit: f32,
 
     /// Always from src to dst
     pub points: PolyLine,
     pub dist_from_bottom: f32,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LanePattern {
-    pub lanes_forward: Vec<LaneKind>,
-    pub lanes_backward: Vec<LaneKind>,
+    pub lanes_forward: Vec<(LaneKind, f32)>,
+    pub lanes_backward: Vec<(LaneKind, f32)>,
 }
 
 impl LanePattern {
-    pub fn lanes(&self) -> impl Iterator<Item = (LaneKind, LaneDirection)> + '_ {
+    pub fn lanes(&self) -> impl Iterator<Item = (LaneKind, LaneDirection, f32)> + '_ {
         self.lanes_forward
             .iter()
             .rev()
-            .map(|&x| (x, LaneDirection::Forward))
+            .map(|&(k, limit)| (k, LaneDirection::Forward, limit))
             .chain(
                 self.lanes_backward
                     .iter()
-                    .map(|&x| (x, LaneDirection::Backward)),
+                    .map(|&(k, limit)| (k, LaneDirection::Backward, limit)),
             )
     }
 
     pub fn width(&self) -> f32 {
-        self.lanes().map(|(kind, _)| kind.width()).sum()
+        self.lanes().map(|(kind, _, _)| kind.width()).sum()
     }
 }
 
 #[derive(Copy, Clone, Inspect)]
 pub struct LanePatternBuilder {
     pub n_lanes: u32,
+    #[inspect(
+        name = "speed",
+        proxy_type = "InspectDragf",
+        step = 1.0,
+        min_value = 4.0,
+        max_value = 40.0
+    )]
+    pub speed_limit: f32,
     pub sidewalks: bool,
     pub parking: bool,
     pub one_way: bool,
@@ -98,6 +108,7 @@ impl Default for LanePatternBuilder {
     fn default() -> Self {
         LanePatternBuilder {
             n_lanes: 1,
+            speed_limit: 12.0,
             sidewalks: true,
             parking: true,
             one_way: false,
@@ -117,6 +128,11 @@ impl LanePatternBuilder {
 
     pub fn sidewalks(&mut self, sidewalks: bool) -> &mut Self {
         self.sidewalks = sidewalks;
+        self
+    }
+
+    pub fn speed_limit(&mut self, limit: f32) -> &mut Self {
+        self.speed_limit = limit;
         self
     }
 
@@ -169,8 +185,11 @@ impl LanePatternBuilder {
         }
 
         LanePattern {
-            lanes_backward: backward,
-            lanes_forward: forward,
+            lanes_backward: backward
+                .into_iter()
+                .map(|x| (x, self.speed_limit))
+                .collect(),
+            lanes_forward: forward.into_iter().map(|x| (x, self.speed_limit)).collect(),
         }
     }
 }
@@ -180,6 +199,7 @@ impl Lane {
         parent: &mut Road,
         store: &mut Lanes,
         kind: LaneKind,
+        speed_limit: f32,
         direction: LaneDirection,
         dist_from_bottom: f32,
     ) -> LaneID {
@@ -197,6 +217,7 @@ impl Lane {
             points: parent.points().clone(),
             dist_from_bottom,
             control: TrafficControl::Always,
+            speed_limit,
         })
     }
 

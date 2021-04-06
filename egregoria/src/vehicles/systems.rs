@@ -221,13 +221,18 @@ pub fn calc_decision<'a>(
         }
     }
 
+    let mut speed = 12.0;
+
     if let Some(Traversable {
         kind: TraverseKind::Lane(l_id),
         ..
     }) = it.get_travers()
     {
         if let Some(l) = map.lanes().get(*l_id) {
+            speed = l.speed_limit;
+
             let light = l.control_point();
+
             match l.control.get_behavior(time.seconds) {
                 TrafficBehavior::RED | TrafficBehavior::ORANGE => {
                     if light.is_close(
@@ -255,7 +260,7 @@ pub fn calc_decision<'a>(
         return (6.0, dir_to_pos);
     }
 
-    (vehicle.kind.cruising_speed(), dir_to_pos)
+    (vehicle.kind.speed_factor() * speed, dir_to_pos)
 }
 
 /// Calculates the distance to the closest problematic object in front of the car.

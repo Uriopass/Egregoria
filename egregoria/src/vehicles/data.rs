@@ -97,10 +97,10 @@ impl VehicleKind {
         }
     }
 
-    pub fn cruising_speed(self) -> f32 {
+    pub fn speed_factor(self) -> f32 {
         match self {
-            VehicleKind::Car => 12.0,
-            VehicleKind::Truck | VehicleKind::Bus => 10.0,
+            VehicleKind::Car => 1.0,
+            VehicleKind::Truck | VehicleKind::Bus => 0.8,
         }
     }
 

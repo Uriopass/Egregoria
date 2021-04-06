@@ -369,7 +369,7 @@ impl Map {
 
         let src_id = r.src;
 
-        let pat = r.pattern();
+        let pat = r.pattern(&self.lanes);
         let (r1, r2) = match r.segment {
             RoadSegmentKind::Straight => (
                 self.connect(src_id, id, &pat, RoadSegmentKind::Straight)?,

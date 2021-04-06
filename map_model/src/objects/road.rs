@@ -83,8 +83,8 @@ impl Road {
         let road = &mut roads[id];
 
         let mut dist_from_bottom = 0.0;
-        for (lane_k, dir) in lane_pattern.lanes() {
-            let id = Lane::make(road, lanes, lane_k, dir, dist_from_bottom);
+        for (lane_k, dir, limit) in lane_pattern.lanes() {
+            let id = Lane::make(road, lanes, lane_k, limit, dir, dist_from_bottom);
 
             match dir {
                 LaneDirection::Forward => road.lanes_forward.insert(0, (id, lane_k)),
@@ -179,10 +179,18 @@ impl Road {
         self.points.bbox().expand(self.width * 0.5)
     }
 
-    pub fn pattern(&self) -> LanePattern {
+    pub fn pattern(&self, lanes: &Lanes) -> LanePattern {
         LanePattern {
-            lanes_forward: self.lanes_forward.iter().map(|&(_, kind)| kind).collect(),
-            lanes_backward: self.lanes_backward.iter().map(|&(_, kind)| kind).collect(),
+            lanes_forward: self
+                .lanes_forward
+                .iter()
+                .map(|&(id, kind)| (kind, lanes.get(id).unwrap().speed_limit))
+                .collect(),
+            lanes_backward: self
+                .lanes_backward
+                .iter()
+                .map(|&(id, kind)| (kind, lanes.get(id).unwrap().speed_limit))
+                .collect(),
         }
     }
 
