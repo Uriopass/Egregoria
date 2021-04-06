@@ -220,6 +220,18 @@ impl Intersection {
         })
     }
 
+    pub fn turns_to(&self, lane: LaneID) -> impl Iterator<Item = (TurnID, TraverseDirection)> + '_ {
+        self.turns.iter().filter_map(move |Turn { id, .. }| {
+            if id.dst == lane {
+                Some((*id, TraverseDirection::Forward))
+            } else if id.bidirectional && id.src == lane {
+                Some((*id, TraverseDirection::Backward))
+            } else {
+                None
+            }
+        })
+    }
+
     pub fn turns(&self) -> &Vec<Turn> {
         &self.turns
     }
