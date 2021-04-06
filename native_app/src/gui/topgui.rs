@@ -189,10 +189,11 @@ impl Gui {
             *uiworld.read::<Tool>(),
             Tool::RoadbuildStraight | Tool::RoadbuildCurved
         ) {
+            let rbw = 220.0;
             Window::new(im_str!("Road Properties"))
-                .size_constraints([180.0, 0.0], [180.0, 10000.0])
+                .size_constraints([rbw, 0.0], [rbw, 10000.0])
                 .position(
-                    [w - 180.0 - toolbox_w, h * 0.5 - 30.0],
+                    [w - rbw - toolbox_w, h * 0.5 - 30.0],
                     imgui::Condition::Always,
                 )
                 .scroll_bar(false)
