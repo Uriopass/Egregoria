@@ -10,9 +10,8 @@ use std::ops::Mul;
 use std::rc::Rc;
 use wgpu_engine::wgpu::{RenderPass, RenderPipeline};
 use wgpu_engine::{
-    compile_shader, CompiledShader, Drawable, GfxContext, Mesh, MeshBuilder, MultiSpriteBatch,
-    ShadedBatch, ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder,
-    Tesselator,
+    compile_shader, CompiledShader, Drawable, GfxContext, Mesh, MultiSpriteBatch, ShadedBatch,
+    ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 
 #[derive(Copy, Clone)]
@@ -91,7 +90,7 @@ impl MapMeshHandler {
             self.last_config = common::config_id();
             self.map_dirt_id = map.dirt_id;
 
-            let m = std::mem::take(&mut self.builders.tess.meshbuilder);
+            let m = &mut self.builders.tess.meshbuilder;
 
             let meshes = MapMeshes {
                 map: m.build(gfx),
@@ -204,7 +203,7 @@ impl MapBuilders {
 
     fn map_mesh(&mut self, map: &Map) {
         let tess = &mut self.tess;
-        tess.meshbuilder = MeshBuilder::new();
+        tess.meshbuilder.clear();
 
         let low_col: LinearColor = common::config().road_low_col.into();
         let mid_col: LinearColor = common::config().road_mid_col.into();
