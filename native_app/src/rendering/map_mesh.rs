@@ -99,8 +99,7 @@ impl MapMeshHandler {
                 buildings: self
                     .builders
                     .buildings_builder
-                    .values()
-                    .into_iter()
+                    .values_mut()
                     .flat_map(|x| x.build(gfx))
                     .collect(),
                 arrows: self.builders.arrow_builder.build(gfx),
