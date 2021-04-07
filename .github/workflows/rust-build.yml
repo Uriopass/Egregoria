@@ -13,7 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout repo (no download lfs dependencies)
+        uses: actions/checkout@v2
+        with:
+          lfs: false
       - name: Update things
         run: sudo apt-get update
       - name: install libs
