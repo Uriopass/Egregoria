@@ -30,7 +30,7 @@ impl PBuffer {
             return;
         }
         if self.capacity < self.len {
-            self.capacity = self.len;
+            self.capacity = self.len.next_power_of_two();
             self.inner = Some(mk_buffer(gfx, self.usage, self.capacity));
         }
         gfx.queue.write_buffer(
@@ -78,6 +78,13 @@ impl PBuffer {
                     count: None,
                 }],
             })
+    }
+
+    pub fn inner(&self) -> Option<Arc<wgpu::Buffer>> {
+        if self.len == 0 {
+            return None;
+        }
+        self.inner.clone()
     }
 }
 

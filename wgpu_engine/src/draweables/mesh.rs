@@ -1,11 +1,19 @@
+use crate::pbuffer::PBuffer;
 use crate::{compile_shader, ColoredVertex, Drawable, GfxContext, IndexType, VBDesc};
-use wgpu::util::DeviceExt;
-use wgpu::{IndexFormat, RenderPass, RenderPipeline};
+use std::sync::Arc;
+use wgpu::{BufferUsage, IndexFormat, RenderPass, RenderPipeline};
 
-#[derive(Default)]
 pub struct MeshBuilder {
     pub vertices: Vec<ColoredVertex>,
     pub indices: Vec<IndexType>,
+    pub vbuffer: PBuffer,
+    pub ibuffer: PBuffer,
+}
+
+impl Default for MeshBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl MeshBuilder {
@@ -13,7 +21,14 @@ impl MeshBuilder {
         Self {
             vertices: vec![],
             indices: vec![],
+            vbuffer: PBuffer::new(BufferUsage::VERTEX),
+            ibuffer: PBuffer::new(BufferUsage::INDEX),
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.vertices.clear();
+        self.indices.clear();
     }
 
     pub fn extend(&mut self, vertices: &[ColoredVertex], indices: &[IndexType]) -> &mut Self {
@@ -34,28 +49,18 @@ impl MeshBuilder {
         f(vertices, &mut x);
     }
 
-    pub fn build(self, ctx: &GfxContext) -> Option<Mesh> {
+    pub fn build(&mut self, ctx: &GfxContext) -> Option<Mesh> {
         if self.vertices.is_empty() {
             return None;
         }
-        let vertex_buffer = ctx
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: None,
-                contents: bytemuck::cast_slice(&self.vertices),
-                usage: wgpu::BufferUsage::VERTEX,
-            });
-        let index_buffer = ctx
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: None,
-                contents: bytemuck::cast_slice(&self.indices),
-                usage: wgpu::BufferUsage::INDEX,
-            });
+
+        self.vbuffer
+            .write(ctx, bytemuck::cast_slice(&self.vertices));
+        self.ibuffer.write(ctx, bytemuck::cast_slice(&self.indices));
 
         Some(Mesh {
-            vertex_buffer,
-            index_buffer,
+            vertex_buffer: self.vbuffer.inner()?,
+            index_buffer: self.ibuffer.inner()?,
             n_indices: self.indices.len() as u32,
             alpha_blend: false,
         })
@@ -63,8 +68,8 @@ impl MeshBuilder {
 }
 
 pub struct Mesh {
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
+    pub vertex_buffer: Arc<wgpu::Buffer>,
+    pub index_buffer: Arc<wgpu::Buffer>,
     pub n_indices: u32,
     pub alpha_blend: bool,
 }
