@@ -10,7 +10,7 @@ use egregoria::{Egregoria, SerPreparedEgregoria};
 use geom::Camera;
 use geom::{vec3, LinearColor};
 use wgpu_engine::lighting::{LightInstance, LightRender};
-use wgpu_engine::{FrameContext, GuiRenderContext, SpriteBatch};
+use wgpu_engine::{FrameContext, GuiRenderContext, Tesselator};
 
 use crate::audio::GameAudio;
 use crate::context::Context;
@@ -48,6 +48,7 @@ pub struct State {
     bg_renderer: BackgroundRender,
     gui: Gui,
     pub light: LightRender,
+    immtess: Tesselator,
 
     all_audio: GameAudio,
 }
@@ -86,6 +87,7 @@ impl State {
             all_audio: GameAudio::new(&mut ctx.audio),
             light: LightRender::new(&mut ctx.gfx),
             goria,
+            immtess: Tesselator::new(None, 1.0),
         }
     }
 
@@ -260,90 +262,33 @@ impl State {
 
         self.bg_renderer.draw_background(ctx);
 
-        let mut tess = self.camera.culled_tesselator();
+        self.immtess.meshbuilder.clear();
+        self.camera.cull_tess(&mut self.immtess);
 
         let time: GameTime = *self.goria.read::<GameTime>();
         self.road_renderer
-            .render(&self.goria.map(), time.seconds, &mut tess, ctx);
+            .render(&self.goria.map(), time.seconds, &mut self.immtess, ctx);
 
         self.instanced_renderer.render(&self.goria, ctx);
 
-        MeshRenderer::render(&self.goria, &mut tess);
+        MeshRenderer::render(&self.goria, &mut self.immtess);
 
         {
             let objs = self.uiw.read::<DebugObjs>();
             for (val, _, obj) in &objs.0 {
                 if *val {
-                    obj(&mut tess, &self.goria, &self.uiw);
+                    obj(&mut self.immtess, &self.goria, &self.uiw);
                 }
             }
         }
 
         {
             let immediate = &mut *self.uiw.write::<ImmediateDraw>();
-            for ImmediateOrder { kind, color, z } in immediate
-                .persistent_orders
-                .iter()
-                .chain(immediate.orders.iter())
-            {
-                let z = *z;
-                tess.set_color(*color);
-                match *kind {
-                    OrderKind::Circle { pos, radius } => {
-                        tess.draw_circle(pos, z, radius);
-                    }
-                    OrderKind::Line {
-                        from,
-                        to,
-                        thickness,
-                    } => {
-                        tess.draw_stroke(from, to, z, thickness);
-                    }
-                    OrderKind::StrokeCircle {
-                        pos,
-                        radius,
-                        thickness,
-                    } => {
-                        tess.draw_stroke_circle(pos, z, radius, thickness);
-                    }
-                    OrderKind::PolyLine {
-                        ref points,
-                        thickness,
-                    } => {
-                        tess.draw_polyline(points, z, thickness);
-                    }
-                    OrderKind::Polygon { ref poly } => {
-                        tess.draw_filled_polygon(poly.as_slice(), z);
-                    }
-                    OrderKind::OBB(ref obb) => {
-                        let [ax1, ax2] = obb.axis();
-                        tess.draw_rect_cos_sin(
-                            obb.center(),
-                            z,
-                            ax1.magnitude(),
-                            ax2.magnitude(),
-                            ax1.normalize(),
-                        );
-                    }
-                    OrderKind::TexturedOBB { obb, ref path } => {
-                        let tex = ctx
-                            .gfx
-                            .read_texture(path)
-                            .expect("texture not interned")
-                            .clone();
-                        ctx.objs.push(Box::new(
-                            SpriteBatch::builder(tex)
-                                .push(obb.center(), obb.axis()[0], z, *color, (1.0, 1.0))
-                                .build(ctx.gfx)
-                                .unwrap(),
-                        ));
-                    }
-                }
-            }
+            immediate.apply(&mut self.immtess, ctx);
             immediate.orders.clear();
         }
 
-        if let Some(x) = tess.meshbuilder.build(ctx.gfx) {
+        if let Some(x) = self.immtess.meshbuilder.build(ctx.gfx) {
             ctx.draw(x)
         }
 

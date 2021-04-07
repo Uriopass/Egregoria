@@ -32,6 +32,7 @@ impl PBuffer {
         if self.capacity < self.len {
             self.capacity = self.len.next_power_of_two();
             self.inner = Some(mk_buffer(gfx, self.usage, self.capacity));
+            log::info!("reallocating {} bytes", self.capacity);
         }
         gfx.queue.write_buffer(
             self.inner.as_ref().expect("inner was never initialized ?"),
