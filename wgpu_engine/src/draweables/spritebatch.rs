@@ -1,24 +1,19 @@
+use crate::pbuffer::PBuffer;
 use crate::{compile_shader, Drawable, GfxContext, Texture};
 use geom::{LinearColor, Vec2};
 use std::path::PathBuf;
 use std::sync::Arc;
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, RenderPass, RenderPipeline, ShaderStage,
-};
+use wgpu::{BindGroup, BufferBindingType, BufferUsage, RenderPass, RenderPipeline, ShaderStage};
 
 pub struct SpriteBatchBuilder {
     pub tex: Arc<Texture>,
     instances: Vec<InstanceRaw>,
     stretch_x: f32,
     stretch_y: f32,
+    pub instance_sbuffer: PBuffer,
 }
 
 pub struct SpriteBatch {
-    // keep alive because used in bind group ?
-    #[allow(dead_code)]
-    instance_sbuffer: wgpu::Buffer,
     instance_bg: BindGroup,
     pub n_instances: u32,
     pub alpha_blend: bool,
@@ -82,41 +77,29 @@ impl SpriteBatchBuilder {
             stretch_y,
             tex,
             instances: vec![],
+            instance_sbuffer: PBuffer::new(BufferUsage::STORAGE),
         }
     }
 
-    pub fn build(&self, gfx: &GfxContext) -> Option<SpriteBatch> {
+    pub fn build(&mut self, gfx: &GfxContext) -> Option<SpriteBatch> {
         let pipeline = gfx.get_pipeline::<SpriteBatch>();
 
         if self.instances.is_empty() {
             return None;
         }
 
-        let instance_sbuffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("spritebatch instance buffer"),
-            contents: bytemuck::cast_slice(&self.instances),
-            usage: wgpu::BufferUsage::STORAGE,
-        });
+        self.instance_sbuffer
+            .write(gfx, bytemuck::cast_slice(&self.instances));
 
-        let instance_bg = gfx.device.create_bind_group(&BindGroupDescriptor {
-            label: Some("spritebatch instance bindgroup"),
-            layout: &pipeline.get_bind_group_layout(2),
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: BindingResource::Buffer {
-                    buffer: &instance_sbuffer,
-                    offset: 0,
-                    size: None,
-                },
-            }],
-        });
+        let instance_bg = self
+            .instance_sbuffer
+            .bindgroup(gfx, &pipeline.get_bind_group_layout(2))?;
 
         let tex_bg = self
             .tex
             .bindgroup(&gfx.device, &pipeline.get_bind_group_layout(0));
 
         Some(SpriteBatch {
-            instance_sbuffer,
             instance_bg,
             n_instances: self.instances.len() as u32,
             alpha_blend: false,
@@ -135,20 +118,11 @@ impl Drawable for SpriteBatch {
             &[
                 &Texture::bindgroup_layout(&gfx.device),
                 &gfx.projection.layout,
-                &gfx.device
-                    .create_bind_group_layout(&BindGroupLayoutDescriptor {
-                        label: Some("spritebatch instance bglayout"),
-                        entries: &[BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: ShaderStage::VERTEX,
-                            ty: BindingType::Buffer {
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
-                                ty: wgpu::BufferBindingType::Storage { read_only: true },
-                            },
-                            count: None,
-                        }],
-                    }),
+                &PBuffer::bindgroup_layout(
+                    gfx,
+                    ShaderStage::VERTEX,
+                    BufferBindingType::Storage { read_only: true },
+                ),
             ],
             &[],
             vert,
