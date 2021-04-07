@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::time::Instant;
 
 use winit::dpi::PhysicalSize;
@@ -298,7 +297,7 @@ impl State {
             .add_value(start.elapsed().as_secs_f32());
     }
 
-    pub fn lights(&self) -> (Cow<[LightInstance]>, LinearColor) {
+    pub fn lights(&self) -> (Vec<LightInstance>, LinearColor) {
         let mut lights = vec![];
 
         let time = self.goria.read::<GameTime>();
@@ -342,10 +341,7 @@ impl State {
             _ => dark,
         };
 
-        (
-            Cow::Owned(lights),
-            LinearColor::new(col.x, col.y, col.z, 1.0),
-        )
+        (lights, LinearColor::new(col.x, col.y, col.z, 1.0))
     }
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {

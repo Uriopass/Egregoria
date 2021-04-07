@@ -1,11 +1,12 @@
+use crate::pbuffer::PBuffer;
 use crate::{compile_shader, Drawable, GfxContext, IndexType, Texture, Uniform, UvVertex, VBDesc};
 use geom::LinearColor;
 use mint::ColumnMatrix4;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    AddressMode, BlendFactor, Buffer, CommandEncoder, FilterMode, IndexFormat, MultisampleState,
-    PrimitiveState, RenderPass, RenderPipeline, SamplerDescriptor, SwapChainFrame,
-    TextureSampleType, VertexAttribute, VertexBufferLayout,
+    AddressMode, BlendFactor, Buffer, BufferUsage, CommandEncoder, FilterMode, IndexFormat,
+    MultisampleState, PrimitiveState, RenderPass, RenderPipeline, SamplerDescriptor,
+    SwapChainFrame, TextureSampleType, VertexAttribute, VertexBufferLayout,
 };
 
 pub struct LightRender {
@@ -14,6 +15,7 @@ pub struct LightRender {
     vertex_buffer: Buffer,
     index_buffer: Buffer,
     screen_vertex_buffer: Buffer,
+    instance_buffer: PBuffer,
 }
 
 impl LightRender {
@@ -62,6 +64,7 @@ impl LightRender {
             noise,
             screen_vertex_buffer,
             blue_noise,
+            instance_buffer: PBuffer::new(BufferUsage::VERTEX),
         }
     }
 }
@@ -265,7 +268,7 @@ impl VBDesc for LightInstance {
 
 impl LightRender {
     pub fn render_lights(
-        &self,
+        &mut self,
         gfx: &GfxContext,
         encoder: &mut CommandEncoder,
         frame: &SwapChainFrame,
@@ -273,13 +276,10 @@ impl LightRender {
         ambiant: LinearColor,
         height: f32,
     ) {
-        let instance_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(lights),
-            usage: wgpu::BufferUsage::VERTEX,
-        });
+        self.instance_buffer
+            .write(gfx, bytemuck::cast_slice(lights));
 
-        {
+        if let Some(instance_buffer) = self.instance_buffer.inner() {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
