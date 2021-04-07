@@ -122,7 +122,7 @@ pub fn spawn_parked_vehicle(
 
     let it = Itinerary::none();
 
-    let pm = goria.read::<ParkingManagement>();
+    let mut pm = goria.write::<ParkingManagement>();
 
     let spot_id = pm.reserve_near(near, &map)?;
 

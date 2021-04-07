@@ -1,28 +1,27 @@
-use common::{FastMap, PtrCmp};
+use common::PtrCmp;
 use geom::Vec2;
 use map_model::{LaneKind, Map, ParkingSpotID};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use std::sync::RwLock;
+use std::collections::{BTreeSet, HashSet};
 
 register_resource!(ParkingManagement, "pmanagement");
 #[derive(Default, Serialize, Deserialize)]
 pub struct ParkingManagement {
-    reserved_spots: RwLock<FastMap<ParkingSpotID, ()>>,
+    reserved_spots: BTreeSet<ParkingSpotID>,
 }
 
 impl ParkingManagement {
-    pub fn free(&self, spot: ParkingSpotID) {
-        if self.reserved_spots.write().unwrap().remove(&spot).is_none() {
+    pub fn free(&mut self, spot: ParkingSpotID) {
+        if !self.reserved_spots.remove(&spot) {
             log::warn!("{:?} wasn't reserved", spot);
         }
     }
 
     pub fn is_free(&self, spot: ParkingSpotID) -> bool {
-        self.reserved_spots.read().unwrap().contains_key(&spot)
+        self.reserved_spots.contains(&spot)
     }
 
-    pub fn reserve_near(&self, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
+    pub fn reserve_near(&mut self, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
         let lane = map.nearest_lane(near, LaneKind::Driving)?;
         let lane = map.lanes().get(lane)?;
 
@@ -42,13 +41,7 @@ impl ParkingManagement {
 
                 if let Some(p_iter) = map.parking.closest_spots(plane, near) {
                     for spot in p_iter {
-                        if self
-                            .reserved_spots
-                            .write()
-                            .unwrap()
-                            .insert(spot, ())
-                            .is_none()
-                        {
+                        if self.reserved_spots.insert(spot) {
                             return Some(spot);
                         }
                     }
