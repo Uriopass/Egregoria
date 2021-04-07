@@ -356,6 +356,8 @@ impl Map {
     pub(crate) fn split_road(&mut self, r_id: RoadID, pos: Vec2) -> Option<IntersectionID> {
         info!("split_road {:?} {:?}", r_id, pos);
 
+        let pat = self.roads.get(r_id)?.pattern(&self.lanes);
+
         let r = unwrap_or!(self.remove_raw_road(r_id), {
             log::error!("Trying to split unexisting road");
             return None;
@@ -369,7 +371,6 @@ impl Map {
 
         let src_id = r.src;
 
-        let pat = r.pattern(&self.lanes);
         let (r1, r2) = match r.segment {
             RoadSegmentKind::Straight => (
                 self.connect(src_id, id, &pat, RoadSegmentKind::Straight)?,
