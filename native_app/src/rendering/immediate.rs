@@ -2,6 +2,7 @@
 
 use common::{AudioKind, Z_DEBUG};
 use geom::{LinearColor, Polygon, Vec2, OBB};
+use wgpu_engine::{FrameContext, SpriteBatch, Tesselator};
 
 register_resource_noserialize!(ImmediateSound);
 #[derive(Default)]
@@ -156,5 +157,65 @@ impl ImmediateDraw {
 
     pub fn clear_persistent(&mut self) {
         self.persistent_orders.clear();
+    }
+
+    pub fn apply(&mut self, tess: &mut Tesselator, ctx: &mut FrameContext) {
+        for ImmediateOrder { kind, color, z } in
+            self.persistent_orders.iter().chain(self.orders.iter())
+        {
+            let z = *z;
+            tess.set_color(*color);
+            match *kind {
+                OrderKind::Circle { pos, radius } => {
+                    tess.draw_circle(pos, z, radius);
+                }
+                OrderKind::Line {
+                    from,
+                    to,
+                    thickness,
+                } => {
+                    tess.draw_stroke(from, to, z, thickness);
+                }
+                OrderKind::StrokeCircle {
+                    pos,
+                    radius,
+                    thickness,
+                } => {
+                    tess.draw_stroke_circle(pos, z, radius, thickness);
+                }
+                OrderKind::PolyLine {
+                    ref points,
+                    thickness,
+                } => {
+                    tess.draw_polyline(points, z, thickness);
+                }
+                OrderKind::Polygon { ref poly } => {
+                    tess.draw_filled_polygon(poly.as_slice(), z);
+                }
+                OrderKind::OBB(ref obb) => {
+                    let [ax1, ax2] = obb.axis();
+                    tess.draw_rect_cos_sin(
+                        obb.center(),
+                        z,
+                        ax1.magnitude(),
+                        ax2.magnitude(),
+                        ax1.normalize(),
+                    );
+                }
+                OrderKind::TexturedOBB { obb, ref path } => {
+                    let tex = ctx
+                        .gfx
+                        .read_texture(path)
+                        .expect("texture not interned")
+                        .clone();
+                    ctx.objs.push(Box::new(
+                        SpriteBatch::builder(tex)
+                            .push(obb.center(), obb.axis()[0], z, *color, (1.0, 1.0))
+                            .build(ctx.gfx)
+                            .unwrap(),
+                    ));
+                }
+            }
+        }
     }
 }

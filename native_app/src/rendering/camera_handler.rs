@@ -19,11 +19,9 @@ impl CameraHandler {
         ctx.gfx.set_inv_proj(self.camera.inv_projection());
     }
 
-    pub fn culled_tesselator(&self) -> Tesselator {
-        Tesselator::new(
-            Some(self.camera.screen_aabb()),
-            1000.0 / self.camera.position.z,
-        )
+    pub fn cull_tess(&self, tess: &mut Tesselator) {
+        tess.cull_rect = Some(self.camera.screen_aabb());
+        tess.zoom = 1000.0 / self.camera.position.z;
     }
 
     pub fn resize(&mut self, ctx: &mut Context, width: f32, height: f32) {
