@@ -184,6 +184,7 @@ impl Gui {
                     });
             }
         }
+        spacing_left.pop(ui);
 
         if matches!(
             *uiworld.read::<Tool>(),
@@ -191,42 +192,95 @@ impl Gui {
         ) {
             let rbw = 220.0;
             Window::new(im_str!("Road Properties"))
-                .size_constraints([rbw, 0.0], [rbw, 10000.0])
+                .size([rbw, 380.0], imgui::Condition::Always)
                 .position(
                     [w - rbw - toolbox_w, h * 0.5 - 30.0],
                     imgui::Condition::Always,
                 )
-                .scroll_bar(false)
                 .title_bar(true)
                 .movable(false)
                 .collapsible(false)
                 .resizable(false)
                 .build(ui, || {
                     let mut roadbuild = uiworld.write::<RoadBuildResource>();
-                    let pat = &mut roadbuild.pattern_builder;
-                    <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
-                        &mut [pat],
-                        "Road shape",
-                        ui,
-                        &InspectArgsStruct {
-                            header: Some(false),
-                            indent_children: Some(false),
-                        },
-                    );
-
-                    if pat.n_lanes == 0 {
-                        pat.sidewalks = true;
-                        pat.parking = false;
-                    }
-
-                    if pat.n_lanes > 10 {
-                        pat.n_lanes = 10;
-                    }
-
                     ui.checkbox(im_str!("snap to grid"), &mut roadbuild.snap_to_grid);
+                    let pat = &mut roadbuild.pattern_builder;
+
+                    if ui.button(im_str!("Street"), [rbw, 30.0]) {
+                        *pat = LanePatternBuilder::new();
+                    }
+
+                    if ui.button(im_str!("Street one-way"), [rbw, 30.0]) {
+                        *pat = *LanePatternBuilder::new().one_way(true);
+                    }
+
+                    if ui.button(im_str!("Avenue"), [rbw, 30.0]) {
+                        *pat = *LanePatternBuilder::new().n_lanes(2).speed_limit(16.0);
+                    }
+
+                    if ui.button(im_str!("Avenue one-way"), [rbw, 30.0]) {
+                        *pat = *LanePatternBuilder::new()
+                            .n_lanes(2)
+                            .one_way(true)
+                            .speed_limit(16.0);
+                    }
+
+                    if ui.button(im_str!("Drive"), [rbw, 30.0]) {
+                        *pat = *LanePatternBuilder::new()
+                            .parking(false)
+                            .sidewalks(false)
+                            .speed_limit(16.0);
+                    }
+
+                    if ui.button(im_str!("Drive one-way"), [rbw, 30.0]) {
+                        *pat = *LanePatternBuilder::new()
+                            .parking(false)
+                            .sidewalks(false)
+                            .one_way(true)
+                            .speed_limit(16.0);
+                    }
+
+                    if ui.button(im_str!("Highway"), [rbw, 30.0]) {
+                        *pat = *LanePatternBuilder::new()
+                            .n_lanes(3)
+                            .speed_limit(30.0)
+                            .parking(false)
+                            .sidewalks(false);
+                    }
+
+                    if ui.button(im_str!("Highway one-way"), [rbw, 30.0]) {
+                        *pat = *LanePatternBuilder::new()
+                            .n_lanes(3)
+                            .speed_limit(30.0)
+                            .parking(false)
+                            .sidewalks(false)
+                            .one_way(true);
+                    }
+
+                    ui.new_line();
+
+                    if imgui::CollapsingHeader::new(im_str!("custom")).build(ui) {
+                        <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
+                            &mut [pat],
+                            "Road shape",
+                            ui,
+                            &InspectArgsStruct {
+                                header: Some(false),
+                                indent_children: Some(false),
+                            },
+                        );
+
+                        if pat.n_lanes == 0 {
+                            pat.sidewalks = true;
+                            pat.parking = false;
+                        }
+
+                        if pat.n_lanes > 10 {
+                            pat.n_lanes = 10;
+                        }
+                    }
                 });
         }
-        spacing_left.pop(ui);
 
         let brushes = [(im_str!("Residential"), LotKind::Residential)];
 
