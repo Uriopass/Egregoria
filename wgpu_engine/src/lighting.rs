@@ -13,9 +13,8 @@ pub struct LightRender {
     noise: Texture,
     blue_noise: Texture,
     vertex_buffer: Buffer,
-    index_buffer: Buffer,
-    screen_vertex_buffer: Buffer,
     instance_buffer: PBuffer,
+    light_uni: Uniform<LightUniform>,
 }
 
 impl LightRender {
@@ -37,21 +36,10 @@ impl LightRender {
             border_color: None,
         });
 
+        // ok: init
         let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(UV_VERTICES),
-            usage: wgpu::BufferUsage::VERTEX,
-        });
-
-        let index_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(UV_INDICES),
-            usage: wgpu::BufferUsage::INDEX,
-        });
-
-        let screen_vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(SCREEN_UV_VERTICES),
             usage: wgpu::BufferUsage::VERTEX,
         });
 
@@ -60,11 +48,18 @@ impl LightRender {
 
         Self {
             vertex_buffer,
-            index_buffer,
             noise,
-            screen_vertex_buffer,
             blue_noise,
             instance_buffer: PBuffer::new(BufferUsage::VERTEX),
+            light_uni: Uniform::new(
+                LightUniform {
+                    inv_proj: ColumnMatrix4::from([0.0; 16]),
+                    ambiant: Default::default(),
+                    time: 0.0,
+                    height: 0.0,
+                },
+                &gfx.device,
+            ),
         }
     }
 }
@@ -224,25 +219,6 @@ const UV_VERTICES: &[UvVertex] = &[
     },
 ];
 
-const SCREEN_UV_VERTICES: &[UvVertex] = &[
-    UvVertex {
-        position: [-1.0, -1.0, 0.0],
-        uv: [0.0, 1.0],
-    },
-    UvVertex {
-        position: [1.0, -1.0, 0.0],
-        uv: [1.0, 1.0],
-    },
-    UvVertex {
-        position: [1.0, 1.0, 0.0],
-        uv: [1.0, 0.0],
-    },
-    UvVertex {
-        position: [-1.0, 1.0, 0.0],
-        uv: [0.0, 0.0],
-    },
-];
-
 const UV_INDICES: &[IndexType] = &[0, 1, 2, 0, 2, 3];
 
 #[repr(C)]
@@ -301,21 +277,18 @@ impl LightRender {
             rpass.set_bind_group(0, &gfx.projection.bindgroup, &[]);
             rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             rpass.set_vertex_buffer(1, instance_buffer.slice(..));
-            rpass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
+            rpass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
             rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..lights.len() as u32);
         }
 
-        let ambiant_uni = Uniform::new(
-            LightUniform {
-                inv_proj: *gfx.inv_projection.value(),
-                time: *gfx.time_uni.value(),
-                ambiant,
-                height,
-            },
-            &gfx.device,
-        );
+        *self.light_uni.value_mut() = LightUniform {
+            inv_proj: *gfx.inv_projection.value(),
+            time: *gfx.time_uni.value(),
+            ambiant,
+            height,
+        };
 
-        ambiant_uni.upload_to_gpu(&gfx.queue);
+        self.light_uni.upload_to_gpu(&gfx.queue);
 
         let lmultiply_tex_bg = Texture::multi_bindgroup(
             &[
@@ -343,9 +316,9 @@ impl LightRender {
 
         rpass.set_pipeline(&gfx.get_pipeline::<LightMultiply>());
         rpass.set_bind_group(0, &lmultiply_tex_bg, &[]);
-        rpass.set_bind_group(1, &ambiant_uni.bindgroup, &[]);
-        rpass.set_vertex_buffer(0, self.screen_vertex_buffer.slice(..));
-        rpass.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
+        rpass.set_bind_group(1, &self.light_uni.bindgroup, &[]);
+        rpass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
+        rpass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
         rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
     }
 }
