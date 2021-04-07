@@ -15,8 +15,8 @@ use serde::{Deserialize, Serialize};
 pub struct Router {
     steps: Vec<RoutingStep>,
     cur_step: Option<RoutingStep>,
-    dest: Option<Destination>,
-    reroute: bool,
+    target_dest: Option<Destination>,
+    cur_dest: Option<Destination>,
     vehicle: Option<VehicleID>,
     pub personal_car: Option<VehicleID>,
 }
@@ -44,14 +44,15 @@ pub enum RoutingStep {
 debug_inspect_impl!(RoutingStep);
 
 register_system!(routing_update);
-#[system(par_for_each)]
+// todo: find a way to parallelize this, can't yet because of parking
+#[system(for_each)]
 #[read_component(Transform)]
 #[read_component(Vehicle)]
 #[read_component(Itinerary)]
 pub fn routing_update(
     #[resource] map: &Map,
     #[resource] cbuf: &ParCommandBuffer,
-    #[resource] parking: &ParkingManagement,
+    #[resource] parking: &mut ParkingManagement,
     body: &Entity,
     trans: &Transform,
     itin: &Itinerary,
@@ -61,136 +62,141 @@ pub fn routing_update(
     kin: &mut Kinematics,
     subworld: &SubWorld,
 ) {
-    let pos = trans.position();
-    if !router.reroute {
-        let next_step = unwrap_or!(router.steps.last(), {
-            router.cur_step = None;
+    if router.cur_dest != router.target_dest {
+        if router.target_dest.is_none() {
             return;
-        });
+        }
+        // router is dirty
+        let dest = router
+            .target_dest
+            .expect("destination is empty but dirty is true");
+        router.clear_steps(parking);
+        match dest {
+            Destination::Outside(pos) => {
+                router.steps = router.steps_to(pos, parking, map, loc, subworld)
+            }
+            Destination::Building(build) => {
+                if let Location::Building(cur_build) = loc {
+                    if *cur_build == build {
+                        return;
+                    }
+                }
 
-        let mut cur_step_over = true;
-
-        if let Some(step) = router.cur_step {
-            cur_step_over = match step {
-                RoutingStep::WalkTo(_) => itin.has_ended(0.0),
-                RoutingStep::DriveTo(vehicle, _) => subworld
-                    .entry_ref(vehicle.0)
-                    .unwrap()
-                    .get_component::<Itinerary>()
-                    .unwrap()
-                    .has_ended(0.0),
-                RoutingStep::Park(vehicle, _) => matches!(
-                    subworld
-                        .entry_ref(vehicle.0)
-                        .unwrap()
-                        .get_component::<Vehicle>()
-                        .unwrap()
-                        .state,
-                    VehicleState::Parked(_)
-                ),
-                RoutingStep::Unpark(_) => true,
-                RoutingStep::GetInVehicle(_) => true,
-                RoutingStep::GetOutVehicle(_) => true,
-                RoutingStep::GetInBuilding(_) => true,
-                RoutingStep::GetOutBuilding(_) => true,
-            };
+                let door_pos = map.buildings()[build].door_pos;
+                router.steps = router.steps_to(door_pos, parking, map, loc, subworld);
+                router.steps.push(RoutingStep::GetInBuilding(build));
+            }
         }
 
-        let next_step_ready = match next_step {
-            RoutingStep::WalkTo(_) => true,
-            RoutingStep::DriveTo(_, _) => true,
-            RoutingStep::Park(_, _) => true,
-            RoutingStep::Unpark(_) => true,
-            RoutingStep::GetInVehicle(vehicle) => subworld
+        router.cur_dest = router.target_dest;
+
+        router.steps.reverse();
+        return;
+    }
+    let pos = trans.position();
+    let next_step = unwrap_or!(router.steps.last(), {
+        router.cur_step = None;
+        return;
+    });
+
+    let mut cur_step_over = true;
+
+    if let Some(step) = router.cur_step {
+        cur_step_over = match step {
+            RoutingStep::WalkTo(_) => itin.has_ended(0.0),
+            RoutingStep::DriveTo(vehicle, _) => subworld
                 .entry_ref(vehicle.0)
                 .unwrap()
-                .get_component::<Transform>()
+                .get_component::<Itinerary>()
                 .unwrap()
-                .position()
-                .is_close(pos, 3.0),
-            RoutingStep::GetOutVehicle(_) => true,
-            &RoutingStep::GetInBuilding(build) => {
-                map.buildings()[build].door_pos.is_close(pos, 3.0) // fixme check building exists
-            }
-            RoutingStep::GetOutBuilding(_) => true,
-        };
-
-        if !(next_step_ready && cur_step_over) {
-            return;
-        }
-
-        router.cur_step = Some(router.steps.pop().unwrap());
-
-        match router.cur_step.unwrap() {
-            RoutingStep::WalkTo(obj) => {
-                if let Some(route) = Itinerary::route(pos, obj, &*map, PathKind::Pedestrian) {
-                    cbuf.add_component(*body, route);
-                }
-            }
-            RoutingStep::DriveTo(vehicle, obj) => {
-                if let Some(route) = Itinerary::route(pos, obj, &*map, PathKind::Vehicle) {
-                    cbuf.add_component(vehicle.0, route);
-                }
-            }
-            RoutingStep::Park(vehicle, spot) => {
-                if !map.parking.contains(spot) {
-                    router.reroute = true;
-                    return;
-                }
-
-                cbuf.exec_ent(vehicle.0, park(vehicle, spot));
-            }
-            RoutingStep::Unpark(vehicle) => {
-                cbuf.exec_ent(vehicle.0, unpark(vehicle));
-            }
-            RoutingStep::GetInVehicle(vehicle) => {
-                *loc = Location::Vehicle(vehicle);
-                walk_inside(*body, cbuf, mr, kin);
-            }
-            RoutingStep::GetOutVehicle(vehicle) => {
-                let vtrans = *subworld
+                .has_ended(0.0),
+            RoutingStep::Park(vehicle, _) => matches!(
+                subworld
                     .entry_ref(vehicle.0)
                     .unwrap()
-                    .get_component::<Transform>()
-                    .unwrap();
-                let pos = vtrans.position() + vtrans.direction().perpendicular() * 2.0;
-                walk_outside(*body, pos, cbuf, mr, loc);
-            }
-            RoutingStep::GetInBuilding(build) => {
-                *loc = Location::Building(build);
-                walk_inside(*body, cbuf, mr, kin);
-            }
-            RoutingStep::GetOutBuilding(build) => {
-                let wpos = map.buildings()[build].door_pos;
-                walk_outside(*body, wpos, cbuf, mr, loc);
-            }
+                    .get_component::<Vehicle>()
+                    .unwrap()
+                    .state,
+                VehicleState::Parked(_)
+            ),
+            RoutingStep::Unpark(_) => true,
+            RoutingStep::GetInVehicle(_) => true,
+            RoutingStep::GetOutVehicle(_) => true,
+            RoutingStep::GetInBuilding(_) => true,
+            RoutingStep::GetOutBuilding(_) => true,
+        };
+    }
+
+    let next_step_ready = match next_step {
+        RoutingStep::WalkTo(_) => true,
+        RoutingStep::DriveTo(_, _) => true,
+        RoutingStep::Park(_, _) => true,
+        RoutingStep::Unpark(_) => true,
+        RoutingStep::GetInVehicle(vehicle) => subworld
+            .entry_ref(vehicle.0)
+            .unwrap()
+            .get_component::<Transform>()
+            .unwrap()
+            .position()
+            .is_close(pos, 3.0),
+        RoutingStep::GetOutVehicle(_) => true,
+        &RoutingStep::GetInBuilding(build) => {
+            map.buildings()[build].door_pos.is_close(pos, 3.0) // fixme check building exists
         }
+        RoutingStep::GetOutBuilding(_) => true,
+    };
+
+    if !(next_step_ready && cur_step_over) {
         return;
     }
 
-    router.reroute = false;
+    router.cur_step = Some(router.steps.pop().unwrap());
 
-    // router is dirty
-    let dest = router.dest.expect("destination is empty but dirty is true");
-    router.clear_steps(parking);
-    match dest {
-        Destination::Outside(pos) => {
-            router.steps = router.steps_to(pos, parking, map, loc, subworld)
+    match router.cur_step.unwrap() {
+        RoutingStep::WalkTo(obj) => {
+            if let Some(route) = Itinerary::route(pos, obj, &*map, PathKind::Pedestrian) {
+                cbuf.add_component(*body, route);
+            }
         }
-        Destination::Building(build) => {
-            if let Location::Building(cur_build) = loc {
-                if *cur_build == build {
-                    return;
-                }
+        RoutingStep::DriveTo(vehicle, obj) => {
+            if let Some(route) = Itinerary::route(pos, obj, &*map, PathKind::Vehicle) {
+                cbuf.add_component(vehicle.0, route);
+            }
+        }
+        RoutingStep::Park(vehicle, spot) => {
+            if !map.parking.contains(spot) {
+                router.clear_steps(parking);
+                router.cur_dest = None;
+                return;
             }
 
-            let door_pos = map.buildings()[build].door_pos;
-            router.steps = router.steps_to(door_pos, parking, map, loc, subworld);
-            router.steps.push(RoutingStep::GetInBuilding(build));
+            cbuf.exec_ent(vehicle.0, park(vehicle, spot));
+        }
+        RoutingStep::Unpark(vehicle) => {
+            cbuf.exec_ent(vehicle.0, unpark(vehicle));
+        }
+        RoutingStep::GetInVehicle(vehicle) => {
+            *loc = Location::Vehicle(vehicle);
+            walk_inside(*body, cbuf, mr, kin);
+        }
+        RoutingStep::GetOutVehicle(vehicle) => {
+            let vtrans = *subworld
+                .entry_ref(vehicle.0)
+                .unwrap()
+                .get_component::<Transform>()
+                .unwrap();
+            let pos = vtrans.position() + vtrans.direction().perpendicular() * 2.0;
+            walk_outside(*body, pos, cbuf, mr, loc);
+        }
+        RoutingStep::GetInBuilding(build) => {
+            *loc = Location::Building(build);
+            walk_inside(*body, cbuf, mr, kin);
+        }
+        RoutingStep::GetOutBuilding(build) => {
+            let wpos = map.buildings()[build].door_pos;
+            walk_outside(*body, wpos, cbuf, mr, loc);
         }
     }
-
-    router.steps.reverse();
 }
 
 fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, mr: &mut MeshRender, kin: &mut Kinematics) {
@@ -248,7 +254,7 @@ fn unpark(vehicle: VehicleID) -> impl FnOnce(&mut Egregoria) {
         let w = v.kind.width();
 
         if let VehicleState::Parked(spot) = v.state {
-            goria.read::<ParkingManagement>().free(spot);
+            goria.write::<ParkingManagement>().free(spot);
         } else {
             log::warn!("Trying to unpark {:?} that wasn't parked", vehicle);
         }
@@ -264,10 +270,10 @@ impl Router {
         Self {
             steps: vec![],
             cur_step: None,
-            dest: None,
-            reroute: false,
+            target_dest: None,
             personal_car,
             vehicle: personal_car,
+            cur_dest: None,
         }
     }
 
@@ -275,7 +281,7 @@ impl Router {
         self.vehicle = v;
     }
 
-    fn clear_steps(&mut self, parking: &ParkingManagement) {
+    fn clear_steps(&mut self, parking: &mut ParkingManagement) {
         for s in self.steps.drain(..) {
             if let RoutingStep::Park(_, spot) = s {
                 parking.free(spot);
@@ -285,20 +291,19 @@ impl Router {
 
     /// Returns wheter or not the destination was already attained
     pub fn go_to(&mut self, dest: Destination) -> bool {
-        if let Some(router_dest) = self.dest {
+        if let Some(router_dest) = self.cur_dest {
             if router_dest == dest {
-                return !self.reroute && self.steps.is_empty() && self.cur_step.is_none();
+                return self.steps.is_empty() && self.cur_step.is_none();
             }
         }
-        self.dest = Some(dest);
-        self.reroute = true;
+        self.target_dest = Some(dest);
         false
     }
 
     fn steps_to(
         &self,
         obj: Vec2,
-        parking: &ParkingManagement,
+        parking: &mut ParkingManagement,
         map: &Map,
         loc: &Location,
         subworld: &SubWorld,
