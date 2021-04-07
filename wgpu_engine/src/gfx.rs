@@ -36,6 +36,8 @@ pub struct GfxContext {
     pub time_uni: Uniform<f32>,
     pub(crate) textures: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) samples: u32,
+    pub(crate) screen_uv_vertices: wgpu::Buffer,
+    pub(crate) rect_indices: wgpu::Buffer,
 }
 
 pub struct GuiRenderContext<'a, 'b> {
@@ -94,6 +96,17 @@ impl GfxContext {
         let inv_projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
 
         let time_uni = Uniform::new(0.0, &device);
+        let screen_uv_vertices = device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(SCREEN_UV_VERTICES),
+            usage: wgpu::BufferUsage::VERTEX,
+        });
+
+        let rect_indices = device.create_buffer_init(&BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(UV_INDICES),
+            usage: wgpu::BufferUsage::INDEX,
+        });
 
         let mut me = Self {
             size: (win_width, win_height),
@@ -114,6 +127,8 @@ impl GfxContext {
             time_uni,
             textures: FastMap::default(),
             samples,
+            screen_uv_vertices,
+            rect_indices,
         };
 
         me.register_pipeline::<Mesh>();
@@ -249,18 +264,6 @@ impl GfxContext {
             rpass: Some(rpass),
         });
 
-        let vertex_buffer = self.device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(SCREEN_UV_VERTICES),
-            usage: wgpu::BufferUsage::VERTEX,
-        });
-
-        let index_buffer = self.device.create_buffer_init(&BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(UV_INDICES),
-            usage: wgpu::BufferUsage::INDEX,
-        });
-
         let pipeline = &self.get_pipeline::<BlitLinear>();
         let bg = self
             .ui_texture
@@ -281,8 +284,8 @@ impl GfxContext {
 
         rpass.set_pipeline(pipeline);
         rpass.set_bind_group(0, &bg, &[]);
-        rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
-        rpass.set_index_buffer(index_buffer.slice(..), IndexFormat::Uint32);
+        rpass.set_vertex_buffer(0, self.screen_uv_vertices.slice(..));
+        rpass.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
         rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
     }
 

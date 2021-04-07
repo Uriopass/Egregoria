@@ -45,18 +45,16 @@ impl BackgroundRender {
     }
 
     pub fn draw_background(&mut self, fctx: &mut FrameContext) {
-        let uni = Uniform::new(
-            BackgroundUniform {
-                sea_color: common::config().sea_col.into(),
-                grass_color: common::config().grass_col.into(),
-                sand_color: common::config().sand_col.into(),
-                time: *fctx.gfx.time_uni.value(),
-            },
-            &fctx.gfx.device,
-        );
-        Rc::get_mut(&mut self.sqt)
+        let uni = &mut Rc::get_mut(&mut self.sqt)
             .expect("last frame didnt destroy obj :(")
-            .uniform = uni;
+            .uniform;
+        *uni.value_mut() = BackgroundUniform {
+            sea_color: common::config().sea_col.into(),
+            grass_color: common::config().grass_col.into(),
+            sand_color: common::config().sand_col.into(),
+            time: *fctx.gfx.time_uni.value(),
+        };
+        uni.upload_to_gpu(&fctx.gfx.queue);
         fctx.objs.push(Box::new(self.sqt.clone()));
     }
 }
