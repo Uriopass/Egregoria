@@ -116,7 +116,7 @@ impl Map {
         to: MapProject,
         interpoint: Option<Vec2>,
         pattern: &LanePattern,
-    ) -> Option<IntersectionID> {
+    ) -> Option<(IntersectionID, RoadID)> {
         if !from.kind.check_valid(self) || !to.kind.check_valid(self) {
             return None;
         }
@@ -138,12 +138,12 @@ impl Map {
         let from = mk_inter(from)?;
         let to = mk_inter(to)?;
 
-        self.connect(from, to, pattern, connection_segment);
+        let r = self.connect(from, to, pattern, connection_segment)?;
 
         #[cfg(debug_assertions)]
         self.check_invariants();
 
-        Some(to)
+        Some((to, r))
     }
 
     pub fn build_special_building(
@@ -635,6 +635,14 @@ impl Map {
             assert!(self.intersections.contains_key(lane.src), "{:?}", lane.src);
             assert!(self.intersections.contains_key(lane.dst), "{:?}", lane.dst);
             assert!(self.roads.contains_key(lane.parent), "{:?}", lane.parent);
+
+            if matches!(lane.kind, LaneKind::Parking) {
+                assert!(
+                    self.parking.spots(lane.id).is_some(),
+                    "no spots for {:?}",
+                    lane.id
+                )
+            }
         }
 
         for road in self.roads.values() {

@@ -141,6 +141,7 @@ pub mod pedestrians;
 pub mod physics;
 pub mod rendering;
 pub mod souls;
+mod tests;
 pub mod utils;
 pub mod vehicles;
 
@@ -232,17 +233,14 @@ impl Egregoria {
         &self.world
     }
 
-    pub fn tick(
-        &mut self,
-        dt: f64,
-        game_schedule: &mut SeqSchedule,
-        commands: &WorldCommands,
-    ) -> Duration {
+    pub fn tick(&mut self, game_schedule: &mut SeqSchedule, commands: &WorldCommands) -> Duration {
+        const WORLD_TICK_DT: f32 = 0.05;
+
         let t = Instant::now();
 
         {
             let mut time = self.write::<GameTime>();
-            *time = GameTime::new(dt as f32, time.timestamp + dt);
+            *time = GameTime::new(WORLD_TICK_DT, time.timestamp + WORLD_TICK_DT as f64);
         }
 
         for command in &commands.commands {

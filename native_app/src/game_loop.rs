@@ -111,11 +111,7 @@ impl State {
                 let mut commands_once = Some(commands.clone());
                 step.prepare_frame(settings.time_warp);
                 while step.tick() || (has_commands && commands_once.is_some()) {
-                    let t = goria.tick(
-                        step.period.as_secs_f64(),
-                        sched,
-                        &commands_once.take().unwrap_or_default(),
-                    );
+                    let t = goria.tick(sched, &commands_once.take().unwrap_or_default());
                     timings.world_update.add_value(t.as_secs_f32());
                 }
 
@@ -178,11 +174,7 @@ impl State {
                     .iter()
                     .map(|x| x.inp.clone())
                     .collect();
-                let t = self.goria.tick(
-                    common::timestep::UP_DT.as_secs_f64(),
-                    &mut self.game_schedule,
-                    &commands,
-                );
+                let t = self.goria.tick(&mut self.game_schedule, &commands);
                 self.uiw
                     .write::<Timings>()
                     .world_update
