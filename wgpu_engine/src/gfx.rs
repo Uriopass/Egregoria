@@ -47,7 +47,7 @@ pub struct GuiRenderContext<'a, 'b> {
 }
 
 pub struct FrameContext<'a> {
-    pub gfx: &'a GfxContext,
+    pub gfx: &'a mut GfxContext,
     pub objs: &'a mut Vec<Box<dyn Drawable>>,
 }
 
@@ -206,7 +206,7 @@ impl GfxContext {
 
         let mut fc = FrameContext {
             objs: &mut objs,
-            gfx: &self,
+            gfx: self,
         };
 
         prepare(&mut fc);
@@ -234,7 +234,7 @@ impl GfxContext {
             }),
         });
 
-        for obj in fc.objs {
+        for obj in &mut objs {
             obj.draw(&self, &mut render_pass);
         }
     }

@@ -3,7 +3,7 @@ use std::time::Instant;
 use winit::dpi::PhysicalSize;
 use winit::window::{Fullscreen, Window};
 
-use crate::rendering::immediate::{ImmediateDraw, ImmediateOrder, ImmediateSound, OrderKind};
+use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::{GameTime, History};
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use geom::Camera;
@@ -230,19 +230,6 @@ impl State {
 
         ctx.gfx
             .set_time(self.goria.read::<GameTime>().timestamp as f32);
-
-        {
-            let immediate = self.uiw.read::<ImmediateDraw>();
-            for ImmediateOrder { kind, .. } in immediate
-                .persistent_orders
-                .iter()
-                .chain(immediate.orders.iter())
-            {
-                if let OrderKind::TexturedOBB { ref path, .. } = *kind {
-                    ctx.gfx.texture(path, Some("immediate tex"));
-                }
-            }
-        }
 
         for (sound, kind) in self.uiw.write::<ImmediateSound>().orders.drain(..) {
             ctx.audio.play(sound, kind);
