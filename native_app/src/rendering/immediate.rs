@@ -203,11 +203,7 @@ impl ImmediateDraw {
                     );
                 }
                 OrderKind::TexturedOBB { obb, ref path } => {
-                    let tex = ctx
-                        .gfx
-                        .read_texture(path)
-                        .expect("texture not interned")
-                        .clone();
+                    let tex = ctx.gfx.texture(path, None);
                     ctx.objs.push(Box::new(
                         SpriteBatch::builder(tex)
                             .push(obb.center(), obb.axis()[0], z, *color, (1.0, 1.0))
