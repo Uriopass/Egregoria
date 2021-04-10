@@ -2,7 +2,7 @@ use crate::map_dynamic::{Itinerary, ParkingManagement};
 use crate::pedestrians::{put_pedestrian_in_coworld, Location};
 use crate::physics::{Collider, CollisionWorld, Kinematics};
 use crate::rendering::meshrender_component::MeshRender;
-use crate::vehicles::{put_vehicle_in_coworld, Vehicle, VehicleID, VehicleState};
+use crate::vehicles::{unpark, Vehicle, VehicleID, VehicleState};
 use crate::{Egregoria, ParCommandBuffer};
 use geom::{Spline, Transform, Vec2};
 use imgui_inspect_derive::*;
@@ -173,7 +173,7 @@ pub fn routing_update(
             cbuf.exec_ent(vehicle.0, park(vehicle, spot));
         }
         RoutingStep::Unpark(vehicle) => {
-            cbuf.exec_ent(vehicle.0, unpark(vehicle));
+            cbuf.exec_ent(vehicle.0, move |goria| unpark(goria, vehicle));
         }
         RoutingStep::GetInVehicle(vehicle) => {
             *loc = Location::Vehicle(vehicle);
@@ -245,23 +245,6 @@ fn park(vehicle: VehicleID, spot_id: ParkingSpotID) -> impl FnOnce(&mut Egregori
         goria.comp_mut::<Vehicle>(vehicle.0).unwrap().state =
             VehicleState::RoadToPark(s, 0.0, spot_id);
         goria.comp_mut::<Kinematics>(vehicle.0).unwrap().velocity = Vec2::ZERO;
-    }
-}
-
-fn unpark(vehicle: VehicleID) -> impl FnOnce(&mut Egregoria) {
-    move |goria| {
-        let v = goria.comp::<Vehicle>(vehicle.0).unwrap();
-        let w = v.kind.width();
-
-        if let VehicleState::Parked(spot) = v.state {
-            goria.write::<ParkingManagement>().free(spot);
-        } else {
-            log::warn!("Trying to unpark {:?} that wasn't parked", vehicle);
-        }
-
-        let coll = put_vehicle_in_coworld(goria, w, *goria.comp::<Transform>(vehicle.0).unwrap());
-        goria.add_comp(vehicle.0, coll);
-        goria.comp_mut::<Vehicle>(vehicle.0).unwrap().state = VehicleState::Driving;
     }
 }
 

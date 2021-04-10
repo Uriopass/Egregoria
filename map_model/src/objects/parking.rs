@@ -12,7 +12,7 @@ new_key_type! {
 
 pub const PARKING_SPOT_LENGTH: f32 = 6.0;
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct ParkingSpot {
     pub parent: LaneID,
     pub trans: Transform,
@@ -81,6 +81,7 @@ impl ParkingSpots {
         let l = lane.length() - gap * 2.0;
         let n_spots = (l / PARKING_SPOT_LENGTH) as i32;
         if n_spots <= 0 {
+            self.lane_spots.insert(lane.id, vec![]);
             return;
         }
         let step = l / n_spots as f32;
@@ -124,12 +125,10 @@ impl ParkingSpots {
         for _ in self.reuse_spot.clear() {}
     }
 
-    pub fn spots(&self, lane: LaneID) -> impl Iterator<Item = &ParkingSpot> + '_ {
+    pub fn spots(&self, lane: LaneID) -> Option<impl Iterator<Item = &ParkingSpot> + '_> {
         self.lane_spots
             .get(lane)
             .map(move |x| x.iter().flat_map(move |spot| self.spots.get(*spot)))
-            .into_iter()
-            .flatten()
     }
 
     pub fn all_spots(&self) -> impl Iterator<Item = (ParkingSpotID, &ParkingSpot)> + '_ {

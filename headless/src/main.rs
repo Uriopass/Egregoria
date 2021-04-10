@@ -58,7 +58,7 @@ fn main() {
             for frame in inputs {
                 assert_eq!(frame.frame.0, w.get_tick() + 1);
                 for input in frame.inputs {
-                    w.tick(UP_DT.as_secs_f64(), &mut sched, &input.inp);
+                    w.tick(&mut sched, &input.inp);
                 }
             }
         }

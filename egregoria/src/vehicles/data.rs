@@ -113,6 +113,21 @@ impl VehicleKind {
     }
 }
 
+pub fn unpark(goria: &mut Egregoria, vehicle: VehicleID) {
+    let v = goria.comp::<Vehicle>(vehicle.0).unwrap();
+    let w = v.kind.width();
+
+    if let VehicleState::Parked(spot) = v.state {
+        goria.write::<ParkingManagement>().free(spot);
+    } else {
+        log::warn!("Trying to unpark {:?} that wasn't parked", vehicle);
+    }
+
+    let coll = put_vehicle_in_coworld(goria, w, *goria.comp::<Transform>(vehicle.0).unwrap());
+    goria.add_comp(vehicle.0, coll);
+    goria.comp_mut::<Vehicle>(vehicle.0).unwrap().state = VehicleState::Driving;
+}
+
 pub fn spawn_parked_vehicle(
     goria: &mut Egregoria,
     kind: VehicleKind,
