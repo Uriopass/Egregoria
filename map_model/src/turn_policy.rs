@@ -4,7 +4,7 @@ use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 use std::iter::{Extend, Iterator};
 
-#[derive(Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Inspect)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Inspect)]
 pub struct TurnPolicy {
     pub back_turns: bool,
     pub left_turns: bool,

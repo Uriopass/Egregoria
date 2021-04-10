@@ -27,7 +27,7 @@ pub struct WorldCommands {
     pub(crate) commands: Vec<WorldCommand>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WorldCommand {
     MapRemoveIntersection(IntersectionID),
     MapRemoveRoad(RoadID),
@@ -55,6 +55,10 @@ impl WorldCommands {
 
     pub fn iter(&self) -> impl Iterator<Item = &WorldCommand> {
         self.commands.iter()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.commands.is_empty()
     }
 
     pub fn map_generate_trees(&mut self, aabb: AABB) {

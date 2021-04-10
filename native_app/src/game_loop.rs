@@ -96,6 +96,7 @@ impl State {
         crate::gui::run_ui_systems(&self.goria, &mut self.uiw);
 
         let commands = std::mem::take(&mut *self.uiw.write::<WorldCommands>());
+        *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
 
         let mut net_state = self.uiw.write::<NetworkState>();
 
@@ -106,9 +107,10 @@ impl State {
                 let sched = &mut self.game_schedule;
                 let mut timings = self.uiw.write::<Timings>();
 
+                let has_commands = !commands.is_empty();
                 let mut commands_once = Some(commands.clone());
                 step.prepare_frame(settings.time_warp);
-                while step.tick() {
+                while step.tick() || (has_commands && commands_once.is_some()) {
                     let t = goria.tick(
                         step.period.as_secs_f64(),
                         sched,

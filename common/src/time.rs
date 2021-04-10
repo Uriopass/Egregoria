@@ -13,7 +13,7 @@ pub struct GameInstant {
 
 /// The resource to know everything about the current in-game time
 /// GameTime is subject to timewarp
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct GameTime {
     /// Monotonic time in seconds elapsed since the start of the game.
     pub timestamp: f64,
@@ -29,7 +29,7 @@ pub struct GameTime {
 }
 
 /// A useful format to define intervals or points in game time
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct DayTime {
     /// Days elapsed since the start of the game
     pub day: i32,
