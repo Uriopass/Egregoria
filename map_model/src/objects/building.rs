@@ -17,7 +17,7 @@ pub enum BuildingKind {
     Company(u32),
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum BuildingGen {
     House,
     Farm,
