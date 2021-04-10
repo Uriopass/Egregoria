@@ -184,12 +184,30 @@ impl Road {
             lanes_forward: self
                 .lanes_forward
                 .iter()
-                .map(|&(id, kind)| (kind, lanes.get(id).unwrap().speed_limit))
+                .flat_map(|&(id, kind)| {
+                    Some((
+                        kind,
+                        unwrap_or!(lanes.get(id), {
+                            log::error!("lane doesn't exist while gettign pattern");
+                            return None;
+                        })
+                        .speed_limit,
+                    ))
+                })
                 .collect(),
             lanes_backward: self
                 .lanes_backward
                 .iter()
-                .map(|&(id, kind)| (kind, lanes.get(id).unwrap().speed_limit))
+                .flat_map(|&(id, kind)| {
+                    Some((
+                        kind,
+                        unwrap_or!(lanes.get(id), {
+                            log::error!("lane doesn't exist while gettign pattern");
+                            return None;
+                        })
+                        .speed_limit,
+                    ))
+                })
                 .collect(),
         }
     }
