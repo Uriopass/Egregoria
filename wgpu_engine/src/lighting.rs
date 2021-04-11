@@ -255,7 +255,7 @@ impl LightRender {
         self.instance_buffer
             .write(gfx, bytemuck::cast_slice(lights));
 
-        if let Some(instance_buffer) = self.instance_buffer.inner() {
+        {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -273,12 +273,14 @@ impl LightRender {
                 }],
                 depth_stencil_attachment: None,
             });
-            rpass.set_pipeline(&gfx.get_pipeline::<LightBlit>());
-            rpass.set_bind_group(0, &gfx.projection.bindgroup, &[]);
-            rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            rpass.set_vertex_buffer(1, instance_buffer.slice(..));
-            rpass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
-            rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..lights.len() as u32);
+            if let Some(ref instance_buffer) = self.instance_buffer.inner() {
+                rpass.set_pipeline(&gfx.get_pipeline::<LightBlit>());
+                rpass.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+                rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+                rpass.set_vertex_buffer(1, instance_buffer.slice(..));
+                rpass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
+                rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..lights.len() as u32);
+            }
         }
 
         *self.light_uni.value_mut() = LightUniform {

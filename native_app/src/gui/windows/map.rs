@@ -1,3 +1,4 @@
+use crate::network::NetworkState;
 use crate::uiworld::UiWorld;
 use egregoria::pedestrians::Pedestrian;
 use egregoria::vehicles::Vehicle;
@@ -39,8 +40,12 @@ pub fn map(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egrego
             );
         }
 
-        if ui.small_button(im_str!("clear the map")) {
-            uiworld.commands().map_clear();
+        if matches!(
+            *uiworld.read::<NetworkState>(),
+            NetworkState::Singleplayer { .. }
+        ) && ui.small_button(im_str!("reset the save"))
+        {
+            uiworld.commands().reset_save();
         }
 
         ui.text(im_str!(

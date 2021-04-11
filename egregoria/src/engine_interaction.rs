@@ -38,7 +38,7 @@ pub enum WorldCommand {
     MapBuildSpecialBuilding(RoadID, OBB, BuildingKind, BuildingGen),
     MapLoadParis,
     MapLoadTestField(Vec2, u32, f32),
-    MapClear,
+    ResetSave,
     SetGameTime(GameTime),
     MapGenerateTrees(AABB),
 }
@@ -73,8 +73,8 @@ impl WorldCommands {
         self.commands.push(MapLoadTestField(pos, size, spacing))
     }
 
-    pub fn map_clear(&mut self) {
-        self.commands.push(MapClear)
+    pub fn reset_save(&mut self) {
+        self.commands.push(ResetSave)
     }
 
     pub fn set_game_time(&mut self, gt: GameTime) {
@@ -165,7 +165,9 @@ impl WorldCommand {
             MapLoadTestField(pos, size, spacing) => {
                 map_model::procgen::load_testfield(&mut *goria.map_mut(), pos, size, spacing)
             }
-            MapClear => goria.map_mut().clear(),
+            ResetSave => {
+                *goria = Egregoria::empty();
+            }
             MapGenerateTrees(aabb) => {
                 goria.map_mut().trees.generate_chunks(aabb);
             }
