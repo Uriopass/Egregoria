@@ -1,21 +1,21 @@
 use crate::gui::follow::FollowEntity;
 use crate::uiworld::UiWorld;
 use egregoria::economy::Market;
-use egregoria::map_dynamic::Itinerary;
+use egregoria::map_dynamic::{Itinerary, Router};
 use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, Kinematics};
 use egregoria::rendering::assets::AssetRender;
 use egregoria::rendering::meshrender_component::MeshRender;
 use egregoria::souls::desire::{BuyFood, Desire, Home, Work};
 use egregoria::souls::goods_company::GoodsCompany;
-use egregoria::vehicles::Vehicle;
+use egregoria::vehicles::{Vehicle, VehicleID, VehicleState};
 use egregoria::{Egregoria, SoulID};
 use geom::Transform;
 use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use legion::storage::Component;
-use legion::Entity;
+use legion::{Entity, IntoQuery};
 
 pub struct InspectRenderer {
     pub entity: Entity,
@@ -38,7 +38,7 @@ impl InspectRenderer {
         }
     }
 
-    pub fn render(&self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui) {
+    pub fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui) {
         ui.text(im_str!("{:?}", self.entity));
         self.inspect_component::<Transform>(goria, ui);
         self.inspect_component::<Vehicle>(goria, ui);
@@ -49,10 +49,25 @@ impl InspectRenderer {
         self.inspect_component::<Kinematics>(goria, ui);
         self.inspect_component::<Collider>(goria, ui);
         self.inspect_component::<Itinerary>(goria, ui);
+        self.inspect_component::<Router>(goria, ui);
         self.inspect_component::<Desire<Work>>(goria, ui);
         self.inspect_component::<Desire<Home>>(goria, ui);
         self.inspect_component::<Desire<BuyFood>>(goria, ui);
         self.inspect_component::<GoodsCompany>(goria, ui);
+
+        if let Some(v) = goria.comp::<Vehicle>(self.entity) {
+            if matches!(v.state, VehicleState::Driving | VehicleState::Panicking(_)) {
+                for (e, loc) in <(Entity, &Location)>::query().iter(goria.world()) {
+                    let loc: &Location = loc;
+                    if loc == &Location::Vehicle(VehicleID(self.entity))
+                        && ui.small_button(&*im_str!("inspect inside vehicle: {:?}", e))
+                    {
+                        self.entity = *e;
+                        return;
+                    }
+                }
+            }
+        }
 
         if goria.comp::<Kinematics>(self.entity).is_some() {
             let follow = &mut uiworld.write::<FollowEntity>().0;
