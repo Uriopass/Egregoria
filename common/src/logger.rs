@@ -40,7 +40,7 @@ impl MyLog {
 
     pub fn init() {
         let leaked = Box::leak(Box::new(MyLog::new()));
-        log::set_logger(leaked).unwrap();
+        unwrap_orr!(log::set_logger(leaked), return);
         log::set_max_level(LevelFilter::Debug);
         log_panics::init();
     }
