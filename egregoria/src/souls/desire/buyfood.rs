@@ -8,14 +8,14 @@ use legion::{system, Entity};
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum BuyFoodState {
     Empty,
     WaitingForTrade,
     BoughtAt(BuildingID),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct BuyFood {
     last_ate: GameInstant,
     state: BuyFoodState,

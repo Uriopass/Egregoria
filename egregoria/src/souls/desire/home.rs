@@ -4,7 +4,7 @@ use legion::system;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Home {
     house: BuildingID,
 }
