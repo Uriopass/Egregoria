@@ -79,7 +79,11 @@ macro_rules! debug_inspect_impl {
                 _: &imgui_inspect::InspectArgsDefault,
             ) {
                 let d = match data.get(0) { Some(x) => x, None => return };
-                ui.text(imgui_inspect::imgui::im_str!("{}: {:?}", label, d));
+                if label == "" {
+                    ui.text(imgui_inspect::imgui::im_str!("{:?}", d));
+                } else {
+                    ui.text(imgui_inspect::imgui::im_str!("{}: {:?}", label, d));
+                }
             }
 
             fn render_mut(
