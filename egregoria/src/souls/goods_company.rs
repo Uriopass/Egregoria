@@ -612,32 +612,23 @@ pub fn company(
         return;
     }
 
-    if let Some(driver) = company.driver {
-        let driver_work_kind = sw
-            .entry_ref(driver.0)
-            .unwrap()
-            .get_component::<Desire<Work>>()
-            .unwrap()
-            .v
-            .kind;
+    if_chain::if_chain! {
+        if let Some(driver) = company.driver;
+        if let Ok(ent) = sw.entry_ref(driver.0);
+        if let Ok(w) = ent.get_component::<Desire<Work>>();
+        if matches!(w.v.kind, WorkKind::Driver { state: DriverState::WaitingForDelivery, .. });
+        if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next();
+        then {
+            let owner_build = binfos.building_owned_by(trade.buyer).unwrap();
 
-        if let WorkKind::Driver {
-            state: DriverState::WaitingForDelivery,
-            ..
-        } = driver_work_kind
-        {
-            if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next() {
-                let owner_build = binfos.building_owned_by(trade.buyer).unwrap();
+            log::info!("asked driver to deliver");
 
-                log::info!("asked driver to deliver");
-
-                cbuf.exec_ent(soul.0, move |goria| {
-                    let w = goria.comp_mut::<Desire<Work>>(driver.0).unwrap();
-                    if let WorkKind::Driver { ref mut state, .. } = w.v.kind {
-                        *state = DriverState::Delivering(owner_build)
-                    }
-                })
-            }
+            cbuf.exec_ent(soul.0, move |goria| {
+                let w = goria.comp_mut::<Desire<Work>>(driver.0).unwrap();
+                if let WorkKind::Driver { ref mut state, .. } = w.v.kind {
+                    *state = DriverState::Delivering(owner_build)
+                }
+            })
         }
     }
 
