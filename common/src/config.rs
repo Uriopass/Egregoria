@@ -8,9 +8,7 @@ use std::io::BufWriter;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-const CONFIG_AT_COMPILE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/config.json"));
-
-#[derive(Clone, Serialize, Deserialize, Inspect)]
+#[derive(Default, Clone, Serialize, Deserialize, Inspect)]
 pub struct Config {
     pub tree_col: Color,
 
@@ -41,12 +39,12 @@ pub struct Config {
 }
 
 fn load_config_start() -> Config {
-    let c = serde_json::from_slice(
-        std::fs::read("assets/config.json")
-            .as_deref()
-            .unwrap_or(CONFIG_AT_COMPILE),
-    )
-    .unwrap();
+    let c = std::fs::read("assets/config.json")
+        .and_then(|x| serde_json::from_slice(&*x).map_err(Into::into))
+        .map_err(|x| {
+            log::error!("couldn't read config: {}", x);
+        })
+        .unwrap_or_default();
     save_config(&c);
     c
 }
