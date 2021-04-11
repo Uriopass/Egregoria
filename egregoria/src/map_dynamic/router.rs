@@ -43,16 +43,54 @@ pub enum RoutingStep {
 
 debug_inspect_impl!(RoutingStep);
 
+register_system!(routing_changed);
 register_system!(routing_update);
-// todo: find a way to parallelize this, can't yet because of parking
+
 #[system(for_each)]
+#[read_component(Transform)]
+#[read_component(Vehicle)]
+#[read_component(Itinerary)]
+pub fn routing_changed(
+    #[resource] map: &Map,
+    #[resource] parking: &mut ParkingManagement,
+    router: &mut Router,
+    loc: &Location,
+    subworld: &SubWorld,
+) {
+    if router.cur_dest != router.target_dest {
+        let dest = unwrap_ret!(router.target_dest);
+
+        router.clear_steps(parking);
+        match dest {
+            Destination::Outside(pos) => {
+                router.steps = unwrap_ret!(router.steps_to(pos, parking, map, loc, subworld));
+            }
+            Destination::Building(build) => {
+                if let Location::Building(cur_build) = loc {
+                    if *cur_build == build {
+                        return;
+                    }
+                }
+
+                let door_pos = unwrap_ret!(map.buildings().get(build)).door_pos;
+                router.steps = unwrap_ret!(router.steps_to(door_pos, parking, map, loc, subworld));
+                router.steps.push(RoutingStep::GetInBuilding(build));
+            }
+        }
+
+        router.cur_dest = router.target_dest;
+
+        router.steps.reverse();
+    }
+}
+
+#[system(par_for_each)]
 #[read_component(Transform)]
 #[read_component(Vehicle)]
 #[read_component(Itinerary)]
 pub fn routing_update(
     #[resource] map: &Map,
     #[resource] cbuf: &ParCommandBuffer,
-    #[resource] parking: &mut ParkingManagement,
     body: &Entity,
     trans: &Transform,
     itin: &Itinerary,
@@ -62,37 +100,6 @@ pub fn routing_update(
     kin: &mut Kinematics,
     subworld: &SubWorld,
 ) {
-    if router.cur_dest != router.target_dest {
-        if router.target_dest.is_none() {
-            return;
-        }
-        // router is dirty
-        let dest = router
-            .target_dest
-            .expect("destination is empty but dirty is true");
-        router.clear_steps(parking);
-        match dest {
-            Destination::Outside(pos) => {
-                router.steps = router.steps_to(pos, parking, map, loc, subworld)
-            }
-            Destination::Building(build) => {
-                if let Location::Building(cur_build) = loc {
-                    if *cur_build == build {
-                        return;
-                    }
-                }
-
-                let door_pos = map.buildings()[build].door_pos;
-                router.steps = router.steps_to(door_pos, parking, map, loc, subworld);
-                router.steps.push(RoutingStep::GetInBuilding(build));
-            }
-        }
-
-        router.cur_dest = router.target_dest;
-
-        router.steps.reverse();
-        return;
-    }
     let pos = trans.position();
     let next_step = unwrap_or!(router.steps.last(), {
         router.cur_step = None;
@@ -165,7 +172,6 @@ pub fn routing_update(
         }
         RoutingStep::Park(vehicle, spot) => {
             if !map.parking.contains(spot) {
-                router.clear_steps(parking);
                 router.cur_dest = None;
                 return;
             }
@@ -265,7 +271,7 @@ impl Router {
     }
 
     fn clear_steps(&mut self, parking: &mut ParkingManagement) {
-        for s in self.steps.drain(..) {
+        for s in self.steps.drain(..).chain(self.cur_step.take()) {
             if let RoutingStep::Park(_, spot) = s {
                 parking.free(spot);
             }
@@ -290,44 +296,36 @@ impl Router {
         map: &Map,
         loc: &Location,
         subworld: &SubWorld,
-    ) -> Vec<RoutingStep> {
+    ) -> Option<Vec<RoutingStep>> {
         let mut steps = vec![];
         if let Location::Building(cur_build) = loc {
             steps.push(RoutingStep::GetOutBuilding(*cur_build));
         }
 
         if let Some(car) = self.vehicle {
-            while let Some(spot_id) = parking.reserve_near(obj, map) {
-                let parking_pos = match map.parking_to_drive_pos(spot_id) {
-                    Some(x) => x,
-                    None => {
-                        parking.free(spot_id);
-                        continue;
-                    }
-                };
-
-                if !matches!(loc, Location::Vehicle(_)) {
-                    // safety: only pedestrians have transforms, not cars
-                    let carpos = subworld
-                        .entry_ref(car.0)
-                        .unwrap()
-                        .get_component::<Transform>()
-                        .unwrap()
-                        .position();
-
-                    steps.push(RoutingStep::WalkTo(carpos));
-                    steps.push(RoutingStep::GetInVehicle(car));
-                    steps.push(RoutingStep::Unpark(car));
+            let spot_id = parking.reserve_near(obj, map)?;
+            let parking_pos = match map.parking_to_drive_pos(spot_id) {
+                Some(x) => x,
+                None => {
+                    parking.free(spot_id);
+                    return None;
                 }
+            };
 
-                steps.push(RoutingStep::DriveTo(car, parking_pos));
-                steps.push(RoutingStep::Park(car, spot_id));
-                steps.push(RoutingStep::GetOutVehicle(car));
-                break;
+            if !matches!(loc, Location::Vehicle(_)) {
+                let ent = subworld.entry_ref(car.0).ok()?;
+                let trans = ent.get_component::<Transform>().ok()?;
+                steps.push(RoutingStep::WalkTo(trans.position()));
+                steps.push(RoutingStep::GetInVehicle(car));
+                steps.push(RoutingStep::Unpark(car));
             }
+
+            steps.push(RoutingStep::DriveTo(car, parking_pos));
+            steps.push(RoutingStep::Park(car, spot_id));
+            steps.push(RoutingStep::GetOutVehicle(car));
         }
 
         steps.push(RoutingStep::WalkTo(obj));
-        steps
+        Some(steps)
     }
 }
