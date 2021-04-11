@@ -1,10 +1,10 @@
 use crate::map_dynamic::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
 use crate::physics::Kinematics;
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
+use crate::utils::time::GameTime;
 use crate::utils::Restrict;
 use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::{Deleted, ParCommandBuffer};
-use common::GameTime;
 use geom::{angle_lerp, Ray, Transform, Vec2};
 use legion::system;
 use legion::Entity;

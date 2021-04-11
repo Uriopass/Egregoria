@@ -3,9 +3,9 @@ use crate::economy::{Bought, Market};
 use crate::map_dynamic::{BuildingInfos, Router};
 use crate::pedestrians::{spawn_pedestrian, Pedestrian};
 use crate::souls::desire::{BuyFood, Home, Work};
+use crate::utils::time::GameTime;
 use crate::vehicles::{spawn_parked_vehicle, VehicleKind};
 use crate::{Egregoria, SoulID};
-use common::GameTime;
 use map_model::BuildingID;
 
 pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> SoulID {

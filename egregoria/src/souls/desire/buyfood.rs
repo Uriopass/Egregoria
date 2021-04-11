@@ -1,9 +1,10 @@
 use crate::economy::{Bought, CommodityKind, Market};
 use crate::map_dynamic::{BuildingInfos, Destination, Router};
 use crate::souls::desire::Desire;
+use crate::utils::time::{GameInstant, GameTime};
 use crate::{ParCommandBuffer, SoulID};
-use common::{GameInstant, GameTime};
 use geom::Transform;
+use imgui_inspect_derive::*;
 use legion::{system, Entity};
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
@@ -15,13 +16,13 @@ pub enum BuyFoodState {
     BoughtAt(BuildingID),
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+debug_inspect_impl!(BuyFoodState);
+
+#[derive(Inspect, Clone, Serialize, Deserialize, Debug)]
 pub struct BuyFood {
     last_ate: GameInstant,
     state: BuyFoodState,
 }
-
-debug_inspect_impl!(BuyFood);
 
 impl BuyFood {
     pub fn new(start: GameInstant) -> Self {

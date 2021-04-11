@@ -1,4 +1,4 @@
-use common::GameTime;
+use crate::utils::time::GameTime;
 use geom::Transform;
 use geom::Vec2;
 use imgui::Ui;
