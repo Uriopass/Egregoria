@@ -297,14 +297,14 @@ impl Router {
         }
 
         if let Some(car) = self.vehicle {
-            if let Some(spot_id) = parking.reserve_near(obj, map) {
-                let lane = map.parking_to_drive(spot_id).unwrap();
-                let spot = *map.parking.get(spot_id).unwrap();
-
-                let (pos, _, dir) = map.lanes()[lane]
-                    .points
-                    .project_segment_dir(spot.trans.position());
-                let parking_pos = pos - dir * 4.0;
+            while let Some(spot_id) = parking.reserve_near(obj, map) {
+                let parking_pos = match map.parking_to_drive_pos(spot_id) {
+                    Some(x) => x,
+                    None => {
+                        parking.free(spot_id);
+                        continue;
+                    }
+                };
 
                 if !matches!(loc, Location::Vehicle(_)) {
                     // safety: only pedestrians have transforms, not cars
@@ -323,6 +323,7 @@ impl Router {
                 steps.push(RoutingStep::DriveTo(car, parking_pos));
                 steps.push(RoutingStep::Park(car, spot_id));
                 steps.push(RoutingStep::GetOutVehicle(car));
+                break;
             }
         }
 
