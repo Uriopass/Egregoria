@@ -177,9 +177,7 @@ impl Market {
                         }
 
                         *capital.entry(trade.buyer).or_default() += trade.qty;
-                        *capital
-                            .get_mut(&trade.seller)
-                            .expect("what is this ? a 0 qty trade ?") -= trade.qty;
+                        *capital.entry(trade.seller).or_default() -= trade.qty;
 
                         true
                     })
