@@ -188,11 +188,13 @@ pub fn to_pos(encoded: SmolTree, cell: (i32, i32)) -> Vec2 {
 #[derive(Serialize, Deserialize)]
 struct SerializedTrees {
     v: Vec<((i32, i32), Vec<SmolTree>)>,
+    dirt_id: u32,
 }
 
 impl From<SerializedTrees> for Trees {
     fn from(ser: SerializedTrees) -> Self {
         let mut t = Self::default();
+        t.dirt_id = ser.dirt_id;
         for (cell, v) in ser.v {
             t.generated.insert(cell);
             for tree in v {
@@ -209,7 +211,10 @@ impl Serialize for Trees {
     where
         S: Serializer,
     {
-        let mut t = SerializedTrees { v: vec![] };
+        let mut t = SerializedTrees {
+            v: vec![],
+            dirt_id: self.dirt_id,
+        };
 
         for &cell in &self.generated {
             let gcell = self.grid.storage().cell(cell);
