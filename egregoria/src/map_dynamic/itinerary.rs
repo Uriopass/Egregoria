@@ -96,6 +96,7 @@ impl Itinerary {
             ..
         }) = reversed_route.last()
         {
+            #[allow(clippy::unwrap_used)] // just checked that last is some
             if id == start_lane {
                 cur = reversed_route.pop().unwrap();
             }
@@ -110,7 +111,7 @@ impl Itinerary {
             pathkind,
         );
 
-        let points = cur.points(map).unwrap();
+        let points = cur.points(map)?;
         let (proj, segid, dir) = points.project_segment_dir(start);
 
         let mut points = points.into_vec();
@@ -145,6 +146,7 @@ impl Itinerary {
 
                 if r.reversed_route.is_empty() {
                     let (proj_pos, id) = points.project_segment(r.end_pos);
+                    #[allow(clippy::indexing_slicing)]
                     self.local_path.extend(&points.as_slice()[..id]);
                     self.local_path.push(proj_pos);
                     self.local_path.push(r.end_pos);
@@ -280,10 +282,7 @@ impl Default for ItineraryKind {
 
 impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
     fn render(data: &[&ItineraryKind], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
-        if data.len() != 1 {
-            unimplemented!()
-        }
-        let d = data[0];
+        let d = *unwrap_ret!(data.get(0));
         use imgui::im_str;
         match d {
             ItineraryKind::None => ui.text(im_str!("None {}", label)),
@@ -304,10 +303,7 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
-        if data.len() != 1 {
-            unimplemented!()
-        }
-        let d = &mut *data[0];
+        let d = &mut *unwrap_ret!(data.get_mut(0), false);
         use imgui::im_str;
         match d {
             ItineraryKind::None => ui.text(im_str!("None {}", label)),

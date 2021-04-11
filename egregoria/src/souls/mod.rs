@@ -19,7 +19,7 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
     let mut empty_buildings: FastMap<BuildingKind, Vec<(BuildingID, Vec2)>> = FastMap::default();
 
     for (id, building) in map.buildings() {
-        if infos[id].owner.is_some() {
+        if unwrap_cont!(infos.get(id)).owner.is_some() {
             continue;
         }
 

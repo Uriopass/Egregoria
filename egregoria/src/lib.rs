@@ -2,6 +2,8 @@
 #![allow(clippy::blocks_in_if_conditions)]
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::upper_case_acronyms)]
+#![deny(clippy::indexing_slicing)]
+#![deny(clippy::unwrap_used)]
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -263,7 +265,10 @@ impl Egregoria {
             h.write(&x);
             h.finish()
         }
-        let serworld = SerPreparedEgregoria::from(self);
+        let serworld = unwrap_ret!(
+            SerPreparedEgregoria::try_from(self).ok(),
+            Default::default()
+        );
 
         let mut hashes = BTreeMap::new();
         hashes.insert("tick".to_string(), serworld.tick as u64);
@@ -281,7 +286,10 @@ impl Egregoria {
     }
 
     pub fn save_to_disk(&self, save_name: &'static str) {
-        let ser = SerPreparedEgregoria::from(self);
+        let ser = unwrap_retlog!(
+            SerPreparedEgregoria::try_from(self).ok(),
+            "failed saving, couldn't serialize"
+        );
         common::saveload::CompressedBincode::save(&ser, save_name);
     }
 
@@ -337,8 +345,10 @@ impl Egregoria {
     }
 }
 
-impl From<&Egregoria> for SerPreparedEgregoria {
-    fn from(goria: &Egregoria) -> Self {
+impl TryFrom<&Egregoria> for SerPreparedEgregoria {
+    type Error = ();
+
+    fn try_from(goria: &Egregoria) -> Result<Self, ()> {
         let registry = registry();
 
         let entity_serializer = IdSer;
@@ -348,7 +358,7 @@ impl From<&Egregoria> for SerPreparedEgregoria {
             &entity_serializer,
         );
 
-        let world = common::saveload::Bincode::encode(&s).unwrap();
+        let world = common::saveload::Bincode::encode(&s).map_err(|_| ())?;
 
         let mut m: FastMap<String, Vec<u8>> = FastMap::default();
 
@@ -359,11 +369,11 @@ impl From<&Egregoria> for SerPreparedEgregoria {
             }
         });
 
-        SerPreparedEgregoria {
+        Ok(SerPreparedEgregoria {
             world,
             res: m,
             tick: goria.tick,
-        }
+        })
     }
 }
 

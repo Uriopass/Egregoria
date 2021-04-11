@@ -46,8 +46,8 @@ pub fn walk_anim(
         * 0.1
         * (speed * 2.0 - pedestrian.walking_speed).restrict(0.0, 1.0);
 
-    mr.orders[0].as_rect_mut().offset.x = offset;
-    mr.orders[1].as_rect_mut().offset.x = -offset;
+    unwrap_ret!(mr.orders.get_mut(0)).as_rect_mut().offset.x = offset;
+    unwrap_ret!(mr.orders.get_mut(1)).as_rect_mut().offset.x = -offset;
 }
 
 const PEDESTRIAN_ACC: f32 = 1.0;

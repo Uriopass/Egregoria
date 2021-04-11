@@ -75,8 +75,9 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Desire<T>> for Desire<T> {
     fn render(data: &[&Desire<T>], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
         if imgui::CollapsingHeader::new(&*imgui::im_str!("{}", label)).build(ui) {
             ui.indent();
-            let v = data[0];
+            let v = *unwrap_ret!(data.get(0));
             let mut wasmax = v.was_max;
+            #[allow(clippy::indexing_slicing)]
             ui.checkbox(imgui::im_str!("was_max"), &mut wasmax);
             <f32 as InspectRenderDefault<f32>>::render(&[&v.score], "score", ui, args);
             ui.unindent();
@@ -99,7 +100,7 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Desire<T>> for Desire<T> {
         ui: &Ui,
         args: &InspectArgsDefault,
     ) -> bool {
-        let v = &mut *data[0];
+        let v = &mut *unwrap_ret!(data.get_mut(0), false);
         ui.text(format!("{} {}", v.was_max, label));
         ui.text(format!("{} {}", v.score, label));
         <T as InspectRenderDefault<T>>::render_mut(&mut [&mut v.v], label, ui, args)

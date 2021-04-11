@@ -39,10 +39,12 @@ fn ent_id(e: Entity) -> u64 {
     unsafe { std::mem::transmute(e) }
 }
 
+#[allow(clippy::unwrap_used)]
 impl ParCommandBuffer {
     pub fn kill(&self, e: Entity) {
         self.to_kill.lock().unwrap().push(e);
     }
+
     pub fn kill_all(&self, e: &[Entity]) {
         self.to_kill.lock().unwrap().extend_from_slice(e);
     }
@@ -109,9 +111,10 @@ impl ParCommandBuffer {
         deleted.sort_unstable_by_key(|&x| ent_id(x));
 
         for entity in deleted {
-            Self::parse_del::<Collider>(goria, entity);
-            Self::parse_del::<Vehicle>(goria, entity);
-            goria.world.remove(entity);
+            if goria.world.remove(entity) {
+                Self::parse_del::<Collider>(goria, entity);
+                Self::parse_del::<Vehicle>(goria, entity);
+            }
         }
 
         let added = std::mem::take(

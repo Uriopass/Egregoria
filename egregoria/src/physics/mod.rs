@@ -50,10 +50,7 @@ pub struct Collider(pub GridHandle);
 
 impl InspectRenderDefault<Collider> for Collider {
     fn render(data: &[&Collider], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
-        if data.len() != 1 {
-            panic!()
-        }
-        let d = data[0];
+        let d = unwrap_ret!(data.get(0));
         ui.text(format!("{:?} {}", d.0, label));
     }
 

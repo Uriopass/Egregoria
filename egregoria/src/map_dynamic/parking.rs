@@ -53,13 +53,13 @@ impl ParkingManagement {
                 next.extend(
                     inter_dst
                         .turns_from(lane.id)
-                        .map(|(turn, _)| PtrCmp(&map.lanes()[turn.dst])),
+                        .flat_map(|(turn, _)| Some(PtrCmp(map.lanes().get(turn.dst)?))),
                 );
 
                 next.extend(
                     inter_src
                         .turns_to(lane.id)
-                        .map(|(turn, _)| PtrCmp(&map.lanes()[turn.src])),
+                        .flat_map(|(turn, _)| Some(PtrCmp(map.lanes().get(turn.src)?))),
                 )
             }
             std::mem::swap(&mut potential, &mut next);
