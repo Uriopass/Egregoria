@@ -100,7 +100,20 @@ pub fn routing_update(
     kin: &mut Kinematics,
     subworld: &SubWorld,
 ) {
-    let pos = trans.position();
+    let pos = match *loc {
+        Location::Outside => trans.position(),
+        Location::Vehicle(id) => subworld
+            .entry_ref(id.0)
+            .ok()
+            .and_then(|x| x.get_component::<Transform>().map(|x| x.position()).ok())
+            .unwrap_or_else(|| trans.position()),
+        Location::Building(id) => map
+            .buildings()
+            .get(id)
+            .map(|b| b.door_pos)
+            .unwrap_or_else(|| trans.position()),
+    };
+
     let next_step = unwrap_or!(router.steps.last(), {
         router.cur_step = None;
         return;
