@@ -4,7 +4,8 @@ use winit::dpi::PhysicalSize;
 use winit::window::{Fullscreen, Window};
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
-use common::{GameTime, History};
+use common::History;
+use egregoria::utils::time::GameTime;
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use geom::Camera;
 use geom::{vec3, LinearColor};

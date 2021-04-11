@@ -1,3 +1,4 @@
+use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
 
 pub const SECONDS_PER_HOUR: i32 = 100;
@@ -5,7 +6,7 @@ pub const HOURS_PER_DAY: i32 = 24;
 pub const SECONDS_PER_DAY: i32 = SECONDS_PER_HOUR * HOURS_PER_DAY;
 
 /// An in-game instant used to measure time differences
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Inspect, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct GameInstant {
     /// Time in seconds elapsed since the start of the game
     pub timestamp: f64,
@@ -65,7 +66,7 @@ impl TimeInterval {
 }
 
 /// A periodic interval of in-game time. Used for schedules. (for example 9am -> 6pm)
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Inspect, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct RecTimeInterval {
     pub start_hour: i32,
     pub start_second: i32,

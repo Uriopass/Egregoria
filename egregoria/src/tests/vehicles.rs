@@ -1,6 +1,6 @@
 use crate::map_dynamic::{Destination, Itinerary, ParkingManagement, Router};
+use crate::utils::time::GameTime;
 use crate::vehicles::{spawn_parked_vehicle, unpark, VehicleKind};
-use common::GameTime;
 use geom::vec2;
 use map_model::{Map, PathKind};
 

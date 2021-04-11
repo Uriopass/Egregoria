@@ -1,10 +1,10 @@
 #![allow(clippy::upper_case_acronyms)]
 
+use std::hash::Hash;
+
 pub use config::*;
 pub use history::*;
 use imgui_inspect::imgui::__core::hash::Hasher;
-use std::hash::Hash;
-pub use time::*;
 pub use z::*;
 
 #[macro_export]
@@ -106,7 +106,6 @@ pub mod history;
 pub mod logger;
 pub mod rand;
 pub mod saveload;
-pub mod time;
 pub mod timestep;
 mod z;
 

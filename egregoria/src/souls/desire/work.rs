@@ -1,7 +1,8 @@
 use crate::map_dynamic::{Destination, Router};
 use crate::souls::desire::Desire;
+use crate::utils::time::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
 use crate::vehicles::VehicleID;
-use common::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
+use imgui_inspect_derive::*;
 use legion::system;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
@@ -22,16 +23,15 @@ pub enum WorkKind {
     },
     Worker,
 }
+debug_inspect_impl!(WorkKind);
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Inspect, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Work {
     workplace: BuildingID,
     work_inter: RecTimeInterval,
     pub kind: WorkKind,
     on_mission: bool,
 }
-
-debug_inspect_impl!(Work);
 
 impl Work {
     pub fn new(workplace: BuildingID, kind: WorkKind, offset: f32) -> Self {

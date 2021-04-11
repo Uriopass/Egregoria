@@ -36,14 +36,18 @@ pub trait InspectRenderStruct<T> {
 }
 
 /// Utility function that, given a list of references, returns Some(T) if they are the same, otherwise None
-pub fn get_same_or_none<T: PartialEq + Clone>(data: &[&T]) -> Option<T> {
+pub fn get_same_or_none<'a, T: PartialEq + Clone>(data: &'a [&T]) -> Option<&'a T> {
     if data.is_empty() {
         return None;
     }
 
-    let first = data[0].clone();
+    if data.len() == 1 {
+        return Some(data[0]);
+    }
+
+    let first = data[0];
     for d in data {
-        if **d != first {
+        if *d != first {
             return None;
         }
     }

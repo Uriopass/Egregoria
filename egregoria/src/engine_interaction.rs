@@ -44,7 +44,7 @@ pub enum WorldCommand {
 }
 
 use crate::map_dynamic::BuildingInfos;
-use common::GameTime;
+use crate::utils::time::GameTime;
 use geom::{Vec2, AABB, OBB};
 use WorldCommand::*;
 

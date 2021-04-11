@@ -73,10 +73,24 @@ macro_rules! desires_system {
 
 impl<T: InspectRenderDefault<T>> InspectRenderDefault<Desire<T>> for Desire<T> {
     fn render(data: &[&Desire<T>], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
-        let v = data[0];
-        ui.text(format!("{} {}", v.was_max, label));
-        ui.text(format!("{} {}", v.score, label));
-        <T as InspectRenderDefault<T>>::render(&[&v.v], label, ui, args);
+        if imgui::CollapsingHeader::new(&*imgui::im_str!("{}", label)).build(ui) {
+            ui.indent();
+            let v = data[0];
+            let mut wasmax = v.was_max;
+            ui.checkbox(imgui::im_str!("was_max"), &mut wasmax);
+            <f32 as InspectRenderDefault<f32>>::render(&[&v.score], "score", ui, args);
+            ui.unindent();
+            <T as InspectRenderDefault<T>>::render(
+                &[&v.v],
+                label,
+                ui,
+                &InspectArgsDefault {
+                    header: Some(false),
+                    ..*args
+                },
+            );
+            ui.unindent();
+        }
     }
 
     fn render_mut(

@@ -21,7 +21,6 @@ use crate::vehicles::Vehicle;
 use atomic_refcell::{AtomicRef, AtomicRefMut};
 use common::saveload::Encoder;
 use common::FastMap;
-use common::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 use geom::{Transform, Vec2};
 use legion::serialize::CustomEntitySerializer;
 use legion::storage::Component;
@@ -39,6 +38,7 @@ use utils::par_command_buffer::Deleted;
 pub use utils::par_command_buffer::ParCommandBuffer;
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
+use utils::time::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 
 macro_rules! register_system {
     ($f: ident) => {
