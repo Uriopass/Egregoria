@@ -10,6 +10,7 @@ use geom::{Spline, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
+use std::num::Wrapping;
 
 pub type Roads = DenseSlotMap<RoadID, Road>;
 pub type Lanes = DenseSlotMap<LaneID, Lane>;
@@ -35,7 +36,7 @@ pub struct Map {
     pub(crate) spatial_map: SpatialMap,
     pub trees: Trees,
     pub parking: ParkingSpots,
-    pub dirt_id: u32,
+    pub dirt_id: Wrapping<u32>,
 }
 
 impl Default for Map {
@@ -56,14 +57,14 @@ impl Map {
             buildings: Buildings::default(),
             lots: Lots::default(),
             trees: Trees::default(),
-            dirt_id: 1,
+            dirt_id: Wrapping(1),
             spatial_map: SpatialMap::default(),
         }
     }
 
     pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection)) {
         info!("update_intersection {:?}", id);
-        self.dirt_id += 1;
+        self.dirt_id += Wrapping(1);
 
         let inter = unwrap_ret!(self.intersections.get_mut(id));
         f(inter);
@@ -76,7 +77,7 @@ impl Map {
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
         info!("remove_intersection {:?}", src);
-        self.dirt_id += 1;
+        self.dirt_id += Wrapping(1);
 
         self.remove_intersection_inner(src);
 
@@ -102,7 +103,7 @@ impl Map {
         let b = self.buildings.remove(b)?;
         self.spatial_map.remove(b.id);
 
-        self.dirt_id += 1;
+        self.dirt_id += Wrapping(1);
 
         #[cfg(debug_assertions)]
         self.check_invariants();
@@ -162,7 +163,7 @@ impl Map {
             road,
             obb
         );
-        self.dirt_id += 1;
+        self.dirt_id += Wrapping(1);
         let to_clean: Vec<_> = self
             .spatial_map
             .query(obb)
@@ -201,7 +202,7 @@ impl Map {
 
     pub fn build_house(&mut self, id: LotID) -> Option<BuildingID> {
         info!("build house on {:?}", id);
-        self.dirt_id += 1;
+        self.dirt_id += Wrapping(1);
 
         let roads = &mut self.roads;
         let buildings = &mut self.buildings;
@@ -227,7 +228,7 @@ impl Map {
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
         info!("remove_road {:?}", road_id);
 
-        self.dirt_id += 1;
+        self.dirt_id += Wrapping(1);
 
         let v = self.remove_road_inner(road_id);
 
@@ -262,7 +263,7 @@ impl Map {
         match self.lots.get_mut(lot) {
             Some(lot) => {
                 lot.kind = kind;
-                self.dirt_id += 1;
+                self.dirt_id += Wrapping(1);
             }
             None => log::warn!("trying to set kind of non-existing lot {:?}", lot),
         }
@@ -272,7 +273,7 @@ impl Map {
         info!("clear");
         let before = std::mem::take(self);
         self.trees = before.trees;
-        self.dirt_id = before.dirt_id + 1;
+        self.dirt_id = before.dirt_id + Wrapping(1);
 
         #[cfg(debug_assertions)]
         self.check_invariants();
@@ -287,7 +288,7 @@ impl Map {
     fn invalidate(&mut self, id: IntersectionID) {
         info!("invalidate {:?}", id);
 
-        self.dirt_id += 1;
+        self.dirt_id += Wrapping(1);
         let inter = unwrap_ret!(self.intersections.get_mut(id));
 
         if inter.roads.is_empty() {
@@ -452,7 +453,7 @@ impl Map {
             "connect {:?} {:?} {:?} {:?}",
             src_id, dst_id, pattern, segment
         );
-        self.dirt_id += 1;
+        self.dirt_id += Wrapping(1);
 
         let src = self.intersections.get(src_id)?;
         let dst = self.intersections.get(dst_id)?;

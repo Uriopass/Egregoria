@@ -128,7 +128,7 @@ impl RoadRenderer {
         gfx: &GfxContext,
     ) -> (Rc<MultiSpriteBatch>, Option<Rc<SpriteBatch>>) {
         let st = map.trees.grid.storage();
-        if map.trees.dirt_id == self.trees_dirt_id
+        if map.trees.dirt_id.0 == self.trees_dirt_id
             && self.tree_shadows.is_some()
             && st.cell_id(screen.ll) == st.cell_id(self.last_cam.ll)
             && st.cell_id(screen.ur) == st.cell_id(self.last_cam.ur)
@@ -138,7 +138,7 @@ impl RoadRenderer {
             }
         }
 
-        self.trees_dirt_id = map.trees.dirt_id;
+        self.trees_dirt_id = map.trees.dirt_id.0;
 
         self.tree_builder.clear();
         self.tree_shadows_builder.clear();

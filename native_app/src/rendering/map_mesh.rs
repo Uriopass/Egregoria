@@ -81,14 +81,14 @@ impl MapMeshHandler {
     }
 
     pub fn latest_mesh(&mut self, map: &Map, gfx: &GfxContext) -> &Option<Rc<MapMeshes>> {
-        if map.dirt_id != self.map_dirt_id || self.last_config != common::config_id() {
+        if map.dirt_id.0 != self.map_dirt_id || self.last_config != common::config_id() {
             self.builders.map_mesh(&map);
             self.builders.arrows(&map);
             self.builders.crosswalks(&map);
             self.builders.buildings_sprites(&map);
 
             self.last_config = common::config_id();
-            self.map_dirt_id = map.dirt_id;
+            self.map_dirt_id = map.dirt_id.0;
 
             let m = &mut self.builders.tess.meshbuilder;
 
