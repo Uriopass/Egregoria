@@ -68,7 +68,9 @@ impl GfxContext {
                 compatible_surface: Some(&surface),
             })
             .await
-            .expect("Failed to find a suitable adapter");
+            .expect(
+                "failed to find a suitable adapter, have you installed necessary vulkan libraries?",
+            );
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
@@ -79,7 +81,7 @@ impl GfxContext {
                 None,
             )
             .await
-            .unwrap();
+            .expect("could not find device, have you installed necessary vulkan libraries?");
         let sc_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
