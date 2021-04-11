@@ -2,7 +2,7 @@ use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Desire<T> {
     pub score: f32,
     pub was_max: bool,

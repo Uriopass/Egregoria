@@ -603,6 +603,24 @@ impl Map {
             .map(|&(id, _)| id)
     }
 
+    pub fn parking_to_drive_pos(&self, spot: ParkingSpotID) -> Option<Vec2> {
+        let spot = self.parking.get(spot)?;
+        let park_lane = self.lanes.get(spot.parent)?;
+        let road = self.roads.get(park_lane.parent)?;
+        let lane = road
+            .outgoing_lanes_from(park_lane.src)
+            .iter()
+            .rfind(|&&(_, kind)| kind == LaneKind::Driving)
+            .map(|&(id, _)| id)?;
+
+        let (pos, _, dir) = self
+            .lanes()
+            .get(lane)?
+            .points
+            .project_segment_dir(spot.trans.position());
+        Some(pos - dir * 4.0)
+    }
+
     pub fn check_invariants(&self) {
         for inter in self.intersections.values() {
             log::debug!("{:?}", inter.id);

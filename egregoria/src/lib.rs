@@ -44,7 +44,7 @@ macro_rules! register_system {
     ($f: ident) => {
         inventory::submit! {
             paste::paste! {
-                $crate::GSystem::new(std::cell::RefCell::new(Some(Box::new([<$f _system >]()))))
+                $crate::GSystem::new(Box::new(|| Box::new([<$f _system >]())))
             }
         }
     };
@@ -186,11 +186,11 @@ pub(crate) struct InitFunc {
 inventory::collect!(InitFunc);
 
 pub(crate) struct GSystem {
-    s: std::cell::RefCell<Option<Box<dyn ParallelRunnable + 'static>>>,
+    s: Box<dyn Fn() -> Box<dyn ParallelRunnable + 'static>>,
 }
 
 impl GSystem {
-    pub fn new(s: std::cell::RefCell<Option<Box<dyn ParallelRunnable + 'static>>>) -> Self {
+    pub fn new(s: Box<dyn Fn() -> Box<dyn ParallelRunnable + 'static>>) -> Self {
         Self { s }
     }
 }
@@ -207,7 +207,7 @@ impl Egregoria {
     pub fn schedule() -> SeqSchedule {
         let mut schedule = SeqSchedule::default();
         for s in inventory::iter::<GSystem> {
-            let s = s.s.borrow_mut().take().unwrap();
+            let s = (s.s)();
             schedule.add_system(s);
         }
         schedule

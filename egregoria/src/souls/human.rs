@@ -8,7 +8,7 @@ use crate::{Egregoria, SoulID};
 use common::GameTime;
 use map_model::BuildingID;
 
-pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) {
+pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> SoulID {
     let map = goria.map();
     let housepos = map.buildings()[house].door_pos;
     drop(map);
@@ -30,6 +30,7 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) {
     e.add_component(Desire::new(BuyFood::new(time)));
     e.add_component(Bought::default());
     e.add_component(Router::new(car));
+    human
 }
 
 desires_system!(human_desires, Pedestrian, Home;0 Work;1 BuyFood;2);
