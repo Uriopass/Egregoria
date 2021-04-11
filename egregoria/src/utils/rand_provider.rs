@@ -68,6 +68,7 @@ impl RngCore for RandProvider {
     }
 }
 
+#[allow(clippy::unwrap_used)]
 impl SeedableRng for RandProvider {
     type Seed = [u8; 16];
 
@@ -110,6 +111,7 @@ impl SeedableRng for RandProvider {
     }
 }
 
+#[allow(clippy::indexing_slicing)]
 /// Implement `fill_bytes` via `next_u64` and `next_u32`, little-endian order.
 ///
 /// The fastest way to fill a slice is usually to work as long as possible with

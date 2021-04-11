@@ -540,9 +540,9 @@ pub struct GoodsCompany {
     pub trucks: Vec<VehicleID>,
 }
 
-pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
+pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<SoulID> {
     let map = goria.map();
-    let b = &map.buildings()[company.building];
+    let b = &map.buildings().get(company.building)?;
     let door_pos = b.door_pos;
     let obb = b.obb;
     drop(map);
@@ -574,7 +574,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> SoulID {
         ),
     );
 
-    soul
+    Some(soul)
 }
 
 register_system!(company);
@@ -604,7 +604,11 @@ pub fn company(
     if company.progress >= 1.0 {
         company.progress = 0.0;
         let recipe = company.recipe.clone();
-        let bpos = map.buildings()[company.building].door_pos;
+        let bpos = unwrap_or!(map.buildings().get(company.building), {
+            cbuf.kill(*me);
+            return;
+        })
+        .door_pos;
 
         cbuf.exec_ent(soul.0, move |goria| {
             recipe.act(soul, bpos, &mut *goria.write::<Market>());
@@ -618,44 +622,43 @@ pub fn company(
         if let Ok(w) = ent.get_component::<Desire<Work>>();
         if matches!(w.v.kind, WorkKind::Driver { state: DriverState::WaitingForDelivery, .. });
         if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next();
+        if let Some(owner_build) = binfos.building_owned_by(trade.buyer);
         then {
-            let owner_build = binfos.building_owned_by(trade.buyer).unwrap();
-
             log::info!("asked driver to deliver");
 
             cbuf.exec_ent(soul.0, move |goria| {
-                let w = goria.comp_mut::<Desire<Work>>(driver.0).unwrap();
-                if let WorkKind::Driver { ref mut state, .. } = w.v.kind {
-                    *state = DriverState::Delivering(owner_build)
+                if let Some(w) = goria.comp_mut::<Desire<Work>>(driver.0) {
+                    if let WorkKind::Driver { ref mut state, .. } = w.v.kind {
+                        *state = DriverState::Delivering(owner_build)
+                    }
                 }
             })
         }
     }
 
     for &worker in workers.0.iter() {
-        if sw
-            .entry_ref(worker.0)
-            .unwrap()
-            .get_component::<Desire<Work>>()
-            .is_err()
-        {
-            let mut kind = WorkKind::Worker;
-            if matches!(company.kind, CompanyKind::Factory { .. })
-                && company.driver.is_none()
-                && !company.trucks.is_empty()
-            {
-                kind = WorkKind::Driver {
-                    state: DriverState::GoingToWork,
-                    truck: company.trucks[0],
-                };
+        if let Ok(ent) = sw.entry_ref(worker.0) {
+            if ent.get_component::<Desire<Work>>().is_err() {
+                let mut kind = WorkKind::Worker;
 
-                company.driver = Some(worker);
+                if let Some(truck) = company.trucks.get(0) {
+                    if matches!(company.kind, CompanyKind::Factory { .. })
+                        && company.driver.is_none()
+                    {
+                        kind = WorkKind::Driver {
+                            state: DriverState::GoingToWork,
+                            truck: *truck,
+                        };
+
+                        company.driver = Some(worker);
+                    }
+                }
+
+                cbuf.add_component(
+                    worker.0,
+                    Desire::<Work>::new(Work::new(company.building, kind, 0.0)),
+                )
             }
-
-            cbuf.add_component(
-                worker.0,
-                Desire::<Work>::new(Work::new(company.building, kind, 0.0)),
-            )
         }
     }
 }

@@ -30,7 +30,7 @@ use common::timestep::Timestep;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
 use networking::{Frame, PollResult, ServerPollResult};
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 
 pub struct State {
     goria: Egregoria,
@@ -126,7 +126,8 @@ impl State {
                 match server.poll(
                     &|| {
                         (
-                            SerPreparedEgregoria::from(&self.goria),
+                            SerPreparedEgregoria::try_from(&self.goria)
+                                .expect("couldn't serialize world"),
                             Frame(self.goria.get_tick()),
                         )
                     },

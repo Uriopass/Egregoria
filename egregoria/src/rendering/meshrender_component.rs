@@ -36,7 +36,7 @@ impl MeshRenderEnum {
 
 impl InspectRenderDefault<MeshRenderEnum> for MeshRenderEnum {
     fn render(data: &[&MeshRenderEnum], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
-        let mre = data[0];
+        let mre = *unwrap_ret!(data.get(0));
 
         match mre {
             MeshRenderEnum::StrokeCircle(x) => <StrokeCircleRender as InspectRenderDefault<

@@ -3,7 +3,6 @@ use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 use slotmap::SecondaryMap;
 use std::collections::BTreeMap;
-use std::ops::{Index, IndexMut};
 
 #[derive(Clone, Default, Serialize, Deserialize, Debug)]
 pub struct BuildingInfo {
@@ -43,18 +42,20 @@ impl BuildingInfos {
     }
 
     pub fn get_in(&mut self, building: BuildingID, e: SoulID) {
-        if cfg!(debug_assertions) && self[building].inside.contains(&e) {
+        let b = unwrap_ret!(self.get_mut(building));
+        if cfg!(debug_assertions) && !b.inside.contains(&e) {
             log::warn!(
                 "called get_in({:?}, {:?}) but it was already inside",
                 building,
                 e
             );
         }
-        self[building].inside.push(e);
+        b.inside.push(e);
     }
 
     pub fn get_out(&mut self, building: BuildingID, e: SoulID) {
-        let inside = &mut self[building].inside;
+        let b = unwrap_ret!(self.get_mut(building));
+        let inside = &mut b.inside;
         if let Some(i) = inside.iter().position(|v| *v == e) {
             inside.swap_remove(i);
         } else {
@@ -64,19 +65,5 @@ impl BuildingInfos {
                 e
             );
         }
-    }
-}
-
-impl Index<BuildingID> for BuildingInfos {
-    type Output = BuildingInfo;
-
-    fn index(&self, index: BuildingID) -> &Self::Output {
-        &self.assignment[index]
-    }
-}
-
-impl IndexMut<BuildingID> for BuildingInfos {
-    fn index_mut(&mut self, index: BuildingID) -> &mut Self::Output {
-        &mut self.assignment[index]
     }
 }

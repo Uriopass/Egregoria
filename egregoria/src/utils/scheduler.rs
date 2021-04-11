@@ -39,7 +39,14 @@ impl SeqSchedule {
         let mut times = self
             .systems
             .iter()
-            .map(|(s, h)| (format!("{}", s.name().unwrap()), h.avg()))
+            .map(|(s, h)| {
+                (
+                    s.name()
+                        .map(|x| format!("{}", x))
+                        .unwrap_or_else(|| "no name".to_string()),
+                    h.avg(),
+                )
+            })
             .collect::<Vec<_>>();
         times.sort_unstable_by_key(|(_, t)| OrderedFloat(-*t));
         times
