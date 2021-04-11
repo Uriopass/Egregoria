@@ -3,10 +3,12 @@ use geom::Color;
 use imgui_inspect_derive::*;
 use lazy_static::*;
 use serde::{Deserialize, Serialize};
-use std::fs::{File, OpenOptions};
-use std::io::{BufReader, BufWriter};
+use std::fs::OpenOptions;
+use std::io::BufWriter;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+
+const CONFIG_AT_COMPILE: &[u8] = include_bytes!("../../assets/config.json");
 
 #[derive(Clone, Serialize, Deserialize, Inspect)]
 pub struct Config {
@@ -39,26 +41,25 @@ pub struct Config {
 }
 
 fn load_config_start() -> Config {
-    let c = serde_json::from_reader(BufReader::new(
-        File::open("assets/config.json").expect("Could not open config file."),
-    ))
+    let c = serde_json::from_slice(
+        std::fs::read("assets/config.json")
+            .as_deref()
+            .unwrap_or(CONFIG_AT_COMPILE),
+    )
     .unwrap();
     save_config(&c);
     c
 }
 
 fn save_config(config: &Config) {
-    serde_json::to_writer_pretty(
-        BufWriter::new(
-            OpenOptions::new()
-                .write(true)
-                .truncate(true)
-                .open("assets/config.json")
-                .expect("Could not open config file"),
-        ),
-        config,
-    )
-    .expect("could not serialize config");
+    if let Err(e) = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open("assets/config.json")
+        .and_then(|x| serde_json::to_writer_pretty(BufWriter::new(x), config).map_err(Into::into))
+    {
+        log::error!("could not save config: {}", e)
+    }
 }
 
 lazy_static! {
