@@ -8,7 +8,7 @@ use std::io::BufWriter;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
-const CONFIG_AT_COMPILE: &[u8] = include_bytes!("../../assets/config.json");
+const CONFIG_AT_COMPILE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/config.json"));
 
 #[derive(Clone, Serialize, Deserialize, Inspect)]
 pub struct Config {
