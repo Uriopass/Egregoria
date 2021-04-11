@@ -4,6 +4,7 @@ use flat_spatial::storage::Storage;
 use flat_spatial::SparseGrid;
 use geom::{vec2, Vec2, AABB};
 use serde::{Deserialize, Serialize, Serializer};
+use std::num::Wrapping;
 
 const CELL_SIZE: i32 = 100;
 
@@ -19,7 +20,7 @@ pub struct Tree {
 pub struct Trees {
     pub grid: SparseGrid<Tree>,
     pub generated: FastSet<(i32, i32)>,
-    pub dirt_id: u32,
+    pub dirt_id: Wrapping<u32>,
 }
 
 impl Default for Trees {
@@ -27,7 +28,7 @@ impl Default for Trees {
         Self {
             grid: SparseGrid::new(CELL_SIZE),
             generated: Default::default(),
-            dirt_id: 1,
+            dirt_id: Wrapping(1),
         }
     }
 }
@@ -43,7 +44,7 @@ impl Trees {
             .map(|x| x.0)
             .collect();
 
-        self.dirt_id += !to_remove.is_empty() as u32;
+        self.dirt_id += Wrapping(!to_remove.is_empty() as u32);
         for h in to_remove {
             self.grid.remove(h);
         }
@@ -134,7 +135,7 @@ impl Trees {
                 }
 
                 self.grid.insert(pos, Tree::new(pos));
-                self.dirt_id += 1;
+                self.dirt_id += Wrapping(1);
 
                 active.push(pos);
                 break;
@@ -193,10 +194,13 @@ struct SerializedTrees {
 
 impl From<SerializedTrees> for Trees {
     fn from(ser: SerializedTrees) -> Self {
-        let mut t = Self::default();
-        t.dirt_id = ser.dirt_id;
+        let mut t = Trees {
+            dirt_id: Wrapping(ser.dirt_id),
+            generated: ser.v.iter().map(|x| x.0).collect(),
+            ..Self::default()
+        };
+
         for (cell, v) in ser.v {
-            t.generated.insert(cell);
             for tree in v {
                 let pos = to_pos(tree, cell);
                 t.grid.insert(pos, Tree::new(pos));
@@ -213,7 +217,7 @@ impl Serialize for Trees {
     {
         let mut t = SerializedTrees {
             v: vec![],
-            dirt_id: self.dirt_id,
+            dirt_id: self.dirt_id.0,
         };
 
         for &cell in &self.generated {

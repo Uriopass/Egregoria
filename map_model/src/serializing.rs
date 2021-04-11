@@ -2,6 +2,7 @@ use crate::procgen::Trees;
 use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap};
 use geom::Shape;
 use serde::{Deserialize, Serialize, Serializer};
+use std::num::Wrapping;
 
 #[derive(Default, Serialize, Deserialize)]
 pub(crate) struct SerializedMap {
@@ -29,7 +30,7 @@ impl From<&Map> for SerializedMap {
             parking: m.parking.clone(),
             lots: m.lots.clone(),
             trees: m.trees.clone(),
-            dirt_id: m.dirt_id,
+            dirt_id: m.dirt_id.0,
         }
     }
 }
@@ -50,7 +51,7 @@ impl From<SerializedMap> for Map {
             lots: sel.lots,
             parking: sel.parking,
             trees: sel.trees,
-            dirt_id: sel.dirt_id,
+            dirt_id: Wrapping(sel.dirt_id),
         }
     }
 }
