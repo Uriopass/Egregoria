@@ -465,7 +465,9 @@ impl Gui {
             .position([30.0, 160.0], imgui::Condition::FirstUseEver)
             .opened(&mut is_open)
             .build(ui, || {
-                crate::gui::inspect::InspectRenderer { entity: e }.render(uiworld, goria, ui);
+                let mut ins = crate::gui::inspect::InspectRenderer { entity: e };
+                ins.render(uiworld, goria, ui);
+                inspected.e = Some(ins.entity);
             });
         if !is_open {
             inspected.e = None;
