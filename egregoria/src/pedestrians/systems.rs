@@ -50,7 +50,7 @@ pub fn walk_anim(
     unwrap_ret!(mr.orders.get_mut(1)).as_rect_mut().offset.x = -offset;
 }
 
-const PEDESTRIAN_ACC: f32 = 1.0;
+const PEDESTRIAN_ACC: f32 = 1.5;
 
 pub fn physics(
     kin: &mut Kinematics,
