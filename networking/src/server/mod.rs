@@ -159,12 +159,11 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
                 .filter(|c| buffer.lag(c.ack).is_none())
                 .map(|c| (c.reliable, c.ack, c.name.clone()))
                 .collect::<Vec<_>>();
-            let consumed = buffer.consumed_frame;
             for (reliable, ack, name) in to_disconnect {
                 log::warn!(
                     "disconnecting {} because it is too late. consumed is {:?} while he is at {:?}",
                     name,
-                    consumed,
+                    self.buffer.consumed_frame,
                     ack,
                 );
                 self.disconnect(reliable);

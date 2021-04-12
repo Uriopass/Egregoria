@@ -104,10 +104,9 @@ pub fn serv_c() {
         start_frame: Frame(world.tick),
         period: UP_DT,
         port: None,
-        virtual_client: Some(VirtualClientConf {
-            name: "server_virtual_client".into(),
-        }),
+        virtual_client: None,
         version: "v1".to_string(),
+        always_run: true,
     })
     .unwrap();
 

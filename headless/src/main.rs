@@ -5,6 +5,7 @@ use egregoria::engine_interaction::WorldCommands;
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use networking::{Frame, Server, ServerConfiguration, ServerPollResult};
 use std::convert::TryFrom;
+use std::iter::FromIterator;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
 
@@ -68,9 +69,8 @@ fn main() {
         ) {
             for frame in inputs {
                 assert_eq!(frame.frame.0, w.get_tick() + 1);
-                for input in frame.inputs {
-                    w.tick(&mut sched, &input.inp);
-                }
+                let merged = WorldCommands::from_iter(frame.inputs.into_iter().map(|x| x.inp));
+                w.tick(&mut sched, &merged);
             }
         }
 
