@@ -4,6 +4,7 @@ use common::unwrap_or;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use networking::{Frame, Server, ServerConfiguration, ServerPollResult};
+use std::convert::TryFrom;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
 
@@ -17,6 +18,10 @@ struct Opt {
     /// Auto save frequency, in seconds
     #[structopt(long, default_value = "300")]
     autosave: u64,
+
+    /// Always continue running even when everyone is disconnected
+    #[structopt(long)]
+    always_run: bool,
 }
 
 fn main() {
@@ -39,6 +44,7 @@ fn main() {
             port: opt.port,
             virtual_client: None,
             version: goria_version::VERSION.to_string(),
+            always_run: opt.always_run,
         }) {
             Ok(x) => x,
             Err(e) => {
@@ -52,7 +58,12 @@ fn main() {
 
     loop {
         if let ServerPollResult::Input(inputs) = server.poll(
-            &|| (SerPreparedEgregoria::from(&w), Frame(w.get_tick())),
+            &|| {
+                (
+                    SerPreparedEgregoria::try_from(&w).expect("could not serialize server"),
+                    Frame(w.get_tick()),
+                )
+            },
             None,
         ) {
             for frame in inputs {
