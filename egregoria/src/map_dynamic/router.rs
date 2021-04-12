@@ -213,6 +213,7 @@ pub fn routing_update(
             walk_outside(*body, wpos, cbuf, mr, loc);
         }
     }
+    router.steps.pop();
 }
 
 fn comp<'a, T: Component>(sw: &'a SubWorld, e: Entity) -> Option<&'a T> {
