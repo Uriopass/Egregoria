@@ -88,6 +88,7 @@ fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<S
             name: info.name.to_string(),
         }),
         version: goria_version::VERSION.to_string(),
+        always_run: true,
     }) {
         Ok(x) => x,
         Err(e) => {

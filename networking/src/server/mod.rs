@@ -28,6 +28,8 @@ pub struct ServerConfiguration {
     pub virtual_client: Option<VirtualClientConf>,
     /// Checks if client has same version or refuses authent otherwise
     pub version: String,
+    /// Always run, even when everyone is disconnected
+    pub always_run: bool,
 }
 
 pub struct VirtualClientConf {
@@ -39,9 +41,8 @@ pub enum ServerPollResult<I> {
     Input(Vec<FrameInputs<I>>),
 }
 
-struct VirtualClient<I> {
+struct VirtualClient {
     name: String,
-    next_inputs: Vec<FrameInputs<I>>,
 }
 
 pub struct Server<WORLD: Serialize, INPUT> {
@@ -49,12 +50,14 @@ pub struct Server<WORLD: Serialize, INPUT> {
     events: EventQueue<NetEvent>,
 
     authent: Authent,
-    v_client: Option<VirtualClient<INPUT>>,
+    v_client: Option<VirtualClient>,
+    next_inputs: Vec<FrameInputs<INPUT>>,
     buffer: ServerPlayoutBuffer,
     catchup: CatchUp,
     worldsend: WorldSend,
 
     step: Timestep,
+    always_run: bool,
 
     _phantom: PhantomSendSync<(WORLD, INPUT)>,
 
@@ -71,10 +74,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
         let (_, udp_addr) = network.listen(Transport::Udp, format!("0.0.0.0:{}", port + 1))?;
 
         let mut authent = Authent::new(conf.version);
-        let v_client = conf.virtual_client.map(|c| VirtualClient {
-            name: c.name,
-            next_inputs: vec![],
-        });
+        let v_client = conf.virtual_client.map(|c| VirtualClient { name: c.name });
         if let Some(ref v_client) = v_client {
             authent.register(v_client.name.clone());
         }
@@ -91,6 +91,8 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
             _phantom: Default::default(),
             tcp_addr,
             udp_addr,
+            always_run: conf.always_run,
+            next_inputs: vec![],
         })
     }
 
@@ -125,8 +127,8 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
         self.send_merged_inputs();
         self.send_long_running();
 
-        if let Some(ref mut v) = self.v_client {
-            if !v.next_inputs.is_empty() {
+        if !self.next_inputs.is_empty() {
+            if self.v_client.is_some() {
                 if let Some(inp) = local_inputs {
                     self.buffer.insert_input(
                         AuthentID::VIRTUAL_ID,
@@ -134,8 +136,8 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
                         PlayerInput(encode(&inp)),
                     );
                 }
-                return ServerPollResult::Input(std::mem::take(&mut v.next_inputs));
             }
+            return ServerPollResult::Input(std::mem::take(&mut self.next_inputs));
         }
         ServerPollResult::Wait(local_inputs)
     }
@@ -143,7 +145,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
     fn send_merged_inputs(&mut self) {
         let n_playing = self.authent.iter_playing().count() + self.v_client.is_some() as usize;
 
-        if n_playing == 0 {
+        if n_playing == 0 && !self.always_run {
             return;
         }
 
@@ -180,13 +182,11 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
                 );
             }
 
-            if let Some(ref mut c) = self.v_client {
-                c.next_inputs.push(decode_merged(
-                    AuthentID::VIRTUAL_ID,
-                    consumed_inputs.clone(),
-                    self.buffer.consumed_frame,
-                ))
-            }
+            self.next_inputs.push(decode_merged(
+                AuthentID::VIRTUAL_ID,
+                consumed_inputs.clone(),
+                self.buffer.consumed_frame,
+            ));
 
             self.catchup
                 .add_merged_inputs(self.buffer.consumed_frame, consumed_inputs);
