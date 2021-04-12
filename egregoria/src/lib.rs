@@ -236,6 +236,7 @@ impl Egregoria {
     }
 
     pub fn tick(&mut self, game_schedule: &mut SeqSchedule, commands: &WorldCommands) -> Duration {
+        self.tick += 1;
         const WORLD_TICK_DT: f32 = 0.05;
 
         let t = Instant::now();
@@ -251,7 +252,6 @@ impl Egregoria {
 
         game_schedule.execute(self);
         add_souls_to_empty_buildings(self);
-        self.tick += 1;
         t.elapsed()
     }
 

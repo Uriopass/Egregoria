@@ -72,7 +72,7 @@ impl ServerPlayoutBuffer {
         &mut self,
         acknowledged: impl Iterator<Item = Frame>,
     ) -> (MergedInputs, Vec<PastInputs>) {
-        let next_frame = self.consumed_frame + Frame(1);
+        let next_frame = self.consumed_frame.incred();
 
         for v in self.dedup.values_mut() {
             *v.get_mut(next_frame) = false;
@@ -97,7 +97,7 @@ impl ServerPlayoutBuffer {
         }
 
         // advance
-        self.consumed_frame.0 += 1;
+        self.consumed_frame = next_frame;
         *self.past.get_mut(self.consumed_frame) = merged.clone();
 
         (merged, result)
