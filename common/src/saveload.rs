@@ -85,7 +85,7 @@ impl Encoder for Bincode {
     const EXTENSION: &'static str = "bc";
 
     fn encode(x: &impl Serialize) -> Result<Vec<u8>> {
-        let mut v = vec![];
+        let mut v = Vec::with_capacity(4096);
         ::bincode::DefaultOptions::new()
             .serialize_into(std::io::Cursor::new(&mut v), x)
             .map_err(|x| std::io::Error::new(ErrorKind::Other, x))?;
