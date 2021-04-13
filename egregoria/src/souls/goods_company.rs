@@ -6,7 +6,7 @@ use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::{DriverState, WorkKind};
 use crate::utils::time::GameTime;
 use crate::vehicles::VehicleID;
-use crate::{Egregoria, ParCommandBuffer, SoulID};
+use crate::{my_hash, Egregoria, ParCommandBuffer, SoulID};
 use geom::{Transform, Vec2};
 use imgui_inspect_derive::*;
 use legion::world::SubWorld;
@@ -654,9 +654,11 @@ pub fn company(
                     }
                 }
 
+                let offset = common::rand::randu(my_hash(worker) as u32);
+
                 cbuf.add_component(
                     worker.0,
-                    Desire::<Work>::new(Work::new(company.building, kind, 0.0)),
+                    Desire::<Work>::new(Work::new(company.building, kind, offset)),
                 )
             }
         }

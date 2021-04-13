@@ -39,3 +39,7 @@ pub fn rand2(x: f32, y: f32) -> f32 {
 pub fn rand3(x: f32, y: f32, z: f32) -> f32 {
     float_construct(hash3(x.to_bits(), y.to_bits(), z.to_bits()))
 }
+
+pub fn randu(x: u32) -> f32 {
+    float_construct(x)
+}
