@@ -51,7 +51,7 @@ impl InstancedRender {
         for (trans, itin) in <(&Transform, &Itinerary)>::query().iter(goria.world()) {
             let itin: &Itinerary = itin;
             if let Some(wait) = itin.is_wait_for_reroute() {
-                if wait <= 0 {
+                if wait == 0 {
                     continue;
                 }
 
