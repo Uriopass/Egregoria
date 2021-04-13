@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub(crate) enum ServerUnreliablePacket {
     Input(Vec<(Frame, MergedInputs)>),
+    ReadyForAuth,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) enum ServerReliablePacket {
     Challenge(AuthentID),
-    ReadyForAuth,
     ReadyToPlay {
         final_consumed_frame: Frame,
         final_inputs: Vec<MergedInputs>,
