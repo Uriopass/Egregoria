@@ -102,6 +102,10 @@ pub fn routing_update(
     kin: &mut Kinematics,
     subworld: &SubWorld,
 ) {
+    if router.cur_step.is_none() && router.steps.is_empty() {
+        return;
+    }
+
     let pos = match *loc {
         Location::Outside => trans.position(),
         Location::Vehicle(id) => comp::<Transform>(subworld, id.0)
@@ -113,11 +117,6 @@ pub fn routing_update(
             .map(|b| b.door_pos)
             .unwrap_or_else(|| trans.position()),
     };
-
-    let next_step = unwrap_or!(router.steps.last(), {
-        router.reset_dest();
-        return;
-    });
 
     let mut cur_step_over = true;
 
@@ -137,87 +136,90 @@ pub fn routing_update(
             RoutingStep::GetOutBuilding(_) => true,
         };
     }
+    let mut next_step_ready = true;
 
-    let next_step_ready = match *next_step {
-        RoutingStep::WalkTo(_) => true,
-        RoutingStep::DriveTo(_, _) => true,
-        RoutingStep::Park(_, _) => true,
-        RoutingStep::Unpark(_) => true,
-        RoutingStep::GetInVehicle(vehicle) => comp::<Transform>(subworld, vehicle.0)
-            .map(|x| x.position().is_close(pos, 3.0))
-            .unwrap_or(true),
-        RoutingStep::GetOutVehicle(_) => true,
-        RoutingStep::GetInBuilding(build) => map
-            .buildings()
-            .get(build)
-            .map(|b| b.door_pos.is_close(pos, 3.0))
-            .unwrap_or(true),
-        RoutingStep::GetOutBuilding(_) => true,
-    };
+    if let Some(step) = router.steps.last() {
+        next_step_ready = match *step {
+            RoutingStep::WalkTo(_) => true,
+            RoutingStep::DriveTo(_, _) => true,
+            RoutingStep::Park(_, _) => true,
+            RoutingStep::Unpark(_) => true,
+            RoutingStep::GetInVehicle(vehicle) => comp::<Transform>(subworld, vehicle.0)
+                .map(|x| x.position().is_close(pos, 3.0))
+                .unwrap_or(true),
+            RoutingStep::GetOutVehicle(_) => true,
+            RoutingStep::GetInBuilding(build) => map
+                .buildings()
+                .get(build)
+                .map(|b| b.door_pos.is_close(pos, 3.0))
+                .unwrap_or(true),
+            RoutingStep::GetOutBuilding(_) => true,
+        };
+    }
 
     if !(next_step_ready && cur_step_over) {
         return;
     }
 
-    let mut next_step = unwrap_ret!(router.steps.pop());
+    router.cur_step = router.steps.pop();
 
-    match next_step {
-        RoutingStep::WalkTo(obj) => {
-            cbuf.add_component(
-                *body,
-                Itinerary::wait_for_reroute(PathKind::Pedestrian, obj),
-            );
-        }
-        RoutingStep::DriveTo(vehicle, obj) => {
-            let route = Itinerary::wait_for_reroute(PathKind::Vehicle, obj);
-            cbuf.add_component(vehicle.0, route);
-        }
-        RoutingStep::Park(vehicle, ref mut spot) => {
-            if let Some(x) = spot.take() {
-                if !x.exists(&map.parking) {
+    if let Some(ref mut next_step) = router.cur_step {
+        match *next_step {
+            RoutingStep::WalkTo(obj) => {
+                cbuf.add_component(
+                    *body,
+                    Itinerary::wait_for_reroute(PathKind::Pedestrian, obj),
+                );
+            }
+            RoutingStep::DriveTo(vehicle, obj) => {
+                let route = Itinerary::wait_for_reroute(PathKind::Vehicle, obj);
+                cbuf.add_component(vehicle.0, route);
+            }
+            RoutingStep::Park(vehicle, ref mut spot) => {
+                if let Some(x) = spot.take() {
+                    if !x.exists(&map.parking) {
+                        router.reset_dest();
+                        return;
+                    }
+
+                    cbuf.exec_ent(vehicle.0, park(vehicle, x));
+                }
+            }
+            RoutingStep::Unpark(vehicle) => {
+                cbuf.exec_ent(vehicle.0, move |goria| unpark(goria, vehicle));
+            }
+            RoutingStep::GetInVehicle(vehicle) => {
+                if subworld.entry_ref(vehicle.0).is_err() {
                     router.reset_dest();
                     return;
                 }
-
-                cbuf.exec_ent(vehicle.0, park(vehicle, x));
+                *loc = Location::Vehicle(vehicle);
+                walk_inside(*body, cbuf, mr, kin);
             }
-        }
-        RoutingStep::Unpark(vehicle) => {
-            cbuf.exec_ent(vehicle.0, move |goria| unpark(goria, vehicle));
-        }
-        RoutingStep::GetInVehicle(vehicle) => {
-            if subworld.entry_ref(vehicle.0).is_err() {
-                router.reset_dest();
-                return;
+            RoutingStep::GetOutVehicle(vehicle) => {
+                let pos = comp::<Transform>(subworld, vehicle.0)
+                    .map(|vtrans| vtrans.position() + vtrans.direction().perpendicular() * 2.0)
+                    .unwrap_or(pos);
+                walk_outside(*body, pos, cbuf, mr, loc);
             }
-            *loc = Location::Vehicle(vehicle);
-            walk_inside(*body, cbuf, mr, kin);
-        }
-        RoutingStep::GetOutVehicle(vehicle) => {
-            let pos = comp::<Transform>(subworld, vehicle.0)
-                .map(|vtrans| vtrans.position() + vtrans.direction().perpendicular() * 2.0)
-                .unwrap_or(pos);
-            walk_outside(*body, pos, cbuf, mr, loc);
-        }
-        RoutingStep::GetInBuilding(build) => {
-            if !map.buildings().contains_key(build) {
-                router.reset_dest();
-                return;
+            RoutingStep::GetInBuilding(build) => {
+                if !map.buildings().contains_key(build) {
+                    router.reset_dest();
+                    return;
+                }
+                *loc = Location::Building(build);
+                walk_inside(*body, cbuf, mr, kin);
             }
-            *loc = Location::Building(build);
-            walk_inside(*body, cbuf, mr, kin);
-        }
-        RoutingStep::GetOutBuilding(build) => {
-            let wpos = map
-                .buildings()
-                .get(build)
-                .map(|x| x.door_pos)
-                .unwrap_or(pos);
-            walk_outside(*body, wpos, cbuf, mr, loc);
+            RoutingStep::GetOutBuilding(build) => {
+                let wpos = map
+                    .buildings()
+                    .get(build)
+                    .map(|x| x.door_pos)
+                    .unwrap_or(pos);
+                walk_outside(*body, wpos, cbuf, mr, loc);
+            }
         }
     }
-
-    router.cur_step = Some(next_step);
 }
 
 impl ComponentDrop for Router {
