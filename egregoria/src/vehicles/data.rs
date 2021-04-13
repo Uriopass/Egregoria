@@ -1,7 +1,8 @@
 use crate::engine_interaction::Selectable;
-use crate::map_dynamic::{Itinerary, ParkingManagement};
+use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::rendering::assets::{AssetID, AssetRender};
+use crate::utils::par_command_buffer::ComponentDrop;
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::GameInstant;
 use crate::Egregoria;
@@ -10,8 +11,7 @@ use geom::Color;
 use geom::{Spline, Transform, Vec2};
 use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
-use legion::Entity;
-use map_model::ParkingSpotID;
+use legion::{Entity, Resources};
 use serde::{Deserialize, Serialize};
 
 /// The duration for the parking animation.
@@ -22,13 +22,13 @@ pub struct VehicleID(pub Entity);
 
 debug_inspect_impl!(VehicleID);
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum VehicleState {
-    Parked(ParkingSpotID),
+    Parked(SpotReservation),
     Driving,
     /// Panicked when it notices it's in a gridlock
     Panicking(GameInstant),
-    RoadToPark(Spline, f32, ParkingSpotID),
+    RoadToPark(Spline, f32, SpotReservation),
 }
 
 debug_inspect_impl!(VehicleState);
@@ -40,7 +40,7 @@ pub enum VehicleKind {
     Bus,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Inspect)]
+#[derive(Debug, Serialize, Deserialize, Inspect)]
 pub struct Vehicle {
     #[inspect(proxy_type = "InspectDragf")]
     pub ang_velocity: f32,
@@ -52,6 +52,16 @@ pub struct Vehicle {
 
     /// Used to detect gridlock
     pub flag: u64,
+}
+
+impl ComponentDrop for Vehicle {
+    fn drop(&mut self, res: &mut Resources, _: Entity) {
+        if let VehicleState::Parked(resa) | VehicleState::RoadToPark(_, _, resa) =
+            std::mem::replace(&mut self.state, VehicleState::Driving)
+        {
+            res.get_mut::<ParkingManagement>().unwrap().free(resa);
+        }
+    }
 }
 
 #[must_use]
@@ -115,10 +125,10 @@ impl VehicleKind {
 }
 
 pub fn unpark(goria: &mut Egregoria, vehicle: VehicleID) {
-    let v = unwrap_ret!(goria.comp::<Vehicle>(vehicle.0));
+    let v = unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0));
     let w = v.kind.width();
 
-    if let VehicleState::Parked(spot) = v.state {
+    if let VehicleState::Parked(spot) = std::mem::replace(&mut v.state, VehicleState::Driving) {
         goria.write::<ParkingManagement>().free(spot);
     } else {
         log::warn!("Trying to unpark {:?} that wasn't parked", vehicle);
@@ -126,7 +136,6 @@ pub fn unpark(goria: &mut Egregoria, vehicle: VehicleID) {
 
     let coll = put_vehicle_in_coworld(goria, w, *unwrap_ret!(goria.comp::<Transform>(vehicle.0)));
     goria.add_comp(vehicle.0, coll);
-    unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0)).state = VehicleState::Driving;
 }
 
 pub fn spawn_parked_vehicle(
@@ -142,7 +151,7 @@ pub fn spawn_parked_vehicle(
 
     let spot_id = pm.reserve_near(near, &map)?;
 
-    let pos = map.parking.get(spot_id).unwrap().trans; // Unwrap ok: Gotten using reserve_near
+    let pos = spot_id.get(&map.parking).unwrap().trans; // Unwrap ok: Gotten using reserve_near
 
     drop(map);
     drop(pm);
@@ -226,7 +235,7 @@ pub fn get_random_car_color(r: &mut RandProvider) -> Color {
 }
 
 impl Vehicle {
-    pub fn new(kind: VehicleKind, spot: ParkingSpotID) -> Vehicle {
+    pub fn new(kind: VehicleKind, spot: SpotReservation) -> Vehicle {
         Self {
             ang_velocity: 0.0,
             wait_time: 0.0,

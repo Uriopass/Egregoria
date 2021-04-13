@@ -273,7 +273,7 @@ pub fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> O
     let pm = goria.read::<ParkingManagement>();
 
     for (id, spot) in map.parking.all_spots() {
-        let color = if pm.is_free(id) {
+        let color = if pm.is_spot_free(id) {
             LinearColor::GREEN
         } else {
             LinearColor::RED
