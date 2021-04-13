@@ -67,16 +67,13 @@ pub fn desire_buy_food(
                 if router.go_to(Destination::Building(b)) {
                     buy_food.state = BuyFoodState::Empty;
                     buy_food.last_ate = time.instant();
+                    log::info!("{:?} ate at {:?}", *me, b)
                 }
             }
         }
     }
     if matches!(buy_food.state, BuyFoodState::WaitingForTrade)
-        && bought
-            .0
-            .get(&CommodityKind::Bread)
-            .map(|x| x.is_empty())
-            .unwrap_or(true)
+        && bought.0.entry(CommodityKind::Bread).or_default().is_empty()
     {
         d.score = 0.0;
         return;
