@@ -28,6 +28,7 @@ gen_z! {
     Z_HOUSE
     Z_SIGNAL
     Z_CAR
+    Z_PATH_NOT_FOUND
     Z_TREE
     Z_DEBUG_BG
     Z_DEBUG
