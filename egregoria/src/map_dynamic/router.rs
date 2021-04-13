@@ -114,7 +114,7 @@ pub fn routing_update(
     };
 
     let next_step = *unwrap_or!(router.steps.last(), {
-        router.cur_step = None;
+        router.reset_dest();
         return;
     });
 
@@ -173,7 +173,7 @@ pub fn routing_update(
         }
         RoutingStep::Park(vehicle, spot) => {
             if !map.parking.contains(spot) {
-                router.cur_dest = None;
+                router.reset_dest();
                 return;
             }
 
@@ -184,7 +184,7 @@ pub fn routing_update(
         }
         RoutingStep::GetInVehicle(vehicle) => {
             if subworld.entry_ref(vehicle.0).is_err() {
-                router.cur_dest = None;
+                router.reset_dest();
                 return;
             }
             *loc = Location::Vehicle(vehicle);
@@ -198,7 +198,7 @@ pub fn routing_update(
         }
         RoutingStep::GetInBuilding(build) => {
             if !map.buildings().contains_key(build) {
-                router.cur_dest = None;
+                router.reset_dest();
                 return;
             }
             *loc = Location::Building(build);
@@ -291,6 +291,10 @@ impl Router {
                 parking.free(spot);
             }
         }
+    }
+
+    pub fn reset_dest(&mut self) {
+        self.cur_dest = None;
     }
 
     /// Returns wheter or not the destination was already attained
