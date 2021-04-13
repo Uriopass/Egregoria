@@ -60,6 +60,14 @@ impl Itinerary {
         }
     }
 
+    pub fn is_wait_for_reroute(&self) -> Option<u16> {
+        if let ItineraryKind::WaitForReroute { wait_ticks, .. } = self.kind {
+            Some(wait_ticks)
+        } else {
+            None
+        }
+    }
+
     pub fn wait_for_reroute(kind: PathKind, dest: Vec2) -> Self {
         Self {
             kind: ItineraryKind::WaitForReroute {
