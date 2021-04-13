@@ -262,14 +262,6 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
 
     fn message_reliable(&mut self, p: ServerReliablePacket) -> Option<()> {
         match p {
-            ServerReliablePacket::ReadyForAuth => {
-                log::info!("{}: received ready for auth", self.name);
-                let connect = ClientReliablePacket::Connect {
-                    name: self.name.clone(),
-                    version: self.version.clone(),
-                };
-                self.network.send(self.tcp, &*encode(&connect));
-            }
             ServerReliablePacket::WorldSend(fragment) => {
                 log::info!("{}: received world fragment", self.name);
 
@@ -387,6 +379,14 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                         let _ = buffer.insert_serv_input(frame, inp);
                     }
                 }
+            }
+            ServerUnreliablePacket::ReadyForAuth => {
+                log::info!("{}: received ready for auth", self.name);
+                let connect = ClientReliablePacket::Connect {
+                    name: self.name.clone(),
+                    version: self.version.clone(),
+                };
+                self.network.send(self.tcp, &*encode(&connect));
             }
         }
     }

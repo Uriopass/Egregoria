@@ -1,4 +1,4 @@
-use crate::packets::{AuthentResponse, ServerReliablePacket};
+use crate::packets::{AuthentResponse, ServerReliablePacket, ServerUnreliablePacket};
 use crate::{encode, hash_str, Frame, UserID};
 use common::{FastMap, FastSet};
 use message_io::network::{Endpoint, Network};
@@ -71,15 +71,8 @@ impl Authent {
         ack: Frame,
         name: String,
         version: String,
-    ) -> AuthentResponse {
-        let v = match self.get_client_state_mut(e) {
-            Some(x) => x,
-            None => {
-                return AuthentResponse::Refused {
-                    reason: "client not found, packet was sent too early?".to_string(),
-                }
-            }
-        };
+    ) -> Option<AuthentResponse> {
+        let v = self.get_client_state_mut(e)?;
 
         if let ClientConnectState::Connecting {
             id,
@@ -91,18 +84,18 @@ impl Authent {
             let hash = hash_str(&name);
 
             if self.register(name.clone()) {
-                return AuthentResponse::Refused {
+                return Some(AuthentResponse::Refused {
                     reason: format!("name is already in use: {}", name),
-                };
+                });
             }
 
             if version != self.version {
-                return AuthentResponse::Refused {
+                return Some(AuthentResponse::Refused {
                     reason: format!(
                         "Incompatible versions: serv: {} vs client: {}",
                         self.version, version
                     ),
-                };
+                });
             }
 
             // Unwrap ok: already checked right before
@@ -118,23 +111,20 @@ impl Authent {
 
             self.n_connected_clients += 1;
 
-            return AuthentResponse::Accepted { id };
+            return Some(AuthentResponse::Accepted { id });
         }
-        AuthentResponse::Refused {
-            reason: "client was not connecting".to_string(),
-        }
+        None
     }
 
     pub fn udp_connect(&mut self, e: Endpoint, id: AuthentID, net: &mut Network) {
         self.addr_to_client.insert(e.addr(), id);
-        if let Some(ClientConnectState::Connecting {
-            id: _,
-            unreliable,
-            reliable,
-        }) = self.get_client_state_mut(e)
+        if let Some(ClientConnectState::Connecting { unreliable, .. }) =
+            self.get_client_state_mut(e)
         {
             *unreliable = Some(e);
-            net.send(*reliable, &*encode(&ServerReliablePacket::ReadyForAuth));
+            net.send(e, &*encode(&ServerUnreliablePacket::ReadyForAuth));
+            net.send(e, &*encode(&ServerUnreliablePacket::ReadyForAuth));
+            net.send(e, &*encode(&ServerUnreliablePacket::ReadyForAuth));
         }
     }
 

@@ -235,7 +235,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
             ClientReliablePacket::Connect { name, version } => {
                 let auth_r =
                     self.authent
-                        .tcp_client_auth(e, self.buffer.consumed_frame, name, version);
+                        .tcp_client_auth(e, self.buffer.consumed_frame, name, version)?;
 
                 self.network.send(
                     e,
