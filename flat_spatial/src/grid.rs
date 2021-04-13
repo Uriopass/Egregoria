@@ -175,6 +175,27 @@ impl<ST: Storage<GridCell>, O: Copy> Grid<O, ST> {
         Some(obj.obj)
     }
 
+    /// Directly removes an object from the grid.
+    /// This is equivalent to remove() then maintain() but is much faster (O(1))
+    ///
+    /// # Example
+    /// ```rust
+    /// use flat_spatial::Grid;
+    /// use geom::Vec2;
+    /// let mut g: Grid<()> = Grid::new(10);
+    /// let h = g.insert(Vec2::new(5.0, 3.0), ());
+    /// g.remove(h);
+    /// ```
+    pub fn remove_maintain(&mut self, handle: GridHandle) -> Option<O> {
+        let obj = self.objects.remove(handle)?;
+
+        let cell = self.storage.cell_mut_unchecked(obj.cell_id);
+
+        cell.objs.retain(|&(h, _)| h != handle);
+
+        Some(obj.obj)
+    }
+
     pub fn clear(&mut self) -> impl Iterator<Item = (Vec2, O)> {
         let objects = std::mem::take(&mut self.objects);
         self.storage = ST::new(self.storage.cell_size());

@@ -1,8 +1,12 @@
 use common::PtrCmp;
 use geom::Vec2;
-use map_model::{LaneKind, Map, ParkingSpotID};
+use map_model::{LaneKind, Map, ParkingSpot, ParkingSpotID, ParkingSpots};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashSet};
+
+#[derive(Debug, Serialize, Deserialize)]
+#[repr(transparent)]
+pub struct SpotReservation(ParkingSpotID);
 
 register_resource!(ParkingManagement, "pmanagement");
 #[derive(Default, Serialize, Deserialize)]
@@ -11,17 +15,22 @@ pub struct ParkingManagement {
 }
 
 impl ParkingManagement {
-    pub fn free(&mut self, spot: ParkingSpotID) {
-        if !self.reserved_spots.remove(&spot) {
-            log::warn!("{:?} wasn't reserved", spot);
+    pub fn free(&mut self, spot: SpotReservation) {
+        if !self.reserved_spots.remove(&spot.0) {
+            log::warn!("{:?} wasn't reserved", spot.0);
         }
+        std::mem::forget(spot);
     }
 
-    pub fn is_free(&self, spot: ParkingSpotID) -> bool {
+    pub fn is_free(&self, spot: SpotReservation) -> bool {
+        self.is_spot_free(spot.0)
+    }
+
+    pub fn is_spot_free(&self, spot: ParkingSpotID) -> bool {
         self.reserved_spots.contains(&spot)
     }
 
-    pub fn reserve_near(&mut self, near: Vec2, map: &Map) -> Option<ParkingSpotID> {
+    pub fn reserve_near(&mut self, near: Vec2, map: &Map) -> Option<SpotReservation> {
         let lane = map.nearest_lane(near, LaneKind::Driving)?;
         let lane = map.lanes().get(lane)?;
 
@@ -42,7 +51,7 @@ impl ParkingManagement {
                 if let Some(p_iter) = map.parking.closest_spots(plane, near) {
                     for spot in p_iter {
                         if self.reserved_spots.insert(spot) {
-                            return Some(spot);
+                            return Some(SpotReservation(spot));
                         }
                     }
                 }
@@ -65,5 +74,19 @@ impl ParkingManagement {
             std::mem::swap(&mut potential, &mut next);
         }
         None
+    }
+}
+
+impl SpotReservation {
+    pub fn exists(&self, spots: &ParkingSpots) -> bool {
+        spots.contains(self.0)
+    }
+
+    pub fn get<'a>(&self, spots: &'a ParkingSpots) -> Option<&'a ParkingSpot> {
+        spots.get(self.0)
+    }
+
+    pub fn park_pos(&self, map: &Map) -> Option<Vec2> {
+        map.parking_to_drive_pos(self.0)
     }
 }

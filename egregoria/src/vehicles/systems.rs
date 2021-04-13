@@ -1,27 +1,14 @@
-use crate::map_dynamic::{Itinerary, ParkingManagement, OBJECTIVE_OK_DIST};
+use crate::map_dynamic::{Itinerary, OBJECTIVE_OK_DIST};
 use crate::physics::Kinematics;
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::utils::time::GameTime;
 use crate::utils::Restrict;
 use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
-use crate::{Deleted, ParCommandBuffer};
+use crate::ParCommandBuffer;
 use geom::{angle_lerp, Ray, Transform, Vec2};
 use legion::system;
 use legion::Entity;
 use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
-
-register_system!(vehicle_cleanup);
-#[system]
-pub fn vehicle_cleanup(
-    #[resource] evts: &mut Deleted<Vehicle>,
-    #[resource] pm: &mut ParkingManagement,
-) {
-    for comp in evts.drain() {
-        if let VehicleState::Parked(id) | VehicleState::RoadToPark(_, _, id) = comp.state {
-            pm.free(id)
-        }
-    }
-}
 
 register_system!(vehicle_decision);
 #[system(par_for_each)]
@@ -80,18 +67,22 @@ pub fn vehicle_state_update(
     ent: &Entity,
 ) {
     match vehicle.state {
-        VehicleState::RoadToPark(_, ref mut t, spot) => {
+        VehicleState::RoadToPark(_, ref mut t, _) => {
             // Vehicle is on rails when parking.
             *t += time.delta / TIME_TO_PARK;
 
             if *t >= 1.0 {
-                buf.remove_component::<Collider>(*ent);
+                buf.remove_component_drop::<Collider>(*ent);
                 kin.velocity = Vec2::ZERO;
+                let spot = match std::mem::replace(&mut vehicle.state, VehicleState::Driving) {
+                    VehicleState::RoadToPark(_, _, spot) => spot,
+                    _ => unreachable!(),
+                };
                 vehicle.state = VehicleState::Parked(spot);
             }
         }
-        VehicleState::Parked(ref mut spot) => {
-            if let Some(p) = map.parking.get(*spot) {
+        VehicleState::Parked(ref spot) => {
+            if let Some(p) = spot.get(&map.parking) {
                 if p.trans != *trans {
                     *trans = p.trans;
                 }
@@ -115,8 +106,8 @@ fn physics(
     desired_dir: Vec2,
 ) {
     match vehicle.state {
-        VehicleState::Parked(id) => {
-            let spot = unwrap_or!(map.parking.get(id), return);
+        VehicleState::Parked(ref id) => {
+            let spot = unwrap_ret!(id.get(&map.parking));
             *trans = spot.trans;
             return;
         }

@@ -1,18 +1,19 @@
-use crate::map_dynamic::{Itinerary, ParkingManagement};
+use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
 use crate::pedestrians::{put_pedestrian_in_coworld, Location};
 use crate::physics::{Collider, CollisionWorld, Kinematics};
 use crate::rendering::meshrender_component::MeshRender;
+use crate::utils::par_command_buffer::ComponentDrop;
 use crate::vehicles::{unpark, Vehicle, VehicleID, VehicleState};
 use crate::{Egregoria, ParCommandBuffer};
 use geom::{Spline, Transform, Vec2};
 use imgui_inspect_derive::*;
 use legion::storage::Component;
 use legion::world::SubWorld;
-use legion::{system, Entity, EntityStore, IntoQuery};
-use map_model::{BuildingID, Map, ParkingSpotID, PathKind};
+use legion::{system, Entity, EntityStore, IntoQuery, Resources};
+use map_model::{BuildingID, Map, PathKind};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Inspect, Serialize, Deserialize)]
+#[derive(Inspect, Serialize, Deserialize)]
 pub struct Router {
     steps: Vec<RoutingStep>,
     cur_step: Option<RoutingStep>,
@@ -30,11 +31,11 @@ pub enum Destination {
 
 debug_inspect_impl!(Destination);
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum RoutingStep {
     WalkTo(Vec2),
     DriveTo(VehicleID, Vec2),
-    Park(VehicleID, ParkingSpotID),
+    Park(VehicleID, Option<SpotReservation>),
     Unpark(VehicleID),
     GetInVehicle(VehicleID),
     GetOutVehicle(VehicleID),
@@ -113,15 +114,15 @@ pub fn routing_update(
             .unwrap_or_else(|| trans.position()),
     };
 
-    let next_step = *unwrap_or!(router.steps.last(), {
+    let next_step = unwrap_or!(router.steps.last(), {
         router.reset_dest();
         return;
     });
 
     let mut cur_step_over = true;
 
-    if let Some(step) = router.cur_step {
-        cur_step_over = match step {
+    if let Some(ref step) = router.cur_step {
+        cur_step_over = match *step {
             RoutingStep::WalkTo(_) => itin.has_ended(0.0),
             RoutingStep::DriveTo(vehicle, _) => comp::<Itinerary>(subworld, vehicle.0)
                 .map(|x| x.has_ended(0.0))
@@ -137,7 +138,7 @@ pub fn routing_update(
         };
     }
 
-    let next_step_ready = match next_step {
+    let next_step_ready = match *next_step {
         RoutingStep::WalkTo(_) => true,
         RoutingStep::DriveTo(_, _) => true,
         RoutingStep::Park(_, _) => true,
@@ -158,7 +159,7 @@ pub fn routing_update(
         return;
     }
 
-    router.cur_step = Some(next_step);
+    let mut next_step = unwrap_ret!(router.steps.pop());
 
     match next_step {
         RoutingStep::WalkTo(obj) => {
@@ -171,13 +172,15 @@ pub fn routing_update(
             let route = Itinerary::wait_for_reroute(PathKind::Vehicle, obj);
             cbuf.add_component(vehicle.0, route);
         }
-        RoutingStep::Park(vehicle, spot) => {
-            if !map.parking.contains(spot) {
-                router.reset_dest();
-                return;
-            }
+        RoutingStep::Park(vehicle, ref mut spot) => {
+            if let Some(x) = spot.take() {
+                if !x.exists(&map.parking) {
+                    router.reset_dest();
+                    return;
+                }
 
-            cbuf.exec_ent(vehicle.0, park(vehicle, spot));
+                cbuf.exec_ent(vehicle.0, park(vehicle, x));
+            }
         }
         RoutingStep::Unpark(vehicle) => {
             cbuf.exec_ent(vehicle.0, move |goria| unpark(goria, vehicle));
@@ -213,7 +216,14 @@ pub fn routing_update(
             walk_outside(*body, wpos, cbuf, mr, loc);
         }
     }
-    router.steps.pop();
+
+    router.cur_step = Some(next_step);
+}
+
+impl ComponentDrop for Router {
+    fn drop(&mut self, res: &mut Resources, _: Entity) {
+        self.clear_steps(&mut *res.get_mut::<ParkingManagement>().unwrap())
+    }
 }
 
 fn comp<'a, T: Component>(sw: &'a SubWorld, e: Entity) -> Option<&'a T> {
@@ -222,7 +232,7 @@ fn comp<'a, T: Component>(sw: &'a SubWorld, e: Entity) -> Option<&'a T> {
 
 fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, mr: &mut MeshRender, kin: &mut Kinematics) {
     mr.hide = true;
-    cbuf.remove_component::<Collider>(body);
+    cbuf.remove_component_drop::<Collider>(body);
     kin.velocity = Vec2::ZERO;
     cbuf.add_component(body, Itinerary::none())
 }
@@ -243,14 +253,14 @@ fn walk_outside(
     });
 }
 
-fn park(vehicle: VehicleID, spot_id: ParkingSpotID) -> impl FnOnce(&mut Egregoria) {
+fn park(vehicle: VehicleID, spot_resa: SpotReservation) -> impl FnOnce(&mut Egregoria) {
     move |goria| {
         let trans = unwrap_ret!(goria.comp::<Transform>(vehicle.0));
         let map = goria.map();
-        let spot = match map.parking.get(spot_id) {
+        let spot = match spot_resa.get(&map.parking) {
             Some(x) => x,
             None => {
-                log::warn!("Couldn't park at {:?} because it doesn't exist", spot_id);
+                log::warn!("Couldn't park at {:?} because it doesn't exist", spot_resa);
                 return;
             }
         };
@@ -264,7 +274,7 @@ fn park(vehicle: VehicleID, spot_id: ParkingSpotID) -> impl FnOnce(&mut Egregori
         drop(map);
 
         unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0)).state =
-            VehicleState::RoadToPark(s, 0.0, spot_id);
+            VehicleState::RoadToPark(s, 0.0, spot_resa);
         unwrap_ret!(goria.comp_mut::<Kinematics>(vehicle.0)).velocity = Vec2::ZERO;
     }
 }
@@ -287,7 +297,7 @@ impl Router {
 
     fn clear_steps(&mut self, parking: &mut ParkingManagement) {
         for s in self.steps.drain(..).chain(self.cur_step.take()) {
-            if let RoutingStep::Park(_, spot) = s {
+            if let RoutingStep::Park(_, Some(spot)) = s {
                 parking.free(spot);
             }
         }
@@ -322,11 +332,11 @@ impl Router {
         }
 
         if let Some(car) = self.vehicle {
-            let spot_id = parking.reserve_near(obj, map)?;
-            let parking_pos = match map.parking_to_drive_pos(spot_id) {
+            let spot_resa = parking.reserve_near(obj, map)?;
+            let parking_pos = match spot_resa.park_pos(map) {
                 Some(x) => x,
                 None => {
-                    parking.free(spot_id);
+                    parking.free(spot_resa);
                     return None;
                 }
             };
@@ -340,7 +350,7 @@ impl Router {
             }
 
             steps.push(RoutingStep::DriveTo(car, parking_pos));
-            steps.push(RoutingStep::Park(car, spot_id));
+            steps.push(RoutingStep::Park(car, Some(spot_resa)));
             steps.push(RoutingStep::GetOutVehicle(car));
         }
 

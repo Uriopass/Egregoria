@@ -1,9 +1,10 @@
 use crate::physics::{Collider, Kinematics};
+use crate::utils::par_command_buffer::ComponentDrop;
 use crate::utils::time::GameTime;
 use crate::vehicles::Vehicle;
-use crate::{CollisionWorld, Deleted};
+use crate::CollisionWorld;
 use geom::Transform;
-use legion::system;
+use legion::{system, Entity, Resources};
 
 register_system!(kinematics_apply);
 #[system(par_for_each)]
@@ -31,17 +32,13 @@ pub fn coworld_synchronize(
     if let Some(v) = v {
         po.flag = v.flag;
     }
+    coworld.maintain();
 }
 
-register_system!(coworld_maintain);
-#[system]
-pub fn coworld_maintain(
-    #[resource] coworld: &mut CollisionWorld,
-    #[resource] evts: &mut Deleted<Collider>,
-) {
-    for Collider(handle) in evts.drain() {
-        coworld.remove(handle);
+impl ComponentDrop for Collider {
+    fn drop(&mut self, res: &mut Resources, _: Entity) {
+        res.get_mut::<CollisionWorld>()
+            .unwrap()
+            .remove_maintain(self.0);
     }
-
-    coworld.maintain();
 }

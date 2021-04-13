@@ -1,26 +1,16 @@
+use crate::map_dynamic::Router;
 use crate::physics::Collider;
 use crate::vehicles::Vehicle;
 use crate::Egregoria;
 use legion::storage::Component;
 use legion::systems::Resource;
-use legion::Entity;
-use serde::{Deserialize, Serialize};
+use legion::{Entity, EntityStore, Resources};
 use std::any::TypeId;
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-#[derive(Serialize, Deserialize)]
-pub struct Deleted<T>(Vec<T>);
-impl<T> Default for Deleted<T> {
-    fn default() -> Self {
-        Self(vec![])
-    }
-}
-
-impl<T> Deleted<T> {
-    pub fn drain(&mut self) -> impl Iterator<Item = T> + '_ {
-        self.0.drain(..)
-    }
+pub trait ComponentDrop {
+    fn drop(&mut self, goria: &mut Resources, ent: Entity);
 }
 
 type ExecType = Box<dyn for<'a> FnOnce(&'a mut Egregoria) + Send>;
@@ -80,7 +70,22 @@ impl ParCommandBuffer {
         }
     }
 
-    pub fn remove_component<T: Component + Clone>(&self, e: Entity) {
+    pub fn remove_component<T: Component>(&self, e: Entity) {
+        let key = (ent_id(e), TypeId::of::<T>());
+        let v = self.remove_comp.lock().unwrap().insert(
+            key,
+            Box::new(move |w| {
+                if let Some(mut x) = w.world.entry(e) {
+                    x.remove_component::<T>();
+                }
+            }),
+        );
+        if v.is_some() {
+            log::error!("adding two times the same component to a struct. Might cause desyncs");
+        }
+    }
+
+    pub fn remove_component_drop<T: Component + ComponentDrop>(&self, e: Entity) {
         let key = (ent_id(e), TypeId::of::<T>());
         let v = self.remove_comp.lock().unwrap().insert(
             key,
@@ -96,10 +101,10 @@ impl ParCommandBuffer {
         }
     }
 
-    fn parse_del<T: Component + Clone>(goria: &mut Egregoria, entity: Entity) {
-        if let Some(v) = goria.comp::<T>(entity).cloned() {
-            if let Some(mut x) = goria.try_write::<Deleted<T>>() {
-                x.0.push(v)
+    fn parse_del<T: Component + ComponentDrop>(goria: &mut Egregoria, entity: Entity) {
+        if let Ok(mut v) = goria.world.entry_mut(entity) {
+            if let Ok(v) = v.get_component_mut::<T>() {
+                ComponentDrop::drop(v, &mut goria.resources, entity);
             }
         }
     }
@@ -114,6 +119,7 @@ impl ParCommandBuffer {
             if goria.world.remove(entity) {
                 Self::parse_del::<Collider>(goria, entity);
                 Self::parse_del::<Vehicle>(goria, entity);
+                Self::parse_del::<Router>(goria, entity);
             }
         }
 

@@ -36,7 +36,6 @@ use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::num::NonZeroU64;
 use std::time::{Duration, Instant};
-use utils::par_command_buffer::Deleted;
 pub use utils::par_command_buffer::ParCommandBuffer;
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
@@ -123,9 +122,6 @@ register_resource!(
 
 register_resource!(CollisionWorld, "coworld", CollisionWorld::new(100));
 register_resource!(RandProvider, "randprovider", RandProvider::new(RNG_SEED));
-
-register_resource!(Deleted<Collider>, "deleted_collider");
-register_resource!(Deleted<Vehicle>, "deleted_vehicle");
 
 #[macro_use]
 extern crate common;
@@ -316,6 +312,7 @@ impl Egregoria {
         <&mut T>::query().get_mut(&mut self.world, e).ok()
     }
 
+    #[allow(dead_code)]
     pub(crate) fn try_write<T: Resource>(&self) -> Option<AtomicRefMut<T>> {
         self.resources.get_mut()
     }
