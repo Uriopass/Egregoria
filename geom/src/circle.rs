@@ -1,4 +1,4 @@
-use crate::{Intersect, Segment, Shape, Vec2, AABB};
+use crate::{Intersect, Polygon, Segment, Shape, Vec2, AABB};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -44,5 +44,11 @@ impl Intersect<Segment> for Circle {
 impl Intersect<Vec2> for Circle {
     fn intersects(&self, p: &Vec2) -> bool {
         self.center.is_close(*p, self.radius)
+    }
+}
+
+impl Intersect<Polygon> for Circle {
+    fn intersects(&self, p: &Polygon) -> bool {
+        p.intersects(self)
     }
 }

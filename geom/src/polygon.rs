@@ -263,6 +263,12 @@ impl Intersect<Vec2> for Polygon {
     }
 }
 
+impl Intersect<Circle> for Polygon {
+    fn intersects(&self, shape: &Circle) -> bool {
+        self.segments().any(|s| s.intersects(shape)) || self.contains(shape.center)
+    }
+}
+
 impl Intersect<Polygon> for Polygon {
     fn intersects(&self, other: &Polygon) -> bool {
         let mybbox = self.bbox();
