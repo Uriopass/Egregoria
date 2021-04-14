@@ -166,6 +166,7 @@ impl Itinerary {
         v
     }
 
+    #[allow(clippy::collapsible_else_if)]
     pub fn update(&mut self, position: Vec2, time: u32, map: &Map) {
         if let Some(p) = self.get_point() {
             if self.is_terminal() {

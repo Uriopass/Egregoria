@@ -38,9 +38,24 @@ impl InspectRenderer {
         }
     }
 
+    fn inspect_transform(&self, goria: &Egregoria, uiw: &mut UiWorld, ui: &Ui) {
+        let c: Option<&Transform> = goria.comp(self.entity);
+        if let Some(x) = c {
+            let mut t = *x;
+            if <Transform as InspectRenderDefault<Transform>>::render_mut(
+                &mut [&mut t],
+                "Transform",
+                ui,
+                &InspectArgsDefault::default(),
+            ) {
+                uiw.commands().update_transform(self.entity, t);
+            }
+        }
+    }
+
     pub fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui) {
         ui.text(im_str!("{:?}", self.entity));
-        self.inspect_component::<Transform>(goria, ui);
+        self.inspect_transform(goria, uiworld, ui);
         self.inspect_component::<Vehicle>(goria, ui);
         self.inspect_component::<Pedestrian>(goria, ui);
         self.inspect_component::<Location>(goria, ui);
