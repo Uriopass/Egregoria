@@ -1,4 +1,4 @@
-use crate::{Intersect, Polygon, Segment, Shape, Vec2, AABB};
+use crate::{Intersect, Polygon, Segment, Shape, Vec2, AABB, OBB};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -26,6 +26,12 @@ impl Intersect<AABB> for Circle {
     fn intersects(&self, b: &AABB) -> bool {
         let proj = self.center.min(b.ur).max(b.ll);
         self.center.is_close(proj, self.radius)
+    }
+}
+
+impl Intersect<OBB> for Circle {
+    fn intersects(&self, b: &OBB) -> bool {
+        b.intersects(self)
     }
 }
 

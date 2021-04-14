@@ -1,5 +1,5 @@
 use crate::aabb::AABB;
-use crate::{vec2, Intersect, Segment, Shape, Vec2};
+use crate::{vec2, Circle, Intersect, Polygon, Segment, Shape, Vec2};
 use serde::{Deserialize, Serialize};
 use std::hint::unreachable_unchecked;
 
@@ -144,6 +144,18 @@ impl Intersect<Vec2> for OBB {
 impl Intersect<OBB> for OBB {
     fn intersects(&self, other: &OBB) -> bool {
         self.intersects1way(other) && other.intersects1way(self)
+    }
+}
+
+impl Intersect<Polygon> for OBB {
+    fn intersects(&self, other: &Polygon) -> bool {
+        other.intersects(self)
+    }
+}
+
+impl Intersect<Circle> for OBB {
+    fn intersects(&self, other: &Circle) -> bool {
+        other.intersects(self)
     }
 }
 

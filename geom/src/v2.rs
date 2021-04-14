@@ -1,4 +1,4 @@
-use crate::Vec3;
+use crate::{Circle, Intersect, Polygon, Shape, Vec3, AABB, OBB};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -262,6 +262,45 @@ impl Vec2 {
     #[inline]
     pub fn rotated_by(self, cossin: Vec2) -> Self {
         self.x * cossin - self.y * cossin.perpendicular()
+    }
+}
+
+impl Shape for Vec2 {
+    fn bbox(&self) -> AABB {
+        AABB {
+            ll: (*self),
+            ur: (*self),
+        }
+    }
+}
+
+impl Intersect<AABB> for Vec2 {
+    fn intersects(&self, aabb: &AABB) -> bool {
+        aabb.contains(*self)
+    }
+}
+
+impl Intersect<OBB> for Vec2 {
+    fn intersects(&self, shape: &OBB) -> bool {
+        shape.contains(*self)
+    }
+}
+
+impl Intersect<Polygon> for Vec2 {
+    fn intersects(&self, shape: &Polygon) -> bool {
+        shape.contains(*self)
+    }
+}
+
+impl Intersect<Circle> for Vec2 {
+    fn intersects(&self, shape: &Circle) -> bool {
+        shape.intersects(self)
+    }
+}
+
+impl Intersect<Vec2> for Vec2 {
+    fn intersects(&self, shape: &Vec2) -> bool {
+        self == shape
     }
 }
 
