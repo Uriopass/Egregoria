@@ -41,11 +41,13 @@ pub enum WorldCommand {
     ResetSave,
     SetGameTime(GameTime),
     MapGenerateTrees(AABB),
+    UpdateTransform(Entity, Transform),
 }
 
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::time::GameTime;
-use geom::{Vec2, AABB, OBB};
+use geom::{Transform, Vec2, AABB, OBB};
+use legion::Entity;
 use WorldCommand::*;
 
 impl WorldCommands {
@@ -71,6 +73,10 @@ impl WorldCommands {
 
     pub fn map_load_testfield(&mut self, pos: Vec2, size: u32, spacing: f32) {
         self.commands.push(MapLoadTestField(pos, size, spacing))
+    }
+
+    pub fn update_transform(&mut self, e: Entity, trans: Transform) {
+        self.commands.push(UpdateTransform(e, trans))
     }
 
     pub fn reset_save(&mut self) {
@@ -170,6 +176,11 @@ impl WorldCommand {
             }
             MapGenerateTrees(aabb) => {
                 goria.map_mut().trees.generate_chunks(aabb);
+            }
+            UpdateTransform(e, t) => {
+                if let Some(x) = goria.comp_mut(e) {
+                    *x = t
+                }
             }
         }
     }
