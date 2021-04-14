@@ -452,16 +452,27 @@ fn registry() -> Registry<u64> {
     registry
 }
 
+pub fn ent_id(e: Entity) -> u64 {
+    unsafe { std::mem::transmute(e) }
+}
+
+pub fn ent_from_id(x: u64) -> Entity {
+    if x == 0 {
+        panic!("x is zero");
+    }
+    unsafe { std::mem::transmute(x) }
+}
+
 struct IdSer;
 
 impl CustomEntitySerializer for IdSer {
     type SerializedID = u64;
 
     fn to_serialized(&self, entity: Entity) -> Self::SerializedID {
-        unsafe { std::mem::transmute(entity) }
+        ent_id(entity)
     }
 
     fn from_serialized(&self, serialized: Self::SerializedID) -> Entity {
-        unsafe { std::mem::transmute(serialized) }
+        ent_from_id(serialized)
     }
 }

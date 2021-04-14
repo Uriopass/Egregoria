@@ -1,7 +1,7 @@
 use crate::map_dynamic::Router;
 use crate::physics::Collider;
 use crate::vehicles::Vehicle;
-use crate::Egregoria;
+use crate::{ent_id, Egregoria};
 use legion::storage::Component;
 use legion::systems::Resource;
 use legion::{Entity, EntityStore, Resources};
@@ -23,10 +23,6 @@ pub struct ParCommandBuffer {
     remove_comp: Mutex<BTreeMap<(u64, TypeId), ExecType>>,
     exec_ent: Mutex<BTreeMap<u64, ExecType>>,
     execs: Mutex<Vec<ExecType>>,
-}
-
-fn ent_id(e: Entity) -> u64 {
-    unsafe { std::mem::transmute(e) }
 }
 
 #[allow(clippy::unwrap_used)]
