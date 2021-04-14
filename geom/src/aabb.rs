@@ -117,23 +117,9 @@ impl Intersect<AABB> for AABB {
     }
 }
 
-impl Intersect<OBB> for AABB {
-    fn intersects(&self, b: &OBB) -> bool {
-        b.intersects(self)
-    }
-}
-
-impl Intersect<Polygon> for AABB {
-    fn intersects(&self, b: &Polygon) -> bool {
-        b.intersects(self)
-    }
-}
-
-impl Intersect<Circle> for AABB {
-    fn intersects(&self, c: &Circle) -> bool {
-        c.intersects(self)
-    }
-}
+defer_inter!(AABB => Circle);
+defer_inter!(AABB => Polygon);
+defer_inter!(AABB => OBB);
 
 impl Intersect<Segment> for AABB {
     fn intersects(&self, s: &Segment) -> bool {

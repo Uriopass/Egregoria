@@ -96,6 +96,11 @@ impl PolyLine {
         proj.distance(p)
     }
 
+    pub fn segments(&self) -> impl Iterator<Item = Segment> + '_ {
+        self.array_windows::<2>()
+            .map(|&[src, dst]| Segment { src, dst })
+    }
+
     /// Closest point to p on the polyline
     pub fn project(&self, p: Vec2) -> Vec2 {
         self.project_segment(p).0

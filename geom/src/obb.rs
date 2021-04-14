@@ -35,6 +35,26 @@ impl OBB {
         (self.corners[2] + self.corners[0]) * 0.5
     }
 
+    pub fn expand(&self, w: f32) -> Self {
+        let [a, b] = self.axis();
+        let a = match a.try_normalize() {
+            Some(x) => x,
+            None => return *self,
+        };
+        let b = match b.try_normalize() {
+            Some(x) => x,
+            None => return *self,
+        };
+        Self {
+            corners: [
+                self.corners[0] - a * w - b * w,
+                self.corners[1] + a * w - b * w,
+                self.corners[2] + a * w + b * w,
+                self.corners[3] - a * w + b * w,
+            ],
+        }
+    }
+
     /// Returns true if other overlaps one dimension of this.
     /// Taken from https://www.flipcode.com/archives/2D_OBB_Intersection.shtml
     fn intersects1way(&self, other: &OBB) -> bool {
@@ -147,17 +167,8 @@ impl Intersect<OBB> for OBB {
     }
 }
 
-impl Intersect<Polygon> for OBB {
-    fn intersects(&self, other: &Polygon) -> bool {
-        other.intersects(self)
-    }
-}
-
-impl Intersect<Circle> for OBB {
-    fn intersects(&self, other: &Circle) -> bool {
-        other.intersects(self)
-    }
-}
+defer_inter!(OBB => Polygon);
+defer_inter!(OBB => Circle);
 
 impl Intersect<AABB> for OBB {
     fn intersects(&self, shape: &AABB) -> bool {
@@ -195,6 +206,7 @@ impl From<&AABB> for OBB {
     }
 }
 
+defer_inter!(Segment => OBB);
 impl Intersect<Segment> for OBB {
     fn intersects(&self, shape: &Segment) -> bool {
         let axis = self.axis();

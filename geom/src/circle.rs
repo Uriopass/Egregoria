@@ -53,8 +53,4 @@ impl Intersect<Vec2> for Circle {
     }
 }
 
-impl Intersect<Polygon> for Circle {
-    fn intersects(&self, p: &Polygon) -> bool {
-        p.intersects(self)
-    }
-}
+defer_inter!(Circle => Polygon);
