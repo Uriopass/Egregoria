@@ -116,6 +116,20 @@ impl TurnPolicy {
                     &outgoing_road1,
                 ));
 
+                if self.back_turns {
+                    turns.extend(Self::zip_on_same_length(
+                        inter.id,
+                        &incoming_road1,
+                        &outgoing_road1,
+                    ));
+
+                    turns.extend(Self::zip_on_same_length(
+                        inter.id,
+                        &incoming_road2,
+                        &outgoing_road2,
+                    ));
+                }
+
                 return;
             }
             _ => {}
