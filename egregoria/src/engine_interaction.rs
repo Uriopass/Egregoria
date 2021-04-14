@@ -1,4 +1,4 @@
-use crate::Egregoria;
+use crate::{ent_from_id, ent_id, Egregoria};
 use map_model::{
     BuildingGen, BuildingID, BuildingKind, IntersectionID, LanePattern, LightPolicy, LotID, Map,
     MapProject, RoadID, TurnPolicy,
@@ -41,7 +41,7 @@ pub enum WorldCommand {
     ResetSave,
     SetGameTime(GameTime),
     MapGenerateTrees(AABB),
-    UpdateTransform(Entity, Transform),
+    UpdateTransform(u64, Transform),
 }
 
 use crate::map_dynamic::BuildingInfos;
@@ -76,7 +76,7 @@ impl WorldCommands {
     }
 
     pub fn update_transform(&mut self, e: Entity, trans: Transform) {
-        self.commands.push(UpdateTransform(e, trans))
+        self.commands.push(UpdateTransform(ent_id(e), trans))
     }
 
     pub fn reset_save(&mut self) {
@@ -178,7 +178,7 @@ impl WorldCommand {
                 goria.map_mut().trees.generate_chunks(aabb);
             }
             UpdateTransform(e, t) => {
-                if let Some(x) = goria.comp_mut(e) {
+                if let Some(x) = goria.comp_mut(ent_from_id(e)) {
                     *x = t
                 }
             }
