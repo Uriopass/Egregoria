@@ -51,14 +51,14 @@ impl ProjectKind {
 
 #[derive(Clone)]
 pub struct SpatialMap {
-    grid: ShapeGrid<ProjectKind, AABB>,
+    broad: ShapeGrid<ProjectKind, AABB>,
     ids: FastMap<ProjectKind, ShapeGridHandle>,
 }
 
 impl Default for SpatialMap {
     fn default() -> Self {
         Self {
-            grid: ShapeGrid::new(50),
+            broad: ShapeGrid::new(50),
             ids: Default::default(),
         }
     }
@@ -67,14 +67,14 @@ impl Default for SpatialMap {
 impl SpatialMap {
     pub fn insert<T: Into<ProjectKind>>(&mut self, p: T, bbox: AABB) {
         let kind = p.into();
-        let handle = self.grid.insert(bbox, kind);
+        let handle = self.broad.insert(bbox, kind);
         self.ids.insert(kind, handle);
     }
 
     pub fn remove<T: Into<ProjectKind>>(&mut self, p: T) {
         let kind = p.into();
         if let Some(id) = self.ids.remove(&kind) {
-            self.grid.remove(id);
+            self.broad.remove(id);
         } else {
             warn!(
                 "trying to remove {:?} from spatial map but it wasn't present",
@@ -86,7 +86,7 @@ impl SpatialMap {
     pub fn update<T: Into<ProjectKind>>(&mut self, p: T, bbox: AABB) {
         let kind = p.into();
         if let Some(id) = self.ids.get(&kind) {
-            self.grid.set_shape(*id, bbox);
+            self.broad.set_shape(*id, bbox);
         } else {
             warn!(
                 "trying to update shape {:?} from spatial map but it wasn't present",
@@ -107,13 +107,13 @@ impl SpatialMap {
         &'a self,
         r: impl Intersect<AABB> + Clone + 'a,
     ) -> impl Iterator<Item = ProjectKind> + 'a {
-        self.grid.query(r).map(|(_, _, k)| *k)
+        self.broad.query(r).map(|(_, _, k)| *k)
     }
 
     pub fn debug_grid(&self) -> impl Iterator<Item = AABB> + '_ {
-        self.grid
+        self.broad
             .handles()
-            .filter_map(move |x| self.grid.get(x))
+            .filter_map(move |x| self.broad.get(x))
             .map(|(aabb, _)| *aabb)
     }
 
@@ -121,7 +121,7 @@ impl SpatialMap {
         let kind = p.into();
 
         let v = unwrap_ret!(self.ids.get(&kind), false);
-        self.grid.get(*v).is_some()
+        self.broad.get(*v).is_some()
     }
 
     pub fn objects(&self) -> impl Iterator<Item = &ProjectKind> + '_ {

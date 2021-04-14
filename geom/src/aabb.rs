@@ -1,5 +1,5 @@
 use super::Vec2;
-use crate::{Circle, Intersect, Segment, Shape};
+use crate::{Circle, Intersect, Polygon, Segment, Shape, OBB};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -114,6 +114,18 @@ impl Intersect<AABB> for AABB {
             f32::abs((a.ll.y + a.ur.y) - (b.ll.y + b.ur.y)) <= (a.ur.y - a.ll.y + b.ur.y - b.ll.y);
 
         x & y
+    }
+}
+
+impl Intersect<OBB> for AABB {
+    fn intersects(&self, b: &OBB) -> bool {
+        b.intersects(self)
+    }
+}
+
+impl Intersect<Polygon> for AABB {
+    fn intersects(&self, b: &Polygon) -> bool {
+        b.intersects(self)
     }
 }
 
