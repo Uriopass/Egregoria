@@ -2,7 +2,18 @@
 #![allow(clippy::many_single_char_names)]
 #![allow(clippy::upper_case_acronyms)]
 
+macro_rules! defer_inter {
+    ($a:ty => $b:ty) => {
+        impl Intersect<$b> for $a {
+            fn intersects(&self, other: &$b) -> bool {
+                other.intersects(self)
+            }
+        }
+    };
+}
+
 mod aabb;
+mod boldline;
 mod camera;
 mod circle;
 mod color;
@@ -18,6 +29,7 @@ mod transform;
 mod v2;
 mod v3;
 
+use crate::boldline::BoldLine;
 pub use aabb::*;
 pub use camera::*;
 pub use circle::*;
@@ -47,6 +59,7 @@ pub enum ShapeEnum {
     Circle(Circle),
     AABB(AABB),
     Vec2(Vec2),
+    BoldLine(BoldLine),
 }
 
 impl<T: Shape, U: Shape> Intersect<T> for &U
@@ -75,6 +88,7 @@ impl Shape for ShapeEnum {
             ShapeEnum::Circle(s) => s.bbox(),
             ShapeEnum::AABB(s) => s.bbox(),
             ShapeEnum::Vec2(s) => s.bbox(),
+            ShapeEnum::BoldLine(s) => s.bbox(),
         }
     }
 }
@@ -87,6 +101,7 @@ impl Intersect<ShapeEnum> for ShapeEnum {
             ShapeEnum::Circle(x) => x.intersects(shape),
             ShapeEnum::AABB(x) => x.intersects(shape),
             ShapeEnum::Vec2(x) => x.intersects(shape),
+            ShapeEnum::BoldLine(x) => x.intersects(shape),
         }
     }
 }
@@ -102,6 +117,7 @@ macro_rules! impl_shape_enum {
                         ShapeEnum::Circle(x) => x.intersects(shape),
                         ShapeEnum::AABB(x) => x.intersects(shape),
                         ShapeEnum::Vec2(x) => x.intersects(shape),
+                        ShapeEnum::BoldLine(x) => x.intersects(shape),
                     }
                 }
             }
@@ -114,6 +130,7 @@ macro_rules! impl_shape_enum {
                         ShapeEnum::Circle(x) => self.intersects(x),
                         ShapeEnum::AABB(x) => self.intersects(x),
                         ShapeEnum::Vec2(x) => self.intersects(x),
+                        ShapeEnum::BoldLine(x) => self.intersects(x),
                     }
                 }
             }
@@ -121,7 +138,7 @@ macro_rules! impl_shape_enum {
     }
 }
 
-impl_shape_enum!(OBB, Polygon, Vec2, Circle, AABB);
+impl_shape_enum!(OBB, Polygon, Vec2, Circle, AABB, BoldLine);
 
 pub fn minmax(x: &[Vec2]) -> Option<(Vec2, Vec2)> {
     let mut min: Vec2 = *x.get(0)?;

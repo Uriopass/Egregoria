@@ -90,12 +90,6 @@ impl Shape for Segment {
     }
 }
 
-impl Intersect<AABB> for Segment {
-    fn intersects(&self, aabb: &AABB) -> bool {
-        aabb.intersects(self)
-    }
-}
-
 fn ccw(a: Vec2, b: Vec2, c: Vec2) -> bool {
     (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x)
 }
@@ -107,11 +101,8 @@ impl Intersect<Segment> for Segment {
     }
 }
 
-impl Intersect<Circle> for Segment {
-    fn intersects(&self, c: &Circle) -> bool {
-        c.intersects(self)
-    }
-}
+defer_inter!(Segment => Circle);
+defer_inter!(Segment => AABB);
 
 impl Intersect<Vec2> for Segment {
     fn intersects(&self, _p: &Vec2) -> bool {
