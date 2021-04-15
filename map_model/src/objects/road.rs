@@ -2,11 +2,10 @@ use crate::{
     Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
     ParkingSpots, Roads, SpatialMap,
 };
+use geom::BoldLine;
 use geom::PolyLine;
 use geom::Spline;
 use geom::Vec2;
-use geom::AABB;
-use geom::OBB;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -96,7 +95,7 @@ impl Road {
 
         road.update_lanes(lanes, parking);
 
-        spatial.insert(id, road.bbox());
+        spatial.insert(id, road.boldline());
         road.id
     }
 
@@ -175,8 +174,8 @@ impl Road {
         self.points.length()
     }
 
-    pub fn bbox(&self) -> AABB {
-        self.points.bbox().expand(self.width * 0.5)
+    pub fn boldline(&self) -> BoldLine {
+        BoldLine::new(self.points.clone(), self.width * 0.5)
     }
 
     pub fn pattern(&self, lanes: &Lanes) -> LanePattern {
@@ -333,17 +332,6 @@ impl Road {
         } else {
             panic!("Asking outgoing lanes from from an intersection not conected to the road");
         }
-    }
-
-    pub fn intersects(&self, obb: &OBB) -> bool {
-        let c = obb.center();
-        self.points
-            .project(c)
-            .is_close(c, (self.width + obb.axis()[0].magnitude()) * 0.5)
-            || obb
-                .corners
-                .iter()
-                .any(|&p| self.points.project(p).is_close(p, self.width * 0.5))
     }
 
     pub fn src_dir(&self) -> Vec2 {

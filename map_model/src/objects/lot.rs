@@ -1,8 +1,8 @@
 use crate::procgen::heightmap::height;
-use crate::{Map, ProjectKind, RoadID};
+use crate::{Map, ProjectFilter, ProjectKind, RoadID};
+use geom::Polygon;
+use geom::Vec2;
 use geom::OBB;
-use geom::{Intersect, Polygon};
-use geom::{Shape, Vec2};
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -44,14 +44,13 @@ impl Lot {
             return None;
         }
 
-        let bbox = shape.bbox();
         let id = map.lots.insert_with_key(move |id| Lot {
             id,
             parent,
             kind: LotKind::Unassigned,
             shape,
         });
-        map.spatial_map.insert(id, bbox);
+        map.spatial_map.insert(id, shape);
         Some(id)
     }
 
@@ -114,33 +113,18 @@ impl Lot {
         let r = unwrap_retlog!(map.roads.get(road), "{:?} does not exist", road);
         let mut to_remove = map
             .spatial_map
-            .query(r.points.bbox())
-            .filter_map(|kind| {
-                let id = kind.to_lot()?;
-                if r.intersects(&map.lots.get(id)?.shape) {
-                    Some(id)
-                } else {
-                    None
-                }
-            })
+            .query(r.boldline(), ProjectFilter::LOT)
             .collect::<Vec<_>>();
 
-        let mut rp = |p: &Polygon| {
-            to_remove.extend(map.spatial_map.query(p.bbox()).filter_map(|kind| {
-                let id = kind.to_lot()?;
-                if p.intersects(&Polygon(map.lots.get(id)?.shape.corners.to_vec())) {
-                    Some(id)
-                } else {
-                    None
-                }
-            }));
-        };
+        let mut rp = |p: &Polygon| to_remove.extend(map.spatial_map.query(p, ProjectFilter::LOT));
         rp(&unwrap_ret!(map.intersections.get(r.src)).polygon);
         rp(&unwrap_ret!(map.intersections.get(r.dst)).polygon);
 
         for lot in to_remove {
-            map.lots.remove(lot);
-            map.spatial_map.remove(lot);
+            if let ProjectKind::Lot(lot) = lot {
+                map.lots.remove(lot);
+                map.spatial_map.remove(lot);
+            }
         }
     }
 }

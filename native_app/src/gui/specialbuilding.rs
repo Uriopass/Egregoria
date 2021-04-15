@@ -5,7 +5,7 @@ use crate::uiworld::UiWorld;
 use common::{AudioKind, Z_TOOL};
 use egregoria::Egregoria;
 use geom::{Intersect, Vec2, OBB};
-use map_model::{BuildingGen, BuildingKind, ProjectKind};
+use map_model::{BuildingGen, BuildingKind, ProjectFilter, ProjectKind};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
@@ -47,7 +47,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     let closest_road = map
         .spatial_map()
-        .query_around(mpos, size)
+        .query_around(mpos, size, ProjectFilter::ROAD)
         .filter_map(|x| match x {
             ProjectKind::Road(id) => Some(&roads[id]),
             _ => None,
@@ -94,12 +94,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         return;
     }
 
-    let buildings = map.buildings();
-    if map.spatial_map().query(obb).any(|x| match x {
-        ProjectKind::Building(id) => buildings[id].obb.intersects(&obb),
-        _ => false,
-    }) || state.last_obb.map(|x| x.intersects(&obb)).unwrap_or(false)
-    {
+    if map.building_overlaps(obb) || state.last_obb.map(|x| x.intersects(&obb)).unwrap_or(false) {
         draw_red(obb);
         return;
     }

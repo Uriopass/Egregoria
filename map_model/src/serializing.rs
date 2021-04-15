@@ -1,6 +1,5 @@
 use crate::procgen::Trees;
 use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap};
-use geom::Shape;
 use serde::{Deserialize, Serialize, Serializer};
 use std::num::Wrapping;
 
@@ -59,16 +58,16 @@ impl From<SerializedMap> for Map {
 fn mk_spatial_map(m: &SerializedMap) -> SpatialMap {
     let mut sm = SpatialMap::default();
     for h in m.buildings.values() {
-        sm.insert(h.id, h.mesh.bbox());
+        sm.insert(h.id, h.obb);
     }
     for r in m.roads.values() {
-        sm.insert(r.id, r.bbox());
+        sm.insert(r.id, r.boldline());
     }
     for i in m.intersections.values() {
-        sm.insert(i.id, i.polygon.bbox());
+        sm.insert(i.id, i.bcircle(&m.roads));
     }
     for l in m.lots.values() {
-        sm.insert(l.id, l.shape.bbox());
+        sm.insert(l.id, l.shape);
     }
     sm
 }

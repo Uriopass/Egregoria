@@ -4,7 +4,7 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use common::Z_TOOL;
 use egregoria::Egregoria;
-use map_model::{LotKind, ProjectKind};
+use map_model::{LotKind, ProjectFilter, ProjectKind};
 use serde::{Deserialize, Serialize};
 
 register_resource!(LotBrushResource, "lot_brush");
@@ -39,12 +39,12 @@ pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     draw.circle(mpos, res.radius).color(col).z(Z_TOOL);
 
     if mouseinfo.pressed.contains(&MouseButton::Left) {
-        let lots = map.lots();
-        for v in map.spatial_map().query_around(mpos, res.radius) {
+        for v in map
+            .spatial_map()
+            .query_around(mpos, res.radius, ProjectFilter::LOT)
+        {
             if let ProjectKind::Lot(id) = v {
-                if lots[id].shape.is_close(mpos, res.radius) {
-                    commands.map_build_house(id);
-                }
+                commands.map_build_house(id);
             }
         }
     }

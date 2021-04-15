@@ -2,11 +2,10 @@ use crate::{
     Intersections, LaneID, Lanes, LightPolicy, Road, RoadID, Roads, SpatialMap, TraverseDirection,
     Turn, TurnID, TurnPolicy,
 };
-use geom::pseudo_angle;
 use geom::Polygon;
 use geom::Spline;
 use geom::Vec2;
-use geom::AABB;
+use geom::{pseudo_angle, Circle};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -48,7 +47,7 @@ impl Intersection {
             light_policy: Default::default(),
             polygon: Polygon::centered_rect(pos, 5.0, 5.0),
         });
-        spatial.insert(id, AABB::new(pos, pos));
+        spatial.insert(id, pos);
         id
     }
 
@@ -61,6 +60,20 @@ impl Intersection {
             #[allow(clippy::indexing_slicing)]
             OrderedFloat(pseudo_angle(roads[road].dir_from(id)))
         });
+    }
+
+    pub fn bcircle(&self, roads: &Roads) -> Circle {
+        Circle {
+            center: self.pos,
+            radius: self
+                .roads
+                .iter()
+                .flat_map(|x| roads.get(*x))
+                .map(|x| OrderedFloat(x.interface_from(self.id)))
+                .max()
+                .map(|x| x.0)
+                .unwrap_or(10.0),
+        }
     }
 
     pub fn remove_road(&mut self, road_id: RoadID) {

@@ -2,10 +2,10 @@ use crate::procgen::Trees;
 use crate::serializing::SerializedMap;
 use crate::{
     Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
-    LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectKind, Road,
-    RoadID, RoadSegmentKind, SpatialMap,
+    LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
+    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap,
 };
-use geom::{pseudo_angle, Intersect, Shape, Vec2, AABB};
+use geom::{pseudo_angle, Circle, Intersect, Shape, Vec2};
 use geom::{Spline, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -25,7 +25,7 @@ pub struct MapProject {
 }
 
 // can't derive Serialize because it would clone
-#[derive(Clone, Deserialize)]
+#[derive(Deserialize)]
 #[serde(from = "SerializedMap")]
 pub struct Map {
     pub(crate) roads: Roads,
@@ -164,25 +164,16 @@ impl Map {
             obb
         );
         self.dirt_id += Wrapping(1);
-        let to_clean: Vec<_> = self
-            .spatial_map
-            .query(obb)
-            .filter_map(|obj| {
-                if let ProjectKind::Lot(id) = obj {
-                    if self.lots.get(id)?.shape.intersects(obb) {
-                        return Some(id);
-                    }
-                }
-                None
-            })
-            .collect();
+        let to_clean: Vec<_> = self.spatial_map.query(obb, ProjectFilter::LOT).collect();
         for id in to_clean {
-            self.spatial_map.remove(id);
+            if let ProjectKind::Lot(id) = id {
+                self.spatial_map.remove(id);
 
-            unwrap_contlog!(
-                &self.lots.remove(id),
-                "Lot was present in spatial map but not in Lots struct"
-            );
+                unwrap_contlog!(
+                    &self.lots.remove(id),
+                    "Lot was present in spatial map but not in Lots struct"
+                );
+            }
         }
 
         self.trees.remove_near_filter(obb.bbox(), |_| true);
@@ -324,13 +315,8 @@ impl Map {
         inter.update_turns(&self.lanes, &self.roads);
         inter.update_polygon(&self.roads);
 
-        self.spatial_map.update(
-            inter.id,
-            inter
-                .polygon
-                .bbox()
-                .union(AABB::centered(inter.pos, Vec2::splat(25.0))),
-        );
+        self.spatial_map
+            .update(inter.id, inter.bcircle(&self.roads));
     }
 
     /// Only removes road from Roads and spatial map but keeps lots,
@@ -483,9 +469,10 @@ impl Map {
         #[allow(clippy::indexing_slicing)]
         let r = &self.roads[id];
         let d = r.width + 50.0;
-        self.trees.remove_near_filter(r.bbox().expand(d), |tpos| {
+        let b = r.boldline();
+        self.trees.remove_near_filter(b.bbox().expand(d), |tpos| {
             let rd = common::rand::rand3(tpos.x, tpos.y, 391.0) * 20.0;
-            r.points.project(tpos).is_close(tpos, d - rd)
+            b.intersects(&Circle::new(tpos, d - rd))
         });
 
         Some(id)
@@ -497,7 +484,10 @@ impl Map {
         let mk_proj = move |kind| MapProject { pos, kind };
 
         let mut qroad = None;
-        for pkind in self.spatial_map.query_around(pos, tolerance) {
+        for pkind in self
+            .spatial_map
+            .query_around(pos, tolerance, ProjectFilter::ALL)
+        {
             match pkind {
                 ProjectKind::Inter(id) => {
                     let inter = unwrap_contlog!(self.intersections.get(id),
@@ -509,12 +499,7 @@ impl Map {
                     };
                 }
                 ProjectKind::Lot(id) => {
-                    let l = unwrap_contlog!(self.lots
-                        .get(id),
-                        "Lot does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
-                    if l.shape.is_close(pos, tolerance) {
-                        return mk_proj(ProjectKind::Lot(id));
-                    }
+                    return mk_proj(ProjectKind::Lot(id));
                 }
                 ProjectKind::Road(id) => {
                     if qroad.is_some() {
@@ -524,9 +509,7 @@ impl Map {
                         "Road does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
                     let projected = road.points.project(pos);
-                    if projected.is_close(pos, road.width * 0.5 + tolerance) {
-                        qroad = Some((id, projected));
-                    }
+                    qroad = Some((id, projected));
                 }
                 ProjectKind::Building(id) => {
                     return mk_proj(ProjectKind::Building(id));
@@ -569,11 +552,10 @@ impl Map {
     }
 
     pub fn building_overlaps(&self, obb: OBB) -> bool {
-        let buildings = &self.buildings;
-        self.spatial_map().query(obb).any(|x| match x {
-            ProjectKind::Building(id) => unwrap_ret!(buildings.get(id), false).obb.intersects(&obb),
-            _ => false,
-        })
+        self.spatial_map
+            .query(obb, ProjectFilter::BUILDING)
+            .next()
+            .is_some()
     }
 
     pub fn find_road(&self, src: IntersectionID, dst: IntersectionID) -> Option<RoadID> {
