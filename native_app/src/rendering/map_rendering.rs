@@ -3,7 +3,7 @@ use common::{Z_SIGNAL, Z_TREE, Z_TREE_SHADOW};
 use egregoria::Egregoria;
 use flat_spatial::storage::Storage;
 use geom::{lerp, vec2, Color, LinearColor, AABB};
-use map_model::{Lane, Map, ProjectKind, TrafficBehavior};
+use map_model::{Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior};
 use std::rc::Rc;
 use wgpu_engine::{
     FrameContext, GfxContext, MultiSpriteBatch, MultiSpriteBatchBuilder, SpriteBatch,
@@ -102,7 +102,7 @@ impl RoadRenderer {
                 }
                 for n in map
                     .spatial_map()
-                    .query(rect)
+                    .query(rect, ProjectFilter::ROAD)
                     .filter_map(|k| match k {
                         ProjectKind::Road(id) => Some(id),
                         _ => None,

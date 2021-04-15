@@ -1,6 +1,6 @@
 use crate::procgen::ColoredMesh;
 use crate::{Buildings, Road, SpatialMap};
-use geom::{Color, Polygon, Shape, Vec2, OBB};
+use geom::{Color, Polygon, Vec2, OBB};
 use imgui_inspect::debug_inspect_impl;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -75,7 +75,7 @@ impl Building {
         mesh.faces.push((walkway, Color::gray(0.4).into()));
 
         buildings.insert_with_key(move |id| {
-            spatial_map.insert(id, obb.bbox());
+            spatial_map.insert(id, obb);
             Self {
                 id,
                 mesh,
