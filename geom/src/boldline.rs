@@ -10,6 +10,12 @@ pub struct BoldLine {
     pub radius: f32,
 }
 
+impl BoldLine {
+    pub fn new(line: PolyLine, radius: f32) -> Self {
+        BoldLine { line, radius }
+    }
+}
+
 impl Shape for BoldLine {
     fn bbox(&self) -> AABB {
         self.line.bbox().expand(self.radius)

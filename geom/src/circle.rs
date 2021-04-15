@@ -29,12 +29,6 @@ impl Intersect<AABB> for Circle {
     }
 }
 
-impl Intersect<OBB> for Circle {
-    fn intersects(&self, b: &OBB) -> bool {
-        b.intersects(self)
-    }
-}
-
 impl Intersect<Circle> for Circle {
     fn intersects(&self, c: &Circle) -> bool {
         self.center.is_close(c.center, self.radius + c.radius)
@@ -53,4 +47,5 @@ impl Intersect<Vec2> for Circle {
     }
 }
 
+defer_inter!(Circle => OBB);
 defer_inter!(Circle => Polygon);

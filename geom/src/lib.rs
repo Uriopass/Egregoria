@@ -29,8 +29,8 @@ mod transform;
 mod v2;
 mod v3;
 
-use crate::boldline::BoldLine;
 pub use aabb::*;
+pub use boldline::*;
 pub use camera::*;
 pub use circle::*;
 pub use color::*;
@@ -107,7 +107,7 @@ impl Intersect<ShapeEnum> for ShapeEnum {
 }
 
 macro_rules! impl_shape_enum {
-    ($($t: ty),+) => {
+    ($($t: ident),+) => {
         $(
             impl Intersect<$t> for ShapeEnum {
                 fn intersects(&self, shape: &$t) -> bool {
@@ -132,6 +132,12 @@ macro_rules! impl_shape_enum {
                         ShapeEnum::Vec2(x) => self.intersects(x),
                         ShapeEnum::BoldLine(x) => self.intersects(x),
                     }
+                }
+            }
+
+            impl From<$t> for ShapeEnum {
+                fn from(v: $t) -> Self {
+                    Self::$t(v)
                 }
             }
         )+

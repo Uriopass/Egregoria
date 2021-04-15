@@ -168,7 +168,16 @@ impl Intersect<OBB> for OBB {
 }
 
 defer_inter!(OBB => Polygon);
-defer_inter!(OBB => Circle);
+
+impl Intersect<Circle> for OBB {
+    fn intersects(&self, shape: &Circle) -> bool {
+        self.contains(shape.center)
+            || self
+                .segments()
+                .iter()
+                .any(|s| s.project(shape.center).is_close(shape.center, shape.radius))
+    }
+}
 
 impl Intersect<AABB> for OBB {
     fn intersects(&self, shape: &AABB) -> bool {
