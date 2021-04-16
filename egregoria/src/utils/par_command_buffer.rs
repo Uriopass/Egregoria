@@ -22,7 +22,7 @@ pub struct ParCommandBuffer {
     add_comp: Mutex<BTreeMap<(u64, TypeId), ExecType>>,
     remove_comp: Mutex<BTreeMap<(u64, TypeId), ExecType>>,
     exec_ent: Mutex<BTreeMap<u64, ExecType>>,
-    execs: Mutex<Vec<ExecType>>,
+    exec_on: Mutex<BTreeMap<(u64, TypeId), ExecType>>,
 }
 
 #[allow(clippy::unwrap_used)]
@@ -43,12 +43,22 @@ impl ParCommandBuffer {
         }
     }
 
-    /// Beware of desyncs
-    pub fn exec_on<T: Resource>(&self, f: impl for<'a> FnOnce(&'a mut T) + 'static + Send) {
-        self.execs
+    pub fn exec_on<T: Resource>(
+        &self,
+        e: Entity,
+        f: impl for<'a> FnOnce(&'a mut T) + 'static + Send,
+    ) {
+        let key = (ent_id(e), TypeId::of::<T>());
+        let v = self
+            .exec_on
             .lock()
             .unwrap()
-            .push(Box::new(move |goria| f(&mut *goria.write::<T>())))
+            .insert(key, Box::new(move |goria| f(&mut *goria.write::<T>())));
+        if v.is_some() {
+            log::error!(
+                "executing two exec_on closures relating to an entity. Might cause desyncs"
+            );
+        }
     }
 
     pub fn add_component<T: Component>(&self, e: Entity, c: T) {
@@ -68,7 +78,7 @@ impl ParCommandBuffer {
 
     pub fn remove_component<T: Component>(&self, e: Entity) {
         let key = (ent_id(e), TypeId::of::<T>());
-        let v = self.remove_comp.lock().unwrap().insert(
+        self.remove_comp.lock().unwrap().insert(
             key,
             Box::new(move |w| {
                 if let Some(mut x) = w.world.entry(e) {
@@ -76,14 +86,11 @@ impl ParCommandBuffer {
                 }
             }),
         );
-        if v.is_some() {
-            log::error!("adding two times the same component to a struct. Might cause desyncs");
-        }
     }
 
     pub fn remove_component_drop<T: Component + ComponentDrop>(&self, e: Entity) {
         let key = (ent_id(e), TypeId::of::<T>());
-        let v = self.remove_comp.lock().unwrap().insert(
+        self.remove_comp.lock().unwrap().insert(
             key,
             Box::new(move |w| {
                 Self::parse_del::<T>(w, e);
@@ -92,9 +99,6 @@ impl ParCommandBuffer {
                 }
             }),
         );
-        if v.is_some() {
-            log::error!("adding two times the same component to a struct. Might cause desyncs");
-        }
     }
 
     fn parse_del<T: Component + ComponentDrop>(goria: &mut Egregoria, entity: Entity) {
@@ -155,10 +159,11 @@ impl ParCommandBuffer {
             exec(goria);
         }
 
-        let funs: Vec<ExecType> =
-            std::mem::take(&mut *goria.write::<ParCommandBuffer>().execs.get_mut().unwrap());
-        for fun in funs {
-            fun(goria);
+        let exec_ent =
+            std::mem::take(&mut *goria.write::<ParCommandBuffer>().exec_on.get_mut().unwrap());
+
+        for (_, exec) in exec_ent {
+            exec(goria);
         }
     }
 }

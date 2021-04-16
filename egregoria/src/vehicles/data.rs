@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 pub const TIME_TO_PARK: f32 = 4.0;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[repr(transparent)]
 pub struct VehicleID(pub Entity);
 
 debug_inspect_impl!(VehicleID);

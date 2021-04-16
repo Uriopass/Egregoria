@@ -1,11 +1,11 @@
 use crate::economy::{Bought, CommodityKind, Market};
-use crate::map_dynamic::{BuildingInfos, Destination, Router};
-use crate::souls::desire::Desire;
+use crate::map_dynamic::{BuildingInfos, Destination};
+use crate::pedestrians::Location;
+use crate::souls::human::HumanDecisionKind;
 use crate::utils::time::{GameInstant, GameTime};
 use crate::{ParCommandBuffer, SoulID};
 use geom::Transform;
 use imgui_inspect_derive::*;
-use legion::{system, Entity};
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
@@ -31,52 +31,63 @@ impl BuyFood {
             state: BuyFoodState::Empty,
         }
     }
-}
 
-register_system!(desire_buy_food);
-#[system(par_for_each)]
-pub fn desire_buy_food(
-    #[resource] cbuf: &ParCommandBuffer,
-    #[resource] binfos: &BuildingInfos,
-    #[resource] time: &GameTime,
-    me: &Entity,
-    trans: &Transform,
-    router: &mut Router,
-    d: &mut Desire<BuyFood>,
-    bought: &mut Bought,
-) {
-    let soul = SoulID(*me);
-    let pos = trans.position();
-    let buy_food = &mut d.v;
-    if d.was_max {
-        match buy_food.state {
+    pub fn score(&self, time: &GameTime, loc: &Location, bought: &Bought) -> f32 {
+        if matches!(self.state, BuyFoodState::WaitingForTrade)
+            && bought
+                .0
+                .get(&CommodityKind::Bread)
+                .map(Vec::is_empty)
+                .unwrap_or(false)
+        {
+            return 0.0;
+        }
+        if let BuyFoodState::BoughtAt(id) = self.state {
+            if loc == &Location::Building(id) {
+                return 1.0;
+            }
+        }
+        self.last_ate.elapsed(time) as f32 / GameTime::DAY as f32 - 1.0
+    }
+
+    pub fn apply(
+        &mut self,
+        cbuf: &ParCommandBuffer,
+        binfos: &BuildingInfos,
+        time: &GameTime,
+        soul: SoulID,
+        trans: &Transform,
+        loc: &Location,
+        bought: &mut Bought,
+    ) -> HumanDecisionKind {
+        use HumanDecisionKind::*;
+        match self.state {
             BuyFoodState::Empty => {
-                cbuf.exec_on(move |market: &mut Market| {
+                let pos = trans.position();
+                cbuf.exec_on(soul.0, move |market: &mut Market| {
                     market.buy(soul, pos, CommodityKind::Bread, 1)
                 });
-                buy_food.state = BuyFoodState::WaitingForTrade;
+                self.state = BuyFoodState::WaitingForTrade;
+                Yield
             }
             BuyFoodState::WaitingForTrade => {
                 for trade in bought.0.entry(CommodityKind::Bread).or_default().drain(..) {
                     if let Some(b) = binfos.building_owned_by(trade.seller) {
-                        buy_food.state = BuyFoodState::BoughtAt(b);
+                        self.state = BuyFoodState::BoughtAt(b);
                     }
                 }
+                Yield
             }
             BuyFoodState::BoughtAt(b) => {
-                if router.go_to(Destination::Building(b)) {
-                    buy_food.state = BuyFoodState::Empty;
-                    buy_food.last_ate = time.instant();
-                    log::info!("{:?} ate at {:?}", *me, b)
+                if loc == &Location::Building(b) {
+                    self.state = BuyFoodState::Empty;
+                    self.last_ate = time.instant();
+                    log::info!("{:?} ate at {:?}", soul, b);
+                    Yield
+                } else {
+                    GoTo(Destination::Building(b))
                 }
             }
         }
     }
-    if matches!(buy_food.state, BuyFoodState::WaitingForTrade)
-        && bought.0.entry(CommodityKind::Bread).or_default().is_empty()
-    {
-        d.score = 0.0;
-        return;
-    }
-    d.score = buy_food.last_ate.elapsed(time) as f32 / GameTime::DAY as f32 - 1.0
 }
