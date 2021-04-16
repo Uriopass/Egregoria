@@ -15,8 +15,10 @@ pub struct Sold(pub Vec<Trade>);
 #[derive(Default, Serialize, Deserialize)]
 pub struct Bought(pub FastMap<CommodityKind, Vec<Trade>>);
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Workers(pub Vec<SoulID>);
+
+debug_inspect_impl!(Workers);
 
 macro_rules! commodity {
     {$($member:tt => $display:literal),*,} => {

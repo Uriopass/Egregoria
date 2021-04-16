@@ -1,12 +1,12 @@
 use crate::gui::follow::FollowEntity;
 use crate::uiworld::UiWorld;
-use egregoria::economy::Market;
+use egregoria::economy::{Market, Workers};
 use egregoria::map_dynamic::{Itinerary, Router};
 use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, Kinematics};
 use egregoria::rendering::assets::AssetRender;
 use egregoria::rendering::meshrender_component::MeshRender;
-use egregoria::souls::desire::{BuyFood, Desire, Home, Work};
+use egregoria::souls::desire::{BuyFood, Home, Work};
 use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::vehicles::{Vehicle, VehicleID, VehicleState};
 use egregoria::{Egregoria, SoulID};
@@ -15,7 +15,8 @@ use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use legion::storage::Component;
-use legion::{Entity, IntoQuery};
+use legion::{Entity, EntityStore, IntoQuery};
+use std::any::TypeId;
 
 pub struct InspectRenderer {
     pub entity: Entity,
@@ -27,6 +28,15 @@ impl InspectRenderer {
         goria: &Egregoria,
         ui: &Ui,
     ) {
+        if goria
+            .world()
+            .entry_ref(self.entity)
+            .unwrap()
+            .get_component::<T>()
+            .is_err()
+        {
+            ui.text(format!("{:?}: no", std::any::type_name::<T>()));
+        }
         let c: Option<&T> = goria.comp::<T>(self.entity);
         if let Some(x) = c {
             <T as InspectRenderDefault<T>>::render(
@@ -65,9 +75,10 @@ impl InspectRenderer {
         self.inspect_component::<Collider>(goria, ui);
         self.inspect_component::<Itinerary>(goria, ui);
         self.inspect_component::<Router>(goria, ui);
-        self.inspect_component::<Desire<Work>>(goria, ui);
-        self.inspect_component::<Desire<Home>>(goria, ui);
-        self.inspect_component::<Desire<BuyFood>>(goria, ui);
+        self.inspect_component::<Workers>(goria, ui);
+        self.inspect_component::<Work>(goria, ui);
+        self.inspect_component::<Home>(goria, ui);
+        self.inspect_component::<BuyFood>(goria, ui);
         self.inspect_component::<GoodsCompany>(goria, ui);
 
         if let Some(v) = goria.comp::<Vehicle>(self.entity) {

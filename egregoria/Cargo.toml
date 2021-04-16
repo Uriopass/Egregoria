@@ -14,7 +14,7 @@ ordered-float = { version = "2.0", features = ["serde"] }
 rand          = { version = "0.8", default-features = false}
 rand_distr    = { version = "0.4", default-features = false }
 serde         = "1.0"
-legion        = { version = "0.4.0", default-features = false, features = ["codegen", "serialize", "parallel"] }
+legion        = { version = "0.4.0", default-features = false, features = ["codegen", "serialize", "parallel", "extended-tuple-impls"] }
 log           = "0.4.11"
 imgui-inspect = { path = "../imgui-inspect"}
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }

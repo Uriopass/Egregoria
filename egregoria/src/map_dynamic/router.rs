@@ -70,6 +70,7 @@ pub fn routing_changed(
             Destination::Building(build) => {
                 if let Location::Building(cur_build) = loc {
                     if *cur_build == build {
+                        router.cur_dest = router.target_dest;
                         return;
                     }
                 }

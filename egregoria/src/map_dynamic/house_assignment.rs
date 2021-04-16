@@ -43,7 +43,7 @@ impl BuildingInfos {
 
     pub fn get_in(&mut self, building: BuildingID, e: SoulID) {
         let b = unwrap_ret!(self.get_mut(building));
-        if cfg!(debug_assertions) && !b.inside.contains(&e) {
+        if cfg!(debug_assertions) && b.inside.contains(&e) {
             log::warn!(
                 "called get_in({:?}, {:?}) but it was already inside",
                 building,

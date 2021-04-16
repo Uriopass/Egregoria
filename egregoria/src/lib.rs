@@ -17,7 +17,7 @@ use crate::physics::{Collider, Kinematics};
 use crate::rendering::assets::AssetRender;
 use crate::rendering::meshrender_component::MeshRender;
 use crate::souls::add_souls_to_empty_buildings;
-use crate::souls::desire::{BuyFood, Desire, Home, Work};
+use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::goods_company::GoodsCompany;
 use crate::vehicles::Vehicle;
 use atomic_refcell::{AtomicRef, AtomicRefMut};
@@ -440,9 +440,9 @@ fn registry() -> Registry<u64> {
       Collider,
       MeshRender,
       Location,
-      Desire<Home>,
-      Desire<BuyFood>,
-      Desire<Work>,
+      Home,
+      BuyFood,
+      Work,
       Bought,
       Sold,
       Workers,

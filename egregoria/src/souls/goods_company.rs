@@ -1,9 +1,8 @@
-use super::desire::Desire;
 use super::desire::Work;
 use crate::economy::{CommodityKind, Market, Sold, Workers};
 use crate::engine_interaction::Selectable;
 use crate::map_dynamic::BuildingInfos;
-use crate::souls::desire::{DriverState, WorkKind};
+use crate::souls::desire::WorkKind;
 use crate::utils::time::GameTime;
 use crate::vehicles::VehicleID;
 use crate::{my_hash, Egregoria, ParCommandBuffer, SoulID};
@@ -579,7 +578,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
 
 register_system!(company);
 #[system(par_for_each)]
-#[read_component(Desire<Work>)]
+#[read_component(Work)]
 pub fn company(
     #[resource] time: &GameTime,
     #[resource] cbuf: &ParCommandBuffer,
@@ -610,8 +609,8 @@ pub fn company(
         })
         .door_pos;
 
-        cbuf.exec_ent(soul.0, move |goria| {
-            recipe.act(soul, bpos, &mut *goria.write::<Market>());
+        cbuf.exec_on(soul.0, move |market| {
+            recipe.act(soul, bpos, market);
         });
         return;
     }
@@ -619,17 +618,17 @@ pub fn company(
     if_chain::if_chain! {
         if let Some(driver) = company.driver;
         if let Ok(ent) = sw.entry_ref(driver.0);
-        if let Ok(w) = ent.get_component::<Desire<Work>>();
-        if matches!(w.v.kind, WorkKind::Driver { state: DriverState::WaitingForDelivery, .. });
+        if let Ok(w) = ent.get_component::<Work>();
+        if matches!(w.kind, WorkKind::Driver { deliver_order: None, .. });
         if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next();
         if let Some(owner_build) = binfos.building_owned_by(trade.buyer);
         then {
             log::info!("asked driver to deliver");
 
             cbuf.exec_ent(soul.0, move |goria| {
-                if let Some(w) = goria.comp_mut::<Desire<Work>>(driver.0) {
-                    if let WorkKind::Driver { ref mut state, .. } = w.v.kind {
-                        *state = DriverState::Delivering(owner_build)
+                if let Some(w) = goria.comp_mut::<Work>(driver.0) {
+                    if let WorkKind::Driver { ref mut deliver_order, .. } = w.kind {
+                        *deliver_order = Some(owner_build)
                     }
                 }
             })
@@ -638,7 +637,7 @@ pub fn company(
 
     for &worker in workers.0.iter() {
         if let Ok(ent) = sw.entry_ref(worker.0) {
-            if ent.get_component::<Desire<Work>>().is_err() {
+            if ent.get_component::<Work>().is_err() {
                 let mut kind = WorkKind::Worker;
 
                 if let Some(truck) = company.trucks.get(0) {
@@ -646,7 +645,7 @@ pub fn company(
                         && company.driver.is_none()
                     {
                         kind = WorkKind::Driver {
-                            state: DriverState::GoingToWork,
+                            deliver_order: None,
                             truck: *truck,
                         };
 
@@ -656,10 +655,7 @@ pub fn company(
 
                 let offset = common::rand::randu(my_hash(worker) as u32);
 
-                cbuf.add_component(
-                    worker.0,
-                    Desire::<Work>::new(Work::new(company.building, kind, offset)),
-                )
+                cbuf.add_component(worker.0, Work::new(company.building, kind, offset))
             }
         }
     }
