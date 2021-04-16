@@ -401,7 +401,6 @@ impl TryFrom<SerPreparedEgregoria> for Egregoria {
         let max_deser = entity_serializer
             .max_deser
             .load(std::sync::atomic::Ordering::SeqCst);
-        println!("max_deser: {}", max_deser);
 
         const BLOCK_SIZE: u64 = 16;
         let mut p = BLOCK_SIZE;
