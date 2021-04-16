@@ -24,10 +24,10 @@ use atomic_refcell::{AtomicRef, AtomicRefMut};
 use common::saveload::Encoder;
 use common::FastMap;
 use geom::{Transform, Vec2};
-use legion::serialize::CustomEntitySerializer;
+use legion::serialize::{Canon, CustomEntitySerializer};
 use legion::storage::Component;
 use legion::systems::{ParallelRunnable, Resource};
-use legion::{any, Entity, IntoQuery, Registry, Resources, World};
+use legion::{Entity, IntoQuery, Registry, Resources, World};
 use map_model::Map;
 use pedestrians::Location;
 use serde::{Deserialize, Serialize};
@@ -35,6 +35,7 @@ use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::num::NonZeroU64;
+use std::sync::atomic::AtomicU64;
 use std::time::{Duration, Instant};
 pub use utils::par_command_buffer::ParCommandBuffer;
 use utils::rand_provider::RandProvider;
@@ -348,7 +349,7 @@ impl TryFrom<&Egregoria> for SerPreparedEgregoria {
     fn try_from(goria: &Egregoria) -> Result<Self, ()> {
         let registry = registry();
 
-        let entity_serializer = IdSer;
+        let entity_serializer = IdSer::default();
         let s = goria.world.as_serializable(
             !legion::query::component::<NoSerialize>(),
             &registry,
@@ -382,20 +383,34 @@ impl TryFrom<SerPreparedEgregoria> for Egregoria {
         goria.tick = ser.tick;
         let registry = registry();
 
-        let entity_serializer = IdSer;
+        let entity_serializer = IdSer::default();
 
-        let mut w: World = common::saveload::Bincode::decode_seed(
+        let w: World = common::saveload::Bincode::decode_seed(
             registry.as_deserialize(&entity_serializer),
             &ser.world,
         )?;
 
-        goria.world.move_from(&mut w, &any());
+        goria.world = w;
 
         legion::serialize::set_entity_serializer(&entity_serializer, || {
             for l in inventory::iter::<SaveLoadFunc> {
                 (l.load)(&mut goria, ser.res.remove(l.name));
             }
         });
+
+        let max_deser = entity_serializer
+            .max_deser
+            .load(std::sync::atomic::Ordering::SeqCst);
+        println!("max_deser: {}", max_deser);
+
+        const BLOCK_SIZE: u64 = 16;
+        let mut p = BLOCK_SIZE;
+        while p <= max_deser {
+            // up block size
+            let c = Canon::default();
+            c.canonize_name(&[0; 16]);
+            p += BLOCK_SIZE
+        }
 
         Ok(goria)
     }
@@ -463,7 +478,10 @@ pub fn ent_from_id(x: u64) -> Entity {
     unsafe { std::mem::transmute(x) }
 }
 
-struct IdSer;
+#[derive(Default)]
+pub struct IdSer {
+    max_deser: AtomicU64,
+}
 
 impl CustomEntitySerializer for IdSer {
     type SerializedID = u64;
@@ -472,7 +490,22 @@ impl CustomEntitySerializer for IdSer {
         ent_id(entity)
     }
 
-    fn from_serialized(&self, serialized: Self::SerializedID) -> Entity {
+    fn from_serialized(&self, serialized: u64) -> Entity {
+        use std::sync::atomic::Ordering::SeqCst;
+        loop {
+            let v = self.max_deser.load(SeqCst);
+            if serialized > v {
+                if self
+                    .max_deser
+                    .compare_exchange(v, serialized, SeqCst, SeqCst)
+                    .is_ok()
+                {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
         ent_from_id(serialized)
     }
 }
