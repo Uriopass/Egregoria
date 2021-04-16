@@ -16,7 +16,6 @@ use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use legion::storage::Component;
 use legion::{Entity, EntityStore, IntoQuery};
-use std::any::TypeId;
 
 pub struct InspectRenderer {
     pub entity: Entity,
