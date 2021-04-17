@@ -15,7 +15,7 @@ use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use legion::storage::Component;
-use legion::{Entity, EntityStore, IntoQuery};
+use legion::{Entity, IntoQuery};
 
 pub struct InspectRenderer {
     pub entity: Entity,
@@ -27,15 +27,6 @@ impl InspectRenderer {
         goria: &Egregoria,
         ui: &Ui,
     ) {
-        if goria
-            .world()
-            .entry_ref(self.entity)
-            .unwrap()
-            .get_component::<T>()
-            .is_err()
-        {
-            ui.text(format!("{:?}: no", std::any::type_name::<T>()));
-        }
         let c: Option<&T> = goria.comp::<T>(self.entity);
         if let Some(x) = c {
             <T as InspectRenderDefault<T>>::render(
