@@ -233,9 +233,13 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
     ) -> Option<()> {
         match packet {
             ClientReliablePacket::Connect { name, version } => {
-                let auth_r =
-                    self.authent
-                        .tcp_client_auth(e, self.buffer.consumed_frame, name, version)?;
+                let auth_r = self.authent.tcp_client_auth(
+                    e,
+                    self.buffer.consumed_frame,
+                    name,
+                    version,
+                    self.step.period,
+                )?;
 
                 self.network.send(
                     e,

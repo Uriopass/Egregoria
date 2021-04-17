@@ -125,7 +125,6 @@ fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
         name: format!("{}", info.name),
         addr: parsed_addr.ip(),
         port: if port != 80 { Some(port) } else { None },
-        period: common::timestep::UP_DT,
         frame_buffer_advance: 8,
         version: goria_version::VERSION.to_string(),
     }) {

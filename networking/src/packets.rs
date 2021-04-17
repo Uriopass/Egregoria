@@ -1,6 +1,7 @@
 use crate::authent::AuthentID;
 use crate::{Frame, MergedInputs, PlayerInput};
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) enum ServerUnreliablePacket {
@@ -38,7 +39,7 @@ pub(crate) enum ClientReliablePacket {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) enum AuthentResponse {
-    Accepted { id: AuthentID },
+    Accepted { id: AuthentID, period: Duration },
     Refused { reason: String },
 }
 

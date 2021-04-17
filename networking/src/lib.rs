@@ -21,7 +21,7 @@ use crate::client::FrameInputs;
 pub use client::{Client, ConnectConf, PollResult, ServerInput};
 pub use server::{Server, ServerConfiguration, ServerPollResult, VirtualClientConf};
 
-pub(crate) const MAX_WORLDSEND_PACKET_SIZE: usize = 1000000; // 1000 kb ~ 125ko
+pub(crate) const MAX_WORLDSEND_PACKET_SIZE: usize = 262144; //32 ko at least 1.3Mo per s at 50FPS
 pub(crate) const DEFAULT_PORT: u16 = 23019;
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Copy, Clone, Hash, Debug, Serialize, Deserialize)]
