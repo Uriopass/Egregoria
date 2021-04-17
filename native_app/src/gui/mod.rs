@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
-use egregoria::{ent_from_id, Egregoria};
+use egregoria::Egregoria;
 use geom::Camera;
 use roadbuild::RoadBuildResource;
 use wgpu_engine::GfxContext;

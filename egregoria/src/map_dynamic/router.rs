@@ -322,7 +322,7 @@ impl Router {
     }
 
     fn steps_to(
-        &self,
+        &mut self,
         obj: Vec2,
         parking: &mut ParkingManagement,
         map: &Map,
@@ -345,11 +345,15 @@ impl Router {
             };
 
             if !matches!(loc, Location::Vehicle(_)) {
-                let ent = subworld.entry_ref(car.0).ok()?;
-                let trans = ent.get_component::<Transform>().ok()?;
-                steps.push(RoutingStep::WalkTo(trans.position()));
-                steps.push(RoutingStep::GetInVehicle(car));
-                steps.push(RoutingStep::Unpark(car));
+                if let Some(trans) = comp::<Transform>(subworld, car.0) {
+                    steps.push(RoutingStep::WalkTo(trans.position()));
+                    steps.push(RoutingStep::GetInVehicle(car));
+                    steps.push(RoutingStep::Unpark(car));
+                } else {
+                    parking.free(spot_resa);
+                    self.vehicle = None;
+                    return None;
+                }
             }
 
             steps.push(RoutingStep::DriveTo(car, parking_pos));
