@@ -194,7 +194,7 @@ pub fn make_vehicle_entity(
             z: Z_CAR,
         },
         trans,
-        Kinematics::from_mass(1000.0),
+        Kinematics::default(),
         Selectable::default(),
         vehicle,
         it,

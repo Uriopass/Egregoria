@@ -30,7 +30,7 @@ pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Option<Enti
         Location::Building(house),
         p,
         Itinerary::none(),
-        Kinematics::from_mass(80.0),
+        Kinematics::default(),
         {
             MeshRender::empty(0.35)
                 .add(RectRender {
