@@ -19,6 +19,7 @@ use crate::rendering::meshrender_component::MeshRender;
 use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::goods_company::GoodsCompany;
+use crate::souls::human::HumanDecision;
 use crate::vehicles::Vehicle;
 use atomic_refcell::{AtomicRef, AtomicRefMut};
 use common::saveload::Encoder;
@@ -291,10 +292,13 @@ impl Egregoria {
     }
 
     pub fn save_to_disk(&self, save_name: &'static str) {
-        let ser = unwrap_retlog!(
-            SerPreparedEgregoria::try_from(self).ok(),
-            "failed saving, couldn't serialize"
-        );
+        let ser = match SerPreparedEgregoria::try_from(self) {
+            Ok(x) => x,
+            Err(e) => {
+                log::error!("couldn't save: {}", e);
+                return;
+            }
+        };
         common::saveload::CompressedBincode::save(&ser, save_name);
     }
 
@@ -352,9 +356,9 @@ impl Egregoria {
 }
 
 impl TryFrom<&Egregoria> for SerPreparedEgregoria {
-    type Error = ();
+    type Error = std::io::Error;
 
-    fn try_from(goria: &Egregoria) -> Result<Self, ()> {
+    fn try_from(goria: &Egregoria) -> Result<Self, Self::Error> {
         let registry = registry();
 
         let entity_serializer = IdSer::default();
@@ -364,7 +368,7 @@ impl TryFrom<&Egregoria> for SerPreparedEgregoria {
             &entity_serializer,
         );
 
-        let world = common::saveload::Bincode::encode(&s).map_err(|_| ())?;
+        let world = common::saveload::Bincode::encode(&s)?;
 
         let mut m: FastMap<String, Vec<u8>> = FastMap::default();
 
@@ -454,25 +458,27 @@ pub struct NoSerialize;
 fn registry() -> Registry<u64> {
     let mut registry = Registry::default();
     register!(registry;
-      AssetRender,
-      Bought,
-      BuyFood,
-      Collider,
-      GoodsCompany,
-      Home,
-      Itinerary,
-      Kinematics,
-      Location,
-      MeshRender,
-      Pedestrian,
-      Router,
-      Selectable,
-      Sold,
-      Transform,
-      Vehicle,
-      Work,
-      Workers,
+        AssetRender,
+        Bought,
+        BuyFood,
+        Collider,
+        GoodsCompany,
+        Home,
+        HumanDecision,
+        Itinerary,
+        Kinematics,
+        Location,
+        MeshRender,
+        Pedestrian,
+        Router,
+        Selectable,
+        Sold,
+        Transform,
+        Vehicle,
+        Work,
+        Workers,
     );
+
     registry
 }
 
