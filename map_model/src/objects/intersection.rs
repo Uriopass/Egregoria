@@ -1,6 +1,6 @@
 use crate::{
-    Intersections, LaneID, Lanes, LightPolicy, Road, RoadID, Roads, SpatialMap, TraverseDirection,
-    Turn, TurnID, TurnPolicy,
+    Intersections, LaneID, LaneKind, Lanes, LightPolicy, Road, RoadID, Roads, SpatialMap,
+    TraverseDirection, Turn, TurnID, TurnPolicy,
 };
 use geom::Polygon;
 use geom::Spline;
@@ -206,10 +206,32 @@ impl Intersection {
         }
     }
 
-    pub fn neighbors<'a>(&'a self, roads: &'a Roads) -> impl Iterator<Item = IntersectionID> + 'a {
+    pub fn undirected_neighbors<'a>(
+        &'a self,
+        roads: &'a Roads,
+    ) -> impl Iterator<Item = IntersectionID> + 'a {
         self.roads
             .iter()
             .flat_map(move |&x| roads.get(x).and_then(|r| r.other_end(self.id)))
+    }
+
+    pub fn driving_neighbours<'a>(
+        &'a self,
+        roads: &'a Roads,
+    ) -> impl Iterator<Item = IntersectionID> + 'a {
+        let id = self.id;
+        self.roads.iter().flat_map(move |&x| {
+            let r = roads.get(x)?;
+            if r.outgoing_lanes_from(id)
+                .iter()
+                .filter(|(_, kind)| matches!(kind, LaneKind::Driving))
+                .next()
+                .is_none()
+            {
+                return None;
+            }
+            r.other_end(id)
+        })
     }
 
     pub fn find_turn(&self, needle: TurnID) -> Option<&Turn> {

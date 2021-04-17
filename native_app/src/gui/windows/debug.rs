@@ -12,8 +12,14 @@ use egregoria::Egregoria;
 use geom::{vec2, Camera, Color, Intersect, LinearColor, Segment, Spline, Vec2, AABB, OBB};
 use imgui::im_str;
 use imgui::Ui;
-use map_model::{Map, RoadSegmentKind};
+use map_model::{IntersectionID, Map, RoadSegmentKind};
 use wgpu_engine::Tesselator;
+
+register_resource_noserialize!(DebugState);
+#[derive(Default)]
+pub struct DebugState {
+    connectiviy: (u32, Vec<Vec<IntersectionID>>),
+}
 
 register_resource_noserialize!(DebugObjs);
 pub struct DebugObjs(
@@ -28,6 +34,7 @@ impl Default for DebugObjs {
     fn default() -> Self {
         DebugObjs(vec![
             (true, "Debug pathfinder", debug_pathfinder),
+            (false, "Debug connectivity", debug_connectivity),
             (false, "Debug spatialmap", debug_spatialmap),
             (false, "Debug collision world", debug_coworld),
             (false, "Debug OBBs", debug_obb),
@@ -173,6 +180,37 @@ pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
 
         tess.draw_polyline(lane.points.as_slice(), Z_DEBUG, 0.3);
     }
+    Some(())
+}
+
+pub fn debug_connectivity(tess: &mut Tesselator, goria: &Egregoria, uiw: &UiWorld) -> Option<()> {
+    use map_model::pathfinding_crate::directed::strongly_connected_components::strongly_connected_components;
+    let mut state = uiw.write::<DebugState>();
+    let map = goria.map();
+
+    if state.connectiviy.0 != map.dirt_id.0 {
+        state.connectiviy.0 = map.dirt_id.0;
+        let nodes: Vec<_> = map.intersections().keys().collect();
+        let roads = map.roads();
+        let inter = map.intersections();
+        let components = strongly_connected_components(&nodes, |i| {
+            inter
+                .get(*i)
+                .into_iter()
+                .flat_map(|i| i.driving_neighbours(roads))
+        });
+        state.connectiviy.1 = components;
+    }
+
+    for (i, comp) in state.connectiviy.1.iter().enumerate() {
+        let r = common::rand::randu(i as u32);
+        tess.set_color(Color::hsv(r * 360.0, 0.8, 0.6, 0.5));
+
+        for int in comp.iter().flat_map(|x| map.intersections().get(*x)) {
+            tess.draw_circle(int.pos, Z_DEBUG, 8.0);
+        }
+    }
+
     Some(())
 }
 

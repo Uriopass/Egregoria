@@ -5,9 +5,6 @@
 #![deny(clippy::indexing_slicing)]
 #![deny(clippy::unwrap_used)]
 
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommands};
 use crate::map_dynamic::{Itinerary, Router};
@@ -33,12 +30,13 @@ use map_model::Map;
 use pedestrians::Location;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
+use std::hash::{Hash, Hasher};
 use std::num::NonZeroU64;
 use std::sync::atomic::AtomicU64;
 use std::time::{Duration, Instant};
-pub use utils::par_command_buffer::ParCommandBuffer;
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
 use utils::time::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
@@ -144,6 +142,8 @@ pub mod souls;
 mod tests;
 pub mod utils;
 pub mod vehicles;
+
+pub use utils::par_command_buffer::ParCommandBuffer;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
 #[repr(transparent)]
