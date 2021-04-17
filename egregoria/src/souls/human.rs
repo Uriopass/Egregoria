@@ -7,24 +7,27 @@ use crate::utils::time::GameTime;
 use crate::vehicles::{spawn_parked_vehicle, VehicleID, VehicleKind};
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::Transform;
+use imgui_inspect_derive::*;
 use legion::system;
 use legion::Entity;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Inspect, Serialize, Deserialize, Default)]
 pub struct HumanDecision {
     kind: HumanDecisionKind,
     wait: u8,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum HumanDecisionKind {
     Yield,
     SetVehicle(Option<VehicleID>),
     GoTo(Destination),
     MultiStack(Vec<HumanDecisionKind>),
 }
+
+debug_inspect_impl!(HumanDecisionKind);
 
 impl Default for HumanDecisionKind {
     fn default() -> Self {

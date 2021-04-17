@@ -8,6 +8,7 @@ use egregoria::rendering::assets::AssetRender;
 use egregoria::rendering::meshrender_component::MeshRender;
 use egregoria::souls::desire::{BuyFood, Home, Work};
 use egregoria::souls::goods_company::GoodsCompany;
+use egregoria::souls::human::HumanDecision;
 use egregoria::vehicles::{Vehicle, VehicleID, VehicleState};
 use egregoria::{Egregoria, SoulID};
 use geom::Transform;
@@ -65,6 +66,7 @@ impl InspectRenderer {
         self.inspect_component::<Collider>(goria, ui);
         self.inspect_component::<Itinerary>(goria, ui);
         self.inspect_component::<Router>(goria, ui);
+        self.inspect_component::<HumanDecision>(goria, ui);
         self.inspect_component::<Workers>(goria, ui);
         self.inspect_component::<Work>(goria, ui);
         self.inspect_component::<Home>(goria, ui);

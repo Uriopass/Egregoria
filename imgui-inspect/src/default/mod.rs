@@ -9,6 +9,7 @@ mod default_tuple;
 mod default_u16;
 mod default_u32;
 mod default_u64;
+mod default_u8;
 mod default_usize;
 mod default_vec;
 
