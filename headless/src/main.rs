@@ -23,6 +23,11 @@ struct Opt {
     /// Always continue running even when everyone is disconnected
     #[structopt(long)]
     always_run: bool,
+
+    /// Timestep in millisecond.
+    /// i.e. 20ms = 50FPS
+    #[structopt(long, default_value = "20")]
+    timestep: u64,
 }
 
 fn main() {
@@ -41,7 +46,7 @@ fn main() {
     let mut server: Server<SerPreparedEgregoria, WorldCommands> =
         match Server::start(ServerConfiguration {
             start_frame: Frame(w.get_tick()),
-            period: UP_DT,
+            period: Duration::from_millis(opt.timestep),
             port: opt.port,
             virtual_client: None,
             version: goria_version::VERSION.to_string(),
