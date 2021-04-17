@@ -6,7 +6,7 @@ pub struct Timestep {
     last_time: Instant,
     acc: Duration,
     real_delta: Duration,
-    period: Duration,
+    pub period: Duration,
 }
 
 impl Default for Timestep {

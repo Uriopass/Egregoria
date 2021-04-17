@@ -4,6 +4,7 @@ use common::{FastMap, FastSet};
 use message_io::network::{Endpoint, Network};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Copy, Clone, Hash, Debug)]
 #[repr(transparent)]
@@ -71,6 +72,7 @@ impl Authent {
         ack: Frame,
         name: String,
         version: String,
+        period: Duration,
     ) -> Option<AuthentResponse> {
         let v = self.get_client_state_mut(e)?;
 
@@ -111,7 +113,7 @@ impl Authent {
 
             self.n_connected_clients += 1;
 
-            return Some(AuthentResponse::Accepted { id });
+            return Some(AuthentResponse::Accepted { id, period });
         }
         None
     }

@@ -1,6 +1,5 @@
 use std::io;
 use std::net::{IpAddr, SocketAddr};
-use std::time::Duration;
 
 use message_io::events::EventQueue;
 use message_io::network::{Endpoint, NetEvent, Network, Transport};
@@ -83,7 +82,6 @@ pub struct ConnectConf {
     pub name: String,
     pub addr: IpAddr,
     pub port: Option<u16>,
-    pub period: Duration,
     pub frame_buffer_advance: u32,
     pub version: String,
 }
@@ -104,7 +102,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
             state: ClientState::Connecting,
             name: conf.name,
             lag_compensate: conf.frame_buffer_advance,
-            step: Timestep::new(conf.period),
+            step: Timestep::default(),
             _phantom: Default::default(),
             version: conf.version,
         })
@@ -279,7 +277,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 );
             }
             ServerReliablePacket::AuthentResponse(r) => match r {
-                AuthentResponse::Accepted { id } => {
+                AuthentResponse::Accepted { id, period: step } => {
                     log::info!(
                         "{}: authent response is accepted. asking for world",
                         self.name
@@ -288,6 +286,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                         wr: WorldReceive::default(),
                         id,
                     };
+                    self.step = Timestep::new(step);
                     self.network
                         .send(self.tcp, &*encode(&ClientReliablePacket::WorldAck));
                 }
