@@ -279,6 +279,14 @@ impl Egregoria {
 
     pub fn load_from_disk(save_name: &'static str) -> Option<Self> {
         let ser: SerPreparedEgregoria = common::saveload::CompressedBincode::load(save_name)?;
+        if ser.version != goria_version::VERSION {
+            log::error!(
+                "couldn't load save, incompatible version! save is: {} - game is: {}",
+                ser.version,
+                goria_version::VERSION
+            );
+            return None;
+        }
         Self::try_from(ser).ok()
     }
 
@@ -368,6 +376,7 @@ impl TryFrom<&Egregoria> for SerPreparedEgregoria {
         });
 
         Ok(SerPreparedEgregoria {
+            version: goria_version::VERSION.to_string(),
             world,
             res: m,
             tick: goria.tick,
@@ -417,6 +426,7 @@ impl TryFrom<SerPreparedEgregoria> for Egregoria {
 
 #[derive(Serialize, Deserialize)]
 pub struct SerPreparedEgregoria {
+    version: String,
     world: Vec<u8>,
     res: FastMap<String, Vec<u8>>,
     tick: u32,
