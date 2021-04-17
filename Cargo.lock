@@ -754,6 +754,7 @@ dependencies = [
  "common",
  "flat_spatial",
  "geom",
+ "goria_version",
  "if_chain",
  "imgui",
  "imgui-inspect",
