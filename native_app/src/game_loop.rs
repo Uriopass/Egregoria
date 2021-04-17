@@ -182,14 +182,12 @@ impl State {
                     .world_update
                     .add_value(t.as_secs_f32());
                 merged.merge(
-                    frame_commands
+                    &frame_commands
                         .inputs
                         .into_iter()
                         .filter(|x| x.sent_by_me)
                         .map(|x| x.inp)
-                        .collect::<WorldCommands>()
-                        .iter()
-                        .cloned(),
+                        .collect::<WorldCommands>(),
                 );
             }
             *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(merged);
