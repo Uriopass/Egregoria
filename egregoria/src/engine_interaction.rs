@@ -23,6 +23,7 @@ impl Default for Selectable {
 }
 
 #[derive(Clone, Default, Serialize, Deserialize)]
+#[serde(from = "Vec<WorldCommand>", into = "Vec<WorldCommand>")]
 pub struct WorldCommands {
     pub(crate) commands: Vec<WorldCommand>,
 }
@@ -51,8 +52,8 @@ use legion::Entity;
 use WorldCommand::*;
 
 impl WorldCommands {
-    pub fn merge(&mut self, src: impl Iterator<Item = WorldCommand>) {
-        self.commands.extend(src);
+    pub fn merge(&mut self, src: &WorldCommands) {
+        self.commands.extend_from_slice(&src.commands);
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &WorldCommand> {
@@ -191,5 +192,17 @@ impl std::iter::FromIterator<WorldCommands> for WorldCommands {
         Self {
             commands: iter.into_iter().flat_map(|x| x.commands).collect(),
         }
+    }
+}
+
+impl From<Vec<WorldCommand>> for WorldCommands {
+    fn from(commands: Vec<WorldCommand>) -> Self {
+        Self { commands }
+    }
+}
+
+impl From<WorldCommands> for Vec<WorldCommand> {
+    fn from(x: WorldCommands) -> Self {
+        x.commands
     }
 }
