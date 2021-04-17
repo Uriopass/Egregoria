@@ -47,7 +47,7 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
         log::info!("bulldozer {:?}", cur_proj);
         match cur_proj.kind {
             ProjectKind::Inter(id) => {
-                potentially_empty.extend(map.intersections()[id].neighbors(map.roads()));
+                potentially_empty.extend(map.intersections()[id].undirected_neighbors(map.roads()));
                 commands.map_remove_intersection(id)
             }
             ProjectKind::Road(id) => {
