@@ -1145,7 +1145,7 @@ dependencies = [
 
 [[package]]
 name = "goria_version"
-version = "0.4.4"
+version = "0.4.5"
 
 [[package]]
 name = "gpu-alloc"
