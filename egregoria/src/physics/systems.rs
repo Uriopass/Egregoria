@@ -11,11 +11,12 @@ register_system!(kinematics_apply);
 #[system]
 pub fn kinematics_apply(
     #[resource] time: &GameTime,
-    qry: &mut Query<(&mut Transform, &mut Kinematics)>,
+    qry: &mut Query<(&mut Transform, &Kinematics)>,
     sw: &mut SubWorld,
 ) {
-    qry.par_for_each_mut(sw, |(trans, kin)| {
-        trans.translate(kin.velocity * time.delta);
+    let delta = time.delta;
+    qry.par_for_each_mut(sw, |(trans, kin): (&mut Transform, &Kinematics)| {
+        trans.translate(kin.velocity * delta);
     });
 }
 
