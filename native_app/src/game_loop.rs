@@ -70,6 +70,8 @@ impl State {
         uiworld.insert(camera.camera);
         uiworld.insert(WorldCommands::default());
 
+        log::info!("version is {}", goria_version::VERSION);
+
         {
             let s = uiworld.read::<Settings>();
             Self::manage_settings(ctx, &s);
