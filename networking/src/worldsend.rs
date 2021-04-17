@@ -7,7 +7,6 @@ use serde::de::DeserializeOwned;
 
 #[derive(Eq, PartialEq)]
 enum WorldSendStatus {
-    WaitingForAck,
     ReadyToSend,
     WaitingForFinalAck,
     Over,
@@ -32,7 +31,7 @@ impl WorldSend {
             WorldSendState {
                 data,
                 sent: 0,
-                status: WorldSendStatus::WaitingForAck,
+                status: WorldSendStatus::ReadyToSend,
                 frame,
             },
         );
@@ -40,9 +39,6 @@ impl WorldSend {
 
     pub fn ack(&mut self, c: &Client) {
         if let Some(state) = self.send_state.get_mut(&c.id) {
-            if state.status == WorldSendStatus::WaitingForAck {
-                state.status = WorldSendStatus::ReadyToSend;
-            }
             if state.status == WorldSendStatus::WaitingForFinalAck {
                 state.status = WorldSendStatus::Over
             }
@@ -62,8 +58,6 @@ impl WorldSend {
                 return;
             }
 
-            state.status = WorldSendStatus::WaitingForAck;
-
             let to_send = MAX_WORLDSEND_PACKET_SIZE.min(state.data.len() - state.sent);
             let is_over = (to_send < MAX_WORLDSEND_PACKET_SIZE).then(|| state.frame);
 
@@ -75,7 +69,12 @@ impl WorldSend {
                 })),
             );
 
-            log::info!("{}: sending world fragment", c.name);
+            if is_over.is_some() {
+                log::info!("{}: sending final world fragment", c.name);
+                state.status = WorldSendStatus::WaitingForFinalAck;
+            } else {
+                log::info!("{}: sending world fragment", c.name);
+            }
 
             state.sent += to_send;
         } else {
@@ -88,6 +87,7 @@ impl WorldSend {
     }
 }
 
+#[derive(Debug)]
 pub(crate) enum WorldReceive<W> {
     Downloading { data_so_far: Vec<u8> },
     Finished { frame: Frame, world: W },
@@ -121,6 +121,11 @@ impl<W: DeserializeOwned> WorldReceive<W> {
                     *self = WorldReceive::Errored;
                 }
             }
+        } else {
+            log::warn!(
+                "received fragment but was not downloading (errored: {:?})",
+                matches!(self, WorldReceive::Errored)
+            );
         }
     }
 }
