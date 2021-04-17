@@ -10,13 +10,15 @@ use geom::Transform;
 use legion::system;
 use legion::Entity;
 use map_model::BuildingID;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct HumanDecision {
     kind: HumanDecisionKind,
     wait: u8,
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum HumanDecisionKind {
     Yield,
     SetVehicle(Option<VehicleID>),
