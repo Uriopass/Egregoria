@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
-use egregoria::Egregoria;
+use egregoria::{ent_from_id, Egregoria};
 use geom::Camera;
 use roadbuild::RoadBuildResource;
 use wgpu_engine::GfxContext;
@@ -45,10 +45,19 @@ pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
 }
 
 register_resource_noserialize!(InspectedEntity);
-#[derive(Copy, Clone, Default, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct InspectedEntity {
     pub e: Option<Entity>,
     pub dist2: f32,
+}
+
+impl Default for InspectedEntity {
+    fn default() -> Self {
+        Self {
+            e: None,
+            dist2: 0.0,
+        }
+    }
 }
 
 pub fn hand_reset(uiworld: &mut UiWorld) {
