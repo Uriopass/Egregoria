@@ -348,9 +348,7 @@ impl Default for GoodsCompanyRegistry {
                 GoodsCompanyDescription {
                     name: "Lumber yard",
                     bkind: BuildingKind::Company(7),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
+                    bgen: BuildingGen::Farm,
                     kind: CompanyKind::Factory { n_trucks: 1 },
                     recipe: Recipe {
                         consumption: vec![],
@@ -359,7 +357,7 @@ impl Default for GoodsCompanyRegistry {
                         storage_multiplier: 5,
                     },
                     n_workers: 10,
-                    size: 80.0,
+                    size: 200.0,
                     asset_location: "assets/lumber_yard.png",
                 },
                 GoodsCompanyDescription {
