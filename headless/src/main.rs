@@ -1,5 +1,4 @@
 use common::logger::MyLog;
-use common::timestep::UP_DT;
 use common::unwrap_or;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::{Egregoria, SerPreparedEgregoria};
@@ -74,7 +73,7 @@ fn main() {
         ) {
             for frame in inputs {
                 assert_eq!(frame.frame.0, w.get_tick() + 1);
-                let merged = WorldCommands::from_iter(frame.inputs.into_iter().map(|x| x.inp));
+                let merged = frame.inputs.into_iter().map(|x| x.inp).collect();
                 w.tick(&mut sched, &merged);
             }
         }
