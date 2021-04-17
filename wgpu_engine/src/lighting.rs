@@ -263,9 +263,9 @@ impl LightRender {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
+                            r: 0.25,
+                            g: 0.25,
+                            b: 0.25,
                             a: 1.0,
                         }),
                         store: true,
