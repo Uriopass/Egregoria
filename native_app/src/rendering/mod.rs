@@ -1,11 +1,13 @@
 pub use background::*;
 pub use camera_handler::*;
+pub use camera_handler_3d::*;
 pub use instanced_render::*;
 pub use map_rendering::*;
 pub use mesh_renderer::*;
 
 mod background;
 mod camera_handler;
+mod camera_handler_3d;
 pub mod imgui_wrapper;
 pub mod immediate;
 mod instanced_render;
