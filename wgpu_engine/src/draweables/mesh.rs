@@ -62,7 +62,6 @@ impl MeshBuilder {
             vertex_buffer: self.vbuffer.inner()?,
             index_buffer: self.ibuffer.inner()?,
             n_indices: self.indices.len() as u32,
-            alpha_blend: false,
         })
     }
 }
@@ -71,7 +70,6 @@ pub struct Mesh {
     pub vertex_buffer: Arc<wgpu::Buffer>,
     pub index_buffer: Arc<wgpu::Buffer>,
     pub n_indices: u32,
-    pub alpha_blend: bool,
 }
 
 impl Drawable for Mesh {
