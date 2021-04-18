@@ -222,14 +222,9 @@ impl Intersection {
         let id = self.id;
         self.roads.iter().flat_map(move |&x| {
             let r = roads.get(x)?;
-            if r.outgoing_lanes_from(id)
+            r.outgoing_lanes_from(id)
                 .iter()
-                .filter(|(_, kind)| matches!(kind, LaneKind::Driving))
-                .next()
-                .is_none()
-            {
-                return None;
-            }
+                .find(|(_, kind)| matches!(kind, LaneKind::Driving))?;
             r.other_end(id)
         })
     }
