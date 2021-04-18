@@ -66,6 +66,7 @@ impl MeshBuilder {
     }
 }
 
+#[derive(Clone)]
 pub struct Mesh {
     pub vertex_buffer: Arc<wgpu::Buffer>,
     pub index_buffer: Arc<wgpu::Buffer>,

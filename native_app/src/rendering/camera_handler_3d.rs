@@ -46,9 +46,8 @@ impl CameraHandler3D {
         Vec2 { x: v.x, y: v.y }
     }
 
-    fn save(&self) {
-        return;
-    }
+    fn save(&self) {}
+
     pub fn load(viewport: (u32, u32)) -> Self {
         Self {
             camera: Camera3D::new(Vec2::ZERO, viewport.0 as f32, viewport.1 as f32),

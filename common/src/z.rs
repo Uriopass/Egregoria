@@ -14,6 +14,7 @@ macro_rules! gen_z {
 }
 
 gen_z! {
+    Z_TERRAIN
     Z_GRID
     Z_LOT
     Z_INTER_BG
