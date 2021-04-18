@@ -18,7 +18,7 @@ use wgpu_engine::Tesselator;
 register_resource_noserialize!(DebugState);
 #[derive(Default)]
 pub struct DebugState {
-    connectiviy: (u32, Vec<Vec<IntersectionID>>),
+    connectivity: (u32, Vec<Vec<IntersectionID>>),
 }
 
 register_resource_noserialize!(DebugObjs);
@@ -188,8 +188,8 @@ pub fn debug_connectivity(tess: &mut Tesselator, goria: &Egregoria, uiw: &UiWorl
     let mut state = uiw.write::<DebugState>();
     let map = goria.map();
 
-    if state.connectiviy.0 != map.dirt_id.0 {
-        state.connectiviy.0 = map.dirt_id.0;
+    if state.connectivity.0 != map.dirt_id.0 {
+        state.connectivity.0 = map.dirt_id.0;
         let nodes: Vec<_> = map.intersections().keys().collect();
         let roads = map.roads();
         let inter = map.intersections();
@@ -199,10 +199,10 @@ pub fn debug_connectivity(tess: &mut Tesselator, goria: &Egregoria, uiw: &UiWorl
                 .into_iter()
                 .flat_map(|i| i.driving_neighbours(roads))
         });
-        state.connectiviy.1 = components;
+        state.connectivity.1 = components;
     }
 
-    for (i, comp) in state.connectiviy.1.iter().enumerate() {
+    for (i, comp) in state.connectivity.1.iter().enumerate() {
         let r = common::rand::randu(i as u32);
         tess.set_color(Color::hsv(r * 360.0, 0.8, 0.6, 0.5));
 
