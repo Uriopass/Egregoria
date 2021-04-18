@@ -217,7 +217,7 @@ impl Tesselator {
         let ratio = (thickness * 0.5) / dist;
         let perp: Vec2 = ratio * diff.perpendicular();
 
-        let points: [Vec2; 4] = [p1 + perp, p1 - perp, p2 - perp, p2 + perp];
+        let points: [Vec2; 4] = [p1 - perp, p1 + perp, p2 + perp, p2 - perp];
 
         let color: [f32; 4] = self.color.into();
 
@@ -324,9 +324,9 @@ impl Tesselator {
                 index_push(index * 2 + 1);
                 index_push(index * 2 + 2);
 
-                index_push(index * 2 + 1);
-                index_push(index * 2 + 2);
                 index_push(index * 2 + 3);
+                index_push(index * 2 + 2);
+                index_push(index * 2 + 1);
 
                 index += 1;
             }
@@ -348,9 +348,9 @@ impl Tesselator {
             index_push(index * 2 + 1);
             index_push(index * 2 + 2);
 
-            index_push(index * 2 + 1);
-            index_push(index * 2 + 2);
             index_push(index * 2 + 3);
+            index_push(index * 2 + 2);
+            index_push(index * 2 + 1);
         });
         true
     }
