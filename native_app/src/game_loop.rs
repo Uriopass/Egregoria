@@ -358,8 +358,7 @@ impl State {
 
         if let Some(e) = self.uiw.read::<FollowEntity>().0 {
             if let Some(pos) = self.goria.pos(e) {
-                self.camera.camera.position.x = pos.x;
-                self.camera.camera.position.y = pos.y;
+                self.camera.follow(pos.z(0.0));
             }
         }
     }

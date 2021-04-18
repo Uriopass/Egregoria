@@ -239,6 +239,12 @@ impl From<[f32; 3]> for Vec3 {
     }
 }
 
+impl From<(f32, f32, f32)> for Vec3 {
+    fn from((x, y, z): (f32, f32, f32)) -> Self {
+        Self { x, y, z }
+    }
+}
+
 impl From<Vec3> for mint::Point3<f32> {
     fn from(v: Vec3) -> Self {
         mint::Point3 {

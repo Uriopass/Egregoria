@@ -226,7 +226,7 @@ impl GfxContext {
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
                 attachment: &self.depth_texture.view,
                 depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(0.0),
+                    load: wgpu::LoadOp::Clear(1.0),
                     store: true,
                 }),
                 stencil_ops: Some(wgpu::Operations {
@@ -375,7 +375,7 @@ impl GfxContext {
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::GreaterEqual,
+                depth_compare: wgpu::CompareFunction::LessEqual,
                 stencil: StencilState {
                     front: wgpu::StencilFaceState::IGNORE,
                     back: wgpu::StencilFaceState::IGNORE,

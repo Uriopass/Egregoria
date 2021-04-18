@@ -15,8 +15,18 @@ pub struct CameraHandler {
 impl CameraHandler {
     pub fn update(&mut self, ctx: &mut Context) {
         self.camera.update();
+
         ctx.gfx.set_proj(self.camera.projection());
         ctx.gfx.set_inv_proj(self.camera.inv_projection());
+    }
+
+    pub fn height(&self) -> f32 {
+        self.camera.position.z
+    }
+
+    pub fn follow(&mut self, p: Vec3) {
+        self.camera.position.x = p.x;
+        self.camera.position.y = p.y;
     }
 
     pub fn cull_tess(&self, tess: &mut Tesselator) {

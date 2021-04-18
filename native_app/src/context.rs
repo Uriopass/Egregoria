@@ -139,7 +139,7 @@ impl Context {
                             &sco,
                             &lights,
                             ambiant_col,
-                            state.camera.camera.position.z,
+                            state.camera.height(),
                         );
 
                         self.gfx
