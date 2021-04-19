@@ -1,7 +1,9 @@
 use crate::{CompiledShader, GfxContext};
+use std::rc::Rc;
 use wgpu::{RenderPass, RenderPipeline};
 
 mod blit_linear;
+mod lit_mesh;
 mod mesh;
 mod multispritebatch;
 mod shaded_batch;
@@ -10,12 +12,12 @@ mod spritebatch;
 mod textured_mesh;
 
 pub use blit_linear::*;
+pub use lit_mesh::*;
 pub use mesh::*;
 pub use multispritebatch::*;
 pub use shaded_batch::*;
 pub use shaded_quad::*;
 pub use spritebatch::*;
-use std::rc::Rc;
 pub use textured_mesh::*;
 
 pub trait Shaders: 'static {

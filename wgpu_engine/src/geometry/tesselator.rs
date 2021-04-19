@@ -1,5 +1,5 @@
 use crate::geometry::earcut::earcut;
-use crate::{ColoredVertex, MeshBuilder};
+use crate::{ColVertex, MeshBuilder};
 use common::Z_GRID;
 use geom::{vec2, Intersect, LinearColor, Segment, Vec2, AABB};
 
@@ -47,7 +47,7 @@ impl Tesselator {
         let n_pointsu32 = n_points as u32;
 
         self.meshbuilder.extend_with(|vertices, index_push| {
-            vertices.push(ColoredVertex {
+            vertices.push(ColVertex {
                 position: [p.x, p.y, z],
                 color,
             });
@@ -55,7 +55,7 @@ impl Tesselator {
             for i in 0..n_pointsu32 {
                 let v = std::f32::consts::PI * 2.0 * (i as f32) / n_points as f32 + start_angle;
                 let trans = p + r * vec2(v.cos(), v.sin());
-                vertices.push(ColoredVertex {
+                vertices.push(ColVertex {
                     position: [trans.x, trans.y, z],
                     color,
                 });
@@ -82,7 +82,7 @@ impl Tesselator {
 
         let color: [f32; 4] = self.color.into();
         self.meshbuilder.extend_with(|vertices, index_push| {
-            vertices.extend(points.iter().map(|p| ColoredVertex {
+            vertices.extend(points.iter().map(|p| ColVertex {
                 position: [p.x, p.y, z],
                 color,
             }));
@@ -110,11 +110,11 @@ impl Tesselator {
 
         let color = self.color.into();
         self.meshbuilder.extend_with(|vertices, index_push| {
-            vertices.push(ColoredVertex {
+            vertices.push(ColVertex {
                 position: [p.x + r + halfthick, p.y, z],
                 color,
             });
-            vertices.push(ColoredVertex {
+            vertices.push(ColVertex {
                 position: [p.x + r - halfthick, p.y, z],
                 color,
             });
@@ -124,11 +124,11 @@ impl Tesselator {
                 let trans = vec2(v.cos(), v.sin());
                 let p1 = p + (r + halfthick) * trans;
                 let p2 = p + (r - halfthick) * trans;
-                vertices.push(ColoredVertex {
+                vertices.push(ColVertex {
                     position: [p1.x, p1.y, z],
                     color,
                 });
-                vertices.push(ColoredVertex {
+                vertices.push(ColVertex {
                     position: [p2.x, p2.y, z],
                     color,
                 });
@@ -180,20 +180,20 @@ impl Tesselator {
 
         let color: [f32; 4] = self.color.into();
 
-        let verts: [ColoredVertex; 4] = [
-            ColoredVertex {
+        let verts: [ColVertex; 4] = [
+            ColVertex {
                 position: [points[0].x, points[0].y, z],
                 color,
             },
-            ColoredVertex {
+            ColVertex {
                 position: [points[1].x, points[1].y, z],
                 color,
             },
-            ColoredVertex {
+            ColVertex {
                 position: [points[2].x, points[2].y, z],
                 color,
             },
-            ColoredVertex {
+            ColVertex {
                 position: [points[3].x, points[3].y, z],
                 color,
             },
@@ -221,20 +221,20 @@ impl Tesselator {
 
         let color: [f32; 4] = self.color.into();
 
-        let verts: [ColoredVertex; 4] = [
-            ColoredVertex {
+        let verts: [ColVertex; 4] = [
+            ColVertex {
                 position: [points[0].x, points[0].y, z],
                 color,
             },
-            ColoredVertex {
+            ColVertex {
                 position: [points[1].x, points[1].y, z],
                 color,
             },
-            ColoredVertex {
+            ColVertex {
                 position: [points[2].x, points[2].y, z],
                 color,
             },
-            ColoredVertex {
+            ColVertex {
                 position: [points[3].x, points[3].y, z],
                 color,
             },
@@ -278,12 +278,12 @@ impl Tesselator {
         self.meshbuilder.extend_with(move |verts, index_push| {
             let nor: Vec2 = halfthick * vec2(-first_dir.y, first_dir.x);
 
-            verts.push(ColoredVertex {
+            verts.push(ColVertex {
                 position: [points[0].x + nor.x, points[0].y + nor.y, z],
                 color,
             });
 
-            verts.push(ColoredVertex {
+            verts.push(ColVertex {
                 position: [points[0].x - nor.x, points[0].y - nor.y, z],
                 color,
             });
@@ -311,11 +311,11 @@ impl Tesselator {
 
                 let p1 = elbow + mul * dir * halfthick;
                 let p2 = elbow - mul * dir * halfthick;
-                verts.push(ColoredVertex {
+                verts.push(ColVertex {
                     position: [p1.x, p1.y, z],
                     color,
                 });
-                verts.push(ColoredVertex {
+                verts.push(ColVertex {
                     position: [p2.x, p2.y, z],
                     color,
                 });
@@ -335,11 +335,11 @@ impl Tesselator {
 
             let p1 = points[n_points - 1] + nor;
             let p2 = points[n_points - 1] - nor;
-            verts.push(ColoredVertex {
+            verts.push(ColVertex {
                 position: [p1.x, p1.y, z],
                 color,
             });
-            verts.push(ColoredVertex {
+            verts.push(ColVertex {
                 position: [p2.x, p2.y, z],
                 color,
             });
