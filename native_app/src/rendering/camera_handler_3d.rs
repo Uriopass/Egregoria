@@ -2,7 +2,7 @@
 use crate::context::Context;
 use crate::gui::windows::settings::Settings;
 use crate::input::KeyCode;
-use geom::{mulmatvec, vec2, Camera3D, Vec2, Vec3, AABB};
+use geom::{mulmatvec, vec2, Camera3D, Plane, Ray, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
 
 pub struct CameraHandler3D {
@@ -42,8 +42,37 @@ impl CameraHandler3D {
     pub fn unproject(&self, pos: Vec2) -> Vec2 {
         let (_, inv) = self.camera.build_view_projection_matrix();
 
-        let v = mulmatvec(inv, mint::Vector4::from([pos.x, pos.y, 1.0, 1.0]));
-        Vec2 { x: v.x, y: v.y }
+        let v = mulmatvec(
+            inv,
+            mint::Vector4::from([
+                2.0 * pos.x / self.camera.viewport_w - 1.0,
+                -(2.0 * pos.y / self.camera.viewport_h - 1.0),
+                1.0,
+                1.0,
+            ]),
+        );
+
+        let v = Vec3 {
+            x: v.x / v.w,
+            y: v.y / v.w,
+            z: v.z / v.w,
+        } - self.camera.eye();
+        let r = Ray3 {
+            from: self.camera.eye(),
+            dir: v.normalize(),
+        };
+
+        let p = Plane {
+            p: Vec3::ZERO,
+            n: Vec3::UNIT_Z,
+        };
+
+        let hit = r.intersection_plane(&p);
+
+        if let Some(hit) = hit {
+            return hit.xy();
+        }
+        Vec2::ZERO
     }
 
     fn save(&self) {}

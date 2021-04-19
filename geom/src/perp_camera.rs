@@ -4,6 +4,8 @@ use crate::{Vec2, Vec3};
 pub struct Camera3D {
     pub pos: Vec2,
     pub offset: Vec3,
+    pub viewport_w: f32,
+    pub viewport_h: f32,
     up: Vec3,
     aspect: f32,
     fovy: f32,
@@ -16,6 +18,8 @@ impl Camera3D {
         Camera3D {
             pos,
             offset: (5000.0, 5000.0, 5000.0).into(),
+            viewport_w,
+            viewport_h,
             up: (0.0, 0.0, 1.0).into(),
             aspect: viewport_w / viewport_h,
             fovy: 60.0,
@@ -28,8 +32,12 @@ impl Camera3D {
         self.aspect = w / h;
     }
 
+    pub fn eye(&self) -> Vec3 {
+        self.pos.z(0.0) + self.offset
+    }
+
     pub fn build_view_projection_matrix(&self) -> (Mat4, Mat4) {
-        let view = look_at_rh(self.pos.z(0.0) + self.offset, self.pos.z(0.0), self.up);
+        let view = look_at_rh(self.eye(), self.pos.z(0.0), self.up);
         let proj = PerspectiveFov::new(
             self.fovy / 180.0 * std::f32::consts::PI,
             self.aspect,
