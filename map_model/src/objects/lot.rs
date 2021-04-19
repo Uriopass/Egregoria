@@ -35,7 +35,7 @@ impl Lot {
     ) -> Option<LotID> {
         let shape = OBB::new(at + axis * size * 0.5, axis, size, size);
 
-        if height(at) < 0.12 {
+        if height(at).0 < 0.12 {
             return None;
         }
 
