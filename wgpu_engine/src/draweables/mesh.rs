@@ -1,10 +1,10 @@
 use crate::pbuffer::PBuffer;
-use crate::{compile_shader, ColoredVertex, Drawable, GfxContext, IndexType, VBDesc};
+use crate::{compile_shader, ColVertex, Drawable, GfxContext, IndexType, VBDesc};
 use std::sync::Arc;
 use wgpu::{BufferUsage, IndexFormat, RenderPass, RenderPipeline};
 
 pub struct MeshBuilder {
-    pub vertices: Vec<ColoredVertex>,
+    pub vertices: Vec<ColVertex>,
     pub indices: Vec<IndexType>,
     pub vbuffer: PBuffer,
     pub ibuffer: PBuffer,
@@ -31,7 +31,7 @@ impl MeshBuilder {
         self.indices.clear();
     }
 
-    pub fn extend(&mut self, vertices: &[ColoredVertex], indices: &[IndexType]) -> &mut Self {
+    pub fn extend(&mut self, vertices: &[ColVertex], indices: &[IndexType]) -> &mut Self {
         let offset = self.vertices.len() as IndexType;
         self.vertices.extend_from_slice(vertices);
         self.indices.extend(indices.iter().map(|x| x + offset));
@@ -39,7 +39,7 @@ impl MeshBuilder {
     }
 
     #[inline(always)]
-    pub fn extend_with(&mut self, f: impl Fn(&mut Vec<ColoredVertex>, &mut dyn FnMut(IndexType))) {
+    pub fn extend_with(&mut self, f: impl Fn(&mut Vec<ColVertex>, &mut dyn FnMut(IndexType))) {
         let offset = self.vertices.len() as IndexType;
         let vertices = &mut self.vertices;
         let indices = &mut self.indices;
@@ -75,15 +75,10 @@ pub struct Mesh {
 
 impl Drawable for Mesh {
     fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
-        let vert = compile_shader(&gfx.device, "assets/shaders/mesh_shader.vert", None);
-        let frag = compile_shader(&gfx.device, "assets/shaders/mesh_shader.frag", None);
+        let vert = compile_shader(&gfx.device, "assets/shaders/mesh.vert", None);
+        let frag = compile_shader(&gfx.device, "assets/shaders/mesh.frag", None);
 
-        gfx.basic_pipeline(
-            &[&gfx.projection.layout],
-            &[ColoredVertex::desc()],
-            vert,
-            frag,
-        )
+        gfx.basic_pipeline(&[&gfx.projection.layout], &[ColVertex::desc()], vert, frag)
     }
 
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {

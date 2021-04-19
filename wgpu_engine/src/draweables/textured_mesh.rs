@@ -1,12 +1,12 @@
 #![allow(dead_code)]
-use crate::{compile_shader, ColoredUvVertex, Drawable, GfxContext, IndexType, Texture, VBDesc};
+use crate::{compile_shader, ColUvVertex, Drawable, GfxContext, IndexType, Texture, VBDesc};
 use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{IndexFormat, RenderPass, RenderPipeline};
 
 #[derive(Default)]
 pub struct TexturedMeshBuilder {
-    vertices: Vec<ColoredUvVertex>,
+    vertices: Vec<ColUvVertex>,
     indices: Vec<IndexType>,
 }
 
@@ -27,7 +27,7 @@ impl TexturedMeshBuilder {
         }
     }
 
-    pub fn extend(&mut self, vertices: &[ColoredUvVertex], indices: &[IndexType]) -> &mut Self {
+    pub fn extend(&mut self, vertices: &[ColUvVertex], indices: &[IndexType]) -> &mut Self {
         let offset = self.vertices.len() as IndexType;
         self.vertices.extend_from_slice(vertices);
         self.indices.extend(indices.iter().map(|x| x + offset));
@@ -103,7 +103,7 @@ impl Drawable for TexturedMesh {
                 &Texture::bindgroup_layout(&gfx.device),
                 &gfx.projection.layout,
             ],
-            &[ColoredUvVertex::desc()],
+            &[ColUvVertex::desc()],
             vert,
             frag,
         )
