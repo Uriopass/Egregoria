@@ -198,6 +198,7 @@ pub fn add_grid(m: &mut Map, pos: Vec2, size: u32, spacing: f32) {
     if size == 0 {
         return;
     }
+    let pos = pos - Vec2::splat(size as f32 * spacing * 0.5);
     let size = size as usize;
     let mut grid: Vec<Vec<IntersectionID>> = vec![vec![]; size];
     for (y, l) in grid.iter_mut().enumerate() {
