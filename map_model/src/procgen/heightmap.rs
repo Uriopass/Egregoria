@@ -19,7 +19,7 @@ pub fn grad2(p: Vec2) -> Vec2 {
 
 /* return range is [-0.5; 0.5] */
 #[allow(clippy::many_single_char_names)]
-pub fn simplex_noise(pos: Vec2) -> f32 {
+pub fn simplex_noise(pos: Vec2) -> (f32, Vec2) {
     let mut i: Vec2 = Vec2::floor(pos + Vec2::splat(Vec2::dot(pos, CY)));
     let x0: Vec2 = pos - i + Vec2::splat(Vec2::dot(i, CX));
     let i1 = if x0.x > x0.y {
@@ -44,49 +44,59 @@ pub fn simplex_noise(pos: Vec2) -> f32 {
 
     let gv = vec3(g0.dot(x0), g1.dot(v1), g2.dot(v2));
 
-    /*
-        // Compute partial derivatives in x and y
-        let temp = t2 * t * gv;
-        let mut grad = -8.0
-            * vec2(
-                temp.dot(vec3(x0.x, v1.x, v2.x)),
-                temp.dot(vec3(x0.y, v1.y, v2.y)),
-            );
-        grad.x += t4.dot(vec3(g0.x, g1.x, g2.x));
-        grad.y += t4.dot(vec3(g0.y, g1.y, g2.y));
-        grad = 40.0 * grad;
-    */
+    // Compute partial derivatives in x and y
+    let temp = t2 * t * gv;
+    let mut grad = -8.0
+        * vec2(
+            temp.dot(vec3(x0.x, v1.x, v2.x)),
+            temp.dot(vec3(x0.y, v1.y, v2.y)),
+        );
+    grad.x += t4.dot(vec3(g0.x, g1.x, g2.x));
+    grad.y += t4.dot(vec3(g0.y, g1.y, g2.y));
+    grad = 40.0 * grad;
 
-    40.0 * t4.dot(gv)
+    (40.0 * t4.dot(gv), grad)
 }
 
 const FBM_MAG: f32 = 0.4;
 
-fn fnoise(ampl: f32, in_wv: Vec2) -> f32 {
+fn fnoise(ampl: f32, in_wv: Vec2) -> (f32, Vec2) {
     let mut dec = Vec2::splat(70.69) + in_wv * ampl;
 
     let mut noise: f32 = 0.0;
     let mut amplitude: f32 = 1.0;
+    let mut grad: Vec2 = Vec2::ZERO;
 
-    for _ in 0..5 {
-        noise += amplitude * simplex_noise(dec);
+    for _ in 0..4 {
+        let (n, g) = simplex_noise(dec);
+        noise += amplitude * n;
+        grad += g;
+
         dec *= 1.0 / FBM_MAG;
         amplitude *= FBM_MAG;
     }
 
-    noise
+    (noise, grad * ampl)
 }
 
-pub fn height(mut p: Vec2) -> f32 {
+pub fn height(mut p: Vec2) -> (f32, Vec2) {
     p -= vec2(-2000.0, 2000.0);
 
-    let noise = fnoise(0.00003, p) + 0.2;
-    noise.max(0.0).min(1.0)
+    let (noise, mut grad) = fnoise(0.00003, p);
+    let mut noise = noise + 0.2;
+    if noise < 0.0 {
+        noise = 0.0;
+        grad = Vec2::ZERO;
+    } else if noise > 1.0 {
+        noise = 1.0;
+        grad = Vec2::ZERO;
+    }
+    (noise, grad)
 }
 
 pub fn tree_density(mut p: Vec2) -> f32 {
     let h = height(p);
     p -= vec2(-2000.0, 2000.0);
 
-    (simplex_noise(p * 0.00003) * 2.0 + 0.5).max(0.0) * (h - 0.12)
+    (simplex_noise(p * 0.00003).0 * 2.0 + 0.5).max(0.0) * (h.0 - 0.12)
 }
