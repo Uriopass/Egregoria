@@ -7,8 +7,8 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
 use egregoria::{Egregoria, SerPreparedEgregoria};
-use geom::Camera;
 use geom::{vec3, LinearColor};
+use geom::{Camera, Vec3};
 use wgpu_engine::lighting::{LightInstance, LightRender};
 use wgpu_engine::{FrameContext, GuiRenderContext, Tesselator};
 
@@ -22,7 +22,8 @@ use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::network::NetworkState;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{
-    BackgroundRender, CameraHandler, InstancedRender, MeshRenderer, RoadRenderer, TerrainRender,
+    BackgroundRender, CameraHandler, CameraHandler3D, InstancedRender, MeshRenderer, RoadRenderer,
+    TerrainRender,
 };
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
@@ -39,7 +40,7 @@ pub struct State {
 
     game_schedule: SeqSchedule,
 
-    pub camera: CameraHandler,
+    pub camera: CameraHandler3D,
 
     imgui_render: ImguiWrapper,
 
@@ -56,7 +57,7 @@ pub struct State {
 
 impl State {
     pub fn new(ctx: &mut Context) -> Self {
-        let camera = CameraHandler::load(ctx.gfx.size);
+        let camera = CameraHandler3D::load(ctx.gfx.size);
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
@@ -68,7 +69,7 @@ impl State {
         uiworld.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));
 
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
-        uiworld.insert(camera.camera);
+        uiworld.insert(Camera::new(100.0, 100.0, Vec3::UNIT_Z));
         uiworld.insert(WorldCommands::default());
 
         log::info!("version is {}", goria_version::VERSION);
@@ -209,7 +210,7 @@ impl State {
         Self::manage_settings(ctx, &settings);
         self.manage_io(ctx);
 
-        self.camera.movespeed = settings.camera_sensibility / 100.0;
+        //        self.camera.movespeed = settings.camera_sensibility / 100.0;
         self.camera.camera_movement(
             ctx,
             real_delta as f32,
@@ -217,7 +218,7 @@ impl State {
             !self.imgui_render.last_kb_captured,
             &settings,
         );
-        *self.uiw.write::<Camera>() = self.camera.camera;
+        //        *self.uiw.write::<Camera>() = self.camera.camera;
 
         if !self.imgui_render.last_mouse_captured {
             self.uiw.write::<MouseInfo>().unprojected =
@@ -244,7 +245,8 @@ impl State {
     pub fn render(&mut self, ctx: &mut FrameContext) {
         let start = Instant::now();
 
-        self.bg_renderer.draw_background(ctx);
+        //self.bg_renderer.draw_background(ctx);
+        self.terrain.render(&self.uiw, ctx);
 
         self.immtess.meshbuilder.clear();
         self.camera.cull_tess(&mut self.immtess);
