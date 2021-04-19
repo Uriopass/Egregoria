@@ -1,7 +1,7 @@
 use crate::draweables::BlitLinear;
 use crate::{
-    CompiledShader, Drawable, IndexType, Mesh, SpriteBatch, Texture, TexturedMesh, Uniform,
-    UvVertex,
+    CompiledShader, Drawable, IndexType, LitMesh, Mesh, SpriteBatch, Texture, TexturedMesh,
+    Uniform, UvVertex,
 };
 use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
@@ -134,6 +134,7 @@ impl GfxContext {
         };
 
         me.register_pipeline::<Mesh>();
+        me.register_pipeline::<LitMesh>();
         me.register_pipeline::<TexturedMesh>();
         me.register_pipeline::<SpriteBatch>();
         me.register_pipeline::<BlitLinear>();
@@ -219,7 +220,12 @@ impl GfxContext {
                 attachment: &self.color_texture.multisampled_buffer,
                 resolve_target: Some(&self.color_texture.target.view),
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.32,
+                        g: 0.63,
+                        b: 0.9,
+                        a: 0.0,
+                    }),
                     store: true,
                 },
             }],
