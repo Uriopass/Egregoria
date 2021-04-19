@@ -1,12 +1,13 @@
 #![allow(dead_code)]
 use crate::context::Context;
 use crate::gui::windows::settings::Settings;
-use crate::input::KeyCode;
-use geom::{mulmatvec, vec2, Camera3D, Plane, Ray, Ray3, Vec2, Vec3, AABB};
+use crate::input::{KeyCode, MouseButton};
+use geom::{mulmatvec, vec2, Camera3D, Plane, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
 
 pub struct CameraHandler3D {
     pub camera: Camera3D,
+    pub lastscreenpos: Vec2,
 }
 
 impl CameraHandler3D {
@@ -18,7 +19,7 @@ impl CameraHandler3D {
     }
 
     pub fn height(&self) -> f32 {
-        self.camera.offset.z
+        self.camera.offset().z
     }
 
     pub fn cull_tess(&self, tess: &mut Tesselator) {
@@ -80,6 +81,7 @@ impl CameraHandler3D {
     pub fn load(viewport: (u32, u32)) -> Self {
         Self {
             camera: Camera3D::new(Vec2::ZERO, viewport.0 as f32, viewport.1 as f32),
+            lastscreenpos: Default::default(),
         }
     }
 
@@ -87,39 +89,58 @@ impl CameraHandler3D {
         &mut self,
         ctx: &mut Context,
         delta: f32,
-        _mouse_enabled: bool,
+        mouse_enabled: bool,
         keyboard_enabled: bool,
         settings: &Settings,
     ) {
         let delta = delta.min(0.1);
         if keyboard_enabled {
-            let is_pressed = &ctx.input.keyboard.pressed;
+            let pressed = &ctx.input.keyboard.pressed;
 
-            let d = self.camera.offset.xy();
-            if is_pressed.contains(&KeyCode::Right) {
+            let off = self.camera.offset();
+            let d = off.xy().try_normalize().unwrap_or(Vec2::ZERO) * self.camera.dist;
+            if pressed.contains(&KeyCode::Right) {
                 self.camera.pos += -delta * d.perpendicular();
             }
-            if is_pressed.contains(&KeyCode::Left) {
+            if pressed.contains(&KeyCode::Left) {
                 self.camera.pos += delta * d.perpendicular();
             }
-            if is_pressed.contains(&KeyCode::Up) {
+            if pressed.contains(&KeyCode::Up) {
                 self.camera.pos += -delta * d;
             }
-            if is_pressed.contains(&KeyCode::Down) {
+            if pressed.contains(&KeyCode::Down) {
                 self.camera.pos += delta * d;
             }
 
             let just_pressed = &ctx.input.keyboard.just_pressed;
             if just_pressed.contains(&KeyCode::Add) || just_pressed.contains(&KeyCode::Equals) {
-                self.camera.offset = self.camera.offset * 1.0 / 1.1;
+                self.camera.dist *= 1.0 / 1.1;
             }
 
             if just_pressed.contains(&KeyCode::Subtract) || just_pressed.contains(&KeyCode::Minus) {
-                self.camera.offset = self.camera.offset * 1.1;
+                self.camera.dist *= 1.1;
             }
 
             if settings.camera_lock {
-                self.camera.offset.z = self.camera.offset.z.min(20000.0).max(5.0);
+                self.camera.dist = self.camera.dist.min(20000.0).max(5.0);
+            }
+        }
+        let delta_mouse = ctx.input.mouse.screen - self.lastscreenpos;
+        self.lastscreenpos = ctx.input.mouse.screen;
+
+        if mouse_enabled {
+            if ctx.input.mouse.wheel_delta < 0.0 {
+                self.camera.dist *= 1.1;
+            }
+            if ctx.input.mouse.wheel_delta > 0.0 {
+                self.camera.dist *= 1.0 / 1.1;
+            }
+            let pressed = &ctx.input.mouse.pressed;
+
+            if pressed.contains(&MouseButton::Middle) {
+                self.camera.yaw -= delta_mouse.x / 100.0;
+                self.camera.pitch += delta_mouse.y / 100.0;
+                self.camera.pitch = self.camera.pitch.min(1.57).max(0.1);
             }
         }
 
