@@ -1,7 +1,7 @@
 macro_rules! gen_z_2 {
     {$($a: ident,)*;$($b: ident,)*} => {
         $(
-            pub const $a: f32 = $b - 0.01;
+            pub const $a: f32 = $b + 0.1;
         )+
     }
 }

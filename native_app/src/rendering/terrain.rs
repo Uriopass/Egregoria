@@ -1,18 +1,18 @@
 use crate::uiworld::UiWorld;
-use common::{FastMap, Z_TERRAIN};
-use geom::{vec2, LinearColor};
+use common::FastMap;
+use geom::{vec2, vec3, LinearColor};
 use std::mem::MaybeUninit;
 use wgpu_engine::pbuffer::PBuffer;
 use wgpu_engine::wgpu::BufferUsage;
-use wgpu_engine::IndexType;
-use wgpu_engine::{ColoredVertex, FrameContext, GfxContext, Mesh};
+use wgpu_engine::{ColNorVertex, IndexType};
+use wgpu_engine::{FrameContext, GfxContext, LitMesh};
 
 const CHUNK_SIZE: f32 = 1000.0;
 const RESOLUTION: usize = 40;
-const LOD: usize = 4;
+const LOD: usize = 1;
 
 struct TerrainChunk {
-    lods: [Mesh; LOD],
+    lods: [LitMesh; LOD],
 }
 
 pub struct TerrainRender {
@@ -52,7 +52,7 @@ impl TerrainRender {
                     let pos = vec2(x, y);
                     let pos = pos * CHUNK_SIZE + offset;
 
-                    let height = map_model::procgen::heightmap::height(pos);
+                    let (mut height, mut grad) = map_model::procgen::heightmap::height(pos);
 
                     let col: LinearColor = if height < 0.1 {
                         common::config().sea_col.into()
@@ -62,8 +62,15 @@ impl TerrainRender {
                         0.37 * LinearColor::from(common::config().grass_col)
                     };
 
-                    mesh.push(ColoredVertex {
-                        position: [pos.x, pos.y, Z_TERRAIN],
+                    grad *= 2.0 * height * 3000.0;
+                    height *= height * 3000.0;
+
+                    mesh.push(ColNorVertex {
+                        position: [pos.x, pos.y, 0.0],
+                        normal: vec3(1.0, 0.0, grad.x)
+                            .cross(vec3(0.0, 1.0, grad.y))
+                            .normalize()
+                            .into(),
                         color: col.into(),
                     })
                 }
@@ -73,7 +80,7 @@ impl TerrainRender {
 
             let mut vbuf = PBuffer::new(BufferUsage::VERTEX);
             vbuf.write(gfx, bytemuck::cast_slice(&mesh));
-            let m = Mesh {
+            let m = LitMesh {
                 vertex_buffer: vbuf.inner().expect("vertices were generated"),
                 index_buffer: indice.inner().expect("indices was generated"),
                 n_indices: n_indices as u32,
@@ -87,7 +94,7 @@ impl TerrainRender {
         self.chunks.insert((x, y), chunk);
     }
 
-    fn generate_indices(gfx: &GfxContext) -> [(PBuffer, usize); 4] {
+    fn generate_indices(gfx: &GfxContext) -> [(PBuffer, usize); LOD] {
         let mut v = vec![];
         for lod in 0..LOD {
             let resolution = RESOLUTION / (1 << lod);
