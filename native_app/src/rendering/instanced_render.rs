@@ -4,11 +4,16 @@ use egregoria::rendering::assets::AssetRender;
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec2};
 use legion::query::*;
-use wgpu_engine::{FrameContext, GfxContext, SpriteBatchBuilder};
+use std::sync::Arc;
+use wgpu_engine::objload::obj_to_mesh;
+use wgpu_engine::{
+    FrameContext, GfxContext, InstancedPaletteMeshBuilder, MeshInstance, SpriteBatchBuilder,
+};
 
 pub struct InstancedRender {
     pub texs: Vec<SpriteBatchBuilder>,
     pub path_not_found: SpriteBatchBuilder,
+    pub cars: InstancedPaletteMeshBuilder,
 }
 
 impl InstancedRender {
@@ -25,6 +30,9 @@ impl InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 ctx.texture("assets/path_not_found.png", Some("path_not_found")),
             ),
+            cars: InstancedPaletteMeshBuilder::new(Arc::new(
+                obj_to_mesh("assets/simple_car.obj", ctx).unwrap(),
+            )),
         }
     }
 
@@ -33,9 +41,19 @@ impl InstancedRender {
             x.clear();
         }
 
+        self.cars.instances.clear();
         for (trans, ar) in <(&Transform, &AssetRender)>::query().iter(goria.world()) {
+            let ar: &AssetRender = ar;
             if ar.hide {
                 continue;
+            }
+
+            if ar.id.id == 0 {
+                self.cars.instances.push(MeshInstance {
+                    pos: trans.position().z(1.5),
+                    dir: trans.direction().z(0.0),
+                    tint: ar.tint.into(),
+                });
             }
 
             self.texs[ar.id.id as usize].push(
@@ -75,6 +93,9 @@ impl InstancedRender {
             }
         }
         if let Some(x) = self.path_not_found.build(fctx.gfx) {
+            fctx.objs.push(Box::new(x));
+        }
+        if let Some(x) = self.cars.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }
     }

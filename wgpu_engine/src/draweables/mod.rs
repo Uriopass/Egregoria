@@ -6,19 +6,19 @@ mod blit_linear;
 mod lit_mesh;
 mod mesh;
 mod multispritebatch;
+mod palette_mesh;
 mod shaded_batch;
 mod shaded_quad;
 mod spritebatch;
-mod textured_mesh;
 
 pub use blit_linear::*;
 pub use lit_mesh::*;
 pub use mesh::*;
 pub use multispritebatch::*;
+pub use palette_mesh::*;
 pub use shaded_batch::*;
 pub use shaded_quad::*;
 pub use spritebatch::*;
-pub use textured_mesh::*;
 
 pub trait Shaders: 'static {
     fn vert_shader(device: &wgpu::Device) -> CompiledShader;

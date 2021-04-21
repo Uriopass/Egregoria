@@ -1,9 +1,11 @@
-mod colored_uv_vertex;
-mod normal_vertex;
-mod uv_vertex;
-mod vertex;
+mod col;
+mod coluv;
+mod nor;
+mod noruv;
+mod uv;
 
-pub use colored_uv_vertex::*;
-pub use normal_vertex::*;
-pub use uv_vertex::*;
-pub use vertex::*;
+pub use col::*;
+pub use coluv::*;
+pub use nor::*;
+pub use noruv::*;
+pub use uv::*;

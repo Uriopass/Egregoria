@@ -22,8 +22,7 @@ use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::network::NetworkState;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{
-    BackgroundRender, CameraHandler, CameraHandler3D, InstancedRender, MeshRenderer, RoadRenderer,
-    TerrainRender,
+    BackgroundRender, CameraHandler3D, InstancedRender, MeshRenderer, RoadRenderer, TerrainRender,
 };
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
