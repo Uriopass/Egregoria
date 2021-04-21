@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::context::Context;
 use crate::gui::windows::settings::Settings;
 use crate::input::{KeyCode, MouseButton};

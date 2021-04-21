@@ -63,7 +63,7 @@ impl TerrainRender {
                     };
 
                     grad *= 2.0 * height * 3000.0;
-                    height *= height * 3000.0;
+                    height = height * height * 3000.0;
 
                     mesh.push(ColNorVertex {
                         position: [pos.x, pos.y, 0.0],

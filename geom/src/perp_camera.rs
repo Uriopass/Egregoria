@@ -11,8 +11,6 @@ pub struct Camera3D {
     up: Vec3,
     aspect: f32,
     fovy: f32,
-    znear: f32,
-    zfar: f32,
 }
 
 impl Camera3D {
@@ -27,9 +25,11 @@ impl Camera3D {
             up: (0.0, 0.0, 1.0).into(),
             aspect: viewport_w / viewport_h,
             fovy: 60.0,
-            znear: 10.0,
-            zfar: 40000.0,
         }
+    }
+
+    pub fn znear(height: f32) -> f32 {
+        (height * 0.1).min(10.0)
     }
 
     pub fn offset(&self) -> Vec3 {
@@ -48,12 +48,15 @@ impl Camera3D {
     }
 
     pub fn build_view_projection_matrix(&self) -> (Mat4, Mat4) {
-        let view = look_at_rh(self.eye(), self.pos.z(0.0), self.up);
+        let eye = self.eye();
+        let znear = Self::znear(eye.z);
+        let zfar = znear * 4000.0;
+        let view = look_at_rh(eye, self.pos.z(0.0), self.up);
         let proj = PerspectiveFov::new(
             self.fovy / 180.0 * std::f32::consts::PI,
             self.aspect,
-            self.znear,
-            self.zfar,
+            znear,
+            zfar,
         )
         .mk_proj();
 

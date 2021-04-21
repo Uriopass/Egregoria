@@ -1,6 +1,6 @@
 use crate::draweables::BlitLinear;
 use crate::{
-    CompiledShader, Drawable, IndexType, LitMesh, Mesh, SpriteBatch, Texture, TexturedMesh,
+    CompiledShader, Drawable, IndexType, InstancedPaletteMesh, LitMesh, Mesh, SpriteBatch, Texture,
     Uniform, UvVertex,
 };
 use crate::{MultisampledTexture, ShaderType};
@@ -12,7 +12,7 @@ use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, CullMode, Device,
-    IndexFormat, MultisampleState, PrimitiveState, Queue, RenderPipeline, StencilState, Surface,
+    FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface,
     SwapChain, SwapChainDescriptor, SwapChainFrame, VertexBufferLayout,
 };
 
@@ -135,11 +135,20 @@ impl GfxContext {
 
         me.register_pipeline::<Mesh>();
         me.register_pipeline::<LitMesh>();
-        me.register_pipeline::<TexturedMesh>();
+        me.register_pipeline::<InstancedPaletteMesh>();
         me.register_pipeline::<SpriteBatch>();
         me.register_pipeline::<BlitLinear>();
 
+        let mut p = Texture::from_path(&me, "assets/palette.png", Some("palette"));
+        p.sampler = Texture::nearest_sampler(&me.device);
+        me.set_texture("assets/palette.png", p);
+
         me
+    }
+
+    pub fn set_texture(&mut self, path: impl Into<PathBuf>, tex: Texture) {
+        let p = path.into();
+        self.textures.insert(p, Arc::new(tex));
     }
 
     pub fn texture(
@@ -165,6 +174,12 @@ impl GfxContext {
 
     pub fn read_texture(&self, path: impl Into<PathBuf>) -> Option<&Arc<Texture>> {
         self.textures.get(&path.into())
+    }
+
+    pub fn palette(&self) -> &Arc<Texture> {
+        self.textures
+            .get(&*PathBuf::from("assets/palette.png"))
+            .expect("palette not loaded")
     }
 
     pub fn set_present_mode(&mut self, mode: wgpu::PresentMode) {
@@ -375,19 +390,15 @@ impl GfxContext {
             }),
             primitive: PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
-                cull_mode: CullMode::None,
+                cull_mode: CullMode::Back,
+                front_face: FrontFace::Ccw,
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::LessEqual,
-                stencil: StencilState {
-                    front: wgpu::StencilFaceState::IGNORE,
-                    back: wgpu::StencilFaceState::IGNORE,
-                    read_mask: 0,
-                    write_mask: 0,
-                },
+                stencil: Default::default(),
                 bias: Default::default(),
                 clamp_depth: false,
             }),

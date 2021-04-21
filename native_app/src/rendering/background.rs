@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use geom::LinearColor;
 use std::rc::Rc;
 use wgpu_engine::{

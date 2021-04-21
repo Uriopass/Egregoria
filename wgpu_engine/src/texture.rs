@@ -85,7 +85,12 @@ impl Texture {
             _ => unimplemented!("unsupported format {:?}", img.color()),
         };
 
-        let mip_level_count = 5;
+        let mut mip_level_count = 5;
+
+        if dimensions.0 < 30 {
+            mip_level_count = 1;
+        }
+
         let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
             label,
             size: extent,
@@ -116,7 +121,7 @@ impl Texture {
         }
 
         let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = Self::default_sampler(&ctx.device);
+        let sampler = Self::linear_sampler(&ctx.device);
 
         Self {
             texture,
@@ -151,7 +156,7 @@ impl Texture {
         let texture = device.create_texture(&desc);
 
         let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = Self::default_sampler(&device);
+        let sampler = Self::linear_sampler(&device);
 
         Self {
             texture,
@@ -244,7 +249,7 @@ impl Texture {
                 vec![
                     wgpu::BindGroupLayoutEntry {
                         binding: i * 2,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        visibility: wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::VERTEX,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
                             view_dimension: wgpu::TextureViewDimension::D2,
@@ -254,7 +259,7 @@ impl Texture {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: i * 2 + 1,
-                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        visibility: wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::VERTEX,
                         ty: wgpu::BindingType::Sampler {
                             filtering: true,
                             comparison: false,
@@ -320,7 +325,7 @@ impl Texture {
         })
     }
 
-    fn default_sampler(device: &Device) -> Sampler {
+    pub fn linear_sampler(device: &Device) -> Sampler {
         device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
             address_mode_u: wgpu::AddressMode::Repeat,
@@ -329,6 +334,23 @@ impl Texture {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Linear,
+            lod_min_clamp: -100.0,
+            lod_max_clamp: 100.0,
+            compare: None,
+            anisotropy_clamp: None,
+            border_color: None,
+        })
+    }
+
+    pub fn nearest_sampler(device: &Device) -> Sampler {
+        device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
             compare: None,

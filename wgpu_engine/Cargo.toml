@@ -16,6 +16,7 @@ image     = { version = "0.23.4", default-features = false, features = ["png"] }
 log       = "0.4.11"
 raw-window-handle = "0.3.3"
 naga      = { version = "0.3.2", features = ["glsl-in", "spv-out"], optional = true}
+tobj      = "2.0.4"
 
 [features]
 default = []
