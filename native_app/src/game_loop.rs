@@ -22,7 +22,7 @@ use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::network::NetworkState;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{
-    BackgroundRender, CameraHandler3D, InstancedRender, MeshRenderer, RoadRenderer, TerrainRender,
+    CameraHandler3D, InstancedRender, MeshRenderer, RoadRenderer, TerrainRender,
 };
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
@@ -45,7 +45,6 @@ pub struct State {
 
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
-    bg_renderer: BackgroundRender,
     terrain: TerrainRender,
     gui: Gui,
     pub light: LightRender,
@@ -85,7 +84,6 @@ impl State {
             imgui_render,
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx, &goria),
-            bg_renderer: BackgroundRender::new(&mut ctx.gfx),
             terrain: TerrainRender::new(&mut ctx.gfx),
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
