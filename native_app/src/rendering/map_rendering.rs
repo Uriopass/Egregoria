@@ -1,50 +1,34 @@
 use crate::rendering::map_mesh::MapMeshHandler;
-use common::{Z_SIGNAL, Z_TREE, Z_TREE_SHADOW};
+use common::{Z_SIGNAL, Z_TREE};
 use egregoria::Egregoria;
 use flat_spatial::storage::Storage;
-use geom::{lerp, vec2, Color, LinearColor, AABB};
+use geom::{lerp, Color, LinearColor, AABB};
 use map_model::{Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior};
-use std::rc::Rc;
+use std::sync::Arc;
+use wgpu_engine::objload::obj_to_mesh;
 use wgpu_engine::{
-    FrameContext, GfxContext, MultiSpriteBatch, MultiSpriteBatchBuilder, SpriteBatch,
-    SpriteBatchBuilder, Tesselator,
+    FrameContext, GfxContext, InstancedPaletteMesh, InstancedPaletteMeshBuilder, MeshInstance,
+    Tesselator,
 };
 
 pub struct RoadRenderer {
     meshb: MapMeshHandler,
 
-    tree_shadows: Option<Rc<SpriteBatch>>,
-    tree_shadows_builder: SpriteBatchBuilder,
-    trees: Option<Rc<MultiSpriteBatch>>,
-    tree_builder: MultiSpriteBatchBuilder,
-
+    trees: Option<InstancedPaletteMesh>,
+    trees_builder: InstancedPaletteMeshBuilder,
     trees_dirt_id: u32,
     last_cam: AABB,
 }
 
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
-        let tree_builder = MultiSpriteBatchBuilder::from_paths(
-            gfx,
-            &[
-                "assets/tree.png",
-                "assets/tree2.png",
-                "assets/tree3.png",
-                "assets/tree4.png",
-                "assets/tree5.png",
-                "assets/tree6.png",
-                "assets/tree7.png",
-            ],
-        );
-        let tree_shadow_builder = SpriteBatchBuilder::from_path(gfx, "assets/tree_shadow.png");
-
         RoadRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
-            tree_shadows: None,
-            tree_shadows_builder: tree_shadow_builder,
             last_cam: AABB::zero(),
             trees: None,
-            tree_builder,
+            trees_builder: InstancedPaletteMeshBuilder::new(Arc::new(
+                obj_to_mesh("assets/pine.obj", gfx).expect("could not load pine"),
+            )),
             trees_dirt_id: 0,
         }
     }
@@ -126,58 +110,40 @@ impl RoadRenderer {
         map: &Map,
         screen: AABB,
         gfx: &GfxContext,
-    ) -> (Rc<MultiSpriteBatch>, Option<Rc<SpriteBatch>>) {
+    ) -> Option<InstancedPaletteMesh> {
         let st = map.trees.grid.storage();
         if map.trees.dirt_id.0 == self.trees_dirt_id
-            && self.tree_shadows.is_some()
             && st.cell_id(screen.ll) == st.cell_id(self.last_cam.ll)
             && st.cell_id(screen.ur) == st.cell_id(self.last_cam.ur)
         {
             if let Some(trees) = self.trees.as_ref() {
-                return (trees.clone(), self.tree_shadows.clone());
+                return Some(trees.clone());
             }
         }
 
         self.trees_dirt_id = map.trees.dirt_id.0;
 
-        self.tree_builder.clear();
-        self.tree_shadows_builder.clear();
-
         let k = screen.w().min(screen.h());
         if k > 4500.0 {
-            return (
-                Rc::new(self.tree_builder.build(gfx)),
-                self.tree_shadows_builder.build(gfx).map(Rc::new),
-            );
+            return None;
         }
 
         let alpha_cutoff = lerp(1.0, 0.0, (k - 3000.0) / 1500.0);
 
         let tree_col = LinearColor::from(common::config().tree_col).a(alpha_cutoff);
 
+        self.trees_builder.instances.clear();
         for (h, _) in map.trees.grid.query_raw(screen.ll, screen.ur) {
             let (pos, t) = map.trees.grid.get(h).unwrap();
 
-            self.tree_shadows_builder.push(
-                pos + vec2(1.0, -1.0),
-                t.dir,
-                Z_TREE_SHADOW,
-                LinearColor::WHITE.a(alpha_cutoff),
-                (t.size, t.size),
-            );
-
-            self.tree_builder
-                .sb(
-                    (common::rand::rand3(pos.x, pos.y, 10.0) * self.tree_builder.n_texs() as f32)
-                        as usize,
-                )
-                .push(pos, t.dir, Z_TREE, t.col * tree_col, (t.size, t.size));
+            self.trees_builder.instances.push(MeshInstance {
+                pos: pos.z(Z_TREE),
+                dir: t.dir.z(0.0),
+                tint: (t.col * LinearColor::WHITE).a(1.0),
+            });
         }
 
-        (
-            Rc::new(self.tree_builder.build(gfx)),
-            self.tree_shadows_builder.build(gfx).map(Rc::new),
-        )
+        self.trees_builder.build(gfx)
     }
 
     pub fn render(&mut self, map: &Map, time: u32, tess: &mut Tesselator, ctx: &mut FrameContext) {
@@ -185,15 +151,9 @@ impl RoadRenderer {
             .cull_rect
             .expect("no cull rectangle, might render far too many trees");
 
-        let (trees, tree_shadows) = self.trees(map, screen, ctx.gfx);
-        self.trees = Some(trees);
-        self.tree_shadows = tree_shadows;
+        self.trees = self.trees(map, screen, ctx.gfx);
 
         if let Some(x) = self.meshb.latest_mesh(map, ctx.gfx).clone() {
-            ctx.draw(x);
-        }
-
-        if let Some(x) = self.tree_shadows.clone() {
             ctx.draw(x);
         }
 

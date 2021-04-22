@@ -4,14 +4,16 @@ use common::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::Restrict;
 use egregoria::Egregoria;
-use geom::{vec2, LinearColor};
+use geom::{vec2, LinearColor, Polygon, Vec2};
 use map_model::{BuildingKind, LaneKind, LotKind, Map, TurnKind, CROSSWALK_WIDTH};
 use std::ops::Mul;
 use std::rc::Rc;
+use wgpu_engine::earcut::earcut;
 use wgpu_engine::wgpu::{RenderPass, RenderPipeline};
 use wgpu_engine::{
-    compile_shader, CompiledShader, Drawable, GfxContext, Mesh, MultiSpriteBatch, ShadedBatch,
-    ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch, SpriteBatchBuilder, Tesselator,
+    compile_shader, ColNorVertex, CompiledShader, Drawable, GfxContext, LitMesh, LitMeshBuilder,
+    Mesh, MultiSpriteBatch, ShadedBatch, ShadedBatchBuilder, ShadedInstanceRaw, Shaders,
+    SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 
 #[derive(Copy, Clone)]
@@ -36,6 +38,7 @@ pub struct MapMeshHandler {
 
 struct MapBuilders {
     buildings_builder: FastMap<BuildingKind, SpriteBatchBuilder>,
+    buildings_mesh: LitMeshBuilder,
     arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: ShadedBatchBuilder<Crosswalk>,
     tess: Tesselator,
@@ -45,6 +48,7 @@ pub struct MapMeshes {
     map: Option<Mesh>,
     crosswalks: Option<ShadedBatch<Crosswalk>>,
     buildings: MultiSpriteBatch,
+    building_mesh: Option<LitMesh>,
     arrows: Option<SpriteBatch>,
 }
 
@@ -70,6 +74,7 @@ impl MapMeshHandler {
             buildings_builder,
             crosswalk_builder: ShadedBatchBuilder::new(),
             tess: Tesselator::new(None, 15.0),
+            buildings_mesh: LitMeshBuilder::new(),
         };
 
         Self {
@@ -86,6 +91,7 @@ impl MapMeshHandler {
             self.builders.arrows(&map);
             self.builders.crosswalks(&map);
             self.builders.buildings_sprites(&map);
+            self.builders.buildings_mesh(&map);
 
             self.last_config = common::config_id();
             self.map_dirt_id = map.dirt_id.0;
@@ -101,6 +107,7 @@ impl MapMeshHandler {
                     .values_mut()
                     .flat_map(|x| x.build(gfx))
                     .collect(),
+                building_mesh: self.builders.buildings_mesh.build(gfx),
                 arrows: self.builders.arrow_builder.build(gfx),
             };
 
@@ -201,6 +208,59 @@ impl MapBuilders {
         }
     }
 
+    fn buildings_mesh(&mut self, map: &Map) {
+        self.buildings_mesh.clear();
+
+        let buildings = &map.buildings();
+
+        let mut projected = Polygon(Vec::with_capacity(10));
+
+        for building in buildings.values() {
+            for (face, col) in &building.mesh.faces {
+                self.buildings_mesh.extend_with(|vertices, add_index| {
+                    let o = face[1];
+                    let u = unwrap_ret!((face[0] - o).try_normalize());
+                    let v = unwrap_ret!((face[2] - o).try_normalize());
+
+                    let mut nor = u.cross(v);
+
+                    let mut reverse = false;
+
+                    if nor.z < 0.0 {
+                        reverse = true;
+                        nor = -nor;
+                    }
+
+                    projected.clear();
+                    for &p in face {
+                        let off = p - o;
+                        projected.0.push(vec2(off.dot(u), off.dot(v)));
+
+                        vertices.push(ColNorVertex {
+                            position: p.into(),
+                            normal: nor.into(),
+                            color: col.into(),
+                        })
+                    }
+
+                    projected.simplify();
+
+                    let points: &[[f32; 2]] =
+                        unsafe { &*(&*projected.0 as *const [Vec2] as *const [[f32; 2]]) };
+
+                    earcut(bytemuck::cast_slice(points), |mut a, b, mut c| {
+                        if reverse {
+                            std::mem::swap(&mut a, &mut c);
+                        }
+                        add_index(a as u32);
+                        add_index(b as u32);
+                        add_index(c as u32);
+                    })
+                });
+            }
+        }
+    }
+
     fn map_mesh(&mut self, map: &Map) {
         let tess = &mut self.tess;
         tess.meshbuilder.clear();
@@ -213,7 +273,6 @@ impl MapBuilders {
         let inters = map.intersections();
         let lanes = map.lanes();
         let lots = map.lots();
-        let buildings = map.buildings();
 
         for l in lanes.values() {
             tess.set_color(line_col);
@@ -293,14 +352,6 @@ impl MapBuilders {
             }
         }
 
-        // Buildings mesh
-        for building in buildings.values() {
-            for (p, col) in &building.mesh.faces {
-                tess.set_color(*col);
-                tess.draw_filled_polygon(p.as_slice(), Z_HOUSE);
-            }
-        }
-
         // Lots
         for lot in lots.values() {
             let col = match lot.kind {
@@ -326,6 +377,9 @@ impl Drawable for MapMeshes {
             map.draw(gfx, rp);
         }
         self.buildings.draw(gfx, rp);
+        if let Some(ref bmesh) = self.building_mesh {
+            bmesh.draw(gfx, rp);
+        }
         if let Some(ref arrows) = self.arrows {
             arrows.draw(gfx, rp);
         }
