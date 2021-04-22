@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 use crate::{Vec2, Vec3};
+use serde::{Deserialize, Serialize};
 
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Camera3D {
     pub pos: Vec2,
     pub yaw: f32,

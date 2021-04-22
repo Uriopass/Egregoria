@@ -2,6 +2,7 @@
 use crate::context::Context;
 use crate::gui::windows::settings::Settings;
 use crate::input::{KeyCode, MouseButton};
+use common::saveload::Encoder;
 use geom::{mulmatvec, vec2, Camera3D, Plane, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
 
@@ -76,11 +77,19 @@ impl CameraHandler3D {
         Vec2::ZERO
     }
 
-    fn save(&self) {}
+    fn save(&self) {
+        let cam = self.camera;
+        rayon::spawn(move || {
+            common::saveload::JSON::save_silent(&cam, "camera3D");
+        });
+    }
 
     pub fn load(viewport: (u32, u32)) -> Self {
+        let cam = common::saveload::JSON::load("camera3D");
+
         Self {
-            camera: Camera3D::new(Vec2::ZERO, viewport.0 as f32, viewport.1 as f32),
+            camera: cam
+                .unwrap_or_else(|| Camera3D::new(Vec2::ZERO, viewport.0 as f32, viewport.1 as f32)),
             lastscreenpos: Default::default(),
         }
     }
@@ -93,6 +102,7 @@ impl CameraHandler3D {
         keyboard_enabled: bool,
         settings: &Settings,
     ) {
+        self.save();
         let delta = delta.min(0.1);
         if keyboard_enabled {
             let pressed = &ctx.input.keyboard.pressed;
