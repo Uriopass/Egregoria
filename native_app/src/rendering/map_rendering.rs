@@ -2,7 +2,7 @@ use crate::rendering::map_mesh::MapMeshHandler;
 use common::{Z_SIGNAL, Z_TREE};
 use egregoria::Egregoria;
 use flat_spatial::storage::Storage;
-use geom::{lerp, Color, LinearColor, AABB};
+use geom::{Color, LinearColor, AABB};
 use map_model::{Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior};
 use std::sync::Arc;
 use wgpu_engine::objload::obj_to_mesh;
@@ -127,10 +127,6 @@ impl RoadRenderer {
         if k > 4500.0 {
             return None;
         }
-
-        let alpha_cutoff = lerp(1.0, 0.0, (k - 3000.0) / 1500.0);
-
-        let tree_col = LinearColor::from(common::config().tree_col).a(alpha_cutoff);
 
         self.trees_builder.instances.clear();
         for (h, _) in map.trees.grid.query_raw(screen.ll, screen.ur) {
