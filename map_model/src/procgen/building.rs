@@ -1,5 +1,5 @@
 use geom::skeleton::{faces_from_skeleton, skeleton};
-use geom::{vec2, vec3, Intersect, LinearColor, Polygon, Segment, Shape, Vec2, AABB};
+use geom::{minmax, vec2, Intersect, LinearColor, Polygon, Segment, Shape, Vec2, Vec3, AABB};
 use ordered_float::OrderedFloat;
 use rand::prelude::SmallRng;
 use rand::{Rng, SeedableRng};
@@ -8,21 +8,23 @@ use std::panic::catch_unwind;
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ColoredMesh {
-    pub faces: Vec<(Polygon, LinearColor)>,
+    pub faces: Vec<(Vec<Vec3>, LinearColor)>,
 }
 
 impl ColoredMesh {
     pub fn bbox(&self) -> AABB {
-        let mut f = unwrap_or!(self.faces.get(0), return AABB::zero()).0.bbox();
-        for (p, _) in self.faces.iter().skip(1) {
-            f = f.union(p.bbox())
-        }
-        f
+        let (ll, ur) = unwrap_or!(
+            minmax(self.faces.iter().flat_map(|x| &x.0).map(|x| x.xy())),
+            return AABB::zero()
+        );
+        AABB::new(ll, ur)
     }
 
     pub fn translate(&mut self, off: Vec2) {
         for (p, _) in &mut self.faces {
-            p.translate(off);
+            for v in p {
+                *v += off.z(0.0);
+            }
         }
     }
 }
@@ -136,27 +138,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
             if face.len() < 3 {
                 continue 'retry;
             }
-
-            #[allow(clippy::indexing_slicing)]
-            let mut normal = (face[0] - face[1]).cross(face[2] - face[1]).normalize();
-
-            if normal.z < 0.0 {
-                normal = -normal;
-            }
-
-            let luminosity = 0.8
-                + 0.2
-                    * vec3(0.7, 0.3, 0.5)
-                        .normalize()
-                        .dot(normal)
-                        .min(1.0)
-                        .max(-1.0);
-            let col = luminosity * roof_col;
-
-            let mut p = Polygon(face.into_iter().map(|x| x.xy()).collect());
-            p.simplify();
-
-            roofs.faces.push((p, col));
+            roofs.faces.push((face, roof_col));
         }
 
         return (roofs, lowest_segment.middle());
