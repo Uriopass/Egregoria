@@ -1,7 +1,8 @@
 use crate::pbuffer::PBuffer;
-use crate::{compile_shader, Drawable, GfxContext, IndexType, Texture, Uniform, UvVertex, VBDesc};
-use geom::LinearColor;
-use mint::ColumnMatrix4;
+use crate::{
+    compile_shader, Drawable, GfxContext, IndexType, LightParams, Texture, Uniform, UvVertex,
+    VBDesc,
+};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     AddressMode, BlendFactor, Buffer, BufferUsage, CommandEncoder, FilterMode, IndexFormat,
@@ -14,7 +15,6 @@ pub struct LightRender {
     blue_noise: Texture,
     vertex_buffer: Buffer,
     instance_buffer: PBuffer,
-    light_uni: Uniform<LightUniform>,
 }
 
 impl LightRender {
@@ -51,29 +51,9 @@ impl LightRender {
             noise,
             blue_noise,
             instance_buffer: PBuffer::new(BufferUsage::VERTEX),
-            light_uni: Uniform::new(
-                LightUniform {
-                    inv_proj: ColumnMatrix4::from([0.0; 16]),
-                    ambiant: Default::default(),
-                    time: 0.0,
-                    height: 0.0,
-                },
-                &gfx.device,
-            ),
         }
     }
 }
-
-#[derive(Copy, Clone)]
-#[repr(C)]
-struct LightUniform {
-    inv_proj: ColumnMatrix4<f32>,
-    ambiant: LinearColor,
-    time: f32,
-    height: f32,
-}
-
-u8slice_impl!(LightUniform);
 
 struct LightBlit;
 
@@ -153,7 +133,7 @@ impl Drawable for LightMultiply {
                             TextureSampleType::Float { filterable: true },
                             4,
                         ),
-                        &Uniform::<LightUniform>::bindgroup_layout(&gfx.device),
+                        &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
                     ],
                     push_constant_ranges: &[],
                 });
@@ -249,8 +229,6 @@ impl LightRender {
         encoder: &mut CommandEncoder,
         frame: &SwapChainFrame,
         lights: &[LightInstance],
-        ambiant: LinearColor,
-        height: f32,
     ) {
         self.instance_buffer
             .write(gfx, bytemuck::cast_slice(lights));
@@ -283,15 +261,6 @@ impl LightRender {
             }
         }
 
-        *self.light_uni.value_mut() = LightUniform {
-            inv_proj: *gfx.inv_projection.value(),
-            time: *gfx.time_uni.value(),
-            ambiant,
-            height,
-        };
-
-        self.light_uni.upload_to_gpu(&gfx.queue);
-
         let lmultiply_tex_bg = Texture::multi_bindgroup(
             &[
                 &gfx.light_texture,
@@ -318,7 +287,7 @@ impl LightRender {
 
         rpass.set_pipeline(&gfx.get_pipeline::<LightMultiply>());
         rpass.set_bind_group(0, &lmultiply_tex_bg, &[]);
-        rpass.set_bind_group(1, &self.light_uni.bindgroup, &[]);
+        rpass.set_bind_group(1, &gfx.light_params.bindgroup, &[]);
         rpass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
         rpass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
         rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);

@@ -1,5 +1,7 @@
 use crate::pbuffer::PBuffer;
-use crate::{compile_shader, ColNorVertex, Drawable, GfxContext, IndexType, VBDesc};
+use crate::{
+    compile_shader, ColNorVertex, Drawable, GfxContext, IndexType, LightParams, Uniform, VBDesc,
+};
 use std::sync::Arc;
 use wgpu::{BufferUsage, IndexFormat, RenderPass, RenderPipeline};
 
@@ -39,7 +41,10 @@ impl LitMeshBuilder {
     }
 
     #[inline(always)]
-    pub fn extend_with(&mut self, f: impl Fn(&mut Vec<ColNorVertex>, &mut dyn FnMut(IndexType))) {
+    pub fn extend_with(
+        &mut self,
+        f: impl FnOnce(&mut Vec<ColNorVertex>, &mut dyn FnMut(IndexType)),
+    ) {
         let offset = self.vertices.len() as IndexType;
         let vertices = &mut self.vertices;
         let indices = &mut self.indices;
@@ -79,7 +84,10 @@ impl Drawable for LitMesh {
         let frag = compile_shader(&gfx.device, "assets/shaders/lit_mesh.frag", None);
 
         gfx.basic_pipeline(
-            &[&gfx.projection.layout],
+            &[
+                &gfx.projection.layout,
+                &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
+            ],
             &[ColNorVertex::desc()],
             vert,
             frag,
@@ -89,6 +97,7 @@ impl Drawable for LitMesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         rp.set_pipeline(&gfx.get_pipeline::<Self>());
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+        rp.set_bind_group(1, &gfx.light_params.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);

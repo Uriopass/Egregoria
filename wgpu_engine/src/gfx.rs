@@ -5,6 +5,8 @@ use crate::{
 };
 use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
+use geom::{LinearColor, Vec3};
+use mint::ColumnMatrix4;
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
 use std::path::PathBuf;
@@ -32,13 +34,42 @@ pub struct GfxContext {
     pub update_sc: bool,
     pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
     pub(crate) projection: Uniform<mint::ColumnMatrix4<f32>>,
-    pub(crate) inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
+    pub inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
     pub time_uni: Uniform<f32>,
+    pub light_params: Uniform<LightParams>,
     pub(crate) textures: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) samples: u32,
     pub(crate) screen_uv_vertices: wgpu::Buffer,
     pub(crate) rect_indices: wgpu::Buffer,
 }
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct LightParams {
+    pub inv_proj: ColumnMatrix4<f32>,
+    pub ambiant: LinearColor,
+    pub cam_pos: Vec3,
+    pub _pad: f32,
+    pub sun: Vec3,
+    pub _pad2: f32,
+    pub time: f32,
+}
+
+impl Default for LightParams {
+    fn default() -> Self {
+        Self {
+            inv_proj: ColumnMatrix4::from([0.0; 16]),
+            ambiant: Default::default(),
+            cam_pos: Default::default(),
+            _pad: 0.0,
+            sun: Default::default(),
+            _pad2: 0.0,
+            time: 0.0,
+        }
+    }
+}
+
+u8slice_impl!(LightParams);
 
 pub struct GuiRenderContext<'a, 'b> {
     pub device: &'a wgpu::Device,
@@ -113,7 +144,6 @@ impl GfxContext {
         let mut me = Self {
             size: (win_width, win_height),
             swapchain,
-            device,
             queue,
             sc_desc,
             update_sc: false,
@@ -127,10 +157,12 @@ impl GfxContext {
             projection,
             inv_projection,
             time_uni,
+            light_params: Uniform::new(Default::default(), &device),
             textures: FastMap::default(),
             samples,
             screen_uv_vertices,
             rect_indices,
+            device,
         };
 
         me.register_pipeline::<Mesh>();
@@ -211,6 +243,7 @@ impl GfxContext {
         self.projection.upload_to_gpu(&self.queue);
         self.inv_projection.upload_to_gpu(&self.queue);
         self.time_uni.upload_to_gpu(&self.queue);
+        self.light_params.upload_to_gpu(&self.queue);
 
         encoder
     }
