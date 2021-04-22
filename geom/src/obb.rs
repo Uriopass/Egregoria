@@ -146,7 +146,7 @@ impl OBB {
 
 impl Shape for OBB {
     fn bbox(&self) -> AABB {
-        let (min, max) = match super::minmax(&self.corners) {
+        let (min, max) = match super::minmax(self.corners.iter().copied()) {
             Some(x) => x,
             None => unsafe { unreachable_unchecked() },
         };

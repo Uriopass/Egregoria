@@ -152,11 +152,12 @@ macro_rules! impl_shape_enum {
 
 impl_shape_enum!(OBB, Polygon, Vec2, Circle, AABB, BoldLine);
 
-pub fn minmax(x: &[Vec2]) -> Option<(Vec2, Vec2)> {
-    let mut min: Vec2 = *x.get(0)?;
+pub fn minmax(x: impl IntoIterator<Item = Vec2>) -> Option<(Vec2, Vec2)> {
+    let mut x = x.into_iter();
+    let mut min: Vec2 = x.next()?;
     let mut max: Vec2 = min;
 
-    for &v in &x[1..] {
+    for v in x {
         min = min.min(v);
         max = max.max(v);
     }
