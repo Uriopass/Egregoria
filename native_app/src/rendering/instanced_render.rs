@@ -1,5 +1,6 @@
 use common::Z_PATH_NOT_FOUND;
 use egregoria::map_dynamic::Itinerary;
+use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::rendering::assets::AssetRender;
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec2};
@@ -14,6 +15,7 @@ pub struct InstancedRender {
     pub texs: Vec<SpriteBatchBuilder>,
     pub path_not_found: SpriteBatchBuilder,
     pub cars: InstancedPaletteMeshBuilder,
+    pub pedestrians: InstancedPaletteMeshBuilder,
 }
 
 impl InstancedRender {
@@ -33,6 +35,9 @@ impl InstancedRender {
             cars: InstancedPaletteMeshBuilder::new(Arc::new(
                 obj_to_mesh("assets/simple_car.obj", ctx).unwrap(),
             )),
+            pedestrians: InstancedPaletteMeshBuilder::new(Arc::new(
+                obj_to_mesh("assets/pedestrian.obj", ctx).unwrap(),
+            )),
         }
     }
 
@@ -42,6 +47,7 @@ impl InstancedRender {
         }
 
         self.cars.instances.clear();
+        self.pedestrians.instances.clear();
         for (trans, ar) in <(&Transform, &AssetRender)>::query().iter(goria.world()) {
             let ar: &AssetRender = ar;
             if ar.hide {
@@ -63,6 +69,18 @@ impl InstancedRender {
                 ar.tint.into(),
                 (ar.scale, ar.scale),
             );
+        }
+
+        for (trans, ped, loc) in <(&Transform, &Pedestrian, &Location)>::query().iter(goria.world())
+        {
+            let ped: &Pedestrian = ped;
+            if matches!(loc, Location::Outside) {
+                self.pedestrians.instances.push(MeshInstance {
+                    pos: trans.position().z(1.5 + 0.4 * ped.walk_anim.cos()),
+                    dir: trans.direction().z(0.0),
+                    tint: LinearColor::WHITE,
+                });
+            }
         }
 
         self.path_not_found.clear();
@@ -96,6 +114,9 @@ impl InstancedRender {
             fctx.objs.push(Box::new(x));
         }
         if let Some(x) = self.cars.build(fctx.gfx) {
+            fctx.objs.push(Box::new(x));
+        }
+        if let Some(x) = self.pedestrians.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }
     }
