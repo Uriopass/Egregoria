@@ -52,7 +52,7 @@ impl TerrainRender {
                     let pos = vec2(x, y);
                     let pos = pos * CHUNK_SIZE + offset;
 
-                    let (mut height, mut grad) = map_model::procgen::heightmap::height(pos);
+                    let (height, mut grad) = map_model::procgen::heightmap::height(pos);
 
                     let col: LinearColor = if height < 0.1 {
                         common::config().sea_col.into()
@@ -63,7 +63,7 @@ impl TerrainRender {
                     };
 
                     grad *= 2.0 * height * 3000.0;
-                    height = height * height * 3000.0;
+                    //height = height * height * 3000.0;
 
                     mesh.push(ColNorVertex {
                         position: [pos.x, pos.y, 0.0],
