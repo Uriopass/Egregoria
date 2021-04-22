@@ -242,7 +242,7 @@ impl From<Vec<Vec2>> for Polygon {
 
 impl Shape for Polygon {
     fn bbox(&self) -> AABB {
-        let (min, max) = match super::minmax(&self.0) {
+        let (min, max) = match super::minmax(self.0.iter().copied()) {
             Some(x) => x,
             None => return AABB::zero(),
         };

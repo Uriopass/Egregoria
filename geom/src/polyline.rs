@@ -300,7 +300,7 @@ impl PolyLine {
     }
 
     pub fn bbox(&self) -> AABB {
-        let (min, max) = match super::minmax(&self.points) {
+        let (min, max) = match super::minmax(self.points.iter().copied()) {
             Some(x) => x,
             None => unsafe { unreachable_unchecked() },
         };
