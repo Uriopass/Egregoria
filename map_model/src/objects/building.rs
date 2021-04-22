@@ -1,6 +1,7 @@
 use crate::procgen::ColoredMesh;
 use crate::{Buildings, Road, SpatialMap};
-use geom::{Color, Polygon, Vec2, OBB};
+use common::Z_HOUSE;
+use geom::{Color, Vec2, OBB};
 use imgui_inspect::debug_inspect_impl;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -59,18 +60,23 @@ impl Building {
         };
 
         for (poly, _) in &mut mesh.faces {
-            poly.rotate(axis).translate(at);
+            for v in poly {
+                v.rotate_z(axis);
+                *v += at.z(0.0);
+            }
         }
         door_pos = door_pos.rotated_by(axis) + at;
 
         let (rpos, _, dir) = road.points.project_segment_dir(door_pos);
 
-        let walkway = Polygon(vec![
-            rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) + dir * 1.5,
-            rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) - dir * 1.5,
-            door_pos - dir * 1.5,
-            door_pos + dir * 1.5,
-        ]);
+        let walkway = vec![
+            (rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) + dir * 1.5)
+                .z(Z_HOUSE),
+            (rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) - dir * 1.5)
+                .z(Z_HOUSE),
+            (door_pos - dir * 1.5).z(Z_HOUSE),
+            (door_pos + dir * 1.5).z(Z_HOUSE),
+        ];
 
         mesh.faces.push((walkway, Color::gray(0.4).into()));
 
