@@ -2,8 +2,9 @@ use crate::audio::AudioContext;
 use crate::game_loop;
 use crate::input::InputContext;
 use futures::executor;
+use geom::vec3;
 use std::time::Instant;
-use wgpu_engine::GfxContext;
+use wgpu_engine::{GfxContext, LightParams};
 use winit::window::Window;
 use winit::{
     dpi::PhysicalSize,
@@ -133,14 +134,20 @@ impl Context {
                         self.gfx.render_objs(&mut enc, |fc| state.render(fc));
 
                         let (lights, ambiant_col) = state.lights();
-                        state.light.render_lights(
-                            &self.gfx,
-                            &mut enc,
-                            &sco,
-                            &lights,
-                            ambiant_col,
-                            state.camera.height(),
-                        );
+
+                        *self.gfx.light_params.value_mut() = LightParams {
+                            inv_proj: *self.gfx.inv_projection.value(),
+                            time: *self.gfx.time_uni.value(),
+                            ambiant: ambiant_col,
+                            cam_pos: state.camera.camera.eye(),
+                            sun: vec3(0.739, 0.1849, 0.647150),
+                            _pad: 0.0,
+                            _pad2: 0.0,
+                        };
+
+                        state
+                            .light
+                            .render_lights(&self.gfx, &mut enc, &sco, &lights);
 
                         self.gfx
                             .render_gui(&mut enc, &sco, |gctx| state.render_gui(window, gctx));
