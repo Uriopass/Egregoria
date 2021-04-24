@@ -144,9 +144,9 @@ impl Tesselator {
                     color,
                     normal,
                 });
-                index_push(i * 2);
-                index_push(i * 2 + 1);
                 index_push(i * 2 + 2);
+                index_push(i * 2 + 1);
+                index_push(i * 2);
 
                 index_push(i * 2 + 1);
                 index_push(i * 2 + 2);
@@ -155,9 +155,9 @@ impl Tesselator {
 
             let i = n_pointsu32;
 
-            index_push(i * 2);
-            index_push(i * 2 + 1);
             index_push(0);
+            index_push(i * 2 + 1);
+            index_push(i * 2);
 
             index_push(i * 2 + 1);
             index_push(0);
