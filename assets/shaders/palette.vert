@@ -1,5 +1,7 @@
 #version 450
 
+#include "light_params.glsl"
+
 layout(location=0) in vec3 in_pos;
 layout(location=1) in vec3 in_normal;
 layout(location=2) in vec2 in_uv;
@@ -28,7 +30,7 @@ void main() {
     vec3 normal = in_normal.x * x + in_normal.y * y + in_normal.z * z;
 
     gl_Position = u_view_proj * vec4(off + in_instance_pos, 1.0);
-    float lol = dot(normal, params.sun);
+    float lol = clamp(dot(normal, params.sun.xyz), 0.0, 1.0);
 
     vec4 col = texture(sampler2D(t_palette, s_palette), in_uv);
     col.rgb *= 0.2 + 0.8 * lol;

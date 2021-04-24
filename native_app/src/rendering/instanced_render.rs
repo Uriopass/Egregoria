@@ -15,6 +15,7 @@ pub struct InstancedRender {
     pub texs: Vec<SpriteBatchBuilder>,
     pub path_not_found: SpriteBatchBuilder,
     pub cars: InstancedPaletteMeshBuilder,
+    pub trucks: InstancedPaletteMeshBuilder,
     pub pedestrians: InstancedPaletteMeshBuilder,
 }
 
@@ -35,6 +36,9 @@ impl InstancedRender {
             cars: InstancedPaletteMeshBuilder::new(Arc::new(
                 obj_to_mesh("assets/simple_car.obj", ctx).unwrap(),
             )),
+            trucks: InstancedPaletteMeshBuilder::new(Arc::new(
+                obj_to_mesh("assets/truck.obj", ctx).unwrap(),
+            )),
             pedestrians: InstancedPaletteMeshBuilder::new(Arc::new(
                 obj_to_mesh("assets/pedestrian.obj", ctx).unwrap(),
             )),
@@ -47,6 +51,7 @@ impl InstancedRender {
         }
 
         self.cars.instances.clear();
+        self.trucks.instances.clear();
         self.pedestrians.instances.clear();
         for (trans, ar) in <(&Transform, &AssetRender)>::query().iter(goria.world()) {
             let ar: &AssetRender = ar;
@@ -56,6 +61,14 @@ impl InstancedRender {
 
             if ar.id.id == 0 {
                 self.cars.instances.push(MeshInstance {
+                    pos: trans.position().z(1.5),
+                    dir: trans.direction().z(0.0),
+                    tint: ar.tint.into(),
+                });
+            }
+
+            if ar.id.id == 1 {
+                self.trucks.instances.push(MeshInstance {
                     pos: trans.position().z(1.5),
                     dir: trans.direction().z(0.0),
                     tint: ar.tint.into(),
@@ -114,6 +127,9 @@ impl InstancedRender {
             fctx.objs.push(Box::new(x));
         }
         if let Some(x) = self.cars.build(fctx.gfx) {
+            fctx.objs.push(Box::new(x));
+        }
+        if let Some(x) = self.trucks.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }
         if let Some(x) = self.pedestrians.build(fctx.gfx) {
