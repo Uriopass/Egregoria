@@ -1,6 +1,6 @@
 use crate::draweables::BlitLinear;
 use crate::{
-    CompiledShader, Drawable, IndexType, InstancedPaletteMesh, LitMesh, Mesh, SpriteBatch, Texture,
+    CompiledShader, Drawable, IndexType, InstancedPaletteMesh, LitMesh, SpriteBatch, Texture,
     Uniform, UvVertex,
 };
 use crate::{MultisampledTexture, ShaderType};
@@ -165,7 +165,6 @@ impl GfxContext {
             device,
         };
 
-        me.register_pipeline::<Mesh>();
         me.register_pipeline::<LitMesh>();
         me.register_pipeline::<InstancedPaletteMesh>();
         me.register_pipeline::<SpriteBatch>();

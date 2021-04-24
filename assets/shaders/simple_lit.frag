@@ -13,17 +13,16 @@ void main() {
     vec3 normal = normalize(in_normal);
     vec3 cam = params.cam_pos.xyz;
 
-    /*
     vec3 L = params.sun.xyz;
     vec3 R = normalize(2 * normal * dot(normal,L) - L);
     vec3 V = normalize(cam - in_wpos);
 
     float specular = clamp(dot(R, V), 0.0, 1.0);
-    specular = pow(specular, 50);
-    */
+    specular = pow(specular, 5);
+
     float diffuse = clamp(dot(normal, params.sun.xyz), 0.0, 1.0);
 
     vec4 c = in_color;
-    c.rgb *= 0.2 + 0.8 * diffuse;
+    c.rgb *= 0.2 + 0.8 * diffuse + 1.0 * specular;
     out_color = c;
 }
