@@ -32,6 +32,7 @@ impl CameraHandler3D {
 
     pub fn follow(&mut self, p: Vec3) {
         self.camera.pos = p.xy();
+        self.targetpos = p.xy();
     }
 
     pub fn resize(&mut self, ctx: &mut Context, width: f32, height: f32) {

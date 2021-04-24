@@ -61,7 +61,7 @@ impl Building {
 
         for (poly, _) in &mut mesh.faces {
             for v in poly {
-                v.rotate_z(axis);
+                *v = v.rotate_z(axis);
                 *v += at.z(0.0);
             }
         }
