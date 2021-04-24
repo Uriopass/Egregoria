@@ -1,7 +1,7 @@
 use common::Z_PATH_NOT_FOUND;
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::{Location, Pedestrian};
-use egregoria::rendering::assets::AssetRender;
+use egregoria::rendering::assets::{AssetID, AssetRender};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec2};
 use legion::query::*;
@@ -12,7 +12,6 @@ use wgpu_engine::{
 };
 
 pub struct InstancedRender {
-    pub texs: Vec<SpriteBatchBuilder>,
     pub path_not_found: SpriteBatchBuilder,
     pub cars: InstancedPaletteMeshBuilder,
     pub trucks: InstancedPaletteMeshBuilder,
@@ -21,15 +20,7 @@ pub struct InstancedRender {
 
 impl InstancedRender {
     pub fn new(ctx: &mut GfxContext) -> Self {
-        let car = ctx.texture("assets/car.png", Some("cartex"));
-        let spr_car = SpriteBatchBuilder::new(car);
-
-        let truck = ctx.texture("assets/truck.png", Some("trucktex"));
-        let spr_truck = SpriteBatchBuilder::new(truck);
-
-        let texs = vec![spr_car, spr_truck];
         InstancedRender {
-            texs,
             path_not_found: SpriteBatchBuilder::new(
                 ctx.texture("assets/path_not_found.png", Some("path_not_found")),
             ),
@@ -46,42 +37,23 @@ impl InstancedRender {
     }
 
     pub fn render(&mut self, goria: &Egregoria, fctx: &mut FrameContext) {
-        for x in &mut self.texs {
-            x.clear();
-        }
-
         self.cars.instances.clear();
         self.trucks.instances.clear();
         self.pedestrians.instances.clear();
         for (trans, ar) in <(&Transform, &AssetRender)>::query().iter(goria.world()) {
             let ar: &AssetRender = ar;
-            if ar.hide {
-                continue;
-            }
 
-            if ar.id.id == 0 {
-                self.cars.instances.push(MeshInstance {
-                    pos: trans.position().z(1.5),
-                    dir: trans.direction().z(0.0),
-                    tint: ar.tint.into(),
-                });
-            }
+            let instance = MeshInstance {
+                pos: trans.position().z(1.0),
+                dir: trans.direction().z(0.0),
+                tint: ar.tint.into(),
+            };
 
-            if ar.id.id == 1 {
-                self.trucks.instances.push(MeshInstance {
-                    pos: trans.position().z(1.5),
-                    dir: trans.direction().z(0.0),
-                    tint: ar.tint.into(),
-                });
+            match ar.id {
+                AssetID::CAR => self.cars.instances.push(instance),
+                AssetID::TRUCK => self.trucks.instances.push(instance),
+                _ => {}
             }
-
-            self.texs[ar.id.id as usize].push(
-                trans.position(),
-                trans.direction(),
-                ar.z,
-                ar.tint.into(),
-                (ar.scale, ar.scale),
-            );
         }
 
         for (trans, ped, loc) in <(&Transform, &Pedestrian, &Location)>::query().iter(goria.world())
@@ -118,11 +90,6 @@ impl InstancedRender {
             }
         }
 
-        for x in &mut self.texs {
-            if let Some(x) = x.build(fctx.gfx) {
-                fctx.objs.push(Box::new(x));
-            }
-        }
         if let Some(x) = self.path_not_found.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }

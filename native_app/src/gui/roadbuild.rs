@@ -5,7 +5,7 @@ use crate::uiworld::UiWorld;
 use common::{AudioKind, Z_GRID, Z_TOOL};
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::Egregoria;
-use geom::{vec2, Vec2};
+use geom::{vec2, Vec2, AABB};
 use geom::{Camera, Spline};
 use map_model::{LanePatternBuilder, Map, MapProject, ProjectKind};
 use BuildState::{Hover, Interpolation, Start};
@@ -56,13 +56,13 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         mouseinfo.unprojected
     };
 
-    let log_height = cam.position.z.log10();
+    let log_height = cam.eye().z.log10();
     let cutoff = inline_tweak::tweak!(3.3);
 
     if state.snap_to_grid && log_height < cutoff {
         let alpha = 1.0 - log_height / cutoff;
         let col = common::config().gui_primary.a(alpha);
-        let screen = cam.screen_aabb();
+        let screen = AABB::new(cam.pos, cam.pos).expand(100.0);
         let startx = (screen.ll.x / grid_size).ceil() * grid_size;
         for x in 0..(screen.w() / grid_size) as i32 {
             let x = startx + x as f32 * grid_size;

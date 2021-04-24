@@ -12,7 +12,6 @@ register_resource!(Settings, SETTINGS_SAVE_NAME);
 #[serde(default)]
 pub struct Settings {
     pub camera_sensibility: f32,
-    pub camera_lock: bool,
     pub camera_border_move: bool,
     pub camera_smooth: bool,
 
@@ -31,7 +30,6 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             camera_sensibility: 80.0,
-            camera_lock: true,
             camera_border_move: true,
             camera_smooth: true,
             music_volume_percent: 100.0,
@@ -135,7 +133,6 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
                 .range(10.0..=200.0)
                 .display_format(im_str!("%.0f"))
                 .build(ui, &mut settings.camera_sensibility);
-            ui.checkbox(im_str!("Camera zoom locked"), &mut settings.camera_lock);
             ui.checkbox(
                 im_str!("Border screen camera movement"),
                 &mut settings.camera_border_move,

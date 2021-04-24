@@ -1,14 +1,14 @@
 macro_rules! gen_z_2 {
     {$($a: ident,)*;$($b: ident,)*} => {
         $(
-            pub const $a: f32 = $b + 0.03;
+            pub const $a: f32 = $b + 0.05;
         )+
     }
 }
 
 macro_rules! gen_z {
     {$a: ident $($v:ident)*} => {
-        pub const $a: f32 = 0.9;
+        pub const $a: f32 = 0.01;
         gen_z_2!{$($v,)*MAX_Z,;$a,$($v,)*}
     }
 }
