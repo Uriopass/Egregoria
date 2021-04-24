@@ -44,7 +44,7 @@ impl InstancedRender {
             let ar: &AssetRender = ar;
 
             let instance = MeshInstance {
-                pos: trans.position().z(1.0),
+                pos: trans.position().z(0.5),
                 dir: trans.direction().z(0.0),
                 tint: ar.tint.into(),
             };
@@ -61,7 +61,7 @@ impl InstancedRender {
             let ped: &Pedestrian = ped;
             if matches!(loc, Location::Outside) {
                 self.pedestrians.instances.push(MeshInstance {
-                    pos: trans.position().z(1.5 + 0.4 * ped.walk_anim.cos()),
+                    pos: trans.position().z(0.5 + 0.4 * ped.walk_anim.cos()),
                     dir: trans.direction().z(0.0),
                     tint: LinearColor::WHITE,
                 });
