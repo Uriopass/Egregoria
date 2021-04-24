@@ -11,7 +11,6 @@ register_resource!(Settings, SETTINGS_SAVE_NAME);
 #[derive(Copy, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
-    pub camera_sensibility: f32,
     pub camera_border_move: bool,
     pub camera_smooth: bool,
 
@@ -29,7 +28,6 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            camera_sensibility: 80.0,
             camera_border_move: true,
             camera_smooth: true,
             music_volume_percent: 100.0,
@@ -129,10 +127,6 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
             ui.new_line();
             ui.text("Input");
 
-            imgui::Slider::new(im_str!("Camera sensibility"))
-                .range(10.0..=200.0)
-                .display_format(im_str!("%.0f"))
-                .build(ui, &mut settings.camera_sensibility);
             ui.checkbox(
                 im_str!("Border screen camera movement"),
                 &mut settings.camera_border_move,
