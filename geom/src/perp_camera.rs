@@ -42,6 +42,8 @@ impl Camera {
     }
 
     pub fn set_viewport(&mut self, w: f32, h: f32) {
+        self.viewport_w = w;
+        self.viewport_h = h;
         self.aspect = w / h;
     }
 

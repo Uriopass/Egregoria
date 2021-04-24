@@ -104,11 +104,13 @@ impl CameraHandler3D {
     ) {
         self.save();
         let delta = delta.min(0.1);
+        let off = self.camera.offset();
+        let d = off.xy().try_normalize().unwrap_or(Vec2::ZERO) * self.camera.dist;
+        let screenpos = ctx.input.mouse.screen;
+
         if keyboard_enabled {
             let pressed = &ctx.input.keyboard.pressed;
 
-            let off = self.camera.offset();
-            let d = off.xy().try_normalize().unwrap_or(Vec2::ZERO) * self.camera.dist;
             if pressed.contains(&KeyCode::Right) {
                 self.targetpos += -delta * d.perpendicular();
             }
@@ -131,8 +133,24 @@ impl CameraHandler3D {
                 self.camera.dist *= 1.1;
             }
         }
-        let delta_mouse = ctx.input.mouse.screen - self.lastscreenpos;
-        self.lastscreenpos = ctx.input.mouse.screen;
+
+        if settings.camera_border_move {
+            if screenpos.x < 2.0 {
+                self.targetpos += delta * d.perpendicular();
+            }
+            if screenpos.x > self.camera.viewport_w - 2.0 {
+                self.targetpos += -delta * d.perpendicular();
+            }
+            if screenpos.y < 2.0 {
+                self.targetpos += -delta * d;
+            }
+            if screenpos.y > self.camera.viewport_h - 2.0 {
+                self.targetpos += delta * d;
+            }
+        }
+
+        let delta_mouse = screenpos - self.lastscreenpos;
+        self.lastscreenpos = screenpos;
 
         let unprojected = ctx.input.mouse.unprojected;
 
@@ -165,6 +183,6 @@ impl CameraHandler3D {
         }
 
         self.update(ctx);
-        self.last_pos = self.unproject(ctx.input.mouse.screen);
+        self.last_pos = self.unproject(screenpos);
     }
 }
