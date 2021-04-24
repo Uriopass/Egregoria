@@ -6,7 +6,6 @@ use crate::utils::par_command_buffer::ComponentDrop;
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::GameInstant;
 use crate::Egregoria;
-use common::Z_CAR;
 use geom::Color;
 use geom::{Spline, Transform, Vec2};
 use imgui_inspect::InspectDragf;
@@ -186,13 +185,7 @@ pub fn make_vehicle_entity(
 
     let w = vehicle.kind.width();
     let e = goria.world.push((
-        AssetRender {
-            id: asset_id,
-            hide: false,
-            scale: w,
-            tint,
-            z: Z_CAR,
-        },
+        AssetRender { id: asset_id, tint },
         trans,
         Kinematics::default(),
         Selectable::default(),

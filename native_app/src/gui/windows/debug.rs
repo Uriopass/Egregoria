@@ -88,7 +88,7 @@ pub fn debug(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egre
 
         let timings = uiworld.read::<Timings>();
         let mouse = uiworld.read::<MouseInfo>().unprojected;
-        let cam = uiworld.read::<Camera>().position;
+        let cam = uiworld.read::<Camera>().pos;
 
         ui.text("Averaged over last 10 frames: ");
         ui.text(im_str!("Total time: {:.1}ms", timings.all.avg() * 1000.0));
@@ -100,8 +100,8 @@ pub fn debug(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egre
             "Render prepare time: {:.1}ms",
             timings.render.avg() * 1000.0
         ));
-        ui.text(im_str!("Mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
-        ui.text(im_str!("Cam   pos: {:.1} {:.1} {:.1}", cam.x, cam.y, cam.z));
+        ui.text(im_str!("Mouse  pos: {:.1} {:.1}", mouse.x, mouse.y));
+        ui.text(im_str!("Cam center: {:.1} {:.1}", cam.x, cam.y));
         ui.separator();
         ui.text("Game system times");
 
@@ -123,13 +123,13 @@ pub fn debug(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egre
 pub fn show_grid(tess: &mut Tesselator, _: &Egregoria, uiworld: &UiWorld) -> Option<()> {
     let cam = &*uiworld.read::<Camera>();
 
-    if cam.position.z > 1000.0 {
+    if cam.eye().z > 1000.0 {
         return Some(());
     }
 
     let gray_maj = 0.5;
     let gray_min = 0.3;
-    if cam.position.z < 300.0 {
+    if cam.eye().z < 300.0 {
         tess.set_color(Color::new(gray_min, gray_min, gray_min, 0.5));
         tess.draw_grid(1.0);
     }

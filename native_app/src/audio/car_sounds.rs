@@ -4,7 +4,7 @@ use common::AudioKind;
 use egregoria::physics::CollisionWorld;
 use egregoria::Egregoria;
 use flat_spatial::grid::GridHandle;
-use geom::Camera;
+use geom::{Camera, AABB};
 use rodio::Source;
 use slotmap::SecondaryMap;
 use std::time::Duration;
@@ -40,9 +40,8 @@ impl CarSounds {
         delta: f32,
     ) {
         let coworld = goria.read::<CollisionWorld>();
-        let cam = uiworld.read::<Camera>();
-        let campos = cam.position;
-        let cambox = cam.screen_aabb().expand(100.0);
+        let campos = uiworld.read::<Camera>().eye();
+        let cambox = AABB::new(campos.xy(), campos.xy()).expand(100.0);
 
         const HEAR_RADIUS: f32 = 200.0;
 

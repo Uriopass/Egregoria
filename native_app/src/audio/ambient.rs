@@ -1,7 +1,7 @@
 use crate::audio::{AudioContext, AudioHandle, AudioKind};
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
-use geom::{lerp, vec2, Camera};
+use geom::{lerp, vec2, Camera, Vec2, AABB};
 use rodio::Source;
 
 pub struct Ambient {
@@ -34,17 +34,17 @@ impl Ambient {
         delta: f32,
     ) {
         let delta = delta.min(0.1);
-        let camera = uiworld.read::<Camera>();
+        let eye = uiworld.read::<Camera>().eye();
         let map = goria.map();
 
-        let h = camera.position.z;
+        let h = eye.z;
 
         // Wind
         let volume = lerp(0.1, 0.8, (h - 100.0) / 4000.0);
         ctx.set_volume_smooth(self.wind, volume, delta * 0.05);
 
         // Forest
-        let bbox = camera.screen_aabb();
+        let bbox = AABB::new(eye.xy() - Vec2::splat(100.0), eye.xy() + Vec2::splat(100.0));
         let mut volume = lerp(1.0, 0.0, h / 600.0);
 
         let ll = bbox.ll;

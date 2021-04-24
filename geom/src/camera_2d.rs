@@ -3,16 +3,16 @@ use mint::ColumnMatrix4;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
-pub struct Camera {
+pub struct Camera2D {
     pub viewport: Vec2,
     pub position: Vec3,
     scale: Vec2,
     offset: Vec2,
 }
 
-impl Camera {
-    pub fn new(viewport_width: f32, viewport_height: f32, position: Vec3) -> Camera {
-        let mut c = Camera {
+impl Camera2D {
+    pub fn new(viewport_width: f32, viewport_height: f32, position: Vec3) -> Self {
+        let mut c = Self {
             viewport: vec2(viewport_width, viewport_height),
             position,
             scale: Vec2::ZERO,

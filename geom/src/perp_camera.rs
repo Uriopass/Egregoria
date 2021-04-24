@@ -3,7 +3,7 @@ use crate::{Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
-pub struct Camera3D {
+pub struct Camera {
     pub pos: Vec2,
     pub yaw: f32,
     pub pitch: f32,
@@ -15,9 +15,9 @@ pub struct Camera3D {
     fovy: f32,
 }
 
-impl Camera3D {
+impl Camera {
     pub fn new(pos: Vec2, viewport_w: f32, viewport_h: f32) -> Self {
-        Camera3D {
+        Self {
             pos,
             yaw: std::f32::consts::FRAC_PI_4,
             pitch: std::f32::consts::FRAC_PI_4,

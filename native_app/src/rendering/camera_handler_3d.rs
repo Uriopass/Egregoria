@@ -1,14 +1,15 @@
-#![allow(dead_code)]
 use crate::context::Context;
 use crate::gui::windows::settings::Settings;
 use crate::input::{KeyCode, MouseButton};
 use common::saveload::Encoder;
-use geom::{mulmatvec, vec2, Camera3D, Plane, Ray3, Vec2, Vec3, AABB};
+use geom::{mulmatvec, Camera, Plane, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
 
 pub struct CameraHandler3D {
-    pub camera: Camera3D,
+    pub camera: Camera,
     pub lastscreenpos: Vec2,
+    pub last_pos: Vec2,
+    pub targetpos: Vec2,
 }
 
 impl CameraHandler3D {
@@ -25,10 +26,7 @@ impl CameraHandler3D {
 
     pub fn cull_tess(&self, tess: &mut Tesselator) {
         let p = self.camera.pos;
-        tess.cull_rect = Some(AABB::new(
-            p - vec2(2000.0, 2000.0),
-            p + vec2(2000.0, 2000.0),
-        ));
+        tess.cull_rect = Some(AABB::new(p, p).expand(2000.0));
         tess.zoom = 1000.0 / self.height();
     }
 
@@ -85,12 +83,14 @@ impl CameraHandler3D {
     }
 
     pub fn load(viewport: (u32, u32)) -> Self {
-        let cam = common::saveload::JSON::load("camera3D");
+        let camera = common::saveload::JSON::load("camera3D")
+            .unwrap_or_else(|| Camera::new(Vec2::ZERO, viewport.0 as f32, viewport.1 as f32));
 
         Self {
-            camera: cam
-                .unwrap_or_else(|| Camera3D::new(Vec2::ZERO, viewport.0 as f32, viewport.1 as f32)),
+            camera,
             lastscreenpos: Default::default(),
+            last_pos: Default::default(),
+            targetpos: camera.pos,
         }
     }
 
@@ -110,16 +110,16 @@ impl CameraHandler3D {
             let off = self.camera.offset();
             let d = off.xy().try_normalize().unwrap_or(Vec2::ZERO) * self.camera.dist;
             if pressed.contains(&KeyCode::Right) {
-                self.camera.pos += -delta * d.perpendicular();
+                self.targetpos += -delta * d.perpendicular();
             }
             if pressed.contains(&KeyCode::Left) {
-                self.camera.pos += delta * d.perpendicular();
+                self.targetpos += delta * d.perpendicular();
             }
             if pressed.contains(&KeyCode::Up) {
-                self.camera.pos += -delta * d;
+                self.targetpos += -delta * d;
             }
             if pressed.contains(&KeyCode::Down) {
-                self.camera.pos += delta * d;
+                self.targetpos += delta * d;
             }
 
             let just_pressed = &ctx.input.keyboard.just_pressed;
@@ -130,13 +130,11 @@ impl CameraHandler3D {
             if just_pressed.contains(&KeyCode::Subtract) || just_pressed.contains(&KeyCode::Minus) {
                 self.camera.dist *= 1.1;
             }
-
-            if settings.camera_lock {
-                self.camera.dist = self.camera.dist.min(20000.0).max(5.0);
-            }
         }
         let delta_mouse = ctx.input.mouse.screen - self.lastscreenpos;
         self.lastscreenpos = ctx.input.mouse.screen;
+
+        let unprojected = ctx.input.mouse.unprojected;
 
         if mouse_enabled {
             if ctx.input.mouse.wheel_delta < 0.0 {
@@ -152,8 +150,21 @@ impl CameraHandler3D {
                 self.camera.pitch += delta_mouse.y / 100.0;
                 self.camera.pitch = self.camera.pitch.min(1.57).max(0.1);
             }
+
+            if pressed.contains(&MouseButton::Right) {
+                self.targetpos += (self.last_pos - unprojected).cap_magnitude(50000.0 * delta);
+                self.targetpos.x = self.targetpos.x.clamp(-10000.0, 10000.0);
+                self.targetpos.y = self.targetpos.y.clamp(-10000.0, 10000.0);
+            }
+        }
+
+        if settings.camera_smooth {
+            self.camera.pos += (self.targetpos - self.camera.pos) * delta * 8.0;
+        } else {
+            self.camera.pos = self.targetpos;
         }
 
         self.update(ctx);
+        self.last_pos = self.unproject(ctx.input.mouse.screen);
     }
 }
