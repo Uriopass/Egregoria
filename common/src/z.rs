@@ -20,17 +20,15 @@ gen_z! {
     Z_INTER_BG
     Z_LANE_BG
     Z_LANE
+    Z_BSPRITE
     Z_SIDEWALK
     Z_ARROW
     Z_CROSSWALK
     Z_HIGHLIGHT_INTER
     Z_GUITURN
-    Z_TREE_SHADOW
-    Z_HOUSE
     Z_SIGNAL
     Z_CAR
     Z_PATH_NOT_FOUND
-    Z_TREE
     Z_DEBUG_BG
     Z_DEBUG
     Z_TOOL_BG

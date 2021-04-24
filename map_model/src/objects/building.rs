@@ -1,6 +1,6 @@
 use crate::procgen::ColoredMesh;
 use crate::{Buildings, Road, SpatialMap};
-use common::Z_HOUSE;
+use common::Z_LANE;
 use geom::{Color, Vec2, OBB};
 use imgui_inspect::debug_inspect_impl;
 use serde::{Deserialize, Serialize};
@@ -69,13 +69,12 @@ impl Building {
 
         let (rpos, _, dir) = road.points.project_segment_dir(door_pos);
 
+        let z = Z_LANE;
         let walkway = vec![
-            (rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) + dir * 1.5)
-                .z(Z_HOUSE),
-            (rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) - dir * 1.5)
-                .z(Z_HOUSE),
-            (door_pos - dir * 1.5).z(Z_HOUSE),
-            (door_pos + dir * 1.5).z(Z_HOUSE),
+            (rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) + dir * 1.5).z(z),
+            (rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) - dir * 1.5).z(z),
+            (door_pos - dir * 1.5).z(z),
+            (door_pos + dir * 1.5).z(z),
         ];
 
         mesh.faces.push((walkway, Color::gray(0.4).into()));

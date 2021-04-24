@@ -1,5 +1,5 @@
 use common::{
-    FastMap, Z_ARROW, Z_CROSSWALK, Z_HOUSE, Z_INTER_BG, Z_LANE, Z_LANE_BG, Z_LOT, Z_SIDEWALK,
+    FastMap, Z_ARROW, Z_BSPRITE, Z_CROSSWALK, Z_INTER_BG, Z_LANE, Z_LANE_BG, Z_LOT, Z_SIDEWALK,
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::Restrict;
@@ -203,7 +203,7 @@ impl MapBuilders {
                 let w = axis[0].magnitude();
                 let d = axis[0] / w;
                 let h = axis[1].magnitude();
-                x.push(c, d, Z_HOUSE - f32::EPSILON, LinearColor::WHITE, (w, h));
+                x.push(c, d, Z_BSPRITE, LinearColor::WHITE, (w, h));
             }
         }
     }

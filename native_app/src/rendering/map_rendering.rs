@@ -1,5 +1,5 @@
 use crate::rendering::map_mesh::MapMeshHandler;
-use common::{Z_SIGNAL, Z_TREE};
+use common::Z_SIGNAL;
 use egregoria::Egregoria;
 use flat_spatial::storage::Storage;
 use geom::{Color, LinearColor, AABB};
@@ -133,7 +133,7 @@ impl RoadRenderer {
             let (pos, t) = map.trees.grid.get(h).unwrap();
 
             self.trees_builder.instances.push(MeshInstance {
-                pos: pos.z(Z_TREE),
+                pos: pos.z(0.0),
                 dir: t.dir.z(0.0),
                 tint: (t.col * LinearColor::WHITE).a(1.0),
             });
