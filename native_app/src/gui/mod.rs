@@ -39,7 +39,7 @@ pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     hand_reset(uiworld);
 
     let eye = uiworld.read::<Camera>().pos;
-    let cam = AABB::new(eye, eye).expand(1000.0);
+    let cam = AABB::new(eye, eye).expand(2000.0);
     if goria.map().trees.check_non_generated_chunks(cam) {
         uiworld.commands().map_generate_trees(cam);
     }

@@ -17,10 +17,10 @@ gen_z! {
     Z_TERRAIN
     Z_GRID
     Z_LOT
+    Z_BSPRITE
     Z_INTER_BG
     Z_LANE_BG
     Z_LANE
-    Z_BSPRITE
     Z_SIDEWALK
     Z_ARROW
     Z_CROSSWALK
