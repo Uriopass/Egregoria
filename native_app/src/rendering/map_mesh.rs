@@ -12,8 +12,8 @@ use wgpu_engine::earcut::earcut;
 use wgpu_engine::wgpu::{RenderPass, RenderPipeline};
 use wgpu_engine::{
     compile_shader, ColNorVertex, CompiledShader, Drawable, GfxContext, LitMesh, LitMeshBuilder,
-    Mesh, MultiSpriteBatch, ShadedBatch, ShadedBatchBuilder, ShadedInstanceRaw, Shaders,
-    SpriteBatch, SpriteBatchBuilder, Tesselator,
+    MultiSpriteBatch, ShadedBatch, ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch,
+    SpriteBatchBuilder, Tesselator,
 };
 
 #[derive(Copy, Clone)]
@@ -45,7 +45,7 @@ struct MapBuilders {
 }
 
 pub struct MapMeshes {
-    map: Option<Mesh>,
+    map: Option<LitMesh>,
     crosswalks: Option<ShadedBatch<Crosswalk>>,
     buildings: MultiSpriteBatch,
     building_mesh: Option<LitMesh>,

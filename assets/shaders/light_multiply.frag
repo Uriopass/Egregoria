@@ -12,17 +12,10 @@ layout(set = 0, binding = 1) uniform sampler s_light;
 layout(set = 0, binding = 2) uniform texture2D t_color;
 layout(set = 0, binding = 3) uniform sampler s_color;
 
-layout(set = 0, binding = 4) uniform texture2D t_noise;
-layout(set = 0, binding = 5) uniform sampler s_noise;
-
-layout(set = 0, binding = 6) uniform texture2D t_blue_noise;
-layout(set = 0, binding = 7) uniform sampler s_blue_noise;
+layout(set = 0, binding = 4) uniform texture2D t_blue_noise;
+layout(set = 0, binding = 5) uniform sampler s_blue_noise;
 
 layout(set = 1, binding = 0) uniform Uni {LightParams params;};
-
-float tnoise( vec2 v) {
-    return texture(sampler2D(t_noise, s_noise), v * 0.1).r * 2.0 - 0.5;
-}
 
 const float FBM_MAG = 0.4;
 

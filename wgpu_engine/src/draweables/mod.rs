@@ -4,7 +4,6 @@ use wgpu::{RenderPass, RenderPipeline};
 
 mod blit_linear;
 mod lit_mesh;
-mod mesh;
 mod multispritebatch;
 mod palette_mesh;
 mod shaded_batch;
@@ -13,7 +12,6 @@ mod spritebatch;
 
 pub use blit_linear::*;
 pub use lit_mesh::*;
-pub use mesh::*;
 pub use multispritebatch::*;
 pub use palette_mesh::*;
 pub use shaded_batch::*;

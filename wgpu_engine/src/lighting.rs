@@ -11,7 +11,6 @@ use wgpu::{
 };
 
 pub struct LightRender {
-    noise: Texture,
     blue_noise: Texture,
     vertex_buffer: Buffer,
     instance_buffer: PBuffer,
@@ -19,7 +18,6 @@ pub struct LightRender {
 
 impl LightRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
-        let noise = Texture::from_path(gfx, "assets/noise.png", None);
         let mut blue_noise = Texture::from_path(gfx, "assets/blue_noise_512.png", None);
         blue_noise.sampler = gfx.device.create_sampler(&SamplerDescriptor {
             label: None,
@@ -48,7 +46,6 @@ impl LightRender {
 
         Self {
             vertex_buffer,
-            noise,
             blue_noise,
             instance_buffer: PBuffer::new(BufferUsage::VERTEX),
         }
@@ -131,7 +128,7 @@ impl Drawable for LightMultiply {
                         &Texture::bindgroup_layout_complex(
                             &gfx.device,
                             TextureSampleType::Float { filterable: true },
-                            4,
+                            3,
                         ),
                         &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
                     ],
@@ -265,7 +262,6 @@ impl LightRender {
             &[
                 &gfx.light_texture,
                 &gfx.color_texture.target,
-                &self.noise,
                 &self.blue_noise,
             ],
             &gfx.device,

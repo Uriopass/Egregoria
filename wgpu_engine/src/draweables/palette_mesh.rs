@@ -44,7 +44,7 @@ pub struct PaletteMesh {
     pub index_buffer: wgpu::Buffer,
     pub n_indices: u32,
     pub palette: Arc<Texture>,
-    pub bind_group: wgpu::BindGroup,
+    pub texbg: wgpu::BindGroup,
 }
 
 pub struct InstancedPaletteMeshBuilder {
@@ -126,8 +126,8 @@ impl PaletteMeshBuilder {
 
         let tex = gfx.palette().clone();
 
-        let bind_group = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &pipeline.get_bind_group_layout(0),
+        let texbg = gfx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &pipeline.get_bind_group_layout(2),
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -146,7 +146,7 @@ impl PaletteMeshBuilder {
             index_buffer,
             n_indices: self.indices.len() as u32,
             palette: tex,
-            bind_group,
+            texbg,
         })
     }
 }
@@ -160,13 +160,13 @@ impl PaletteMesh {
 impl Drawable for InstancedPaletteMesh {
     fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
         let vert = compile_shader(&gfx.device, "assets/shaders/palette.vert", None);
-        let frag = compile_shader(&gfx.device, "assets/shaders/palette.frag", None);
+        let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
 
         gfx.basic_pipeline(
             &[
-                &Texture::bindgroup_layout(&gfx.device),
                 &gfx.projection.layout,
                 &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
+                &Texture::bindgroup_layout(&gfx.device),
             ],
             &[NorUvVertex::desc(), MeshInstance::desc()],
             vert,
@@ -177,9 +177,9 @@ impl Drawable for InstancedPaletteMesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
         rp.set_pipeline(&pipeline);
-        rp.set_bind_group(0, &self.mesh.bind_group, &[]);
-        rp.set_bind_group(1, &gfx.projection.bindgroup, &[]);
-        rp.set_bind_group(2, &gfx.light_params.bindgroup, &[]);
+        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+        rp.set_bind_group(1, &gfx.light_params.bindgroup, &[]);
+        rp.set_bind_group(2, &self.mesh.texbg, &[]);
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);

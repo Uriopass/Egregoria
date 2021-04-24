@@ -81,7 +81,7 @@ pub struct LitMesh {
 impl Drawable for LitMesh {
     fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
         let vert = compile_shader(&gfx.device, "assets/shaders/lit_mesh.vert", None);
-        let frag = compile_shader(&gfx.device, "assets/shaders/lit_mesh.frag", None);
+        let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
 
         gfx.basic_pipeline(
             &[
