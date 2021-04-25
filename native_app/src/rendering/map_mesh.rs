@@ -4,7 +4,7 @@ use common::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::Restrict;
 use egregoria::Egregoria;
-use geom::{vec2, LinearColor, Polygon, Vec2};
+use geom::{vec2, LinearColor, Polygon, Vec2, Vec3};
 use map_model::{BuildingKind, LaneKind, LotKind, Map, TurnKind, CROSSWALK_WIDTH};
 use std::ops::Mul;
 use std::rc::Rc;
@@ -12,8 +12,7 @@ use wgpu_engine::earcut::earcut;
 use wgpu_engine::wgpu::{RenderPass, RenderPipeline};
 use wgpu_engine::{
     compile_shader, CompiledShader, Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex,
-    MultiSpriteBatch, ShadedBatch, ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch,
-    SpriteBatchBuilder, Tesselator,
+    MultiSpriteBatch, ShadedBatch, Shaders, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 
 #[derive(Copy, Clone)]
@@ -40,13 +39,13 @@ struct MapBuilders {
     buildings_builder: FastMap<BuildingKind, SpriteBatchBuilder>,
     buildings_mesh: MeshBuilder,
     arrow_builder: SpriteBatchBuilder,
-    crosswalk_builder: ShadedBatchBuilder<Crosswalk>,
+    crosswalk_builder: MeshBuilder,
     tess: Tesselator,
 }
 
 pub struct MapMeshes {
     map: Option<Mesh>,
-    crosswalks: Option<ShadedBatch<Crosswalk>>,
+    crosswalks: Option<Mesh>,
     buildings: MultiSpriteBatch,
     building_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
@@ -72,7 +71,7 @@ impl MapMeshHandler {
         let builders = MapBuilders {
             arrow_builder,
             buildings_builder,
-            crosswalk_builder: ShadedBatchBuilder::new(),
+            crosswalk_builder: MeshBuilder::new(),
             tess: Tesselator::new(None, 15.0),
             buildings_mesh: MeshBuilder::new(),
         };
@@ -85,7 +84,7 @@ impl MapMeshHandler {
         }
     }
 
-    pub fn latest_mesh(&mut self, map: &Map, gfx: &GfxContext) -> &Option<Rc<MapMeshes>> {
+    pub fn latest_mesh(&mut self, map: &Map, gfx: &mut GfxContext) -> &Option<Rc<MapMeshes>> {
         if map.dirt_id.0 != self.map_dirt_id || self.last_config != common::config_id() {
             self.builders.map_mesh(&map);
             self.builders.arrows(&map);
@@ -98,9 +97,11 @@ impl MapMeshHandler {
 
             let m = &mut self.builders.tess.meshbuilder;
 
+            let cw = gfx.texture("assets/crosswalk.png", Some("crosswalk"));
+
             let meshes = MapMeshes {
                 map: m.build(gfx, gfx.palette()),
-                crosswalks: self.builders.crosswalk_builder.build(gfx),
+                crosswalks: self.builders.crosswalk_builder.build(gfx, cw),
                 buildings: self
                     .builders
                     .buildings_builder
@@ -155,7 +156,7 @@ impl MapBuilders {
 
     fn crosswalks(&mut self, map: &Map) {
         let builder = &mut self.crosswalk_builder;
-        builder.instances.clear();
+        builder.clear();
 
         let lanes = map.lanes();
         let intersections = map.intersections();
@@ -174,16 +175,35 @@ impl MapBuilders {
                     }
 
                     let dir = (to - from) / l;
-                    let pos = from + dir * 2.25 + dir.perpendicular() * CROSSWALK_WIDTH * 0.5;
+                    let perp = dir.perpendicular() * CROSSWALK_WIDTH * 0.5;
+                    let pos = (from + dir * 2.25).z(Z_CROSSWALK);
                     let height = l - 4.5;
+                    let dir = dir.z(0.0);
+                    let perp = perp.z(0.0);
 
-                    builder.instances.push(ShadedInstanceRaw::new(
-                        pos,
-                        Z_CROSSWALK,
-                        dir,
-                        vec2(height, CROSSWALK_WIDTH),
-                        LinearColor::WHITE,
-                    ));
+                    builder.extend_with(|vertices, add_index| {
+                        let mk_v = |position: Vec3, uv: Vec2| MeshVertex {
+                            position: position.into(),
+                            uv: uv.into(),
+                            normal: [0.0, 0.0, 1.0],
+                            color: [1.0; 4],
+                        };
+
+                        vertices.push(mk_v(pos - perp, Vec2::ZERO));
+                        vertices.push(mk_v(pos + perp, Vec2::ZERO));
+                        vertices.push(mk_v(pos + perp + dir * height, Vec2::x(height / 10.0)));
+                        vertices.push(mk_v(pos - perp + dir * height, Vec2::x(height / 10.0)));
+
+                        dbg!("cross");
+
+                        add_index(0);
+                        add_index(1);
+                        add_index(2);
+
+                        add_index(0);
+                        add_index(2);
+                        add_index(3);
+                    });
                 }
             }
         }
