@@ -93,6 +93,7 @@ impl TerrainRender {
                 albedo_bg: self.bg.clone(),
                 albedo: self.albedo.clone(),
                 n_indices: n_indices as u32,
+                translucent: false,
             };
             v.push(m);
         }

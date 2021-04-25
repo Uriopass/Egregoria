@@ -125,8 +125,8 @@ impl SpriteBatch {
                 ),
             ],
             &[],
-            vert,
-            frag,
+            &vert,
+            &frag,
         );
         gfx.register_pipeline::<Self>(pipe);
     }

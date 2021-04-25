@@ -72,17 +72,19 @@ impl InstancedMesh {
         let vert = compile_shader(&gfx.device, "assets/shaders/instanced_mesh.vert", None);
         let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
 
+        let vb = &[MeshVertex::desc(), MeshInstance::desc()];
         let pipe = gfx.basic_pipeline(
             &[
                 &gfx.projection.layout,
                 &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
                 &Texture::bindgroup_layout(&gfx.device),
             ],
-            &[MeshVertex::desc(), MeshInstance::desc()],
-            vert,
-            frag,
+            vb,
+            &vert,
+            &frag,
         );
         gfx.register_pipeline::<Self>(pipe);
+        gfx.register_pipeline::<InstancedMeshDepth>(gfx.depth_pipeline(vb, &vert))
     }
 }
 
@@ -99,10 +101,14 @@ impl Drawable for InstancedMesh {
         rp.draw_indexed(0..self.mesh.n_indices, 0, 0..self.n_instances);
     }
 
-    fn draw_depth<'a>(&'a self, _: &'a GfxContext, rp: &mut RenderPass<'a>) {
+    fn draw_depth<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        rp.set_pipeline(&gfx.get_pipeline::<InstancedMeshDepth>());
+        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.mesh.n_indices, 0, 0..self.n_instances);
     }
 }
+
+struct InstancedMeshDepth;

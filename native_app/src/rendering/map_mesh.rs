@@ -179,8 +179,6 @@ impl MapBuilders {
                         vertices.push(mk_v(pos + perp + dir * height, Vec2::x(height / 10.0)));
                         vertices.push(mk_v(pos - perp + dir * height, Vec2::x(height / 10.0)));
 
-                        dbg!("cross");
-
                         add_index(0);
                         add_index(1);
                         add_index(2);

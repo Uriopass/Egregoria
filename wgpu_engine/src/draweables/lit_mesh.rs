@@ -69,6 +69,7 @@ impl MeshBuilder {
             ),
             albedo,
             n_indices: self.indices.len() as u32,
+            translucent: false,
         })
     }
 }
@@ -80,6 +81,7 @@ pub struct Mesh {
     pub albedo: Arc<Texture>,
     pub albedo_bg: Arc<wgpu::BindGroup>,
     pub n_indices: u32,
+    pub translucent: bool,
 }
 
 impl Mesh {
@@ -94,10 +96,12 @@ impl Mesh {
                 &Texture::bindgroup_layout(&gfx.device),
             ],
             &[MeshVertex::desc()],
-            vert,
-            frag,
+            &vert,
+            &frag,
         );
         gfx.register_pipeline::<Self>(pipe);
+
+        gfx.register_pipeline::<LitMeshDepth>(gfx.depth_pipeline(&[MeshVertex::desc()], &vert))
     }
 }
 
@@ -112,9 +116,16 @@ impl Drawable for Mesh {
         rp.draw_indexed(0..self.n_indices, 0, 0..1);
     }
 
-    fn draw_depth<'a>(&'a self, _: &'a GfxContext, rp: &mut RenderPass<'a>) {
+    fn draw_depth<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        if self.translucent {
+            return;
+        }
+        rp.set_pipeline(&gfx.get_pipeline::<LitMeshDepth>());
+        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);
     }
 }
+
+struct LitMeshDepth;
