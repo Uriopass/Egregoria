@@ -1,9 +1,7 @@
 use crate::map_dynamic::Itinerary;
 use crate::pedestrians::Pedestrian;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
-use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::time::GameTime;
-use crate::utils::Restrict;
 use geom::{angle_lerp, Transform, Vec2};
 use legion::system;
 use map_model::{Map, TraverseDirection};
@@ -19,7 +17,6 @@ pub fn pedestrian_decision(
     trans: &mut Transform,
     kin: &mut Kinematics,
     pedestrian: &mut Pedestrian,
-    mr: &mut MeshRender,
 ) {
     let (_, my_obj) = cow.get(coll.0).expect("Handle not in collision world");
     let neighbors = cow.query_around(trans.position(), 10.0);
@@ -29,25 +26,9 @@ pub fn pedestrian_decision(
 
     let (desired_v, desired_dir) = calc_decision(pedestrian, trans, kin, map, my_obj, it, objs);
 
-    walk_anim(pedestrian, mr, time, kin);
-    physics(kin, trans, time, desired_v, desired_dir);
-}
-
-pub fn walk_anim(
-    pedestrian: &mut Pedestrian,
-    mr: &mut MeshRender,
-    time: &GameTime,
-    kin: &Kinematics,
-) {
     let speed = kin.velocity.magnitude();
     pedestrian.walk_anim += 7.0 * speed * time.delta / pedestrian.walking_speed;
-
-    let offset = pedestrian.walk_anim.cos()
-        * 0.1
-        * (speed * 2.0 - pedestrian.walking_speed).restrict(0.0, 1.0);
-
-    unwrap_ret!(mr.orders.get_mut(0)).as_rect_mut().offset.x = offset;
-    unwrap_ret!(mr.orders.get_mut(1)).as_rect_mut().offset.x = -offset;
+    physics(kin, trans, time, desired_v, desired_dir);
 }
 
 const PEDESTRIAN_ACC: f32 = 1.5;

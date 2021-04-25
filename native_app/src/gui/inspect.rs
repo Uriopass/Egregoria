@@ -5,7 +5,6 @@ use egregoria::map_dynamic::{Itinerary, Router};
 use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, Kinematics};
 use egregoria::rendering::assets::AssetRender;
-use egregoria::rendering::meshrender_component::MeshRender;
 use egregoria::souls::desire::{BuyFood, Home, Work};
 use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::souls::human::HumanDecision;
@@ -61,7 +60,6 @@ impl InspectRenderer {
         self.inspect_component::<Pedestrian>(goria, ui);
         self.inspect_component::<Location>(goria, ui);
         self.inspect_component::<AssetRender>(goria, ui);
-        self.inspect_component::<MeshRender>(goria, ui);
         self.inspect_component::<Kinematics>(goria, ui);
         self.inspect_component::<Collider>(goria, ui);
         self.inspect_component::<Itinerary>(goria, ui);

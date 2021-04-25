@@ -1,7 +1,6 @@
 use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
 use crate::pedestrians::{put_pedestrian_in_coworld, Location};
 use crate::physics::{Collider, CollisionWorld, Kinematics};
-use crate::rendering::meshrender_component::MeshRender;
 use crate::utils::par_command_buffer::ComponentDrop;
 use crate::vehicles::{unpark, Vehicle, VehicleID, VehicleState};
 use crate::{Egregoria, ParCommandBuffer};
@@ -99,7 +98,6 @@ pub fn routing_update(
     itin: &Itinerary,
     router: &mut Router,
     loc: &mut Location,
-    mr: &mut MeshRender,
     kin: &mut Kinematics,
     subworld: &SubWorld,
 ) {
@@ -195,13 +193,13 @@ pub fn routing_update(
                     return;
                 }
                 *loc = Location::Vehicle(vehicle);
-                walk_inside(*body, cbuf, mr, kin);
+                walk_inside(*body, cbuf, kin);
             }
             RoutingStep::GetOutVehicle(vehicle) => {
                 let pos = comp::<Transform>(subworld, vehicle.0)
                     .map(|vtrans| vtrans.position() + vtrans.direction().perpendicular() * 2.0)
                     .unwrap_or(pos);
-                walk_outside(*body, pos, cbuf, mr, loc);
+                walk_outside(*body, pos, cbuf, loc);
             }
             RoutingStep::GetInBuilding(build) => {
                 if !map.buildings().contains_key(build) {
@@ -209,7 +207,7 @@ pub fn routing_update(
                     return;
                 }
                 *loc = Location::Building(build);
-                walk_inside(*body, cbuf, mr, kin);
+                walk_inside(*body, cbuf, kin);
             }
             RoutingStep::GetOutBuilding(build) => {
                 let wpos = map
@@ -217,7 +215,7 @@ pub fn routing_update(
                     .get(build)
                     .map(|x| x.door_pos)
                     .unwrap_or(pos);
-                walk_outside(*body, wpos, cbuf, mr, loc);
+                walk_outside(*body, wpos, cbuf, loc);
             }
         }
     }
@@ -233,21 +231,13 @@ fn comp<'a, T: Component>(sw: &'a SubWorld, e: Entity) -> Option<&'a T> {
     <(&T,)>::query().get(sw, e).map(|x| x.0).ok()
 }
 
-fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, mr: &mut MeshRender, kin: &mut Kinematics) {
-    mr.hide = true;
+fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, kin: &mut Kinematics) {
     cbuf.remove_component_drop::<Collider>(body);
     kin.velocity = Vec2::ZERO;
     cbuf.add_component(body, Itinerary::none())
 }
 
-fn walk_outside(
-    body: Entity,
-    pos: Vec2,
-    cbuf: &ParCommandBuffer,
-    mr: &mut MeshRender,
-    loc: &mut Location,
-) {
-    mr.hide = false;
+fn walk_outside(body: Entity, pos: Vec2, cbuf: &ParCommandBuffer, loc: &mut Location) {
     *loc = Location::Outside;
     cbuf.exec_ent(body, move |goria| {
         unwrap_ret!(goria.comp_mut::<Transform>(body)).set_position(pos);
