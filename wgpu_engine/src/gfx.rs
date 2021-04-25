@@ -1,7 +1,7 @@
 use crate::draweables::BlitLinear;
 use crate::{
-    CompiledShader, Drawable, IndexType, InstancedPaletteMesh, LitMesh, SpriteBatch, Texture,
-    Uniform, UvVertex,
+    CompiledShader, Drawable, IndexType, InstancedMesh, Mesh, SpriteBatch, Texture, Uniform,
+    UvVertex,
 };
 use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
@@ -165,8 +165,8 @@ impl GfxContext {
             device,
         };
 
-        me.register_pipeline::<LitMesh>();
-        me.register_pipeline::<InstancedPaletteMesh>();
+        me.register_pipeline::<Mesh>();
+        me.register_pipeline::<InstancedMesh>();
         me.register_pipeline::<SpriteBatch>();
         me.register_pipeline::<BlitLinear>();
 
@@ -207,10 +207,11 @@ impl GfxContext {
         self.textures.get(&path.into())
     }
 
-    pub fn palette(&self) -> &Arc<Texture> {
+    pub fn palette(&self) -> Arc<Texture> {
         self.textures
             .get(&*PathBuf::from("assets/palette.png"))
             .expect("palette not loaded")
+            .clone()
     }
 
     pub fn set_present_mode(&mut self, mode: wgpu::PresentMode) {

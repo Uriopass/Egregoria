@@ -1,24 +1,25 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    compile_shader, ColNorVertex, Drawable, GfxContext, IndexType, LightParams, Uniform, VBDesc,
+    compile_shader, Drawable, GfxContext, IndexType, LightParams, MeshVertex, Texture, Uniform,
+    VBDesc,
 };
 use std::sync::Arc;
 use wgpu::{BufferUsage, IndexFormat, RenderPass, RenderPipeline};
 
-pub struct LitMeshBuilder {
-    pub vertices: Vec<ColNorVertex>,
+pub struct MeshBuilder {
+    pub vertices: Vec<MeshVertex>,
     pub indices: Vec<IndexType>,
     pub vbuffer: PBuffer,
     pub ibuffer: PBuffer,
 }
 
-impl Default for LitMeshBuilder {
+impl Default for MeshBuilder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl LitMeshBuilder {
+impl MeshBuilder {
     pub fn new() -> Self {
         Self {
             vertices: vec![],
@@ -33,7 +34,7 @@ impl LitMeshBuilder {
         self.indices.clear();
     }
 
-    pub fn extend(&mut self, vertices: &[ColNorVertex], indices: &[IndexType]) -> &mut Self {
+    pub fn extend(&mut self, vertices: &[MeshVertex], indices: &[IndexType]) -> &mut Self {
         let offset = self.vertices.len() as IndexType;
         self.vertices.extend_from_slice(vertices);
         self.indices.extend(indices.iter().map(|x| x + offset));
@@ -41,10 +42,7 @@ impl LitMeshBuilder {
     }
 
     #[inline(always)]
-    pub fn extend_with(
-        &mut self,
-        f: impl FnOnce(&mut Vec<ColNorVertex>, &mut dyn FnMut(IndexType)),
-    ) {
+    pub fn extend_with(&mut self, f: impl FnOnce(&mut Vec<MeshVertex>, &mut dyn FnMut(IndexType))) {
         let offset = self.vertices.len() as IndexType;
         let vertices = &mut self.vertices;
         let indices = &mut self.indices;
@@ -54,31 +52,37 @@ impl LitMeshBuilder {
         f(vertices, &mut x);
     }
 
-    pub fn build(&mut self, ctx: &GfxContext) -> Option<LitMesh> {
+    pub fn build(&mut self, gfx: &GfxContext, albedo: Arc<Texture>) -> Option<Mesh> {
         if self.vertices.is_empty() {
             return None;
         }
 
         self.vbuffer
-            .write(ctx, bytemuck::cast_slice(&self.vertices));
-        self.ibuffer.write(ctx, bytemuck::cast_slice(&self.indices));
+            .write(gfx, bytemuck::cast_slice(&self.vertices));
+        self.ibuffer.write(gfx, bytemuck::cast_slice(&self.indices));
 
-        Some(LitMesh {
+        Some(Mesh {
             vertex_buffer: self.vbuffer.inner()?,
             index_buffer: self.ibuffer.inner()?,
+            albedo_bg: Arc::new(
+                albedo.bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device)),
+            ),
+            albedo,
             n_indices: self.indices.len() as u32,
         })
     }
 }
 
 #[derive(Clone)]
-pub struct LitMesh {
+pub struct Mesh {
     pub vertex_buffer: Arc<wgpu::Buffer>,
     pub index_buffer: Arc<wgpu::Buffer>,
+    pub albedo: Arc<Texture>,
+    pub albedo_bg: Arc<wgpu::BindGroup>,
     pub n_indices: u32,
 }
 
-impl Drawable for LitMesh {
+impl Drawable for Mesh {
     fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
         let vert = compile_shader(&gfx.device, "assets/shaders/lit_mesh.vert", None);
         let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
@@ -87,8 +91,9 @@ impl Drawable for LitMesh {
             &[
                 &gfx.projection.layout,
                 &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
+                &Texture::bindgroup_layout(&gfx.device),
             ],
-            &[ColNorVertex::desc()],
+            &[MeshVertex::desc()],
             vert,
             frag,
         )
@@ -98,6 +103,7 @@ impl Drawable for LitMesh {
         rp.set_pipeline(&gfx.get_pipeline::<Self>());
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.light_params.bindgroup, &[]);
+        rp.set_bind_group(2, &self.albedo_bg, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);

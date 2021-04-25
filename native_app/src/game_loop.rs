@@ -269,7 +269,7 @@ impl State {
             immediate.orders.clear();
         }
 
-        if let Some(x) = self.immtess.meshbuilder.build(ctx.gfx) {
+        if let Some(x) = self.immtess.meshbuilder.build(ctx.gfx, ctx.gfx.palette()) {
             ctx.draw(x)
         }
 

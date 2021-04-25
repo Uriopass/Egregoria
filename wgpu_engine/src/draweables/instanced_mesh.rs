@@ -1,0 +1,100 @@
+#![allow(dead_code)]
+use crate::pbuffer::PBuffer;
+use crate::{
+    compile_shader, Drawable, GfxContext, LightParams, Mesh, MeshVertex, Texture, Uniform, VBDesc,
+};
+use geom::{LinearColor, Vec3};
+use std::sync::Arc;
+use wgpu::{
+    BufferUsage, IndexFormat, RenderPass, RenderPipeline, VertexAttribute, VertexBufferLayout,
+};
+
+#[derive(Copy, Clone)]
+#[repr(C)]
+pub struct MeshInstance {
+    pub pos: Vec3,
+    pub dir: Vec3,
+    pub tint: LinearColor,
+}
+
+u8slice_impl!(MeshInstance);
+
+const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![4 => Float3, 5 => Float3, 6 => Float4];
+
+impl VBDesc for MeshInstance {
+    fn desc<'a>() -> VertexBufferLayout<'a> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
+            step_mode: wgpu::InputStepMode::Instance,
+            attributes: ATTRS,
+        }
+    }
+}
+
+pub struct InstancedMeshBuilder {
+    mesh: Arc<Mesh>,
+    ibuffer: PBuffer,
+    pub instances: Vec<MeshInstance>,
+}
+
+impl InstancedMeshBuilder {
+    pub fn new(mesh: Arc<Mesh>) -> Self {
+        InstancedMeshBuilder {
+            mesh,
+            instances: vec![],
+            ibuffer: PBuffer::new(BufferUsage::VERTEX),
+        }
+    }
+
+    pub fn build(&mut self, gfx: &GfxContext) -> Option<InstancedMesh> {
+        if self.instances.is_empty() {
+            return None;
+        }
+
+        self.ibuffer
+            .write(gfx, bytemuck::cast_slice(&self.instances));
+
+        Some(InstancedMesh {
+            mesh: self.mesh.clone(),
+            instance_buffer: self.ibuffer.inner()?,
+            n_instances: self.instances.len() as u32,
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct InstancedMesh {
+    mesh: Arc<Mesh>,
+    instance_buffer: Arc<wgpu::Buffer>,
+    n_instances: u32,
+}
+
+impl Drawable for InstancedMesh {
+    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
+        let vert = compile_shader(&gfx.device, "assets/shaders/instanced_mesh.vert", None);
+        let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
+
+        gfx.basic_pipeline(
+            &[
+                &gfx.projection.layout,
+                &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
+                &Texture::bindgroup_layout(&gfx.device),
+            ],
+            &[MeshVertex::desc(), MeshInstance::desc()],
+            vert,
+            frag,
+        )
+    }
+
+    fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        let pipeline = &gfx.get_pipeline::<Self>();
+        rp.set_pipeline(&pipeline);
+        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+        rp.set_bind_group(1, &gfx.light_params.bindgroup, &[]);
+        rp.set_bind_group(2, &self.mesh.albedo_bg, &[]);
+        rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
+        rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
+        rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);
+        rp.draw_indexed(0..self.mesh.n_indices, 0, 0..self.n_instances);
+    }
+}

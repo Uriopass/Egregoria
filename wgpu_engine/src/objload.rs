@@ -1,11 +1,13 @@
-use crate::{GfxContext, IndexType, NorUvVertex, PaletteMesh, PaletteMeshBuilder};
+use crate::{GfxContext, IndexType, Mesh, MeshBuilder, MeshVertex, Texture};
 use geom::{vec2, vec3, Vec2, Vec3};
 use std::path::Path;
+use std::sync::Arc;
 
 pub fn obj_to_mesh(
     path: impl AsRef<Path> + std::fmt::Debug,
     gfx: &GfxContext,
-) -> Option<PaletteMesh> {
+    albedo: Arc<Texture>,
+) -> Option<Mesh> {
     let (models, _) = tobj::load_obj(path, true)
         .map_err(|e| log::error!("{}", e))
         .ok()?;
@@ -29,7 +31,7 @@ pub fn obj_to_mesh(
         ));
     }
 
-    let mut flat_vertices: Vec<NorUvVertex> = vec![];
+    let mut flat_vertices: Vec<MeshVertex> = vec![];
     let mut indices = vec![];
 
     for triangle in model.mesh.indices.chunks(3) {
@@ -39,10 +41,11 @@ pub fn obj_to_mesh(
 
         let t_normal = (a.1 + b.1 + c.1) / 3.0;
 
-        let mk_v = |p: Vec3, u: Vec2| NorUvVertex {
+        let mk_v = |p: Vec3, u: Vec2| MeshVertex {
             position: p.into(),
             normal: t_normal.into(),
             uv: u.into(),
+            color: [1.0, 1.0, 1.0, 1.0],
         };
 
         indices.push(flat_vertices.len() as IndexType);
@@ -55,9 +58,9 @@ pub fn obj_to_mesh(
         flat_vertices.push(mk_v(c.0, c.2));
     }
 
-    let mut b = PaletteMeshBuilder::new();
+    let mut b = MeshBuilder::new();
     b.vertices = flat_vertices;
     b.indices = indices;
 
-    b.build(gfx)
+    b.build(gfx, albedo)
 }

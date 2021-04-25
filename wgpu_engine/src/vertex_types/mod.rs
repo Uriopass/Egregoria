@@ -1,7 +1,5 @@
-mod nor;
-mod noruv;
+mod mesh;
 mod uv;
 
-pub use nor::*;
-pub use noruv::*;
+pub use mesh::*;
 pub use uv::*;

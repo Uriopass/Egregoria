@@ -8,30 +8,30 @@ use legion::query::*;
 use std::sync::Arc;
 use wgpu_engine::objload::obj_to_mesh;
 use wgpu_engine::{
-    FrameContext, GfxContext, InstancedPaletteMeshBuilder, MeshInstance, SpriteBatchBuilder,
+    FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder,
 };
 
 pub struct InstancedRender {
     pub path_not_found: SpriteBatchBuilder,
-    pub cars: InstancedPaletteMeshBuilder,
-    pub trucks: InstancedPaletteMeshBuilder,
-    pub pedestrians: InstancedPaletteMeshBuilder,
+    pub cars: InstancedMeshBuilder,
+    pub trucks: InstancedMeshBuilder,
+    pub pedestrians: InstancedMeshBuilder,
 }
 
 impl InstancedRender {
-    pub fn new(ctx: &mut GfxContext) -> Self {
+    pub fn new(gfx: &mut GfxContext) -> Self {
         InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
-                ctx.texture("assets/path_not_found.png", Some("path_not_found")),
+                gfx.texture("assets/path_not_found.png", Some("path_not_found")),
             ),
-            cars: InstancedPaletteMeshBuilder::new(Arc::new(
-                obj_to_mesh("assets/simple_car.obj", ctx).unwrap(),
+            cars: InstancedMeshBuilder::new(Arc::new(
+                obj_to_mesh("assets/simple_car.obj", gfx, gfx.palette()).unwrap(),
             )),
-            trucks: InstancedPaletteMeshBuilder::new(Arc::new(
-                obj_to_mesh("assets/truck.obj", ctx).unwrap(),
+            trucks: InstancedMeshBuilder::new(Arc::new(
+                obj_to_mesh("assets/truck.obj", gfx, gfx.palette()).unwrap(),
             )),
-            pedestrians: InstancedPaletteMeshBuilder::new(Arc::new(
-                obj_to_mesh("assets/pedestrian.obj", ctx).unwrap(),
+            pedestrians: InstancedMeshBuilder::new(Arc::new(
+                obj_to_mesh("assets/pedestrian.obj", gfx, gfx.palette()).unwrap(),
             )),
         }
     }

@@ -2,30 +2,36 @@ use crate::uiworld::UiWorld;
 use common::FastMap;
 use geom::{vec2, vec3, LinearColor};
 use std::mem::MaybeUninit;
+use std::sync::Arc;
 use wgpu_engine::pbuffer::PBuffer;
 use wgpu_engine::wgpu::BufferUsage;
-use wgpu_engine::{ColNorVertex, IndexType};
-use wgpu_engine::{FrameContext, GfxContext, LitMesh};
+use wgpu_engine::{FrameContext, GfxContext, Mesh, Texture};
+use wgpu_engine::{IndexType, MeshVertex};
 
 const CHUNK_SIZE: f32 = 1000.0;
 const RESOLUTION: usize = 40;
 const LOD: usize = 1;
 
 struct TerrainChunk {
-    lods: [LitMesh; LOD],
+    lods: [Mesh; LOD],
 }
 
 pub struct TerrainRender {
     chunks: FastMap<(i32, i32), TerrainChunk>,
     indices: [(PBuffer, usize); LOD],
+    albedo: Arc<Texture>,
+    bg: Arc<wgpu_engine::wgpu::BindGroup>,
 }
 
 impl TerrainRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
         let indices = Self::generate_indices(gfx);
+        let pal = gfx.palette();
         let mut me = TerrainRender {
             chunks: Default::default(),
             indices,
+            bg: Arc::new(pal.bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device))),
+            albedo: pal,
         };
 
         for y in -10..10 {
@@ -65,12 +71,13 @@ impl TerrainRender {
                     grad *= 2.0 * height * 3000.0;
                     //height = height * height * 3000.0;
 
-                    mesh.push(ColNorVertex {
+                    mesh.push(MeshVertex {
                         position: [pos.x, pos.y, 0.0],
                         normal: vec3(1.0, 0.0, grad.x)
                             .cross(vec3(0.0, 1.0, grad.y))
                             .normalize()
                             .into(),
+                        uv: [0.0; 2],
                         color: col.into(),
                     })
                 }
@@ -80,9 +87,11 @@ impl TerrainRender {
 
             let mut vbuf = PBuffer::new(BufferUsage::VERTEX);
             vbuf.write(gfx, bytemuck::cast_slice(&mesh));
-            let m = LitMesh {
+            let m = Mesh {
                 vertex_buffer: vbuf.inner().expect("vertices were generated"),
                 index_buffer: indice.inner().expect("indices was generated"),
+                albedo_bg: self.bg.clone(),
+                albedo: self.albedo.clone(),
                 n_indices: n_indices as u32,
             };
             v.push(m);

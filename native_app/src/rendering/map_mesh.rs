@@ -11,7 +11,7 @@ use std::rc::Rc;
 use wgpu_engine::earcut::earcut;
 use wgpu_engine::wgpu::{RenderPass, RenderPipeline};
 use wgpu_engine::{
-    compile_shader, ColNorVertex, CompiledShader, Drawable, GfxContext, LitMesh, LitMeshBuilder,
+    compile_shader, CompiledShader, Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex,
     MultiSpriteBatch, ShadedBatch, ShadedBatchBuilder, ShadedInstanceRaw, Shaders, SpriteBatch,
     SpriteBatchBuilder, Tesselator,
 };
@@ -38,17 +38,17 @@ pub struct MapMeshHandler {
 
 struct MapBuilders {
     buildings_builder: FastMap<BuildingKind, SpriteBatchBuilder>,
-    buildings_mesh: LitMeshBuilder,
+    buildings_mesh: MeshBuilder,
     arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: ShadedBatchBuilder<Crosswalk>,
     tess: Tesselator,
 }
 
 pub struct MapMeshes {
-    map: Option<LitMesh>,
+    map: Option<Mesh>,
     crosswalks: Option<ShadedBatch<Crosswalk>>,
     buildings: MultiSpriteBatch,
-    building_mesh: Option<LitMesh>,
+    building_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
 }
 
@@ -74,7 +74,7 @@ impl MapMeshHandler {
             buildings_builder,
             crosswalk_builder: ShadedBatchBuilder::new(),
             tess: Tesselator::new(None, 15.0),
-            buildings_mesh: LitMeshBuilder::new(),
+            buildings_mesh: MeshBuilder::new(),
         };
 
         Self {
@@ -99,7 +99,7 @@ impl MapMeshHandler {
             let m = &mut self.builders.tess.meshbuilder;
 
             let meshes = MapMeshes {
-                map: m.build(gfx),
+                map: m.build(gfx, gfx.palette()),
                 crosswalks: self.builders.crosswalk_builder.build(gfx),
                 buildings: self
                     .builders
@@ -107,7 +107,7 @@ impl MapMeshHandler {
                     .values_mut()
                     .flat_map(|x| x.build(gfx))
                     .collect(),
-                building_mesh: self.builders.buildings_mesh.build(gfx),
+                building_mesh: self.builders.buildings_mesh.build(gfx, gfx.palette()),
                 arrows: self.builders.arrow_builder.build(gfx),
             };
 
@@ -236,9 +236,10 @@ impl MapBuilders {
                         let off = p - o;
                         projected.0.push(vec2(off.dot(u), off.dot(v)));
 
-                        vertices.push(ColNorVertex {
+                        vertices.push(MeshVertex {
                             position: p.into(),
                             normal: nor.into(),
+                            uv: [0.0; 2],
                             color: col.into(),
                         })
                     }
