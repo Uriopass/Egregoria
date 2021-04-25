@@ -1,4 +1,4 @@
-use crate::{CompiledShader, GfxContext};
+use crate::GfxContext;
 use std::rc::Rc;
 use wgpu::{RenderPass, RenderPipeline};
 
@@ -6,20 +6,13 @@ mod blit_linear;
 mod instanced_mesh;
 mod lit_mesh;
 mod multispritebatch;
-mod shaded_batch;
 mod spritebatch;
 
 pub use blit_linear::*;
 pub use instanced_mesh::*;
 pub use lit_mesh::*;
 pub use multispritebatch::*;
-pub use shaded_batch::*;
 pub use spritebatch::*;
-
-pub trait Shaders: 'static {
-    fn vert_shader(device: &wgpu::Device) -> CompiledShader;
-    fn frag_shader(device: &wgpu::Device) -> CompiledShader;
-}
 
 pub type IndexType = u32;
 
