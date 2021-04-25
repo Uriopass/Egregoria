@@ -5,7 +5,6 @@ use std::time::SystemTime;
 use wgpu::{ShaderFlags, ShaderModule, ShaderSource};
 
 #[derive(Copy, Clone)]
-#[non_exhaustive]
 pub enum ShaderType {
     Vertex,
     Fragment,

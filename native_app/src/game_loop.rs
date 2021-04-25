@@ -269,7 +269,8 @@ impl State {
             immediate.orders.clear();
         }
 
-        if let Some(x) = self.immtess.meshbuilder.build(ctx.gfx, ctx.gfx.palette()) {
+        if let Some(mut x) = self.immtess.meshbuilder.build(ctx.gfx, ctx.gfx.palette()) {
+            x.translucent = true;
             ctx.draw(x)
         }
 

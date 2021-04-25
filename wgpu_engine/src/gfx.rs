@@ -262,36 +262,53 @@ impl GfxContext {
 
         prepare(&mut fc);
 
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: None,
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &self.color_texture.multisampled_buffer,
-                resolve_target: Some(&self.color_texture.target.view),
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.32,
-                        g: 0.63,
-                        b: 0.9,
-                        a: 0.0,
+        {
+            let mut depth_prepass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                    attachment: &self.depth_texture.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: true,
                     }),
-                    store: true,
-                },
-            }],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                attachment: &self.depth_texture.view,
-                depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(1.0),
-                    store: true,
+                    stencil_ops: None,
                 }),
-                stencil_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(0),
-                    store: true,
-                }),
-            }),
-        });
+            });
 
-        for obj in &mut objs {
-            obj.draw(&self, &mut render_pass);
+            for obj in &mut objs {
+                obj.draw_depth(&self, &mut depth_prepass);
+            }
+        }
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &self.color_texture.multisampled_buffer,
+                    resolve_target: Some(&self.color_texture.target.view),
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.32,
+                            g: 0.63,
+                            b: 0.9,
+                            a: 0.0,
+                        }),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                    attachment: &self.depth_texture.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: true,
+                    }),
+                    stencil_ops: None,
+                }),
+            });
+
+            for obj in &mut objs {
+                obj.draw(&self, &mut render_pass);
+            }
         }
     }
 
@@ -383,8 +400,8 @@ impl GfxContext {
         &self,
         layouts: &[&BindGroupLayout],
         vertex_buffers: &[VertexBufferLayout],
-        vert_shader: CompiledShader,
-        frag_shader: CompiledShader,
+        vert_shader: &CompiledShader,
+        frag_shader: &CompiledShader,
     ) -> RenderPipeline {
         assert!(matches!(vert_shader.1, ShaderType::Vertex));
         assert!(matches!(frag_shader.1, ShaderType::Fragment));
@@ -447,7 +464,7 @@ impl GfxContext {
     pub fn depth_pipeline(
         &self,
         vertex_buffers: &[VertexBufferLayout],
-        vert_shader: CompiledShader,
+        vert_shader: &CompiledShader,
     ) -> RenderPipeline {
         assert!(matches!(vert_shader.1, ShaderType::Vertex));
 
@@ -455,7 +472,7 @@ impl GfxContext {
             self.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("depth pipeline"),
-                    bind_group_layouts: &[],
+                    bind_group_layouts: &[&self.projection.layout],
                     push_constant_ranges: &[],
                 });
 
