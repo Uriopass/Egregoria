@@ -439,14 +439,13 @@ impl GfxContext {
                 targets: &color_states,
             }),
             primitive: PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
                 cull_mode: CullMode::Back,
                 front_face: FrontFace::Ccw,
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: true,
+                depth_write_enabled: false,
                 depth_compare: wgpu::CompareFunction::LessEqual,
                 stencil: Default::default(),
                 bias: Default::default(),

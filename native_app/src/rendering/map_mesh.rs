@@ -175,8 +175,8 @@ impl MapBuilders {
 
                         vertices.push(mk_v(pos - perp, Vec2::ZERO));
                         vertices.push(mk_v(pos + perp, Vec2::ZERO));
-                        vertices.push(mk_v(pos + perp + dir * height, Vec2::x(height / 10.0)));
-                        vertices.push(mk_v(pos - perp + dir * height, Vec2::x(height / 10.0)));
+                        vertices.push(mk_v(pos + perp + dir * height, Vec2::x(height / 2.0)));
+                        vertices.push(mk_v(pos - perp + dir * height, Vec2::x(height / 2.0)));
 
                         add_index(0);
                         add_index(1);
