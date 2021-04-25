@@ -7,7 +7,6 @@ mod lit_mesh;
 mod multispritebatch;
 mod palette_mesh;
 mod shaded_batch;
-mod shaded_quad;
 mod spritebatch;
 
 pub use blit_linear::*;
@@ -15,7 +14,6 @@ pub use lit_mesh::*;
 pub use multispritebatch::*;
 pub use palette_mesh::*;
 pub use shaded_batch::*;
-pub use shaded_quad::*;
 pub use spritebatch::*;
 
 pub trait Shaders: 'static {
