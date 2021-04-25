@@ -41,7 +41,7 @@ u8slice_impl!(InstanceRaw);
 
 impl SpriteBatchBuilder {
     pub fn from_path(ctx: &mut GfxContext, path: impl Into<PathBuf>) -> Self {
-        Self::new(ctx.texture(path, None))
+        Self::new(ctx.texture(path, "some spritebatch tex"))
     }
 
     pub fn clear(&mut self) {

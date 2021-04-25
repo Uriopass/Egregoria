@@ -1,6 +1,7 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    compile_shader, GfxContext, IndexType, LightParams, Texture, Uniform, UvVertex, VBDesc,
+    compile_shader, GfxContext, IndexType, LightParams, Texture, TextureBuilder, Uniform, UvVertex,
+    VBDesc,
 };
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -17,7 +18,11 @@ pub struct LightRender {
 
 impl LightRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
-        let mut blue_noise = Texture::from_path(gfx, "assets/blue_noise_512.png", None);
+        let mut blue_noise = TextureBuilder::from_path("assets/blue_noise_512.png")
+            .with_label("blue noise")
+            .with_srgb(false)
+            .with_mipmaps(false)
+            .build(gfx);
         blue_noise.sampler = gfx.device.create_sampler(&SamplerDescriptor {
             label: None,
             address_mode_u: AddressMode::Repeat,
@@ -64,7 +69,7 @@ pub fn setup(gfx: &mut GfxContext) {
             });
 
     let color_states = [wgpu::ColorTargetState {
-        format: gfx.light_texture.format,
+        format: gfx.fbos.light.format,
         color_blend: wgpu::BlendState {
             src_factor: BlendFactor::One,
             dst_factor: BlendFactor::One,
@@ -198,7 +203,7 @@ impl LightRender {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &gfx.light_texture.view,
+                    attachment: &gfx.fbos.light.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -223,11 +228,7 @@ impl LightRender {
         }
 
         let lmultiply_tex_bg = Texture::multi_bindgroup(
-            &[
-                &gfx.light_texture,
-                &gfx.color_texture.target,
-                &self.blue_noise,
-            ],
+            &[&gfx.fbos.light, &gfx.fbos.color.target, &self.blue_noise],
             &gfx.device,
             &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(0),
         );

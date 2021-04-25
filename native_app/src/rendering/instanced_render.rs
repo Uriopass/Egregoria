@@ -22,7 +22,7 @@ impl InstancedRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
         InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
-                gfx.texture("assets/path_not_found.png", Some("path_not_found")),
+                gfx.texture("assets/path_not_found.png", "path_not_found"),
             ),
             cars: InstancedMeshBuilder::new(Arc::new(
                 obj_to_mesh("assets/simple_car.obj", gfx, gfx.palette()).unwrap(),
