@@ -7,15 +7,14 @@ use map_model::{Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior};
 use std::sync::Arc;
 use wgpu_engine::objload::obj_to_mesh;
 use wgpu_engine::{
-    FrameContext, GfxContext, InstancedPaletteMesh, InstancedPaletteMeshBuilder, MeshInstance,
-    Tesselator,
+    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Tesselator,
 };
 
 pub struct RoadRenderer {
     meshb: MapMeshHandler,
 
-    trees: Option<InstancedPaletteMesh>,
-    trees_builder: InstancedPaletteMeshBuilder,
+    trees: Option<InstancedMesh>,
+    trees_builder: InstancedMeshBuilder,
     trees_dirt_id: u32,
     last_cam: AABB,
 }
@@ -26,8 +25,8 @@ impl RoadRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
             last_cam: AABB::zero(),
             trees: None,
-            trees_builder: InstancedPaletteMeshBuilder::new(Arc::new(
-                obj_to_mesh("assets/pine.obj", gfx).expect("could not load pine"),
+            trees_builder: InstancedMeshBuilder::new(Arc::new(
+                obj_to_mesh("assets/pine.obj", gfx, gfx.palette()).expect("could not load pine"),
             )),
             trees_dirt_id: 0,
         }
@@ -105,12 +104,7 @@ impl RoadRenderer {
         }
     }
 
-    pub fn trees(
-        &mut self,
-        map: &Map,
-        screen: AABB,
-        gfx: &GfxContext,
-    ) -> Option<InstancedPaletteMesh> {
+    pub fn trees(&mut self, map: &Map, screen: AABB, gfx: &GfxContext) -> Option<InstancedMesh> {
         let st = map.trees.grid.storage();
         if map.trees.dirt_id.0 == self.trees_dirt_id
             && st.cell_id(screen.ll) == st.cell_id(self.last_cam.ll)

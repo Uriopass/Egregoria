@@ -3,16 +3,16 @@ use std::rc::Rc;
 use wgpu::{RenderPass, RenderPipeline};
 
 mod blit_linear;
+mod instanced_mesh;
 mod lit_mesh;
 mod multispritebatch;
-mod palette_mesh;
 mod shaded_batch;
 mod spritebatch;
 
 pub use blit_linear::*;
+pub use instanced_mesh::*;
 pub use lit_mesh::*;
 pub use multispritebatch::*;
-pub use palette_mesh::*;
 pub use shaded_batch::*;
 pub use spritebatch::*;
 
