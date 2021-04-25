@@ -23,6 +23,6 @@ void main() {
     float diffuse = clamp(dot(normal, params.sun.xyz), 0.0, 1.0);
 
     vec4 c = in_color;
-    c.rgb *= 0.2 + 0.8 * diffuse + 1.0 * specular;
+    c.rgb *= 0.2 + 0.8 * diffuse + 0.5 * specular;
     out_color = c;
 }

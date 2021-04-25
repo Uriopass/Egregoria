@@ -18,8 +18,6 @@ uniform Uniforms {
     mat4 u_view_proj;
 };
 
-layout(set=1, binding = 0) uniform Uni {LightParams params;};
-
 layout(set = 2, binding = 0) uniform texture2D t_palette;
 layout(set = 2, binding = 1) uniform sampler s_palette;
 
