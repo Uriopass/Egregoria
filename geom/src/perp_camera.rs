@@ -31,7 +31,7 @@ impl Camera {
     }
 
     pub fn znear(height: f32) -> f32 {
-        (height * 0.5).min(10.0)
+        1.5
     }
 
     pub fn offset(&self) -> Vec3 {
@@ -54,7 +54,7 @@ impl Camera {
     pub fn build_view_projection_matrix(&self) -> (Mat4, Mat4) {
         let eye = self.eye();
         let znear = Self::znear(eye.z);
-        let zfar = znear * 4000.0;
+        let zfar = znear * 6000.0;
         let view = look_at_rh(eye, self.pos.z(0.0), self.up);
         let proj = PerspectiveFov::new(
             self.fovy / 180.0 * std::f32::consts::PI,

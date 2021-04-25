@@ -1,6 +1,6 @@
 use crate::{
-    BlitLinear, CompiledShader, Drawable, IndexType, InstancedMesh, Mesh, SpriteBatch, Texture,
-    TextureBuilder, Uniform, UvVertex,
+    compile_shader, BlitLinear, CompiledShader, Drawable, IndexType, InstancedMesh, Mesh,
+    SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
 };
 use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
@@ -12,9 +12,10 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, CullMode, Device,
-    FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface,
-    SwapChain, SwapChainDescriptor, SwapChainFrame, TextureUsage, VertexBufferLayout,
+    Adapter, BindGroupLayout, BindGroupLayoutDescriptor, CommandEncoder, CommandEncoderDescriptor,
+    CullMode, Device, Extent3d, FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue,
+    RenderPipeline, Surface, SwapChain, SwapChainDescriptor, SwapChainFrame, TextureCopyView,
+    TextureSampleType, TextureUsage, VertexBufferLayout,
 };
 
 pub struct FBOs {
@@ -169,6 +170,7 @@ impl GfxContext {
         SpriteBatch::setup(&mut me);
         crate::lighting::setup(&mut me);
         BlitLinear::setup(&mut me);
+        SSAOPipeline::setup(&mut me);
 
         let p = TextureBuilder::from_path("assets/palette.png")
             .with_label("palette")
@@ -274,6 +276,57 @@ impl GfxContext {
                 obj.draw_depth(&self, &mut depth_prepass);
             }
         }
+        SSAOPipeline::setup(self);
+        {
+            let pipeline = self.get_pipeline::<SSAOPipeline>();
+            let bg = self
+                .fbos
+                .depth
+                .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
+
+            let mut ssao_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &self.fbos.ssao.view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 0.0,
+                        }),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            });
+
+            ssao_pass.set_pipeline(pipeline);
+            ssao_pass.set_bind_group(0, &bg, &[]);
+            ssao_pass.set_vertex_buffer(0, self.screen_uv_vertices.slice(..));
+            ssao_pass.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
+            ssao_pass.draw_indexed(0..6, 0, 0..1);
+        }
+
+        encoder.copy_texture_to_texture(
+            TextureCopyView {
+                texture: &self.fbos.ssao.texture,
+                mip_level: 0,
+                origin: Default::default(),
+            },
+            TextureCopyView {
+                texture: &self.fbos.color.target.texture,
+                mip_level: 0,
+                origin: Default::default(),
+            },
+            Extent3d {
+                width: self.sc_desc.width,
+                height: self.sc_desc.height,
+                depth: 1,
+            },
+        );
+        /*
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
@@ -303,7 +356,7 @@ impl GfxContext {
             for obj in &mut objs {
                 obj.draw(&self, &mut render_pass);
             }
-        }
+        }*/
     }
 
     pub fn render_gui(
@@ -376,8 +429,8 @@ impl GfxContext {
             ssao: Texture::create_fbo(
                 device,
                 desc,
-                wgpu::TextureFormat::R16Float,
-                TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
+                wgpu::TextureFormat::Rgba8UnormSrgb,
+                TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED | TextureUsage::COPY_SRC,
                 None,
             ),
         }
@@ -448,8 +501,7 @@ impl GfxContext {
             }),
             multisample: MultisampleState {
                 count: self.samples,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
+                ..Default::default()
             },
         };
         self.device.create_render_pipeline(&render_pipeline_desc)
@@ -534,3 +586,73 @@ const SCREEN_UV_VERTICES: &[UvVertex] = &[
 ];
 
 const UV_INDICES: &[IndexType] = &[0, 1, 2, 0, 2, 3];
+
+struct SSAOPipeline;
+
+impl SSAOPipeline {
+    pub fn setup(gfx: &mut GfxContext) {
+        let blit_linear = compile_shader(&gfx.device, "assets/shaders/blit_linear.vert", None);
+        let ssao_frag = compile_shader(&gfx.device, "assets/shaders/ssao.frag", None);
+        let render_pipeline_layout =
+            gfx.device
+                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("ssao pipeline"),
+                    bind_group_layouts: &[&gfx.device.create_bind_group_layout(
+                        &BindGroupLayoutDescriptor {
+                            label: Some("ssao depth bg layout"),
+                            entries: &[
+                                wgpu::BindGroupLayoutEntry {
+                                    binding: 0,
+                                    visibility: wgpu::ShaderStage::FRAGMENT,
+                                    ty: wgpu::BindingType::Texture {
+                                        multisampled: true,
+                                        view_dimension: wgpu::TextureViewDimension::D2,
+                                        sample_type: TextureSampleType::Float { filterable: true },
+                                    },
+                                    count: None,
+                                },
+                                wgpu::BindGroupLayoutEntry {
+                                    binding: 1,
+                                    visibility: wgpu::ShaderStage::FRAGMENT,
+                                    ty: wgpu::BindingType::Sampler {
+                                        filtering: true,
+                                        comparison: false,
+                                    },
+                                    count: None,
+                                },
+                            ],
+                        },
+                    )],
+                    push_constant_ranges: &[],
+                });
+
+        let color_states = [wgpu::ColorTargetState {
+            format: gfx.fbos.ssao.format,
+            color_blend: wgpu::BlendState::REPLACE,
+            alpha_blend: wgpu::BlendState::REPLACE,
+            write_mask: wgpu::ColorWrite::ALL,
+        }];
+
+        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &blit_linear.0,
+                entry_point: "main",
+                buffers: &[UvVertex::desc()],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &ssao_frag.0,
+                entry_point: "main",
+                targets: &color_states,
+            }),
+            primitive: Default::default(),
+            depth_stencil: None,
+            multisample: Default::default(),
+        };
+
+        gfx.register_pipeline::<SSAOPipeline>(
+            gfx.device.create_render_pipeline(&render_pipeline_desc),
+        );
+    }
+}

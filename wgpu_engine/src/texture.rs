@@ -56,7 +56,7 @@ impl Texture {
             mip_level_count: 1,
             sample_count: samples.unwrap_or(1),
             dimension: wgpu::TextureDimension::D2,
-            label: Some("depth texture"),
+            label: Some("fbo texture"),
         };
         let texture = device.create_texture(&desc);
 
@@ -76,12 +76,12 @@ impl Texture {
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
         samples: u32,
-    ) -> Self {
+    ) -> Texture {
         Self::create_fbo(
             device,
             sc_desc,
             TextureFormat::Depth32Float,
-            TextureUsage::RENDER_ATTACHMENT,
+            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
             Some(samples),
         )
     }
@@ -118,7 +118,7 @@ impl Texture {
             device,
             sc_desc,
             TextureFormat::Rgba8UnormSrgb,
-            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
+            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             None,
         );
 
