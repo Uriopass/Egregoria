@@ -109,7 +109,7 @@ impl Context {
                             self.gfx.resize(size.0, size.1);
                         }
 
-                        match self.gfx.swapchain.get_current_frame() {
+                        match self.gfx.fbos.swapchain.get_current_frame() {
                             Ok(swapchainframe) => {
                                 frame = Some(swapchainframe);
                             }

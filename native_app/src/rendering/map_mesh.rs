@@ -46,9 +46,7 @@ impl MapMeshHandler {
         for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
             buildings_builder.insert(
                 descr.bkind,
-                SpriteBatchBuilder::new(
-                    gfx.texture(descr.asset_location, Some(descr.asset_location)),
-                ),
+                SpriteBatchBuilder::new(gfx.texture(descr.asset_location, descr.asset_location)),
             );
         }
 
@@ -81,7 +79,7 @@ impl MapMeshHandler {
 
             let m = &mut self.builders.tess.meshbuilder;
 
-            let cw = gfx.texture("assets/crosswalk.png", Some("crosswalk"));
+            let cw = gfx.texture("assets/crosswalk.png", "crosswalk");
 
             let meshes = MapMeshes {
                 map: m.build(gfx, gfx.palette()),

@@ -8,7 +8,7 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use wgpu::{
     BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
-    PipelineLayoutDescriptor, Sampler, TextureCopyView, TextureDataLayout, TextureFormat,
+    PipelineLayoutDescriptor, SamplerDescriptor, TextureCopyView, TextureDataLayout, TextureFormat,
     TextureSampleType, TextureUsage, TextureViewDescriptor,
 };
 
@@ -37,101 +37,6 @@ impl Texture {
         })
     }
 
-    pub(crate) fn from_path(
-        ctx: &GfxContext,
-        p: impl AsRef<Path>,
-        label: Option<&'static str>,
-    ) -> Self {
-        let r = p.as_ref();
-        if let Some(x) = Self::try_from_path(ctx, r, label) {
-            x
-        } else {
-            panic!("texture not found at path: {}", r.display())
-        }
-    }
-
-    pub(crate) fn try_from_path(
-        ctx: &GfxContext,
-        p: impl AsRef<Path>,
-        label: Option<&'static str>,
-    ) -> Option<Self> {
-        let mut buf = vec![];
-        let mut f = File::open(p).ok()?;
-        f.read_to_end(&mut buf).ok()?;
-        Texture::from_bytes(&ctx, &buf, label)
-    }
-
-    pub fn from_bytes(ctx: &GfxContext, bytes: &[u8], label: Option<&'static str>) -> Option<Self> {
-        let img = image::load_from_memory(bytes).ok()?;
-        Some(Self::from_image(ctx, &img, label))
-    }
-
-    pub fn from_image(
-        ctx: &GfxContext,
-        img: &image::DynamicImage,
-        label: Option<&'static str>,
-    ) -> Self {
-        let dimensions = img.dimensions();
-
-        let extent = wgpu::Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
-            depth: 1,
-        };
-
-        let (format, data, pixwidth): (TextureFormat, &[u8], u32) = match img {
-            DynamicImage::ImageRgba8(img) => (wgpu::TextureFormat::Rgba8UnormSrgb, img as &[u8], 4),
-            DynamicImage::ImageLuma8(gray) => (wgpu::TextureFormat::R8Unorm, gray, 1),
-            _ => unimplemented!("unsupported format {:?}", img.color()),
-        };
-
-        let mut mip_level_count = 5;
-
-        if dimensions.0 < 30 {
-            mip_level_count = 1;
-        }
-
-        let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
-            label,
-            size: extent,
-            mip_level_count,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST | TextureUsage::RENDER_ATTACHMENT,
-        });
-
-        ctx.queue.write_texture(
-            TextureCopyView {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-            },
-            data,
-            TextureDataLayout {
-                offset: 0,
-                bytes_per_row: pixwidth * extent.width,
-                rows_per_image: extent.height,
-            },
-            extent,
-        );
-
-        if mip_level_count > 1 {
-            generate_mipmaps(&ctx.device, &ctx.queue, &texture, format, mip_level_count);
-        }
-
-        let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = Self::linear_sampler(&ctx.device);
-
-        Self {
-            texture,
-            view,
-            sampler,
-            format,
-            extent,
-        }
-    }
-
     pub fn create_fbo(
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
@@ -156,7 +61,7 @@ impl Texture {
         let texture = device.create_texture(&desc);
 
         let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = Self::linear_sampler(&device);
+        let sampler = device.create_sampler(&Self::linear_sampler());
 
         Self {
             texture,
@@ -325,8 +230,8 @@ impl Texture {
         })
     }
 
-    pub fn linear_sampler(device: &Device) -> Sampler {
-        device.create_sampler(&wgpu::SamplerDescriptor {
+    pub fn linear_sampler() -> SamplerDescriptor<'static> {
+        wgpu::SamplerDescriptor {
             label: None,
             address_mode_u: wgpu::AddressMode::Repeat,
             address_mode_v: wgpu::AddressMode::Repeat,
@@ -339,11 +244,11 @@ impl Texture {
             compare: None,
             anisotropy_clamp: None,
             border_color: None,
-        })
+        }
     }
 
-    pub fn nearest_sampler(device: &Device) -> Sampler {
-        device.create_sampler(&wgpu::SamplerDescriptor {
+    pub fn nearest_sampler() -> SamplerDescriptor<'static> {
+        wgpu::SamplerDescriptor {
             label: None,
             address_mode_u: wgpu::AddressMode::Repeat,
             address_mode_v: wgpu::AddressMode::Repeat,
@@ -356,7 +261,133 @@ impl Texture {
             compare: None,
             anisotropy_clamp: None,
             border_color: None,
+        }
+    }
+}
+
+pub struct TextureBuilder {
+    img: image::DynamicImage,
+    sampler: wgpu::SamplerDescriptor<'static>,
+    label: &'static str,
+    srgb: bool,
+    mipmaps: bool,
+}
+
+impl TextureBuilder {
+    pub fn with_label(mut self, label: &'static str) -> Self {
+        self.label = label;
+        self
+    }
+
+    pub fn with_sampler(mut self, sampler: wgpu::SamplerDescriptor<'static>) -> Self {
+        self.sampler = sampler;
+        self
+    }
+
+    pub fn with_srgb(mut self, srgb: bool) -> Self {
+        self.srgb = srgb;
+        self
+    }
+
+    pub fn with_mipmaps(mut self, mipmaps: bool) -> Self {
+        self.mipmaps = mipmaps;
+        self
+    }
+
+    pub(crate) fn from_path(p: impl AsRef<Path>) -> Self {
+        let r = p.as_ref();
+        if let Some(x) = Self::try_from_path(r) {
+            x
+        } else {
+            panic!("texture not found at path: {}", r.display())
+        }
+    }
+
+    pub(crate) fn try_from_path(p: impl AsRef<Path>) -> Option<Self> {
+        let mut buf = vec![];
+        let mut f = File::open(p).ok()?;
+        f.read_to_end(&mut buf).ok()?;
+        Self::from_bytes(&buf)
+    }
+
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        let img = image::load_from_memory(bytes).ok()?;
+        Some(Self {
+            img,
+            sampler: Texture::linear_sampler(),
+            label: "texture without label",
+            srgb: true,
+            mipmaps: true,
         })
+    }
+
+    pub fn build(self, ctx: &GfxContext) -> Texture {
+        let img = self.img;
+        let label = self.label;
+
+        let dimensions = img.dimensions();
+
+        let extent = wgpu::Extent3d {
+            width: dimensions.0,
+            height: dimensions.1,
+            depth: 1,
+        };
+
+        let (format, data, pixwidth): (TextureFormat, &[u8], u32) = match img {
+            DynamicImage::ImageRgba8(ref img) => (
+                if self.srgb {
+                    wgpu::TextureFormat::Rgba8UnormSrgb
+                } else {
+                    wgpu::TextureFormat::Rgba8Unorm
+                },
+                &*img,
+                4,
+            ),
+            DynamicImage::ImageLuma8(ref gray) => (wgpu::TextureFormat::R8Unorm, &*gray, 1),
+            _ => unimplemented!("unsupported format {:?}", img.color()),
+        };
+
+        let mip_level_count = if self.mipmaps { 5 } else { 1 };
+
+        let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(label),
+            size: extent,
+            mip_level_count,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format,
+            usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST | TextureUsage::RENDER_ATTACHMENT,
+        });
+
+        ctx.queue.write_texture(
+            TextureCopyView {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            data,
+            TextureDataLayout {
+                offset: 0,
+                bytes_per_row: pixwidth * extent.width,
+                rows_per_image: extent.height,
+            },
+            extent,
+        );
+
+        if mip_level_count > 1 {
+            generate_mipmaps(&ctx.device, &ctx.queue, &texture, format, mip_level_count);
+        }
+
+        let view = texture.create_view(&TextureViewDescriptor::default());
+        let sampler = ctx.device.create_sampler(&self.sampler);
+
+        Texture {
+            texture,
+            view,
+            sampler,
+            format,
+            extent,
+        }
     }
 }
 

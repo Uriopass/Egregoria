@@ -1,6 +1,6 @@
 use crate::{
     BlitLinear, CompiledShader, Drawable, IndexType, InstancedMesh, Mesh, SpriteBatch, Texture,
-    Uniform, UvVertex,
+    TextureBuilder, Uniform, UvVertex,
 };
 use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
@@ -14,8 +14,17 @@ use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, CommandEncoder, CommandEncoderDescriptor, CullMode, Device,
     FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface,
-    SwapChain, SwapChainDescriptor, SwapChainFrame, VertexBufferLayout,
+    SwapChain, SwapChainDescriptor, SwapChainFrame, TextureUsage, VertexBufferLayout,
 };
+
+pub struct FBOs {
+    pub swapchain: SwapChain,
+    pub(crate) depth: Texture,
+    pub(crate) light: Texture,
+    pub(crate) color: MultisampledTexture,
+    pub(crate) ui: Texture,
+    pub(crate) ssao: Texture,
+}
 
 pub struct GfxContext {
     pub(crate) surface: Surface,
@@ -24,11 +33,7 @@ pub struct GfxContext {
     pub(crate) adapter: Adapter,
     pub device: Device,
     pub queue: Queue,
-    pub swapchain: SwapChain,
-    pub(crate) depth_texture: Texture,
-    pub(crate) light_texture: Texture,
-    pub(crate) color_texture: MultisampledTexture,
-    pub(crate) ui_texture: Texture,
+    pub fbos: FBOs,
     pub(crate) sc_desc: SwapChainDescriptor,
     pub update_sc: bool,
     pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
@@ -120,8 +125,7 @@ impl GfxContext {
             present_mode: wgpu::PresentMode::Fifo,
         };
         let samples = 4;
-        let (swapchain, depth_texture, light_texture, color_texture, ui_texture) =
-            Self::create_textures(&device, &surface, &sc_desc, samples);
+        let fbos = Self::create_textures(&device, &surface, &sc_desc, samples);
 
         let projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
 
@@ -142,15 +146,11 @@ impl GfxContext {
 
         let mut me = Self {
             size: (win_width, win_height),
-            swapchain,
             queue,
             sc_desc,
             update_sc: false,
             adapter,
-            depth_texture,
-            color_texture,
-            light_texture,
-            ui_texture,
+            fbos,
             surface,
             pipelines: FastMap::default(),
             projection,
@@ -170,8 +170,10 @@ impl GfxContext {
         crate::lighting::setup(&mut me);
         BlitLinear::setup(&mut me);
 
-        let mut p = Texture::from_path(&me, "assets/palette.png", Some("palette"));
-        p.sampler = Texture::nearest_sampler(&me.device);
+        let p = TextureBuilder::from_path("assets/palette.png")
+            .with_label("palette")
+            .with_sampler(Texture::nearest_sampler())
+            .build(&me);
         me.set_texture("assets/palette.png", p);
 
         me
@@ -182,20 +184,12 @@ impl GfxContext {
         self.textures.insert(p, Arc::new(tex));
     }
 
-    pub fn texture(
-        &mut self,
-        path: impl Into<PathBuf>,
-        label: Option<&'static str>,
-    ) -> Arc<Texture> {
-        fn texture_inner(
-            sel: &mut GfxContext,
-            p: PathBuf,
-            label: Option<&'static str>,
-        ) -> Arc<Texture> {
+    pub fn texture(&mut self, path: impl Into<PathBuf>, label: &'static str) -> Arc<Texture> {
+        fn texture_inner(sel: &mut GfxContext, p: PathBuf, label: &'static str) -> Arc<Texture> {
             if let Some(tex) = sel.textures.get(&p) {
                 return tex.clone();
             }
-            let tex = Arc::new(Texture::from_path(sel, &p, label));
+            let tex = Arc::new(TextureBuilder::from_path(&p).with_label(label).build(sel));
             sel.textures.insert(p, tex.clone());
             tex
         }
@@ -267,7 +261,7 @@ impl GfxContext {
                 label: None,
                 color_attachments: &[],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &self.depth_texture.view,
+                    attachment: &self.fbos.depth.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: true,
@@ -284,8 +278,8 @@ impl GfxContext {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &self.color_texture.multisampled_buffer,
-                    resolve_target: Some(&self.color_texture.target.view),
+                    attachment: &self.fbos.color.multisampled_buffer,
+                    resolve_target: Some(&self.fbos.color.target.view),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
                             r: 0.32,
@@ -297,7 +291,7 @@ impl GfxContext {
                     },
                 }],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &self.depth_texture.view,
+                    attachment: &self.fbos.depth.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: true,
@@ -321,7 +315,7 @@ impl GfxContext {
         let rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &self.ui_texture.view,
+                attachment: &self.fbos.ui.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
@@ -339,7 +333,8 @@ impl GfxContext {
 
         let pipeline = &self.get_pipeline::<BlitLinear>();
         let bg = self
-            .ui_texture
+            .fbos
+            .ui
             .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
 
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -371,14 +366,21 @@ impl GfxContext {
         surface: &Surface,
         desc: &SwapChainDescriptor,
         samples: u32,
-    ) -> (SwapChain, Texture, Texture, MultisampledTexture, Texture) {
-        (
-            device.create_swap_chain(surface, desc),
-            Texture::create_depth_texture(device, desc, samples),
-            Texture::create_light_texture(device, desc),
-            Texture::create_color_texture(device, desc, samples),
-            Texture::create_ui_texture(device, desc),
-        )
+    ) -> FBOs {
+        FBOs {
+            swapchain: device.create_swap_chain(surface, desc),
+            depth: Texture::create_depth_texture(device, desc, samples),
+            light: Texture::create_light_texture(device, desc),
+            color: Texture::create_color_texture(device, desc, samples),
+            ui: Texture::create_ui_texture(device, desc),
+            ssao: Texture::create_fbo(
+                device,
+                desc,
+                wgpu::TextureFormat::R16Float,
+                TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
+                None,
+            ),
+        }
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
@@ -386,14 +388,7 @@ impl GfxContext {
         self.sc_desc.width = self.size.0;
         self.sc_desc.height = self.size.1;
 
-        let (swapchain, depth, light, color, ui) =
-            Self::create_textures(&self.device, &self.surface, &self.sc_desc, self.samples);
-
-        self.swapchain = swapchain;
-        self.depth_texture = depth;
-        self.light_texture = light;
-        self.color_texture = color;
-        self.ui_texture = ui;
+        self.fbos = Self::create_textures(&self.device, &self.surface, &self.sc_desc, self.samples);
     }
 
     pub fn basic_pipeline(
@@ -415,7 +410,7 @@ impl GfxContext {
                 });
 
         let color_states = [wgpu::ColorTargetState {
-            format: self.color_texture.target.format,
+            format: self.fbos.color.target.format,
             color_blend: wgpu::BlendState {
                 src_factor: wgpu::BlendFactor::SrcAlpha,
                 dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
