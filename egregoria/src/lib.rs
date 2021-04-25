@@ -12,7 +12,6 @@ use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Kinematics};
 use crate::rendering::assets::AssetRender;
-use crate::rendering::meshrender_component::MeshRender;
 use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::goods_company::GoodsCompany;
@@ -468,7 +467,6 @@ fn registry() -> Registry<u64> {
         Itinerary,
         Kinematics,
         Location,
-        MeshRender,
         Pedestrian,
         Router,
         Selectable,

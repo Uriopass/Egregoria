@@ -2,7 +2,6 @@ use crate::map_dynamic::{Itinerary, OBJECTIVE_OK_DIST};
 use crate::physics::Kinematics;
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::utils::time::GameTime;
-use crate::utils::Restrict;
 use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::ParCommandBuffer;
 use geom::{angle_lerp, Ray, Transform, Vec2};
@@ -124,12 +123,12 @@ fn physics(
     let direction = trans.direction();
 
     let speed = speed
-        + (desired_speed - speed).restrict(
+        + (desired_speed - speed).clamp(
             -time.delta * kind.deceleration(),
             time.delta * kind.acceleration(),
         );
 
-    let max_ang_vel = (speed.abs() / kind.min_turning_radius()).restrict(0.0, 2.0);
+    let max_ang_vel = (speed.abs() / kind.min_turning_radius()).clamp(0.0, 2.0);
 
     let approx_angle = direction.distance(desired_dir);
 

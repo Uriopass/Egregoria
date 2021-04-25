@@ -2,11 +2,10 @@ use crate::engine_interaction::Selectable;
 use crate::map_dynamic::{BuildingInfos, Itinerary};
 use crate::pedestrians::Location;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
-use crate::rendering::meshrender_component::{CircleRender, MeshRender, RectRender};
 use crate::utils::rand_provider::RandProvider;
 use crate::{Egregoria, SoulID};
 use geom::Color;
-use geom::{vec2, Transform, Vec2};
+use geom::{Transform, Vec2};
 use imgui_inspect_derive::*;
 use legion::Entity;
 use map_model::BuildingID;
@@ -21,7 +20,7 @@ pub struct Pedestrian {
 const PED_SIZE: f32 = 0.5;
 
 pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Option<Entity> {
-    let color = random_pedestrian_shirt_color(&mut *goria.write::<RandProvider>());
+    let _color = random_pedestrian_shirt_color(&mut *goria.write::<RandProvider>());
 
     let hpos = goria.map().buildings().get(house)?.door_pos;
     let p = Pedestrian::new(&mut *goria.write::<RandProvider>());
@@ -31,38 +30,6 @@ pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Option<Enti
         p,
         Itinerary::none(),
         Kinematics::default(),
-        {
-            MeshRender::empty(0.35)
-                .add(RectRender {
-                    // Arm 1
-                    height: 0.14,
-                    width: PED_SIZE * 0.4,
-                    offset: vec2(0.0, PED_SIZE * 0.6),
-                    color: Color::from_hex(0xFFCCA8), // Skin color (beige)
-                })
-                .add(RectRender {
-                    // Arm 2
-                    height: 0.14,
-                    width: PED_SIZE * 0.4,
-                    offset: vec2(0.0, -PED_SIZE * 0.6),
-                    color: Color::from_hex(0xFFCCA8),
-                })
-                .add(RectRender {
-                    // Body
-                    height: PED_SIZE,
-                    width: PED_SIZE * 0.5,
-                    color,
-                    ..Default::default()
-                })
-                .add(CircleRender {
-                    // Head
-                    radius: 0.16,
-                    color: Color::BLACK,
-                    ..Default::default()
-                })
-                .hidden()
-                .build()
-        },
         Selectable::new(0.5),
     ));
 

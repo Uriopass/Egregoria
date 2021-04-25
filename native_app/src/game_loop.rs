@@ -20,9 +20,7 @@ use crate::gui::{FollowEntity, Gui, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::network::NetworkState;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
-use crate::rendering::{
-    CameraHandler3D, InstancedRender, MeshRenderer, RoadRenderer, TerrainRender,
-};
+use crate::rendering::{CameraHandler3D, InstancedRender, RoadRenderer, TerrainRender};
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
 use common::timestep::Timestep;
@@ -251,8 +249,6 @@ impl State {
             .render(&self.goria.map(), time.seconds, &mut self.immtess, ctx);
 
         self.instanced_renderer.render(&self.goria, ctx);
-
-        MeshRenderer::render(&self.goria, &mut self.immtess);
 
         {
             let objs = self.uiw.read::<DebugObjs>();

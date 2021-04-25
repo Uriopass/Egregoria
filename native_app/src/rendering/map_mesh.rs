@@ -2,7 +2,6 @@ use common::{
     FastMap, Z_ARROW, Z_BSPRITE, Z_CROSSWALK, Z_INTER_BG, Z_LANE, Z_LANE_BG, Z_LOT, Z_SIDEWALK,
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
-use egregoria::utils::Restrict;
 use egregoria::Egregoria;
 use geom::{vec2, LinearColor, Polygon, Vec2, Vec3};
 use map_model::{BuildingKind, LaneKind, LotKind, Map, TurnKind, CROSSWALK_WIDTH};
@@ -114,7 +113,7 @@ impl MapBuilders {
                 - road.interface_from(road.src)
                 - road.interface_from(road.dst))
             .mul(0.2)
-            .restrict(0.0, 1.0);
+            .clamp(0.0, 1.0);
 
             let r_lanes = road.lanes_iter().filter(|(_, kind)| kind.vehicles());
             let n_arrows = ((road.length() / 50.0) as i32).max(1);
