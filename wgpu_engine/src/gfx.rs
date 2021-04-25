@@ -1,7 +1,6 @@
-use crate::draweables::BlitLinear;
 use crate::{
-    CompiledShader, Drawable, IndexType, InstancedMesh, Mesh, SpriteBatch, Texture, Uniform,
-    UvVertex,
+    BlitLinear, CompiledShader, Drawable, IndexType, InstancedMesh, Mesh, SpriteBatch, Texture,
+    Uniform, UvVertex,
 };
 use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
@@ -165,10 +164,11 @@ impl GfxContext {
             device,
         };
 
-        me.register_pipeline::<Mesh>();
-        me.register_pipeline::<InstancedMesh>();
-        me.register_pipeline::<SpriteBatch>();
-        me.register_pipeline::<BlitLinear>();
+        Mesh::setup(&mut me);
+        InstancedMesh::setup(&mut me);
+        SpriteBatch::setup(&mut me);
+        crate::lighting::setup(&mut me);
+        BlitLinear::setup(&mut me);
 
         let mut p = Texture::from_path(&me, "assets/palette.png", Some("palette"));
         p.sampler = Texture::nearest_sampler(&me.device);
@@ -444,16 +444,62 @@ impl GfxContext {
         self.device.create_render_pipeline(&render_pipeline_desc)
     }
 
-    pub fn get_pipeline<T: 'static + Drawable>(&self) -> &RenderPipeline {
+    pub fn depth_pipeline(
+        &self,
+        vertex_buffers: &[VertexBufferLayout],
+        vert_shader: CompiledShader,
+    ) -> RenderPipeline {
+        assert!(matches!(vert_shader.1, ShaderType::Vertex));
+
+        let render_pipeline_layout =
+            self.device
+                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("depth pipeline"),
+                    bind_group_layouts: &[],
+                    push_constant_ranges: &[],
+                });
+
+        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &vert_shader.0,
+                entry_point: "main",
+                buffers: vertex_buffers,
+            },
+            fragment: None,
+            primitive: PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                cull_mode: CullMode::Back,
+                front_face: FrontFace::Ccw,
+                ..Default::default()
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::LessEqual,
+                stencil: Default::default(),
+                bias: Default::default(),
+                clamp_depth: false,
+            }),
+            multisample: MultisampleState {
+                count: self.samples,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+        };
+        self.device.create_render_pipeline(&render_pipeline_desc)
+    }
+
+    pub fn get_pipeline<T: 'static>(&self) -> &RenderPipeline {
         &self
             .pipelines
             .get(&std::any::TypeId::of::<T>())
             .expect("Pipeline was not registered in context")
     }
 
-    pub fn register_pipeline<T: 'static + Drawable>(&mut self) {
-        self.pipelines
-            .insert(std::any::TypeId::of::<T>(), T::create_pipeline(self));
+    pub fn register_pipeline<T: 'static>(&mut self, pipe: RenderPipeline) {
+        self.pipelines.insert(std::any::TypeId::of::<T>(), pipe);
     }
 }
 

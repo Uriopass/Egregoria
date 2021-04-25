@@ -9,7 +9,7 @@ use map_model::{BuildingKind, LaneKind, LotKind, Map, TurnKind, CROSSWALK_WIDTH}
 use std::ops::Mul;
 use std::rc::Rc;
 use wgpu_engine::earcut::earcut;
-use wgpu_engine::wgpu::{RenderPass, RenderPipeline};
+use wgpu_engine::wgpu::RenderPass;
 use wgpu_engine::{
     Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, MultiSpriteBatch, SpriteBatch,
     SpriteBatchBuilder, Tesselator,
@@ -371,13 +371,6 @@ impl MapBuilders {
 }
 
 impl Drawable for MapMeshes {
-    fn create_pipeline(_: &GfxContext) -> RenderPipeline
-    where
-        Self: Sized,
-    {
-        panic!("create the pipelines of the components :-)")
-    }
-
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         if let Some(ref map) = self.map {
             map.draw(gfx, rp);
@@ -391,6 +384,22 @@ impl Drawable for MapMeshes {
         }
         if let Some(ref crosswalks) = self.crosswalks {
             crosswalks.draw(gfx, rp);
+        }
+    }
+
+    fn draw_depth<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        if let Some(ref map) = self.map {
+            map.draw_depth(gfx, rp);
+        }
+        self.buildings.draw_depth(gfx, rp);
+        if let Some(ref bmesh) = self.building_mesh {
+            bmesh.draw_depth(gfx, rp);
+        }
+        if let Some(ref arrows) = self.arrows {
+            arrows.draw_depth(gfx, rp);
+        }
+        if let Some(ref crosswalks) = self.crosswalks {
+            crosswalks.draw_depth(gfx, rp);
         }
     }
 }
