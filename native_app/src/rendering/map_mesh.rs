@@ -11,22 +11,9 @@ use std::rc::Rc;
 use wgpu_engine::earcut::earcut;
 use wgpu_engine::wgpu::{RenderPass, RenderPipeline};
 use wgpu_engine::{
-    compile_shader, CompiledShader, Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex,
-    MultiSpriteBatch, ShadedBatch, Shaders, SpriteBatch, SpriteBatchBuilder, Tesselator,
+    Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, MultiSpriteBatch, SpriteBatch,
+    SpriteBatchBuilder, Tesselator,
 };
-
-#[derive(Copy, Clone)]
-struct Crosswalk;
-
-impl Shaders for Crosswalk {
-    fn vert_shader(device: &wgpu_engine::wgpu::Device) -> CompiledShader {
-        compile_shader(device, "assets/shaders/crosswalk.vert", None)
-    }
-
-    fn frag_shader(device: &wgpu_engine::wgpu::Device) -> CompiledShader {
-        compile_shader(device, "assets/shaders/crosswalk.frag", None)
-    }
-}
 
 pub struct MapMeshHandler {
     builders: MapBuilders,
@@ -54,8 +41,6 @@ pub struct MapMeshes {
 impl MapMeshHandler {
     pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         let arrow_builder = SpriteBatchBuilder::from_path(gfx, "assets/arrow_one_way.png");
-
-        gfx.register_pipeline::<ShadedBatch<Crosswalk>>();
 
         let mut buildings_builder = FastMap::default();
 
