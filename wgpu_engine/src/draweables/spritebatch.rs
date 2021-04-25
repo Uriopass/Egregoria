@@ -3,7 +3,7 @@ use crate::{compile_shader, Drawable, GfxContext, Texture};
 use geom::{LinearColor, Vec2};
 use std::path::PathBuf;
 use std::sync::Arc;
-use wgpu::{BindGroup, BufferBindingType, BufferUsage, RenderPass, RenderPipeline, ShaderStage};
+use wgpu::{BindGroup, BufferBindingType, BufferUsage, RenderPass, ShaderStage};
 
 pub struct SpriteBatchBuilder {
     pub tex: Arc<Texture>,
@@ -109,12 +109,12 @@ impl SpriteBatchBuilder {
     }
 }
 
-impl Drawable for SpriteBatch {
-    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
+impl SpriteBatch {
+    pub fn setup(gfx: &mut GfxContext) {
         let vert = compile_shader(&gfx.device, "assets/shaders/spritebatch.vert", None);
         let frag = compile_shader(&gfx.device, "assets/shaders/spritebatch.frag", None);
 
-        gfx.basic_pipeline(
+        let pipe = gfx.basic_pipeline(
             &[
                 &Texture::bindgroup_layout(&gfx.device),
                 &gfx.projection.layout,
@@ -127,9 +127,12 @@ impl Drawable for SpriteBatch {
             &[],
             vert,
             frag,
-        )
+        );
+        gfx.register_pipeline::<Self>(pipe);
     }
+}
 
+impl Drawable for SpriteBatch {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
         rp.set_pipeline(&pipeline);

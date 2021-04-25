@@ -1,15 +1,10 @@
-use crate::{compile_shader, Drawable, GfxContext, Texture, UvVertex, VBDesc};
-use wgpu::{
-    BlendFactor, BlendOperation, MultisampleState, PrimitiveState, RenderPass, RenderPipeline,
-};
+use crate::{compile_shader, GfxContext, Texture, UvVertex, VBDesc};
+use wgpu::{BlendFactor, BlendOperation};
 
 pub struct BlitLinear;
 
-impl Drawable for BlitLinear {
-    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline
-    where
-        Self: Sized,
-    {
+impl BlitLinear {
+    pub fn setup(gfx: &mut GfxContext) {
         let render_pipeline_layout =
             gfx.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -45,21 +40,11 @@ impl Drawable for BlitLinear {
                 entry_point: "main",
                 targets: &color_states,
             }),
-            primitive: PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                ..Default::default()
-            },
+            primitive: Default::default(),
             depth_stencil: None,
-            multisample: MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
+            multisample: Default::default(),
         };
-        gfx.device.create_render_pipeline(&render_pipeline_desc)
-    }
-
-    fn draw<'a>(&'a self, _gfx: &'a GfxContext, _rp: &mut RenderPass<'a>) {
-        unimplemented!()
+        let pipe = gfx.device.create_render_pipeline(&render_pipeline_desc);
+        gfx.register_pipeline::<Self>(pipe);
     }
 }

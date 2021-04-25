@@ -5,9 +5,7 @@ use crate::{
 };
 use geom::{LinearColor, Vec3};
 use std::sync::Arc;
-use wgpu::{
-    BufferUsage, IndexFormat, RenderPass, RenderPipeline, VertexAttribute, VertexBufferLayout,
-};
+use wgpu::{BufferUsage, IndexFormat, RenderPass, VertexAttribute, VertexBufferLayout};
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -69,12 +67,12 @@ pub struct InstancedMesh {
     n_instances: u32,
 }
 
-impl Drawable for InstancedMesh {
-    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
+impl InstancedMesh {
+    pub fn setup(gfx: &mut GfxContext) {
         let vert = compile_shader(&gfx.device, "assets/shaders/instanced_mesh.vert", None);
         let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
 
-        gfx.basic_pipeline(
+        let pipe = gfx.basic_pipeline(
             &[
                 &gfx.projection.layout,
                 &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
@@ -83,15 +81,25 @@ impl Drawable for InstancedMesh {
             &[MeshVertex::desc(), MeshInstance::desc()],
             vert,
             frag,
-        )
+        );
+        gfx.register_pipeline::<Self>(pipe);
     }
+}
 
+impl Drawable for InstancedMesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
         rp.set_pipeline(&pipeline);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.light_params.bindgroup, &[]);
         rp.set_bind_group(2, &self.mesh.albedo_bg, &[]);
+        rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
+        rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
+        rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);
+        rp.draw_indexed(0..self.mesh.n_indices, 0, 0..self.n_instances);
+    }
+
+    fn draw_depth<'a>(&'a self, _: &'a GfxContext, rp: &mut RenderPass<'a>) {
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);

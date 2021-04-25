@@ -1,13 +1,12 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    compile_shader, Drawable, GfxContext, IndexType, LightParams, Texture, Uniform, UvVertex,
-    VBDesc,
+    compile_shader, GfxContext, IndexType, LightParams, Texture, Uniform, UvVertex, VBDesc,
 };
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     AddressMode, BlendFactor, Buffer, BufferUsage, CommandEncoder, FilterMode, IndexFormat,
-    MultisampleState, PrimitiveState, RenderPass, RenderPipeline, SamplerDescriptor,
-    SwapChainFrame, TextureSampleType, VertexAttribute, VertexBufferLayout,
+    MultisampleState, SamplerDescriptor, SwapChainFrame, TextureSampleType, VertexAttribute,
+    VertexBufferLayout,
 };
 
 pub struct LightRender {
@@ -41,9 +40,6 @@ impl LightRender {
             usage: wgpu::BufferUsage::VERTEX,
         });
 
-        gfx.register_pipeline::<LightBlit>();
-        gfx.register_pipeline::<LightMultiply>();
-
         Self {
             vertex_buffer,
             blue_noise,
@@ -53,128 +49,96 @@ impl LightRender {
 }
 
 struct LightBlit;
-
-impl Drawable for LightBlit {
-    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline
-    where
-        Self: Sized,
-    {
-        let vert_shader = compile_shader(&gfx.device, "assets/shaders/blit_light.vert", None);
-        let frag_shader = compile_shader(&gfx.device, "assets/shaders/blit_light.frag", None);
-
-        let render_pipeline_layout =
-            gfx.device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("light pipeline"),
-                    bind_group_layouts: &[&gfx.projection.layout],
-                    push_constant_ranges: &[],
-                });
-
-        let color_states = [wgpu::ColorTargetState {
-            format: gfx.light_texture.format,
-            color_blend: wgpu::BlendState {
-                src_factor: BlendFactor::One,
-                dst_factor: BlendFactor::One,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha_blend: wgpu::BlendState::REPLACE,
-            write_mask: wgpu::ColorWrite::ALL,
-        }];
-
-        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &vert_shader.0,
-                entry_point: "main",
-                buffers: &[UvVertex::desc(), LightInstance::desc()],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &frag_shader.0,
-                entry_point: "main",
-                targets: &color_states,
-            }),
-            primitive: PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                ..Default::default()
-            },
-            depth_stencil: None,
-            multisample: MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-        };
-
-        gfx.device.create_render_pipeline(&render_pipeline_desc)
-    }
-
-    fn draw<'a>(&'a self, _gfx: &'a GfxContext, _rp: &mut RenderPass<'a>) {
-        unimplemented!()
-    }
-}
-
 struct LightMultiply;
-impl Drawable for LightMultiply {
-    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline
-    where
-        Self: Sized,
-    {
-        let render_pipeline_layout =
-            gfx.device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("basic pipeline"),
-                    bind_group_layouts: &[
-                        &Texture::bindgroup_layout_complex(
-                            &gfx.device,
-                            TextureSampleType::Float { filterable: true },
-                            3,
-                        ),
-                        &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
-                    ],
-                    push_constant_ranges: &[],
-                });
 
-        let vs_module = compile_shader(&gfx.device, "assets/shaders/light_multiply.vert", None).0;
-        let fs_module = compile_shader(&gfx.device, "assets/shaders/light_multiply.frag", None).0;
+pub fn setup(gfx: &mut GfxContext) {
+    let vert_shader = compile_shader(&gfx.device, "assets/shaders/blit_light.vert", None);
+    let frag_shader = compile_shader(&gfx.device, "assets/shaders/blit_light.frag", None);
 
-        let color_states = [wgpu::ColorTargetState {
-            format: gfx.sc_desc.format,
-            color_blend: wgpu::BlendState::REPLACE,
-            alpha_blend: wgpu::BlendState::REPLACE,
-            write_mask: wgpu::ColorWrite::ALL,
-        }];
+    let render_pipeline_layout =
+        gfx.device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("light blit layout"),
+                bind_group_layouts: &[&gfx.projection.layout],
+                push_constant_ranges: &[],
+            });
 
-        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &vs_module,
-                entry_point: "main",
-                buffers: &[UvVertex::desc()],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &fs_module,
-                entry_point: "main",
-                targets: &color_states,
-            }),
-            primitive: PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                ..Default::default()
-            },
-            depth_stencil: None,
-            multisample: MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-        };
-        gfx.device.create_render_pipeline(&render_pipeline_desc)
-    }
+    let color_states = [wgpu::ColorTargetState {
+        format: gfx.light_texture.format,
+        color_blend: wgpu::BlendState {
+            src_factor: BlendFactor::One,
+            dst_factor: BlendFactor::One,
+            operation: wgpu::BlendOperation::Add,
+        },
+        alpha_blend: wgpu::BlendState::REPLACE,
+        write_mask: wgpu::ColorWrite::ALL,
+    }];
 
-    fn draw<'a>(&'a self, _gfx: &'a GfxContext, _rp: &mut RenderPass<'a>) {
-        unimplemented!()
-    }
+    let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
+        label: Some("light blit"),
+        layout: Some(&render_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &vert_shader.0,
+            entry_point: "main",
+            buffers: &[UvVertex::desc(), LightInstance::desc()],
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &frag_shader.0,
+            entry_point: "main",
+            targets: &color_states,
+        }),
+        primitive: Default::default(),
+        depth_stencil: None,
+        multisample: Default::default(),
+    };
+
+    let pipe = gfx.device.create_render_pipeline(&render_pipeline_desc);
+    gfx.register_pipeline::<LightBlit>(pipe);
+
+    let render_pipeline_layout =
+        gfx.device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("light multiply layout"),
+                bind_group_layouts: &[
+                    &Texture::bindgroup_layout_complex(
+                        &gfx.device,
+                        TextureSampleType::Float { filterable: true },
+                        3,
+                    ),
+                    &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
+                ],
+                push_constant_ranges: &[],
+            });
+
+    let vs_module = compile_shader(&gfx.device, "assets/shaders/light_multiply.vert", None).0;
+    let fs_module = compile_shader(&gfx.device, "assets/shaders/light_multiply.frag", None).0;
+
+    let color_states = [wgpu::ColorTargetState {
+        format: gfx.sc_desc.format,
+        color_blend: wgpu::BlendState::REPLACE,
+        alpha_blend: wgpu::BlendState::REPLACE,
+        write_mask: wgpu::ColorWrite::ALL,
+    }];
+
+    let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
+        label: Some("light multiply"),
+        layout: Some(&render_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &vs_module,
+            entry_point: "main",
+            buffers: &[UvVertex::desc()],
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &fs_module,
+            entry_point: "main",
+            targets: &color_states,
+        }),
+        primitive: Default::default(),
+        depth_stencil: None,
+        multisample: MultisampleState::default(),
+    };
+    let pipe = gfx.device.create_render_pipeline(&render_pipeline_desc);
+    gfx.register_pipeline::<LightMultiply>(pipe);
 }
 
 const UV_VERTICES: &[UvVertex] = &[

@@ -4,7 +4,7 @@ use crate::{
     VBDesc,
 };
 use std::sync::Arc;
-use wgpu::{BufferUsage, IndexFormat, RenderPass, RenderPipeline};
+use wgpu::{BufferUsage, IndexFormat, RenderPass};
 
 pub struct MeshBuilder {
     pub vertices: Vec<MeshVertex>,
@@ -82,12 +82,12 @@ pub struct Mesh {
     pub n_indices: u32,
 }
 
-impl Drawable for Mesh {
-    fn create_pipeline(gfx: &GfxContext) -> RenderPipeline {
+impl Mesh {
+    pub fn setup(gfx: &mut GfxContext) {
         let vert = compile_shader(&gfx.device, "assets/shaders/lit_mesh.vert", None);
         let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
 
-        gfx.basic_pipeline(
+        let pipe = gfx.basic_pipeline(
             &[
                 &gfx.projection.layout,
                 &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
@@ -96,14 +96,23 @@ impl Drawable for Mesh {
             &[MeshVertex::desc()],
             vert,
             frag,
-        )
+        );
+        gfx.register_pipeline::<Self>(pipe);
     }
+}
 
+impl Drawable for Mesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         rp.set_pipeline(&gfx.get_pipeline::<Self>());
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.light_params.bindgroup, &[]);
         rp.set_bind_group(2, &self.albedo_bg, &[]);
+        rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
+        rp.draw_indexed(0..self.n_indices, 0, 0..1);
+    }
+
+    fn draw_depth<'a>(&'a self, _: &'a GfxContext, rp: &mut RenderPass<'a>) {
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);

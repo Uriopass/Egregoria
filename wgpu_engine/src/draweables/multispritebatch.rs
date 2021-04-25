@@ -1,7 +1,7 @@
 use crate::{Drawable, GfxContext, SpriteBatch, SpriteBatchBuilder, Texture};
 use std::iter::FromIterator;
 use std::sync::Arc;
-use wgpu::{RenderPass, RenderPipeline};
+use wgpu::RenderPass;
 
 pub struct MultiSpriteBatchBuilder {
     sbs: Vec<SpriteBatchBuilder>,
@@ -48,10 +48,6 @@ impl MultiSpriteBatchBuilder {
 }
 
 impl Drawable for MultiSpriteBatch {
-    fn create_pipeline(_gfx: &GfxContext) -> RenderPipeline {
-        unimplemented!()
-    }
-
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         for v in &self.sbs {
             v.draw(gfx, rp);
