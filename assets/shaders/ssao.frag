@@ -1,4 +1,5 @@
 #version 450
+#include "render_params.glsl"
 
 layout(location=0) in vec2 in_uv;
 
@@ -7,6 +8,8 @@ layout(location=0) out vec4 out_ssao;
 layout(set = 0, binding = 0) uniform texture2DMS t_depth;
 layout(set = 0, binding = 1) uniform sampler s_depth;
 
+layout(set = 1, binding = 0) uniform Uni {RenderParams params;};
+
 float PHI = 1.618034;
 
 float fastnoise(vec2 xy, float seed){
@@ -14,17 +17,16 @@ float fastnoise(vec2 xy, float seed){
 }
 
 float sample_depth(vec2 coords) {
-    return texelFetch(sampler2DMS(t_depth, s_depth), ivec2(coords * vec2(1920, 1080)), 0).r;
+    return texelFetch(sampler2DMS(t_depth, s_depth), ivec2(coords * params.viewport), 0).r;
 }
 
 vec2 derivative_from_depth(float depth, vec2 texcoords) {
-    const vec2 offsetx = vec2(0.001,0.0);
-    const vec2 offsety = vec2(0.0,0.001);
+    ivec2 c = ivec2(texcoords * params.viewport);
 
-    float depthx = sample_depth(texcoords + offsetx);
-    float depthy = sample_depth(texcoords + offsety);
+    float depthx = texelFetch(sampler2DMS(t_depth, s_depth), c + ivec2(1, 0), 0).r;
+    float depthy = texelFetch(sampler2DMS(t_depth, s_depth), c + ivec2(0, 1), 0).r;
 
-    return 1000.0 * vec2(depthx - depth, depthy - depth);
+    return params.viewport * vec2(depthx - depth, depthy - depth);
 }
 
 void main() {

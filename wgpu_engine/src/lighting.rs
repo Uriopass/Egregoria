@@ -1,7 +1,7 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    compile_shader, GfxContext, IndexType, LightParams, Texture, TextureBuilder, Uniform, UvVertex,
-    VBDesc,
+    compile_shader, GfxContext, IndexType, RenderParams, Texture, TextureBuilder, Uniform,
+    UvVertex, VBDesc,
 };
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -110,7 +110,7 @@ pub fn setup(gfx: &mut GfxContext) {
                         TextureSampleType::Float { filterable: true },
                         3,
                     ),
-                    &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
+                    &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
                 ],
                 push_constant_ranges: &[],
             });
@@ -248,7 +248,7 @@ impl LightRender {
 
         rpass.set_pipeline(&gfx.get_pipeline::<LightMultiply>());
         rpass.set_bind_group(0, &lmultiply_tex_bg, &[]);
-        rpass.set_bind_group(1, &gfx.light_params.bindgroup, &[]);
+        rpass.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rpass.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
         rpass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
         rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);

@@ -1,6 +1,6 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    compile_shader, Drawable, GfxContext, IndexType, LightParams, MeshVertex, Texture, Uniform,
+    compile_shader, Drawable, GfxContext, IndexType, MeshVertex, RenderParams, Texture, Uniform,
     VBDesc,
 };
 use std::sync::Arc;
@@ -92,7 +92,8 @@ impl Mesh {
         let pipe = gfx.basic_pipeline(
             &[
                 &gfx.projection.layout,
-                &Uniform::<LightParams>::bindgroup_layout(&gfx.device),
+                &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                &Texture::bindgroup_layout(&gfx.device),
                 &Texture::bindgroup_layout(&gfx.device),
             ],
             &[MeshVertex::desc()],
@@ -109,8 +110,9 @@ impl Drawable for Mesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         rp.set_pipeline(&gfx.get_pipeline::<Self>());
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
-        rp.set_bind_group(1, &gfx.light_params.bindgroup, &[]);
+        rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(2, &self.albedo_bg, &[]);
+        rp.set_bind_group(3, &gfx.fbos.ssao_bg, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);

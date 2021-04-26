@@ -30,7 +30,7 @@ impl Camera {
         }
     }
 
-    pub fn znear(height: f32) -> f32 {
+    pub fn znear(_height: f32) -> f32 {
         1.5
     }
 
