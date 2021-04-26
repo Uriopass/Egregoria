@@ -20,8 +20,8 @@ float sample_depth(vec2 coords) {
     return texelFetch(sampler2DMS(t_depth, s_depth), ivec2(coords * params.viewport), 0).r;
 }
 
-vec2 derivative_from_depth(float depth, vec2 texcoords) {
-    ivec2 c = ivec2(texcoords * params.viewport);
+vec2 derivative(float depth, vec2 uv) {
+    ivec2 c = ivec2(uv * params.viewport);
 
     float depthx = texelFetch(sampler2DMS(t_depth, s_depth), c + ivec2(1, 0), 0).r;
     float depthy = texelFetch(sampler2DMS(t_depth, s_depth), c + ivec2(0, 1), 0).r;
@@ -29,16 +29,17 @@ vec2 derivative_from_depth(float depth, vec2 texcoords) {
     return params.viewport * vec2(depthx - depth, depthy - depth);
 }
 
+const float total_strength = 1.0;
+const float base = 0.1;
+
+const float area = 0.5;
+const float falloff = 0.0015;
+
+const float radius = 0.02;
+
+const int samples = 16;
+
 void main() {
-    const float total_strength = 1.0;
-    const float base = 0.1;
-
-    const float area = 0.5;
-    const float falloff = 0.0015;
-
-    const float radius = 0.02;
-
-    const int samples = 16;
     vec3 sample_sphere[samples] = {
     vec3( 0.5381, 0.1856,-0.4319), vec3( 0.1379, 0.2486, 0.4430),
     vec3( 0.3371, 0.5679,-0.0057), vec3(-0.6999,-0.0451,-0.0019),
@@ -50,7 +51,7 @@ void main() {
     vec3( 0.0352,-0.0631, 0.5460), vec3(-0.4776, 0.2847,-0.0271)
     };
 
-    float xr = fastnoise(in_uv * 1000.0, 1.0); // three primes
+    float xr = fastnoise(in_uv * 1000.0, 1.0);
     float yr = fastnoise(in_uv * 1000.0, 2.0);
     float zr = fastnoise(in_uv * 1000.0, 3.0);
     vec3 random = normalize( vec3(xr, yr, zr) );
@@ -58,14 +59,13 @@ void main() {
     float depth = sample_depth(in_uv);
     //out_ssao = depth;
 
-    vec2 derivative = derivative_from_depth(depth, in_uv);
+    vec2 derivative = derivative(depth, in_uv);
     //out_ssao = vec4(abs(derivative), 1.0 - depth, 1);
 
     float radius_depth = radius / depth;
     float occlusion = 0.0;
     for(int i=0; i < samples; i++) {
         vec3 ray = radius_depth * reflect(sample_sphere[i], random);
-        //float dott = dot(ray,normal);
         vec2 off = ray.xy;
         //off = radius_depth * vec2( 0.0100,-0.1924);
 
