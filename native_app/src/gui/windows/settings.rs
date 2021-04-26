@@ -16,6 +16,7 @@ pub struct Settings {
 
     pub fullscreen: bool,
     pub vsync: VSyncOptions,
+    pub ssao: bool,
 
     pub music_volume_percent: f32,
     pub effects_volume_percent: f32,
@@ -37,6 +38,7 @@ impl Default for Settings {
             vsync: VSyncOptions::Vsync,
             time_warp: 1,
             auto_save_every: AutoSaveEvery::Never,
+            ssao: true,
         }
     }
 }
@@ -137,6 +139,7 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
             ui.text("Graphics");
 
             ui.checkbox(im_str!("Fullscreen"), &mut settings.fullscreen);
+            ui.checkbox(im_str!("Ambient Occlusion (SSAO)"), &mut settings.ssao);
 
             if let Some(tok) = imgui::ComboBox::new(im_str!("VSync"))
                 .preview_value(&im_str!("{}", settings.vsync.as_ref()))

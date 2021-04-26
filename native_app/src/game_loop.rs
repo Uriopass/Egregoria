@@ -343,6 +343,7 @@ impl State {
         }
 
         ctx.gfx.set_present_mode(settings.vsync.into());
+        ctx.gfx.settings.ssao = settings.ssao;
 
         ctx.audio.set_settings(settings);
     }
