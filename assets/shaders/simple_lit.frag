@@ -18,8 +18,10 @@ layout(set = 3, binding = 1) uniform sampler s_ssao;
 
 void main() {
     vec4 albedo = texture(sampler2D(t_albedo, s_albedo), in_uv);
-    vec4 ssao = texture(sampler2D(t_ssao, s_ssao), gl_FragCoord.xy / params.viewport);
-
+    float ssao = 1;
+    if (params.ssao) {
+       ssao = texture(sampler2D(t_ssao, s_ssao), gl_FragCoord.xy / params.viewport).r;
+    }
     vec3 normal = normalize(in_normal);
     vec3 cam = params.cam_pos.xyz;
 
@@ -34,5 +36,6 @@ void main() {
 
     vec4 c = in_tint * albedo;
     c.rgb *= 0.2 + 0.8 * diffuse + 0.5 * specular;
-    out_color = c * ssao;
+    c.rgb *= ssao;
+    out_color = c;
 }

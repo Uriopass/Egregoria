@@ -28,6 +28,16 @@ pub struct FBOs {
     pub(crate) ssao_bg: wgpu::BindGroup,
 }
 
+pub struct GfxSettings {
+    pub ssao: bool,
+}
+
+impl Default for GfxSettings {
+    fn default() -> Self {
+        Self { ssao: true }
+    }
+}
+
 pub struct GfxContext {
     pub(crate) surface: Surface,
     pub size: (u32, u32),
@@ -45,6 +55,7 @@ pub struct GfxContext {
     pub(crate) samples: u32,
     pub(crate) screen_uv_vertices: wgpu::Buffer,
     pub(crate) rect_indices: wgpu::Buffer,
+    pub settings: GfxSettings,
 }
 
 #[derive(Copy, Clone)]
@@ -58,6 +69,7 @@ pub struct RenderParams {
     pub _pad2: f32,
     pub viewport: Vec2,
     pub time: f32,
+    pub ssao: bool,
 }
 
 impl Default for RenderParams {
@@ -71,6 +83,7 @@ impl Default for RenderParams {
             _pad2: 0.0,
             viewport: vec2(1000.0, 1000.0),
             time: 0.0,
+            ssao: true,
         }
     }
 }
@@ -159,6 +172,7 @@ impl GfxContext {
             screen_uv_vertices,
             rect_indices,
             device,
+            settings: GfxSettings::default(),
         };
 
         Mesh::setup(&mut me);
@@ -233,7 +247,6 @@ impl GfxContext {
             });
 
         self.projection.upload_to_gpu(&self.queue);
-        self.render_params.upload_to_gpu(&self.queue);
 
         encoder
     }
@@ -270,9 +283,8 @@ impl GfxContext {
                 obj.draw_depth(&self, &mut depth_prepass);
             }
         }
-        //SSAOPipeline::setup(self);
 
-        {
+        if self.settings.ssao {
             let pipeline = self.get_pipeline::<SSAOPipeline>();
             let bg = self
                 .fbos

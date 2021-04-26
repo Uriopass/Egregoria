@@ -5,4 +5,5 @@ struct RenderParams {
     vec4 sun;
     vec2 viewport;
     float time;
+    bool ssao;
 };

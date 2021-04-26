@@ -147,6 +147,8 @@ impl Context {
                         params.cam_pos = state.camera.camera.eye();
                         params.sun = sun;
                         params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);
+                        params.ssao = self.gfx.settings.ssao;
+                        self.gfx.render_params.upload_to_gpu(&self.gfx.queue);
 
                         state
                             .light
