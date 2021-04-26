@@ -4,7 +4,7 @@ use crate::{
 };
 use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
-use geom::{LinearColor, Vec3};
+use geom::{vec2, LinearColor, Vec2, Vec3};
 use mint::ColumnMatrix4;
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
@@ -13,9 +13,9 @@ use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, BindGroupLayoutDescriptor, CommandEncoder, CommandEncoderDescriptor,
-    CullMode, Device, Extent3d, FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue,
-    RenderPipeline, Surface, SwapChain, SwapChainDescriptor, SwapChainFrame, TextureCopyView,
-    TextureSampleType, TextureUsage, VertexBufferLayout,
+    CullMode, Device, FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue,
+    RenderPipeline, Surface, SwapChain, SwapChainDescriptor, SwapChainFrame, TextureSampleType,
+    TextureUsage, VertexBufferLayout,
 };
 
 pub struct FBOs {
@@ -25,6 +25,7 @@ pub struct FBOs {
     pub(crate) color: MultisampledTexture,
     pub(crate) ui: Texture,
     pub(crate) ssao: Texture,
+    pub(crate) ssao_bg: wgpu::BindGroup,
 }
 
 pub struct GfxContext {
@@ -39,9 +40,7 @@ pub struct GfxContext {
     pub update_sc: bool,
     pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
     pub(crate) projection: Uniform<mint::ColumnMatrix4<f32>>,
-    pub inv_projection: Uniform<mint::ColumnMatrix4<f32>>,
-    pub time_uni: Uniform<f32>,
-    pub light_params: Uniform<LightParams>,
+    pub render_params: Uniform<RenderParams>,
     pub(crate) textures: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) samples: u32,
     pub(crate) screen_uv_vertices: wgpu::Buffer,
@@ -50,17 +49,18 @@ pub struct GfxContext {
 
 #[derive(Copy, Clone)]
 #[repr(C)]
-pub struct LightParams {
+pub struct RenderParams {
     pub inv_proj: ColumnMatrix4<f32>,
     pub ambiant: LinearColor,
     pub cam_pos: Vec3,
     pub _pad: f32,
     pub sun: Vec3,
     pub _pad2: f32,
+    pub viewport: Vec2,
     pub time: f32,
 }
 
-impl Default for LightParams {
+impl Default for RenderParams {
     fn default() -> Self {
         Self {
             inv_proj: ColumnMatrix4::from([0.0; 16]),
@@ -69,12 +69,13 @@ impl Default for LightParams {
             _pad: 0.0,
             sun: Default::default(),
             _pad2: 0.0,
+            viewport: vec2(1000.0, 1000.0),
             time: 0.0,
         }
     }
 }
 
-u8slice_impl!(LightParams);
+u8slice_impl!(RenderParams);
 
 pub struct GuiRenderContext<'a, 'b> {
     pub device: &'a wgpu::Device,
@@ -130,9 +131,6 @@ impl GfxContext {
 
         let projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
 
-        let inv_projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
-
-        let time_uni = Uniform::new(0.0, &device);
         let screen_uv_vertices = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(SCREEN_UV_VERTICES),
@@ -155,9 +153,7 @@ impl GfxContext {
             surface,
             pipelines: FastMap::default(),
             projection,
-            inv_projection,
-            time_uni,
-            light_params: Uniform::new(Default::default(), &device),
+            render_params: Uniform::new(Default::default(), &device),
             textures: FastMap::default(),
             samples,
             screen_uv_vertices,
@@ -218,7 +214,7 @@ impl GfxContext {
     }
 
     pub fn set_time(&mut self, time: f32) {
-        *self.time_uni.value_mut() = time;
+        self.render_params.value_mut().time = time;
     }
 
     pub fn set_proj(&mut self, proj: mint::ColumnMatrix4<f32>) {
@@ -226,7 +222,7 @@ impl GfxContext {
     }
 
     pub fn set_inv_proj(&mut self, proj: mint::ColumnMatrix4<f32>) {
-        *self.inv_projection.value_mut() = proj;
+        self.render_params.value_mut().inv_proj = proj;
     }
 
     pub fn start_frame(&mut self) -> CommandEncoder {
@@ -237,9 +233,7 @@ impl GfxContext {
             });
 
         self.projection.upload_to_gpu(&self.queue);
-        self.inv_projection.upload_to_gpu(&self.queue);
-        self.time_uni.upload_to_gpu(&self.queue);
-        self.light_params.upload_to_gpu(&self.queue);
+        self.render_params.upload_to_gpu(&self.queue);
 
         encoder
     }
@@ -276,7 +270,8 @@ impl GfxContext {
                 obj.draw_depth(&self, &mut depth_prepass);
             }
         }
-        SSAOPipeline::setup(self);
+        //SSAOPipeline::setup(self);
+
         {
             let pipeline = self.get_pipeline::<SSAOPipeline>();
             let bg = self
@@ -304,29 +299,31 @@ impl GfxContext {
 
             ssao_pass.set_pipeline(pipeline);
             ssao_pass.set_bind_group(0, &bg, &[]);
+            ssao_pass.set_bind_group(1, &self.render_params.bindgroup, &[]);
             ssao_pass.set_vertex_buffer(0, self.screen_uv_vertices.slice(..));
             ssao_pass.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
             ssao_pass.draw_indexed(0..6, 0, 0..1);
         }
 
+        /*
         encoder.copy_texture_to_texture(
-            TextureCopyView {
+            wgpu::TextureCopyView {
                 texture: &self.fbos.ssao.texture,
                 mip_level: 0,
                 origin: Default::default(),
             },
-            TextureCopyView {
+            wgpu::TextureCopyView {
                 texture: &self.fbos.color.target.texture,
                 mip_level: 0,
                 origin: Default::default(),
             },
-            Extent3d {
+            wgpu::Extent3d {
                 width: self.sc_desc.width,
                 height: self.sc_desc.height,
                 depth: 1,
             },
-        );
-        /*
+        );*/
+
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
@@ -356,7 +353,7 @@ impl GfxContext {
             for obj in &mut objs {
                 obj.draw(&self, &mut render_pass);
             }
-        }*/
+        }
     }
 
     pub fn render_gui(
@@ -420,19 +417,21 @@ impl GfxContext {
         desc: &SwapChainDescriptor,
         samples: u32,
     ) -> FBOs {
+        let ssao = Texture::create_fbo(
+            device,
+            desc,
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED | TextureUsage::COPY_SRC,
+            None,
+        );
         FBOs {
             swapchain: device.create_swap_chain(surface, desc),
             depth: Texture::create_depth_texture(device, desc, samples),
             light: Texture::create_light_texture(device, desc),
             color: Texture::create_color_texture(device, desc, samples),
             ui: Texture::create_ui_texture(device, desc),
-            ssao: Texture::create_fbo(
-                device,
-                desc,
-                wgpu::TextureFormat::Rgba8UnormSrgb,
-                TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED | TextureUsage::COPY_SRC,
-                None,
-            ),
+            ssao_bg: ssao.bindgroup(device, &Texture::bindgroup_layout(device)),
+            ssao,
         }
     }
 
@@ -597,32 +596,36 @@ impl SSAOPipeline {
             gfx.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("ssao pipeline"),
-                    bind_group_layouts: &[&gfx.device.create_bind_group_layout(
-                        &BindGroupLayoutDescriptor {
-                            label: Some("ssao depth bg layout"),
-                            entries: &[
-                                wgpu::BindGroupLayoutEntry {
-                                    binding: 0,
-                                    visibility: wgpu::ShaderStage::FRAGMENT,
-                                    ty: wgpu::BindingType::Texture {
-                                        multisampled: true,
-                                        view_dimension: wgpu::TextureViewDimension::D2,
-                                        sample_type: TextureSampleType::Float { filterable: true },
+                    bind_group_layouts: &[
+                        &gfx.device
+                            .create_bind_group_layout(&BindGroupLayoutDescriptor {
+                                label: Some("ssao depth bg layout"),
+                                entries: &[
+                                    wgpu::BindGroupLayoutEntry {
+                                        binding: 0,
+                                        visibility: wgpu::ShaderStage::FRAGMENT,
+                                        ty: wgpu::BindingType::Texture {
+                                            multisampled: true,
+                                            view_dimension: wgpu::TextureViewDimension::D2,
+                                            sample_type: TextureSampleType::Float {
+                                                filterable: true,
+                                            },
+                                        },
+                                        count: None,
                                     },
-                                    count: None,
-                                },
-                                wgpu::BindGroupLayoutEntry {
-                                    binding: 1,
-                                    visibility: wgpu::ShaderStage::FRAGMENT,
-                                    ty: wgpu::BindingType::Sampler {
-                                        filtering: true,
-                                        comparison: false,
+                                    wgpu::BindGroupLayoutEntry {
+                                        binding: 1,
+                                        visibility: wgpu::ShaderStage::FRAGMENT,
+                                        ty: wgpu::BindingType::Sampler {
+                                            filtering: true,
+                                            comparison: false,
+                                        },
+                                        count: None,
                                     },
-                                    count: None,
-                                },
-                            ],
-                        },
-                    )],
+                                ],
+                            }),
+                        &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                    ],
                     push_constant_ranges: &[],
                 });
 

@@ -3,9 +3,9 @@ use crate::game_loop;
 use crate::input::InputContext;
 use egregoria::utils::time::GameTime;
 use futures::executor;
-use geom::vec3;
+use geom::{vec2, vec3};
 use std::time::Instant;
-use wgpu_engine::{GfxContext, LightParams};
+use wgpu_engine::GfxContext;
 use winit::window::Window;
 use winit::{
     dpi::PhysicalSize,
@@ -137,20 +137,16 @@ impl Context {
                         let (lights, ambiant_col) = state.lights();
 
                         let t = std::f32::consts::TAU
-                            * (self.gfx.time_uni.value() - 8.0 * GameTime::HOUR as f32)
+                            * (self.gfx.render_params.value().time - 8.0 * GameTime::HOUR as f32)
                             / GameTime::DAY as f32;
 
                         let sun = vec3(t.cos(), t.sin() * 0.5, t.sin() + 0.5).normalize();
 
-                        *self.gfx.light_params.value_mut() = LightParams {
-                            inv_proj: *self.gfx.inv_projection.value(),
-                            time: *self.gfx.time_uni.value(),
-                            ambiant: ambiant_col,
-                            cam_pos: state.camera.camera.eye(),
-                            sun,
-                            _pad: 0.0,
-                            _pad2: 0.0,
-                        };
+                        let params = self.gfx.render_params.value_mut();
+                        params.ambiant = ambiant_col;
+                        params.cam_pos = state.camera.camera.eye();
+                        params.sun = sun;
+                        params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);
 
                         state
                             .light

@@ -1,5 +1,5 @@
 #version 450
-#include "light_params.glsl"
+#include "render_params.glsl"
 
 layout(location=0) in vec2 in_uv;
 layout(location=1) in vec2 in_wv;
@@ -15,7 +15,7 @@ layout(set = 0, binding = 3) uniform sampler s_color;
 layout(set = 0, binding = 4) uniform texture2D t_blue_noise;
 layout(set = 0, binding = 5) uniform sampler s_blue_noise;
 
-layout(set = 1, binding = 0) uniform Uni {LightParams params;};
+layout(set = 1, binding = 0) uniform Uni {RenderParams params;};
 
 const float FBM_MAG = 0.4;
 

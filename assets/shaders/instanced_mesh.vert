@@ -1,6 +1,6 @@
 #version 450
 
-#include "light_params.glsl"
+#include "render_params.glsl"
 
 layout(location=0) in vec3 in_pos;
 layout(location=1) in vec3 in_normal;
