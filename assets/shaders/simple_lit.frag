@@ -21,6 +21,11 @@ void main() {
     float ssao = 1;
     if (params.ssao) {
        ssao = texture(sampler2D(t_ssao, s_ssao), gl_FragCoord.xy / params.viewport).r;
+/*
+        if (gl_FragCoord.x > params.viewport.x * 0.5) {
+            out_color = vec4(vec3(ssao), 1);
+            return;
+        }*/
     }
     vec3 normal = normalize(in_normal);
     vec3 cam = params.cam_pos.xyz;
