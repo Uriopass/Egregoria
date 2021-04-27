@@ -254,7 +254,7 @@ impl GfxContext {
     pub fn render_objs(
         &mut self,
         encoder: &mut CommandEncoder,
-        mut prepare: impl for<'a> FnMut(&'a mut FrameContext),
+        mut prepare: impl FnMut(&mut FrameContext),
     ) {
         let mut objs = vec![];
 
