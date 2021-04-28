@@ -69,7 +69,12 @@ pub struct RenderParams {
     pub _pad2: f32,
     pub viewport: Vec2,
     pub time: f32,
-    pub ssao: bool,
+    pub ssao_strength: f32,
+    pub ssao_radius: f32,
+    pub ssao_falloff: f32,
+    pub ssao_base: f32,
+    pub ssao_samples: i32,
+    pub ssao_enabled: i32,
 }
 
 impl Default for RenderParams {
@@ -83,7 +88,12 @@ impl Default for RenderParams {
             _pad2: 0.0,
             viewport: vec2(1000.0, 1000.0),
             time: 0.0,
-            ssao: true,
+            ssao_strength: 0.0,
+            ssao_radius: 0.0,
+            ssao_falloff: 0.0,
+            ssao_base: 0.0,
+            ssao_samples: 0,
+            ssao_enabled: 1,
         }
     }
 }

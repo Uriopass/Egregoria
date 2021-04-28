@@ -147,7 +147,14 @@ impl Context {
                         params.cam_pos = state.camera.camera.eye();
                         params.sun = sun;
                         params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);
-                        params.ssao = self.gfx.settings.ssao;
+                        params.ssao_enabled = self.gfx.settings.ssao as i32;
+                        let c = common::config();
+                        params.ssao_strength = c.ssao_strength;
+                        params.ssao_radius = c.ssao_radius;
+                        params.ssao_falloff = c.ssao_falloff;
+                        params.ssao_base = c.ssao_base;
+                        params.ssao_samples = c.ssao_samples;
+                        drop(c);
                         self.gfx.render_params.upload_to_gpu(&self.gfx.queue);
 
                         state
