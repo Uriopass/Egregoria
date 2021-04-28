@@ -33,17 +33,24 @@ vec2 derivative(float depth) {
     return vec2(depthx - depth, depthy - depth);
 }
 
+/*
 const float total_strength = 1.0;
 const float base = 0.1;
 
-const float area = 0.03;
 const float falloff = 0.0002;
-
 const float radius = 0.02;
 
 const int samples = 16;
-
+*/
 void main() {
+    float total_strength = params.ssao_strength;
+    float base = params.ssao_base;
+
+    float falloff = params.ssao_falloff;
+    float radius = params.ssao_radius;
+
+    int samples = params.ssao_samples;
+
     vec3 sample_sphere[16] = {
     vec3( 0.5381, 0.1856,-0.4319), vec3( 0.1379, 0.2486, 0.4430),
     vec3( 0.3371, 0.5679,-0.0057), vec3(-0.6999,-0.0451,-0.0019),
@@ -83,7 +90,7 @@ void main() {
         float occ_depth = sample_depth(ivec2(gl_FragCoord.xy + off));
         float difference = depth - occ_depth;
         float dcorrected = difference + dot(off, derivative);
-        dcorrected = dcorrected * depth;
+        //dcorrected = dcorrected * depth;
 
         occlusion += smoothstep(falloff, falloff * 2.0, dcorrected);
     }

@@ -19,7 +19,7 @@ layout(set = 3, binding = 1) uniform sampler s_ssao;
 void main() {
     vec4 albedo = texture(sampler2D(t_albedo, s_albedo), in_uv);
     float ssao = 1;
-    if (params.ssao) {
+    if (params.ssao_enabled != 0) {
        ssao = texture(sampler2D(t_ssao, s_ssao), gl_FragCoord.xy / params.viewport).r;
 /*
         if (gl_FragCoord.x > params.viewport.x * 0.5) {

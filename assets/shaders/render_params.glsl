@@ -5,5 +5,10 @@ struct RenderParams {
     vec4 sun;
     vec2 viewport;
     float time;
-    bool ssao;
+    float ssao_strength;
+    float ssao_radius;
+    float ssao_falloff;
+    float ssao_base;
+    int ssao_samples;
+    int ssao_enabled;
 };

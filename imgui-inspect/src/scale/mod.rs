@@ -31,8 +31,10 @@ impl InspectRenderDefault<f32> for InspectDragf {
 
         let format = if args.step == Some(1.0) {
             "%.0f"
-        } else {
+        } else if args.step == Some(0.1) {
             "%.1f"
+        } else {
+            "%f"
         };
 
         imgui::Drag::new(&im_str!("{}", label))

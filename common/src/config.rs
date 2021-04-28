@@ -1,5 +1,6 @@
 use arc_swap::{ArcSwap, Guard};
 use geom::Color;
+use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
 use lazy_static::*;
 use serde::{Deserialize, Serialize};
@@ -36,6 +37,16 @@ pub struct Config {
 
     pub special_building_col: Color,
     pub special_building_invalid_col: Color,
+
+    #[inspect(step = 0.01, proxy_type = "InspectDragf")]
+    pub ssao_strength: f32,
+    #[inspect(step = 0.001, proxy_type = "InspectDragf")]
+    pub ssao_radius: f32,
+    #[inspect(step = 0.00001, proxy_type = "InspectDragf")]
+    pub ssao_falloff: f32,
+    #[inspect(step = 0.01, proxy_type = "InspectDragf")]
+    pub ssao_base: f32,
+    pub ssao_samples: i32,
 }
 
 fn load_config_start() -> Config {
