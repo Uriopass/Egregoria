@@ -16,6 +16,14 @@ layout(set = 2, binding = 1) uniform sampler s_albedo;
 layout(set = 3, binding = 0) uniform texture2D t_ssao;
 layout(set = 3, binding = 1) uniform sampler s_ssao;
 
+layout(set = 3, binding = 2) uniform texture2D t_bnoise;
+layout(set = 3, binding = 3) uniform sampler s_bnoise;
+
+float dither() {
+    float color = texture(sampler2D(t_bnoise, s_bnoise), gl_FragCoord.xy / 512.0).r;
+    return (color - 0.5) / 255.0;
+}
+
 void main() {
     vec4 albedo = texture(sampler2D(t_albedo, s_albedo), in_uv);
     float ssao = 1;
@@ -42,5 +50,6 @@ void main() {
     vec4 c = in_tint * albedo;
     c.rgb *= 0.2 + 0.8 * diffuse + 0.5 * specular;
     c.rgb *= ssao;
+    c.rgb += dither();
     out_color = c;
 }

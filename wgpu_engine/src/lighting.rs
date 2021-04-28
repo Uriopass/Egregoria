@@ -1,43 +1,20 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    compile_shader, GfxContext, IndexType, RenderParams, Texture, TextureBuilder, Uniform,
-    UvVertex, VBDesc,
+    compile_shader, GfxContext, IndexType, RenderParams, Texture, Uniform, UvVertex, VBDesc,
 };
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    AddressMode, BlendFactor, Buffer, BufferUsage, CommandEncoder, FilterMode, IndexFormat,
-    MultisampleState, SamplerDescriptor, SwapChainFrame, TextureSampleType, VertexAttribute,
-    VertexBufferLayout,
+    BlendFactor, Buffer, BufferUsage, CommandEncoder, IndexFormat, MultisampleState,
+    SwapChainFrame, TextureSampleType, VertexAttribute, VertexBufferLayout,
 };
 
 pub struct LightRender {
-    blue_noise: Texture,
     vertex_buffer: Buffer,
     instance_buffer: PBuffer,
 }
 
 impl LightRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
-        let mut blue_noise = TextureBuilder::from_path("assets/blue_noise_512.png")
-            .with_label("blue noise")
-            .with_srgb(false)
-            .with_mipmaps(false)
-            .build(gfx);
-        blue_noise.sampler = gfx.device.create_sampler(&SamplerDescriptor {
-            label: None,
-            address_mode_u: AddressMode::Repeat,
-            address_mode_v: AddressMode::Repeat,
-            address_mode_w: AddressMode::Repeat,
-            mag_filter: FilterMode::Nearest,
-            min_filter: FilterMode::Nearest,
-            mipmap_filter: FilterMode::Nearest,
-            lod_min_clamp: 0.0,
-            lod_max_clamp: 0.0,
-            compare: None,
-            anisotropy_clamp: None,
-            border_color: None,
-        });
-
         // ok: init
         let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
             label: None,
@@ -47,7 +24,6 @@ impl LightRender {
 
         Self {
             vertex_buffer,
-            blue_noise,
             instance_buffer: PBuffer::new(BufferUsage::VERTEX),
         }
     }
@@ -228,7 +204,11 @@ impl LightRender {
         }
 
         let lmultiply_tex_bg = Texture::multi_bindgroup(
-            &[&gfx.fbos.light, &gfx.fbos.color.target, &self.blue_noise],
+            &[
+                &gfx.fbos.light,
+                &gfx.fbos.color.target,
+                &gfx.read_texture("assets/blue_noise_512.png").unwrap(),
+            ],
             &gfx.device,
             &gfx.get_pipeline::<LightMultiply>().get_bind_group_layout(0),
         );
