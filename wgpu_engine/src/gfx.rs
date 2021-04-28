@@ -25,7 +25,6 @@ pub struct FBOs {
     pub(crate) color: MultisampledTexture,
     pub(crate) ui: Texture,
     pub(crate) ssao: Texture,
-    pub(crate) ssao_bg: wgpu::BindGroup,
 }
 
 pub struct GfxSettings {
@@ -56,6 +55,7 @@ pub struct GfxContext {
     pub(crate) screen_uv_vertices: wgpu::Buffer,
     pub(crate) rect_indices: wgpu::Buffer,
     pub settings: GfxSettings,
+    pub ssao_noise_bg: wgpu::BindGroup,
 }
 
 #[derive(Copy, Clone)]
@@ -166,6 +166,29 @@ impl GfxContext {
             usage: wgpu::BufferUsage::INDEX,
         });
 
+        let blue_noise = TextureBuilder::from_path("assets/blue_noise_512.png")
+            .with_label("blue noise")
+            .with_srgb(false)
+            .with_mipmaps(false)
+            .with_sampler(Texture::nearest_sampler())
+            .build(&device, &queue);
+
+        let ssao_noise_bg = Texture::multi_bindgroup(
+            &[&fbos.ssao, &blue_noise],
+            &device,
+            &Texture::bindgroup_layout_complex(
+                &device,
+                TextureSampleType::Float { filterable: true },
+                2,
+            ),
+        );
+
+        let mut textures = FastMap::default();
+        textures.insert(
+            PathBuf::from("assets/blue_noise_512.png"),
+            Arc::new(blue_noise),
+        );
+
         let mut me = Self {
             size: (win_width, win_height),
             queue,
@@ -177,12 +200,13 @@ impl GfxContext {
             pipelines: FastMap::default(),
             projection,
             render_params: Uniform::new(Default::default(), &device),
-            textures: FastMap::default(),
+            textures,
             samples,
             screen_uv_vertices,
             rect_indices,
             device,
             settings: GfxSettings::default(),
+            ssao_noise_bg,
         };
 
         Mesh::setup(&mut me);
@@ -195,7 +219,7 @@ impl GfxContext {
         let p = TextureBuilder::from_path("assets/palette.png")
             .with_label("palette")
             .with_sampler(Texture::nearest_sampler())
-            .build(&me);
+            .build(&me.device, &me.queue);
         me.set_texture("assets/palette.png", p);
 
         me
@@ -211,7 +235,11 @@ impl GfxContext {
             if let Some(tex) = sel.textures.get(&p) {
                 return tex.clone();
             }
-            let tex = Arc::new(TextureBuilder::from_path(&p).with_label(label).build(sel));
+            let tex = Arc::new(
+                TextureBuilder::from_path(&p)
+                    .with_label(label)
+                    .build(&sel.device, &sel.queue),
+            );
             sel.textures.insert(p, tex.clone());
             tex
         }
@@ -452,7 +480,6 @@ impl GfxContext {
             light: Texture::create_light_texture(device, desc),
             color: Texture::create_color_texture(device, desc, samples),
             ui: Texture::create_ui_texture(device, desc),
-            ssao_bg: ssao.bindgroup(device, &Texture::bindgroup_layout(device)),
             ssao,
         }
     }
@@ -463,6 +490,20 @@ impl GfxContext {
         self.sc_desc.height = self.size.1;
 
         self.fbos = Self::create_textures(&self.device, &self.surface, &self.sc_desc, self.samples);
+        self.ssao_noise_bg = Texture::multi_bindgroup(
+            &[
+                &self.fbos.ssao,
+                &self
+                    .read_texture("assets/blue_noise_512.png")
+                    .expect("blue noise not initialized"),
+            ],
+            &self.device,
+            &Texture::bindgroup_layout_complex(
+                &self.device,
+                TextureSampleType::Float { filterable: true },
+                2,
+            ),
+        );
     }
 
     pub fn basic_pipeline(

@@ -94,7 +94,11 @@ impl Mesh {
                 &gfx.projection.layout,
                 &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
                 &Texture::bindgroup_layout(&gfx.device),
-                &Texture::bindgroup_layout(&gfx.device),
+                &Texture::bindgroup_layout_complex(
+                    &gfx.device,
+                    wgpu::TextureSampleType::Float { filterable: true },
+                    2,
+                ),
             ],
             &[MeshVertex::desc()],
             &vert,
@@ -112,7 +116,7 @@ impl Drawable for Mesh {
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(2, &self.albedo_bg, &[]);
-        rp.set_bind_group(3, &gfx.fbos.ssao_bg, &[]);
+        rp.set_bind_group(3, &gfx.ssao_noise_bg, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{compile_shader, GfxContext};
+use crate::compile_shader;
 use image::{DynamicImage, GenericImageView};
 use std::fs::File;
 use std::io::Read;
@@ -321,7 +321,7 @@ impl TextureBuilder {
         })
     }
 
-    pub fn build(self, ctx: &GfxContext) -> Texture {
+    pub fn build(self, device: &wgpu::Device, queue: &wgpu::Queue) -> Texture {
         let img = self.img;
         let label = self.label;
 
@@ -349,7 +349,7 @@ impl TextureBuilder {
 
         let mip_level_count = if self.mipmaps { 5 } else { 1 };
 
-        let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some(label),
             size: extent,
             mip_level_count,
@@ -359,7 +359,7 @@ impl TextureBuilder {
             usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST | TextureUsage::RENDER_ATTACHMENT,
         });
 
-        ctx.queue.write_texture(
+        queue.write_texture(
             TextureCopyView {
                 texture: &texture,
                 mip_level: 0,
@@ -375,11 +375,11 @@ impl TextureBuilder {
         );
 
         if mip_level_count > 1 {
-            generate_mipmaps(&ctx.device, &ctx.queue, &texture, format, mip_level_count);
+            generate_mipmaps(device, queue, &texture, format, mip_level_count);
         }
 
         let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = ctx.device.create_sampler(&self.sampler);
+        let sampler = device.create_sampler(&self.sampler);
 
         Texture {
             texture,
