@@ -6,7 +6,7 @@ use geom::{vec2, Vec2, AABB};
 use serde::{Deserialize, Serialize, Serializer};
 use std::num::Wrapping;
 
-const CELL_SIZE: i32 = 100;
+const CELL_SIZE: i32 = 300;
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Tree {
@@ -57,9 +57,6 @@ impl Trees {
     }
 
     fn chunks_iter(&self, aabb: AABB) -> Option<impl Iterator<Item = (i32, i32)> + '_> {
-        if aabb.h().min(aabb.w()) > 4000.0 {
-            return None;
-        }
         let ll = Self::cell(aabb.ll);
         let ur = Self::cell(aabb.ur);
         Some((ll.1..=ur.1).flat_map(move |y| {
@@ -103,7 +100,9 @@ impl Trees {
         );
         let mut active = vec![forest_pos];
 
-        for j in 0..50 {
+        let cluster_prox = common::rand::rand3(startx, forest_pos.x, forest_pos.y);
+
+        for j in 0..100 {
             if active.is_empty() {
                 break;
             }
@@ -126,9 +125,11 @@ impl Trees {
                     break;
                 }
                 let theta = std::f32::consts::TAU * common::rand::rand3(startx, j as f32, k as f32);
-                let dist_coeff = 3.0 * common::rand::rand3(startx, j as f32, k as f32 + 10.0);
+                let dist_coeff = common::rand::rand3(startx, j as f32, k as f32 + 10.0);
 
-                let pos = sample + Vec2::from_angle(theta) * (13.0 * (0.75 + dist_coeff));
+                let pos = sample
+                    + Vec2::from_angle(theta)
+                        * (4.5 + 45.0 * dist_coeff * dist_coeff * cluster_prox);
 
                 if self.grid.query_around(pos, 10.0).next().is_some() {
                     continue;
@@ -157,7 +158,7 @@ impl Tree {
             2.0 * std::f32::consts::PI * common::rand::rand3(pos.x as f32, pos.y as f32, 2.0);
 
         let srand = common::rand::rand3(pos.x as f32, pos.y, 3.0);
-        let scale = 10.0 + 6.0 * srand;
+        let scale = 5.0 + 5.0 * srand;
 
         Tree {
             size: scale,

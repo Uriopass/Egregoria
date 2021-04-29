@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
-use geom::{Camera, AABB};
+use geom::AABB;
 use roadbuild::RoadBuildResource;
 use wgpu_engine::GfxContext;
 
@@ -38,8 +38,7 @@ pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     specialbuilding::specialbuilding(goria, uiworld);
     hand_reset(uiworld);
 
-    let eye = uiworld.read::<Camera>().pos;
-    let cam = AABB::new(eye, eye).expand(2000.0);
+    let cam = AABB::zero().expand((10 * 1000) as f32);
     if goria.map().trees.check_non_generated_chunks(cam) {
         uiworld.commands().map_generate_trees(cam);
     }

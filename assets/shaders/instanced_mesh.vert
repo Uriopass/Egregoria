@@ -24,7 +24,7 @@ uniform Uniforms {
 void main() {
     vec3 x = in_instance_dir;
     vec3 y = cross(vec3(0, 0, 1), x); // Z up
-    vec3 z = cross(x, y);
+    vec3 z = cross(x, normalize(y));
 
     vec3 off = in_pos.x * x + in_pos.y * y + in_pos.z * z + in_instance_pos;
     vec3 normal = in_normal.x * x + in_normal.y * y + in_normal.z * z;
