@@ -82,7 +82,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
         let hook = std::panic::take_hook();
         std::panic::set_hook(Box::new(|_| ()));
         // have to catch because the algorithm for skeleton might fail and is quite complicated
-        let (skeleton, faces) = unwrap_or!(
+        let (skeleton, (faces, contour)) = unwrap_or!(
             catch_unwind(|| {
                 let skeleton = skeleton(p.as_slice(), &[]);
                 let faces = faces_from_skeleton(p.as_slice(), &skeleton, merge_triangles)?;
@@ -134,11 +134,44 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
         let mut roofs = ColoredMesh::default();
         let roof_col = LinearColor::from(common::config().roof_col);
 
-        for face in faces {
+        let height = 4.0 + rng.gen_range(0.0..2.0);
+
+        for mut face in faces {
             if face.len() < 3 {
                 continue 'retry;
             }
+            for v in &mut face {
+                v.z += height;
+            }
             roofs.faces.push((face, roof_col));
+        }
+
+        if contour.len() < 4 {
+            continue 'retry;
+        }
+
+        let mut walls = Vec::with_capacity(contour.len());
+
+        for (a, b, c) in geom::skeleton::window(&*contour) {
+            let ba = (a - b).normalize().xy();
+            let bc = (c - b).normalize().xy();
+
+            let mut d = (ba + bc).try_normalize().unwrap_or_default();
+
+            if ba.perp_dot(bc) > 0.0 {
+                d = -d;
+            }
+
+            if d.is_close(Vec2::ZERO, 0.1) {
+                d = ba.perpendicular();
+            }
+
+            walls.push(b + d.z(0.0) * 0.8 + Vec3::z(height));
+        }
+
+        for (&a, &b, _) in geom::skeleton::window(&walls) {
+            let face = vec![a, b, b.xy().z(0.0), a.xy().z(0.0)];
+            roofs.faces.push((face, common::config().house_col.into()));
         }
 
         return (roofs, lowest_segment.middle());

@@ -292,6 +292,21 @@ impl Vec3 {
     }
 
     #[inline]
+    pub const fn x(x: f32) -> Self {
+        Self { x, y: 0.0, z: 0.0 }
+    }
+
+    #[inline]
+    pub const fn y(y: f32) -> Self {
+        Self { x: 0.0, y, z: 0.0 }
+    }
+
+    #[inline]
+    pub const fn z(z: f32) -> Self {
+        Self { x: 0.0, y: 0.0, z }
+    }
+
+    #[inline]
     pub const fn splat(v: f32) -> Self {
         Self { x: v, y: v, z: v }
     }

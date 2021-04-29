@@ -56,10 +56,10 @@ impl Trees {
         (p.x as i32 / CELL_SIZE, p.y as i32 / CELL_SIZE)
     }
 
-    fn chunks_iter(&self, aabb: AABB) -> Option<impl Iterator<Item = (i32, i32)> + '_> {
+    fn chunks_iter(&self, aabb: AABB) -> impl Iterator<Item = (i32, i32)> + '_ {
         let ll = Self::cell(aabb.ll);
         let ur = Self::cell(aabb.ur);
-        Some((ll.1..=ur.1).flat_map(move |y| {
+        (ll.1..=ur.1).flat_map(move |y| {
             (ll.0..=ur.0).flat_map(move |x| {
                 let cell = (x, y);
                 if !self.generated.contains(&cell) {
@@ -68,19 +68,17 @@ impl Trees {
                     None
                 }
             })
-        }))
+        })
     }
 
     pub fn check_non_generated_chunks(&self, aabb: AABB) -> bool {
-        unwrap_or!(self.chunks_iter(aabb), return false)
-            .next()
-            .is_some()
+        self.chunks_iter(aabb).next().is_some()
     }
 
     pub fn generate_chunks(&mut self, aabb: AABB) {
         log::info!("generating chunks for {:?}", aabb);
 
-        let cells = unwrap_or!(self.chunks_iter(aabb), return).collect::<Vec<_>>();
+        let cells = self.chunks_iter(aabb).collect::<Vec<_>>();
         for cell in cells {
             self.add_forest(cell)
         }

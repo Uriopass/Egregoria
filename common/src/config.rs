@@ -18,6 +18,7 @@ pub struct Config {
     pub sea_col: Color,
 
     pub roof_col: Color,
+    pub house_col: Color,
 
     pub gui_bg_col: Color,
     pub gui_title_col: Color,

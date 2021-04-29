@@ -10,7 +10,7 @@ type FastSet<V> = fnv::FnvHashSet<V>;
 
 const EPSILON: f32 = 0.00001;
 
-fn window<T>(lst: &[T]) -> impl Iterator<Item = (&T, &T, &T)> {
+pub fn window<T>(lst: &[T]) -> impl Iterator<Item = (&T, &T, &T)> {
     let prevs = lst.iter().cycle().skip(lst.len() - 1);
     let items = lst.iter();
     let nexts = lst.iter().cycle().skip(1);
@@ -923,7 +923,7 @@ pub fn faces_from_skeleton(
     poly: &[Vec2],
     skeleton: &[Subtree],
     merge_triangles: bool,
-) -> Option<Vec<Vec<Vec3>>> {
+) -> Option<(Vec<Vec<Vec3>>, Vec<Vec3>)> {
     let poly = normalize_contour(poly);
     let mut graph: FastMap<Vec2, Vec<_>> = FastMap::default();
     let mut heights = FastMap::default();
@@ -1014,6 +1014,8 @@ pub fn faces_from_skeleton(
         face
     }
 
+    let mut contour = None;
+
     for (&node, l) in &graph {
         for &edge in l {
             if !visited.contains(&(node, edge)) {
@@ -1023,8 +1025,10 @@ pub fn faces_from_skeleton(
                 for (_, cur, next) in window(&face) {
                     sum += (next.x - cur.x) * (next.y + cur.y);
                 }
+
+                // is clockwise therefore is the contour
                 if sum <= 0.0 {
-                    // is clockwise therefore is the contour so throw it away
+                    contour = Some(face);
                     continue;
                 }
 
@@ -1037,7 +1041,7 @@ pub fn faces_from_skeleton(
         return None;
     }
 
-    Some(faces)
+    Some(faces).zip(contour)
 }
 
 #[cfg(test)]
@@ -1065,8 +1069,8 @@ mod tests {
 
         let skeleton = skeleton(poly, &[]);
         assert!(!skeleton.is_empty());
-        let faces = faces_from_skeleton(poly, &skeleton, false).unwrap();
-        assert_eq!(faces.len(), 6);
+        let faces = faces_from_skeleton(poly, &skeleton, false).unwrap().0;
+        assert_eq!(faces.len(), 8);
     }
 
     #[test]
@@ -1079,8 +1083,8 @@ mod tests {
         ];
         let skeleton = skeleton(poly, &[]);
         assert!(!skeleton.is_empty());
-        let faces = faces_from_skeleton(poly, &skeleton, false).unwrap();
-        assert_eq!(faces.len(), 6);
+        let faces = faces_from_skeleton(poly, &skeleton, false).unwrap().0;
+        assert_eq!(faces.len(), 4);
     }
 
     #[test]
@@ -1100,7 +1104,7 @@ mod tests {
         .rev()
         .collect::<Vec<_>>();
         let skeleton = skeleton(&poly, &[]);
-        let faces = faces_from_skeleton(&poly, &skeleton, false);
+        let faces = faces_from_skeleton(&poly, &skeleton, false).unwrap().0;
     }
 
     #[test]
