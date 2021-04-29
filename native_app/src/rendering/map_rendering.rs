@@ -1,7 +1,6 @@
 use crate::rendering::map_mesh::MapMeshHandler;
 use common::Z_SIGNAL;
 use egregoria::Egregoria;
-use flat_spatial::storage::Storage;
 use geom::{Color, LinearColor, AABB};
 use map_model::{Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior};
 use std::sync::Arc;
@@ -104,7 +103,7 @@ impl RoadRenderer {
         }
     }
 
-    pub fn trees(&mut self, map: &Map, screen: AABB, gfx: &GfxContext) -> Option<InstancedMesh> {
+    pub fn trees(&mut self, map: &Map, _screen: AABB, gfx: &GfxContext) -> Option<InstancedMesh> {
         if map.trees.dirt_id.0 == self.trees_dirt_id {
             if let Some(trees) = self.trees.as_ref() {
                 return Some(trees.clone());
