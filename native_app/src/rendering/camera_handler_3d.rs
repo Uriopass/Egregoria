@@ -164,13 +164,13 @@ impl CameraHandler3D {
             }
             let pressed = &ctx.input.mouse.pressed;
 
-            if pressed.contains(&MouseButton::Middle) {
+            if pressed.contains(&MouseButton::Right) {
                 self.camera.yaw -= delta_mouse.x / 100.0;
                 self.camera.pitch += delta_mouse.y / 100.0;
                 self.camera.pitch = self.camera.pitch.min(1.57).max(0.1);
             }
 
-            if pressed.contains(&MouseButton::Right) {
+            if pressed.contains(&MouseButton::Middle) {
                 self.targetpos += (self.last_pos - unprojected).cap_magnitude(50000.0 * delta);
                 self.targetpos.x = self.targetpos.x.clamp(-10000.0, 10000.0);
                 self.targetpos.y = self.targetpos.y.clamp(-10000.0, 10000.0);
