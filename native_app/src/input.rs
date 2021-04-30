@@ -1,42 +1,18 @@
-use common::{FastMap, FastSet};
+use common::FastSet;
 use geom::{vec2, Vec2};
+use std::fmt::Debug;
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
-
-pub struct InputCombinations(Vec<InputCombination>);
-
-pub enum InputCombination {
-    Key(KeyCode),
-    KeyModifier(Modifier, KeyCode),
-    Mouse(MouseButton),
-    MouseModifier(Modifier, MouseButton),
-}
-
-pub enum InputAction {
-    GoLeft,
-    GoRight,
-    GoForward,
-    GoBackward,
-    Rotate,
-    Zoom,
-    Dezoom,
-    Close,
-    HideGui,
-}
 
 #[derive(Default)]
 pub struct InputContext {
     pub mouse: MouseInfo,
     pub keyboard: KeyboardInfo,
-    pub just_act: FastSet<InputAction>,
-    pub act: FastSet<InputAction>,
-    pub input_mapping: FastMap<InputCombinations, InputAction>,
 }
 
 impl InputContext {
     pub fn end_frame(&mut self) {
         self.mouse.just_pressed.clear();
         self.keyboard.just_pressed.clear();
-        self.just_act.clear();
         self.keyboard.last_characters.clear();
         self.mouse.wheel_delta = 0.0;
     }
@@ -296,7 +272,7 @@ impl From<VirtualKeyCode> for KeyCode {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MouseButton {
     Left,
     Right,
@@ -304,27 +280,10 @@ pub enum MouseButton {
     Other(u16),
 }
 
-pub enum Modifier {
-    LShift,
-    RShift,
-    LCtrl,
-    RCtrl,
-    LAlt,
-    RAlt,
-}
-
-impl Modifier {
-    pub fn try_new(kc: KeyCode) -> Option<Modifier> {
+impl KeyCode {
+    fn is_modifier(&self) -> bool {
         use KeyCode::*;
-        Some(match kc {
-            LShift => Modifier::LShift,
-            RShift => Modifier::RShift,
-            LControl => Modifier::LCtrl,
-            RControl => Modifier::RCtrl,
-            LAlt => Modifier::LAlt,
-            RAlt => Modifier::RAlt,
-            _ => return None,
-        })
+        matches!(self, LShift | RShift | LControl | RControl | LAlt | RAlt)
     }
 }
 
@@ -332,25 +291,15 @@ impl Modifier {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u32)]
 pub enum KeyCode {
-    /// The '1' key over the letters.
     Key1,
-    /// The '2' key over the letters.
     Key2,
-    /// The '3' key over the letters.
     Key3,
-    /// The '4' key over the letters.
     Key4,
-    /// The '5' key over the letters.
     Key5,
-    /// The '6' key over the letters.
     Key6,
-    /// The '7' key over the letters.
     Key7,
-    /// The '8' key over the letters.
     Key8,
-    /// The '9' key over the letters.
     Key9,
-    /// The '0' key over the 'O' and 'P' keys.
     Key0,
 
     A,

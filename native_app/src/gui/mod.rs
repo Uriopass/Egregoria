@@ -22,6 +22,7 @@ mod selectable;
 mod specialbuilding;
 mod topgui;
 
+pub mod inputmap;
 pub mod windows;
 
 pub use follow::FollowEntity;
