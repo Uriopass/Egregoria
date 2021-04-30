@@ -1,3 +1,4 @@
+use crate::gui::inputmap::InputMap;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
@@ -103,11 +104,10 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
 
     window
         .position([w * 0.5, h * 0.5], Condition::Always)
+        .size([600.0, 600.0], Condition::Appearing)
         .position_pivot([0.5, 0.5])
         .movable(false)
-        .resizable(false)
         .collapsible(false)
-        .size_constraints([400.0, h * 0.6], [(w * 0.6).max(400.0), h * 0.8])
         .build(ui, || {
             ui.text("Gameplay");
             let tok = imgui::ComboBox::new(im_str!("Autosave"))
@@ -172,6 +172,26 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
                 .range(0.0..=100.0)
                 .display_format(im_str!("%.0f"))
                 .build(ui, &mut settings.ui_volume_percent);
+
+            ui.new_line();
+            ui.text("Keybinds");
+
+            let im = uiworld.read::<InputMap>();
+            ui.columns(3, &*im_str!("input_map"), false);
+            ui.text("Action");
+            ui.next_column();
+            ui.text("Input");
+            ui.next_column();
+            ui.next_column();
+
+            for (act, comb) in &im.input_mapping {
+                ui.text(format!("{}", act));
+                ui.next_column();
+                ui.text(format!("{}", comb));
+                ui.next_column();
+                ui.text("cannot change bindings for now");
+                ui.next_column();
+            }
 
             common::saveload::JSON::save_silent(&*settings, SETTINGS_SAVE_NAME);
         });

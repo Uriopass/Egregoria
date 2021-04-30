@@ -13,6 +13,7 @@ use wgpu_engine::{FrameContext, GuiRenderContext, Tesselator};
 
 use crate::audio::GameAudio;
 use crate::context::Context;
+use crate::gui::inputmap::InputMap;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::network::NetworkConnectionInfo;
 use crate::gui::windows::settings::Settings;
@@ -66,6 +67,7 @@ impl State {
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
         uiworld.insert(WorldCommands::default());
+        uiworld.insert(InputMap::default());
 
         log::info!("version is {}", goria_version::VERSION);
 
@@ -93,6 +95,7 @@ impl State {
     pub fn update(&mut self, ctx: &mut Context) {
         let settings = *self.uiw.read::<Settings>();
 
+        self.uiw.write::<InputMap>().prepare_frame(&ctx.input);
         crate::gui::run_ui_systems(&self.goria, &mut self.uiw);
 
         let commands = std::mem::take(&mut *self.uiw.write::<WorldCommands>());
