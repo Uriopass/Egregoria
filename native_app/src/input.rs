@@ -1,17 +1,42 @@
-use common::FastSet;
+use common::{FastMap, FastSet};
 use geom::{vec2, Vec2};
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
+
+pub struct InputCombinations(Vec<InputCombination>);
+
+pub enum InputCombination {
+    Key(KeyCode),
+    KeyModifier(Modifier, KeyCode),
+    Mouse(MouseButton),
+    MouseModifier(Modifier, MouseButton),
+}
+
+pub enum InputAction {
+    GoLeft,
+    GoRight,
+    GoForward,
+    GoBackward,
+    Rotate,
+    Zoom,
+    Dezoom,
+    Close,
+    HideGui,
+}
 
 #[derive(Default)]
 pub struct InputContext {
     pub mouse: MouseInfo,
     pub keyboard: KeyboardInfo,
+    pub just_act: FastSet<InputAction>,
+    pub act: FastSet<InputAction>,
+    pub input_mapping: FastMap<InputCombinations, InputAction>,
 }
 
 impl InputContext {
     pub fn end_frame(&mut self) {
         self.mouse.just_pressed.clear();
         self.keyboard.just_pressed.clear();
+        self.just_act.clear();
         self.keyboard.last_characters.clear();
         self.mouse.wheel_delta = 0.0;
     }
@@ -277,6 +302,30 @@ pub enum MouseButton {
     Right,
     Middle,
     Other(u16),
+}
+
+pub enum Modifier {
+    LShift,
+    RShift,
+    LCtrl,
+    RCtrl,
+    LAlt,
+    RAlt,
+}
+
+impl Modifier {
+    pub fn try_new(kc: KeyCode) -> Option<Modifier> {
+        use KeyCode::*;
+        Some(match kc {
+            LShift => Modifier::LShift,
+            RShift => Modifier::RShift,
+            LControl => Modifier::LCtrl,
+            RControl => Modifier::RCtrl,
+            LAlt => Modifier::LAlt,
+            RAlt => Modifier::RAlt,
+            _ => return None,
+        })
+    }
 }
 
 /// Symbolic name for a keyboard key.
