@@ -567,15 +567,6 @@ impl Gui {
                 goria.save_to_disk("world");
                 uiworld.save_to_disk();
             }
-
-            ui.menu(im_str!("Help"), true, || {
-                ui.text(im_str!("Pan: Right click or Arrow keys"));
-                ui.text(im_str!("Select: Left click"));
-                ui.text(im_str!("Deselect: Escape"));
-                ui.text(im_str!("Delete (use with caution): Delete"));
-                ui.text(im_str!("Use the tools on the right\nto build and modify roads"));
-                ui.text(im_str!("Use the \"Map\" window to build houses\nor load prebuilt maps such as Paris\n(takes a few seconds to load)"));
-            });
         });
         t.pop(ui);
     }
