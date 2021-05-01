@@ -1,5 +1,6 @@
 struct RenderParams {
     mat4 invproj;
+    mat4 sunproj;
     vec4 ambiant;
     vec4 cam_pos;
     vec4 sun;

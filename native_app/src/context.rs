@@ -130,10 +130,6 @@ impl Context {
                         self.delta = d.as_secs_f32();
                         state.update(&mut self);
 
-                        let window = &self.window;
-                        let mut enc = self.gfx.start_frame();
-                        self.gfx.render_objs(&mut enc, |fc| state.render(fc));
-
                         let (lights, ambiant_col) = state.lights();
 
                         let t = std::f32::consts::TAU
@@ -148,6 +144,8 @@ impl Context {
                         params.sun = sun;
                         params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);
                         params.ssao_enabled = self.gfx.settings.ssao as i32;
+                        params.sun_shadow_proj =
+                            state.camera.camera.build_sun_shadowmap_matrix(sun);
                         let c = common::config();
                         params.ssao_strength = c.ssao_strength;
                         params.ssao_radius = c.ssao_radius;
@@ -155,12 +153,16 @@ impl Context {
                         params.ssao_base = c.ssao_base;
                         params.ssao_samples = c.ssao_samples;
                         drop(c);
+
                         self.gfx.render_params.upload_to_gpu(&self.gfx.queue);
 
+                        let mut enc = self.gfx.start_frame();
+                        self.gfx.render_objs(&mut enc, |fc| state.render(fc));
                         state
                             .light
                             .render_lights(&self.gfx, &mut enc, &sco, &lights);
 
+                        let window = &self.window;
                         self.gfx
                             .render_gui(&mut enc, &sco, |gctx| state.render_gui(window, gctx));
                         self.gfx.finish_frame(enc);

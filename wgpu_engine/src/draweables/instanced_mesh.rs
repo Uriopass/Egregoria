@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 use crate::pbuffer::PBuffer;
 use crate::{
-    compile_shader, Drawable, GfxContext, Mesh, MeshVertex, RenderParams, Texture, Uniform, VBDesc,
+    bg_layout_litmesh, compile_shader, Drawable, GfxContext, Mesh, MeshVertex, RenderParams,
+    Texture, Uniform, VBDesc,
 };
 use geom::{LinearColor, Vec3};
 use std::sync::Arc;
@@ -78,18 +79,19 @@ impl InstancedMesh {
                 &gfx.projection.layout,
                 &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
                 &Texture::bindgroup_layout(&gfx.device),
-                &Texture::bindgroup_layout_complex(
-                    &gfx.device,
-                    wgpu::TextureSampleType::Float { filterable: true },
-                    2,
-                ),
+                &bg_layout_litmesh(&gfx.device),
             ],
             vb,
             &vert,
             &frag,
         );
         gfx.register_pipeline::<Self>(pipe);
-        gfx.register_pipeline::<InstancedMeshDepth>(gfx.depth_pipeline(vb, &vert))
+        gfx.register_pipeline::<InstancedMeshDepthMultisample>(gfx.depth_pipeline(
+            vb,
+            &vert,
+            gfx.samples,
+        ));
+        gfx.register_pipeline::<InstancedMeshDepth>(gfx.depth_pipeline(vb, &vert, 1));
     }
 }
 
@@ -111,7 +113,12 @@ impl Drawable for InstancedMesh {
         if self.mesh.translucent {
             return;
         }
-        rp.set_pipeline(&gfx.get_pipeline::<InstancedMeshDepth>());
+        if gfx.samples == 1 {
+            rp.set_pipeline(&gfx.get_pipeline::<InstancedMeshDepth>());
+        } else {
+            rp.set_pipeline(&gfx.get_pipeline::<InstancedMeshDepthMultisample>());
+        }
+
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
@@ -120,4 +127,5 @@ impl Drawable for InstancedMesh {
     }
 }
 
+struct InstancedMeshDepthMultisample;
 struct InstancedMeshDepth;
