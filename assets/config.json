@@ -125,9 +125,9 @@
     "b": 0.73333335,
     "a": 0.5019608
   },
-  "ssao_strength": 0.81,
-  "ssao_radius": 0.018,
-  "ssao_falloff": 0.00003,
-  "ssao_base": 0.03,
+  "ssao_strength": 0.75,
+  "ssao_radius": 0.012,
+  "ssao_falloff": 0.00005,
+  "ssao_base": 0.01,
   "ssao_samples": 16
 }

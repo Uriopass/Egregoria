@@ -1,6 +1,6 @@
 use crate::{
-    compile_shader, BlitLinear, CompiledShader, Drawable, IndexType, InstancedMesh, Mesh,
-    SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
+    bg_layout_litmesh, compile_shader, BlitLinear, CompiledShader, Drawable, IndexType,
+    InstancedMesh, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
 };
 use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
@@ -52,6 +52,7 @@ pub struct GfxContext {
     pub(crate) samples: u32,
     pub(crate) screen_uv_vertices: wgpu::Buffer,
     pub(crate) rect_indices: wgpu::Buffer,
+    pub(crate) sun_shadowmap: Texture,
     pub settings: GfxSettings,
     pub simplelit_bg: wgpu::BindGroup,
     #[allow(dead_code)] // keep adapter alive
@@ -62,6 +63,7 @@ pub struct GfxContext {
 #[repr(C)]
 pub struct RenderParams {
     pub inv_proj: ColumnMatrix4<f32>,
+    pub sun_shadow_proj: ColumnMatrix4<f32>,
     pub ambiant: LinearColor,
     pub cam_pos: Vec3,
     pub _pad: f32,
@@ -81,6 +83,7 @@ impl Default for RenderParams {
     fn default() -> Self {
         Self {
             inv_proj: ColumnMatrix4::from([0.0; 16]),
+            sun_shadow_proj: ColumnMatrix4::from([0.0; 16]),
             ambiant: Default::default(),
             cam_pos: Default::default(),
             _pad: 0.0,
@@ -189,6 +192,9 @@ impl GfxContext {
             Arc::new(blue_noise),
         );
 
+        let mut sun_shadowmap = Texture::create_depth_texture(&device, (2048, 2048), 1);
+        sun_shadowmap.sampler = device.create_sampler(&Texture::depth_compare_sampler());
+
         let mut me = Self {
             size: (win_width, win_height),
             queue,
@@ -204,9 +210,10 @@ impl GfxContext {
             samples,
             screen_uv_vertices,
             rect_indices,
-            device,
             settings: GfxSettings::default(),
             simplelit_bg,
+            sun_shadowmap,
+            device,
         };
 
         Mesh::setup(&mut me);
@@ -331,6 +338,33 @@ impl GfxContext {
             }
         }
 
+        let prev = std::mem::replace(
+            &mut self.projection,
+            Uniform::new(self.render_params.value().sun_shadow_proj, &self.device),
+        );
+        let prevs = self.samples;
+        self.samples = 1;
+        {
+            let mut sun_shadow_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                    attachment: &self.sun_shadowmap.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: true,
+                    }),
+                    stencil_ops: None,
+                }),
+            });
+
+            for obj in &mut objs {
+                obj.draw_depth(&self, &mut sun_shadow_pass);
+            }
+        }
+        self.projection = prev;
+        self.samples = prevs;
+
         if self.settings.ssao {
             let pipeline = self.get_pipeline::<SSAOPipeline>();
             let bg = self
@@ -363,25 +397,6 @@ impl GfxContext {
             ssao_pass.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
             ssao_pass.draw_indexed(0..6, 0, 0..1);
         }
-
-        /*
-        encoder.copy_texture_to_texture(
-            wgpu::TextureCopyView {
-                texture: &self.fbos.ssao.texture,
-                mip_level: 0,
-                origin: Default::default(),
-            },
-            wgpu::TextureCopyView {
-                texture: &self.fbos.color.target.texture,
-                mip_level: 0,
-                origin: Default::default(),
-            },
-            wgpu::Extent3d {
-                width: self.sc_desc.width,
-                height: self.sc_desc.height,
-                depth: 1,
-            },
-        );*/
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -476,16 +491,17 @@ impl GfxContext {
         desc: &SwapChainDescriptor,
         samples: u32,
     ) -> FBOs {
+        let size = (desc.width, desc.height);
         let ssao = Texture::create_fbo(
             device,
-            desc,
+            size,
             wgpu::TextureFormat::Rgba8UnormSrgb,
             TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED | TextureUsage::COPY_SRC,
             None,
         );
         FBOs {
             swapchain: device.create_swap_chain(surface, desc),
-            depth: Texture::create_depth_texture(device, desc, samples),
+            depth: Texture::create_depth_texture(device, size, samples),
             light: Texture::create_light_texture(device, desc),
             color: Texture::create_color_texture(device, desc, samples),
             ui: Texture::create_ui_texture(device, desc),
@@ -505,13 +521,10 @@ impl GfxContext {
                 &self
                     .read_texture("assets/blue_noise_512.png")
                     .expect("blue noise not initialized"),
+                &self.sun_shadowmap,
             ],
             &self.device,
-            &Texture::bindgroup_layout_complex(
-                &self.device,
-                TextureSampleType::Float { filterable: true },
-                2,
-            ),
+            &bg_layout_litmesh(&self.device),
         );
     }
 
@@ -582,6 +595,7 @@ impl GfxContext {
         &self,
         vertex_buffers: &[VertexBufferLayout],
         vert_shader: &CompiledShader,
+        samples: u32,
     ) -> RenderPipeline {
         assert!(matches!(vert_shader.1, ShaderType::Vertex));
 
@@ -617,9 +631,8 @@ impl GfxContext {
                 clamp_depth: false,
             }),
             multisample: MultisampleState {
-                count: self.samples,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
+                count: samples,
+                ..Default::default()
             },
         };
         self.device.create_render_pipeline(&render_pipeline_desc)

@@ -4,7 +4,7 @@ use crate::{
     VBDesc,
 };
 use std::sync::Arc;
-use wgpu::{BufferUsage, IndexFormat, RenderPass};
+use wgpu::{BindGroupLayout, BindGroupLayoutEntry, BufferUsage, Device, IndexFormat, RenderPass};
 
 pub struct MeshBuilder {
     pub vertices: Vec<MeshVertex>,
@@ -94,11 +94,7 @@ impl Mesh {
                 &gfx.projection.layout,
                 &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
                 &Texture::bindgroup_layout(&gfx.device),
-                &Texture::bindgroup_layout_complex(
-                    &gfx.device,
-                    wgpu::TextureSampleType::Float { filterable: true },
-                    2,
-                ),
+                &bg_layout_litmesh(&gfx.device),
             ],
             &[MeshVertex::desc()],
             &vert,
@@ -106,7 +102,13 @@ impl Mesh {
         );
         gfx.register_pipeline::<Self>(pipe);
 
-        gfx.register_pipeline::<LitMeshDepth>(gfx.depth_pipeline(&[MeshVertex::desc()], &vert))
+        gfx.register_pipeline::<LitMeshDepthMultisample>(gfx.depth_pipeline(
+            &[MeshVertex::desc()],
+            &vert,
+            gfx.samples,
+        ));
+
+        gfx.register_pipeline::<LitMeshDepth>(gfx.depth_pipeline(&[MeshVertex::desc()], &vert, 1));
     }
 }
 
@@ -126,7 +128,12 @@ impl Drawable for Mesh {
         if self.translucent {
             return;
         }
-        rp.set_pipeline(&gfx.get_pipeline::<LitMeshDepth>());
+        if gfx.samples == 1 {
+            rp.set_pipeline(&gfx.get_pipeline::<LitMeshDepth>());
+        } else {
+            rp.set_pipeline(&gfx.get_pipeline::<LitMeshDepthMultisample>());
+        }
+
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
@@ -134,4 +141,38 @@ impl Drawable for Mesh {
     }
 }
 
+struct LitMeshDepthMultisample;
 struct LitMeshDepth;
+
+pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
+    let entries: Vec<BindGroupLayoutEntry> = (0..3)
+        .flat_map(|i| {
+            vec![
+                wgpu::BindGroupLayoutEntry {
+                    binding: i * 2,
+                    visibility: wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: i * 2 + 1,
+                    visibility: wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::Sampler {
+                        filtering: true,
+                        comparison: i == 2,
+                    },
+                    count: None,
+                },
+            ]
+            .into_iter()
+        })
+        .collect::<Vec<_>>();
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        entries: &entries,
+        label: Some("Texture bindgroup layout"),
+    })
+}

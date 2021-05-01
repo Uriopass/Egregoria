@@ -51,7 +51,7 @@ impl Camera {
         self.pos.z(0.0) + self.offset()
     }
 
-    pub fn build_view_projection_matrix(&self) -> (Mat4, Mat4) {
+    pub fn build_view_projection_matrix(&self) -> Mat4 {
         let eye = self.eye();
         let znear = Self::znear(eye.z);
         let zfar = znear * 1000.0;
@@ -64,8 +64,31 @@ impl Camera {
         )
         .mk_proj();
 
-        let m = mul(opengl_to_wgpu_matrix(), mul(proj, view));
-        (m, invert(&m).unwrap())
+        mul(opengl_to_wgpu_matrix(), mul(proj, view))
+    }
+
+    pub fn build_sun_shadowmap_matrix(&self, mut dir: Vec3) -> Mat4 {
+        if dir.x == 0.0 && dir.y == 0.0 {
+            dir.x = 0.01;
+            dir.y = 0.01;
+        }
+
+        let d = self.dist * 1.3;
+
+        let suneye = self.pos.z(0.0) + dir;
+
+        let view = look_at_rh(suneye, self.pos.z(0.0), self.up);
+        let proj: Mat4 = Ortho {
+            left: -d,
+            right: d,
+            bottom: -d,
+            top: d,
+            near: -d,
+            far: d,
+        }
+        .into();
+
+        mul(opengl_to_wgpu_matrix(), mul(proj, view))
     }
 }
 
@@ -108,6 +131,49 @@ pub struct PerspectiveFov {
 
 type Mat4 = mint::ColumnMatrix4<f32>;
 type Vec4 = mint::Vector4<f32>;
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Ortho {
+    pub left: f32,
+    pub right: f32,
+    pub bottom: f32,
+    pub top: f32,
+    pub near: f32,
+    pub far: f32,
+}
+
+#[rustfmt::skip]
+impl From<Ortho> for Mat4 {
+    fn from(ortho: Ortho) -> Self {
+        let c0r0 = 2.0 / (ortho.right - ortho.left);
+        let c0r1 = 0.0;
+        let c0r2 = 0.0;
+        let c0r3 = 0.0;
+
+        let c1r0 = 0.0;
+        let c1r1 = 2.0 / (ortho.top - ortho.bottom);
+        let c1r2 = 0.0;
+        let c1r3 = 0.0;
+
+        let c2r0 = 0.0;
+        let c2r1 = 0.0;
+        let c2r2 = -2.0 / (ortho.far - ortho.near);
+        let c2r3 = 0.0;
+
+        let c3r0 = -(ortho.right + ortho.left) / (ortho.right - ortho.left);
+        let c3r1 = -(ortho.top + ortho.bottom) / (ortho.top - ortho.bottom);
+        let c3r2 = -(ortho.far + ortho.near) / (ortho.far - ortho.near);
+        let c3r3 = 1.0;
+
+        Mat4::from([
+            c0r0, c0r1, c0r2, c0r3,
+            c1r0, c1r1, c1r2, c1r3,
+            c2r0, c2r1, c2r2, c2r3,
+            c3r0, c3r1, c3r2, c3r3,
+            ]
+        )
+    }
+}
 
 impl PerspectiveFov {
     pub fn new(fovy_angle: f32, aspect: f32, near: f32, far: f32) -> Self {
@@ -187,7 +253,7 @@ fn dot(a: &Vec4, b: &Vec4) -> f32 {
     (a.x * b.x + a.y * b.y) + (a.z * b.z + a.w * b.w)
 }
 
-fn invert(sel: &Mat4) -> Option<Mat4> {
+pub fn invert(sel: &Mat4) -> Option<Mat4> {
     let tmp0 = unsafe { det_sub_proc_unsafe(sel, 1, 2, 3) };
     let det = dot(&tmp0, &Vec4::from([sel.x.x, sel.y.x, sel.z.x, sel.w.x]));
     if det.abs() < f32::EPSILON {

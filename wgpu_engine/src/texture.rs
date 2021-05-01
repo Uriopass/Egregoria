@@ -39,14 +39,14 @@ impl Texture {
 
     pub fn create_fbo(
         device: &wgpu::Device,
-        sc_desc: &wgpu::SwapChainDescriptor,
+        (width, height): (u32, u32),
         format: wgpu::TextureFormat,
         usage: TextureUsage,
         samples: Option<u32>,
     ) -> Texture {
         let extent = wgpu::Extent3d {
-            width: sc_desc.width,
-            height: sc_desc.height,
+            width,
+            height,
             depth: 1,
         };
         let desc = wgpu::TextureDescriptor {
@@ -72,14 +72,10 @@ impl Texture {
         }
     }
 
-    pub fn create_depth_texture(
-        device: &wgpu::Device,
-        sc_desc: &wgpu::SwapChainDescriptor,
-        samples: u32,
-    ) -> Texture {
+    pub fn create_depth_texture(device: &wgpu::Device, size: (u32, u32), samples: u32) -> Texture {
         Self::create_fbo(
             device,
-            sc_desc,
+            size,
             TextureFormat::Depth32Float,
             TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
             Some(samples),
@@ -92,7 +88,7 @@ impl Texture {
     ) -> Self {
         Self::create_fbo(
             device,
-            sc_desc,
+            (sc_desc.width, sc_desc.height),
             TextureFormat::R16Float,
             TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
             None,
@@ -102,7 +98,7 @@ impl Texture {
     pub fn create_ui_texture(device: &wgpu::Device, sc_desc: &wgpu::SwapChainDescriptor) -> Self {
         Self::create_fbo(
             device,
-            sc_desc,
+            (sc_desc.width, sc_desc.height),
             TextureFormat::Rgba8Unorm,
             TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
             None,
@@ -116,7 +112,7 @@ impl Texture {
     ) -> MultisampledTexture {
         let target = Self::create_fbo(
             device,
-            sc_desc,
+            (sc_desc.width, sc_desc.height),
             TextureFormat::Rgba8UnormSrgb,
             TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             None,
@@ -228,6 +224,23 @@ impl Texture {
             entries: &entries,
             label: None,
         })
+    }
+
+    pub fn depth_compare_sampler() -> SamplerDescriptor<'static> {
+        wgpu::SamplerDescriptor {
+            label: None,
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            lod_min_clamp: -100.0,
+            lod_max_clamp: 100.0,
+            compare: Some(wgpu::CompareFunction::LessEqual),
+            anisotropy_clamp: None,
+            border_color: None,
+        }
     }
 
     pub fn linear_sampler() -> SamplerDescriptor<'static> {

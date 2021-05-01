@@ -109,6 +109,8 @@ pub mod saveload;
 pub mod timestep;
 mod z;
 
+pub use inline_tweak as tw;
+
 #[derive(Copy, Clone)]
 pub enum AudioKind {
     Music,
