@@ -39,12 +39,10 @@ impl Default for GfxSettings {
 
 pub struct GfxContext {
     pub(crate) surface: Surface,
-    pub size: (u32, u32),
-    #[allow(dead_code)] // keep adapter alive
-    pub(crate) adapter: Adapter,
     pub device: Device,
     pub queue: Queue,
     pub fbos: FBOs,
+    pub size: (u32, u32),
     pub(crate) sc_desc: SwapChainDescriptor,
     pub update_sc: bool,
     pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
@@ -55,7 +53,9 @@ pub struct GfxContext {
     pub(crate) screen_uv_vertices: wgpu::Buffer,
     pub(crate) rect_indices: wgpu::Buffer,
     pub settings: GfxSettings,
-    pub ssao_noise_bg: wgpu::BindGroup,
+    pub simplelit_bg: wgpu::BindGroup,
+    #[allow(dead_code)] // keep adapter alive
+    pub(crate) adapter: Adapter,
 }
 
 #[derive(Copy, Clone)]
@@ -173,7 +173,7 @@ impl GfxContext {
             .with_sampler(Texture::nearest_sampler())
             .build(&device, &queue);
 
-        let ssao_noise_bg = Texture::multi_bindgroup(
+        let simplelit_bg = Texture::multi_bindgroup(
             &[&fbos.ssao, &blue_noise],
             &device,
             &Texture::bindgroup_layout_complex(
@@ -206,7 +206,7 @@ impl GfxContext {
             rect_indices,
             device,
             settings: GfxSettings::default(),
-            ssao_noise_bg,
+            simplelit_bg,
         };
 
         Mesh::setup(&mut me);
@@ -499,7 +499,7 @@ impl GfxContext {
         self.sc_desc.height = self.size.1;
 
         self.fbos = Self::create_textures(&self.device, &self.surface, &self.sc_desc, self.samples);
-        self.ssao_noise_bg = Texture::multi_bindgroup(
+        self.simplelit_bg = Texture::multi_bindgroup(
             &[
                 &self.fbos.ssao,
                 &self
