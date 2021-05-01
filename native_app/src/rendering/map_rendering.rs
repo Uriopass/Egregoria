@@ -3,7 +3,6 @@ use common::Z_SIGNAL;
 use egregoria::Egregoria;
 use geom::{Color, LinearColor, AABB};
 use map_model::{Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior};
-use std::sync::Arc;
 use wgpu_engine::objload::obj_to_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Tesselator,
@@ -24,9 +23,9 @@ impl RoadRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
             last_cam: AABB::zero(),
             trees: None,
-            trees_builder: InstancedMeshBuilder::new(Arc::new(
+            trees_builder: InstancedMeshBuilder::new(
                 obj_to_mesh("assets/pine.obj", gfx, gfx.palette()).expect("could not load pine"),
-            )),
+            ),
             trees_dirt_id: 0,
         }
     }

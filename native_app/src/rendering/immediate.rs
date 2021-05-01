@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 
 use common::{AudioKind, Z_DEBUG};
-use geom::{LinearColor, Polygon, Vec2, OBB};
-use wgpu_engine::{FrameContext, SpriteBatch, Tesselator};
+use geom::{LinearColor, Polygon, Vec2, Vec3, OBB};
+use wgpu_engine::objload::obj_to_mesh;
+use wgpu_engine::{FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatch, Tesselator};
 
 register_resource_noserialize!(ImmediateSound);
 #[derive(Default)]
@@ -43,6 +44,11 @@ pub enum OrderKind {
     TexturedOBB {
         obb: OBB,
         path: String,
+    },
+    PaletteMesh {
+        path: String,
+        pos: Vec3,
+        dir: Vec3,
     },
 }
 
@@ -155,6 +161,10 @@ impl ImmediateDraw {
         self.builder(OrderKind::TexturedOBB { obb, path })
     }
 
+    pub fn palette_mesh(&mut self, path: String, pos: Vec3, dir: Vec3) -> ImmediateBuilder {
+        self.builder(OrderKind::PaletteMesh { path, pos, dir })
+    }
+
     pub fn clear_persistent(&mut self) {
         self.persistent_orders.clear();
     }
@@ -203,13 +213,25 @@ impl ImmediateDraw {
                     );
                 }
                 OrderKind::TexturedOBB { obb, ref path } => {
-                    let tex = ctx.gfx.texture(path, "some immediate obb");
+                    let tex = unwrap_cont!(ctx.gfx.try_texture(path, "some immediate obb"));
                     ctx.objs.push(Box::new(
                         SpriteBatch::builder(tex)
                             .push(obb.center(), obb.axis()[0], z, *color, (1.0, 1.0))
                             .build(ctx.gfx)
                             .unwrap(),
                     ));
+                }
+                OrderKind::PaletteMesh { ref path, pos, dir } => {
+                    let m = unwrap_cont!(obj_to_mesh(path, &ctx.gfx, ctx.gfx.palette()));
+                    let mut i = InstancedMeshBuilder::new(m);
+
+                    i.instances.push(MeshInstance {
+                        pos,
+                        dir,
+                        tint: color.a(1.0),
+                    });
+
+                    ctx.objs.push(Box::new(i.build(&ctx.gfx).unwrap()))
                 }
             }
         }

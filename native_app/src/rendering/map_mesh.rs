@@ -8,10 +8,11 @@ use map_model::{BuildingKind, LaneKind, LotKind, Map, TurnKind, CROSSWALK_WIDTH}
 use std::ops::Mul;
 use std::rc::Rc;
 use wgpu_engine::earcut::earcut;
+use wgpu_engine::objload::obj_to_mesh;
 use wgpu_engine::wgpu::RenderPass;
 use wgpu_engine::{
-    Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, MultiSpriteBatch, SpriteBatch,
-    SpriteBatchBuilder, Tesselator,
+    Drawable, GfxContext, InstancedMesh, InstancedMeshBuilder, Mesh, MeshBuilder, MeshInstance,
+    MeshVertex, MultiSpriteBatch, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 
 pub struct MapMeshHandler {
@@ -22,8 +23,9 @@ pub struct MapMeshHandler {
 }
 
 struct MapBuilders {
-    buildings_builder: FastMap<BuildingKind, SpriteBatchBuilder>,
-    buildings_mesh: MeshBuilder,
+    buildsprites: FastMap<BuildingKind, SpriteBatchBuilder>,
+    buildmeshes: FastMap<BuildingKind, InstancedMeshBuilder>,
+    houses_mesh: MeshBuilder,
     arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: MeshBuilder,
     tess: Tesselator,
@@ -32,8 +34,9 @@ struct MapBuilders {
 pub struct MapMeshes {
     map: Option<Mesh>,
     crosswalks: Option<Mesh>,
-    buildings: MultiSpriteBatch,
-    building_mesh: Option<Mesh>,
+    bsprites: MultiSpriteBatch,
+    bmeshes: Vec<InstancedMesh>,
+    houses_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
 }
 
@@ -41,21 +44,42 @@ impl MapMeshHandler {
     pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         let arrow_builder = SpriteBatchBuilder::from_path(gfx, "assets/arrow_one_way.png");
 
-        let mut buildings_builder = FastMap::default();
+        let mut buildsprites = FastMap::default();
+        let mut buildmeshes = FastMap::default();
 
         for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
-            buildings_builder.insert(
+            let asset = descr.asset_location;
+            if !asset.ends_with(".png") {
+                continue;
+            }
+            buildsprites.insert(
                 descr.bkind,
-                SpriteBatchBuilder::new(gfx.texture(descr.asset_location, descr.asset_location)),
+                SpriteBatchBuilder::new(gfx.texture(asset, asset)),
+            );
+        }
+
+        for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
+            let asset = descr.asset_location;
+            if !asset.ends_with(".obj") {
+                continue;
+            }
+            buildmeshes.insert(
+                descr.bkind,
+                InstancedMeshBuilder::new(unwrap_contlog!(
+                    obj_to_mesh(asset, gfx, gfx.palette()),
+                    "couldn't load obj: {}",
+                    asset
+                )),
             );
         }
 
         let builders = MapBuilders {
             arrow_builder,
-            buildings_builder,
+            buildsprites,
             crosswalk_builder: MeshBuilder::new(),
             tess: Tesselator::new(None, 15.0),
-            buildings_mesh: MeshBuilder::new(),
+            houses_mesh: MeshBuilder::new(),
+            buildmeshes,
         };
 
         Self {
@@ -71,8 +95,8 @@ impl MapMeshHandler {
             self.builders.map_mesh(&map);
             self.builders.arrows(&map);
             self.builders.crosswalks(&map);
-            self.builders.buildings_sprites(&map);
-            self.builders.buildings_mesh(&map);
+            self.builders.bspritesmesh(&map);
+            self.builders.houses_mesh(&map);
 
             self.last_config = common::config_id();
             self.map_dirt_id = map.dirt_id.0;
@@ -84,13 +108,19 @@ impl MapMeshHandler {
             let meshes = MapMeshes {
                 map: m.build(gfx, gfx.palette()),
                 crosswalks: self.builders.crosswalk_builder.build(gfx, cw),
-                buildings: self
+                bsprites: self
                     .builders
-                    .buildings_builder
+                    .buildsprites
                     .values_mut()
                     .flat_map(|x| x.build(gfx))
                     .collect(),
-                building_mesh: self.builders.buildings_mesh.build(gfx, gfx.palette()),
+                bmeshes: self
+                    .builders
+                    .buildmeshes
+                    .values_mut()
+                    .flat_map(|x| x.build(gfx))
+                    .collect(),
+                houses_mesh: self.builders.houses_mesh.build(gfx, gfx.palette()),
                 arrows: self.builders.arrow_builder.build(gfx),
             };
 
@@ -189,15 +219,19 @@ impl MapBuilders {
         }
     }
 
-    fn buildings_sprites(&mut self, map: &Map) {
-        for v in self.buildings_builder.values_mut() {
+    fn bspritesmesh(&mut self, map: &Map) {
+        for v in self.buildsprites.values_mut() {
             v.clear();
+        }
+
+        for v in self.buildmeshes.values_mut() {
+            v.instances.clear();
         }
 
         let buildings = &map.buildings();
 
         for building in buildings.values() {
-            if let Some(x) = self.buildings_builder.get_mut(&building.kind) {
+            if let Some(x) = self.buildsprites.get_mut(&building.kind) {
                 let axis = building.obb.axis();
                 let c = building.obb.center();
                 let w = axis[0].magnitude();
@@ -205,11 +239,22 @@ impl MapBuilders {
                 let h = axis[1].magnitude();
                 x.push(c, d, Z_BSPRITE, LinearColor::WHITE, (w, h));
             }
+
+            if let Some(x) = self.buildmeshes.get_mut(&building.kind) {
+                let pos = building.obb.center().z(Z_BSPRITE);
+                let dir = building.obb.axis()[0].normalize().z(0.0);
+
+                x.instances.push(MeshInstance {
+                    pos,
+                    dir,
+                    tint: LinearColor::WHITE,
+                });
+            }
         }
     }
 
-    fn buildings_mesh(&mut self, map: &Map) {
-        self.buildings_mesh.clear();
+    fn houses_mesh(&mut self, map: &Map) {
+        self.houses_mesh.clear();
 
         let buildings = &map.buildings();
 
@@ -217,7 +262,7 @@ impl MapBuilders {
 
         for building in buildings.values() {
             for (face, col) in &building.mesh.faces {
-                self.buildings_mesh.extend_with(|vertices, add_index| {
+                self.houses_mesh.extend_with(|vertices, add_index| {
                     let o = face[1];
                     let u = unwrap_ret!((face[0] - o).try_normalize());
                     let v = unwrap_ret!((face[2] - o).try_normalize());
@@ -370,8 +415,11 @@ impl Drawable for MapMeshes {
         if let Some(ref map) = self.map {
             map.draw(gfx, rp);
         }
-        self.buildings.draw(gfx, rp);
-        if let Some(ref bmesh) = self.building_mesh {
+        self.bsprites.draw(gfx, rp);
+        for v in &self.bmeshes {
+            v.draw(gfx, rp);
+        }
+        if let Some(ref bmesh) = self.houses_mesh {
             bmesh.draw(gfx, rp);
         }
         if let Some(ref arrows) = self.arrows {
@@ -386,8 +434,11 @@ impl Drawable for MapMeshes {
         if let Some(ref map) = self.map {
             map.draw_depth(gfx, rp);
         }
-        self.buildings.draw_depth(gfx, rp);
-        if let Some(ref bmesh) = self.building_mesh {
+        self.bsprites.draw_depth(gfx, rp);
+        for v in &self.bmeshes {
+            v.draw_depth(gfx, rp);
+        }
+        if let Some(ref bmesh) = self.houses_mesh {
             bmesh.draw_depth(gfx, rp);
         }
         if let Some(ref arrows) = self.arrows {
