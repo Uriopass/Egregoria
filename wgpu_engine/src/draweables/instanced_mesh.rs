@@ -36,10 +36,10 @@ pub struct InstancedMeshBuilder {
 }
 
 impl InstancedMeshBuilder {
-    pub fn new(mesh: Arc<Mesh>) -> Self {
+    pub fn new(mesh: Mesh) -> Self {
         InstancedMeshBuilder {
-            mesh,
-            instances: vec![],
+            mesh: Arc::new(mesh),
+            instances: Vec::with_capacity(4),
             ibuffer: PBuffer::new(BufferUsage::VERTEX),
         }
     }
@@ -108,6 +108,9 @@ impl Drawable for InstancedMesh {
     }
 
     fn draw_depth<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        if self.mesh.translucent {
+            return;
+        }
         rp.set_pipeline(&gfx.get_pipeline::<InstancedMeshDepth>());
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));

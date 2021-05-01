@@ -5,7 +5,6 @@ use egregoria::rendering::assets::{AssetID, AssetRender};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec2};
 use legion::query::*;
-use std::sync::Arc;
 use wgpu_engine::objload::obj_to_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder,
@@ -24,15 +23,15 @@ impl InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 gfx.texture("assets/path_not_found.png", "path_not_found"),
             ),
-            cars: InstancedMeshBuilder::new(Arc::new(
+            cars: InstancedMeshBuilder::new(
                 obj_to_mesh("assets/simple_car.obj", gfx, gfx.palette()).unwrap(),
-            )),
-            trucks: InstancedMeshBuilder::new(Arc::new(
+            ),
+            trucks: InstancedMeshBuilder::new(
                 obj_to_mesh("assets/truck.obj", gfx, gfx.palette()).unwrap(),
-            )),
-            pedestrians: InstancedMeshBuilder::new(Arc::new(
+            ),
+            pedestrians: InstancedMeshBuilder::new(
                 obj_to_mesh("assets/pedestrian.obj", gfx, gfx.palette()).unwrap(),
-            )),
+            ),
         }
     }
 

@@ -231,20 +231,29 @@ impl GfxContext {
     }
 
     pub fn texture(&mut self, path: impl Into<PathBuf>, label: &'static str) -> Arc<Texture> {
-        fn texture_inner(sel: &mut GfxContext, p: PathBuf, label: &'static str) -> Arc<Texture> {
-            if let Some(tex) = sel.textures.get(&p) {
-                return tex.clone();
-            }
-            let tex = Arc::new(
-                TextureBuilder::from_path(&p)
-                    .with_label(label)
-                    .build(&sel.device, &sel.queue),
-            );
-            sel.textures.insert(p, tex.clone());
-            tex
-        }
+        self.texture_inner(path.into(), label)
+            .expect("tex not found")
+    }
 
-        texture_inner(self, path.into(), label)
+    pub fn try_texture(
+        &mut self,
+        path: impl Into<PathBuf>,
+        label: &'static str,
+    ) -> Option<Arc<Texture>> {
+        self.texture_inner(path.into(), label)
+    }
+
+    fn texture_inner(&mut self, p: PathBuf, label: &'static str) -> Option<Arc<Texture>> {
+        if let Some(tex) = self.textures.get(&p) {
+            return Some(tex.clone());
+        }
+        let tex = Arc::new(
+            TextureBuilder::try_from_path(&p)?
+                .with_label(label)
+                .build(&self.device, &self.queue),
+        );
+        self.textures.insert(p, tex.clone());
+        Some(tex)
     }
 
     pub fn read_texture(&self, path: impl Into<PathBuf>) -> Option<&Arc<Texture>> {

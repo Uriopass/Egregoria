@@ -74,7 +74,7 @@ macro_rules! unwrap_retlog {
 
 #[macro_export]
 macro_rules! unwrap_contlog {
-    ($e: expr, $($t: expr)+) => {
+    ($e: expr, $($t: expr),+) => {
         match $e {
             Some(x) => x,
             None => {

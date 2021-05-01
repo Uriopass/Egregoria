@@ -2,7 +2,7 @@ use super::Tool;
 use crate::input::{MouseButton, MouseInfo};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
-use common::{AudioKind, Z_TOOL};
+use common::{AudioKind, Z_BSPRITE, Z_TOOL};
 use egregoria::Egregoria;
 use geom::{Intersect, Vec2, OBB};
 use map_model::{BuildingGen, BuildingKind, ProjectFilter, ProjectKind};
@@ -56,18 +56,32 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     let hover_obb = OBB::new(mpos, Vec2::UNIT_Y, size, size);
 
-    let mut draw_red = |obb| {
-        draw.textured_obb(obb, asset.to_owned())
-            .color(common::config().special_building_invalid_col)
-            .z(Z_TOOL);
+    let mut draw = |obb, red| {
+        let p = asset.to_string();
+        let col = if red {
+            common::config().special_building_invalid_col
+        } else {
+            common::config().special_building_col
+        };
+
+        if p.ends_with(".png") {
+            draw.textured_obb(obb, p).color(col).z(Z_TOOL);
+        } else if p.ends_with(".obj") {
+            draw.palette_mesh(
+                p,
+                obb.center().z(Z_BSPRITE + 0.1),
+                obb.axis()[0].normalize().z(0.0),
+            )
+            .color(col);
+        }
     };
 
-    let closest_road = unwrap_or!(closest_road, return draw_red(hover_obb));
+    let closest_road = unwrap_or!(closest_road, return draw(hover_obb, true));
 
     let (proj, _, dir) = closest_road.points().project_segment_dir(mpos);
 
     if !proj.is_close(mpos, size + closest_road.width * 0.5) {
-        return draw_red(hover_obb);
+        return draw(hover_obb, true);
     }
 
     let side = if (mpos - proj).dot(dir.perpendicular()) > 0.0 {
@@ -90,20 +104,18 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         || proj.distance(last) < 0.5 * size
         || closest_road.sidewalks(closest_road.src).incoming.is_none()
     {
-        draw_red(obb);
+        draw(obb, true);
         return;
     }
 
     if map.building_overlaps(obb) || state.last_obb.map(|x| x.intersects(&obb)).unwrap_or(false) {
-        draw_red(obb);
+        draw(obb, true);
         return;
     }
 
     let rid = closest_road.id;
 
-    draw.textured_obb(obb, asset.to_owned())
-        .color(common::config().special_building_col)
-        .z(Z_TOOL);
+    draw(obb, false);
 
     if mouseinfo.pressed.contains(&MouseButton::Left) {
         commands.map_build_special_building(rid, obb, *kind, *gen);
