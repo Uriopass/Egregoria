@@ -13,9 +13,9 @@ use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, BindGroupLayoutDescriptor, CommandEncoder, CommandEncoderDescriptor,
-    CullMode, Device, FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue,
-    RenderPipeline, Surface, SwapChain, SwapChainDescriptor, SwapChainFrame, TextureSampleType,
-    TextureUsage, VertexBufferLayout,
+    CullMode, DepthBiasState, Device, FrontFace, IndexFormat, MultisampleState, PrimitiveState,
+    Queue, RenderPipeline, Surface, SwapChain, SwapChainDescriptor, SwapChainFrame,
+    TextureSampleType, TextureUsage, VertexBufferLayout,
 };
 
 pub struct FBOs {
@@ -25,16 +25,6 @@ pub struct FBOs {
     pub(crate) color: MultisampledTexture,
     pub(crate) ui: Texture,
     pub(crate) ssao: Texture,
-}
-
-pub struct GfxSettings {
-    pub ssao: bool,
-}
-
-impl Default for GfxSettings {
-    fn default() -> Self {
-        Self { ssao: true }
-    }
 }
 
 pub struct GfxContext {
@@ -52,8 +42,7 @@ pub struct GfxContext {
     pub(crate) samples: u32,
     pub(crate) screen_uv_vertices: wgpu::Buffer,
     pub(crate) rect_indices: wgpu::Buffer,
-    pub(crate) sun_shadowmap: Texture,
-    pub settings: GfxSettings,
+    pub sun_shadowmap: Texture,
     pub simplelit_bg: wgpu::BindGroup,
     #[allow(dead_code)] // keep adapter alive
     pub(crate) adapter: Adapter,
@@ -77,6 +66,7 @@ pub struct RenderParams {
     pub ssao_base: f32,
     pub ssao_samples: i32,
     pub ssao_enabled: i32,
+    pub shadow_mapping_enabled: i32,
 }
 
 impl Default for RenderParams {
@@ -97,6 +87,7 @@ impl Default for RenderParams {
             ssao_base: 0.0,
             ssao_samples: 0,
             ssao_enabled: 1,
+            shadow_mapping_enabled: 1,
         }
     }
 }
@@ -138,7 +129,7 @@ impl GfxContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::empty(),
+                    features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER,
                     limits: wgpu::Limits::default(),
                 },
                 None,
@@ -192,9 +183,6 @@ impl GfxContext {
             Arc::new(blue_noise),
         );
 
-        let mut sun_shadowmap = Texture::create_depth_texture(&device, (2048, 2048), 1);
-        sun_shadowmap.sampler = device.create_sampler(&Texture::depth_compare_sampler());
-
         let mut me = Self {
             size: (win_width, win_height),
             queue,
@@ -210,9 +198,8 @@ impl GfxContext {
             samples,
             screen_uv_vertices,
             rect_indices,
-            settings: GfxSettings::default(),
             simplelit_bg,
-            sun_shadowmap,
+            sun_shadowmap: Self::mk_shadowmap(&device, 2048),
             device,
         };
 
@@ -230,6 +217,12 @@ impl GfxContext {
         me.set_texture("assets/palette.png", p);
 
         me
+    }
+
+    pub fn mk_shadowmap(device: &Device, res: u32) -> Texture {
+        let mut smap = Texture::create_depth_texture(&device, (res, res), 1);
+        smap.sampler = device.create_sampler(&Texture::depth_compare_sampler());
+        smap
     }
 
     pub fn set_texture(&mut self, path: impl Into<PathBuf>, tex: Texture) {
@@ -365,7 +358,7 @@ impl GfxContext {
         self.projection = prev;
         self.samples = prevs;
 
-        if self.settings.ssao {
+        if self.render_params.value().ssao_enabled != 0 {
             let pipeline = self.get_pipeline::<SSAOPipeline>();
             let bg = self
                 .fbos
@@ -398,7 +391,7 @@ impl GfxContext {
             ssao_pass.draw_indexed(0..6, 0, 0..1);
         }
 
-        {
+        if self.render_params.value().shadow_mapping_enabled != 0 {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -515,6 +508,10 @@ impl GfxContext {
         self.sc_desc.height = self.size.1;
 
         self.fbos = Self::create_textures(&self.device, &self.surface, &self.sc_desc, self.samples);
+        self.update_simplelit_bg();
+    }
+
+    pub fn update_simplelit_bg(&mut self) {
         self.simplelit_bg = Texture::multi_bindgroup(
             &[
                 &self.fbos.ssao,
@@ -595,7 +592,7 @@ impl GfxContext {
         &self,
         vertex_buffers: &[VertexBufferLayout],
         vert_shader: &CompiledShader,
-        samples: u32,
+        shadow_map: bool,
     ) -> RenderPipeline {
         assert!(matches!(vert_shader.1, ShaderType::Vertex));
 
@@ -627,11 +624,19 @@ impl GfxContext {
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::LessEqual,
                 stencil: Default::default(),
-                bias: Default::default(),
+                bias: if shadow_map {
+                    DepthBiasState {
+                        constant: 1,
+                        slope_scale: 1.75,
+                        clamp: 0.0,
+                    }
+                } else {
+                    Default::default()
+                },
                 clamp_depth: false,
             }),
             multisample: MultisampleState {
-                count: samples,
+                count: if shadow_map { 1 } else { self.samples },
                 ..Default::default()
             },
         };

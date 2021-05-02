@@ -8,8 +8,8 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use wgpu::{
     BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
-    PipelineLayoutDescriptor, SamplerDescriptor, TextureCopyView, TextureDataLayout, TextureFormat,
-    TextureSampleType, TextureUsage, TextureViewDescriptor,
+    PipelineLayoutDescriptor, SamplerBorderColor, SamplerDescriptor, TextureCopyView,
+    TextureDataLayout, TextureFormat, TextureSampleType, TextureUsage, TextureViewDescriptor,
 };
 
 pub struct Texture {
@@ -229,17 +229,15 @@ impl Texture {
     pub fn depth_compare_sampler() -> SamplerDescriptor<'static> {
         wgpu::SamplerDescriptor {
             label: None,
-            address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v: wgpu::AddressMode::Repeat,
-            address_mode_w: wgpu::AddressMode::Repeat,
+            address_mode_u: wgpu::AddressMode::ClampToBorder,
+            address_mode_v: wgpu::AddressMode::ClampToBorder,
+            address_mode_w: wgpu::AddressMode::ClampToBorder,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
+            mipmap_filter: wgpu::FilterMode::Nearest,
             compare: Some(wgpu::CompareFunction::LessEqual),
-            anisotropy_clamp: None,
-            border_color: None,
+            border_color: Some(SamplerBorderColor::OpaqueWhite),
+            ..Default::default()
         }
     }
 
@@ -252,11 +250,7 @@ impl Texture {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Linear,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
-            compare: None,
-            anisotropy_clamp: None,
-            border_color: None,
+            ..Default::default()
         }
     }
 
@@ -269,11 +263,7 @@ impl Texture {
             mag_filter: wgpu::FilterMode::Nearest,
             min_filter: wgpu::FilterMode::Nearest,
             mipmap_filter: wgpu::FilterMode::Nearest,
-            lod_min_clamp: -100.0,
-            lod_max_clamp: 100.0,
-            compare: None,
-            anisotropy_clamp: None,
-            border_color: None,
+            ..Default::default()
         }
     }
 }

@@ -32,11 +32,11 @@ float sampleShadow(vec3 wpos) {
     if (light_local.w <= 0.0) {
         return 1.0;
     }
-    vec3 corrected = light_local.xyz / light_local.w * vec3(0.5, -0.5, 0.99) + vec3(0.5, 0.5, 0.0);
+    vec3 corrected = light_local.xyz / light_local.w * vec3(0.5, -0.5, 1.0) + vec3(0.5, 0.5, 0.0);
 
     float v = texture(sampler2DShadow(t_sun_smap, s_sun_smap), corrected);
 
-    return mix(v, 1, min(length(light_local.xy), 1.0));
+    return mix(v, 1, clamp(dot(light_local.xy, light_local.xy), 0.0, 1.0));
 }
 
 void main() {
@@ -51,7 +51,11 @@ void main() {
         }*/
     }
 
-    float shadow_v = sampleShadow(in_wpos);
+    float shadow_v = 1;
+
+    if (params.shadow_mapping_enabled != 0) {
+        shadow_v = sampleShadow(in_wpos);
+    }
 
     /*
     out_color = vec4(in_wpos * 0.001, 1);

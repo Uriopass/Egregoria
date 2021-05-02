@@ -9,14 +9,14 @@ use egregoria::utils::time::GameTime;
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use geom::{vec3, Camera, LinearColor};
 use wgpu_engine::lighting::{LightInstance, LightRender};
-use wgpu_engine::{FrameContext, GuiRenderContext, Tesselator};
+use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
 use crate::audio::GameAudio;
 use crate::context::Context;
 use crate::gui::inputmap::InputMap;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::network::NetworkConnectionInfo;
-use crate::gui::windows::settings::Settings;
+use crate::gui::windows::settings::{Settings, ShadowQuality};
 use crate::gui::{FollowEntity, Gui, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::network::NetworkState;
@@ -346,7 +346,21 @@ impl State {
         }
 
         ctx.gfx.set_present_mode(settings.vsync.into());
-        ctx.gfx.settings.ssao = settings.ssao;
+        ctx.gfx.render_params.value_mut().ssao_enabled = settings.ssao as i32;
+        ctx.gfx.render_params.value_mut().shadow_mapping_enabled =
+            i32::from(!matches!(settings.shadows, ShadowQuality::NoShadows));
+
+        if let Some(v) = match settings.shadows {
+            ShadowQuality::Low => Some(512),
+            ShadowQuality::Medium => Some(1024),
+            ShadowQuality::High => Some(2048),
+            ShadowQuality::NoShadows => None,
+        } {
+            if ctx.gfx.sun_shadowmap.extent.width != v {
+                ctx.gfx.sun_shadowmap = GfxContext::mk_shadowmap(&ctx.gfx.device, v);
+                ctx.gfx.update_simplelit_bg();
+            }
+        }
 
         ctx.audio.set_settings(settings);
     }

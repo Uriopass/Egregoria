@@ -9,6 +9,25 @@ const SETTINGS_SAVE_NAME: &str = "settings";
 
 register_resource!(Settings, SETTINGS_SAVE_NAME);
 
+#[derive(Serialize, Deserialize, Copy, Clone)]
+pub enum ShadowQuality {
+    NoShadows,
+    Low,
+    Medium,
+    High,
+}
+
+impl AsRef<str> for ShadowQuality {
+    fn as_ref(&self) -> &str {
+        match self {
+            ShadowQuality::NoShadows => "No Shadows",
+            ShadowQuality::Low => "Low",
+            ShadowQuality::Medium => "Medium",
+            ShadowQuality::High => "High",
+        }
+    }
+}
+
 #[derive(Copy, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
@@ -18,6 +37,7 @@ pub struct Settings {
     pub fullscreen: bool,
     pub vsync: VSyncOptions,
     pub ssao: bool,
+    pub shadows: ShadowQuality,
 
     pub music_volume_percent: f32,
     pub effects_volume_percent: f32,
@@ -40,6 +60,7 @@ impl Default for Settings {
             time_warp: 1,
             auto_save_every: AutoSaveEvery::Never,
             ssao: true,
+            shadows: ShadowQuality::High,
         }
     }
 }
@@ -140,6 +161,25 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
 
             ui.checkbox(im_str!("Fullscreen"), &mut settings.fullscreen);
             ui.checkbox(im_str!("Ambient Occlusion (SSAO)"), &mut settings.ssao);
+
+            let tok = imgui::ComboBox::new(im_str!("Shadow quality"))
+                .preview_value(&im_str!("{}", settings.shadows.as_ref()))
+                .begin(ui);
+            if let Some(tok) = tok {
+                if imgui::Selectable::new(im_str!("No Shadows")).build(ui) {
+                    settings.shadows = ShadowQuality::NoShadows;
+                }
+                if imgui::Selectable::new(im_str!("Low")).build(ui) {
+                    settings.shadows = ShadowQuality::Low;
+                }
+                if imgui::Selectable::new(im_str!("Medium")).build(ui) {
+                    settings.shadows = ShadowQuality::Medium;
+                }
+                if imgui::Selectable::new(im_str!("High")).build(ui) {
+                    settings.shadows = ShadowQuality::High;
+                }
+                tok.end(ui);
+            }
 
             if let Some(tok) = imgui::ComboBox::new(im_str!("VSync"))
                 .preview_value(&im_str!("{}", settings.vsync.as_ref()))

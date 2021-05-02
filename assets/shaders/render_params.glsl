@@ -12,4 +12,5 @@ struct RenderParams {
     float ssao_base;
     int ssao_samples;
     int ssao_enabled;
+    int shadow_mapping_enabled;
 };
