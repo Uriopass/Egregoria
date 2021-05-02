@@ -1,9 +1,12 @@
 use crate::pbuffer::PBuffer;
-use crate::{compile_shader, Drawable, GfxContext, Texture};
+use crate::{compile_shader, Drawable, GfxContext, IndexType, Texture, UvVertex, VBDesc};
 use geom::{LinearColor, Vec2};
 use std::path::PathBuf;
 use std::sync::Arc;
-use wgpu::{BindGroup, BufferBindingType, BufferUsage, RenderPass, ShaderStage};
+use wgpu::{
+    BindGroup, BufferBindingType, BufferUsage, IndexFormat, RenderPass, ShaderStage,
+    VertexBufferLayout,
+};
 
 pub struct SpriteBatchBuilder {
     pub tex: Arc<Texture>,
@@ -14,7 +17,7 @@ pub struct SpriteBatchBuilder {
 }
 
 pub struct SpriteBatch {
-    instance_bg: BindGroup,
+    instance_buf: Arc<wgpu::Buffer>,
     pub n_instances: u32,
     pub alpha_blend: bool,
     pub tex: Arc<Texture>,
@@ -32,12 +35,23 @@ impl SpriteBatch {
 struct InstanceRaw {
     tint: [f32; 4],
     pos: [f32; 3],
-    _pad: f32,
     dir: [f32; 2],
     scale: [f32; 2],
 }
 
 u8slice_impl!(InstanceRaw);
+
+impl VBDesc for InstanceRaw {
+    fn desc<'a>() -> VertexBufferLayout<'a> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
+            step_mode: wgpu::InputStepMode::Instance,
+            attributes: Box::leak(Box::new(
+                wgpu::vertex_attr_array![2 => Float4, 3 => Float3, 4 => Float2, 5 => Float2],
+            )),
+        }
+    }
+}
 
 impl SpriteBatchBuilder {
     pub fn from_path(ctx: &mut GfxContext, path: impl Into<PathBuf>) -> Self {
@@ -59,9 +73,8 @@ impl SpriteBatchBuilder {
         self.instances.push(InstanceRaw {
             tint: col.into(),
             dir: direction.into(),
-            scale: [scale.0 * self.stretch_x, -scale.1 * self.stretch_y],
+            scale: [scale.0 * self.stretch_x, scale.1 * self.stretch_y],
             pos: [pos.x, pos.y, z],
-            _pad: 0.0,
         });
         self
     }
@@ -69,15 +82,15 @@ impl SpriteBatchBuilder {
     pub fn new(tex: Arc<Texture>) -> Self {
         let m = tex.extent.width.max(tex.extent.height) as f32;
 
-        let stretch_x = tex.extent.width as f32 / m;
-        let stretch_y = tex.extent.height as f32 / m;
+        let stretch_x = 0.5 * tex.extent.width as f32 / m;
+        let stretch_y = 0.5 * tex.extent.height as f32 / m;
 
         Self {
             stretch_x,
             stretch_y,
             tex,
             instances: vec![],
-            instance_sbuffer: PBuffer::new(BufferUsage::STORAGE),
+            instance_sbuffer: PBuffer::new(BufferUsage::VERTEX),
         }
     }
 
@@ -91,16 +104,12 @@ impl SpriteBatchBuilder {
         self.instance_sbuffer
             .write(gfx, bytemuck::cast_slice(&self.instances));
 
-        let instance_bg = self
-            .instance_sbuffer
-            .bindgroup(gfx, &pipeline.get_bind_group_layout(2))?;
-
         let tex_bg = self
             .tex
-            .bindgroup(&gfx.device, &pipeline.get_bind_group_layout(0));
+            .bindgroup(&gfx.device, &pipeline.get_bind_group_layout(1));
 
         Some(SpriteBatch {
-            instance_bg,
+            instance_buf: self.instance_sbuffer.inner().unwrap(),
             n_instances: self.instances.len() as u32,
             alpha_blend: false,
             tex: self.tex.clone(),
@@ -116,15 +125,10 @@ impl SpriteBatch {
 
         let pipe = gfx.basic_pipeline(
             &[
-                &Texture::bindgroup_layout(&gfx.device),
                 &gfx.projection.layout,
-                &PBuffer::bindgroup_layout(
-                    gfx,
-                    ShaderStage::VERTEX,
-                    BufferBindingType::Storage { read_only: true },
-                ),
+                &Texture::bindgroup_layout(&gfx.device),
             ],
-            &[],
+            &[UvVertex::desc(), InstanceRaw::desc()],
             &vert,
             &frag,
         );
@@ -136,9 +140,23 @@ impl Drawable for SpriteBatch {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
         rp.set_pipeline(&pipeline);
-        rp.set_bind_group(0, &self.tex_bg, &[]);
-        rp.set_bind_group(1, &gfx.projection.bindgroup, &[]);
-        rp.set_bind_group(2, &self.instance_bg, &[]);
-        rp.draw(0..6 * self.n_instances, 0..1);
+        rp.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
+        rp.set_vertex_buffer(1, self.instance_buf.slice(..));
+        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+        rp.set_bind_group(1, &self.tex_bg, &[]);
+        rp.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
+        rp.draw_indexed(0..6, 0, 0..self.n_instances);
+    }
+
+    fn draw_depth<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        return;
+        let pipeline = &gfx.get_pipeline::<Self>();
+        rp.set_pipeline(&pipeline);
+        rp.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
+        rp.set_vertex_buffer(1, self.instance_buf.slice(..));
+        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+        rp.set_bind_group(1, &self.tex_bg, &[]);
+        rp.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
+        rp.draw(0..6, 0..self.n_instances);
     }
 }

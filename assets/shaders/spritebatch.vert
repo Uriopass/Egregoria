@@ -1,41 +1,23 @@
 #version 450
 
+layout(location=0) in vec3 in_pos;
+layout(location=1) in vec2 in_uv;
+layout(location=2) in vec4 in_tint;
+layout(location=3) in vec3 in_instance_pos;
+layout(location=4) in vec2 in_dir;
+layout(location=5) in vec2 in_scale;
+
 layout(location=0) out vec4 out_color;
 layout(location=1) out vec2 out_uv;
 
-struct Sprite {
-    vec4 tint;
-    vec3 pos;
-    vec2 dir;
-    vec2 scale;
-};
-
-layout (set=2, binding=0) readonly buffer SpriteStorage {
-    Sprite sprites[];
-};
-
-layout(set=1, binding=0)
+layout(set=0, binding=0)
 uniform Uniforms {
     mat4 u_view_proj;
 };
 
-vec2[] ppp = {vec2(0, 0),
-              vec2(1, 1),
-              vec2(1, 0),
-
-              vec2(0, 0),
-              vec2(0, 1),
-              vec2(1, 1)};
-
 void main() {
-    int aaa = gl_VertexIndex % 6;
-    Sprite s = sprites[gl_VertexIndex / 6];
-
-    vec2 in_uv = ppp[aaa];
-    vec2 in_pos = (in_uv - vec2(0.5)) * s.scale;
-
-    gl_Position = u_view_proj * vec4(in_pos.x * s.dir - in_pos.y * vec2(s.dir.y, -s.dir.x) + s.pos.xy, s.pos.z, 1.0);
-
-    out_color = s.tint;
+    vec2 scaled = in_pos.xy * in_scale;
+    gl_Position = u_view_proj * vec4(scaled.x * in_dir - scaled.y * vec2(in_dir.y, -in_dir.x) + in_instance_pos.xy, in_instance_pos.z, 1.0);
+    out_color = in_tint;
     out_uv = in_uv;
 }
