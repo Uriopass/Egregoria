@@ -130,7 +130,7 @@ impl Context {
                         self.delta = d.as_secs_f32();
                         state.update(&mut self);
 
-                        let (lights, ambiant_col) = state.lights();
+                        let (lights, sun_col) = state.lights();
 
                         let t = std::f32::consts::TAU
                             * (self.gfx.render_params.value().time - 8.0 * GameTime::HOUR as f32)
@@ -139,7 +139,7 @@ impl Context {
                         let sun = vec3(t.cos(), t.sin() * 0.5, t.sin() + 0.5).normalize();
 
                         let params = self.gfx.render_params.value_mut();
-                        params.ambiant = ambiant_col;
+                        params.sun_col = sun_col;
                         params.cam_pos = state.camera.camera.eye();
                         params.sun = sun;
                         params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);

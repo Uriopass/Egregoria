@@ -1,9 +1,9 @@
 struct RenderParams {
     mat4 invproj;
     mat4 sunproj;
-    vec4 ambiant;
     vec4 cam_pos;
     vec4 sun;
+    vec4 sun_col;
     vec2 viewport;
     float time;
     float ssao_strength;

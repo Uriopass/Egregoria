@@ -7,7 +7,7 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
 use egregoria::{Egregoria, SerPreparedEgregoria};
-use geom::{vec3, Camera, LinearColor};
+use geom::{vec3, Camera, LinearColor, Vec3};
 use wgpu_engine::lighting::{LightInstance, LightRender};
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
@@ -307,7 +307,7 @@ impl State {
             });
         }
 
-        let dark = vec3(0.1, 0.1, 0.1);
+        let dark = Vec3::ZERO;
         let bright = vec3(1.0, 1.0, 1.0);
 
         let col = match time.daytime.hour {
