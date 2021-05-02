@@ -3,7 +3,7 @@
 
 layout(location=0) in vec2 in_uv;
 
-layout(location=0) out vec4 out_ssao;
+layout(location=0) out float out_ssao;
 
 layout(set = 0, binding = 0) uniform texture2DMS t_depth;
 layout(set = 0, binding = 1) uniform sampler s_depth;
@@ -97,5 +97,5 @@ void main() {
 
     float ao = 1.0 - total_strength * occlusion * (1.0 / samples);
     float v = clamp(ao + base, 0.0, 1.0);
-    out_ssao = vec4(v, v, v, 1);
+    out_ssao = v;
 }

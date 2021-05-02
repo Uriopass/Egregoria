@@ -1,8 +1,8 @@
+use crate::ShaderType;
 use crate::{
     bg_layout_litmesh, compile_shader, BlitLinear, CompiledShader, Drawable, IndexType,
     InstancedMesh, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
 };
-use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
 use geom::{vec2, LinearColor, Vec2, Vec3};
 use mint::ColumnMatrix4;
@@ -22,7 +22,7 @@ pub struct FBOs {
     pub swapchain: SwapChain,
     pub(crate) depth: Texture,
     pub(crate) light: Texture,
-    pub(crate) color: MultisampledTexture,
+    pub(crate) color_msaa: wgpu::TextureView,
     pub(crate) ui: Texture,
     pub(crate) ssao: Texture,
 }
@@ -301,6 +301,7 @@ impl GfxContext {
     pub fn render_objs(
         &mut self,
         encoder: &mut CommandEncoder,
+        frame: &SwapChainFrame,
         mut prepare: impl FnMut(&mut FrameContext),
     ) {
         let mut objs = vec![];
@@ -337,7 +338,7 @@ impl GfxContext {
         );
         let prevs = self.samples;
         self.samples = 1;
-        {
+        if self.render_params.value().shadow_mapping_enabled != 0 {
             let mut sun_shadow_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[],
@@ -391,12 +392,12 @@ impl GfxContext {
             ssao_pass.draw_indexed(0..6, 0, 0..1);
         }
 
-        if self.render_params.value().shadow_mapping_enabled != 0 {
+        {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &self.fbos.color.multisampled_buffer,
-                    resolve_target: Some(&self.fbos.color.target.view),
+                    attachment: &self.fbos.color_msaa,
+                    resolve_target: Some(&frame.output.view),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
                             r: 0.32,
@@ -411,7 +412,7 @@ impl GfxContext {
                     attachment: &self.fbos.depth.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Load,
-                        store: true,
+                        store: false,
                     }),
                     stencil_ops: None,
                 }),
@@ -488,7 +489,7 @@ impl GfxContext {
         let ssao = Texture::create_fbo(
             device,
             size,
-            wgpu::TextureFormat::Rgba8UnormSrgb,
+            wgpu::TextureFormat::R8Unorm,
             TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED | TextureUsage::COPY_SRC,
             None,
         );
@@ -496,7 +497,7 @@ impl GfxContext {
             swapchain: device.create_swap_chain(surface, desc),
             depth: Texture::create_depth_texture(device, size, samples),
             light: Texture::create_light_texture(device, desc),
-            color: Texture::create_color_texture(device, desc, samples),
+            color_msaa: Texture::create_color_msaa(device, desc, samples),
             ui: Texture::create_ui_texture(device, desc),
             ssao,
         }
@@ -519,6 +520,7 @@ impl GfxContext {
                     .read_texture("assets/blue_noise_512.png")
                     .expect("blue noise not initialized"),
                 &self.sun_shadowmap,
+                &self.fbos.light,
             ],
             &self.device,
             &bg_layout_litmesh(&self.device),
@@ -544,7 +546,7 @@ impl GfxContext {
                 });
 
         let color_states = [wgpu::ColorTargetState {
-            format: self.fbos.color.target.format,
+            format: self.sc_desc.format,
             color_blend: wgpu::BlendState {
                 src_factor: wgpu::BlendFactor::SrcAlpha,
                 dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,

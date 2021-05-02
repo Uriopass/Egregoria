@@ -22,13 +22,16 @@ layout(set = 3, binding = 3) uniform sampler s_bnoise;
 layout(set = 3, binding = 4) uniform texture2D t_sun_smap;
 layout(set = 3, binding = 5) uniform samplerShadow s_sun_smap;
 
+layout(set = 3, binding = 6) uniform texture2D t_quadlights;
+layout(set = 3, binding = 7) uniform samplerShadow s_quadlights;
+
 float dither() {
     float color = texture(sampler2D(t_bnoise, s_bnoise), gl_FragCoord.xy / 512.0).r;
     return (color - 0.5) / 255.0;
 }
 
-float sampleShadow(vec3 wpos) {
-    vec4 light_local = params.sunproj * vec4(wpos, 1);
+float sampleShadow() {
+    vec4 light_local = params.sunproj * vec4(in_wpos, 1);
     if (light_local.w <= 0.0) {
         return 1.0;
     }
@@ -52,10 +55,11 @@ void main() {
     }
 
     float shadow_v = 1;
-
     if (params.shadow_mapping_enabled != 0) {
-        shadow_v = sampleShadow(in_wpos);
+        shadow_v = sampleShadow();
     }
+
+    float quad_lights = texture(sampler2D(t_quadlights, s_quadlights), gl_FragCoord.xy / params.viewport).r;
 
     /*
     out_color = vec4(in_wpos * 0.001, 1);
@@ -81,7 +85,7 @@ void main() {
     float diffuse = clamp(dot(normal, params.sun.xyz), 0.0, 1.0);
 
     vec4 c = in_tint * albedo;
-    c.rgb *= 0.2 + 0.8 * diffuse * shadow_v + 0.5 * specular;
+    c.rgb *= 0.2 + max(0.8 * diffuse * shadow_v, quad_lights) + 0.5 * specular;
     c.rgb *= ssao;
     c.rgb += dither();
     out_color = c;
