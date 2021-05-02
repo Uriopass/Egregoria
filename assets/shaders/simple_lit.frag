@@ -82,11 +82,15 @@ void main() {
     float specular = clamp(dot(R, V), 0.0, 1.0);
     specular = pow(specular, 5);
 
-    float diffuse = clamp(dot(normal, params.sun.xyz), 0.0, 1.0);
+    float sun_contrib = clamp(dot(normal, params.sun.xyz), 0.0, 1.0);
 
     vec4 c = in_tint * albedo;
-    c.rgb *= 0.2 + max(0.8 * diffuse * shadow_v, quad_lights) + 0.5 * specular;
-    c.rgb *= ssao;
-    c.rgb += dither();
-    out_color = c;
+    float ambiant = 0.1;
+    float sun = (0.8 * sun_contrib + 0.5 * specular) * shadow_v;
+    float lights = quad_lights * (1.0 - sun_contrib) * 0.7;
+
+    vec3 final_rgb = (ambiant + lights) * c.rgb + sun * params.sun_col.rgb * c.rgb;
+    final_rgb *= ssao;
+    final_rgb += dither();
+    out_color = vec4(final_rgb, c.a);
 }

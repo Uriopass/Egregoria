@@ -53,11 +53,11 @@ pub struct GfxContext {
 pub struct RenderParams {
     pub inv_proj: ColumnMatrix4<f32>,
     pub sun_shadow_proj: ColumnMatrix4<f32>,
-    pub ambiant: LinearColor,
     pub cam_pos: Vec3,
     pub _pad: f32,
     pub sun: Vec3,
     pub _pad2: f32,
+    pub sun_col: LinearColor,
     pub viewport: Vec2,
     pub time: f32,
     pub ssao_strength: f32,
@@ -74,7 +74,7 @@ impl Default for RenderParams {
         Self {
             inv_proj: ColumnMatrix4::from([0.0; 16]),
             sun_shadow_proj: ColumnMatrix4::from([0.0; 16]),
-            ambiant: Default::default(),
+            sun_col: Default::default(),
             cam_pos: Default::default(),
             _pad: 0.0,
             sun: Default::default(),
