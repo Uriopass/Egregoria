@@ -143,7 +143,6 @@ impl Context {
                         params.cam_pos = state.camera.camera.eye();
                         params.sun = sun;
                         params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);
-                        params.ssao_enabled = self.gfx.settings.ssao as i32;
                         params.sun_shadow_proj =
                             state.camera.camera.build_sun_shadowmap_matrix(sun);
                         let c = common::config();

@@ -86,12 +86,10 @@ impl InstancedMesh {
             &frag,
         );
         gfx.register_pipeline::<Self>(pipe);
-        gfx.register_pipeline::<InstancedMeshDepthMultisample>(gfx.depth_pipeline(
-            vb,
-            &vert,
-            gfx.samples,
-        ));
-        gfx.register_pipeline::<InstancedMeshDepth>(gfx.depth_pipeline(vb, &vert, 1));
+        gfx.register_pipeline::<InstancedMeshDepthMultisample>(
+            gfx.depth_pipeline(vb, &vert, false),
+        );
+        gfx.register_pipeline::<InstancedMeshDepth>(gfx.depth_pipeline(vb, &vert, true));
     }
 }
 

@@ -105,10 +105,14 @@ impl Mesh {
         gfx.register_pipeline::<LitMeshDepthMultisample>(gfx.depth_pipeline(
             &[MeshVertex::desc()],
             &vert,
-            gfx.samples,
+            false,
         ));
 
-        gfx.register_pipeline::<LitMeshDepth>(gfx.depth_pipeline(&[MeshVertex::desc()], &vert, 1));
+        gfx.register_pipeline::<LitMeshDepth>(gfx.depth_pipeline(
+            &[MeshVertex::desc()],
+            &vert,
+            true,
+        ));
     }
 }
 

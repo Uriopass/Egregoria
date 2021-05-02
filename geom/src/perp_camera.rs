@@ -75,9 +75,10 @@ impl Camera {
 
         let d = self.dist * 1.3;
 
-        let suneye = self.pos.z(0.0) + dir;
+        let base = (self.pos - self.offset().xy() * 0.6).z(0.0);
+        let suneye = base + dir;
 
-        let view = look_at_rh(suneye, self.pos.z(0.0), self.up);
+        let view = look_at_rh(suneye, base, self.up);
         let proj: Mat4 = Ortho {
             left: -d,
             right: d,
