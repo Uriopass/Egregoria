@@ -149,12 +149,12 @@ struct LitMeshDepthMultisample;
 struct LitMeshDepth;
 
 pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
-    let entries: Vec<BindGroupLayoutEntry> = (0..3)
+    let entries: Vec<BindGroupLayoutEntry> = (0..4)
         .flat_map(|i| {
             vec![
                 wgpu::BindGroupLayoutEntry {
                     binding: i * 2,
-                    visibility: wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::VERTEX,
+                    visibility: wgpu::ShaderStage::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
                         view_dimension: wgpu::TextureViewDimension::D2,
@@ -164,7 +164,7 @@ pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: i * 2 + 1,
-                    visibility: wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::VERTEX,
+                    visibility: wgpu::ShaderStage::FRAGMENT,
                     ty: wgpu::BindingType::Sampler {
                         filtering: true,
                         comparison: i == 2,

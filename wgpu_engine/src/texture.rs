@@ -20,11 +20,6 @@ pub struct Texture {
     pub extent: Extent3d,
 }
 
-pub struct MultisampledTexture {
-    pub target: Texture,
-    pub multisampled_buffer: wgpu::TextureView,
-}
-
 impl Texture {
     pub fn read_image(p: impl AsRef<Path>) -> Option<(Vec<u8>, u32, u32)> {
         let mut buf = vec![];
@@ -105,21 +100,13 @@ impl Texture {
         )
     }
 
-    pub fn create_color_texture(
+    pub fn create_color_msaa(
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
         samples: u32,
-    ) -> MultisampledTexture {
-        let target = Self::create_fbo(
-            device,
-            (sc_desc.width, sc_desc.height),
-            TextureFormat::Rgba8UnormSrgb,
-            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED | TextureUsage::COPY_DST,
-            None,
-        );
-
+    ) -> wgpu::TextureView {
         let multisample_desc = &wgpu::TextureDescriptor {
-            format: target.format,
+            format: sc_desc.format,
             size: Extent3d {
                 width: sc_desc.width,
                 height: sc_desc.height,
@@ -132,12 +119,9 @@ impl Texture {
             label: Some("color texture"),
         };
 
-        MultisampledTexture {
-            target,
-            multisampled_buffer: device
-                .create_texture(multisample_desc)
-                .create_view(&TextureViewDescriptor::default()),
-        }
+        device
+            .create_texture(multisample_desc)
+            .create_view(&TextureViewDescriptor::default())
     }
 
     pub fn bindgroup_layout_complex(
