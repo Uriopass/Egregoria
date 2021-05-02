@@ -180,6 +180,7 @@ impl CameraHandler3D {
                 self.targetpos.y = self.targetpos.y.clamp(-10000.0, 10000.0);
             }
         }
+        self.camera.dist = self.camera.dist.clamp(30.0, 100000.0);
 
         if settings.camera_smooth {
             self.camera.pos += (self.targetpos - self.camera.pos) * delta * 8.0;

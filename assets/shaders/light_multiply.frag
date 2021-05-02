@@ -17,8 +17,6 @@ layout(set = 0, binding = 5) uniform sampler s_blue_noise;
 
 layout(set = 1, binding = 0) uniform Uni {RenderParams params;};
 
-const float FBM_MAG = 0.4;
-
 float dither() {
     float color = texture(sampler2D(t_blue_noise, s_blue_noise), gl_FragCoord.xy / 512.0).r;
     return (color - 0.5) / 255.0;
