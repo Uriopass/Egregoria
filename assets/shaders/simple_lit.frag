@@ -85,8 +85,8 @@ void main() {
     float sun_contrib = clamp(dot(normal, params.sun.xyz), 0.0, 1.0);
 
     vec4 c = in_tint * albedo;
-    float ambiant = 0.1;
-    float sun = (0.8 * sun_contrib + 0.5 * specular) * shadow_v;
+    float ambiant = 0.15;
+    float sun = (0.85 * sun_contrib + 0.5 * specular) * shadow_v;
     float lights = quad_lights * (1.0 - sun_contrib) * 0.7;
 
     vec3 final_rgb = (ambiant + lights) * c.rgb + sun * params.sun_col.rgb * c.rgb;
