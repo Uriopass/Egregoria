@@ -439,7 +439,7 @@ impl Default for GoodsCompanyRegistry {
                     },
                     n_workers: 3,
                     size: 10.0,
-                    asset_location: "assets/bakery.png",
+                    asset_location: "assets/bakery.glb",
                 },
                 GoodsCompanyDescription {
                     name: "Cereal Factory",
