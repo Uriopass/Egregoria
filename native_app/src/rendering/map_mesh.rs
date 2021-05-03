@@ -66,7 +66,7 @@ impl MapMeshHandler {
             buildmeshes.insert(
                 descr.bkind,
                 InstancedMeshBuilder::new(unwrap_contlog!(
-                    obj_to_mesh(asset, gfx, gfx.palette()),
+                    obj_to_mesh(asset, gfx),
                     "couldn't load obj: {}",
                     asset
                 )),

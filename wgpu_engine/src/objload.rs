@@ -1,15 +1,11 @@
-use crate::{GfxContext, IndexType, Mesh, MeshBuilder, MeshVertex, Texture};
+use crate::{GfxContext, IndexType, Mesh, MeshBuilder, MeshVertex};
 use geom::{vec2, vec3, Vec2, Vec3};
 use std::path::Path;
-use std::sync::Arc;
 
-pub fn obj_to_mesh(
-    path: impl AsRef<Path> + std::fmt::Debug,
-    gfx: &GfxContext,
-    albedo: Arc<Texture>,
-) -> Option<Mesh> {
+pub fn obj_to_mesh(path: impl AsRef<Path> + std::fmt::Debug, gfx: &GfxContext) -> Option<Mesh> {
     let mut flat_vertices: Vec<MeshVertex> = vec![];
     let mut indices = vec![];
+    let albedo = gfx.palette();
 
     let (models, _) = tobj::load_obj(path, true)
         .map_err(|e| log::error!("{}", e))
