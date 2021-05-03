@@ -1,5 +1,4 @@
-use crate::{vec2, Vec2, Vec3, AABB};
-use mint::ColumnMatrix4;
+use crate::{vec2, Matrix4, Vec2, Vec3, AABB};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
@@ -40,8 +39,8 @@ impl Camera2D {
     }
 
     #[rustfmt::skip]
-    pub fn projection(&self) -> ColumnMatrix4<f32> {
-        ColumnMatrix4::from([self.scale.x, 0.0, 0.0, 0.0,
+    pub fn projection(&self) -> Matrix4{
+        Matrix4::from([self.scale.x, 0.0, 0.0, 0.0,
             0.0, self.scale.y, 0.0, 0.0,
             0.0, 0.0, 0.1, 0.0,
             self.offset.x, self.offset.y, 0.0, 1.0])
@@ -49,8 +48,8 @@ impl Camera2D {
 
 
     #[rustfmt::skip]
-    pub fn inv_projection(&self) -> ColumnMatrix4<f32> {
-        ColumnMatrix4::from([1.0 / self.scale.x, 0.0, 0.0, 0.0,
+    pub fn inv_projection(&self) -> Matrix4{
+        Matrix4::from([1.0 / self.scale.x, 0.0, 0.0, 0.0,
             0.0, 1.0 / self.scale.y, 0.0, 0.0,
             0.0, 0.0, 0.1, 0.0,
             -self.offset.x / self.scale.x, -self.offset.y / self.scale.y, 0.0, 1.0])
