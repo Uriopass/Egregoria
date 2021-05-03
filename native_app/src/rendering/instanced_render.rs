@@ -39,7 +39,7 @@ impl InstancedRender {
             let ar: &AssetRender = ar;
 
             let instance = MeshInstance {
-                pos: trans.position().z(0.5),
+                pos: trans.position().z(0.3),
                 dir: trans.direction().z(0.0),
                 tint: ar.tint.into(),
             };
