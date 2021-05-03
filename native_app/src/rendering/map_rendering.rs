@@ -24,7 +24,7 @@ impl RoadRenderer {
             last_cam: AABB::zero(),
             trees: None,
             trees_builder: InstancedMeshBuilder::new(
-                obj_to_mesh("assets/pine.obj", gfx, gfx.palette()).expect("could not load pine"),
+                obj_to_mesh("assets/pine.obj", gfx).expect("could not load pine"),
             ),
             trees_dirt_id: 0,
         }

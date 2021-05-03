@@ -222,7 +222,7 @@ impl ImmediateDraw {
                     ));
                 }
                 OrderKind::PaletteMesh { ref path, pos, dir } => {
-                    let m = unwrap_cont!(obj_to_mesh(path, &ctx.gfx, ctx.gfx.palette()));
+                    let m = unwrap_cont!(obj_to_mesh(path, &ctx.gfx));
                     let mut i = InstancedMeshBuilder::new(m);
 
                     i.instances.push(MeshInstance {
