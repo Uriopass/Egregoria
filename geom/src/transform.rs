@@ -1,4 +1,4 @@
-use crate::{vec2, Vec2};
+use crate::{vec2, Matrix4, Vec2};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -65,8 +65,8 @@ impl Transform {
         vec2(-self.sin(), self.cos())
     }
 
-    pub fn to_matrix4(&self, z: f32) -> mint::ColumnMatrix4<f32> {
-        mint::ColumnMatrix4 {
+    pub fn to_matrix4(&self, z: f32) -> Matrix4 {
+        Matrix4 {
             x: [self.cossin.x, self.cossin.y, 0.0, 0.0].into(),
             y: [-self.cossin.y, self.cossin.x, 0.0, 0.0].into(),
             z: [0.0, 0.0, 0.0, 0.0].into(),

@@ -1,4 +1,4 @@
-use crate::{vec2, Vec2};
+use crate::{vec2, vec4, Vec2, Vec4};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
@@ -245,46 +245,6 @@ impl From<(f32, f32, f32)> for Vec3 {
     }
 }
 
-impl From<Vec3> for mint::Point3<f32> {
-    fn from(v: Vec3) -> Self {
-        mint::Point3 {
-            x: v.x,
-            y: v.y,
-            z: v.z,
-        }
-    }
-}
-
-impl From<mint::Point3<f32>> for Vec3 {
-    fn from(v: mint::Point3<f32>) -> Self {
-        Self {
-            x: v.x,
-            y: v.y,
-            z: v.z,
-        }
-    }
-}
-
-impl From<Vec3> for mint::Vector3<f32> {
-    fn from(v: Vec3) -> Self {
-        mint::Vector3 {
-            x: v.x,
-            y: v.y,
-            z: v.z,
-        }
-    }
-}
-
-impl From<mint::Vector3<f32>> for Vec3 {
-    fn from(v: mint::Vector3<f32>) -> Self {
-        Self {
-            x: v.x,
-            y: v.y,
-            z: v.z,
-        }
-    }
-}
-
 impl Vec3 {
     #[inline]
     pub const fn new(x: f32, y: f32, z: f32) -> Self {
@@ -356,6 +316,11 @@ impl Vec3 {
             y: self.z * other.x - self.x * other.z,
             z: self.x * other.y - self.y * other.x,
         }
+    }
+
+    #[inline]
+    pub const fn w(self, w: f32) -> Vec4 {
+        vec4(self.x, self.y, self.z, w)
     }
 
     #[inline]

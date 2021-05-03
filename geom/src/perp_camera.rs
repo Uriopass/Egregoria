@@ -1,4 +1,20 @@
-#![allow(dead_code)]
+// Copyright 2013-2014 The CGMath Developers.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Modified for the Egregoria project by the Egregoria developers.
+
+use crate::matrix4::Matrix4;
 use crate::{Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 
@@ -51,7 +67,7 @@ impl Camera {
         self.pos.z(0.0) + self.offset()
     }
 
-    pub fn build_view_projection_matrix(&self) -> Mat4 {
+    pub fn build_view_projection_matrix(&self) -> Matrix4 {
         let eye = self.eye();
         let znear = Self::znear(eye.z);
         let zfar = znear * 1000.0;
@@ -64,10 +80,10 @@ impl Camera {
         )
         .mk_proj();
 
-        mul(opengl_to_wgpu_matrix(), mul(proj, view))
+        opengl_to_wgpu_matrix() * (proj * view)
     }
 
-    pub fn build_sun_shadowmap_matrix(&self, mut dir: Vec3) -> Mat4 {
+    pub fn build_sun_shadowmap_matrix(&self, mut dir: Vec3) -> Matrix4 {
         if dir.x == 0.0 && dir.y == 0.0 {
             dir.x = 0.01;
             dir.y = 0.01;
@@ -79,7 +95,7 @@ impl Camera {
         let suneye = base + dir;
 
         let view = look_at_rh(suneye, base, self.up);
-        let proj: Mat4 = Ortho {
+        let proj: Matrix4 = Ortho {
             left: -d,
             right: d,
             bottom: -d,
@@ -89,39 +105,10 @@ impl Camera {
         }
         .into();
 
-        mul(opengl_to_wgpu_matrix(), mul(proj, view))
+        opengl_to_wgpu_matrix() * (proj * view)
     }
 }
 
-#[rustfmt::skip]
-pub fn opengl_to_wgpu_matrix() -> Mat4 {
-    Mat4::from([
-        1.0, 0.0, 0.0, 0.0,
-        0.0, 1.0, 0.0, 0.0,
-        0.0, 0.0, 0.5, 0.0,
-        0.0, 0.0, 0.5, 1.0,
-    ])
-}
-
-pub fn look_at_rh(eye: Vec3, center: Vec3, up: Vec3) -> Mat4 {
-    look_to_rh(eye, center - eye, up)
-}
-
-/// Create a homogeneous transformation matrix that will cause a vector to point at
-/// `dir`, using `up` for orientation.
-#[rustfmt::skip]
-pub fn look_to_rh(eye: Vec3, dir: Vec3, up: Vec3) -> Mat4 {
-    let f = dir.normalize();
-    let s = f.cross(up).normalize();
-    let u = s.cross(f);
-
-    Mat4::from([
-        s.x,             u.x,              -f.x,           0.0,
-        s.y,             u.y,              -f.y,           0.0,
-        s.z,             u.z,              -f.z,           0.0,
-        -eye.dot(s), -eye.dot(u), eye.dot(f), 1.0,
-    ])
-}
 #[derive(Debug, Copy, Clone)]
 pub struct PerspectiveFov {
     pub fovy_angle: f32, // Angle
@@ -129,9 +116,6 @@ pub struct PerspectiveFov {
     pub near: f32,
     pub far: f32,
 }
-
-type Mat4 = mint::ColumnMatrix4<f32>;
-type Vec4 = mint::Vector4<f32>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Ortho {
@@ -144,7 +128,37 @@ pub struct Ortho {
 }
 
 #[rustfmt::skip]
-impl From<Ortho> for Mat4 {
+pub fn opengl_to_wgpu_matrix() -> Matrix4 {
+    Matrix4::from([
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 0.5, 0.0,
+        0.0, 0.0, 0.5, 1.0,
+    ])
+}
+
+pub fn look_at_rh(eye: Vec3, center: Vec3, up: Vec3) -> Matrix4 {
+    look_to_rh(eye, center - eye, up)
+}
+
+/// Create a homogeneous transformation matrix that will cause a vector to point at
+/// `dir`, using `up` for orientation.
+#[rustfmt::skip]
+pub fn look_to_rh(eye: Vec3, dir: Vec3, up: Vec3) -> Matrix4 {
+    let f = dir.normalize();
+    let s = f.cross(up).normalize();
+    let u = s.cross(f);
+
+    Matrix4::from([
+        s.x,             u.x,              -f.x,           0.0,
+        s.y,             u.y,              -f.y,           0.0,
+        s.z,             u.z,              -f.z,           0.0,
+        -eye.dot(s), -eye.dot(u), eye.dot(f), 1.0,
+    ])
+}
+
+#[rustfmt::skip]
+impl From<Ortho> for Matrix4 {
     fn from(ortho: Ortho) -> Self {
         let c0r0 = 2.0 / (ortho.right - ortho.left);
         let c0r1 = 0.0;
@@ -166,7 +180,7 @@ impl From<Ortho> for Mat4 {
         let c3r2 = -(ortho.far + ortho.near) / (ortho.far - ortho.near);
         let c3r3 = 1.0;
 
-        Mat4::from([
+        Matrix4::from([
             c0r0, c0r1, c0r2, c0r3,
             c1r0, c1r1, c1r2, c1r3,
             c2r0, c2r1, c2r2, c2r3,
@@ -188,7 +202,7 @@ impl PerspectiveFov {
 }
 
 impl PerspectiveFov {
-    pub fn mk_proj(&self) -> Mat4 {
+    pub fn mk_proj(&self) -> Matrix4 {
         assert!(
             self.fovy_angle > 0.0,
             "The vertical field of view cannot be below zero, found: {:?}",
@@ -243,132 +257,9 @@ impl PerspectiveFov {
         let c3r2 = (2.0 * self.far * self.near) / (self.near - self.far);
         let c3r3 = 0.0;
 
-        mint::ColumnMatrix4::from([
+        Matrix4::from([
             c0r0, c0r1, c0r2, c0r3, c1r0, c1r1, c1r2, c1r3, c2r0, c2r1, c2r2, c2r3, c3r0, c3r1,
             c3r2, c3r3,
         ])
     }
-}
-
-fn dot(a: &Vec4, b: &Vec4) -> f32 {
-    (a.x * b.x + a.y * b.y) + (a.z * b.z + a.w * b.w)
-}
-
-pub fn invert(sel: &Mat4) -> Option<Mat4> {
-    let tmp0 = unsafe { det_sub_proc_unsafe(sel, 1, 2, 3) };
-    let det = dot(&tmp0, &Vec4::from([sel.x.x, sel.y.x, sel.z.x, sel.w.x]));
-    if det.abs() < f32::EPSILON {
-        None
-    } else {
-        let inv_det = 1.0 / det;
-        let x = mul_scalar(tmp0, inv_det);
-        let y = unsafe { mul_scalar(det_sub_proc_unsafe(sel, 0, 3, 2), inv_det) };
-        let z = unsafe { mul_scalar(det_sub_proc_unsafe(sel, 0, 1, 3), inv_det) };
-        let w = unsafe { mul_scalar(det_sub_proc_unsafe(sel, 0, 2, 1), inv_det) };
-        Some(Mat4 { x, y, z, w })
-    }
-}
-
-#[rustfmt::skip]
-fn mul(lhs: Mat4, rhs: Mat4) -> Mat4 {
-    let a = lhs.x;
-    let b = lhs.y;
-    let c = lhs.z;
-    let d = lhs.w;
-
-    Mat4::from([
-        <Vec4 as Into<[f32; 4]>>::into(add(add(mul_scalar(a, rhs.x.x), mul_scalar(b, rhs.x.y)), add(mul_scalar(c, rhs.x.z), mul_scalar(d, rhs.x.w)))),
-        <Vec4 as Into<[f32; 4]>>::into(add(add(mul_scalar(a, rhs.y.x), mul_scalar(b, rhs.y.y)), add(mul_scalar(c, rhs.y.z), mul_scalar(d, rhs.y.w)))),
-        <Vec4 as Into<[f32; 4]>>::into(add(add(mul_scalar(a, rhs.z.x), mul_scalar(b, rhs.z.y)), add(mul_scalar(c, rhs.z.z), mul_scalar(d, rhs.z.w)))),
-        <Vec4 as Into<[f32; 4]>>::into(add(add(mul_scalar(a, rhs.w.x), mul_scalar(b, rhs.w.y)), add(mul_scalar(c, rhs.w.z), mul_scalar(d, rhs.w.w)))),
-    ])
-}
-
-#[rustfmt::skip]
-pub fn mulmatvec(lhs: Mat4, rhs: Vec4) -> Vec4 {
-    let a = lhs.x;
-    let b = lhs.y;
-    let c = lhs.z;
-    let d = lhs.w;
-
-    add(add(mul_scalar(a, rhs.x), mul_scalar(b, rhs.y)), add(mul_scalar(c, rhs.z), mul_scalar(d, rhs.w)))
-}
-
-unsafe fn det_sub_proc_unsafe(m: &Mat4, x: usize, y: usize, z: usize) -> mint::Vector4<f32> {
-    let s: &[f32; 16] = m.as_ref();
-    let a = Vec4::from([
-        *s.get_unchecked(4 + x),
-        *s.get_unchecked(12 + x),
-        *s.get_unchecked(x),
-        *s.get_unchecked(8 + x),
-    ]);
-    let b = Vec4::from([
-        *s.get_unchecked(8 + y),
-        *s.get_unchecked(8 + y),
-        *s.get_unchecked(4 + y),
-        *s.get_unchecked(4 + y),
-    ]);
-    let c = Vec4::from([
-        *s.get_unchecked(12 + z),
-        *s.get_unchecked(z),
-        *s.get_unchecked(12 + z),
-        *s.get_unchecked(z),
-    ]);
-
-    let d = Vec4::from([
-        *s.get_unchecked(8 + x),
-        *s.get_unchecked(8 + x),
-        *s.get_unchecked(4 + x),
-        *s.get_unchecked(4 + x),
-    ]);
-    let e = Vec4::from([
-        *s.get_unchecked(12 + y),
-        *s.get_unchecked(y),
-        *s.get_unchecked(12 + y),
-        *s.get_unchecked(y),
-    ]);
-    let f = Vec4::from([
-        *s.get_unchecked(4 + z),
-        *s.get_unchecked(12 + z),
-        *s.get_unchecked(z),
-        *s.get_unchecked(8 + z),
-    ]);
-
-    let g = Vec4::from([
-        *s.get_unchecked(12 + x),
-        *s.get_unchecked(x),
-        *s.get_unchecked(12 + x),
-        *s.get_unchecked(x),
-    ]);
-    let h = Vec4::from([
-        *s.get_unchecked(4 + y),
-        *s.get_unchecked(12 + y),
-        *s.get_unchecked(y),
-        *s.get_unchecked(8 + y),
-    ]);
-    let i = Vec4::from([
-        *s.get_unchecked(8 + z),
-        *s.get_unchecked(8 + z),
-        *s.get_unchecked(4 + z),
-        *s.get_unchecked(4 + z),
-    ]);
-    let mut tmp = mul_elem(a, mul_elem(b, c));
-    tmp = add(tmp, mul_elem(d, mul_elem(e, f)));
-    tmp = add(tmp, mul_elem(g, mul_elem(h, i)));
-    tmp = add(tmp, mul_scalar(mul_elem(a, mul_elem(e, i)), -1.0));
-    tmp = add(tmp, mul_scalar(mul_elem(d, mul_elem(h, c)), -1.0));
-    tmp = add(tmp, mul_scalar(mul_elem(g, mul_elem(b, f)), -1.0));
-    tmp
-}
-
-fn add(a: Vec4, b: Vec4) -> Vec4 {
-    Vec4::from([a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w])
-}
-
-fn mul_elem(a: Vec4, b: Vec4) -> Vec4 {
-    Vec4::from([a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w])
-}
-
-fn mul_scalar(a: Vec4, b: f32) -> Vec4 {
-    Vec4::from([a.x * b, a.y * b, a.z * b, a.w * b])
 }

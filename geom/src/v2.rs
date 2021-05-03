@@ -519,27 +519,3 @@ impl From<[f32; 2]> for Vec2 {
         Self { x: v[0], y: v[1] }
     }
 }
-
-impl From<Vec2> for mint::Point2<f32> {
-    fn from(v: Vec2) -> Self {
-        mint::Point2 { x: v.x, y: v.y }
-    }
-}
-
-impl From<mint::Point2<f32>> for Vec2 {
-    fn from(v: mint::Point2<f32>) -> Self {
-        Self { x: v.x, y: v.y }
-    }
-}
-
-impl From<Vec2> for mint::Vector2<f32> {
-    fn from(v: Vec2) -> Self {
-        mint::Vector2 { x: v.x, y: v.y }
-    }
-}
-
-impl From<mint::Vector2<f32>> for Vec2 {
-    fn from(v: mint::Vector2<f32>) -> Self {
-        Self { x: v.x, y: v.y }
-    }
-}
