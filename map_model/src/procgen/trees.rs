@@ -100,7 +100,7 @@ impl Trees {
 
         let cluster_prox = common::rand::rand3(startx, forest_pos.x, forest_pos.y);
 
-        for j in 0..100 {
+        for j in 0..200 {
             if active.is_empty() {
                 break;
             }
@@ -117,8 +117,8 @@ impl Trees {
                 continue;
             }
 
-            for k in 0..5 {
-                if k == 9 {
+            for k in 0..3 {
+                if k == 2 {
                     active.swap_remove(idx);
                     break;
                 }
@@ -127,9 +127,9 @@ impl Trees {
 
                 let pos = sample
                     + Vec2::from_angle(theta)
-                        * (4.5 + 45.0 * dist_coeff * dist_coeff * cluster_prox);
+                        * (20.0 + 120.0 * dist_coeff * dist_coeff * cluster_prox);
 
-                if self.grid.query_around(pos, 10.0).next().is_some() {
+                if self.grid.query_around(pos, 15.0).next().is_some() {
                     continue;
                 }
 
