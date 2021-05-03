@@ -2,8 +2,7 @@ use crate::context::Context;
 use crate::gui::windows::settings::Settings;
 use crate::input::{KeyCode, MouseButton};
 use common::saveload::Encoder;
-use geom::{invert, mulmatvec, Camera, Plane, Ray3, Vec2, Vec3, AABB};
-use mint::ColumnMatrix4;
+use geom::{vec4, Camera, Matrix4, Plane, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
 
 pub struct CameraHandler3D {
@@ -16,7 +15,7 @@ pub struct CameraHandler3D {
 impl CameraHandler3D {
     pub fn update(&mut self, ctx: &mut Context) {
         let proj = self.camera.build_view_projection_matrix();
-        let inv_proj = invert(&proj).unwrap_or_else(|| ColumnMatrix4::from([0.0; 16]));
+        let inv_proj = proj.invert().unwrap_or_else(|| Matrix4::from([0.0; 16]));
 
         ctx.gfx.set_proj(proj);
         ctx.gfx.set_inv_proj(inv_proj);
@@ -44,17 +43,15 @@ impl CameraHandler3D {
 
     pub fn unproject(&self, pos: Vec2) -> Vec2 {
         let proj = self.camera.build_view_projection_matrix();
-        let inv = invert(&proj).unwrap();
+        let inv = proj.invert().unwrap();
 
-        let v = mulmatvec(
-            inv,
-            mint::Vector4::from([
+        let v = inv
+            * vec4(
                 2.0 * pos.x / self.camera.viewport_w - 1.0,
                 -(2.0 * pos.y / self.camera.viewport_h - 1.0),
                 1.0,
                 1.0,
-            ]),
-        );
+            );
 
         let v = Vec3 {
             x: v.x / v.w,

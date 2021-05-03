@@ -8,7 +8,7 @@ use map_model::{BuildingKind, LaneKind, LotKind, Map, TurnKind, CROSSWALK_WIDTH}
 use std::ops::Mul;
 use std::rc::Rc;
 use wgpu_engine::earcut::earcut;
-use wgpu_engine::objload::obj_to_mesh;
+use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::wgpu::RenderPass;
 use wgpu_engine::{
     Drawable, GfxContext, InstancedMesh, InstancedMeshBuilder, Mesh, MeshBuilder, MeshInstance,
@@ -60,13 +60,13 @@ impl MapMeshHandler {
 
         for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
             let asset = descr.asset_location;
-            if !asset.ends_with(".obj") {
+            if !asset.ends_with(".glb") {
                 continue;
             }
             buildmeshes.insert(
                 descr.bkind,
                 InstancedMeshBuilder::new(unwrap_contlog!(
-                    obj_to_mesh(asset, gfx),
+                    load_mesh(asset, gfx),
                     "couldn't load obj: {}",
                     asset
                 )),

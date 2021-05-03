@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use common::{AudioKind, Z_DEBUG};
+use common::{AudioKind, FastMap, Z_DEBUG};
 use geom::{LinearColor, Polygon, Vec2, Vec3, OBB};
-use wgpu_engine::objload::obj_to_mesh;
+use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatch, Tesselator};
 
 register_resource_noserialize!(ImmediateSound);
@@ -45,7 +45,7 @@ pub enum OrderKind {
         obb: OBB,
         path: String,
     },
-    PaletteMesh {
+    Mesh {
         path: String,
         pos: Vec3,
         dir: Vec3,
@@ -64,6 +64,7 @@ register_resource_noserialize!(ImmediateDraw);
 pub struct ImmediateDraw {
     pub orders: Vec<ImmediateOrder>,
     pub persistent_orders: Vec<ImmediateOrder>,
+    pub mesh_cache: FastMap<String, InstancedMeshBuilder>,
 }
 
 pub struct ImmediateBuilder<'a> {
@@ -161,8 +162,8 @@ impl ImmediateDraw {
         self.builder(OrderKind::TexturedOBB { obb, path })
     }
 
-    pub fn palette_mesh(&mut self, path: String, pos: Vec3, dir: Vec3) -> ImmediateBuilder {
-        self.builder(OrderKind::PaletteMesh { path, pos, dir })
+    pub fn mesh(&mut self, path: String, pos: Vec3, dir: Vec3) -> ImmediateBuilder {
+        self.builder(OrderKind::Mesh { path, pos, dir })
     }
 
     pub fn clear_persistent(&mut self) {
@@ -221,9 +222,17 @@ impl ImmediateDraw {
                             .unwrap(),
                     ));
                 }
-                OrderKind::PaletteMesh { ref path, pos, dir } => {
-                    let m = unwrap_cont!(obj_to_mesh(path, &ctx.gfx));
-                    let mut i = InstancedMeshBuilder::new(m);
+                OrderKind::Mesh { ref path, pos, dir } => {
+                    let m = self.mesh_cache.get_mut(path);
+                    let i = if let Some(x) = m {
+                        x
+                    } else {
+                        self.mesh_cache.insert(
+                            path.clone(),
+                            InstancedMeshBuilder::new(unwrap_cont!(load_mesh(path, &ctx.gfx))),
+                        );
+                        self.mesh_cache.get_mut(path).unwrap()
+                    };
 
                     i.instances.push(MeshInstance {
                         pos,
@@ -234,6 +243,12 @@ impl ImmediateDraw {
                     ctx.objs.push(Box::new(i.build(&ctx.gfx).unwrap()))
                 }
             }
+        }
+        for v in self.mesh_cache.values_mut() {
+            if let Some(x) = v.build(&ctx.gfx) {
+                ctx.objs.push(Box::new(x));
+            }
+            v.instances.clear();
         }
     }
 }
