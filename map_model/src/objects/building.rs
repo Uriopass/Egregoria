@@ -46,7 +46,7 @@ impl Building {
         gen: BuildingGen,
     ) -> BuildingID {
         let at = obb.center();
-        let axis = (obb.corners[1] - obb.corners[0]).normalize();
+        let axis = (obb.corners[3] - obb.corners[0]).normalize();
         let size = obb.corners[0].distance(obb.corners[1]);
 
         let r = common::rand::rand2(obb.center().x, obb.center().y).to_bits();
