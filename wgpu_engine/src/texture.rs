@@ -299,13 +299,17 @@ impl TextureBuilder {
 
     pub(crate) fn from_bytes(bytes: &[u8]) -> Option<Self> {
         let img = image::load_from_memory(bytes).ok()?;
-        Some(Self {
+        Some(Self::from_img(img))
+    }
+
+    pub(crate) fn from_img(img: image::DynamicImage) -> Self {
+        Self {
             img,
             sampler: Texture::linear_sampler(),
             label: "texture without label",
             srgb: true,
             mipmaps: true,
-        })
+        }
     }
 
     pub fn build(self, device: &wgpu::Device, queue: &wgpu::Queue) -> Texture {

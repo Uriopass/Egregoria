@@ -5,7 +5,7 @@ use egregoria::rendering::assets::{AssetID, AssetRender};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec2};
 use legion::query::*;
-use wgpu_engine::objload::obj_to_mesh;
+use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder,
 };
@@ -23,10 +23,10 @@ impl InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 gfx.texture("assets/path_not_found.png", "path_not_found"),
             ),
-            cars: InstancedMeshBuilder::new(obj_to_mesh("assets/simple_car.obj", gfx).unwrap()),
-            trucks: InstancedMeshBuilder::new(obj_to_mesh("assets/truck.obj", gfx).unwrap()),
+            cars: InstancedMeshBuilder::new(load_mesh("assets/simple_car.glb", gfx).unwrap()),
+            trucks: InstancedMeshBuilder::new(load_mesh("assets/truck.glb", gfx).unwrap()),
             pedestrians: InstancedMeshBuilder::new(
-                obj_to_mesh("assets/pedestrian.obj", gfx).unwrap(),
+                load_mesh("assets/pedestrian.glb", gfx).unwrap(),
             ),
         }
     }

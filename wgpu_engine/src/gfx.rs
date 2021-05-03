@@ -4,8 +4,7 @@ use crate::{
     InstancedMesh, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
 };
 use common::FastMap;
-use geom::{vec2, LinearColor, Vec2, Vec3};
-use mint::ColumnMatrix4;
+use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
 use std::path::PathBuf;
@@ -36,7 +35,7 @@ pub struct GfxContext {
     pub(crate) sc_desc: SwapChainDescriptor,
     pub update_sc: bool,
     pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
-    pub(crate) projection: Uniform<mint::ColumnMatrix4<f32>>,
+    pub(crate) projection: Uniform<Matrix4>,
     pub render_params: Uniform<RenderParams>,
     pub(crate) textures: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) samples: u32,
@@ -51,8 +50,8 @@ pub struct GfxContext {
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct RenderParams {
-    pub inv_proj: ColumnMatrix4<f32>,
-    pub sun_shadow_proj: ColumnMatrix4<f32>,
+    pub inv_proj: Matrix4,
+    pub sun_shadow_proj: Matrix4,
     pub cam_pos: Vec3,
     pub _pad: f32,
     pub sun: Vec3,
@@ -72,8 +71,8 @@ pub struct RenderParams {
 impl Default for RenderParams {
     fn default() -> Self {
         Self {
-            inv_proj: ColumnMatrix4::from([0.0; 16]),
-            sun_shadow_proj: ColumnMatrix4::from([0.0; 16]),
+            inv_proj: Matrix4::from([0.0; 16]),
+            sun_shadow_proj: Matrix4::from([0.0; 16]),
             sun_col: Default::default(),
             cam_pos: Default::default(),
             _pad: 0.0,
@@ -146,7 +145,7 @@ impl GfxContext {
         let samples = 4;
         let fbos = Self::create_textures(&device, &surface, &sc_desc, samples);
 
-        let projection = Uniform::new(mint::ColumnMatrix4::from([0.0; 16]), &device);
+        let projection = Uniform::new(Matrix4::from([0.0; 16]), &device);
 
         let screen_uv_vertices = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
@@ -167,21 +166,12 @@ impl GfxContext {
             .with_sampler(Texture::nearest_sampler())
             .build(&device, &queue);
 
-        let simplelit_bg = Texture::multi_bindgroup(
-            &[&fbos.ssao, &blue_noise],
-            &device,
-            &Texture::bindgroup_layout_complex(
-                &device,
-                TextureSampleType::Float { filterable: true },
-                2,
-            ),
-        );
-
         let mut textures = FastMap::default();
         textures.insert(
             PathBuf::from("assets/blue_noise_512.png"),
             Arc::new(blue_noise),
         );
+        let bogus_bindgroup = Uniform::new([0.0f32; 4], &device).bindgroup;
 
         let mut me = Self {
             size: (win_width, win_height),
@@ -198,10 +188,12 @@ impl GfxContext {
             samples,
             screen_uv_vertices,
             rect_indices,
-            simplelit_bg,
+            simplelit_bg: bogus_bindgroup,
             sun_shadowmap: Self::mk_shadowmap(&device, 2048),
             device,
         };
+
+        me.update_simplelit_bg();
 
         Mesh::setup(&mut me);
         InstancedMesh::setup(&mut me);
@@ -278,11 +270,11 @@ impl GfxContext {
         self.render_params.value_mut().time = time;
     }
 
-    pub fn set_proj(&mut self, proj: mint::ColumnMatrix4<f32>) {
+    pub fn set_proj(&mut self, proj: Matrix4) {
         *self.projection.value_mut() = proj;
     }
 
-    pub fn set_inv_proj(&mut self, proj: mint::ColumnMatrix4<f32>) {
+    pub fn set_inv_proj(&mut self, proj: Matrix4) {
         self.render_params.value_mut().inv_proj = proj;
     }
 

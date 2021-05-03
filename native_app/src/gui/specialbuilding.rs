@@ -66,8 +66,8 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
 
         if p.ends_with(".png") {
             draw.textured_obb(obb, p).color(col).z(Z_TOOL);
-        } else if p.ends_with(".obj") {
-            draw.palette_mesh(
+        } else if p.ends_with(".glb") {
+            draw.mesh(
                 p,
                 obb.center().z(Z_BSPRITE + 0.1),
                 obb.axis()[0].normalize().z(0.0),

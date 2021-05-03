@@ -456,7 +456,7 @@ impl Default for GoodsCompanyRegistry {
                     },
                     n_workers: 10,
                     size: 80.0,
-                    asset_location: "assets/flour_factory.obj",
+                    asset_location: "assets/flour_factory.glb",
                 },
                 GoodsCompanyDescription {
                     name: "Cereal Farm",

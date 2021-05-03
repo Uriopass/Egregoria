@@ -10,7 +10,7 @@ mod draweables;
 mod geometry;
 mod gfx;
 pub mod lighting;
-pub mod objload;
+pub mod meshload;
 pub mod pbuffer;
 mod shader;
 mod texture;
