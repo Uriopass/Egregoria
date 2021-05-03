@@ -27,7 +27,6 @@ gen_z! {
     Z_HIGHLIGHT_INTER
     Z_GUITURN
     Z_SIGNAL
-    Z_CAR
     Z_PATH_NOT_FOUND
     Z_DEBUG_BG
     Z_DEBUG
