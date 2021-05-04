@@ -10,6 +10,9 @@ pub struct CameraHandler3D {
     pub lastscreenpos: Vec2,
     pub last_pos: Vec2,
     pub targetpos: Vec2,
+    pub targetyaw: f32,
+    pub targetpitch: f32,
+    pub targetdist: f32,
 }
 
 impl CameraHandler3D {
@@ -92,6 +95,9 @@ impl CameraHandler3D {
             lastscreenpos: Default::default(),
             last_pos: Default::default(),
             targetpos: camera.pos,
+            targetyaw: camera.yaw,
+            targetpitch: camera.pitch,
+            targetdist: camera.dist,
         }
     }
 
@@ -127,11 +133,11 @@ impl CameraHandler3D {
 
             let just_pressed = &ctx.input.keyboard.just_pressed;
             if just_pressed.contains(&KeyCode::Add) || just_pressed.contains(&KeyCode::Equals) {
-                self.camera.dist *= 1.0 / 1.1;
+                self.targetdist *= 1.0 / 1.1;
             }
 
             if just_pressed.contains(&KeyCode::Subtract) || just_pressed.contains(&KeyCode::Minus) {
-                self.camera.dist *= 1.1;
+                self.targetdist *= 1.1;
             }
         }
 
@@ -157,10 +163,10 @@ impl CameraHandler3D {
 
         if mouse_enabled {
             if ctx.input.mouse.wheel_delta < 0.0 {
-                self.camera.dist *= 1.1;
+                self.targetdist *= 1.1;
             }
             if ctx.input.mouse.wheel_delta > 0.0 {
-                self.camera.dist *= 1.0 / 1.1;
+                self.targetdist *= 1.0 / 1.1;
             }
             let pressed = &ctx.input.mouse.pressed;
 
@@ -168,21 +174,37 @@ impl CameraHandler3D {
                 && ctx.input.keyboard.pressed.contains(&KeyCode::LShift))
                 || pressed.contains(&MouseButton::Middle)
             {
-                self.camera.yaw -= delta_mouse.x / 100.0;
-                self.camera.pitch += delta_mouse.y / 100.0;
-                self.camera.pitch = self.camera.pitch.min(1.57).max(0.1);
+                self.targetyaw -= delta_mouse.x / 100.0;
+                self.targetpitch += delta_mouse.y / 100.0;
+                self.targetpitch = self.targetpitch.min(1.57).max(0.1);
             } else if pressed.contains(&MouseButton::Right) {
                 self.targetpos += (self.last_pos - unprojected).cap_magnitude(50000.0 * delta);
                 self.targetpos.x = self.targetpos.x.clamp(-10000.0, 10000.0);
                 self.targetpos.y = self.targetpos.y.clamp(-10000.0, 10000.0);
             }
         }
-        self.camera.dist = self.camera.dist.clamp(30.0, 100000.0);
+        self.targetdist = self.targetdist.clamp(30.0, 100000.0);
 
         if settings.camera_smooth {
-            self.camera.pos += (self.targetpos - self.camera.pos) * delta * 8.0;
+            self.camera.pos +=
+                (self.targetpos - self.camera.pos) * delta * settings.camera_smooth_tightness * 8.0;
+            self.camera.yaw += (self.targetyaw - self.camera.yaw)
+                * delta
+                * settings.camera_smooth_tightness
+                * 16.0;
+            self.camera.pitch += (self.targetpitch - self.camera.pitch)
+                * delta
+                * settings.camera_smooth_tightness
+                * 8.0;
+            self.camera.dist += (self.targetdist - self.camera.dist)
+                * delta
+                * settings.camera_smooth_tightness
+                * 8.0;
         } else {
             self.camera.pos = self.targetpos;
+            self.camera.yaw = self.targetyaw;
+            self.camera.pitch = self.targetpitch;
+            self.camera.dist = self.targetdist;
         }
 
         self.update(ctx);

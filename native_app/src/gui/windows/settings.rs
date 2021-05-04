@@ -33,6 +33,7 @@ impl AsRef<str> for ShadowQuality {
 pub struct Settings {
     pub camera_border_move: bool,
     pub camera_smooth: bool,
+    pub camera_smooth_tightness: f32,
 
     pub fullscreen: bool,
     pub vsync: VSyncOptions,
@@ -61,6 +62,7 @@ impl Default for Settings {
             auto_save_every: AutoSaveEvery::Never,
             ssao: true,
             shadows: ShadowQuality::High,
+            camera_smooth_tightness: 1.0,
         }
     }
 }
@@ -155,6 +157,13 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
                 &mut settings.camera_border_move,
             );
             ui.checkbox(im_str!("Camera smooth"), &mut settings.camera_smooth);
+
+            if settings.camera_smooth {
+                imgui::Drag::new(im_str!("Camera smoothing tightness"))
+                    .display_format(im_str!("%.2f"))
+                    .speed(0.01)
+                    .build(ui, &mut settings.camera_smooth_tightness);
+            }
 
             ui.new_line();
             ui.text("Graphics");
