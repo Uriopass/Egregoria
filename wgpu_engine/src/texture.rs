@@ -324,6 +324,11 @@ impl TextureBuilder {
             depth: 1,
         };
 
+        let img = match img {
+            DynamicImage::ImageRgb8(_) => DynamicImage::ImageRgba8(img.to_rgba8()),
+            _ => img,
+        };
+
         let (format, data, pixwidth): (TextureFormat, &[u8], u32) = match img {
             DynamicImage::ImageRgba8(ref img) => (
                 if self.srgb {
@@ -338,7 +343,12 @@ impl TextureBuilder {
             _ => unimplemented!("unsupported format {:?}", img.color()),
         };
 
-        let mip_level_count = if self.mipmaps { 5 } else { 1 };
+        let mip_level_count = if self.mipmaps {
+            let m = dimensions.0.min(dimensions.1);
+            (m.next_power_of_two().trailing_zeros()).max(1).min(5)
+        } else {
+            1
+        };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some(label),
