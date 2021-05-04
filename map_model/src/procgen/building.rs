@@ -126,8 +126,8 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
             }
         }
 
-        let lowest_segment = unwrap_or!(
-            p.segments().min_by_key(|s| OrderedFloat(s.src.y + s.dst.y)),
+        let leftmost_segment = unwrap_or!(
+            p.segments().min_by_key(|s| OrderedFloat(s.src.x + s.dst.x)),
             continue 'retry
         );
 
@@ -174,7 +174,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
             roofs.faces.push((face, common::config().house_col.into()));
         }
 
-        return (roofs, lowest_segment.middle());
+        return (roofs, leftmost_segment.middle());
     }
 }
 
