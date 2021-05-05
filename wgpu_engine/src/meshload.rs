@@ -159,7 +159,6 @@ pub fn load_mesh(path: impl AsRef<Path>, gfx: &GfxContext) -> Option<Mesh> {
         mipmap_filter: mipmap,
         ..Default::default()
     };
-    log::info!("start");
 
     let albedo = Arc::new(
         TextureBuilder::from_img(albedo_img)
@@ -167,7 +166,6 @@ pub fn load_mesh(path: impl AsRef<Path>, gfx: &GfxContext) -> Option<Mesh> {
             .with_sampler(sampler)
             .build(&gfx.device, &gfx.queue),
     );
-    log::info!("end");
 
     let mut meshb = MeshBuilder::new();
     meshb.vertices = flat_vertices;
