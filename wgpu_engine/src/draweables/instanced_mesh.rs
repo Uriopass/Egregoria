@@ -74,7 +74,7 @@ impl InstancedMesh {
         let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
 
         let vb = &[MeshVertex::desc(), MeshInstance::desc()];
-        let pipe = gfx.basic_pipeline(
+        let pipe = gfx.color_pipeline(
             &[
                 &gfx.projection.layout,
                 &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),

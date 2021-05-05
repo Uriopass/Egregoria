@@ -75,14 +75,14 @@ void main() {
     vec3 normal = normalize(in_normal);
     vec3 cam = params.cam_pos.xyz;
 
-    vec3 L = params.sun.xyz;
+    vec3 L = params.sun;
     vec3 R = normalize(2 * normal * dot(normal,L) - L);
     vec3 V = normalize(cam - in_wpos);
 
     float specular = clamp(dot(R, V), 0.0, 1.0);
     specular = pow(specular, 5);
 
-    float sun_contrib = clamp(dot(normal, params.sun.xyz), 0.0, 1.0);
+    float sun_contrib = clamp(dot(normal, params.sun), 0.0, 1.0);
 
     vec4 c = in_tint * albedo;
     float ambiant = 0.15;

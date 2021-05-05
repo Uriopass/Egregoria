@@ -13,7 +13,7 @@ uniform Proj {
 };
 
 void main() {
-    gl_Position = view_proj * vec4(in_pos.xy * in_instance_scale + in_instance_pos, 1.0, 1.0);
+    gl_Position = view_proj * vec4(in_pos.xy * in_instance_scale + in_instance_pos, 0.0, 1.0);
 
     out_uv = in_uv;
 }

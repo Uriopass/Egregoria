@@ -89,7 +89,7 @@ impl Mesh {
         let vert = compile_shader(&gfx.device, "assets/shaders/lit_mesh.vert", None);
         let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
 
-        let pipe = gfx.basic_pipeline(
+        let pipe = gfx.color_pipeline(
             &[
                 &gfx.projection.layout,
                 &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),

@@ -43,6 +43,7 @@ pub struct GfxContext {
     pub(crate) rect_indices: wgpu::Buffer,
     pub sun_shadowmap: Texture,
     pub simplelit_bg: wgpu::BindGroup,
+    pub bnoise_bg: wgpu::BindGroup,
     #[allow(dead_code)] // keep adapter alive
     pub(crate) adapter: Adapter,
 }
@@ -166,6 +167,8 @@ impl GfxContext {
             .with_sampler(Texture::nearest_sampler())
             .build(&device, &queue);
 
+        let bnoise_bg = blue_noise.bindgroup(&device, &Texture::bindgroup_layout(&device));
+
         let mut textures = FastMap::default();
         textures.insert(
             PathBuf::from("assets/blue_noise_512.png"),
@@ -189,6 +192,7 @@ impl GfxContext {
             screen_uv_vertices,
             rect_indices,
             simplelit_bg: bogus_bindgroup,
+            bnoise_bg,
             sun_shadowmap: Self::mk_shadowmap(&device, 2048),
             device,
         };
@@ -201,6 +205,7 @@ impl GfxContext {
         crate::lighting::setup(&mut me);
         BlitLinear::setup(&mut me);
         SSAOPipeline::setup(&mut me);
+        BackgroundPipeline::setup(&mut me);
 
         let p = TextureBuilder::from_path("assets/palette.png")
             .with_label("palette")
@@ -392,11 +397,37 @@ impl GfxContext {
                     resolve_target: Some(&frame.output.view),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.32,
-                            g: 0.63,
-                            b: 0.9,
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
                             a: 0.0,
                         }),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
+                    attachment: &self.fbos.depth.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: true,
+                    }),
+                    stencil_ops: None,
+                }),
+            });
+
+            for obj in &mut objs {
+                obj.draw(&self, &mut render_pass);
+            }
+        }
+
+        {
+            let mut bg_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &self.fbos.color_msaa,
+                    resolve_target: Some(&frame.output.view),
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
                         store: true,
                     },
                 }],
@@ -410,9 +441,12 @@ impl GfxContext {
                 }),
             });
 
-            for obj in &mut objs {
-                obj.draw(&self, &mut render_pass);
-            }
+            bg_pass.set_pipeline(self.get_pipeline::<BackgroundPipeline>());
+            bg_pass.set_bind_group(0, &self.render_params.bindgroup, &[]);
+            bg_pass.set_bind_group(1, &self.bnoise_bg, &[]);
+            bg_pass.set_vertex_buffer(0, self.screen_uv_vertices.slice(..));
+            bg_pass.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
+            bg_pass.draw_indexed(0..6, 0, 0..1);
         }
     }
 
@@ -519,7 +553,7 @@ impl GfxContext {
         );
     }
 
-    pub fn basic_pipeline(
+    pub fn color_pipeline(
         &self,
         layouts: &[&BindGroupLayout],
         vertex_buffers: &[VertexBufferLayout],
@@ -532,7 +566,7 @@ impl GfxContext {
         let render_pipeline_layout =
             self.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("basic pipeline"),
+                    label: Some("color pipeline"),
                     bind_group_layouts: layouts,
                     push_constant_ranges: &[],
                 });
@@ -741,5 +775,25 @@ impl SSAOPipeline {
         gfx.register_pipeline::<SSAOPipeline>(
             gfx.device.create_render_pipeline(&render_pipeline_desc),
         );
+    }
+}
+
+struct BackgroundPipeline;
+
+impl BackgroundPipeline {
+    pub fn setup(gfx: &mut GfxContext) {
+        let bg_vert = compile_shader(&gfx.device, "assets/shaders/background.vert", None);
+        let bg_frag = compile_shader(&gfx.device, "assets/shaders/background.frag", None);
+        let pipe = gfx.color_pipeline(
+            &[
+                &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                &Texture::bindgroup_layout(&gfx.device),
+            ],
+            &[UvVertex::desc()],
+            &bg_vert,
+            &bg_frag,
+        );
+
+        gfx.register_pipeline::<BackgroundPipeline>(pipe);
     }
 }
