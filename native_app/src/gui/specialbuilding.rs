@@ -95,7 +95,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     let obb = OBB::new(
         proj + side * (size + closest_road.width + 0.5) * 0.5,
-        side.perpendicular(),
+        side,
         size,
         size,
     );
