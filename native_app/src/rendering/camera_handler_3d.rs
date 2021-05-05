@@ -176,7 +176,7 @@ impl CameraHandler3D {
             {
                 self.targetyaw -= delta_mouse.x / 100.0;
                 self.targetpitch += delta_mouse.y / 100.0;
-                self.targetpitch = self.targetpitch.min(1.57).max(0.1);
+                self.targetpitch = self.targetpitch.min(1.57).max(0.01);
             } else if pressed.contains(&MouseButton::Right) {
                 self.targetpos += (self.last_pos - unprojected).cap_magnitude(50000.0 * delta);
                 self.targetpos.x = self.targetpos.x.clamp(-10000.0, 10000.0);
