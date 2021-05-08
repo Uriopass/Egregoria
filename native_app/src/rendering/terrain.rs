@@ -136,9 +136,8 @@ impl TerrainRender {
 
         let chunk = TerrainChunk {
             lods: collect_arrlod(v),
-            dirt_id: 0,
+            dirt_id: chunk.dirt_id.0,
         };
-        log::info!("generated chunk {:?}", cell);
         self.chunks.insert(cell, chunk);
     }
 
