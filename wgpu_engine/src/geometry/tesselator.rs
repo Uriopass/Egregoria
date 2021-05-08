@@ -225,7 +225,7 @@ impl Tesselator {
                 uv: [0.0; 2],
             },
         ];
-        self.meshbuilder.extend(&verts, &[0, 1, 2, 0, 2, 3]);
+        self.meshbuilder.extend(&verts, &[2, 1, 0, 3, 2, 0]);
         true
     }
 
