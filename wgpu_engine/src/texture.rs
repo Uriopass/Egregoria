@@ -8,8 +8,8 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use wgpu::{
     BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
-    PipelineLayoutDescriptor, SamplerBorderColor, SamplerDescriptor, TextureCopyView,
-    TextureDataLayout, TextureFormat, TextureSampleType, TextureUsage, TextureViewDescriptor,
+    ImageCopyTexture, ImageDataLayout, PipelineLayoutDescriptor, SamplerBorderColor,
+    SamplerDescriptor, TextureFormat, TextureSampleType, TextureUsage, TextureViewDescriptor,
 };
 
 pub struct Texture {
@@ -42,7 +42,7 @@ impl Texture {
         let extent = wgpu::Extent3d {
             width,
             height,
-            depth: 1,
+            depth_or_array_layers: 1,
         };
         let desc = wgpu::TextureDescriptor {
             format,
@@ -110,7 +110,7 @@ impl Texture {
             size: Extent3d {
                 width: sc_desc.width,
                 height: sc_desc.height,
-                depth: 1,
+                depth_or_array_layers: 1,
             },
             usage: TextureUsage::RENDER_ATTACHMENT,
             mip_level_count: 1,
@@ -321,7 +321,7 @@ impl TextureBuilder {
         let extent = wgpu::Extent3d {
             width: dimensions.0,
             height: dimensions.1,
-            depth: 1,
+            depth_or_array_layers: 1,
         };
 
         let img = match img {
@@ -361,16 +361,16 @@ impl TextureBuilder {
         });
 
         queue.write_texture(
-            TextureCopyView {
+            ImageCopyTexture {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
             data,
-            TextureDataLayout {
+            ImageDataLayout {
                 offset: 0,
-                bytes_per_row: pixwidth * extent.width,
-                rows_per_image: extent.height,
+                bytes_per_row: NonZeroU32::new(pixwidth * extent.width),
+                rows_per_image: None,
             },
             extent,
         );
@@ -426,7 +426,7 @@ fn generate_mipmaps(
         primitive: wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::TriangleStrip,
             front_face: wgpu::FrontFace::Ccw,
-            cull_mode: wgpu::CullMode::None,
+            cull_mode: None,
             ..Default::default()
         },
         depth_stencil: None,
@@ -458,7 +458,7 @@ fn generate_mipmaps(
                 dimension: None,
                 aspect: wgpu::TextureAspect::All,
                 base_mip_level: mip,
-                level_count: NonZeroU32::new(1),
+                mip_level_count: NonZeroU32::new(1),
                 base_array_layer: 0,
                 array_layer_count: None,
             })
@@ -485,8 +485,8 @@ fn generate_mipmaps(
         {
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &views[target_mip],
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &views[target_mip],
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),

@@ -1,7 +1,7 @@
 use crate::ToU8Slice;
 use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{BufferBindingType, ShaderStage};
+use wgpu::{BufferBinding, BufferBindingType, ShaderStage};
 
 pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
@@ -28,11 +28,11 @@ where
             layout: &layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer {
+                resource: wgpu::BindingResource::Buffer(BufferBinding {
                     buffer: &buffer,
                     offset: 0,
                     size: None,
-                },
+                }),
             }],
             label: Some(
                 format!(

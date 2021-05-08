@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use wgpu::{ShaderFlags, ShaderModule, ShaderSource};
+use wgpu::{ShaderFlags, ShaderModule};
 
 #[derive(Copy, Clone)]
 pub enum ShaderType {
@@ -25,11 +25,31 @@ fn cache_filename(p: &Path) -> Option<PathBuf> {
     Some(p.parent()?.parent()?.join("compiled_shaders").join(name))
 }
 
-fn mk_module(s: ShaderSource, device: &wgpu::Device) -> ShaderModule {
-    device.create_shader_module(&wgpu::ShaderModuleDescriptor {
-        label: None,
-        source: s,
-        flags: ShaderFlags::VALIDATION,
+fn mk_module(p: &Path, data: &[u8], device: &wgpu::Device) -> ShaderModule {
+    let dev = device as *const wgpu::Device as usize;
+    let v = std::panic::catch_unwind(|| {
+        let dev = dev as *const wgpu::Device;
+        let s = wgpu::util::make_spirv(data);
+        wgpu::Device::create_shader_module(
+            unsafe { &*dev as &wgpu::Device },
+            &wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: s,
+                flags: ShaderFlags::VALIDATION,
+            },
+        )
+    });
+    v.unwrap_or_else(move |_| {
+        log::error!(
+            "couldn't validate shader {:?} using naga. disabling validation",
+            p
+        );
+        let s = wgpu::util::make_spirv(data);
+        device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: s,
+            flags: ShaderFlags::default(),
+        })
     })
 }
 
@@ -44,9 +64,7 @@ fn find_in_cache(
         Err(_) => return CacheState::Nofile,
     };
 
-    let data = wgpu::util::make_spirv(&*read);
-
-    let shader = CompiledShader(mk_module(data, device), stype);
+    let shader = CompiledShader(mk_module(compiled_path, &*read, device), stype);
 
     let f = match File::open(compiled_path) {
         Ok(x) => x,
@@ -170,8 +188,7 @@ pub fn compile_shader(
 
     let _ = compiled_name.and_then(|x| save_to_cache(&x, &spirv));
 
-    let data = wgpu::util::make_spirv(&*spirv);
-    CompiledShader(mk_module(data, device), stype)
+    CompiledShader(mk_module(p, &*spirv, device), stype)
 }
 
 #[cfg(not(feature = "spirv_naga"))]

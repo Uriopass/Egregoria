@@ -43,12 +43,14 @@ pub fn setup(gfx: &mut GfxContext) {
 
     let color_states = [wgpu::ColorTargetState {
         format: gfx.fbos.light.format,
-        color_blend: wgpu::BlendState {
-            src_factor: BlendFactor::One,
-            dst_factor: BlendFactor::One,
-            operation: wgpu::BlendOperation::Add,
-        },
-        alpha_blend: wgpu::BlendState::REPLACE,
+        blend: Some(wgpu::BlendState {
+            color: wgpu::BlendComponent {
+                src_factor: BlendFactor::One,
+                dst_factor: BlendFactor::One,
+                operation: wgpu::BlendOperation::Add,
+            },
+            alpha: wgpu::BlendComponent::REPLACE,
+        }),
         write_mask: wgpu::ColorWrite::ALL,
     }];
 
@@ -102,7 +104,7 @@ pub struct LightInstance {
 
 u8slice_impl!(LightInstance);
 
-const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![2 => Float2, 3 => Float];
+const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32];
 
 impl VBDesc for LightInstance {
     fn desc<'a>() -> VertexBufferLayout<'a> {
@@ -126,8 +128,8 @@ impl LightRender {
 
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &gfx.fbos.light.view,
+            color_attachments: &[wgpu::RenderPassColorAttachment {
+                view: &gfx.fbos.light.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {

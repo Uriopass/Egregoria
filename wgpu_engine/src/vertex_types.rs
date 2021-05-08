@@ -13,7 +13,7 @@ pub struct MeshVertex {
 u8slice_impl!(MeshVertex);
 
 const ATTRS_MV: &[VertexAttribute] =
-    &wgpu::vertex_attr_array![0 => Float3, 1 => Float3, 2 => Float2, 3 => Float4];
+    &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2, 3 => Float32x4];
 
 impl VBDesc for MeshVertex {
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
@@ -35,7 +35,7 @@ pub struct UvVertex {
 
 u8slice_impl!(UvVertex);
 
-const ATTRS_UV: &[VertexAttribute] = &wgpu::vertex_attr_array![0 => Float3, 1 => Float2];
+const ATTRS_UV: &[VertexAttribute] = &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x2];
 
 impl VBDesc for UvVertex {
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {

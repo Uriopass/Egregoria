@@ -11,10 +11,10 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, BindGroupLayout, BindGroupLayoutDescriptor, CommandEncoder, CommandEncoderDescriptor,
-    CullMode, DepthBiasState, Device, FrontFace, IndexFormat, MultisampleState, PrimitiveState,
-    Queue, RenderPipeline, Surface, SwapChain, SwapChainDescriptor, SwapChainFrame,
-    TextureSampleType, TextureUsage, VertexBufferLayout,
+    Adapter, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState,
+    CommandEncoder, CommandEncoderDescriptor, DepthBiasState, Device, Face, FrontFace, IndexFormat,
+    MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface, SwapChain,
+    SwapChainDescriptor, SwapChainFrame, TextureSampleType, TextureUsage, VertexBufferLayout,
 };
 
 pub struct FBOs {
@@ -330,8 +330,8 @@ impl GfxContext {
             let mut depth_prepass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &self.fbos.depth.view,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.fbos.depth.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: true,
@@ -355,8 +355,8 @@ impl GfxContext {
             let mut sun_shadow_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &self.sun_shadowmap.view,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.sun_shadowmap.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: true,
@@ -381,8 +381,8 @@ impl GfxContext {
 
             let mut ssao_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &self.fbos.ssao.view,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &self.fbos.ssao.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -408,8 +408,8 @@ impl GfxContext {
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &self.fbos.color_msaa,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &self.fbos.color_msaa,
                     resolve_target: Some(&frame.output.view),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -421,8 +421,8 @@ impl GfxContext {
                         store: true,
                     },
                 }],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &self.fbos.depth.view,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.fbos.depth.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: true,
@@ -439,16 +439,16 @@ impl GfxContext {
         {
             let mut bg_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                    attachment: &self.fbos.color_msaa,
+                color_attachments: &[wgpu::RenderPassColorAttachment {
+                    view: &self.fbos.color_msaa,
                     resolve_target: Some(&frame.output.view),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: true,
                     },
                 }],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: &self.fbos.depth.view,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.fbos.depth.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: false,
@@ -475,8 +475,8 @@ impl GfxContext {
     ) {
         let rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &self.fbos.ui.view,
+            color_attachments: &[wgpu::RenderPassColorAttachment {
+                view: &self.fbos.ui.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
@@ -500,8 +500,8 @@ impl GfxContext {
 
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
-            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                attachment: &frame.output.view,
+            color_attachments: &[wgpu::RenderPassColorAttachment {
+                view: &frame.output.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
@@ -590,12 +590,14 @@ impl GfxContext {
 
         let color_states = [wgpu::ColorTargetState {
             format: self.sc_desc.format,
-            color_blend: wgpu::BlendState {
-                src_factor: wgpu::BlendFactor::SrcAlpha,
-                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                operation: wgpu::BlendOperation::Add,
-            },
-            alpha_blend: wgpu::BlendState::REPLACE,
+            blend: Some(wgpu::BlendState {
+                color: BlendComponent {
+                    src_factor: wgpu::BlendFactor::SrcAlpha,
+                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    operation: wgpu::BlendOperation::Add,
+                },
+                alpha: BlendComponent::REPLACE,
+            }),
             write_mask: wgpu::ColorWrite::ALL,
         }];
 
@@ -613,7 +615,7 @@ impl GfxContext {
                 targets: &color_states,
             }),
             primitive: PrimitiveState {
-                cull_mode: CullMode::Back,
+                cull_mode: Some(wgpu::Face::Back),
                 front_face: FrontFace::Ccw,
                 ..Default::default()
             },
@@ -623,7 +625,6 @@ impl GfxContext {
                 depth_compare: wgpu::CompareFunction::LessEqual,
                 stencil: Default::default(),
                 bias: Default::default(),
-                clamp_depth: false,
             }),
             multisample: MultisampleState {
                 count: self.samples,
@@ -660,7 +661,7 @@ impl GfxContext {
             fragment: None,
             primitive: PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
-                cull_mode: CullMode::Back,
+                cull_mode: Some(Face::Back),
                 front_face: FrontFace::Ccw,
                 ..Default::default()
             },
@@ -678,7 +679,6 @@ impl GfxContext {
                 } else {
                     Default::default()
                 },
-                clamp_depth: false,
             }),
             multisample: MultisampleState {
                 count: if shadow_map { 1 } else { self.samples },
@@ -766,9 +766,11 @@ impl SSAOPipeline {
 
         let color_states = [wgpu::ColorTargetState {
             format: gfx.fbos.ssao.format,
-            color_blend: wgpu::BlendState::REPLACE,
-            alpha_blend: wgpu::BlendState::REPLACE,
             write_mask: wgpu::ColorWrite::ALL,
+            blend: Some(BlendState {
+                color: wgpu::BlendComponent::REPLACE,
+                alpha: wgpu::BlendComponent::REPLACE,
+            }),
         }];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {

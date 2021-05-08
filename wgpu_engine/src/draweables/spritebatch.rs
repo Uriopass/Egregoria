@@ -42,7 +42,7 @@ impl VBDesc for InstanceRaw {
             array_stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
             attributes: Box::leak(Box::new(
-                wgpu::vertex_attr_array![2 => Float4, 3 => Float3, 4 => Float2, 5 => Float2],
+                wgpu::vertex_attr_array![2 => Float32x4, 3 => Float32x3, 4 => Float32x2, 5 => Float32x2],
             )),
         }
     }
