@@ -107,6 +107,13 @@ impl Context {
                         if self.gfx.update_sc {
                             self.gfx.update_sc = false;
                             self.gfx.resize(size.0, size.1);
+                            state.resized(
+                                &mut self,
+                                PhysicalSize {
+                                    width: size.0,
+                                    height: size.1,
+                                },
+                            );
                         }
 
                         match self.gfx.fbos.swapchain.get_current_frame() {
@@ -117,6 +124,7 @@ impl Context {
                             | Err(wgpu_engine::wgpu::SwapChainError::Lost) => {
                                 self.gfx.resize(size.0, size.1);
                                 state.resized(&mut self, PhysicalSize::new(size.0, size.1));
+                                log::error!("swapchain has been lost or is outdated, recreating before retrying");
                             }
                             Err(e) => panic!("error getting swapchain: {}", e),
                         };
