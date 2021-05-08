@@ -44,6 +44,7 @@ pub struct GfxContext {
     pub sun_shadowmap: Texture,
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
+    pub sky_bg: wgpu::BindGroup,
     #[allow(dead_code)] // keep adapter alive
     pub(crate) adapter: Adapter,
 }
@@ -67,6 +68,7 @@ pub struct RenderParams {
     pub ssao_samples: i32,
     pub ssao_enabled: i32,
     pub shadow_mapping_enabled: i32,
+    pub realistic_sky: i32,
 }
 
 impl Default for RenderParams {
@@ -88,6 +90,7 @@ impl Default for RenderParams {
             ssao_samples: 0,
             ssao_enabled: 1,
             shadow_mapping_enabled: 1,
+            realistic_sky: 0,
         }
     }
 }
@@ -174,7 +177,6 @@ impl GfxContext {
             PathBuf::from("assets/blue_noise_512.png"),
             Arc::new(blue_noise),
         );
-        let bogus_bindgroup = Uniform::new([0.0f32; 4], &device).bindgroup;
 
         let mut me = Self {
             size: (win_width, win_height),
@@ -191,7 +193,8 @@ impl GfxContext {
             samples,
             screen_uv_vertices,
             rect_indices,
-            simplelit_bg: bogus_bindgroup,
+            simplelit_bg: Uniform::new([0.0f32; 4], &device).bindgroup, // bogus
+            sky_bg: Uniform::new([0.0f32; 4], &device).bindgroup,       // bogus
             bnoise_bg,
             sun_shadowmap: Self::mk_shadowmap(&device, 2048),
             device,
@@ -212,6 +215,19 @@ impl GfxContext {
             .with_sampler(Texture::nearest_sampler())
             .build(&me.device, &me.queue);
         me.set_texture("assets/palette.png", p);
+
+        let gs = me.texture("assets/gradientsky.png", "gradient sky");
+        let starfield = me.texture("assets/starfield.png", "starfield");
+
+        me.sky_bg = Texture::multi_bindgroup(
+            &[&*gs, &*starfield],
+            &me.device,
+            &Texture::bindgroup_layout_complex(
+                &me.device,
+                TextureSampleType::Float { filterable: true },
+                2,
+            ),
+        );
 
         me
     }
@@ -444,6 +460,7 @@ impl GfxContext {
             bg_pass.set_pipeline(self.get_pipeline::<BackgroundPipeline>());
             bg_pass.set_bind_group(0, &self.render_params.bindgroup, &[]);
             bg_pass.set_bind_group(1, &self.bnoise_bg, &[]);
+            bg_pass.set_bind_group(2, &self.sky_bg, &[]);
             bg_pass.set_vertex_buffer(0, self.screen_uv_vertices.slice(..));
             bg_pass.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
             bg_pass.draw_indexed(0..6, 0, 0..1);
@@ -788,6 +805,11 @@ impl BackgroundPipeline {
             &[
                 &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
                 &Texture::bindgroup_layout(&gfx.device),
+                &Texture::bindgroup_layout_complex(
+                    &gfx.device,
+                    TextureSampleType::Float { filterable: true },
+                    2,
+                ),
             ],
             &[UvVertex::desc()],
             &bg_vert,

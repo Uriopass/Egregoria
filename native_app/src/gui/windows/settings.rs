@@ -39,6 +39,7 @@ pub struct Settings {
     pub vsync: VSyncOptions,
     pub ssao: bool,
     pub shadows: ShadowQuality,
+    pub realistic_sky: bool,
 
     pub music_volume_percent: f32,
     pub effects_volume_percent: f32,
@@ -63,6 +64,7 @@ impl Default for Settings {
             ssao: true,
             shadows: ShadowQuality::High,
             camera_smooth_tightness: 1.0,
+            realistic_sky: false,
         }
     }
 }
@@ -169,6 +171,7 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
             ui.text("Graphics");
 
             ui.checkbox(im_str!("Fullscreen"), &mut settings.fullscreen);
+            ui.checkbox(im_str!("Realistic sky"), &mut settings.realistic_sky);
             ui.checkbox(im_str!("Ambient Occlusion (SSAO)"), &mut settings.ssao);
 
             let tok = imgui::ComboBox::new(im_str!("Shadow quality"))

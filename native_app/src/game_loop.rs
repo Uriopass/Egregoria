@@ -350,6 +350,7 @@ impl State {
 
         ctx.gfx.set_present_mode(settings.vsync.into());
         ctx.gfx.render_params.value_mut().ssao_enabled = settings.ssao as i32;
+        ctx.gfx.render_params.value_mut().realistic_sky = settings.realistic_sky as i32;
         ctx.gfx.render_params.value_mut().shadow_mapping_enabled =
             i32::from(!matches!(settings.shadows, ShadowQuality::NoShadows));
 

@@ -9,6 +9,12 @@ layout(set = 0, binding = 0) uniform Uni {RenderParams params;};
 layout(set = 1, binding = 0) uniform texture2D t_bnoise;
 layout(set = 1, binding = 1) uniform sampler s_bnoise;
 
+layout(set = 2, binding = 0) uniform texture2D t_gradientsky;
+layout(set = 2, binding = 1) uniform sampler s_gradientsky;
+
+layout(set = 2, binding = 2) uniform texture2D t_starfield;
+layout(set = 2, binding = 3) uniform sampler s_starfield;
+
 #define PI 3.141592
 #define iSteps 16
 #define jSteps 8
@@ -122,6 +128,12 @@ float dither() {
     return (color - 0.5) / 255.0;
 }
 
+float atan2(float y, float x)
+{
+    bool s = (abs(x) > abs(y));
+    return mix(PI/2.0 - atan(x,y), atan(y,x), s);
+}
+
 void main()
 {
     vec3 fsun = params.sun;
@@ -129,19 +141,29 @@ void main()
     vec3 pos = normalize(in_pos.xyz);
     pos.yz = pos.zy;
 
-    vec3 color = atmosphere(
-        normalize(pos),           // normalized ray direction
-        vec3(0,6372e3,0),               // ray origin
-        fsun,                        // position of the sun
-        22.0,                           // intensity of the sun
-        6371e3,                         // radius of the planet in meters
-        6471e3,                         // radius of the atmosphere in meters
-        vec3(5.5e-6, 13.0e-6, 22.4e-6), // Rayleigh scattering coefficient
-        21e-6,                          // Mie scattering coefficient
-        8e3,                            // Rayleigh scale height
-        1.2e3,                          // Mie scale height
-        0.758                           // Mie preferred scattering direction
-    );
+    float longitude = atan2(pos.x, pos.z);
+
+    vec3 color;
+    if (params.realistic_sky != 0) {
+        color = atmosphere(
+            normalize(pos),           // normalized ray direction
+            vec3(0,6372e3,0),               // ray origin
+            fsun,                        // position of the sun
+            22.0,                           // intensity of the sun
+            6371e3,                         // radius of the planet in meters
+            6471e3,                         // radius of the atmosphere in meters
+            vec3(5.5e-6, 13.0e-6, 22.4e-6), // Rayleigh scattering coefficient
+            21e-6,                          // Mie scattering coefficient
+            8e3,                            // Rayleigh scale height
+            1.2e3,                          // Mie scale height
+            0.758                           // Mie preferred scattering direction
+        );
+    } else {
+        color = texture(sampler2D(t_gradientsky, s_gradientsky), vec2(0.5 - fsun.y * 0.5, 1.0 - max(0.01, pos.y))).rgb;
+    }
+
+    color += max(pos.y + 0.1, 0.0) * 5.0 * texture(sampler2D(t_starfield, s_starfield), vec2(longitude, pos.y)).rgb; // starfield
+    color += max(pos.y, 0.0) * 10000.0 * smoothstep(0.99993, 1.0, dot(fsun, pos)); // sun
 
     // Apply exposure.
     out_color.rgb = 1.0 - exp(-color) + dither();
