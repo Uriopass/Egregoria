@@ -53,15 +53,15 @@ impl Terrain {
         }
     }
 
-    pub fn remove_near_filter(&mut self, bbox: AABB, f: impl Fn(Vec2) -> bool) {
+    pub fn remove_near_filter(&mut self, bbox: AABB, should_remove: impl Fn(Vec2) -> bool) {
         let mut v = false;
         for cell in self.chunks_iter(bbox) {
             let chunk = unwrap_cont!(self.chunks.get_mut(&cell));
             let mut vcell = false;
             chunk.trees.retain(|t| {
-                let b = !f(t.pos);
-                vcell |= !b;
-                b
+                let rem = should_remove(t.pos);
+                vcell |= rem;
+                !rem
             });
             chunk.dirt_id += Wrapping(vcell as u32);
             v |= vcell;
@@ -71,8 +71,8 @@ impl Terrain {
 
     pub fn cell(p: Vec2) -> (i32, i32) {
         (
-            p.x as i32 / CHUNK_SIZE as i32,
-            p.y as i32 / CHUNK_SIZE as i32,
+            p.x as i32 / CHUNK_SIZE as i32 - if p.x < 0.0 { 1 } else { 0 },
+            p.y as i32 / CHUNK_SIZE as i32 - if p.y < 0.0 { 1 } else { 0 },
         )
     }
 
