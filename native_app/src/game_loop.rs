@@ -203,7 +203,7 @@ impl State {
 
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
 
-        self.gui.hidden = ctx.input.keyboard.pressed.contains(&KeyCode::H);
+        self.gui.hidden ^= ctx.input.keyboard.just_pressed.contains(&KeyCode::H);
 
         Self::manage_settings(ctx, &settings);
         self.manage_io(ctx);
@@ -318,9 +318,9 @@ impl State {
                 let c = (daysec / GameTime::HOUR as f64 - 6.0) / 4.0;
                 dark.smoothstep(bright, c as f32)
             }
-            10..=15 => bright,
-            16..=20 => {
-                let c = (daysec / GameTime::HOUR as f64 - 16.0) / 5.0;
+            10..=20 => bright,
+            21..=22 => {
+                let c = (daysec / GameTime::HOUR as f64 - 21.0) / 1.0;
                 bright.smoothstep(dark, c as f32)
             }
             _ => dark,
