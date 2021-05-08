@@ -4,7 +4,8 @@ use geom::Vec2;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
-use legion::system;
+use legion::world::SubWorld;
+use legion::{system, Query};
 use map_model::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use serde::{Deserialize, Serialize};
 
@@ -190,6 +191,7 @@ impl Itinerary {
                     }
                 }
             }
+            return;
         }
 
         if let ItineraryKind::WaitForReroute {
@@ -336,13 +338,16 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
     }
 }
 
+type Qry<'a, 'b> = (&'a Transform, &'b mut Itinerary);
 register_system!(itinerary_update);
-#[system(par_for_each)]
+#[system]
 pub fn itinerary_update(
     #[resource] time: &GameTime,
     #[resource] map: &Map,
-    trans: &Transform,
-    it: &mut Itinerary,
+    qry: &mut Query<Qry>,
+    world: &mut SubWorld,
 ) {
-    it.update(trans.position(), time.seconds, map)
+    qry.par_for_each_mut(world, |(trans, it): Qry| {
+        it.update(trans.position(), time.seconds, map)
+    });
 }
