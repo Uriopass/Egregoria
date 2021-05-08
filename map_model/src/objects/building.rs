@@ -15,7 +15,7 @@ debug_inspect_impl!(BuildingID);
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum BuildingKind {
     House,
-    Company(u32),
+    GoodsCompany(u32),
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]

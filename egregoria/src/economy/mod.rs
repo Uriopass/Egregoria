@@ -65,6 +65,8 @@ commodity! {
     Textile => "Textile",
     Cloth => "Cloth",
     Oil => "Oil",
+    Coal => "Coal",
+    Electricity => "Electricity",
     Polyester => "Polyester",
     Petrol => "Petrol",
 }
