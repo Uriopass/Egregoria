@@ -23,7 +23,7 @@ layout(set = 3, binding = 4) uniform texture2D t_sun_smap;
 layout(set = 3, binding = 5) uniform samplerShadow s_sun_smap;
 
 layout(set = 3, binding = 6) uniform texture2D t_quadlights;
-layout(set = 3, binding = 7) uniform samplerShadow s_quadlights;
+layout(set = 3, binding = 7) uniform sampler s_quadlights;
 
 float dither() {
     float color = texture(sampler2D(t_bnoise, s_bnoise), gl_FragCoord.xy / 512.0).r;
