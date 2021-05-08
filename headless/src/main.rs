@@ -4,7 +4,6 @@ use egregoria::engine_interaction::WorldCommands;
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use networking::{Frame, Server, ServerConfiguration, ServerPollResult};
 use std::convert::TryFrom;
-use std::iter::FromIterator;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
 
@@ -37,7 +36,7 @@ fn main() {
 
     let mut w = unwrap_or!(Egregoria::load_from_disk("world"), {
         log::info!("savegame not found defaulting to empty");
-        Egregoria::empty()
+        Egregoria::new(10)
     });
 
     let mut sched = Egregoria::schedule();
