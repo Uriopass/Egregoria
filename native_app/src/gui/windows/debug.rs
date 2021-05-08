@@ -393,10 +393,7 @@ pub fn debug_rays(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -
 pub fn debug_spatialmap(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     let map: &Map = &goria.map();
     for r in map.spatial_map().debug_grid() {
-        tess.set_color(LinearColor {
-            a: 0.1,
-            ..LinearColor::BLUE
-        });
+        tess.set_color(LinearColor::BLUE.a(0.1));
         tess.draw_rect_cos_sin(r.center(), Z_DEBUG, r.w(), r.h(), Vec2::UNIT_X);
     }
 
