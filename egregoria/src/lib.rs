@@ -212,7 +212,7 @@ impl Egregoria {
         schedule
     }
 
-    pub fn empty() -> Egregoria {
+    pub fn new(size: i32) -> Egregoria {
         let mut goria = Egregoria {
             world: Default::default(),
             resources: Default::default(),
@@ -223,6 +223,12 @@ impl Egregoria {
 
         for s in inventory::iter::<InitFunc> {
             (s.f)(&mut goria);
+        }
+
+        for y in -size + 1..size {
+            for x in -size + 1..size {
+                goria.write::<Map>().terrain.generate_chunk((x, y));
+            }
         }
 
         goria
@@ -391,7 +397,7 @@ impl TryFrom<SerPreparedEgregoria> for Egregoria {
     type Error = std::io::Error;
 
     fn try_from(mut ser: SerPreparedEgregoria) -> Result<Self, Self::Error> {
-        let mut goria = Self::empty();
+        let mut goria = Self::new(0);
         goria.tick = ser.tick;
         let registry = registry();
 

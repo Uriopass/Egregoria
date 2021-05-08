@@ -2,6 +2,7 @@ use crate::audio::{AudioContext, AudioHandle, AudioKind};
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use geom::{lerp, vec2, Camera, Vec2, AABB};
+use map_model::Terrain;
 use rodio::Source;
 
 pub struct Ambient {
@@ -61,7 +62,13 @@ impl Ambient {
         if volume > 0.0 {
             let matches = tree_check
                 .iter()
-                .filter_map(|&p| map.trees.grid.query_around(p, h * 0.2).next())
+                .filter(|&&p| {
+                    map.terrain
+                        .chunks
+                        .get(&Terrain::cell(p))
+                        .map(|x| x.trees.len() > 10)
+                        .unwrap_or_default()
+                })
                 .count();
 
             volume *= matches as f32 / 4.0;

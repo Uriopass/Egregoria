@@ -103,20 +103,18 @@ impl RoadRenderer {
     }
 
     pub fn trees(&mut self, map: &Map, _screen: AABB, gfx: &GfxContext) -> Option<InstancedMesh> {
-        if map.trees.dirt_id.0 == self.trees_dirt_id {
+        if map.terrain.dirt_id.0 == self.trees_dirt_id {
             if let Some(trees) = self.trees.as_ref() {
                 return Some(trees.clone());
             }
         }
 
-        self.trees_dirt_id = map.trees.dirt_id.0;
+        self.trees_dirt_id = map.terrain.dirt_id.0;
 
         self.trees_builder.instances.clear();
-        for h in map.trees.grid.handles() {
-            let (pos, t) = map.trees.grid.get(h).unwrap();
-
+        for t in map.terrain.trees() {
             self.trees_builder.instances.push(MeshInstance {
-                pos: pos.z(0.0),
+                pos: t.pos.z(0.0),
                 dir: t.dir.z(0.0) * t.size * 0.2,
                 tint: ((1.0 - t.size * 0.05) * t.col * LinearColor::WHITE).a(1.0),
             });

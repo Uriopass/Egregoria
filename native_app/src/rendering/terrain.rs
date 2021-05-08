@@ -1,6 +1,7 @@
 use crate::uiworld::UiWorld;
 use common::FastMap;
-use geom::{vec2, vec3, LinearColor};
+use geom::{vec2, LinearColor};
+use map_model::{Map, CHUNK_RESOLUTION, CHUNK_SIZE};
 use std::mem::MaybeUninit;
 use std::sync::Arc;
 use wgpu_engine::pbuffer::PBuffer;
@@ -8,12 +9,11 @@ use wgpu_engine::wgpu::BufferUsage;
 use wgpu_engine::{FrameContext, GfxContext, Mesh, Texture};
 use wgpu_engine::{IndexType, MeshVertex};
 
-const CHUNK_SIZE: f32 = 1000.0;
-const RESOLUTION: usize = 40;
 const LOD: usize = 1;
 
 struct TerrainChunk {
     lods: [Mesh; LOD],
+    dirt_id: u32,
 }
 
 pub struct TerrainRender {
@@ -21,44 +21,86 @@ pub struct TerrainRender {
     indices: [(PBuffer, usize); LOD],
     albedo: Arc<Texture>,
     bg: Arc<wgpu_engine::wgpu::BindGroup>,
+    dirt_id: u32,
 }
 
 impl TerrainRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
         let indices = Self::generate_indices(gfx);
         let pal = gfx.palette();
-        let mut me = TerrainRender {
+        Self {
             chunks: Default::default(),
             indices,
             bg: Arc::new(pal.bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device))),
             albedo: pal,
-        };
-
-        for y in -10..10 {
-            for x in -10..10 {
-                me.generate(gfx, x, y);
-            }
+            dirt_id: 0,
         }
-        me
     }
 
-    fn generate(&mut self, gfx: &mut GfxContext, x: i32, y: i32) {
+    pub fn update(&mut self, gfx: &mut GfxContext, map: &Map) {
+        if map.terrain.dirt_id.0 != self.dirt_id {
+            self.dirt_id = map.terrain.dirt_id.0;
+
+            for &cell in map.terrain.chunks.keys() {
+                self.update_chunk(gfx, map, cell)
+            }
+        }
+    }
+
+    fn update_chunk(&mut self, gfx: &mut GfxContext, map: &Map, cell: (i32, i32)) {
+        let chunk = unwrap_retlog!(
+            map.terrain.chunks.get(&cell),
+            "trying to update nonexistent chunk"
+        );
+
+        if self
+            .chunks
+            .get(&cell)
+            .map(|x| x.dirt_id == chunk.dirt_id.0)
+            .unwrap_or_default()
+        {
+            return;
+        }
+
         let mut v = vec![];
+
+        const CELLSIZE: f32 = CHUNK_SIZE as f32 / CHUNK_RESOLUTION as f32;
+
+        let right_chunk = map.terrain.chunks.get(&(cell.0 + 1, cell.1));
+        let up_chunk = map.terrain.chunks.get(&(cell.0, cell.1 + 1));
+        let upright_chunk = map.terrain.chunks.get(&(cell.0 + 1, cell.1 + 1));
+
         for lod in 0..LOD {
-            let resolution = RESOLUTION / (1 << lod);
+            let scale = 1 << lod;
+            let resolution = CHUNK_RESOLUTION / (1 << lod);
 
             let mut mesh = Vec::with_capacity((resolution + 1) * (resolution + 1));
 
-            let offset = vec2(x as f32, y as f32) * CHUNK_SIZE;
+            let chunkoff = vec2(
+                (cell.0 * CHUNK_SIZE as i32) as f32,
+                (cell.1 * CHUNK_SIZE as i32) as f32,
+            );
 
             for y in 0..=resolution {
-                let y = y as f32 / resolution as f32;
                 for x in 0..=resolution {
-                    let x = x as f32 / resolution as f32;
-                    let pos = vec2(x, y);
-                    let pos = pos * CHUNK_SIZE + offset;
+                    let fallback = || {
+                        chunk.heights[y * scale - (y == resolution) as usize]
+                            [x * scale - (x == resolution) as usize]
+                    };
+                    let height = match (x == resolution, y == resolution) {
+                        (false, false) => chunk.heights[y * scale][x * scale],
+                        (true, false) => right_chunk
+                            .map(|c| c.heights[y * scale][0])
+                            .unwrap_or_else(fallback),
+                        (false, true) => up_chunk
+                            .map(|c| c.heights[0][x * scale])
+                            .unwrap_or_else(fallback),
+                        (true, true) => upright_chunk
+                            .map(|c| c.heights[0][0])
+                            .unwrap_or_else(fallback),
+                    };
 
-                    let (height, mut grad) = map_model::procgen::heightmap::height(pos);
+                    let pos = chunkoff + vec2(x as f32, y as f32) * CELLSIZE;
 
                     let col: LinearColor = if height < 0.1 {
                         common::config().sea_col.into()
@@ -68,15 +110,9 @@ impl TerrainRender {
                         0.37 * LinearColor::from(common::config().grass_col)
                     };
 
-                    grad *= 2.0 * height * 3000.0;
-                    //height = height * height * 3000.0;
-
                     mesh.push(MeshVertex {
                         position: [pos.x, pos.y, 0.0],
-                        normal: vec3(1.0, 0.0, grad.x)
-                            .cross(vec3(0.0, 1.0, grad.y))
-                            .normalize()
-                            .into(),
+                        normal: [0.0, 0.0, 1.0],
                         uv: [0.0; 2],
                         color: col.into(),
                     })
@@ -99,15 +135,17 @@ impl TerrainRender {
         }
 
         let chunk = TerrainChunk {
-            lods: collect_arr4(v),
+            lods: collect_arrlod(v),
+            dirt_id: 0,
         };
-        self.chunks.insert((x, y), chunk);
+        log::info!("generated chunk {:?}", cell);
+        self.chunks.insert(cell, chunk);
     }
 
     fn generate_indices(gfx: &GfxContext) -> [(PBuffer, usize); LOD] {
         let mut v = vec![];
         for lod in 0..LOD {
-            let resolution = RESOLUTION / (1 << lod);
+            let resolution = CHUNK_RESOLUTION / (1 << lod);
             let mut indices: Vec<IndexType> = Vec::with_capacity(6 * resolution * resolution);
 
             let w = (resolution + 1) as IndexType;
@@ -130,7 +168,7 @@ impl TerrainRender {
             buf.write(gfx, bytemuck::cast_slice(&indices));
             v.push((buf, l));
         }
-        collect_arr4(v)
+        collect_arrlod(v)
     }
 
     pub fn render(&mut self, _uiw: &UiWorld, fctx: &mut FrameContext) {
@@ -140,7 +178,7 @@ impl TerrainRender {
     }
 }
 
-fn collect_arr4<T>(x: impl IntoIterator<Item = T>) -> [T; LOD] {
+fn collect_arrlod<T>(x: impl IntoIterator<Item = T>) -> [T; LOD] {
     let mut arr = MaybeUninit::uninit();
 
     let mut ptr = arr.as_mut_ptr() as *mut T;

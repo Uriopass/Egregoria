@@ -1,9 +1,8 @@
-use crate::procgen::Trees;
 use crate::serializing::SerializedMap;
 use crate::{
     Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
-    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap,
+    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain,
 };
 use geom::{pseudo_angle, Circle, Intersect, Shape, Vec2};
 use geom::{Spline, OBB};
@@ -34,7 +33,7 @@ pub struct Map {
     pub(crate) buildings: Buildings,
     pub(crate) lots: Lots,
     pub(crate) spatial_map: SpatialMap,
-    pub trees: Trees,
+    pub terrain: Terrain,
     pub parking: ParkingSpots,
     pub dirt_id: Wrapping<u32>,
 }
@@ -47,7 +46,6 @@ impl Default for Map {
 
 impl Map {
     // Public API
-
     pub fn empty() -> Self {
         Self {
             roads: Roads::default(),
@@ -56,7 +54,7 @@ impl Map {
             parking: ParkingSpots::default(),
             buildings: Buildings::default(),
             lots: Lots::default(),
-            trees: Trees::default(),
+            terrain: Terrain::default(),
             dirt_id: Wrapping(1),
             spatial_map: SpatialMap::default(),
         }
@@ -176,7 +174,7 @@ impl Map {
             }
         }
 
-        self.trees.remove_near_filter(obb.bbox(), |_| true);
+        self.terrain.remove_near_filter(obb.bbox(), |_| true);
 
         let v = Some(Building::make(
             &mut self.buildings,
@@ -262,8 +260,8 @@ impl Map {
 
     pub fn clear(&mut self) {
         info!("clear");
-        let before = std::mem::take(self);
-        self.trees = before.trees;
+        let before = std::mem::replace(self, Self::empty());
+        self.terrain = before.terrain;
         self.dirt_id = before.dirt_id + Wrapping(1);
 
         #[cfg(debug_assertions)]
@@ -470,7 +468,7 @@ impl Map {
         let r = &self.roads[id];
         let d = r.width + 50.0;
         let b = r.boldline();
-        self.trees.remove_near_filter(b.bbox().expand(d), |tpos| {
+        self.terrain.remove_near_filter(b.bbox().expand(d), |tpos| {
             let rd = common::rand::rand3(tpos.x, tpos.y, 391.0) * 20.0;
             b.intersects(&Circle::new(tpos, d - rd))
         });
