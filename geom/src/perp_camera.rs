@@ -100,8 +100,8 @@ impl Camera {
             right: d,
             bottom: -d,
             top: d,
-            near: -d,
-            far: d,
+            near: -d * 1.2,
+            far: d * 1.2,
         }
         .into();
 
