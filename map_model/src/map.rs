@@ -174,7 +174,9 @@ impl Map {
             }
         }
 
-        self.terrain.remove_near_filter(obb.bbox(), |_| true);
+        let tree_remove_mask = obb.expand(10.0);
+        self.terrain
+            .remove_near_filter(obb.bbox(), |p| tree_remove_mask.contains(p));
 
         let v = Some(Building::make(
             &mut self.buildings,
