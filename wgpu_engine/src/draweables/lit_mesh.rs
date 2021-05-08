@@ -158,7 +158,11 @@ pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
                         view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        sample_type: if i != 2 {
+                            wgpu::TextureSampleType::Float { filterable: true }
+                        } else {
+                            wgpu::TextureSampleType::Depth
+                        },
                     },
                     count: None,
                 },

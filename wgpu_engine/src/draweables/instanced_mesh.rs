@@ -18,7 +18,8 @@ pub struct MeshInstance {
 
 u8slice_impl!(MeshInstance);
 
-const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![4 => Float3, 5 => Float3, 6 => Float4];
+const ATTRS: &[VertexAttribute] =
+    &wgpu::vertex_attr_array![4 => Float32x3, 5 => Float32x3, 6 => Float32x4];
 
 impl VBDesc for MeshInstance {
     fn desc<'a>() -> VertexBufferLayout<'a> {

@@ -18,7 +18,7 @@ networking    = { path = "../networking" }
 goria_version = { path = "../goria_version" }
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
-imgui-wgpu    = "0.14.0"
+imgui-wgpu    = "0.15.0"
 imgui-winit-support = "0.7.0"
 map_model     = { path = "../map_model" }
 flat_spatial  = { path = "../flat_spatial" }

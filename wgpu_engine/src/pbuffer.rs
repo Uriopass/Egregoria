@@ -2,7 +2,8 @@ use crate::GfxContext;
 use std::sync::Arc;
 use wgpu::{
     BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, BindingResource, BindingType, BufferDescriptor, BufferSize, BufferUsage,
+    BindGroupLayoutEntry, BindingResource, BindingType, BufferBinding, BufferDescriptor,
+    BufferSize, BufferUsage,
 };
 
 /// Short for Persistent Buffer, keeps memory around to reuse it
@@ -51,11 +52,11 @@ impl PBuffer {
             layout,
             entries: &[BindGroupEntry {
                 binding: 0,
-                resource: BindingResource::Buffer {
+                resource: BindingResource::Buffer(BufferBinding {
                     buffer: &buffer,
                     offset: 0,
                     size: Some(BufferSize::new(self.len)?),
-                },
+                }),
             }],
         }))
     }
