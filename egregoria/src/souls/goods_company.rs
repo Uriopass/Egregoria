@@ -49,8 +49,25 @@ impl Default for GoodsCompanyRegistry {
         Self {
             descriptions: vec![
                 GoodsCompanyDescription {
+                    name: "Coal power plant", // doesn't do anything yet, was really to test my modeling skills..
+                    bkind: BuildingKind::GoodsCompany(25), // should've probably done an existing useful building instead..
+                    bgen: BuildingGen::CenteredDoor {
+                        vertical_factor: 1.0,
+                    },
+                    kind: CompanyKind::Network,
+                    recipe: Recipe {
+                        consumption: vec![(CommodityKind::Coal, 1)],
+                        production: vec![(CommodityKind::Electricity, 2460)],
+                        complexity: 100,
+                        storage_multiplier: 5,
+                    },
+                    n_workers: 10,
+                    size: 165.0,
+                    asset_location: "assets/coal_power_plant.glb",
+                },
+                GoodsCompanyDescription {
                     name: "Useless warehouse",
-                    bkind: BuildingKind::Company(24),
+                    bkind: BuildingKind::GoodsCompany(24),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -67,7 +84,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Supermarket",
-                    bkind: BuildingKind::Company(23),
+                    bkind: BuildingKind::GoodsCompany(23),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -92,7 +109,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Clothes store",
-                    bkind: BuildingKind::Company(22),
+                    bkind: BuildingKind::GoodsCompany(22),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -109,7 +126,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Cloth factory",
-                    bkind: BuildingKind::Company(21),
+                    bkind: BuildingKind::GoodsCompany(21),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -126,7 +143,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Polyester refinery",
-                    bkind: BuildingKind::Company(20),
+                    bkind: BuildingKind::GoodsCompany(20),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -143,7 +160,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Oil pump",
-                    bkind: BuildingKind::Company(19),
+                    bkind: BuildingKind::GoodsCompany(19),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -160,7 +177,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Textile processing facility",
-                    bkind: BuildingKind::Company(18),
+                    bkind: BuildingKind::GoodsCompany(18),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -177,7 +194,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Wool farm",
-                    bkind: BuildingKind::Company(17),
+                    bkind: BuildingKind::GoodsCompany(17),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -194,7 +211,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Florist",
-                    bkind: BuildingKind::Company(16),
+                    bkind: BuildingKind::GoodsCompany(16),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -211,7 +228,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Horticulturalist",
-                    bkind: BuildingKind::Company(15),
+                    bkind: BuildingKind::GoodsCompany(15),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -228,7 +245,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "High tech store",
-                    bkind: BuildingKind::Company(14),
+                    bkind: BuildingKind::GoodsCompany(14),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -245,7 +262,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "High tech facility",
-                    bkind: BuildingKind::Company(13),
+                    bkind: BuildingKind::GoodsCompany(13),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -262,7 +279,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Rare metal mine",
-                    bkind: BuildingKind::Company(12),
+                    bkind: BuildingKind::GoodsCompany(12),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -279,7 +296,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Furniture store",
-                    bkind: BuildingKind::Company(11),
+                    bkind: BuildingKind::GoodsCompany(11),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -296,7 +313,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Foundry",
-                    bkind: BuildingKind::Company(10),
+                    bkind: BuildingKind::GoodsCompany(10),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -313,7 +330,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Iron mine",
-                    bkind: BuildingKind::Company(9),
+                    bkind: BuildingKind::GoodsCompany(9),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -330,7 +347,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Woodmill",
-                    bkind: BuildingKind::Company(8),
+                    bkind: BuildingKind::GoodsCompany(8),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -347,7 +364,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Lumber yard",
-                    bkind: BuildingKind::Company(7),
+                    bkind: BuildingKind::GoodsCompany(7),
                     bgen: BuildingGen::Farm,
                     kind: CompanyKind::Factory { n_trucks: 1 },
                     recipe: Recipe {
@@ -362,7 +379,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Meat facility",
-                    bkind: BuildingKind::Company(6),
+                    bkind: BuildingKind::GoodsCompany(6),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 0.6,
                     },
@@ -379,7 +396,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Slaughterhouse",
-                    bkind: BuildingKind::Company(5),
+                    bkind: BuildingKind::GoodsCompany(5),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -396,7 +413,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Animal Farm",
-                    bkind: BuildingKind::Company(4),
+                    bkind: BuildingKind::GoodsCompany(4),
                     bgen: BuildingGen::Farm,
                     kind: CompanyKind::Factory { n_trucks: 1 },
                     recipe: Recipe {
@@ -411,7 +428,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Vegetable Farm",
-                    bkind: BuildingKind::Company(3),
+                    bkind: BuildingKind::GoodsCompany(3),
                     bgen: BuildingGen::Farm,
                     kind: CompanyKind::Factory { n_trucks: 1 },
                     recipe: Recipe {
@@ -426,7 +443,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Bakery",
-                    bkind: BuildingKind::Company(2),
+                    bkind: BuildingKind::GoodsCompany(2),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 1.0,
                     },
@@ -443,7 +460,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Cereal Factory",
-                    bkind: BuildingKind::Company(1),
+                    bkind: BuildingKind::GoodsCompany(1),
                     bgen: BuildingGen::CenteredDoor {
                         vertical_factor: 0.6,
                     },
@@ -460,7 +477,7 @@ impl Default for GoodsCompanyRegistry {
                 },
                 GoodsCompanyDescription {
                     name: "Cereal Farm",
-                    bkind: BuildingKind::Company(0),
+                    bkind: BuildingKind::GoodsCompany(0),
                     bgen: BuildingGen::Farm,
                     kind: CompanyKind::Factory { n_trucks: 1 },
                     recipe: Recipe {
@@ -521,6 +538,8 @@ pub enum CompanyKind {
     Store,
     // Buyers get their goods delivered to them
     Factory { n_trucks: u32 },
+    // Buyers get their goods instantly delivered, useful for things like electricity/water/..
+    Network,
 }
 
 debug_inspect_impl!(CompanyKind);
@@ -614,11 +633,11 @@ pub fn company(
     }
 
     if_chain::if_chain! {
+        if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next();
         if let Some(driver) = company.driver;
         if let Ok(ent) = sw.entry_ref(driver.0);
         if let Ok(w) = ent.get_component::<Work>();
         if matches!(w.kind, WorkKind::Driver { deliver_order: None, .. });
-        if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next();
         if let Some(owner_build) = binfos.building_owned_by(trade.buyer);
         then {
             log::info!("asked driver to deliver");
