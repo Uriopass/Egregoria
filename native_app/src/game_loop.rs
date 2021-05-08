@@ -57,7 +57,8 @@ impl State {
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
 
-        let goria: Egregoria = Egregoria::load_from_disk("world").unwrap_or_else(Egregoria::empty);
+        let goria: Egregoria =
+            Egregoria::load_from_disk("world").unwrap_or_else(|| Egregoria::new(10));
         let game_schedule = Egregoria::schedule();
 
         let mut uiworld = UiWorld::init();
@@ -206,6 +207,8 @@ impl State {
 
         Self::manage_settings(ctx, &settings);
         self.manage_io(ctx);
+
+        self.terrain.update(&mut ctx.gfx, &*self.goria.map());
 
         //        self.camera.movespeed = settings.camera_sensibility / 100.0;
         self.camera.camera_movement(

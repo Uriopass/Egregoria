@@ -41,13 +41,12 @@ pub enum WorldCommand {
     MapLoadTestField(Vec2, u32, f32),
     ResetSave,
     SetGameTime(GameTime),
-    MapGenerateTrees(AABB),
     UpdateTransform(u64, Transform),
 }
 
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::time::GameTime;
-use geom::{Transform, Vec2, AABB, OBB};
+use geom::{Transform, Vec2, OBB};
 use legion::Entity;
 use WorldCommand::*;
 
@@ -62,10 +61,6 @@ impl WorldCommands {
 
     pub fn is_empty(&self) -> bool {
         self.commands.is_empty()
-    }
-
-    pub fn map_generate_trees(&mut self, aabb: AABB) {
-        self.commands.push(MapGenerateTrees(aabb));
     }
 
     pub fn map_load_paris(&mut self) {
@@ -173,10 +168,7 @@ impl WorldCommand {
                 map_model::procgen::load_testfield(&mut *goria.map_mut(), pos, size, spacing)
             }
             ResetSave => {
-                *goria = Egregoria::empty();
-            }
-            MapGenerateTrees(aabb) => {
-                goria.map_mut().trees.generate_chunks(aabb);
+                *goria = Egregoria::new(10);
             }
             UpdateTransform(e, t) => {
                 if let Some(x) = goria.comp_mut(ent_from_id(e)) {

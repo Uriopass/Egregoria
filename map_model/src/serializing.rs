@@ -1,5 +1,4 @@
-use crate::procgen::Trees;
-use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap};
+use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap, Terrain};
 use serde::{Deserialize, Serialize, Serializer};
 use std::num::Wrapping;
 
@@ -11,7 +10,7 @@ pub(crate) struct SerializedMap {
     pub lanes: Lanes,
     pub parking: ParkingSpots,
     pub lots: Lots,
-    pub trees: Trees,
+    pub terrain: Terrain,
     pub dirt_id: u32,
 }
 
@@ -28,7 +27,7 @@ impl From<&Map> for SerializedMap {
             lanes: m.lanes.clone(),
             parking: m.parking.clone(),
             lots: m.lots.clone(),
-            trees: m.trees.clone(),
+            terrain: m.terrain.clone(),
             dirt_id: m.dirt_id.0,
         }
     }
@@ -49,7 +48,7 @@ impl From<SerializedMap> for Map {
             spatial_map,
             lots: sel.lots,
             parking: sel.parking,
-            trees: sel.trees,
+            terrain: sel.terrain,
             dirt_id: Wrapping(sel.dirt_id),
         }
     }

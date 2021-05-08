@@ -34,11 +34,9 @@ pub mod procgen {
     mod building;
     pub mod heightmap;
     mod presets;
-    mod trees;
 
     pub use building::*;
     pub use presets::*;
-    pub use trees::*;
 }
 
 mod light_policy;
@@ -46,6 +44,7 @@ mod map;
 mod pathfinding;
 mod serializing;
 mod spatial_map;
+mod terrain;
 mod traffic_control;
 mod traversable;
 mod turn_policy;
@@ -55,6 +54,7 @@ pub use self::pathfinding::*;
 pub use light_policy::*;
 pub use map::*;
 pub use spatial_map::*;
+pub use terrain::*;
 pub use traffic_control::*;
 pub use traversable::*;
 pub use turn_policy::*;
