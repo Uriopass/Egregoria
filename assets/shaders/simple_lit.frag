@@ -32,7 +32,8 @@ float dither() {
 
 float sampleShadow() {
     vec4 light_local = params.sunproj * vec4(in_wpos, 1);
-    if (light_local.w <= 0.0) {
+
+    if (light_local.z >= 1.0) {
         return 1.0;
     }
     vec3 corrected = light_local.xyz / light_local.w * vec3(0.5, -0.5, 1.0) + vec3(0.5, 0.5, 0.0);
@@ -65,12 +66,12 @@ void main() {
     out_color = vec4(in_wpos * 0.001, 1);
     return;
     */
-    /*
+/*
     vec2 p = gl_FragCoord.xy;
     if (p.x < 500 && p.y < 500) {
         out_color = vec4(vec3(texture(sampler2DShadow(t_sun_smap, s_sun_smap), vec3(p / 500, 1))), 1);
         return;
-    }    */
+    }*/
 
     vec3 normal = normalize(in_normal);
     vec3 cam = params.cam_pos.xyz;
@@ -86,7 +87,7 @@ void main() {
 
     vec4 c = in_tint * albedo;
     float ambiant = 0.15;
-    float sun = (0.85 * sun_contrib + 0.5 * specular) * shadow_v;
+    float sun = clamp(params.sun.z, 0.0, 1.0) * (0.85 * sun_contrib + 0.5 * specular) * shadow_v;
     float lights = quad_lights * (1.0 - sun_contrib) * 0.7;
 
     vec3 final_rgb = (ambiant + lights) * c.rgb + sun * params.sun_col.rgb * c.rgb;
