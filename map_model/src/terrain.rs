@@ -7,11 +7,21 @@ use std::num::Wrapping;
 pub const CHUNK_SIZE: u32 = 300;
 pub const CHUNK_RESOLUTION: usize = 10;
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Chunk {
     pub trees: Vec<Tree>,
     pub heights: [[f32; CHUNK_RESOLUTION]; CHUNK_RESOLUTION],
     pub dirt_id: Wrapping<u32>,
+}
+
+impl Default for Chunk {
+    fn default() -> Self {
+        Self {
+            trees: Default::default(),
+            heights: Default::default(),
+            dirt_id: Wrapping(1),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
@@ -47,12 +57,14 @@ impl Terrain {
         let mut v = false;
         for cell in self.chunks_iter(bbox) {
             let chunk = unwrap_cont!(self.chunks.get_mut(&cell));
+            let mut vcell = false;
             chunk.trees.retain(|t| {
                 let b = !f(t.pos);
-                v |= b;
+                vcell |= !b;
                 b
             });
-            chunk.dirt_id += Wrapping(v as u32)
+            chunk.dirt_id += Wrapping(vcell as u32);
+            v |= vcell;
         }
         self.dirt_id += Wrapping(v as u32)
     }
