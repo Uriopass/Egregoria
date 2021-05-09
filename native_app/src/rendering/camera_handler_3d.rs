@@ -9,7 +9,7 @@ pub struct CameraHandler3D {
     pub camera: Camera,
     pub lastscreenpos: Vec2,
     pub last_pos: Vec2,
-    pub targetpos: Vec2,
+    pub targetpos: Vec3,
     pub targetyaw: f32,
     pub targetpitch: f32,
     pub targetdist: f32,
@@ -30,13 +30,13 @@ impl CameraHandler3D {
 
     pub fn cull_tess(&self, tess: &mut Tesselator) {
         let p = self.camera.pos;
-        tess.cull_rect = Some(AABB::new(p, p).expand(2000.0));
+        tess.cull_rect = Some(AABB::new(p.xy(), p.xy()).expand(2000.0));
         tess.zoom = 1000.0 / self.height();
     }
 
     pub fn follow(&mut self, p: Vec3) {
-        self.camera.pos = p.xy();
-        self.targetpos = p.xy();
+        self.camera.pos = p;
+        self.targetpos = p;
     }
 
     pub fn resize(&mut self, ctx: &mut Context, width: f32, height: f32) {
@@ -88,7 +88,7 @@ impl CameraHandler3D {
 
     pub fn load(viewport: (u32, u32)) -> Self {
         let camera = common::saveload::JSON::load("camera3D")
-            .unwrap_or_else(|| Camera::new(Vec2::ZERO, viewport.0 as f32, viewport.1 as f32));
+            .unwrap_or_else(|| Camera::new(Vec3::ZERO, viewport.0 as f32, viewport.1 as f32));
 
         Self {
             camera,
@@ -108,6 +108,7 @@ impl CameraHandler3D {
         mouse_enabled: bool,
         keyboard_enabled: bool,
         settings: &Settings,
+        height: impl Fn(Vec2) -> Option<f32>,
     ) {
         self.save();
         let delta = delta.min(0.1);
@@ -119,16 +120,16 @@ impl CameraHandler3D {
             let pressed = &ctx.input.keyboard.pressed;
 
             if pressed.contains(&KeyCode::Right) {
-                self.targetpos += -delta * d.perpendicular();
+                self.targetpos += -delta * d.perpendicular().z(0.0);
             }
             if pressed.contains(&KeyCode::Left) {
-                self.targetpos += delta * d.perpendicular();
+                self.targetpos += delta * d.perpendicular().z(0.0);
             }
             if pressed.contains(&KeyCode::Up) {
-                self.targetpos += -delta * d;
+                self.targetpos += -delta * d.z(0.0);
             }
             if pressed.contains(&KeyCode::Down) {
-                self.targetpos += delta * d;
+                self.targetpos += delta * d.z(0.0);
             }
 
             let just_pressed = &ctx.input.keyboard.just_pressed;
@@ -143,16 +144,16 @@ impl CameraHandler3D {
 
         if settings.camera_border_move {
             if screenpos.x < 2.0 {
-                self.targetpos += delta * d.perpendicular();
+                self.targetpos += delta * d.perpendicular().z(0.0);
             }
             if screenpos.x > self.camera.viewport_w - 2.0 {
-                self.targetpos += -delta * d.perpendicular();
+                self.targetpos += -delta * d.perpendicular().z(0.0);
             }
             if screenpos.y < 2.0 {
-                self.targetpos += -delta * d;
+                self.targetpos += -delta * d.z(0.0);
             }
             if screenpos.y > self.camera.viewport_h - 2.0 {
-                self.targetpos += delta * d;
+                self.targetpos += delta * d.z(0.0);
             }
         }
 
@@ -178,7 +179,9 @@ impl CameraHandler3D {
                 self.targetpitch += delta_mouse.y / 100.0;
                 self.targetpitch = self.targetpitch.min(1.57).max(0.01);
             } else if pressed.contains(&MouseButton::Right) {
-                self.targetpos += (self.last_pos - unprojected).cap_magnitude(50000.0 * delta);
+                self.targetpos += (self.last_pos - unprojected)
+                    .cap_magnitude(50000.0 * delta)
+                    .z(0.0);
                 self.targetpos.x = self.targetpos.x.clamp(-10000.0, 10000.0);
                 self.targetpos.y = self.targetpos.y.clamp(-10000.0, 10000.0);
             }
@@ -207,6 +210,9 @@ impl CameraHandler3D {
             self.camera.dist = self.targetdist;
         }
 
+        self.camera.pos.z = height(self.camera.pos.xy())
+            .unwrap_or(self.camera.pos.z)
+            .max(height(self.camera.offset().xy()).unwrap_or_default());
         self.update(ctx);
         self.last_pos = self.unproject(screenpos);
     }

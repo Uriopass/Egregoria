@@ -1,7 +1,7 @@
 use crate::uiworld::UiWorld;
 use common::FastMap;
-use geom::{vec2, LinearColor};
-use map_model::{Map, CHUNK_RESOLUTION, CHUNK_SIZE};
+use geom::{vec2, vec3, LinearColor};
+use map_model::{Map, CELL_SIZE, CHUNK_RESOLUTION, CHUNK_SIZE};
 use std::mem::MaybeUninit;
 use std::sync::Arc;
 use wgpu_engine::pbuffer::PBuffer;
@@ -64,8 +64,6 @@ impl TerrainRender {
 
         let mut v = vec![];
 
-        const CELLSIZE: f32 = CHUNK_SIZE as f32 / CHUNK_RESOLUTION as f32;
-
         let right_chunk = map.terrain.chunks.get(&(cell.0 + 1, cell.1));
         let up_chunk = map.terrain.chunks.get(&(cell.0, cell.1 + 1));
         let upright_chunk = map.terrain.chunks.get(&(cell.0 + 1, cell.1 + 1));
@@ -87,32 +85,40 @@ impl TerrainRender {
                         chunk.heights[y * scale - (y == resolution) as usize]
                             [x * scale - (x == resolution) as usize]
                     };
-                    let height = match (x == resolution, y == resolution) {
+
+                    let getheight = |x: usize, y: usize| match (x >= resolution, y >= resolution) {
                         (false, false) => chunk.heights[y * scale][x * scale],
                         (true, false) => right_chunk
-                            .map(|c| c.heights[y * scale][0])
+                            .map(|c| c.heights[y * scale][(x - resolution) * scale])
                             .unwrap_or_else(fallback),
                         (false, true) => up_chunk
-                            .map(|c| c.heights[0][x * scale])
+                            .map(|c| c.heights[(y - resolution) * scale][x * scale])
                             .unwrap_or_else(fallback),
                         (true, true) => upright_chunk
-                            .map(|c| c.heights[0][0])
+                            .map(|c| c.heights[(y - resolution) * scale][(x - resolution) * scale])
                             .unwrap_or_else(fallback),
                     };
 
-                    let pos = chunkoff + vec2(x as f32, y as f32) * CELLSIZE;
+                    let height = getheight(x, y);
+                    let hx = getheight(x + 1, y);
+                    let hy = getheight(x, y + 1);
 
-                    let col: LinearColor = if height < 0.1 {
+                    let pos = chunkoff + vec2(x as f32, y as f32) * CELL_SIZE;
+
+                    let col: LinearColor = if height < -0.02 {
                         common::config().sea_col.into()
-                    } else if height < 0.12 {
+                    } else if height < 0.0 {
                         common::config().sand_col.into()
                     } else {
                         0.37 * LinearColor::from(common::config().grass_col)
                     };
 
                     mesh.push(MeshVertex {
-                        position: [pos.x, pos.y, 0.0],
-                        normal: [0.0, 0.0, 1.0],
+                        position: [pos.x, pos.y, height],
+                        normal: vec3(CELL_SIZE * scale as f32, 0.0, hx - height)
+                            .cross(vec3(0.0, CELL_SIZE * scale as f32, hy - height))
+                            .normalize()
+                            .into(),
                         uv: [0.0; 2],
                         color: col.into(),
                     })

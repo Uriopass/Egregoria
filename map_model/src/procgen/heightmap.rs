@@ -10,7 +10,7 @@ const CZ: Vec2 = Vec2::new(-0.577_350_26, -0.577_350_26);
 const K: f32 = 0.024_390_243;
 
 // Gradient mapping with an extra rotation.
-pub fn grad2(p: Vec2) -> Vec2 {
+fn grad2(p: Vec2) -> Vec2 {
     // Map from a line to a diamond such that a shift maps to a rotation.
     let u = permute(permute(p.x) + p.y) * K;
     let u = 4.0 * u.fract() - 2.0;
@@ -19,7 +19,7 @@ pub fn grad2(p: Vec2) -> Vec2 {
 
 /* return range is [-0.5; 0.5] */
 #[allow(clippy::many_single_char_names)]
-pub fn simplex_noise(pos: Vec2) -> (f32, Vec2) {
+pub(crate) fn simplex_noise(pos: Vec2) -> (f32, Vec2) {
     let mut i: Vec2 = Vec2::floor(pos + Vec2::splat(Vec2::dot(pos, CY)));
     let x0: Vec2 = pos - i + Vec2::splat(Vec2::dot(i, CX));
     let i1 = if x0.x > x0.y {
@@ -79,7 +79,7 @@ fn fnoise(ampl: f32, in_wv: Vec2) -> (f32, Vec2) {
     (noise, grad * ampl)
 }
 
-pub fn height(mut p: Vec2) -> (f32, Vec2) {
+pub(crate) fn height(mut p: Vec2) -> (f32, Vec2) {
     p -= vec2(-2000.0, 2000.0);
 
     let (noise, mut grad) = fnoise(0.00003, p);
@@ -94,7 +94,7 @@ pub fn height(mut p: Vec2) -> (f32, Vec2) {
     (noise, grad)
 }
 
-pub fn tree_density(mut p: Vec2) -> f32 {
+pub(crate) fn tree_density(mut p: Vec2) -> f32 {
     let h = height(p);
     p -= vec2(-2000.0, 2000.0);
 

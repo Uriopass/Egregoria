@@ -56,13 +56,13 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         mouseinfo.unprojected
     };
 
-    let log_height = cam.eye().z.log10();
+    let log_camheight = cam.eye().z.log10();
     let cutoff = inline_tweak::tweak!(3.3);
 
-    if state.snap_to_grid && log_height < cutoff {
-        let alpha = 1.0 - log_height / cutoff;
+    if state.snap_to_grid && log_camheight < cutoff {
+        let alpha = 1.0 - log_camheight / cutoff;
         let col = common::config().gui_primary.a(alpha);
-        let screen = AABB::new(cam.pos, cam.pos).expand(1000.0);
+        let screen = AABB::new(cam.pos.xy(), cam.pos.xy()).expand(1000.0);
         let startx = (screen.ll.x / grid_size).ceil() * grid_size;
         for x in 0..(screen.w() / grid_size) as i32 {
             let x = startx + x as f32 * grid_size;

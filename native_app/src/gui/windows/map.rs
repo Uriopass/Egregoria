@@ -34,7 +34,7 @@ pub fn map(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egrego
 
         if ui.small_button(im_str!("load test field")) {
             uiworld.commands().map_load_testfield(
-                uiworld.read::<Camera>().pos,
+                uiworld.read::<Camera>().pos.xy(),
                 state.size,
                 state.spacing,
             );
