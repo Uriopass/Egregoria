@@ -6,6 +6,7 @@ use std::num::Wrapping;
 
 pub const CHUNK_SIZE: u32 = 300;
 pub const CHUNK_RESOLUTION: usize = 10;
+pub const CELL_SIZE: f32 = CHUNK_SIZE as f32 / CHUNK_RESOLUTION as f32;
 
 #[derive(Clone)]
 pub struct Chunk {
@@ -82,6 +83,32 @@ impl Terrain {
         (ll.1..=ur.1).flat_map(move |y| (ll.0..=ur.0).map(move |x| (x, y)))
     }
 
+    pub fn height(&self, p: Vec2) -> Option<f32> {
+        let exact = self.height_nearest(p);
+        if let (Some(a), Some(b), Some(c), Some(d)) = (
+            exact,
+            self.height_nearest(p + Vec2::x(CELL_SIZE)),
+            self.height_nearest(p + Vec2::y(CELL_SIZE)),
+            self.height_nearest(p + vec2(CELL_SIZE, CELL_SIZE)),
+        ) {
+            return Some((a + b + c + d) / 4.0);
+        }
+        exact
+    }
+
+    fn height_nearest(&self, p: Vec2) -> Option<f32> {
+        let cell = Self::cell(p);
+        self.chunks.get(&cell).and_then(|chunk| {
+            let v = p / CHUNK_SIZE as f32 - vec2(cell.0 as f32, cell.1 as f32);
+            let v = v * CHUNK_RESOLUTION as f32;
+            chunk
+                .heights
+                .get(v.y as usize)
+                .and_then(|x| x.get(v.x as usize))
+                .copied()
+        })
+    }
+
     pub fn generate_chunk(&mut self, (x, y): (i32, i32)) {
         if self.chunks.contains_key(&(x, y)) {
             return;
@@ -92,9 +119,8 @@ impl Terrain {
         let offchunk = vec2(x as f32, y as f32) * CHUNK_SIZE as f32;
         for (y, l) in chunk.heights.iter_mut().enumerate() {
             for (x, h) in l.iter_mut().enumerate() {
-                let offcell =
-                    vec2(x as f32, y as f32) / CHUNK_RESOLUTION as f32 * CHUNK_SIZE as f32;
-                *h = crate::procgen::heightmap::height(offchunk + offcell).0;
+                let offcell = vec2(x as f32, y as f32) * CELL_SIZE;
+                *h = (crate::procgen::heightmap::height(offchunk + offcell).0 - 0.12).min(0.0);
             }
         }
 
@@ -154,20 +180,20 @@ impl Tree {
 
 type SmolTree = u16;
 
-pub fn new_smoltree(pos: Vec2, cell: (i32, i32)) -> SmolTree {
-    let diffx = pos.x - (cell.0 * CHUNK_SIZE as i32) as f32;
-    let diffy = pos.y - (cell.1 * CHUNK_SIZE as i32) as f32;
+pub fn new_smoltree(pos: Vec2, chunk: (i32, i32)) -> SmolTree {
+    let diffx = pos.x - (chunk.0 * CHUNK_SIZE as i32) as f32;
+    let diffy = pos.y - (chunk.1 * CHUNK_SIZE as i32) as f32;
 
     ((((diffx / CHUNK_SIZE as f32) * 256.0) as u8 as u16) << 8)
         + ((diffy / CHUNK_SIZE as f32) * 256.0) as u8 as u16
 }
 
-pub fn to_pos(encoded: SmolTree, cell: (i32, i32)) -> Vec2 {
+pub fn to_pos(encoded: SmolTree, chunk: (i32, i32)) -> Vec2 {
     let diffx = (encoded >> 8) as u8;
     let diffy = (encoded & 0xFF) as u8;
     Vec2 {
-        x: CHUNK_SIZE as f32 * (cell.0 as f32 + diffx as f32 / 256.0),
-        y: CHUNK_SIZE as f32 * (cell.1 as f32 + diffy as f32 / 256.0),
+        x: CHUNK_SIZE as f32 * (chunk.0 as f32 + diffx as f32 / 256.0),
+        y: CHUNK_SIZE as f32 * (chunk.1 as f32 + diffy as f32 / 256.0),
     }
 }
 
@@ -190,15 +216,15 @@ impl From<SerializedTerrain> for Terrain {
             ..Self::default()
         };
 
-        for (cell, v) in ser.v {
+        for (chunk_pos, v) in ser.v {
             let trees = v
                 .trees
                 .into_iter()
-                .map(|x| Tree::new(to_pos(x, cell)))
+                .map(|x| Tree::new(to_pos(x, chunk_pos)))
                 .collect();
 
             t.chunks.insert(
-                cell,
+                chunk_pos,
                 Chunk {
                     trees,
                     heights: v.heights,

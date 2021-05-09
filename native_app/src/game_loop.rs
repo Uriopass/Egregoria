@@ -210,6 +210,7 @@ impl State {
 
         self.terrain.update(&mut ctx.gfx, &*self.goria.map());
 
+        let map = self.goria.map();
         //        self.camera.movespeed = settings.camera_sensibility / 100.0;
         self.camera.camera_movement(
             ctx,
@@ -217,7 +218,9 @@ impl State {
             !self.imgui_render.last_mouse_captured,
             !self.imgui_render.last_kb_captured,
             &settings,
+            |p| map.terrain.height(p),
         );
+        drop(map);
         *self.uiw.write::<Camera>() = self.camera.camera;
 
         if !self.imgui_render.last_mouse_captured {

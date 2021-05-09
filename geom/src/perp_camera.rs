@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Camera {
-    pub pos: Vec2,
+    pub pos: Vec3,
     pub yaw: f32,
     pub pitch: f32,
     pub dist: f32,
@@ -32,7 +32,7 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(pos: Vec2, viewport_w: f32, viewport_h: f32) -> Self {
+    pub fn new(pos: Vec3, viewport_w: f32, viewport_h: f32) -> Self {
         Self {
             pos,
             yaw: std::f32::consts::FRAC_PI_4,
@@ -64,14 +64,14 @@ impl Camera {
     }
 
     pub fn eye(&self) -> Vec3 {
-        self.pos.z(0.0) + self.offset()
+        self.pos + self.offset()
     }
 
     pub fn build_view_projection_matrix(&self) -> Matrix4 {
         let eye = self.eye();
-        let znear = Self::znear(eye.z);
+        let znear = Self::znear(self.offset().z);
         let zfar = znear * 1000.0;
-        let view = look_at_rh(eye, self.pos.z(0.0), self.up);
+        let view = look_at_rh(eye, self.pos, self.up);
         let proj = PerspectiveFov::new(
             self.fovy / 180.0 * std::f32::consts::PI,
             self.aspect,
@@ -91,7 +91,7 @@ impl Camera {
 
         let d = self.dist * 1.3;
 
-        let base = (self.pos - self.offset().xy() * 0.6).z(0.0);
+        let base = self.pos - self.offset().xy().z(0.0) * 0.6;
         let suneye = base + dir;
 
         let view = look_at_rh(suneye, base, self.up);

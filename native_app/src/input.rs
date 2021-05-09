@@ -281,6 +281,7 @@ pub enum MouseButton {
 }
 
 impl KeyCode {
+    #[allow(dead_code)]
     fn is_modifier(&self) -> bool {
         use KeyCode::*;
         matches!(self, LShift | RShift | LControl | RControl | LAlt | RAlt)

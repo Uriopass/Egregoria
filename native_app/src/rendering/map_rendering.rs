@@ -114,7 +114,7 @@ impl RoadRenderer {
         self.trees_builder.instances.clear();
         for t in map.terrain.trees() {
             self.trees_builder.instances.push(MeshInstance {
-                pos: t.pos.z(0.0),
+                pos: t.pos.z(map.terrain.height(t.pos).unwrap_or_default()),
                 dir: t.dir.z(0.0) * t.size * 0.2,
                 tint: ((1.0 - t.size * 0.05) * t.col * LinearColor::WHITE).a(1.0),
             });
