@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 use std::num::Wrapping;
 
-pub const CHUNK_SIZE: u32 = 300;
-pub const CHUNK_RESOLUTION: usize = 10;
+pub const CHUNK_SIZE: u32 = 1024;
+pub const CHUNK_RESOLUTION: usize = 32;
 pub const CELL_SIZE: f32 = CHUNK_SIZE as f32 / CHUNK_RESOLUTION as f32;
 
 #[derive(Clone)]
@@ -120,14 +120,15 @@ impl Terrain {
         for (y, l) in chunk.heights.iter_mut().enumerate() {
             for (x, h) in l.iter_mut().enumerate() {
                 let offcell = vec2(x as f32, y as f32) * CELL_SIZE;
-                *h = (crate::procgen::heightmap::height(offchunk + offcell).0 - 0.12).min(0.0);
+                *h = 1000.0
+                    * (crate::procgen::heightmap::height(offchunk + offcell).0 - 0.12).min(0.0);
             }
         }
 
         let rchunk = common::rand::rand2(x as f32, y as f32);
         let pchunk = CHUNK_SIZE as f32 * vec2(x as f32, y as f32);
 
-        const RES_TREES: usize = 10;
+        const RES_TREES: usize = 32;
         const TCELLW: f32 = CHUNK_SIZE as f32 / RES_TREES as f32;
 
         for offx in 0..RES_TREES {
@@ -144,11 +145,9 @@ impl Terrain {
 
                 let tdens = tree_density(sample);
 
-                if dens_test > tdens * 2.0 {
-                    continue;
+                if dens_test < tdens * 2.0 - 0.3 {
+                    chunk.trees.push(Tree::new(sample));
                 }
-
-                chunk.trees.push(Tree::new(sample));
             }
         }
     }

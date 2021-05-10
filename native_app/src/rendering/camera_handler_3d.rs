@@ -182,8 +182,6 @@ impl CameraHandler3D {
                 self.targetpos += (self.last_pos - unprojected)
                     .cap_magnitude(50000.0 * delta)
                     .z(0.0);
-                self.targetpos.x = self.targetpos.x.clamp(-10000.0, 10000.0);
-                self.targetpos.y = self.targetpos.y.clamp(-10000.0, 10000.0);
             }
         }
         self.targetdist = self.targetdist.clamp(30.0, 100000.0);
