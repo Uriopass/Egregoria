@@ -31,10 +31,10 @@ impl LaneKind {
 
     pub fn width(self) -> f32 {
         match self {
-            LaneKind::Driving | LaneKind::Biking | LaneKind::Bus => 8.0,
-            LaneKind::Parking => 4.0,
-            LaneKind::Construction => 4.0,
-            LaneKind::Walking => 4.0,
+            LaneKind::Driving | LaneKind::Biking | LaneKind::Bus => 4.0,
+            LaneKind::Parking => 2.5,
+            LaneKind::Construction => 2.0,
+            LaneKind::Walking => 2.0,
         }
     }
 }

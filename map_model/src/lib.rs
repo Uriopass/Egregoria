@@ -61,4 +61,4 @@ pub use turn_policy::*;
 
 pub use ::pathfinding as pathfinding_crate;
 
-pub const CROSSWALK_WIDTH: f32 = 4.0;
+pub const CROSSWALK_WIDTH: f32 = 2.0;
