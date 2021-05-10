@@ -16,7 +16,6 @@ pub enum LaneKind {
     Biking,
     Bus,
     Parking,
-    Construction,
     Walking,
 }
 
@@ -33,7 +32,6 @@ impl LaneKind {
         match self {
             LaneKind::Driving | LaneKind::Biking | LaneKind::Bus => 4.0,
             LaneKind::Parking => 2.5,
-            LaneKind::Construction => 2.0,
             LaneKind::Walking => 2.0,
         }
     }
