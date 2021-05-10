@@ -159,7 +159,7 @@ impl MapBuilders {
                         dir,
                         Z_ARROW,
                         LinearColor::gray(0.3 + fade * 0.1),
-                        (4.0, 4.0),
+                        (2.0, 2.0),
                     );
                 }
             }
@@ -169,6 +169,8 @@ impl MapBuilders {
     fn crosswalks(&mut self, map: &Map) {
         let builder = &mut self.crosswalk_builder;
         builder.clear();
+
+        let walking_w: f32 = LaneKind::Walking.width();
 
         let lanes = map.lanes();
         let intersections = map.intersections();
@@ -182,14 +184,14 @@ impl MapBuilders {
 
                     let l = (to - from).magnitude();
 
-                    if l < 4.0 {
+                    if l < walking_w {
                         continue;
                     }
 
                     let dir = (to - from) / l;
                     let perp = dir.perpendicular() * CROSSWALK_WIDTH * 0.5;
-                    let pos = (from + dir * 2.25).z(Z_CROSSWALK);
-                    let height = l - 4.5;
+                    let pos = (from + dir * walking_w * 0.5).z(Z_CROSSWALK);
+                    let height = l - walking_w;
                     let dir = dir.z(0.0);
                     let perp = perp.z(0.0);
 
@@ -203,8 +205,8 @@ impl MapBuilders {
 
                         vertices.push(mk_v(pos - perp, Vec2::ZERO));
                         vertices.push(mk_v(pos + perp, Vec2::ZERO));
-                        vertices.push(mk_v(pos + perp + dir * height, Vec2::x(height / 2.0)));
-                        vertices.push(mk_v(pos - perp + dir * height, Vec2::x(height / 2.0)));
+                        vertices.push(mk_v(pos + perp + dir * height, Vec2::x(height)));
+                        vertices.push(mk_v(pos - perp + dir * height, Vec2::x(height)));
 
                         add_index(0);
                         add_index(1);
@@ -331,7 +333,7 @@ impl MapBuilders {
                 or_src,
                 or_dst,
                 Z_LANE_BG,
-                l.kind.width() + 0.5,
+                l.kind.width() + 0.25,
             );
 
             tess.set_color(match l.kind {
@@ -349,7 +351,7 @@ impl MapBuilders {
                 or_src,
                 or_dst,
                 z,
-                l.kind.width() - 0.5,
+                l.kind.width() - 0.25,
             );
         }
 
@@ -385,7 +387,7 @@ impl MapBuilders {
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                tess.draw_polyline_with_dir(&p, first_dir, last_dir, Z_LANE_BG, w + 0.5);
+                tess.draw_polyline_with_dir(&p, first_dir, last_dir, Z_LANE_BG, w + 0.25);
 
                 tess.set_color(hig_col);
 
@@ -394,7 +396,7 @@ impl MapBuilders {
 
                 let z = Z_SIDEWALK;
 
-                tess.draw_polyline_with_dir(&p, first_dir, last_dir, z, w - 0.5);
+                tess.draw_polyline_with_dir(&p, first_dir, last_dir, z, w - 0.25);
             }
         }
 
