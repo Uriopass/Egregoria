@@ -1,15 +1,16 @@
 use crate::uiworld::UiWorld;
 use common::FastMap;
-use geom::{vec2, vec3, LinearColor};
+use geom::{vec2, vec3, Camera, LinearColor};
 use map_model::{Map, CELL_SIZE, CHUNK_RESOLUTION, CHUNK_SIZE};
 use std::mem::MaybeUninit;
+use std::ops::Sub;
 use std::sync::Arc;
 use wgpu_engine::pbuffer::PBuffer;
 use wgpu_engine::wgpu::BufferUsage;
 use wgpu_engine::{FrameContext, GfxContext, Mesh, Texture};
 use wgpu_engine::{IndexType, MeshVertex};
 
-const LOD: usize = 1;
+const LOD: usize = 4;
 
 struct TerrainChunk {
     lods: [Mesh; LOD],
@@ -103,9 +104,9 @@ impl TerrainRender {
                     let hx = getheight(x + 1, y);
                     let hy = getheight(x, y + 1);
 
-                    let pos = chunkoff + vec2(x as f32, y as f32) * CELL_SIZE;
+                    let pos = chunkoff + vec2(x as f32, y as f32) * CELL_SIZE * scale as f32;
 
-                    let col: LinearColor = if height < -0.02 {
+                    let col: LinearColor = if height < -20.0 {
                         common::config().sea_col.into()
                     } else if height < 0.0 {
                         common::config().sand_col.into()
@@ -176,9 +177,15 @@ impl TerrainRender {
         collect_arrlod(v)
     }
 
-    pub fn render(&mut self, _uiw: &UiWorld, fctx: &mut FrameContext) {
-        for chunk in self.chunks.values() {
-            fctx.objs.push(Box::new(chunk.lods[0].clone()))
+    pub fn render(&mut self, uiw: &UiWorld, fctx: &mut FrameContext) {
+        let cam = uiw.read::<Camera>();
+
+        let eye = cam.eye();
+        for (cell, chunk) in &self.chunks {
+            let p = vec2(cell.0 as f32, cell.1 as f32) * CHUNK_SIZE as f32;
+            let lod = eye.distance(p.z(0.0)).log2().sub(10.0).max(0.0) as usize;
+            fctx.objs
+                .push(Box::new(chunk.lods[lod.min(LOD - 1)].clone()))
         }
     }
 }
