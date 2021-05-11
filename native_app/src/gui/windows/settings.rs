@@ -64,7 +64,7 @@ impl Default for Settings {
             ssao: true,
             shadows: ShadowQuality::High,
             camera_smooth_tightness: 1.0,
-            realistic_sky: false,
+            realistic_sky: true,
         }
     }
 }
