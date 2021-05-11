@@ -16,6 +16,7 @@ pub struct Config {
     pub grass_col: Color,
     pub sand_col: Color,
     pub sea_col: Color,
+    pub border_col: Color,
 
     pub roof_col: Color,
     pub house_col: Color,

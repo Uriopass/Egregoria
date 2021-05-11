@@ -1,13 +1,13 @@
 use crate::uiworld::UiWorld;
 use common::FastMap;
-use geom::{vec2, vec3, Camera, LinearColor};
+use geom::{vec2, vec3, Camera, LinearColor, Polygon, Vec2};
 use map_model::{Map, CELL_SIZE, CHUNK_RESOLUTION, CHUNK_SIZE};
 use std::mem::MaybeUninit;
 use std::ops::Sub;
 use std::sync::Arc;
 use wgpu_engine::pbuffer::PBuffer;
 use wgpu_engine::wgpu::BufferUsage;
-use wgpu_engine::{FrameContext, GfxContext, Mesh, Texture};
+use wgpu_engine::{FrameContext, GfxContext, Mesh, MeshBuilder, Texture};
 use wgpu_engine::{IndexType, MeshVertex};
 
 const LOD: usize = 4;
@@ -19,6 +19,7 @@ struct TerrainChunk {
 
 pub struct TerrainRender {
     chunks: FastMap<(i32, i32), TerrainChunk>,
+    borders: Vec<Mesh>,
     indices: [(PBuffer, usize); LOD],
     albedo: Arc<Texture>,
     bg: Arc<wgpu_engine::wgpu::BindGroup>,
@@ -31,6 +32,7 @@ impl TerrainRender {
         let pal = gfx.palette();
         Self {
             chunks: Default::default(),
+            borders: vec![],
             indices,
             bg: Arc::new(pal.bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device))),
             albedo: pal,
@@ -45,6 +47,8 @@ impl TerrainRender {
             for &cell in map.terrain.chunks.keys() {
                 self.update_chunk(gfx, map, cell)
             }
+
+            self.update_borders(gfx, map);
         }
     }
 
@@ -148,6 +152,70 @@ impl TerrainRender {
         self.chunks.insert(cell, chunk);
     }
 
+    fn update_borders(&mut self, gfx: &GfxContext, map: &Map) {
+        let minx = unwrap_ret!(self.chunks.keys().map(|x| x.0).min());
+        let maxx = unwrap_ret!(self.chunks.keys().map(|x| x.0).max()) + 1;
+        let miny = unwrap_ret!(self.chunks.keys().map(|x| x.1).min());
+        let maxy = unwrap_ret!(self.chunks.keys().map(|x| x.1).max()) + 1;
+        let albedo = &self.albedo;
+        let mk_bord = |start, end, c, is_x, rev| {
+            let c = c as f32 * CHUNK_SIZE as f32;
+            let flip = move |v: Vec2| {
+                if is_x {
+                    v
+                } else {
+                    vec2(v.y, v.x)
+                }
+            };
+
+            let mut poly = Polygon(vec![]);
+            poly.0.push(vec2(start as f32 * CHUNK_SIZE as f32, -1000.0));
+            for along in start * CHUNK_RESOLUTION as i32..=end * CHUNK_RESOLUTION as i32 {
+                let along = along as f32 * CELL_SIZE;
+                let p = flip(vec2(along, c));
+                let height = unwrap_cont!(map.terrain.height(p - p.sign() * 0.001));
+                poly.0.push(vec2(along, height + 1.5));
+            }
+            poly.0.push(vec2(end as f32 * CHUNK_SIZE as f32, -1000.0));
+
+            poly.simplify();
+
+            let mut indices = vec![];
+            wgpu_engine::earcut::earcut(&poly.0, |mut a, b, mut c| {
+                if rev {
+                    std::mem::swap(&mut a, &mut c);
+                }
+                indices.push(a as IndexType);
+                indices.push(b as IndexType);
+                indices.push(c as IndexType);
+            });
+            let mut mb = MeshBuilder::new();
+            mb.indices = indices;
+            mb.vertices = poly
+                .0
+                .into_iter()
+                .map(|p| MeshVertex {
+                    position: if is_x {
+                        vec3(p.x, c, p.y)
+                    } else {
+                        vec3(c, p.x, p.y)
+                    }
+                    .into(),
+                    normal: [0.0, 1.0, 0.0],
+                    uv: [0.0, 0.0],
+                    color: LinearColor::from(common::config().border_col).into(),
+                })
+                .collect();
+            mb.build(gfx, albedo.clone())
+        };
+
+        self.borders.clear();
+        self.borders.extend(mk_bord(minx, maxx, miny, true, false));
+        self.borders.extend(mk_bord(minx, maxx, maxy, true, true));
+        self.borders.extend(mk_bord(miny, maxy, minx, false, true));
+        self.borders.extend(mk_bord(miny, maxy, maxx, false, false));
+    }
+
     fn generate_indices(gfx: &GfxContext) -> [(PBuffer, usize); LOD] {
         let mut v = vec![];
         for lod in 0..LOD {
@@ -186,6 +254,9 @@ impl TerrainRender {
             let lod = eye.distance(p.z(0.0)).log2().sub(10.0).max(0.0) as usize;
             fctx.objs
                 .push(Box::new(chunk.lods[lod.min(LOD - 1)].clone()))
+        }
+        for b in &self.borders {
+            fctx.objs.push(Box::new(b.clone()))
         }
     }
 }
