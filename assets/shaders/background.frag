@@ -16,8 +16,8 @@ layout(set = 2, binding = 2) uniform texture2D t_starfield;
 layout(set = 2, binding = 3) uniform sampler s_starfield;
 
 #define PI 3.141592
-#define iSteps 16
-#define jSteps 8
+#define iSteps 12
+#define jSteps 4
 
 vec2 rsi(vec3 r0, vec3 rd, float sr) {
     // ray-sphere intersection that assumes
@@ -46,7 +46,7 @@ vec3 atmosphere(vec3 r, vec3 r0, vec3 pSun, float iSun, float rPlanet, float rAt
     float iStepSize = (p.y - p.x) / float(iSteps);
 
     // Initialize the primary ray time.
-    float iTime = 0.0;
+    float iTime = iStepSize * 0.375;
 
     // Initialize accumulators for Rayleigh and Mie scattering.
     vec3 totalRlh = vec3(0,0,0);
@@ -67,7 +67,7 @@ vec3 atmosphere(vec3 r, vec3 r0, vec3 pSun, float iSun, float rPlanet, float rAt
     for (int i = 0; i < iSteps; i++) {
 
         // Calculate the primary ray sample position.
-        vec3 iPos = r0 + r * (iTime + iStepSize * 0.5);
+        vec3 iPos = r0 + r * iTime;
 
         // Calculate the height of the sample.
         float iHeight = length(iPos) - rPlanet;
