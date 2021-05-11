@@ -1,5 +1,7 @@
 #![allow(clippy::float_cmp)]
 
+use geom::Vec2;
+
 /**
  Original author: donbright
  See implementation at https://github.com/donbright/earcutr
@@ -650,7 +652,13 @@ fn point_in_triangle(a: &Node, b: &Node, c: &Node, p: &Node) -> bool {
         && ((b.x - p.x) * (c.y - p.y) - (c.x - p.x) * (b.y - p.y) >= 0.0)
 }
 
-pub fn earcut(data: &[f32], mut on_triangle: impl FnMut(usize, usize, usize)) {
+pub fn earcut(data: &[Vec2], on_triangle: impl FnMut(usize, usize, usize)) {
+    // Safe because Vector2 and [f32; 2] have the same layout (Vec2 is repr(c))
+    let points: &[[f32; 2]] = unsafe { &*(&*data as *const [Vec2] as *const [[f32; 2]]) };
+
+    earcut_inner(bytemuck::cast_slice(points), on_triangle)
+}
+fn earcut_inner(data: &[f32], mut on_triangle: impl FnMut(usize, usize, usize)) {
     let (mut ll, outer_node) = linked_list(data, 0, data.len(), true);
     if ll.nodes.len() == 1 {
         return;

@@ -293,10 +293,7 @@ impl MapBuilders {
 
                     projected.simplify();
 
-                    let points: &[[f32; 2]] =
-                        unsafe { &*(&*projected.0 as *const [Vec2] as *const [[f32; 2]]) };
-
-                    earcut(bytemuck::cast_slice(points), |mut a, b, mut c| {
+                    earcut(&projected.0, |mut a, b, mut c| {
                         if reverse {
                             std::mem::swap(&mut a, &mut c);
                         }

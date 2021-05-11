@@ -97,9 +97,7 @@ impl Tesselator {
                 uv: [0.0; 2],
             }));
 
-            // Safe because Vector2 and [f32; 2] have the same layout (Vector2 is repr(c))
-            let points: &[[f32; 2]] = unsafe { &*(points as *const [Vec2] as *const [[f32; 2]]) };
-            earcut(bytemuck::cast_slice(points), |x, y, z| {
+            earcut(points, |x, y, z| {
                 index_push(x as u32);
                 index_push(y as u32);
                 index_push(z as u32);

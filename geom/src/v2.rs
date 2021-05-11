@@ -207,6 +207,13 @@ impl Vec2 {
         }
     }
 
+    pub fn sign(self) -> Self {
+        Self {
+            x: self.x.signum(),
+            y: self.y.signum(),
+        }
+    }
+
     #[inline]
     pub fn min(self, other: Vec2) -> Vec2 {
         Vec2 {
