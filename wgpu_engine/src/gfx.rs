@@ -90,7 +90,7 @@ impl Default for RenderParams {
             ssao_samples: 0,
             ssao_enabled: 1,
             shadow_mapping_enabled: 1,
-            realistic_sky: 0,
+            realistic_sky: 1,
         }
     }
 }
