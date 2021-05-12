@@ -4,11 +4,11 @@ use winit::dpi::PhysicalSize;
 use winit::window::{Fullscreen, Window};
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
-use common::History;
+use common::{History, Z_LANE};
 use egregoria::utils::time::GameTime;
 use egregoria::{Egregoria, SerPreparedEgregoria};
 use geom::{vec3, Camera, LinearColor, Vec3};
-use wgpu_engine::lighting::{LightInstance, LightRender};
+use wgpu_engine::lighting::LightInstance;
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
 use crate::audio::GameAudio;
@@ -45,7 +45,6 @@ pub struct State {
     road_renderer: RoadRenderer,
     terrain: TerrainRender,
     gui: Gui,
-    pub light: LightRender,
     immtess: Tesselator,
 
     all_audio: GameAudio,
@@ -87,7 +86,6 @@ impl State {
             terrain: TerrainRender::new(&mut ctx.gfx),
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
-            light: LightRender::new(&mut ctx.gfx),
             goria,
             immtess: Tesselator::new(None, 1.0),
         }
@@ -296,11 +294,11 @@ impl State {
             let w = x.width * 0.5 - 5.0;
             for (point, dir) in x.points().equipoints_dir(45.0) {
                 lights.push(LightInstance {
-                    pos: (point + dir.perpendicular() * w).into(),
+                    pos: (point + dir.perpendicular() * w).z(Z_LANE).into(),
                     scale: 60.0,
                 });
                 lights.push(LightInstance {
-                    pos: (point - dir.perpendicular() * w).into(),
+                    pos: (point - dir.perpendicular() * w).z(Z_LANE).into(),
                     scale: 60.0,
                 });
             }
@@ -308,7 +306,7 @@ impl State {
 
         for i in map.intersections().values() {
             lights.push(LightInstance {
-                pos: (i.pos).into(),
+                pos: i.pos.z(Z_LANE).into(),
                 scale: 60.0,
             });
         }

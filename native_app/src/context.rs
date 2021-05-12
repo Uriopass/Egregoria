@@ -164,8 +164,7 @@ impl Context {
                         self.gfx.render_params.upload_to_gpu(&self.gfx.queue);
 
                         let mut enc = self.gfx.start_frame();
-                        state.light.render_lights(&self.gfx, &mut enc, &lights);
-                        self.gfx.render_objs(&mut enc, &sco, |fc| state.render(fc));
+                        self.gfx.render_objs(&mut enc, &sco, &*lights, |fc| state.render(fc));
 
                         let window = &self.window;
                         self.gfx
