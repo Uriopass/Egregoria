@@ -1,6 +1,4 @@
-use common::{
-    FastMap, Z_ARROW, Z_BSPRITE, Z_CROSSWALK, Z_INTER_BG, Z_LANE, Z_LANE_BG, Z_LOT, Z_SIDEWALK,
-};
+use common::{FastMap, Z_ARROW, Z_BSPRITE, Z_CROSSWALK, Z_INTER_BG, Z_LANE, Z_LOT};
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
 use geom::{vec2, LinearColor, Polygon, Vec2, Vec3};
@@ -317,39 +315,40 @@ impl MapBuilders {
 
         let inters = map.intersections();
         let lanes = map.lanes();
+        let roads = map.roads();
         let lots = map.lots();
 
-        for l in lanes.values() {
-            tess.set_color(line_col);
-
-            let or_src = l.orientation_from(l.src);
-            let or_dst = -l.orientation_from(l.dst);
-
-            tess.draw_polyline_with_dir(
-                l.points.as_slice(),
-                or_src,
-                or_dst,
-                Z_LANE_BG,
-                l.kind.width() + 0.25,
-            );
-
-            tess.set_color(match l.kind {
-                LaneKind::Walking => hig_col,
-                LaneKind::Parking => low_col,
-                _ => mid_col,
-            });
-            let z = match l.kind {
-                LaneKind::Walking => Z_SIDEWALK,
-                _ => Z_LANE,
+        for road in roads.values() {
+            let cut = road.interfaced_points();
+            let mut draw_off = |col: LinearColor, w, off| {
+                tess.set_color(col);
+                tess.draw_polyline_full(
+                    cut.as_slice(),
+                    unwrap_ret!(cut.first_dir()),
+                    unwrap_ret!(cut.last_dir()),
+                    Z_LANE,
+                    w,
+                    off,
+                );
             };
 
-            tess.draw_polyline_with_dir(
-                l.points.as_slice(),
-                or_src,
-                or_dst,
-                z,
-                l.kind.width() - 0.25,
-            );
+            draw_off(line_col, 0.25, -road.width * 0.5);
+            for l in road.lanes_iter().flat_map(|(l, _)| lanes.get(l)) {
+                draw_off(
+                    match l.kind {
+                        LaneKind::Walking => hig_col,
+                        LaneKind::Parking => low_col,
+                        _ => mid_col,
+                    },
+                    l.kind.width() - 0.25,
+                    l.dist_from_bottom - road.width * 0.5 + l.kind.width() * 0.5,
+                );
+                draw_off(
+                    line_col,
+                    0.25,
+                    l.dist_from_bottom - road.width * 0.5 + l.kind.width(),
+                );
+            }
         }
 
         // Intersections
@@ -357,7 +356,7 @@ impl MapBuilders {
         for inter in inters.values() {
             if inter.roads.is_empty() {
                 tess.set_color(line_col);
-                tess.draw_circle(inter.pos, Z_LANE_BG, 5.5);
+                tess.draw_circle(inter.pos, Z_LANE - 0.1, 5.5);
 
                 tess.set_color(mid_col);
                 tess.draw_circle(inter.pos, Z_LANE, 5.0);
@@ -384,16 +383,15 @@ impl MapBuilders {
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                tess.draw_polyline_with_dir(&p, first_dir, last_dir, Z_LANE_BG, w + 0.25);
+                tess.draw_polyline_full(&p, first_dir, last_dir, Z_LANE, 0.25, w * 0.5);
+                tess.draw_polyline_full(&p, first_dir, last_dir, Z_LANE, 0.25, -w * 0.5);
 
                 tess.set_color(hig_col);
 
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                let z = Z_SIDEWALK;
-
-                tess.draw_polyline_with_dir(&p, first_dir, last_dir, z, w - 0.25);
+                tess.draw_polyline_with_dir(&p, first_dir, last_dir, Z_LANE, w - 0.25);
             }
         }
 

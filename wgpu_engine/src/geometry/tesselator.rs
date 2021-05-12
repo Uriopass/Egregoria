@@ -275,7 +275,6 @@ impl Tesselator {
         self.meshbuilder.extend(&verts, &[0, 1, 2, 0, 2, 3]);
         true
     }
-
     pub fn draw_polyline_with_dir(
         &mut self,
         points: &[Vec2],
@@ -284,13 +283,33 @@ impl Tesselator {
         z: f32,
         thickness: f32,
     ) -> bool {
+        self.draw_polyline_full(points, first_dir, last_dir, z, thickness, 0.0)
+    }
+
+    pub fn draw_polyline_full(
+        &mut self,
+        points: &[Vec2],
+        first_dir: Vec2,
+        last_dir: Vec2,
+        z: f32,
+        thickness: f32,
+        offset: f32,
+    ) -> bool {
         let n_points = points.len();
         if n_points < 2 || thickness <= 0.0 {
             return true;
         }
         if n_points == 2 {
-            self.draw_stroke(points[0], points[1], z, thickness);
-            return true;
+            let dir = (points[0] - points[1])
+                .try_normalize()
+                .unwrap_or_default()
+                .perpendicular();
+            return self.draw_stroke(
+                points[0] + dir * offset,
+                points[1] + dir * offset,
+                z,
+                thickness,
+            );
         }
         if let Some(cull_rect) = self.cull_rect {
             let window_intersects = |x: &[Vec2]| {
@@ -309,17 +328,17 @@ impl Tesselator {
         let color = self.color.into();
         let normal = self.normal;
         self.meshbuilder.extend_with(move |verts, index_push| {
-            let nor: Vec2 = halfthick * vec2(-first_dir.y, first_dir.x);
+            let nor = -first_dir.perpendicular();
 
             verts.push(MeshVertex {
-                position: [points[0].x + nor.x, points[0].y + nor.y, z],
+                position: (points[0] + nor * (offset + halfthick)).z(z).into(),
                 color,
                 normal,
                 uv: [0.0; 2],
             });
 
             verts.push(MeshVertex {
-                position: [points[0].x - nor.x, points[0].y - nor.y, z],
+                position: (points[0] + nor * (offset - halfthick)).z(z).into(),
                 color,
                 normal,
                 uv: [0.0; 2],
@@ -346,8 +365,8 @@ impl Tesselator {
 
                 let mul = 1.0 + (1.0 + ae.dot(ce).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
 
-                let p1 = elbow + mul * dir * halfthick;
-                let p2 = elbow - mul * dir * halfthick;
+                let p1 = elbow + mul * dir * (offset + halfthick);
+                let p2 = elbow + mul * dir * (offset - halfthick);
                 verts.push(MeshVertex {
                     position: [p1.x, p1.y, z],
                     color,
@@ -372,10 +391,10 @@ impl Tesselator {
                 index += 1;
             }
 
-            let nor: Vec2 = halfthick * vec2(-last_dir.y, last_dir.x);
+            let nor = -last_dir.perpendicular();
 
-            let p1 = points[n_points - 1] + nor;
-            let p2 = points[n_points - 1] - nor;
+            let p1 = points[n_points - 1] + (offset + halfthick) * nor;
+            let p2 = points[n_points - 1] + (offset - halfthick) * nor;
             verts.push(MeshVertex {
                 position: [p1.x, p1.y, z],
                 color,
