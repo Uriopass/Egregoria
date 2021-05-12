@@ -20,6 +20,11 @@ pub struct Texture {
     pub extent: Extent3d,
 }
 
+pub struct MultisampledTexture {
+    pub target: Texture,
+    pub multisampled_buffer: wgpu::TextureView,
+}
+
 impl Texture {
     pub fn read_image(p: impl AsRef<Path>) -> Option<(Vec<u8>, u32, u32)> {
         let mut buf = vec![];
@@ -80,14 +85,36 @@ impl Texture {
     pub fn create_light_texture(
         device: &wgpu::Device,
         sc_desc: &wgpu::SwapChainDescriptor,
-    ) -> Self {
-        Self::create_fbo(
+        samples: u32,
+    ) -> MultisampledTexture {
+        let fbo = Self::create_fbo(
             device,
             (sc_desc.width, sc_desc.height),
             TextureFormat::R16Float,
             TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
             None,
-        )
+        );
+
+        let multisample_desc = &wgpu::TextureDescriptor {
+            format: TextureFormat::R16Float,
+            size: Extent3d {
+                width: sc_desc.width,
+                height: sc_desc.height,
+                depth_or_array_layers: 1,
+            },
+            usage: TextureUsage::RENDER_ATTACHMENT,
+            mip_level_count: 1,
+            sample_count: samples,
+            dimension: wgpu::TextureDimension::D2,
+            label: Some("light texture multisampled buffer"),
+        };
+
+        MultisampledTexture {
+            target: fbo,
+            multisampled_buffer: device
+                .create_texture(multisample_desc)
+                .create_view(&TextureViewDescriptor::default()),
+        }
     }
 
     pub fn create_ui_texture(device: &wgpu::Device, sc_desc: &wgpu::SwapChainDescriptor) -> Self {

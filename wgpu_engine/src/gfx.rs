@@ -1,8 +1,9 @@
-use crate::ShaderType;
+use crate::lighting::{LightInstance, LightRender};
 use crate::{
     bg_layout_litmesh, compile_shader, BlitLinear, CompiledShader, Drawable, IndexType,
     InstancedMesh, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
 };
+use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
 use raw_window_handle::HasRawWindowHandle;
@@ -20,7 +21,7 @@ use wgpu::{
 pub struct FBOs {
     pub swapchain: SwapChain,
     pub(crate) depth: Texture,
-    pub(crate) light: Texture,
+    pub(crate) light: MultisampledTexture,
     pub(crate) color_msaa: wgpu::TextureView,
     pub(crate) ui: Texture,
     pub(crate) ssao: Texture,
@@ -45,6 +46,7 @@ pub struct GfxContext {
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
     pub sky_bg: wgpu::BindGroup,
+    pub light: LightRender,
     #[allow(dead_code)] // keep adapter alive
     pub(crate) adapter: Adapter,
 }
@@ -197,6 +199,7 @@ impl GfxContext {
             sky_bg: Uniform::new([0.0f32; 4], &device).bindgroup,       // bogus
             bnoise_bg,
             sun_shadowmap: Self::mk_shadowmap(&device, 2048),
+            light: LightRender::new(&device),
             device,
         };
 
@@ -315,6 +318,7 @@ impl GfxContext {
         &mut self,
         encoder: &mut CommandEncoder,
         frame: &SwapChainFrame,
+        lights: &[LightInstance],
         mut prepare: impl FnMut(&mut FrameContext),
     ) {
         let mut objs = vec![];
@@ -344,6 +348,8 @@ impl GfxContext {
                 obj.draw_depth(&self, &mut depth_prepass);
             }
         }
+
+        LightRender::render_lights(self, encoder, &lights);
 
         let prev = std::mem::replace(
             &mut self.projection,
@@ -539,7 +545,7 @@ impl GfxContext {
         FBOs {
             swapchain: device.create_swap_chain(surface, desc),
             depth: Texture::create_depth_texture(device, size, samples),
-            light: Texture::create_light_texture(device, desc),
+            light: Texture::create_light_texture(device, desc, samples),
             color_msaa: Texture::create_color_msaa(device, desc, samples),
             ui: Texture::create_ui_texture(device, desc),
             ssao,
@@ -563,7 +569,7 @@ impl GfxContext {
                     .read_texture("assets/blue_noise_512.png")
                     .expect("blue noise not initialized"),
                 &self.sun_shadowmap,
-                &self.fbos.light,
+                &self.fbos.light.target,
             ],
             &self.device,
             &bg_layout_litmesh(&self.device),

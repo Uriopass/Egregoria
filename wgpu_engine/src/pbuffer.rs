@@ -3,7 +3,7 @@ use std::sync::Arc;
 use wgpu::{
     BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BufferBinding, BufferDescriptor,
-    BufferSize, BufferUsage,
+    BufferSize, BufferUsage, Device, Queue,
 };
 
 /// Short for Persistent Buffer, keeps memory around to reuse it
@@ -26,16 +26,20 @@ impl PBuffer {
     }
 
     pub fn write(&mut self, gfx: &GfxContext, data: &[u8]) {
+        self.write_qd(&gfx.queue, &gfx.device, data);
+    }
+
+    pub fn write_qd(&mut self, queue: &Queue, device: &Device, data: &[u8]) {
         self.len = data.len() as u64;
         if self.len == 0 {
             return;
         }
         if self.capacity < self.len {
             self.capacity = self.len.next_power_of_two();
-            self.inner = Some(mk_buffer(gfx, self.usage, self.capacity));
+            self.inner = Some(mk_buffer(device, self.usage, self.capacity));
             //log::info!("reallocating {} bytes", self.capacity);
         }
-        gfx.queue.write_buffer(
+        queue.write_buffer(
             self.inner.as_ref().expect("inner was never initialized ?"),
             0,
             data,
@@ -90,8 +94,8 @@ impl PBuffer {
     }
 }
 
-fn mk_buffer(gfx: &GfxContext, usage: BufferUsage, size: u64) -> Arc<wgpu::Buffer> {
-    Arc::new(gfx.device.create_buffer(&BufferDescriptor {
+fn mk_buffer(device: &Device, usage: BufferUsage, size: u64) -> Arc<wgpu::Buffer> {
+    Arc::new(device.create_buffer(&BufferDescriptor {
         label: Some("pbuffer"),
         size,
         usage: usage | BufferUsage::COPY_DST,

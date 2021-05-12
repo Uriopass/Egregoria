@@ -2,8 +2,9 @@ use crate::pbuffer::PBuffer;
 use crate::{compile_shader, GfxContext, UvVertex, VBDesc};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    BlendFactor, Buffer, BufferUsage, CommandEncoder, IndexFormat, VertexAttribute,
-    VertexBufferLayout,
+    BlendFactor, Buffer, BufferUsage, CommandEncoder, CompareFunction, DepthBiasState,
+    DepthStencilState, Device, IndexFormat, LoadOp, MultisampleState, Operations,
+    RenderPassDepthStencilAttachment, VertexAttribute, VertexBufferLayout,
 };
 
 pub struct LightRender {
@@ -12,9 +13,8 @@ pub struct LightRender {
 }
 
 impl LightRender {
-    pub fn new(gfx: &mut GfxContext) -> Self {
-        // ok: init
-        let vertex_buffer = gfx.device.create_buffer_init(&BufferInitDescriptor {
+    pub fn new(device: &Device) -> Self {
+        let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(UV_VERTICES),
             usage: wgpu::BufferUsage::VERTEX,
@@ -42,7 +42,7 @@ pub fn setup(gfx: &mut GfxContext) {
             });
 
     let color_states = [wgpu::ColorTargetState {
-        format: gfx.fbos.light.format,
+        format: gfx.fbos.light.target.format,
         blend: Some(wgpu::BlendState {
             color: wgpu::BlendComponent {
                 src_factor: BlendFactor::One,
@@ -68,8 +68,22 @@ pub fn setup(gfx: &mut GfxContext) {
             targets: &color_states,
         }),
         primitive: Default::default(),
-        depth_stencil: None,
-        multisample: Default::default(),
+        depth_stencil: Some(DepthStencilState {
+            format: gfx.fbos.depth.format,
+            depth_write_enabled: false,
+            depth_compare: CompareFunction::Less,
+            stencil: Default::default(),
+            bias: DepthBiasState {
+                constant: -1000,
+                slope_scale: 0.0,
+                clamp: 0.0,
+            },
+        }),
+        multisample: MultisampleState {
+            count: gfx.samples,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
     };
 
     let pipe = gfx.device.create_render_pipeline(&render_pipeline_desc);
@@ -98,13 +112,13 @@ const UV_VERTICES: &[UvVertex] = &[
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct LightInstance {
-    pub pos: [f32; 2],
+    pub pos: [f32; 3],
     pub scale: f32,
 }
 
 u8slice_impl!(LightInstance);
 
-const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![2 => Float32x2, 3 => Float32];
+const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![2 => Float32x3, 3 => Float32];
 
 impl VBDesc for LightInstance {
     fn desc<'a>() -> VertexBufferLayout<'a> {
@@ -118,19 +132,19 @@ impl VBDesc for LightInstance {
 
 impl LightRender {
     pub fn render_lights(
-        &mut self,
-        gfx: &GfxContext,
+        gfx: &mut GfxContext,
         encoder: &mut CommandEncoder,
         lights: &[LightInstance],
     ) {
-        self.instance_buffer
-            .write(gfx, bytemuck::cast_slice(lights));
+        gfx.light
+            .instance_buffer
+            .write_qd(&gfx.queue, &gfx.device, bytemuck::cast_slice(lights));
 
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: &gfx.fbos.light.view,
-                resolve_target: None,
+                view: &gfx.fbos.light.multisampled_buffer,
+                resolve_target: Some(&gfx.fbos.light.target.view),
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
                         r: 0.25,
@@ -141,12 +155,19 @@ impl LightRender {
                     store: true,
                 },
             }],
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(RenderPassDepthStencilAttachment {
+                view: &gfx.fbos.depth.view,
+                depth_ops: Some(Operations {
+                    load: LoadOp::Load,
+                    store: false,
+                }),
+                stencil_ops: None,
+            }),
         });
-        if let Some(ref instance_buffer) = self.instance_buffer.inner() {
+        if let Some(ref instance_buffer) = gfx.light.instance_buffer.inner() {
             rpass.set_pipeline(&gfx.get_pipeline::<LightBlit>());
             rpass.set_bind_group(0, &gfx.projection.bindgroup, &[]);
-            rpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            rpass.set_vertex_buffer(0, gfx.light.vertex_buffer.slice(..));
             rpass.set_vertex_buffer(1, instance_buffer.slice(..));
             rpass.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
             rpass.draw_indexed(0..6, 0, 0..lights.len() as u32);
