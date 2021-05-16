@@ -155,6 +155,15 @@ impl Intersection {
     pub fn update_polygon(&mut self, roads: &Roads) {
         self.polygon.clear();
         self.check_dead_roads(roads);
+        let id = self.id;
+
+        let getw = |road: &Road| {
+            if road.sidewalks(id).outgoing.is_some() {
+                road.width * 0.5 - LaneKind::Walking.width()
+            } else {
+                road.width * 0.5
+            }
+        };
 
         for (i, &road) in self.roads.iter().enumerate() {
             #[allow(clippy::indexing_slicing)]
@@ -170,7 +179,8 @@ impl Intersection {
             }
 
             let src_orient = unwrap_cont!(fp.first_dir());
-            let left = fp.first() - src_orient.perpendicular() * road.width * 0.5;
+
+            let left = fp.first() - src_orient.perpendicular() * getw(road);
 
             let mut fp = next_road.interfaced_points();
 
@@ -179,7 +189,7 @@ impl Intersection {
             }
 
             let dst_orient = unwrap_cont!(fp.first_dir());
-            let next_right = fp.first() + dst_orient.perpendicular() * next_road.width * 0.5;
+            let next_right = fp.first() + dst_orient.perpendicular() * getw(next_road);
 
             let ang = (-src_orient).angle(dst_orient);
 

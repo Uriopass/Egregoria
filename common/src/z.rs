@@ -1,7 +1,7 @@
 macro_rules! gen_z_2 {
     {$($a: ident,)*;$($b: ident,)*} => {
         $(
-            pub const $a: f32 = $b + 0.05;
+            pub const $a: f32 = $b + 0.03;
         )+
     }
 }
@@ -18,7 +18,6 @@ gen_z! {
     Z_GRID
     Z_LOT
     Z_BSPRITE
-    Z_INTER_BG
     Z_LANE
     Z_ARROW
     Z_CROSSWALK

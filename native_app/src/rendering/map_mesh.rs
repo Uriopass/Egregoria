@@ -1,4 +1,4 @@
-use common::{FastMap, Z_ARROW, Z_BSPRITE, Z_CROSSWALK, Z_INTER_BG, Z_LANE, Z_LOT};
+use common::{FastMap, Z_ARROW, Z_BSPRITE, Z_CROSSWALK, Z_LANE, Z_LOT};
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
 use geom::{vec2, LinearColor, Polygon, Vec2, Vec3};
@@ -364,7 +364,7 @@ impl MapBuilders {
             }
 
             tess.set_color(mid_col);
-            tess.draw_filled_polygon(inter.polygon.as_slice(), Z_INTER_BG);
+            tess.draw_filled_polygon(inter.polygon.as_slice(), Z_LANE - 0.001);
 
             // Walking corners
             for turn in inter
