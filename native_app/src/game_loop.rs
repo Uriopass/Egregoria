@@ -283,11 +283,8 @@ impl State {
             .add_value(start.elapsed().as_secs_f32());
     }
 
-    pub fn lights(&self) -> (Vec<LightInstance>, LinearColor) {
+    pub fn lights(&self) -> Vec<LightInstance> {
         let mut lights = vec![];
-
-        let time = self.goria.read::<GameTime>();
-        let daysec = time.daysec();
 
         let map = self.goria.map();
         for x in map.roads().values() {
@@ -311,23 +308,7 @@ impl State {
             });
         }
 
-        let dark = Vec3::ZERO;
-        let bright = vec3(1.0, 1.0, 1.0);
-
-        let col = match time.daytime.hour {
-            6..=9 => {
-                let c = (daysec / GameTime::HOUR as f64 - 6.0) / 4.0;
-                dark.smoothstep(bright, c as f32)
-            }
-            10..=20 => bright,
-            21..=22 => {
-                let c = (daysec / GameTime::HOUR as f64 - 21.0) / 1.0;
-                bright.smoothstep(dark, c as f32)
-            }
-            _ => dark,
-        };
-
-        (lights, LinearColor::new(col.x, col.y, col.z, 1.0))
+        lights
     }
 
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
