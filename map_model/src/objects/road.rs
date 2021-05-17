@@ -2,10 +2,10 @@ use crate::{
     Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
     ParkingSpots, Roads, SpatialMap,
 };
-use geom::BoldLine;
 use geom::PolyLine;
 use geom::Spline;
 use geom::Vec2;
+use geom::{BoldLine, PolyLine3};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -37,7 +37,7 @@ pub struct Road {
     pub segment: RoadSegmentKind,
 
     // always from src to dst
-    pub points: PolyLine,
+    pub points: PolyLine3,
     pub width: f32,
 
     src_interface: f32,
@@ -175,7 +175,7 @@ impl Road {
     }
 
     pub fn boldline(&self) -> BoldLine {
-        BoldLine::new(self.points.clone(), self.width * 0.5)
+        BoldLine::new(self.points.flatten(), self.width * 0.5)
     }
 
     pub fn pattern(&self, lanes: &Lanes) -> LanePattern {
@@ -211,11 +211,11 @@ impl Road {
         }
     }
 
-    pub fn points(&self) -> &PolyLine {
+    pub fn points(&self) -> &PolyLine3 {
         &self.points
     }
 
-    pub fn interfaced_points(&self) -> PolyLine {
+    pub fn interfaced_points(&self) -> PolyLine3 {
         self.points()
             .cut(self.interface_from(self.src), self.interface_from(self.dst))
     }
@@ -224,11 +224,11 @@ impl Road {
         src: &Intersection,
         dst: &Intersection,
         segment: RoadSegmentKind,
-    ) -> PolyLine {
+    ) -> PolyLine3 {
         let from = src.pos;
         let to = dst.pos;
 
-        PolyLine::new(match segment {
+        PolyLine3::new(match segment {
             RoadSegmentKind::Straight => {
                 vec![from, to]
             }

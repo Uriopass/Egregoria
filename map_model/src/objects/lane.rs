@@ -1,6 +1,5 @@
 use crate::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
-use geom::PolyLine;
-use geom::Vec2;
+use geom::{PolyLine3, Vec3};
 use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
@@ -58,7 +57,7 @@ pub struct Lane {
     pub speed_limit: f32,
 
     /// Always from src to dst
-    pub points: PolyLine,
+    pub points: PolyLine3,
     pub dist_from_bottom: f32,
 }
 
@@ -219,7 +218,7 @@ impl Lane {
         })
     }
 
-    pub fn get_inter_node_pos(&self, id: IntersectionID) -> Vec2 {
+    pub fn get_inter_node_pos(&self, id: IntersectionID) -> Vec3 {
         match (id, self.points.as_slice()) {
             (x, [p, ..]) if x == self.src => *p,
             (x, [.., p]) if x == self.dst => *p,
@@ -270,22 +269,6 @@ impl Lane {
         }
     }
 
-    pub fn length(&self) -> f32 {
-        self.points.length()
-    }
-
-    pub fn control_point(&self) -> Vec2 {
-        self.points.last()
-    }
-
-    pub fn proj(&self, p: Vec2) -> Vec2 {
-        self.points.project(p)
-    }
-
-    pub fn dist2_to(&self, p: Vec2) -> f32 {
-        self.points.project_dist2(p)
-    }
-
     pub fn dir_from(&self, i: IntersectionID) -> TraverseDirection {
         if self.src == i {
             TraverseDirection::Forward
@@ -294,11 +277,11 @@ impl Lane {
         }
     }
 
-    pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
+    pub fn orientation_from(&self, id: IntersectionID) -> Vec3 {
         if id == self.src {
-            self.points.first_dir().unwrap_or(Vec2::UNIT_X)
+            self.points.first_dir().unwrap_or(Vec3::UNIT_X)
         } else {
-            -self.points.last_dir().unwrap_or(Vec2::UNIT_X)
+            -self.points.last_dir().unwrap_or(Vec3::UNIT_X)
         }
     }
 }

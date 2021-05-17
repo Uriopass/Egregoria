@@ -2,10 +2,9 @@ use crate::{
     Intersections, LaneID, LaneKind, Lanes, LightPolicy, Road, RoadID, Roads, SpatialMap,
     TraverseDirection, Turn, TurnID, TurnPolicy,
 };
-use geom::Polygon;
-use geom::Spline;
-use geom::Vec2;
 use geom::{pseudo_angle, Circle};
+use geom::{Polygon, Vec3};
+use geom::{Spline, Spline3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -23,7 +22,7 @@ impl IntersectionID {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Intersection {
     pub id: IntersectionID,
-    pub pos: Vec2,
+    pub pos: Vec3,
 
     turns: Vec<Turn>,
 
@@ -32,12 +31,10 @@ pub struct Intersection {
 
     pub turn_policy: TurnPolicy,
     pub light_policy: LightPolicy,
-
-    pub polygon: Polygon,
 }
 
 impl Intersection {
-    pub fn make(store: &mut Intersections, spatial: &mut SpatialMap, pos: Vec2) -> IntersectionID {
+    pub fn make(store: &mut Intersections, spatial: &mut SpatialMap, pos: Vec3) -> IntersectionID {
         let id = store.insert_with_key(|id| Intersection {
             id,
             pos,
@@ -45,9 +42,8 @@ impl Intersection {
             roads: Default::default(),
             turn_policy: Default::default(),
             light_policy: Default::default(),
-            polygon: Polygon::centered_rect(pos, 5.0, 5.0),
         });
-        spatial.insert(id, pos);
+        spatial.insert(id, pos.xy());
         id
     }
 
@@ -64,7 +60,7 @@ impl Intersection {
 
     pub fn bcircle(&self, roads: &Roads) -> Circle {
         Circle {
-            center: self.pos,
+            center: self.pos.xy(),
             radius: self
                 .roads
                 .iter()
@@ -152,9 +148,7 @@ impl Intersection {
         }
     }
 
-    pub fn update_polygon(&mut self, roads: &Roads) {
-        self.polygon.clear();
-        self.check_dead_roads(roads);
+    pub fn polygon(&self, roads: &Roads) -> Polygon {
         let id = self.id;
 
         let getw = |road: &Road| {
@@ -164,6 +158,8 @@ impl Intersection {
                 road.width * 0.5
             }
         };
+
+        let mut polygon = Polygon::default();
 
         for (i, &road) in self.roads.iter().enumerate() {
             #[allow(clippy::indexing_slicing)]
@@ -201,18 +197,20 @@ impl Intersection {
                 * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL)
                 * TURN_MUL;
 
-            let spline = Spline {
+            let spline = Spline3 {
                 from: left,
                 to: next_right,
                 from_derivative: -src_orient * dist,
                 to_derivative: dst_orient * dist,
             };
 
-            self.polygon.extend(spline.smart_points(1.0, 0.0, 1.0));
+            polygon.extend(spline.smart_points(1.0, 0.0, 1.0));
         }
 
-        if self.polygon.is_empty() {
-            self.polygon = Polygon::centered_rect(self.pos, 5.0, 5.0);
+        if polygon.is_empty() {
+            Polygon::centered_rect(self.pos.xy(), 5.0, 5.0)
+        } else {
+            polygon
         }
     }
 

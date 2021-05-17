@@ -13,22 +13,27 @@ macro_rules! defer_inter {
 }
 
 mod aabb;
+mod aabb3;
 mod boldline;
 mod camera_2d;
 mod circle;
 mod color;
 mod line;
+mod line3;
 mod matrix4;
 mod obb;
 mod perp_camera;
 mod plane;
 mod polygon;
 mod polyline;
+mod polyline3;
 mod quaternion;
 mod ray;
 mod ray3;
 mod segment;
+mod segment3;
 pub mod skeleton;
+mod spline3;
 mod splines;
 mod transform;
 mod v2;
@@ -36,21 +41,26 @@ mod v3;
 mod v4;
 
 pub use aabb::*;
+pub use aabb3::*;
 pub use boldline::*;
 pub use camera_2d::*;
 pub use circle::*;
 pub use color::*;
 pub use line::*;
+pub use line3::*;
 pub use matrix4::*;
 pub use obb::*;
 pub use perp_camera::*;
 pub use plane::*;
 pub use polygon::*;
 pub use polyline::*;
+pub use polyline3::*;
 pub use quaternion::*;
 pub use ray::*;
 pub use ray3::*;
 pub use segment::*;
+pub use segment3::*;
+pub use spline3::*;
 pub use splines::*;
 pub use transform::*;
 pub use v2::*;
@@ -160,8 +170,21 @@ impl_shape_enum!(OBB, Polygon, Vec2, Circle, AABB, BoldLine);
 
 pub fn minmax(x: impl IntoIterator<Item = Vec2>) -> Option<(Vec2, Vec2)> {
     let mut x = x.into_iter();
-    let mut min: Vec2 = x.next()?;
-    let mut max: Vec2 = min;
+    let mut min = x.next()?;
+    let mut max = min;
+
+    for v in x {
+        min = min.min(v);
+        max = max.max(v);
+    }
+
+    Some((min, max))
+}
+
+pub fn minmax3(x: impl IntoIterator<Item = Vec3>) -> Option<(Vec3, Vec3)> {
+    let mut x = x.into_iter();
+    let mut min = x.next()?;
+    let mut max = min;
 
     for v in x {
         min = min.min(v);

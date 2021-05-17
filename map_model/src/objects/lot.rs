@@ -1,8 +1,8 @@
 use crate::procgen::heightmap::height;
 use crate::{Map, ProjectFilter, ProjectKind, RoadID};
-use geom::Polygon;
 use geom::Vec2;
 use geom::OBB;
+use geom::{Circle, Polygon};
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -116,9 +116,9 @@ impl Lot {
             .query(r.boldline(), ProjectFilter::LOT)
             .collect::<Vec<_>>();
 
-        let mut rp = |p: &Polygon| to_remove.extend(map.spatial_map.query(p, ProjectFilter::LOT));
-        rp(&unwrap_ret!(map.intersections.get(r.src)).polygon);
-        rp(&unwrap_ret!(map.intersections.get(r.dst)).polygon);
+        let mut rp = |p: Circle| to_remove.extend(map.spatial_map.query(p, ProjectFilter::LOT));
+        rp(unwrap_ret!(map.intersections.get(r.src)).bcircle(&map.roads));
+        rp(unwrap_ret!(map.intersections.get(r.dst)).bcircle(&map.roads));
 
         for lot in to_remove {
             if let ProjectKind::Lot(lot) = lot {

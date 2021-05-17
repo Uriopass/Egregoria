@@ -4,7 +4,7 @@ use crate::{
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
     ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain,
 };
-use geom::{pseudo_angle, Circle, Intersect, Shape, Vec2};
+use geom::{pseudo_angle, Circle, Intersect, Shape, Vec2, Vec3};
 use geom::{Spline, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -568,7 +568,7 @@ impl Map {
         None
     }
 
-    pub fn nearest_lane(&self, p: Vec2, kind: LaneKind) -> Option<LaneID> {
+    pub fn nearest_lane(&self, p: Vec3, kind: LaneKind) -> Option<LaneID> {
         self.lanes
             .iter()
             .filter(|(_, x)| x.kind == kind)

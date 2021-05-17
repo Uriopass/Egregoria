@@ -1,13 +1,13 @@
 use crate::{LaneID, LaneKind, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
-use geom::{PolyLine, Vec2};
+use geom::{PolyLine, PolyLine3, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::Key;
 
 pub trait Pathfinder {
     fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>>;
-    fn nearest_lane(&self, map: &Map, pos: Vec2) -> Option<LaneID>;
-    fn local_route(&self, map: &Map, lane: LaneID, start: Vec2, end: Vec2) -> Option<PolyLine>;
+    fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID>;
+    fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3>;
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -24,14 +24,14 @@ impl Pathfinder for PathKind {
         }
     }
 
-    fn nearest_lane(&self, map: &Map, pos: Vec2) -> Option<LaneID> {
+    fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID> {
         match self {
             PathKind::Pedestrian => PedestrianPath.nearest_lane(map, pos),
             PathKind::Vehicle => CarPath.nearest_lane(map, pos),
         }
     }
 
-    fn local_route(&self, map: &Map, lane: LaneID, start: Vec2, end: Vec2) -> Option<PolyLine> {
+    fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3> {
         match self {
             PathKind::Pedestrian => PedestrianPath.local_route(map, lane, start, end),
             PathKind::Vehicle => CarPath.local_route(map, lane, start, end),
@@ -74,7 +74,7 @@ impl Pathfinder for PedestrianPath {
                         TraverseKind::Lane(lane_from_id),
                         lane_from.dir_from(inter.id),
                     ),
-                    OrderedFloat(lane_from.length()),
+                    OrderedFloat(lane_from.points.length()),
                 )
             });
 
@@ -100,11 +100,11 @@ impl Pathfinder for PedestrianPath {
             .map(|(v, _)| v)
     }
 
-    fn nearest_lane(&self, map: &Map, pos: Vec2) -> Option<LaneID> {
+    fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID> {
         map.nearest_lane(pos, LaneKind::Walking)
     }
 
-    fn local_route(&self, map: &Map, lane: LaneID, start: Vec2, end: Vec2) -> Option<PolyLine> {
+    fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3> {
         let lane = map.lanes.get(lane)?;
         let (p_start, seg_start) = lane.points.project_segment(start);
         let (p_end, seg_end) = lane.points.project_segment(end);
@@ -117,7 +117,7 @@ impl Pathfinder for PedestrianPath {
         v.extend_from_slice(segs);
         v.push(p_end);
         v.push(end);
-        Some(PolyLine::new(v))
+        Some(PolyLine3::new(v))
     }
 }
 
@@ -161,7 +161,7 @@ impl Pathfinder for CarPath {
                             OrderedFloat(
                                 lanes
                                     .get(x.dst)
-                                    .map(|p| p.length())
+                                    .map(|p| p.points.length())
                                     .unwrap_or(f32::INFINITY),
                             ),
                         )
@@ -194,11 +194,11 @@ impl Pathfinder for CarPath {
         Some(path)
     }
 
-    fn nearest_lane(&self, map: &Map, pos: Vec2) -> Option<LaneID> {
+    fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID> {
         map.nearest_lane(pos, LaneKind::Driving)
     }
 
-    fn local_route(&self, map: &Map, lane: LaneID, start: Vec2, end: Vec2) -> Option<PolyLine> {
+    fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3> {
         let lane = &map.lanes.get(lane)?;
         let (p_start, seg_start) = lane.points.project_segment(start);
         let (p_end, seg_end) = lane.points.project_segment(end);
@@ -217,6 +217,6 @@ impl Pathfinder for CarPath {
         v.extend_from_slice(segs);
         v.push(p_end);
         v.push(end);
-        Some(PolyLine::new(v))
+        Some(PolyLine3::new(v))
     }
 }
