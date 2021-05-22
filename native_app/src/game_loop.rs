@@ -221,9 +221,10 @@ impl State {
         *self.uiw.write::<Camera>() = self.camera.camera;
 
         if !self.imgui_render.last_mouse_captured {
-            self.uiw.write::<MouseInfo>().unprojected = self
-                .camera
-                .unproject(ctx.input.mouse.screen, |p| map.terrain.height(p));
+            self.uiw.write::<MouseInfo>().unprojected =
+                self.camera.unproject(ctx.input.mouse.screen, |p| {
+                    map.terrain.height(p).map(|x| x + 0.01)
+                });
         }
         drop(map);
 

@@ -161,7 +161,7 @@ impl TurnPolicy {
                         let id = TurnID::new(inter.id, incoming.id, outgoing.id, false);
 
                         if self.left_turns
-                            || incoming_right.dot(outgoing_dir) <= -0.1
+                            || incoming_right.dot(outgoing_dir) <= 0.1
                             || i2 == (i1 + 1) % n_roads
                         {
                             turns.push((id, TurnKind::Driving));

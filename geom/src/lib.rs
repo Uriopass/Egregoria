@@ -15,7 +15,6 @@ macro_rules! defer_inter {
 mod aabb;
 mod aabb3;
 mod boldline;
-mod camera_2d;
 mod circle;
 mod color;
 mod line;
@@ -43,7 +42,6 @@ mod v4;
 pub use aabb::*;
 pub use aabb3::*;
 pub use boldline::*;
-pub use camera_2d::*;
 pub use circle::*;
 pub use color::*;
 pub use line::*;

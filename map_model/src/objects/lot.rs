@@ -34,7 +34,7 @@ impl Lot {
         size: f32,
     ) -> Option<LotID> {
         let height = map.terrain.height(at.xy())?;
-        if (height - at.z) < 1.0 {
+        if (height - at.z).abs() > 1.0 {
             return None;
         }
 
@@ -42,6 +42,7 @@ impl Lot {
 
         let proj = map.project(shape.center().z0(), size * 0.5 - 0.5)?;
         if !matches!(proj.kind, ProjectKind::Ground) {
+            log::info!("denied because not ground");
             return None;
         }
 
