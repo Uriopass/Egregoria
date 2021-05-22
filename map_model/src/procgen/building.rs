@@ -23,7 +23,7 @@ impl ColoredMesh {
     pub fn translate(&mut self, off: Vec2) {
         for (p, _) in &mut self.faces {
             for v in p {
-                *v += off.z(0.0);
+                *v += off.z0();
             }
         }
     }
@@ -166,11 +166,11 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
                 d = ba.perpendicular();
             }
 
-            walls.push(b + d.z(0.0) * 0.8 + Vec3::z(height));
+            walls.push(b + d.z0() * 0.8 + Vec3::z(height));
         }
 
         for (&a, &b, _) in geom::skeleton::window(&walls) {
-            let face = vec![a, b, b.xy().z(0.0), a.xy().z(0.0)];
+            let face = vec![a, b, b.xy().z0(), a.xy().z0()];
             roofs.faces.push((face, common::config().house_col.into()));
         }
 

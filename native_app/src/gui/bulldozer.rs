@@ -2,7 +2,6 @@ use super::Tool;
 use crate::input::{MouseButton, MouseInfo};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
-use common::Z_TOOL;
 use egregoria::Egregoria;
 use imgui_inspect_derive::*;
 use map_model::{Map, ProjectKind};
@@ -27,7 +26,7 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut commands = uiworld.commands();
     let state: &BulldozerState = &*uiworld.read::<BulldozerState>();
 
-    let cur_proj = map.project(mouseinfo.unprojected, 0.0);
+    let cur_proj = unwrap_ret!(map.project(unwrap_ret!(mouseinfo.unprojected), 0.0));
 
     let col = if matches!(
         cur_proj.kind,
@@ -38,7 +37,7 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
         common::config().gui_disabled
     };
 
-    draw.circle(cur_proj.pos, 2.0).color(col).z(Z_TOOL);
+    draw.circle(cur_proj.pos, 2.0).color(col);
 
     if (!state.hold && mouseinfo.just_pressed.contains(&MouseButton::Left))
         || (state.hold && mouseinfo.pressed.contains(&MouseButton::Left))

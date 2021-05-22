@@ -1,9 +1,8 @@
-use common::Z_PATH_NOT_FOUND;
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::rendering::assets::{AssetID, AssetRender};
 use egregoria::Egregoria;
-use geom::{LinearColor, Transform, Vec2};
+use geom::{LinearColor, Transform, Vec3, V3};
 use legion::query::*;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
@@ -39,8 +38,8 @@ impl InstancedRender {
             let ar: &AssetRender = ar;
 
             let instance = MeshInstance {
-                pos: trans.position().z(0.3),
-                dir: trans.direction().z(0.0),
+                pos: trans.position,
+                dir: trans.dir,
                 tint: ar.tint.into(),
             };
 
@@ -56,8 +55,8 @@ impl InstancedRender {
             let ped: &Pedestrian = ped;
             if matches!(loc, Location::Outside) {
                 self.pedestrians.instances.push(MeshInstance {
-                    pos: trans.position().z(0.5 + 0.4 * ped.walk_anim.cos()),
-                    dir: trans.direction().z(0.0),
+                    pos: trans.position.up(0.5 + 0.4 * ped.walk_anim.cos()),
+                    dir: trans.dir.xy().z0(),
                     tint: LinearColor::WHITE,
                 });
             }
@@ -76,9 +75,8 @@ impl InstancedRender {
 
                 let s = 7.0;
                 self.path_not_found.push(
-                    trans.position() + off * 3.0 * Vec2::UNIT_Y,
-                    Vec2::UNIT_X,
-                    Z_PATH_NOT_FOUND,
+                    trans.position + off * 3.0 * V3::Y + 3.0 * V3::Z,
+                    Vec3::X,
                     LinearColor::RED.a(r),
                     (s, s),
                 );

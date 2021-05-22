@@ -217,7 +217,7 @@ mod tests {
         m.produce(seller_far, CommodityKind::Cereal, 3);
 
         m.buy(buyer, Vec2::ZERO, CommodityKind::Cereal, 2);
-        m.sell(seller, Vec2::UNIT_X, CommodityKind::Cereal, 3);
+        m.sell(seller, Vec2::X, CommodityKind::Cereal, 3);
         m.sell(seller_far, vec2(10.0, 10.0), CommodityKind::Cereal, 3);
 
         let trades = m.make_trades().collect::<Vec<_>>();

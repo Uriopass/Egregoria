@@ -63,6 +63,7 @@ pub use segment3::*;
 pub use spline3::*;
 pub use splines::*;
 pub use transform::*;
+pub use transform::*;
 pub use v2::*;
 pub use v3::*;
 pub use v4::*;
@@ -170,8 +171,8 @@ impl_shape_enum!(OBB, Polygon, Vec2, Circle, AABB, BoldLine);
 
 pub fn minmax(x: impl IntoIterator<Item = Vec2>) -> Option<(Vec2, Vec2)> {
     let mut x = x.into_iter();
-    let mut min = x.next()?;
-    let mut max = min;
+    let mut min: Vec2 = x.next()?;
+    let mut max: Vec2 = min;
 
     for v in x {
         min = min.min(v);
@@ -183,8 +184,8 @@ pub fn minmax(x: impl IntoIterator<Item = Vec2>) -> Option<(Vec2, Vec2)> {
 
 pub fn minmax3(x: impl IntoIterator<Item = Vec3>) -> Option<(Vec3, Vec3)> {
     let mut x = x.into_iter();
-    let mut min = x.next()?;
-    let mut max = min;
+    let mut min: Vec3 = x.next()?;
+    let mut max: Vec3 = min;
 
     for v in x {
         min = min.min(v);
@@ -214,6 +215,14 @@ pub fn angle_lerp(src: Vec2, dst: Vec2, ang_amount: f32) -> Vec2 {
         return dst;
     }
     (src - src.perpendicular() * perp_dot.signum() * ang_amount).normalize()
+}
+
+pub fn angle_lerp3(src: Vec3, dst: Vec3, ang_amount: f32) -> Vec3 {
+    let dot = src.dot(dst);
+    if dot > 1.0 - ang_amount {
+        return dst;
+    }
+    (src + (dst - src) * ang_amount / (1.01 + dot * 0.5)).normalize()
 }
 
 pub fn abs_lerp(src: f32, dst: f32, amount: f32) -> f32 {

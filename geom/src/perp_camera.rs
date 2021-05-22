@@ -91,7 +91,7 @@ impl Camera {
 
         let d = self.dist * 1.3;
 
-        let base = self.pos - self.offset().xy().z(0.0) * 0.6;
+        let base = self.pos - self.offset().xy().z0() * 0.6;
         let suneye = base + dir;
 
         let view = look_at_rh(suneye, base, self.up);

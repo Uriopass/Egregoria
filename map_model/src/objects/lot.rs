@@ -1,8 +1,7 @@
-use crate::procgen::heightmap::height;
 use crate::{Map, ProjectFilter, ProjectKind, RoadID};
 use geom::Vec2;
 use geom::OBB;
-use geom::{Circle, Polygon};
+use geom::{Circle, Vec3};
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -23,23 +22,25 @@ pub struct Lot {
     pub parent: RoadID,
     pub kind: LotKind,
     pub shape: OBB,
+    pub height: f32,
 }
 
 impl Lot {
     pub fn try_make(
         map: &mut Map,
         parent: RoadID,
-        at: Vec2,
+        at: Vec3,
         axis: Vec2,
         size: f32,
     ) -> Option<LotID> {
-        let shape = OBB::new(at + axis * size * 0.5, axis, size, size);
-
-        if height(at).0 < 0.12 {
+        let height = map.terrain.height(at.xy())?;
+        if (height - at.z) < 1.0 {
             return None;
         }
 
-        let proj = map.project(shape.center(), size * 0.5 - 0.5);
+        let shape = OBB::new(at.xy() + axis * size * 0.5, axis, size, size);
+
+        let proj = map.project(shape.center().z0(), size * 0.5 - 0.5)?;
         if !matches!(proj.kind, ProjectKind::Ground) {
             return None;
         }
@@ -49,6 +50,7 @@ impl Lot {
             parent,
             kind: LotKind::Unassigned,
             shape,
+            height,
         });
         map.spatial_map.insert(id, shape);
         Some(id)
@@ -85,8 +87,8 @@ impl Lot {
 
             let mut lots = vec![];
             while let Some((pos, dir)) = along.next(d) {
-                let axis = side * dir.perpendicular();
-                let l = Lot::try_make(map, road, pos + axis * (w + 1.0), axis, size);
+                let axis = side * dir.perp_up();
+                let l = Lot::try_make(map, road, pos + axis * (w + 1.0), axis.xy(), size);
                 if let Some(id) = l {
                     lots.push(id);
 

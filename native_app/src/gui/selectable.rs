@@ -15,14 +15,15 @@ pub fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = uiworld.read::<Tool>();
 
     if mouse.just_pressed.contains(&MouseButton::Left) && matches!(*tool, Tool::Hand) {
-        inspected.dist2 = std::f32::INFINITY;
+        inspected.dist2 = f32::INFINITY;
         let protec = Mutex::new(inspected);
+        let unproj = unwrap_ret!(mouse.unprojected);
 
         <(Entity, &Transform, &Selectable)>::query().par_for_each_chunk(goria.world(), |chunk| {
-            let mut v = std::f32::INFINITY;
+            let mut v = f32::INFINITY;
             let mut ent = None;
             for (e, trans, select) in chunk {
-                let dist2 = (trans.position() - mouse.unprojected).magnitude2();
+                let dist2 = (trans.position - unproj).magnitude2();
                 if dist2 >= select.radius * select.radius || dist2 >= v {
                     continue;
                 }

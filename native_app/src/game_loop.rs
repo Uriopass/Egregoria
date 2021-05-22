@@ -4,10 +4,10 @@ use winit::dpi::PhysicalSize;
 use winit::window::{Fullscreen, Window};
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
-use common::{History, Z_LANE};
+use common::History;
 use egregoria::utils::time::GameTime;
 use egregoria::{Egregoria, SerPreparedEgregoria};
-use geom::{vec3, Camera, LinearColor, Vec3};
+use geom::{Camera, V3};
 use wgpu_engine::lighting::LightInstance;
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
@@ -218,13 +218,14 @@ impl State {
             &settings,
             |p| map.terrain.height(p),
         );
-        drop(map);
         *self.uiw.write::<Camera>() = self.camera.camera;
 
         if !self.imgui_render.last_mouse_captured {
-            self.uiw.write::<MouseInfo>().unprojected =
-                self.camera.unproject(ctx.input.mouse.screen);
+            self.uiw.write::<MouseInfo>().unprojected = self
+                .camera
+                .unproject(ctx.input.mouse.screen, |p| map.terrain.height(p));
         }
+        drop(map);
 
         ctx.gfx
             .set_time(self.goria.read::<GameTime>().timestamp as f32);
@@ -291,11 +292,11 @@ impl State {
             let w = x.width * 0.5 - 5.0;
             for (point, dir) in x.points().equipoints_dir(45.0) {
                 lights.push(LightInstance {
-                    pos: (point + dir.perpendicular() * w).z(Z_LANE).into(),
+                    pos: point + dir.perp_up() * w + 0.1 * V3::Z,
                     scale: 60.0,
                 });
                 lights.push(LightInstance {
-                    pos: (point - dir.perpendicular() * w).z(Z_LANE).into(),
+                    pos: point - dir.perp_up() * w + 0.1 * V3::Z,
                     scale: 60.0,
                 });
             }
@@ -303,7 +304,7 @@ impl State {
 
         for i in map.intersections().values() {
             lights.push(LightInstance {
-                pos: i.pos.z(Z_LANE).into(),
+                pos: i.pos + 0.1 * V3::Z,
                 scale: 60.0,
             });
         }
@@ -358,7 +359,7 @@ impl State {
 
         if let Some(e) = self.uiw.read::<FollowEntity>().0 {
             if let Some(pos) = self.goria.pos(e) {
-                self.camera.follow(pos.z(0.0));
+                self.camera.follow(pos);
             }
         }
     }

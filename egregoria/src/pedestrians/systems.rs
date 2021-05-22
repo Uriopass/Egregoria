@@ -2,7 +2,7 @@ use crate::map_dynamic::Itinerary;
 use crate::pedestrians::Pedestrian;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
 use crate::utils::time::GameTime;
-use geom::{angle_lerp, Transform, Vec2};
+use geom::{angle_lerp3, Transform, Vec2, Vec3};
 use legion::system;
 use map_model::{Map, TraverseDirection};
 
@@ -19,7 +19,7 @@ pub fn pedestrian_decision(
     pedestrian: &mut Pedestrian,
 ) {
     let (_, my_obj) = cow.get(coll.0).expect("Handle not in collision world");
-    let neighbors = cow.query_around(trans.position(), 10.0);
+    let neighbors = cow.query_around(trans.position.xy(), 10.0);
 
     let objs =
         neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
@@ -37,8 +37,8 @@ pub fn physics(
     kin: &mut Kinematics,
     trans: &mut Transform,
     time: &GameTime,
-    desired_velocity: Vec2,
-    desired_dir: Vec2,
+    desired_velocity: Vec3,
+    desired_dir: Vec3,
 ) {
     let diff = desired_velocity - kin.velocity;
     let mag = diff.magnitude().min(time.delta * PEDESTRIAN_ACC);
@@ -48,11 +48,7 @@ pub fn physics(
 
     const ANG_VEL: f32 = 1.0;
 
-    trans.set_direction(angle_lerp(
-        trans.direction(),
-        desired_dir,
-        ANG_VEL * time.delta,
-    ));
+    trans.dir = angle_lerp3(trans.dir, desired_dir, ANG_VEL * time.delta);
 }
 
 pub fn calc_decision<'a>(
@@ -63,29 +59,29 @@ pub fn calc_decision<'a>(
     my_obj: &PhysicsObject,
     it: &Itinerary,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
-) -> (Vec2, Vec2) {
+) -> (Vec3, Vec3) {
     let objective = match it.get_point() {
         Some(x) => x,
-        None => return (Vec2::ZERO, trans.direction()),
+        None => return (Vec3::ZERO, trans.dir),
     };
 
-    let position = trans.position();
-    let direction = trans.direction();
+    let position = trans.position;
+    let direction = trans.dir;
 
-    let delta_pos: Vec2 = objective - position;
+    let delta_pos: Vec3 = objective - position;
     let dir_to_pos = match delta_pos.try_normalize() {
         Some(x) => x,
-        None => return (Vec2::ZERO, trans.direction()),
+        None => return (Vec3::ZERO, trans.dir),
     };
 
     let mut desired_v = dir_to_pos * pedestrian.walking_speed;
 
     for (his_pos, his_obj) in neighs {
-        if his_pos == position {
+        if his_pos == position.xy() {
             continue;
         }
 
-        let towards_vec: Vec2 = his_pos - position;
+        let towards_vec: Vec3 = his_pos.z(his_obj.height) - position;
         if let Some((towards_dir, dist)) = towards_vec.dir_dist() {
             let forward_boost = 1.0 + direction.dot(towards_dir).abs();
 
@@ -108,7 +104,7 @@ pub fn calc_decision<'a>(
                 TraverseDirection::Backward => -1.0,
             };
 
-            let lane_force = (projected + proj_dir.perpendicular() * walk_side) - trans.position();
+            let lane_force = (projected + proj_dir.perp_up() * walk_side) - trans.position;
             let m = lane_force.magnitude();
 
             desired_v += lane_force * m * 0.1;

@@ -4,7 +4,7 @@ use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::utils::time::GameTime;
 use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::ParCommandBuffer;
-use geom::{angle_lerp, Ray, Transform, Vec2};
+use geom::{angle_lerp3, Ray, Transform, Vec2, Vec3};
 use legion::system;
 use legion::Entity;
 use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
@@ -25,14 +25,14 @@ pub fn vehicle_decision(
     let (_, self_obj) = cow.get(collider.0).expect("Handle not in collision world");
 
     let mut desired_speed = 0.0;
-    let mut desired_dir = Vec2::ZERO;
+    let mut desired_dir = Vec3::ZERO;
     if matches!(
         vehicle.state,
         VehicleState::Driving | VehicleState::Panicking(_)
     ) {
         let danger_length =
             (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
-        let neighbors = cow.query_around(trans.position(), 12.0 + danger_length);
+        let neighbors = cow.query_around(trans.position.xy(), 12.0 + danger_length);
         let objs =
             neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
 
@@ -72,7 +72,7 @@ pub fn vehicle_state_update(
 
             if *t >= 1.0 {
                 buf.remove_component_drop::<Collider>(*ent);
-                kin.velocity = Vec2::ZERO;
+                kin.velocity = Vec3::ZERO;
                 let spot = match std::mem::replace(&mut vehicle.state, VehicleState::Driving) {
                     VehicleState::RoadToPark(_, _, spot) => spot,
                     _ => unreachable!(),
@@ -102,7 +102,7 @@ fn physics(
     obj: &PhysicsObject,
     map: &Map,
     desired_speed: f32,
-    desired_dir: Vec2,
+    desired_dir: Vec3,
 ) {
     match vehicle.state {
         VehicleState::Parked(ref id) => {
@@ -111,8 +111,8 @@ fn physics(
             return;
         }
         VehicleState::RoadToPark(spline, t, _) => {
-            trans.set_position(spline.get(t));
-            trans.set_direction(spline.derivative(t).normalize());
+            trans.position = spline.get(t);
+            trans.dir = spline.derivative(t).normalize();
             return;
         }
         _ => {}
@@ -120,7 +120,6 @@ fn physics(
 
     let speed = obj.speed;
     let kind = vehicle.kind;
-    let direction = trans.direction();
 
     let speed = speed
         + (desired_speed - speed).clamp(
@@ -130,7 +129,7 @@ fn physics(
 
     let max_ang_vel = (speed.abs() / kind.min_turning_radius()).clamp(0.0, 2.0);
 
-    let approx_angle = direction.distance(desired_dir);
+    let approx_angle = trans.dir.distance(desired_dir);
 
     vehicle.ang_velocity += time.delta * kind.ang_acc();
     vehicle.ang_velocity = vehicle
@@ -138,13 +137,9 @@ fn physics(
         .min(3.0 * approx_angle)
         .min(max_ang_vel);
 
-    trans.set_direction(angle_lerp(
-        trans.direction(),
-        desired_dir,
-        vehicle.ang_velocity * time.delta,
-    ));
+    trans.dir = angle_lerp3(trans.dir, desired_dir, vehicle.ang_velocity * time.delta);
 
-    kin.velocity = trans.direction() * speed;
+    kin.velocity = trans.dir * speed;
 }
 
 /// Decide the appropriate velocity and direction to aim for.
@@ -157,13 +152,13 @@ pub fn calc_decision<'a>(
     self_obj: &PhysicsObject,
     it: &Itinerary,
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
-) -> (f32, Vec2) {
-    let default_return = (0.0, self_obj.dir);
+) -> (f32, Vec3) {
+    let default_return = (0.0, trans.dir);
     if vehicle.wait_time > 0.0 {
         vehicle.wait_time -= time.delta;
         return default_return;
     }
-    let objective: Vec2 = unwrap_or!(it.get_point(), return default_return);
+    let objective: Vec3 = unwrap_or!(it.get_point(), return default_return);
 
     let speed = self_obj.speed;
     let time_to_stop = speed / vehicle.kind.deceleration();
@@ -173,7 +168,7 @@ pub fn calc_decision<'a>(
 
     let (front_dist, flag) = calc_front_dist(vehicle, trans, self_obj, it, neighs, cutoff);
 
-    let position = trans.position();
+    let position = trans.position;
     let dir_to_pos = unwrap_or!(
         (objective - position).try_normalize(),
         return default_return
@@ -246,7 +241,7 @@ pub fn calc_decision<'a>(
     }
 
     // Not facing the objective
-    if dir_to_pos.dot(trans.direction()) < 0.8 {
+    if dir_to_pos.dot(trans.dir) < 0.8 {
         return (6.0, dir_to_pos);
     }
 
@@ -264,14 +259,16 @@ fn calc_front_dist<'a>(
     neighs: impl Iterator<Item = (Vec2, &'a PhysicsObject)>,
     cutoff: f32,
 ) -> (f32, u64) {
-    let position = trans.position();
-    let direction = trans.direction();
+    let position = trans.position;
+    let direction = trans.dir;
+    let pos2 = position.xy();
+    let dir2 = trans.dir.xy();
 
     let mut min_front_dist: f32 = 50.0;
 
     let my_ray = Ray {
-        from: position - direction * vehicle.kind.width() * 0.5,
-        dir: direction,
+        from: position.xy() - direction.xy() * vehicle.kind.width() * 0.5,
+        dir: direction.xy(),
     };
 
     let my_radius = self_obj.radius;
@@ -281,7 +278,10 @@ fn calc_front_dist<'a>(
     let mut flag = 0;
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {
-        let towards_vec: Vec2 = his_pos - position;
+        if (nei_physics_obj.height - position.z).abs() < 3.0 {
+            continue;
+        }
+        let towards_vec: Vec2 = his_pos - pos2;
         // Ignore myself and very close cars
         if towards_vec.is_close(Vec2::ZERO, 1.0) {
             continue;
@@ -290,18 +290,18 @@ fn calc_front_dist<'a>(
         let (towards_dir, dist) = unwrap_or!(towards_vec.dir_dist(), continue);
 
         // cos of angle from self to obj
-        let cos_angle = towards_dir.dot(direction);
+        let cos_angle = towards_dir.dot(dir2);
 
         // Ignore things behind
         if cos_angle < 0.0 {
             continue;
         }
 
-        let dist_to_side = towards_vec.perp_dot(direction).abs();
+        let dist_to_side = towards_vec.perp_dot(dir2).abs();
 
         let is_vehicle = matches!(nei_physics_obj.group, PhysicsGroup::Vehicles);
 
-        let cos_direction_angle = nei_physics_obj.dir.dot(direction);
+        let cos_direction_angle = nei_physics_obj.dir.dot(dir2);
 
         // front cone
         if cos_angle > 0.85 - 0.015 * speed.min(10.0)

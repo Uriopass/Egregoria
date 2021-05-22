@@ -1,5 +1,4 @@
 use flat_spatial::grid::GridHandle;
-use geom::Vec2;
 use imgui::Ui;
 use imgui_inspect::InspectDragf;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault, InspectVec2Rotation};
@@ -9,6 +8,7 @@ use serde::{Deserialize, Serialize};
 mod kinematics;
 pub mod systems;
 
+use geom::Vec2;
 pub use kinematics::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -27,6 +27,7 @@ pub struct PhysicsObject {
     pub speed: f32,
     #[inspect(proxy_type = "InspectDragf")]
     pub radius: f32,
+    pub height: f32,
     pub group: PhysicsGroup,
     pub flag: u64,
 }
@@ -34,9 +35,10 @@ pub struct PhysicsObject {
 impl Default for PhysicsObject {
     fn default() -> Self {
         Self {
-            dir: Vec2::UNIT_X,
+            dir: Vec2::X,
             speed: 0.0,
             radius: 1.0,
+            height: 0.0,
             group: PhysicsGroup::Unknown,
             flag: 0,
         }

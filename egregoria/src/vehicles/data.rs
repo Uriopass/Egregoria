@@ -6,8 +6,8 @@ use crate::utils::par_command_buffer::ComponentDrop;
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::GameInstant;
 use crate::Egregoria;
-use geom::Color;
-use geom::{Spline, Transform, Vec2};
+use geom::Transform;
+use geom::{Color, Spline3, Vec3};
 use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
 use legion::{Entity, Resources};
@@ -28,7 +28,7 @@ pub enum VehicleState {
     Driving,
     /// Panicked when it notices it's in a gridlock
     Panicking(GameInstant),
-    RoadToPark(Spline, f32, SpotReservation),
+    RoadToPark(Spline3, f32, SpotReservation),
 }
 
 debug_inspect_impl!(VehicleState);
@@ -67,9 +67,9 @@ impl ComponentDrop for Vehicle {
 #[must_use]
 pub fn put_vehicle_in_coworld(goria: &mut Egregoria, w: f32, trans: Transform) -> Collider {
     Collider(goria.write::<CollisionWorld>().insert(
-        trans.position(),
+        trans.position.xy(),
         PhysicsObject {
-            dir: trans.direction(),
+            dir: trans.dir.xy(),
             radius: w * 0.5,
             group: PhysicsGroup::Vehicles,
             ..Default::default()
@@ -141,7 +141,7 @@ pub fn unpark(goria: &mut Egregoria, vehicle: VehicleID) {
 pub fn spawn_parked_vehicle(
     goria: &mut Egregoria,
     kind: VehicleKind,
-    near: Vec2,
+    near: Vec3,
 ) -> Option<VehicleID> {
     let map = goria.map();
 

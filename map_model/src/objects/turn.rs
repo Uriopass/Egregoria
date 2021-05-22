@@ -1,7 +1,6 @@
 use crate::{IntersectionID, LaneID, Lanes};
-use geom::PolyLine;
-use geom::Spline;
-use geom::Vec2;
+use geom::PolyLine3;
+use geom::{Spline, Vec3};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
@@ -39,7 +38,7 @@ impl TurnKind {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Turn {
     pub id: TurnID,
-    pub points: PolyLine,
+    pub points: PolyLine3,
     pub kind: TurnKind,
 }
 
@@ -52,7 +51,7 @@ impl Turn {
     pub fn new(id: TurnID, kind: TurnKind) -> Self {
         Self {
             id,
-            points: PolyLine::new(vec![Vec2::ZERO; N_SPLINE + 2]),
+            points: PolyLine3::new(vec![Vec3::ZERO; N_SPLINE + 2]),
             kind,
         }
     }
@@ -83,13 +82,17 @@ impl Turn {
         let derivative_dst = dst_dir * dist;
 
         let spline = Spline {
-            from: pos_src,
-            to: pos_dst,
+            from: pos_src.xy(),
+            to: pos_dst.xy(),
             from_derivative: derivative_src,
             to_derivative: derivative_dst,
         };
 
-        self.points
-            .extend(spline.smart_points(0.3, 0.0, 1.0).skip(1));
+        self.points.extend(
+            spline
+                .smart_points(0.3, 0.0, 1.0)
+                .skip(1)
+                .map(|x| x.z(pos_src.z)),
+        );
     }
 }

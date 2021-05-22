@@ -1,6 +1,5 @@
 use crate::utils::time::GameTime;
-use geom::Transform;
-use geom::Vec2;
+use geom::{Transform, Vec3};
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::*;
@@ -13,7 +12,7 @@ use serde::{Deserialize, Serialize};
 pub struct Itinerary {
     kind: ItineraryKind,
     // fixme: replace local path with newtype stack to be popped in O(1)
-    local_path: Vec<Vec2>,
+    local_path: Vec<Vec3>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -24,7 +23,7 @@ pub enum ItineraryKind {
     Route(Route, PathKind),
     WaitForReroute {
         kind: PathKind,
-        dest: Vec2,
+        dest: Vec3,
         wait_ticks: u16,
     },
 }
@@ -33,7 +32,7 @@ pub enum ItineraryKind {
 pub struct Route {
     /// Route is reversed, allows for efficient popping
     pub reversed_route: Vec<Traversable>,
-    pub end_pos: Vec2,
+    pub end_pos: Vec3,
     pub cur: Traversable,
 }
 
@@ -47,7 +46,7 @@ impl Itinerary {
         }
     }
 
-    pub fn simple(path: Vec<Vec2>) -> Self {
+    pub fn simple(path: Vec<Vec3>) -> Self {
         Self {
             kind: ItineraryKind::Simple,
             local_path: path,
@@ -69,7 +68,7 @@ impl Itinerary {
         }
     }
 
-    pub fn wait_for_reroute(kind: PathKind, dest: Vec2) -> Self {
+    pub fn wait_for_reroute(kind: PathKind, dest: Vec3) -> Self {
         Self {
             kind: ItineraryKind::WaitForReroute {
                 kind,
@@ -80,7 +79,7 @@ impl Itinerary {
         }
     }
 
-    pub fn route(start: Vec2, end: Vec2, map: &Map, pathkind: PathKind) -> Option<Itinerary> {
+    pub fn route(start: Vec3, end: Vec3, map: &Map, pathkind: PathKind) -> Option<Itinerary> {
         let start_lane = pathkind.nearest_lane(map, start)?;
         let end_lane = pathkind.nearest_lane(map, end)?;
 
@@ -134,7 +133,7 @@ impl Itinerary {
         Some(it)
     }
 
-    fn advance(&mut self, map: &Map) -> Option<Vec2> {
+    fn advance(&mut self, map: &Map) -> Option<Vec3> {
         let v = if self.local_path.is_empty() {
             None
         } else {
@@ -168,7 +167,7 @@ impl Itinerary {
     }
 
     #[allow(clippy::collapsible_else_if)]
-    pub fn update(&mut self, position: Vec2, time: u32, map: &Map) {
+    pub fn update(&mut self, position: Vec3, time: u32, map: &Map) {
         if let Some(p) = self.get_point() {
             if self.is_terminal() {
                 if position.is_close(p, 2.0) {
@@ -211,7 +210,7 @@ impl Itinerary {
         }
     }
 
-    pub fn end_pos(&self) -> Option<Vec2> {
+    pub fn end_pos(&self) -> Option<Vec3> {
         match &self.kind {
             ItineraryKind::None => None,
             ItineraryKind::WaitUntil(_) | ItineraryKind::WaitForReroute { .. } => None,
@@ -235,11 +234,11 @@ impl Itinerary {
         }
     }
 
-    pub fn get_point(&self) -> Option<Vec2> {
+    pub fn get_point(&self) -> Option<Vec3> {
         self.local_path.first().copied()
     }
 
-    pub fn get_terminal(&self) -> Option<Vec2> {
+    pub fn get_terminal(&self) -> Option<Vec3> {
         if !self.is_terminal() {
             return None;
         }
@@ -266,11 +265,11 @@ impl Itinerary {
         &self.kind
     }
 
-    pub fn local_path(&self) -> &[Vec2] {
+    pub fn local_path(&self) -> &[Vec3] {
         &self.local_path
     }
 
-    pub fn prepend_local_path(&mut self, points: impl IntoIterator<Item = Vec2>) {
+    pub fn prepend_local_path(&mut self, points: impl IntoIterator<Item = Vec3>) {
         self.local_path.splice(0..0, points.into_iter());
     }
 
@@ -348,6 +347,6 @@ pub fn itinerary_update(
     world: &mut SubWorld,
 ) {
     qry.par_for_each_mut(world, |(trans, it): Qry| {
-        it.update(trans.position(), time.seconds, map)
+        it.update(trans.position, time.seconds, map)
     });
 }

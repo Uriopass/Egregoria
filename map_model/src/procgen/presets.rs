@@ -3,7 +3,7 @@
 use crate::{IntersectionID, LanePatternBuilder, Map, RoadSegmentKind};
 use common::FastMap;
 use flat_spatial::SparseGrid;
-use geom::{vec2, Vec2};
+use geom::{vec2, vec3, Vec2};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
@@ -72,13 +72,13 @@ pub fn load_parismap(map: &mut Map) {
         if let Some((h, _)) = n {
             let (_, close_id) = g.get(h).unwrap();
             ids.push(*close_id);
-            let newpos = (map.intersections[*close_id].pos + pos) * 0.5;
-            map.intersections[*close_id].pos = newpos;
+            let newpos = (map.intersections[*close_id].pos.xy() + pos) * 0.5;
+            map.intersections[*close_id].pos = newpos.z(0.0);
             g.set_position(h, newpos);
             g.maintain();
             continue;
         }
-        let id = map.add_intersection(pos);
+        let id = map.add_intersection(pos.z0());
         ids.push(id);
         g.insert(pos, id);
     }
@@ -144,8 +144,8 @@ pub fn add_doublecircle(pos: Vec2, m: &mut Map) {
         let angle = (i as f32 / N_POINTS as f32) * 2.0 * std::f32::consts::PI;
 
         let v: Vec2 = [angle.cos(), angle.sin()].into();
-        first_circle.push(m.add_intersection(pos + v * 200.0));
-        second_circle.push(m.add_intersection(pos + v * 300.0));
+        first_circle.push(m.add_intersection((pos + v * 200.0).z0()));
+        second_circle.push(m.add_intersection((pos + v * 300.0).z0()));
     }
 
     for x in first_circle.windows(2) {
@@ -203,7 +203,9 @@ pub fn add_grid(m: &mut Map, pos: Vec2, size: u32, spacing: f32) {
     let mut grid: Vec<Vec<IntersectionID>> = vec![vec![]; size];
     for (y, l) in grid.iter_mut().enumerate() {
         for x in 0..size {
-            l.push(m.add_intersection(pos + vec2(x as f32 * spacing, y as f32 * spacing)));
+            l.push(
+                m.add_intersection(pos.z0() + vec3(x as f32 * spacing, y as f32 * spacing, 0.0)),
+            );
         }
     }
 

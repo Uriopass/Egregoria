@@ -1,8 +1,10 @@
-use common::{FastMap, Z_ARROW, Z_BSPRITE, Z_CROSSWALK, Z_LANE, Z_LOT};
+use common::FastMap;
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
-use geom::{vec2, LinearColor, Polygon, Vec2, Vec3};
-use map_model::{BuildingKind, LaneKind, LotKind, Map, TurnKind, CROSSWALK_WIDTH};
+use geom::{vec2, LinearColor, Polygon, Spline, Vec2, Vec3};
+use map_model::{
+    BuildingKind, Intersection, LaneKind, LotKind, Map, Road, Roads, TurnKind, CROSSWALK_WIDTH,
+};
 use std::ops::Mul;
 use std::rc::Rc;
 use wgpu_engine::earcut::earcut;
@@ -146,16 +148,15 @@ impl MapBuilders {
 
             for (id, _) in r_lanes {
                 let lane = &lanes[id];
-                let l = lane.length();
+                let l = lane.points.length();
                 for i in 0..n_arrows {
                     let (mid, dir) = lane
                         .points
                         .point_dir_along(l * (1.0 + i as f32) / (1.0 + n_arrows as f32));
 
                     self.arrow_builder.push(
-                        mid,
+                        mid.up(0.01),
                         dir,
-                        Z_ARROW,
                         LinearColor::gray(0.3 + fade * 0.1),
                         (2.0, 2.0),
                     );
@@ -177,8 +178,8 @@ impl MapBuilders {
                 let id = turn.id;
 
                 if matches!(turn.kind, TurnKind::Crosswalk) {
-                    let from = lanes[id.src].get_inter_node_pos(inter_id);
-                    let to = lanes[id.dst].get_inter_node_pos(inter_id);
+                    let from = lanes[id.src].get_inter_node_pos(inter_id).up(0.01);
+                    let to = lanes[id.dst].get_inter_node_pos(inter_id).up(0.01);
 
                     let l = (to - from).magnitude();
 
@@ -187,11 +188,9 @@ impl MapBuilders {
                     }
 
                     let dir = (to - from) / l;
-                    let perp = dir.perpendicular() * CROSSWALK_WIDTH * 0.5;
-                    let pos = (from + dir * walking_w * 0.5).z(Z_CROSSWALK);
+                    let perp = dir.perp_up() * CROSSWALK_WIDTH * 0.5;
+                    let pos = from + dir * walking_w * 0.5;
                     let height = l - walking_w;
-                    let dir = dir.z(0.0);
-                    let perp = perp.z(0.0);
 
                     builder.extend_with(|vertices, add_index| {
                         let mk_v = |position: Vec3, uv: Vec2| MeshVertex {
@@ -237,12 +236,12 @@ impl MapBuilders {
                 let w = axis[0].magnitude();
                 let d = axis[0] / w;
                 let h = axis[1].magnitude();
-                x.push(c, d, Z_BSPRITE, LinearColor::WHITE, (w, h));
+                x.push(c.z(building.height), d.z0(), LinearColor::WHITE, (w, h));
             }
 
             if let Some(x) = self.buildmeshes.get_mut(&building.kind) {
-                let pos = building.obb.center().z(Z_BSPRITE);
-                let dir = building.obb.axis()[0].normalize().z(0.0);
+                let pos = building.obb.center().z(building.height);
+                let dir = building.obb.axis()[0].normalize().z0();
 
                 x.instances.push(MeshInstance {
                     pos,
@@ -323,10 +322,9 @@ impl MapBuilders {
             let mut draw_off = |col: LinearColor, w, off| {
                 tess.set_color(col);
                 tess.draw_polyline_full(
-                    cut.as_slice(),
-                    unwrap_ret!(cut.first_dir()),
-                    unwrap_ret!(cut.last_dir()),
-                    Z_LANE,
+                    cut.as_slice().into_iter().copied(),
+                    unwrap_ret!(cut.first_dir()).xy(),
+                    unwrap_ret!(cut.last_dir()).xy(),
                     w,
                     off,
                 );
@@ -356,15 +354,14 @@ impl MapBuilders {
         for inter in inters.values() {
             if inter.roads.is_empty() {
                 tess.set_color(line_col);
-                tess.draw_circle(inter.pos, Z_LANE - 0.1, 5.5);
+                tess.draw_circle(inter.pos, 5.5);
 
                 tess.set_color(mid_col);
-                tess.draw_circle(inter.pos, Z_LANE, 5.0);
+                tess.draw_circle(inter.pos, 5.0);
                 continue;
             }
 
-            tess.set_color(mid_col);
-            tess.draw_filled_polygon(inter.polygon.as_slice(), Z_LANE - 0.001);
+            intersection_mesh(&mut tess.meshbuilder, inter, roads);
 
             // Walking corners
             for turn in inter
@@ -383,15 +380,15 @@ impl MapBuilders {
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                tess.draw_polyline_full(&p, first_dir, last_dir, Z_LANE, 0.25, w * 0.5);
-                tess.draw_polyline_full(&p, first_dir, last_dir, Z_LANE, 0.25, -w * 0.5);
+                tess.draw_polyline_full(p.iter().copied(), first_dir, last_dir, 0.25, w * 0.5);
+                tess.draw_polyline_full(p.iter().copied(), first_dir, last_dir, 0.25, -w * 0.5);
 
                 tess.set_color(hig_col);
 
                 p.clear();
                 p.extend_from_slice(turn.points.as_slice());
 
-                tess.draw_polyline_with_dir(&p, first_dir, last_dir, Z_LANE, w - 0.25);
+                tess.draw_polyline_with_dir(&p, first_dir, last_dir, w - 0.25);
             }
         }
 
@@ -402,7 +399,7 @@ impl MapBuilders {
                 LotKind::Residential => common::config().lot_residential_col,
             };
             tess.set_color(col);
-            tess.draw_filled_polygon(&lot.shape.corners, Z_LOT);
+            tess.draw_filled_polygon(&lot.shape.corners, lot.height);
         }
     }
 }
@@ -445,4 +442,79 @@ impl Drawable for MapMeshes {
             crosswalks.draw_depth(gfx, rp);
         }
     }
+}
+
+fn intersection_mesh(meshb: &mut MeshBuilder, inter: &Intersection, roads: &Roads) {
+    let id = inter.id;
+
+    let getw = |road: &Road| {
+        if road.sidewalks(id).outgoing.is_some() {
+            road.width * 0.5 - LaneKind::Walking.width()
+        } else {
+            road.width * 0.5
+        }
+    };
+
+    let mut polygon = Polygon::default();
+
+    for (i, &road) in inter.roads.iter().enumerate() {
+        #[allow(clippy::indexing_slicing)]
+        let road = &roads[road];
+
+        #[allow(clippy::indexing_slicing)]
+        let next_road = &roads[inter.roads[(i + 1) % inter.roads.len()]];
+
+        let mut fp = road.interfaced_points();
+
+        if road.dst == inter.id {
+            fp.reverse();
+        }
+
+        let src_orient = unwrap_cont!(fp.first_dir()).xy();
+
+        let left = fp.first().xy() - src_orient.perpendicular() * getw(road);
+
+        let mut fp = next_road.interfaced_points();
+
+        if next_road.dst == inter.id {
+            fp.reverse();
+        }
+
+        let dst_orient = unwrap_cont!(fp.first_dir()).xy();
+        let next_right = fp.first().xy() + dst_orient.perpendicular() * getw(next_road);
+
+        let ang = (-src_orient).angle(dst_orient);
+
+        const TURN_ANG_ADD: f32 = 0.29;
+        const TURN_ANG_MUL: f32 = 0.36;
+        const TURN_MUL: f32 = 0.46;
+
+        let dist =
+            (next_right - left).magnitude() * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL) * TURN_MUL;
+
+        let spline = Spline {
+            from: left,
+            to: next_right,
+            from_derivative: -src_orient * dist,
+            to_derivative: dst_orient * dist,
+        };
+
+        polygon.extend(spline.smart_points(1.0, 0.0, 1.0));
+    }
+
+    polygon.simplify();
+
+    meshb.extend_with(|vertices, add_idx| {
+        vertices.extend(polygon.iter().map(|pos| MeshVertex {
+            position: (inter.pos + pos.z0()).into(),
+            normal: [0.0, 0.0, 1.0],
+            uv: [0.0; 2],
+            color: [1.0; 4],
+        }));
+        earcut(&polygon.0, |a, b, c| {
+            add_idx(c as u32);
+            add_idx(b as u32);
+            add_idx(a as u32);
+        });
+    });
 }

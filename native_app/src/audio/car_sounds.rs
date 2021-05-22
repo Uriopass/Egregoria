@@ -54,7 +54,7 @@ impl CarSounds {
 
         for (h, _) in &self.sounds {
             if let Some((pos, _)) = coworld.get(h) {
-                if pos.z(0.0).is_close(campos, HEAR_RADIUS) {
+                if pos.z0().is_close(campos, HEAR_RADIUS) {
                     continue;
                 }
             }
@@ -115,19 +115,16 @@ impl CarSounds {
         for (h, cs) in &mut self.sounds {
             let (pos, obj) = coworld.get(h).unwrap(); // Unwrap ok: checked it existed before
 
-            let his_speed = (obj.speed * obj.dir).z(0.0);
+            let his_speed = (obj.speed * obj.dir).z0();
             let dir_to_me = (campos - pos.z(campos.z * 0.5)).normalize();
 
             let speed_to_me = his_speed.dot(dir_to_me);
             let boost = 300.0 / (300.0 - speed_to_me);
 
-            ctx.set_volume(
-                cs.road,
-                obj.speed.sqrt() * 3.0 / pos.z(0.0).distance(campos),
-            );
+            ctx.set_volume(cs.road, obj.speed.sqrt() * 3.0 / pos.z0().distance(campos));
             ctx.set_speed(cs.road, boost);
 
-            ctx.set_volume(cs.engine, obj.speed.sqrt() / pos.z(0.0).distance(campos));
+            ctx.set_volume(cs.engine, obj.speed.sqrt() / pos.z0().distance(campos));
             ctx.set_speed(cs.engine, boost);
         }
 

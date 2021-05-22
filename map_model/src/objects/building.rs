@@ -1,7 +1,6 @@
 use crate::procgen::ColoredMesh;
-use crate::{Buildings, Road, SpatialMap};
-use common::Z_LANE;
-use geom::{Color, Vec2, OBB};
+use crate::{Buildings, Road, SpatialMap, Terrain};
+use geom::{Color, Vec2, Vec3, OBB};
 use imgui_inspect::debug_inspect_impl;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -30,28 +29,30 @@ pub enum BuildingGen {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Building {
     pub id: BuildingID,
-    pub door_pos: Vec2,
+    pub door_pos: Vec3,
     pub kind: BuildingKind,
     pub mesh: ColoredMesh,
     pub obb: OBB,
+    pub height: f32,
 }
 
 impl Building {
     pub fn make(
         buildings: &mut Buildings,
         spatial_map: &mut SpatialMap,
+        terrain: &Terrain,
         road: &Road,
         obb: OBB,
         kind: BuildingKind,
         gen: BuildingGen,
-    ) -> BuildingID {
-        let at = obb.center();
+    ) -> Option<BuildingID> {
+        let at = obb.center().z(terrain.height(obb.center())?);
         let axis = (obb.corners[1] - obb.corners[0]).normalize();
         let size = obb.corners[0].distance(obb.corners[1]);
 
         let r = common::rand::rand2(obb.center().x, obb.center().y).to_bits();
 
-        let (mut mesh, mut door_pos) = match gen {
+        let (mut mesh, door_pos) = match gen {
             BuildingGen::House => crate::procgen::gen_exterior_house(size, r as u64),
             BuildingGen::Farm => crate::procgen::gen_exterior_farm(size, r as u64),
             BuildingGen::CenteredDoor { vertical_factor } => {
@@ -61,25 +62,23 @@ impl Building {
 
         for (poly, _) in &mut mesh.faces {
             for v in poly {
-                *v = v.rotate_z(axis);
-                *v += at.z(0.0);
+                *v = v.rotate_z(axis) + at;
             }
         }
-        door_pos = door_pos.rotated_by(axis) + at;
+        let door_pos = door_pos.rotated_by(axis).z0() + at;
 
         let (rpos, _, dir) = road.points.project_segment_dir(door_pos);
 
-        let z = Z_LANE;
         let walkway = vec![
-            (rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) + dir * 1.5).z(z),
-            (rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) - dir * 1.5).z(z),
-            (door_pos - dir * 1.5).z(z),
-            (door_pos + dir * 1.5).z(z),
+            rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) + dir * 1.5,
+            rpos + (door_pos - rpos).normalize() * (road.width * 0.5 + 0.25) - dir * 1.5,
+            door_pos - dir * 1.5,
+            door_pos + dir * 1.5,
         ];
 
         mesh.faces.push((walkway, Color::gray(0.4).into()));
 
-        buildings.insert_with_key(move |id| {
+        Some(buildings.insert_with_key(move |id| {
             spatial_map.insert(id, obb);
             Self {
                 id,
@@ -87,7 +86,8 @@ impl Building {
                 kind,
                 door_pos,
                 obb,
+                height: at.z,
             }
-        })
+        }))
     }
 }

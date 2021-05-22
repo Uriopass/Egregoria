@@ -1,6 +1,6 @@
 use crate::pbuffer::PBuffer;
 use crate::{bg_layout_litmesh, compile_shader, Drawable, GfxContext, Texture, UvVertex, VBDesc};
-use geom::{LinearColor, Vec2};
+use geom::{LinearColor, Vec3};
 use std::path::PathBuf;
 use std::sync::Arc;
 use wgpu::{BindGroup, BufferUsage, IndexFormat, RenderPass, VertexBufferLayout};
@@ -29,8 +29,8 @@ impl SpriteBatch {
 #[derive(Copy, Clone, Debug)]
 struct InstanceRaw {
     tint: [f32; 4],
-    pos: [f32; 3],
-    dir: [f32; 2],
+    pos: Vec3,
+    dir: Vec3,
     scale: [f32; 2],
 }
 
@@ -42,7 +42,7 @@ impl VBDesc for InstanceRaw {
             array_stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Instance,
             attributes: Box::leak(Box::new(
-                wgpu::vertex_attr_array![2 => Float32x4, 3 => Float32x3, 4 => Float32x2, 5 => Float32x2],
+                wgpu::vertex_attr_array![2 => Float32x4, 3 => Float32x3, 4 => Float32x3, 5 => Float32x2],
             )),
         }
     }
@@ -59,9 +59,8 @@ impl SpriteBatchBuilder {
 
     pub fn push(
         &mut self,
-        pos: Vec2,
-        direction: Vec2,
-        z: f32,
+        pos: Vec3,
+        direction: Vec3,
         col: LinearColor,
         scale: (f32, f32),
     ) -> &mut Self {
@@ -69,7 +68,7 @@ impl SpriteBatchBuilder {
             tint: col.into(),
             dir: direction.into(),
             scale: [scale.0 * self.stretch_x, scale.1 * self.stretch_y],
-            pos: [pos.x, pos.y, z],
+            pos,
         });
         self
     }

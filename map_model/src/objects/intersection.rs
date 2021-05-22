@@ -2,9 +2,8 @@ use crate::{
     Intersections, LaneID, LaneKind, Lanes, LightPolicy, Road, RoadID, Roads, SpatialMap,
     TraverseDirection, Turn, TurnID, TurnPolicy,
 };
+use geom::Vec3;
 use geom::{pseudo_angle, Circle};
-use geom::{Polygon, Vec3};
-use geom::{Spline, Spline3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -145,72 +144,6 @@ impl Intersection {
             let min_dist = w * 1.1 / sin;
             roads[r1_id].max_interface(id, min_dist);
             roads[r2_id].max_interface(id, min_dist);
-        }
-    }
-
-    pub fn polygon(&self, roads: &Roads) -> Polygon {
-        let id = self.id;
-
-        let getw = |road: &Road| {
-            if road.sidewalks(id).outgoing.is_some() {
-                road.width * 0.5 - LaneKind::Walking.width()
-            } else {
-                road.width * 0.5
-            }
-        };
-
-        let mut polygon = Polygon::default();
-
-        for (i, &road) in self.roads.iter().enumerate() {
-            #[allow(clippy::indexing_slicing)]
-            let road = &roads[road];
-
-            #[allow(clippy::indexing_slicing)]
-            let next_road = &roads[self.roads[(i + 1) % self.roads.len()]];
-
-            let mut fp = road.interfaced_points();
-
-            if road.dst == self.id {
-                fp.reverse();
-            }
-
-            let src_orient = unwrap_cont!(fp.first_dir());
-
-            let left = fp.first() - src_orient.perpendicular() * getw(road);
-
-            let mut fp = next_road.interfaced_points();
-
-            if next_road.dst == self.id {
-                fp.reverse();
-            }
-
-            let dst_orient = unwrap_cont!(fp.first_dir());
-            let next_right = fp.first() + dst_orient.perpendicular() * getw(next_road);
-
-            let ang = (-src_orient).angle(dst_orient);
-
-            const TURN_ANG_ADD: f32 = 0.29;
-            const TURN_ANG_MUL: f32 = 0.36;
-            const TURN_MUL: f32 = 0.46;
-
-            let dist = (next_right - left).magnitude()
-                * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL)
-                * TURN_MUL;
-
-            let spline = Spline3 {
-                from: left,
-                to: next_right,
-                from_derivative: -src_orient * dist,
-                to_derivative: dst_orient * dist,
-            };
-
-            polygon.extend(spline.smart_points(1.0, 0.0, 1.0));
-        }
-
-        if polygon.is_empty() {
-            Polygon::centered_rect(self.pos.xy(), 5.0, 5.0)
-        } else {
-            polygon
         }
     }
 

@@ -2,10 +2,9 @@ use crate::{
     Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
     ParkingSpots, Roads, SpatialMap,
 };
-use geom::PolyLine;
-use geom::Spline;
-use geom::Vec2;
+use geom::Spline3;
 use geom::{BoldLine, PolyLine3};
+use geom::{Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -233,11 +232,11 @@ impl Road {
                 vec![from, to]
             }
             RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
-                let s = Spline {
+                let s = Spline3 {
                     from: src.pos,
                     to: dst.pos,
-                    from_derivative,
-                    to_derivative,
+                    from_derivative: from_derivative.z0(),
+                    to_derivative: to_derivative.z0(),
                 };
 
                 s.smart_points(1.0, 0.0, 1.0).collect()
@@ -245,7 +244,7 @@ impl Road {
         })
     }
 
-    pub fn interface_point(&self, id: IntersectionID) -> Vec2 {
+    pub fn interface_point(&self, id: IntersectionID) -> Vec3 {
         if id == self.src {
             self.interfaced_points().first()
         } else if id == self.dst {
@@ -335,11 +334,11 @@ impl Road {
     }
 
     pub fn src_dir(&self) -> Vec2 {
-        self.points.first_dir().unwrap_or(Vec2::UNIT_X)
+        self.points.first_dir().unwrap_or(Vec3::X).xy().normalize()
     }
 
     pub fn dst_dir(&self) -> Vec2 {
-        -self.points.last_dir().unwrap_or(Vec2::UNIT_X)
+        -self.points.last_dir().unwrap_or(Vec3::X).xy().normalize()
     }
 
     pub fn other_end(&self, my_end: IntersectionID) -> Option<IntersectionID> {

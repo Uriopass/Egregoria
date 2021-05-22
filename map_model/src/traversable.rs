@@ -1,5 +1,5 @@
 use crate::{IntersectionID, LaneID, Lanes, Map, TurnID};
-use geom::PolyLine;
+use geom::PolyLine3;
 use imgui_inspect::imgui;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
@@ -33,16 +33,16 @@ impl Traversable {
         Self { kind, dir }
     }
 
-    pub fn points(&self, m: &Map) -> Option<PolyLine> {
-        let p = self.raw_points(m)?;
+    pub fn points(&self, m: &Map) -> Option<PolyLine3> {
+        let mut p = self.raw_points(m)?.clone();
 
-        match self.dir {
-            TraverseDirection::Forward => Some(p.clone()),
-            TraverseDirection::Backward => Some(PolyLine::new(p.iter().copied().rev().collect())),
+        if let TraverseDirection::Backward = self.dir {
+            p.reverse();
         }
+        Some(p)
     }
 
-    pub fn raw_points<'a>(&self, m: &'a Map) -> Option<&'a PolyLine> {
+    pub fn raw_points<'a>(&self, m: &'a Map) -> Option<&'a PolyLine3> {
         match self.kind {
             TraverseKind::Lane(id) => Some(&m.lanes.get(id)?.points),
             TraverseKind::Turn(id) => Some(&m.intersections.get(id.parent)?.find_turn(id)?.points),

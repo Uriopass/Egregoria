@@ -113,7 +113,7 @@ impl PolyLine {
             segm,
             self.segment_vec(segm - 1)
                 .and_then(|x| x.try_normalize())
-                .unwrap_or(Vec2::UNIT_X),
+                .unwrap_or(Vec2::X),
         )
     }
 
@@ -198,7 +198,7 @@ impl PolyLine {
         let (dir, dist) = windows
             .next()
             .and_then(|w| (w[1] - w[0]).dir_dist())
-            .unwrap_or((Vec2::UNIT_X, 0.0));
+            .unwrap_or((Vec2::X, 0.0));
         PointsAlongs {
             windows,
             lastp: self.first(),
@@ -380,7 +380,7 @@ impl<'a> PointsAlongs<'a> {
     pub fn next(&mut self, d: f32) -> Option<(Vec2, Vec2)> {
         while d > self.partial + self.dist {
             let w = self.windows.next()?;
-            let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((Vec2::UNIT_X, 0.0));
+            let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((Vec2::X, 0.0));
             self.partial += self.dist;
             self.dir = dir; // no structural assignment :(
             self.dist = dist;

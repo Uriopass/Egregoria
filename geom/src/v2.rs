@@ -68,9 +68,18 @@ impl Vec2 {
         }
     }
 
+    #[inline]
+    pub const fn z0(self) -> Vec3 {
+        Vec3 {
+            x: self.x,
+            y: self.y,
+            z: 0.0,
+        }
+    }
+
     pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
-    pub const UNIT_X: Self = Self { x: 1.0, y: 0.0 };
-    pub const UNIT_Y: Self = Self { x: 0.0, y: 1.0 };
+    pub const X: Self = Self { x: 1.0, y: 0.0 };
+    pub const Y: Self = Self { x: 0.0, y: 1.0 };
 
     #[inline]
     pub fn perpendicular(self) -> Self {

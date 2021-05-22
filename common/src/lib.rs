@@ -1,11 +1,9 @@
 #![allow(clippy::upper_case_acronyms)]
 
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 
 pub use config::*;
 pub use history::*;
-use imgui_inspect::imgui::__core::hash::Hasher;
-pub use z::*;
 
 #[macro_export]
 macro_rules! unwrap_or {
@@ -107,7 +105,6 @@ pub mod logger;
 pub mod rand;
 pub mod saveload;
 pub mod timestep;
-mod z;
 
 pub use inline_tweak as tw;
 

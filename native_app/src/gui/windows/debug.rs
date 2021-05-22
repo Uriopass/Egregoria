@@ -4,12 +4,11 @@ use crate::game_loop::Timings;
 use crate::gui::InspectedEntity;
 use crate::input::MouseInfo;
 use crate::uiworld::UiWorld;
-use common::{Z_DEBUG, Z_DEBUG_BG};
 use egregoria::map_dynamic::{Itinerary, ParkingManagement};
 use egregoria::physics::CollisionWorld;
 use egregoria::utils::time::{GameTime, SECONDS_PER_DAY};
 use egregoria::Egregoria;
-use geom::{vec2, Camera, Color, Intersect, LinearColor, Segment, Spline, Vec2, AABB, OBB};
+use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use imgui::im_str;
 use imgui::Ui;
 use map_model::{IntersectionID, Map, RoadSegmentKind};
@@ -37,8 +36,6 @@ impl Default for DebugObjs {
             (false, "Debug connectivity", debug_connectivity),
             (false, "Debug spatialmap", debug_spatialmap),
             (false, "Debug collision world", debug_coworld),
-            (false, "Debug OBBs", debug_obb),
-            (false, "Debug rays", debug_rays),
             (false, "Debug splines", debug_spline),
             (false, "Debug lots", debug_lots),
             (false, "Debug road points", debug_road_points),
@@ -100,8 +97,10 @@ pub fn debug(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egre
             "Render prepare time: {:.1}ms",
             timings.render.avg() * 1000.0
         ));
-        ui.text(im_str!("Mouse  pos: {:.1} {:.1}", mouse.x, mouse.y));
-        ui.text(im_str!("Cam center: {:.1} {:.1}", cam.x, cam.y));
+        if let Some(mouse) = mouse {
+            ui.text(im_str!("World mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
+        }
+        ui.text(im_str!("Cam center:      {:.1} {:.1}", cam.x, cam.y));
         ui.separator();
         ui.text("Game system times");
 
@@ -120,7 +119,7 @@ pub fn debug(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egre
     })
 }
 
-pub fn show_grid(tess: &mut Tesselator, _: &Egregoria, uiworld: &UiWorld) -> Option<()> {
+pub fn show_grid(tess: &mut Tesselator, g: &Egregoria, uiworld: &UiWorld) -> Option<()> {
     let cam = &*uiworld.read::<Camera>();
 
     if cam.eye().z > 1000.0 {
@@ -129,12 +128,14 @@ pub fn show_grid(tess: &mut Tesselator, _: &Egregoria, uiworld: &UiWorld) -> Opt
 
     let gray_maj = 0.5;
     let gray_min = 0.3;
+    let map = g.map();
+    let h = |p| map.terrain.height(p);
     if cam.eye().z < 300.0 {
         tess.set_color(Color::new(gray_min, gray_min, gray_min, 0.5));
-        tess.draw_grid(1.0);
+        tess.draw_grid(1.0, h);
     }
     tess.set_color(Color::new(gray_maj, gray_maj, gray_maj, 0.5));
-    tess.draw_grid(10.0);
+    tess.draw_grid(10.0, h);
     Some(())
 }
 
@@ -145,11 +146,11 @@ pub fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Op
             let to = road.points.last();
             draw_spline(
                 tess,
-                &Spline {
+                &Spline3 {
                     from: fr,
                     to,
-                    from_derivative: fr_dr,
-                    to_derivative: to_der,
+                    from_derivative: fr_dr.z0(),
+                    to_derivative: to_der.z0(),
                 },
             );
         }
@@ -161,7 +162,7 @@ pub fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Op
 pub fn debug_lots(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     tess.set_color(Color::RED);
     for lot in goria.map().lots().values() {
-        tess.draw_circle(lot.shape.corners[0], Z_DEBUG, 1.0);
+        tess.draw_circle(lot.shape.corners[0].z(lot.height), 1.0);
     }
 
     Some(())
@@ -171,14 +172,14 @@ pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
     let map = goria.map();
     tess.set_color(Color::RED);
     for (_, road) in map.roads() {
-        tess.draw_polyline(road.points().as_slice(), Z_DEBUG, 0.3);
+        tess.draw_polyline(road.points().as_slice(), 0.3);
     }
 
     for (_, lane) in map.lanes() {
         let r = common::rand::rand2(lane.points.first().x, lane.points.first().y);
         tess.set_color(Color::hsv(r * 360.0, 0.8, 0.6, 0.5));
 
-        tess.draw_polyline(lane.points.as_slice(), Z_DEBUG, 0.3);
+        tess.draw_polyline(lane.points.as_slice(), 0.3);
     }
     Some(())
 }
@@ -207,31 +208,27 @@ pub fn debug_connectivity(tess: &mut Tesselator, goria: &Egregoria, uiw: &UiWorl
         tess.set_color(Color::hsv(r * 360.0, 0.8, 0.6, 0.5));
 
         for int in comp.iter().flat_map(|x| map.intersections().get(*x)) {
-            tess.draw_circle(int.pos, Z_DEBUG, 8.0);
+            tess.draw_circle(int.pos, 8.0);
         }
     }
 
     Some(())
 }
 
-fn draw_spline(tess: &mut Tesselator, sp: &Spline) {
+fn draw_spline(tess: &mut Tesselator, sp: &Spline3) {
     tess.set_color(Color::RED);
-    tess.draw_polyline(
-        &sp.smart_points(0.1, 0.0, 1.0).collect::<Vec<_>>(),
-        Z_DEBUG,
-        2.0,
-    );
+    tess.draw_polyline(&sp.smart_points(0.1, 0.0, 1.0).collect::<Vec<_>>(), 2.0);
     tess.set_color(Color::GREEN);
 
-    tess.draw_stroke(sp.from, sp.from + sp.from_derivative, Z_DEBUG, 1.5);
-    tess.draw_stroke(sp.to, sp.to + sp.to_derivative, Z_DEBUG, 1.5);
+    tess.draw_stroke(sp.from, sp.from + sp.from_derivative, 1.5);
+    tess.draw_stroke(sp.to, sp.to + sp.to_derivative, 1.5);
 
     tess.set_color(Color::PURPLE);
-    tess.draw_circle(sp.from, Z_DEBUG, 1.0);
-    tess.draw_circle(sp.to, Z_DEBUG, 1.0);
+    tess.draw_circle(sp.from, 1.0);
+    tess.draw_circle(sp.to, 1.0);
 
-    tess.draw_circle(sp.from + sp.from_derivative, Z_DEBUG, 1.0);
-    tess.draw_circle(sp.to + sp.to_derivative, Z_DEBUG, 1.0);
+    tess.draw_circle(sp.from + sp.from_derivative, 1.0);
+    tess.draw_circle(sp.to + sp.to_derivative, 1.0);
 }
 
 fn debug_coworld(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
@@ -239,12 +236,13 @@ fn debug_coworld(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Optio
 
     tess.set_color(Color::new(0.8, 0.8, 0.9, 0.5));
     for h in coworld.handles() {
-        let pos = coworld.get(h)?.0;
-        tess.draw_circle(pos, Z_DEBUG, 3.0);
+        let (pos, obj) = coworld.get(h)?;
+        tess.draw_circle(pos.z(obj.height + 0.1), 3.0);
     }
     Some(())
 }
 
+/*
 pub fn debug_obb(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -> Option<()> {
     let time = goria.read::<GameTime>();
     let mouse = uiworld.read::<MouseInfo>().unprojected;
@@ -305,6 +303,7 @@ pub fn debug_obb(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) ->
 
     Some(())
 }
+*/
 
 pub fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     let map: &Map = &goria.map();
@@ -318,7 +317,7 @@ pub fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> O
         };
 
         tess.set_color(color);
-        tess.draw_circle(spot.trans.position(), Z_DEBUG, 2.0);
+        tess.draw_circle(spot.trans.position, 2.0);
     }
 
     Some(())
@@ -332,17 +331,17 @@ pub fn debug_pathfinder(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWo
     let itinerary = goria.comp::<Itinerary>(selected)?;
 
     tess.set_color(LinearColor::GREEN);
-    tess.draw_polyline(itinerary.local_path(), Z_DEBUG, 1.0);
+    tess.draw_polyline(itinerary.local_path(), 1.0);
 
     if let Some(p) = itinerary.get_point() {
-        tess.draw_stroke(p, pos, Z_DEBUG, 1.0);
+        tess.draw_stroke(p, pos, 1.0);
     }
 
     if let egregoria::map_dynamic::ItineraryKind::Route(r, _) = itinerary.kind() {
         tess.set_color(LinearColor::RED);
         for l in &r.reversed_route {
             if let Some(l) = l.raw_points(map) {
-                tess.draw_polyline(l.as_slice(), Z_DEBUG, 3.0);
+                tess.draw_polyline(l.as_slice(), 3.0);
             }
         }
         tess.set_color(if itinerary.has_ended(0.0) {
@@ -351,11 +350,12 @@ pub fn debug_pathfinder(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWo
             LinearColor::MAGENTA
         });
 
-        tess.draw_circle(r.end_pos, Z_DEBUG, 1.0);
+        tess.draw_circle(r.end_pos, 1.0);
     }
     Some(())
 }
 
+/*
 pub fn debug_rays(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -> Option<()> {
     let time = goria.read::<GameTime>();
     let time = time.timestamp * 0.2;
@@ -377,24 +377,29 @@ pub fn debug_rays(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -
     };
 
     tess.set_color(LinearColor::WHITE);
-    tess.draw_line(r.from, r.from + r.dir * 50.0, Z_DEBUG);
-    tess.draw_line(r2.from, r2.from + r2.dir * 50.0, Z_DEBUG);
+    tess.draw_line(r.from, r.from + r.dir * 50.0);
+    tess.draw_line(r2.from, r2.from + r2.dir * 50.0);
 
     let inter = r.intersection_point(&r2);
     if let Some(v) = inter {
         tess.set_color(LinearColor::RED);
 
-        tess.draw_circle(v, Z_DEBUG, 2.0);
+        tess.draw_circle(v.z0(), 2.0);
     }
 
     Some(())
-}
+}*/
 
 pub fn debug_spatialmap(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     let map: &Map = &goria.map();
     for r in map.spatial_map().debug_grid() {
         tess.set_color(LinearColor::BLUE.a(0.1));
-        tess.draw_rect_cos_sin(r.center(), Z_DEBUG, r.w(), r.h(), Vec2::UNIT_X);
+        tess.draw_rect_cos_sin(
+            r.center().z(map.terrain.height(r.center()).unwrap_or(0.0)),
+            r.w(),
+            r.h(),
+            Vec2::X,
+        );
     }
 
     Some(())

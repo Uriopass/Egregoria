@@ -63,9 +63,9 @@ impl BuyFood {
         use HumanDecisionKind::*;
         match self.state {
             BuyFoodState::Empty => {
-                let pos = trans.position();
+                let pos = trans.position;
                 cbuf.exec_on(soul.0, move |market: &mut Market| {
-                    market.buy(soul, pos, CommodityKind::Bread, 1)
+                    market.buy(soul, pos.xy(), CommodityKind::Bread, 1)
                 });
                 self.state = BuyFoodState::WaitingForTrade;
                 Yield

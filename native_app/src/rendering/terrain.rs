@@ -251,7 +251,7 @@ impl TerrainRender {
         let eye = cam.eye();
         for (cell, chunk) in &self.chunks {
             let p = vec2(cell.0 as f32, cell.1 as f32) * CHUNK_SIZE as f32;
-            let lod = eye.distance(p.z(0.0)).log2().sub(10.0).max(0.0) as usize;
+            let lod = eye.distance(p.z0()).log2().sub(10.0).max(0.0) as usize;
             fctx.objs
                 .push(Box::new(chunk.lods[lod.min(LOD - 1)].clone()))
         }
