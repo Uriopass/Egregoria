@@ -236,7 +236,12 @@ impl MapBuilders {
                 let w = axis[0].magnitude();
                 let d = axis[0] / w;
                 let h = axis[1].magnitude();
-                x.push(c.z(building.height), d.z0(), LinearColor::WHITE, (w, h));
+                x.push(
+                    c.z(building.height + 0.01),
+                    d.z0(),
+                    LinearColor::WHITE,
+                    (w, h),
+                );
             }
 
             if let Some(x) = self.buildmeshes.get_mut(&building.kind) {
@@ -399,7 +404,7 @@ impl MapBuilders {
                 LotKind::Residential => common::config().lot_residential_col,
             };
             tess.set_color(col);
-            tess.draw_filled_polygon(&lot.shape.corners, lot.height);
+            tess.draw_filled_polygon(&lot.shape.corners, lot.height + 0.3);
         }
     }
 }
@@ -504,17 +509,18 @@ fn intersection_mesh(meshb: &mut MeshBuilder, inter: &Intersection, roads: &Road
 
     polygon.simplify();
 
+    let col = LinearColor::from(common::config().road_mid_col).into();
     meshb.extend_with(|vertices, add_idx| {
         vertices.extend(polygon.iter().map(|pos| MeshVertex {
-            position: (inter.pos + pos.z0()).into(),
+            position: pos.z(inter.pos.z - 0.01).into(),
             normal: [0.0, 0.0, 1.0],
             uv: [0.0; 2],
-            color: [1.0; 4],
+            color: col,
         }));
         earcut(&polygon.0, |a, b, c| {
-            add_idx(c as u32);
-            add_idx(b as u32);
             add_idx(a as u32);
+            add_idx(b as u32);
+            add_idx(c as u32);
         });
     });
 }

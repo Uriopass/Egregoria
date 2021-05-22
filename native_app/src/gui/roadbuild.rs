@@ -32,6 +32,7 @@ pub struct RoadBuildResource {
     pub build_state: BuildState,
     pub pattern_builder: LanePatternBuilder,
     pub snap_to_grid: bool,
+    pub height_offset: f32,
 }
 
 pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
@@ -53,9 +54,9 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let grid_size = 30.0;
     let mousepos = if state.snap_to_grid {
         let v = unproj.xy().snap(grid_size, grid_size);
-        v.z(unwrap_ret!(map.terrain.height(v)) + 0.3)
+        v.z(unwrap_ret!(map.terrain.height(v)) + 0.3 + state.height_offset)
     } else {
-        unproj.up(0.3)
+        unproj.up(0.3 + state.height_offset)
     };
 
     let log_camheight = cam.eye().z.log10();
@@ -64,7 +65,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     if state.snap_to_grid && log_camheight < cutoff {
         let alpha = 1.0 - log_camheight / cutoff;
         let col = common::config().gui_primary.a(alpha);
-        let screen = AABB::new(cam.pos.xy(), cam.pos.xy()).expand(1000.0);
+        let screen = AABB::new(cam.pos.xy(), cam.pos.xy()).expand(300.0);
         let startx = (screen.ll.x / grid_size).ceil() * grid_size;
         let starty = (screen.ll.y / grid_size).ceil() * grid_size;
 
@@ -79,10 +80,10 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
                 let py = p + Vec2::y(grid_size);
 
                 immdraw
-                    .line(p3, px.z(unwrap_cont!(height(px)) + 0.1), 0.1)
+                    .line(p3, px.z(unwrap_cont!(height(px)) + 0.1), 0.3)
                     .color(col);
                 immdraw
-                    .line(p3, py.z(unwrap_cont!(height(py)) + 0.1), 0.1)
+                    .line(p3, py.z(unwrap_cont!(height(py)) + 0.1), 0.3)
                     .color(col);
             }
         }

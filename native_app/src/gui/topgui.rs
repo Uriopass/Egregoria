@@ -204,6 +204,7 @@ impl Gui {
                 .build(ui, || {
                     let mut roadbuild = uiworld.write::<RoadBuildResource>();
                     ui.checkbox(im_str!("snap to grid"), &mut roadbuild.snap_to_grid);
+                    imgui::Drag::new(im_str!("height off")).build(ui, &mut roadbuild.height_offset);
                     let pat = &mut roadbuild.pattern_builder;
 
                     if ui.button(im_str!("Street"), [rbw, 30.0]) {
