@@ -2,10 +2,10 @@ use crate::gui::Tool;
 use crate::input::{MouseButton, MouseInfo};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
-use common::{AudioKind, Z_GRID, Z_TOOL};
+use common::AudioKind;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::Egregoria;
-use geom::{vec2, Vec2, AABB};
+use geom::{vec2, Spline3, Vec2, Vec3, AABB};
 use geom::{Camera, Spline};
 use map_model::{LanePatternBuilder, Map, MapProject, ProjectKind};
 use BuildState::{Hover, Interpolation, Start};
@@ -49,11 +49,13 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         return;
     }
 
+    let unproj = unwrap_ret!(mouseinfo.unprojected);
     let grid_size = 30.0;
     let mousepos = if state.snap_to_grid {
-        mouseinfo.unprojected.snap(grid_size, grid_size)
+        let v = unproj.xy().snap(grid_size, grid_size);
+        v.z(unwrap_ret!(map.terrain.height(v)) + 0.3)
     } else {
-        mouseinfo.unprojected
+        unproj.up(0.3)
     };
 
     let log_camheight = cam.eye().z.log10();
@@ -64,21 +66,25 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         let col = common::config().gui_primary.a(alpha);
         let screen = AABB::new(cam.pos.xy(), cam.pos.xy()).expand(1000.0);
         let startx = (screen.ll.x / grid_size).ceil() * grid_size;
+        let starty = (screen.ll.y / grid_size).ceil() * grid_size;
+
+        let height = |p| map.terrain.height(p);
         for x in 0..(screen.w() / grid_size) as i32 {
             let x = startx + x as f32 * grid_size;
-            immdraw
-                .line(vec2(x, screen.ll.y), vec2(x, screen.ur.y), 1.0)
-                .color(col)
-                .z(Z_GRID);
-        }
+            for y in 0..(screen.h() / grid_size) as i32 {
+                let y = starty + y as f32 * grid_size;
+                let p = vec2(x, y);
+                let p3 = p.z(unwrap_cont!(height(p)) + 0.1);
+                let px = p + Vec2::x(grid_size);
+                let py = p + Vec2::y(grid_size);
 
-        let starty = (screen.ll.y / grid_size).ceil() * grid_size;
-        for y in 0..(screen.h() / grid_size) as i32 {
-            let y = starty + y as f32 * grid_size;
-            immdraw
-                .line(vec2(screen.ll.x, y), vec2(screen.ur.x, y), 1.0)
-                .color(col)
-                .z(Z_GRID);
+                immdraw
+                    .line(p3, px.z(unwrap_cont!(height(px)) + 0.1), 0.1)
+                    .color(col);
+                immdraw
+                    .line(p3, py.z(unwrap_cont!(height(py)) + 0.1), 0.1)
+                    .color(col);
+            }
         }
     }
 
@@ -89,7 +95,15 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         ) {
             if let WorldCommand::MapMakeConnection(_, to, _, _) = command {
                 let proj = map.project(to.pos, 0.0);
-                if matches!(proj.kind, ProjectKind::Inter(_)) {
+                if let Some(
+                    proj
+                    @
+                    MapProject {
+                        kind: ProjectKind::Inter(_),
+                        ..
+                    },
+                ) = proj
+                {
                     state.build_state = BuildState::Start(proj);
                 }
             }
@@ -100,7 +114,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         state.build_state = BuildState::Hover;
     }
 
-    let mut cur_proj = map.project(mousepos, 0.0);
+    let mut cur_proj = unwrap_ret!(map.project(mousepos, 0.0));
     if matches!(cur_proj.kind, ProjectKind::Lot(_)) {
         cur_proj.kind = ProjectKind::Ground;
     }
@@ -133,15 +147,16 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         (Hover, Building(_)) => false,
         (Start(selected_proj), _) => {
             compatible(map, cur_proj.kind, selected_proj.kind)
-                && check_angle(map, selected_proj, cur_proj.pos)
-                && check_angle(map, cur_proj, selected_proj.pos)
+                && check_angle(map, selected_proj, cur_proj.pos.xy())
+                && check_angle(map, cur_proj, selected_proj.pos.xy())
         }
         (Interpolation(interpoint, selected_proj), _) => {
             let sp = Spline {
-                from: selected_proj.pos,
-                to: cur_proj.pos,
-                from_derivative: (interpoint - selected_proj.pos) * std::f32::consts::FRAC_1_SQRT_2,
-                to_derivative: (cur_proj.pos - interpoint) * std::f32::consts::FRAC_1_SQRT_2,
+                from: selected_proj.pos.xy(),
+                to: cur_proj.pos.xy(),
+                from_derivative: (interpoint - selected_proj.pos.xy())
+                    * std::f32::consts::FRAC_1_SQRT_2,
+                to_derivative: (cur_proj.pos.xy() - interpoint) * std::f32::consts::FRAC_1_SQRT_2,
             };
 
             compatible(map, cur_proj.kind, selected_proj.kind)
@@ -169,7 +184,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
             }
             (Start(v), Ground, Tool::RoadbuildCurved) => {
                 // Set interpolation point
-                state.build_state = Interpolation(mouseinfo.unprojected, v);
+                state.build_state = Interpolation(mousepos.xy(), v);
             }
             (Start(selected_proj), _, _) => {
                 // Straight connection to something
@@ -204,7 +219,7 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
     match from.kind {
         Inter(i) => {
             let inter = &map.intersections()[i];
-            let dir = (to - inter.pos).normalize();
+            let dir = (to - inter.pos.xy()).normalize();
             for &road in &inter.roads {
                 let road = &map.roads()[road];
                 let v = road.dir_from(i);
@@ -218,8 +233,10 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
             let r = &map.roads()[r]; // fixme dont crash
             let (proj, _, rdir1) = r.points().project_segment_dir(from.pos);
             let rdir2 = -rdir1;
-            let dir = (to - proj).normalize();
-            if rdir1.angle(dir).abs() < MAX_TURN_ANGLE || rdir2.angle(dir).abs() < MAX_TURN_ANGLE {
+            let dir = (to - proj.xy()).normalize();
+            if rdir1.xy().angle(dir).abs() < MAX_TURN_ANGLE
+                || rdir2.xy().angle(dir).abs() < MAX_TURN_ANGLE
+            {
                 return false;
             }
             true
@@ -249,10 +266,11 @@ impl RoadBuildResource {
     pub fn update_drawing(
         &self,
         immdraw: &mut ImmediateDraw,
-        proj_pos: Vec2,
+        mut proj_pos: Vec3,
         patwidth: f32,
         is_valid: bool,
     ) {
+        proj_pos.z += 0.1;
         let col = if is_valid {
             common::config().gui_primary
         } else {
@@ -261,38 +279,26 @@ impl RoadBuildResource {
 
         match self.build_state {
             BuildState::Hover => {
-                immdraw
-                    .circle(proj_pos, patwidth * 0.5)
-                    .color(col)
-                    .z(Z_TOOL);
+                immdraw.circle(proj_pos, patwidth * 0.5).color(col);
             }
             BuildState::Start(x) => {
-                immdraw
-                    .circle(proj_pos, patwidth * 0.5)
-                    .color(col)
-                    .z(Z_TOOL);
-                immdraw.circle(x.pos, patwidth * 0.5).color(col).z(Z_TOOL);
-                immdraw.line(proj_pos, x.pos, patwidth).color(col).z(Z_TOOL);
+                immdraw.circle(proj_pos, patwidth * 0.5).color(col);
+                immdraw.circle(x.pos.up(0.1), patwidth * 0.5).color(col);
+                immdraw.line(proj_pos, x.pos.up(0.1), patwidth).color(col);
             }
             BuildState::Interpolation(p, x) => {
-                let sp = Spline {
-                    from: x.pos,
+                let sp = Spline3 {
+                    from: x.pos.up(0.1),
                     to: proj_pos,
-                    from_derivative: (p - x.pos) * std::f32::consts::FRAC_1_SQRT_2,
-                    to_derivative: (proj_pos - p) * std::f32::consts::FRAC_1_SQRT_2,
+                    from_derivative: (p - x.pos.xy()).z0() * std::f32::consts::FRAC_1_SQRT_2,
+                    to_derivative: (proj_pos.xy() - p).z0() * std::f32::consts::FRAC_1_SQRT_2,
                 };
                 let points: Vec<_> = sp.smart_points(1.0, 0.0, 1.0).collect();
 
-                immdraw.polyline(points, patwidth).color(col).z(Z_TOOL);
+                immdraw.polyline(points, patwidth).color(col);
 
-                immdraw
-                    .circle(sp.get(0.0), patwidth * 0.5)
-                    .color(col)
-                    .z(Z_TOOL);
-                immdraw
-                    .circle(sp.get(1.0), patwidth * 0.5)
-                    .color(col)
-                    .z(Z_TOOL);
+                immdraw.circle(sp.get(0.0), patwidth * 0.5).color(col);
+                immdraw.circle(sp.get(1.0), patwidth * 0.5).color(col);
             }
         }
     }

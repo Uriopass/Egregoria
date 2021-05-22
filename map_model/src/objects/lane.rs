@@ -1,5 +1,5 @@
 use crate::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
-use geom::{PolyLine3, Vec3};
+use geom::{PolyLine3, Vec2, Vec3};
 use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::*;
 use serde::{Deserialize, Serialize};
@@ -236,14 +236,14 @@ impl Lane {
             middle_points.first_dir(),
             "not enough points in interfaced points"
         )
-        .perpendicular();
+        .perp_up();
         self.points
             .clear_push(middle_points.first() + src_nor * lane_dist);
         self.points.reserve(middle_points.n_points() - 1);
 
         for [a, elbow, c] in middle_points.array_windows::<3>() {
-            let x = unwrap_contlog!((elbow - a).try_normalize(), "elbow too close to a");
-            let y = unwrap_contlog!((elbow - c).try_normalize(), "elbow too close to c");
+            let x = unwrap_contlog!((elbow - a).xy().try_normalize(), "elbow too close to a");
+            let y = unwrap_contlog!((elbow - c).xy().try_normalize(), "elbow too close to c");
 
             let mut dir = (x + y).try_normalize().unwrap_or(-x.perpendicular());
 
@@ -254,19 +254,23 @@ impl Lane {
             let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
 
             let nor = mul * lane_dist * dir;
-            self.points.push(elbow + nor);
+            self.points.push(elbow + nor.z0());
         }
 
         let dst_nor = -unwrap_retlog!(
             middle_points.last_dir(),
             "not enough points in interfaced points"
         )
-        .perpendicular();
+        .perp_up();
         self.points.push(middle_points.last() + dst_nor * lane_dist);
 
         if self.dst == parent_road.src {
             self.points.reverse();
         }
+    }
+
+    pub fn control_point(&self) -> Vec3 {
+        self.points.last()
     }
 
     pub fn dir_from(&self, i: IntersectionID) -> TraverseDirection {
@@ -277,11 +281,11 @@ impl Lane {
         }
     }
 
-    pub fn orientation_from(&self, id: IntersectionID) -> Vec3 {
+    pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
-            self.points.first_dir().unwrap_or(Vec3::UNIT_X)
+            self.points.first_dir().unwrap_or(Vec3::X).xy()
         } else {
-            -self.points.last_dir().unwrap_or(Vec3::UNIT_X)
+            -self.points.last_dir().unwrap_or(Vec3::X).xy()
         }
     }
 }

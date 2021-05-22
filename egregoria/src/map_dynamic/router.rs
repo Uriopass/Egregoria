@@ -4,7 +4,7 @@ use crate::physics::{Collider, CollisionWorld, Kinematics};
 use crate::utils::par_command_buffer::ComponentDrop;
 use crate::vehicles::{unpark, Vehicle, VehicleID, VehicleState};
 use crate::{Egregoria, ParCommandBuffer};
-use geom::{Spline, Transform, Vec2};
+use geom::{Spline3, Transform, Vec3};
 use imgui_inspect_derive::*;
 use legion::storage::Component;
 use legion::world::SubWorld;
@@ -24,7 +24,7 @@ pub struct Router {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Destination {
-    Outside(Vec2),
+    Outside(Vec3),
     Building(BuildingID),
 }
 
@@ -32,8 +32,8 @@ debug_inspect_impl!(Destination);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum RoutingStep {
-    WalkTo(Vec2),
-    DriveTo(VehicleID, Vec2),
+    WalkTo(Vec3),
+    DriveTo(VehicleID, Vec3),
     Park(VehicleID, Option<SpotReservation>),
     Unpark(VehicleID),
     GetInVehicle(VehicleID),
@@ -106,15 +106,15 @@ pub fn routing_update(
     }
 
     let pos = match *loc {
-        Location::Outside => trans.position(),
+        Location::Outside => trans.position,
         Location::Vehicle(id) => comp::<Transform>(subworld, id.0)
-            .map(|x| x.position())
-            .unwrap_or_else(|| trans.position()),
+            .map(|x| x.position)
+            .unwrap_or_else(|| trans.position),
         Location::Building(id) => map
             .buildings()
             .get(id)
             .map(|b| b.door_pos)
-            .unwrap_or_else(|| trans.position()),
+            .unwrap_or_else(|| trans.position),
     };
 
     let mut cur_step_over = true;
@@ -144,7 +144,7 @@ pub fn routing_update(
             RoutingStep::Park(_, _) => true,
             RoutingStep::Unpark(_) => true,
             RoutingStep::GetInVehicle(vehicle) => comp::<Transform>(subworld, vehicle.0)
-                .map(|x| x.position().is_close(pos, 3.0))
+                .map(|x| x.position.is_close(pos, 3.0))
                 .unwrap_or(true),
             RoutingStep::GetOutVehicle(_) => true,
             RoutingStep::GetInBuilding(build) => map
@@ -197,7 +197,7 @@ pub fn routing_update(
             }
             RoutingStep::GetOutVehicle(vehicle) => {
                 let pos = comp::<Transform>(subworld, vehicle.0)
-                    .map(|vtrans| vtrans.position() + vtrans.direction().perpendicular() * 2.0)
+                    .map(|vtrans| vtrans.position + vtrans.dir.cross(Vec3::Z) * 2.0)
                     .unwrap_or(pos);
                 walk_outside(*body, pos, cbuf, loc);
             }
@@ -233,14 +233,14 @@ fn comp<'a, T: Component>(sw: &'a SubWorld, e: Entity) -> Option<&'a T> {
 
 fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, kin: &mut Kinematics) {
     cbuf.remove_component_drop::<Collider>(body);
-    kin.velocity = Vec2::ZERO;
+    kin.velocity = Vec3::ZERO;
     cbuf.add_component(body, Itinerary::none())
 }
 
-fn walk_outside(body: Entity, pos: Vec2, cbuf: &ParCommandBuffer, loc: &mut Location) {
+fn walk_outside(body: Entity, pos: Vec3, cbuf: &ParCommandBuffer, loc: &mut Location) {
     *loc = Location::Outside;
     cbuf.exec_ent(body, move |goria| {
-        unwrap_ret!(goria.comp_mut::<Transform>(body)).set_position(pos);
+        unwrap_ret!(goria.comp_mut::<Transform>(body)).position = pos;
         let coll = put_pedestrian_in_coworld(&mut goria.write::<CollisionWorld>(), pos);
         goria.add_comp(body, coll);
     });
@@ -258,17 +258,17 @@ fn park(vehicle: VehicleID, spot_resa: SpotReservation) -> impl FnOnce(&mut Egre
             }
         };
 
-        let s = Spline {
-            from: trans.position(),
-            to: spot.trans.position(),
-            from_derivative: trans.direction() * 2.0,
-            to_derivative: spot.trans.direction() * 2.0,
+        let s = Spline3 {
+            from: trans.position,
+            to: spot.trans.position,
+            from_derivative: trans.dir * 2.0,
+            to_derivative: spot.trans.dir * 2.0,
         };
         drop(map);
 
         unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0)).state =
             VehicleState::RoadToPark(s, 0.0, spot_resa);
-        unwrap_ret!(goria.comp_mut::<Kinematics>(vehicle.0)).velocity = Vec2::ZERO;
+        unwrap_ret!(goria.comp_mut::<Kinematics>(vehicle.0)).velocity = Vec3::ZERO;
     }
 }
 
@@ -313,7 +313,7 @@ impl Router {
 
     fn steps_to(
         &mut self,
-        obj: Vec2,
+        obj: Vec3,
         parking: &mut ParkingManagement,
         map: &Map,
         loc: &Location,
@@ -336,7 +336,7 @@ impl Router {
 
             if !matches!(loc, Location::Vehicle(_)) {
                 if let Some(trans) = comp::<Transform>(subworld, car.0) {
-                    steps.push(RoutingStep::WalkTo(trans.position()));
+                    steps.push(RoutingStep::WalkTo(trans.position));
                     steps.push(RoutingStep::GetInVehicle(car));
                     steps.push(RoutingStep::Unpark(car));
                 } else {

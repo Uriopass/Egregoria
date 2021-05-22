@@ -16,7 +16,7 @@ pub fn kinematics_apply(
 ) {
     let delta = time.delta;
     qry.par_for_each_mut(sw, |(trans, kin): (&mut Transform, &Kinematics)| {
-        trans.translate(kin.velocity * delta);
+        trans.position += kin.velocity * delta;
     });
 }
 
@@ -28,10 +28,11 @@ pub fn coworld_synchronize(
     sw: &SubWorld,
 ) {
     qry.for_each(sw, |(trans, kin, coll, v)| {
-        coworld.set_position(coll.0, trans.position());
+        coworld.set_position(coll.0, trans.position.xy());
         let (_, po) = coworld.get_mut(coll.0).unwrap(); // Unwrap ok: handle is deleted only when entity is deleted too
-        po.dir = trans.direction();
+        po.dir = trans.dir.xy();
         po.speed = kin.velocity.magnitude();
+        po.height = trans.position.z;
         if let Some(v) = v {
             po.flag = v.flag;
         }

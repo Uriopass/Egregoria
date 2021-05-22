@@ -1,7 +1,6 @@
 use log::LevelFilter;
 use networking::{
     Client, ConnectConf, Frame, PollResult, Server, ServerConfiguration, ServerPollResult,
-    VirtualClientConf,
 };
 use serde::{Deserialize, Serialize};
 use std::net::Ipv4Addr;
@@ -57,7 +56,6 @@ pub fn main() {
     let mut client2: Client<World, Action> = Client::connect(ConnectConf {
         name: "client".into(),
         addr: Ipv4Addr::LOCALHOST.into(),
-        period: UP_DT,
         port: None,
         frame_buffer_advance: 10,
         version: "v1".to_string(),

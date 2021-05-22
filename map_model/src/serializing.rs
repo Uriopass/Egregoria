@@ -16,13 +16,9 @@ pub(crate) struct SerializedMap {
 
 impl From<&Map> for SerializedMap {
     fn from(m: &Map) -> Self {
-        let mut intersections = m.intersections.clone();
-        for i in intersections.values_mut() {
-            i.polygon.clear()
-        }
         Self {
             roads: m.roads.clone(),
-            intersections,
+            intersections: m.intersections.clone(),
             buildings: m.buildings.clone(),
             lanes: m.lanes.clone(),
             parking: m.parking.clone(),
@@ -34,11 +30,7 @@ impl From<&Map> for SerializedMap {
 }
 
 impl From<SerializedMap> for Map {
-    fn from(mut sel: SerializedMap) -> Self {
-        for inter in sel.intersections.values_mut() {
-            inter.update_polygon(&sel.roads);
-        }
-
+    fn from(sel: SerializedMap) -> Self {
         let spatial_map = mk_spatial_map(&sel);
         Map {
             roads: sel.roads,

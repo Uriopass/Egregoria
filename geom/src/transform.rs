@@ -1,84 +1,57 @@
-use crate::{vec2, Matrix4, Vec2};
+use crate::{vec2, Matrix4, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
+
+const UP: Vec3 = Vec3::Z;
 
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Transform {
-    position: Vec2,
-    cossin: Vec2,
+    pub position: Vec3,
+    pub dir: Vec3,
 }
 
 impl Transform {
     pub fn zero() -> Self {
-        Transform::new([0.0, 0.0])
+        Self::new(Vec3::ZERO)
     }
 
-    pub fn new<T: Into<Vec2>>(position: T) -> Self {
+    pub fn new<T: Into<Vec3>>(position: T) -> Self {
         let position = position.into();
-        Transform {
+        Self {
             position,
-            cossin: Vec2::UNIT_X,
+            dir: Vec3::X,
         }
     }
 
-    pub fn new_cos_sin(position: Vec2, cossin: Vec2) -> Self {
-        Transform { position, cossin }
-    }
-
-    pub fn position(&self) -> Vec2 {
-        self.position
-    }
-
-    pub fn set_position(&mut self, position: Vec2) {
-        self.position = position;
-    }
-
-    pub fn translate(&mut self, offset: Vec2) {
-        self.position += offset;
-    }
-
-    pub fn set_cos_sin(&mut self, cos: f32, sin: f32) {
-        self.cossin.x = cos;
-        self.cossin.y = sin;
-    }
-
-    pub fn set_direction(&mut self, dir: Vec2) {
-        self.cossin = dir;
-    }
-
-    pub fn cos(&self) -> f32 {
-        self.cossin.x
-    }
-
-    pub fn sin(&self) -> f32 {
-        self.cossin.y
+    pub fn new_dir(position: Vec3, dir: Vec3) -> Self {
+        Self { position, dir }
     }
 
     pub fn angle(&self) -> f32 {
-        f32::atan2(self.sin(), self.cos())
+        f32::atan2(self.dir.y, self.dir.x)
     }
 
-    pub fn direction(&self) -> Vec2 {
-        vec2(self.cos(), self.sin())
+    pub fn normalxy(&self) -> Vec2 {
+        vec2(-self.dir.y, self.dir.x)
     }
 
-    pub fn normal(&self) -> Vec2 {
-        vec2(-self.sin(), self.cos())
-    }
+    pub fn to_matrix4(&self) -> Matrix4 {
+        let x = self.dir;
+        let y = self.dir.cross(UP).try_normalize().unwrap_or(Vec3::Y);
+        let z = x.cross(y).try_normalize().unwrap_or(Vec3::Z);
 
-    pub fn to_matrix4(&self, z: f32) -> Matrix4 {
         Matrix4 {
-            x: [self.cossin.x, self.cossin.y, 0.0, 0.0].into(),
-            y: [-self.cossin.y, self.cossin.x, 0.0, 0.0].into(),
-            z: [0.0, 0.0, 0.0, 0.0].into(),
-            w: [self.position.x, self.position.y, z, 1.0].into(),
+            x: x.w(0.0),
+            y: y.w(0.0),
+            z: z.w(0.0),
+            w: self.position.w(1.0),
         }
     }
 
-    pub fn apply_rotation(&self, point: Vec2) -> Vec2 {
-        point.rotated_by(self.cossin)
+    pub fn apply_rotation(&self, point: Vec3) -> Vec3 {
+        point.rotate_up(self.dir)
     }
 
-    pub fn project(&self, point: Vec2) -> Vec2 {
-        point.rotated_by(self.cossin) + self.position
+    pub fn project(&self, point: Vec3) -> Vec3 {
+        point.rotate_up(self.dir) + self.position
     }
 }

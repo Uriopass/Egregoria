@@ -86,7 +86,7 @@ pub fn update_decision(
         decision.wait -= 1;
         return;
     }
-    let pos = trans.position();
+    let pos = trans.position;
     decision.wait = (30.0 + common::rand::rand2(pos.x, pos.y) * 50.0) as u8;
     if !decision.kind.update(router) {
         return;
@@ -143,7 +143,7 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<SoulID> {
     let car = spawn_parked_vehicle(goria, VehicleKind::Car, housepos);
 
     let mut m = goria.write::<Market>();
-    m.buy(human, housepos, JobOpening, 1);
+    m.buy(human, housepos.xy(), JobOpening, 1);
     drop(m);
 
     goria.write::<BuildingInfos>().set_owner(house, human);

@@ -2,6 +2,8 @@ use crate::{vec2, vec4, Vec2, Vec4};
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
+pub type V3 = Vec3;
+
 #[derive(Copy, Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 #[repr(C)]
 pub struct Vec3 {
@@ -276,17 +278,17 @@ impl Vec3 {
         y: 0.0,
         z: 0.0,
     };
-    pub const UNIT_X: Self = Self {
+    pub const X: Self = Self {
         x: 1.0,
         y: 0.0,
         z: 0.0,
     };
-    pub const UNIT_Y: Self = Self {
+    pub const Y: Self = Self {
         x: 0.0,
         y: 1.0,
         z: 0.0,
     };
-    pub const UNIT_Z: Self = Self {
+    pub const Z: Self = Self {
         x: 0.0,
         y: 0.0,
         z: 1.0,
@@ -316,6 +318,16 @@ impl Vec3 {
             y: self.z * other.x - self.x * other.z,
             z: self.x * other.y - self.y * other.x,
         }
+    }
+
+    pub fn rotate_up(self, dir: Vec3) -> Self {
+        let y = dir.cross(Vec3::Z).try_normalize().unwrap_or(Vec3::Y);
+        let z = dir.cross(y).try_normalize().unwrap_or(Vec3::Z);
+        vec3(
+            self.x * (dir.x + y.x + z.x),
+            self.y * (dir.y + y.y + z.y),
+            self.z * (dir.z + y.z + z.z),
+        )
     }
 
     #[inline]
@@ -351,12 +363,23 @@ impl Vec3 {
     }
 
     #[inline]
+    pub fn up(mut self, z: f32) -> Self {
+        self.z += z;
+        self
+    }
+
+    #[inline]
     pub fn modulo(self, v: f32) -> Self {
         Self {
             x: self.x % v,
             y: self.y % v,
             z: self.z % v,
         }
+    }
+
+    #[inline]
+    pub fn perp_up(self) -> Self {
+        self.cross(Vec3::Z)
     }
 
     #[inline]
@@ -475,6 +498,6 @@ impl Vec3 {
     #[inline]
     pub fn approx_eq(self, other: Vec3) -> bool {
         let m = self.distance2(other);
-        m < std::f32::EPSILON
+        m < f32::EPSILON
     }
 }

@@ -4,8 +4,8 @@ use crate::{
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
     ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain,
 };
-use geom::{pseudo_angle, Circle, Intersect, Shape, Vec2, Vec3};
-use geom::{Spline, OBB};
+use geom::OBB;
+use geom::{pseudo_angle, Circle, Intersect, Shape, Spline3, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
@@ -19,7 +19,7 @@ pub type Lots = DenseSlotMap<LotID, Lot>;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct MapProject {
-    pub pos: Vec2,
+    pub pos: Vec3,
     pub kind: ProjectKind,
 }
 
@@ -121,7 +121,7 @@ impl Map {
         }
 
         let connection_segment = match interpoint {
-            Some(x) => RoadSegmentKind::from_elbow(from.pos, to.pos, x),
+            Some(x) => RoadSegmentKind::from_elbow(from.pos.xy(), to.pos.xy(), x),
             None => RoadSegmentKind::Straight,
         };
 
@@ -178,14 +178,15 @@ impl Map {
         self.terrain
             .remove_near_filter(obb.bbox(), |p| tree_remove_mask.contains(p));
 
-        let v = Some(Building::make(
+        let v = Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
+            &self.terrain,
             self.roads.get(road)?,
             *obb,
             kind,
             gen,
-        ));
+        );
         #[cfg(debug_assertions)]
         self.check_invariants();
         v
@@ -195,22 +196,19 @@ impl Map {
         info!("build house on {:?}", id);
         self.dirt_id += Wrapping(1);
 
-        let roads = &mut self.roads;
-        let buildings = &mut self.buildings;
-        let spatial_map = &mut self.spatial_map;
-
         let lot = self.lots.remove(id)?;
 
-        spatial_map.remove(lot.id);
+        self.spatial_map.remove(lot.id);
 
-        let v = Some(Building::make(
-            buildings,
-            spatial_map,
-            roads.get(lot.parent)?,
+        let v = Building::make(
+            &mut self.buildings,
+            &mut self.spatial_map,
+            &self.terrain,
+            self.roads.get(lot.parent)?,
             lot.shape,
             BuildingKind::House,
             BuildingGen::House,
-        ));
+        );
         #[cfg(debug_assertions)]
         self.check_invariants();
         v
@@ -272,7 +270,7 @@ impl Map {
 
     // Private mutating
 
-    pub(crate) fn add_intersection(&mut self, pos: Vec2) -> IntersectionID {
+    pub(crate) fn add_intersection(&mut self, pos: Vec3) -> IntersectionID {
         Intersection::make(&mut self.intersections, &mut self.spatial_map, pos)
     }
 
@@ -305,15 +303,12 @@ impl Map {
 
             #[allow(clippy::indexing_slicing)] // borrowed before
             self.roads[x].update_lanes(&mut self.lanes, &mut self.parking);
-
-            other_end.update_polygon(&self.roads);
         }
 
         #[allow(clippy::indexing_slicing)] // borrowed before
         let inter = &mut self.intersections[id];
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
-        inter.update_polygon(&self.roads);
 
         self.spatial_map
             .update(inter.id, inter.bcircle(&self.roads));
@@ -340,7 +335,7 @@ impl Map {
         Some(road)
     }
 
-    pub(crate) fn split_road(&mut self, r_id: RoadID, pos: Vec2) -> Option<IntersectionID> {
+    pub(crate) fn split_road(&mut self, r_id: RoadID, pos: Vec3) -> Option<IntersectionID> {
         info!("split_road {:?} {:?}", r_id, pos);
 
         let pat = self.roads.get(r_id)?.pattern(&self.lanes);
@@ -364,11 +359,11 @@ impl Map {
                 self.connect(id, r.dst, &pat, RoadSegmentKind::Straight)?,
             ),
             RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
-                let s = Spline {
+                let s = Spline3 {
                     from: r.points.first(),
                     to: r.points.last(),
-                    from_derivative,
-                    to_derivative,
+                    from_derivative: from_derivative.z0(),
+                    to_derivative: to_derivative.z0(),
                 };
                 let t_approx = s.project_t(pos, 1.0);
 
@@ -379,13 +374,19 @@ impl Map {
                         src_id,
                         id,
                         &pat,
-                        RoadSegmentKind::Curved((s_from.from_derivative, s_from.to_derivative)),
+                        RoadSegmentKind::Curved((
+                            s_from.from_derivative.xy(),
+                            s_from.to_derivative.xy(),
+                        )),
                     )?,
                     self.connect(
                         id,
                         r.dst,
                         &pat,
-                        RoadSegmentKind::Curved((s_to.from_derivative, s_to.to_derivative)),
+                        RoadSegmentKind::Curved((
+                            s_to.from_derivative.xy(),
+                            s_to.to_derivative.xy(),
+                        )),
                     )?,
                 )
             }
@@ -404,7 +405,7 @@ impl Map {
             if lot.parent != r_id {
                 return true;
             }
-            let p: Vec2 = lot.shape.corners[0];
+            let p = lot.shape.corners[0].z(lot.height);
             let d1 = r1.points.project(p).distance(p);
             let d2 = r2.points.project(p).distance(p);
             if d1 < d2 {
@@ -480,23 +481,23 @@ impl Map {
 
     // Public helpers
 
-    pub fn project(&self, pos: Vec2, tolerance: f32) -> MapProject {
-        let mk_proj = move |kind| MapProject { pos, kind };
+    pub fn project(&self, pos: Vec3, tolerance: f32) -> Option<MapProject> {
+        let mk_proj = move |kind| Some(MapProject { pos, kind });
 
         let mut qroad = None;
         for pkind in self
             .spatial_map
-            .query_around(pos, tolerance, ProjectFilter::ALL)
+            .query_around(pos.xy(), tolerance, ProjectFilter::ALL)
         {
             match pkind {
                 ProjectKind::Inter(id) => {
                     let inter = unwrap_contlog!(self.intersections.get(id),
                         "Inter does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
-                    return MapProject {
+                    return Some(MapProject {
                         pos: inter.pos,
                         kind: pkind,
-                    };
+                    });
                 }
                 ProjectKind::Lot(id) => {
                     return mk_proj(ProjectKind::Lot(id));
@@ -519,10 +520,10 @@ impl Map {
         }
 
         if let Some((id, pos)) = qroad {
-            return MapProject {
+            return Some(MapProject {
                 pos,
                 kind: ProjectKind::Road(id),
-            };
+            });
         }
 
         mk_proj(ProjectKind::Ground)
@@ -572,7 +573,7 @@ impl Map {
         self.lanes
             .iter()
             .filter(|(_, x)| x.kind == kind)
-            .min_by_key(|(_, lane)| OrderedFloat(lane.dist2_to(p)))
+            .min_by_key(|(_, lane)| OrderedFloat(lane.points.project_dist2(p)))
             .map(|(id, _)| id)
     }
 
@@ -586,7 +587,7 @@ impl Map {
             .map(|&(id, _)| id)
     }
 
-    pub fn parking_to_drive_pos(&self, spot: ParkingSpotID) -> Option<Vec2> {
+    pub fn parking_to_drive_pos(&self, spot: ParkingSpotID) -> Option<Vec3> {
         let spot = self.parking.get(spot)?;
         let park_lane = self.lanes.get(spot.parent)?;
         let road = self.roads.get(park_lane.parent)?;
@@ -600,7 +601,7 @@ impl Map {
             .lanes()
             .get(lane)?
             .points
-            .project_segment_dir(spot.trans.position());
+            .project_segment_dir(spot.trans.position);
         Some(pos - dir * 4.0)
     }
 
@@ -626,7 +627,6 @@ impl Map {
             }
 
             assert!(inter.pos.is_finite());
-            assert!(!inter.polygon.is_empty());
             assert!(self.spatial_map.contains(inter.id));
         }
 

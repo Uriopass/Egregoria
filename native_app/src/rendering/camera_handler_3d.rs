@@ -8,7 +8,7 @@ use wgpu_engine::Tesselator;
 pub struct CameraHandler3D {
     pub camera: Camera,
     pub lastscreenpos: Vec2,
-    pub last_pos: Vec2,
+    pub last_pos: Option<Vec2>,
     pub targetpos: Vec3,
     pub targetyaw: f32,
     pub targetpitch: f32,
@@ -44,7 +44,7 @@ impl CameraHandler3D {
         self.update(ctx);
     }
 
-    pub fn unproject(&self, pos: Vec2) -> Vec2 {
+    pub fn unproject(&self, pos: Vec2, height: impl Fn(Vec2) -> Option<f32>) -> Option<Vec3> {
         let proj = self.camera.build_view_projection_matrix();
         let inv = proj.invert().unwrap();
 
@@ -68,15 +68,11 @@ impl CameraHandler3D {
 
         let p = Plane {
             p: Vec3::ZERO,
-            n: Vec3::UNIT_Z,
+            n: Vec3::Z,
         };
 
-        let hit = r.intersection_plane(&p);
-
-        if let Some(hit) = hit {
-            return hit.xy();
-        }
-        Vec2::ZERO
+        let p = r.intersection_plane(&p)?.xy();
+        Some(p.z(height(p)?))
     }
 
     fn save(&self) {
@@ -120,16 +116,16 @@ impl CameraHandler3D {
             let pressed = &ctx.input.keyboard.pressed;
 
             if pressed.contains(&KeyCode::Right) {
-                self.targetpos += -delta * d.perpendicular().z(0.0);
+                self.targetpos += -delta * d.perpendicular().z0();
             }
             if pressed.contains(&KeyCode::Left) {
-                self.targetpos += delta * d.perpendicular().z(0.0);
+                self.targetpos += delta * d.perpendicular().z0();
             }
             if pressed.contains(&KeyCode::Up) {
-                self.targetpos += -delta * d.z(0.0);
+                self.targetpos += -delta * d.z0();
             }
             if pressed.contains(&KeyCode::Down) {
-                self.targetpos += delta * d.z(0.0);
+                self.targetpos += delta * d.z0();
             }
 
             let just_pressed = &ctx.input.keyboard.just_pressed;
@@ -144,23 +140,23 @@ impl CameraHandler3D {
 
         if settings.camera_border_move {
             if screenpos.x < 2.0 {
-                self.targetpos += delta * d.perpendicular().z(0.0);
+                self.targetpos += delta * d.perpendicular().z0();
             }
             if screenpos.x > self.camera.viewport_w - 2.0 {
-                self.targetpos += -delta * d.perpendicular().z(0.0);
+                self.targetpos += -delta * d.perpendicular().z0();
             }
             if screenpos.y < 2.0 {
-                self.targetpos += -delta * d.z(0.0);
+                self.targetpos += -delta * d.z0();
             }
             if screenpos.y > self.camera.viewport_h - 2.0 {
-                self.targetpos += delta * d.z(0.0);
+                self.targetpos += delta * d.z0();
             }
         }
 
         let delta_mouse = screenpos - self.lastscreenpos;
         self.lastscreenpos = screenpos;
 
-        let unprojected = ctx.input.mouse.unprojected;
+        let unprojected = self.unproject(screenpos, |_| Some(0.0));
 
         if mouse_enabled {
             if ctx.input.mouse.wheel_delta < 0.0 {
@@ -179,9 +175,11 @@ impl CameraHandler3D {
                 self.targetpitch += delta_mouse.y / 100.0;
                 self.targetpitch = self.targetpitch.min(1.57).max(0.01);
             } else if pressed.contains(&MouseButton::Right) {
-                self.targetpos += (self.last_pos - unprojected)
-                    .cap_magnitude(50000.0 * delta)
-                    .z(0.0);
+                if let Some((last_pos, unprojected)) = self.last_pos.zip(unprojected) {
+                    self.targetpos += (last_pos - unprojected.xy())
+                        .cap_magnitude(50000.0 * delta)
+                        .z0();
+                }
             }
         }
         self.targetdist = self.targetdist.clamp(30.0, 100000.0);
@@ -212,6 +210,6 @@ impl CameraHandler3D {
             .unwrap_or(self.camera.pos.z)
             .max(height(self.camera.offset().xy()).unwrap_or_default());
         self.update(ctx);
-        self.last_pos = self.unproject(screenpos);
+        self.last_pos = self.unproject(screenpos, |_| Some(0.0)).map(Vec3::xy);
     }
 }

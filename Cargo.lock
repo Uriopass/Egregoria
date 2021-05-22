@@ -3214,6 +3214,7 @@ dependencies = [
  "geom",
  "gltf",
  "image",
+ "itertools 0.10.0",
  "log",
  "naga 0.3.2",
  "raw-window-handle",

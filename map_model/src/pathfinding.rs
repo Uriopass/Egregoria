@@ -1,5 +1,5 @@
 use crate::{LaneID, LaneKind, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
-use geom::{PolyLine, PolyLine3, Vec2, Vec3};
+use geom::{PolyLine3, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::Key;

@@ -16,7 +16,8 @@ log       = "0.4.11"
 raw-window-handle = "0.3.3"
 naga      = { version = "0.3.2", features = ["glsl-in", "spv-out"], optional = true}
 tobj      = "2.0.4"
-gltf = "0.15.2"
+gltf      = "0.15.2"
+itertools = { version = "0.10.0", default-features = false }
 
 [features]
 default = []

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 #![cfg(test)]
 
 use crate::engine_interaction::WorldCommands;
@@ -5,7 +6,7 @@ use crate::map_dynamic::BuildingInfos;
 use crate::utils::scheduler::SeqSchedule;
 use crate::Egregoria;
 use common::logger::MyLog;
-use geom::Vec2;
+use geom::{Vec2, Vec3};
 use map_model::{BuildingID, LanePatternBuilder};
 
 mod vehicles;
@@ -19,17 +20,17 @@ impl TestCtx {
     fn init() -> Self {
         MyLog::init();
 
-        let g = Egregoria::empty();
+        let g = Egregoria::new(3);
         let sched = Egregoria::schedule();
 
         Self { g, sched }
     }
 
-    fn build_roads(&self, v: &[Vec2]) {
+    fn build_roads(&self, v: &[Vec3]) {
         let mut m = self.g.map_mut();
         for w in v.windows(2) {
-            let a = m.project(w[0], 0.0);
-            let b = m.project(w[1], 0.0);
+            let a = m.project(w[0], 0.0).unwrap();
+            let b = m.project(w[1], 0.0).unwrap();
             m.make_connection(a, b, None, &LanePatternBuilder::default().build());
         }
     }

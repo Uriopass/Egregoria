@@ -1,5 +1,5 @@
 use common::PtrCmp;
-use geom::Vec2;
+use geom::Vec3;
 use map_model::{LaneKind, Map, ParkingSpot, ParkingSpotID, ParkingSpots};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashSet};
@@ -30,7 +30,7 @@ impl ParkingManagement {
         self.reserved_spots.contains(&spot)
     }
 
-    pub fn reserve_near(&mut self, near: Vec2, map: &Map) -> Option<SpotReservation> {
+    pub fn reserve_near(&mut self, near: Vec3, map: &Map) -> Option<SpotReservation> {
         let lane = map.nearest_lane(near, LaneKind::Driving)?;
         let lane = map.lanes().get(lane)?;
 
@@ -86,7 +86,7 @@ impl SpotReservation {
         spots.get(self.0)
     }
 
-    pub fn park_pos(&self, map: &Map) -> Option<Vec2> {
+    pub fn park_pos(&self, map: &Map) -> Option<Vec3> {
         map.parking_to_drive_pos(self.0)
     }
 }

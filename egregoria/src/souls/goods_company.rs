@@ -561,6 +561,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
     let b = &map.buildings().get(company.building)?;
     let door_pos = b.door_pos;
     let obb = b.obb;
+    let height = b.height;
     drop(map);
 
     let e = goria.world.push(());
@@ -570,9 +571,9 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
     {
         let m = &mut *goria.write::<Market>();
         m.produce(soul, CommodityKind::JobOpening, company.max_workers);
-        m.sell_all(soul, door_pos, CommodityKind::JobOpening);
+        m.sell_all(soul, door_pos.xy(), CommodityKind::JobOpening);
 
-        company.recipe.init(soul, door_pos, m);
+        company.recipe.init(soul, door_pos.xy(), m);
     }
 
     goria
@@ -585,7 +586,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
             company,
             Workers::default(),
             Sold::default(),
-            Transform::new(obb.center()),
+            Transform::new(obb.center().z(height)),
             Selectable::new(obb.axis()[0].magnitude() * 0.5),
         ),
     );
@@ -627,7 +628,7 @@ pub fn company(
         .door_pos;
 
         cbuf.exec_on(soul.0, move |market| {
-            recipe.act(soul, bpos, market);
+            recipe.act(soul, bpos.xy(), market);
         });
         return;
     }

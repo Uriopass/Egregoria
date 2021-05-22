@@ -1,5 +1,4 @@
 use crate::rendering::map_mesh::MapMeshHandler;
-use common::Z_SIGNAL;
 use egregoria::Egregoria;
 use geom::{Color, LinearColor, AABB};
 use map_model::{Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior};
@@ -38,15 +37,15 @@ impl RoadRenderer {
         let dir = n.orientation_from(n.dst);
         let dir_perp = dir.perpendicular();
 
-        let r_center = n.points.last() + dir_perp * -3.5 + dir * -1.0;
+        let r_center = n.points.last() + (dir_perp * -3.5 + dir * -1.0).z(0.02);
 
         // Stop sign
         if n.control.is_stop_sign() {
             sr.set_color(LinearColor::WHITE);
-            sr.draw_regular_polygon(r_center, Z_SIGNAL, 0.5, 8, std::f32::consts::FRAC_PI_8);
+            sr.draw_regular_polygon(r_center, 0.5, 8, std::f32::consts::FRAC_PI_8);
 
             sr.set_color(LinearColor::RED);
-            sr.draw_regular_polygon(r_center, Z_SIGNAL, 0.4, 8, std::f32::consts::FRAC_PI_8);
+            sr.draw_regular_polygon(r_center, 0.4, 8, std::f32::consts::FRAC_PI_8);
             return;
         }
 
@@ -54,10 +53,10 @@ impl RoadRenderer {
         let size = 0.5; // light size
 
         sr.color = Color::gray(0.2).into();
-        sr.draw_rect_cos_sin(r_center, Z_SIGNAL, size + 0.1, size * 3.0 + 0.1, dir);
+        sr.draw_rect_cos_sin(r_center, size + 0.1, size * 3.0 + 0.1, dir);
 
         for i in -1..2 {
-            sr.draw_circle(r_center + i as f32 * dir_perp * size, Z_SIGNAL, size * 0.5);
+            sr.draw_circle(r_center + i as f32 * dir_perp.z0() * size, size * 0.5);
         }
         sr.set_color(match n.control.get_behavior(time) {
             TrafficBehavior::RED | TrafficBehavior::STOP => LinearColor::RED,
@@ -72,7 +71,7 @@ impl RoadRenderer {
             TrafficBehavior::STOP => unreachable!(),
         };
 
-        sr.draw_circle(r_center + offset * dir_perp, Z_SIGNAL, size * 0.5);
+        sr.draw_circle(r_center + offset * dir_perp.z0(), size * 0.5);
     }
 
     fn signals_render(map: &Map, time: u32, sr: &mut Tesselator) {
@@ -115,7 +114,7 @@ impl RoadRenderer {
         for t in map.terrain.trees() {
             self.trees_builder.instances.push(MeshInstance {
                 pos: t.pos.z(map.terrain.height(t.pos).unwrap_or_default()),
-                dir: t.dir.z(0.0) * t.size * 0.2,
+                dir: t.dir.z0() * t.size * 0.2,
                 tint: ((1.0 - t.size * 0.05) * t.col * LinearColor::WHITE).a(1.0),
             });
         }

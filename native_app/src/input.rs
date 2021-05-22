@@ -1,5 +1,5 @@
 use common::FastSet;
-use geom::{vec2, Vec2};
+use geom::{vec2, Vec2, Vec3};
 use std::fmt::Debug;
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 
@@ -78,7 +78,7 @@ register_resource_noserialize!(MouseInfo);
 pub struct MouseInfo {
     pub wheel_delta: f32,
     pub screen: Vec2,
-    pub unprojected: Vec2,
+    pub unprojected: Option<Vec3>,
     pub pressed: FastSet<MouseButton>,
     pub just_pressed: FastSet<MouseButton>,
 }

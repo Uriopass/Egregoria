@@ -20,7 +20,7 @@ use crate::vehicles::Vehicle;
 use atomic_refcell::{AtomicRef, AtomicRefMut};
 use common::saveload::Encoder;
 use common::FastMap;
-use geom::{Transform, Vec2};
+use geom::{Transform, Vec3};
 use legion::serialize::{Canon, CustomEntitySerializer};
 use legion::storage::Component;
 use legion::systems::{ParallelRunnable, Resource};
@@ -307,8 +307,8 @@ impl Egregoria {
         common::saveload::CompressedBincode::save(&ser, save_name);
     }
 
-    pub fn pos(&self, e: Entity) -> Option<Vec2> {
-        self.comp::<Transform>(e).map(|x| x.position())
+    pub fn pos(&self, e: Entity) -> Option<Vec3> {
+        self.comp::<Transform>(e).map(|x| x.position)
     }
 
     pub(crate) fn add_comp(&mut self, e: Entity, c: impl Component) {

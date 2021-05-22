@@ -4,8 +4,8 @@ use crate::pedestrians::Location;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::utils::rand_provider::RandProvider;
 use crate::{Egregoria, SoulID};
-use geom::Color;
-use geom::{Transform, Vec2};
+use geom::Transform;
+use geom::{Color, Vec3};
 use imgui_inspect_derive::*;
 use legion::Entity;
 use map_model::BuildingID;
@@ -37,9 +37,9 @@ pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Option<Enti
     Some(e)
 }
 
-pub fn put_pedestrian_in_coworld(coworld: &mut CollisionWorld, pos: Vec2) -> Collider {
+pub fn put_pedestrian_in_coworld(coworld: &mut CollisionWorld, pos: Vec3) -> Collider {
     Collider(coworld.insert(
-        pos,
+        pos.xy(),
         PhysicsObject {
             radius: PED_SIZE * 0.6,
             group: PhysicsGroup::Pedestrians,

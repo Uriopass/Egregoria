@@ -981,7 +981,7 @@ pub fn faces_from_skeleton(
     }
 
     for (&r, l) in &mut graph {
-        l.sort_unstable_by_key(|&p| OrderedFloat((r - p).angle(Vec2::UNIT_X)));
+        l.sort_unstable_by_key(|&p| OrderedFloat((r - p).angle(Vec2::X)));
     }
 
     let mut faces = vec![];
@@ -1104,7 +1104,7 @@ mod tests {
         .rev()
         .collect::<Vec<_>>();
         let skeleton = skeleton(&poly, &[]);
-        let faces = faces_from_skeleton(&poly, &skeleton, false).unwrap().0;
+        let _ = faces_from_skeleton(&poly, &skeleton, false).unwrap().0;
     }
 
     #[test]

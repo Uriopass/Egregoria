@@ -1,6 +1,6 @@
 use crate::default::InspectArgsDefault;
 use crate::default::InspectRenderDefault;
-use geom::{from_srgb, Color, LinearColor, PolyLine, Transform, Vec2};
+use geom::{from_srgb, Color, LinearColor, PolyLine, Transform, Vec2, Vec3};
 use imgui::{im_str, ColorEdit, EditableColor, Ui};
 
 impl InspectRenderDefault<Color> for Color {
@@ -70,16 +70,16 @@ impl InspectRenderDefault<LinearColor> for LinearColor {
 impl InspectRenderDefault<Transform> for Transform {
     fn render(data: &[&Transform], _: &'static str, ui: &Ui, _: &InspectArgsDefault) {
         let t = data[0];
-        let position = t.position();
-        let direction = t.direction();
-        <Vec2 as InspectRenderDefault<Vec2>>::render(
+        let position = t.position;
+        let direction = t.dir;
+        <Vec3 as InspectRenderDefault<Vec3>>::render(
             &[&position],
             "position",
             ui,
             &InspectArgsDefault::default(),
         );
         <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render(
-            &[&direction],
+            &[&direction.xy()],
             "direction",
             ui,
             &InspectArgsDefault::default(),
@@ -96,9 +96,9 @@ impl InspectRenderDefault<Transform> for Transform {
             unimplemented!();
         }
         let x = &mut data[0];
-        let mut position = x.position();
-        let mut direction = x.direction();
-        let mut changed = <Vec2 as InspectRenderDefault<Vec2>>::render_mut(
+        let mut position = x.position;
+        let mut direction = x.dir.xy();
+        let mut changed = <Vec3 as InspectRenderDefault<Vec3>>::render_mut(
             &mut [&mut position],
             "position",
             ui,
@@ -110,8 +110,10 @@ impl InspectRenderDefault<Transform> for Transform {
             ui,
             &InspectArgsDefault::default(),
         );
-        x.set_direction(direction);
-        x.set_position(position);
+        x.dir.x = direction.x;
+        x.dir.y = direction.y;
+        x.dir = x.dir.normalize();
+        x.position = position;
         changed
     }
 }
@@ -170,6 +172,38 @@ impl InspectRenderDefault<Vec2> for Vec2 {
             .build_array(ui, &mut conv);
         x.x = conv[0];
         x.y = conv[1];
+        changed
+    }
+}
+
+impl InspectRenderDefault<Vec3> for Vec3 {
+    fn render(data: &[&Vec3], label: &'static str, ui: &imgui::Ui, _: &InspectArgsDefault) {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = data[0];
+        imgui::InputFloat3::new(ui, &im_str!("{}", label), &mut [x.x, x.y, x.z])
+            .always_insert_mode(false)
+            .build();
+    }
+
+    fn render_mut(
+        data: &mut [&mut Vec3],
+        label: &'static str,
+        ui: &imgui::Ui,
+        args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            unimplemented!();
+        }
+        let x = &mut data[0];
+        let mut conv = [x.x, x.y, x.z];
+        let changed = imgui::Drag::new(&im_str!("{}", label))
+            .speed(args.step.unwrap_or(0.1))
+            .build_array(ui, &mut conv);
+        x.x = conv[0];
+        x.y = conv[1];
+        x.z = conv[2];
         changed
     }
 }

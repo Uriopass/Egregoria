@@ -1,6 +1,6 @@
 use crate::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
 use flat_spatial::ShapeGrid;
-use geom::{Transform, Vec2};
+use geom::{Transform, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
@@ -65,7 +65,7 @@ impl ParkingSpots {
         if let Some(spots) = self.lane_spots.remove(lane) {
             for spot_id in spots {
                 let spot = unwrap_cont!(self.spots.get(spot_id));
-                self.reuse_spot.insert(spot.trans.position(), spot_id);
+                self.reuse_spot.insert(spot.trans.position.xy(), spot_id);
             }
         }
     }
@@ -78,7 +78,7 @@ impl ParkingSpots {
         }
 
         let gap = CROSSWALK_WIDTH + 1.0;
-        let l = lane.length() - gap * 2.0;
+        let l = lane.points.length() - gap * 2.0;
         let n_spots = (l / PARKING_SPOT_LENGTH) as i32;
         if n_spots <= 0 {
             self.lane_spots.insert(lane.id, vec![]);
@@ -93,7 +93,7 @@ impl ParkingSpots {
             .points
             .points_dirs_along((0..n_spots).map(|x| (x as f32 + 0.5) * step + gap))
             .map(move |(pos, dir)| {
-                let mut iter = reuse.query_around(pos, 3.0);
+                let mut iter = reuse.query_around(pos.xy(), 3.0);
                 if let Some((h, _, &spot_id)) = iter.next() {
                     drop(iter);
 
@@ -101,7 +101,7 @@ impl ParkingSpots {
                     if let Some(p) = spots.get_mut(spot_id) {
                         *p = ParkingSpot {
                             parent,
-                            trans: Transform::new_cos_sin(pos, dir),
+                            trans: Transform::new_dir(pos, dir),
                         };
                         return spot_id;
                     } else {
@@ -111,7 +111,7 @@ impl ParkingSpots {
 
                 spots.insert(ParkingSpot {
                     parent,
-                    trans: Transform::new_cos_sin(pos, dir),
+                    trans: Transform::new_dir(pos, dir),
                 })
             })
             .collect();
@@ -139,13 +139,13 @@ impl ParkingSpots {
     pub fn closest_spots(
         &self,
         lane: LaneID,
-        near: Vec2,
+        near: Vec3,
     ) -> Option<impl Iterator<Item = ParkingSpotID> + '_> {
         let spots = &self.spots;
         let lspots = self.lane_spots.get(lane)?;
         let (closest, _) = lspots.iter().copied().enumerate().min_by_key(|&(_, x)| {
             let p = unwrap_ret!(spots.get(x), OrderedFloat(f32::INFINITY));
-            OrderedFloat(p.trans.position().distance2(near))
+            OrderedFloat(p.trans.position.distance2(near))
         })?;
 
         let closest = closest as i32;

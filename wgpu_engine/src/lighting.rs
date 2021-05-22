@@ -1,5 +1,6 @@
 use crate::pbuffer::PBuffer;
 use crate::{compile_shader, GfxContext, UvVertex, VBDesc};
+use geom::Vec3;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BlendFactor, Buffer, BufferUsage, CommandEncoder, CompareFunction, DepthBiasState,
@@ -112,7 +113,7 @@ const UV_VERTICES: &[UvVertex] = &[
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct LightInstance {
-    pub pos: [f32; 3],
+    pub pos: Vec3,
     pub scale: f32,
 }
 

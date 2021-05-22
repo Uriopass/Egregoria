@@ -130,9 +130,6 @@ impl Context {
                         };
                     }
                     Some(sco) => {
-                        self.input.mouse.unprojected =
-                            state.camera.unproject(self.input.mouse.screen);
-
                         let d = last_update.elapsed();
                         last_update = Instant::now();
                         self.delta = d.as_secs_f32();
