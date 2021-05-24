@@ -138,13 +138,14 @@ fn physics(
         .min(max_ang_vel);
 
     trans.dir.z = desired_dir.z;
+    let m = desired_dir.xy().magnitude();
     let lerped = angle_lerp(
-        trans.dir.xy().normalize(),
-        desired_dir.xy().normalize(),
+        trans.dir.xy() / m,
+        desired_dir.xy() / m,
         vehicle.ang_velocity * time.delta,
     );
-    trans.dir.x = lerped.x;
-    trans.dir.y = lerped.y;
+    trans.dir.x = lerped.x * m;
+    trans.dir.y = lerped.y * m;
 
     kin.velocity = trans.dir * speed;
 }
