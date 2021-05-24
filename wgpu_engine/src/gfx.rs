@@ -314,6 +314,7 @@ impl GfxContext {
         encoder
     }
 
+    #[profiling::function]
     pub fn render_objs(
         &mut self,
         encoder: &mut CommandEncoder,
@@ -331,6 +332,7 @@ impl GfxContext {
         prepare(&mut fc);
 
         {
+            profiling::scope!("depth prepass");
             let mut depth_prepass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[],
@@ -358,6 +360,7 @@ impl GfxContext {
         let prevs = self.samples;
         self.samples = 1;
         if self.render_params.value().shadow_mapping_enabled != 0 {
+            profiling::scope!("shadow pass");
             let mut sun_shadow_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[],
@@ -379,6 +382,7 @@ impl GfxContext {
         self.samples = prevs;
 
         if self.render_params.value().ssao_enabled != 0 {
+            profiling::scope!("ssao");
             let pipeline = self.get_pipeline::<SSAOPipeline>();
             let bg = self
                 .fbos
@@ -412,6 +416,7 @@ impl GfxContext {
         }
 
         {
+            profiling::scope!("main render pass");
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -443,6 +448,7 @@ impl GfxContext {
         }
 
         {
+            profiling::scope!("bg pass");
             let mut bg_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
@@ -473,6 +479,7 @@ impl GfxContext {
         }
     }
 
+    #[profiling::function]
     pub fn render_gui(
         &mut self,
         encoder: &mut CommandEncoder,

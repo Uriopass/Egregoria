@@ -8,6 +8,7 @@ use legion::IntoQuery;
 use legion::{Entity, EntityStore};
 use std::sync::Mutex;
 
+#[profiling::function]
 pub fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut inspected = uiworld.write::<InspectedEntity>();
     let mouse = uiworld.read::<MouseInfo>();

@@ -13,6 +13,7 @@ pub struct BulldozerState {
     hold: bool,
 }
 
+#[profiling::function]
 pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool: &Tool = &*uiworld.read::<Tool>();
 

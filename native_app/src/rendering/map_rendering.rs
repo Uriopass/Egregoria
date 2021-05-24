@@ -122,6 +122,7 @@ impl RoadRenderer {
         self.trees_builder.build(gfx)
     }
 
+    #[profiling::function]
     pub fn render(&mut self, map: &Map, time: u32, tess: &mut Tesselator, ctx: &mut FrameContext) {
         let screen = tess
             .cull_rect

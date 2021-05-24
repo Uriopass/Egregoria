@@ -35,6 +35,7 @@ pub struct RoadBuildResource {
     pub height_offset: f32,
 }
 
+#[profiling::function]
 pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let state = &mut *uiworld.write::<RoadBuildResource>();
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();

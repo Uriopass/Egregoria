@@ -21,6 +21,7 @@ pub struct RoadEditorResource {
     pub dirty: bool,
 }
 
+#[profiling::function]
 pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = uiworld.read::<Tool>();
     let mouseinfo = uiworld.read::<MouseInfo>();

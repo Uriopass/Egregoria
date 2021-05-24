@@ -75,6 +75,7 @@ impl Context {
         let mut frame: Option<_> = None;
         let mut new_size: Option<PhysicalSize<u32>> = None;
         let mut last_update = Instant::now();
+        profiling::register_thread!("Main Thread");
 
         self.el.take().unwrap().run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Poll;
@@ -130,6 +131,9 @@ impl Context {
                         };
                     }
                     Some(sco) => {
+                        profiling::finish_frame!();
+                        profiling::scope!("frame");
+
                         let d = last_update.elapsed();
                         last_update = Instant::now();
                         self.delta = d.as_secs_f32();

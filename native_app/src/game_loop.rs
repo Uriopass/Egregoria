@@ -91,6 +91,7 @@ impl State {
         }
     }
 
+    #[profiling::function]
     pub fn update(&mut self, ctx: &mut Context) {
         let settings = *self.uiw.read::<Settings>();
 
@@ -245,6 +246,7 @@ impl State {
         self.camera.update(ctx);
     }
 
+    #[profiling::function]
     pub fn render(&mut self, ctx: &mut FrameContext) {
         let start = Instant::now();
 
@@ -285,6 +287,7 @@ impl State {
             .add_value(start.elapsed().as_secs_f32());
     }
 
+    #[profiling::function]
     pub fn lights(&self) -> Vec<LightInstance> {
         let mut lights = vec![];
 
@@ -313,6 +316,7 @@ impl State {
         lights
     }
 
+    #[profiling::function]
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
         let gui = &mut self.gui;
         let goria = &self.goria;
