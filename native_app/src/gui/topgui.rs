@@ -110,7 +110,7 @@ impl Gui {
 
         Window::new(im_str!("Toolbox"))
             .size_constraints([toolbox_w, 0.0], [toolbox_w, 1000.0])
-            .position([w - toolbox_w, h * 0.5 - 30.0], imgui::Condition::Always)
+            .position([w - toolbox_w, h * 0.5 - 30.0], imgui::Condition::Appearing)
             .scroll_bar(false)
             .title_bar(true)
             .movable(false)
@@ -147,10 +147,10 @@ impl Gui {
             if let Some(ref mut v) = state.inspect {
                 let dirty = &mut state.dirty;
                 Window::new(im_str!("Road Properties"))
-                    .size([150.0, 200.0], imgui::Condition::Always)
+                    .size([150.0, 200.0], imgui::Condition::Appearing)
                     .position(
                         [w - 150.0 - toolbox_w, h * 0.5 - 30.0],
-                        imgui::Condition::Always,
+                        imgui::Condition::Appearing,
                     )
                     .scroll_bar(false)
                     .title_bar(true)
@@ -192,10 +192,10 @@ impl Gui {
         ) {
             let rbw = 220.0;
             Window::new(im_str!("Road Properties"))
-                .size([rbw, 380.0], imgui::Condition::Always)
+                .size([rbw, 380.0], imgui::Condition::Appearing)
                 .position(
                     [w - rbw - toolbox_w, h * 0.5 - 30.0],
-                    imgui::Condition::Always,
+                    imgui::Condition::Appearing,
                 )
                 .title_bar(true)
                 .movable(false)
@@ -290,11 +290,11 @@ impl Gui {
             Window::new(im_str!("Lot Brush"))
                 .size(
                     [lbw, 50.0 + brushes.len() as f32 * 35.0],
-                    imgui::Condition::Always,
+                    imgui::Condition::Appearing,
                 )
                 .position(
                     [w - toolbox_w - lbw, h * 0.5 - 30.0],
-                    imgui::Condition::Always,
+                    imgui::Condition::Appearing,
                 )
                 .scroll_bar(false)
                 .title_bar(true)
@@ -333,7 +333,7 @@ impl Gui {
                 .size_constraints([lbw, 0.0], [lbw, 1000.0])
                 .position(
                     [w - toolbox_w - lbw, h * 0.5 - 30.0],
-                    imgui::Condition::Always,
+                    imgui::Condition::Appearing,
                 )
                 .scroll_bar(false)
                 .title_bar(true)
@@ -364,7 +364,7 @@ impl Gui {
                 .size_constraints([building_select_w, 0.0], [building_select_w, h * 0.5])
                 .position(
                     [w - toolbox_w - building_select_w, h * 0.5 - 30.0],
-                    imgui::Condition::Always,
+                    imgui::Condition::Appearing,
                 )
                 .title_bar(true)
                 .movable(false)
@@ -419,7 +419,7 @@ impl Gui {
                                     w - toolbox_w - building_select_w - bdescrpt_w,
                                     h * 0.5 - 30.0,
                                 ],
-                                imgui::Condition::Always,
+                                imgui::Condition::Appearing,
                             )
                             .scroll_bar(false)
                             .title_bar(true)
@@ -462,8 +462,8 @@ impl Gui {
 
         let mut is_open = true;
         Window::new(im_str!("Inspect"))
-            .size([300.0, 300.0], imgui::Condition::FirstUseEver)
-            .position([30.0, 160.0], imgui::Condition::FirstUseEver)
+            .size([300.0, 300.0], imgui::Condition::Appearing)
+            .position([30.0, 160.0], imgui::Condition::Appearing)
             .opened(&mut is_open)
             .build(ui, || {
                 let mut ins = crate::gui::inspect::InspectRenderer { entity: e };
@@ -499,8 +499,8 @@ impl Gui {
             StyleVar::ItemSpacing([10.0, 7.0]),
         ]);
         Window::new(im_str!("Time controls"))
-            .size([165.0, 55.0], imgui::Condition::Always)
-            .position([-1.0, h - 52.0], imgui::Condition::Always)
+            .size([165.0, 55.0], imgui::Condition::Appearing)
+            .position([-1.0, h - 52.0], imgui::Condition::Appearing)
             .no_decoration()
             .collapsible(false)
             .resizable(false)

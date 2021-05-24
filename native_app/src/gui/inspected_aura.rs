@@ -6,6 +6,7 @@ use egregoria::pedestrians::Location;
 use egregoria::Egregoria;
 use geom::Color;
 
+#[profiling::function]
 pub fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
     let inspected = uiworld.write::<InspectedEntity>();
     let map = goria.map();

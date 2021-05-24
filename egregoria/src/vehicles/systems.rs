@@ -4,7 +4,7 @@ use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::utils::time::GameTime;
 use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::ParCommandBuffer;
-use geom::{angle_lerp3, Ray, Transform, Vec2, Vec3};
+use geom::{angle_lerp, angle_lerp3, Ray, Transform, Vec2, Vec3};
 use legion::system;
 use legion::Entity;
 use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
@@ -127,7 +127,7 @@ fn physics(
             time.delta * kind.acceleration(),
         );
 
-    let max_ang_vel = (speed.abs() / kind.min_turning_radius()).clamp(0.0, 2.0);
+    let max_ang_vel = (speed.abs() / kind.min_turning_radius()).clamp(0.0, 3.0);
 
     let approx_angle = trans.dir.distance(desired_dir);
 
@@ -137,7 +137,14 @@ fn physics(
         .min(3.0 * approx_angle)
         .min(max_ang_vel);
 
-    trans.dir = angle_lerp3(trans.dir, desired_dir, vehicle.ang_velocity * time.delta);
+    trans.dir.z = desired_dir.z;
+    let lerped = angle_lerp(
+        trans.dir.xy().normalize(),
+        desired_dir.xy().normalize(),
+        vehicle.ang_velocity * time.delta,
+    );
+    trans.dir.x = lerped.x;
+    trans.dir.y = lerped.y;
 
     kin.velocity = trans.dir * speed;
 }

@@ -28,6 +28,7 @@ pub use follow::FollowEntity;
 pub use inspect::*;
 pub use topgui::*;
 
+#[profiling::function]
 pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     bulldozer::bulldozer(goria, uiworld);
     inspected_aura::inspected_aura(goria, uiworld);
@@ -55,6 +56,7 @@ impl Default for InspectedEntity {
     }
 }
 
+#[profiling::function]
 pub fn hand_reset(uiworld: &mut UiWorld) {
     let info = uiworld.read::<KeyboardInfo>();
     if info.just_pressed.contains(&KeyCode::Escape) {

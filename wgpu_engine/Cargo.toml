@@ -18,6 +18,7 @@ naga      = { version = "0.3.2", features = ["glsl-in", "spv-out"], optional = t
 tobj      = "2.0.4"
 gltf      = "0.15.2"
 itertools = { version = "0.10.0", default-features = false }
+profiling = "1.0.1"
 
 [features]
 default = []

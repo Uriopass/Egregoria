@@ -13,6 +13,7 @@ pub struct LotBrushResource {
     pub radius: f32,
 }
 
+#[profiling::function]
 pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     let res = uiworld.read::<LotBrushResource>();
     let tool = *uiworld.read::<Tool>();

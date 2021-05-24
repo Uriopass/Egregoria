@@ -1910,11 +1910,11 @@ dependencies = [
  "networking",
  "ordered-float",
  "paste",
+ "profiling",
  "rayon",
  "rodio",
  "serde",
  "slotmap 1.0.3",
- "tracing",
  "wgpu_engine",
  "winit",
 ]
@@ -2416,6 +2416,20 @@ name = "profiling"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3a66d5e88679f2720126c11ee29da07a08f094eac52306b066edd7d393752d6"
+dependencies = [
+ "profiling-procmacros",
+ "tracy-client",
+]
+
+[[package]]
+name = "profiling-procmacros"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b83296b4ea7c60800e0832617bb9d274e4f5928abd08acc5a6ae8be0fb15969"
+dependencies = [
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "quote"
@@ -2872,36 +2886,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing"
-version = "0.1.25"
+name = "tracy-client"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01ebdc2bb4498ab1ab5f5b73c5803825e60199229ccba0698170e3be0e7f959f"
+checksum = "8088b69594669b5b4ea2bd90b04676fcd0480a8624a52056ea87c5eb3a66d8ae"
 dependencies = [
- "cfg-if 1.0.0",
- "log",
- "pin-project-lite",
- "tracing-attributes",
- "tracing-core",
+ "tracy-client-sys",
 ]
 
 [[package]]
-name = "tracing-attributes"
-version = "0.1.15"
+name = "tracy-client-sys"
+version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c42e6fa53307c8a17e4ccd4dc81cf5ec38db9209f59b222210375b54ee40d1e2"
+checksum = "6226e4e77f0d46ce7ebb0a4b1daa82790035248b75bbf605b932a1d7b3b22b6d"
 dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "tracing-core"
-version = "0.1.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f50de3927f93d202783f4513cda820ab47ef17f624b03c096e86ef00c67e6b5f"
-dependencies = [
- "lazy_static",
+ "cc",
 ]
 
 [[package]]
@@ -3217,6 +3216,7 @@ dependencies = [
  "itertools 0.10.0",
  "log",
  "naga 0.3.2",
+ "profiling",
  "raw-window-handle",
  "tobj",
  "wgpu",

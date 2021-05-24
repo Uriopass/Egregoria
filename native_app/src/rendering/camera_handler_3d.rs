@@ -185,20 +185,22 @@ impl CameraHandler3D {
         self.targetdist = self.targetdist.clamp(30.0, 100000.0);
 
         if settings.camera_smooth {
-            self.camera.pos +=
-                (self.targetpos - self.camera.pos) * delta * settings.camera_smooth_tightness * 8.0;
-            self.camera.yaw += (self.targetyaw - self.camera.yaw)
-                * delta
-                * settings.camera_smooth_tightness
-                * 16.0;
-            self.camera.pitch += (self.targetpitch - self.camera.pitch)
-                * delta
-                * settings.camera_smooth_tightness
-                * 8.0;
-            self.camera.dist += (self.targetdist - self.camera.dist)
-                * delta
-                * settings.camera_smooth_tightness
-                * 8.0;
+            macro_rules! lerpp {
+                ($a:expr, $b:expr, $amt:expr) => {
+                    let coeff = delta * settings.camera_smooth_tightness * $amt;
+                    let diff = $b - $a;
+                    if coeff.abs() > 1.0 {
+                        $a = $b;
+                    } else {
+                        $a += diff * coeff;
+                    }
+                };
+            }
+
+            lerpp!(self.camera.pos, self.targetpos, 8.0);
+            lerpp!(self.camera.yaw, self.targetyaw, 16.0);
+            lerpp!(self.camera.pitch, self.targetpitch, 8.0);
+            lerpp!(self.camera.dist, self.targetdist, 8.0);
         } else {
             self.camera.pos = self.targetpos;
             self.camera.yaw = self.targetyaw;

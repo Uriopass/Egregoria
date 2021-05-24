@@ -25,6 +25,7 @@ impl Default for SpecialBuildingResource {
     }
 }
 
+#[profiling::function]
 pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut state = uiworld.write::<SpecialBuildingResource>();
     let tool = *uiworld.read::<Tool>();

@@ -128,10 +128,10 @@ pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egreg
     let [w, h] = ui.io().display_size;
 
     window
-        .position([w * 0.5, h * 0.5], Condition::Always)
+        .position([w * 0.5, h * 0.5], Condition::Appearing)
         .size([600.0, 600.0], Condition::Appearing)
         .position_pivot([0.5, 0.5])
-        .movable(false)
+        .movable(true)
         .collapsible(false)
         .build(ui, || {
             ui.text("Gameplay");

@@ -245,6 +245,7 @@ impl TerrainRender {
         collect_arrlod(v)
     }
 
+    #[profiling::function]
     pub fn render(&mut self, uiw: &UiWorld, fctx: &mut FrameContext) {
         let cam = uiw.read::<Camera>();
 

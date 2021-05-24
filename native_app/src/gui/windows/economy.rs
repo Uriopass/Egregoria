@@ -8,9 +8,9 @@ pub fn economy(window: imgui::Window, ui: &Ui, _: &mut UiWorld, goria: &Egregori
     let [w, h] = ui.io().display_size;
 
     window
-        .position([w * 0.5, h * 0.5], Condition::FirstUseEver)
+        .position([w * 0.5, h * 0.5], Condition::Appearing)
         .position_pivot([0.5, 0.5])
-        .size([600.0, h * 0.6], Condition::FirstUseEver)
+        .size([600.0, h * 0.6], Condition::Appearing)
         .build(ui, || {
             let inner = market.inner();
 
