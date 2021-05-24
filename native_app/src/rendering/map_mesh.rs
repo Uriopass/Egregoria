@@ -237,7 +237,7 @@ impl MapBuilders {
                 let d = axis[0] / w;
                 let h = axis[1].magnitude();
                 x.push(
-                    c.z(building.height + 0.01),
+                    c.z(building.height + 0.1),
                     d.z0(),
                     LinearColor::WHITE,
                     (w, h),
