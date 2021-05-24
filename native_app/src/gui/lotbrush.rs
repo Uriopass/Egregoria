@@ -36,7 +36,7 @@ pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     col.a = 0.2;
 
     let mpos = unwrap_ret!(mouseinfo.unprojected);
-    draw.circle(mpos, res.radius).color(col);
+    draw.circle(mpos.up(0.8), res.radius).color(col);
 
     if mouseinfo.pressed.contains(&MouseButton::Left) {
         for v in map

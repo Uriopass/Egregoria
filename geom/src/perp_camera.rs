@@ -47,7 +47,7 @@ impl Camera {
     }
 
     pub fn znear(height: f32) -> f32 {
-        (height * 0.5).abs().max(3.0)
+        (1.0 + 6.0 * height.log10()).abs().max(3.0).min(30.0)
     }
 
     pub fn offset(&self) -> Vec3 {
