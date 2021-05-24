@@ -142,6 +142,7 @@ mod tests;
 pub mod utils;
 pub mod vehicles;
 
+use std::io::ErrorKind;
 pub use utils::par_command_buffer::ParCommandBuffer;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -397,39 +398,44 @@ impl TryFrom<SerPreparedEgregoria> for Egregoria {
     type Error = std::io::Error;
 
     fn try_from(mut ser: SerPreparedEgregoria) -> Result<Self, Self::Error> {
-        let mut goria = Self::new(0);
-        goria.tick = ser.tick;
-        let registry = registry();
+        std::panic::catch_unwind(move || {
+            let mut goria = Self::new(0);
+            goria.tick = ser.tick;
+            let registry = registry();
 
-        let entity_serializer = IdSer::default();
+            let entity_serializer = IdSer::default();
 
-        let w: World = common::saveload::Bincode::decode_seed(
-            registry.as_deserialize(&entity_serializer),
-            &ser.world,
-        )?;
+            let w: World = common::saveload::Bincode::decode_seed(
+                registry.as_deserialize(&entity_serializer),
+                &ser.world,
+            )?;
 
-        goria.world = w;
+            goria.world = w;
 
-        legion::serialize::set_entity_serializer(&entity_serializer, || {
-            for l in inventory::iter::<SaveLoadFunc> {
-                (l.load)(&mut goria, ser.res.remove(l.name));
+            legion::serialize::set_entity_serializer(&entity_serializer, || {
+                for l in inventory::iter::<SaveLoadFunc> {
+                    (l.load)(&mut goria, ser.res.remove(l.name));
+                }
+            });
+
+            let max_deser = entity_serializer
+                .max_deser
+                .load(std::sync::atomic::Ordering::SeqCst);
+
+            const BLOCK_SIZE: u64 = 16;
+            let mut p = BLOCK_SIZE;
+            while p <= max_deser {
+                // up block size
+                let c = Canon::default();
+                c.canonize_name(&[0; 16]);
+                p += BLOCK_SIZE
             }
-        });
 
-        let max_deser = entity_serializer
-            .max_deser
-            .load(std::sync::atomic::Ordering::SeqCst);
-
-        const BLOCK_SIZE: u64 = 16;
-        let mut p = BLOCK_SIZE;
-        while p <= max_deser {
-            // up block size
-            let c = Canon::default();
-            c.canonize_name(&[0; 16]);
-            p += BLOCK_SIZE
-        }
-
-        Ok(goria)
+            Ok(goria)
+        })
+        .map_err(|_| {
+            std::io::Error::new(ErrorKind::Other, "couldn't decode: probably an old version")
+        })?
     }
 }
 
