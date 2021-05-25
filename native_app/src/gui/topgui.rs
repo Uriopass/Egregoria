@@ -110,7 +110,7 @@ impl Gui {
 
         Window::new(im_str!("Toolbox"))
             .size_constraints([toolbox_w, 0.0], [toolbox_w, 1000.0])
-            .position([w - toolbox_w, h * 0.5 - 30.0], imgui::Condition::Appearing)
+            .position([w - toolbox_w, h * 0.5 - 30.0], imgui::Condition::Always)
             .scroll_bar(false)
             .title_bar(true)
             .movable(false)
@@ -499,8 +499,8 @@ impl Gui {
             StyleVar::ItemSpacing([10.0, 7.0]),
         ]);
         Window::new(im_str!("Time controls"))
-            .size([165.0, 55.0], imgui::Condition::Appearing)
-            .position([-1.0, h - 52.0], imgui::Condition::Appearing)
+            .size([165.0, 55.0], imgui::Condition::Always)
+            .position([-1.0, h - 52.0], imgui::Condition::Always)
             .no_decoration()
             .collapsible(false)
             .resizable(false)
