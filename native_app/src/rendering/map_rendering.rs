@@ -13,14 +13,12 @@ pub struct RoadRenderer {
     trees: Option<InstancedMesh>,
     trees_builder: InstancedMeshBuilder,
     trees_dirt_id: u32,
-    last_cam: AABB,
 }
 
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         RoadRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
-            last_cam: AABB::zero(),
             trees: None,
             trees_builder: InstancedMeshBuilder::new(
                 load_mesh("assets/pine.glb", gfx).expect("could not load pine"),
@@ -139,7 +137,5 @@ impl RoadRenderer {
         }
 
         Self::signals_render(map, time, tess);
-
-        self.last_cam = screen;
     }
 }
