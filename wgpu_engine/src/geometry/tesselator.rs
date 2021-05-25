@@ -329,7 +329,27 @@ impl Tesselator {
 
         let color = self.color.into();
         let normal = self.normal;
+        let swap = (self.normal[2] < 0.0) as u32 * 2;
         self.meshbuilder.extend_with(move |verts, index_push| {
+            let mut idx_quad = move |index| {
+                index_push(index * 2 + swap);
+                index_push(index * 2 + 1);
+                index_push(index * 2 + 2 - swap);
+
+                index_push(index * 2 + 3 - swap);
+                index_push(index * 2 + 2);
+                index_push(index * 2 + 1 + swap);
+            };
+
+            let mut pvert = move |pos: Vec3| {
+                verts.push(MeshVertex {
+                    position: pos.into(),
+                    color,
+                    normal,
+                    uv: [0.0; 2],
+                });
+            };
+
             let mut index: u32 = 0;
             for (a, elbow, c) in points.tuple_windows() {
                 let a: Vec3 = a;
@@ -337,19 +357,8 @@ impl Tesselator {
                 let c: Vec3 = c;
                 if index == 0 {
                     let nor = -first_dir.perpendicular();
-                    verts.push(MeshVertex {
-                        position: (a + (nor * (offset + halfthick)).z0()).into(),
-                        color,
-                        normal,
-                        uv: [0.0; 2],
-                    });
-
-                    verts.push(MeshVertex {
-                        position: (a + (nor * (offset - halfthick)).z0()).into(),
-                        color,
-                        normal,
-                        uv: [0.0; 2],
-                    });
+                    pvert(a + (nor * (offset + halfthick)).z0());
+                    pvert(a + (nor * (offset - halfthick)).z0());
                 }
 
                 let ae = unwrap_or!((elbow - a).xy().try_normalize(), continue);
@@ -368,26 +377,9 @@ impl Tesselator {
 
                 let p1 = elbow + (mul * dir * (offset + halfthick)).z0();
                 let p2 = elbow + (mul * dir * (offset - halfthick)).z0();
-                verts.push(MeshVertex {
-                    position: p1.into(),
-                    color,
-                    normal,
-                    uv: [0.0; 2],
-                });
-                verts.push(MeshVertex {
-                    position: p2.into(),
-                    color,
-                    normal,
-                    uv: [0.0; 2],
-                });
-
-                index_push(index * 2);
-                index_push(index * 2 + 1);
-                index_push(index * 2 + 2);
-
-                index_push(index * 2 + 3);
-                index_push(index * 2 + 2);
-                index_push(index * 2 + 1);
+                pvert(p1);
+                pvert(p2);
+                idx_quad(index);
 
                 index += 1;
                 if index as usize == n_points - 2 {
@@ -395,26 +387,9 @@ impl Tesselator {
 
                     let p1 = c + ((offset + halfthick) * nor).z0();
                     let p2 = c + ((offset - halfthick) * nor).z0();
-                    verts.push(MeshVertex {
-                        position: p1.into(),
-                        color,
-                        normal,
-                        uv: [0.0; 2],
-                    });
-                    verts.push(MeshVertex {
-                        position: p2.into(),
-                        color,
-                        normal,
-                        uv: [0.0; 2],
-                    });
-
-                    index_push(index * 2);
-                    index_push(index * 2 + 1);
-                    index_push(index * 2 + 2);
-
-                    index_push(index * 2 + 3);
-                    index_push(index * 2 + 2);
-                    index_push(index * 2 + 1);
+                    pvert(p1);
+                    pvert(p2);
+                    idx_quad(index);
                 }
             }
         });
