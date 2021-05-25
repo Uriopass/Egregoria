@@ -145,7 +145,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
     }
 
-    let is_valid = match (state.build_state, cur_proj.kind) {
+    let mut is_valid = match (state.build_state, cur_proj.kind) {
         (Hover, Building(_)) => false,
         (Start(selected_proj), _) => {
             compatible(map, cur_proj.kind, selected_proj.kind)
@@ -168,6 +168,15 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
         _ => true,
     };
+    if matches!(*tool, Tool::RoadbuildCurved) {
+        if let Start(proj) = state.build_state {
+            is_valid = true;
+            cur_proj = MapProject {
+                pos: mousepos.xy().z(proj.pos.z),
+                kind: ProjectKind::Ground,
+            };
+        }
+    }
 
     state.update_drawing(immdraw, cur_proj.pos, patwidth, is_valid);
 
