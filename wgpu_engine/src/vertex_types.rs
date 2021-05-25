@@ -1,11 +1,12 @@
 use crate::VBDesc;
+use geom::Vec3;
 use wgpu::VertexAttribute;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct MeshVertex {
     pub position: [f32; 3],
-    pub normal: [f32; 3],
+    pub normal: Vec3,
     pub uv: [f32; 2],
     pub color: [f32; 4],
 }
