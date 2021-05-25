@@ -201,7 +201,8 @@ impl TerrainRender {
                         vec3(c, p.x, p.y)
                     }
                     .into(),
-                    normal: [0.0, 1.0, 0.0],
+                    normal: if rev ^ !is_x { 1.0 } else { -1.0 }
+                        * vec3(!is_x as i32 as f32, is_x as i32 as f32, 0.0),
                     uv: [0.0, 0.0],
                     color: LinearColor::from(common::config().border_col).into(),
                 })
