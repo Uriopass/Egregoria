@@ -193,6 +193,7 @@ pub fn minmax3(x: impl IntoIterator<Item = Vec3>) -> Option<(Vec3, Vec3)> {
     Some((min, max))
 }
 
+#[inline]
 pub fn pseudo_angle(v: Vec2) -> f32 {
     debug_assert!((v.magnitude2() - 1.0).abs() <= 1e-5);
     let dx = v.x;
@@ -206,6 +207,7 @@ pub fn pseudo_angle(v: Vec2) -> f32 {
     }
 }
 
+#[inline]
 pub fn angle_lerp(src: Vec2, dst: Vec2, ang_amount: f32) -> Vec2 {
     let src_perp = src.perpendicular();
     let dot = src.dot(dst);
@@ -216,18 +218,19 @@ pub fn angle_lerp(src: Vec2, dst: Vec2, ang_amount: f32) -> Vec2 {
     (src + src_perp * perp_dot.signum() * ang_amount).normalize()
 }
 
-pub fn angle_lerp3(src: Vec3, dst: Vec3, ang_amount: f32) -> Vec3 {
-    let dot = src.dot(dst);
-    if dot > 1.0 - ang_amount {
-        return dst;
-    }
-    (src + (dst - src) * ang_amount / (1.01 + dot * 0.5)).normalize()
+#[inline]
+pub fn angle_lerpxy(src: Vec3, dst: Vec3, ang_amount: f32) -> Vec3 {
+    let m = src.xy().magnitude();
+    let lerped = angle_lerp(dst.xy() / m, src.xy() / m, ang_amount);
+    (lerped * m).z(src.z)
 }
 
+#[inline]
 pub fn abs_lerp(src: f32, dst: f32, amount: f32) -> f32 {
     src + (dst - src).min(amount).max(-amount)
 }
 
+#[inline]
 pub fn lerp(src: f32, dst: f32, coeff: f32) -> f32 {
     let coeff = coeff.max(0.0).min(1.0);
     src * (1.0 - coeff) + dst * coeff

@@ -2,7 +2,7 @@ use crate::map_dynamic::Itinerary;
 use crate::pedestrians::Pedestrian;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
 use crate::utils::time::GameTime;
-use geom::{angle_lerp3, Transform, Vec2, Vec3};
+use geom::{angle_lerpxy, Transform, Vec2, Vec3};
 use legion::system;
 use map_model::{Map, TraverseDirection};
 
@@ -48,7 +48,7 @@ pub fn physics(
 
     const ANG_VEL: f32 = 1.0;
 
-    trans.dir = angle_lerp3(trans.dir, desired_dir, ANG_VEL * time.delta);
+    trans.dir = angle_lerpxy(trans.dir, desired_dir, ANG_VEL * time.delta);
 }
 
 pub fn calc_decision<'a>(
