@@ -324,6 +324,17 @@ impl MapBuilders {
 
         for road in roads.values() {
             let cut = road.interfaced_points();
+
+            tess.normal.z = -1.0;
+            tess.draw_polyline_full(
+                cut.iter().map(|x| x.up(-0.3)),
+                cut.first_dir().unwrap_or_default().xy(),
+                cut.last_dir().unwrap_or_default().xy(),
+                road.width,
+                0.0,
+            );
+            tess.normal.z = 1.0;
+
             let mut draw_off = |col: LinearColor, w, off| {
                 tess.set_color(col);
                 tess.draw_polyline_full(
