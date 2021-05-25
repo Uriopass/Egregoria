@@ -196,7 +196,7 @@ impl MapBuilders {
                         let mk_v = |position: Vec3, uv: Vec2| MeshVertex {
                             position: position.into(),
                             uv: uv.into(),
-                            normal: [0.0, 0.0, 1.0],
+                            normal: Vec3::Z,
                             color: [1.0; 4],
                         };
 
@@ -513,7 +513,7 @@ fn intersection_mesh(meshb: &mut MeshBuilder, inter: &Intersection, roads: &Road
     meshb.extend_with(|vertices, add_idx| {
         vertices.extend(polygon.iter().map(|pos| MeshVertex {
             position: pos.z(inter.pos.z - 0.01).into(),
-            normal: [0.0, 0.0, 1.0],
+            normal: Vec3::Z,
             uv: [0.0; 2],
             color: col,
         }));

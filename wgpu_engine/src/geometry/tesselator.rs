@@ -8,7 +8,7 @@ pub struct Tesselator {
     pub meshbuilder: MeshBuilder,
     pub cull_rect: Option<AABB>,
     pub zoom: f32,
-    pub normal: [f32; 3],
+    pub normal: Vec3,
 }
 
 impl Tesselator {
@@ -18,7 +18,7 @@ impl Tesselator {
             meshbuilder: MeshBuilder::new(),
             cull_rect,
             zoom,
-            normal: [0.0, 0.0, 1.0],
+            normal: Vec3::Z,
         }
     }
 }
@@ -329,7 +329,7 @@ impl Tesselator {
 
         let color = self.color.into();
         let normal = self.normal;
-        let swap = (self.normal[2] < 0.0) as u32 * 2;
+        let swap = (self.normal.z < 0.0) as u32 * 2;
         self.meshbuilder.extend_with(move |verts, index_push| {
             let mut idx_quad = move |index| {
                 index_push(index * 2 + swap);
