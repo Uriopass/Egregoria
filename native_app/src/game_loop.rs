@@ -289,8 +289,9 @@ impl State {
 
     #[profiling::function]
     pub fn lights(&self) -> Vec<LightInstance> {
+        vec![]
+        /*
         let mut lights = vec![];
-
         let map = self.goria.map();
         for x in map.roads().values() {
             let w = x.width * 0.5 - 5.0;
@@ -313,7 +314,7 @@ impl State {
             });
         }
 
-        lights
+        lights*/
     }
 
     #[profiling::function]
