@@ -250,7 +250,7 @@ impl State {
     pub fn render(&mut self, ctx: &mut FrameContext) {
         let start = Instant::now();
 
-        self.terrain.render(&self.uiw, ctx);
+        self.terrain.draw_terrain(&self.uiw, ctx);
 
         self.immtess.meshbuilder.clear();
         self.camera.cull_tess(&mut self.immtess);

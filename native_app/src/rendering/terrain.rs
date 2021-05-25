@@ -152,6 +152,22 @@ impl TerrainRender {
         self.chunks.insert(cell, chunk);
     }
 
+    #[profiling::function]
+    pub fn draw_terrain(&mut self, uiw: &UiWorld, fctx: &mut FrameContext) {
+        let cam = uiw.read::<Camera>();
+
+        let eye = cam.eye();
+        for (cell, chunk) in &self.chunks {
+            let p = vec2(cell.0 as f32, cell.1 as f32) * CHUNK_SIZE as f32;
+            let lod = eye.distance(p.z0()).log2().sub(10.0).max(0.0) as usize;
+            fctx.objs
+                .push(Box::new(chunk.lods[lod.min(LOD - 1)].clone()))
+        }
+        for b in &self.borders {
+            fctx.objs.push(Box::new(b.clone()))
+        }
+    }
+
     fn update_borders(&mut self, gfx: &GfxContext, map: &Map) {
         let minx = unwrap_ret!(self.chunks.keys().map(|x| x.0).min());
         let maxx = unwrap_ret!(self.chunks.keys().map(|x| x.0).max()) + 1;
@@ -244,22 +260,6 @@ impl TerrainRender {
             v.push((buf, l));
         }
         collect_arrlod(v)
-    }
-
-    #[profiling::function]
-    pub fn render(&mut self, uiw: &UiWorld, fctx: &mut FrameContext) {
-        let cam = uiw.read::<Camera>();
-
-        let eye = cam.eye();
-        for (cell, chunk) in &self.chunks {
-            let p = vec2(cell.0 as f32, cell.1 as f32) * CHUNK_SIZE as f32;
-            let lod = eye.distance(p.z0()).log2().sub(10.0).max(0.0) as usize;
-            fctx.objs
-                .push(Box::new(chunk.lods[lod.min(LOD - 1)].clone()))
-        }
-        for b in &self.borders {
-            fctx.objs.push(Box::new(b.clone()))
-        }
     }
 }
 
