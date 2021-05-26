@@ -7,7 +7,7 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
 use egregoria::{Egregoria, SerPreparedEgregoria};
-use geom::{Camera, V3};
+use geom::Camera;
 use wgpu_engine::lighting::LightInstance;
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 

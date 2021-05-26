@@ -86,11 +86,11 @@ void main() {
     float sun_contrib = clamp(dot(normal, params.sun), 0.0, 1.0);
 
     vec4 c = in_tint * albedo;
-    float ambiant = 0.15;
-    float sun = clamp(params.sun.z, 0.0, 1.0) * (0.85 * sun_contrib + 0.5 * specular) * shadow_v;
+    vec3 ambiant = 0.15 * c.rgb;
+    float sun = (0.85 * sun_contrib + 0.5 * specular) * shadow_v;
     float lights = quad_lights * (1.0 - sun_contrib) * 0.7;
 
-    vec3 final_rgb = (ambiant + lights) * c.rgb + sun * params.sun_col.rgb * c.rgb;
+    vec3 final_rgb = ambiant + lights * c.rgb + sun * params.sun_col.rgb * c.rgb;
     final_rgb *= ssao;
     final_rgb += dither();
     out_color = vec4(final_rgb, c.a);
