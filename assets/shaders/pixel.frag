@@ -27,7 +27,7 @@ layout(set = 3, binding = 7) uniform sampler s_quadlights;
 
 float dither() {
     float color = texture(sampler2D(t_bnoise, s_bnoise), gl_FragCoord.xy / 512.0).r;
-    return (color - 0.5) / 255.0;
+    return (color - 0.5) / 512.0;
 }
 
 float sampleShadow() {
