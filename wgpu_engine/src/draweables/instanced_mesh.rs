@@ -72,7 +72,7 @@ pub struct InstancedMesh {
 impl InstancedMesh {
     pub fn setup(gfx: &mut GfxContext) {
         let vert = compile_shader(&gfx.device, "assets/shaders/instanced_mesh.vert", None);
-        let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
+        let frag = compile_shader(&gfx.device, "assets/shaders/pixel.frag", None);
 
         let vb = &[MeshVertex::desc(), MeshInstance::desc()];
         let pipe = gfx.color_pipeline(

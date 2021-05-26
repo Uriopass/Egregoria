@@ -87,7 +87,7 @@ pub struct Mesh {
 impl Mesh {
     pub fn setup(gfx: &mut GfxContext) {
         let vert = compile_shader(&gfx.device, "assets/shaders/lit_mesh.vert", None);
-        let frag = compile_shader(&gfx.device, "assets/shaders/simple_lit.frag", None);
+        let frag = compile_shader(&gfx.device, "assets/shaders/pixel.frag", None);
 
         let pipe = gfx.color_pipeline(
             &[
