@@ -167,14 +167,16 @@ impl CameraHandler3D {
             }
             let pressed = &ctx.input.mouse.pressed;
 
-            if (pressed.contains(&MouseButton::Right)
-                && ctx.input.keyboard.pressed.contains(&KeyCode::LShift))
-                || pressed.contains(&MouseButton::Middle)
-            {
+            let lshift = ctx.input.keyboard.pressed.contains(&KeyCode::LShift);
+
+            let right = pressed.contains(&MouseButton::Right);
+            let middle = pressed.contains(&MouseButton::Middle);
+
+            if right && lshift || middle && !lshift {
                 self.targetyaw -= delta_mouse.x / 100.0;
                 self.targetpitch += delta_mouse.y / 100.0;
                 self.targetpitch = self.targetpitch.min(1.57).max(0.01);
-            } else if pressed.contains(&MouseButton::Right) {
+            } else if right && !lshift || middle && lshift {
                 if let Some((last_pos, unprojected)) = self.last_pos.zip(unprojected) {
                     self.targetpos += (last_pos - unprojected.xy())
                         .cap_magnitude(50000.0 * delta)
