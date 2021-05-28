@@ -166,7 +166,7 @@ impl Tree {
             2.0 * std::f32::consts::PI * common::rand::rand3(pos.x as f32, pos.y as f32, 2.0);
 
         let srand = common::rand::rand3(pos.x as f32, pos.y, 3.0);
-        let scale = 7.0 + 2.0 * srand;
+        let scale = 5.0 + 3.0 * srand;
 
         Tree {
             pos,
