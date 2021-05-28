@@ -217,19 +217,27 @@ impl Road {
     pub fn interfaced_points(&self) -> PolyLine3 {
         let points = self.points();
         let mut cpoints = points.cut(self.interface_from(self.src), self.interface_from(self.dst));
-        let zbeg = points.first().z;
-        let zend = points.last().z;
-        let zcbeg = cpoints.first().z;
-        let zcend = cpoints.last().z;
-        let d = zcend - zcbeg;
-        let mul = if d.abs() < f32::EPSILON {
-            1.0
-        } else {
-            (zend - zbeg) / d
-        };
-        let off = zbeg - zcbeg;
+        let o_beg = points.first().z;
+        let o_end = points.last().z;
+        let i_beg = cpoints.first().z;
+        let i_end = cpoints.last().z;
+        let i_range = i_end - i_beg;
+        let o_range = o_end - o_beg;
+
+        if i_range.abs() < 0.01 {
+            if cpoints.n_points() == 1 {
+                return cpoints;
+            }
+
+            let n = cpoints.n_points() as f32 - 1.0;
+            for (i, v) in cpoints.iter_mut().enumerate() {
+                v.z = o_beg + (i as f32) * o_range / n;
+            }
+            return cpoints;
+        }
+
         for v in cpoints.iter_mut() {
-            v.z = v.z * mul + off;
+            v.z = ((v.z - i_beg) * o_range) / i_range + o_beg;
         }
         cpoints
     }
