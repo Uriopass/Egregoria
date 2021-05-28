@@ -172,14 +172,30 @@ pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
     let map = goria.map();
     tess.set_color(Color::RED);
     for (_, road) in map.roads() {
-        tess.draw_polyline(road.points().as_slice(), 0.3);
+        tess.draw_polyline(
+            &*road
+                .points()
+                .as_slice()
+                .into_iter()
+                .map(|x| x.up(0.01))
+                .collect::<Vec<_>>(),
+            0.3,
+        );
     }
 
     for (_, lane) in map.lanes() {
         let r = common::rand::rand2(lane.points.first().x, lane.points.first().y);
         tess.set_color(Color::hsv(r * 360.0, 0.8, 0.6, 0.5));
 
-        tess.draw_polyline(lane.points.as_slice(), 0.3);
+        tess.draw_polyline(
+            &*lane
+                .points
+                .as_slice()
+                .into_iter()
+                .map(|x| x.up(0.01))
+                .collect::<Vec<_>>(),
+            0.3,
+        );
     }
     Some(())
 }
