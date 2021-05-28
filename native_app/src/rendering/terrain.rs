@@ -122,8 +122,7 @@ impl TerrainRender {
                         position: [pos.x, pos.y, height],
                         normal: vec3(CELL_SIZE * scale as f32, 0.0, hx - height)
                             .cross(vec3(0.0, CELL_SIZE * scale as f32, hy - height))
-                            .normalize()
-                            .into(),
+                            .normalize(),
                         uv: [0.0; 2],
                         color: col.into(),
                     })

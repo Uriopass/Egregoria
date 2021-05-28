@@ -87,10 +87,8 @@ impl InstancedMesh {
             &frag,
         );
         gfx.register_pipeline::<Self>(pipe);
-        gfx.register_pipeline::<InstancedMeshDepthMultisample>(
-            gfx.depth_pipeline(vb, &vert, false),
-        );
-        gfx.register_pipeline::<InstancedMeshDepth>(gfx.depth_pipeline(vb, &vert, true));
+        gfx.register_pipeline::<InstancedMeshDepth>(gfx.depth_pipeline(vb, &vert, false));
+        gfx.register_pipeline::<InstancedMeshDepthSMap>(gfx.depth_pipeline(vb, &vert, true));
     }
 }
 
@@ -108,17 +106,23 @@ impl Drawable for InstancedMesh {
         rp.draw_indexed(0..self.mesh.n_indices, 0, 0..self.n_instances);
     }
 
-    fn draw_depth<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+    fn draw_depth<'a>(
+        &'a self,
+        gfx: &'a GfxContext,
+        rp: &mut RenderPass<'a>,
+        shadow_map: bool,
+        proj: &'a wgpu::BindGroup,
+    ) {
         if self.mesh.translucent {
             return;
         }
-        if gfx.samples == 1 {
-            rp.set_pipeline(&gfx.get_pipeline::<InstancedMeshDepth>());
+        if shadow_map {
+            rp.set_pipeline(&gfx.get_pipeline::<InstancedMeshDepthSMap>());
         } else {
-            rp.set_pipeline(&gfx.get_pipeline::<InstancedMeshDepthMultisample>());
+            rp.set_pipeline(&gfx.get_pipeline::<InstancedMeshDepth>());
         }
 
-        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
+        rp.set_bind_group(0, proj, &[]);
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);
@@ -126,5 +130,5 @@ impl Drawable for InstancedMesh {
     }
 }
 
-struct InstancedMeshDepthMultisample;
 struct InstancedMeshDepth;
+struct InstancedMeshDepthSMap;
