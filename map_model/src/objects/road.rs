@@ -229,12 +229,19 @@ impl Road {
 
         PolyLine3::new(match segment {
             RoadSegmentKind::Straight => {
-                vec![from, to]
+                let s = Spline3 {
+                    from,
+                    to,
+                    from_derivative: ((to - from) * 0.3).xy().z0(),
+                    to_derivative: ((to - from) * 0.3).xy().z0(),
+                };
+
+                s.smart_points(1.0, 0.0, 1.0).collect()
             }
             RoadSegmentKind::Curved((from_derivative, to_derivative)) => {
                 let s = Spline3 {
-                    from: src.pos,
-                    to: dst.pos,
+                    from,
+                    to,
                     from_derivative: from_derivative.z0(),
                     to_derivative: to_derivative.z0(),
                 };
