@@ -6,7 +6,7 @@ use map_model::{
     BuildingKind, Intersection, LaneKind, LotKind, Map, Road, Roads, TurnKind, CROSSWALK_WIDTH,
 };
 use std::ops::Mul;
-use std::rc::Rc;
+use std::sync::Arc;
 use wgpu_engine::earcut::earcut;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::wgpu::RenderPass;
@@ -17,7 +17,7 @@ use wgpu_engine::{
 
 pub struct MapMeshHandler {
     builders: MapBuilders,
-    cache: Option<Rc<MapMeshes>>,
+    cache: Option<Arc<MapMeshes>>,
     map_dirt_id: u32,
     last_config: usize,
 }
@@ -90,7 +90,7 @@ impl MapMeshHandler {
         }
     }
 
-    pub fn latest_mesh(&mut self, map: &Map, gfx: &mut GfxContext) -> &Option<Rc<MapMeshes>> {
+    pub fn latest_mesh(&mut self, map: &Map, gfx: &mut GfxContext) -> &Option<Arc<MapMeshes>> {
         if map.dirt_id.0 != self.map_dirt_id || self.last_config != common::config_id() {
             self.builders.map_mesh(&map);
             self.builders.arrows(&map);
@@ -124,7 +124,7 @@ impl MapMeshHandler {
                 arrows: self.builders.arrow_builder.build(gfx),
             };
 
-            self.cache = Some(Rc::new(meshes));
+            self.cache = Some(Arc::new(meshes));
         }
         &self.cache
     }
@@ -287,7 +287,7 @@ impl MapBuilders {
 
                         vertices.push(MeshVertex {
                             position: p.into(),
-                            normal: nor.into(),
+                            normal: nor,
                             uv: [0.0; 2],
                             color: col.into(),
                         })
@@ -338,7 +338,7 @@ impl MapBuilders {
             let mut draw_off = |col: LinearColor, w, off| {
                 tess.set_color(col);
                 tess.draw_polyline_full(
-                    cut.as_slice().into_iter().copied(),
+                    cut.as_slice().iter().copied(),
                     unwrap_ret!(cut.first_dir()).xy(),
                     unwrap_ret!(cut.last_dir()).xy(),
                     w,
@@ -440,22 +440,33 @@ impl Drawable for MapMeshes {
         }
     }
 
-    fn draw_depth<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        if let Some(ref map) = self.map {
-            map.draw_depth(gfx, rp);
+    fn draw_depth<'a>(
+        &'a self,
+        gfx: &'a GfxContext,
+        rp: &mut RenderPass<'a>,
+        shadow_map: bool,
+        proj: &'a wgpu_engine::wgpu::BindGroup,
+    ) {
+        macro_rules! deferdepth {
+            ($x:expr) => {
+                $x.draw_depth(gfx, rp, shadow_map, proj);
+            };
         }
-        self.bsprites.draw_depth(gfx, rp);
+        if let Some(ref map) = self.map {
+            map.draw_depth(gfx, rp, shadow_map, proj);
+        }
+        deferdepth!(self.bsprites);
         for v in &self.bmeshes {
-            v.draw_depth(gfx, rp);
+            deferdepth!(v);
         }
         if let Some(ref bmesh) = self.houses_mesh {
-            bmesh.draw_depth(gfx, rp);
+            deferdepth!(bmesh);
         }
         if let Some(ref arrows) = self.arrows {
-            arrows.draw_depth(gfx, rp);
+            deferdepth!(arrows);
         }
         if let Some(ref crosswalks) = self.crosswalks {
-            crosswalks.draw_depth(gfx, rp);
+            deferdepth!(crosswalks);
         }
     }
 }

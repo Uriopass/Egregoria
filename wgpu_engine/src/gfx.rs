@@ -1,4 +1,4 @@
-use crate::lighting::{LightInstance, LightRender};
+use crate::lighting::LightRender;
 use crate::{
     bg_layout_litmesh, compile_shader, BlitLinear, CompiledShader, Drawable, IndexType,
     InstancedMesh, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState,
+    Adapter, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState, CommandBuffer,
     CommandEncoder, CommandEncoderDescriptor, DepthBiasState, Device, Face, FrontFace, IndexFormat,
     MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface, SwapChain,
     SwapChainDescriptor, SwapChainFrame, TextureSampleType, TextureUsage, VertexBufferLayout,
@@ -37,6 +37,7 @@ pub struct GfxContext {
     pub update_sc: bool,
     pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
     pub(crate) projection: Uniform<Matrix4>,
+    pub(crate) sun_projection: Uniform<Matrix4>,
     pub render_params: Uniform<RenderParams>,
     pub(crate) textures: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) samples: u32,
@@ -49,6 +50,12 @@ pub struct GfxContext {
     pub light: LightRender,
     #[allow(dead_code)] // keep adapter alive
     pub(crate) adapter: Adapter,
+}
+
+pub struct Encoders {
+    pub smap: Option<CommandBuffer>,
+    pub depth_prepass: Option<CommandBuffer>,
+    pub end: CommandEncoder,
 }
 
 #[derive(Copy, Clone)]
@@ -76,8 +83,8 @@ pub struct RenderParams {
 impl Default for RenderParams {
     fn default() -> Self {
         Self {
-            inv_proj: Matrix4::from([0.0; 16]),
-            sun_shadow_proj: Matrix4::from([0.0; 16]),
+            inv_proj: Matrix4::zero(),
+            sun_shadow_proj: Matrix4::zero(),
             sun_col: Default::default(),
             cam_pos: Default::default(),
             _pad: 0.0,
@@ -151,7 +158,7 @@ impl GfxContext {
         let samples = 4;
         let fbos = Self::create_textures(&device, &surface, &sc_desc, samples);
 
-        let projection = Uniform::new(Matrix4::from([0.0; 16]), &device);
+        let projection = Uniform::new(Matrix4::zero(), &device);
 
         let screen_uv_vertices = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
@@ -190,6 +197,7 @@ impl GfxContext {
             surface,
             pipelines: FastMap::default(),
             projection,
+            sun_projection: Uniform::new(Matrix4::zero(), &device),
             render_params: Uniform::new(Default::default(), &device),
             textures,
             samples,
@@ -302,28 +310,33 @@ impl GfxContext {
         self.render_params.value_mut().inv_proj = proj;
     }
 
-    pub fn start_frame(&mut self) -> CommandEncoder {
-        let encoder = self
+    pub fn start_frame(&mut self) -> Encoders {
+        let end = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("Render encoder"),
+                label: Some("End encoder"),
             });
 
-        self.projection.upload_to_gpu(&self.queue);
+        *self.sun_projection.value_mut() = self.render_params.value().sun_shadow_proj;
 
-        encoder
+        self.projection.upload_to_gpu(&self.queue);
+        self.sun_projection.upload_to_gpu(&self.queue);
+
+        Encoders {
+            smap: None,
+            depth_prepass: None,
+            end,
+        }
     }
 
     #[profiling::function]
     pub fn render_objs(
         &mut self,
-        encoder: &mut CommandEncoder,
+        encs: &mut Encoders,
         frame: &SwapChainFrame,
-        lights: &[LightInstance],
         mut prepare: impl FnMut(&mut FrameContext),
     ) {
         let mut objs = vec![];
-
         let mut fc = FrameContext {
             objs: &mut objs,
             gfx: self,
@@ -331,9 +344,21 @@ impl GfxContext {
 
         prepare(&mut fc);
 
+        drop(fc);
+
+        let objsref = &*objs;
+        let enc_dep_ext = &mut encs.depth_prepass;
+        let enc_smap_ext = &mut encs.smap;
+
+        profiling::scope!("depth prepass");
+        let mut prepass = self
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("depth prepass encoder"),
+            });
+
         {
-            profiling::scope!("depth prepass");
-            let mut depth_prepass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut depth_prepass = prepass.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
@@ -346,22 +371,20 @@ impl GfxContext {
                 }),
             });
 
-            for obj in &mut objs {
-                obj.draw_depth(&self, &mut depth_prepass);
+            for obj in objsref.iter() {
+                obj.draw_depth(&self, &mut depth_prepass, false, &self.projection.bindgroup);
             }
+            drop(depth_prepass);
         }
-
-        LightRender::render_lights(self, encoder, &lights);
-
-        let prev = std::mem::replace(
-            &mut self.projection,
-            Uniform::new(self.render_params.value().sun_shadow_proj, &self.device),
-        );
-        let prevs = self.samples;
-        self.samples = 1;
+        *enc_dep_ext = Some(prepass.finish());
         if self.render_params.value().shadow_mapping_enabled != 0 {
             profiling::scope!("shadow pass");
-            let mut sun_shadow_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut smap_enc = self
+                .device
+                .create_command_encoder(&CommandEncoderDescriptor {
+                    label: Some("shadow map encoder"),
+                });
+            let mut sun_shadow_pass = smap_enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
@@ -374,12 +397,17 @@ impl GfxContext {
                 }),
             });
 
-            for obj in &mut objs {
-                obj.draw_depth(&self, &mut sun_shadow_pass);
+            for obj in objsref.iter() {
+                obj.draw_depth(
+                    &self,
+                    &mut sun_shadow_pass,
+                    true,
+                    &self.sun_projection.bindgroup,
+                );
             }
+            drop(sun_shadow_pass);
+            *enc_smap_ext = Some(smap_enc.finish());
         }
-        self.projection = prev;
-        self.samples = prevs;
 
         if self.render_params.value().ssao_enabled != 0 {
             profiling::scope!("ssao");
@@ -389,7 +417,7 @@ impl GfxContext {
                 .depth
                 .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
 
-            let mut ssao_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut ssao_pass = encs.end.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: &self.fbos.ssao.view,
@@ -417,7 +445,7 @@ impl GfxContext {
 
         {
             profiling::scope!("main render pass");
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encs.end.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: &self.fbos.color_msaa,
@@ -442,14 +470,14 @@ impl GfxContext {
                 }),
             });
 
-            for obj in &mut objs {
+            for obj in objsref.iter() {
                 obj.draw(&self, &mut render_pass);
             }
         }
 
         {
             profiling::scope!("bg pass");
-            let mut bg_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut bg_pass = encs.end.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: &self.fbos.color_msaa,
@@ -482,11 +510,11 @@ impl GfxContext {
     #[profiling::function]
     pub fn render_gui(
         &mut self,
-        encoder: &mut CommandEncoder,
+        encoders: &mut Encoders,
         frame: &SwapChainFrame,
         mut render_gui: impl FnMut(GuiRenderContext),
     ) {
-        let rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let rpass = encoders.end.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[wgpu::RenderPassColorAttachment {
                 view: &self.fbos.ui.view,
@@ -511,7 +539,7 @@ impl GfxContext {
             .ui
             .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
 
-        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let mut blit_linear = encoders.end.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[wgpu::RenderPassColorAttachment {
                 view: &frame.output.view,
@@ -524,15 +552,21 @@ impl GfxContext {
             depth_stencil_attachment: None,
         });
 
-        rpass.set_pipeline(pipeline);
-        rpass.set_bind_group(0, &bg, &[]);
-        rpass.set_vertex_buffer(0, self.screen_uv_vertices.slice(..));
-        rpass.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
-        rpass.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
+        blit_linear.set_pipeline(pipeline);
+        blit_linear.set_bind_group(0, &bg, &[]);
+        blit_linear.set_vertex_buffer(0, self.screen_uv_vertices.slice(..));
+        blit_linear.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
+        blit_linear.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
     }
 
-    pub fn finish_frame(&mut self, encoder: CommandEncoder) {
-        self.queue.submit(Some(encoder.finish()));
+    pub fn finish_frame(&mut self, encoder: Encoders) {
+        self.queue.submit(
+            encoder
+                .depth_prepass
+                .into_iter()
+                .chain(encoder.smap)
+                .chain(Some(encoder.end.finish())),
+        );
     }
 
     pub fn create_textures(

@@ -19,6 +19,7 @@ tobj      = "2.0.4"
 gltf      = "0.15.2"
 itertools = { version = "0.10.0", default-features = false }
 profiling = "1.0.1"
+rayon     = "1.4"
 
 [features]
 default = []

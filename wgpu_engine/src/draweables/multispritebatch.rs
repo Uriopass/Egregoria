@@ -13,9 +13,15 @@ impl Drawable for MultiSpriteBatch {
         }
     }
 
-    fn draw_depth<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+    fn draw_depth<'a>(
+        &'a self,
+        gfx: &'a GfxContext,
+        rp: &mut RenderPass<'a>,
+        shadow_map: bool,
+        proj: &'a wgpu::BindGroup,
+    ) {
         for v in &self.sbs {
-            v.draw_depth(gfx, rp);
+            v.draw_depth(gfx, rp, shadow_map, proj);
         }
     }
 }

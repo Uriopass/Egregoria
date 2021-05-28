@@ -139,8 +139,6 @@ impl Context {
                         self.delta = d.as_secs_f32();
                         state.update(&mut self);
 
-                        let lights = state.lights();
-
                         let t = std::f32::consts::TAU
                             * (self.gfx.render_params.value().time - 8.0 * GameTime::HOUR as f32)
                             / GameTime::DAY as f32;
@@ -165,7 +163,7 @@ impl Context {
                         self.gfx.render_params.upload_to_gpu(&self.gfx.queue);
 
                         let mut enc = self.gfx.start_frame();
-                        self.gfx.render_objs(&mut enc, &sco, &*lights, |fc| state.render(fc));
+                        self.gfx.render_objs(&mut enc, &sco, |fc| state.render(fc));
 
                         let window = &self.window;
                         self.gfx

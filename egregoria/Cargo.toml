@@ -25,7 +25,7 @@ common        = { path = "../common" }
 goria_version = { path = "../goria_version" }
 slotmap       = { version = "1.0.2", default-features = false }
 imgui         = "0.7"
-rayon         = "1.5.0"
+rayon         = "1.4.0"
 inventory     = "0.1.10"
 paste         = "1.0.4"
 atomic_refcell = "0.1.6"

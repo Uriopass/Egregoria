@@ -28,6 +28,15 @@ pub struct Matrix4 {
 }
 
 impl Matrix4 {
+    pub fn zero() -> Self {
+        Self {
+            x: Default::default(),
+            y: Default::default(),
+            z: Default::default(),
+            w: Default::default(),
+        }
+    }
+
     pub fn determinent(&self) -> f32 {
         let tmp0 = unsafe { det_sub_proc_unsafe(self, 1, 2, 3) };
         tmp0.dot(&Vec4::from([self.x.x, self.y.x, self.z.x, self.w.x]))

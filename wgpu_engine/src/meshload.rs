@@ -75,7 +75,7 @@ pub fn load_mesh(path: impl AsRef<Path>, gfx: &GfxContext) -> Option<Mesh> {
 
             let mk_v = |p: Vec3, u: Vec2| MeshVertex {
                 position: p.into(),
-                normal: t_normal.into(),
+                normal: t_normal,
                 uv: u.into(),
                 color: [1.0, 1.0, 1.0, 1.0],
             };

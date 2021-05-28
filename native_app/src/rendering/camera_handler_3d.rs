@@ -18,7 +18,7 @@ pub struct CameraHandler3D {
 impl CameraHandler3D {
     pub fn update(&mut self, ctx: &mut Context) {
         let proj = self.camera.build_view_projection_matrix();
-        let inv_proj = proj.invert().unwrap_or_else(|| Matrix4::from([0.0; 16]));
+        let inv_proj = proj.invert().unwrap_or_else(Matrix4::zero);
 
         ctx.gfx.set_proj(proj);
         ctx.gfx.set_inv_proj(inv_proj);
