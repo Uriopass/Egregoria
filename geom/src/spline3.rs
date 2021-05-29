@@ -147,11 +147,11 @@ impl Spline3 {
         let dot = self
             .derivative(t)
             .normalize()
-            .xy()
-            .perp_dot(self.derivative_2(t).xy())
+            .perp_up()
+            .dot(self.derivative_2(t))
             .abs()
             .sqrt();
-        (detail / dot).min(0.15)
+        (detail / dot).min(0.1)
     }
 }
 
