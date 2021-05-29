@@ -78,8 +78,8 @@ impl InspectRenderDefault<Transform> for Transform {
             ui,
             &InspectArgsDefault::default(),
         );
-        <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render(
-            &[&direction.xy()],
+        <Vec3 as InspectRenderDefault<Vec3>>::render(
+            &[&direction],
             "direction",
             ui,
             &InspectArgsDefault::default(),
@@ -97,22 +97,20 @@ impl InspectRenderDefault<Transform> for Transform {
         }
         let x = &mut data[0];
         let mut position = x.position;
-        let mut direction = x.dir.xy();
+        let mut direction = x.dir;
         let mut changed = <Vec3 as InspectRenderDefault<Vec3>>::render_mut(
             &mut [&mut position],
             "position",
             ui,
             &InspectArgsDefault::default(),
         );
-        changed |= <InspectVec2Rotation as InspectRenderDefault<Vec2>>::render_mut(
+        changed |= <Vec3 as InspectRenderDefault<Vec3>>::render_mut(
             &mut [&mut direction],
             "direction",
             ui,
             &InspectArgsDefault::default(),
         );
-        x.dir.x = direction.x;
-        x.dir.y = direction.y;
-        x.dir = x.dir.normalize();
+        x.dir = direction.normalize();
         x.position = position;
         changed
     }
