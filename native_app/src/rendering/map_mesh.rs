@@ -543,6 +543,9 @@ fn intersection_mesh(meshb: &mut MeshBuilder, inter: &Intersection, roads: &Road
             add_idx(a as u32);
             add_idx(b as u32);
             add_idx(c as u32);
+            add_idx(c as u32);
+            add_idx(b as u32);
+            add_idx(a as u32);
         });
     });
 }
