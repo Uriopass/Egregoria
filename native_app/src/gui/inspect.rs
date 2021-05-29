@@ -1,5 +1,4 @@
 use crate::gui::follow::FollowEntity;
-use crate::gui::windows::ImguiWindow;
 use crate::uiworld::UiWorld;
 use egregoria::economy::{Market, Workers};
 use egregoria::map_dynamic::{Itinerary, Router};
