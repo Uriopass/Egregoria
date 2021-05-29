@@ -220,8 +220,8 @@ pub fn angle_lerp(src: Vec2, dst: Vec2, ang_amount: f32) -> Vec2 {
 
 #[inline]
 pub fn angle_lerpxy(src: Vec3, dst: Vec3, ang_amount: f32) -> Vec3 {
-    let m = src.xy().magnitude();
-    let lerped = angle_lerp(dst.xy() / m, src.xy() / m, ang_amount);
+    let m = dst.xy().magnitude();
+    let lerped = angle_lerp(src.xy() / m, dst.xy() / m, ang_amount);
     (lerped * m).z(dst.z)
 }
 
