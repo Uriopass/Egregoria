@@ -1,16 +1,17 @@
 use crate::gui::follow::FollowEntity;
+use crate::gui::windows::ImguiWindow;
 use crate::uiworld::UiWorld;
 use egregoria::economy::{Market, Workers};
 use egregoria::map_dynamic::{Itinerary, Router};
 use egregoria::pedestrians::{Location, Pedestrian};
-use egregoria::physics::{Collider, Kinematics};
+use egregoria::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
 use egregoria::rendering::assets::AssetRender;
 use egregoria::souls::desire::{BuyFood, Home, Work};
 use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::souls::human::HumanDecision;
 use egregoria::vehicles::{Vehicle, VehicleID, VehicleState};
 use egregoria::{Egregoria, SoulID};
-use geom::Transform;
+use geom::{Transform, Vec2};
 use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
@@ -61,7 +62,6 @@ impl InspectRenderer {
         self.inspect_component::<Location>(goria, ui);
         self.inspect_component::<AssetRender>(goria, ui);
         self.inspect_component::<Kinematics>(goria, ui);
-        self.inspect_component::<Collider>(goria, ui);
         self.inspect_component::<Itinerary>(goria, ui);
         self.inspect_component::<Router>(goria, ui);
         self.inspect_component::<HumanDecision>(goria, ui);
@@ -82,6 +82,33 @@ impl InspectRenderer {
                         return;
                     }
                 }
+            }
+        }
+
+        if let Some(coll) = goria.comp::<Collider>(self.entity) {
+            if let Some((pos, po)) = goria.read::<CollisionWorld>().get(coll.0) {
+                if imgui::CollapsingHeader::new(im_str!("Physics Object")).build(ui) {
+                    <Vec2 as InspectRenderDefault<Vec2>>::render(
+                        &[&pos],
+                        "pos",
+                        ui,
+                        &InspectArgsDefault::default(),
+                    );
+                    <PhysicsObject as InspectRenderDefault<PhysicsObject>>::render(
+                        &[po],
+                        "aaaa",
+                        ui,
+                        &InspectArgsDefault {
+                            header: Some(false),
+                            indent_children: Some(false),
+                            min_value: None,
+                            max_value: None,
+                            step: None,
+                        },
+                    )
+                }
+            } else {
+                ui.text_colored([1.0, 0.0, 0.0, 1.0], "Invalid coll handle!");
             }
         }
 
