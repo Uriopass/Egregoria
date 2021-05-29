@@ -278,12 +278,12 @@ fn calc_front_dist<'a>(
     let mut flag = 0;
     // Collision avoidance
     for (his_pos, nei_physics_obj) in neighs {
-        if (nei_physics_obj.height - position.z).abs() > 2.0 {
+        if (nei_physics_obj.height - position.z).abs() > 5.0 {
             continue;
         }
         let towards_vec: Vec2 = his_pos - pos2;
         // Ignore myself and very close cars
-        if towards_vec.is_close(Vec2::ZERO, 1.0) {
+        if towards_vec.is_close(Vec2::ZERO, 1.0) && towards_vec.x > 0.0 {
             continue;
         }
 
