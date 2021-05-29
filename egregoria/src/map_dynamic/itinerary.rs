@@ -36,7 +36,7 @@ pub struct Route {
     pub cur: Traversable,
 }
 
-pub const OBJECTIVE_OK_DIST: f32 = 4.5;
+pub const OBJECTIVE_OK_DIST: f32 = 2.5;
 
 impl Itinerary {
     pub fn none() -> Self {
@@ -170,7 +170,7 @@ impl Itinerary {
     pub fn update(&mut self, position: Vec3, time: u32, map: &Map) {
         if let Some(p) = self.get_point() {
             if self.is_terminal() {
-                if position.is_close(p, 2.0) {
+                if position.is_close(p, 1.5) {
                     self.advance(map);
                 }
             } else {

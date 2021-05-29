@@ -12,14 +12,26 @@ pub mod network;
 pub mod settings;
 
 pub trait ImguiWindow: Send + Sync {
-    fn render(&mut self, window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria);
+    fn render_window(
+        &mut self,
+        window: imgui::Window,
+        ui: &Ui,
+        uiworld: &mut UiWorld,
+        goria: &Egregoria,
+    );
 }
 
 impl<F> ImguiWindow for F
 where
     F: Fn(imgui::Window, &Ui, &mut UiWorld, &Egregoria) + Send + Sync,
 {
-    fn render(&mut self, window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+    fn render_window(
+        &mut self,
+        window: imgui::Window,
+        ui: &Ui,
+        uiworld: &mut UiWorld,
+        goria: &Egregoria,
+    ) {
         self(window, ui, uiworld, goria);
     }
 }
@@ -85,7 +97,7 @@ impl ImguiWindows {
     pub fn render(&mut self, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
         for (ws, opened) in self.windows.iter_mut().zip(self.opened.iter_mut()) {
             if *opened {
-                ws.w.render(
+                ws.w.render_window(
                     imgui::Window::new(ws.name).opened(opened),
                     ui,
                     uiworld,
