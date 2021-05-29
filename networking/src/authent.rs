@@ -23,6 +23,7 @@ pub(crate) enum ClientGameState {
 
 pub(crate) struct Client {
     pub id: AuthentID,
+    #[allow(dead_code)]
     pub uid: UserID,
     pub name: String,
     pub ack: Frame,
