@@ -60,17 +60,22 @@ void main() {
     float depth = sample_depth(pos);
 
     vec2 derivative = derivative(pos, depth);
+//    vec3 normal = cross(vec3(1, 0, derivative.x), vec3(0, 1, derivative.y));
 
     float radius_depth = radius / depth;
     float occlusion = 0.0;
     for(int i=0; i < samples; i++) {
         vec3 ray = radius_depth * reflect(sample_sphere[i], random);
+/*        if (dot(ray, normal) < 0.0) {
+            ray = -ray;
+        }*/
         vec2 off = uv2s(ray.xy);
 
         float occ_depth = sample_depth(pos + ivec2(off));
         float difference = depth - occ_depth;
         float dcorrected = difference + dot(off, derivative);
         //dcorrected = dcorrected * depth;
+        //dcorrected = dcorrected - ray.z;
 
         occlusion += smoothstep(falloff, falloff * 2.0, dcorrected);
     }
