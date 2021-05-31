@@ -50,11 +50,15 @@ impl Camera {
         (1.0 + 6.0 * height.log10()).abs().max(3.0).min(30.0)
     }
 
-    pub fn offset(&self) -> Vec3 {
+    fn dir(&self) -> Vec3 {
         let v = Vec2::from_angle(self.yaw);
         let horiz = self.pitch.cos();
         let vert = self.pitch.sin();
-        (v * horiz).z(vert) * self.dist
+        (v * horiz).z(vert)
+    }
+
+    pub fn offset(&self) -> Vec3 {
+        self.dir() * self.dist
     }
 
     pub fn set_viewport(&mut self, w: f32, h: f32) {
@@ -71,7 +75,7 @@ impl Camera {
         let eye = self.eye();
         let znear = Self::znear(self.offset().z);
         let zfar = znear * 1000.0;
-        let view = look_at_rh(eye, self.pos, self.up);
+        let view = look_to_rh(eye, -self.dir(), self.up);
         let proj = PerspectiveFov::new(
             self.fovy / 180.0 * std::f32::consts::PI,
             self.aspect,
