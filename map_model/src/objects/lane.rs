@@ -247,7 +247,10 @@ impl Lane {
 
             let dir = match (x + y).try_normalize() {
                 Some(v) => {
-                    if x.perp_dot(y) < 0.0 {
+                    let d = x.perp_dot(y);
+                    if d.abs() < 0.01 {
+                        -x.perpendicular()
+                    } else if d < 0.0 {
                         -v
                     } else {
                         v

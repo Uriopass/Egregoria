@@ -223,7 +223,7 @@ impl PolyLine3 {
 
     /// Inverse of point_along
     /// proj needs to be on the polyline for the result to be accurate
-    pub fn distance_along(&self, proj: Vec3) -> f32 {
+    pub fn length_at_proj(&self, proj: Vec3) -> f32 {
         match self.n_points() {
             0 => unsafe { unreachable_unchecked() },
             1 => 0.0,
@@ -243,6 +243,15 @@ impl PolyLine3 {
                 partial
             }
         }
+    }
+
+    pub fn split(mut self, dst: f32) -> (Self, Self) {
+        let start = self.cut_start(dst);
+        let n = start.n_points();
+        *self.points.get_mut(n - 1).unwrap() = start.last();
+        self.points.drain(..n - 1);
+        self.l -= start.length();
+        (start, self)
     }
 
     // dst is distance from start to cut

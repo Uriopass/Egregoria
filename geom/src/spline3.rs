@@ -120,6 +120,8 @@ impl Spline3 {
 
     fn smart_points_t(&self, detail: f32, start: f32, end: f32) -> impl Iterator<Item = f32> + '_ {
         let detail = detail.abs();
+        assert!(start >= 0.0);
+        assert!(end <= 1.0);
 
         std::iter::once(start)
             .chain(SmartPoints3 {
@@ -144,14 +146,16 @@ impl Spline3 {
     }
 
     fn step(&self, t: f32, detail: f32) -> f32 {
-        let dot = self
-            .derivative(t)
+        let der = self.derivative(t);
+        let dot = der
             .normalize()
             .perp_up()
             .dot(self.derivative_2(t))
             .abs()
             .sqrt();
-        (detail / dot).min(0.1)
+        (detail / dot)
+            .min(1.0 / (1.0 + 0.3 * der.z))
+            .clamp(0.01, 0.1)
     }
 }
 

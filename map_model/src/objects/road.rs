@@ -36,6 +36,7 @@ pub struct Road {
     pub segment: RoadSegmentKind,
 
     // always from src to dst
+    // don't try to make points go away from the road as it would be impossible to split them correctly afterward
     pub points: PolyLine3,
     pub width: f32,
 
@@ -64,7 +65,7 @@ impl Road {
         spatial: &mut SpatialMap,
     ) -> RoadID {
         let width = lane_pattern.width();
-        let points = Self::generate_points(src, dst, segment, width);
+        let points = Self::generate_points(src, dst, segment);
 
         let id = roads.insert_with_key(|id| Self {
             id,
@@ -216,6 +217,15 @@ impl Road {
     }
 
     pub fn interfaced_points(&self) -> PolyLine3 {
+        fn ease(x: f32) -> f32 {
+            let d = 1.0 - x;
+            let dd = d * d;
+            let xx = x * x;
+            let x4 = xx * xx;
+            let xc = x4.cbrt();
+            //            x * x * (3.0 - 2.0 * x)
+            xc / (xc + (dd * dd).cbrt())
+        }
         let points = self.points();
         let mut cpoints = points.cut(self.interface_from(self.src), self.interface_from(self.dst));
         let o_beg = points.first().z;
@@ -238,7 +248,7 @@ impl Road {
         }
 
         for v in cpoints.iter_mut() {
-            v.z = ((v.z - i_beg) * o_range) / i_range + o_beg;
+            v.z = ease((v.z - i_beg) / i_range) * o_range + o_beg;
         }
         cpoints
     }
@@ -247,36 +257,29 @@ impl Road {
         src: &Intersection,
         dst: &Intersection,
         segment: RoadSegmentKind,
-        road_width: f32,
     ) -> PolyLine3 {
         let from = src.pos;
         let to = dst.pos;
         let diff = to - from;
 
-        let off = (road_width * 0.8).min(diff.magnitude() * 0.48);
-
         let spline = match segment {
+            RoadSegmentKind::Straight if diff.z.abs() > 0.5 => Spline3 {
+                from,
+                to,
+                from_derivative: (diff * 0.3).xy().z0(),
+                to_derivative: (diff * 0.3).xy().z0(),
+            },
             RoadSegmentKind::Straight => {
-                let dir = diff.normalize().xy().z0();
-                Spline3 {
-                    from: from + dir * off,
-                    to: to - dir * off,
-                    from_derivative: (diff * 0.3).xy().z0(),
-                    to_derivative: (diff * 0.3).xy().z0(),
-                }
+                return PolyLine3::new(vec![from, to]);
             }
             RoadSegmentKind::Curved((from_derivative, to_derivative)) => Spline3 {
-                from: from + from_derivative.z0().normalize() * off,
-                to: to - to_derivative.z0().normalize() * off,
+                from,
+                to,
                 from_derivative: from_derivative.z0(),
                 to_derivative: to_derivative.z0(),
             },
         };
-        let mut v = Vec::with_capacity(15);
-        v.push(from);
-        v.extend(spline.smart_points(1.0, 0.0, 1.0));
-        v.push(to);
-        PolyLine3::new(v)
+        PolyLine3::new(spline.smart_points(1.0, 0.0, 1.0).collect())
     }
 
     pub fn interface_point(&self, id: IntersectionID) -> Vec3 {

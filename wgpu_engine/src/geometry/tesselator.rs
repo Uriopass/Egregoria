@@ -374,7 +374,10 @@ impl Tesselator {
 
                 let dir = match (ae + ce).try_normalize() {
                     Some(x) => {
-                        if ae.perp_dot(ce) < 0.0 {
+                        let d = ae.perp_dot(ce);
+                        if d.abs() < 0.01 {
+                            -ae.perpendicular()
+                        } else if d < 0.0 {
                             -x
                         } else {
                             x
