@@ -217,15 +217,6 @@ impl Road {
     }
 
     pub fn interfaced_points(&self) -> PolyLine3 {
-        fn ease(x: f32) -> f32 {
-            let d = 1.0 - x;
-            let dd = d * d;
-            let xx = x * x;
-            let x4 = xx * xx;
-            let xc = x4.cbrt();
-            //            x * x * (3.0 - 2.0 * x)
-            xc / (xc + (dd * dd).cbrt())
-        }
         let points = self.points();
         let mut cpoints = points.cut(self.interface_from(self.src), self.interface_from(self.dst));
         let o_beg = points.first().z;
@@ -248,7 +239,7 @@ impl Road {
         }
 
         for v in cpoints.iter_mut() {
-            v.z = ease((v.z - i_beg) / i_range) * o_range + o_beg;
+            v.z = ((v.z - i_beg) * o_range) / i_range + o_beg;
         }
         cpoints
     }

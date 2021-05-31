@@ -172,8 +172,8 @@ pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
     let map = goria.map();
     tess.set_color(Color::RED.a(0.5));
     for (_, road) in map.roads() {
-        for (i, p) in road.points.as_slice().iter().enumerate() {
-            tess.draw_circle(p.up(0.02 + common::rand::rand(i as f32)), 0.3);
+        for (_, p) in road.points.as_slice().iter().enumerate() {
+            tess.draw_circle(p.up(0.02), 0.3);
         }
         tess.draw_polyline(
             &*road
