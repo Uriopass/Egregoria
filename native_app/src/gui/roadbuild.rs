@@ -256,7 +256,10 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
 }
 
 fn compatible(map: &Map, x: MapProject, y: MapProject) -> bool {
-    if x.pos.distance(y.pos) < 10.0 {
+    // enforce at most 18 deg angle
+    if x.pos.distance(y.pos) < 10.0
+        || (x.pos.z - y.pos.z).abs() > 0.2 * x.pos.xy().distance(y.pos.xy())
+    {
         return false;
     }
     match (x.kind, y.kind) {

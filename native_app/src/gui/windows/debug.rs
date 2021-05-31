@@ -146,7 +146,7 @@ pub fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Op
             let to = road.points.last();
             draw_spline(
                 tess,
-                &Spline3 {
+                Spline3 {
                     from: fr,
                     to,
                     from_derivative: fr_dr.z0(),
@@ -170,13 +170,16 @@ pub fn debug_lots(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Opti
 
 pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     let map = goria.map();
-    tess.set_color(Color::RED);
+    tess.set_color(Color::RED.a(0.5));
     for (_, road) in map.roads() {
+        for (i, p) in road.points.as_slice().iter().enumerate() {
+            tess.draw_circle(p.up(0.02 + common::rand::rand(i as f32)), 0.3);
+        }
         tess.draw_polyline(
             &*road
                 .points()
                 .as_slice()
-                .into_iter()
+                .iter()
                 .map(|x| x.up(0.01))
                 .collect::<Vec<_>>(),
             0.3,
@@ -191,7 +194,7 @@ pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
             &*lane
                 .points
                 .as_slice()
-                .into_iter()
+                .iter()
                 .map(|x| x.up(0.01))
                 .collect::<Vec<_>>(),
             0.3,
@@ -231,20 +234,22 @@ pub fn debug_connectivity(tess: &mut Tesselator, goria: &Egregoria, uiw: &UiWorl
     Some(())
 }
 
-fn draw_spline(tess: &mut Tesselator, sp: &Spline3) {
+fn draw_spline(tess: &mut Tesselator, mut sp: Spline3) {
+    sp.from = sp.from.up(0.3);
+    sp.to = sp.to.up(0.3);
     tess.set_color(Color::RED);
-    tess.draw_polyline(&sp.smart_points(0.1, 0.0, 1.0).collect::<Vec<_>>(), 2.0);
+    tess.draw_polyline(&sp.smart_points(0.1, 0.0, 1.0).collect::<Vec<_>>(), 1.0);
     tess.set_color(Color::GREEN);
 
-    tess.draw_stroke(sp.from, sp.from + sp.from_derivative, 1.5);
-    tess.draw_stroke(sp.to, sp.to + sp.to_derivative, 1.5);
+    tess.draw_stroke(sp.from, sp.from + sp.from_derivative, 0.75);
+    tess.draw_stroke(sp.to, sp.to - sp.to_derivative, 0.75);
 
     tess.set_color(Color::PURPLE);
-    tess.draw_circle(sp.from, 1.0);
-    tess.draw_circle(sp.to, 1.0);
+    tess.draw_circle(sp.from, 0.7);
+    tess.draw_circle(sp.to, 0.7);
 
-    tess.draw_circle(sp.from + sp.from_derivative, 1.0);
-    tess.draw_circle(sp.to + sp.to_derivative, 1.0);
+    tess.draw_circle(sp.from + sp.from_derivative, 0.7);
+    tess.draw_circle(sp.to - sp.to_derivative, 0.7);
 }
 
 fn debug_coworld(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
