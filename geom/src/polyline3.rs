@@ -114,7 +114,7 @@ impl PolyLine3 {
             .map(|&[src, dst]| Segment3 { src, dst })
     }
 
-    /// Closest point to p on the polyline
+    /// Closest point to p on the polyline using xy distance
     pub fn project(&self, p: Vec3) -> Vec3 {
         self.project_segment(p).0
     }
@@ -133,22 +133,21 @@ impl PolyLine3 {
     /// Returns the id of the point right after the projection along with the projection
     /// None if polyline is empty
     pub fn project_segment(&self, p: Vec3) -> (Vec3, usize) {
-        match self.n_points() {
-            0 => unsafe { unreachable_unchecked() },
-            1 => (self.first(), 0),
-            2 => (
-                Segment3 {
-                    src: self.points[0],
-                    dst: self.points[1],
-                }
-                .project(p),
-                1,
-            ),
+        match *self.points {
+            [] => unsafe { unreachable_unchecked() },
+            [p] => (p, 0),
+            [src, dst] => (Segment3 { src, dst }.project(p), 1),
             _ => self
                 .array_windows::<2>()
                 .enumerate()
-                .map(|(i, &[a, b])| (Segment3 { src: a, dst: b }.project(p), i + 1))
-                .min_by_key(|&(proj, _)| OrderedFloat((p - proj).magnitude2()))
+                .map(|(i, &[a, b])| {
+                    let seg = Segment3 { src: a, dst: b };
+                    (
+                        seg.src + (seg.dst - seg.src) * seg.flatten().project_t(p.xy()),
+                        i + 1,
+                    )
+                })
+                .min_by_key(|&(proj, _)| OrderedFloat((p - proj).xy().magnitude()))
                 .unwrap(), // Unwrap ok: n_points > 2
         }
     }

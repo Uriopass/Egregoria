@@ -1,4 +1,4 @@
-use crate::{Line3, Vec3};
+use crate::{Line3, Segment, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -27,6 +27,13 @@ impl Segment3 {
         } else {
             let lol = proj1 / diff.magnitude2();
             self.src + diff * lol
+        }
+    }
+
+    pub fn flatten(&self) -> Segment {
+        Segment {
+            src: self.src.xy(),
+            dst: self.dst.xy(),
         }
     }
 

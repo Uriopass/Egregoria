@@ -32,6 +32,23 @@ impl Segment {
         }
     }
 
+    pub fn project_t(&self, p: Vec2) -> f32 {
+        let diff = self.dst - self.src;
+        let diff2 = p - self.src;
+        let diff3 = p - self.dst;
+
+        let proj1 = diff2.dot(diff);
+        let proj2 = -diff3.dot(diff);
+
+        if proj1 <= 0.0 {
+            0.0
+        } else if proj2 <= 0.0 {
+            1.0
+        } else {
+            proj1 / diff.magnitude2()
+        }
+    }
+
     pub fn as_line(&self) -> Line {
         Line {
             src: self.src,
