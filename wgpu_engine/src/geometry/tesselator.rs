@@ -372,14 +372,16 @@ impl Tesselator {
                 let ae = unwrap_or!((elbow - a).xy().try_normalize(), continue);
                 let ce = unwrap_or!((elbow - c).xy().try_normalize(), continue);
 
-                let mut dir = match (ae + ce).try_normalize() {
-                    Some(x) => x,
+                let dir = match (ae + ce).try_normalize() {
+                    Some(x) => {
+                        if ae.perp_dot(ce) < 0.0 {
+                            -x
+                        } else {
+                            x
+                        }
+                    }
                     None => -ae.perpendicular(),
                 };
-
-                if ae.perp_dot(ce) < 0.0 {
-                    dir = -dir;
-                }
 
                 let mul = 1.0 + (1.0 + ae.dot(ce).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
 

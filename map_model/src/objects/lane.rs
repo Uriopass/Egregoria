@@ -245,11 +245,16 @@ impl Lane {
             let x = unwrap_contlog!((elbow - a).xy().try_normalize(), "elbow too close to a");
             let y = unwrap_contlog!((elbow - c).xy().try_normalize(), "elbow too close to c");
 
-            let mut dir = (x + y).try_normalize().unwrap_or(-x.perpendicular());
-
-            if x.perp_dot(y) < 0.0 {
-                dir = -dir;
-            }
+            let dir = match (x + y).try_normalize() {
+                Some(v) => {
+                    if x.perp_dot(y) < 0.0 {
+                        -v
+                    } else {
+                        v
+                    }
+                }
+                None => -x.perpendicular(),
+            };
 
             let mul = 1.0 + (1.0 + x.dot(y).min(0.0)) * (std::f32::consts::SQRT_2 - 1.0);
 
