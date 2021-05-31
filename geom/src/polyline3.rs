@@ -1,4 +1,4 @@
-use crate::{PolyLine, Segment3, Vec3, AABB3};
+use crate::{vec3, PolyLine, Segment3, Vec3, AABB3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::convert::TryInto;
@@ -38,6 +38,17 @@ impl PolyLine3 {
         self.points.clear();
         self.points.push(x);
         self.l = 0.0;
+    }
+
+    pub fn merge_close(&mut self, dist: f64) {
+        let mut last = vec3(f32::INFINITY, f32::INFINITY, f32::INFINITY);
+        self.points.retain(|x| {
+            let v = last.distance(*x) >= dist as f32;
+            if v {
+                last = *x;
+            }
+            v
+        })
     }
 
     pub fn extend<A, T>(&mut self, s: T)
