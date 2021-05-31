@@ -156,7 +156,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let is_valid = match (state.build_state, cur_proj.kind) {
         (Hover, Building(_)) => false,
         (Start(selected_proj), _) => {
-            compatible(map, cur_proj.kind, selected_proj.kind)
+            compatible(map, cur_proj, selected_proj)
                 && check_angle(map, selected_proj, cur_proj.pos.xy())
                 && check_angle(map, cur_proj, selected_proj.pos.xy())
         }
@@ -169,7 +169,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
                 to_derivative: (cur_proj.pos.xy() - interpoint) * std::f32::consts::FRAC_1_SQRT_2,
             };
 
-            compatible(map, cur_proj.kind, selected_proj.kind)
+            compatible(map, cur_proj, selected_proj)
                 && check_angle(map, selected_proj, interpoint)
                 && check_angle(map, cur_proj, interpoint)
                 && !sp.is_steep(state.pattern_builder.width())
@@ -255,8 +255,11 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
     }
 }
 
-fn compatible(map: &Map, x: ProjectKind, y: ProjectKind) -> bool {
-    match (x, y) {
+fn compatible(map: &Map, x: MapProject, y: MapProject) -> bool {
+    if x.pos.distance(y.pos) < 10.0 {
+        return false;
+    }
+    match (x.kind, y.kind) {
         (Ground, Ground)
         | (Ground, Road(_))
         | (Ground, Inter(_))
