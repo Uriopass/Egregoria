@@ -2,8 +2,8 @@ use crate::{
     Intersections, LaneID, LaneKind, Lanes, LightPolicy, Road, RoadID, Roads, SpatialMap,
     TraverseDirection, Turn, TurnID, TurnPolicy,
 };
-use geom::Vec3;
 use geom::{pseudo_angle, Circle};
+use geom::{Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -107,6 +107,7 @@ impl Intersection {
         });
     }
 
+    const MIN_INTERFACE: f32 = 9.0;
     // allow slicing since we remove all roads not in self.roads
     #[allow(clippy::indexing_slicing)]
     pub fn update_interface_radius(&mut self, roads: &mut Roads) {
@@ -114,12 +115,11 @@ impl Intersection {
         self.check_dead_roads(roads);
 
         for &r in &self.roads {
-            roads[r].set_interface(id, 9.0);
+            let r = &mut roads[r];
+            r.set_interface(id, Self::empty_interface(r.width));
         }
 
-        if let [ref r] = *self.roads {
-            let r = &mut roads[*r];
-            r.max_interface(id, r.width * 0.5);
+        if self.roads.len() <= 1 {
             return;
         }
 
@@ -145,6 +145,30 @@ impl Intersection {
             roads[r1_id].max_interface(id, min_dist);
             roads[r2_id].max_interface(id, min_dist);
         }
+    }
+
+    pub fn empty_interface(width: f32) -> f32 {
+        (width * 0.8).max(Self::MIN_INTERFACE)
+    }
+
+    pub fn interface_at(&self, roads: &Roads, width: f32, dir: Vec2) -> f32 {
+        let mut max_inter = Self::empty_interface(width);
+        let id = self.id;
+        for i in 0..self.roads.len() {
+            let r1_id = self.roads[i];
+            let r1 = &roads[r1_id];
+
+            let width1 = r1.width * 0.5;
+            let w = width1.hypot(width);
+            let dir1 = r1.dir_from(id);
+
+            let d = dir1.dot(dir).max(0.0).min(1.0);
+            let sin = (1.0 - d * d).sqrt();
+
+            let min_dist = w * 1.1 / sin;
+            max_inter = max_inter.max(min_dist);
+        }
+        max_inter
     }
 
     pub fn undirected_neighbors<'a>(

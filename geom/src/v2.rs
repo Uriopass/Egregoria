@@ -1,6 +1,6 @@
 use crate::{Circle, Intersect, Polygon, Shape, Vec3, AABB, OBB};
 use serde::{Deserialize, Serialize};
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
@@ -13,7 +13,17 @@ pub struct Vec2 {
 
 impl Debug for Vec2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("Vec2({},{})", self.x, self.y))
+        f.write_str("Vec2(")?;
+        std::fmt::Display::fmt(&self.x, f)?;
+        f.write_str(", ")?;
+        std::fmt::Display::fmt(&self.y, f)?;
+        f.write_str(")")
+    }
+}
+
+impl Display for Vec2 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(self, f)
     }
 }
 

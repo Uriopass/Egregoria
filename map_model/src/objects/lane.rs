@@ -145,13 +145,14 @@ impl LanePatternBuilder {
 
     pub fn width(self) -> f32 {
         let mut w = 0.0;
+        let wayf = if self.one_way { 1.0 } else { 2.0 };
         if self.sidewalks {
             w += LaneKind::Walking.width() * 2.0;
         }
         if self.parking {
-            w += LaneKind::Parking.width() * 2.0;
+            w += LaneKind::Parking.width() * wayf;
         }
-        w += self.n_lanes as f32 * 2.0 * LaneKind::Driving.width();
+        w += self.n_lanes as f32 * wayf * LaneKind::Driving.width();
         w + 0.5
     }
 

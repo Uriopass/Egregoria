@@ -5,9 +5,9 @@ use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::Egregoria;
-use geom::{vec2, Spline3, Vec2, Vec3, AABB};
+use geom::{vec2, PolyLine3, Spline3, Vec2, AABB};
 use geom::{Camera, Spline};
-use map_model::{LanePatternBuilder, Map, MapProject, ProjectKind};
+use map_model::{Intersection, LanePatternBuilder, Map, MapProject, ProjectKind, PylonPosition};
 use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};
 
@@ -52,7 +52,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     let unproj = unwrap_ret!(mouseinfo.unprojected);
-    let grid_size = 30.0;
+    let grid_size = 15.0;
     let mousepos = if state.snap_to_grid {
         let v = unproj.xy().snap(grid_size, grid_size);
         v.z(unwrap_ret!(map.terrain.height(v)) + 0.3 + state.height_offset)
@@ -66,7 +66,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     if state.snap_to_grid && log_camheight < cutoff {
         let alpha = 1.0 - log_camheight / cutoff;
         let col = common::config().gui_primary.a(alpha);
-        let screen = AABB::new(cam.pos.xy(), cam.pos.xy()).expand(300.0);
+        let screen = AABB::new(unproj.xy(), unproj.xy()).expand(300.0);
         let startx = (screen.ll.x / grid_size).ceil() * grid_size;
         let starty = (screen.ll.y / grid_size).ceil() * grid_size;
 
@@ -177,7 +177,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         _ => true,
     };
 
-    state.update_drawing(immdraw, cur_proj.pos, patwidth, is_valid);
+    state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid);
 
     if is_valid && mouseinfo.just_pressed.contains(&MouseButton::Left) {
         log::info!(
@@ -281,11 +281,13 @@ fn compatible(map: &Map, x: MapProject, y: MapProject) -> bool {
 impl RoadBuildResource {
     pub fn update_drawing(
         &self,
+        map: &Map,
         immdraw: &mut ImmediateDraw,
-        mut proj_pos: Vec3,
+        proj: MapProject,
         patwidth: f32,
         is_valid: bool,
     ) {
+        let mut proj_pos = proj.pos;
         proj_pos.z += 0.1;
         let col = if is_valid {
             common::config().gui_primary
@@ -293,14 +295,30 @@ impl RoadBuildResource {
             common::config().gui_danger
         };
 
-        match self.build_state {
+        let interf = |ang: Vec2, proj: MapProject| match proj.kind {
+            Inter(i) => map
+                .intersections()
+                .get(i)
+                .map(|i| i.interface_at(map.roads(), patwidth, ang))
+                .unwrap_or_default(),
+            Road(_) => Intersection::empty_interface(patwidth),
+            Building(_) => 0.0,
+            ProjectKind::Lot(_) => 0.0,
+            Ground => Intersection::empty_interface(patwidth),
+        };
+
+        let p = match self.build_state {
             BuildState::Hover => {
                 immdraw.circle(proj_pos, patwidth * 0.5).color(col);
+                return;
             }
             BuildState::Start(x) => {
                 immdraw.circle(proj_pos, patwidth * 0.5).color(col);
                 immdraw.circle(x.pos.up(0.1), patwidth * 0.5).color(col);
                 immdraw.line(proj_pos, x.pos.up(0.1), patwidth).color(col);
+                let istart = interf((proj_pos - x.pos).xy().normalize(), x);
+                let iend = interf(-(proj_pos - x.pos).xy().normalize(), proj);
+                PolyLine3::new(vec![proj_pos, x.pos.up(0.1)]).cut(istart, iend)
             }
             BuildState::Interpolation(p, x) => {
                 let sp = Spline3 {
@@ -311,11 +329,27 @@ impl RoadBuildResource {
                 };
                 let points: Vec<_> = sp.smart_points(1.0, 0.0, 1.0).collect();
 
-                immdraw.polyline(points, patwidth).color(col);
+                immdraw.polyline(&*points, patwidth).color(col);
 
                 immdraw.circle(sp.get(0.0), patwidth * 0.5).color(col);
                 immdraw.circle(sp.get(1.0), patwidth * 0.5).color(col);
+
+                let istart = interf((p - x.pos.xy()).normalize(), x);
+                let iend = interf(-(proj_pos.xy() - p).normalize(), proj);
+
+                PolyLine3::new(points).cut(istart, iend)
             }
+        };
+
+        for PylonPosition {
+            terrain_height,
+            pos,
+            ..
+        } in map_model::Road::pylons_positions(&p, &map.terrain)
+        {
+            immdraw
+                .circle(pos.xy().z(terrain_height + 0.1), patwidth * 0.5)
+                .color(col);
         }
     }
 }

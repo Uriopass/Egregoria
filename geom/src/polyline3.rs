@@ -189,7 +189,7 @@ impl PolyLine3 {
         self.points_dirs_along(
             (0..=n_step)
                 .map(move |i| i as f32 * step)
-                .chain(std::iter::once(l)),
+                .chain(std::iter::once(l - 0.01)),
         )
     }
 
@@ -255,6 +255,9 @@ impl PolyLine3 {
 
     // dst is distance from start to cut
     pub fn cut_start(&self, mut dst: f32) -> Self {
+        if dst == 0.0 {
+            return self.clone();
+        }
         match *self.points {
             [] => unsafe { unreachable_unchecked() },
             [x] => Self::new(vec![x]),
@@ -304,7 +307,11 @@ impl PolyLine3 {
             0 => unsafe { unreachable_unchecked() },
             1 => self.clone(),
             2 => {
-                let n = self.first_dir().unwrap();
+                let n = match self.first_dir() {
+                    Some(x) => x,
+                    None => return self.clone(),
+                };
+
                 Self::new(vec![
                     self.first() + n * dst_from_start,
                     self.last() - n * dst_from_end,
@@ -401,7 +408,7 @@ impl<'a> PointsAlongs<'a> {
     pub fn next(&mut self, d: f32) -> Option<(Vec3, Vec3)> {
         while d > self.partial + self.dist {
             let w = self.windows.next()?;
-            let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((Vec3::X, 0.0));
+            let (dir, dist) = (w[1] - w[0]).dir_dist().unwrap_or((Vec3::X, 0.01));
             self.partial += self.dist;
             self.dir = dir; // no structural assignment :(
             self.dist = dist;

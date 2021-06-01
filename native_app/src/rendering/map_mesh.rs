@@ -3,7 +3,8 @@ use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
 use geom::{vec2, LinearColor, Polygon, Spline, Vec2, Vec3};
 use map_model::{
-    BuildingKind, Intersection, LaneKind, LotKind, Map, Road, Roads, TurnKind, CROSSWALK_WIDTH,
+    BuildingKind, Intersection, LaneKind, LotKind, Map, PylonPosition, Road, Roads, Terrain,
+    TurnKind, CROSSWALK_WIDTH,
 };
 use std::ops::{Mul, Neg};
 use std::sync::Arc;
@@ -155,7 +156,7 @@ impl MapBuilders {
                         .point_dir_along(l * (1.0 + i as f32) / (1.0 + n_arrows as f32));
 
                     self.arrow_builder.push(
-                        mid.up(0.01),
+                        mid.up(0.03),
                         dir,
                         LinearColor::gray(0.3 + fade * 0.1),
                         (2.0, 2.0),
@@ -321,9 +322,12 @@ impl MapBuilders {
         let lanes = map.lanes();
         let roads = map.roads();
         let lots = map.lots();
+        let terrain = &map.terrain;
 
         for road in roads.values() {
             let cut = road.interfaced_points();
+
+            pylons(&mut tess.meshbuilder, terrain, road);
 
             tess.normal.z = -1.0;
             tess.draw_polyline_full(
@@ -468,6 +472,82 @@ impl Drawable for MapMeshes {
         if let Some(ref crosswalks) = self.crosswalks {
             deferdepth!(crosswalks);
         }
+    }
+}
+
+fn pylons(mut meshb: &mut MeshBuilder, terrain: &Terrain, road: &Road) {
+    let color = LinearColor::from(common::config().road_pylon_col);
+    let color: [f32; 4] = color.into();
+    let w = road.width * 0.5;
+    for PylonPosition {
+        terrain_height: h,
+        pos: p,
+        dir,
+    } in Road::pylons_positions(road.interfaced_points(), terrain)
+    {
+        let up = p.up(-0.2);
+        let down = p.xy().z(h);
+        let dirp = dir.perp_up();
+        let d2 = dir.xy().z0();
+        let d2p = d2.perp_up();
+        let d2 = d2 * w * 0.5;
+        let d2p = d2p * w * 0.5;
+        let dir = dir * w * 0.5;
+        let dirp = dirp * w * 0.5;
+        // down rect
+        // 2 --- 1 -> dir
+        // |     |
+        // |     |
+        // 3-----0
+        // | dirp
+        // v
+
+        // up rect
+        // 6 --- 5
+        // |     |
+        // |     |
+        // 7-----4
+        let verts = [
+            down + d2 + d2p, // 0
+            down + d2 - d2p, // 1
+            down - d2 - d2p, // 2
+            down - d2 + d2p, // 3
+            up + dir + dirp, // 4
+            up + dir - dirp, // 5
+            up - dir - dirp, // 6
+            up - dir + dirp, // 7
+        ];
+
+        let mr = &mut meshb;
+        let mut quad = move |a, b, c, d, nor| {
+            mr.extend_with(move |vertices, add_idx| {
+                let mut pvert = move |p: Vec3, normal: Vec3| {
+                    vertices.push(MeshVertex {
+                        position: p.into(),
+                        normal,
+                        uv: [0.0; 2],
+                        color,
+                    })
+                };
+
+                pvert(verts[a], nor);
+                pvert(verts[b], nor);
+                pvert(verts[c], nor);
+                pvert(verts[d], nor);
+
+                add_idx(0);
+                add_idx(1);
+                add_idx(2);
+
+                add_idx(1);
+                add_idx(3);
+                add_idx(2);
+            });
+        };
+        quad(0, 1, 4, 5, d2);
+        quad(1, 2, 5, 6, -d2p);
+        quad(2, 3, 6, 7, -d2);
+        quad(3, 0, 7, 4, d2p);
     }
 }
 

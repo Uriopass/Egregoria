@@ -1,6 +1,6 @@
 use crate::{
     Intersection, IntersectionID, Lane, LaneDirection, LaneID, LaneKind, LanePattern, Lanes,
-    ParkingSpots, Roads, SpatialMap,
+    ParkingSpots, Roads, SpatialMap, Terrain,
 };
 use geom::Spline3;
 use geom::{BoldLine, PolyLine3};
@@ -51,6 +51,12 @@ pub struct Road {
 pub struct LanePair {
     pub incoming: Option<LaneID>,
     pub outgoing: Option<LaneID>,
+}
+
+pub struct PylonPosition {
+    pub terrain_height: f32,
+    pub pos: Vec3,
+    pub dir: Vec3,
 }
 
 impl Road {
@@ -213,6 +219,25 @@ impl Road {
                 })
                 .collect(),
         }
+    }
+
+    pub fn pylons_positions<'a>(
+        interfaced_points: &'a PolyLine3,
+        terrain: &'a Terrain,
+    ) -> impl Iterator<Item = PylonPosition> + 'a {
+        interfaced_points
+            .equipoints_dir(80.0)
+            .filter_map(move |(pos, dir)| {
+                let h = terrain.height(pos.xy())?;
+                if (h - pos.z).abs() <= 2.0 {
+                    return None;
+                }
+                Some(PylonPosition {
+                    terrain_height: h,
+                    pos,
+                    dir,
+                })
+            })
     }
 
     pub fn points(&self) -> &PolyLine3 {
