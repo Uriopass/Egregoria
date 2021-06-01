@@ -1,4 +1,4 @@
-use crate::{Line3, Segment, Vec2, Vec3};
+use crate::{Line3, Segment, Vec3};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
