@@ -38,6 +38,7 @@ pub struct Road {
     // always from src to dst
     // don't try to make points go away from the road as it would be impossible to split them correctly afterward
     pub points: PolyLine3,
+    pub interfaced_points: PolyLine3,
     pub width: f32,
 
     src_interface: f32,
@@ -77,6 +78,7 @@ impl Road {
             width,
             lanes_forward: vec![],
             lanes_backward: vec![],
+            interfaced_points: PolyLine3::new(vec![points.first()]),
             points,
         });
         #[allow(clippy::indexing_slicing)]
@@ -160,7 +162,8 @@ impl Road {
         }
     }
 
-    pub fn update_lanes(&self, lanes: &mut Lanes, parking: &mut ParkingSpots) {
+    pub fn update_lanes(&mut self, lanes: &mut Lanes, parking: &mut ParkingSpots) {
+        self.update_interfaced_points();
         for (id, _) in self.lanes_iter() {
             let l = unwrap_contlog!(lanes.get_mut(id), "lane in road does not exist anymore");
             l.gen_pos(self);
@@ -215,10 +218,16 @@ impl Road {
     pub fn points(&self) -> &PolyLine3 {
         &self.points
     }
+    pub fn interfaced_points(&self) -> &PolyLine3 {
+        &self.interfaced_points
+    }
 
-    pub fn interfaced_points(&self) -> PolyLine3 {
-        let points = self.points();
-        let mut cpoints = points.cut(self.interface_from(self.src), self.interface_from(self.dst));
+    fn update_interfaced_points(&mut self) {
+        let points = &self.points;
+        self.interfaced_points =
+            points.cut(self.interface_from(self.src), self.interface_from(self.dst));
+
+        let cpoints = &mut self.interfaced_points;
         let o_beg = points.first().z;
         let o_end = points.last().z;
         let i_beg = cpoints.first().z;
@@ -228,20 +237,19 @@ impl Road {
 
         if i_range.abs() < 0.01 {
             if cpoints.n_points() == 1 {
-                return cpoints;
+                return;
             }
 
             let n = cpoints.n_points() as f32 - 1.0;
             for (i, v) in cpoints.iter_mut().enumerate() {
                 v.z = o_beg + (i as f32) * o_range / n;
             }
-            return cpoints;
+            return;
         }
 
         for v in cpoints.iter_mut() {
             v.z = ((v.z - i_beg) * o_range) / i_range + o_beg;
         }
-        cpoints
     }
 
     fn generate_points(

@@ -5,7 +5,7 @@ use geom::{vec2, LinearColor, Polygon, Spline, Vec2, Vec3};
 use map_model::{
     BuildingKind, Intersection, LaneKind, LotKind, Map, Road, Roads, TurnKind, CROSSWALK_WIDTH,
 };
-use std::ops::Mul;
+use std::ops::{Mul, Neg};
 use std::sync::Arc;
 use wgpu_engine::earcut::earcut;
 use wgpu_engine::meshload::load_mesh;
@@ -491,24 +491,36 @@ fn intersection_mesh(meshb: &mut MeshBuilder, inter: &Intersection, roads: &Road
         #[allow(clippy::indexing_slicing)]
         let next_road = &roads[inter.roads[(i + 1) % inter.roads.len()]];
 
-        let mut fp = road.interfaced_points();
+        let ip = road.interfaced_points();
 
+        let firstp;
+        let firstdir;
         if road.dst == inter.id {
-            fp.reverse();
+            firstp = ip.last();
+            firstdir = ip.last_dir().map(Vec3::neg);
+        } else {
+            firstp = ip.first();
+            firstdir = ip.first_dir();
         }
 
-        let src_orient = unwrap_cont!(fp.first_dir()).xy();
+        let src_orient = unwrap_cont!(firstdir).xy();
 
-        let left = fp.first().xy() - src_orient.perpendicular() * getw(road);
+        let left = firstp.xy() - src_orient.perpendicular() * getw(road);
 
-        let mut fp = next_road.interfaced_points();
+        let ip = next_road.interfaced_points();
 
+        let firstp;
+        let firstdir;
         if next_road.dst == inter.id {
-            fp.reverse();
+            firstp = ip.last();
+            firstdir = ip.last_dir().map(Vec3::neg);
+        } else {
+            firstp = ip.first();
+            firstdir = ip.first_dir();
         }
 
-        let dst_orient = unwrap_cont!(fp.first_dir()).xy();
-        let next_right = fp.first().xy() + dst_orient.perpendicular() * getw(next_road);
+        let dst_orient = unwrap_cont!(firstdir).xy();
+        let next_right = firstp.xy() + dst_orient.perpendicular() * getw(next_road);
 
         let ang = (-src_orient).angle(dst_orient);
 
