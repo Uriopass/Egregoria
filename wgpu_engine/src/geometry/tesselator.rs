@@ -232,6 +232,15 @@ impl Tesselator {
     }
 
     pub fn draw_stroke(&mut self, p1: Vec3, p2: Vec3, thickness: f32) -> bool {
+        let perp = (p2 - p1)
+            .xy()
+            .perpendicular()
+            .try_normalize()
+            .unwrap_or(Vec2::X);
+        self.draw_stroke_full(p1, p2, perp, thickness)
+    }
+
+    pub fn draw_stroke_full(&mut self, p1: Vec3, p2: Vec3, dir: Vec2, thickness: f32) -> bool {
         if let Some(x) = self.cull_rect {
             if !x
                 .expand(thickness * 0.5)
@@ -241,15 +250,8 @@ impl Tesselator {
             }
         }
 
-        let diff = p2 - p1;
-        let dist = diff.magnitude();
-        if dist < 1e-5 {
-            return false;
-        }
-        let ratio = (thickness * 0.5) / dist;
-        let perp: Vec3 = ratio * diff.perp_up();
-
-        let points: [Vec3; 4] = [p1 - perp, p1 + perp, p2 + perp, p2 - perp];
+        let dir = (thickness * 0.5) * dir.z0();
+        let points: [Vec3; 4] = [p1 - dir, p1 + dir, p2 + dir, p2 - dir];
 
         let color: [f32; 4] = self.color.into();
 
@@ -319,7 +321,12 @@ impl Tesselator {
                 .try_normalize()
                 .unwrap_or_default()
                 .perp_up();
-            return self.draw_stroke(first + dir * offset, second + dir * offset, thickness);
+            return self.draw_stroke_full(
+                first + dir * offset,
+                second + dir * offset,
+                first_dir.perpendicular(),
+                thickness,
+            );
         }
         if let Some(cull_rect) = self.cull_rect {
             let window_intersects = |(a, b): (Vec3, Vec3)| {

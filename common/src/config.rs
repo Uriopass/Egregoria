@@ -32,6 +32,7 @@ pub struct Config {
     pub road_mid_col: Color,
     pub road_hig_col: Color,
     pub road_line_col: Color,
+    pub road_pylon_col: Color,
 
     pub lot_unassigned_col: Color,
     pub lot_residential_col: Color,

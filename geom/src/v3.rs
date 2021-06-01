@@ -1,5 +1,6 @@
 use crate::{vec2, vec4, Vec2, Vec4};
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
 pub type V3 = Vec3;
@@ -13,6 +14,18 @@ pub struct Vec3 {
 }
 
 impl Eq for Vec3 {}
+
+impl Display for Vec3 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("V3(")?;
+        self.x.fmt(f)?;
+        f.write_str(", ")?;
+        self.y.fmt(f)?;
+        f.write_str(", ")?;
+        self.z.fmt(f)?;
+        f.write_str(")")
+    }
+}
 
 #[inline]
 pub const fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
