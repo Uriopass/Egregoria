@@ -93,7 +93,7 @@ impl Camera {
             dir.y = 0.01;
         }
 
-        let d = self.dist;
+        let d = self.dist * 1.3;
 
         let base = self.pos;
         let suneye = base + dir;
