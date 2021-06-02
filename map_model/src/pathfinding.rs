@@ -1,4 +1,6 @@
-use crate::{LaneID, LaneKind, Map, Traversable, TraverseDirection, TraverseKind, TurnID};
+use crate::{
+    LaneID, LaneKind, LanePatternBuilder, Map, Traversable, TraverseDirection, TraverseKind, TurnID,
+};
 use geom::{PolyLine3, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -134,13 +136,15 @@ impl Pathfinder for CarPath {
 
         let dummy = LaneID::null();
 
+        const HEURISTIC_SPEED: f32 = LanePatternBuilder::new().speed_limit;
+
         let heuristic = |&p: &LaneID| {
             let pos = unwrap_ret!(
                 inters.get(unwrap_ret!(lanes.get(p), OrderedFloat(f32::INFINITY)).dst),
                 OrderedFloat(f32::INFINITY)
             )
             .pos;
-            OrderedFloat(pos.distance(end_pos) * 1.2) // Inexact but (much) faster
+            OrderedFloat(pos.distance(end_pos) * 1.2 / HEURISTIC_SPEED) // Inexact but (much) faster
         };
 
         let successors = |&p: &LaneID| {
@@ -156,15 +160,11 @@ impl Pathfinder for CarPath {
                 .into_iter()
                 .flat_map(move |inter| {
                     inter.turns_from(p).map(move |(x, _)| {
-                        (
-                            x.dst,
-                            OrderedFloat(
-                                lanes
-                                    .get(x.dst)
-                                    .map(|p| p.points.length())
-                                    .unwrap_or(f32::INFINITY),
-                            ),
-                        )
+                        let cost = lanes
+                            .get(x.dst)
+                            .map(|p| p.points.length() / p.speed_limit)
+                            .unwrap_or(f32::INFINITY);
+                        (x.dst, OrderedFloat(cost))
                     })
                 })
         };
