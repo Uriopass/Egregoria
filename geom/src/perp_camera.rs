@@ -28,7 +28,7 @@ pub struct Camera {
     pub viewport_h: f32,
     up: Vec3,
     aspect: f32,
-    fovy: f32,
+    pub fovy: f32,
 }
 
 impl Camera {
@@ -58,7 +58,7 @@ impl Camera {
     }
 
     pub fn offset(&self) -> Vec3 {
-        self.dir() * self.dist
+        self.dir() * self.dist / (self.fovy / 180.0 * std::f32::consts::PI).sin()
     }
 
     pub fn set_viewport(&mut self, w: f32, h: f32) {
@@ -93,9 +93,9 @@ impl Camera {
             dir.y = 0.01;
         }
 
-        let d = self.dist * 1.3;
+        let d = self.dist;
 
-        let base = self.pos - self.offset().xy().z0() * 0.6;
+        let base = self.pos;
         let suneye = base + dir;
 
         let view = look_at_rh(suneye, base, self.up);
@@ -213,8 +213,8 @@ impl PerspectiveFov {
             self.fovy_angle
         );
         assert!(
-            self.fovy_angle < 1.57,
-            "The vertical field of view cannot be greater than a half turn, found: {:?}",
+            self.fovy_angle < std::f32::consts::PI,
+            "The vertical field of view cannot be greater than a turn, found: {:?}",
             self.fovy_angle
         );
         assert!(

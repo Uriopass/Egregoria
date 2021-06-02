@@ -210,6 +210,8 @@ impl CameraHandler3D {
             self.camera.dist = self.targetdist;
         }
 
+        self.camera.fovy = settings.camera_fov.clamp(1.0, 179.0);
+
         self.camera.pos.z = height(self.camera.pos.xy())
             .unwrap_or(self.camera.pos.z)
             .max(height(self.camera.offset().xy()).unwrap_or_default());
