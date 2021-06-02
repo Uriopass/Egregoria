@@ -30,7 +30,7 @@ pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Option<Enti
         p,
         Itinerary::none(),
         Kinematics::default(),
-        Selectable::new(0.5),
+        Selectable::new(3.0),
     ));
 
     goria.write::<BuildingInfos>().get_in(house, SoulID(e));
