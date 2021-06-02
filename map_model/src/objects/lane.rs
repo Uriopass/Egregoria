@@ -103,6 +103,12 @@ pub struct LanePatternBuilder {
 
 impl Default for LanePatternBuilder {
     fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl LanePatternBuilder {
+    pub const fn new() -> Self {
         LanePatternBuilder {
             n_lanes: 1,
             speed_limit: 9.0,
@@ -110,12 +116,6 @@ impl Default for LanePatternBuilder {
             parking: true,
             one_way: false,
         }
-    }
-}
-
-impl LanePatternBuilder {
-    pub fn new() -> Self {
-        Default::default()
     }
 
     pub fn n_lanes(&mut self, n_lanes: u32) -> &mut Self {
