@@ -36,7 +36,7 @@ pub struct Route {
     pub cur: Traversable,
 }
 
-pub const OBJECTIVE_OK_DIST: f32 = 2.5;
+pub const OBJECTIVE_OK_DIST: f32 = 3.0;
 
 impl Itinerary {
     pub fn none() -> Self {

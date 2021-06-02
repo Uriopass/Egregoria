@@ -225,21 +225,21 @@ impl Gui {
                     }
 
                     if ui.button(im_str!("Avenue"), [rbw, 30.0]) {
-                        *pat = *LanePatternBuilder::new().n_lanes(2).speed_limit(16.0);
+                        *pat = *LanePatternBuilder::new().n_lanes(2).speed_limit(13.0);
                     }
 
                     if ui.button(im_str!("Avenue one-way"), [rbw, 30.0]) {
                         *pat = *LanePatternBuilder::new()
                             .n_lanes(2)
                             .one_way(true)
-                            .speed_limit(16.0);
+                            .speed_limit(13.0);
                     }
 
                     if ui.button(im_str!("Drive"), [rbw, 30.0]) {
                         *pat = *LanePatternBuilder::new()
                             .parking(false)
                             .sidewalks(false)
-                            .speed_limit(16.0);
+                            .speed_limit(13.0);
                     }
 
                     if ui.button(im_str!("Drive one-way"), [rbw, 30.0]) {
@@ -247,13 +247,13 @@ impl Gui {
                             .parking(false)
                             .sidewalks(false)
                             .one_way(true)
-                            .speed_limit(16.0);
+                            .speed_limit(13.0);
                     }
 
                     if ui.button(im_str!("Highway"), [rbw, 30.0]) {
                         *pat = *LanePatternBuilder::new()
                             .n_lanes(3)
-                            .speed_limit(30.0)
+                            .speed_limit(25.0)
                             .parking(false)
                             .sidewalks(false);
                     }
@@ -261,7 +261,7 @@ impl Gui {
                     if ui.button(im_str!("Highway one-way"), [rbw, 30.0]) {
                         *pat = *LanePatternBuilder::new()
                             .n_lanes(3)
-                            .speed_limit(30.0)
+                            .speed_limit(25.0)
                             .parking(false)
                             .sidewalks(false)
                             .one_way(true);

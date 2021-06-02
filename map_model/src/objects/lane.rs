@@ -105,7 +105,7 @@ impl Default for LanePatternBuilder {
     fn default() -> Self {
         LanePatternBuilder {
             n_lanes: 1,
-            speed_limit: 12.0,
+            speed_limit: 9.0,
             sidewalks: true,
             parking: true,
             one_way: false,
