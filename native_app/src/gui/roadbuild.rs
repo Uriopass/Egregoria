@@ -318,7 +318,7 @@ impl RoadBuildResource {
                 immdraw.line(proj_pos, x.pos.up(0.1), patwidth).color(col);
                 let istart = interf((proj_pos - x.pos).xy().normalize(), x);
                 let iend = interf(-(proj_pos - x.pos).xy().normalize(), proj);
-                PolyLine3::new(vec![proj_pos, x.pos.up(0.1)]).cut(istart, iend)
+                PolyLine3::new(vec![x.pos.up(0.1), proj_pos]).cut(istart, iend)
             }
             BuildState::Interpolation(p, x) => {
                 let sp = Spline3 {

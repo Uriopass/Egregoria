@@ -181,15 +181,15 @@ impl PolyLine3 {
         self.points_dirs_along(std::iter::once(l)).next().unwrap() // Unwrap ok: std::iter::once
     }
 
-    pub fn equipoints_dir(&self, d: f32) -> impl Iterator<Item = (Vec3, Vec3)> + '_ {
+    pub fn equipoints_dir(&self, d: f32, nolimit: bool) -> impl Iterator<Item = (Vec3, Vec3)> + '_ {
         let l = self.length();
         let n_step = (l / d) as i32;
         let step = l / (n_step as f32 + 1.0);
 
         self.points_dirs_along(
-            (0..=n_step)
+            (nolimit as i32..n_step.min(1000) + 1)
                 .map(move |i| i as f32 * step)
-                .chain(std::iter::once(l - 0.01)),
+                .chain((!nolimit).then(|| l - 0.01)),
         )
     }
 
