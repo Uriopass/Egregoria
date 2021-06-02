@@ -24,8 +24,12 @@ pub fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
 
         if let Some((pos, selectable)) = pos.zip(goria.comp::<Selectable>(sel)) {
-            draw.stroke_circle(pos, selectable.radius, (selectable.radius * 0.01).max(0.1))
-                .color(Color::gray(0.7));
+            draw.stroke_circle(
+                pos.up(0.25),
+                selectable.radius,
+                (selectable.radius * 0.01).max(0.1),
+            )
+            .color(Color::gray(0.7));
         }
     }
 }
