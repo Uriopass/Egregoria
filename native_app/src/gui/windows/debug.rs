@@ -352,17 +352,27 @@ pub fn debug_pathfinder(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWo
     let itinerary = goria.comp::<Itinerary>(selected)?;
 
     tess.set_color(LinearColor::GREEN);
-    tess.draw_polyline(itinerary.local_path(), 1.0);
+    tess.draw_polyline(
+        &*itinerary
+            .local_path()
+            .iter()
+            .map(|x| x.up(0.15))
+            .collect::<Vec<_>>(),
+        1.0,
+    );
 
     if let Some(p) = itinerary.get_point() {
-        tess.draw_stroke(p, pos, 1.0);
+        tess.draw_stroke(p.up(0.18), pos.up(0.18), 1.0);
     }
 
     if let egregoria::map_dynamic::ItineraryKind::Route(r, _) = itinerary.kind() {
         tess.set_color(LinearColor::RED);
         for l in &r.reversed_route {
             if let Some(l) = l.raw_points(map) {
-                tess.draw_polyline(l.as_slice(), 3.0);
+                tess.draw_polyline(
+                    &*l.as_slice().iter().map(|x| x.up(0.1)).collect::<Vec<_>>(),
+                    3.0,
+                );
             }
         }
         tess.set_color(if itinerary.has_ended(0.0) {
@@ -371,7 +381,7 @@ pub fn debug_pathfinder(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWo
             LinearColor::MAGENTA
         });
 
-        tess.draw_circle(r.end_pos, 1.0);
+        tess.draw_circle(r.end_pos.up(0.2), 1.0);
     }
     Some(())
 }
