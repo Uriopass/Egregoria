@@ -10,7 +10,7 @@ edition = "2018"
 # I'll prune some of them when I feel it's worth it.
 
 [dependencies]
-ordered-float = { version = "2.0", features = ["serde"] }
+ordered-float = { version = "2.5.1", default-features = false }
 rand          = { version = "0.8", default-features = false}
 rand_distr    = { version = "0.4", default-features = false }
 serde         = "1.0"

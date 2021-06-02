@@ -154,9 +154,8 @@ impl Intersection {
     pub fn interface_at(&self, roads: &Roads, width: f32, dir: Vec2) -> f32 {
         let mut max_inter = Self::empty_interface(width);
         let id = self.id;
-        for i in 0..self.roads.len() {
-            let r1_id = self.roads[i];
-            let r1 = &roads[r1_id];
+        for &r1_id in &self.roads {
+            let r1 = unwrap_cont!(roads.get(r1_id));
 
             let width1 = r1.width * 0.5;
             let w = width1.hypot(width);

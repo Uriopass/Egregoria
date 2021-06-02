@@ -226,7 +226,7 @@ impl Road {
         terrain: &'a Terrain,
     ) -> impl Iterator<Item = PylonPosition> + 'a {
         interfaced_points
-            .equipoints_dir(80.0)
+            .equipoints_dir(80.0, true)
             .filter_map(move |(pos, dir)| {
                 let h = terrain.height(pos.xy())?;
                 if (h - pos.z).abs() <= 2.0 {

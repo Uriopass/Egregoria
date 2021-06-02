@@ -211,6 +211,7 @@ impl Gui {
                     let tok = ui.push_item_width(50.0);
                     imgui::Drag::new(im_str!("height off"))
                         .range(0.0..=100.0)
+                        .speed(1.0)
                         .display_format(im_str!("%.0f"))
                         .build(ui, &mut roadbuild.height_offset);
                     tok.pop(ui);

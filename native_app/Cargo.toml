@@ -26,7 +26,7 @@ log           = { version = "0.4.11", features=["max_level_debug", "release_max_
 inline_tweak  = "1.0.6"
 imgui         = "0.7"
 legion        = { version = "0.4.0", default-features = false, features = ["codegen", "serialize"] }
-ordered-float = "2.0.0"
+ordered-float = { version = "2.5.1", default-features = false }
 serde         = "1.0"
 rodio         = { version = "0.13.0", default-features = false, features = ["vorbis"] }
 slotmap       = { version = "1.0.2", default-features = false }

@@ -327,7 +327,7 @@ impl MapBuilders {
         for road in roads.values() {
             let cut = road.interfaced_points();
 
-            pylons(&mut tess.meshbuilder, terrain, road);
+            road_pylons(&mut tess.meshbuilder, terrain, road);
 
             tess.normal.z = -1.0;
             tess.draw_polyline_full(
@@ -381,6 +381,7 @@ impl MapBuilders {
                 continue;
             }
 
+            inter_pylon(&mut tess.meshbuilder, terrain, inter, roads);
             intersection_mesh(&mut tess.meshbuilder, inter, roads);
 
             // Walking corners
@@ -475,80 +476,118 @@ impl Drawable for MapMeshes {
     }
 }
 
-fn pylons(mut meshb: &mut MeshBuilder, terrain: &Terrain, road: &Road) {
+fn add_polyon(
+    mut meshb: &mut MeshBuilder,
+    w: f32,
+    PylonPosition {
+        terrain_height,
+        pos,
+        dir,
+    }: PylonPosition,
+) {
     let color = LinearColor::from(common::config().road_pylon_col);
     let color: [f32; 4] = color.into();
-    let w = road.width * 0.5;
-    for PylonPosition {
-        terrain_height: h,
-        pos: p,
-        dir,
-    } in Road::pylons_positions(road.interfaced_points(), terrain)
-    {
-        let up = p.up(-0.2);
-        let down = p.xy().z(h);
-        let dirp = dir.perp_up();
-        let d2 = dir.xy().z0();
-        let d2p = d2.perp_up();
-        let d2 = d2 * w * 0.5;
-        let d2p = d2p * w * 0.5;
-        let dir = dir * w * 0.5;
-        let dirp = dirp * w * 0.5;
-        // down rect
-        // 2 --- 1 -> dir
-        // |     |
-        // |     |
-        // 3-----0
-        // | dirp
-        // v
 
-        // up rect
-        // 6 --- 5
-        // |     |
-        // |     |
-        // 7-----4
-        let verts = [
-            down + d2 + d2p, // 0
-            down + d2 - d2p, // 1
-            down - d2 - d2p, // 2
-            down - d2 + d2p, // 3
-            up + dir + dirp, // 4
-            up + dir - dirp, // 5
-            up - dir - dirp, // 6
-            up - dir + dirp, // 7
-        ];
+    let up = pos.up(-0.2);
+    let down = pos.xy().z(terrain_height);
+    let dirp = dir.perp_up();
+    let d2 = dir.xy().z0();
+    let d2p = d2.perp_up();
+    let d2 = d2 * w * 0.5;
+    let d2p = d2p * w * 0.5;
+    let dir = dir * w * 0.5;
+    let dirp = dirp * w * 0.5;
+    // down rect
+    // 2 --- 1 -> dir
+    // |     |
+    // |     |
+    // 3-----0
+    // | dirp
+    // v
 
-        let mr = &mut meshb;
-        let mut quad = move |a, b, c, d, nor| {
-            mr.extend_with(move |vertices, add_idx| {
-                let mut pvert = move |p: Vec3, normal: Vec3| {
-                    vertices.push(MeshVertex {
-                        position: p.into(),
-                        normal,
-                        uv: [0.0; 2],
-                        color,
-                    })
-                };
+    // up rect
+    // 6 --- 5
+    // |     |
+    // |     |
+    // 7-----4
+    let verts = [
+        down + d2 + d2p, // 0
+        down + d2 - d2p, // 1
+        down - d2 - d2p, // 2
+        down - d2 + d2p, // 3
+        up + dir + dirp, // 4
+        up + dir - dirp, // 5
+        up - dir - dirp, // 6
+        up - dir + dirp, // 7
+    ];
 
-                pvert(verts[a], nor);
-                pvert(verts[b], nor);
-                pvert(verts[c], nor);
-                pvert(verts[d], nor);
+    let mr = &mut meshb;
+    let mut quad = move |a, b, c, d, nor| {
+        mr.extend_with(move |vertices, add_idx| {
+            let mut pvert = move |p: Vec3, normal: Vec3| {
+                vertices.push(MeshVertex {
+                    position: p.into(),
+                    normal,
+                    uv: [0.0; 2],
+                    color,
+                })
+            };
 
-                add_idx(0);
-                add_idx(1);
-                add_idx(2);
+            pvert(verts[a], nor);
+            pvert(verts[b], nor);
+            pvert(verts[c], nor);
+            pvert(verts[d], nor);
 
-                add_idx(1);
-                add_idx(3);
-                add_idx(2);
-            });
-        };
-        quad(0, 1, 4, 5, d2);
-        quad(1, 2, 5, 6, -d2p);
-        quad(2, 3, 6, 7, -d2);
-        quad(3, 0, 7, 4, d2p);
+            add_idx(0);
+            add_idx(1);
+            add_idx(2);
+
+            add_idx(1);
+            add_idx(3);
+            add_idx(2);
+        });
+    };
+    quad(0, 1, 4, 5, d2);
+    quad(1, 2, 5, 6, -d2p);
+    quad(2, 3, 6, 7, -d2);
+    quad(3, 0, 7, 4, d2p);
+}
+
+fn road_pylons(meshb: &mut MeshBuilder, terrain: &Terrain, road: &Road) {
+    for pylon in Road::pylons_positions(road.interfaced_points(), terrain) {
+        add_polyon(meshb, road.width * 0.5, pylon);
     }
+}
+
+fn inter_pylon(meshb: &mut MeshBuilder, terrain: &Terrain, inter: &Intersection, roads: &Roads) {
+    let h = unwrap_ret!(terrain.height(inter.pos.xy()));
+    if (h - inter.pos.z).abs() <= 2.0 {
+        return;
+    }
+
+    let mut maxw = 3.0f32;
+    let mut avgp = Vec3::ZERO;
+
+    for &road in &inter.roads {
+        let r = &roads[road];
+        maxw = maxw.max(r.width * 0.5);
+        avgp += r.interface_point(inter.id);
+    }
+    if !inter.roads.is_empty() {
+        avgp /= inter.roads.len() as f32;
+    } else {
+        avgp = inter.pos;
+    }
+
+    add_polyon(
+        meshb,
+        maxw,
+        PylonPosition {
+            terrain_height: h,
+            pos: avgp,
+            dir: Vec3::X,
+        },
+    );
 }
 
 fn intersection_mesh(meshb: &mut MeshBuilder, inter: &Intersection, roads: &Roads) {
