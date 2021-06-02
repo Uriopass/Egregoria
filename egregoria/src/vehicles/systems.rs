@@ -31,7 +31,7 @@ pub fn vehicle_decision(
         VehicleState::Driving | VehicleState::Panicking(_)
     ) {
         let danger_length =
-            (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(40.0);
+            (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(100.0);
         let neighbors = cow.query_around(trans.position.xy(), 12.0 + danger_length);
         let objs =
             neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
@@ -206,7 +206,7 @@ pub fn calc_decision<'a>(
         }
     }
 
-    let mut speed = 12.0;
+    let mut speed = 9.0;
 
     if let Some(Traversable {
         kind: TraverseKind::Lane(l_id),
@@ -235,7 +235,11 @@ pub fn calc_decision<'a>(
                         return (0.0, dir_to_pos);
                     }
                 }
-                _ => {}
+                TrafficBehavior::GREEN => {
+                    if light.is_close(position, stop_dist * 0.4) {
+                        return (0.0, dir_to_pos);
+                    }
+                }
             }
         }
     }
@@ -306,7 +310,7 @@ fn calc_front_dist<'a>(
         // front cone
         if cos_angle > 0.85 - 0.015 * speed.min(10.0)
             && (!is_vehicle || cos_direction_angle > 0.0)
-            && (!on_lane || dist_to_side < 3.0)
+            && (!on_lane || dist_to_side < 3.0 + speed * 0.3)
         {
             let mut dist_to_obj = dist - my_radius - nei_physics_obj.radius;
             if !is_vehicle {
