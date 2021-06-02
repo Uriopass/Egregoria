@@ -96,7 +96,7 @@ impl VehicleKind {
 
     pub fn deceleration(self) -> f32 {
         match self {
-            VehicleKind::Car | VehicleKind::Bus | VehicleKind::Truck => 9.0,
+            VehicleKind::Car | VehicleKind::Bus | VehicleKind::Truck => 11.0,
         }
     }
 
