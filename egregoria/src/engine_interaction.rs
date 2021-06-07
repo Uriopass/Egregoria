@@ -22,11 +22,12 @@ impl Default for Selectable {
     }
 }
 
-#[derive(Clone, Default, Serialize, Deserialize)]
-#[serde(from = "Vec<WorldCommand>", into = "Vec<WorldCommand>")]
+#[derive(Clone, Default)]
 pub struct WorldCommands {
     pub(crate) commands: Vec<WorldCommand>,
 }
+
+defer_serialize!(WorldCommands, Vec<WorldCommand>);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WorldCommand {
@@ -193,8 +194,8 @@ impl From<Vec<WorldCommand>> for WorldCommands {
     }
 }
 
-impl From<WorldCommands> for Vec<WorldCommand> {
-    fn from(x: WorldCommands) -> Self {
-        x.commands
+impl From<&WorldCommands> for Vec<WorldCommand> {
+    fn from(x: &WorldCommands) -> Self {
+        x.commands.clone()
     }
 }

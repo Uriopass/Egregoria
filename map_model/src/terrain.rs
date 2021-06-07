@@ -1,6 +1,6 @@
 use crate::procgen::heightmap::tree_density;
 use geom::{vec2, Vec2, AABB};
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::num::Wrapping;
 
@@ -33,12 +33,13 @@ pub struct Tree {
     pub dir: Vec2,
 }
 
-#[derive(Deserialize, Clone)]
-#[serde(from = "SerializedTerrain")]
+#[derive(Clone)]
 pub struct Terrain {
     pub chunks: HashMap<(i32, i32), Chunk>,
     pub dirt_id: Wrapping<u32>,
 }
+
+defer_serialize!(Terrain, SerializedTerrain);
 
 impl Default for Terrain {
     fn default() -> Self {
@@ -235,17 +236,14 @@ impl From<SerializedTerrain> for Terrain {
     }
 }
 
-impl Serialize for Terrain {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
+impl From<&Terrain> for SerializedTerrain {
+    fn from(ter: &Terrain) -> Self {
         let mut t = SerializedTerrain {
             v: vec![],
-            dirt_id: self.dirt_id.0,
+            dirt_id: ter.dirt_id.0,
         };
 
-        for (&cell, chunk) in &self.chunks {
+        for (&cell, chunk) in &ter.chunks {
             t.v.push((
                 cell,
                 SerializedChunk {
@@ -259,6 +257,6 @@ impl Serialize for Terrain {
             ))
         }
 
-        t.serialize(serializer)
+        t
     }
 }
