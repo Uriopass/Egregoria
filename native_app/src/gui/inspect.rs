@@ -4,7 +4,6 @@ use egregoria::economy::{Market, Workers};
 use egregoria::map_dynamic::{Itinerary, Router};
 use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
-use egregoria::rendering::assets::AssetRender;
 use egregoria::souls::desire::{BuyFood, Home, Work};
 use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::souls::human::HumanDecision;
@@ -59,7 +58,6 @@ impl InspectRenderer {
         self.inspect_component::<Vehicle>(goria, ui);
         self.inspect_component::<Pedestrian>(goria, ui);
         self.inspect_component::<Location>(goria, ui);
-        self.inspect_component::<AssetRender>(goria, ui);
         self.inspect_component::<Kinematics>(goria, ui);
         self.inspect_component::<Itinerary>(goria, ui);
         self.inspect_component::<Router>(goria, ui);

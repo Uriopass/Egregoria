@@ -11,7 +11,6 @@ use crate::map_dynamic::{Itinerary, Router};
 use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Kinematics};
-use crate::rendering::assets::AssetRender;
 use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::goods_company::GoodsCompany;
@@ -136,7 +135,6 @@ pub mod engine_interaction;
 pub mod map_dynamic;
 pub mod pedestrians;
 pub mod physics;
-pub mod rendering;
 pub mod souls;
 mod tests;
 pub mod utils;
@@ -469,7 +467,6 @@ pub struct NoSerialize;
 fn registry() -> Registry<u64> {
     let mut registry = Registry::default();
     register!(registry;
-        AssetRender,
         Bought,
         BuyFood,
         Collider,
