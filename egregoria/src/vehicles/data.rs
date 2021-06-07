@@ -1,7 +1,6 @@
 use crate::engine_interaction::Selectable;
 use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
-use crate::rendering::assets::{AssetID, AssetRender};
 use crate::utils::par_command_buffer::ComponentDrop;
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::GameInstant;
@@ -49,6 +48,7 @@ pub struct Vehicle {
 
     pub state: VehicleState,
     pub kind: VehicleKind,
+    pub tint: Color,
 
     /// Used to detect gridlock
     pub flag: u64,
@@ -156,10 +156,15 @@ pub fn spawn_parked_vehicle(
     drop(map);
     drop(pm);
 
+    let tint = match kind {
+        VehicleKind::Car => get_random_car_color(&mut *goria.write::<RandProvider>()),
+        _ => Color::WHITE,
+    };
+
     Some(VehicleID(make_vehicle_entity(
         goria,
         pos,
-        Vehicle::new(kind, spot_id),
+        Vehicle::new(kind, spot_id, tint),
         it,
         false,
     )))
@@ -172,20 +177,8 @@ pub fn make_vehicle_entity(
     it: Itinerary,
     mk_collider: bool,
 ) -> Entity {
-    let asset_id = match vehicle.kind {
-        VehicleKind::Car => AssetID::CAR,
-        VehicleKind::Truck => AssetID::TRUCK,
-        VehicleKind::Bus => unreachable!(),
-    };
-
-    let tint = match vehicle.kind {
-        VehicleKind::Car => get_random_car_color(&mut *goria.write::<RandProvider>()),
-        _ => Color::WHITE,
-    };
-
     let w = vehicle.kind.width();
     let e = goria.world.push((
-        AssetRender { id: asset_id, tint },
         trans,
         Kinematics::default(),
         Selectable::default(),
@@ -229,12 +222,13 @@ pub fn get_random_car_color(r: &mut RandProvider) -> Color {
 }
 
 impl Vehicle {
-    pub fn new(kind: VehicleKind, spot: SpotReservation) -> Vehicle {
+    pub fn new(kind: VehicleKind, spot: SpotReservation, tint: Color) -> Vehicle {
         Self {
             ang_velocity: 0.0,
             wait_time: 0.0,
             state: VehicleState::Parked(spot),
             kind,
+            tint,
             flag: 0,
         }
     }

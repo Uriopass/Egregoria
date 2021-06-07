@@ -1,6 +1,6 @@
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::{Location, Pedestrian};
-use egregoria::rendering::assets::{AssetID, AssetRender};
+use egregoria::vehicles::{Vehicle, VehicleKind};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec3, V3};
 use legion::query::*;
@@ -35,18 +35,18 @@ impl InstancedRender {
         self.cars.instances.clear();
         self.trucks.instances.clear();
         self.pedestrians.instances.clear();
-        for (trans, ar) in <(&Transform, &AssetRender)>::query().iter(goria.world()) {
-            let ar: &AssetRender = ar;
+        for (trans, v) in <(&Transform, &Vehicle)>::query().iter(goria.world()) {
+            let v: &Vehicle = v;
 
             let instance = MeshInstance {
                 pos: trans.position,
                 dir: trans.dir,
-                tint: ar.tint.into(),
+                tint: v.tint.into(),
             };
 
-            match ar.id {
-                AssetID::CAR => self.cars.instances.push(instance),
-                AssetID::TRUCK => self.trucks.instances.push(instance),
+            match v.kind {
+                VehicleKind::Car => self.cars.instances.push(instance),
+                VehicleKind::Truck => self.trucks.instances.push(instance),
                 _ => {}
             }
         }
