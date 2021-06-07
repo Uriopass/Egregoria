@@ -83,6 +83,36 @@ macro_rules! unwrap_contlog {
     };
 }
 
+#[macro_export]
+macro_rules! defer_serialize {
+    ($me:ty, $defered:ty) => {
+        impl serde::Serialize for $me {
+            fn serialize<S>(
+                &self,
+                serializer: S,
+            ) -> Result<<S as serde::Serializer>::Ok, <S as serde::Serializer>::Error>
+            where
+                S: serde::Serializer,
+            {
+                let v: $defered = self.into();
+                serde::Serialize::serialize(&v, serializer)
+            }
+        }
+
+        impl<'de> serde::Deserialize<'de> for $me {
+            fn deserialize<D>(
+                deserializer: D,
+            ) -> Result<Self, <D as serde::Deserializer<'de>>::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                let v: $defered = serde::Deserialize::deserialize(deserializer)?;
+                Ok(v.into())
+            }
+        }
+    };
+}
+
 pub struct PtrCmp<'a, T>(pub &'a T);
 
 impl<'a, T> Hash for PtrCmp<'a, T> {

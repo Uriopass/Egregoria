@@ -23,9 +23,6 @@ pub struct MapProject {
     pub kind: ProjectKind,
 }
 
-// can't derive Serialize because it would clone
-#[derive(Deserialize)]
-#[serde(from = "SerializedMap")]
 pub struct Map {
     pub(crate) roads: Roads,
     pub(crate) lanes: Lanes,
@@ -37,6 +34,8 @@ pub struct Map {
     pub parking: ParkingSpots,
     pub dirt_id: Wrapping<u32>,
 }
+
+defer_serialize!(Map, SerializedMap);
 
 impl Default for Map {
     fn default() -> Self {

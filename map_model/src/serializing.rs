@@ -1,5 +1,5 @@
 use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap, Terrain};
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::num::Wrapping;
 
 #[derive(Default, Serialize, Deserialize)]
@@ -61,13 +61,4 @@ fn mk_spatial_map(m: &SerializedMap) -> SpatialMap {
         sm.insert(l.id, l.shape);
     }
     sm
-}
-
-impl Serialize for Map {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        SerializedMap::from(self).serialize(serializer)
-    }
 }
