@@ -45,6 +45,7 @@ pub enum WorldCommand {
     UpdateTransform(u64, Transform),
 }
 
+use crate::economy::Government;
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::time::GameTime;
 use geom::{Transform, Vec2, OBB};
@@ -134,6 +135,8 @@ impl WorldCommands {
 
 impl WorldCommand {
     pub(crate) fn apply(&self, goria: &mut Egregoria) {
+        let cost = Government::action_cost(self, goria);
+        goria.write::<Government>().money.0 -= cost.0;
         match *self {
             MapRemoveIntersection(id) => goria.map_mut().remove_intersection(id),
             MapRemoveRoad(id) => drop(goria.map_mut().remove_road(id)),

@@ -8,6 +8,7 @@ use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
+use egregoria::economy::Government;
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
@@ -578,6 +579,8 @@ impl Gui {
                 goria.save_to_disk("world");
                 uiworld.save_to_disk();
             }
+
+            ui.text(format!("Money: {}", goria.read::<Government>().money));
         });
         t.pop(ui);
     }

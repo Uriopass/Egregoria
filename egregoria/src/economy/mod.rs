@@ -5,8 +5,40 @@ use legion::{system, EntityStore};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
+mod government;
 mod market;
 
+#[derive(Serialize, Deserialize)]
+/// Money in cents, can be negative when in debt.
+pub struct Money(pub i64);
+
+impl Display for Money {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        (self.0 / 100).fmt(f)?;
+        let cent = self.0 % 100;
+        if cent > 0 {
+            f.write_str(".")?;
+            if cent < 10 {
+                f.write_str("0")?;
+            }
+            cent.fmt(f)?;
+        }
+        f.write_str("¢")
+    }
+}
+
+impl Money {
+    pub fn cents(cents: i64) -> Self {
+        Self(cents)
+    }
+
+    pub fn base(base: i64) -> Self {
+        Self(base * 100)
+    }
+}
+
+pub use government::*;
+use imgui_inspect::imgui::__core::fmt::Formatter;
 pub use market::*;
 
 #[derive(Default, Serialize, Deserialize)]
