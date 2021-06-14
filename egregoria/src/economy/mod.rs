@@ -3,7 +3,7 @@ use common::FastMap;
 use legion::world::SubWorld;
 use legion::{system, EntityStore};
 use serde::{Deserialize, Serialize};
-use std::fmt::Display;
+use std::fmt::{Display, Formatter};
 
 mod government;
 mod market;
@@ -38,7 +38,6 @@ impl Money {
 }
 
 pub use government::*;
-use imgui_inspect::imgui::__core::fmt::Formatter;
 pub use market::*;
 
 #[derive(Default, Serialize, Deserialize)]
