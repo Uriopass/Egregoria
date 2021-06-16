@@ -166,7 +166,7 @@ impl LightRender {
             }),
         });
         if let Some(ref instance_buffer) = gfx.light.instance_buffer.inner() {
-            rpass.set_pipeline(&gfx.get_pipeline::<LightBlit>());
+            rpass.set_pipeline(gfx.get_pipeline::<LightBlit>());
             rpass.set_bind_group(0, &gfx.projection.bindgroup, &[]);
             rpass.set_vertex_buffer(0, gfx.light.vertex_buffer.slice(..));
             rpass.set_vertex_buffer(1, instance_buffer.slice(..));
