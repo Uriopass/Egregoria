@@ -428,8 +428,8 @@ fn is_ear(ll: &LinkedLists, prev: NodeIdx, ear: NodeIdx, next: NodeIdx) -> bool 
         false // reflex, cant be ear
     } else {
         !ll.iter(c.next_idx..a.idx).any(|p| {
-            point_in_triangle(&a, &b, &c, &p)
-                && (area(prevref!(ll, p.idx), &p, nextref!(ll, p.idx)) >= 0.0)
+            point_in_triangle(a, b, c, p)
+                && (area(prevref!(ll, p.idx), p, nextref!(ll, p.idx)) >= 0.0)
         })
     }
 }
@@ -439,8 +439,8 @@ fn is_ear(ll: &LinkedLists, prev: NodeIdx, ear: NodeIdx, next: NodeIdx) -> bool 
 fn earcheck(a: &Node, b: &Node, c: &Node, prev: &Node, p: &Node, next: &Node) -> bool {
     (p.idx != a.idx)
         && (p.idx != c.idx)
-        && point_in_triangle(&a, &b, &c, &p)
-        && area(&prev, &p, &next) >= 0.0
+        && point_in_triangle(a, b, c, p)
+        && area(prev, p, next) >= 0.0
 }
 
 #[inline(always)]
@@ -589,7 +589,7 @@ fn linked_list_add_contour(
     let mut leftmost_idx = 0;
     let mut contour_minx = std::f32::MAX;
 
-    if clockwise == (signed_area(&data, start, end) > 0.0) {
+    if clockwise == (signed_area(data, start, end) > 0.0) {
         for i in (start..end).step_by(DIM) {
             lastidx = ll.insert_node(i / DIM, data[i], data[i + 1], lastidx);
             if contour_minx > data[i] {
@@ -846,7 +846,7 @@ fn pseudo_intersects(p1: &Node, q1: &Node, p2: &Node, q2: &Node) -> bool {
 // check if a polygon diagonal intersects any polygon segments
 fn intersects_polygon(ll: &LinkedLists, a: &Node, b: &Node) -> bool {
     ll.iter_pairs(a.idx..a.idx).any(|(p, n)| {
-        p.i != a.i && n.i != a.i && p.i != b.i && n.i != b.i && pseudo_intersects(&p, &n, a, b)
+        p.i != a.i && n.i != a.i && p.i != b.i && n.i != b.i && pseudo_intersects(p, n, a, b)
     })
 }
 

@@ -139,7 +139,7 @@ impl SpriteBatch {
 impl Drawable for SpriteBatch {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let pipeline = &gfx.get_pipeline::<Self>();
-        rp.set_pipeline(&pipeline);
+        rp.set_pipeline(pipeline);
         rp.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
         rp.set_vertex_buffer(1, self.instance_buf.slice(..));
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);

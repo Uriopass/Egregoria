@@ -244,7 +244,7 @@ impl GfxContext {
     }
 
     pub fn mk_shadowmap(device: &Device, res: u32) -> Texture {
-        let mut smap = Texture::create_depth_texture(&device, (res, res), 1);
+        let mut smap = Texture::create_depth_texture(device, (res, res), 1);
         smap.sampler = device.create_sampler(&Texture::depth_compare_sampler());
         smap
     }
@@ -372,7 +372,7 @@ impl GfxContext {
             });
 
             for obj in objsref.iter() {
-                obj.draw_depth(&self, &mut depth_prepass, false, &self.projection.bindgroup);
+                obj.draw_depth(self, &mut depth_prepass, false, &self.projection.bindgroup);
             }
             drop(depth_prepass);
         }
@@ -399,7 +399,7 @@ impl GfxContext {
 
             for obj in objsref.iter() {
                 obj.draw_depth(
-                    &self,
+                    self,
                     &mut sun_shadow_pass,
                     true,
                     &self.sun_projection.bindgroup,
@@ -471,7 +471,7 @@ impl GfxContext {
             });
 
             for obj in objsref.iter() {
-                obj.draw(&self, &mut render_pass);
+                obj.draw(self, &mut render_pass);
             }
         }
 
@@ -606,8 +606,7 @@ impl GfxContext {
         self.simplelit_bg = Texture::multi_bindgroup(
             &[
                 &self.fbos.ssao,
-                &self
-                    .read_texture("assets/blue_noise_512.png")
+                self.read_texture("assets/blue_noise_512.png")
                     .expect("blue noise not initialized"),
                 &self.sun_shadowmap,
                 &self.fbos.light.target,
@@ -736,8 +735,7 @@ impl GfxContext {
     }
 
     pub fn get_pipeline<T: 'static>(&self) -> &RenderPipeline {
-        &self
-            .pipelines
+        self.pipelines
             .get(&std::any::TypeId::of::<T>())
             .expect("Pipeline was not registered in context")
     }
