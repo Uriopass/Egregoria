@@ -16,7 +16,7 @@ where
     T: ToU8Slice,
 {
     pub fn new(value: T, device: &wgpu::Device) -> Self {
-        let layout = Self::bindgroup_layout(&device);
+        let layout = Self::bindgroup_layout(device);
 
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,

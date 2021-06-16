@@ -57,7 +57,7 @@ impl PBuffer {
             entries: &[BindGroupEntry {
                 binding: 0,
                 resource: BindingResource::Buffer(BufferBinding {
-                    buffer: &buffer,
+                    buffer,
                     offset: 0,
                     size: Some(BufferSize::new(self.len)?),
                 }),

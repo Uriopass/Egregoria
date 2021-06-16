@@ -264,7 +264,7 @@ impl Egregoria {
     pub fn hashes(&self) -> BTreeMap<String, u64> {
         fn hash(x: &[u8]) -> u64 {
             let mut h = DefaultHasher::new();
-            h.write(&x);
+            h.write(x);
             h.finish()
         }
         let serworld = unwrap_ret!(

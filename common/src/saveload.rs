@@ -100,7 +100,7 @@ impl Encoder for Bincode {
 
     fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(seed: S, x: &[u8]) -> Result<V> {
         seed.deserialize(&mut ::bincode::Deserializer::from_slice(
-            &x,
+            x,
             DefaultOptions::new(),
         ))
         .map_err(|x| std::io::Error::new(ErrorKind::Other, x))
