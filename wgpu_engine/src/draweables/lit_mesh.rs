@@ -118,7 +118,7 @@ impl Mesh {
 
 impl Drawable for Mesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        rp.set_pipeline(&gfx.get_pipeline::<Self>());
+        rp.set_pipeline(gfx.get_pipeline::<Self>());
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(2, &self.albedo_bg, &[]);
@@ -139,9 +139,9 @@ impl Drawable for Mesh {
             return;
         }
         if shadow_map {
-            rp.set_pipeline(&gfx.get_pipeline::<LitMeshDepthSMap>());
+            rp.set_pipeline(gfx.get_pipeline::<LitMeshDepthSMap>());
         } else {
-            rp.set_pipeline(&gfx.get_pipeline::<LitMeshDepth>());
+            rp.set_pipeline(gfx.get_pipeline::<LitMeshDepth>());
         }
 
         rp.set_bind_group(0, proj, &[]);

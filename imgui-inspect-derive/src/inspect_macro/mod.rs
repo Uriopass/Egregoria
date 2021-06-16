@@ -57,12 +57,12 @@ fn parse_field_args(input: &syn::DeriveInput) -> Vec<ParsedField> {
                         .map(|f| {
                             let mut parsed_field: Option<ParsedField> = None;
 
-                            handle_inspect_types(&mut parsed_field, &f);
+                            handle_inspect_types(&mut parsed_field, f);
 
                             if parsed_field.is_none() {
                                 handle_inspect_type::<InspectFieldArgsDefault, InspectArgsDefault>(
                                     &mut parsed_field,
-                                    &f,
+                                    f,
                                     quote!(imgui_inspect::InspectRenderDefault),
                                     quote!(imgui_inspect::InspectArgsDefault),
                                 );
@@ -95,7 +95,7 @@ fn try_handle_inspect_type<
     arg_type: proc_macro2::TokenStream,
 ) {
     if f.attrs.iter().any(|x| x.path == *path) {
-        handle_inspect_type::<FieldArgsT, ArgsT>(parsed_field, &f, default_render_trait, arg_type);
+        handle_inspect_type::<FieldArgsT, ArgsT>(parsed_field, f, default_render_trait, arg_type);
     }
 }
 
@@ -118,7 +118,7 @@ fn handle_inspect_type<
         );
     }
 
-    let field_args = FieldArgsT::from_field(&f).unwrap();
+    let field_args = FieldArgsT::from_field(f).unwrap();
 
     if field_args.skip() {
         *parsed_field = Some(ParsedField {

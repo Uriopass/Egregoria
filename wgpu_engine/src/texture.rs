@@ -429,7 +429,7 @@ fn generate_mipmaps(
     let vs_module = compile_shader(device, "assets/shaders/mipmap.vert", None).0;
     let fs_module = compile_shader(device, "assets/shaders/mipmap.frag", None).0;
 
-    let bglayout = Texture::bindgroup_layout(&device);
+    let bglayout = Texture::bindgroup_layout(device);
 
     let layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
         label: None,
