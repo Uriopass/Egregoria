@@ -28,7 +28,7 @@ imgui         = "0.7"
 legion        = { version = "0.4.0", default-features = false, features = ["codegen", "serialize"] }
 ordered-float = { version = "2.5.1", default-features = false }
 serde         = "1.0"
-rodio         = { version = "0.13.0", default-features = false, features = ["vorbis"] }
+rodio         = { version = "0.14.0", default-features = false, features = ["vorbis"] }
 slotmap       = { version = "1.0.2", default-features = false }
 winit         = "0.24"
 inventory     = "0.1.10"
