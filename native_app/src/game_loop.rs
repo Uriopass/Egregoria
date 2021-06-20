@@ -359,7 +359,7 @@ impl State {
     }
 
     fn manage_entity_follow(&mut self) {
-        if !self.uiw.read::<MouseInfo>().just_pressed.is_empty() {
+        if self.uiw.read::<KeyboardInfo>().just_pressed.contains(&KeyCode::Escape) {
             self.uiw.write::<FollowEntity>().0.take();
         }
 
