@@ -21,9 +21,9 @@ Decoupling the rendering from the simulation really helps to separate concerns a
 
 # Codemap
 
-*Image of the crates relationships to one another*
+![](assets/crates_architecture.jpg)
 
-This is a codaeap to showcase the different crate's usages and modules within some crates.
+This is a codemap to showcase the different crate's usages and modules within some crates.
 
 Approximately sorted by importance.
 
