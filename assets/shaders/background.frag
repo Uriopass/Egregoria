@@ -34,11 +34,18 @@ vec2 rsi(vec3 r0, vec3 rd, float sr) {
     );
 }
 
-vec3 atmosphere(vec3 r, vec3 r0, vec3 pSun, float iSun, float rPlanet, float rAtmos, vec3 kRlh, float kMie, float shRlh, float shMie, float g) {
-    // Normalize the sun and view directions.
-    pSun = normalize(pSun);
-    r = normalize(r);
+const vec3 r0       = vec3(0,6372e3,0);               // ray origin
+const float iSun    = 22.0;                           // intensity of the sun
+const float rPlanet = 6371e3;                         // radius of the planet in meters
+const float rAtmos  = 6471e3;                         // radius of the atmosphere in meters
+const vec3 kRlh     = vec3(5.5e-6, 13.0e-6, 22.4e-6); // Rayleigh scattering coefficient
+const float kMie    = 21e-6;                          // Mie scattering coefficient
+const float shRlh   = 8e3;                            // Rayleigh scale height
+const float shMie   = 1.2e3;                          // Mie scale height
+const float g       = 0.758;                          // Mie preferred scattering direction
 
+// r and pSun are normalized
+vec3 atmosphere(vec3 r, vec3 pSun) {
     // Calculate the step size of the primary ray.
     vec2 p = rsi(r0, r, rAtmos);
     if (p.x > p.y) return vec3(0,0,0);
@@ -116,7 +123,6 @@ vec3 atmosphere(vec3 r, vec3 r0, vec3 pSun, float iSun, float rPlanet, float rAt
 
         // Increment the primary ray time.
         iTime += iStepSize;
-
     }
 
     // Calculate and return the final color.
@@ -146,17 +152,8 @@ void main()
     vec3 color;
     if (params.realistic_sky != 0) {
         color = atmosphere(
-            normalize(pos),           // normalized ray direction
-            vec3(0,6372e3,0),               // ray origin
-            fsun,                        // position of the sun
-            22.0,                           // intensity of the sun
-            6371e3,                         // radius of the planet in meters
-            6471e3,                         // radius of the atmosphere in meters
-            vec3(5.5e-6, 13.0e-6, 22.4e-6), // Rayleigh scattering coefficient
-            21e-6,                          // Mie scattering coefficient
-            8e3,                            // Rayleigh scale height
-            1.2e3,                          // Mie scale height
-            0.758                           // Mie preferred scattering direction
+            pos,           // normalized ray direction
+            fsun           // normalized sun direction
         );
     } else {
         color = texture(sampler2D(t_gradientsky, s_gradientsky), vec2(0.5 - fsun.y * 0.5, 1.0 - max(0.01, pos.y))).rgb;
