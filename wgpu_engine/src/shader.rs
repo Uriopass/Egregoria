@@ -20,7 +20,7 @@ pub enum CacheState {
 
 fn cache_filename(p: &Path) -> Option<PathBuf> {
     let mut name = p.file_name()?.to_string_lossy().into_owned();
-    name.push_str(".spirv");
+    name.push_str(".spv");
 
     Some(p.parent()?.parent()?.join("compiled_shaders").join(name))
 }
