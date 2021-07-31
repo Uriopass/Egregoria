@@ -1,10 +1,14 @@
-#![allow(clippy::unreadable_literal)]
-#![allow(clippy::blocks_in_if_conditions)]
-#![allow(clippy::too_many_arguments)]
-#![allow(clippy::upper_case_acronyms)]
-#![deny(clippy::indexing_slicing)]
-#![deny(clippy::unwrap_used)]
+#![allow(
+    clippy::unreadable_literal,
+    clippy::blocks_in_if_conditions,
+    clippy::too_many_arguments,
+    clippy::upper_case_acronyms,
+    missing_copy_implementations,
+    missing_debug_implementations
+)]
 #![deny(
+    clippy::indexing_slicing,
+    clippy::unwrap_used,
     rust_2018_compatibility,
     rust_2018_idioms,
     nonstandard_style,
@@ -12,7 +16,6 @@
     future_incompatible,
     unused_extern_crates
 )]
-#![allow(missing_debug_implementations, missing_copy_implementations)]
 
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommands};

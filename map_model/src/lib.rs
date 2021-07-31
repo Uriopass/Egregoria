@@ -1,9 +1,13 @@
-#![allow(clippy::too_many_arguments)]
-#![allow(clippy::many_single_char_names)]
-#![allow(clippy::upper_case_acronyms)]
-#![warn(clippy::indexing_slicing)]
-#![allow(clippy::collapsible_else_if)]
+#![allow(
+    clippy::too_many_arguments,
+    clippy::many_single_char_names,
+    clippy::upper_case_acronyms,
+    clippy::collapsible_else_if,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
 #![deny(
+    clippy::indexing_slicing,
     rust_2018_compatibility,
     rust_2018_idioms,
     nonstandard_style,
@@ -11,7 +15,6 @@
     future_incompatible,
     unused_extern_crates
 )]
-#![allow(missing_copy_implementations, missing_debug_implementations)]
 
 #[macro_use]
 extern crate common;

@@ -1,3 +1,4 @@
+#![allow(missing_debug_implementations, missing_copy_implementations)]
 #![deny(
     rust_2018_compatibility,
     rust_2018_idioms,
@@ -6,7 +7,6 @@
     future_incompatible,
     unused_extern_crates
 )]
-#![allow(missing_debug_implementations, missing_copy_implementations)]
 mod default;
 mod scale;
 mod slider;

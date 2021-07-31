@@ -1,7 +1,11 @@
-#![allow(clippy::too_many_arguments)]
-#![allow(clippy::float_cmp)]
-#![allow(elided_lifetimes_in_paths)]
-#![allow(clippy::upper_case_acronyms)]
+#![allow(
+    clippy::too_many_arguments,
+    clippy::float_cmp,
+    elided_lifetimes_in_paths,
+    clippy::upper_case_acronyms,
+    missing_copy_implementations,
+    missing_debug_implementations
+)]
 #![deny(
     rust_2018_compatibility,
     rust_2018_idioms,
@@ -10,7 +14,6 @@
     future_incompatible,
     unused_extern_crates
 )]
-#![allow(missing_debug_implementations, missing_copy_implementations)]
 
 use crate::context::Context;
 use common::logger::MyLog;

@@ -1,4 +1,8 @@
-#![allow(clippy::upper_case_acronyms)]
+#![allow(
+    clippy::upper_case_acronyms,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
 #![deny(
     rust_2018_compatibility,
     rust_2018_idioms,
@@ -7,7 +11,6 @@
     future_incompatible,
     unused_extern_crates
 )]
-#![allow(missing_debug_implementations, missing_copy_implementations)]
 
 #[macro_use]
 extern crate common;

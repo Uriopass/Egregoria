@@ -1,7 +1,10 @@
-#![allow(clippy::manual_range_contains)]
-#![allow(clippy::many_single_char_names)]
-#![allow(clippy::upper_case_acronyms)]
-#![allow(missing_debug_implementations, missing_copy_implementations)]
+#![allow(
+    clippy::manual_range_contains,
+    clippy::many_single_char_names,
+    clippy::upper_case_acronyms,
+    missing_debug_implementations,
+    missing_copy_implementations
+)]
 #![deny(
     rust_2018_compatibility,
     rust_2018_idioms,
