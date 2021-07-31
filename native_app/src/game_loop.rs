@@ -247,7 +247,7 @@ impl State {
     }
 
     #[profiling::function]
-    pub fn render(&mut self, ctx: &mut FrameContext) {
+    pub fn render(&mut self, ctx: &mut FrameContext<'_>) {
         let start = Instant::now();
 
         self.terrain.draw_terrain(&self.uiw, ctx);
@@ -318,7 +318,7 @@ impl State {
     }
 
     #[profiling::function]
-    pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext) {
+    pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext<'_, '_>) {
         let gui = &mut self.gui;
         let goria = &self.goria;
         let uiworld = &mut self.uiw;
@@ -359,7 +359,12 @@ impl State {
     }
 
     fn manage_entity_follow(&mut self) {
-        if self.uiw.read::<KeyboardInfo>().just_pressed.contains(&KeyCode::Escape) {
+        if self
+            .uiw
+            .read::<KeyboardInfo>()
+            .just_pressed
+            .contains(&KeyCode::Escape)
+        {
             self.uiw.write::<FollowEntity>().0.take();
         }
 
@@ -388,7 +393,7 @@ impl State {
         }
     }
 
-    pub fn event(&mut self, window: &Window, event: &winit::event::Event<()>) {
+    pub fn event(&mut self, window: &Window, event: &winit::event::Event<'_, ()>) {
         self.imgui_render.handle_event(window, event);
     }
 

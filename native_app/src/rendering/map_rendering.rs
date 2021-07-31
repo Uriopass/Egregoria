@@ -121,7 +121,13 @@ impl RoadRenderer {
     }
 
     #[profiling::function]
-    pub fn render(&mut self, map: &Map, time: u32, tess: &mut Tesselator, ctx: &mut FrameContext) {
+    pub fn render(
+        &mut self,
+        map: &Map,
+        time: u32,
+        tess: &mut Tesselator,
+        ctx: &mut FrameContext<'_>,
+    ) {
         let screen = tess
             .cull_rect
             .expect("no cull rectangle, might render far too many trees");

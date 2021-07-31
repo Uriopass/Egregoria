@@ -293,7 +293,12 @@ impl Default for ItineraryKind {
 }
 
 impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
-    fn render(data: &[&ItineraryKind], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+    fn render(
+        data: &[&ItineraryKind],
+        label: &'static str,
+        ui: &Ui<'_>,
+        args: &InspectArgsDefault,
+    ) {
         let d = *unwrap_ret!(data.get(0));
         use imgui::im_str;
         match d {
@@ -312,7 +317,7 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
     fn render_mut(
         data: &mut [&mut ItineraryKind],
         label: &'static str,
-        ui: &Ui,
+        ui: &Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         let d = &mut *unwrap_ret!(data.get_mut(0), false);
@@ -343,10 +348,10 @@ register_system!(itinerary_update);
 pub fn itinerary_update(
     #[resource] time: &GameTime,
     #[resource] map: &Map,
-    qry: &mut Query<Qry>,
-    world: &mut SubWorld,
+    qry: &mut Query<Qry<'_, '_>>,
+    world: &mut SubWorld<'_>,
 ) {
-    qry.par_for_each_mut(world, |(trans, it): Qry| {
+    qry.par_for_each_mut(world, |(trans, it): Qry<'_, '_>| {
         it.update(trans.position, time.seconds, map)
     });
 }

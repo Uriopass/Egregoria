@@ -51,7 +51,7 @@ pub type CollisionWorld = flat_spatial::SparseGrid<PhysicsObject>;
 pub struct Collider(pub GridHandle);
 
 impl InspectRenderDefault<Collider> for Collider {
-    fn render(data: &[&Collider], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&Collider], label: &'static str, ui: &Ui<'_>, _: &InspectArgsDefault) {
         let d = unwrap_ret!(data.get(0));
         ui.text(format!("{:?} {}", d.0, label));
     }
@@ -59,7 +59,7 @@ impl InspectRenderDefault<Collider> for Collider {
     fn render_mut(
         data: &mut [&mut Collider],
         label: &'static str,
-        ui: &Ui,
+        ui: &Ui<'_>,
         _: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {

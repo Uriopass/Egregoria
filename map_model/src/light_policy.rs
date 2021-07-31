@@ -103,14 +103,14 @@ impl LightPolicy {
 }
 
 impl InspectRenderDefault<LightPolicy> for LightPolicy {
-    fn render(_: &[&LightPolicy], _: &'static str, _: &Ui, _: &InspectArgsDefault) {
+    fn render(_: &[&LightPolicy], _: &'static str, _: &Ui<'_>, _: &InspectArgsDefault) {
         unimplemented!()
     }
 
     fn render_mut(
         data: &mut [&mut LightPolicy],
         label: &'static str,
-        ui: &Ui,
+        ui: &Ui<'_>,
         _: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {

@@ -1,4 +1,15 @@
-#![allow(clippy::upper_case_acronyms)]
+#![allow(
+    clippy::upper_case_acronyms,
+    missing_copy_implementations,
+    missing_debug_implementations
+)]
+#![deny(
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    nonstandard_style,
+    unused,
+    future_incompatible
+)]
 //!
 //! flat_spatial is a crate dedicated to spatial partitioning structures that are not based on trees
 //! (which are recursive) but on simple flat structures such as grids.

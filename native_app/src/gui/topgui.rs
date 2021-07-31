@@ -52,7 +52,7 @@ impl Default for Gui {
 }
 
 impl Gui {
-    pub fn render(&mut self, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn render(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         let tok = ui.push_style_colors(&[
             (StyleColor::WindowBg, common::config().gui_bg_col.into()),
             (StyleColor::TitleBg, common::config().gui_title_col.into()),
@@ -89,7 +89,7 @@ impl Gui {
         }
     }
 
-    pub fn toolbox(ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn toolbox(ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         let [w, h] = ui.io().display_size;
         let tok = ui.push_style_vars(&[
             StyleVar::WindowPadding([0.0, 0.0]),
@@ -467,7 +467,7 @@ impl Gui {
         tok.pop(ui);
     }
 
-    pub fn inspector(ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn inspector(ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         let mut inspected = *uiworld.read::<InspectedEntity>();
         let e = unwrap_or!(inspected.e, return);
 
@@ -487,7 +487,7 @@ impl Gui {
         *uiworld.write::<InspectedEntity>() = inspected;
     }
 
-    pub fn time_controls(&mut self, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn time_controls(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         let time = goria.read::<GameTime>().daytime;
         let warp = &mut uiworld.write::<Settings>().time_warp;
         let depause_warp = &mut self.depause_warp;
@@ -568,7 +568,7 @@ impl Gui {
         tok.pop(ui);
     }
 
-    pub fn menu_bar(&mut self, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn menu_bar(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         let t = ui.push_style_vars(&[StyleVar::ItemSpacing([3.0, 0.0])]);
 
         ui.main_menu_bar(|| {
