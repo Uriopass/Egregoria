@@ -45,7 +45,7 @@ impl Default for DebugObjs {
     }
 }
 
-pub fn debug(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+pub fn debug(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
     window.build(ui, || {
         let mut objs = uiworld.write::<DebugObjs>();
         for (val, name, _) in &mut objs.0 {

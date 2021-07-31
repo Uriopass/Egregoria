@@ -2,7 +2,7 @@ use crate::{InspectArgsDefault, InspectRenderDefault};
 use imgui::{im_str, Ui};
 
 impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for Vec<T> {
-    fn render(data: &[&Vec<T>], label: &'static str, ui: &Ui, args: &InspectArgsDefault) {
+    fn render(data: &[&Vec<T>], label: &'static str, ui: &Ui<'_>, args: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -24,7 +24,7 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Vec<T>> for Vec<T> {
         data: &mut [&mut Vec<T>],
         label: &str,
 
-        ui: &Ui,
+        ui: &Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {

@@ -59,7 +59,7 @@ macro_rules! write_log_stdout {
 }
 
 impl log::Log for MyLog {
-    fn enabled(&self, metadata: &Metadata) -> bool {
+    fn enabled(&self, metadata: &Metadata<'_>) -> bool {
         let l = metadata.level();
         if l > Level::Info {
             return false;

@@ -17,7 +17,7 @@ impl InputContext {
         self.mouse.wheel_delta = 0.0;
     }
 
-    pub fn handle(&mut self, event: &WindowEvent) -> bool {
+    pub fn handle(&mut self, event: &WindowEvent<'_>) -> bool {
         match event {
             WindowEvent::ReceivedCharacter(c) => {
                 self.keyboard.last_characters.push(*c);

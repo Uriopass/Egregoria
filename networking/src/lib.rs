@@ -1,4 +1,12 @@
 #![allow(clippy::upper_case_acronyms)]
+#![deny(
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    nonstandard_style,
+    unused,
+    future_incompatible
+)]
+#![allow(missing_copy_implementations, missing_debug_implementations)]
 
 use crate::authent::AuthentID;
 use common::saveload::{CompressedBincode, Encoder};

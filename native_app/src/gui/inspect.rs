@@ -24,7 +24,7 @@ impl InspectRenderer {
     fn inspect_component<T: Component + InspectRenderDefault<T>>(
         &self,
         goria: &Egregoria,
-        ui: &Ui,
+        ui: &Ui<'_>,
     ) {
         let c: Option<&T> = goria.comp::<T>(self.entity);
         if let Some(x) = c {
@@ -37,7 +37,7 @@ impl InspectRenderer {
         }
     }
 
-    fn inspect_transform(&self, goria: &Egregoria, uiw: &mut UiWorld, ui: &Ui) {
+    fn inspect_transform(&self, goria: &Egregoria, uiw: &mut UiWorld, ui: &Ui<'_>) {
         let c: Option<&Transform> = goria.comp(self.entity);
         if let Some(x) = c {
             let mut t = *x;
@@ -52,7 +52,7 @@ impl InspectRenderer {
         }
     }
 
-    pub fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui) {
+    pub fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui<'_>) {
         ui.text(im_str!("{:?}", self.entity));
         self.inspect_transform(goria, uiworld, ui);
         self.inspect_component::<Vehicle>(goria, ui);

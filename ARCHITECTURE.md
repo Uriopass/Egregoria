@@ -3,7 +3,7 @@ This document describes the high-level architecture of Egregoria. If you want to
 # Bird's Eye View
 
 Egregoria's core is a fixed-time "tick" update and uses an [ECS](https://en.wikipedia.org/wiki/Entity_component_system).
-The whole simualtion is advanced by one step depending on the current state, it is pure and deterministic.
+The whole simulation is advanced by one step depending on the current state, it is pure and deterministic.
 
 The simulation is composed of many systems which acts upon the different entities and singletons.
 For example, there's the `kinematics` system which says `position += velocity * DT`.

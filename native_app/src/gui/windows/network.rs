@@ -17,7 +17,7 @@ pub struct NetworkConnectionInfo {
     hashes: BTreeMap<String, u64>,
 }
 
-pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+pub fn network(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
     window.build(ui, || {
         let mut state = uiworld.write::<NetworkState>();
         let mut info = uiworld.write::<NetworkConnectionInfo>();
@@ -64,7 +64,7 @@ pub fn network(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Eg
     })
 }
 
-fn show_hashes(ui: &Ui, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
+fn show_hashes(ui: &Ui<'_>, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
     ui.checkbox(im_str!("show hashes"), &mut info.show_hashes);
     if !info.show_hashes {
         return;

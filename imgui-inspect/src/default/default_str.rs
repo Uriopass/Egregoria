@@ -5,7 +5,7 @@ impl InspectRenderDefault<&'static str> for &'static str {
         data: &[&&'static str],
         label: &'static str,
 
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         _args: &InspectArgsDefault,
     ) {
         if data.is_empty() {
@@ -35,7 +35,7 @@ impl InspectRenderDefault<&'static str> for &'static str {
         data: &mut [&mut &'static str],
         label: &'static str,
 
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         _args: &InspectArgsDefault,
     ) -> bool {
         if data.is_empty() {

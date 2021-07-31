@@ -334,7 +334,7 @@ impl GfxContext {
         &mut self,
         encs: &mut Encoders,
         frame: &SwapChainFrame,
-        mut prepare: impl FnMut(&mut FrameContext),
+        mut prepare: impl FnMut(&mut FrameContext<'_>),
     ) {
         let mut objs = vec![];
         let mut fc = FrameContext {
@@ -512,7 +512,7 @@ impl GfxContext {
         &mut self,
         encoders: &mut Encoders,
         frame: &SwapChainFrame,
-        mut render_gui: impl FnMut(GuiRenderContext),
+        mut render_gui: impl FnMut(GuiRenderContext<'_, '_>),
     ) {
         let rpass = encoders.end.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
@@ -619,7 +619,7 @@ impl GfxContext {
     pub fn color_pipeline(
         &self,
         layouts: &[&BindGroupLayout],
-        vertex_buffers: &[VertexBufferLayout],
+        vertex_buffers: &[VertexBufferLayout<'_>],
         vert_shader: &CompiledShader,
         frag_shader: &CompiledShader,
     ) -> RenderPipeline {
@@ -682,7 +682,7 @@ impl GfxContext {
 
     pub fn depth_pipeline(
         &self,
-        vertex_buffers: &[VertexBufferLayout],
+        vertex_buffers: &[VertexBufferLayout<'_>],
         vert_shader: &CompiledShader,
         shadow_map: bool,
     ) -> RenderPipeline {
