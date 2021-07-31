@@ -1,6 +1,14 @@
 #![allow(clippy::manual_range_contains)]
 #![allow(clippy::many_single_char_names)]
 #![allow(clippy::upper_case_acronyms)]
+#![allow(missing_debug_implementations, missing_copy_implementations)]
+#![deny(
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    nonstandard_style,
+    unused,
+    future_incompatible
+)]
 
 macro_rules! defer_inter {
     ($a:ty => $b:ty) => {

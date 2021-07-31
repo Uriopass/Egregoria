@@ -1,7 +1,12 @@
 use super::*;
 
 impl<T: InspectRenderDefault<T>> InspectRenderDefault<Option<T>> for Option<T> {
-    fn render(data: &[&Option<T>], label: &'static str, ui: &imgui::Ui, args: &InspectArgsDefault) {
+    fn render(
+        data: &[&Option<T>],
+        label: &'static str,
+        ui: &imgui::Ui<'_>,
+        args: &InspectArgsDefault,
+    ) {
         if data.is_empty() {
             ui.text(&imgui::im_str!("{}: None", label));
             return;
@@ -17,7 +22,7 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Option<T>> for Option<T> {
     fn render_mut(
         data: &mut [&mut Option<T>],
         label: &'static str,
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.is_empty() {

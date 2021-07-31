@@ -4,6 +4,14 @@
 #![allow(clippy::upper_case_acronyms)]
 #![deny(clippy::indexing_slicing)]
 #![deny(clippy::unwrap_used)]
+#![deny(
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    nonstandard_style,
+    unused,
+    future_incompatible
+)]
+#![allow(missing_debug_implementations, missing_copy_implementations)]
 
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommands};
@@ -330,27 +338,27 @@ impl Egregoria {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn try_write<T: Resource>(&self) -> Option<AtomicRefMut<T>> {
+    pub(crate) fn try_write<T: Resource>(&self) -> Option<AtomicRefMut<'_, T>> {
         self.resources.get_mut()
     }
 
-    pub(crate) fn write<T: Resource>(&self) -> AtomicRefMut<T> {
+    pub(crate) fn write<T: Resource>(&self) -> AtomicRefMut<'_, T> {
         self.resources
             .get_mut()
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn read<T: Resource>(&self) -> AtomicRef<T> {
+    pub fn read<T: Resource>(&self) -> AtomicRef<'_, T> {
         self.resources
             .get()
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn map(&self) -> AtomicRef<Map> {
+    pub fn map(&self) -> AtomicRef<'_, Map> {
         self.resources.get().unwrap()
     }
 
-    pub(crate) fn map_mut(&self) -> AtomicRefMut<Map> {
+    pub(crate) fn map_mut(&self) -> AtomicRefMut<'_, Map> {
         self.resources.get_mut().unwrap()
     }
 

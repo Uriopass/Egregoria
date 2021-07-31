@@ -1,7 +1,7 @@
 use super::*;
 
 impl InspectRenderSlider<f32> for f32 {
-    fn render(data: &[&Self], label: &'static str, ui: &imgui::Ui, _args: &InspectArgsSlider) {
+    fn render(data: &[&Self], label: &'static str, ui: &imgui::Ui<'_>, _args: &InspectArgsSlider) {
         if data.is_empty() {
             ui.text(&imgui::im_str!("{}: None", label));
             return;
@@ -14,7 +14,7 @@ impl InspectRenderSlider<f32> for f32 {
         data: &mut [&mut Self],
         label: &'static str,
 
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         args: &InspectArgsSlider,
     ) -> bool {
         let same_or_none_value = get_same_or_none_mut(data);

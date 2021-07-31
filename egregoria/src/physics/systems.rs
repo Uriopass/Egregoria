@@ -12,7 +12,7 @@ register_system!(kinematics_apply);
 pub fn kinematics_apply(
     #[resource] time: &GameTime,
     qry: &mut Query<(&mut Transform, &Kinematics)>,
-    sw: &mut SubWorld,
+    sw: &mut SubWorld<'_>,
 ) {
     let delta = time.delta;
     qry.par_for_each_mut(sw, |(trans, kin): (&mut Transform, &Kinematics)| {
@@ -25,7 +25,7 @@ register_system!(coworld_synchronize);
 pub fn coworld_synchronize(
     #[resource] coworld: &mut CollisionWorld,
     qry: &mut Query<(&Transform, &Kinematics, &Collider, Option<&Vehicle>)>,
-    sw: &SubWorld,
+    sw: &SubWorld<'_>,
 ) {
     qry.for_each(sw, |(trans, kin, coll, v)| {
         coworld.set_position(coll.0, trans.position.xy());

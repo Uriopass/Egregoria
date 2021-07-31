@@ -15,7 +15,7 @@ struct TestFieldProperties {
     spacing: f32,
 }
 
-pub fn map(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+pub fn map(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
     window.build(ui, || {
         if ui.small_button(im_str!("load Paris map")) {
             uiworld.commands().map_load_paris();

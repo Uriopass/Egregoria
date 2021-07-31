@@ -202,10 +202,10 @@ impl Polygon {
         Circle { center, radius }
     }
 
-    pub fn iter(&self) -> std::slice::Iter<Vec2> {
+    pub fn iter(&self) -> std::slice::Iter<'_, Vec2> {
         self.0.iter()
     }
-    pub fn iter_mut(&mut self) -> std::slice::IterMut<Vec2> {
+    pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Vec2> {
         self.0.iter_mut()
     }
 

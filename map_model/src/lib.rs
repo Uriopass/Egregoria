@@ -3,6 +3,14 @@
 #![allow(clippy::upper_case_acronyms)]
 #![warn(clippy::indexing_slicing)]
 #![allow(clippy::collapsible_else_if)]
+#![deny(
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    nonstandard_style,
+    unused,
+    future_incompatible
+)]
+#![allow(missing_copy_implementations, missing_debug_implementations)]
 
 #[macro_use]
 extern crate common;

@@ -1,7 +1,7 @@
 use super::*;
 
 impl InspectRenderDefault<i32> for i32 {
-    fn render(data: &[&i32], label: &'static str, ui: &imgui::Ui, _args: &InspectArgsDefault) {
+    fn render(data: &[&i32], label: &'static str, ui: &imgui::Ui<'_>, _args: &InspectArgsDefault) {
         if !label.is_empty() {
             ui.text(&imgui::im_str!("{}: {}", label, data[0]))
         } else {
@@ -12,7 +12,7 @@ impl InspectRenderDefault<i32> for i32 {
     fn render_mut(
         data: &mut [&mut i32],
         label: &'static str,
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         let mut changed = false;

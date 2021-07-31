@@ -607,7 +607,7 @@ pub fn company(
     company: &mut GoodsCompany,
     sold: &mut Sold,
     workers: &Workers,
-    sw: &SubWorld,
+    sw: &SubWorld<'_>,
 ) {
     let n_workers = workers.0.len();
     let soul = SoulID(*me);

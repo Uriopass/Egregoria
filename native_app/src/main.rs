@@ -2,6 +2,14 @@
 #![allow(clippy::float_cmp)]
 #![allow(elided_lifetimes_in_paths)]
 #![allow(clippy::upper_case_acronyms)]
+#![deny(
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    nonstandard_style,
+    unused,
+    future_incompatible
+)]
+#![allow(missing_debug_implementations, missing_copy_implementations)]
 
 use crate::context::Context;
 use common::logger::MyLog;

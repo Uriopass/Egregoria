@@ -21,10 +21,10 @@ impl UiWorld {
         w
     }
 
-    pub fn commands(&self) -> AtomicRefMut<WorldCommands> {
+    pub fn commands(&self) -> AtomicRefMut<'_, WorldCommands> {
         self.write::<WorldCommands>()
     }
-    pub fn received_commands(&self) -> AtomicRef<ReceivedCommands> {
+    pub fn received_commands(&self) -> AtomicRef<'_, ReceivedCommands> {
         self.read::<ReceivedCommands>()
     }
 
@@ -47,21 +47,21 @@ impl UiWorld {
         <&mut T>::query().get_mut(&mut self.world, e).ok()
     }
 
-    pub fn write_or_default<T: Resource + Default>(&mut self) -> AtomicRefMut<T> {
+    pub fn write_or_default<T: Resource + Default>(&mut self) -> AtomicRefMut<'_, T> {
         self.resources.get_mut_or_insert_with(T::default)
     }
 
-    pub fn try_write<T: Resource>(&self) -> Option<AtomicRefMut<T>> {
+    pub fn try_write<T: Resource>(&self) -> Option<AtomicRefMut<'_, T>> {
         self.resources.get_mut()
     }
 
-    pub fn write<T: Resource>(&self) -> AtomicRefMut<T> {
+    pub fn write<T: Resource>(&self) -> AtomicRefMut<'_, T> {
         self.resources
             .get_mut()
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn read<T: Resource>(&self) -> AtomicRef<T> {
+    pub fn read<T: Resource>(&self) -> AtomicRef<'_, T> {
         self.resources
             .get()
             .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))

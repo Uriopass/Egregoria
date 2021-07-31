@@ -3,7 +3,7 @@ use egregoria::economy::{CommodityKind, Market};
 use egregoria::Egregoria;
 use imgui::{im_str, Condition, Ui};
 
-pub fn economy(window: imgui::Window, ui: &Ui, _: &mut UiWorld, goria: &Egregoria) {
+pub fn economy(window: imgui::Window<'_>, ui: &Ui<'_>, _: &mut UiWorld, goria: &Egregoria) {
     let market = goria.read::<Market>();
     let [w, h] = ui.io().display_size;
 

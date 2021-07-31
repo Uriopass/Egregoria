@@ -323,11 +323,11 @@ impl PolyLine {
         self.points.as_slice()
     }
 
-    pub fn iter(&self) -> Iter<Vec2> {
+    pub fn iter(&self) -> Iter<'_, Vec2> {
         self.points.iter()
     }
 
-    pub fn iter_mut(&mut self) -> IterMut<Vec2> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, Vec2> {
         self.points.iter_mut()
     }
 

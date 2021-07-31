@@ -1,3 +1,12 @@
+#![deny(
+    rust_2018_compatibility,
+    rust_2018_idioms,
+    nonstandard_style,
+    unused,
+    future_incompatible
+)]
+#![allow(missing_debug_implementations, missing_copy_implementations)]
+
 use common::logger::MyLog;
 use common::unwrap_or;
 use egregoria::engine_interaction::WorldCommands;

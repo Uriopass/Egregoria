@@ -56,7 +56,7 @@ pub fn routing_changed(
     #[resource] parking: &mut ParkingManagement,
     router: &mut Router,
     loc: &Location,
-    subworld: &SubWorld,
+    subworld: &SubWorld<'_>,
 ) {
     if router.cur_dest != router.target_dest {
         let dest = unwrap_ret!(router.target_dest);
@@ -99,7 +99,7 @@ pub fn routing_update(
     router: &mut Router,
     loc: &mut Location,
     kin: &mut Kinematics,
-    subworld: &SubWorld,
+    subworld: &SubWorld<'_>,
 ) {
     if router.cur_step.is_none() && router.steps.is_empty() {
         return;
@@ -227,7 +227,7 @@ impl ComponentDrop for Router {
     }
 }
 
-fn comp<'a, T: Component>(sw: &'a SubWorld, e: Entity) -> Option<&'a T> {
+fn comp<'a, T: Component>(sw: &'a SubWorld<'_>, e: Entity) -> Option<&'a T> {
     <(&T,)>::query().get(sw, e).map(|x| x.0).ok()
 }
 
@@ -317,7 +317,7 @@ impl Router {
         parking: &mut ParkingManagement,
         map: &Map,
         loc: &Location,
-        subworld: &SubWorld,
+        subworld: &SubWorld<'_>,
     ) -> Option<Vec<RoutingStep>> {
         let mut steps = vec![];
         if let Location::Building(cur_build) = loc {
