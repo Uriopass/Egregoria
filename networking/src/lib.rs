@@ -4,7 +4,8 @@
     rust_2018_idioms,
     nonstandard_style,
     unused,
-    future_incompatible
+    future_incompatible,
+    unused_extern_crates
 )]
 #![allow(missing_copy_implementations, missing_debug_implementations)]
 

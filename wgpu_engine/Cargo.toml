@@ -15,7 +15,6 @@ image     = { version = "0.23.4", default-features = false, features = ["png"] }
 log       = "0.4.11"
 raw-window-handle = "0.3.3"
 naga      = { version = "0.5.0", features = ["glsl-in", "spv-out"], optional = true}
-tobj      = "3.1.0"
 gltf      = "0.16.0"
 itertools = { version = "0.10.0", default-features = false }
 profiling = "1.0.1"

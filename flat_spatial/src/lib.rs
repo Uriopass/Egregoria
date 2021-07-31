@@ -8,7 +8,8 @@
     rust_2018_idioms,
     nonstandard_style,
     unused,
-    future_incompatible
+    future_incompatible,
+    unused_extern_crates
 )]
 //!
 //! flat_spatial is a crate dedicated to spatial partitioning structures that are not based on trees
