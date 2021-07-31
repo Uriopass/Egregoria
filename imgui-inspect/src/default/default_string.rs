@@ -1,7 +1,12 @@
 use super::*;
 
 impl InspectRenderDefault<String> for String {
-    fn render(data: &[&String], label: &'static str, ui: &imgui::Ui, _args: &InspectArgsDefault) {
+    fn render(
+        data: &[&String],
+        label: &'static str,
+        ui: &imgui::Ui<'_>,
+        _args: &InspectArgsDefault,
+    ) {
         if data.is_empty() {
             // Values are inconsistent
             let style_token = ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0]);
@@ -29,7 +34,7 @@ impl InspectRenderDefault<String> for String {
         data: &mut [&mut String],
         label: &'static str,
 
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         _args: &InspectArgsDefault,
     ) -> bool {
         let same_or_none_value = get_same_or_none_mut(data);

@@ -31,7 +31,7 @@ impl InstancedRender {
     }
 
     #[profiling::function]
-    pub fn render(&mut self, goria: &Egregoria, fctx: &mut FrameContext) {
+    pub fn render(&mut self, goria: &Egregoria, fctx: &mut FrameContext<'_>) {
         self.cars.instances.clear();
         self.trucks.instances.clear();
         self.pedestrians.instances.clear();

@@ -9,7 +9,7 @@ pub use geometry::*;
 pub struct InspectDragf;
 
 impl InspectRenderDefault<f32> for InspectDragf {
-    fn render(data: &[&f32], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&f32], label: &'static str, ui: &Ui<'_>, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -22,7 +22,7 @@ impl InspectRenderDefault<f32> for InspectDragf {
     fn render_mut(
         data: &mut [&mut f32],
         label: &'static str,
-        ui: &Ui,
+        ui: &Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
@@ -49,7 +49,7 @@ impl InspectRenderDefault<f32> for InspectDragf {
 }
 
 impl InspectRenderDefault<f64> for InspectDragf {
-    fn render(data: &[&f64], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&f64], label: &'static str, ui: &Ui<'_>, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -62,7 +62,7 @@ impl InspectRenderDefault<f64> for InspectDragf {
     fn render_mut(
         data: &mut [&mut f64],
         label: &'static str,
-        ui: &Ui,
+        ui: &Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {

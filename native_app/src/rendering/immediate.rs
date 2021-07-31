@@ -110,7 +110,7 @@ impl<'a> Drop for ImmediateBuilder<'a> {
 }
 
 impl ImmediateDraw {
-    fn builder(&mut self, kind: OrderKind) -> ImmediateBuilder {
+    fn builder(&mut self, kind: OrderKind) -> ImmediateBuilder<'_> {
         ImmediateBuilder {
             draw: self,
             order: ImmediateOrder {
@@ -120,11 +120,11 @@ impl ImmediateDraw {
             persistent: false,
         }
     }
-    pub fn circle(&mut self, pos: Vec3, radius: f32) -> ImmediateBuilder {
+    pub fn circle(&mut self, pos: Vec3, radius: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::Circle { pos, radius })
     }
 
-    pub fn line(&mut self, from: Vec3, to: Vec3, thickness: f32) -> ImmediateBuilder {
+    pub fn line(&mut self, from: Vec3, to: Vec3, thickness: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::Line {
             from,
             to,
@@ -132,18 +132,27 @@ impl ImmediateDraw {
         })
     }
 
-    pub fn polyline(&mut self, points: impl Into<Vec<Vec3>>, thickness: f32) -> ImmediateBuilder {
+    pub fn polyline(
+        &mut self,
+        points: impl Into<Vec<Vec3>>,
+        thickness: f32,
+    ) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::PolyLine {
             points: points.into(),
             thickness,
         })
     }
 
-    pub fn polygon(&mut self, poly: Polygon, z: f32) -> ImmediateBuilder {
+    pub fn polygon(&mut self, poly: Polygon, z: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::Polygon { poly, z })
     }
 
-    pub fn stroke_circle(&mut self, pos: Vec3, radius: f32, thickness: f32) -> ImmediateBuilder {
+    pub fn stroke_circle(
+        &mut self,
+        pos: Vec3,
+        radius: f32,
+        thickness: f32,
+    ) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::StrokeCircle {
             pos,
             radius,
@@ -151,15 +160,15 @@ impl ImmediateDraw {
         })
     }
 
-    pub fn obb(&mut self, obb: OBB, z: f32) -> ImmediateBuilder {
+    pub fn obb(&mut self, obb: OBB, z: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::OBB { obb, z })
     }
 
-    pub fn textured_obb(&mut self, obb: OBB, path: String, z: f32) -> ImmediateBuilder {
+    pub fn textured_obb(&mut self, obb: OBB, path: String, z: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::TexturedOBB { obb, path, z })
     }
 
-    pub fn mesh(&mut self, path: String, pos: Vec3, dir: Vec3) -> ImmediateBuilder {
+    pub fn mesh(&mut self, path: String, pos: Vec3, dir: Vec3) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::Mesh { path, pos, dir })
     }
 
@@ -167,7 +176,7 @@ impl ImmediateDraw {
         self.persistent_orders.clear();
     }
 
-    pub fn apply(&mut self, tess: &mut Tesselator, ctx: &mut FrameContext) {
+    pub fn apply(&mut self, tess: &mut Tesselator, ctx: &mut FrameContext<'_>) {
         for ImmediateOrder { kind, color } in
             self.persistent_orders.iter().chain(self.orders.iter())
         {

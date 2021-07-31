@@ -30,13 +30,13 @@ pub trait InspectRenderSlider<T> {
     ///
     /// (Hopefully in the future this can be better. See
     /// https://github.com/ocornut/imgui/issues/211)
-    fn render(data: &[&T], label: &'static str, ui: &imgui::Ui, args: &InspectArgsSlider);
+    fn render(data: &[&T], label: &'static str, ui: &imgui::Ui<'_>, args: &InspectArgsSlider);
 
     /// Render the element as a mutable slider
     fn render_mut(
         data: &mut [&mut T],
         label: &'static str,
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         args: &InspectArgsSlider,
     ) -> bool;
 }

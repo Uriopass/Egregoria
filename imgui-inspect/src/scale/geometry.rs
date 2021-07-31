@@ -4,7 +4,7 @@ use geom::{from_srgb, Color, LinearColor, PolyLine, Transform, Vec2, Vec3};
 use imgui::{im_str, ColorEdit, EditableColor, Ui};
 
 impl InspectRenderDefault<Color> for Color {
-    fn render(data: &[&Color], label: &'static str, ui: &Ui, _args: &InspectArgsDefault) {
+    fn render(data: &[&Color], label: &'static str, ui: &Ui<'_>, _args: &InspectArgsDefault) {
         let c = data[0];
         let mut color_arr = [c.r, c.g, c.b, c.a];
         ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui);
@@ -13,7 +13,7 @@ impl InspectRenderDefault<Color> for Color {
     fn render_mut(
         data: &mut [&mut Color],
         label: &'static str,
-        ui: &Ui,
+        ui: &Ui<'_>,
         _args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
@@ -35,7 +35,7 @@ impl InspectRenderDefault<Color> for Color {
 }
 
 impl InspectRenderDefault<LinearColor> for LinearColor {
-    fn render(data: &[&LinearColor], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&LinearColor], label: &'static str, ui: &Ui<'_>, _: &InspectArgsDefault) {
         let lc = data[0];
         let c: Color = (*lc).into();
         let mut color_arr = [c.r, c.g, c.b, c.a];
@@ -45,7 +45,7 @@ impl InspectRenderDefault<LinearColor> for LinearColor {
     fn render_mut(
         data: &mut [&mut LinearColor],
         label: &'static str,
-        ui: &Ui,
+        ui: &Ui<'_>,
         _args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
@@ -68,7 +68,7 @@ impl InspectRenderDefault<LinearColor> for LinearColor {
 }
 
 impl InspectRenderDefault<Transform> for Transform {
-    fn render(data: &[&Transform], _: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&Transform], _: &'static str, ui: &Ui<'_>, _: &InspectArgsDefault) {
         let t = data[0];
         let position = t.position;
         let direction = t.dir;
@@ -89,7 +89,7 @@ impl InspectRenderDefault<Transform> for Transform {
     fn render_mut(
         data: &mut [&mut Transform],
         _: &'static str,
-        ui: &Ui,
+        ui: &Ui<'_>,
         _: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
@@ -118,7 +118,7 @@ impl InspectRenderDefault<Transform> for Transform {
 
 pub struct InspectVec2Immutable;
 impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
-    fn render(data: &[&Vec2], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&Vec2], label: &'static str, ui: &Ui<'_>, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -132,7 +132,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
         data: &mut [&mut Vec2],
         label: &'static str,
 
-        ui: &Ui,
+        ui: &Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
@@ -144,7 +144,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
 }
 
 impl InspectRenderDefault<Vec2> for Vec2 {
-    fn render(data: &[&Vec2], label: &'static str, ui: &imgui::Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&Vec2], label: &'static str, ui: &imgui::Ui<'_>, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -157,7 +157,7 @@ impl InspectRenderDefault<Vec2> for Vec2 {
     fn render_mut(
         data: &mut [&mut Vec2],
         label: &'static str,
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
@@ -175,7 +175,7 @@ impl InspectRenderDefault<Vec2> for Vec2 {
 }
 
 impl InspectRenderDefault<Vec3> for Vec3 {
-    fn render(data: &[&Vec3], label: &'static str, ui: &imgui::Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&Vec3], label: &'static str, ui: &imgui::Ui<'_>, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -188,7 +188,7 @@ impl InspectRenderDefault<Vec3> for Vec3 {
     fn render_mut(
         data: &mut [&mut Vec3],
         label: &'static str,
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
@@ -207,7 +207,12 @@ impl InspectRenderDefault<Vec3> for Vec3 {
 }
 
 impl InspectRenderDefault<PolyLine> for PolyLine {
-    fn render(data: &[&PolyLine], label: &'static str, ui: &imgui::Ui, args: &InspectArgsDefault) {
+    fn render(
+        data: &[&PolyLine],
+        label: &'static str,
+        ui: &imgui::Ui<'_>,
+        args: &InspectArgsDefault,
+    ) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -227,7 +232,7 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
     fn render_mut(
         data: &mut [&mut PolyLine],
         label: &str,
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
@@ -253,7 +258,7 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
 
 pub struct InspectVec2Rotation;
 impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
-    fn render(data: &[&Vec2], label: &'static str, ui: &Ui, _: &InspectArgsDefault) {
+    fn render(data: &[&Vec2], label: &'static str, ui: &Ui<'_>, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -268,7 +273,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
         data: &mut [&mut Vec2],
         label: &'static str,
 
-        ui: &Ui,
+        ui: &Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {

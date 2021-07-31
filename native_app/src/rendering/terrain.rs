@@ -152,7 +152,7 @@ impl TerrainRender {
     }
 
     #[profiling::function]
-    pub fn draw_terrain(&mut self, uiw: &UiWorld, fctx: &mut FrameContext) {
+    pub fn draw_terrain(&mut self, uiw: &UiWorld, fctx: &mut FrameContext<'_>) {
         let cam = uiw.read::<Camera>();
 
         let eye = cam.eye();

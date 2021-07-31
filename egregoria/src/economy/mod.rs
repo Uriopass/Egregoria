@@ -107,7 +107,7 @@ register_system!(market_update);
 #[write_component(Sold)]
 #[write_component(Bought)]
 #[write_component(Workers)]
-pub fn market_update(#[resource] m: &mut Market, subworld: &mut SubWorld) {
+pub fn market_update(#[resource] m: &mut Market, subworld: &mut SubWorld<'_>) {
     for trade in m.make_trades() {
         log::info!("A trade was made! {:?}", trade);
 

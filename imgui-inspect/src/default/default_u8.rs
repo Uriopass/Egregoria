@@ -1,7 +1,7 @@
 use crate::{get_same_or_none, get_same_or_none_mut, InspectArgsDefault, InspectRenderDefault};
 
 impl InspectRenderDefault<u8> for u8 {
-    fn render(data: &[&u8], label: &'static str, ui: &imgui::Ui, _args: &InspectArgsDefault) {
+    fn render(data: &[&u8], label: &'static str, ui: &imgui::Ui<'_>, _args: &InspectArgsDefault) {
         if data.is_empty() {
             // Values are inconsistent
             let style_token = ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0]);
@@ -29,7 +29,7 @@ impl InspectRenderDefault<u8> for u8 {
         data: &mut [&mut u8],
         label: &'static str,
 
-        ui: &imgui::Ui,
+        ui: &imgui::Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         let same_or_none_value = get_same_or_none_mut(data);

@@ -14,8 +14,8 @@ pub mod settings;
 pub trait ImguiWindow: Send + Sync {
     fn render_window(
         &mut self,
-        window: imgui::Window,
-        ui: &Ui,
+        window: imgui::Window<'_>,
+        ui: &Ui<'_>,
         uiworld: &mut UiWorld,
         goria: &Egregoria,
     );
@@ -23,12 +23,12 @@ pub trait ImguiWindow: Send + Sync {
 
 impl<F> ImguiWindow for F
 where
-    F: Fn(imgui::Window, &Ui, &mut UiWorld, &Egregoria) + Send + Sync,
+    F: Fn(imgui::Window<'_>, &Ui<'_>, &mut UiWorld, &Egregoria) + Send + Sync,
 {
     fn render_window(
         &mut self,
-        window: imgui::Window,
-        ui: &Ui,
+        window: imgui::Window<'_>,
+        ui: &Ui<'_>,
         uiworld: &mut UiWorld,
         goria: &Egregoria,
     ) {
@@ -81,7 +81,7 @@ impl ImguiWindows {
         }
     }
 
-    pub fn menu(&mut self, ui: &Ui) {
+    pub fn menu(&mut self, ui: &Ui<'_>) {
         if self.opened.len() < self.windows.len() {
             self.opened
                 .extend(std::iter::repeat(false).take(self.windows.len() - self.opened.len()))
@@ -94,7 +94,7 @@ impl ImguiWindows {
         }
     }
 
-    pub fn render(&mut self, ui: &Ui, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn render(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         for (ws, opened) in self.windows.iter_mut().zip(self.opened.iter_mut()) {
             if *opened {
                 ws.w.render_window(

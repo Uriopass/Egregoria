@@ -67,10 +67,10 @@ impl ImguiWrapper {
 
     pub fn render(
         &mut self,
-        mut gfx: GuiRenderContext,
+        mut gfx: GuiRenderContext<'_, '_>,
         window: &Window,
         hidden: bool,
-        ui_render: impl for<'ui> FnOnce(&'ui Ui),
+        ui_render: impl for<'ui> FnOnce(&'ui Ui<'_>),
     ) {
         let now = Instant::now();
         let delta = now - self.last_frame;
@@ -84,7 +84,7 @@ impl ImguiWrapper {
             .prepare_frame(self.imgui.io_mut(), window)
             .expect("Failed to prepare frame");
 
-        let ui: imgui::Ui = self.imgui.frame();
+        let ui: imgui::Ui<'_> = self.imgui.frame();
         ui_render(&ui);
 
         self.last_mouse_captured = ui.io().want_capture_mouse;
@@ -101,7 +101,7 @@ impl ImguiWrapper {
         }
     }
 
-    pub fn handle_event(&mut self, window: &Window, e: &winit::event::Event<()>) {
+    pub fn handle_event(&mut self, window: &Window, e: &winit::event::Event<'_, ()>) {
         self.platform.handle_event(self.imgui.io_mut(), window, e);
     }
 }

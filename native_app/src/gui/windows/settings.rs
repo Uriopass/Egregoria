@@ -125,7 +125,7 @@ impl AsRef<str> for AutoSaveEvery {
     }
 }
 
-pub fn settings(window: imgui::Window, ui: &Ui, uiworld: &mut UiWorld, _: &Egregoria) {
+pub fn settings(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, _: &Egregoria) {
     let mut settings = uiworld.write::<Settings>();
     let [w, h] = ui.io().display_size;
 
