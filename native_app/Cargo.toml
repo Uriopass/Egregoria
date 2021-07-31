@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 
 futures       = { version = "0.3.4", default-features = false, features = ["executor"] }
-bytemuck      = "1.2.0"
+bytemuck      = "1.7.2"
 egregoria     = { path = "../egregoria" }
 geom          = { path = "../geom" }
 wgpu_engine   = { path = "../wgpu_engine" }
@@ -18,7 +18,7 @@ networking    = { path = "../networking" }
 goria_version = { path = "../goria_version" }
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
-imgui-wgpu    = "0.15.0"
+imgui-wgpu    = "0.16.0"
 imgui-winit-support = "0.7.0"
 map_model     = { path = "../map_model" }
 flat_spatial  = { path = "../flat_spatial" }
@@ -26,7 +26,7 @@ log           = { version = "0.4.11", features=["max_level_debug", "release_max_
 inline_tweak  = "1.0.6"
 imgui         = "0.7"
 legion        = { version = "0.4.0", default-features = false, features = ["codegen", "serialize"] }
-ordered-float = { version = "2.5.1", default-features = false }
+ordered-float = { version = "2.7.0", default-features = false }
 serde         = "1.0"
 rodio         = { version = "0.14.0", default-features = false, features = ["vorbis"] }
 slotmap       = { version = "1.0.2", default-features = false }

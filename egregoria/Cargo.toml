@@ -10,7 +10,7 @@ edition = "2018"
 # I'll prune some of them when I feel it's worth it.
 
 [dependencies]
-ordered-float = { version = "2.5.1", default-features = false }
+ordered-float = { version = "2.7.0", default-features = false }
 rand          = { version = "0.8", default-features = false}
 rand_distr    = { version = "0.4", default-features = false }
 serde         = "1.0"
@@ -25,7 +25,7 @@ common        = { path = "../common" }
 goria_version = { path = "../goria_version" }
 slotmap       = { version = "1.0.2", default-features = false }
 imgui         = "0.7"
-rayon         = "1.4.0"
+rayon         = "1.5.1"
 inventory     = "0.1.10"
 paste         = "1.0.4"
 atomic_refcell = "0.1.6"
