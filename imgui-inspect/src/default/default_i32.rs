@@ -1,4 +1,4 @@
-use super::*;
+use super::{imgui, InspectArgsDefault, InspectRenderDefault};
 
 impl InspectRenderDefault<i32> for i32 {
     fn render(data: &[&i32], label: &'static str, ui: &imgui::Ui<'_>, _args: &InspectArgsDefault) {

@@ -1,10 +1,12 @@
-#![allow(clippy::too_many_arguments)]
 use darling::FromDeriveInput;
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 mod args;
-use args::*;
+use args::{
+    InspectArgsDefault, InspectArgsSlider, InspectFieldArgs, InspectFieldArgsDefault,
+    InspectFieldArgsSlider, InspectStructArgs,
+};
 
 pub fn impl_inspect_macro(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

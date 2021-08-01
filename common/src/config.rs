@@ -1,8 +1,8 @@
 use arc_swap::{ArcSwap, Guard};
 use geom::Color;
 use imgui_inspect::InspectDragf;
-use imgui_inspect_derive::*;
-use lazy_static::*;
+use imgui_inspect_derive::Inspect;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::io::BufWriter;

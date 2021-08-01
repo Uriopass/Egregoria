@@ -341,7 +341,7 @@ impl Road {
         } else if id == self.dst {
             (self.dst_interface, self.src_interface)
         } else {
-            panic!("Asking interface from from an intersection not conected to the road");
+            panic!("Asking interface from from an intersection not connected to the road");
         }
     }
 
@@ -351,7 +351,7 @@ impl Road {
         } else if id == self.dst {
             self.dst_interface = v;
         } else {
-            panic!("Setting interface from from an intersection not conected to the road");
+            panic!("Setting interface from from an intersection not connected to the road");
         }
     }
 
@@ -361,7 +361,7 @@ impl Road {
         } else if id == self.dst {
             self.dst_interface = self.dst_interface.max(v);
         } else {
-            panic!("Setting interface from from an intersection not conected to the road");
+            panic!("Setting interface from from an intersection not connected to the road");
         }
     }
 
@@ -371,7 +371,7 @@ impl Road {
         } else if id == self.dst {
             self.dst_dir()
         } else {
-            panic!("Asking dir from from an intersection not conected to the road");
+            panic!("Asking dir from from an intersection not connected to the road");
         }
     }
 
@@ -381,7 +381,7 @@ impl Road {
         } else if id == self.dst {
             &self.lanes_forward
         } else {
-            panic!("Asking incoming lanes from from an intersection not conected to the road");
+            panic!("Asking incoming lanes from from an intersection not connected to the road");
         }
     }
 
@@ -391,7 +391,7 @@ impl Road {
         } else if id == self.dst {
             &self.lanes_backward
         } else {
-            panic!("Asking outgoing lanes from from an intersection not conected to the road");
+            panic!("Asking outgoing lanes from from an intersection not connected to the road");
         }
     }
 

@@ -1,10 +1,8 @@
-#![allow(clippy::float_cmp)]
-
 use geom::Vec2;
 
 /**
  Original author: donbright
- See implementation at https://github.com/donbright/earcutr
+ See implementation at <https://github.com/donbright/earcutr>
 
  ISC License
 
@@ -150,10 +148,10 @@ impl LinkedLists {
         let mut ll = LinkedLists {
             nodes: Vec::with_capacity(size_hint),
             invsize: 0.0,
-            minx: std::f32::MAX,
-            miny: std::f32::MAX,
-            maxx: std::f32::MIN,
-            maxy: std::f32::MIN,
+            minx: f32::MAX,
+            miny: f32::MAX,
+            maxx: f32::MIN,
+            maxy: f32::MIN,
             usehash: true,
         };
         // ll.nodes[0] is the 0 node. For example usage, see remove_node()
@@ -587,7 +585,7 @@ fn linked_list_add_contour(
     }
     let mut lastidx = 0;
     let mut leftmost_idx = 0;
-    let mut contour_minx = std::f32::MAX;
+    let mut contour_minx = f32::MAX;
 
     if clockwise == (signed_area(data, start, end) > 0.0) {
         for i in (start..end).step_by(DIM) {
@@ -864,7 +862,7 @@ fn middle_inside(ll: &LinkedLists, a: &Node, b: &Node) -> bool {
     let (mx, my) = ((a.x + b.x) * 0.5, (a.y + b.y) * 0.5);
     ll.iter_pairs(a.idx..a.idx)
         .filter(|(p, n)| (p.y > my) != (n.y > my))
-        .filter(|(p, n)| n.y != p.y)
+        .filter(|(p, n)| (n.y - p.y).abs() > f32::EPSILON)
         .filter(|(p, n)| (mx) < ((n.x - p.x) * (my - p.y) / (n.y - p.y) + p.x))
         .fold(false, |inside, _| !inside)
 }

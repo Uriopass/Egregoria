@@ -479,7 +479,6 @@ impl Map {
     }
 
     // Public helpers
-
     pub fn project(&self, pos: Vec3, tolerance: f32) -> Option<MapProject> {
         let mk_proj = move |kind| Some(MapProject { pos, kind });
 

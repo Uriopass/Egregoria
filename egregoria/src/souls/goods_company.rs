@@ -7,7 +7,7 @@ use crate::utils::time::GameTime;
 use crate::vehicles::VehicleID;
 use crate::{my_hash, Egregoria, ParCommandBuffer, SoulID};
 use geom::{Transform, Vec2};
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use legion::world::SubWorld;
 use legion::{system, Entity, EntityStore};
 use map_model::{BuildingGen, BuildingID, BuildingKind, Map};
@@ -509,7 +509,7 @@ impl Recipe {
     }
 
     pub fn should_produce(&self, soul: SoulID, market: &Market) -> bool {
-        // Has enough ressources
+        // Has enough resources
         self.consumption
             .iter()
             .all(move |&(kind, qty)| market.capital(soul, kind) >= qty)

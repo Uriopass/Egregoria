@@ -49,7 +49,7 @@ impl InspectRenderDefault<u8> for u8 {
         let mut changed = false;
         if imgui::InputInt::new(ui, &imgui::im_str!("{}", label), &mut value).build()
             && value >= args.min_value.map(|x| x as i32).unwrap_or(0).max(0)
-            && value <= args.max_value.map(|x| x as i32).unwrap_or(std::i32::MAX)
+            && value <= args.max_value.map(|x| x as i32).unwrap_or(i32::MAX)
         {
             {
                 for d in data {

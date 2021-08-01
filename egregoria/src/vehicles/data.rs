@@ -8,7 +8,7 @@ use crate::Egregoria;
 use geom::Transform;
 use geom::{Color, Spline3, Vec3};
 use imgui_inspect::InspectDragf;
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use legion::{Entity, Resources};
 use serde::{Deserialize, Serialize};
 

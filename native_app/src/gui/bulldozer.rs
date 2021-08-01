@@ -3,7 +3,7 @@ use crate::input::{MouseButton, MouseInfo};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use map_model::{Map, ProjectKind};
 
 register_resource_noserialize!(BulldozerState);

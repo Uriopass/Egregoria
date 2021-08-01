@@ -93,11 +93,11 @@ impl MapMeshHandler {
 
     pub fn latest_mesh(&mut self, map: &Map, gfx: &mut GfxContext) -> &Option<Arc<MapMeshes>> {
         if map.dirt_id.0 != self.map_dirt_id || self.last_config != common::config_id() {
-            self.builders.map_mesh(&map);
-            self.builders.arrows(&map);
-            self.builders.crosswalks(&map);
-            self.builders.bspritesmesh(&map);
-            self.builders.houses_mesh(&map);
+            self.builders.map_mesh(map);
+            self.builders.arrows(map);
+            self.builders.crosswalks(map);
+            self.builders.bspritesmesh(map);
+            self.builders.houses_mesh(map);
 
             self.last_config = common::config_id();
             self.map_dirt_id = map.dirt_id.0;

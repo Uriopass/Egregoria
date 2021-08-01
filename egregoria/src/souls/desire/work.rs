@@ -3,7 +3,7 @@ use crate::pedestrians::Location;
 use crate::souls::human::HumanDecisionKind;
 use crate::utils::time::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
 use crate::vehicles::VehicleID;
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
