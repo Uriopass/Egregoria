@@ -1,7 +1,7 @@
 use crate::{IntersectionID, LaneID, Lanes, Map, TurnID};
 use geom::PolyLine3;
 use imgui_inspect::imgui;
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]

@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, AtomicU32};
 use std::sync::Arc;
 use std::time::Duration;
 
-/// Copy of rodio::sink with some modifications
+/// Copy of `rodio::sink` with some modifications
 pub struct UniqueSink {
     controls: Arc<Controls>,
 }

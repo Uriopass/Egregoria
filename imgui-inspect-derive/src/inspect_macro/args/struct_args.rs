@@ -1,4 +1,4 @@
-use super::*;
+use super::{expand_to_tokens, InspectFieldArgs};
 use darling::FromField;
 use quote::quote;
 

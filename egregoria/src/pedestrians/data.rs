@@ -6,7 +6,7 @@ use crate::utils::rand_provider::RandProvider;
 use crate::{Egregoria, SoulID};
 use geom::Transform;
 use geom::{Color, Vec3};
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use legion::Entity;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};

@@ -2,7 +2,7 @@ use crate::utils::time::GameTime;
 use geom::{Transform, Vec3};
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use legion::world::SubWorld;
 use legion::{system, Query};
 use map_model::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};

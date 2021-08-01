@@ -5,7 +5,7 @@ use crate::utils::par_command_buffer::ComponentDrop;
 use crate::vehicles::{unpark, Vehicle, VehicleID, VehicleState};
 use crate::{Egregoria, ParCommandBuffer};
 use geom::{Spline3, Transform, Vec3};
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use legion::storage::Component;
 use legion::world::SubWorld;
 use legion::{system, Entity, EntityStore, IntoQuery, Resources};

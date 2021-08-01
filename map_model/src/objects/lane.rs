@@ -1,7 +1,7 @@
 use crate::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
 use geom::{PolyLine3, Vec2, Vec3};
 use imgui_inspect::InspectDragf;
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 

@@ -196,7 +196,7 @@ impl PolyLine {
         }
     }
 
-    /// Inverse of point_along
+    /// Inverse of `point_along`
     /// proj needs to be on the polyline for the result to be accurate
     pub fn distance_along(&self, proj: Vec2) -> f32 {
         match self.n_points() {

@@ -324,7 +324,7 @@ impl State {
         let uiworld = &mut self.uiw;
 
         self.imgui_render.render(ctx, window, gui.hidden, |ui| {
-            gui.render(&ui, uiworld, goria);
+            gui.render(ui, uiworld, goria);
         });
     }
 

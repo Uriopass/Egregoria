@@ -209,7 +209,7 @@ fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
         },
         Default::default(),
     )
-    .map_err(|e| log::error!("{}", e))
+    .map_err(|e| log::error!("{:?}", e))
     .ok()?;
 
     let mut spirv = vec![];
