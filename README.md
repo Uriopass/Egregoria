@@ -21,7 +21,7 @@ This is of course very ambitious, so a minimal viable product will be made where
 
 The first [milestone](https://github.com/Uriopass/Egregoria/projects/1) will introduce humans into the world. They will have their own homes and a workplace, traveling by foot or using the road system.
 
-As of January 2021, this milestone is now achieved :-) I'm focusing on making more interesting interactions now, but I don't have the next milestone well defined yet.
+As of January 2021, this milestone is now achieved :-) I'm focusing on making more interesting interactions now, but I don't have the next milestone well-defined yet.
 
 ## Devblog  
 
@@ -42,7 +42,7 @@ git lfs pull
 ```
 
 ### Windows/Mac
-I personally use Windows 10 and Mac OS 10.11 and it compiles fine once the [rust toolchain is installed](https://www.rust-lang.org/tools/install).
+I personally use Windows 10 and Mac OS 10.11, and it compiles fine once the [rust toolchain is installed](https://www.rust-lang.org/tools/install).
 ```bash
 cargo run
 ```
@@ -55,7 +55,7 @@ sudo apt-get install libasound2-dev libudev-dev pkg-config libx11-dev
 cargo run
 ```
 
-A Github Action tests the builds on Ubuntu.
+A GitHub Action tests the builds on Ubuntu.
 
 
 

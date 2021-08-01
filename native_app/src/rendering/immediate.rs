@@ -233,7 +233,7 @@ impl ImmediateDraw {
                     } else {
                         self.mesh_cache.insert(
                             path.clone(),
-                            InstancedMeshBuilder::new(unwrap_cont!(load_mesh(path, &ctx.gfx))),
+                            InstancedMeshBuilder::new(unwrap_cont!(load_mesh(path, ctx.gfx))),
                         );
                         self.mesh_cache.get_mut(path).unwrap()
                     };
@@ -244,12 +244,12 @@ impl ImmediateDraw {
                         tint: color.a(1.0),
                     });
 
-                    ctx.objs.push(Box::new(i.build(&ctx.gfx).unwrap()))
+                    ctx.objs.push(Box::new(i.build(ctx.gfx).unwrap()))
                 }
             }
         }
         for v in self.mesh_cache.values_mut() {
-            if let Some(x) = v.build(&ctx.gfx) {
+            if let Some(x) = v.build(ctx.gfx) {
                 ctx.objs.push(Box::new(x));
             }
             v.instances.clear();

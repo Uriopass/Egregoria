@@ -5,7 +5,7 @@ use crate::souls::human::HumanDecisionKind;
 use crate::utils::time::{GameInstant, GameTime};
 use crate::{ParCommandBuffer, SoulID};
 use geom::Transform;
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 

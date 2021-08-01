@@ -1,4 +1,6 @@
-use super::*;
+use super::{
+    get_same_or_none, get_same_or_none_mut, imgui, InspectArgsDefault, InspectRenderDefault,
+};
 
 impl InspectRenderDefault<bool> for bool {
     fn render(data: &[&bool], label: &'static str, ui: &imgui::Ui<'_>, _args: &InspectArgsDefault) {

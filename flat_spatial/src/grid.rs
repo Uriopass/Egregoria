@@ -47,17 +47,17 @@ pub struct StoreObject<O> {
 /// Compare that to most immutable spatial partitioning structures out there, which pretty much require
 /// to rebuild the entire tree every time.
 ///
-/// A SlotMap is used for objects managing, adding a level of indirection between points and objects.
-/// SlotMap is used because removal doesn't alter handles given to the user, while still having constant time access.
-/// However it requires O to be copy, but SlotMap's author stated that they were working on a similar
+/// A `SlotMap` is used for objects managing, adding a level of indirection between points and objects.
+/// `SlotMap` is used because removal doesn't alter handles given to the user, while still having constant time access.
+/// However it requires O to be copy, but `SlotMap's` author stated that they were working on a similar
 /// map where Copy isn't required.
 ///
-/// ## About object managment
+/// ## About object management
 ///
-/// In theory, you don't have to use the object managment directly, you can make your custom
+/// In theory, you don't have to use the object management directly, you can make your custom
 /// Handle -> Object map by specifying "`()`" to be the object type.
 /// _(This can be useful if your object is not Copy)_
-/// Since `()` is zero sized, it should probably optimize away a lot of the object managment code.
+/// Since `()` is zero sized, it should probably optimize away a lot of the object management code.
 ///
 ///
 /// ## Examples
@@ -115,7 +115,7 @@ impl<ST: Storage<GridCell>, O: Copy> Grid<O, ST> {
     }
 
     /// Inserts a new object with a position and an associated object
-    /// Returns the unique and stable handle to be used with get_obj
+    /// Returns the unique and stable handle to be used with `get_obj`
     pub fn insert(&mut self, pos: Vec2, obj: O) -> GridHandle {
         let (cell_id, cell) = self.storage.cell_mut(pos);
         let handle = self.objects.insert(StoreObject {

@@ -17,9 +17,8 @@ pub fn window<T>(lst: &[T]) -> impl Iterator<Item = (&T, &T, &T)> {
     prevs.zip(items).zip(nexts).map(|((a, b), c)| (a, b, c))
 }
 
-#[allow(clippy::float_cmp)]
 fn approx_equal(a: f32, b: f32) -> bool {
-    (a == b) || ((a - b).abs() <= f32::max(a.abs(), b.abs()) * 0.001)
+    (a - b).abs() < f32::EPSILON || ((a - b).abs() <= f32::max(a.abs(), b.abs()) * 0.001)
 }
 
 fn approx_equal_vec(a: Vec2, b: Vec2) -> bool {

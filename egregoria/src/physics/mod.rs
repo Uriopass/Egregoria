@@ -2,7 +2,7 @@ use flat_spatial::grid::GridHandle;
 use imgui::Ui;
 use imgui_inspect::InspectDragf;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault, InspectVec2Rotation};
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 
 mod kinematics;

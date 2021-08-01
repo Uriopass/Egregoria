@@ -43,7 +43,7 @@ pub trait Storage<T> {
     fn cell_aabb(&self, id: CellIdx) -> AABB;
 }
 
-/// DenseStorage stores cells in a Vec to be used for a Grid.
+/// `DenseStorage` stores cells in a Vec to be used for a Grid.
 /// It implements the Storage trait.
 #[derive(Clone, Deserialize, Serialize)]
 pub struct DenseStorage<T: Default> {
@@ -228,7 +228,7 @@ impl<T: Default> Storage<T> for DenseStorage<T> {
     }
 }
 
-/// SparseStorage stores cells in a FastMap to be used in a Grid.
+/// `SparseStorage` stores cells in a `FastMap` to be used in a Grid.
 /// It is Sparse because cells are eagerly allocated, and cleaned when they are empty.
 /// It implements the Storage trait.
 #[derive(Clone, Deserialize, Serialize)]

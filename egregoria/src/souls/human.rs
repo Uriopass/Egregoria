@@ -7,7 +7,7 @@ use crate::utils::time::GameTime;
 use crate::vehicles::{spawn_parked_vehicle, VehicleID, VehicleKind};
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::Transform;
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use legion::system;
 use legion::Entity;
 use map_model::BuildingID;

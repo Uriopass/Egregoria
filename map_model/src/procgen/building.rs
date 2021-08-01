@@ -181,7 +181,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
 ///  XXXXX   
 ///  XXXXX   
 ///    XXX   
-///     |    
+///     |
 pub fn gen_exterior_farm(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
     let h_size = 30.0;
     let (mut mesh, mut door_pos) = gen_exterior_house(h_size, seed);
@@ -207,7 +207,7 @@ pub fn gen_exterior_farm(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
 // 4. Score the resulting house based on "rectanglicity" and size of resulting regions
 //    - rectanglicity: area of region divided by area of smallest surrounding bbox
 // 5. Put holes in between regions for the doors
-// 6. Put a outgoing door somwhere
+// 6. Put a outgoing door somewhere
 // 7. Assign rooms somehow
 //  necessary:
 //    - bedroom

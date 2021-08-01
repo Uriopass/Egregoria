@@ -220,7 +220,7 @@ impl PolyLine3 {
         }
     }
 
-    /// Inverse of point_along
+    /// Inverse of `point_along`
     /// proj needs to be on the polyline for the result to be accurate
     pub fn length_at_proj(&self, proj: Vec3) -> f32 {
         match self.n_points() {

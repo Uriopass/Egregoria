@@ -1,4 +1,4 @@
-use super::*;
+use super::{imgui, InspectArgsDefault, InspectRenderDefault};
 
 impl<A: InspectRenderDefault<A>, B: InspectRenderDefault<B>> InspectRenderDefault<(A, B)>
     for (A, B)

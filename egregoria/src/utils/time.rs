@@ -1,4 +1,4 @@
-use imgui_inspect_derive::*;
+use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 
 pub const SECONDS_PER_HOUR: i32 = 100;
@@ -13,7 +13,7 @@ pub struct GameInstant {
 }
 
 /// The resource to know everything about the current in-game time
-/// GameTime is subject to timewarp
+/// `GameTime` is subject to timewarp
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct GameTime {
     /// Monotonic time in seconds elapsed since the start of the game.
