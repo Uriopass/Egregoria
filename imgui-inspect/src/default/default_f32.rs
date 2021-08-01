@@ -1,4 +1,6 @@
-use super::*;
+use super::{
+    get_same_or_none, get_same_or_none_mut, imgui, InspectArgsDefault, InspectRenderDefault,
+};
 
 impl InspectRenderDefault<f32> for f32 {
     fn render(data: &[&f32], label: &'static str, ui: &imgui::Ui<'_>, _args: &InspectArgsDefault) {

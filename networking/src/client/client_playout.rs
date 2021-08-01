@@ -70,7 +70,7 @@ impl ClientPlayoutBuffer {
     ///  ack cons next
     ///  lag = 3 = next - ack
     ///
-    /// mk_input is closure which should be called and sent if try_consume works out
+    /// `mk_input` is closure which should be called and sent if `try_consume` works out
     pub fn try_consume(
         &mut self,
         mk_input: &mut impl FnMut() -> PlayerInput,

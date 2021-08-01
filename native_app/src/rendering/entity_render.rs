@@ -3,7 +3,7 @@ use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::vehicles::{Vehicle, VehicleKind};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec3, V3};
-use legion::query::*;
+use legion::query::IntoQuery;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder,

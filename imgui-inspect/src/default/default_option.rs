@@ -1,4 +1,4 @@
-use super::*;
+use super::{imgui, InspectArgsDefault, InspectRenderDefault};
 
 impl<T: InspectRenderDefault<T>> InspectRenderDefault<Option<T>> for Option<T> {
     fn render(

@@ -21,32 +21,32 @@ pub struct StoreObject<O: Copy, S: Shape> {
     pub shape: S,
 }
 
-/// ShapeGrid is a generic shape-based spatial partitioning structure that uses a generic storage of cells which acts as a
+/// `ShapeGrid` is a generic shape-based spatial partitioning structure that uses a generic storage of cells which acts as a
 /// grid instead of a tree.
 ///
 /// ## Fast queries
-/// In theory, ShapeGrid should be faster than a quadtree/r-tree because it has no log costs
+/// In theory, `ShapeGrid` should be faster than a quadtree/r-tree because it has no log costs
 /// (calculating the cells around a point is trivial).  
 /// However, it only works if the cell size is adapted to the problem, much like how a tree has to
 /// be balanced to be efficient.  
 ///
 /// ## Dynamicity
-/// ShapeGrid's allows eager removals and position updates, however for big shapes (spanning many cells)
+/// `ShapeGrid's` allows eager removals and position updates, however for big shapes (spanning many cells)
 /// this can be expensive, so beware.
 ///
 /// Use this grid for mostly static objects with the occasional removal/position update if needed.
 ///
-/// A SlotMap is used for objects managing, adding a level of indirection between shapes and objects.
-/// SlotMap is used because removal doesn't alter handles given to the user, while still having constant time access.
-/// However it requires O to be copy, but SlotMap's author stated that they were working on a similar
+/// A `SlotMap` is used for objects managing, adding a level of indirection between shapes and objects.
+/// `SlotMap` is used because removal doesn't alter handles given to the user, while still having constant time access.
+/// However it requires O to be copy, but `SlotMap's` author stated that they were working on a similar
 /// map where Copy isn't required.
 ///
-/// ## About object managment
+/// ## About object management
 ///
-/// In theory, you don't have to use the object managment directly, you can make your custom
+/// In theory, you don't have to use the object management directly, you can make your custom
 /// Handle -> Object map by specifying "`()`" to be the object type.
 /// _(This can be useful if your object is not Copy)_
-/// Since `()` is zero sized, it should probably optimize away a lot of the object managment code.
+/// Since `()` is zero sized, it should probably optimize away a lot of the object management code.
 ///
 /// ```rust
 /// use flat_spatial::ShapeGrid;
@@ -108,7 +108,7 @@ impl<S: Shape + Intersect<AABB> + Copy, ST: Storage<ShapeGridCell>, O: Copy> Sha
     }
 
     /// Inserts a new object with a position and an associated object
-    /// Returns the unique and stable handle to be used with get_obj
+    /// Returns the unique and stable handle to be used with `get_obj`
     pub fn insert(&mut self, shape: S, obj: O) -> ShapeGridHandle {
         let Self {
             storage, objects, ..

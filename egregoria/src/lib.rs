@@ -1,18 +1,26 @@
-#![allow(clippy::unreadable_literal)]
-#![allow(clippy::blocks_in_if_conditions)]
-#![allow(clippy::too_many_arguments)]
-#![allow(clippy::upper_case_acronyms)]
-#![deny(clippy::indexing_slicing)]
-#![deny(clippy::unwrap_used)]
 #![deny(
+    rustdoc::all,
     rust_2018_compatibility,
     rust_2018_idioms,
     nonstandard_style,
     unused,
     future_incompatible,
-    unused_extern_crates
+    unused_extern_crates,
+    clippy::all,
+    clippy::doc_markdown,
+    clippy::wildcard_imports
 )]
-#![allow(missing_debug_implementations, missing_copy_implementations)]
+#![allow(
+    clippy::collapsible_else_if,
+    clippy::manual_range_contains,
+    clippy::unreadable_literal,
+    clippy::unseparated_literal_suffix,
+    clippy::blocks_in_if_conditions,
+    clippy::upper_case_acronyms,
+    clippy::must_use_candidate,
+    missing_copy_implementations,
+    missing_debug_implementations
+)]
 
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommands};
@@ -204,8 +212,8 @@ impl GSystem {
 inventory::collect!(GSystem);
 
 /// Safety: Resources must be Send+Sync.
-/// Guaranteed by Egregoria::insert.
-/// World is Send+Sync and SeqSchedule too
+/// Guaranteed by `Egregoria::insert`.
+/// World is Send+Sync and `SeqSchedule` too
 unsafe impl Sync for Egregoria {}
 
 const RNG_SEED: u64 = 123;

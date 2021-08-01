@@ -10,7 +10,7 @@ pub struct OBB {
 }
 
 impl OBB {
-    /// cossin of UNIT_X makes this an AABB
+    /// cossin of `UNIT_X` makes this an AABB
     pub fn new(center: Vec2, cossin: Vec2, w: f32, h: f32) -> Self {
         let up = cossin * w * 0.5;
         let right = cossin.perpendicular() * h * 0.5;
@@ -56,7 +56,7 @@ impl OBB {
     }
 
     /// Returns true if other overlaps one dimension of this.
-    /// Taken from https://www.flipcode.com/archives/2D_OBB_Intersection.shtml
+    /// Taken from <https://www.flipcode.com/archives/2D_OBB_Intersection.shtml>
     fn intersects1way(&self, other: &OBB) -> bool {
         let mut axis = self.axis();
 

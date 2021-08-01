@@ -1,4 +1,6 @@
-use super::*;
+use super::{
+    get_same_or_none, get_same_or_none_mut, imgui, InspectArgsDefault, InspectRenderDefault,
+};
 
 impl InspectRenderDefault<u16> for u16 {
     fn render(data: &[&u16], label: &'static str, ui: &imgui::Ui<'_>, _args: &InspectArgsDefault) {
@@ -49,7 +51,7 @@ impl InspectRenderDefault<u16> for u16 {
         let mut changed = false;
         if imgui::InputInt::new(ui, &imgui::im_str!("{}", label), &mut value).build()
             && value >= args.min_value.map(|x| x as i32).unwrap_or(0).max(0)
-            && value <= args.max_value.map(|x| x as i32).unwrap_or(std::i32::MAX)
+            && value <= args.max_value.map(|x| x as i32).unwrap_or(i32::MAX)
         {
             {
                 for d in data {
