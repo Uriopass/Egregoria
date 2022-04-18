@@ -1,6 +1,6 @@
 #![allow(clippy::ptr_arg)]
 
-use crate::{Ray, Segment, Vec2, Vec3};
+use crate::{vec2, vec2d, Rayd, Segmentd, Vec2, Vec2d, Vec3};
 use ordered_float::OrderedFloat;
 use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
@@ -8,7 +8,7 @@ use std::collections::BinaryHeap;
 type FastMap<K, V> = fnv::FnvHashMap<K, V>;
 type FastSet<V> = fnv::FnvHashSet<V>;
 
-const EPSILON: f32 = 0.00001;
+const EPSILON: f64 = 0.00001;
 
 pub fn window<T>(lst: &[T]) -> impl Iterator<Item = (&T, &T, &T)> {
     let prevs = lst.iter().cycle().skip(lst.len() - 1);
@@ -17,16 +17,16 @@ pub fn window<T>(lst: &[T]) -> impl Iterator<Item = (&T, &T, &T)> {
     prevs.zip(items).zip(nexts).map(|((a, b), c)| (a, b, c))
 }
 
-fn approx_equal(a: f32, b: f32) -> bool {
-    (a - b).abs() < f32::EPSILON || ((a - b).abs() <= f32::max(a.abs(), b.abs()) * 0.001)
+fn approx_equal(a: f64, b: f64) -> bool {
+    (a - b).abs() < f64::EPSILON || ((a - b).abs() <= f64::max(a.abs(), b.abs()) * 0.001)
 }
 
-fn approx_equal_vec(a: Vec2, b: Vec2) -> bool {
+fn approx_equal_vec(a: Vec2d, b: Vec2d) -> bool {
     approx_equal(a.x, b.x) && approx_equal(a.y, b.y)
 }
 
-fn normalize_contour(contour: &[Vec2]) -> Vec<Vec2> {
-    window(&contour.iter().copied().rev().collect::<Vec<_>>())
+fn normalize_contour(contour: impl DoubleEndedIterator<Item = Vec2d> + Sized) -> Vec<Vec2d> {
+    window(&contour.rev().collect::<Vec<_>>())
         .filter(|&(&prev, &point, &next)| {
             !approx_equal_vec(point, next)
                 && !approx_equal_vec((point - prev).normalize(), (next - point).normalize())
@@ -46,18 +46,18 @@ type Lavs = Vec<LAV>;
 
 #[derive(Debug)]
 struct SplitEvent {
-    distance: f32,
-    intersection_point: Vec2,
+    distance: f64,
+    intersection_point: Vec2d,
     vertex: VertexID,
-    opposite_edge: Segment,
+    opposite_edge: Segmentd,
 }
 
 impl SplitEvent {
     pub fn new(
-        distance: f32,
-        intersection_point: Vec2,
+        distance: f64,
+        intersection_point: Vec2d,
         vertex: VertexID,
-        opposite_edge: Segment,
+        opposite_edge: Segmentd,
     ) -> Self {
         SplitEvent {
             distance,
@@ -70,16 +70,16 @@ impl SplitEvent {
 
 #[derive(Debug)]
 struct EdgeEvent {
-    distance: f32,
-    intersection_point: Vec2,
+    distance: f64,
+    intersection_point: Vec2d,
     vertex_a: VertexID,
     vertex_b: VertexID,
 }
 
 impl EdgeEvent {
     pub fn new(
-        distance: f32,
-        intersection_point: Vec2,
+        distance: f64,
+        intersection_point: Vec2d,
         vertex_a: VertexID,
         vertex_b: VertexID,
     ) -> Self {
@@ -99,14 +99,14 @@ enum Event {
 }
 
 impl Event {
-    fn distance(&self) -> f32 {
+    fn distance(&self) -> f64 {
         match self {
             Event::Split(s) => s.distance,
             Event::Edge(e) => e.distance,
         }
     }
 
-    fn intersection_point(&self) -> Vec2 {
+    fn intersection_point(&self) -> Vec2d {
         match self {
             Event::Split(s) => s.intersection_point,
             Event::Edge(e) => e.intersection_point,
@@ -136,13 +136,13 @@ impl Ord for Event {
 
 #[derive(Debug)]
 struct OriginalEdge {
-    edge: Segment,
-    bisector_left: Ray,
-    bisector_right: Ray,
+    edge: Segmentd,
+    bisector_left: Rayd,
+    bisector_right: Rayd,
 }
 
 impl OriginalEdge {
-    pub fn new(edge: Segment, bisector_left: Ray, bisector_right: Ray) -> Self {
+    pub fn new(edge: Segmentd, bisector_left: Rayd, bisector_right: Rayd) -> Self {
         OriginalEdge {
             edge,
             bisector_left,
@@ -159,11 +159,14 @@ pub struct Subtree {
 }
 
 impl Subtree {
-    pub fn new(source: Vec2, height: f32, sinks: Vec<Vec2>) -> Self {
+    pub fn new(source: Vec2d, height: f64, sinks: Vec<Vec2d>) -> Self {
         Subtree {
-            source,
-            height,
-            sinks,
+            source: vec2(source.x as f32, source.y as f32),
+            height: height as f32,
+            sinks: sinks
+                .into_iter()
+                .map(|v| vec2(v.x as f32, v.y as f32))
+                .collect(),
         }
     }
 }
@@ -171,15 +174,15 @@ impl Subtree {
 #[derive(Clone)]
 struct LAVertex {
     pub(crate) id: VertexID,
-    pub(crate) point: Vec2,
-    pub(crate) edge_left: Segment,
-    pub(crate) edge_right: Segment,
+    pub(crate) point: Vec2d,
+    pub(crate) edge_left: Segmentd,
+    pub(crate) edge_right: Segmentd,
     pub(crate) prev: Option<VertexID>,
     pub(crate) next: Option<VertexID>,
     pub(crate) lav: Option<LavID>,
     pub(crate) valid: bool,
     pub(crate) is_reflex: bool,
-    pub(crate) bisector: Ray,
+    pub(crate) bisector: Rayd,
 }
 
 impl LAVertex {
@@ -241,10 +244,10 @@ impl LAVertex {
                     }
 
                     let bisect_vec = ed_vec + lin_vec;
-                    if approx_equal_vec(bisect_vec, Vec2::ZERO) {
+                    if approx_equal_vec(bisect_vec, Vec2d::ZERO) {
                         continue;
                     }
-                    let bisector = Ray::new(i, bisect_vec);
+                    let bisector = Rayd::new(i, bisect_vec);
                     let b = bisector.intersection_point(&self.bisector);
                     if b.is_none() {
                         #[cfg(test)]
@@ -331,7 +334,7 @@ impl LAVertex {
         );
 
         let mut min_ev = None;
-        let mut min_v: f32 = f32::INFINITY;
+        let mut min_v: f64 = f64::INFINITY;
         for ev in events {
             #[cfg(test)]
             println!("    {:?}", &ev);
@@ -382,10 +385,10 @@ impl LAVertex {
 impl LAVertex {
     pub fn new(
         id: VertexID,
-        point: Vec2,
-        edge_left: Segment,
-        edge_right: Segment,
-        direction_vectors: Option<(Vec2, Vec2)>,
+        point: Vec2d,
+        edge_left: Segmentd,
+        edge_right: Segmentd,
+        direction_vectors: Option<(Vec2d, Vec2d)>,
     ) -> Self {
         let creator_vectors = (-edge_left.vec().normalize(), edge_right.vec().normalize());
         let direction_vectors = if let Some(v) = direction_vectors {
@@ -395,7 +398,7 @@ impl LAVertex {
         };
 
         let is_reflex = direction_vectors.0.cross(direction_vectors.1) < 0.0;
-        let bisector = Ray {
+        let bisector = Rayd {
             from: point,
             dir: (creator_vectors.0 + creator_vectors.1) * if is_reflex { -1.0 } else { 1.0 },
         };
@@ -671,10 +674,16 @@ impl SLAV {
 
 impl SLAV {
     pub fn new(vs: &mut Vertices, lavs: &mut Lavs, polygon: &[Vec2], holes: &[&[Vec2]]) -> Self {
-        let lavs_l = std::iter::once(normalize_contour(polygon))
-            .chain(holes.iter().map(|x| normalize_contour(x)))
-            .map(|x| LAV::from_polygon(lavs, vs, &x))
-            .collect::<Vec<_>>();
+        let lavs_l = std::iter::once(normalize_contour(
+            polygon.iter().map(|v| vec2d(v.x as f64, v.y as f64)),
+        ))
+        .chain(
+            holes
+                .iter()
+                .map(|x| normalize_contour(x.iter().map(|v| vec2d(v.x as f64, v.y as f64)))),
+        )
+        .map(|x| LAV::from_polygon(lavs, vs, &x))
+        .collect::<Vec<_>>();
 
         let original_edges: Vec<OriginalEdge> = lavs
             .iter()
@@ -684,7 +693,7 @@ impl SLAV {
                 let vertex = &vs[vertex.0];
                 let prev = &vs[vertex.prev.unwrap().0];
                 OriginalEdge::new(
-                    Segment::new(prev.point, vertex.point),
+                    Segmentd::new(prev.point, vertex.point),
                     prev.bisector,
                     vertex.bisector,
                 )
@@ -717,7 +726,7 @@ impl LAV {
         }
     }
 
-    pub fn from_polygon(lavs: &mut Lavs, vs: &mut Vertices, polygon: &[Vec2]) -> LavID {
+    pub fn from_polygon(lavs: &mut Lavs, vs: &mut Vertices, polygon: &[Vec2d]) -> LavID {
         let lav_id = LavID(lavs.len());
         let mut len = 0;
         let mut head = None;
@@ -727,8 +736,8 @@ impl LAV {
             vs.push(LAVertex::new(
                 vertex,
                 point,
-                Segment::new(prev, point),
-                Segment::new(point, next),
+                Segmentd::new(prev, point),
+                Segmentd::new(point, next),
                 None,
             ));
             vs[vertex.0].lav = Some(lav_id);
@@ -774,7 +783,7 @@ impl LAV {
         vs: &mut Vertices,
         vertex_a: VertexID,
         vertex_b: VertexID,
-        point: Vec2,
+        point: Vec2d,
     ) -> VertexID {
         let va = &vs[vertex_a.0].clone();
         let vb = &vs[vertex_b.0].clone();
@@ -925,11 +934,13 @@ pub fn faces_from_skeleton(
     skeleton: &[Subtree],
     merge_triangles: bool,
 ) -> Option<(Vec<Vec<Vec3>>, Vec<Vec3>)> {
-    let poly = normalize_contour(poly);
+    let poly = normalize_contour(poly.iter().map(|v| vec2d(v.x as f64, v.y as f64)));
     let mut graph: FastMap<Vec2, Vec<_>> = FastMap::default();
-    let mut heights = FastMap::default();
+    let mut heights: FastMap<Vec2, f32> = FastMap::default();
 
     for (&prev, &p, _) in window(&poly) {
+        let p = vec2(p.x as f32, p.y as f32);
+        let prev = vec2(prev.x as f32, prev.y as f32);
         graph.entry(p).or_default().push(prev);
         graph.entry(prev).or_default().push(p);
         heights.insert(p, 0.0);
@@ -952,6 +963,9 @@ pub fn faces_from_skeleton(
     if merge_triangles {
         let mut triangles = vec![];
         for (_, cur, next) in window(&poly) {
+            let cur = &vec2(cur.x as f32, cur.y as f32);
+            let next = &vec2(next.x as f32, next.y as f32);
+
             let top = *graph.get(cur)?.last()?;
             let top_next = *graph.get(next)?.last()?;
 
@@ -1047,8 +1061,7 @@ pub fn faces_from_skeleton(
 
 #[cfg(test)]
 mod tests {
-    use crate::skeleton::{faces_from_skeleton, skeleton};
-    use crate::vec2;
+    use super::*;
     use ordered_float::OrderedFloat;
 
     #[test]
@@ -1086,26 +1099,6 @@ mod tests {
         assert!(!skeleton.is_empty());
         let faces = faces_from_skeleton(poly, &skeleton, false).unwrap().0;
         assert_eq!(faces.len(), 4);
-    }
-
-    #[test]
-    fn test_half_cross() {
-        let poly = &[
-            vec2(100.0, 50.0),
-            vec2(150.0, 150.0),
-            vec2(50.0, 100.0),
-            vec2(50.0, 350.0),
-            vec2(350.0, 350.0),
-            vec2(350.0, 100.0),
-            vec2(250.0, 150.0),
-            vec2(300.0, 50.0),
-        ]
-        .iter()
-        .copied()
-        .rev()
-        .collect::<Vec<_>>();
-        let skeleton = skeleton(&poly, &[]);
-        let _ = faces_from_skeleton(&poly, &skeleton, false).unwrap().0;
     }
 
     #[test]

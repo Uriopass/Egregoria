@@ -13,11 +13,31 @@ pub struct Vec3 {
     pub z: f32,
 }
 
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
+#[repr(C)]
+pub struct Vec3d {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+}
+
 impl Eq for Vec3 {}
 
 impl Display for Vec3 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str("V3(")?;
+        self.x.fmt(f)?;
+        f.write_str(", ")?;
+        self.y.fmt(f)?;
+        f.write_str(", ")?;
+        self.z.fmt(f)?;
+        f.write_str(")")
+    }
+}
+
+impl Display for Vec3d {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("V3d(")?;
         self.x.fmt(f)?;
         f.write_str(", ")?;
         self.y.fmt(f)?;
