@@ -499,6 +499,7 @@ impl SLAV {
         )
     }
 
+    #[allow(unknown_lints)]
     #[allow(clippy::needless_late_init)]
     pub fn handle_split_event(
         &mut self,

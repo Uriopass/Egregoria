@@ -1078,17 +1078,15 @@ dependencies = [
  "arrayvec",
  "bitflags",
  "fxhash",
- "gfx-auxil",
  "gfx-hal",
  "glow",
  "js-sys",
  "khronos-egl",
  "libloading 0.7.0",
  "log",
- "naga",
+ "naga 0.5.0",
  "parking_lot",
  "raw-window-handle",
- "spirv_cross",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -1107,17 +1105,15 @@ dependencies = [
  "core-graphics-types",
  "foreign-types",
  "fxhash",
- "gfx-auxil",
  "gfx-hal",
  "log",
  "metal",
- "naga",
+ "naga 0.5.0",
  "objc",
  "parking_lot",
  "profiling",
  "range-alloc",
  "raw-window-handle",
- "spirv_cross",
  "storage-map",
 ]
 
@@ -1135,7 +1131,7 @@ dependencies = [
  "gfx-renderdoc",
  "inplace_it",
  "log",
- "naga",
+ "naga 0.5.0",
  "objc",
  "parking_lot",
  "raw-window-handle",
@@ -1151,7 +1147,7 @@ checksum = "7fbb575ea793dd0507b3082f4f2cde62dc9f3cebd98f5cd49ba2a4da97a976fd"
 dependencies = [
  "bitflags",
  "external-memory",
- "naga",
+ "naga 0.5.0",
  "raw-window-handle",
  "thiserror",
 ]
@@ -1909,9 +1905,25 @@ dependencies = [
  "log",
  "num-traits",
  "petgraph",
- "pp-rs",
  "rose_tree",
  "spirv_headers",
+ "thiserror",
+]
+
+[[package]]
+name = "naga"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3012f2dbcc79e8e0b5825a4836a7106a75dd9b2fe42c528163be0f572538c705"
+dependencies = [
+ "bit-set",
+ "bitflags",
+ "indexmap",
+ "log",
+ "num-traits",
+ "pp-rs",
+ "rustc-hash",
+ "spirv",
  "thiserror",
 ]
 
@@ -2740,6 +2752,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "spirv"
+version = "0.2.0+1.5.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "246bfa38fe3db3f1dfc8ca5a2cdeb7348c78be2112740cc0ec8ef18b6d94f830"
+dependencies = [
+ "bitflags",
+ "num-traits",
+]
+
+[[package]]
 name = "spirv_cross"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3196,7 +3218,7 @@ dependencies = [
  "arrayvec",
  "js-sys",
  "log",
- "naga",
+ "naga 0.5.0",
  "parking_lot",
  "raw-window-handle",
  "smallvec",
@@ -3228,7 +3250,7 @@ dependencies = [
  "gpu-alloc",
  "gpu-descriptor",
  "log",
- "naga",
+ "naga 0.5.0",
  "parking_lot",
  "profiling",
  "raw-window-handle",
@@ -3257,7 +3279,7 @@ dependencies = [
  "image",
  "itertools",
  "log",
- "naga",
+ "naga 0.8.5",
  "profiling",
  "raw-window-handle",
  "rayon",
