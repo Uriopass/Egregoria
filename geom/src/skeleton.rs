@@ -425,6 +425,7 @@ impl LAVertex {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 struct SLAV {
     lavs: Vec<LavID>,
     original_edges: Vec<OriginalEdge>,
@@ -697,6 +698,7 @@ impl SLAV {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 struct LAV {
     id: LavID,
     head: Option<VertexID>,

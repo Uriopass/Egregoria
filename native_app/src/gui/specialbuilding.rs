@@ -10,19 +10,10 @@ use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
 register_resource_noserialize!(SpecialBuildingResource);
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct SpecialBuildingResource {
     pub opt: Option<(BuildingKind, BuildingGen, f32, String)>,
     pub last_obb: Option<OBB>,
-}
-
-impl Default for SpecialBuildingResource {
-    fn default() -> Self {
-        Self {
-            opt: None,
-            last_obb: None,
-        }
-    }
 }
 
 #[profiling::function]

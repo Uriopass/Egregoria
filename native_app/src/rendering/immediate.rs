@@ -17,6 +17,7 @@ impl ImmediateSound {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone)]
 pub enum OrderKind {
     Circle {

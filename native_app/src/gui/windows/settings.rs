@@ -59,7 +59,7 @@ impl Default for Settings {
             effects_volume_percent: 100.0,
             ui_volume_percent: 100.0,
             fullscreen: true,
-            vsync: VSyncOptions::Vsync,
+            vsync: VSyncOptions::Enabled,
             time_warp: 1,
             auto_save_every: AutoSaveEvery::Never,
             ssao: true,
@@ -73,17 +73,17 @@ impl Default for Settings {
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub enum VSyncOptions {
-    NoVsync,
-    Vsync,
-    LowLatencyVsync,
+    Disabled,
+    Enabled,
+    LowLatency,
 }
 
 impl From<VSyncOptions> for wgpu_engine::wgpu::PresentMode {
     fn from(x: VSyncOptions) -> Self {
         match x {
-            VSyncOptions::NoVsync => wgpu_engine::wgpu::PresentMode::Immediate,
-            VSyncOptions::Vsync => wgpu_engine::wgpu::PresentMode::Fifo,
-            VSyncOptions::LowLatencyVsync => wgpu_engine::wgpu::PresentMode::Mailbox,
+            VSyncOptions::Disabled => wgpu_engine::wgpu::PresentMode::Immediate,
+            VSyncOptions::Enabled => wgpu_engine::wgpu::PresentMode::Fifo,
+            VSyncOptions::LowLatency => wgpu_engine::wgpu::PresentMode::Mailbox,
         }
     }
 }
@@ -91,9 +91,9 @@ impl From<VSyncOptions> for wgpu_engine::wgpu::PresentMode {
 impl AsRef<str> for VSyncOptions {
     fn as_ref(&self) -> &str {
         match self {
-            VSyncOptions::NoVsync => "No VSync",
-            VSyncOptions::Vsync => "VSync Enabled",
-            VSyncOptions::LowLatencyVsync => "Low Latency VSync",
+            VSyncOptions::Disabled => "No VSync",
+            VSyncOptions::Enabled => "VSync Enabled",
+            VSyncOptions::LowLatency => "Low Latency VSync",
         }
     }
 }
@@ -205,13 +205,13 @@ pub fn settings(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, _
                 .begin(ui)
             {
                 if imgui::Selectable::new(im_str!("No VSync")).build(ui) {
-                    settings.vsync = VSyncOptions::NoVsync;
+                    settings.vsync = VSyncOptions::Disabled;
                 }
                 if imgui::Selectable::new(im_str!("VSync Enabled")).build(ui) {
-                    settings.vsync = VSyncOptions::Vsync;
+                    settings.vsync = VSyncOptions::Enabled;
                 }
                 if imgui::Selectable::new(im_str!("Low latency VSync")).build(ui) {
-                    settings.vsync = VSyncOptions::LowLatencyVsync;
+                    settings.vsync = VSyncOptions::LowLatency;
                 }
                 tok.end(ui);
             }
