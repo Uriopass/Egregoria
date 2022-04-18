@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use wgpu::{ShaderFlags, ShaderModule};
+use wgpu::ShaderModule;
 
 #[derive(Copy, Clone)]
 pub enum ShaderType {
@@ -27,28 +27,26 @@ fn cache_filename(p: &Path) -> Option<PathBuf> {
 
 fn mk_module(p: &Path, data: &[u8], device: &wgpu::Device) -> ShaderModule {
     let dev = device as *const wgpu::Device as usize;
-    let v = std::panic::catch_unwind(|| {
+    let v = std::panic::catch_unwind(|| unsafe {
         let dev = dev as *const wgpu::Device;
-        let s = wgpu::util::make_spirv(data);
-        wgpu::Device::create_shader_module(
-            unsafe { &*dev as &wgpu::Device },
-            &wgpu::ShaderModuleDescriptor {
+        let s = wgpu::util::make_spirv_raw(data);
+        wgpu::Device::create_shader_module_spirv(
+            &*dev as &wgpu::Device,
+            &wgpu::ShaderModuleDescriptorSpirV {
                 label: None,
                 source: s,
-                flags: ShaderFlags::VALIDATION,
             },
         )
     });
-    v.unwrap_or_else(move |_| {
+    v.unwrap_or_else(move |_| unsafe {
         log::error!(
             "couldn't validate shader {:?} using naga. disabling validation",
             p
         );
-        let s = wgpu::util::make_spirv(data);
-        device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+        let s = wgpu::util::make_spirv_raw(data);
+        device.create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
             label: None,
             source: s,
-            flags: ShaderFlags::default(),
         })
     })
 }
@@ -204,8 +202,8 @@ fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
         &src,
         "main",
         match stype {
-            ShaderType::Vertex => naga::ShaderStage::Vertex,
-            ShaderType::Fragment => naga::ShaderStage::Fragment,
+            ShaderType::Vertex => naga::ShaderStages::Vertex,
+            ShaderType::Fragment => naga::ShaderStages::Fragment,
         },
         Default::default(),
     )

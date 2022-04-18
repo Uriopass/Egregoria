@@ -9,8 +9,8 @@ use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::souls::human::HumanDecision;
 use egregoria::vehicles::{Vehicle, VehicleID, VehicleState};
 use egregoria::{Egregoria, SoulID};
+
 use geom::{Transform, Vec2};
-use imgui::im_str;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use legion::storage::Component;
@@ -53,7 +53,7 @@ impl InspectRenderer {
     }
 
     pub fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui<'_>) {
-        ui.text(im_str!("{:?}", self.entity));
+        ui.text(format!("{:?}", self.entity));
         self.inspect_transform(goria, uiworld, ui);
         self.inspect_component::<Vehicle>(goria, ui);
         self.inspect_component::<Pedestrian>(goria, ui);
@@ -73,7 +73,7 @@ impl InspectRenderer {
                 for (e, loc) in <(Entity, &Location)>::query().iter(goria.world()) {
                     let loc: &Location = loc;
                     if loc == &Location::Vehicle(VehicleID(self.entity))
-                        && ui.small_button(&*im_str!("inspect inside vehicle: {:?}", e))
+                        && ui.small_button(&*format!("inspect inside vehicle: {:?}", e))
                     {
                         self.entity = *e;
                         return;
@@ -84,7 +84,7 @@ impl InspectRenderer {
 
         if let Some(coll) = goria.comp::<Collider>(self.entity) {
             if let Some((pos, po)) = goria.read::<CollisionWorld>().get(coll.0) {
-                if imgui::CollapsingHeader::new(im_str!("Physics Object")).build(ui) {
+                if imgui::CollapsingHeader::new("Physics Object").build(ui) {
                     <Vec2 as InspectRenderDefault<Vec2>>::render(
                         &[&pos],
                         "pos",
@@ -112,10 +112,10 @@ impl InspectRenderer {
         if goria.comp::<Kinematics>(self.entity).is_some() {
             let follow = &mut uiworld.write::<FollowEntity>().0;
             if follow.is_none() {
-                if ui.small_button(im_str!("Follow")) {
+                if ui.small_button("Follow") {
                     follow.replace(self.entity);
                 }
-            } else if ui.small_button(im_str!("Unfollow")) {
+            } else if ui.small_button("Unfollow") {
                 follow.take();
             }
         }
@@ -131,14 +131,14 @@ impl InspectRenderer {
             return;
         }
 
-        if imgui::CollapsingHeader::new(im_str!("Capital")).build(ui) {
+        if imgui::CollapsingHeader::new("Capital").build(ui) {
             ui.indent();
-            ui.columns(2, im_str!("markett"), false);
+            ui.columns(2, "markett", false);
 
             for (kind, cap) in capitals {
-                ui.text(im_str!("{}", kind));
+                ui.text(format!("{}", kind));
                 ui.next_column();
-                ui.text(im_str!("{}", cap));
+                ui.text(format!("{}", cap));
                 ui.next_column();
             }
         }

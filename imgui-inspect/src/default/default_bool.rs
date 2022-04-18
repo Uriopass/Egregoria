@@ -7,22 +7,22 @@ impl InspectRenderDefault<bool> for bool {
         if data.is_empty() {
             // Values are inconsistent
             let style_token = ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0]);
-            ui.text(&imgui::im_str!("{}: ", label));
-            style_token.pop(ui);
+            ui.text(&format!("{}: ", label));
+            style_token.pop();
             return;
         }
 
         match get_same_or_none(data) {
             Some(_v) => {
                 // Values are consistent
-                ui.text(&imgui::im_str!("{}: {}", label, data[0]))
+                ui.text(&format!("{}: {}", label, data[0]))
             }
             None => {
                 // Values are inconsistent
                 let style_token =
                     ui.push_style_color(imgui::StyleColor::Text, [1.0, 1.0, 0.0, 1.0]);
-                ui.text(&imgui::im_str!("{}: ", label));
-                style_token.pop(ui);
+                ui.text(&format!("{}: ", label));
+                style_token.pop();
             }
         }
     }
@@ -46,7 +46,7 @@ impl InspectRenderDefault<bool> for bool {
         };
 
         let mut changed = false;
-        if ui.checkbox(&imgui::im_str!("{}", label), &mut value) {
+        if ui.checkbox(&label, &mut value) {
             for d in data {
                 **d = value;
                 changed = true;
@@ -54,7 +54,7 @@ impl InspectRenderDefault<bool> for bool {
         }
 
         if let Some(style_token) = style_token {
-            style_token.pop(ui);
+            style_token.pop();
         }
 
         changed

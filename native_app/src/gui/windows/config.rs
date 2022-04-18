@@ -4,7 +4,12 @@ use egregoria::Egregoria;
 use imgui::{Condition, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
-pub fn config(window: imgui::Window<'_>, ui: &Ui<'_>, _: &mut UiWorld, _: &Egregoria) {
+pub fn config(
+    window: imgui::Window<'_, &'static str>,
+    ui: &Ui<'_>,
+    _: &mut UiWorld,
+    _: &Egregoria,
+) {
     window
         .size([600.0, 500.0], Condition::Appearing)
         .build(ui, || {

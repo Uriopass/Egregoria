@@ -3,11 +3,11 @@ use super::{get_same_or_none_mut, imgui, InspectArgsSlider, InspectRenderSlider}
 impl InspectRenderSlider<f32> for f32 {
     fn render(data: &[&Self], label: &'static str, ui: &imgui::Ui<'_>, _args: &InspectArgsSlider) {
         if data.is_empty() {
-            ui.text(&imgui::im_str!("{}: None", label));
+            ui.text(&format!("{}: None", label));
             return;
         }
 
-        ui.text(&imgui::im_str!("{}: {}", label, data[0]));
+        ui.text(&format!("{}: {}", label, data[0]));
     }
 
     fn render_mut(
@@ -39,10 +39,7 @@ impl InspectRenderSlider<f32> for f32 {
         }
 
         let mut changed = false;
-        if imgui::Slider::new(&imgui::im_str!("{}", label))
-            .range(min..=max)
-            .build(ui, &mut value)
-        {
+        if imgui::Slider::new(&label, min, max).build(ui, &mut value) {
             for d in data {
                 **d = value;
                 changed = true;
@@ -50,7 +47,7 @@ impl InspectRenderSlider<f32> for f32 {
         }
 
         if let Some(style_token) = style_token {
-            style_token.pop(ui);
+            style_token.pop();
         }
 
         changed

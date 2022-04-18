@@ -1,7 +1,7 @@
 use crate::ToU8Slice;
 use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{BufferBinding, BufferBindingType, ShaderStage};
+use wgpu::{BufferBinding, BufferBindingType, ShaderStages};
 
 pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
@@ -21,7 +21,7 @@ where
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: ToU8Slice::cast_slice(std::slice::from_ref(&value)),
-            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         let bindgroup = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -75,7 +75,7 @@ impl<T> Uniform<T> {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: ShaderStage::VERTEX | ShaderStage::FRAGMENT,
+                visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: BufferBindingType::Uniform,
                     has_dynamic_offset: false, // The dynamic field indicates whether this buffer will change size or not. This is useful if we want to store an array of things in our uniforms.

@@ -2,7 +2,7 @@ use crate::network::{Client, NetworkState, Server};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
-use imgui::{im_str, ImString, Ui};
+use imgui::Ui;
 use networking::{ConnectConf, Frame, ServerConfiguration, VirtualClientConf};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
@@ -10,14 +10,19 @@ use std::net::ToSocketAddrs;
 
 register_resource!(NetworkConnectionInfo, "netinfo");
 pub struct NetworkConnectionInfo {
-    name: ImString,
-    ip: ImString,
+    name: String,
+    ip: String,
     pub error: String,
     show_hashes: bool,
     hashes: BTreeMap<String, u64>,
 }
 
-pub fn network(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+pub fn network(
+    window: imgui::Window<'_, &'static str>,
+    ui: &Ui<'_>,
+    uiworld: &mut UiWorld,
+    goria: &Egregoria,
+) {
     window.build(ui, || {
         let mut state = uiworld.write::<NetworkState>();
         let mut info = uiworld.write::<NetworkConnectionInfo>();
@@ -30,22 +35,22 @@ pub fn network(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, go
                     ui.separator();
                 }
 
-                ui.input_text(im_str!("name"), &mut info.name).build();
+                ui.input_text("name", &mut info.name).build();
 
                 if info.name.is_empty() {
                     ui.text("please enter your name");
                     return;
                 }
 
-                if ui.small_button(im_str!("Start server")) {
+                if ui.small_button("Start server") {
                     if let Some(server) = start_server(&mut *info, goria) {
                         *state = NetworkState::Server(server);
                     }
                 }
 
                 ui.separator();
-                ui.input_text(im_str!("IP"), &mut info.ip).build();
-                if ui.small_button(im_str!("Connect")) {
+                ui.input_text("IP", &mut info.ip).build();
+                if ui.small_button("Connect") {
                     if let Some(c) = start_client(&mut info) {
                         *state = NetworkState::Client(c);
                     }
@@ -61,11 +66,11 @@ pub fn network(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, go
                 show_hashes(ui, goria, &mut *info);
             }
         }
-    })
+    });
 }
 
 fn show_hashes(ui: &Ui<'_>, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
-    ui.checkbox(im_str!("show hashes"), &mut info.show_hashes);
+    ui.checkbox("show hashes", &mut info.show_hashes);
     if !info.show_hashes {
         return;
     }
@@ -122,7 +127,7 @@ fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
     let port = parsed_addr.port();
 
     let client = match networking::Client::connect(ConnectConf {
-        name: format!("{}", info.name),
+        name: info.name.clone(),
         addr: parsed_addr.ip(),
         port: if port != 80 { Some(port) } else { None },
         frame_buffer_advance: 8,
@@ -141,8 +146,8 @@ fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
 impl Default for NetworkConnectionInfo {
     fn default() -> Self {
         Self {
-            name: ImString::with_capacity(100),
-            ip: ImString::with_capacity(100),
+            name: String::with_capacity(100),
+            ip: String::with_capacity(100),
             error: String::new(),
             show_hashes: false,
             hashes: Default::default(),
@@ -168,8 +173,8 @@ impl<'de> Deserialize<'de> for NetworkConnectionInfo {
         name.reserve(100);
         ip.reserve(100);
         Ok(Self {
-            name: ImString::new(name),
-            ip: ImString::new(ip),
+            name,
+            ip,
             ..Default::default()
         })
     }

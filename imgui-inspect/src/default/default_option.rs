@@ -8,14 +8,14 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Option<T>> for Option<T> {
         args: &InspectArgsDefault,
     ) {
         if data.is_empty() {
-            ui.text(&imgui::im_str!("{}: None", label));
+            ui.text(&format!("{}: None", label));
             return;
         }
 
         let d = data[0];
         match d {
             Some(value) => <T as InspectRenderDefault<T>>::render(&[value], label, ui, args),
-            None => ui.text(&imgui::im_str!("{}: None", label)),
+            None => ui.text(&format!("{}: None", label)),
         };
     }
 
@@ -26,7 +26,7 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Option<T>> for Option<T> {
         args: &InspectArgsDefault,
     ) -> bool {
         if data.is_empty() {
-            ui.text(&imgui::im_str!("{}: None", label));
+            ui.text(&format!("{}: None", label));
             return false;
         }
 
@@ -36,7 +36,7 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Option<T>> for Option<T> {
                 <T as InspectRenderDefault<T>>::render_mut(&mut [value], label, ui, args)
             }
             None => {
-                ui.text(&imgui::im_str!("{}: None", label));
+                ui.text(&format!("{}: None", label));
                 false
             }
         }

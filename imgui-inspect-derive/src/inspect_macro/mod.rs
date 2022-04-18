@@ -309,7 +309,7 @@ fn generate(
                 }
 
                 let should_render_children = if header {
-                    imgui_inspect::imgui::CollapsingHeader::new(&imgui_inspect::imgui::im_str!( "{}", label)).default_open(true).build(&ui)
+                    imgui_inspect::imgui::CollapsingHeader::new(&label).default_open(true).build(&ui)
                 } else {
                     true
                 };
@@ -321,7 +321,7 @@ fn generate(
                         #render_impls
                     )*
                     if indent_children { ui.unindent(); }
-                    id_token.pop(ui);
+                    id_token.pop();
                 }
             }
 
@@ -339,7 +339,7 @@ fn generate(
                 }
 
                 let should_render_children = if header {
-                    imgui_inspect::imgui::CollapsingHeader::new(&imgui_inspect::imgui::im_str!("{}", label)).default_open(true).build(&ui)
+                    imgui_inspect::imgui::CollapsingHeader::new(&label).default_open(true).build(&ui)
                 } else {
                     true
                 };
@@ -352,7 +352,7 @@ fn generate(
                         #render_mut_impls
                     )*
                     if indent_children { ui.unindent(); }
-                    id_token.pop(ui);
+                    id_token.pop();
                 }
                 _has_any_field_changed
             }

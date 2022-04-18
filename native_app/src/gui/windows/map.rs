@@ -4,7 +4,7 @@ use egregoria::pedestrians::Pedestrian;
 use egregoria::vehicles::Vehicle;
 use egregoria::Egregoria;
 use geom::Camera;
-use imgui::{im_str, Ui};
+use imgui::Ui;
 use legion::IntoQuery;
 
 register_resource_noserialize!(TestFieldProperties);
@@ -15,24 +15,29 @@ struct TestFieldProperties {
     spacing: f32,
 }
 
-pub fn map(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+pub fn map(
+    window: imgui::Window<'_, &'static str>,
+    ui: &Ui<'_>,
+    uiworld: &mut UiWorld,
+    goria: &Egregoria,
+) {
     window.build(ui, || {
-        if ui.small_button(im_str!("load Paris map")) {
+        if ui.small_button("load Paris map") {
             uiworld.commands().map_load_paris();
         }
         ui.separator();
         let mut state = uiworld.write::<TestFieldProperties>();
 
-        imgui::Drag::new(im_str!("size"))
-            .range(2..=100)
+        imgui::Drag::new("size")
+            .range(2, 100)
             .build(ui, &mut state.size);
 
-        imgui::Drag::new(im_str!("spacing"))
-            .range(30.0..=1000.0)
-            .display_format(im_str!("%.0f"))
+        imgui::Drag::new("spacing")
+            .range(30.0, 1000.0)
+            .display_format("%.0f")
             .build(ui, &mut state.spacing);
 
-        if ui.small_button(im_str!("load test field")) {
+        if ui.small_button("load test field") {
             uiworld.commands().map_load_testfield(
                 uiworld.read::<Camera>().pos.xy(),
                 state.size,
@@ -43,20 +48,20 @@ pub fn map(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, goria:
         if matches!(
             *uiworld.read::<NetworkState>(),
             NetworkState::Singleplayer { .. }
-        ) && ui.small_button(im_str!("reset the save"))
+        ) && ui.small_button("reset the save")
         {
             uiworld.commands().reset_save();
         }
 
-        ui.text(im_str!(
+        ui.text(format!(
             "{} pedestrians",
             <&Pedestrian>::query().iter(goria.world()).count()
         ));
-        ui.text(im_str!(
+        ui.text(format!(
             "{} vehicles",
             <&Vehicle>::query().iter(goria.world()).count()
         ));
-    })
+    });
 }
 
 impl Default for TestFieldProperties {

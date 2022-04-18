@@ -3,7 +3,7 @@ use crate::{bg_layout_litmesh, compile_shader, Drawable, GfxContext, Texture, Uv
 use geom::{LinearColor, Vec3};
 use std::path::PathBuf;
 use std::sync::Arc;
-use wgpu::{BindGroup, BufferUsage, IndexFormat, RenderPass, VertexBufferLayout};
+use wgpu::{BindGroup, BufferUsages, IndexFormat, RenderPass, VertexBufferLayout};
 
 pub struct SpriteBatchBuilder {
     pub albedo: Arc<Texture>,
@@ -40,7 +40,7 @@ impl VBDesc for InstanceRaw {
     fn desc<'a>() -> VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
-            step_mode: wgpu::InputStepMode::Instance,
+            step_mode: wgpu::VertexStepMode::Instance,
             attributes: Box::leak(Box::new(
                 wgpu::vertex_attr_array![2 => Float32x4, 3 => Float32x3, 4 => Float32x3, 5 => Float32x2],
             )),
@@ -78,7 +78,7 @@ impl SpriteBatchBuilder {
             stretch_y,
             albedo,
             instances: vec![],
-            instance_sbuffer: PBuffer::new(BufferUsage::VERTEX),
+            instance_sbuffer: PBuffer::new(BufferUsages::VERTEX),
         }
     }
 

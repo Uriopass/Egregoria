@@ -7,8 +7,8 @@ impl InspectRenderDefault<f32> for f32 {
         if data.is_empty() {
             // Values are inconsistent
             let style_token = ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0]);
-            ui.text(&imgui::im_str!("{}: ", label));
-            style_token.pop(ui);
+            ui.text(&format!("{}: ", label));
+            style_token.pop();
             return;
         }
 
@@ -16,7 +16,7 @@ impl InspectRenderDefault<f32> for f32 {
             Some(_v) => {
                 // Values are consistent
                 let mut cp = *data[0];
-                imgui::InputFloat::new(ui, &*imgui::im_str!("{}", label), &mut cp)
+                imgui::InputFloat::new(ui, &*label, &mut cp)
                     .read_only(true)
                     .build();
             }
@@ -24,8 +24,8 @@ impl InspectRenderDefault<f32> for f32 {
                 // Values are inconsistent
                 let style_token =
                     ui.push_style_color(imgui::StyleColor::Text, [1.0, 1.0, 0.0, 1.0]);
-                ui.text(&imgui::im_str!("{}: ", label));
-                style_token.pop(ui);
+                ui.text(&format!("{}: ", label));
+                style_token.pop();
             }
         }
     }
@@ -48,10 +48,7 @@ impl InspectRenderDefault<f32> for f32 {
         };
 
         let mut changed = false;
-        if ui
-            .input_float(&imgui::im_str!("{}", label), &mut value)
-            .build()
-        {
+        if ui.input_float(&label, &mut value).build() {
             for d in data {
                 **d = value;
                 changed = true;
@@ -59,7 +56,7 @@ impl InspectRenderDefault<f32> for f32 {
         }
 
         if let Some(style_token) = style_token {
-            style_token.pop(ui);
+            style_token.pop();
         }
 
         changed

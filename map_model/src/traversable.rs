@@ -96,7 +96,7 @@ macro_rules! enum_inspect_impl {
                     }
                 )+
 
-                ui.text(imgui::im_str!("{} {}", &aha, label));
+                ui.text(format!("{} {}", &aha, label));
             }
 
             fn render_mut(
@@ -116,7 +116,7 @@ macro_rules! enum_inspect_impl {
                     }
                 )+
 
-                ui.text(imgui::im_str!("{} {}", &aha, label));
+                ui.text(format!("{} {}", &aha, label));
                 false
             }
         }

@@ -14,7 +14,7 @@ pub mod settings;
 pub trait ImguiWindow: Send + Sync {
     fn render_window(
         &mut self,
-        window: imgui::Window<'_>,
+        window: imgui::Window<'_, &'static str>,
         ui: &Ui<'_>,
         uiworld: &mut UiWorld,
         goria: &Egregoria,
@@ -23,11 +23,11 @@ pub trait ImguiWindow: Send + Sync {
 
 impl<F> ImguiWindow for F
 where
-    F: Fn(imgui::Window<'_>, &Ui<'_>, &mut UiWorld, &Egregoria) + Send + Sync,
+    F: Fn(imgui::Window<'_, &'static str>, &Ui<'_>, &mut UiWorld, &Egregoria) + Send + Sync,
 {
     fn render_window(
         &mut self,
-        window: imgui::Window<'_>,
+        window: imgui::Window<'_, &'static str>,
         ui: &Ui<'_>,
         uiworld: &mut UiWorld,
         goria: &Egregoria,
@@ -38,7 +38,7 @@ where
 
 struct ImguiWindowStruct {
     w: Box<dyn ImguiWindow>,
-    name: &'static imgui::ImStr,
+    name: &'static str,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -55,23 +55,18 @@ impl Default for ImguiWindows {
             windows: vec![],
             opened: vec![],
         };
-        s.insert(imgui::im_str!("Map"), map::map, true);
-        s.insert(imgui::im_str!("Economy"), economy::economy, false);
-        s.insert(imgui::im_str!("Config"), config::config, false);
-        s.insert(imgui::im_str!("Debug"), debug::debug, false);
-        s.insert(imgui::im_str!("Settings"), settings::settings, false);
-        s.insert(imgui::im_str!("Network"), network::network, false);
+        s.insert("Map", map::map, true);
+        s.insert("Economy", economy::economy, false);
+        s.insert("Config", config::config, false);
+        s.insert("Debug", debug::debug, false);
+        s.insert("Settings", settings::settings, false);
+        s.insert("Network", network::network, false);
         s
     }
 }
 
 impl ImguiWindows {
-    pub fn insert(
-        &mut self,
-        name: &'static imgui::ImStr,
-        w: impl ImguiWindow + 'static,
-        opened: bool,
-    ) {
+    pub fn insert(&mut self, name: &'static str, w: impl ImguiWindow + 'static, opened: bool) {
         self.windows.push(ImguiWindowStruct {
             w: Box::new(w),
             name,
@@ -89,8 +84,8 @@ impl ImguiWindows {
         let h = ui.window_size()[1];
         for (opened, w) in self.opened.iter_mut().zip(self.windows.iter()) {
             let tok = ui.push_style_var(StyleVar::Alpha(if *opened { 1.0 } else { 0.5 }));
-            *opened ^= ui.button(w.name, [80.0, h]);
-            tok.pop(ui);
+            *opened ^= ui.button_with_size(w.name, [80.0, h]);
+            tok.pop();
         }
     }
 

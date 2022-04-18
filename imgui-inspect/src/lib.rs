@@ -84,9 +84,9 @@ macro_rules! debug_inspect_impl {
             ) {
                 let d = match data.get(0) { Some(x) => x, None => return };
                 if label == "" {
-                    ui.text(imgui_inspect::imgui::im_str!("{:?}", d));
+                    ui.text(format!("{:?}", d));
                 } else {
-                    ui.text(imgui_inspect::imgui::im_str!("{}: {:?}", label, d));
+                    ui.text(format!("{}: {:?}", label, d));
                 }
             }
 
@@ -97,7 +97,7 @@ macro_rules! debug_inspect_impl {
                 _: &imgui_inspect::InspectArgsDefault,
             ) -> bool {
                 let d = match data.get(0) { Some(x) => x, None => return false };
-                ui.text(imgui_inspect::imgui::im_str!("{}: {:?}", label, d));
+                ui.text(format!("{}: {:?}", label, d));
                 false
             }
         }

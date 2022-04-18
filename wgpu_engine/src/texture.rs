@@ -8,8 +8,9 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use wgpu::{
     BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
-    ImageCopyTexture, ImageDataLayout, PipelineLayoutDescriptor, SamplerBorderColor,
-    SamplerDescriptor, TextureFormat, TextureSampleType, TextureUsage, TextureViewDescriptor,
+    ImageCopyTexture, ImageDataLayout, PipelineLayoutDescriptor, SamplerBindingType,
+    SamplerBorderColor, SamplerDescriptor, TextureFormat, TextureSampleType, TextureUsages,
+    TextureViewDescriptor,
 };
 
 pub struct Texture {
@@ -41,7 +42,7 @@ impl Texture {
         device: &wgpu::Device,
         (width, height): (u32, u32),
         format: wgpu::TextureFormat,
-        usage: TextureUsage,
+        usage: TextureUsages,
         samples: Option<u32>,
     ) -> Texture {
         let extent = wgpu::Extent3d {
@@ -77,21 +78,21 @@ impl Texture {
             device,
             size,
             TextureFormat::Depth32Float,
-            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
+            TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
             Some(samples),
         )
     }
 
     pub fn create_light_texture(
         device: &wgpu::Device,
-        sc_desc: &wgpu::SwapChainDescriptor,
+        sc_desc: &wgpu::SurfaceConfiguration,
         samples: u32,
     ) -> MultisampledTexture {
         let fbo = Self::create_fbo(
             device,
             (sc_desc.width, sc_desc.height),
             TextureFormat::R16Float,
-            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
+            TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
             None,
         );
 
@@ -102,7 +103,7 @@ impl Texture {
                 height: sc_desc.height,
                 depth_or_array_layers: 1,
             },
-            usage: TextureUsage::RENDER_ATTACHMENT,
+            usage: TextureUsages::RENDER_ATTACHMENT,
             mip_level_count: 1,
             sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
@@ -117,19 +118,19 @@ impl Texture {
         }
     }
 
-    pub fn create_ui_texture(device: &wgpu::Device, sc_desc: &wgpu::SwapChainDescriptor) -> Self {
+    pub fn create_ui_texture(device: &wgpu::Device, sc_desc: &wgpu::SurfaceConfiguration) -> Self {
         Self::create_fbo(
             device,
             (sc_desc.width, sc_desc.height),
             TextureFormat::Rgba8Unorm,
-            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED,
+            TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
             None,
         )
     }
 
     pub fn create_color_msaa(
         device: &wgpu::Device,
-        sc_desc: &wgpu::SwapChainDescriptor,
+        sc_desc: &wgpu::SurfaceConfiguration,
         samples: u32,
     ) -> wgpu::TextureView {
         let multisample_desc = &wgpu::TextureDescriptor {
@@ -139,7 +140,7 @@ impl Texture {
                 height: sc_desc.height,
                 depth_or_array_layers: 1,
             },
-            usage: TextureUsage::RENDER_ATTACHMENT,
+            usage: TextureUsages::RENDER_ATTACHMENT,
             mip_level_count: 1,
             sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
@@ -161,7 +162,7 @@ impl Texture {
                 vec![
                     wgpu::BindGroupLayoutEntry {
                         binding: i * 2,
-                        visibility: wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::VERTEX,
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
                             view_dimension: wgpu::TextureViewDimension::D2,
@@ -171,11 +172,8 @@ impl Texture {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: i * 2 + 1,
-                        visibility: wgpu::ShaderStage::FRAGMENT | wgpu::ShaderStage::VERTEX,
-                        ty: wgpu::BindingType::Sampler {
-                            filtering: true,
-                            comparison: false,
-                        },
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                         count: None,
                     },
                 ]
@@ -384,7 +382,9 @@ impl TextureBuilder {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST | TextureUsage::RENDER_ATTACHMENT,
+            usage: TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_DST
+                | TextureUsages::RENDER_ATTACHMENT,
         });
 
         queue.write_texture(
@@ -392,6 +392,7 @@ impl TextureBuilder {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
+                aspect: Default::default(),
             },
             data,
             ImageDataLayout {
@@ -462,6 +463,7 @@ fn generate_mipmaps(
             mask: !0,
             alpha_to_coverage_enabled: false,
         },
+        multiview: None,
     });
 
     let bind_group_layout = pipeline.get_bind_group_layout(0);

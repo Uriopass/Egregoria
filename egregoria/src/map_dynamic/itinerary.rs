@@ -300,16 +300,16 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
         args: &InspectArgsDefault,
     ) {
         let d = *unwrap_ret!(data.get(0));
-        use imgui::im_str;
+
         match d {
-            ItineraryKind::None => ui.text(im_str!("None {}", label)),
-            ItineraryKind::WaitUntil(time) => ui.text(im_str!("WaitUntil({}) {}", time, label)),
-            ItineraryKind::Simple => ui.text(im_str!("Simple {}", label)),
+            ItineraryKind::None => ui.text(format!("None {}", label)),
+            ItineraryKind::WaitUntil(time) => ui.text(format!("WaitUntil({}) {}", time, label)),
+            ItineraryKind::Simple => ui.text(format!("Simple {}", label)),
             ItineraryKind::Route(r, _) => {
                 <Route as InspectRenderDefault<Route>>::render(&[r], label, ui, args);
             }
             ItineraryKind::WaitForReroute { wait_ticks, .. } => {
-                ui.text(im_str!("wait for reroute: {}", *wait_ticks));
+                ui.text(format!("wait for reroute: {}", *wait_ticks));
             }
         };
     }
@@ -321,11 +321,11 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
         args: &InspectArgsDefault,
     ) -> bool {
         let d = &mut *unwrap_ret!(data.get_mut(0), false);
-        use imgui::im_str;
+
         match d {
-            ItineraryKind::None => ui.text(im_str!("None {}", label)),
-            ItineraryKind::WaitUntil(time) => ui.text(im_str!("WaitUntil({}) {}", time, label)),
-            ItineraryKind::Simple => ui.text(im_str!("Simple {}", label)),
+            ItineraryKind::None => ui.text(format!("None {}", label)),
+            ItineraryKind::WaitUntil(time) => ui.text(format!("WaitUntil({}) {}", time, label)),
+            ItineraryKind::Simple => ui.text(format!("Simple {}", label)),
             ItineraryKind::Route(r, _) => {
                 return <Route as InspectRenderDefault<Route>>::render_mut(
                     &mut [r],
@@ -335,7 +335,7 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
                 );
             }
             ItineraryKind::WaitForReroute { wait_ticks, .. } => {
-                ui.text(im_str!("wait for reroute: {}", *wait_ticks));
+                ui.text(format!("wait for reroute: {}", *wait_ticks));
             }
         };
         false
