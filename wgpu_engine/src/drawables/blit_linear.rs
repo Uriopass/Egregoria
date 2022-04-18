@@ -26,7 +26,7 @@ impl BlitLinear {
                 },
                 alpha: wgpu::BlendComponent::REPLACE,
             }),
-            write_mask: wgpu::ColorWrite::ALL,
+            write_mask: wgpu::ColorWrites::ALL,
         }];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
@@ -45,6 +45,7 @@ impl BlitLinear {
             primitive: Default::default(),
             depth_stencil: None,
             multisample: Default::default(),
+            multiview: None,
         };
         let pipe = gfx.device.create_render_pipeline(&render_pipeline_desc);
         gfx.register_pipeline::<Self>(pipe);

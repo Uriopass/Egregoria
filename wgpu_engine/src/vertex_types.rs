@@ -21,7 +21,7 @@ impl VBDesc for MeshVertex {
         use std::mem;
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
-            step_mode: wgpu::InputStepMode::Vertex,
+            step_mode: wgpu::VertexStepMode::Vertex,
             attributes: ATTRS_MV,
         }
     }
@@ -43,7 +43,7 @@ impl VBDesc for UvVertex {
         use std::mem;
         wgpu::VertexBufferLayout {
             array_stride: mem::size_of::<UvVertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::InputStepMode::Vertex,
+            step_mode: wgpu::VertexStepMode::Vertex,
             attributes: ATTRS_UV,
         }
     }

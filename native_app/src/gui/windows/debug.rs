@@ -8,8 +8,8 @@ use egregoria::map_dynamic::{Itinerary, ParkingManagement};
 use egregoria::physics::CollisionWorld;
 use egregoria::utils::time::{GameTime, SECONDS_PER_DAY};
 use egregoria::Egregoria;
+
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
-use imgui::im_str;
 use imgui::Ui;
 use map_model::{IntersectionID, Map, RoadSegmentKind};
 use wgpu_engine::Tesselator;
@@ -45,38 +45,43 @@ impl Default for DebugObjs {
     }
 }
 
-pub fn debug(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+pub fn debug(
+    window: imgui::Window<'_, &'static str>,
+    ui: &Ui<'_>,
+    uiworld: &mut UiWorld,
+    goria: &Egregoria,
+) {
     window.build(ui, || {
         let mut objs = uiworld.write::<DebugObjs>();
         for (val, name, _) in &mut objs.0 {
-            ui.checkbox(&im_str!("{}", *name), val);
+            ui.checkbox(name, val);
         }
         drop(objs);
 
         let time = goria.read::<GameTime>().timestamp;
         let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
 
-        if ui.small_button(im_str!("set night")) {
+        if ui.small_button("set night") {
             uiworld
                 .commands()
                 .set_game_time(GameTime::new(0.1, time + daysecleft as f64));
         }
 
-        if ui.small_button(im_str!("set morning")) {
+        if ui.small_button("set morning") {
             uiworld.commands().set_game_time(GameTime::new(
                 0.1,
                 time + daysecleft as f64 + 7.0 * GameTime::HOUR as f64,
             ));
         }
 
-        if ui.small_button(im_str!("set day")) {
+        if ui.small_button("set day") {
             uiworld.commands().set_game_time(GameTime::new(
                 0.1,
                 time + daysecleft as f64 + 12.0 * GameTime::HOUR as f64,
             ));
         }
 
-        if ui.small_button(im_str!("set dawn")) {
+        if ui.small_button("set dawn") {
             uiworld.commands().set_game_time(GameTime::new(
                 0.1,
                 time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64,
@@ -88,23 +93,23 @@ pub fn debug(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, gori
         let cam = uiworld.read::<Camera>().pos;
 
         ui.text("Averaged over last 10 frames: ");
-        ui.text(im_str!("Total time: {:.1}ms", timings.all.avg() * 1000.0));
-        ui.text(im_str!(
+        ui.text(format!("Total time: {:.1}ms", timings.all.avg() * 1000.0));
+        ui.text(format!(
             "World update time: {:.1}ms",
             timings.world_update.avg() * 1000.0
         ));
-        ui.text(im_str!(
+        ui.text(format!(
             "Render prepare time: {:.1}ms",
             timings.render.avg() * 1000.0
         ));
         if let Some(mouse) = mouse {
-            ui.text(im_str!("World mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
+            ui.text(format!("World mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
         }
-        ui.text(im_str!("Cam center:      {:.1} {:.1}", cam.x, cam.y));
+        ui.text(format!("Cam center:      {:.1} {:.1}", cam.x, cam.y));
         ui.separator();
         ui.text("Game system times");
 
-        ui.columns(2, im_str!("game times"), false);
+        ui.columns(2, "game times", false);
         ui.text("System name");
         ui.next_column();
         ui.text("Time avg in ms over last 100 ticks");
@@ -113,10 +118,10 @@ pub fn debug(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, gori
         for (name, time) in &timings.per_game_system {
             ui.text(name);
             ui.next_column();
-            ui.text(im_str!("{:.3}", *time));
+            ui.text(format!("{:.3}", *time));
             ui.next_column();
         }
-    })
+    });
 }
 
 pub fn show_grid(tess: &mut Tesselator, g: &Egregoria, uiworld: &UiWorld) -> Option<()> {

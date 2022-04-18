@@ -1,4 +1,5 @@
 use crate::lighting::LightRender;
+use crate::wgpu::SamplerBindingType;
 use crate::{
     bg_layout_litmesh, compile_shader, BlitLinear, CompiledShader, Drawable, IndexType,
     InstancedMesh, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
@@ -14,12 +15,11 @@ use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState, CommandBuffer,
     CommandEncoder, CommandEncoderDescriptor, DepthBiasState, Device, Face, FrontFace, IndexFormat,
-    MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface, SwapChain,
-    SwapChainDescriptor, SwapChainFrame, TextureSampleType, TextureUsage, VertexBufferLayout,
+    MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface, SurfaceConfiguration,
+    TextureSampleType, TextureUsages, TextureView, VertexBufferLayout,
 };
 
 pub struct FBOs {
-    pub swapchain: SwapChain,
     pub(crate) depth: Texture,
     pub(crate) light: MultisampledTexture,
     pub(crate) color_msaa: wgpu::TextureView,
@@ -28,12 +28,12 @@ pub struct FBOs {
 }
 
 pub struct GfxContext {
-    pub(crate) surface: Surface,
+    pub surface: Surface,
     pub device: Device,
     pub queue: Queue,
     pub fbos: FBOs,
     pub size: (u32, u32),
-    pub(crate) sc_desc: SwapChainDescriptor,
+    pub(crate) sc_desc: SurfaceConfiguration,
     pub update_sc: bool,
     pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
     pub(crate) projection: Uniform<Matrix4>,
@@ -125,12 +125,13 @@ impl<'a> FrameContext<'a> {
 
 impl GfxContext {
     pub async fn new<W: HasRawWindowHandle>(window: &W, win_width: u32, win_height: u32) -> Self {
-        let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+        let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
 
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
+                force_fallback_adapter: false,
                 compatible_surface: Some(&surface),
             })
             .await
@@ -141,35 +142,37 @@ impl GfxContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER,
+                    features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER
+                        | wgpu::Features::SPIRV_SHADER_PASSTHROUGH,
                     limits: wgpu::Limits::default(),
                 },
                 None,
             )
             .await
             .expect("could not find device, have you installed necessary vulkan libraries?");
-        let sc_desc = wgpu::SwapChainDescriptor {
-            usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+        let sc_desc = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
             width: win_width,
             height: win_height,
             present_mode: wgpu::PresentMode::Fifo,
         };
         let samples = 4;
-        let fbos = Self::create_textures(&device, &surface, &sc_desc, samples);
+        let fbos = Self::create_textures(&device, &sc_desc, samples);
+        surface.configure(&device, &sc_desc);
 
         let projection = Uniform::new(Matrix4::zero(), &device);
 
         let screen_uv_vertices = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(SCREEN_UV_VERTICES),
-            usage: wgpu::BufferUsage::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX,
         });
 
         let rect_indices = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(UV_INDICES),
-            usage: wgpu::BufferUsage::INDEX,
+            usage: wgpu::BufferUsages::INDEX,
         });
 
         let blue_noise = TextureBuilder::from_path("assets/blue_noise_512.png")
@@ -333,7 +336,7 @@ impl GfxContext {
     pub fn render_objs(
         &mut self,
         encs: &mut Encoders,
-        frame: &SwapChainFrame,
+        frame: &TextureView,
         mut prepare: impl FnMut(&mut FrameContext<'_>),
     ) {
         let mut objs = vec![];
@@ -449,7 +452,7 @@ impl GfxContext {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: &self.fbos.color_msaa,
-                    resolve_target: Some(&frame.output.view),
+                    resolve_target: Some(frame),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
                             r: 0.0,
@@ -481,7 +484,7 @@ impl GfxContext {
                 label: None,
                 color_attachments: &[wgpu::RenderPassColorAttachment {
                     view: &self.fbos.color_msaa,
-                    resolve_target: Some(&frame.output.view),
+                    resolve_target: Some(frame),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: true,
@@ -511,7 +514,7 @@ impl GfxContext {
     pub fn render_gui(
         &mut self,
         encoders: &mut Encoders,
-        frame: &SwapChainFrame,
+        frame: &TextureView,
         mut render_gui: impl FnMut(GuiRenderContext<'_, '_>),
     ) {
         let rpass = encoders.end.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -542,7 +545,7 @@ impl GfxContext {
         let mut blit_linear = encoders.end.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: &frame.output.view,
+                view: frame,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
@@ -569,22 +572,18 @@ impl GfxContext {
         );
     }
 
-    pub fn create_textures(
-        device: &Device,
-        surface: &Surface,
-        desc: &SwapChainDescriptor,
-        samples: u32,
-    ) -> FBOs {
+    pub fn create_textures(device: &Device, desc: &SurfaceConfiguration, samples: u32) -> FBOs {
         let size = (desc.width, desc.height);
         let ssao = Texture::create_fbo(
             device,
             size,
             wgpu::TextureFormat::R8Unorm,
-            TextureUsage::RENDER_ATTACHMENT | TextureUsage::SAMPLED | TextureUsage::COPY_SRC,
+            TextureUsages::RENDER_ATTACHMENT
+                | TextureUsages::TEXTURE_BINDING
+                | TextureUsages::COPY_SRC,
             None,
         );
         FBOs {
-            swapchain: device.create_swap_chain(surface, desc),
             depth: Texture::create_depth_texture(device, size, samples),
             light: Texture::create_light_texture(device, desc, samples),
             color_msaa: Texture::create_color_msaa(device, desc, samples),
@@ -598,7 +597,8 @@ impl GfxContext {
         self.sc_desc.width = self.size.0;
         self.sc_desc.height = self.size.1;
 
-        self.fbos = Self::create_textures(&self.device, &self.surface, &self.sc_desc, self.samples);
+        self.surface.configure(&self.device, &self.sc_desc);
+        self.fbos = Self::create_textures(&self.device, &self.sc_desc, self.samples);
         self.update_simplelit_bg();
     }
 
@@ -644,7 +644,7 @@ impl GfxContext {
                 },
                 alpha: BlendComponent::REPLACE,
             }),
-            write_mask: wgpu::ColorWrite::ALL,
+            write_mask: wgpu::ColorWrites::ALL,
         }];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
@@ -676,6 +676,7 @@ impl GfxContext {
                 count: self.samples,
                 ..Default::default()
             },
+            multiview: None,
         };
         self.device.create_render_pipeline(&render_pipeline_desc)
     }
@@ -730,6 +731,7 @@ impl GfxContext {
                 count: if shadow_map { 1 } else { self.samples },
                 ..Default::default()
             },
+            multiview: None,
         };
         self.device.create_render_pipeline(&render_pipeline_desc)
     }
@@ -783,7 +785,7 @@ impl SSAOPipeline {
                                 entries: &[
                                     wgpu::BindGroupLayoutEntry {
                                         binding: 0,
-                                        visibility: wgpu::ShaderStage::FRAGMENT,
+                                        visibility: wgpu::ShaderStages::FRAGMENT,
                                         ty: wgpu::BindingType::Texture {
                                             multisampled: true,
                                             view_dimension: wgpu::TextureViewDimension::D2,
@@ -795,11 +797,10 @@ impl SSAOPipeline {
                                     },
                                     wgpu::BindGroupLayoutEntry {
                                         binding: 1,
-                                        visibility: wgpu::ShaderStage::FRAGMENT,
-                                        ty: wgpu::BindingType::Sampler {
-                                            filtering: true,
-                                            comparison: false,
-                                        },
+                                        visibility: wgpu::ShaderStages::FRAGMENT,
+                                        ty: wgpu::BindingType::Sampler(
+                                            SamplerBindingType::Filtering,
+                                        ),
                                         count: None,
                                     },
                                 ],
@@ -811,7 +812,7 @@ impl SSAOPipeline {
 
         let color_states = [wgpu::ColorTargetState {
             format: gfx.fbos.ssao.format,
-            write_mask: wgpu::ColorWrite::ALL,
+            write_mask: wgpu::ColorWrites::ALL,
             blend: Some(BlendState {
                 color: wgpu::BlendComponent::REPLACE,
                 alpha: wgpu::BlendComponent::REPLACE,
@@ -834,6 +835,7 @@ impl SSAOPipeline {
             primitive: Default::default(),
             depth_stencil: None,
             multisample: Default::default(),
+            multiview: None,
         };
 
         gfx.register_pipeline::<SSAOPipeline>(

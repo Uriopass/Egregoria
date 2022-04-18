@@ -6,7 +6,7 @@ use std::mem::MaybeUninit;
 use std::ops::Sub;
 use std::sync::Arc;
 use wgpu_engine::pbuffer::PBuffer;
-use wgpu_engine::wgpu::BufferUsage;
+use wgpu_engine::wgpu::BufferUsages;
 use wgpu_engine::{FrameContext, GfxContext, Mesh, MeshBuilder, Texture};
 use wgpu_engine::{IndexType, MeshVertex};
 
@@ -131,7 +131,7 @@ impl TerrainRender {
 
             let (ref indice, n_indices) = self.indices[lod];
 
-            let mut vbuf = PBuffer::new(BufferUsage::VERTEX);
+            let mut vbuf = PBuffer::new(BufferUsages::VERTEX);
             vbuf.write(gfx, bytemuck::cast_slice(&mesh));
             let m = Mesh {
                 vertex_buffer: vbuf.inner().expect("vertices were generated"),
@@ -254,7 +254,7 @@ impl TerrainRender {
 
             let l = indices.len();
 
-            let mut buf = PBuffer::new(BufferUsage::INDEX);
+            let mut buf = PBuffer::new(BufferUsages::INDEX);
             buf.write(gfx, bytemuck::cast_slice(&indices));
             v.push((buf, l));
         }

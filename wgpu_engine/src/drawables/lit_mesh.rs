@@ -4,7 +4,7 @@ use crate::{
     VBDesc,
 };
 use std::sync::Arc;
-use wgpu::{BindGroupLayout, BindGroupLayoutEntry, BufferUsage, Device, IndexFormat, RenderPass};
+use wgpu::{BindGroupLayout, BindGroupLayoutEntry, BufferUsages, Device, IndexFormat, RenderPass};
 
 pub struct MeshBuilder {
     pub vertices: Vec<MeshVertex>,
@@ -24,8 +24,8 @@ impl MeshBuilder {
         Self {
             vertices: vec![],
             indices: vec![],
-            vbuffer: PBuffer::new(BufferUsage::VERTEX),
-            ibuffer: PBuffer::new(BufferUsage::INDEX),
+            vbuffer: PBuffer::new(BufferUsages::VERTEX),
+            ibuffer: PBuffer::new(BufferUsages::INDEX),
         }
     }
 
@@ -160,7 +160,7 @@ pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
             vec![
                 wgpu::BindGroupLayoutEntry {
                     binding: i * 2,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
                         view_dimension: wgpu::TextureViewDimension::D2,
@@ -174,11 +174,12 @@ pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: i * 2 + 1,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler {
-                        filtering: true,
-                        comparison: i == 2,
-                    },
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(if i == 2 {
+                        wgpu::SamplerBindingType::Comparison
+                    } else {
+                        wgpu::SamplerBindingType::Filtering
+                    }),
                     count: None,
                 },
             ]

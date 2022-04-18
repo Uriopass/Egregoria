@@ -1,9 +1,14 @@
 use crate::uiworld::UiWorld;
 use egregoria::economy::{CommodityKind, Market};
 use egregoria::Egregoria;
-use imgui::{im_str, Condition, Ui};
+use imgui::{Condition, Ui};
 
-pub fn economy(window: imgui::Window<'_>, ui: &Ui<'_>, _: &mut UiWorld, goria: &Egregoria) {
+pub fn economy(
+    window: imgui::Window<'_, &'static str>,
+    ui: &Ui<'_>,
+    _: &mut UiWorld,
+    goria: &Egregoria,
+) {
     let market = goria.read::<Market>();
     let [w, h] = ui.io().display_size;
 
@@ -14,7 +19,7 @@ pub fn economy(window: imgui::Window<'_>, ui: &Ui<'_>, _: &mut UiWorld, goria: &
         .build(ui, || {
             let inner = market.inner();
 
-            ui.columns(5, im_str!("Economy"), false);
+            ui.columns(5, "Economy", false);
 
             ui.text("Commodity");
             ui.next_column();

@@ -3,7 +3,6 @@ name = "native_app"
 version = "0.4.3"
 authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
 edition = "2018"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -18,19 +17,19 @@ networking    = { path = "../networking" }
 goria_version = { path = "../goria_version" }
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
-imgui-wgpu    = "0.16.0"
-imgui-winit-support = "0.7.0"
+imgui-wgpu    = { git = "https://github.com/Yatekii/imgui-wgpu-rs",  }
+imgui-winit-support = { version = "0.8.2", default-features = false, features=["winit-26"] }
 map_model     = { path = "../map_model" }
 flat_spatial  = { path = "../flat_spatial" }
 log           = { version = "0.4.11", features=["max_level_debug", "release_max_level_info"] }
 inline_tweak  = "1.0.6"
-imgui         = "0.7"
+imgui         = "0.8"
 legion        = { version = "0.4.0", default-features = false, features = ["codegen", "serialize"] }
 ordered-float = { version = "2.7.0", default-features = false }
 serde         = "1.0"
 rodio         = { version = "0.14.0", default-features = false, features = ["vorbis"] }
 slotmap       = { version = "1.0.2", default-features = false }
-winit         = "0.24"
+winit         = "0.26.1"
 inventory     = "0.1.10"
 paste         = "1.0.4"
 atomic_refcell = "0.1.6"

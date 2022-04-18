@@ -5,6 +5,7 @@ use egregoria::utils::time::GameTime;
 use futures::executor;
 use geom::{vec2, vec3, LinearColor};
 use std::time::Instant;
+use wgpu_engine::wgpu::TextureViewDescriptor;
 use wgpu_engine::GfxContext;
 use winit::window::Window;
 use winit::{
@@ -117,12 +118,12 @@ impl Context {
                             );
                         }
 
-                        match self.gfx.fbos.swapchain.get_current_frame() {
+                        match self.gfx.surface.get_current_texture() {
                             Ok(swapchainframe) => {
                                 frame = Some(swapchainframe);
                             }
-                            Err(wgpu_engine::wgpu::SwapChainError::Outdated)
-                            | Err(wgpu_engine::wgpu::SwapChainError::Lost) => {
+                            Err(wgpu_engine::wgpu::SurfaceError::Outdated)
+                            | Err(wgpu_engine::wgpu::SurfaceError::Lost) => {
                                 self.gfx.resize(size.0, size.1);
                                 state.resized(&mut self, PhysicalSize::new(size.0, size.1));
                                 log::error!("swapchain has been lost or is outdated, recreating before retrying");
@@ -162,13 +163,17 @@ impl Context {
 
                         self.gfx.render_params.upload_to_gpu(&self.gfx.queue);
 
+                        let view = sco
+                            .texture
+                            .create_view(&TextureViewDescriptor::default());
                         let mut enc = self.gfx.start_frame();
-                        self.gfx.render_objs(&mut enc, &sco, |fc| state.render(fc));
+                        self.gfx.render_objs(&mut enc, &view, |fc| state.render(fc));
 
                         let window = &self.window;
                         self.gfx
-                            .render_gui(&mut enc, &sco, |gctx| state.render_gui(window, gctx));
+                            .render_gui(&mut enc, &view, |gctx| state.render_gui(window, gctx));
                         self.gfx.finish_frame(enc);
+                        sco.present();
 
                         self.input.end_frame();
                         self.audio.update();

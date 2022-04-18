@@ -1,13 +1,13 @@
 use crate::default::InspectArgsDefault;
 use crate::default::InspectRenderDefault;
 use geom::{from_srgb, Color, LinearColor, PolyLine, Transform, Vec2, Vec3};
-use imgui::{im_str, ColorEdit, EditableColor, Ui};
+use imgui::{ColorEdit, EditableColor, Ui};
 
 impl InspectRenderDefault<Color> for Color {
     fn render(data: &[&Color], label: &'static str, ui: &Ui<'_>, _args: &InspectArgsDefault) {
         let c = data[0];
         let mut color_arr = [c.r, c.g, c.b, c.a];
-        ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui);
+        ColorEdit::new(&label, EditableColor::Float4(&mut color_arr)).build(ui);
     }
 
     fn render_mut(
@@ -22,7 +22,7 @@ impl InspectRenderDefault<Color> for Color {
 
         let c = &mut data[0];
         let mut color_arr = [c.r, c.g, c.b, c.a];
-        if ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui) {
+        if ColorEdit::new(&label, EditableColor::Float4(&mut color_arr)).build(ui) {
             c.r = color_arr[0];
             c.g = color_arr[1];
             c.b = color_arr[2];
@@ -39,7 +39,7 @@ impl InspectRenderDefault<LinearColor> for LinearColor {
         let lc = data[0];
         let c: Color = (*lc).into();
         let mut color_arr = [c.r, c.g, c.b, c.a];
-        ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui);
+        ColorEdit::new(&label, EditableColor::Float4(&mut color_arr)).build(ui);
     }
 
     fn render_mut(
@@ -55,7 +55,7 @@ impl InspectRenderDefault<LinearColor> for LinearColor {
         let lc = &mut *data[0];
         let c: Color = (*lc).into();
         let mut color_arr = [c.r, c.g, c.b, c.a];
-        if ColorEdit::new(&im_str!("{}", label), EditableColor::Float4(&mut color_arr)).build(ui) {
+        if ColorEdit::new(&label, EditableColor::Float4(&mut color_arr)).build(ui) {
             lc.r = from_srgb(color_arr[0]);
             lc.g = from_srgb(color_arr[1]);
             lc.b = from_srgb(color_arr[2]);
@@ -123,7 +123,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
             unimplemented!();
         }
         let x = data[0];
-        imgui::InputFloat2::new(ui, &im_str!("{}", label), &mut [x.x, x.y])
+        imgui::InputFloat2::new(ui, &label, &mut [x.x, x.y])
             .always_insert_mode(false)
             .build();
     }
@@ -149,7 +149,7 @@ impl InspectRenderDefault<Vec2> for Vec2 {
             unimplemented!();
         }
         let x = data[0];
-        imgui::InputFloat2::new(ui, &im_str!("{}", label), &mut [x.x, x.y])
+        imgui::InputFloat2::new(ui, &label, &mut [x.x, x.y])
             .always_insert_mode(false)
             .build();
     }
@@ -165,7 +165,7 @@ impl InspectRenderDefault<Vec2> for Vec2 {
         }
         let x = &mut data[0];
         let mut conv = [x.x, x.y];
-        let changed = imgui::Drag::new(&im_str!("{}", label))
+        let changed = imgui::Drag::new(&label)
             .speed(args.step.unwrap_or(0.1))
             .build_array(ui, &mut conv);
         x.x = conv[0];
@@ -180,7 +180,7 @@ impl InspectRenderDefault<Vec3> for Vec3 {
             unimplemented!();
         }
         let x = data[0];
-        imgui::InputFloat3::new(ui, &im_str!("{}", label), &mut [x.x, x.y, x.z])
+        imgui::InputFloat3::new(ui, &label, &mut [x.x, x.y, x.z])
             .always_insert_mode(false)
             .build();
     }
@@ -196,7 +196,7 @@ impl InspectRenderDefault<Vec3> for Vec3 {
         }
         let x = &mut data[0];
         let mut conv = [x.x, x.y, x.z];
-        let changed = imgui::Drag::new(&im_str!("{}", label))
+        let changed = imgui::Drag::new(&label)
             .speed(args.step.unwrap_or(0.1))
             .build_array(ui, &mut conv);
         x.x = conv[0];
@@ -218,12 +218,12 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
         }
 
         let v = data[0];
-        if imgui::CollapsingHeader::new(&im_str!("{}", label)).build(ui) {
+        if imgui::CollapsingHeader::new(&label).build(ui) {
             ui.indent();
             for (i, x) in v.iter().enumerate() {
                 let id = ui.push_id(i as i32);
                 <Vec2 as InspectRenderDefault<Vec2>>::render(&[x], "", ui, args);
-                id.pop(ui);
+                id.pop();
             }
             ui.unindent();
         }
@@ -242,12 +242,12 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
         let v = &mut *data[0];
         let mut changed = false;
 
-        if imgui::CollapsingHeader::new(&im_str!("{}", label)).build(ui) {
+        if imgui::CollapsingHeader::new(&label).build(ui) {
             ui.indent();
             for (i, x) in v.iter_mut().enumerate() {
                 let id = ui.push_id(i as i32);
                 changed |= <Vec2 as InspectRenderDefault<Vec2>>::render_mut(&mut [x], "", ui, args);
-                id.pop(ui);
+                id.pop();
             }
             ui.unindent();
         }
@@ -264,7 +264,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
         }
         let x = data[0];
         let mut ang = f32::atan2(x.y, x.x);
-        imgui::InputFloat::new(ui, &*im_str!("{}", label), &mut ang)
+        imgui::InputFloat::new(ui, &*label, &mut ang)
             .read_only(true)
             .build();
     }
@@ -282,7 +282,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Rotation {
         let x = &mut data[0];
         let mut ang = f32::atan2(x.y, x.x);
 
-        let changed = imgui::Drag::new(&im_str!("{}", label))
+        let changed = imgui::Drag::new(&label)
             .speed(-args.step.unwrap_or(0.1))
             .build(ui, &mut ang);
         x.x = ang.cos();

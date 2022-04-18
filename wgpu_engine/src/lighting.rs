@@ -3,7 +3,7 @@ use crate::{compile_shader, GfxContext, UvVertex, VBDesc};
 use geom::Vec3;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    BlendFactor, Buffer, BufferUsage, CommandEncoder, CompareFunction, DepthBiasState,
+    BlendFactor, Buffer, BufferUsages, CommandEncoder, CompareFunction, DepthBiasState,
     DepthStencilState, Device, IndexFormat, LoadOp, MultisampleState, Operations,
     RenderPassDepthStencilAttachment, VertexAttribute, VertexBufferLayout,
 };
@@ -18,12 +18,12 @@ impl LightRender {
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(UV_VERTICES),
-            usage: wgpu::BufferUsage::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX,
         });
 
         Self {
             vertex_buffer,
-            instance_buffer: PBuffer::new(BufferUsage::VERTEX),
+            instance_buffer: PBuffer::new(BufferUsages::VERTEX),
         }
     }
 }
@@ -52,7 +52,7 @@ pub fn setup(gfx: &mut GfxContext) {
             },
             alpha: wgpu::BlendComponent::REPLACE,
         }),
-        write_mask: wgpu::ColorWrite::ALL,
+        write_mask: wgpu::ColorWrites::ALL,
     }];
 
     let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
@@ -85,6 +85,7 @@ pub fn setup(gfx: &mut GfxContext) {
             mask: !0,
             alpha_to_coverage_enabled: false,
         },
+        multiview: None,
     };
 
     let pipe = gfx.device.create_render_pipeline(&render_pipeline_desc);
@@ -125,7 +126,7 @@ impl VBDesc for LightInstance {
     fn desc<'a>() -> VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<LightInstance>() as wgpu::BufferAddress,
-            step_mode: wgpu::InputStepMode::Instance,
+            step_mode: wgpu::VertexStepMode::Instance,
             attributes: ATTRS,
         }
     }

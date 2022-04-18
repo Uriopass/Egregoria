@@ -1,5 +1,4 @@
 use crate::{InspectArgsDefault, InspectRenderDefault};
-use imgui::im_str;
 use imgui::Ui;
 
 mod geometry;
@@ -14,7 +13,7 @@ impl InspectRenderDefault<f32> for InspectDragf {
             unimplemented!();
         }
         let mut cp = *data[0];
-        imgui::InputFloat::new(ui, &*imgui::im_str!("{}", label), &mut cp)
+        imgui::InputFloat::new(ui, &*label, &mut cp)
             .read_only(true)
             .build();
     }
@@ -37,12 +36,12 @@ impl InspectRenderDefault<f32> for InspectDragf {
             "%f"
         };
 
-        imgui::Drag::new(&im_str!("{}", label))
+        imgui::Drag::new(&label)
             .speed(args.step.unwrap_or(0.1))
-            .display_format(&*im_str!("{}", format))
+            .display_format(&*format)
             .range(
-                args.min_value.unwrap_or(f32::NEG_INFINITY)
-                    ..=args.max_value.unwrap_or(f32::INFINITY),
+                args.min_value.unwrap_or(f32::NEG_INFINITY),
+                args.max_value.unwrap_or(f32::INFINITY),
             )
             .build(ui, data[0])
     }
@@ -54,7 +53,7 @@ impl InspectRenderDefault<f64> for InspectDragf {
             unimplemented!();
         }
         let mut cp = *data[0] as f32;
-        imgui::InputFloat::new(ui, &*imgui::im_str!("{}", label), &mut cp)
+        imgui::InputFloat::new(ui, &*label, &mut cp)
             .read_only(true)
             .build();
     }
@@ -69,7 +68,7 @@ impl InspectRenderDefault<f64> for InspectDragf {
             unimplemented!();
         }
         let mut cp = *data[0] as f32;
-        let changed = imgui::Drag::new(&im_str!("{}", label))
+        let changed = imgui::Drag::new(&label)
             .speed(args.step.unwrap_or(0.1))
             .build(ui, &mut cp);
         *data[0] = cp as f64;

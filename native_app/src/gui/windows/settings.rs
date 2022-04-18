@@ -2,7 +2,7 @@ use crate::gui::inputmap::InputMap;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
-use imgui::{im_str, Condition, Ui};
+use imgui::{Condition, Ui};
 use std::time::Duration;
 
 const SETTINGS_SAVE_NAME: &str = "settings";
@@ -125,7 +125,12 @@ impl AsRef<str> for AutoSaveEvery {
     }
 }
 
-pub fn settings(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, _: &Egregoria) {
+pub fn settings(
+    window: imgui::Window<'_, &'static str>,
+    ui: &Ui<'_>,
+    uiworld: &mut UiWorld,
+    _: &Egregoria,
+) {
     let mut settings = uiworld.write::<Settings>();
     let [w, h] = ui.io().display_size;
 
@@ -137,106 +142,103 @@ pub fn settings(window: imgui::Window<'_>, ui: &Ui<'_>, uiworld: &mut UiWorld, _
         .collapsible(false)
         .build(ui, || {
             ui.text("Gameplay");
-            let tok = imgui::ComboBox::new(im_str!("Autosave"))
-                .preview_value(&im_str!("{}", settings.auto_save_every.as_ref()))
+            let tok = imgui::ComboBox::new("Autosave")
+                .preview_value(settings.auto_save_every.as_ref())
                 .begin(ui);
             if let Some(tok) = tok {
-                if imgui::Selectable::new(im_str!("Never")).build(ui) {
+                if imgui::Selectable::new("Never").build(ui) {
                     settings.auto_save_every = AutoSaveEvery::Never;
                 }
-                if imgui::Selectable::new(im_str!("Minute")).build(ui) {
+                if imgui::Selectable::new("Minute").build(ui) {
                     settings.auto_save_every = AutoSaveEvery::OneMinute;
                 }
-                if imgui::Selectable::new(im_str!("Five Minutes")).build(ui) {
+                if imgui::Selectable::new("Five Minutes").build(ui) {
                     settings.auto_save_every = AutoSaveEvery::FiveMinutes;
                 }
-                tok.end(ui);
+                tok.end();
             }
 
             ui.new_line();
             ui.text("Input");
 
             ui.checkbox(
-                im_str!("Border screen camera movement"),
+                "Border screen camera movement",
                 &mut settings.camera_border_move,
             );
-            ui.checkbox(im_str!("Camera smooth"), &mut settings.camera_smooth);
+            ui.checkbox("Camera smooth", &mut settings.camera_smooth);
 
             if settings.camera_smooth {
-                imgui::Drag::new(im_str!("Camera smoothing tightness"))
-                    .display_format(im_str!("%.2f"))
+                imgui::Drag::new("Camera smoothing tightness")
+                    .display_format("%.2f")
                     .speed(0.01)
                     .build(ui, &mut settings.camera_smooth_tightness);
             }
-            imgui::Drag::new(im_str!("Camera Field of View (FOV)"))
-                .display_format(im_str!("%.1f"))
-                .range(1.0..=179.0)
+            imgui::Drag::new("Camera Field of View (FOV)")
+                .display_format("%.1f")
+                .range(1.0, 179.0)
                 .speed(0.1)
                 .build(ui, &mut settings.camera_fov);
 
             ui.new_line();
             ui.text("Graphics");
 
-            ui.checkbox(im_str!("Fullscreen"), &mut settings.fullscreen);
-            ui.checkbox(im_str!("Realistic sky"), &mut settings.realistic_sky);
-            ui.checkbox(im_str!("Ambient Occlusion (SSAO)"), &mut settings.ssao);
+            ui.checkbox("Fullscreen", &mut settings.fullscreen);
+            ui.checkbox("Realistic sky", &mut settings.realistic_sky);
+            ui.checkbox("Ambient Occlusion (SSAO)", &mut settings.ssao);
 
-            let tok = imgui::ComboBox::new(im_str!("Shadow quality"))
-                .preview_value(&im_str!("{}", settings.shadows.as_ref()))
+            let tok = imgui::ComboBox::new("Shadow quality")
+                .preview_value(settings.shadows.as_ref())
                 .begin(ui);
             if let Some(tok) = tok {
-                if imgui::Selectable::new(im_str!("No Shadows")).build(ui) {
+                if imgui::Selectable::new("No Shadows").build(ui) {
                     settings.shadows = ShadowQuality::NoShadows;
                 }
-                if imgui::Selectable::new(im_str!("Low")).build(ui) {
+                if imgui::Selectable::new("Low").build(ui) {
                     settings.shadows = ShadowQuality::Low;
                 }
-                if imgui::Selectable::new(im_str!("Medium")).build(ui) {
+                if imgui::Selectable::new("Medium").build(ui) {
                     settings.shadows = ShadowQuality::Medium;
                 }
-                if imgui::Selectable::new(im_str!("High")).build(ui) {
+                if imgui::Selectable::new("High").build(ui) {
                     settings.shadows = ShadowQuality::High;
                 }
-                tok.end(ui);
+                tok.end();
             }
 
-            if let Some(tok) = imgui::ComboBox::new(im_str!("VSync"))
-                .preview_value(&im_str!("{}", settings.vsync.as_ref()))
+            if let Some(tok) = imgui::ComboBox::new("VSync")
+                .preview_value(settings.vsync.as_ref())
                 .begin(ui)
             {
-                if imgui::Selectable::new(im_str!("No VSync")).build(ui) {
+                if imgui::Selectable::new("No VSync").build(ui) {
                     settings.vsync = VSyncOptions::Disabled;
                 }
-                if imgui::Selectable::new(im_str!("VSync Enabled")).build(ui) {
+                if imgui::Selectable::new("VSync Enabled").build(ui) {
                     settings.vsync = VSyncOptions::Enabled;
                 }
-                if imgui::Selectable::new(im_str!("Low latency VSync")).build(ui) {
+                if imgui::Selectable::new("Low latency VSync").build(ui) {
                     settings.vsync = VSyncOptions::LowLatency;
                 }
-                tok.end(ui);
+                tok.end();
             }
 
             ui.new_line();
             ui.text("Audio");
 
-            imgui::Slider::new(im_str!("Music volume"))
-                .range(0.0..=100.0)
-                .display_format(im_str!("%.0f"))
+            imgui::Slider::new("Music volume", 0.0, 100.0)
+                .display_format("%.0f")
                 .build(ui, &mut settings.music_volume_percent);
-            imgui::Slider::new(im_str!("Effects volume"))
-                .range(0.0..=100.0)
-                .display_format(im_str!("%.0f"))
+            imgui::Slider::new("Effects volume", 0.0, 100.0)
+                .display_format("%.0f")
                 .build(ui, &mut settings.effects_volume_percent);
-            imgui::Slider::new(im_str!("Ui volume"))
-                .range(0.0..=100.0)
-                .display_format(im_str!("%.0f"))
+            imgui::Slider::new("Ui volume", 0.0, 100.0)
+                .display_format("%.0f")
                 .build(ui, &mut settings.ui_volume_percent);
 
             ui.new_line();
             ui.text("Keybinds");
 
             let im = uiworld.read::<InputMap>();
-            ui.columns(3, &*im_str!("input_map"), false);
+            ui.columns(3, &*"input_map", false);
             ui.text("Action");
             ui.next_column();
             ui.text("Input");

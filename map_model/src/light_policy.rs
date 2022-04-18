@@ -1,10 +1,8 @@
 use crate::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
-use imgui_inspect::{
-    imgui::{im_str, Ui},
-    InspectArgsDefault, InspectRenderDefault,
-};
+use imgui_inspect::{imgui::Ui, InspectArgsDefault, InspectRenderDefault};
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LightPolicy {
@@ -125,17 +123,24 @@ impl InspectRenderDefault<LightPolicy> for LightPolicy {
         };
 
         #[allow(clippy::indexing_slicing)]
-        let changed = imgui_inspect::imgui::ComboBox::new(&im_str!("{}", label))
-            .build_simple_string(
-                ui,
-                &mut id,
-                &[
-                    &im_str!("No lights"),
-                    &im_str!("Stop signs"),
-                    &im_str!("Lights"),
-                    &im_str!("Auto"),
-                ],
-            );
+        let changed = ui.combo(
+            label,
+            &mut id,
+            &[
+                LightPolicy::NoLights,
+                LightPolicy::StopSigns,
+                LightPolicy::Lights,
+                LightPolicy::Auto,
+            ],
+            |x| {
+                Cow::Borrowed(match *x {
+                    LightPolicy::NoLights => "No lights",
+                    LightPolicy::StopSigns => "Stop signs",
+                    LightPolicy::Lights => "Lights",
+                    LightPolicy::Auto => "Auto",
+                })
+            },
+        );
 
         if changed {
             match id {

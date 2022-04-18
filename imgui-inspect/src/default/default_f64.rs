@@ -7,8 +7,8 @@ impl InspectRenderDefault<f64> for f64 {
         if data.is_empty() {
             // Values are inconsistent
             let style_token = ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0]);
-            ui.text(&imgui::im_str!("{}: ", label));
-            style_token.pop(ui);
+            ui.text(&format!("{}: ", label));
+            style_token.pop();
             return;
         }
 
@@ -16,14 +16,14 @@ impl InspectRenderDefault<f64> for f64 {
             Some(_v) => {
                 // Values are consistent
                 let mut cp = *data[0];
-                imgui::Drag::new(&*imgui::im_str!("{}", label)).build(ui, &mut cp);
+                imgui::Drag::new(&*label).build(ui, &mut cp);
             }
             None => {
                 // Values are inconsistent
                 let style_token =
                     ui.push_style_color(imgui::StyleColor::Text, [1.0, 1.0, 0.0, 1.0]);
-                ui.text(&imgui::im_str!("{}: ", label));
-                style_token.pop(ui);
+                ui.text(&format!("{}: ", label));
+                style_token.pop();
             }
         }
     }
@@ -46,7 +46,7 @@ impl InspectRenderDefault<f64> for f64 {
         };
 
         let mut changed = false;
-        if imgui::Drag::new(&imgui::im_str!("{}", label)).build(ui, &mut value) {
+        if imgui::Drag::new(&label).build(ui, &mut value) {
             for d in data {
                 **d = value;
                 changed = true;
@@ -54,7 +54,7 @@ impl InspectRenderDefault<f64> for f64 {
         }
 
         if let Some(style_token) = style_token {
-            style_token.pop(ui);
+            style_token.pop();
         }
 
         changed

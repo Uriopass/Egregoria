@@ -12,22 +12,22 @@ impl InspectRenderDefault<String> for String {
         if data.is_empty() {
             // Values are inconsistent
             let style_token = ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0]);
-            ui.text(&imgui::im_str!("{}: ", label));
-            style_token.pop(ui);
+            ui.text(&format!("{}: ", label));
+            style_token.pop();
             return;
         }
 
         match get_same_or_none(data) {
             Some(_v) => {
                 // Values are consistent
-                ui.text(&imgui::im_str!("{}: {}", label, data[0]))
+                ui.text(&format!("{}: {}", label, data[0]))
             }
             None => {
                 // Values are inconsistent
                 let style_token =
                     ui.push_style_color(imgui::StyleColor::Text, [1.0, 1.0, 0.0, 1.0]);
-                ui.text(&imgui::im_str!("{}: ", label));
-                style_token.pop(ui);
+                ui.text(&format!("{}: ", label));
+                style_token.pop();
             }
         }
     }
@@ -48,18 +48,13 @@ impl InspectRenderDefault<String> for String {
             None
         };
 
-        let value = match same_or_none_value {
+        let mut value = match same_or_none_value {
             Some(v) => v,
             None => "".to_string(), // Some reasonable default
         };
 
         let mut changed = false;
-        let mut value = imgui::im_str!("{}", value);
-        if ui
-            .input_text(&imgui::im_str!("{}", label), &mut value)
-            .resize_buffer(true)
-            .build()
-        {
+        if ui.input_text(label, &mut value).build() {
             for d in data {
                 **d = value.to_string();
                 changed = true;
@@ -67,7 +62,7 @@ impl InspectRenderDefault<String> for String {
         }
 
         if let Some(style_token) = style_token {
-            style_token.pop(ui);
+            style_token.pop();
         }
 
         changed

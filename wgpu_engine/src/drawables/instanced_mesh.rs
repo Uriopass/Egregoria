@@ -6,7 +6,7 @@ use crate::{
 };
 use geom::{LinearColor, Vec3};
 use std::sync::Arc;
-use wgpu::{BufferUsage, IndexFormat, RenderPass, VertexAttribute, VertexBufferLayout};
+use wgpu::{BufferUsages, IndexFormat, RenderPass, VertexAttribute, VertexBufferLayout};
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -25,7 +25,7 @@ impl VBDesc for MeshInstance {
     fn desc<'a>() -> VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
-            step_mode: wgpu::InputStepMode::Instance,
+            step_mode: wgpu::VertexStepMode::Instance,
             attributes: ATTRS,
         }
     }
@@ -42,7 +42,7 @@ impl InstancedMeshBuilder {
         InstancedMeshBuilder {
             mesh: Arc::new(mesh),
             instances: Vec::with_capacity(4),
-            ibuffer: PBuffer::new(BufferUsage::VERTEX),
+            ibuffer: PBuffer::new(BufferUsages::VERTEX),
         }
     }
 

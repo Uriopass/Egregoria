@@ -78,6 +78,7 @@ impl ImguiWrapper {
         self.last_frame = now;
 
         self.imgui.io_mut().delta_time = delta_s;
+        log::info!("{:?}", self.imgui.io().display_size);
 
         // Prepare
         self.platform

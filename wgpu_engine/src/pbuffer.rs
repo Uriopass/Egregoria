@@ -3,7 +3,7 @@ use std::sync::Arc;
 use wgpu::{
     BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BufferBinding, BufferDescriptor,
-    BufferSize, BufferUsage, Device, Queue,
+    BufferSize, BufferUsages, Device, Queue,
 };
 
 /// Short for Persistent Buffer, keeps memory around to reuse it
@@ -12,11 +12,11 @@ pub struct PBuffer {
     inner: Option<Arc<wgpu::Buffer>>,
     len: u64,
     capacity: u64,
-    usage: BufferUsage,
+    usage: BufferUsages,
 }
 
 impl PBuffer {
-    pub fn new(usage: BufferUsage) -> Self {
+    pub fn new(usage: BufferUsages) -> Self {
         Self {
             inner: None,
             len: 0,
@@ -67,7 +67,7 @@ impl PBuffer {
 
     pub fn bindgroup_layout(
         gfx: &GfxContext,
-        visibility: wgpu::ShaderStage,
+        visibility: wgpu::ShaderStages,
         ty: wgpu::BufferBindingType,
     ) -> wgpu::BindGroupLayout {
         gfx.device
@@ -94,11 +94,11 @@ impl PBuffer {
     }
 }
 
-fn mk_buffer(device: &Device, usage: BufferUsage, size: u64) -> Arc<wgpu::Buffer> {
+fn mk_buffer(device: &Device, usage: BufferUsages, size: u64) -> Arc<wgpu::Buffer> {
     Arc::new(device.create_buffer(&BufferDescriptor {
         label: Some("pbuffer"),
         size,
-        usage: usage | BufferUsage::COPY_DST,
+        usage: usage | BufferUsages::COPY_DST,
         mapped_at_creation: false,
     }))
 }

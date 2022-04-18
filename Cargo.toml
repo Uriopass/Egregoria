@@ -14,6 +14,7 @@ members = [
     "goria_version"
 ]
 
+resolver = "2"
 default-members = ["native_app"]
 
 # Set the settings for build scripts and proc-macros.

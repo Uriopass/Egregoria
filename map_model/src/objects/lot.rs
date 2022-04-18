@@ -42,7 +42,6 @@ impl Lot {
 
         let proj = map.project(shape.center().z0(), size * 0.5 - 0.5)?;
         if !matches!(proj.kind, ProjectKind::Ground) {
-            log::info!("denied because not ground");
             return None;
         }
 

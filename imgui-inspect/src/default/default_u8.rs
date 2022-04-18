@@ -5,22 +5,22 @@ impl InspectRenderDefault<u8> for u8 {
         if data.is_empty() {
             // Values are inconsistent
             let style_token = ui.push_style_color(imgui::StyleColor::Text, [1.0, 0.0, 0.0, 1.0]);
-            ui.text(&imgui::im_str!("{}: ", label));
-            style_token.pop(ui);
+            ui.text(&format!("{}: ", label));
+            style_token.pop();
             return;
         }
 
         match get_same_or_none(data) {
             Some(_v) => {
                 // Values are consistent
-                ui.text(&imgui::im_str!("{}: {}", label, data[0]))
+                ui.text(&format!("{}: {}", label, data[0]))
             }
             None => {
                 // Values are inconsistent
                 let style_token =
                     ui.push_style_color(imgui::StyleColor::Text, [1.0, 1.0, 0.0, 1.0]);
-                ui.text(&imgui::im_str!("{}: ", label));
-                style_token.pop(ui);
+                ui.text(&format!("{}: ", label));
+                style_token.pop();
             }
         }
     }
@@ -47,7 +47,7 @@ impl InspectRenderDefault<u8> for u8 {
         };
 
         let mut changed = false;
-        if imgui::InputInt::new(ui, &imgui::im_str!("{}", label), &mut value).build()
+        if imgui::InputInt::new(ui, &label, &mut value).build()
             && value >= args.min_value.map(|x| x as i32).unwrap_or(0).max(0)
             && value <= args.max_value.map(|x| x as i32).unwrap_or(i32::MAX)
         {
@@ -63,7 +63,7 @@ impl InspectRenderDefault<u8> for u8 {
         }
 
         if let Some(style_token) = style_token {
-            style_token.pop(ui);
+            style_token.pop();
         }
 
         changed
