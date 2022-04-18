@@ -499,6 +499,7 @@ impl SLAV {
         )
     }
 
+    #[allow(clippy::needless_late_init)]
     pub fn handle_split_event(
         &mut self,
         vs: &mut Vertices,
@@ -687,8 +688,7 @@ impl SLAV {
 
         let original_edges: Vec<OriginalEdge> = lavs
             .iter()
-            .map(|x| x.iter_keys(vs))
-            .flatten()
+            .flat_map(|x| x.iter_keys(vs))
             .map(|vertex| {
                 let vertex = &vs[vertex.0];
                 let prev = &vs[vertex.prev.unwrap().0];

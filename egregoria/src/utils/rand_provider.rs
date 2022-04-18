@@ -74,7 +74,7 @@ impl SeedableRng for RandProvider {
 
     fn from_seed(seed: Self::Seed) -> Self {
         let mut seed_u32 = [0u32; 4];
-        for (out, chunk) in seed_u32.iter_mut().zip((&seed).chunks_exact(4)) {
+        for (out, chunk) in seed_u32.iter_mut().zip(seed.chunks_exact(4)) {
             *out = u32::from_le_bytes(chunk.try_into().unwrap());
         }
 
