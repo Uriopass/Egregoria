@@ -56,6 +56,7 @@ impl Segment {
         }
     }
 
+    #[allow(clippy::manual_range_contains)]
     pub fn intersection_point(&self, other: &Segment) -> Option<Vec2> {
         // see https://stackoverflow.com/a/565282
         let r = self.vec();

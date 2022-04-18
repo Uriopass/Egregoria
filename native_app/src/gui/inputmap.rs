@@ -17,7 +17,7 @@ impl InputMap {
         use InputAction::*;
         use InputCombination::*;
 
-        let ic = |x| InputCombinations(x);
+        let ic = InputCombinations;
 
         for (k, v) in vec![
             (GoForward,     ic(vec![Key(KeyCode::Z), Key(KeyCode::Up)])),

@@ -334,6 +334,7 @@ impl Map {
         Some(road)
     }
 
+    #[allow(clippy::collapsible_else_if)]
     pub(crate) fn split_road(&mut self, r_id: RoadID, pos: Vec3) -> Option<IntersectionID> {
         info!("split_road {:?} {:?}", r_id, pos);
 

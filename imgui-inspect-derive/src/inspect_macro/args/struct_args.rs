@@ -27,9 +27,11 @@ pub struct InspectFieldArgsStruct {
     skip: bool,
 
     #[darling(default)]
+    #[allow(dead_code)]
     min_value: Option<f32>,
 
     #[darling(default)]
+    #[allow(dead_code)]
     max_value: Option<f32>,
 
     //TODO: Default to true

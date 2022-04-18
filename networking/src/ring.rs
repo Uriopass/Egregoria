@@ -7,7 +7,9 @@ pub struct Ring<T: Default> {
 
 impl<T: Default> Ring<T> {
     pub fn new() -> Self {
-        Self { ring: arr_init() }
+        Self {
+            ring: [(); RING_SIZE].map(|_| Default::default()),
+        }
     }
 
     pub fn get(&self, f: Frame) -> &T {
@@ -26,14 +28,4 @@ impl<T: Default> Ring<T> {
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.ring.iter_mut()
     }
-}
-
-fn arr_init<T: Default>() -> [T; RING_SIZE] {
-    let mut data: [T; RING_SIZE] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
-    for i in 0..RING_SIZE {
-        unsafe {
-            data.as_mut_ptr().add(i).write(T::default());
-        }
-    }
-    data
 }
