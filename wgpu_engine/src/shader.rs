@@ -1,3 +1,5 @@
+use crate::wgpu::ShaderSource;
+use std::borrow::Cow;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -20,35 +22,19 @@ pub enum CacheState {
 
 fn cache_filename(p: &Path) -> Option<PathBuf> {
     let mut name = p.file_name()?.to_string_lossy().into_owned();
-    name.push_str(".spv");
+    name.push_str(".wgsl");
 
     Some(p.parent()?.parent()?.join("compiled_shaders").join(name))
 }
 
-fn mk_module(p: &Path, data: &[u8], device: &wgpu::Device) -> ShaderModule {
-    let dev = device as *const wgpu::Device as usize;
-    let v = std::panic::catch_unwind(|| unsafe {
-        let dev = dev as *const wgpu::Device;
-        let s = wgpu::util::make_spirv_raw(data);
-        wgpu::Device::create_shader_module_spirv(
-            &*dev as &wgpu::Device,
-            &wgpu::ShaderModuleDescriptorSpirV {
-                label: None,
-                source: s,
-            },
-        )
-    });
-    v.unwrap_or_else(move |_| unsafe {
-        log::error!(
-            "couldn't validate shader {:?} using naga. disabling validation",
-            p
-        );
-        let s = wgpu::util::make_spirv_raw(data);
-        device.create_shader_module_spirv(&wgpu::ShaderModuleDescriptorSpirV {
+fn mk_module(data: &str, device: &wgpu::Device) -> ShaderModule {
+    wgpu::Device::create_shader_module(
+        device,
+        &wgpu::ShaderModuleDescriptor {
             label: None,
-            source: s,
-        })
-    })
+            source: ShaderSource::Wgsl(std::borrow::Cow::Borrowed(data)),
+        },
+    )
 }
 
 fn find_in_cache(
@@ -57,12 +43,12 @@ fn find_in_cache(
     stype: ShaderType,
     last_modified: SystemTime,
 ) -> CacheState {
-    let read = match std::fs::read(&compiled_path) {
+    let read = match std::fs::read_to_string(&compiled_path) {
         Ok(x) => x,
         Err(_) => return CacheState::Nofile,
     };
 
-    let shader = CompiledShader(mk_module(compiled_path, &*read, device), stype);
+    let shader = CompiledShader(mk_module(&*read, device), stype);
 
     let f = match File::open(compiled_path) {
         Ok(x) => x,
@@ -87,9 +73,9 @@ fn find_in_cache(
     }
 }
 
-fn save_to_cache(compiled_path: &Path, spirv: &[u8]) -> Option<()> {
+fn save_to_cache(compiled_path: &Path, wgsl: &String) -> Option<()> {
     std::fs::create_dir_all(compiled_path.parent()?).ok()?;
-    std::fs::write(compiled_path, spirv).ok()?;
+    std::fs::write(compiled_path, wgsl).ok()?;
     Some(())
 }
 
@@ -166,7 +152,7 @@ pub fn compile_shader(
         )
     });
 
-    let spirv = match fileread.ok().and_then(|_| compile(&src, stype)) {
+    let wgsl = match fileread.ok().and_then(|_| compile(p, src, stype)) {
         Some(x) => {
             log::info!("successfully compiled {}", p.to_string_lossy().into_owned());
             x
@@ -180,51 +166,63 @@ pub fn compile_shader(
                     );
                     x
                 })
-                .expect("couldn't compile glsl and no outdated spirv found in cache, aborting.");
+                .expect("couldn't compile glsl and no outdated wgsl found in cache, aborting.");
         }
     };
 
-    let _ = compiled_name.and_then(|x| save_to_cache(&x, &spirv));
+    let _ = compiled_name.and_then(|x| save_to_cache(&x, &wgsl));
 
-    CompiledShader(mk_module(p, &*spirv, device), stype)
+    CompiledShader(mk_module(&*wgsl, device), stype)
 }
 
-#[cfg(not(feature = "spirv_naga"))]
-fn compile(_src: &str, _stype: ShaderType) -> Option<Vec<u8>> {
-    log::info!("No compiler enabled");
-    None
-}
-
-#[cfg(feature = "spirv_naga")]
-fn compile(src: &str, stype: ShaderType) -> Option<Vec<u8>> {
+fn compile(p: &Path, mut src: String, stype: ShaderType) -> Option<String> {
     log::info!("Using naga compiler");
-    let glsl = naga::front::glsl::parse_str(
-        &src,
-        "main",
-        match stype {
-            ShaderType::Vertex => naga::ShaderStages::Vertex,
-            ShaderType::Fragment => naga::ShaderStages::Fragment,
-        },
-        Default::default(),
-    )
-    .map_err(|e| log::error!("{:?}", e))
-    .ok()?;
+    src = src
+        .lines()
+        .map(|x| {
+            if let Some(mut loc) = x.strip_prefix("#include \"") {
+                loc = loc
+                    .strip_suffix("\"")
+                    .expect("include does not end with \"");
+                let mut p = p.to_path_buf();
+                p.pop();
+                p.push(loc);
+                return Cow::Owned(
+                    std::fs::read_to_string(p).expect("could not find included file"),
+                );
+            }
+            Cow::Borrowed(x)
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
 
-    let mut spirv = vec![];
-    naga::back::spv::Writer::new(
-        &glsl.header,
-        naga::back::spv::WriterFlags::DEBUG,
-        Default::default(),
-    )
-    .write(&glsl, &mut spirv)
-    .ok()?;
+    let glsl = naga::front::glsl::Parser::default()
+        .parse(
+            &naga::front::glsl::Options {
+                stage: match stype {
+                    ShaderType::Vertex => naga::ShaderStage::Vertex,
+                    ShaderType::Fragment => naga::ShaderStage::Fragment,
+                },
+                defines: Default::default(),
+            },
+            &src,
+        )
+        .map_err(|e| log::error!("{:?}", e))
+        .ok()?;
 
-    Some(
-        spirv
-            .iter()
-            .fold(Vec::with_capacity(spirv.len() * 4), |mut v, w| {
-                v.extend_from_slice(&w.to_le_bytes());
-                v
-            }),
-    )
+    let mut valid = naga::valid::Validator::new(
+        naga::valid::ValidationFlags::all(),
+        naga::valid::Capabilities::empty(),
+    );
+    let info = valid
+        .validate(&glsl)
+        .map_err(|e| log::error!("{:?}", e))
+        .ok()?;
+
+    let mut wgsl = String::new();
+    naga::back::wgsl::Writer::new(&mut wgsl, naga::back::wgsl::WriterFlags::all())
+        .write(&glsl, &info)
+        .ok()?;
+
+    Some(wgsl)
 }
