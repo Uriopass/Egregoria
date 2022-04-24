@@ -9,6 +9,7 @@ void main() {
         case 1: tc = vec2(1.0, 1.0); break;
         case 2: tc = vec2(0.0, 0.0); break;
         case 3: tc = vec2(0.0, 1.0); break;
+        default: break;
     }
     v_TexCoord = tc;
     vec2 pos = tc * 2.0 - 1.0;
