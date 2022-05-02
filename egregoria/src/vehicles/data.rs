@@ -7,9 +7,10 @@ use crate::utils::time::GameInstant;
 use crate::Egregoria;
 use geom::Transform;
 use geom::{Color, Spline3, Vec3};
+use hecs::Entity;
 use imgui_inspect::InspectDragf;
 use imgui_inspect_derive::Inspect;
-use legion::{Entity, Resources};
+use resources::Resources;
 use serde::{Deserialize, Serialize};
 
 /// The duration for the parking animation.
@@ -125,16 +126,19 @@ impl VehicleKind {
 }
 
 pub fn unpark(goria: &mut Egregoria, vehicle: VehicleID) {
-    let v = unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0));
+    let mut v = unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0));
     let w = v.kind.width();
 
-    if let VehicleState::Parked(spot) = std::mem::replace(&mut v.state, VehicleState::Driving) {
+    if let VehicleState::Parked(spot) = std::mem::replace(&mut (*v).state, VehicleState::Driving) {
+        drop(v);
         goria.write::<ParkingManagement>().free(spot);
     } else {
+        drop(v);
         log::warn!("Trying to unpark {:?} that wasn't parked", vehicle);
     }
 
-    let coll = put_vehicle_in_coworld(goria, w, *unwrap_ret!(goria.comp::<Transform>(vehicle.0)));
+    let trans = *unwrap_ret!(goria.comp::<Transform>(vehicle.0));
+    let coll = put_vehicle_in_coworld(goria, w, trans);
     goria.add_comp(vehicle.0, coll);
 }
 
@@ -178,7 +182,7 @@ pub fn make_vehicle_entity(
     mk_collider: bool,
 ) -> Entity {
     let w = vehicle.kind.width();
-    let e = goria.world.push((
+    let e = goria.world.spawn((
         trans,
         Kinematics::default(),
         Selectable::default(),
@@ -189,7 +193,7 @@ pub fn make_vehicle_entity(
     if mk_collider {
         let c = put_vehicle_in_coworld(goria, w, trans);
         #[allow(clippy::unwrap_used)] // literally just added to the world
-        goria.world.entry(e).unwrap().add_component(c);
+        let _ = goria.world.insert_one(e, c);
     }
 
     e

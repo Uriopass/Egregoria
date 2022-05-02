@@ -9,24 +9,17 @@ use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::goods_company::GoodsCompany;
 use crate::souls::human::HumanDecision;
 use crate::vehicles::Vehicle;
-use atomic_refcell::{AtomicRef, AtomicRefMut};
 use common::saveload::Encoder;
-use common::FastMap;
 use geom::{Transform, Vec3};
-use legion::serialize::{Canon, CustomEntitySerializer};
-use legion::storage::Component;
-use legion::systems::{ParallelRunnable, Resource};
-use legion::{Entity, IntoQuery, Registry, Resources, World};
+use hecs::{Component, Entity, EntityBuilder, EntityRef, World};
 use map_model::Map;
 use pedestrians::Location;
-use serde::{Deserialize, Serialize};
+use resources::{Ref, RefMut, Resource, Resources};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
-use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeMap;
-use std::convert::TryFrom;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use std::num::NonZeroU64;
-use std::sync::atomic::AtomicU64;
 use std::time::{Duration, Instant};
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
@@ -35,9 +28,7 @@ use utils::time::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 macro_rules! register_system {
     ($f: ident) => {
         inventory::submit! {
-            paste::paste! {
-                $crate::GSystem::new(Box::new(|| Box::new([<$f _system >]())))
-            }
+            $crate::GSystem::new(Box::new(|| Box::new($crate::utils::scheduler::RunnableFn { f: $f, name: stringify!($f) })))
         }
     };
 }
@@ -133,7 +124,9 @@ mod tests;
 pub mod utils;
 pub mod vehicles;
 
-use std::io::ErrorKind;
+use crate::utils::scheduler::RunnableSystem;
+use common::FastMap;
+use serde::de::Error;
 pub use utils::par_command_buffer::ParCommandBuffer;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -177,11 +170,11 @@ pub(crate) struct InitFunc {
 inventory::collect!(InitFunc);
 
 pub(crate) struct GSystem {
-    s: Box<dyn Fn() -> Box<dyn ParallelRunnable + 'static>>,
+    s: Box<fn() -> Box<dyn RunnableSystem>>,
 }
 
 impl GSystem {
-    pub fn new(s: Box<dyn Fn() -> Box<dyn ParallelRunnable + 'static>>) -> Self {
+    pub fn new(s: Box<fn() -> Box<dyn RunnableSystem>>) -> Self {
         Self { s }
     }
 }
@@ -255,48 +248,26 @@ impl Egregoria {
     }
 
     pub fn hashes(&self) -> BTreeMap<String, u64> {
-        fn hash(x: &[u8]) -> u64 {
-            let mut h = DefaultHasher::new();
-            h.write(x);
-            h.finish()
-        }
-        let serworld = unwrap_ret!(
-            SerPreparedEgregoria::try_from(self).ok(),
-            Default::default()
-        );
-
         let mut hashes = BTreeMap::new();
-        hashes.insert("tick".to_string(), serworld.tick as u64);
-        hashes.insert("world".to_string(), hash(&*serworld.world));
-        for (name, v) in serworld.res {
-            hashes.insert(name, hash(&*v));
+        hashes.insert("tick".to_string(), self.tick as u64);
+        let ser = common::saveload::Bincode::encode(&SerWorld(&self.world)).unwrap();
+        hashes.insert("world".to_string(), common::hash_u64(&*ser));
+
+        for l in inventory::iter::<SaveLoadFunc> {
+            let v = (l.save)(self);
+            hashes.insert(l.name.to_string(), common::hash_u64(&*v));
         }
 
         hashes
     }
 
     pub fn load_from_disk(save_name: &'static str) -> Option<Self> {
-        let ser: SerPreparedEgregoria = common::saveload::CompressedBincode::load(save_name)?;
-        if ser.version != goria_version::VERSION {
-            log::error!(
-                "couldn't load save, incompatible version! save is: {} - game is: {}",
-                ser.version,
-                goria_version::VERSION
-            );
-            return None;
-        }
-        Self::try_from(ser).ok()
+        let goria: Egregoria = common::saveload::JSON::load(save_name)?;
+        Some(goria)
     }
 
     pub fn save_to_disk(&self, save_name: &'static str) {
-        let ser = match SerPreparedEgregoria::try_from(self) {
-            Ok(x) => x,
-            Err(e) => {
-                log::error!("couldn't save: {}", e);
-                return;
-            }
-        };
-        common::saveload::CompressedBincode::save(&ser, save_name);
+        common::saveload::JSON::save(&self, save_name);
     }
 
     pub fn pos(&self, e: Entity) -> Option<Vec3> {
@@ -304,223 +275,208 @@ impl Egregoria {
     }
 
     pub(crate) fn add_comp(&mut self, e: Entity, c: impl Component) {
-        if self
-            .world
-            .entry(e)
-            .map(move |mut e| e.add_component(c))
-            .is_none()
-        {
+        if self.world.insert_one(e, c).is_err() {
             log::error!("trying to add component to entity but it doesn't exist");
         }
     }
-
-    pub fn comp<T: Component>(&self, e: Entity) -> Option<&T> {
-        <&T>::query().get(&self.world, e).ok()
+    pub fn comptest<T: Component>(&self, e: Entity) -> Option<&T> {
+        match self.world.get::<&T>(e).ok() {
+            None => None,
+            Some(x) => Some(*x),
+        }
     }
 
-    pub(crate) fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
-        <&mut T>::query().get_mut(&mut self.world, e).ok()
+    pub fn comp<T: Component>(&self, e: Entity) -> Option<hecs::Ref<T>> {
+        self.world.get(e).ok()
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn try_write<T: Resource>(&self) -> Option<AtomicRefMut<'_, T>> {
-        self.resources.get_mut()
+    pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<hecs::RefMut<T>> {
+        self.world.get_mut(e).ok()
     }
 
-    pub(crate) fn write<T: Resource>(&self) -> AtomicRefMut<'_, T> {
+    pub fn write_or_default<T: Resource + Default>(&mut self) -> RefMut<T> {
+        self.resources.entry::<T>().or_default()
+    }
+
+    pub fn try_write<T: Resource>(&self) -> Option<RefMut<T>> {
+        self.resources.get_mut().ok()
+    }
+
+    pub fn write<T: Resource>(&self) -> RefMut<T> {
         self.resources
             .get_mut()
-            .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
+            .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn read<T: Resource>(&self) -> AtomicRef<'_, T> {
+    pub fn read<T: Resource>(&self) -> Ref<T> {
         self.resources
             .get()
-            .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
+            .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn map(&self) -> AtomicRef<'_, Map> {
+    pub fn map(&self) -> Ref<'_, Map> {
         self.resources.get().unwrap()
     }
 
-    pub(crate) fn map_mut(&self) -> AtomicRefMut<'_, Map> {
+    pub(crate) fn map_mut(&self) -> RefMut<'_, Map> {
         self.resources.get_mut().unwrap()
     }
 
     pub fn insert<T: Resource>(&mut self, res: T) {
-        self.resources.insert(res)
+        self.resources.insert(res);
     }
 }
 
-impl TryFrom<&Egregoria> for SerPreparedEgregoria {
-    type Error = std::io::Error;
+struct SerWorld<'a>(&'a World);
 
-    fn try_from(goria: &Egregoria) -> Result<Self, Self::Error> {
-        let registry = registry();
+impl<'a> Serialize for SerWorld<'a> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        hecs::serialize::row::serialize(self.0, &mut SerContext, serializer)
+    }
+}
 
-        let entity_serializer = IdSer::default();
-        let s = goria.world.as_serializable(
-            !legion::query::component::<NoSerialize>(),
-            &registry,
-            &entity_serializer,
-        );
-
-        let world = common::saveload::Bincode::encode(&s)?;
-
+impl Serialize for Egregoria {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         let mut m: FastMap<String, Vec<u8>> = FastMap::default();
 
-        legion::serialize::set_entity_serializer(&entity_serializer, || {
-            for l in inventory::iter::<SaveLoadFunc> {
-                let v = (l.save)(goria);
-                m.insert(l.name.to_string(), v);
-            }
-        });
+        for l in inventory::iter::<SaveLoadFunc> {
+            let v = (l.save)(self);
+            m.insert(l.name.to_string(), v);
+        }
 
-        Ok(SerPreparedEgregoria {
+        EgregoriaSer {
+            world: SerWorld(&self.world),
             version: goria_version::VERSION.to_string(),
-            world,
             res: m,
-            tick: goria.tick,
-        })
+            tick: self.tick,
+        }
+        .serialize(serializer)
     }
 }
 
-impl TryFrom<SerPreparedEgregoria> for Egregoria {
-    type Error = std::io::Error;
-
-    fn try_from(mut ser: SerPreparedEgregoria) -> Result<Self, Self::Error> {
-        std::panic::catch_unwind(move || {
-            let mut goria = Self::new(0);
-            goria.tick = ser.tick;
-            let registry = registry();
-
-            let entity_serializer = IdSer::default();
-
-            let w: World = common::saveload::Bincode::decode_seed(
-                registry.as_deserialize(&entity_serializer),
-                &ser.world,
-            )?;
-
-            goria.world = w;
-
-            legion::serialize::set_entity_serializer(&entity_serializer, || {
-                for l in inventory::iter::<SaveLoadFunc> {
-                    (l.load)(&mut goria, ser.res.remove(l.name));
-                }
-            });
-
-            let max_deser = entity_serializer
-                .max_deser
-                .load(std::sync::atomic::Ordering::SeqCst);
-
-            const BLOCK_SIZE: u64 = 16;
-            let mut p = BLOCK_SIZE;
-            while p <= max_deser {
-                // up block size
-                let c = Canon::default();
-                c.canonize_name(&[0; 16]);
-                p += BLOCK_SIZE
-            }
-
-            Ok(goria)
-        })
-        .map_err(|_| {
-            std::io::Error::new(ErrorKind::Other, "couldn't decode: probably an old version")
-        })?
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct SerPreparedEgregoria {
+#[derive(Serialize)]
+struct EgregoriaSer<'a> {
+    world: SerWorld<'a>,
     version: String,
-    world: Vec<u8>,
     res: FastMap<String, Vec<u8>>,
     tick: u32,
 }
 
-fn my_hash<T>(obj: T) -> u64
-where
-    T: Hash,
-{
-    let mut hasher = DefaultHasher::new();
-    obj.hash(&mut hasher);
-    hasher.finish()
+#[derive(Deserialize)]
+struct EgregoriaDeser {
+    world: DeserWorld,
+    version: String,
+    res: FastMap<String, Vec<u8>>,
+    tick: u32,
 }
 
+impl<'de> Deserialize<'de> for Egregoria {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let mut goriadeser = EgregoriaDeser::deserialize(deserializer)?;
+
+        if goriadeser.version != goria_version::VERSION {
+            return Err(Error::custom(format!(
+                "couldn't load save, incompatible version! save is: {} - game is: {}",
+                goriadeser.version,
+                goria_version::VERSION
+            )));
+        }
+
+        let mut goria = Self::new(0);
+
+        goria.world = goriadeser.world.0;
+        goria.tick = goriadeser.tick;
+
+        for l in inventory::iter::<SaveLoadFunc> {
+            (l.load)(&mut goria, goriadeser.res.remove(l.name));
+        }
+
+        Ok(goria)
+    }
+}
+
+struct DeserWorld(World);
+
+impl<'de> Deserialize<'de> for DeserWorld {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        hecs::serialize::row::deserialize(&mut DeserContext, deserializer).map(DeserWorld)
+    }
+}
+
+struct SerContext;
+struct DeserContext;
+
 macro_rules! register {
-    ($r: expr; $($t: ty),+,) => {
-        $(
-            $r.register::<$t>(my_hash(stringify!($t)))
-        );+
+    ($($t: ty => $p:literal),+,) => {
+        impl hecs::serialize::row::SerializeContext for SerContext {
+            fn serialize_entity<S>(
+                &mut self,
+                entity: EntityRef<'_>,
+                map: &mut S,
+            ) -> Result<(), S::Error>
+            where
+                S: serde::ser::SerializeMap,
+            {
+                $(
+                    hecs::serialize::row::try_serialize::<$t, _, _>(&entity, &$p, map)?;
+                )+
+                Ok(())
+            }
+        }
+
+        impl hecs::serialize::row::DeserializeContext for DeserContext {
+            fn deserialize_entity<'de, M>(
+                &mut self,
+                mut map: M,
+                entity: &mut EntityBuilder,
+            ) -> Result<(), M::Error>
+                where
+                    M: serde::de::MapAccess<'de>,
+            {
+                while let Some(key) = map.next_key::<u64>()? {
+                    match key {
+                        $(
+                           $p => {entity.add::<$t>(map.next_value()?);},
+                        )+
+                        _ => continue,
+                    }
+                }
+                Ok(())
+            }
+        }
     };
 }
 
 pub struct NoSerialize;
 
-fn registry() -> Registry<u64> {
-    let mut registry = Registry::default();
-    register!(registry;
-        Bought,
-        BuyFood,
-        Collider,
-        GoodsCompany,
-        Home,
-        HumanDecision,
-        Itinerary,
-        Kinematics,
-        Location,
-        Pedestrian,
-        Router,
-        Selectable,
-        Sold,
-        Transform,
-        Vehicle,
-        Work,
-        Workers,
-    );
-
-    registry
-}
-
-pub fn ent_id(e: Entity) -> u64 {
-    unsafe { std::mem::transmute(e) }
-}
-
-pub fn ent_from_id(x: u64) -> Entity {
-    if x == 0 {
-        panic!("x is zero");
-    }
-    unsafe { std::mem::transmute(x) }
-}
-
-#[derive(Default)]
-pub struct IdSer {
-    max_deser: AtomicU64,
-}
-
-impl CustomEntitySerializer for IdSer {
-    type SerializedID = u64;
-
-    fn to_serialized(&self, entity: Entity) -> Self::SerializedID {
-        ent_id(entity)
-    }
-
-    fn from_serialized(&self, serialized: u64) -> Entity {
-        use std::sync::atomic::Ordering::SeqCst;
-        loop {
-            let v = self.max_deser.load(SeqCst);
-            if serialized > v {
-                if self
-                    .max_deser
-                    .compare_exchange(v, serialized, SeqCst, SeqCst)
-                    .is_ok()
-                {
-                    break;
-                }
-            } else {
-                break;
-            }
-        }
-        ent_from_id(serialized)
-    }
-}
+register!(
+        Transform => 0,
+        Bought => 1,
+        BuyFood => 2,
+        Collider => 3,
+        GoodsCompany => 4,
+        Home => 5,
+        HumanDecision => 6,
+        Itinerary => 7,
+        Kinematics => 8,
+        Location => 9,
+        Pedestrian => 10,
+        Router => 11,
+        Selectable => 12,
+        Sold => 13,
+        Vehicle => 14,
+        Work => 15,
+        Workers => 16,
+);

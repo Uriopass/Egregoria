@@ -3,7 +3,6 @@ use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::vehicles::{Vehicle, VehicleKind};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec3, V3};
-use legion::query::IntoQuery;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder,
@@ -35,9 +34,7 @@ impl InstancedRender {
         self.cars.instances.clear();
         self.trucks.instances.clear();
         self.pedestrians.instances.clear();
-        for (trans, v) in <(&Transform, &Vehicle)>::query().iter(goria.world()) {
-            let v: &Vehicle = v;
-
+        for (_, (trans, v)) in goria.world().query::<(&Transform, &Vehicle)>().iter() {
             let instance = MeshInstance {
                 pos: trans.position,
                 dir: trans.dir,
@@ -51,7 +48,10 @@ impl InstancedRender {
             }
         }
 
-        for (trans, ped, loc) in <(&Transform, &Pedestrian, &Location)>::query().iter(goria.world())
+        for (_, (trans, ped, loc)) in goria
+            .world()
+            .query::<(&Transform, &Pedestrian, &Location)>()
+            .iter()
         {
             let ped: &Pedestrian = ped;
             if matches!(loc, Location::Outside) {
@@ -64,7 +64,7 @@ impl InstancedRender {
         }
 
         self.path_not_found.clear();
-        for (trans, itin) in <(&Transform, &Itinerary)>::query().iter(goria.world()) {
+        for (_, (trans, itin)) in goria.world().query::<(&Transform, &Itinerary)>().iter() {
             let itin: &Itinerary = itin;
             if let Some(wait) = itin.is_wait_for_reroute() {
                 if wait == 0 {

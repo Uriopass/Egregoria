@@ -7,6 +7,7 @@ use networking::{ConnectConf, Frame, ServerConfiguration, VirtualClientConf};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 use std::net::ToSocketAddrs;
+use std::sync::Mutex;
 
 register_resource!(NetworkConnectionInfo, "netinfo");
 pub struct NetworkConnectionInfo {
@@ -57,12 +58,12 @@ pub fn network(
                 }
             }
             NetworkState::Client(ref client) => {
-                ui.text(client.describe());
+                ui.text(client.lock().unwrap().describe());
                 show_hashes(ui, goria, &mut *info);
             }
             NetworkState::Server(ref server) => {
                 ui.text("Running server");
-                ui.text(server.describe());
+                ui.text(server.lock().unwrap().describe());
                 show_hashes(ui, goria, &mut *info);
             }
         }
@@ -102,7 +103,7 @@ fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<S
         }
     };
 
-    Some(server)
+    Some(Mutex::new(server))
 }
 
 fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
@@ -140,7 +141,7 @@ fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
         }
     };
 
-    Some(client)
+    Some(Mutex::new(client))
 }
 
 impl Default for NetworkConnectionInfo {

@@ -1,7 +1,7 @@
 use crate::SoulID;
 use common::FastMap;
-use legion::world::SubWorld;
-use legion::{system, EntityStore};
+use hecs::World;
+use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
@@ -103,32 +103,26 @@ commodity! {
 }
 
 register_system!(market_update);
-#[system]
-#[write_component(Sold)]
-#[write_component(Bought)]
-#[write_component(Workers)]
-pub fn market_update(#[resource] m: &mut Market, subworld: &mut SubWorld<'_>) {
+
+pub fn market_update(world: &mut World, resources: &mut Resources) {
+    let mut m = resources.get_mut::<Market>().unwrap();
     for trade in m.make_trades() {
         log::info!("A trade was made! {:?}", trade);
 
-        let mut ent = unwrap_orr!(subworld.entry_mut(trade.seller.0), continue);
-
         match trade.kind {
-            CommodityKind::JobOpening => ent
-                .get_component_mut::<Workers>()
+            CommodityKind::JobOpening => world
+                .get_mut::<Workers>(trade.seller.0)
                 .expect("employer has no component Workers")
                 .0
                 .push(trade.buyer),
             _ => {
-                if let Ok(v) = ent.get_component_mut::<Sold>() {
+                if let Ok(mut v) = world.get_mut::<Sold>(trade.seller.0) {
                     v.0.push(trade)
                 }
             }
         }
 
-        if let Ok(v) =
-            unwrap_orr!(subworld.entry_mut(trade.buyer.0), continue).get_component_mut::<Bought>()
-        {
+        if let Ok(mut v) = world.get_mut::<Bought>(trade.buyer.0) {
             v.0.entry(trade.kind).or_default().push(trade);
         }
     }

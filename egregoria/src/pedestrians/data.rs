@@ -6,8 +6,8 @@ use crate::utils::rand_provider::RandProvider;
 use crate::{Egregoria, SoulID};
 use geom::Transform;
 use geom::{Color, Vec3};
+use hecs::Entity;
 use imgui_inspect_derive::Inspect;
-use legion::Entity;
 use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
@@ -24,7 +24,7 @@ pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Option<Enti
 
     let hpos = goria.map().buildings().get(house)?.door_pos;
     let p = Pedestrian::new(&mut *goria.write::<RandProvider>());
-    let e = goria.world.push((
+    let e = goria.world.spawn((
         Transform::new(hpos),
         Location::Building(house),
         p,

@@ -5,7 +5,6 @@ use egregoria::vehicles::Vehicle;
 use egregoria::Egregoria;
 use geom::Camera;
 use imgui::Ui;
-use legion::IntoQuery;
 
 register_resource_noserialize!(TestFieldProperties);
 
@@ -55,11 +54,11 @@ pub fn map(
 
         ui.text(format!(
             "{} pedestrians",
-            <&Pedestrian>::query().iter(goria.world()).count()
+            goria.world().query::<&Pedestrian>().iter().count()
         ));
         ui.text(format!(
             "{} vehicles",
-            <&Vehicle>::query().iter(goria.world()).count()
+            goria.world().query::<&Vehicle>().iter().count()
         ));
     });
 }

@@ -5,12 +5,13 @@ use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
 use crate::utils::time::GameTime;
 use crate::vehicles::VehicleID;
-use crate::{my_hash, Egregoria, ParCommandBuffer, SoulID};
+use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::{Transform, Vec2};
+use hecs::{Entity, World};
+use if_chain::if_chain;
 use imgui_inspect_derive::Inspect;
-use legion::world::SubWorld;
-use legion::{system, Entity, EntityStore};
 use map_model::{BuildingGen, BuildingID, BuildingKind, Map};
+use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -564,7 +565,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
     let height = b.height;
     drop(map);
 
-    let e = goria.world.push(());
+    let e = goria.world.spawn(());
 
     let soul = SoulID(e);
 
@@ -580,37 +581,53 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
         .write::<BuildingInfos>()
         .set_owner(company.building, soul);
 
-    goria.world.push_with_id(
-        e,
-        (
-            company,
-            Workers::default(),
-            Sold::default(),
-            Transform::new(obb.center().z(height)),
-            Selectable::new(obb.axis()[0].magnitude() * 0.5),
-        ),
-    );
+    goria
+        .world
+        .insert(
+            e,
+            (
+                company,
+                Workers::default(),
+                Sold::default(),
+                Transform::new(obb.center().z(height)),
+                Selectable::new(obb.axis()[0].magnitude() * 0.5),
+            ),
+        )
+        .unwrap();
 
     Some(soul)
 }
 
-register_system!(company);
-#[system(par_for_each)]
-#[read_component(Work)]
+register_system!(company_system);
+
+pub fn company_system(world: &mut World, res: &mut Resources) {
+    let ra = res.get().unwrap();
+    let rb = res.get().unwrap();
+    let rc = res.get().unwrap();
+    let rd = res.get().unwrap();
+    let re = res.get().unwrap();
+    for (ent, (a, b, c)) in world
+        .query::<(&mut GoodsCompany, &mut Sold, &Workers)>()
+        .iter()
+    {
+        company(&*ra, &*rb, &*rc, &*rd, &*re, ent, a, b, c, world);
+    }
+}
+
 pub fn company(
-    #[resource] time: &GameTime,
-    #[resource] cbuf: &ParCommandBuffer,
-    #[resource] binfos: &BuildingInfos,
-    #[resource] market: &Market,
-    #[resource] map: &Map,
-    me: &Entity,
+    time: &GameTime,
+    cbuf: &ParCommandBuffer,
+    binfos: &BuildingInfos,
+    market: &Market,
+    map: &Map,
+    me: Entity,
     company: &mut GoodsCompany,
     sold: &mut Sold,
     workers: &Workers,
-    sw: &SubWorld<'_>,
+    world: &World,
 ) {
     let n_workers = workers.0.len();
-    let soul = SoulID(*me);
+    let soul = SoulID(me);
 
     if company.recipe.should_produce(soul, market) {
         company.progress += n_workers as f32
@@ -622,7 +639,7 @@ pub fn company(
         company.progress = 0.0;
         let recipe = company.recipe.clone();
         let bpos = unwrap_or!(map.buildings().get(company.building), {
-            cbuf.kill(*me);
+            cbuf.kill(me);
             return;
         })
         .door_pos;
@@ -633,18 +650,17 @@ pub fn company(
         return;
     }
 
-    if_chain::if_chain! {
+    if_chain! {
         if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next();
         if let Some(driver) = company.driver;
-        if let Ok(ent) = sw.entry_ref(driver.0);
-        if let Ok(w) = ent.get_component::<Work>();
+        if let Ok(w) = world.get::<Work>(driver.0);
         if matches!(w.kind, WorkKind::Driver { deliver_order: None, .. });
         if let Some(owner_build) = binfos.building_owned_by(trade.buyer);
         then {
             log::info!("asked driver to deliver");
 
             cbuf.exec_ent(soul.0, move |goria| {
-                if let Some(w) = goria.comp_mut::<Work>(driver.0) {
+                if let Some(mut w) = goria.comp_mut::<Work>(driver.0) {
                     if let WorkKind::Driver { ref mut deliver_order, .. } = w.kind {
                         *deliver_order = Some(owner_build)
                     }
@@ -654,27 +670,23 @@ pub fn company(
     }
 
     for &worker in workers.0.iter() {
-        if let Ok(ent) = sw.entry_ref(worker.0) {
-            if ent.get_component::<Work>().is_err() {
-                let mut kind = WorkKind::Worker;
+        if world.get::<Work>(worker.0).is_err() {
+            let mut kind = WorkKind::Worker;
 
-                if let Some(truck) = company.trucks.get(0) {
-                    if matches!(company.kind, CompanyKind::Factory { .. })
-                        && company.driver.is_none()
-                    {
-                        kind = WorkKind::Driver {
-                            deliver_order: None,
-                            truck: *truck,
-                        };
+            if let Some(truck) = company.trucks.get(0) {
+                if matches!(company.kind, CompanyKind::Factory { .. }) && company.driver.is_none() {
+                    kind = WorkKind::Driver {
+                        deliver_order: None,
+                        truck: *truck,
+                    };
 
-                        company.driver = Some(worker);
-                    }
+                    company.driver = Some(worker);
                 }
-
-                let offset = common::rand::randu(my_hash(worker) as u32);
-
-                cbuf.add_component(worker.0, Work::new(company.building, kind, offset))
             }
+
+            let offset = common::rand::randu(common::hash_u64(worker) as u32);
+
+            cbuf.add_component(worker.0, Work::new(company.building, kind, offset))
         }
     }
 }

@@ -6,7 +6,7 @@ use winit::window::{Fullscreen, Window};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
-use egregoria::{Egregoria, SerPreparedEgregoria};
+use egregoria::Egregoria;
 use geom::Camera;
 use wgpu_engine::lighting::LightInstance;
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
@@ -28,7 +28,6 @@ use common::timestep::Timestep;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
 use networking::{Frame, PollResult, ServerPollResult};
-use std::convert::{TryFrom, TryInto};
 
 pub struct State {
     goria: Egregoria,
@@ -104,7 +103,7 @@ impl State {
         let mut net_state = self.uiw.write::<NetworkState>();
 
         let mut inputs_to_apply = None;
-        match *net_state {
+        match &mut *net_state {
             NetworkState::Singleplayer(ref mut step) => {
                 let goria = &mut self.goria; // mut for tick
                 let sched = &mut self.game_schedule;
@@ -125,16 +124,12 @@ impl State {
                 }
             }
             NetworkState::Server(ref mut server) => {
-                match server.poll(
-                    &|| {
-                        (
-                            SerPreparedEgregoria::try_from(&self.goria)
-                                .expect("couldn't serialize world"),
-                            Frame(self.goria.get_tick()),
-                        )
-                    },
+                let polled = server.get_mut().unwrap().poll(
+                    &self.goria,
+                    Frame(self.goria.get_tick()),
                     Some(commands),
-                ) {
+                );
+                match polled {
                     ServerPollResult::Wait(commands) => {
                         if let Some(commands) = commands {
                             *self.uiw.write::<WorldCommands>() = commands;
@@ -145,28 +140,28 @@ impl State {
                     }
                 }
             }
-            NetworkState::Client(ref mut client) => match client.poll(commands) {
-                PollResult::Wait(commands) => {
-                    *self.uiw.write::<WorldCommands>() = commands;
-                }
-                PollResult::Input(inputs) => {
-                    inputs_to_apply = Some(inputs);
-                }
-                PollResult::GameWorld(commands, prepared_goria) => {
-                    if let Ok(x) = prepared_goria.try_into() {
-                        self.goria = x;
-                    } else {
-                        log::error!("couldn't decode serialized goria sent by server");
-                        *net_state = NetworkState::Singleplayer(Timestep::default());
+            NetworkState::Client(ref mut client) => {
+                let polled = client.get_mut().unwrap().poll(commands);
+                match polled {
+                    PollResult::Wait(commands) => {
+                        *self.uiw.write::<WorldCommands>() = commands;
                     }
-                    *self.uiw.write::<WorldCommands>() = commands;
+                    PollResult::Input(inputs) => {
+                        inputs_to_apply = Some(inputs);
+                    }
+                    PollResult::GameWorld(commands, prepared_goria) => {
+                        self.goria = prepared_goria;
+                        *self.uiw.write::<WorldCommands>() = commands;
+                    }
+                    PollResult::Disconnect(reason) => {
+                        log::error!(
+                            "got disconnected :-( continuing with server world but it's sad"
+                        );
+                        *net_state = NetworkState::Singleplayer(Timestep::default());
+                        self.uiw.write::<NetworkConnectionInfo>().error = reason;
+                    }
                 }
-                PollResult::Disconnect(reason) => {
-                    log::error!("got disconnected :-( continuing with server world but it's sad");
-                    *net_state = NetworkState::Singleplayer(Timestep::default());
-                    self.uiw.write::<NetworkConnectionInfo>().error = reason;
-                }
-            },
+            }
         }
 
         if let Some(inputs) = inputs_to_apply {

@@ -4,8 +4,8 @@ use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::Selectable;
 use egregoria::Egregoria;
 use geom::Transform;
-use legion::IntoQuery;
-use legion::{Entity, EntityStore};
+use rayon::iter::ParallelIterator;
+use rayon::prelude::ParallelBridge;
 use std::sync::Mutex;
 
 #[profiling::function]
@@ -16,32 +16,38 @@ pub fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = uiworld.read::<Tool>();
 
     if mouse.just_pressed.contains(&MouseButton::Left) && matches!(*tool, Tool::Hand) {
-        inspected.dist2 = f32::INFINITY;
-        let protec = Mutex::new(inspected);
+        let mut inspectcpy = *inspected;
+        inspectcpy.dist2 = f32::INFINITY;
+        let protec = Mutex::new(inspectcpy);
         let unproj = unwrap_ret!(mouse.unprojected);
 
-        <(Entity, &Transform, &Selectable)>::query().par_for_each_chunk(goria.world(), |chunk| {
-            let mut v = f32::INFINITY;
-            let mut ent = None;
-            for (e, trans, select) in chunk {
-                let dist2 = (trans.position.xy() - unproj.xy()).magnitude2();
-                if dist2 >= select.radius * select.radius || dist2 >= v {
-                    continue;
+        goria
+            .world()
+            .query::<(&Transform, &Selectable)>()
+            .iter_batched(16)
+            .par_bridge()
+            .for_each(|chunk| {
+                let mut v = f32::INFINITY;
+                let mut ent = None;
+                for (e, (trans, select)) in chunk {
+                    let dist2 = (trans.position.xy() - unproj.xy()).magnitude2();
+                    if dist2 >= select.radius * select.radius || dist2 >= v {
+                        continue;
+                    }
+                    v = dist2;
+                    ent = Some(e);
                 }
-                v = dist2;
-                ent = Some(*e);
-            }
-            let mut inspected = protec.lock().unwrap();
-            if inspected.dist2 >= v {
-                inspected.e = ent;
-                inspected.dist2 = v;
-            }
-        });
-        inspected = protec.into_inner().unwrap();
+                let mut inspected = protec.lock().unwrap();
+                if inspected.dist2 >= v {
+                    inspected.e = ent;
+                    inspected.dist2 = v;
+                }
+            });
+        *inspected = protec.into_inner().unwrap();
     }
 
     if let Some(e) = inspected.e {
-        if goria.world().entry_ref(e).is_err() {
+        if !goria.world().contains(e) {
             inspected.e = None;
         }
     }
