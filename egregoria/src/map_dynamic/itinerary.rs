@@ -1,11 +1,12 @@
 use crate::utils::time::GameTime;
 use geom::{Transform, Vec3};
+use hecs::World;
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::Inspect;
-use legion::world::SubWorld;
-use legion::{system, Query};
 use map_model::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
+use rayon::prelude::{ParallelBridge, ParallelIterator};
+use resources::Resources;
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Serialize, Deserialize, Inspect)]
@@ -342,16 +343,13 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
     }
 }
 
-type Qry<'a, 'b> = (&'a Transform, &'b mut Itinerary);
 register_system!(itinerary_update);
-#[system]
-pub fn itinerary_update(
-    #[resource] time: &GameTime,
-    #[resource] map: &Map,
-    qry: &mut Query<Qry<'_, '_>>,
-    world: &mut SubWorld<'_>,
-) {
-    qry.par_for_each_mut(world, |(trans, it): Qry<'_, '_>| {
-        it.update(trans.position, time.seconds, map)
-    });
+pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
+    let time = &*resources.get::<GameTime>().unwrap();
+    let map = &*resources.get::<Map>().unwrap();
+    world
+        .query_mut::<(&Transform, &mut Itinerary)>()
+        .into_iter()
+        .par_bridge()
+        .for_each(|(_, (trans, it))| it.update(trans.position, time.seconds, map));
 }

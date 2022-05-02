@@ -1,3 +1,4 @@
+use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 pub use config::*;
@@ -109,6 +110,15 @@ macro_rules! defer_serialize {
             }
         }
     };
+}
+
+pub fn hash_u64<T>(obj: T) -> u64
+where
+    T: Hash,
+{
+    let mut hasher = DefaultHasher::new();
+    obj.hash(&mut hasher);
+    hasher.finish()
 }
 
 pub struct PtrCmp<'a, T>(pub &'a T);

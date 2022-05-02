@@ -73,7 +73,7 @@ fn find_in_cache(
     }
 }
 
-fn save_to_cache(compiled_path: &Path, wgsl: &String) -> Option<()> {
+fn save_to_cache(compiled_path: &Path, wgsl: &str) -> Option<()> {
     std::fs::create_dir_all(compiled_path.parent()?).ok()?;
     std::fs::write(compiled_path, wgsl).ok()?;
     Some(())
@@ -181,9 +181,7 @@ fn compile(p: &Path, mut src: String, stype: ShaderType) -> Option<String> {
         .lines()
         .map(|x| {
             if let Some(mut loc) = x.strip_prefix("#include \"") {
-                loc = loc
-                    .strip_suffix("\"")
-                    .expect("include does not end with \"");
+                loc = loc.strip_suffix('"').expect("include does not end with \"");
                 let mut p = p.to_path_buf();
                 p.pop();
                 p.push(loc);

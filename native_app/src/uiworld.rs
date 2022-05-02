@@ -1,13 +1,12 @@
-use atomic_refcell::{AtomicRef, AtomicRefMut};
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
-use legion::storage::Component;
-use legion::systems::Resource;
-use legion::{Entity, IntoQuery, Resources, World};
+use hecs::{Component, DynamicBundle, QueryOne};
+use hecs::{Entity, World};
+use resources::{Ref, RefMut, Resource};
 
 #[derive(Default)]
 pub struct UiWorld {
     pub world: World,
-    resources: Resources,
+    resources: resources::Resources,
 }
 
 #[allow(dead_code)]
@@ -21,54 +20,50 @@ impl UiWorld {
         w
     }
 
-    pub fn commands(&self) -> AtomicRefMut<'_, WorldCommands> {
+    pub fn commands(&self) -> RefMut<WorldCommands> {
         self.write::<WorldCommands>()
     }
-    pub fn received_commands(&self) -> AtomicRef<'_, ReceivedCommands> {
+
+    pub fn received_commands(&self) -> Ref<ReceivedCommands> {
         self.read::<ReceivedCommands>()
     }
 
-    pub fn add_comp(&mut self, e: Entity, c: impl Component) {
-        if self
-            .world
-            .entry(e)
-            .map(move |mut e| e.add_component(c))
-            .is_none()
-        {
+    pub fn add_comp(&mut self, e: Entity, c: impl DynamicBundle) {
+        if self.world.insert(e, c).is_err() {
             log::error!("trying to add component to entity but it doesn't exist");
         }
     }
 
-    pub fn comp<T: Component>(&self, e: Entity) -> Option<&T> {
-        <&T>::query().get(&self.world, e).ok()
+    pub fn comp<T: Component>(&self, e: Entity) -> Option<QueryOne<&T>> {
+        self.world.query_one::<&T>(e).ok()
     }
 
     pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
-        <&mut T>::query().get_mut(&mut self.world, e).ok()
+        self.world.query_one_mut::<&mut T>(e).ok()
     }
 
-    pub fn write_or_default<T: Resource + Default>(&mut self) -> AtomicRefMut<'_, T> {
-        self.resources.get_mut_or_insert_with(T::default)
+    pub fn write_or_default<T: Resource + Default>(&mut self) -> RefMut<T> {
+        self.resources.entry::<T>().or_default()
     }
 
-    pub fn try_write<T: Resource>(&self) -> Option<AtomicRefMut<'_, T>> {
-        self.resources.get_mut()
+    pub fn try_write<T: Resource>(&self) -> Option<RefMut<T>> {
+        self.resources.get_mut().ok()
     }
 
-    pub fn write<T: Resource>(&self) -> AtomicRefMut<'_, T> {
+    pub fn write<T: Resource>(&self) -> RefMut<T> {
         self.resources
             .get_mut()
-            .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
+            .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn read<T: Resource>(&self) -> AtomicRef<'_, T> {
+    pub fn read<T: Resource>(&self) -> Ref<T> {
         self.resources
             .get()
-            .unwrap_or_else(|| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
+            .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
     pub fn insert<T: Resource>(&mut self, res: T) {
-        self.resources.insert(res)
+        self.resources.insert(res);
     }
 
     fn load_from_disk(&mut self) {

@@ -98,7 +98,8 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
 
     pub fn poll(
         &mut self,
-        world: &impl Fn() -> (WORLD, Frame),
+        world: &WORLD,
+        frame: Frame,
         local_inputs: Option<INPUT>,
     ) -> ServerPollResult<INPUT> {
         while let Some(ev) = self.events.try_receive() {
@@ -106,7 +107,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
                 NetEvent::Message(e, data) => match is_reliable(&e) {
                     true => {
                         if let Some(packet) = decode::<ClientReliablePacket>(&data) {
-                            let _ = self.message_reliable(e, packet, world);
+                            let _ = self.message_reliable(e, packet, world, frame);
                         } else {
                             log::error!("client sent invalid reliable packet");
                         }
@@ -229,7 +230,8 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
         &mut self,
         e: Endpoint,
         packet: ClientReliablePacket,
-        world: &impl Fn() -> (WORLD, Frame),
+        w: &WORLD,
+        w_frame: Frame,
     ) -> Option<()> {
         match packet {
             ClientReliablePacket::Connect { name, version } => {
@@ -249,7 +251,6 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
                 match auth_r {
                     AuthentResponse::Accepted { .. } => {
                         let c = self.authent.get_client(e)?;
-                        let (w, w_frame) = world();
                         assert_eq!(self.buffer.consumed_frame, w_frame);
                         self.worldsend.begin_send(c, encode(&w), w_frame);
                         self.catchup

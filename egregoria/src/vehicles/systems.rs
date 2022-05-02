@@ -5,17 +5,37 @@ use crate::utils::time::GameTime;
 use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::ParCommandBuffer;
 use geom::{angle_lerpxy, Ray, Transform, Vec2, Vec3};
-use legion::system;
-use legion::Entity;
+use hecs::{Entity, World};
 use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
+use rayon::prelude::{ParallelBridge, ParallelIterator};
+use resources::Resources;
 
-register_system!(vehicle_decision);
-#[system(par_for_each)]
+register_system!(vehicle_decision_system);
+
+pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
+    let ra = &*resources.get().unwrap();
+    let rb = &*resources.get().unwrap();
+    let rc = &*resources.get().unwrap();
+    world
+        .query_mut::<(
+            &mut Itinerary,
+            &mut Transform,
+            &mut Kinematics,
+            &mut Vehicle,
+            &Collider,
+        )>()
+        .into_iter()
+        .par_bridge()
+        .for_each(|(ent, (a, b, c, d, e))| {
+            vehicle_decision(ra, rb, rc, ent, a, b, c, d, e);
+        })
+}
+
 pub fn vehicle_decision(
-    #[resource] map: &Map,
-    #[resource] time: &GameTime,
-    #[resource] cow: &CollisionWorld,
-    me: &Entity,
+    map: &Map,
+    time: &GameTime,
+    cow: &CollisionWorld,
+    me: Entity,
     it: &mut Itinerary,
     trans: &mut Transform,
     kin: &mut Kinematics,
@@ -36,7 +56,7 @@ pub fn vehicle_decision(
         let objs =
             neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
 
-        let (s, d) = calc_decision(*me, vehicle, map, time, trans, self_obj, it, objs);
+        let (s, d) = calc_decision(me, vehicle, map, time, trans, self_obj, it, objs);
         desired_speed = s;
         desired_dir = d;
     }
@@ -53,17 +73,30 @@ pub fn vehicle_decision(
     );
 }
 
-register_system!(vehicle_state_update);
+register_system!(vehicle_state_update_system);
+
+pub fn vehicle_state_update_system(world: &mut World, resources: &mut Resources) {
+    let ra = &*resources.get().unwrap();
+    let rb = &*resources.get().unwrap();
+    let rc = &*resources.get().unwrap();
+    world
+        .query_mut::<(&mut Vehicle, &mut Transform, &mut Kinematics)>()
+        .into_iter()
+        .par_bridge()
+        .for_each(|(ent, (a, b, c))| {
+            vehicle_state_update(ra, rb, rc, ent, a, b, c);
+        })
+}
+
 /// Decides whether a vehicle should change states, from parked to unparking to driving etc
-#[system(par_for_each)]
 pub fn vehicle_state_update(
-    #[resource] buf: &ParCommandBuffer,
-    #[resource] time: &GameTime,
-    #[resource] map: &Map,
+    buf: &ParCommandBuffer,
+    time: &GameTime,
+    map: &Map,
+    ent: Entity,
     vehicle: &mut Vehicle,
     trans: &mut Transform,
     kin: &mut Kinematics,
-    ent: &Entity,
 ) {
     match vehicle.state {
         VehicleState::RoadToPark(_, ref mut t, _) => {
@@ -71,7 +104,7 @@ pub fn vehicle_state_update(
             *t += time.delta / TIME_TO_PARK;
 
             if *t >= 1.0 {
-                buf.remove_component_drop::<Collider>(*ent);
+                buf.remove_component_drop::<Collider>(ent);
                 kin.velocity = Vec3::ZERO;
                 let spot = match std::mem::replace(&mut vehicle.state, VehicleState::Driving) {
                     VehicleState::RoadToPark(_, _, spot) => spot,
@@ -86,7 +119,7 @@ pub fn vehicle_state_update(
                     *trans = p.trans;
                 }
             } else {
-                buf.kill(*ent);
+                buf.kill(ent);
             }
         }
         _ => {}

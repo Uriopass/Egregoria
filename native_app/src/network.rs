@@ -1,9 +1,9 @@
 use common::timestep::Timestep;
 use egregoria::engine_interaction::WorldCommands;
-use egregoria::SerPreparedEgregoria;
+use egregoria::Egregoria;
 
-pub type Client = networking::Client<SerPreparedEgregoria, WorldCommands>;
-pub type Server = networking::Server<SerPreparedEgregoria, WorldCommands>;
+pub type Client = std::sync::Mutex<networking::Client<Egregoria, WorldCommands>>;
+pub type Server = std::sync::Mutex<networking::Server<Egregoria, WorldCommands>>;
 
 register_resource_noserialize!(NetworkState);
 #[allow(clippy::large_enum_variant)]

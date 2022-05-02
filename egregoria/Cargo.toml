@@ -14,7 +14,6 @@ ordered-float = { version = "2.7.0", default-features = false }
 rand          = { version = "0.8", default-features = false}
 rand_distr    = { version = "0.4", default-features = false }
 serde         = "1.0"
-legion        = { version = "0.4.0", default-features = false, features = ["codegen", "serialize", "parallel", "extended-tuple-impls"] }
 log           = "0.4.11"
 imgui-inspect = { path = "../imgui-inspect"}
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
@@ -29,4 +28,6 @@ rayon         = "1.5.1"
 inventory     = "0.1.10"
 paste         = "1.0.4"
 atomic_refcell = "0.1.6"
-if_chain = "1.0.1"
+if_chain      = "1.0.1"
+hecs          = { version = "0.7.6", features=["row-serialize"] }
+resources     = "1.1.0"

@@ -1,10 +1,9 @@
 use crate::map_dynamic::Router;
 use crate::physics::Collider;
 use crate::vehicles::Vehicle;
-use crate::{ent_id, Egregoria};
-use legion::storage::Component;
-use legion::systems::Resource;
-use legion::{Entity, EntityStore, Resources};
+use crate::Egregoria;
+use hecs::{Component, Entity};
+use resources::{Resource, Resources};
 use std::any::TypeId;
 use std::collections::BTreeMap;
 use std::sync::Mutex;
@@ -19,10 +18,10 @@ register_resource_noserialize!(ParCommandBuffer);
 #[derive(Default)]
 pub struct ParCommandBuffer {
     to_kill: Mutex<Vec<Entity>>,
-    add_comp: Mutex<BTreeMap<(u64, TypeId), ExecType>>,
-    remove_comp: Mutex<BTreeMap<(u64, TypeId), ExecType>>,
-    exec_ent: Mutex<BTreeMap<u64, ExecType>>,
-    exec_on: Mutex<BTreeMap<(u64, TypeId), ExecType>>,
+    add_comp: Mutex<BTreeMap<(Entity, TypeId), ExecType>>,
+    remove_comp: Mutex<BTreeMap<(Entity, TypeId), ExecType>>,
+    exec_ent: Mutex<BTreeMap<Entity, ExecType>>,
+    exec_on: Mutex<BTreeMap<(Entity, TypeId), ExecType>>,
 }
 
 #[allow(clippy::unwrap_used)]
@@ -36,8 +35,7 @@ impl ParCommandBuffer {
     }
 
     pub fn exec_ent(&self, e: Entity, f: impl for<'a> FnOnce(&'a mut Egregoria) + 'static + Send) {
-        let key = ent_id(e);
-        let v = self.exec_ent.lock().unwrap().insert(key, Box::new(f));
+        let v = self.exec_ent.lock().unwrap().insert(e, Box::new(f));
         if v.is_some() {
             log::error!("executing two closures relating to an entity. Might cause desyncs");
         }
@@ -48,7 +46,7 @@ impl ParCommandBuffer {
         e: Entity,
         f: impl for<'a> FnOnce(&'a mut T) + 'static + Send,
     ) {
-        let key = (ent_id(e), TypeId::of::<T>());
+        let key = (e, TypeId::of::<T>());
         let v = self
             .exec_on
             .lock()
@@ -62,13 +60,11 @@ impl ParCommandBuffer {
     }
 
     pub fn add_component<T: Component>(&self, e: Entity, c: T) {
-        let key = (ent_id(e), TypeId::of::<T>());
+        let key = (e, TypeId::of::<T>());
         let v = self.add_comp.lock().unwrap().insert(
             key,
             Box::new(move |w| {
-                if let Some(mut x) = w.world.entry(e) {
-                    x.add_component(c)
-                }
+                let _ = w.world.insert_one(e, c);
             }),
         );
         if v.is_some() {
@@ -77,49 +73,42 @@ impl ParCommandBuffer {
     }
 
     pub fn remove_component<T: Component>(&self, e: Entity) {
-        let key = (ent_id(e), TypeId::of::<T>());
+        let key = (e, TypeId::of::<T>());
         self.remove_comp.lock().unwrap().insert(
             key,
             Box::new(move |w| {
-                if let Some(mut x) = w.world.entry(e) {
-                    x.remove_component::<T>();
-                }
+                let _ = w.world.remove_one::<T>(e);
             }),
         );
     }
 
     pub fn remove_component_drop<T: Component + ComponentDrop>(&self, e: Entity) {
-        let key = (ent_id(e), TypeId::of::<T>());
+        let key = (e, TypeId::of::<T>());
         self.remove_comp.lock().unwrap().insert(
             key,
             Box::new(move |w| {
-                Self::parse_del::<T>(w, e);
-                if let Some(mut x) = w.world.entry(e) {
-                    x.remove_component::<T>();
+                if let Ok(mut c) = w.world.remove_one::<T>(e) {
+                    ComponentDrop::drop(&mut c, &mut w.resources, e);
                 }
             }),
         );
-    }
-
-    fn parse_del<T: Component + ComponentDrop>(goria: &mut Egregoria, entity: Entity) {
-        if let Ok(mut v) = goria.world.entry_mut(entity) {
-            if let Ok(v) = v.get_component_mut::<T>() {
-                ComponentDrop::drop(v, &mut goria.resources, entity);
-            }
-        }
     }
 
     pub fn apply(goria: &mut Egregoria) {
         let mut deleted: Vec<Entity> =
             std::mem::take(&mut *goria.write::<ParCommandBuffer>().to_kill.get_mut().unwrap());
 
-        deleted.sort_unstable_by_key(|&x| ent_id(x));
+        deleted.sort_unstable();
 
         for entity in deleted {
-            if goria.world.remove(entity) {
-                Self::parse_del::<Collider>(goria, entity);
-                Self::parse_del::<Vehicle>(goria, entity);
-                Self::parse_del::<Router>(goria, entity);
+            if let Ok(mut v) = goria.world.get_mut::<Collider>(entity) {
+                ComponentDrop::drop(&mut *v, &mut goria.resources, entity);
+            }
+            if let Ok(mut v) = goria.world.get_mut::<Vehicle>(entity) {
+                ComponentDrop::drop(&mut *v, &mut goria.resources, entity);
+            }
+            if let Ok(mut v) = goria.world.get_mut::<Router>(entity) {
+                ComponentDrop::drop(&mut *v, &mut goria.resources, entity);
             }
         }
 

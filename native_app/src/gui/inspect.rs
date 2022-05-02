@@ -11,10 +11,9 @@ use egregoria::vehicles::{Vehicle, VehicleID, VehicleState};
 use egregoria::{Egregoria, SoulID};
 
 use geom::{Transform, Vec2};
+use hecs::{Component, Entity};
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
-use legion::storage::Component;
-use legion::{Entity, IntoQuery};
 
 pub struct InspectRenderer {
     pub entity: Entity,
@@ -26,10 +25,10 @@ impl InspectRenderer {
         goria: &Egregoria,
         ui: &Ui<'_>,
     ) {
-        let c: Option<&T> = goria.comp::<T>(self.entity);
+        let c = goria.comp::<T>(self.entity);
         if let Some(x) = c {
             <T as InspectRenderDefault<T>>::render(
-                &[x],
+                &[&*x],
                 std::any::type_name::<T>().split("::").last().unwrap_or(""),
                 ui,
                 &InspectArgsDefault::default(),
@@ -38,7 +37,7 @@ impl InspectRenderer {
     }
 
     fn inspect_transform(&self, goria: &Egregoria, uiw: &mut UiWorld, ui: &Ui<'_>) {
-        let c: Option<&Transform> = goria.comp(self.entity);
+        let c = goria.comp(self.entity);
         if let Some(x) = c {
             let mut t = *x;
             if <Transform as InspectRenderDefault<Transform>>::render_mut(
@@ -70,12 +69,12 @@ impl InspectRenderer {
 
         if let Some(v) = goria.comp::<Vehicle>(self.entity) {
             if matches!(v.state, VehicleState::Driving | VehicleState::Panicking(_)) {
-                for (e, loc) in <(Entity, &Location)>::query().iter(goria.world()) {
+                for (e, loc) in goria.world().query::<&Location>().iter() {
                     let loc: &Location = loc;
                     if loc == &Location::Vehicle(VehicleID(self.entity))
                         && ui.small_button(&*format!("inspect inside vehicle: {:?}", e))
                     {
-                        self.entity = *e;
+                        self.entity = e;
                         return;
                     }
                 }

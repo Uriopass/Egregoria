@@ -1,7 +1,7 @@
 use common::FastMap;
+use hecs::Entity;
 
 use imgui::TextureId;
-use legion::Entity;
 use serde::{Deserialize, Serialize};
 
 use crate::input::{KeyCode, KeyboardInfo};

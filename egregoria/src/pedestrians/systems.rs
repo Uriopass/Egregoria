@@ -3,15 +3,35 @@ use crate::pedestrians::Pedestrian;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
 use crate::utils::time::GameTime;
 use geom::{angle_lerpxy, Transform, Vec2, Vec3};
-use legion::system;
+use hecs::World;
 use map_model::{Map, TraverseDirection};
+use rayon::iter::ParallelBridge;
+use rayon::prelude::*;
+use resources::Resources;
 
-register_system!(pedestrian_decision);
-#[system(par_for_each)]
+register_system!(pedestrian_decision_system);
+
+pub fn pedestrian_decision_system(world: &mut World, resources: &mut Resources) {
+    let ra = &*resources.get().unwrap();
+    let rb = &*resources.get().unwrap();
+    let rc = &*resources.get().unwrap();
+    world
+        .query_mut::<(
+            &Collider,
+            &mut Itinerary,
+            &mut Transform,
+            &mut Kinematics,
+            &mut Pedestrian,
+        )>()
+        .into_iter()
+        .par_bridge()
+        .for_each(|(_, (a, b, c, d, e))| pedestrian_decision(ra, rb, rc, a, b, c, d, e))
+}
+
 pub fn pedestrian_decision(
-    #[resource] cow: &CollisionWorld,
-    #[resource] map: &Map,
-    #[resource] time: &GameTime,
+    cow: &CollisionWorld,
+    map: &Map,
+    time: &GameTime,
     coll: &Collider,
     it: &mut Itinerary,
     trans: &mut Transform,

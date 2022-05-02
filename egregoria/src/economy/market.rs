@@ -199,7 +199,7 @@ mod tests {
     use crate::economy::CommodityKind;
     use crate::SoulID;
     use geom::{vec2, Vec2};
-    use legion::Entity;
+    use hecs::Entity;
 
     fn mk_ent(id: u64) -> Entity {
         unsafe { std::mem::transmute(id) }

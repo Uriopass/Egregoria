@@ -7,10 +7,11 @@ use crate::utils::time::GameTime;
 use crate::vehicles::{spawn_parked_vehicle, VehicleID, VehicleKind};
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::Transform;
+use hecs::{Entity, World};
 use imgui_inspect_derive::Inspect;
-use legion::system;
-use legion::Entity;
 use map_model::BuildingID;
+use rayon::prelude::{ParallelBridge, ParallelIterator};
+use resources::Resources;
 use serde::{Deserialize, Serialize};
 
 #[derive(Inspect, Serialize, Deserialize, Default)]
@@ -65,14 +66,35 @@ enum NextDesire<'a> {
     Work(&'a mut Work),
     Food(&'a mut BuyFood),
 }
+register_system!(update_decision_system);
 
-register_system!(update_decision);
-#[system(par_for_each)]
+pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
+    let ra = &*resources.get().unwrap();
+    let rb = &*resources.get().unwrap();
+    let rc = &*resources.get().unwrap();
+    world
+        .query_mut::<(
+            &Transform,
+            &Location,
+            &mut Router,
+            &mut Bought,
+            &mut HumanDecision,
+            Option<&mut BuyFood>,
+            Option<&mut Home>,
+            Option<&mut Work>,
+        )>()
+        .into_iter()
+        .par_bridge()
+        .for_each(|(ent, (a, b, c, d, e, f, g, h))| {
+            update_decision(ra, rb, rc, ent, a, b, c, d, e, f, g, h);
+        })
+}
+
 pub fn update_decision(
-    #[resource] cbuf: &ParCommandBuffer,
-    #[resource] time: &GameTime,
-    #[resource] binfos: &BuildingInfos,
-    me: &Entity,
+    cbuf: &ParCommandBuffer,
+    time: &GameTime,
+    binfos: &BuildingInfos,
+    me: Entity,
     trans: &Transform,
     loc: &Location,
     router: &mut Router,
@@ -92,7 +114,7 @@ pub fn update_decision(
         return;
     }
 
-    let soul = SoulID(*me);
+    let soul = SoulID(me);
     let mut decision_id = NextDesire::None;
     let mut max_score = f32::NEG_INFINITY;
 
@@ -150,12 +172,18 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<SoulID> {
 
     let time = goria.read::<GameTime>().instant();
 
-    let mut e = goria.world.entry(human.0)?;
-
-    e.add_component(HumanDecision::default());
-    e.add_component(Home::new(house));
-    e.add_component(BuyFood::new(time));
-    e.add_component(Bought::default());
-    e.add_component(Router::new(car));
+    goria
+        .world
+        .insert(
+            human.0,
+            (
+                HumanDecision::default(),
+                Home::new(house),
+                BuyFood::new(time),
+                Bought::default(),
+                Router::new(car),
+            ),
+        )
+        .unwrap();
     Some(human)
 }

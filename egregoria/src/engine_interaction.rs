@@ -1,4 +1,5 @@
-use crate::{ent_from_id, ent_id, Egregoria};
+use crate::Egregoria;
+use hecs::Entity;
 use map_model::{
     BuildingGen, BuildingID, BuildingKind, IntersectionID, LanePattern, LightPolicy, LotID, Map,
     MapProject, RoadID, TurnPolicy,
@@ -42,14 +43,13 @@ pub enum WorldCommand {
     MapLoadTestField(Vec2, u32, f32),
     ResetSave,
     SetGameTime(GameTime),
-    UpdateTransform(u64, Transform),
+    UpdateTransform(Entity, Transform),
 }
 
 use crate::economy::Government;
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::time::GameTime;
 use geom::{Transform, Vec2, OBB};
-use legion::Entity;
 use WorldCommand::*;
 
 impl WorldCommands {
@@ -74,7 +74,7 @@ impl WorldCommands {
     }
 
     pub fn update_transform(&mut self, e: Entity, trans: Transform) {
-        self.commands.push(UpdateTransform(ent_id(e), trans))
+        self.commands.push(UpdateTransform(e, trans))
     }
 
     pub fn reset_save(&mut self) {
@@ -175,7 +175,7 @@ impl WorldCommand {
                 *goria = Egregoria::new(10);
             }
             UpdateTransform(e, t) => {
-                if let Some(x) = goria.comp_mut(ent_from_id(e)) {
+                if let Some(mut x) = goria.comp_mut(e) {
                     *x = t
                 }
             }
