@@ -31,7 +31,6 @@ serde         = "1.0"
 rodio         = { version = "0.14.0", default-features = false, features = ["vorbis"] }
 slotmap       = { version = "1.0.2", default-features = false }
 winit         = "0.26.1"
-inventory     = "0.1.10"
 paste         = "1.0.4"
 atomic_refcell = "0.1.6"
 rayon         = "1.4.0"

@@ -6,8 +6,6 @@ use egregoria::Egregoria;
 use imgui_inspect_derive::Inspect;
 use map_model::{Map, ProjectKind};
 
-register_resource_noserialize!(BulldozerState);
-
 #[derive(Default, Inspect)]
 pub struct BulldozerState {
     hold: bool,

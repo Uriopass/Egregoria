@@ -343,7 +343,6 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
     }
 }
 
-register_system!(itinerary_update);
 pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
     let time = &*resources.get::<GameTime>().unwrap();
     let map = &*resources.get::<Map>().unwrap();

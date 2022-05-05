@@ -8,7 +8,6 @@ use std::collections::{BTreeSet, HashSet};
 #[repr(transparent)]
 pub struct SpotReservation(ParkingSpotID);
 
-register_resource!(ParkingManagement, "pmanagement");
 #[derive(Default, Serialize, Deserialize)]
 pub struct ParkingManagement {
     reserved_spots: BTreeSet<ParkingSpotID>,

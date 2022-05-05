@@ -9,7 +9,6 @@ use map_model::{BuildingGen, BuildingKind, ProjectFilter, ProjectKind};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
-register_resource_noserialize!(SpecialBuildingResource);
 #[derive(Default, Serialize, Deserialize)]
 pub struct SpecialBuildingResource {
     pub opt: Option<(BuildingKind, BuildingGen, f32, String)>,

@@ -73,7 +73,6 @@ impl InputContext {
     }
 }
 
-register_resource_noserialize!(MouseInfo);
 #[derive(Clone, Default)]
 pub struct MouseInfo {
     pub wheel_delta: f32,
@@ -83,7 +82,6 @@ pub struct MouseInfo {
     pub just_pressed: FastSet<MouseButton>,
 }
 
-register_resource_noserialize!(KeyboardInfo);
 #[derive(Clone, Default)]
 pub struct KeyboardInfo {
     pub just_pressed: FastSet<KeyCode>,

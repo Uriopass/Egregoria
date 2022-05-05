@@ -6,8 +6,6 @@ use egregoria::Egregoria;
 use geom::Camera;
 use imgui::Ui;
 
-register_resource_noserialize!(TestFieldProperties);
-
 #[derive(Clone)]
 struct TestFieldProperties {
     size: u32,
@@ -25,6 +23,7 @@ pub fn map(
             uiworld.commands().map_load_paris();
         }
         ui.separator();
+        uiworld.write_or_default::<TestFieldProperties>();
         let mut state = uiworld.write::<TestFieldProperties>();
 
         imgui::Drag::new("size")

@@ -28,7 +28,6 @@ impl SingleMarket {
     }
 }
 
-register_resource!(Market, "market");
 #[derive(Serialize, Deserialize)]
 pub struct Market {
     markets: BTreeMap<CommodityKind, SingleMarket>,

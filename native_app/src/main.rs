@@ -14,12 +14,14 @@ mod audio;
 mod context;
 mod game_loop;
 mod gui;
+mod init;
 mod input;
 mod network;
 mod rendering;
 
 fn main() {
     MyLog::init();
+    init::init();
 
     let mut ctx = Context::new();
 

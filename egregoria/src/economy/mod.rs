@@ -102,8 +102,6 @@ commodity! {
     Petrol => "Petrol",
 }
 
-register_system!(market_update);
-
 pub fn market_update(world: &mut World, resources: &mut Resources) {
     let mut m = resources.get_mut::<Market>().unwrap();
     for trade in m.make_trades() {

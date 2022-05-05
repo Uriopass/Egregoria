@@ -7,8 +7,6 @@ use std::time::Duration;
 
 const SETTINGS_SAVE_NAME: &str = "settings";
 
-register_resource!(Settings, SETTINGS_SAVE_NAME);
-
 #[derive(Serialize, Deserialize, Copy, Clone)]
 pub enum ShadowQuality {
     NoShadows,

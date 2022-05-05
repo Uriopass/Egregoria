@@ -40,7 +40,6 @@ pub struct GoodsCompanyDescription {
     pub asset_location: &'static str,
 }
 
-register_resource_noserialize!(GoodsCompanyRegistry);
 pub struct GoodsCompanyRegistry {
     pub descriptions: BTreeMap<BuildingKind, GoodsCompanyDescription>,
 }
@@ -597,8 +596,6 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
 
     Some(soul)
 }
-
-register_system!(company_system);
 
 pub fn company_system(world: &mut World, res: &mut Resources) {
     let ra = res.get().unwrap();

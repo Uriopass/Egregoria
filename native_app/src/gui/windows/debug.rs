@@ -14,13 +14,11 @@ use imgui::Ui;
 use map_model::{IntersectionID, Map, RoadSegmentKind};
 use wgpu_engine::Tesselator;
 
-register_resource_noserialize!(DebugState);
 #[derive(Default)]
 pub struct DebugState {
     connectivity: (u32, Vec<Vec<IntersectionID>>),
 }
 
-register_resource_noserialize!(DebugObjs);
 pub struct DebugObjs(
     pub  Vec<(
         bool,

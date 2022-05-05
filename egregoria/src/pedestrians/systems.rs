@@ -9,8 +9,6 @@ use rayon::iter::ParallelBridge;
 use rayon::prelude::*;
 use resources::Resources;
 
-register_system!(pedestrian_decision_system);
-
 pub fn pedestrian_decision_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &*resources.get().unwrap();
