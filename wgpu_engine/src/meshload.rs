@@ -120,8 +120,6 @@ pub fn load_mesh(path: impl AsRef<Path>, gfx: &GfxContext) -> Option<Mesh> {
         Format::R8G8 => DynamicImage::ImageLumaA8(ImageBuffer::from_raw(w, h, d)?),
         Format::R8G8B8 => DynamicImage::ImageRgb8(ImageBuffer::from_raw(w, h, d)?),
         Format::R8G8B8A8 => DynamicImage::ImageRgba8(ImageBuffer::from_raw(w, h, d)?),
-        Format::B8G8R8 => DynamicImage::ImageBgr8(ImageBuffer::from_raw(w, h, d)?),
-        Format::B8G8R8A8 => DynamicImage::ImageBgra8(ImageBuffer::from_raw(w, h, d)?),
         _ => {
             log::error!("invalid mesh: unsupported 16 bits pixel texture");
             return None;
