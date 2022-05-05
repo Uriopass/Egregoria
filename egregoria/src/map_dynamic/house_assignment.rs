@@ -10,7 +10,6 @@ pub struct BuildingInfo {
     pub inside: Vec<SoulID>,
 }
 
-register_resource!(BuildingInfos, "binfos");
 #[derive(Clone, Default, Serialize, Deserialize, Debug)]
 pub struct BuildingInfos {
     assignment: SecondaryMap<BuildingID, BuildingInfo>,

@@ -25,86 +25,6 @@ use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
 use utils::time::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 
-macro_rules! register_system {
-    ($f: ident) => {
-        inventory::submit! {
-            $crate::GSystem::new(Box::new(|| Box::new($crate::utils::scheduler::RunnableFn { f: $f, name: stringify!($f) })))
-        }
-    };
-}
-
-macro_rules! init_func {
-    ($f: expr) => {
-        inventory::submit! {
-            $crate::InitFunc {
-                f: Box::new($f),
-            }
-        }
-    };
-}
-
-macro_rules! register_resource {
-    ($t: ty, $name: expr) => {
-        init_func!(|goria| {
-            goria.insert(<$t>::default());
-        });
-        inventory::submit! {
-            $crate::SaveLoadFunc {
-                name: $name,
-                save: Box::new(|goria| {
-                     <common::saveload::Bincode as common::saveload::Encoder>::encode(&*goria.read::<$t>()).unwrap()
-                }),
-                load: Box::new(|goria, v| {
-                    if let Some(v) = v {
-                        if let Ok(res) = <common::saveload::Bincode as common::saveload::Encoder>::decode::<$t>(&v) {
-                            goria.insert(res);
-                        }
-                    }
-                })
-            }
-        }
-    };
-    ($t: ty, $name: expr, $init: expr) => {
-        init_func!(|goria| {
-            goria.insert($init);
-        });
-        inventory::submit! {
-            $crate::SaveLoadFunc {
-                name: $name,
-                save: Box::new(|goria| {
-                     <common::saveload::Bincode as common::saveload::Encoder>::encode(&*goria.read::<$t>()).unwrap()
-                }),
-                load: Box::new(|goria, v| {
-                    if let Some(v) = v {
-                        if let Ok(res) = <common::saveload::Bincode as common::saveload::Encoder>::decode::<$t>(&v) {
-                            goria.insert(res);
-                        }
-                    }
-                })
-            }
-        }
-    };
-}
-
-macro_rules! register_resource_noserialize {
-    ($t: ty) => {
-        init_func!(|goria| {
-            goria.insert(<$t>::default());
-        });
-    };
-}
-
-register_resource!(Map, "map");
-
-register_resource!(
-    GameTime,
-    "game_time",
-    GameTime::new(0.0, SECONDS_PER_DAY as f64 + 10.0 * SECONDS_PER_HOUR as f64,)
-);
-
-register_resource!(CollisionWorld, "coworld", CollisionWorld::new(100));
-register_resource!(RandProvider, "randprovider", RandProvider::new(RNG_SEED));
-
 #[macro_use]
 extern crate common;
 
@@ -116,6 +36,7 @@ extern crate log as extern_log;
 
 pub mod economy;
 pub mod engine_interaction;
+pub mod init;
 pub mod map_dynamic;
 pub mod pedestrians;
 pub mod physics;
@@ -124,6 +45,7 @@ mod tests;
 pub mod utils;
 pub mod vehicles;
 
+use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::utils::scheduler::RunnableSystem;
 use common::FastMap;
 use serde::de::Error;
@@ -157,29 +79,6 @@ pub struct Egregoria {
     tick: u32,
 }
 
-pub(crate) struct SaveLoadFunc {
-    pub name: &'static str,
-    pub save: Box<dyn Fn(&Egregoria) -> Vec<u8> + 'static>,
-    pub load: Box<dyn Fn(&mut Egregoria, Option<Vec<u8>>) + 'static>,
-}
-inventory::collect!(SaveLoadFunc);
-
-pub(crate) struct InitFunc {
-    pub f: Box<dyn Fn(&mut Egregoria) + 'static>,
-}
-inventory::collect!(InitFunc);
-
-pub(crate) struct GSystem {
-    s: Box<fn() -> Box<dyn RunnableSystem>>,
-}
-
-impl GSystem {
-    pub fn new(s: Box<fn() -> Box<dyn RunnableSystem>>) -> Self {
-        Self { s }
-    }
-}
-inventory::collect!(GSystem);
-
 /// Safety: Resources must be Send+Sync.
 /// Guaranteed by `Egregoria::insert`.
 /// World is Send+Sync and `SeqSchedule` too
@@ -190,9 +89,11 @@ const RNG_SEED: u64 = 123;
 impl Egregoria {
     pub fn schedule() -> SeqSchedule {
         let mut schedule = SeqSchedule::default();
-        for s in inventory::iter::<GSystem> {
-            let s = (s.s)();
-            schedule.add_system(s);
+        unsafe {
+            for s in &GSYSTEMS {
+                let s = (s.s)();
+                schedule.add_system(s);
+            }
         }
         schedule
     }
@@ -206,8 +107,10 @@ impl Egregoria {
 
         info!("Seed is {}", RNG_SEED);
 
-        for s in inventory::iter::<InitFunc> {
-            (s.f)(&mut goria);
+        unsafe {
+            for s in &INIT_FUNCS {
+                (s.f)(&mut goria);
+            }
         }
 
         for y in -size + 1..size {
@@ -253,9 +156,11 @@ impl Egregoria {
         let ser = common::saveload::Bincode::encode(&SerWorld(&self.world)).unwrap();
         hashes.insert("world".to_string(), common::hash_u64(&*ser));
 
-        for l in inventory::iter::<SaveLoadFunc> {
-            let v = (l.save)(self);
-            hashes.insert(l.name.to_string(), common::hash_u64(&*v));
+        unsafe {
+            for l in &SAVELOAD_FUNCS {
+                let v = (l.save)(self);
+                hashes.insert(l.name.to_string(), common::hash_u64(&*v));
+            }
         }
 
         hashes
@@ -345,9 +250,11 @@ impl Serialize for Egregoria {
     {
         let mut m: FastMap<String, Vec<u8>> = FastMap::default();
 
-        for l in inventory::iter::<SaveLoadFunc> {
-            let v = (l.save)(self);
-            m.insert(l.name.to_string(), v);
+        unsafe {
+            for l in &SAVELOAD_FUNCS {
+                let v: Vec<u8> = (l.save)(self);
+                m.insert(l.name.to_string(), v);
+            }
         }
 
         EgregoriaSer {
@@ -396,8 +303,12 @@ impl<'de> Deserialize<'de> for Egregoria {
         goria.world = goriadeser.world.0;
         goria.tick = goriadeser.tick;
 
-        for l in inventory::iter::<SaveLoadFunc> {
-            (l.load)(&mut goria, goriadeser.res.remove(l.name));
+        unsafe {
+            for l in &SAVELOAD_FUNCS {
+                if let Some(data) = goriadeser.res.remove(l.name) {
+                    (l.load)(&mut goria, data);
+                }
+            }
         }
 
         Ok(goria)

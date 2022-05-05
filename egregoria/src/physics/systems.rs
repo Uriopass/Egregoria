@@ -8,7 +8,6 @@ use hecs::{Entity, World};
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 
-register_system!(kinematics_apply);
 pub fn kinematics_apply(world: &mut World, resources: &mut Resources) {
     let time = resources.get::<GameTime>().unwrap();
     let delta = time.delta;
@@ -21,7 +20,6 @@ pub fn kinematics_apply(world: &mut World, resources: &mut Resources) {
         });
 }
 
-register_system!(coworld_synchronize);
 pub fn coworld_synchronize(world: &mut World, resources: &mut Resources) {
     let mut coworld = resources.get_mut::<CollisionWorld>().unwrap();
     world

@@ -26,7 +26,6 @@ impl Default for BuildState {
     }
 }
 
-register_resource_noserialize!(RoadBuildResource);
 #[derive(Default)]
 pub struct RoadBuildResource {
     pub build_state: BuildState,
@@ -98,9 +97,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
             if let WorldCommand::MapMakeConnection(_, to, _, _) = command {
                 let proj = map.project(to.pos, 0.0);
                 if let Some(
-                    proj
-                    @
-                    MapProject {
+                    proj @ MapProject {
                         kind: ProjectKind::Inter(_),
                         ..
                     },

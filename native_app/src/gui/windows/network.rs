@@ -9,7 +9,6 @@ use std::collections::BTreeMap;
 use std::net::ToSocketAddrs;
 use std::sync::Mutex;
 
-register_resource!(NetworkConnectionInfo, "netinfo");
 pub struct NetworkConnectionInfo {
     name: String,
     ip: String,

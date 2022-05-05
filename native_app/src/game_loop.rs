@@ -398,7 +398,6 @@ impl State {
     }
 }
 
-register_resource_noserialize!(Timings);
 #[derive(Default)]
 pub struct Timings {
     pub all: History,

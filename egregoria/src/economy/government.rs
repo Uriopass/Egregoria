@@ -3,7 +3,6 @@ use crate::engine_interaction::WorldCommand;
 use crate::Egregoria;
 use serde::{Deserialize, Serialize};
 
-register_resource!(Government, "government");
 #[derive(Serialize, Deserialize)]
 pub struct Government {
     pub money: Money,

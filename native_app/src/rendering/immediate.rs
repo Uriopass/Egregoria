@@ -5,7 +5,6 @@ use geom::{LinearColor, Polygon, Vec3, OBB};
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatch, Tesselator};
 
-register_resource_noserialize!(ImmediateSound);
 #[derive(Default)]
 pub struct ImmediateSound {
     pub orders: Vec<(&'static str, AudioKind)>,
@@ -64,7 +63,6 @@ pub struct ImmediateOrder {
     pub color: LinearColor,
 }
 
-register_resource_noserialize!(ImmediateDraw);
 #[derive(Default)]
 pub struct ImmediateDraw {
     pub orders: Vec<ImmediateOrder>,

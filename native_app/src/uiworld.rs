@@ -1,3 +1,4 @@
+use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use hecs::{Component, DynamicBundle, QueryOne};
 use hecs::{Entity, World};
@@ -13,8 +14,10 @@ pub struct UiWorld {
 impl UiWorld {
     pub fn init() -> UiWorld {
         let mut w = UiWorld::default();
-        for s in inventory::iter::<InitFunc> {
-            (s.f)(&mut w);
+        unsafe {
+            for s in &INIT_FUNCS {
+                (s.f)(&mut w);
+            }
         }
         w.load_from_disk();
         w
@@ -67,70 +70,24 @@ impl UiWorld {
     }
 
     fn load_from_disk(&mut self) {
-        for l in inventory::iter::<SaveLoadFunc> {
-            (l.load)(self);
+        unsafe {
+            for l in &SAVELOAD_FUNCS {
+                (l.load)(self);
+            }
         }
     }
 
     pub(crate) fn save_to_disk(&self) {
-        for l in inventory::iter::<SaveLoadFunc> {
-            (l.save)(self);
+        unsafe {
+            for l in &SAVELOAD_FUNCS {
+                (l.save)(self);
+            }
         }
     }
 }
 
-pub(crate) struct SaveLoadFunc {
-    pub save: Box<dyn Fn(&UiWorld) + 'static>,
-    pub load: Box<dyn Fn(&mut UiWorld) + 'static>,
-}
-inventory::collect!(SaveLoadFunc);
-
-pub(crate) struct InitFunc {
-    pub f: Box<dyn Fn(&mut UiWorld) + 'static>,
-}
-inventory::collect!(InitFunc);
-
-macro_rules! init_func {
-    ($f: expr) => {
-        inventory::submit! {
-            $crate::uiworld::InitFunc {
-                f: Box::new($f),
-            }
-        }
-    };
-}
-
-macro_rules! register_resource {
-    ($t: ty, $name: expr) => {
-        init_func!(|uiworld| {
-            uiworld.insert(<$t>::default());
-        });
-        inventory::submit! {
-            $crate::uiworld::SaveLoadFunc {
-                save: Box::new(|uiworld| {
-                     <common::saveload::JSON as common::saveload::Encoder>::save(&*uiworld.read::<$t>(), $name);
-                }),
-                load: Box::new(|uiworld| {
-                    if let Some(res) = <common::saveload::JSON as common::saveload::Encoder>::load::<$t>($name) {
-                        uiworld.insert(res);
-                    }
-                })
-            }
-        }
-    };
-}
-
-macro_rules! register_resource_noserialize {
-    ($t: ty) => {
-        init_func!(|uiworld| {
-            uiworld.insert(<$t>::default());
-        });
-    };
-}
-
 #[derive(Default)]
 pub struct ReceivedCommands(WorldCommands);
-register_resource_noserialize!(ReceivedCommands);
 
 impl ReceivedCommands {
     pub fn new(commands: WorldCommands) -> Self {

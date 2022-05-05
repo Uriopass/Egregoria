@@ -10,16 +10,16 @@ use egregoria::Egregoria;
 use roadbuild::RoadBuildResource;
 use wgpu_engine::GfxContext;
 
-mod bulldozer;
-mod follow;
-mod inspect;
-mod inspected_aura;
-mod lotbrush;
-mod roadbuild;
-mod roadeditor;
-mod selectable;
-mod specialbuilding;
-mod topgui;
+pub mod bulldozer;
+pub mod follow;
+pub mod inspect;
+pub mod inspected_aura;
+pub mod lotbrush;
+pub mod roadbuild;
+pub mod roadeditor;
+pub mod selectable;
+pub mod specialbuilding;
+pub mod topgui;
 
 pub mod inputmap;
 pub mod windows;
@@ -40,7 +40,6 @@ pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     hand_reset(uiworld);
 }
 
-register_resource_noserialize!(InspectedEntity);
 #[derive(Copy, Clone, Debug)]
 pub struct InspectedEntity {
     pub e: Option<Entity>,
@@ -64,7 +63,6 @@ pub fn hand_reset(uiworld: &mut UiWorld) {
     }
 }
 
-register_resource_noserialize!(Tool);
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub enum Tool {
     Hand,

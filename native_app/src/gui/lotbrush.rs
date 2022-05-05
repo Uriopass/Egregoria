@@ -6,7 +6,6 @@ use egregoria::Egregoria;
 use map_model::{LotKind, ProjectFilter, ProjectKind};
 use serde::{Deserialize, Serialize};
 
-register_resource!(LotBrushResource, "lot_brush");
 #[derive(Serialize, Deserialize)]
 pub struct LotBrushResource {
     pub kind: LotKind,

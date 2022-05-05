@@ -66,7 +66,6 @@ enum NextDesire<'a> {
     Work(&'a mut Work),
     Food(&'a mut BuyFood),
 }
-register_system!(update_decision_system);
 
 pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();

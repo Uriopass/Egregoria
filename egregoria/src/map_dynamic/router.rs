@@ -44,9 +44,6 @@ pub enum RoutingStep {
 
 debug_inspect_impl!(RoutingStep);
 
-register_system!(routing_changed_system);
-register_system!(routing_update_system);
-
 pub fn routing_changed_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &mut *resources.get_mut().unwrap();

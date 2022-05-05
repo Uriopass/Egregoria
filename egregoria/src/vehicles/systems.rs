@@ -10,8 +10,6 @@ use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 
-register_system!(vehicle_decision_system);
-
 pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &*resources.get().unwrap();
@@ -72,8 +70,6 @@ pub fn vehicle_decision(
         desired_dir,
     );
 }
-
-register_system!(vehicle_state_update_system);
 
 pub fn vehicle_state_update_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
