@@ -13,6 +13,7 @@ pub mod desire;
 pub mod goods_company;
 pub mod human;
 
+#[profiling::function]
 pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
     let map = goria.map();
     let infos = goria.read::<BuildingInfos>();
@@ -45,6 +46,7 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
 
     for (bkind, &(build_id, pos)) in empty_buildings
         .iter()
+        .filter(|(kind, _)| matches!(kind, BuildingKind::GoodsCompany(_)))
         .flat_map(|(bkind, v)| v.iter().map(move |x| (bkind, x)))
     {
         let registry = goria.read::<GoodsCompanyRegistry>();

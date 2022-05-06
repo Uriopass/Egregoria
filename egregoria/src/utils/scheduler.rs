@@ -36,6 +36,7 @@ impl SeqSchedule {
         self
     }
 
+    #[profiling::function]
     pub fn execute(&mut self, goria: &mut Egregoria) {
         for (sys, h) in &mut self.systems {
             let world = &mut goria.world;

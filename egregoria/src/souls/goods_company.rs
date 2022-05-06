@@ -597,6 +597,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
     Some(soul)
 }
 
+#[profiling::function]
 pub fn company_system(world: &mut World, res: &mut Resources) {
     let ra = res.get().unwrap();
     let rb = res.get().unwrap();

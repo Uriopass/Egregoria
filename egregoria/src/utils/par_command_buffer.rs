@@ -93,6 +93,7 @@ impl ParCommandBuffer {
         );
     }
 
+    #[profiling::function]
     pub fn apply(goria: &mut Egregoria) {
         let mut deleted: Vec<Entity> =
             std::mem::take(&mut *goria.write::<ParCommandBuffer>().to_kill.get_mut().unwrap());

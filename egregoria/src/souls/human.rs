@@ -67,12 +67,13 @@ enum NextDesire<'a> {
     Food(&'a mut BuyFood),
 }
 
+#[profiling::function]
 pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &*resources.get().unwrap();
     let rc = &*resources.get().unwrap();
     world
-        .query_mut::<(
+        .query::<(
             &Transform,
             &Location,
             &mut Router,
@@ -82,10 +83,12 @@ pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
             Option<&mut Home>,
             Option<&mut Work>,
         )>()
-        .into_iter()
+        .iter_batched(32)
         .par_bridge()
-        .for_each(|(ent, (a, b, c, d, e, f, g, h))| {
-            update_decision(ra, rb, rc, ent, a, b, c, d, e, f, g, h);
+        .for_each(|batch| {
+            batch.for_each(|(ent, (a, b, c, d, e, f, g, h))| {
+                update_decision(ra, rb, rc, ent, a, b, c, d, e, f, g, h);
+            })
         })
 }
 
@@ -155,6 +158,7 @@ pub fn update_decision(
     }
 }
 
+#[profiling::function]
 pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<SoulID> {
     let map = goria.map();
     let housepos = map.buildings().get(house)?.door_pos;

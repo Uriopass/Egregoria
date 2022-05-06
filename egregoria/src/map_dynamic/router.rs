@@ -44,6 +44,7 @@ pub enum RoutingStep {
 
 debug_inspect_impl!(RoutingStep);
 
+#[profiling::function]
 pub fn routing_changed_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &mut *resources.get_mut().unwrap();
@@ -90,6 +91,7 @@ pub fn routing_changed(
     }
 }
 
+#[profiling::function]
 pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &*resources.get().unwrap();
@@ -101,9 +103,11 @@ pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
             &mut Location,
             &mut Kinematics,
         )>()
-        .into_iter()
+        .iter_batched(32)
         .par_bridge()
-        .for_each(|(e, (a, b, c, d, f))| routing_update(ra, rb, e, a, b, c, d, f, world));
+        .for_each(|batch| {
+            batch.for_each(|(e, (a, b, c, d, f))| routing_update(ra, rb, e, a, b, c, d, f, world))
+        });
 }
 
 pub fn routing_update(

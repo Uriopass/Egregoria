@@ -30,3 +30,4 @@ atomic_refcell = "0.1.6"
 if_chain      = "1.0.1"
 hecs          = { version = "0.7.6", features=["row-serialize"] }
 resources     = "1.1.0"
+profiling     = "1.0.5"

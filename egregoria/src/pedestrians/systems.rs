@@ -9,21 +9,24 @@ use rayon::iter::ParallelBridge;
 use rayon::prelude::*;
 use resources::Resources;
 
+#[profiling::function]
 pub fn pedestrian_decision_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &*resources.get().unwrap();
     let rc = &*resources.get().unwrap();
     world
-        .query_mut::<(
+        .query::<(
             &Collider,
             &mut Itinerary,
             &mut Transform,
             &mut Kinematics,
             &mut Pedestrian,
         )>()
-        .into_iter()
+        .iter_batched(32)
         .par_bridge()
-        .for_each(|(_, (a, b, c, d, e))| pedestrian_decision(ra, rb, rc, a, b, c, d, e))
+        .for_each(|batch| {
+            batch.for_each(|(_, (a, b, c, d, e))| pedestrian_decision(ra, rb, rc, a, b, c, d, e))
+        })
 }
 
 pub fn pedestrian_decision(
