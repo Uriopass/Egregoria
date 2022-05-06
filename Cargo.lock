@@ -700,6 +700,7 @@ dependencies = [
  "map_model",
  "ordered-float",
  "paste",
+ "profiling",
  "rand",
  "rand_distr",
  "rayon",

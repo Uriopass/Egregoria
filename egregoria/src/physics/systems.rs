@@ -8,18 +8,22 @@ use hecs::{Entity, World};
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 
+#[profiling::function]
 pub fn kinematics_apply(world: &mut World, resources: &mut Resources) {
     let time = resources.get::<GameTime>().unwrap();
     let delta = time.delta;
     world
-        .query_mut::<(&mut Transform, &Kinematics)>()
-        .into_iter()
+        .query::<(&mut Transform, &Kinematics)>()
+        .iter_batched(32)
         .par_bridge()
-        .for_each(|(_, (trans, kin))| {
-            trans.position += kin.velocity * delta;
+        .for_each(|batch| {
+            batch.for_each(|(_, (trans, kin))| {
+                trans.position += kin.velocity * delta;
+            })
         });
 }
 
+#[profiling::function]
 pub fn coworld_synchronize(world: &mut World, resources: &mut Resources) {
     let mut coworld = resources.get_mut::<CollisionWorld>().unwrap();
     world

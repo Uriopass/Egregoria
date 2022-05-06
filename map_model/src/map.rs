@@ -569,6 +569,31 @@ impl Map {
     }
 
     pub fn nearest_lane(&self, p: Vec3, kind: LaneKind) -> Option<LaneID> {
+        let tryfind = |radius| {
+            self.spatial_map()
+                .query_around(p.xy(), radius, ProjectFilter::ROAD)
+                .filter_map(|x| {
+                    if let ProjectKind::Road(id) = x {
+                        Some(id)
+                    } else {
+                        unsafe { std::hint::unreachable_unchecked() }
+                    }
+                })
+                .filter_map(|id| self.roads().get(id))
+                .flat_map(|road| road.lanes_iter())
+                .filter(|&(_, x)| x == kind)
+                .map(|(id, _)| &self.lanes[id])
+                .min_by_key(|lane| OrderedFloat(lane.points.project_dist2(p)))
+        };
+
+        if let Some(lane) = tryfind(20.0) {
+            return Some(lane.id);
+        }
+
+        if let Some(lane) = tryfind(100.0) {
+            return Some(lane.id);
+        }
+
         self.lanes
             .iter()
             .filter(|(_, x)| x.kind == kind)

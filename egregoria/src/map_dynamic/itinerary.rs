@@ -343,12 +343,15 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
     }
 }
 
+#[profiling::function]
 pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
     let time = &*resources.get::<GameTime>().unwrap();
     let map = &*resources.get::<Map>().unwrap();
     world
-        .query_mut::<(&Transform, &mut Itinerary)>()
-        .into_iter()
+        .query::<(&Transform, &mut Itinerary)>()
+        .iter_batched(32)
         .par_bridge()
-        .for_each(|(_, (trans, it))| it.update(trans.position, time.seconds, map));
+        .for_each(|chunk| {
+            chunk.for_each(|(_, (trans, it))| it.update(trans.position, time.seconds, map))
+        });
 }

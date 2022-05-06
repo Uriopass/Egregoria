@@ -126,6 +126,7 @@ impl Egregoria {
         &self.world
     }
 
+    #[profiling::function]
     pub fn tick(&mut self, game_schedule: &mut SeqSchedule, commands: &WorldCommands) -> Duration {
         self.tick += 1;
         const WORLD_TICK_DT: f32 = 0.05;
@@ -137,8 +138,11 @@ impl Egregoria {
             *time = GameTime::new(WORLD_TICK_DT, time.timestamp + WORLD_TICK_DT as f64);
         }
 
-        for command in &commands.commands {
-            command.apply(self);
+        {
+            profiling::scope!("applying commands");
+            for command in &commands.commands {
+                command.apply(self);
+            }
         }
 
         game_schedule.execute(self);

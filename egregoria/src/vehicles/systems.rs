@@ -10,22 +10,25 @@ use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 
+#[profiling::function]
 pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &*resources.get().unwrap();
     let rc = &*resources.get().unwrap();
     world
-        .query_mut::<(
+        .query::<(
             &mut Itinerary,
             &mut Transform,
             &mut Kinematics,
             &mut Vehicle,
             &Collider,
         )>()
-        .into_iter()
+        .iter_batched(32)
         .par_bridge()
-        .for_each(|(ent, (a, b, c, d, e))| {
-            vehicle_decision(ra, rb, rc, ent, a, b, c, d, e);
+        .for_each(|batch| {
+            batch.for_each(|(ent, (a, b, c, d, e))| {
+                vehicle_decision(ra, rb, rc, ent, a, b, c, d, e);
+            })
         })
 }
 
@@ -71,16 +74,19 @@ pub fn vehicle_decision(
     );
 }
 
+#[profiling::function]
 pub fn vehicle_state_update_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &*resources.get().unwrap();
     let rc = &*resources.get().unwrap();
     world
-        .query_mut::<(&mut Vehicle, &mut Transform, &mut Kinematics)>()
-        .into_iter()
+        .query::<(&mut Vehicle, &mut Transform, &mut Kinematics)>()
+        .iter_batched(32)
         .par_bridge()
-        .for_each(|(ent, (a, b, c))| {
-            vehicle_state_update(ra, rb, rc, ent, a, b, c);
+        .for_each(|batch| {
+            batch.for_each(|(ent, (a, b, c))| {
+                vehicle_state_update(ra, rb, rc, ent, a, b, c);
+            })
         })
 }
 
