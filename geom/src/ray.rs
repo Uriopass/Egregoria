@@ -64,10 +64,13 @@ impl Rayd {
         let div = self.dir.perp_dot(r2.dir);
 
         let p_diff = self.from - r2.from;
+
         let t = r2.dir.perp_dot(p_diff);
         let s = self.dir.perp_dot(p_diff);
 
-        if t * div > 0.0 && s * div > 0.0 {
+        if ((t == 0.0 && div != 0.0) || (t * div > 0.0))
+            && ((s == 0.0 && div != 0.0) || (s * div > 0.0))
+        {
             Some(self.from + self.dir * t / div)
         } else {
             None
@@ -93,5 +96,23 @@ impl Rayd {
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{vec2d, Rayd, Vec2d};
+
+    #[test]
+    fn test_exact() {
+        let a = Rayd {
+            from: vec2d(200.0, 200.0),
+            dir: vec2d(1.3416407864998738, 0.4472135954999579),
+        };
+        let b = Rayd {
+            from: vec2d(150.0, 150.0),
+            dir: vec2d(1.3416407864998738, 1.3416407864998738),
+        };
+        assert_eq!(a.intersection_point(&b), Some(Vec2d::new(200.0, 200.0)));
     }
 }

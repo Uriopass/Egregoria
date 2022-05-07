@@ -208,8 +208,8 @@ impl Map {
             BuildingKind::House,
             BuildingGen::House,
         );
-        #[cfg(debug_assertions)]
-        self.check_invariants();
+        //#[cfg(debug_assertions)]
+        //self.check_invariants();
         v
     }
 
