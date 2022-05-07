@@ -95,7 +95,7 @@ fn register_resource<T: 'static + Send + Sync + Serialize + DeserializeOwned>(
                 <common::saveload::Bincode as Encoder>::encode(&*uiworld.read::<T>()).unwrap()
             }),
             load: Box::new(move |uiworld, data| {
-                if let Ok(res) = <common::saveload::JSON as Encoder>::decode::<T>(&data) {
+                if let Ok(res) = <common::saveload::Bincode as Encoder>::decode::<T>(&data) {
                     uiworld.insert(res);
                 }
             }),
