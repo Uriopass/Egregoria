@@ -953,6 +953,9 @@ pub fn faces_from_skeleton(
         }
         heights.insert(tree.source, tree.height);
         for &v in &tree.sinks {
+            if v == tree.source {
+                continue;
+            }
             if v.magnitude2() > 1e10 {
                 return None;
             }
@@ -998,6 +1001,9 @@ pub fn faces_from_skeleton(
 
     for (&r, l) in &mut graph {
         l.sort_unstable_by_key(|&p| OrderedFloat((r - p).angle(Vec2::X)));
+        if l.len() <= 1 {
+            return None;
+        }
     }
 
     let mut faces = vec![];
@@ -1019,14 +1025,16 @@ pub fn faces_from_skeleton(
     ) -> Vec<Vec3> {
         let mut face = vec![start.z(heights[&start])];
         let mut cur = start;
-        visited.insert((cur, next));
         while next != start {
+            if !visited.insert((cur, next)) {
+                return face;
+            }
             let (c, n) = next_v(graph, cur, next);
             cur = c;
             next = n;
             face.push(cur.z(heights[&cur]));
-            visited.insert((cur, next));
         }
+        visited.insert((cur, next));
         face
     }
 
@@ -1083,9 +1091,9 @@ mod tests {
         dbg!(&poly);
 
         let skeleton = skeleton(poly, &[]);
-        assert!(!skeleton.is_empty());
+        dbg!(&skeleton);
         let faces = faces_from_skeleton(poly, &skeleton, false).unwrap().0;
-        assert_eq!(faces.len(), 8);
+        assert_eq!(faces.len(), 10);
     }
 
     #[test]
@@ -1100,6 +1108,27 @@ mod tests {
         assert!(!skeleton.is_empty());
         let faces = faces_from_skeleton(poly, &skeleton, false).unwrap().0;
         assert_eq!(faces.len(), 4);
+    }
+
+    #[test]
+    fn test_half_cross() {
+        let poly = &[
+            vec2(100.0, 50.0),
+            vec2(150.0, 150.0),
+            vec2(50.0, 100.0),
+            vec2(50.0, 350.0),
+            vec2(350.0, 350.0),
+            vec2(350.0, 100.0),
+            vec2(250.0, 150.0),
+            vec2(300.0, 50.0),
+        ]
+        .iter()
+        .copied()
+        .rev()
+        .collect::<Vec<_>>();
+        let skeleton = skeleton(&poly, &[]);
+        dbg!(&skeleton);
+        let _ = faces_from_skeleton(&poly, &skeleton, false).unwrap().0;
     }
 
     #[test]
