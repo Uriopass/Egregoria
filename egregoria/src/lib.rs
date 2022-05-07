@@ -11,7 +11,7 @@ use crate::souls::human::HumanDecision;
 use crate::vehicles::Vehicle;
 use common::saveload::Encoder;
 use geom::{Transform, Vec3};
-use hecs::{Component, Entity, EntityBuilder, EntityRef, World};
+use hecs::{Component, Entity, World};
 use map_model::Map;
 use pedestrians::Location;
 use resources::{Ref, RefMut, Resource, Resources};
@@ -171,12 +171,12 @@ impl Egregoria {
     }
 
     pub fn load_from_disk(save_name: &'static str) -> Option<Self> {
-        let goria: Egregoria = common::saveload::JSON::load(save_name)?;
+        let goria: Egregoria = common::saveload::CompressedBincode::load(save_name)?;
         Some(goria)
     }
 
     pub fn save_to_disk(&self, save_name: &'static str) {
-        common::saveload::JSON::save(&self, save_name);
+        common::saveload::CompressedBincode::save(&self, save_name);
     }
 
     pub fn pos(&self, e: Entity) -> Option<Vec3> {
@@ -243,7 +243,7 @@ impl<'a> Serialize for SerWorld<'a> {
     where
         S: Serializer,
     {
-        hecs::serialize::row::serialize(self.0, &mut SerContext, serializer)
+        hecs::serialize::column::serialize(self.0, &mut SerContext, serializer)
     }
 }
 
@@ -326,46 +326,102 @@ impl<'de> Deserialize<'de> for DeserWorld {
     where
         D: Deserializer<'de>,
     {
-        hecs::serialize::row::deserialize(&mut DeserContext, deserializer).map(DeserWorld)
+        hecs::serialize::column::deserialize(&mut DeserContext::default(), deserializer)
+            .map(DeserWorld)
     }
 }
 
 struct SerContext;
-struct DeserContext;
+
+#[derive(Default)]
+struct DeserContext {
+    components: Vec<ComponentId>,
+}
 
 macro_rules! register {
-    ($($t: ty => $p:literal),+,) => {
-        impl hecs::serialize::row::SerializeContext for SerContext {
-            fn serialize_entity<S>(
+    ($($t: ty => $p:ident),+,) => {
+        #[derive(Serialize, Deserialize)]
+        enum ComponentId {
+            $(
+                $p,
+            )+
+        }
+
+        impl hecs::serialize::column::SerializeContext for SerContext {
+            fn component_count(&self, archetype: &hecs::Archetype) -> usize {
+                archetype.component_types()
+                    .filter(|&t| {
+                    $(
+                        t == std::any::TypeId::of::<$t>() ||
+                    )+
+                    true
+                    })
+                    .count()
+            }
+
+            fn serialize_component_ids<S: serde::ser::SerializeTuple>(
                 &mut self,
-                entity: EntityRef<'_>,
-                map: &mut S,
-            ) -> Result<(), S::Error>
-            where
-                S: serde::ser::SerializeMap,
-            {
+                archetype: &hecs::Archetype,
+                out: &mut S,
+            ) -> Result<(), S::Error> {
                 $(
-                    hecs::serialize::row::try_serialize::<$t, _, _>(&entity, &$p, map)?;
+                    hecs::serialize::column::try_serialize_id::<$t, _, _>(archetype, &ComponentId::$p, out)?;
+                )+
+                Ok(())
+            }
+
+            fn serialize_components<S: serde::ser::SerializeTuple>(
+                &mut self,
+                archetype: &hecs::Archetype,
+                out: &mut S,
+            ) -> Result<(), S::Error> {
+                $(
+                    hecs::serialize::column::try_serialize::<$t, _>(archetype, out)?;
                 )+
                 Ok(())
             }
         }
 
-        impl hecs::serialize::row::DeserializeContext for DeserContext {
-            fn deserialize_entity<'de, M>(
+        impl hecs::serialize::column::DeserializeContext for DeserContext {
+            fn deserialize_component_ids<'de, A>(
                 &mut self,
-                mut map: M,
-                entity: &mut EntityBuilder,
-            ) -> Result<(), M::Error>
-                where
-                    M: serde::de::MapAccess<'de>,
+                mut seq: A,
+            ) -> Result<hecs::ColumnBatchType, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
             {
-                while let Some(key) = map.next_key::<u64>()? {
-                    match key {
+                self.components.clear(); // Discard data from the previous archetype
+                let mut batch = hecs::ColumnBatchType::new();
+                while let Some(id) = seq.next_element()? {
+                    match id {
                         $(
-                           $p => {entity.add::<$t>(map.next_value()?);},
+                            ComponentId::$p => {
+                                batch.add::<$t>();
+                            },
                         )+
-                        _ => continue,
+                    }
+                    self.components.push(id);
+                }
+                Ok(batch)
+            }
+
+            fn deserialize_components<'de, A>(
+                &mut self,
+                entity_count: u32,
+                mut seq: A,
+                batch: &mut hecs::ColumnBatchBuilder,
+            ) -> Result<(), A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                // Decode component data in the order that the component IDs appeared
+                for component in &self.components {
+                    match *component {
+                        $(
+                        ComponentId::$p => {
+                            hecs::serialize::column::deserialize_column::<$t, _>(entity_count, &mut seq, batch)?;
+                        },
+                        )+
                     }
                 }
                 Ok(())
@@ -377,21 +433,21 @@ macro_rules! register {
 pub struct NoSerialize;
 
 register!(
-        Transform => 0,
-        Bought => 1,
-        BuyFood => 2,
-        Collider => 3,
-        GoodsCompany => 4,
-        Home => 5,
-        HumanDecision => 6,
-        Itinerary => 7,
-        Kinematics => 8,
-        Location => 9,
-        Pedestrian => 10,
-        Router => 11,
-        Selectable => 12,
-        Sold => 13,
-        Vehicle => 14,
-        Work => 15,
-        Workers => 16,
+        Transform => _0,
+        Bought => _1,
+        BuyFood => _2,
+        Collider => _3,
+        GoodsCompany => _4,
+        Home => _5,
+        HumanDecision => _6,
+        Itinerary => _7,
+        Kinematics => _8,
+        Location => _9,
+        Pedestrian => _10,
+        Router => _11,
+        Selectable => _12,
+        Sold => _13,
+        Vehicle => _14,
+        Work => _15,
+        Workers => _16,
 );
