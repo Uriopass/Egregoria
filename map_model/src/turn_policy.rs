@@ -48,10 +48,7 @@ impl TurnPolicy {
             .iter()
             .zip(outgoing)
             .map(|(lane_src, lane_dst)| {
-                (
-                    TurnID::new(inter_id, *lane_src, *lane_dst, false),
-                    TurnKind::Driving,
-                )
+                (TurnID::new(inter_id, *lane_src, *lane_dst, false), turnkind)
             })
             .collect()
     }
