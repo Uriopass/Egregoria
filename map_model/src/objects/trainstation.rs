@@ -3,12 +3,14 @@ use crate::{
     RoadID, RoadSegmentKind, Roads, SpatialMap, TrainStations,
 };
 use geom::Vec3;
+use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
 new_key_type! {
     pub struct TrainStationID;
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TrainStation {
     pub left: IntersectionID,
     pub right: IntersectionID,
