@@ -16,6 +16,8 @@ use common::saveload::Encoder;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
+pub static SOUNDS_LIST: include_dir::Dir = include_dir::include_dir!("assets/sounds");
+
 pub fn init() {
     egregoria::init::init();
     register_resource::<Settings>("settings");

@@ -6,6 +6,7 @@ extern crate common;
 
 #[macro_use]
 extern crate egregoria;
+extern crate core;
 
 #[macro_use]
 mod uiworld;
