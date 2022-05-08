@@ -10,12 +10,14 @@ new_key_type! {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
+#[repr(u8)]
 pub enum LaneKind {
     Driving,
     Biking,
     Bus,
     Parking,
     Walking,
+    Rail,
 }
 
 impl LaneKind {
@@ -27,11 +29,16 @@ impl LaneKind {
         matches!(self, LaneKind::Driving | LaneKind::Biking | LaneKind::Bus)
     }
 
+    pub fn is_rail(self) -> bool {
+        matches!(self, LaneKind::Rail)
+    }
+
     pub fn width(self) -> f32 {
         match self {
             LaneKind::Driving | LaneKind::Biking | LaneKind::Bus => 4.0,
             LaneKind::Parking => 2.5,
             LaneKind::Walking => 3.0,
+            LaneKind::Rail => 5.3,
         }
     }
 }
