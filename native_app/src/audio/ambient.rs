@@ -1,40 +1,32 @@
-use crate::audio::{AudioContext, AudioHandle, AudioKind};
+use crate::audio::{AudioContext, AudioKind, ControlHandle, Stereo};
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use geom::{lerp, vec2, Camera, Vec2, AABB};
 use map_model::Terrain;
-use rodio::Source;
+use oddio::{Cycle, Gain};
 
 pub struct Ambient {
-    wind: AudioHandle,
-    forest: AudioHandle,
+    wind: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
+    forest: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
 }
 
 impl Ambient {
     pub fn new(ctx: &mut AudioContext) -> Self {
         let wind = ctx.play_with_control(
             "calm_wind",
-            |s| s.repeat_infinite(),
+            |s| Gain::new(Cycle::new(s), 0.0),
             AudioKind::Effect,
-            false,
         );
-        ctx.set_volume(wind, 0.0);
-
-        let forest =
-            ctx.play_with_control("forest", |s| s.repeat_infinite(), AudioKind::Effect, false);
-        ctx.set_volume(forest, 0.0);
+        let forest = ctx.play_with_control(
+            "forest",
+            |s| Gain::new(Cycle::new(s), 0.0),
+            AudioKind::Effect,
+        );
 
         Self { wind, forest }
     }
 
-    pub fn update(
-        &self,
-        goria: &Egregoria,
-        uiworld: &mut UiWorld,
-        ctx: &mut AudioContext,
-        delta: f32,
-    ) {
-        let delta = delta.min(0.1);
+    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld) {
         let eye = uiworld.read::<Camera>().eye();
         let map = goria.map();
 
@@ -42,7 +34,9 @@ impl Ambient {
 
         // Wind
         let volume = lerp(0.1, 0.8, (h - 100.0) / 4000.0);
-        ctx.set_volume_smooth(self.wind, volume, delta * 0.05);
+        if let Some(ref mut wind) = self.wind {
+            wind.control::<Gain<_>, _>().set_amplitude_ratio(volume);
+        }
 
         // Forest
         let bbox = AABB::new(eye.xy() - Vec2::splat(100.0), eye.xy() + Vec2::splat(100.0));
@@ -73,6 +67,8 @@ impl Ambient {
 
             volume *= matches as f32 / 4.0;
         }
-        ctx.set_volume_smooth(self.forest, volume, delta * 0.2);
+        if let Some(ref mut forest) = self.forest {
+            forest.control::<Gain<_>, _>().set_amplitude_ratio(volume);
+        }
     }
 }

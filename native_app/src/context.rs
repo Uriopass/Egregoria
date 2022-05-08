@@ -176,7 +176,6 @@ impl Context {
                         sco.present();
 
                         self.input.end_frame();
-                        self.audio.update();
                     }
                 },
                 _ => (),

@@ -1475,6 +1475,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "mint"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e53debba6bda7a793e5f99b8dacf19e626084f525f7829104ba9898f367d85ff"
+
+[[package]]
 name = "mio"
 version = "0.7.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1536,6 +1542,7 @@ dependencies = [
  "atomic_refcell",
  "bytemuck",
  "common",
+ "cpal",
  "egregoria",
  "flat_spatial",
  "futures",
@@ -1548,15 +1555,16 @@ dependencies = [
  "imgui-wgpu",
  "imgui-winit-support",
  "inline_tweak",
+ "lewton",
  "log",
  "map_model",
  "networking",
+ "oddio",
  "ordered-float",
  "paste",
  "profiling",
  "rayon",
  "resources",
- "rodio",
  "serde",
  "slotmap",
  "wgpu_engine",
@@ -1876,6 +1884,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "oddio"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33f6d5a128f26322b02ba2741cbdc9f14f1431e757db3b15fd893d5c416f3e20"
+dependencies = [
+ "mint",
+]
+
+[[package]]
 name = "ogg"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2182,16 +2199,6 @@ dependencies = [
  "downcast-rs",
  "fxhash",
  "parking_lot",
-]
-
-[[package]]
-name = "rodio"
-version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d98f5e557b61525057e2bc142c8cd7f0e70d75dc32852309bec440e6e046bf9"
-dependencies = [
- "cpal",
- "lewton",
 ]
 
 [[package]]
