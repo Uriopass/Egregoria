@@ -16,6 +16,7 @@ pub trait Pathfinder {
 pub enum PathKind {
     Pedestrian,
     Vehicle,
+    Rail,
 }
 
 impl Pathfinder for PathKind {
@@ -23,6 +24,7 @@ impl Pathfinder for PathKind {
         match self {
             PathKind::Pedestrian => PedestrianPath.path(map, start, end),
             PathKind::Vehicle => CarPath.path(map, start, end),
+            PathKind::Rail => RailPath.path(map, start, end),
         }
     }
 
@@ -30,6 +32,7 @@ impl Pathfinder for PathKind {
         match self {
             PathKind::Pedestrian => PedestrianPath.nearest_lane(map, pos),
             PathKind::Vehicle => CarPath.nearest_lane(map, pos),
+            PathKind::Rail => RailPath.nearest_lane(map, pos),
         }
     }
 
@@ -37,6 +40,7 @@ impl Pathfinder for PathKind {
         match self {
             PathKind::Pedestrian => PedestrianPath.local_route(map, lane, start, end),
             PathKind::Vehicle => CarPath.local_route(map, lane, start, end),
+            PathKind::Rail => RailPath.local_route(map, lane, start, end),
         }
     }
 }
@@ -120,6 +124,22 @@ impl Pathfinder for PedestrianPath {
         v.push(p_end);
         v.push(end);
         Some(PolyLine3::new(v))
+    }
+}
+
+struct RailPath;
+
+impl Pathfinder for RailPath {
+    fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
+        CarPath.path(map, start, end)
+    }
+
+    fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID> {
+        map.nearest_lane(pos, LaneKind::Rail)
+    }
+
+    fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3> {
+        CarPath.local_route(map, lane, start, end)
     }
 }
 

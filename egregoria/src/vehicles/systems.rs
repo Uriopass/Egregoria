@@ -107,7 +107,7 @@ pub fn vehicle_state_update(
 
             if *t >= 1.0 {
                 buf.remove_component_drop::<Collider>(ent);
-                kin.velocity = Vec3::ZERO;
+                kin.speed = 0.0;
                 let spot = match std::mem::replace(&mut vehicle.state, VehicleState::Driving) {
                     VehicleState::RoadToPark(_, _, spot) => spot,
                     _ => unreachable!(),
@@ -169,12 +169,12 @@ fn physics(
     vehicle.ang_velocity += time.delta * kind.ang_acc();
     vehicle.ang_velocity = vehicle
         .ang_velocity
-        .min(3.0 * approx_angle)
+        .min(4.0 * approx_angle)
         .min(max_ang_vel);
 
     trans.dir = angle_lerpxy(trans.dir, desired_dir, vehicle.ang_velocity * time.delta);
 
-    kin.velocity = trans.dir * speed;
+    kin.speed = speed;
 }
 
 /// Decide the appropriate velocity and direction to aim for.
