@@ -21,18 +21,22 @@ pub enum LaneKind {
 }
 
 impl LaneKind {
+    #[inline]
     pub fn vehicles(self) -> bool {
         matches!(self, LaneKind::Driving | LaneKind::Biking | LaneKind::Bus)
     }
 
+    #[inline]
     pub fn needs_light(self) -> bool {
         matches!(self, LaneKind::Driving | LaneKind::Biking | LaneKind::Bus)
     }
 
+    #[inline]
     pub fn is_rail(self) -> bool {
         matches!(self, LaneKind::Rail)
     }
 
+    #[inline]
     pub fn width(self) -> f32 {
         match self {
             LaneKind::Driving | LaneKind::Biking | LaneKind::Bus => 4.0,
