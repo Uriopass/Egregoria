@@ -1,5 +1,5 @@
 use crate::cell::{CellObject, GridCell};
-use crate::storage::{cell_range, CellIdx, SparseStorage, Storage};
+use crate::storage::{cell_range, CellIdx, SparseStorage};
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
@@ -90,25 +90,19 @@ pub struct StoreObject<O> {
 /// assert_eq!(g.get(a), None); // But that a doesn't exist anymore
 /// ```
 #[derive(Clone, Deserialize, Serialize)]
-pub struct Grid<O, ST: Storage<GridCell> = SparseStorage<GridCell>> {
-    storage: ST,
+pub struct Grid<O> {
+    storage: SparseStorage<GridCell>,
     objects: GridObjects<O>,
     // Cache maintain vec to avoid allocating every time maintain is called
     to_relocate: Vec<CellObject>,
 }
 
-impl<ST: Storage<GridCell>, O: Copy> Grid<O, ST> {
+impl<O: Copy> Grid<O> {
     /// Creates an empty grid.   
     /// The cell size should be about the same magnitude as your queries size.
     pub fn new(cell_size: i32) -> Self {
-        Self::with_storage(ST::new(cell_size))
-    }
-
-    /// Creates an empty grid.   
-    /// The cell size should be about the same magnitude as your queries size.
-    pub fn with_storage(st: ST) -> Self {
         Self {
-            storage: st,
+            storage: SparseStorage::new(cell_size),
             objects: SlotMap::with_key(),
             to_relocate: vec![],
         }
@@ -198,7 +192,7 @@ impl<ST: Storage<GridCell>, O: Copy> Grid<O, ST> {
 
     pub fn clear(&mut self) -> impl Iterator<Item = (Vec2, O)> {
         let objects = std::mem::take(&mut self.objects);
-        self.storage = ST::new(self.storage.cell_size());
+        self.storage = SparseStorage::new(self.storage.cell_size());
         self.to_relocate.clear();
         objects.into_iter().map(|(_, x)| (x.pos, x.obj))
     }
@@ -276,7 +270,7 @@ impl<ST: Storage<GridCell>, O: Copy> Grid<O, ST> {
     }
 
     /// The underlying storage
-    pub fn storage(&self) -> &ST {
+    pub fn storage(&self) -> &SparseStorage<GridCell> {
         &self.storage
     }
 

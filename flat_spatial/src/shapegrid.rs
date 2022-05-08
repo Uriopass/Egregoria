@@ -1,5 +1,5 @@
 use crate::cell::ShapeGridCell;
-use crate::storage::{cell_range, SparseStorage, Storage};
+use crate::storage::{cell_range, SparseStorage};
 use common::FastSet;
 use geom::{Circle, Intersect, Shape, Vec2, AABB};
 use serde::{Deserialize, Serialize};
@@ -60,42 +60,33 @@ pub struct StoreObject<O: Copy, S: Shape> {
 /// // Use handle however you want
 /// ```
 #[derive(Clone, Deserialize, Serialize)]
-pub struct ShapeGrid<
-    O: Copy,
-    S: Shape + Intersect<AABB> + Copy,
-    ST: Storage<ShapeGridCell> = SparseStorage<ShapeGridCell>,
-> {
-    storage: ST,
+pub struct ShapeGrid<O: Copy, S: Shape + Intersect<AABB> + Copy> {
+    storage: SparseStorage<ShapeGridCell>,
     objects: ShapeGridObjects<O, S>,
 }
 
-impl<S: Shape + Intersect<AABB> + Copy, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST> {
+impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S> {
     /// Creates an empty grid.
     /// The cell size should be about the same magnitude as your queries size.
     pub fn new(cell_size: i32) -> Self {
         Self {
-            storage: ST::new(cell_size),
+            storage: SparseStorage::new(cell_size),
             objects: ShapeGridObjects::default(),
         }
     }
 
     /// Clears the grid.
     pub fn clear(&mut self) -> impl Iterator<Item = (S, O)> {
-        self.storage = ST::new(self.storage.cell_size());
+        self.storage = SparseStorage::new(self.storage.cell_size());
         let objs = std::mem::take(&mut self.objects);
         objs.into_iter().map(|(_, o)| (o.shape, o.obj))
     }
 
-    /// Creates an empty grid.   
-    /// The cell size should be about the same magnitude as your queries size.
-    pub fn with_storage(st: ST) -> Self {
-        Self {
-            storage: st,
-            objects: ShapeGridObjects::default(),
-        }
-    }
-
-    fn cells_apply(storage: &mut ST, shape: &S, f: impl Fn(&mut ShapeGridCell, bool)) {
+    fn cells_apply(
+        storage: &mut SparseStorage<ShapeGridCell>,
+        shape: &S,
+        f: impl Fn(&mut ShapeGridCell, bool),
+    ) {
         let bbox = shape.bbox();
         let ll = storage.cell_mut(bbox.ll).0;
         let ur = storage.cell_mut(bbox.ur).0;
@@ -182,7 +173,7 @@ impl<S: Shape + Intersect<AABB> + Copy, ST: Storage<ShapeGridCell>, O: Copy> Sha
     }
 
     /// The underlying storage
-    pub fn storage(&self) -> &ST {
+    pub fn storage(&self) -> &SparseStorage<ShapeGridCell> {
         &self.storage
     }
 
@@ -235,7 +226,7 @@ impl<S: Shape + Intersect<AABB> + Copy, ST: Storage<ShapeGridCell>, O: Copy> Sha
     }
 }
 
-impl<S: Shape + Intersect<AABB> + Copy, ST: Storage<ShapeGridCell>, O: Copy> ShapeGrid<O, S, ST>
+impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S>
 where
     Circle: Intersect<S>,
 {
