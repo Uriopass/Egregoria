@@ -1,3 +1,4 @@
+extern crate core;
 macro_rules! defer_inter {
     ($a:ty => $b:ty) => {
         impl Intersect<$b> for $a {

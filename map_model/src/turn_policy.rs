@@ -42,6 +42,7 @@ impl TurnPolicy {
         inter_id: IntersectionID,
         incoming: &[LaneID],
         outgoing: &[LaneID],
+        turnkind: TurnKind,
     ) -> Vec<(TurnID, TurnKind)> {
         incoming
             .iter()
@@ -59,15 +60,13 @@ impl TurnPolicy {
         inter_id: IntersectionID,
         incoming: &[LaneID],
         outgoing: &[LaneID],
+        turnkind: TurnKind,
     ) -> Vec<(TurnID, TurnKind)> {
         incoming
             .iter()
             .flat_map(|lane_src| {
                 outgoing.iter().map(move |lane_dst| {
-                    (
-                        TurnID::new(inter_id, *lane_src, *lane_dst, false),
-                        TurnKind::Driving,
-                    )
+                    (TurnID::new(inter_id, *lane_src, *lane_dst, false), turnkind)
                 })
             })
             .collect()
@@ -77,11 +76,12 @@ impl TurnPolicy {
         inter_id: IntersectionID,
         incoming: &[LaneID],
         outgoing: &[LaneID],
+        turnkind: TurnKind,
     ) -> Vec<(TurnID, TurnKind)> {
         if incoming.len() == outgoing.len() {
-            Self::zip(inter_id, incoming, outgoing)
+            Self::zip(inter_id, incoming, outgoing, turnkind)
         } else {
-            Self::all(inter_id, incoming, outgoing)
+            Self::all(inter_id, incoming, outgoing, turnkind)
         }
     }
 
@@ -99,6 +99,7 @@ impl TurnPolicy {
                     inter.id,
                     &filter_vehicles(road.incoming_lanes_to(inter.id)),
                     &filter_vehicles(road.outgoing_lanes_from(inter.id)),
+                    TurnKind::Driving,
                 ));
                 return;
             }
@@ -116,12 +117,14 @@ impl TurnPolicy {
                     inter.id,
                     &incoming_road1,
                     &outgoing_road2,
+                    TurnKind::Driving,
                 ));
 
                 turns.extend(Self::zip_on_same_length(
                     inter.id,
                     &incoming_road2,
                     &outgoing_road1,
+                    TurnKind::Driving,
                 ));
 
                 if self.back_turns {
@@ -129,12 +132,14 @@ impl TurnPolicy {
                         inter.id,
                         &incoming_road1,
                         &outgoing_road1,
+                        TurnKind::Driving,
                     ));
 
                     turns.extend(Self::zip_on_same_length(
                         inter.id,
                         &incoming_road2,
                         &outgoing_road2,
+                        TurnKind::Driving,
                     ));
                 }
 
@@ -217,7 +222,7 @@ impl TurnPolicy {
     }
 
     pub fn compatible_turn_sharpness_rail(dir1: Vec2, dir2: Vec2) -> bool {
-        dir1.dot(dir2) <= -0.3
+        dir1.dot(dir2) <= -0.2
     }
 
     pub fn generate_rail_turns(
@@ -234,6 +239,7 @@ impl TurnPolicy {
                     inter.id,
                     &filter_rail(road.incoming_lanes_to(inter.id)),
                     &filter_rail(road.outgoing_lanes_from(inter.id)),
+                    TurnKind::Rail,
                 ));
                 return;
             }
@@ -251,12 +257,14 @@ impl TurnPolicy {
                     inter.id,
                     &incoming_road1,
                     &outgoing_road2,
+                    TurnKind::Rail,
                 ));
 
                 turns.extend(Self::zip_on_same_length(
                     inter.id,
                     &incoming_road2,
                     &outgoing_road1,
+                    TurnKind::Rail,
                 ));
 
                 return;
@@ -286,7 +294,7 @@ impl TurnPolicy {
 
                         if Self::compatible_turn_sharpness_rail(incoming_dir, outgoing_dir) {
                             let id = TurnID::new(inter.id, incoming.id, outgoing.id, false);
-                            turns.push((id, TurnKind::Driving));
+                            turns.push((id, TurnKind::Rail));
                         }
                     }
                 }

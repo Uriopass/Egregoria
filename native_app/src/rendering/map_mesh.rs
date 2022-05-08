@@ -1,7 +1,7 @@
 use common::FastMap;
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
-use geom::{vec2, LinearColor, Polygon, Spline, Vec2, Vec3};
+use geom::{vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Spline, Vec2, Vec3};
 use map_model::{
     BuildingKind, Intersection, LaneKind, LotKind, Map, PylonPosition, Road, Roads, Terrain,
     TurnKind, CROSSWALK_WIDTH,
@@ -29,7 +29,7 @@ struct MapBuilders {
     houses_mesh: MeshBuilder,
     arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: MeshBuilder,
-    tess: Tesselator,
+    tess_map: Tesselator,
 }
 
 pub struct MapMeshes {
@@ -78,7 +78,7 @@ impl MapMeshHandler {
             arrow_builder,
             buildsprites,
             crosswalk_builder: MeshBuilder::new(),
-            tess: Tesselator::new(None, 15.0),
+            tess_map: Tesselator::new(None, 15.0),
             houses_mesh: MeshBuilder::new(),
             buildmeshes,
         };
@@ -102,7 +102,7 @@ impl MapMeshHandler {
             self.last_config = common::config_id();
             self.map_dirt_id = map.dirt_id.0;
 
-            let m = &mut self.builders.tess.meshbuilder;
+            let m = &mut self.builders.tess_map.meshbuilder;
 
             let cw = gfx.texture("assets/crosswalk.png", "crosswalk");
 
@@ -309,8 +309,36 @@ impl MapBuilders {
         }
     }
 
+    fn draw_rail(tess: &mut Tesselator, cut: &PolyLine3, off: f32, limits: bool) {
+        tess.set_color(Color::gray(0.5));
+        tess.draw_polyline_full(
+            cut.as_slice().iter().map(|v| vec3(v.x, v.y, v.z + 0.02)),
+            unwrap_ret!(cut.first_dir()).xy(),
+            unwrap_ret!(cut.last_dir()).xy(),
+            0.1,
+            off + 0.6,
+        );
+        tess.draw_polyline_full(
+            cut.as_slice().iter().map(|v| vec3(v.x, v.y, v.z + 0.02)),
+            unwrap_ret!(cut.first_dir()).xy(),
+            unwrap_ret!(cut.last_dir()).xy(),
+            0.1,
+            off - 0.6,
+        );
+        for (v, dir) in cut.equipoints_dir(1.0, !limits) {
+            let up = vec3(v.x, v.y, v.z + 0.04);
+            tess.draw_polyline_full(
+                std::array::IntoIter::new([up, up + dir * 0.1]),
+                dir.xy(),
+                dir.xy(),
+                2.0,
+                off,
+            );
+        }
+    }
+
     fn map_mesh(&mut self, map: &Map) {
-        let tess = &mut self.tess;
+        let tess = &mut self.tess_map;
         tess.meshbuilder.clear();
 
         let low_col: LinearColor = common::config().road_low_col.into();
@@ -339,7 +367,7 @@ impl MapBuilders {
             );
             tess.normal.z = 1.0;
 
-            let mut draw_off = |col: LinearColor, w, off| {
+            let draw_off = |tess: &mut Tesselator, col: LinearColor, w, off| {
                 tess.set_color(col);
                 tess.draw_polyline_full(
                     cut.as_slice().iter().copied(),
@@ -350,9 +378,21 @@ impl MapBuilders {
                 );
             };
 
-            draw_off(line_col, 0.25, -road.width * 0.5);
+            let mut start = true;
             for l in road.lanes_iter().flat_map(|(l, _)| lanes.get(l)) {
+                if l.kind.is_rail() {
+                    let off = l.dist_from_bottom - road.width * 0.5 + LaneKind::Rail.width() * 0.5;
+                    draw_off(tess, mid_col, LaneKind::Rail.width(), off);
+                    Self::draw_rail(tess, cut, off, true);
+                    start = true;
+                    continue;
+                }
+                if start {
+                    draw_off(tess, line_col, 0.25, l.dist_from_bottom - road.width * 0.5);
+                    start = false;
+                }
                 draw_off(
+                    tess,
                     match l.kind {
                         LaneKind::Walking => hig_col,
                         LaneKind::Parking => low_col,
@@ -362,6 +402,7 @@ impl MapBuilders {
                     l.dist_from_bottom - road.width * 0.5 + l.kind.width() * 0.5,
                 );
                 draw_off(
+                    tess,
                     line_col,
                     0.25,
                     l.dist_from_bottom - road.width * 0.5 + l.kind.width(),
@@ -371,6 +412,7 @@ impl MapBuilders {
 
         // Intersections
         let mut p = Vec::with_capacity(8);
+        let mut ppoly = unsafe { PolyLine3::new_unchecked(vec![]) };
         for inter in inters.values() {
             if inter.roads.is_empty() {
                 tess.set_color(line_col);
@@ -410,6 +452,16 @@ impl MapBuilders {
                 p.extend_from_slice(turn.points.as_slice());
 
                 tess.draw_polyline_with_dir(&p, first_dir, last_dir, w - 0.25);
+            }
+
+            // Rail turns
+            for turn in inter
+                .turns()
+                .iter()
+                .filter(|turn| matches!(turn.kind, TurnKind::Rail))
+            {
+                ppoly.clear_extend(turn.points.as_slice());
+                Self::draw_rail(tess, &ppoly, 0.0, false);
             }
         }
 
@@ -665,7 +717,7 @@ fn intersection_mesh(meshb: &mut MeshBuilder, inter: &Intersection, roads: &Road
     let col = LinearColor::from(common::config().road_mid_col).into();
     meshb.extend_with(|vertices, add_idx| {
         vertices.extend(polygon.iter().map(|pos| MeshVertex {
-            position: pos.z(inter.pos.z - 0.01).into(),
+            position: pos.z(inter.pos.z - 0.001).into(),
             normal: Vec3::Z,
             uv: [0.0; 2],
             color: col,

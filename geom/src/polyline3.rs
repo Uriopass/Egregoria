@@ -30,6 +30,13 @@ impl PolyLine3 {
         }
     }
 
+    pub unsafe fn new_unchecked(x: Vec<Vec3>) -> Self {
+        Self {
+            l: length(&*x),
+            points: x,
+        }
+    }
+
     pub fn flatten(&self) -> PolyLine {
         PolyLine::new(self.points.iter().copied().map(crate::Vec3::xy).collect())
     }
@@ -38,6 +45,19 @@ impl PolyLine3 {
         self.points.clear();
         self.points.push(x);
         self.l = 0.0;
+    }
+
+    pub fn clear_extend<A, T>(&mut self, s: T)
+    where
+        T: IntoIterator<Item = A>,
+        Vec<Vec3>: Extend<A>,
+    {
+        self.points.clear();
+        self.points.extend(s);
+        self.l = length(&self.points);
+        if self.points.len() == 0 {
+            panic!("cannot have empty polyline3");
+        }
     }
 
     pub fn merge_close(&mut self, dist: f64) {
