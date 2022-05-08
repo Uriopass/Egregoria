@@ -4,7 +4,7 @@ use crate::map_dynamic::{
     ParkingManagement,
 };
 use crate::pedestrians::pedestrian_decision_system;
-use crate::physics::systems::{coworld_synchronize, kinematics_apply};
+use crate::physics::systems::coworld_synchronize;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
 use crate::vehicles::systems::{vehicle_decision_system, vehicle_state_update_system};
@@ -23,7 +23,6 @@ pub fn init() {
     register_system("update_decision_system", update_decision_system);
     register_system("company_system", company_system);
     register_system("pedestrian_decision_system", pedestrian_decision_system);
-    register_system("kinematics_apply", kinematics_apply);
     register_system("coworld_synchronize", coworld_synchronize);
     register_system("vehicle_decision_system", vehicle_decision_system);
     register_system("vehicle_state_update_system", vehicle_state_update_system);

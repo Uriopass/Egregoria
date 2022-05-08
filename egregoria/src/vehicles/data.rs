@@ -97,13 +97,13 @@ impl VehicleKind {
 
     pub fn deceleration(self) -> f32 {
         match self {
-            VehicleKind::Car | VehicleKind::Bus | VehicleKind::Truck => 11.0,
+            VehicleKind::Car | VehicleKind::Bus | VehicleKind::Truck => 6.0,
         }
     }
 
     pub fn min_turning_radius(self) -> f32 {
         match self {
-            VehicleKind::Car => 2.0,
+            VehicleKind::Car => 1.5,
             VehicleKind::Truck => 3.0,
             VehicleKind::Bus => 4.0,
         }

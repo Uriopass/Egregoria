@@ -250,7 +250,7 @@ fn comp<T: Component>(sw: &World, e: Entity) -> Option<Ref<T>> {
 
 fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, kin: &mut Kinematics) {
     cbuf.remove_component_drop::<Collider>(body);
-    kin.velocity = Vec3::ZERO;
+    kin.speed = 0.0;
     cbuf.add_component(body, Itinerary::none())
 }
 
@@ -286,7 +286,7 @@ fn park(vehicle: VehicleID, spot_resa: SpotReservation) -> impl FnOnce(&mut Egre
 
         unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0)).state =
             VehicleState::RoadToPark(s, 0.0, spot_resa);
-        unwrap_ret!(goria.comp_mut::<Kinematics>(vehicle.0)).velocity = Vec3::ZERO;
+        unwrap_ret!(goria.comp_mut::<Kinematics>(vehicle.0)).speed = 0.0;
     }
 }
 

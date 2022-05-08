@@ -1,27 +1,10 @@
 use crate::physics::{Collider, Kinematics};
 use crate::utils::par_command_buffer::ComponentDrop;
-use crate::utils::time::GameTime;
 use crate::vehicles::Vehicle;
 use crate::CollisionWorld;
 use geom::Transform;
 use hecs::{Entity, World};
-use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
-
-#[profiling::function]
-pub fn kinematics_apply(world: &mut World, resources: &mut Resources) {
-    let time = resources.get::<GameTime>().unwrap();
-    let delta = time.delta;
-    world
-        .query::<(&mut Transform, &Kinematics)>()
-        .iter_batched(32)
-        .par_bridge()
-        .for_each(|batch| {
-            batch.for_each(|(_, (trans, kin))| {
-                trans.position += kin.velocity * delta;
-            })
-        });
-}
 
 #[profiling::function]
 pub fn coworld_synchronize(world: &mut World, resources: &mut Resources) {
@@ -33,7 +16,7 @@ pub fn coworld_synchronize(world: &mut World, resources: &mut Resources) {
             coworld.set_position(coll.0, trans.position.xy());
             let (_, po) = coworld.get_mut(coll.0).unwrap(); // Unwrap ok: handle is deleted only when entity is deleted too
             po.dir = trans.dir.xy();
-            po.speed = kin.velocity.magnitude();
+            po.speed = kin.speed;
             po.height = trans.position.z;
             if let Some(v) = v {
                 po.flag = v.flag;

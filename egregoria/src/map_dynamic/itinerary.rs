@@ -1,4 +1,5 @@
 use crate::utils::time::GameTime;
+use crate::Kinematics;
 use geom::{Transform, Vec3};
 use hecs::World;
 use imgui::Ui;
@@ -167,31 +168,41 @@ impl Itinerary {
         v
     }
 
-    #[allow(clippy::collapsible_else_if)]
-    pub fn update(&mut self, position: Vec3, time: u32, map: &Map) {
-        if let Some(p) = self.get_point() {
-            if self.is_terminal() {
-                if position.is_close(p, 1.5) {
+    pub fn update_rail(
+        &mut self,
+        mut position: Vec3,
+        mut dist_to_move: f32,
+        time: u32,
+        map: &Map,
+    ) -> Vec3 {
+        while let Some(p) = self.get_point() {
+            let dist = position.distance(p);
+            if dist < dist_to_move {
+                dist_to_move -= dist;
+                position = p;
+                if self.is_terminal() {
                     self.advance(map);
+                    return p;
                 }
-            } else {
-                if position.is_close(p, OBJECTIVE_OK_DIST) {
-                    if self.remaining_points() > 1 {
-                        self.advance(map);
-                        return;
-                    }
 
-                    let k = unwrap_or!(self.get_travers(), {
-                        *self = Itinerary::none();
-                        return;
-                    });
-
-                    if k.can_pass(time, map.lanes()) {
-                        self.advance(map);
-                    }
+                if self.remaining_points() > 1 {
+                    self.advance(map);
+                    continue;
                 }
+
+                let k = unwrap_or!(self.get_travers(), {
+                    *self = Itinerary::none();
+                    return p;
+                });
+
+                if k.can_pass(time, map.lanes()) {
+                    self.advance(map);
+                    continue;
+                }
+                return p;
             }
-            return;
+
+            return position + (p - position).normalize_to(dist_to_move);
         }
 
         if let ItineraryKind::WaitForReroute {
@@ -202,13 +213,14 @@ impl Itinerary {
         {
             if *wait_ticks > 0 {
                 *wait_ticks -= 1;
-                return;
+                return position;
             }
             *self = unwrap_or!(Self::route(position, dest, map, kind), {
                 *wait_ticks = 200;
-                return;
+                return position;
             });
         }
+        position
     }
 
     pub fn end_pos(&self) -> Option<Vec3> {
@@ -348,10 +360,13 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
     let time = &*resources.get::<GameTime>().unwrap();
     let map = &*resources.get::<Map>().unwrap();
     world
-        .query::<(&Transform, &mut Itinerary)>()
+        .query::<(&mut Transform, &Kinematics, &mut Itinerary)>()
         .iter_batched(32)
         .par_bridge()
         .for_each(|chunk| {
-            chunk.for_each(|(_, (trans, it))| it.update(trans.position, time.seconds, map))
+            chunk.for_each(|(_, (trans, kin, it))| {
+                trans.position =
+                    it.update_rail(trans.position, kin.speed * time.delta, time.seconds, map);
+            })
         });
 }
