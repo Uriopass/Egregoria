@@ -27,6 +27,7 @@ pub enum TurnKind {
     Crosswalk,
     WalkingCorner,
     Driving,
+    Rail,
 }
 
 impl TurnKind {

@@ -2,7 +2,7 @@ use crate::serializing::SerializedMap;
 use crate::{
     Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
-    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain,
+    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain, TrainStation, TrainStationID,
 };
 use geom::OBB;
 use geom::{pseudo_angle, Circle, Intersect, Shape, Spline3, Vec2, Vec3};
@@ -12,6 +12,7 @@ use slotmap::DenseSlotMap;
 use std::num::Wrapping;
 
 pub type Roads = DenseSlotMap<RoadID, Road>;
+pub type TrainStations = DenseSlotMap<TrainStationID, TrainStation>;
 pub type Lanes = DenseSlotMap<LaneID, Lane>;
 pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 pub type Buildings = DenseSlotMap<BuildingID, Building>;
@@ -630,6 +631,9 @@ impl Map {
     }
 
     pub fn check_invariants(&self) {
+        if std::env::var("MAP_INVARIANT_CHECK").is_err() {
+            return;
+        }
         for inter in self.intersections.values() {
             log::debug!("{:?}", inter.id);
             assert!(!inter.roads.is_empty());

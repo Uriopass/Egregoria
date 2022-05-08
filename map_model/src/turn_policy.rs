@@ -1,5 +1,5 @@
 use crate::{Intersection, IntersectionID, LaneID, LaneKind, Lanes, Roads, TurnID, TurnKind};
-use geom::vec2;
+use geom::{vec2, Vec2};
 use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 use std::iter::{Extend, Iterator};
@@ -24,6 +24,14 @@ impl Default for TurnPolicy {
 fn filter_vehicles(x: &[(LaneID, LaneKind)]) -> Vec<LaneID> {
     x.iter()
         .filter(|(_, kind)| kind.vehicles())
+        .map(|(id, _)| id)
+        .copied()
+        .collect::<Vec<_>>()
+}
+
+fn filter_rail(x: &[(LaneID, LaneKind)]) -> Vec<LaneID> {
+    x.iter()
+        .filter(|(_, kind)| kind.is_rail())
         .map(|(id, _)| id)
         .copied()
         .collect::<Vec<_>>()
@@ -208,6 +216,84 @@ impl TurnPolicy {
         }
     }
 
+    pub fn compatible_turn_sharpness_rail(dir1: Vec2, dir2: Vec2) -> bool {
+        dir1.dot(dir2) <= -0.3
+    }
+
+    pub fn generate_rail_turns(
+        self,
+        inter: &Intersection,
+        lanes: &Lanes,
+        roads: &Roads,
+        turns: &mut Vec<(TurnID, TurnKind)>,
+    ) {
+        match inter.roads.as_slice() {
+            [road_id] => {
+                let road = unwrap_ret!(roads.get(*road_id));
+                turns.extend(Self::zip_on_same_length(
+                    inter.id,
+                    &filter_rail(road.incoming_lanes_to(inter.id)),
+                    &filter_rail(road.outgoing_lanes_from(inter.id)),
+                ));
+                return;
+            }
+            [road1, road2] => {
+                let road1 = unwrap_ret!(roads.get(*road1));
+                let road2 = unwrap_ret!(roads.get(*road2));
+
+                let incoming_road1 = filter_rail(road1.incoming_lanes_to(inter.id));
+                let incoming_road2 = filter_rail(road2.incoming_lanes_to(inter.id));
+
+                let outgoing_road1 = filter_rail(road1.outgoing_lanes_from(inter.id));
+                let outgoing_road2 = filter_rail(road2.outgoing_lanes_from(inter.id));
+
+                turns.extend(Self::zip_on_same_length(
+                    inter.id,
+                    &incoming_road1,
+                    &outgoing_road2,
+                ));
+
+                turns.extend(Self::zip_on_same_length(
+                    inter.id,
+                    &incoming_road2,
+                    &outgoing_road1,
+                ));
+
+                return;
+            }
+            _ => {}
+        }
+
+        for road1 in &inter.roads {
+            for road2 in &inter.roads {
+                if road1 == road2 {
+                    continue;
+                }
+
+                let r1 = unwrap_cont!(roads.get(*road1));
+                let r2 = unwrap_cont!(roads.get(*road2));
+                for (incoming, incoming_kind) in r1.incoming_lanes_to(inter.id) {
+                    for (outgoing, outgoing_kind) in r2.outgoing_lanes_from(inter.id) {
+                        if !incoming_kind.is_rail() || !outgoing_kind.is_rail() {
+                            continue;
+                        }
+
+                        let incoming = unwrap_cont!(lanes.get(*incoming));
+                        let outgoing = unwrap_cont!(lanes.get(*outgoing));
+
+                        let incoming_dir = incoming.orientation_from(inter.id);
+                        let outgoing_dir = outgoing.orientation_from(inter.id);
+
+                        if Self::compatible_turn_sharpness_rail(incoming_dir, outgoing_dir) {
+                            let id = TurnID::new(inter.id, incoming.id, outgoing.id, false);
+                            turns.push((id, TurnKind::Driving));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     pub fn generate_turns(
         self,
         inter: &Intersection,
@@ -217,6 +303,7 @@ impl TurnPolicy {
         let mut turns = vec![];
 
         self.generate_vehicle_turns(inter, lanes, roads, &mut turns);
+        self.generate_rail_turns(inter, lanes, roads, &mut turns);
 
         self.generate_walking_turns(inter, roads, &mut turns);
 

@@ -163,10 +163,10 @@ impl AudioContext {
             decoder.ident_hdr.audio_channels,
         );
 
-        return Some(Frames::from_slice(
+        Some(Frames::from_slice(
             decoder.ident_hdr.audio_sample_rate,
             &samples,
-        ));
+        ))
     }
 
     fn get(cache: &mut FastMap<String, StoredAudio>, name: &str) -> Option<StoredAudio> {

@@ -11,6 +11,7 @@ mod objects {
     mod lot;
     mod parking;
     mod road;
+    mod trainstation;
     mod turn;
 
     pub use building::*;
@@ -19,6 +20,7 @@ mod objects {
     pub use lot::*;
     pub use parking::*;
     pub use road::*;
+    pub use trainstation::*;
     pub use turn::*;
 }
 
