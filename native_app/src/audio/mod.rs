@@ -1,24 +1,21 @@
 mod ambient;
 mod car_sounds;
 mod music;
-mod unique_sink;
 
 use crate::audio::ambient::Ambient;
 use crate::audio::car_sounds::CarSounds;
 use crate::audio::music::Music;
-use crate::audio::unique_sink::UniqueSink;
 use crate::gui::windows::settings::Settings;
 use crate::uiworld::UiWorld;
 use common::AudioKind;
 use common::FastMap;
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use egregoria::Egregoria;
-use rodio::source::Buffered;
-use rodio::{Decoder, OutputStream, OutputStreamHandle, Sample, Source};
-use slotmap::{new_key_type, DenseSlotMap};
+use oddio::{Filter, Frames, FramesSignal, Gain, Handle, Mixer, Sample, Signal, Smoothed, Stop};
+use std::cell::RefCell;
 use std::collections::hash_map::Entry;
-use std::io::Cursor;
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::time::Duration;
+use std::sync::Arc;
 
 pub struct GameAudio {
     music: Music,
@@ -35,103 +32,80 @@ impl GameAudio {
         }
     }
 
-    pub fn update(
-        &mut self,
-        goria: &Egregoria,
-        uiworld: &mut UiWorld,
-        ctx: &mut AudioContext,
-        delta: f32,
-    ) {
+    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
         self.music.update(ctx);
-        self.ambiant.update(goria, uiworld, ctx, delta);
-        self.carsounds.update(goria, uiworld, ctx, delta);
+        self.ambiant.update(goria, uiworld);
+        self.carsounds.update(goria, uiworld, ctx);
     }
 }
 
-new_key_type! {
-    pub struct AudioHandle;
-}
-
-pub struct PlayingSink {
-    sink: UniqueSink,
-    kind: AudioKind,
-    volume: AtomicU32,
-    complex: bool,
-}
-
-impl PlayingSink {
-    pub fn set_volume(&self, ctx: &AudioContext, volume: f32) {
-        self.volume
-            .store(volume.to_bits(), std::sync::atomic::Ordering::SeqCst);
-        self.sink.set_volume(ctx.g_volume(self.kind) * volume);
-    }
-}
-
-type StoredAudio = Buffered<Decoder<Cursor<&'static [u8]>>>;
+type StoredAudio = Arc<Frames<[Sample; 2]>>;
 
 // We allow dead_code because we need to keep OutputStream alive for it to work
 #[allow(dead_code)]
 pub struct AudioContext {
-    out: Option<OutputStream>,
-    out_handle: Option<OutputStreamHandle>,
-    sinks: DenseSlotMap<AudioHandle, PlayingSink>,
-    dummy: AudioHandle,
+    stream: Option<cpal::Stream>,
+    scene_handle: Option<Handle<Mixer<[Sample; 2]>>>,
     cache: FastMap<&'static str, StoredAudio>,
-
-    music_volume: f32,
-    effect_volume: f32,
-    ui_volume: f32,
 }
+
+static MUSIC_SHARED: AtomicU32 = AtomicU32::new(0);
+static EFFECT_SHARED: AtomicU32 = AtomicU32::new(0);
+static UI_SHARED: AtomicU32 = AtomicU32::new(0);
+
+type ControlHandle<T> = Handle<Stop<GlobalGain<T>>>;
+type Stereo = [Sample; 2];
+type BaseSignal = FramesSignal<Stereo>;
 
 impl AudioContext {
     pub fn new() -> Self {
-        let (out, out_handle) = match rodio::OutputStream::try_default() {
+        let host = cpal::default_host();
+        let device = host
+            .default_output_device()
+            .expect("no output device available");
+        let sample_rate = device.default_output_config().unwrap().sample_rate();
+        let config = cpal::StreamConfig {
+            channels: 2,
+            sample_rate,
+            buffer_size: cpal::BufferSize::Default,
+        };
+
+        let (scene_handle, scene) = oddio::split(Mixer::new());
+
+        let stream = match device.build_output_stream(
+            &config,
+            move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
+                let frames = oddio::frame_stereo(data);
+                oddio::run(&scene, sample_rate.0, frames);
+            },
+            move |err| {
+                eprintln!("{:?}", err);
+            },
+        ) {
             Ok(x) => x,
             Err(e) => {
-                log::error!("Couldn't initialize audio because of {}", e);
+                log::error!("Couldn't initialize audio because of {:?}", e);
                 return Self {
-                    out: None,
-                    out_handle: None,
-                    sinks: DenseSlotMap::with_key(),
-                    dummy: AudioHandle::default(),
+                    stream: None,
+                    scene_handle: None,
                     cache: Default::default(),
-
-                    music_volume: 1.0,
-                    effect_volume: 1.0,
-                    ui_volume: 1.0,
                 };
             }
         };
+        stream.play().unwrap();
 
         Self {
-            out: Some(out),
-            out_handle: Some(out_handle),
-            sinks: DenseSlotMap::with_key(),
-            dummy: AudioHandle::default(),
+            stream: Some(stream),
+            scene_handle: Some(scene_handle),
             cache: Default::default(),
-            music_volume: 1.0,
-            effect_volume: 1.0,
-            ui_volume: 1.0,
-        }
-    }
-
-    pub fn update(&mut self) {
-        let to_kill: Vec<_> = self
-            .sinks
-            .iter()
-            .filter(|(_, sink)| sink.sink.is_dead())
-            .map(|(id, _)| id)
-            .collect();
-        for v in to_kill {
-            self.sinks.remove(v);
         }
     }
 
     pub fn g_volume(&self, kind: AudioKind) -> f32 {
         match kind {
-            AudioKind::Music => self.music_volume,
-            AudioKind::Effect => self.effect_volume,
-            AudioKind::Ui => self.ui_volume,
+            AudioKind::Music => f32::from_bits(MUSIC_SHARED.load(Ordering::Relaxed)),
+            AudioKind::Effect => f32::from_bits(EFFECT_SHARED.load(Ordering::Relaxed)),
+            AudioKind::Ui => f32::from_bits(UI_SHARED.load(Ordering::Relaxed)),
         }
     }
 
@@ -144,7 +118,8 @@ impl AudioContext {
         match e {
             Entry::Occupied(x) => Some(x.get().clone()),
             Entry::Vacant(v) => {
-                let buf = match std::fs::read(format!("assets/sounds/{}.ogg", name)) {
+                let p = format!("assets/sounds/{}.ogg", name);
+                let buf = match std::fs::read(&p) {
                     Ok(x) => x,
                     Err(e) => {
                         log::error!("Could not load sound {}: {}", name, e);
@@ -152,170 +127,210 @@ impl AudioContext {
                     }
                 };
 
-                let s = rodio::Decoder::new(std::io::Cursor::new(&*buf.leak()))
-                    .unwrap()
-                    .buffered();
-                Some(v.insert(s).clone())
+                let mut decoder =
+                    lewton::inside_ogg::OggStreamReader::new(std::io::Cursor::new(buf)).unwrap();
+
+                let mut samples = vec![];
+                let mono = decoder.ident_hdr.audio_channels == 1;
+
+                while let Some(packets) = decoder.read_dec_packet().expect("error decoding") {
+                    if mono {
+                        let mut it = packets.into_iter();
+                        let center = it.next().unwrap();
+                        samples.extend(center.into_iter().map(|x| {
+                            let v = x as f32 / (i16::MAX as f32);
+                            [v, v]
+                        }))
+                    } else {
+                        let mut it = packets.into_iter();
+                        let left = it.next().unwrap();
+                        let right = it.next().unwrap();
+                        samples.extend(left.into_iter().zip(right).map(|(x, y)| {
+                            [x as f32 / (i16::MAX as f32), y as f32 / (i16::MAX as f32)]
+                        }))
+                    }
+                }
+
+                log::info!(
+                    "decoding {}: {} sps|{} total samples|{} channels",
+                    &p,
+                    decoder.ident_hdr.audio_sample_rate,
+                    samples.len(),
+                    decoder.ident_hdr.audio_channels,
+                );
+
+                Some(
+                    v.insert(Frames::from_slice(
+                        decoder.ident_hdr.audio_sample_rate,
+                        &samples,
+                    ))
+                    .clone(),
+                )
             }
         }
     }
 
     pub fn play(&mut self, name: &'static str, kind: AudioKind) {
-        if let Some(ref h) = self.out_handle {
+        let vol = self.g_volume(kind);
+        if let Some(ref mut h) = self.scene_handle {
             if let Some(x) = Self::get(&mut self.cache, name) {
+                if let AudioKind::Music = kind {
+                    log::error!("shouldn't play music with base play as it's not affected by global volume changes");
+                }
                 log::info!("playing {}", name);
-                let _ = h.play_raw(x.convert_samples().amplify(self.g_volume(kind)));
+                h.control().play(Gain::new(FramesSignal::new(x, 0.0), vol));
             }
         }
     }
 
-    pub fn play_with_control<S>(
+    pub fn play_with_control<S: 'static>(
         &mut self,
         name: &'static str,
         transform: impl FnOnce(StoredAudio) -> S,
         kind: AudioKind,
-        complex: bool,
-    ) -> AudioHandle
+    ) -> Option<ControlHandle<S>>
     where
-        S: Source + Send + 'static,
-        S::Item: Sample + Send,
+        S: Signal<Frame = [Sample; 2]> + Send,
     {
-        if let Some(ref h) = self.out_handle {
+        if let Some(ref mut h) = self.scene_handle {
             if let Some(x) = Self::get(&mut self.cache, name) {
-                let sink = UniqueSink::try_new(h, transform(x), complex).unwrap();
-                return self.sinks.insert(PlayingSink {
-                    sink,
+                let test = GlobalGain {
+                    volume: RefCell::new(Smoothed::new(1.0)),
                     kind,
-                    volume: 0.0f32.to_bits().into(),
-                    complex,
-                });
+                    inner: transform(x),
+                };
+                let hand = h.control().play(test);
+                return Some(hand);
             }
         }
-        self.dummy
-    }
-
-    pub fn stop(&self, handle: AudioHandle) {
-        if let Some(x) = self.sinks.get(handle) {
-            x.sink.stop();
-        }
-    }
-
-    pub fn set_volume(&self, handle: AudioHandle, volume: f32) {
-        if let Some(x) = self.sinks.get(handle) {
-            let volume = volume.max(0.0).min(2.0);
-            x.set_volume(self, volume);
-        }
-    }
-
-    pub fn set_speed(&self, handle: AudioHandle, speed: f32) {
-        if let Some(x) = self.sinks.get(handle) {
-            if !x.complex {
-                log::warn!("trying to set speed of {:?} but it is not a complex sound. This won't do anything", handle);
-                return;
-            }
-            let speed = speed.max(0.0).min(2.0);
-            x.sink.set_speed(speed);
-        }
-    }
-
-    pub fn is_over(&self, handle: AudioHandle) -> bool {
-        if let Some(x) = self.sinks.get(handle) {
-            x.sink.is_dead()
-        } else {
-            true
-        }
-    }
-
-    pub fn set_volume_smooth(&self, handle: AudioHandle, volume: f32, max_change: f32) {
-        if let Some(x) = self.sinks.get(handle) {
-            let cur_volume = f32::from_bits(x.volume.load(Ordering::SeqCst));
-            let volume = volume.max(0.0).min(2.0);
-            self.set_volume(
-                handle,
-                cur_volume + (volume - cur_volume).max(-max_change).min(max_change),
-            )
-        }
+        None
     }
 
     pub fn set_settings(&mut self, settings: &Settings) {
-        let mut changed = false;
-
         let ui_volume = (settings.ui_volume_percent / 100.0).powi(2);
-        if (self.ui_volume - ui_volume).abs() > f32::EPSILON {
-            self.ui_volume = ui_volume;
-            changed = true;
+        if (f32::from_bits(UI_SHARED.load(Ordering::Relaxed)) - ui_volume).abs() > f32::EPSILON {
+            UI_SHARED.store(ui_volume.to_bits(), Ordering::Relaxed);
         }
 
         let music_volume = (settings.music_volume_percent / 100.0).powi(2);
-        if (self.music_volume - music_volume).abs() > f32::EPSILON {
-            self.music_volume = music_volume;
-            changed = true;
+        if (f32::from_bits(MUSIC_SHARED.load(Ordering::Relaxed)) - music_volume).abs()
+            > f32::EPSILON
+        {
+            MUSIC_SHARED.store(music_volume.to_bits(), Ordering::Relaxed);
         }
 
         let effect_volume = (settings.effects_volume_percent / 100.0).powi(2);
-        if (self.effect_volume - effect_volume).abs() > f32::EPSILON {
-            self.effect_volume = effect_volume;
-            changed = true;
+        if (f32::from_bits(EFFECT_SHARED.load(Ordering::Relaxed)) - effect_volume).abs()
+            > f32::EPSILON
+        {
+            EFFECT_SHARED.store(effect_volume.to_bits(), Ordering::Relaxed);
+        }
+    }
+}
+
+pub struct GlobalGain<T: ?Sized> {
+    volume: RefCell<Smoothed<f32>>,
+    kind: AudioKind,
+    inner: T,
+}
+
+impl<T: Signal<Frame = [Sample; 2]>> Signal for GlobalGain<T> {
+    type Frame = [Sample; 2];
+
+    fn sample(&self, interval: f32, out: &mut [Self::Frame]) {
+        self.inner.sample(interval, out);
+
+        fn upd(x: &AtomicU32, gain: &mut std::cell::RefMut<Smoothed<f32>>) {
+            let shared = f32::from_bits(x.load(Ordering::Relaxed));
+            if gain.get() != shared {
+                gain.set(shared);
+            }
         }
 
-        if !changed {
+        let mut gain = self.volume.borrow_mut();
+        match self.kind {
+            AudioKind::Music => {
+                upd(&MUSIC_SHARED, &mut gain);
+            }
+            AudioKind::Effect => {
+                upd(&EFFECT_SHARED, &mut gain);
+            }
+            AudioKind::Ui => {
+                upd(&UI_SHARED, &mut gain);
+            }
+        };
+        for x in out {
+            let g = gain.get();
+            x[0] *= g;
+            x[1] *= g;
+            gain.advance(interval / 0.1);
+        }
+    }
+
+    fn remaining(&self) -> f32 {
+        self.inner.remaining()
+    }
+
+    fn handle_dropped(&self) {
+        self.inner.handle_dropped()
+    }
+}
+
+impl<T> Filter for GlobalGain<T> {
+    type Inner = T;
+
+    fn inner(&self) -> &Self::Inner {
+        &self.inner
+    }
+}
+
+pub struct FadeIn<T: ?Sized> {
+    fadetime: f32,
+    advance: RefCell<f32>,
+    inner: T,
+}
+
+impl<T> FadeIn<T> {
+    pub fn new(signal: T, fadetime: f32) -> Self {
+        Self {
+            fadetime,
+            advance: RefCell::new(0.0),
+            inner: signal,
+        }
+    }
+}
+
+impl<T: Signal<Frame = [Sample; 2]>> Signal for FadeIn<T> {
+    type Frame = [Sample; 2];
+
+    fn sample(&self, interval: f32, out: &mut [Self::Frame]) {
+        self.inner.sample(interval, out);
+
+        let mut advance = self.advance.borrow_mut();
+        if *advance >= 1.0 {
             return;
         }
 
-        for sink in self.sinks.values() {
-            sink.set_volume(self, f32::from_bits(sink.volume.load(Ordering::SeqCst)));
+        for x in out {
+            x[0] *= *advance;
+            x[1] *= *advance;
+            *advance += interval / self.fadetime;
         }
     }
-}
 
-struct PrintOnFirstSample<S: Source<Item = f32>> {
-    s: S,
-    printed: bool,
-}
+    fn remaining(&self) -> f32 {
+        self.inner.remaining()
+    }
 
-trait SourceExt: Source<Item = f32> + Sized {
-    fn print_on_first(self) -> PrintOnFirstSample<Self>;
-}
-
-impl<S: Source<Item = f32>> SourceExt for S {
-    fn print_on_first(self) -> PrintOnFirstSample<S> {
-        PrintOnFirstSample {
-            s: self,
-            printed: false,
-        }
+    fn handle_dropped(&self) {
+        self.inner.handle_dropped()
     }
 }
 
-impl<S: Source<Item = f32>> Iterator for PrintOnFirstSample<S> {
-    type Item = f32;
+impl<T> Filter for FadeIn<T> {
+    type Inner = T;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if !self.printed {
-            self.printed = true;
-            log::info!("first sample");
-        }
-        self.s.next()
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.s.size_hint()
-    }
-}
-
-impl<S: Source<Item = f32>> Source for PrintOnFirstSample<S> {
-    fn current_frame_len(&self) -> Option<usize> {
-        self.s.current_frame_len()
-    }
-
-    fn channels(&self) -> u16 {
-        self.s.channels()
-    }
-
-    fn sample_rate(&self) -> u32 {
-        self.s.sample_rate()
-    }
-
-    fn total_duration(&self) -> Option<Duration> {
-        self.s.total_duration()
+    fn inner(&self) -> &Self::Inner {
+        &self.inner
     }
 }

@@ -1,22 +1,21 @@
-use crate::audio::{AudioContext, AudioHandle};
+use crate::audio::{AudioContext, ControlHandle, Stereo};
 use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::physics::CollisionWorld;
 use egregoria::Egregoria;
 use flat_spatial::grid::GridHandle;
 use geom::{Camera, AABB};
-use rodio::Source;
+use oddio::{Cycle, Gain, Seek, Speed, Stop};
 use slotmap::SecondaryMap;
-use std::time::Duration;
 
 pub struct CarSound {
-    road: AudioHandle,
-    engine: AudioHandle,
+    road: Option<ControlHandle<Speed<Gain<Cycle<Stereo>>>>>,
+    engine: Option<ControlHandle<Speed<Gain<Cycle<Stereo>>>>>,
 }
 
 pub struct CarSounds {
     sounds: SecondaryMap<GridHandle, CarSound>,
-    generic_car_sound: AudioHandle,
+    generic_car_sound: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
 }
 
 impl CarSounds {
@@ -25,20 +24,13 @@ impl CarSounds {
             sounds: SecondaryMap::new(),
             generic_car_sound: ctx.play_with_control(
                 "car_loop",
-                |x| x.repeat_infinite(),
+                |x| Gain::new(Cycle::new(x), 0.0),
                 AudioKind::Effect,
-                false,
             ),
         }
     }
 
-    pub fn update(
-        &mut self,
-        goria: &Egregoria,
-        uiworld: &mut UiWorld,
-        ctx: &mut AudioContext,
-        delta: f32,
-    ) {
+    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
         let coworld = goria.read::<CollisionWorld>();
         let campos = uiworld.read::<Camera>().eye();
         let cambox = AABB::new(campos.xy(), campos.xy()).expand(100.0);
@@ -48,7 +40,7 @@ impl CarSounds {
         #[cfg(not(debug_assertions))]
         const MAX_SOUNDS: usize = 30;
         #[cfg(debug_assertions)]
-        const MAX_SOUNDS: usize = 10;
+        const MAX_SOUNDS: usize = 1;
 
         let mut to_remove = vec![];
 
@@ -64,8 +56,12 @@ impl CarSounds {
 
         for h in to_remove {
             let cs = self.sounds.remove(h).unwrap();
-            ctx.stop(cs.road);
-            ctx.stop(cs.engine);
+            if let Some(mut road) = cs.road {
+                road.control::<Stop<_>, _>().stop();
+            }
+            if let Some(mut engine) = cs.engine {
+                engine.control::<Stop<_>, _>().stop();
+            }
         }
 
         // Gather
@@ -88,23 +84,21 @@ impl CarSounds {
                 let engine = ctx.play_with_control(
                     "car_engine",
                     |x| {
-                        x.repeat_infinite().skip_duration(Duration::from_millis(
-                            (common::rand::rand2(pos.x, pos.y) * 1000.0) as u64,
-                        ))
+                        let cycle = Cycle::new(x);
+                        cycle.seek(common::rand::rand2(pos.x, pos.y));
+                        Speed::new(Gain::new(cycle, 0.0))
                     },
                     AudioKind::Effect,
-                    true,
                 );
 
                 let road = ctx.play_with_control(
                     "car_loop",
                     |x| {
-                        x.repeat_infinite().skip_duration(Duration::from_millis(
-                            (common::rand::rand2(pos.x, pos.y) * 1000.0) as u64,
-                        ))
+                        let cycle = Cycle::new(x);
+                        cycle.seek(common::rand::rand2(pos.x, pos.y));
+                        Speed::new(Gain::new(cycle, 0.0))
                     },
                     AudioKind::Effect,
-                    true,
                 );
 
                 self.sounds.insert(h, CarSound { road, engine });
@@ -121,11 +115,18 @@ impl CarSounds {
             let speed_to_me = his_speed.dot(dir_to_me);
             let boost = 300.0 / (300.0 - speed_to_me);
 
-            ctx.set_volume(cs.road, obj.speed.sqrt() * 3.0 / pos.z0().distance(campos));
-            ctx.set_speed(cs.road, boost);
+            if let Some(ref mut road) = cs.road {
+                road.control::<Gain<_>, _>()
+                    .set_amplitude_ratio(obj.speed.sqrt() * 3.0 / pos.z0().distance(campos));
+                road.control::<Speed<_>, _>().set_speed(boost)
+            }
 
-            ctx.set_volume(cs.engine, obj.speed.sqrt() / pos.z0().distance(campos));
-            ctx.set_speed(cs.engine, boost);
+            if let Some(ref mut engine) = cs.road {
+                engine
+                    .control::<Gain<_>, _>()
+                    .set_amplitude_ratio(obj.speed.sqrt() / pos.z0().distance(campos));
+                engine.control::<Speed<_>, _>().set_speed(boost)
+            }
         }
 
         if campos.z < 1000.0 {
@@ -134,13 +135,14 @@ impl CarSounds {
                 .filter_map(|(h, _)| coworld.get(h))
                 .filter(|(_, obj)| matches!(obj.group, egregoria::physics::PhysicsGroup::Vehicles))
                 .count();
-            ctx.set_volume_smooth(
-                self.generic_car_sound,
-                ((cars_on_screen as f32).min(100.0) / 100.0 * (1.0 - campos.z / 1000.0)).min(0.03),
-                delta,
-            )
-        } else {
-            ctx.set_volume_smooth(self.generic_car_sound, 0.0, delta);
+            if let Some(ref mut s) = self.generic_car_sound {
+                s.control::<Gain<_>, _>().set_amplitude_ratio(
+                    ((cars_on_screen as f32).min(100.0) / 100.0 * (1.0 - campos.z / 1000.0))
+                        .min(0.03),
+                );
+            }
+        } else if let Some(ref mut s) = self.generic_car_sound {
+            s.control::<Gain<_>, _>().set_amplitude_ratio(0.0);
         }
     }
 }

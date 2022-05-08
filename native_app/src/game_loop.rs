@@ -230,12 +230,8 @@ impl State {
         for (sound, kind) in self.uiw.write::<ImmediateSound>().orders.drain(..) {
             ctx.audio.play(sound, kind);
         }
-        self.all_audio.update(
-            &self.goria,
-            &mut self.uiw,
-            &mut ctx.audio,
-            real_delta as f32,
-        );
+        self.all_audio
+            .update(&self.goria, &mut self.uiw, &mut ctx.audio);
 
         self.manage_entity_follow();
         self.camera.update(ctx);
