@@ -30,6 +30,8 @@ impl PolyLine3 {
         }
     }
 
+    /// # Safety
+    /// Must not be used with advanced functions if passed vector is empty, as it would lead to UB
     pub unsafe fn new_unchecked(x: Vec<Vec3>) -> Self {
         Self {
             l: length(&*x),
@@ -55,7 +57,7 @@ impl PolyLine3 {
         self.points.clear();
         self.points.extend(s);
         self.l = length(&self.points);
-        if self.points.len() == 0 {
+        if self.points.is_empty() {
             panic!("cannot have empty polyline3");
         }
     }

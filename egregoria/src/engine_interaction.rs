@@ -143,7 +143,7 @@ impl WorldCommand {
             MapRemoveRoad(id) => drop(goria.map_mut().remove_road(id)),
             MapRemoveBuilding(id) => drop(goria.map_mut().remove_building(id)),
             MapBuildTrainstation(left, right) => {
-                drop(goria.map_mut().build_trainstation(left, right))
+                goria.map_mut().build_trainstation(left, right);
             }
             MapBuildHouse(id) => {
                 if let Some(build) = goria.map_mut().build_house(id) {
