@@ -1,4 +1,7 @@
-use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap, Terrain};
+use crate::{
+    Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap, Terrain,
+    TrainStations,
+};
 use serde::{Deserialize, Serialize};
 use std::num::Wrapping;
 
@@ -11,6 +14,7 @@ pub(crate) struct SerializedMap {
     pub parking: ParkingSpots,
     pub lots: Lots,
     pub terrain: Terrain,
+    pub trainstations: TrainStations,
     pub dirt_id: u32,
 }
 
@@ -24,6 +28,7 @@ impl From<&Map> for SerializedMap {
             parking: m.parking.clone(),
             lots: m.lots.clone(),
             terrain: m.terrain.clone(),
+            trainstations: m.trainstations.clone(),
             dirt_id: m.dirt_id.0,
         }
     }
@@ -42,6 +47,7 @@ impl From<SerializedMap> for Map {
             parking: sel.parking,
             terrain: sel.terrain,
             dirt_id: Wrapping(sel.dirt_id),
+            trainstations: sel.trainstations,
         }
     }
 }

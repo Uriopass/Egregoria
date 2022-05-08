@@ -36,6 +36,7 @@ pub enum WorldCommand {
     MapRemoveRoad(RoadID),
     MapRemoveBuilding(BuildingID),
     MapBuildHouse(LotID),
+    MapBuildTrainstation(Vec3, Vec3),
     MapMakeConnection(MapProject, MapProject, Option<Vec2>, LanePattern),
     MapUpdateIntersectionPolicy(IntersectionID, TurnPolicy, LightPolicy),
     MapBuildSpecialBuilding(RoadID, OBB, BuildingKind, BuildingGen),
@@ -49,7 +50,7 @@ pub enum WorldCommand {
 use crate::economy::Government;
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::time::GameTime;
-use geom::{Transform, Vec2, OBB};
+use geom::{Transform, Vec2, Vec3, OBB};
 use WorldCommand::*;
 
 impl WorldCommands {
@@ -141,6 +142,9 @@ impl WorldCommand {
             MapRemoveIntersection(id) => goria.map_mut().remove_intersection(id),
             MapRemoveRoad(id) => drop(goria.map_mut().remove_road(id)),
             MapRemoveBuilding(id) => drop(goria.map_mut().remove_building(id)),
+            MapBuildTrainstation(left, right) => {
+                drop(goria.map_mut().build_trainstation(left, right))
+            }
             MapBuildHouse(id) => {
                 if let Some(build) = goria.map_mut().build_house(id) {
                     let mut infos = goria.write::<BuildingInfos>();

@@ -30,6 +30,7 @@ pub struct Map {
     pub(crate) intersections: Intersections,
     pub(crate) buildings: Buildings,
     pub(crate) lots: Lots,
+    pub(crate) trainstations: TrainStations,
     pub(crate) spatial_map: SpatialMap,
     pub terrain: Terrain,
     pub parking: ParkingSpots,
@@ -57,6 +58,7 @@ impl Map {
             terrain: Terrain::default(),
             dirt_id: Wrapping(1),
             spatial_map: SpatialMap::default(),
+            trainstations: Default::default(),
         }
     }
 
@@ -192,6 +194,28 @@ impl Map {
         v
     }
 
+    pub fn build_trainstation(&mut self, left: Vec3, right: Vec3) -> TrainStationID {
+        info!("build_trainstation {:?} {:?}", left, right);
+
+        self.dirt_id += Wrapping(1);
+
+        let id = TrainStation::make(
+            &mut self.trainstations,
+            &mut self.roads,
+            &mut self.lanes,
+            &mut self.parking,
+            &mut self.intersections,
+            &mut self.spatial_map,
+            left,
+            right,
+        );
+
+        #[cfg(debug_assertions)]
+        self.check_invariants();
+
+        id
+    }
+
     pub fn build_house(&mut self, id: LotID) -> Option<BuildingID> {
         info!("build house on {:?}", id);
         self.dirt_id += Wrapping(1);
@@ -209,8 +233,8 @@ impl Map {
             BuildingKind::House,
             BuildingGen::House,
         );
-        //#[cfg(debug_assertions)]
-        //self.check_invariants();
+        #[cfg(debug_assertions)]
+        self.check_invariants();
         v
     }
 

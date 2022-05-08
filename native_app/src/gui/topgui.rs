@@ -211,6 +211,10 @@ impl Gui {
                     tok.pop(ui);
                     let pat = &mut roadbuild.pattern_builder;
 
+                    if ui.button_with_size("Rail", [rbw, 30.0]) {
+                        *pat = *LanePatternBuilder::new().rail(true);
+                    }
+
                     if ui.button_with_size("Street", [rbw, 30.0]) {
                         *pat = LanePatternBuilder::new();
                     }

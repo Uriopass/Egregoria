@@ -106,6 +106,7 @@ pub struct LanePatternBuilder {
     pub sidewalks: bool,
     pub parking: bool,
     pub one_way: bool,
+    pub rail: bool,
 }
 
 impl Default for LanePatternBuilder {
@@ -122,6 +123,7 @@ impl LanePatternBuilder {
             sidewalks: true,
             parking: true,
             one_way: false,
+            rail: false,
         }
     }
 
@@ -150,7 +152,17 @@ impl LanePatternBuilder {
         self
     }
 
+    pub fn rail(&mut self, rail: bool) -> &mut Self {
+        self.rail = rail;
+        self
+    }
+
     pub fn width(self) -> f32 {
+        if self.rail {
+            let wayf = if self.one_way { 1.0 } else { 2.0 };
+            return self.n_lanes as f32 * LaneKind::Rail.width() * wayf;
+        }
+
         let mut w = 0.0;
         let wayf = if self.one_way { 1.0 } else { 2.0 };
         if self.sidewalks {
@@ -187,6 +199,15 @@ impl LanePatternBuilder {
         if self.sidewalks {
             backward.push(LaneKind::Walking);
             forward.push(LaneKind::Walking);
+        }
+
+        if self.rail {
+            backward = if self.one_way {
+                vec![]
+            } else {
+                (0..self.n_lanes).map(|_| LaneKind::Rail).collect()
+            };
+            forward = (0..self.n_lanes).map(|_| LaneKind::Rail).collect();
         }
 
         LanePattern {

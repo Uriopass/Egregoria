@@ -126,6 +126,10 @@ impl Terrain {
             }
         }
 
+        if cfg!(debug_assertions) {
+            return;
+        }
+
         let rchunk = common::rand::rand2(x as f32, y as f32);
         let pchunk = CHUNK_SIZE as f32 * vec2(x as f32, y as f32);
 
