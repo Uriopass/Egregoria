@@ -1,5 +1,6 @@
 use crate::audio::AudioContext;
 use crate::game_loop;
+use crate::init::SOUNDS_LIST;
 use crate::input::InputContext;
 use egregoria::utils::time::GameTime;
 use futures::executor;
@@ -60,7 +61,15 @@ impl Context {
             window.inner_size().height,
         ));
         let input = InputContext::default();
-        let audio = AudioContext::new();
+        let mut audio = AudioContext::new();
+
+        audio.preload(
+            SOUNDS_LIST
+                .files()
+                .flat_map(|x| x.path().file_name())
+                .flat_map(|x| x.to_str())
+                .map(|x| x.trim_end_matches(".ogg")),
+        );
 
         Self {
             gfx,

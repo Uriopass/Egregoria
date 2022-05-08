@@ -37,6 +37,7 @@ paste         = "1.0.4"
 atomic_refcell = "0.1.6"
 rayon         = "1.4.0"
 profiling     = "1.0.1"
+include_dir   = "0.7.2"
 
 [features]
 default = []

@@ -12,8 +12,8 @@ use common::FastMap;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use egregoria::Egregoria;
 use oddio::{Filter, Frames, FramesSignal, Gain, Handle, Mixer, Sample, Signal, Smoothed, Stop};
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use std::cell::RefCell;
-use std::collections::hash_map::Entry;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
@@ -46,7 +46,7 @@ type StoredAudio = Arc<Frames<[Sample; 2]>>;
 pub struct AudioContext {
     stream: Option<cpal::Stream>,
     scene_handle: Option<Handle<Mixer<[Sample; 2]>>>,
-    cache: FastMap<&'static str, StoredAudio>,
+    cache: FastMap<String, StoredAudio>,
 }
 
 static MUSIC_SHARED: AtomicU32 = AtomicU32::new(0);
@@ -101,6 +101,16 @@ impl AudioContext {
         }
     }
 
+    pub fn preload<'a>(&mut self, sounds: impl Iterator<Item = &'a str> + Send) {
+        self.cache.extend(
+            sounds
+                .par_bridge()
+                .flat_map(|x| Some(x.to_string()).zip(Self::decode(x)))
+                .collect::<Vec<_>>()
+                .into_iter(),
+        );
+    }
+
     pub fn g_volume(&self, kind: AudioKind) -> f32 {
         match kind {
             AudioKind::Music => f32::from_bits(MUSIC_SHARED.load(Ordering::Relaxed)),
@@ -109,65 +119,65 @@ impl AudioContext {
         }
     }
 
-    fn get(
-        cache: &mut FastMap<&'static str, StoredAudio>,
-        name: &'static str,
-    ) -> Option<StoredAudio> {
-        let e = cache.entry(name);
+    fn decode(name: &str) -> Option<StoredAudio> {
+        let p = format!("assets/sounds/{}.ogg", name);
+        let buf = match std::fs::read(&p) {
+            Ok(x) => x,
+            Err(e) => {
+                log::error!("Could not load sound {}: {}", name, e);
+                return None;
+            }
+        };
 
-        match e {
-            Entry::Occupied(x) => Some(x.get().clone()),
-            Entry::Vacant(v) => {
-                let p = format!("assets/sounds/{}.ogg", name);
-                let buf = match std::fs::read(&p) {
-                    Ok(x) => x,
-                    Err(e) => {
-                        log::error!("Could not load sound {}: {}", name, e);
-                        return None;
-                    }
-                };
+        let mut decoder =
+            lewton::inside_ogg::OggStreamReader::new(std::io::Cursor::new(buf)).unwrap();
 
-                let mut decoder =
-                    lewton::inside_ogg::OggStreamReader::new(std::io::Cursor::new(buf)).unwrap();
+        let mut samples = vec![];
+        let mono = decoder.ident_hdr.audio_channels == 1;
 
-                let mut samples = vec![];
-                let mono = decoder.ident_hdr.audio_channels == 1;
-
-                while let Some(packets) = decoder.read_dec_packet().expect("error decoding") {
-                    if mono {
-                        let mut it = packets.into_iter();
-                        let center = it.next().unwrap();
-                        samples.extend(center.into_iter().map(|x| {
-                            let v = x as f32 / (i16::MAX as f32);
-                            [v, v]
-                        }))
-                    } else {
-                        let mut it = packets.into_iter();
-                        let left = it.next().unwrap();
-                        let right = it.next().unwrap();
-                        samples.extend(left.into_iter().zip(right).map(|(x, y)| {
-                            [x as f32 / (i16::MAX as f32), y as f32 / (i16::MAX as f32)]
-                        }))
-                    }
-                }
-
-                log::info!(
-                    "decoding {}: {} sps|{} total samples|{} channels",
-                    &p,
-                    decoder.ident_hdr.audio_sample_rate,
-                    samples.len(),
-                    decoder.ident_hdr.audio_channels,
-                );
-
-                Some(
-                    v.insert(Frames::from_slice(
-                        decoder.ident_hdr.audio_sample_rate,
-                        &samples,
-                    ))
-                    .clone(),
+        while let Some(packets) = decoder.read_dec_packet().expect("error decoding") {
+            if mono {
+                let mut it = packets.into_iter();
+                let center = it.next().unwrap();
+                samples.extend(center.into_iter().map(|x| {
+                    let v = x as f32 / (i16::MAX as f32);
+                    [v, v]
+                }))
+            } else {
+                let mut it = packets.into_iter();
+                let left = it.next().unwrap();
+                let right = it.next().unwrap();
+                samples.extend(
+                    left.into_iter()
+                        .zip(right)
+                        .map(|(x, y)| [x as f32 / (i16::MAX as f32), y as f32 / (i16::MAX as f32)]),
                 )
             }
         }
+
+        log::info!(
+            "decoding {}: {} sps|{} total samples|{} channels",
+            &p,
+            decoder.ident_hdr.audio_sample_rate,
+            samples.len(),
+            decoder.ident_hdr.audio_channels,
+        );
+
+        return Some(Frames::from_slice(
+            decoder.ident_hdr.audio_sample_rate,
+            &samples,
+        ));
+    }
+
+    fn get(cache: &mut FastMap<String, StoredAudio>, name: &str) -> Option<StoredAudio> {
+        if let Some(v) = cache.get(name) {
+            return Some(v.clone());
+        }
+        if let Some(decoded) = Self::decode(name) {
+            cache.insert(name.to_string(), decoded.clone());
+            return Some(decoded);
+        }
+        None
     }
 
     pub fn play(&mut self, name: &'static str, kind: AudioKind) {
