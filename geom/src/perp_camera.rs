@@ -206,6 +206,7 @@ impl PerspectiveFov {
 }
 
 impl PerspectiveFov {
+    #[rustfmt::skip]
     pub fn mk_proj(&self) -> Matrix4 {
         assert!(
             self.fovy_angle > 0.0,
@@ -241,29 +242,14 @@ impl PerspectiveFov {
 
         let f = 1.0 / (self.fovy_angle / 2.0).tan();
 
-        let c0r0 = f / self.aspect;
-        let c0r1 = 0.0;
-        let c0r2 = 0.0;
-        let c0r3 = 0.0;
+        let a = (self.far + self.near) / (self.near - self.far);
+        let b = 2.0*self.far*self.near / (self.near - self.far);
 
-        let c1r0 = 0.0;
-        let c1r1 = f;
-        let c1r2 = 0.0;
-        let c1r3 = 0.0;
+        let c0 = [f / self.aspect, 0.0, 0.0, 0.0];
+        let c1 = [0.0            , f  , 0.0, 0.0];
+        let c2 = [0.0            , 0.0, a,  -1.0];
+        let c3 = [0.0            , 0.0, b,   0.0];
 
-        let c2r0 = 0.0;
-        let c2r1 = 0.0;
-        let c2r2 = (self.far + self.near) / (self.near - self.far);
-        let c2r3 = -1.0;
-
-        let c3r0 = 0.0;
-        let c3r1 = 0.0;
-        let c3r2 = (2.0 * self.far * self.near) / (self.near - self.far);
-        let c3r3 = 0.0;
-
-        Matrix4::from([
-            c0r0, c0r1, c0r2, c0r3, c1r0, c1r1, c1r2, c1r3, c2r0, c2r1, c2r2, c2r3, c3r0, c3r1,
-            c3r2, c3r3,
-        ])
+        Matrix4::from([c0, c1, c2, c3])
     }
 }
