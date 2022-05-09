@@ -21,7 +21,7 @@ impl RoadRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
             trees: None,
             trees_builder: InstancedMeshBuilder::new(
-                load_mesh("assets/pine.glb", gfx).expect("could not load pine"),
+                load_mesh("assets/models/pine.glb", gfx).expect("could not load pine"),
             ),
             trees_dirt_id: 0,
         }

@@ -21,10 +21,12 @@ impl InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 gfx.texture("assets/path_not_found.png", "path_not_found"),
             ),
-            cars: InstancedMeshBuilder::new(load_mesh("assets/simple_car.glb", gfx).unwrap()),
-            trucks: InstancedMeshBuilder::new(load_mesh("assets/truck.glb", gfx).unwrap()),
+            cars: InstancedMeshBuilder::new(
+                load_mesh("assets/models/simple_car.glb", gfx).unwrap(),
+            ),
+            trucks: InstancedMeshBuilder::new(load_mesh("assets/models/truck.glb", gfx).unwrap()),
             pedestrians: InstancedMeshBuilder::new(
-                load_mesh("assets/pedestrian.glb", gfx).unwrap(),
+                load_mesh("assets/models/pedestrian.glb", gfx).unwrap(),
             ),
         }
     }
