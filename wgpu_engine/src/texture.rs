@@ -311,7 +311,11 @@ impl TextureBuilder {
         if let Some(x) = Self::try_from_path(r) {
             x
         } else {
-            panic!("texture not found at path: {}", r.display())
+            panic!(
+                "texture not found at path: {} (in dir: {:?})",
+                r.display(),
+                std::env::current_dir().as_ref().map(|x| x.display())
+            )
         }
     }
 
