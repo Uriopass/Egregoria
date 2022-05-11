@@ -1,8 +1,10 @@
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::{Location, Pedestrian};
+use egregoria::vehicles::railvehicle::Locomotive;
 use egregoria::vehicles::{Vehicle, VehicleKind};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec3, V3};
+use hecs::With;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder,
@@ -11,6 +13,7 @@ use wgpu_engine::{
 pub struct InstancedRender {
     pub path_not_found: SpriteBatchBuilder,
     pub cars: InstancedMeshBuilder,
+    pub trains: InstancedMeshBuilder,
     pub trucks: InstancedMeshBuilder,
     pub pedestrians: InstancedMeshBuilder,
 }
@@ -24,6 +27,7 @@ impl InstancedRender {
             cars: InstancedMeshBuilder::new(
                 load_mesh("assets/models/simple_car.glb", gfx).unwrap(),
             ),
+            trains: InstancedMeshBuilder::new(load_mesh("assets/models/train.glb", gfx).unwrap()),
             trucks: InstancedMeshBuilder::new(load_mesh("assets/models/truck.glb", gfx).unwrap()),
             pedestrians: InstancedMeshBuilder::new(
                 load_mesh("assets/models/pedestrian.glb", gfx).unwrap(),
@@ -48,6 +52,15 @@ impl InstancedRender {
                 VehicleKind::Truck => self.trucks.instances.push(instance),
                 _ => {}
             }
+        }
+
+        for (_, trans) in goria.world().query::<With<Locomotive, &Transform>>().iter() {
+            let instance = MeshInstance {
+                pos: trans.position,
+                dir: trans.dir,
+                tint: LinearColor::WHITE,
+            };
+            self.trains.instances.push(instance);
         }
 
         for (_, (trans, ped, loc)) in goria
@@ -96,6 +109,9 @@ impl InstancedRender {
             fctx.objs.push(Box::new(x));
         }
         if let Some(x) = self.pedestrians.build(fctx.gfx) {
+            fctx.objs.push(Box::new(x));
+        }
+        if let Some(x) = self.trains.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }
     }

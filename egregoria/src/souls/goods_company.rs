@@ -63,7 +63,7 @@ impl Default for GoodsCompanyRegistry {
                     },
                     n_workers: 10,
                     size: 165.0,
-                    asset_location: "assets/coal_power_plant.glb",
+                    asset_location: "assets/models/coal_power_plant.glb",
                 },
                 GoodsCompanyDescription {
                     name: "Useless warehouse",
@@ -456,7 +456,7 @@ impl Default for GoodsCompanyRegistry {
                     },
                     n_workers: 3,
                     size: 10.0,
-                    asset_location: "assets/bakery.glb",
+                    asset_location: "assets/models/bakery.glb",
                 },
                 GoodsCompanyDescription {
                     name: "Cereal Factory",
@@ -473,7 +473,7 @@ impl Default for GoodsCompanyRegistry {
                     },
                     n_workers: 10,
                     size: 80.0,
-                    asset_location: "assets/flour_factory.glb",
+                    asset_location: "assets/models/flour_factory.glb",
                 },
                 GoodsCompanyDescription {
                     name: "Cereal Farm",

@@ -209,8 +209,7 @@ impl State {
         self.camera.camera_movement(
             ctx,
             real_delta as f32,
-            !self.imgui_render.last_mouse_captured,
-            !self.imgui_render.last_kb_captured,
+            &*self.uiw.read::<InputMap>(),
             &settings,
             |p| map.terrain.height(p),
         );

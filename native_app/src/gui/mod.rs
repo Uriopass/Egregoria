@@ -20,6 +20,7 @@ pub mod roadeditor;
 pub mod selectable;
 pub mod specialbuilding;
 pub mod topgui;
+pub mod trainstation;
 
 pub mod inputmap;
 pub mod windows;
@@ -37,6 +38,7 @@ pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     roadeditor::roadeditor(goria, uiworld);
     selectable::selectable(goria, uiworld);
     specialbuilding::specialbuilding(goria, uiworld);
+    trainstation::trainstation(goria, uiworld);
     hand_reset(uiworld);
 }
 
@@ -72,6 +74,7 @@ pub enum Tool {
     Bulldozer,
     LotBrush,
     SpecialBuilding,
+    TrainStation,
 }
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]
@@ -82,6 +85,7 @@ pub enum UiTex {
     Bulldozer,
     Buildings,
     LotBrush,
+    TrainStation,
 }
 
 const UI_TEXTURES: &[(UiTex, &str)] = &[
@@ -91,6 +95,7 @@ const UI_TEXTURES: &[(UiTex, &str)] = &[
     (UiTex::Bulldozer, "assets/ui/bulldozer.png"),
     (UiTex::Buildings, "assets/ui/buildings.png"),
     (UiTex::LotBrush, "assets/ui/lotbrush.png"),
+    (UiTex::TrainStation, "assets/ui/trainstation.png"),
 ];
 
 pub struct UiTextures {

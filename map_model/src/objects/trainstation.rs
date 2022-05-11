@@ -1,8 +1,4 @@
-use crate::{
-    Intersection, IntersectionID, Intersections, LaneKind, LanePattern, Lanes, ParkingSpots, Road,
-    RoadID, RoadSegmentKind, Roads, SpatialMap, TrainStations,
-};
-use geom::Vec3;
+use crate::{IntersectionID, RoadID, TrainStations};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -20,30 +16,10 @@ pub struct TrainStation {
 impl TrainStation {
     pub fn make(
         trainstations: &mut TrainStations,
-        roads: &mut Roads,
-        lanes: &mut Lanes,
-        parking: &mut ParkingSpots,
-        inters: &mut Intersections,
-        spatial: &mut SpatialMap,
-        left: Vec3,
-        right: Vec3,
+        lefti: IntersectionID,
+        righti: IntersectionID,
+        track: RoadID,
     ) -> TrainStationID {
-        let lefti = Intersection::make(inters, spatial, left);
-        let righti = Intersection::make(inters, spatial, right);
-        let track = Road::make(
-            &inters[lefti],
-            &inters[righti],
-            RoadSegmentKind::Straight,
-            &LanePattern {
-                lanes_forward: vec![(LaneKind::Rail, 30.0)],
-                lanes_backward: vec![(LaneKind::Rail, 30.0)],
-            },
-            roads,
-            lanes,
-            parking,
-            spatial,
-        );
-
         trainstations.insert(Self {
             left: lefti,
             right: righti,
