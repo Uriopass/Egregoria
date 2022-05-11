@@ -94,7 +94,21 @@ impl State {
     pub fn update(&mut self, ctx: &mut Context) {
         let settings = *self.uiw.read::<Settings>();
 
-        self.uiw.write::<InputMap>().prepare_frame(&ctx.input);
+        if !self.imgui_render.last_mouse_captured {
+            let map = self.goria.map();
+            let unproj = self.camera.unproject(ctx.input.mouse.screen, |p| {
+                map.terrain.height(p).map(|x| x + 0.01)
+            });
+
+            self.uiw.write::<MouseInfo>().unprojected = unproj;
+            self.uiw.write::<InputMap>().unprojected = unproj;
+        }
+
+        self.uiw.write::<InputMap>().prepare_frame(
+            &ctx.input,
+            !self.imgui_render.last_kb_captured,
+            !self.imgui_render.last_mouse_captured,
+        );
         crate::gui::run_ui_systems(&self.goria, &mut self.uiw);
 
         let commands = std::mem::take(&mut *self.uiw.write::<WorldCommands>());
@@ -215,12 +229,6 @@ impl State {
         );
         *self.uiw.write::<Camera>() = self.camera.camera;
 
-        if !self.imgui_render.last_mouse_captured {
-            self.uiw.write::<MouseInfo>().unprojected =
-                self.camera.unproject(ctx.input.mouse.screen, |p| {
-                    map.terrain.height(p).map(|x| x + 0.01)
-                });
-        }
         drop(map);
 
         ctx.gfx

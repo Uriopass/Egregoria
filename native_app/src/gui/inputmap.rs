@@ -1,5 +1,6 @@
-use crate::input::{InputContext, KeyCode, KeyboardInfo, MouseButton, MouseInfo};
+use crate::input::{InputContext, KeyCode, MouseButton};
 use common::{FastMap, FastSet};
+use geom::Vec3;
 use std::collections::hash_map::Entry;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
@@ -43,6 +44,7 @@ pub struct InputMap {
     pub act: FastSet<InputAction>,
     pub input_mapping: FastMap<InputAction, InputCombinations>,
     pub wheel: f32,
+    pub unprojected: Option<Vec3>,
     input_tree: InputTree,
 }
 
@@ -92,15 +94,22 @@ impl InputMap {
         self.input_tree = InputTree::new(&self.input_mapping);
     }
 
-    pub fn prepare_frame(&mut self, input: &InputContext) {
+    pub fn prepare_frame(&mut self, input: &InputContext, kb: bool, mouse: bool) {
         self.just_act.clear();
-        let kb = &input.keyboard;
-        let mouse = &input.mouse;
-        let mut acts: FastSet<_> = self.input_tree.query(kb, mouse).collect();
+        let empty1 = FastSet::default();
+        let empty2 = FastSet::default();
+        let mut acts: FastSet<_> = self
+            .input_tree
+            .query(
+                if kb { &input.keyboard.pressed } else { &empty1 },
+                if mouse { &input.mouse.pressed } else { &empty2 },
+                if mouse { input.mouse.wheel_delta } else { 0.0 },
+            )
+            .collect();
         std::mem::swap(&mut self.act, &mut acts);
         for v in &self.act {
             if !acts.contains(v) {
-                self.just_act.insert(v.clone());
+                self.just_act.insert(*v);
             }
         }
         self.wheel = input.mouse.wheel_delta;
@@ -177,6 +186,7 @@ impl Default for InputMap {
             act: Default::default(),
             input_mapping: Self::default_mapping(),
             wheel: 0.0,
+            unprojected: None,
             input_tree: InputTree {
                 childs: Default::default(),
                 action: None,
@@ -222,16 +232,20 @@ impl InputTree {
         root
     }
 
-    pub fn query(&self, kb: &KeyboardInfo, mouse: &MouseInfo) -> impl Iterator<Item = InputAction> {
-        let mut units: HashSet<UnitInput> =
-            HashSet::with_capacity(kb.pressed.len() + mouse.pressed.len() + 1);
+    pub fn query(
+        &self,
+        kb: &FastSet<KeyCode>,
+        mouse: &FastSet<MouseButton>,
+        wheel: f32,
+    ) -> impl Iterator<Item = InputAction> {
+        let mut units: HashSet<UnitInput> = HashSet::with_capacity(kb.len() + mouse.len() + 1);
 
-        units.extend(kb.pressed.iter().map(|x| UnitInput::Key(*x)));
-        units.extend(mouse.pressed.iter().map(|x| UnitInput::Mouse(*x)));
-        if mouse.wheel_delta > 0.0 {
+        units.extend(kb.iter().map(|x| UnitInput::Key(*x)));
+        units.extend(mouse.iter().map(|x| UnitInput::Mouse(*x)));
+        if wheel > 0.0 {
             units.insert(UnitInput::WheelUp);
         }
-        if mouse.wheel_delta < 0.0 {
+        if wheel < 0.0 {
             units.insert(UnitInput::WheelDown);
         }
 

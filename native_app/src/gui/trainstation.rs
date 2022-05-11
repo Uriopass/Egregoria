@@ -1,6 +1,5 @@
 use super::Tool;
 use crate::gui::inputmap::{InputAction, InputMap};
-use crate::input::MouseInfo;
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
@@ -20,14 +19,13 @@ pub fn trainstation(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     uiworld.write_or_default::<TrainstationResource>();
     let mut res = uiworld.write::<TrainstationResource>();
-    let mouseinfo = uiworld.read::<MouseInfo>();
     let inp = uiworld.read::<InputMap>();
 
     let mut draw = uiworld.write::<ImmediateDraw>();
     let map = goria.map();
     let commands = &mut *uiworld.commands();
 
-    let mpos = unwrap_ret!(mouseinfo.unprojected);
+    let mpos = unwrap_ret!(inp.unprojected);
 
     let w = LanePatternBuilder::new().rail(true).n_lanes(1).width();
 
