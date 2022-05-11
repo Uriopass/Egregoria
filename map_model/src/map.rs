@@ -607,6 +607,9 @@ impl Map {
     pub fn buildings(&self) -> &Buildings {
         &self.buildings
     }
+    pub fn trainstations(&self) -> &TrainStations {
+        &self.trainstations
+    }
     pub fn lots(&self) -> &Lots {
         &self.lots
     }

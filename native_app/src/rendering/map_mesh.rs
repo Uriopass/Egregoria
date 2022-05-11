@@ -26,6 +26,7 @@ pub struct MapMeshHandler {
 struct MapBuilders {
     buildsprites: FastMap<BuildingKind, SpriteBatchBuilder>,
     buildmeshes: FastMap<BuildingKind, InstancedMeshBuilder>,
+    trainstations: InstancedMeshBuilder,
     houses_mesh: MeshBuilder,
     arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: MeshBuilder,
@@ -37,6 +38,7 @@ pub struct MapMeshes {
     crosswalks: Option<Mesh>,
     bsprites: MultiSpriteBatch,
     bmeshes: Vec<InstancedMesh>,
+    trainstation: Option<InstancedMesh>,
     houses_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
 }
@@ -81,6 +83,9 @@ impl MapMeshHandler {
             tess_map: Tesselator::new(None, 15.0),
             houses_mesh: MeshBuilder::new(),
             buildmeshes,
+            trainstations: InstancedMeshBuilder::new(
+                load_mesh("assets/models/trainstation.glb", gfx).unwrap(),
+            ),
         };
 
         Self {
@@ -97,6 +102,7 @@ impl MapMeshHandler {
             self.builders.arrows(map);
             self.builders.crosswalks(map);
             self.builders.bspritesmesh(map);
+            self.builders.trainstation(map);
             self.builders.houses_mesh(map);
 
             self.last_config = common::config_id();
@@ -121,6 +127,7 @@ impl MapMeshHandler {
                     .values_mut()
                     .flat_map(|x| x.build(gfx))
                     .collect(),
+                trainstation: self.builders.trainstations.build(gfx),
                 houses_mesh: self.builders.houses_mesh.build(gfx, gfx.palette()),
                 arrows: self.builders.arrow_builder.build(gfx),
             };
@@ -216,6 +223,28 @@ impl MapBuilders {
                     });
                 }
             }
+        }
+    }
+
+    fn trainstation(&mut self, map: &Map) {
+        self.trainstations.instances.clear();
+
+        let inter = map.intersections();
+        let roads = map.roads();
+
+        for station in map.trainstations().values() {
+            let lefti = inter[station.left].pos;
+            let righti = inter[station.right].pos;
+            let rw = roads[station.track].width;
+
+            let center = (lefti + righti) * 0.5;
+            let dir = (righti - lefti).normalize();
+
+            self.trainstations.instances.push(MeshInstance {
+                pos: center - dir.perp_up() * (rw * 0.5 + 10.5),
+                dir,
+                tint: LinearColor::WHITE,
+            });
         }
     }
 
@@ -479,21 +508,24 @@ impl MapBuilders {
 
 impl Drawable for MapMeshes {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        if let Some(ref map) = self.map {
-            map.draw(gfx, rp);
+        if let Some(ref v) = self.map {
+            v.draw(gfx, rp);
         }
         self.bsprites.draw(gfx, rp);
         for v in &self.bmeshes {
             v.draw(gfx, rp);
         }
-        if let Some(ref bmesh) = self.houses_mesh {
-            bmesh.draw(gfx, rp);
+        if let Some(ref v) = self.houses_mesh {
+            v.draw(gfx, rp);
         }
-        if let Some(ref arrows) = self.arrows {
-            arrows.draw(gfx, rp);
+        if let Some(ref v) = self.arrows {
+            v.draw(gfx, rp);
         }
-        if let Some(ref crosswalks) = self.crosswalks {
-            crosswalks.draw(gfx, rp);
+        if let Some(ref v) = self.crosswalks {
+            v.draw(gfx, rp);
+        }
+        if let Some(ref v) = self.trainstation {
+            v.draw(gfx, rp);
         }
     }
 
@@ -516,14 +548,17 @@ impl Drawable for MapMeshes {
         for v in &self.bmeshes {
             deferdepth!(v);
         }
-        if let Some(ref bmesh) = self.houses_mesh {
-            deferdepth!(bmesh);
+        if let Some(ref v) = self.houses_mesh {
+            deferdepth!(v);
         }
-        if let Some(ref arrows) = self.arrows {
-            deferdepth!(arrows);
+        if let Some(ref v) = self.arrows {
+            deferdepth!(v);
         }
-        if let Some(ref crosswalks) = self.crosswalks {
-            deferdepth!(crosswalks);
+        if let Some(ref v) = self.crosswalks {
+            deferdepth!(v);
+        }
+        if let Some(ref v) = self.trainstation {
+            deferdepth!(v);
         }
     }
 }
