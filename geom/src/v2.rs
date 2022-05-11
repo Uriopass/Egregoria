@@ -327,6 +327,11 @@ impl Vec2 {
     pub fn rotated_by(self, cossin: Vec2) -> Self {
         self.x * cossin - self.y * cossin.perpendicular()
     }
+
+    #[inline]
+    pub fn rotated_by_angle(self, angle: f32) -> Self {
+        self.rotated_by(vec2(angle.cos(), angle.sin()))
+    }
 }
 
 impl Vec2d {

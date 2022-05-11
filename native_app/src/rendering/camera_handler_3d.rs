@@ -1,6 +1,6 @@
 use crate::context::Context;
+use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::windows::settings::Settings;
-use crate::input::{KeyCode, MouseButton};
 use common::saveload::Encoder;
 use geom::{vec4, Camera, Matrix4, Plane, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
@@ -101,8 +101,7 @@ impl CameraHandler3D {
         &mut self,
         ctx: &mut Context,
         delta: f32,
-        mouse_enabled: bool,
-        keyboard_enabled: bool,
+        inps: &InputMap,
         settings: &Settings,
         height: impl Fn(Vec2) -> Option<f32>,
     ) {
@@ -112,30 +111,25 @@ impl CameraHandler3D {
         let d = off.xy().try_normalize().unwrap_or(Vec2::ZERO) * self.camera.dist;
         let screenpos = ctx.input.mouse.screen;
 
-        if keyboard_enabled {
-            let pressed = &ctx.input.keyboard.pressed;
+        if inps.act.contains(&InputAction::GoRight) {
+            self.targetpos += -delta * d.perpendicular().z0();
+        }
+        if inps.act.contains(&InputAction::GoLeft) {
+            self.targetpos += delta * d.perpendicular().z0();
+        }
+        if inps.act.contains(&InputAction::GoForward) {
+            self.targetpos += -delta * d.z0();
+        }
+        if inps.act.contains(&InputAction::GoBackward) {
+            self.targetpos += delta * d.z0();
+        }
 
-            if pressed.contains(&KeyCode::Right) {
-                self.targetpos += -delta * d.perpendicular().z0();
-            }
-            if pressed.contains(&KeyCode::Left) {
-                self.targetpos += delta * d.perpendicular().z0();
-            }
-            if pressed.contains(&KeyCode::Up) {
-                self.targetpos += -delta * d.z0();
-            }
-            if pressed.contains(&KeyCode::Down) {
-                self.targetpos += delta * d.z0();
-            }
+        if inps.act.contains(&InputAction::Zoom) {
+            self.targetdist *= 1.0 / 1.1;
+        }
 
-            let just_pressed = &ctx.input.keyboard.just_pressed;
-            if just_pressed.contains(&KeyCode::Add) || just_pressed.contains(&KeyCode::Equals) {
-                self.targetdist *= 1.0 / 1.1;
-            }
-
-            if just_pressed.contains(&KeyCode::Subtract) || just_pressed.contains(&KeyCode::Minus) {
-                self.targetdist *= 1.1;
-            }
+        if inps.act.contains(&InputAction::Dezoom) {
+            self.targetdist *= 1.1;
         }
 
         if settings.camera_border_move {
@@ -158,32 +152,18 @@ impl CameraHandler3D {
 
         let unprojected = self.unproject(screenpos, |_| Some(0.0));
 
-        if mouse_enabled {
-            if ctx.input.mouse.wheel_delta < 0.0 {
-                self.targetdist *= 1.1;
-            }
-            if ctx.input.mouse.wheel_delta > 0.0 {
-                self.targetdist *= 1.0 / 1.1;
-            }
-            let pressed = &ctx.input.mouse.pressed;
-
-            let lshift = ctx.input.keyboard.pressed.contains(&KeyCode::LShift);
-
-            let right = pressed.contains(&MouseButton::Right);
-            let middle = pressed.contains(&MouseButton::Middle);
-
-            if right && lshift || middle && !lshift {
-                self.targetyaw -= delta_mouse.x / 100.0;
-                self.targetpitch += delta_mouse.y / 100.0;
-                self.targetpitch = self.targetpitch.min(1.57).max(0.01);
-            } else if right && !lshift || middle && lshift {
-                if let Some((last_pos, unprojected)) = self.last_pos.zip(unprojected) {
-                    self.targetpos += (last_pos - unprojected.xy())
-                        .cap_magnitude(50000.0 * delta)
-                        .z0();
-                }
+        if inps.act.contains(&InputAction::CameraRotate) {
+            self.targetyaw -= delta_mouse.x / 100.0;
+            self.targetpitch += delta_mouse.y / 100.0;
+            self.targetpitch = self.targetpitch.min(1.57).max(0.01);
+        } else if inps.act.contains(&InputAction::CameraMove) {
+            if let Some((last_pos, unprojected)) = self.last_pos.zip(unprojected) {
+                self.targetpos += (last_pos - unprojected.xy())
+                    .cap_magnitude(50000.0 * delta)
+                    .z0();
             }
         }
+
         self.targetdist = self.targetdist.clamp(30.0, 100000.0);
 
         if settings.camera_smooth {

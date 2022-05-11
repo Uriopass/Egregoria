@@ -4,8 +4,8 @@ use crate::{
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
     ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain, TrainStation, TrainStationID,
 };
-use geom::OBB;
-use geom::{pseudo_angle, Circle, Intersect, Shape, Spline3, Vec2, Vec3};
+use geom::{pseudo_angle, BoldLine, Circle, Intersect, PolyLine, Shape, Spline3, Vec2, Vec3};
+use geom::{ShapeEnum, AABB, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
@@ -199,21 +199,27 @@ impl Map {
 
         self.dirt_id += Wrapping(1);
 
-        let id = TrainStation::make(
-            &mut self.trainstations,
-            &mut self.roads,
-            &mut self.lanes,
-            &mut self.parking,
-            &mut self.intersections,
-            &mut self.spatial_map,
-            left,
-            right,
-        );
+        let lefti = Intersection::make(&mut self.intersections, &mut self.spatial_map, left);
+        let righti = Intersection::make(&mut self.intersections, &mut self.spatial_map, right);
+
+        let track = self
+            .connect(
+                lefti,
+                righti,
+                &LanePattern {
+                    lanes_forward: vec![(LaneKind::Rail, 30.0)],
+                    lanes_backward: vec![(LaneKind::Rail, 30.0)],
+                },
+                RoadSegmentKind::Straight,
+            )
+            .unwrap();
+
+        let station = TrainStation::make(&mut self.trainstations, lefti, righti, track);
 
         #[cfg(debug_assertions)]
         self.check_invariants();
 
-        id
+        station
     }
 
     pub fn build_house(&mut self, id: LotID) -> Option<BuildingID> {
@@ -551,6 +557,38 @@ impl Map {
         }
 
         mk_proj(ProjectKind::Ground)
+    }
+
+    pub fn query_exact<'a>(
+        &'a self,
+        shape: impl Intersect<ShapeEnum> + Intersect<AABB> + Clone + 'a,
+        filter: ProjectFilter,
+    ) -> impl Iterator<Item = ProjectKind> + 'a {
+        self.spatial_map
+            .query(shape.clone(), filter)
+            .filter_map(move |x| match x {
+                ProjectKind::Inter(i) => self
+                    .intersections
+                    .contains_key(i)
+                    .then(move || ProjectKind::Inter(i)),
+                ProjectKind::Road(r) => {
+                    let road = &self.roads.get(r)?;
+                    let poly = PolyLine::new(road.points.iter().map(|x| x.xy()).collect());
+                    let bold = BoldLine::new(poly, road.width);
+                    shape
+                        .intersects(&ShapeEnum::BoldLine(bold))
+                        .then(move || ProjectKind::Road(r))
+                }
+                ProjectKind::Building(b) => self
+                    .buildings
+                    .contains_key(b)
+                    .then(move || ProjectKind::Building(b)),
+                ProjectKind::Lot(lot) => self
+                    .lots
+                    .contains_key(lot)
+                    .then(move || ProjectKind::Lot(lot)),
+                ProjectKind::Ground => unreachable!(),
+            })
     }
 
     pub fn is_empty(&self) -> bool {

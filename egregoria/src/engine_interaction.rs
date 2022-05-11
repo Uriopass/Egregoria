@@ -74,6 +74,10 @@ impl WorldCommands {
         self.commands.push(MapLoadTestField(pos, size, spacing))
     }
 
+    pub fn map_build_trainstation(&mut self, left: Vec3, right: Vec3) {
+        self.commands.push(MapBuildTrainstation(left, right))
+    }
+
     pub fn update_transform(&mut self, e: Entity, trans: Transform) {
         self.commands.push(UpdateTransform(e, trans))
     }

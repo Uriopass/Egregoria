@@ -270,7 +270,7 @@ impl From<VirtualKeyCode> for KeyCode {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub enum MouseButton {
     Left,
     Right,
