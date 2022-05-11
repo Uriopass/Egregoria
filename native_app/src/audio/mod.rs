@@ -248,8 +248,6 @@ impl<T: Signal<Frame = [Sample; 2]>> Signal for GlobalGain<T> {
     type Frame = [Sample; 2];
 
     fn sample(&self, interval: f32, out: &mut [Self::Frame]) {
-        self.inner.sample(interval, out);
-
         fn upd(x: &AtomicU32, gain: &mut std::cell::RefMut<Smoothed<f32>>) {
             let shared = f32::from_bits(x.load(Ordering::Relaxed));
             if gain.get() != shared {
@@ -269,6 +267,13 @@ impl<T: Signal<Frame = [Sample; 2]>> Signal for GlobalGain<T> {
                 upd(&UI_SHARED, &mut gain);
             }
         };
+
+        if gain.get() == 0.0 {
+            out.fill([0.0; 2]);
+            return;
+        }
+
+        self.inner.sample(interval, out);
         for x in out {
             let g = gain.get();
             x[0] *= g;
