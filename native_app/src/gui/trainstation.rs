@@ -29,7 +29,7 @@ pub fn trainstation(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     let w = LanePatternBuilder::new().rail(true).n_lanes(1).width();
 
-    let obb = OBB::new(mpos.xy(), res.rotation, 130.0, w + 15.0);
+    let obb = OBB::new(mpos.xy(), res.rotation, 230.0, w + 15.0);
 
     let intersects = map
         .query_exact(obb, ProjectFilter::INTER | ProjectFilter::ROAD)
@@ -50,8 +50,8 @@ pub fn trainstation(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     if inp.act.contains(&InputAction::Select) && !intersects {
         commands.map_build_trainstation(
-            mpos - 65.0 * res.rotation.z(0.0),
-            mpos + 65.0 * res.rotation.z(0.0),
+            mpos - 115.0 * res.rotation.z(0.0),
+            mpos + 115.0 * res.rotation.z(0.0),
         );
     }
 }
