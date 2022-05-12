@@ -54,6 +54,7 @@ impl State {
         let camera = CameraHandler3D::load(ctx.gfx.size);
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
+        log::info!("loaded imgui_render");
 
         let goria: Egregoria =
             Egregoria::load_from_disk("world").unwrap_or_else(|| Egregoria::new(10));
