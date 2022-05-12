@@ -4,7 +4,7 @@ use crate::{
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
     ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain, TrainStation, TrainStationID,
 };
-use geom::{pseudo_angle, BoldLine, Circle, Intersect, PolyLine, Shape, Spline3, Vec2, Vec3};
+use geom::{pseudo_angle, Circle, Intersect, Shape, Spline3, Vec2, Vec3};
 use geom::{ShapeEnum, AABB, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -565,20 +565,16 @@ impl Map {
         filter: ProjectFilter,
     ) -> impl Iterator<Item = ProjectKind> + 'a {
         self.spatial_map
-            .query(shape.clone(), filter)
+            .query(shape, filter)
             .filter_map(move |x| match x {
                 ProjectKind::Inter(i) => self
                     .intersections
                     .contains_key(i)
                     .then(move || ProjectKind::Inter(i)),
-                ProjectKind::Road(r) => {
-                    let road = &self.roads.get(r)?;
-                    let poly = PolyLine::new(road.points.iter().map(|x| x.xy()).collect());
-                    let bold = BoldLine::new(poly, road.width);
-                    shape
-                        .intersects(&ShapeEnum::BoldLine(bold))
-                        .then(move || ProjectKind::Road(r))
-                }
+                ProjectKind::Road(r) => self
+                    .roads
+                    .contains_key(r)
+                    .then(move || ProjectKind::Road(r)),
                 ProjectKind::Building(b) => self
                     .buildings
                     .contains_key(b)

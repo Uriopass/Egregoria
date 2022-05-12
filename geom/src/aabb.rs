@@ -15,6 +15,7 @@ impl AABB {
     }
 
     /// Create a new `AABB`.
+    #[inline]
     pub fn centered(pos: Vec2, size: Vec2) -> Self {
         AABB {
             ll: pos - size * 0.5,
@@ -30,14 +31,17 @@ impl AABB {
         }
     }
 
+    #[inline]
     pub fn w(&self) -> f32 {
         self.ur.x - self.ll.x
     }
 
+    #[inline]
     pub fn h(&self) -> f32 {
         self.ur.y - self.ll.y
     }
 
+    #[inline]
     pub fn union(self, other: AABB) -> AABB {
         AABB {
             ll: self.ll.min(other.ll),
@@ -45,10 +49,17 @@ impl AABB {
         }
     }
 
+    #[inline]
+    pub fn area(&self) -> f32 {
+        self.w() * self.h()
+    }
+
+    #[inline]
     pub fn center(&self) -> Vec2 {
         self.ll * 0.5 + self.ur * 0.5
     }
 
+    #[inline]
     pub fn expand(self, w: f32) -> Self {
         Self {
             ll: self.ll - Vec2::splat(w),
@@ -68,10 +79,12 @@ impl AABB {
             | (TOP * (p.y > self.ur.y) as u8)
     }
 
+    #[inline]
     pub fn contains(&self, p: Vec2) -> bool {
         p.x >= self.ll.x && p.y >= self.ll.y && p.x <= self.ur.x && p.y <= self.ur.y
     }
 
+    #[inline]
     /// Checks whether the `AABB` contains a `Point`
     pub fn contains_within(&self, point: Vec2, tolerance: f32) -> bool {
         point.x >= self.ll.x - tolerance

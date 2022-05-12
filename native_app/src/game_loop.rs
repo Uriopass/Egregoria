@@ -7,7 +7,7 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use geom::Camera;
+use geom::{Camera, LinearColor};
 use wgpu_engine::lighting::LightInstance;
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
@@ -271,6 +271,27 @@ impl State {
 
         {
             let immediate = &mut *self.uiw.write::<ImmediateDraw>();
+
+            let mut col = LinearColor::WHITE;
+            col.a = 0.1;
+            unsafe {
+                for v in &geom::DEBUG_OBBS {
+                    immediate.obb(*v, 2.0).color(col);
+                }
+                for v in &geom::DEBUG_SPLINES {
+                    immediate
+                        .polyline(
+                            v.smart_points(1.0, 0.0, 1.0)
+                                .map(|x| x.z(10.0))
+                                .collect::<Vec<_>>(),
+                            5.0,
+                        )
+                        .color(col);
+                }
+                geom::DEBUG_OBBS.clear();
+                geom::DEBUG_SPLINES.clear();
+            }
+
             immediate.apply(&mut self.immtess, ctx);
             immediate.orders.clear();
         }

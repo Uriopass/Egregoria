@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use common::{AudioKind, FastMap};
-use geom::{LinearColor, Polygon, Vec3, OBB};
+use geom::{LinearColor, Polygon, Vec2, Vec3, AABB, OBB};
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatch, Tesselator};
 
@@ -161,6 +161,13 @@ impl ImmediateDraw {
 
     pub fn obb(&mut self, obb: OBB, z: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::OBB { obb, z })
+    }
+
+    pub fn aabb(&mut self, aabb: AABB, z: f32) -> ImmediateBuilder<'_> {
+        self.builder(OrderKind::OBB {
+            obb: OBB::new(aabb.center(), Vec2::X, aabb.w(), aabb.h()),
+            z,
+        })
     }
 
     pub fn textured_obb(&mut self, obb: OBB, path: String, z: f32) -> ImmediateBuilder<'_> {
