@@ -4,8 +4,8 @@ use crate::{
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
     ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain, TrainStation, TrainStationID,
 };
+use geom::OBB;
 use geom::{pseudo_angle, Circle, Intersect, Shape, Spline3, Vec2, Vec3};
-use geom::{ShapeEnum, AABB, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
@@ -557,34 +557,6 @@ impl Map {
         }
 
         mk_proj(ProjectKind::Ground)
-    }
-
-    pub fn query_exact<'a>(
-        &'a self,
-        shape: impl Intersect<ShapeEnum> + Intersect<AABB> + Clone + 'a,
-        filter: ProjectFilter,
-    ) -> impl Iterator<Item = ProjectKind> + 'a {
-        self.spatial_map
-            .query(shape, filter)
-            .filter_map(move |x| match x {
-                ProjectKind::Inter(i) => self
-                    .intersections
-                    .contains_key(i)
-                    .then(move || ProjectKind::Inter(i)),
-                ProjectKind::Road(r) => self
-                    .roads
-                    .contains_key(r)
-                    .then(move || ProjectKind::Road(r)),
-                ProjectKind::Building(b) => self
-                    .buildings
-                    .contains_key(b)
-                    .then(move || ProjectKind::Building(b)),
-                ProjectKind::Lot(lot) => self
-                    .lots
-                    .contains_key(lot)
-                    .then(move || ProjectKind::Lot(lot)),
-                ProjectKind::Ground => unreachable!(),
-            })
     }
 
     pub fn is_empty(&self) -> bool {

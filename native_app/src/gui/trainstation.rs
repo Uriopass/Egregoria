@@ -32,7 +32,8 @@ pub fn trainstation(goria: &Egregoria, uiworld: &mut UiWorld) {
     let obb = OBB::new(mpos.xy(), res.rotation, 230.0, w + 15.0);
 
     let intersects = map
-        .query_exact(obb, ProjectFilter::INTER | ProjectFilter::ROAD)
+        .spatial_map()
+        .query(obb, ProjectFilter::INTER | ProjectFilter::ROAD)
         .next()
         .is_some();
 

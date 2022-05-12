@@ -242,7 +242,8 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
 }
 
 fn check_intersect(map: &Map, obj: &ShapeEnum, start: ProjectKind, end: ProjectKind) -> bool {
-    !map.query_exact(obj, ProjectFilter::ROAD | ProjectFilter::INTER)
+    !map.spatial_map()
+        .query(obj, ProjectFilter::ROAD | ProjectFilter::INTER)
         .any(move |x| {
             if let Road(rid) = x {
                 if let Inter(id) = start {
