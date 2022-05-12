@@ -5,9 +5,11 @@ use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::Egregoria;
-use geom::{vec2, PolyLine3, Spline3, Vec2, AABB};
+use geom::{vec2, BoldSpline, PolyLine3, ShapeEnum, Spline3, Vec2, AABB, OBB};
 use geom::{Camera, Spline};
-use map_model::{Intersection, LanePatternBuilder, Map, MapProject, ProjectKind, PylonPosition};
+use map_model::{
+    Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
+};
 use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};
 
@@ -150,12 +152,23 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
             };
         }
     }
+
     let is_valid = match (state.build_state, cur_proj.kind) {
         (Hover, Building(_)) => false,
         (Start(selected_proj), _) => {
+            let diff = selected_proj.pos.xy() - cur_proj.pos.xy();
+            let l = diff.magnitude();
+            let obb = OBB::new(
+                (selected_proj.pos.xy() + cur_proj.pos.xy()) * 0.5,
+                diff / l,
+                (l - 5.0).max(0.1),
+                patwidth,
+            );
+
             compatible(map, cur_proj, selected_proj)
                 && check_angle(map, selected_proj, cur_proj.pos.xy())
                 && check_angle(map, cur_proj, selected_proj.pos.xy())
+                && check_intersect(map, &ShapeEnum::OBB(obb), cur_proj.kind, selected_proj.kind)
         }
         (Interpolation(interpoint, selected_proj), _) => {
             let sp = Spline {
@@ -170,6 +183,12 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
                 && check_angle(map, selected_proj, interpoint)
                 && check_angle(map, cur_proj, interpoint)
                 && !sp.is_steep(state.pattern_builder.width())
+                && check_intersect(
+                    map,
+                    &ShapeEnum::BoldSpline(BoldSpline::new(sp, patwidth)),
+                    selected_proj.kind,
+                    cur_proj.kind,
+                )
         }
         _ => true,
     };
@@ -220,6 +239,25 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
             _ => {}
         }
     }
+}
+
+fn check_intersect(map: &Map, obj: &ShapeEnum, start: ProjectKind, end: ProjectKind) -> bool {
+    !map.query_exact(obj, ProjectFilter::ROAD | ProjectFilter::INTER)
+        .any(move |x| {
+            if let Road(rid) = x {
+                if let Inter(id) = start {
+                    if map.intersections()[id].roads.contains(&rid) {
+                        return false;
+                    }
+                }
+                if let Inter(id) = end {
+                    if map.intersections()[id].roads.contains(&rid) {
+                        return false;
+                    }
+                }
+            }
+            x != start && x != end
+        })
 }
 
 fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {

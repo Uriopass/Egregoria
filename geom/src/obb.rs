@@ -24,6 +24,10 @@ impl OBB {
         }
     }
 
+    pub fn new_corners(corners: [Vec2; 4]) -> Self {
+        Self { corners }
+    }
+
     pub fn axis(&self) -> [Vec2; 2] {
         [
             self.corners[1] - self.corners[0],

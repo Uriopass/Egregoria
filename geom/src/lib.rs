@@ -12,6 +12,7 @@ macro_rules! defer_inter {
 mod aabb;
 mod aabb3;
 mod boldline;
+mod boldspline;
 mod circle;
 mod color;
 mod line;
@@ -39,6 +40,7 @@ mod v4;
 pub use aabb::*;
 pub use aabb3::*;
 pub use boldline::*;
+pub use boldspline::*;
 pub use circle::*;
 pub use color::*;
 pub use line::*;
@@ -78,6 +80,7 @@ pub enum ShapeEnum {
     AABB(AABB),
     Vec2(Vec2),
     BoldLine(BoldLine),
+    BoldSpline(BoldSpline),
 }
 
 impl<T: Shape, U: Shape> Intersect<T> for &U
@@ -107,6 +110,7 @@ impl Shape for ShapeEnum {
             ShapeEnum::AABB(s) => s.bbox(),
             ShapeEnum::Vec2(s) => s.bbox(),
             ShapeEnum::BoldLine(s) => s.bbox(),
+            ShapeEnum::BoldSpline(s) => s.bbox(),
         }
     }
 }
@@ -120,6 +124,7 @@ impl Intersect<ShapeEnum> for ShapeEnum {
             ShapeEnum::AABB(x) => x.intersects(shape),
             ShapeEnum::Vec2(x) => x.intersects(shape),
             ShapeEnum::BoldLine(x) => x.intersects(shape),
+            ShapeEnum::BoldSpline(x) => x.intersects(shape),
         }
     }
 }
@@ -136,6 +141,7 @@ macro_rules! impl_shape_enum {
                         ShapeEnum::AABB(x) => x.intersects(shape),
                         ShapeEnum::Vec2(x) => x.intersects(shape),
                         ShapeEnum::BoldLine(x) => x.intersects(shape),
+                        ShapeEnum::BoldSpline(x) => x.intersects(shape),
                     }
                 }
             }
@@ -149,6 +155,7 @@ macro_rules! impl_shape_enum {
                         ShapeEnum::AABB(x) => self.intersects(x),
                         ShapeEnum::Vec2(x) => self.intersects(x),
                         ShapeEnum::BoldLine(x) => self.intersects(x),
+                        ShapeEnum::BoldSpline(x) => x.intersects(x),
                     }
                 }
             }
@@ -162,7 +169,7 @@ macro_rules! impl_shape_enum {
     }
 }
 
-impl_shape_enum!(OBB, Polygon, Vec2, Circle, AABB, BoldLine);
+impl_shape_enum!(OBB, Polygon, Vec2, Circle, AABB, BoldLine, BoldSpline);
 
 pub fn minmax(x: impl IntoIterator<Item = Vec2>) -> Option<(Vec2, Vec2)> {
     let mut x = x.into_iter();

@@ -1,5 +1,6 @@
 use super::Vec2;
 use crate::polyline::PolyLine;
+use crate::AABB;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 
@@ -42,6 +43,80 @@ impl Spline {
             + (18.0 * t - 12.0) * (self.from + self.from_derivative)
             + (6.0 - 18.0 * t) * (self.to - self.to_derivative)
             + 6.0 * t * self.to
+    }
+
+    pub fn bbox(&self) -> AABB {
+        let p0 = self.from;
+        let p1 = self.from + self.from_derivative;
+        let p2 = self.to - self.to_derivative;
+        let p3 = self.to;
+
+        let mut mi = p0.min(p3);
+        let mut ma = p0.max(p3);
+
+        let c = -1.0 * p0 + 1.0 * p1;
+        let b = 1.0 * p0 - 2.0 * p1 + 1.0 * p2;
+        let a = -1.0 * p0 + 3.0 * p1 - 3.0 * p2 + 1.0 * p3;
+
+        let mut h = b * b - a * c;
+
+        if h.x > 0.0 {
+            h.x = h.x.sqrt();
+            let mut t = (-b.x - h.x) / a.x;
+            if t > 0.0 && t < 1.0 {
+                let s = 1.0 - t;
+                let q = s * s * s * p0.x
+                    + 3.0 * s * s * t * p1.x
+                    + 3.0 * s * t * t * p2.x
+                    + t * t * t * p3.x;
+                mi.x = mi.x.min(q);
+                ma.x = ma.x.max(q);
+            }
+            t = (-b.x + h.x) / a.x;
+            if t > 0.0 && t < 1.0 {
+                let s = 1.0 - t;
+                let q = s * s * s * p0.x
+                    + 3.0 * s * s * t * p1.x
+                    + 3.0 * s * t * t * p2.x
+                    + t * t * t * p3.x;
+                mi.x = mi.x.min(q);
+                ma.x = ma.x.max(q);
+            }
+        }
+
+        if h.y > 0.0 {
+            h.y = h.y.sqrt();
+            let mut t = (-b.y - h.y) / a.y;
+            if t > 0.0 && t < 1.0 {
+                let s = 1.0 - t;
+                let q = s * s * s * p0.y
+                    + 3.0 * s * s * t * p1.y
+                    + 3.0 * s * t * t * p2.y
+                    + t * t * t * p3.y;
+                mi.y = mi.y.min(q);
+                ma.y = ma.y.max(q);
+            }
+            t = (-b.y + h.y) / a.y;
+            if t > 0.0 && t < 1.0 {
+                let s = 1.0 - t;
+                let q = s * s * s * p0.y
+                    + 3.0 * s * s * t * p1.y
+                    + 3.0 * s * t * t * p2.y
+                    + t * t * t * p3.y;
+                mi.y = mi.y.min(q);
+                ma.y = ma.y.max(q);
+            }
+        }
+
+        AABB::new(mi, ma)
+    }
+
+    pub fn wide_bbox(&self) -> AABB {
+        let p1 = self.from + self.from_derivative;
+        let p2 = self.to - self.to_derivative;
+        let mi = self.from.min(self.to).min(p1).min(p2);
+        let ma = self.from.max(self.to).max(p1).max(p2);
+        AABB::new(mi, ma)
     }
 
     pub fn is_steep(&self, thickness: f32) -> bool {

@@ -62,6 +62,10 @@ impl Segment {
         }
     }
 
+    pub fn center(&self) -> Vec2 {
+        (self.src + self.dst) * 0.5
+    }
+
     #[allow(clippy::manual_range_contains)]
     pub fn intersection_point(&self, other: &Segment) -> Option<Vec2> {
         // see https://stackoverflow.com/a/565282
