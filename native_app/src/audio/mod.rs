@@ -12,10 +12,9 @@ use common::FastMap;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use egregoria::Egregoria;
 use oddio::{Filter, Frames, FramesSignal, Gain, Handle, Mixer, Sample, Signal, Smoothed, Stop};
-use rayon::iter::{ParallelBridge, ParallelIterator};
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 pub struct GameAudio {
     music: Music,
@@ -46,7 +45,7 @@ type StoredAudio = Arc<Frames<[Sample; 2]>>;
 pub struct AudioContext {
     stream: Option<cpal::Stream>,
     scene_handle: Option<Handle<Mixer<[Sample; 2]>>>,
-    cache: FastMap<String, StoredAudio>,
+    cache: Arc<RwLock<FastMap<String, StoredAudio>>>,
 }
 
 static MUSIC_SHARED: AtomicU32 = AtomicU32::new(0);
@@ -101,14 +100,16 @@ impl AudioContext {
         }
     }
 
-    pub fn preload<'a>(&mut self, sounds: impl Iterator<Item = &'a str> + Send) {
-        self.cache.extend(
-            sounds
-                .par_bridge()
-                .flat_map(|x| Some(x.to_string()).zip(Self::decode(x)))
-                .collect::<Vec<_>>()
-                .into_iter(),
-        );
+    pub fn preload<'a>(&mut self, sounds: impl Iterator<Item = &'a str> + Send + 'static) {
+        sounds.for_each(move |v| {
+            let s = v.to_string();
+            let cache = self.cache.clone();
+            rayon::spawn(move || {
+                if let Some(audio) = Self::decode(&*s) {
+                    cache.write().unwrap().insert(s, audio);
+                }
+            });
+        });
     }
 
     pub fn g_volume(&self, kind: AudioKind) -> f32 {
@@ -169,12 +170,15 @@ impl AudioContext {
         ))
     }
 
-    fn get(cache: &mut FastMap<String, StoredAudio>, name: &str) -> Option<StoredAudio> {
-        if let Some(v) = cache.get(name) {
+    fn get(cache: &RwLock<FastMap<String, StoredAudio>>, name: &str) -> Option<StoredAudio> {
+        if let Some(v) = cache.read().unwrap().get(name) {
             return Some(v.clone());
         }
         if let Some(decoded) = Self::decode(name) {
-            cache.insert(name.to_string(), decoded.clone());
+            cache
+                .write()
+                .unwrap()
+                .insert(name.to_string(), decoded.clone());
             return Some(decoded);
         }
         None
@@ -183,7 +187,7 @@ impl AudioContext {
     pub fn play(&mut self, name: &'static str, kind: AudioKind) {
         let vol = self.g_volume(kind);
         if let Some(ref mut h) = self.scene_handle {
-            if let Some(x) = Self::get(&mut self.cache, name) {
+            if let Some(x) = Self::get(&self.cache, name) {
                 if let AudioKind::Music = kind {
                     log::error!("shouldn't play music with base play as it's not affected by global volume changes");
                 }
@@ -203,7 +207,7 @@ impl AudioContext {
         S: Signal<Frame = [Sample; 2]> + Send,
     {
         if let Some(ref mut h) = self.scene_handle {
-            if let Some(x) = Self::get(&mut self.cache, name) {
+            if let Some(x) = Self::get(&self.cache, name) {
                 let test = GlobalGain {
                     volume: RefCell::new(Smoothed::new(1.0)),
                     kind,
