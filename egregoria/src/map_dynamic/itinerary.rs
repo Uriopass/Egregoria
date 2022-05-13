@@ -1,7 +1,7 @@
 use crate::utils::time::GameTime;
 use crate::Kinematics;
-use geom::{Transform, Vec3};
-use hecs::World;
+use geom::{Follower, Polyline3Queue, Transform, Vec3};
+use hecs::{Entity, World};
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::Inspect;
@@ -9,6 +9,17 @@ use map_model::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, Trave
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ItineraryFollower {
+    pub leader: Entity,
+    pub follower: Follower,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ItineraryLeader {
+    pub past: Polyline3Queue,
+}
 
 #[derive(Default, Debug, Serialize, Deserialize, Inspect)]
 pub struct Itinerary {
@@ -131,6 +142,10 @@ impl Itinerary {
             kind,
             local_path: points,
         };
+        if matches!(pathkind, PathKind::Rail) {
+            return Some(it);
+        }
+
         it.prepend_local_path([proj + dir * 3.5].iter().copied());
         Some(it)
     }
@@ -367,6 +382,27 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
             chunk.for_each(|(_, (trans, kin, it))| {
                 trans.position =
                     it.update_rail(trans.position, kin.speed * time.delta, time.seconds, map);
+            })
+        });
+    world
+        .query::<(&Transform, &mut ItineraryLeader)>()
+        .iter_batched(32)
+        .par_bridge()
+        .for_each(|chunk| {
+            chunk.for_each(|(_, (trans, leader))| {
+                leader.past.push(trans.position);
+            })
+        });
+    world
+        .query::<(&mut Transform, &mut ItineraryFollower)>()
+        .iter_batched(32)
+        .par_bridge()
+        .for_each(|chunk| {
+            chunk.for_each(|(_, (trans, follow))| {
+                let leader = unwrap_orr!(world.get::<ItineraryLeader>(follow.leader), return);
+                let (pos, dir) = follow.follower.update(&leader.past);
+                trans.position = pos;
+                trans.dir = dir;
             })
         });
 }
