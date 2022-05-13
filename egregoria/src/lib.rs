@@ -125,6 +125,9 @@ impl Egregoria {
     pub fn world(&self) -> &World {
         &self.world
     }
+    pub fn world_mut_unchecked(&mut self) -> &mut World {
+        &mut self.world
+    }
 
     #[profiling::function]
     pub fn tick(&mut self, game_schedule: &mut SeqSchedule, commands: &WorldCommands) -> Duration {

@@ -1,21 +1,23 @@
+use crate::map_dynamic::ItineraryKind;
 use crate::{GameTime, Itinerary, Kinematics};
-use geom::{Transform, Vec3};
+use geom::Transform;
 use hecs::{Entity, World};
+use imgui_inspect_derive::*;
 use map_model::Map;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use resources::Resources;
-use std::collections::VecDeque;
 
+#[derive(Inspect)]
 pub struct Locomotive {
-    pub past: VecDeque<Vec3>,
+    /// m/s
     pub max_speed: f32,
+    /// m.s^2
     pub acc_force: f32,
+    /// m.s^2
     pub dec_force: f32,
 }
 
-pub struct RailWagon {
-    pub locomotive: Entity,
-}
+pub struct RailWagon;
 
 #[profiling::function]
 pub fn locomotive_system(world: &mut World, resources: &mut Resources) {
@@ -47,10 +49,17 @@ pub fn locomotive_decision(
     loco: &mut Locomotive,
 ) {
     let desired_speed = locomotive_desired_speed(trans, kin, it, loco);
-    trans.dir = it
+    let desired_dir = it
         .get_point()
-        .and_then(|x| (trans.position - x).try_normalize())
+        .and_then(|x| {
+            let d = x - trans.position;
+            if d.magnitude2() < 0.5 {
+                return None;
+            }
+            d.try_normalize()
+        })
         .unwrap_or(trans.dir);
+    trans.dir = desired_dir;
 
     kin.speed += (desired_speed - kin.speed)
         .clamp(-time.delta * loco.dec_force, time.delta * loco.acc_force);
@@ -63,14 +72,21 @@ pub fn locomotive_desired_speed(
     loco: &Locomotive,
 ) -> f32 {
     let time_to_stop = kin.speed * kin.speed / (2.0 * loco.dec_force);
+    let stop_dist = time_to_stop * kin.speed * 0.5;
 
-    let howfar = it
-        .get_terminal()
-        .map(|terminal| terminal.distance(trans.position))
-        .unwrap_or(0.0);
-
-    if howfar < time_to_stop {
-        return 0.0;
+    if let ItineraryKind::Route(r, _) = it.kind() {
+        if r.reversed_route.is_empty() {
+            if let Some(howfar) = it
+                .local_path()
+                .last()
+                .map(|terminal| terminal.distance(trans.position))
+            {
+                if howfar + 0.1 <= stop_dist {
+                    return 0.0;
+                }
+            }
+        }
     }
+
     loco.max_speed
 }

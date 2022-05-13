@@ -2,13 +2,13 @@
 
 use crate::game_loop::Timings;
 use crate::gui::InspectedEntity;
-use crate::input::MouseInfo;
 use crate::uiworld::UiWorld;
 use egregoria::map_dynamic::{Itinerary, ParkingManagement};
 use egregoria::physics::CollisionWorld;
 use egregoria::utils::time::{GameTime, SECONDS_PER_DAY};
 use egregoria::Egregoria;
 
+use crate::gui::inputmap::InputMap;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use imgui::Ui;
 use map_model::{IntersectionID, Map, RoadSegmentKind};
@@ -85,9 +85,8 @@ pub fn debug(
                 time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64,
             ));
         }
-
         let timings = uiworld.read::<Timings>();
-        let mouse = uiworld.read::<MouseInfo>().unprojected;
+        let mouse = uiworld.read::<InputMap>().unprojected;
         let cam = uiworld.read::<Camera>().pos;
 
         ui.text("Averaged over last 10 frames: ");

@@ -7,6 +7,7 @@ use crate::pedestrians::pedestrian_decision_system;
 use crate::physics::systems::coworld_synchronize;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
+use crate::vehicles::railvehicle::locomotive_system;
 use crate::vehicles::systems::{vehicle_decision_system, vehicle_state_update_system};
 use crate::{
     utils, CollisionWorld, Egregoria, GameTime, ParCommandBuffer, RandProvider, RunnableSystem,
@@ -24,6 +25,7 @@ pub fn init() {
     register_system("company_system", company_system);
     register_system("pedestrian_decision_system", pedestrian_decision_system);
     register_system("coworld_synchronize", coworld_synchronize);
+    register_system("locomotive_system", locomotive_system);
     register_system("vehicle_decision_system", vehicle_decision_system);
     register_system("vehicle_state_update_system", vehicle_state_update_system);
     register_system("routing_changed_system", routing_changed_system);

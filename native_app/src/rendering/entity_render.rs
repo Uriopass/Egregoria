@@ -1,6 +1,6 @@
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::{Location, Pedestrian};
-use egregoria::vehicles::railvehicle::Locomotive;
+use egregoria::vehicles::railvehicle::{Locomotive, RailWagon};
 use egregoria::vehicles::{Vehicle, VehicleKind};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec3, V3};
@@ -54,7 +54,17 @@ impl InstancedRender {
             }
         }
 
+        self.trains.instances.clear();
         for (_, trans) in goria.world().query::<With<Locomotive, &Transform>>().iter() {
+            let instance = MeshInstance {
+                pos: trans.position,
+                dir: trans.dir,
+                tint: LinearColor::WHITE,
+            };
+            self.trains.instances.push(instance);
+        }
+
+        for (_, trans) in goria.world().query::<With<RailWagon, &Transform>>().iter() {
             let instance = MeshInstance {
                 pos: trans.position,
                 dir: trans.dir,
