@@ -55,9 +55,19 @@ impl Polyline3Queue {
     }
 
     pub fn push(&mut self, v: Vec3) {
-        if v.is_close(self.head, 0.1) {
+        if v.is_close(self.head, 0.2) {
             self.update_front(v);
             return;
+        }
+        if self.data.len() >= 2 {
+            if let Some(behind) = (self.data[0] - self.data[1]).try_normalize() {
+                if let Some(headdir) = (self.head - self.data[0]).try_normalize() {
+                    if behind.dot(headdir) > 0.99999 {
+                        self.update_front(v);
+                        return;
+                    }
+                }
+            }
         }
         self.real_push(v)
     }

@@ -31,3 +31,4 @@ if_chain      = "1.0.1"
 hecs          = { version = "0.7.6", features=["column-serialize"] }
 resources     = "1.1.0"
 profiling     = "1.0.5"
+inline_tweak  = "1.0.8"
