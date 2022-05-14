@@ -72,7 +72,12 @@ impl Road {
         spatial: &mut SpatialMap,
     ) -> RoadID {
         let width = lane_pattern.width();
-        let points = Self::generate_points(src, dst, segment);
+        let points = Self::generate_points(
+            src,
+            dst,
+            segment,
+            lane_pattern.lanes().any(|(a, _, _)| a.is_rail()),
+        );
 
         let id = roads.insert_with_key(|id| Self {
             id,
@@ -281,6 +286,7 @@ impl Road {
         src: &Intersection,
         dst: &Intersection,
         segment: RoadSegmentKind,
+        precise: bool,
     ) -> PolyLine3 {
         let from = src.pos;
         let to = dst.pos;
@@ -303,7 +309,11 @@ impl Road {
                 to_derivative: to_derivative.z0(),
             },
         };
-        PolyLine3::new(spline.smart_points(1.0, 0.0, 1.0).collect())
+        PolyLine3::new(
+            spline
+                .smart_points(if precise { 0.1 } else { 1.0 }, 0.0, 1.0)
+                .collect(),
+        )
     }
 
     pub fn interface_point(&self, id: IntersectionID) -> Vec3 {

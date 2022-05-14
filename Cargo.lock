@@ -696,6 +696,7 @@ dependencies = [
  "imgui",
  "imgui-inspect",
  "imgui-inspect-derive",
+ "inline_tweak",
  "log",
  "map_model",
  "ordered-float",
