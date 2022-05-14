@@ -84,6 +84,9 @@ impl ImguiWrapper {
             .prepare_frame(self.imgui.io_mut(), window)
             .expect("Failed to prepare frame");
 
+        self.imgui.io_mut().display_size = [gfx.size.0 as f32, gfx.size.1 as f32];
+        self.imgui.io_mut().display_framebuffer_scale = [1.0, 1.0];
+
         let ui: imgui::Ui<'_> = self.imgui.frame();
         ui_render(&ui);
 

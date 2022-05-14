@@ -109,6 +109,7 @@ impl Default for RenderParams {
 u8slice_impl!(RenderParams);
 
 pub struct GuiRenderContext<'a, 'b> {
+    pub size: (u32, u32),
     pub device: &'a wgpu::Device,
     pub queue: &'a wgpu::Queue,
     pub rpass: Option<wgpu::RenderPass<'b>>,
@@ -533,6 +534,7 @@ impl GfxContext {
         });
 
         render_gui(GuiRenderContext {
+            size: self.size,
             device: &self.device,
             queue: &self.queue,
             rpass: Some(rpass),
