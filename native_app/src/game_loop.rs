@@ -132,7 +132,7 @@ impl State {
         };
         println!("{:?}", leader.past);
 
-        let distances = (1..6).map(|x| x as f32 * 18.0);
+        let distances = (1..6).map(|x| 1.0 + x as f32 * 16.75);
         let followers: Vec<_> = leader.past.mk_followers(distances).collect();
 
         let loco = goria.world_mut_unchecked().spawn((

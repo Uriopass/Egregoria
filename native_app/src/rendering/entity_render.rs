@@ -14,6 +14,7 @@ pub struct InstancedRender {
     pub path_not_found: SpriteBatchBuilder,
     pub cars: InstancedMeshBuilder,
     pub trains: InstancedMeshBuilder,
+    pub wagons: InstancedMeshBuilder,
     pub trucks: InstancedMeshBuilder,
     pub pedestrians: InstancedMeshBuilder,
 }
@@ -28,6 +29,7 @@ impl InstancedRender {
                 load_mesh("assets/models/simple_car.glb", gfx).unwrap(),
             ),
             trains: InstancedMeshBuilder::new(load_mesh("assets/models/train.glb", gfx).unwrap()),
+            wagons: InstancedMeshBuilder::new(load_mesh("assets/models/wagon.glb", gfx).unwrap()),
             trucks: InstancedMeshBuilder::new(load_mesh("assets/models/truck.glb", gfx).unwrap()),
             pedestrians: InstancedMeshBuilder::new(
                 load_mesh("assets/models/pedestrian.glb", gfx).unwrap(),
@@ -64,13 +66,14 @@ impl InstancedRender {
             self.trains.instances.push(instance);
         }
 
+        self.wagons.instances.clear();
         for (_, trans) in goria.world().query::<With<RailWagon, &Transform>>().iter() {
             let instance = MeshInstance {
                 pos: trans.position,
                 dir: trans.dir,
                 tint: LinearColor::WHITE,
             };
-            self.trains.instances.push(instance);
+            self.wagons.instances.push(instance);
         }
 
         for (_, (trans, ped, loc)) in goria
@@ -122,6 +125,9 @@ impl InstancedRender {
             fctx.objs.push(Box::new(x));
         }
         if let Some(x) = self.trains.build(fctx.gfx) {
+            fctx.objs.push(Box::new(x));
+        }
+        if let Some(x) = self.wagons.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }
     }
