@@ -1,4 +1,5 @@
 mod default_bool;
+mod default_btrees;
 mod default_f32;
 mod default_f64;
 mod default_i32;

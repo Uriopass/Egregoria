@@ -10,6 +10,7 @@ use egregoria::souls::human::HumanDecision;
 use egregoria::vehicles::{Vehicle, VehicleID, VehicleState};
 use egregoria::{Egregoria, SoulID};
 
+use egregoria::vehicles::trains::{Locomotive, LocomotiveReservation};
 use geom::{Transform, Vec2};
 use hecs::{Component, Entity};
 use imgui::Ui;
@@ -66,6 +67,8 @@ impl InspectRenderer {
         self.inspect_component::<Home>(goria, ui);
         self.inspect_component::<BuyFood>(goria, ui);
         self.inspect_component::<GoodsCompany>(goria, ui);
+        self.inspect_component::<Locomotive>(goria, ui);
+        self.inspect_component::<LocomotiveReservation>(goria, ui);
 
         if let Some(v) = goria.comp::<Vehicle>(self.entity) {
             if matches!(v.state, VehicleState::Driving | VehicleState::Panicking(_)) {

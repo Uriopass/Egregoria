@@ -1,5 +1,5 @@
 mod data;
-pub mod railvehicle;
 pub mod systems;
+pub mod trains;
 
 pub use data::*;

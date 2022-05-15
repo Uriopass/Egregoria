@@ -7,8 +7,11 @@ use crate::pedestrians::pedestrian_decision_system;
 use crate::physics::systems::coworld_synchronize;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
-use crate::vehicles::railvehicle::{locomotive_random_movement_system, locomotive_system};
 use crate::vehicles::systems::{vehicle_decision_system, vehicle_state_update_system};
+use crate::vehicles::trains::{
+    locomotive_random_movement_system, locomotive_system, train_reservations_update,
+    TrainReservations,
+};
 use crate::{
     utils, CollisionWorld, Egregoria, GameTime, ParCommandBuffer, RandProvider, RunnableSystem,
     RNG_SEED, SECONDS_PER_DAY, SECONDS_PER_HOUR,
@@ -36,11 +39,13 @@ pub fn init() {
     register_system("routing_update_system", routing_update_system);
     register_system("itinerary_update", itinerary_update);
     register_system("market_update", market_update);
+    register_system("train_reservations_update", train_reservations_update);
 
     register_resource_noserialize::<GoodsCompanyRegistry>();
     register_resource_noserialize::<ParCommandBuffer>();
 
     register_resource("map", Map::default);
+    register_resource("train_reservations", TrainReservations::default);
     register_resource("government", Government::default);
     register_resource("market", Market::default);
     register_resource("pmanagement", ParkingManagement::default);

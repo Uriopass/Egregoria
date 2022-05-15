@@ -2,7 +2,7 @@ use super::Tool;
 use crate::gui::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
-use egregoria::vehicles::railvehicle::wagons_positions;
+use egregoria::vehicles::trains::wagons_positions;
 use egregoria::Egregoria;
 use geom::{Color, OBB};
 use map_model::LaneKind;

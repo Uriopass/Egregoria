@@ -4,9 +4,12 @@ use crate::{
 };
 use geom::{pseudo_angle, Circle};
 use geom::{Vec2, Vec3};
+use imgui_inspect::imgui::Ui;
+use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
+use std::collections::BTreeSet;
 
 new_key_type! {
     pub struct IntersectionID;
@@ -23,7 +26,7 @@ pub struct Intersection {
     pub id: IntersectionID,
     pub pos: Vec3,
 
-    turns: Vec<Turn>,
+    turns: BTreeSet<Turn>,
 
     // sorted by angle
     pub roads: Vec<RoadID>,
@@ -83,9 +86,13 @@ impl Intersection {
             .map(|(id, kind)| Turn::new(id, kind))
             .collect();
 
-        for turn in self.turns.iter_mut() {
-            turn.make_points(lanes);
-        }
+        self.turns = std::mem::take(&mut self.turns)
+            .into_iter()
+            .map(|mut x| {
+                x.make_points(lanes);
+                x
+            })
+            .collect();
     }
 
     pub fn update_traffic_control(&self, lanes: &mut Lanes, roads: &Roads) {
@@ -194,9 +201,7 @@ impl Intersection {
     }
 
     pub fn find_turn(&self, needle: TurnID) -> Option<&Turn> {
-        self.turns
-            .iter()
-            .find_map(move |x| if x.id == needle { Some(x) } else { None })
+        self.turns.get(&needle)
     }
 
     pub fn turns_from(
@@ -226,7 +231,30 @@ impl Intersection {
         })
     }
 
-    pub fn turns(&self) -> &Vec<Turn> {
-        &self.turns
+    pub fn turns(&self) -> impl ExactSizeIterator<Item = &Turn> {
+        self.turns.iter()
+    }
+}
+
+impl InspectRenderDefault<IntersectionID> for IntersectionID {
+    fn render(
+        data: &[&IntersectionID],
+        label: &'static str,
+        ui: &Ui<'_>,
+        _args: &InspectArgsDefault,
+    ) {
+        let v = &data[0];
+        ui.text(format!("{}: {:?}", label, *v));
+    }
+
+    fn render_mut(
+        data: &mut [&mut IntersectionID],
+        label: &'static str,
+        ui: &Ui<'_>,
+        _args: &InspectArgsDefault,
+    ) -> bool {
+        let v = &data[0];
+        ui.text(format!("{}: {:?}", label, *v));
+        false
     }
 }

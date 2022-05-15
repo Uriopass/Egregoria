@@ -8,7 +8,7 @@ use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::goods_company::GoodsCompany;
 use crate::souls::human::HumanDecision;
-use crate::vehicles::railvehicle::{Locomotive, RandomLocomotive};
+use crate::vehicles::trains::{Locomotive, LocomotiveReservation, RandomLocomotive};
 use crate::vehicles::Vehicle;
 use common::saveload::Encoder;
 use geom::{Transform, Vec3};
@@ -48,7 +48,7 @@ pub mod vehicles;
 
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::utils::scheduler::RunnableSystem;
-use crate::vehicles::railvehicle::RailWagon;
+use crate::vehicles::trains::RailWagon;
 use common::FastMap;
 use serde::de::Error;
 pub use utils::par_command_buffer::ParCommandBuffer;
@@ -464,4 +464,5 @@ register!(
         RandomLocomotive => _19,
         ItineraryLeader => _20,
         ItineraryFollower => _21,
+        LocomotiveReservation => _22,
 );

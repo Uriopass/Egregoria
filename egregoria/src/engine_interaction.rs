@@ -51,7 +51,7 @@ pub enum WorldCommand {
 use crate::economy::Government;
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::time::GameTime;
-use crate::vehicles::railvehicle::spawn_train;
+use crate::vehicles::trains::spawn_train;
 use geom::{Transform, Vec2, Vec3, OBB};
 use WorldCommand::*;
 
