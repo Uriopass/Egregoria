@@ -107,7 +107,7 @@ impl Pathfinder for PedestrianPath {
     }
 
     fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID> {
-        map.nearest_lane(pos, LaneKind::Walking)
+        map.nearest_lane(pos, LaneKind::Walking, None)
     }
 
     fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3> {
@@ -135,7 +135,7 @@ impl Pathfinder for RailPath {
     }
 
     fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID> {
-        map.nearest_lane(pos, LaneKind::Rail)
+        map.nearest_lane(pos, LaneKind::Rail, None)
     }
 
     fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3> {
@@ -215,7 +215,7 @@ impl Pathfinder for CarPath {
     }
 
     fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID> {
-        map.nearest_lane(pos, LaneKind::Driving)
+        map.nearest_lane(pos, LaneKind::Driving, None)
     }
 
     fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3> {

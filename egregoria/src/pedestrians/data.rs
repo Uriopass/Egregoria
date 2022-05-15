@@ -28,7 +28,7 @@ pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Option<Enti
         Transform::new(hpos),
         Location::Building(house),
         p,
-        Itinerary::none(),
+        Itinerary::NONE,
         Kinematics::default(),
         Selectable::new(3.0),
     ));

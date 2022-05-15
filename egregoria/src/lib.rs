@@ -1,6 +1,6 @@
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommands};
-use crate::map_dynamic::{Itinerary, Router};
+use crate::map_dynamic::{Itinerary, ItineraryFollower, ItineraryLeader, Router};
 use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Kinematics};
@@ -8,6 +8,7 @@ use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::goods_company::GoodsCompany;
 use crate::souls::human::HumanDecision;
+use crate::vehicles::railvehicle::{Locomotive, RandomLocomotive};
 use crate::vehicles::Vehicle;
 use common::saveload::Encoder;
 use geom::{Transform, Vec3};
@@ -47,6 +48,7 @@ pub mod vehicles;
 
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::utils::scheduler::RunnableSystem;
+use crate::vehicles::railvehicle::RailWagon;
 use common::FastMap;
 use serde::de::Error;
 pub use utils::par_command_buffer::ParCommandBuffer;
@@ -120,6 +122,10 @@ impl Egregoria {
         }
 
         goria
+    }
+
+    pub fn world_res(&mut self) -> (&mut World, &mut Resources) {
+        (&mut self.world, &mut self.resources)
     }
 
     pub fn world(&self) -> &World {
@@ -453,4 +459,9 @@ register!(
         Vehicle => _14,
         Work => _15,
         Workers => _16,
+        Locomotive => _17,
+        RailWagon => _18,
+        RandomLocomotive => _19,
+        ItineraryLeader => _20,
+        ItineraryFollower => _21,
 );

@@ -32,7 +32,7 @@ pub struct Itinerary {
 pub enum ItineraryKind {
     None,
     WaitUntil(f64),
-    Simple,
+    Simple(Vec3),
     Route(Route, PathKind),
     WaitForReroute {
         kind: PathKind,
@@ -52,16 +52,14 @@ pub struct Route {
 pub const OBJECTIVE_OK_DIST: f32 = 3.0;
 
 impl Itinerary {
-    pub fn none() -> Self {
-        Self {
-            kind: ItineraryKind::None,
-            local_path: Default::default(),
-        }
-    }
+    pub const NONE: Self = Self {
+        kind: ItineraryKind::None,
+        local_path: Vec::new(),
+    };
 
     pub fn simple(path: Vec<Vec3>) -> Self {
         Self {
-            kind: ItineraryKind::Simple,
+            kind: ItineraryKind::Simple(*path.last().unwrap()),
             local_path: path,
         }
     }
@@ -206,7 +204,7 @@ impl Itinerary {
                 }
 
                 let k = unwrap_or!(self.get_travers(), {
-                    *self = Itinerary::none();
+                    *self = Itinerary::NONE;
                     return p;
                 });
 
@@ -239,11 +237,11 @@ impl Itinerary {
     }
 
     pub fn end_pos(&self) -> Option<Vec3> {
-        match &self.kind {
+        match self.kind {
             ItineraryKind::None => None,
             ItineraryKind::WaitUntil(_) | ItineraryKind::WaitForReroute { .. } => None,
-            ItineraryKind::Simple => self.local_path.last().copied(),
-            ItineraryKind::Route(r, _) => Some(r.end_pos),
+            ItineraryKind::Simple(e) => Some(e),
+            ItineraryKind::Route(ref r, _) => Some(r.end_pos),
         }
     }
 
@@ -255,9 +253,9 @@ impl Itinerary {
         match &self.kind {
             ItineraryKind::None | ItineraryKind::WaitUntil(_) => true,
             ItineraryKind::WaitForReroute { .. } => false,
-            ItineraryKind::Simple => self.remaining_points() == 1,
+            ItineraryKind::Simple(_) => self.remaining_points() <= 1,
             ItineraryKind::Route(Route { reversed_route, .. }, _) => {
-                reversed_route.is_empty() && self.remaining_points() == 1
+                reversed_route.is_empty() && self.remaining_points() <= 1
             }
         }
     }
@@ -270,12 +268,12 @@ impl Itinerary {
         if !self.is_terminal() {
             return None;
         }
-        match &self.kind {
+        match self.kind {
             ItineraryKind::None
             | ItineraryKind::WaitUntil(_)
             | ItineraryKind::WaitForReroute { .. } => None,
-            ItineraryKind::Simple => self.local_path.last().copied(),
-            ItineraryKind::Route(Route { end_pos, .. }, _) => Some(*end_pos),
+            ItineraryKind::Simple(e) => Some(e),
+            ItineraryKind::Route(Route { end_pos, .. }, _) => Some(end_pos),
         }
     }
 
@@ -283,7 +281,7 @@ impl Itinerary {
         match &self.kind {
             ItineraryKind::None
             | ItineraryKind::WaitUntil(_)
-            | ItineraryKind::Simple
+            | ItineraryKind::Simple(_)
             | ItineraryKind::WaitForReroute { .. } => None,
             ItineraryKind::Route(Route { cur, .. }, _) => Some(cur),
         }
@@ -332,7 +330,7 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
         match d {
             ItineraryKind::None => ui.text(format!("None {}", label)),
             ItineraryKind::WaitUntil(time) => ui.text(format!("WaitUntil({}) {}", time, label)),
-            ItineraryKind::Simple => ui.text(format!("Simple {}", label)),
+            ItineraryKind::Simple(e) => ui.text(format!("Simple {} to {}", label, e)),
             ItineraryKind::Route(r, _) => {
                 <Route as InspectRenderDefault<Route>>::render(&[r], label, ui, args);
             }
@@ -353,7 +351,7 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
         match d {
             ItineraryKind::None => ui.text(format!("None {}", label)),
             ItineraryKind::WaitUntil(time) => ui.text(format!("WaitUntil({}) {}", time, label)),
-            ItineraryKind::Simple => ui.text(format!("Simple {}", label)),
+            ItineraryKind::Simple(e) => ui.text(format!("Simple {} to {}", label, e)),
             ItineraryKind::Route(r, _) => {
                 return <Route as InspectRenderDefault<Route>>::render_mut(
                     &mut [r],

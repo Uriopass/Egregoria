@@ -602,7 +602,7 @@ impl Map {
         None
     }
 
-    pub fn nearest_lane(&self, p: Vec3, kind: LaneKind) -> Option<LaneID> {
+    pub fn nearest_lane(&self, p: Vec3, kind: LaneKind, cutoff: Option<f32>) -> Option<LaneID> {
         let tryfind = |radius| {
             self.spatial_map()
                 .query_around(p.xy(), radius, ProjectFilter::ROAD)
@@ -619,6 +619,10 @@ impl Map {
                 .map(|(id, _)| &self.lanes[id])
                 .min_by_key(|lane| OrderedFloat(lane.points.project_dist2(p)))
         };
+
+        if let Some(cutoff) = cutoff {
+            return tryfind(cutoff).map(|v| v.id);
+        }
 
         if let Some(lane) = tryfind(20.0) {
             return Some(lane.id);

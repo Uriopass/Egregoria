@@ -251,7 +251,7 @@ fn comp<T: Component>(sw: &World, e: Entity) -> Option<Ref<T>> {
 fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, kin: &mut Kinematics) {
     cbuf.remove_component_drop::<Collider>(body);
     kin.speed = 0.0;
-    cbuf.add_component(body, Itinerary::none())
+    cbuf.add_component(body, Itinerary::NONE)
 }
 
 fn walk_outside(body: Entity, pos: Vec3, cbuf: &ParCommandBuffer, loc: &mut Location) {

@@ -7,7 +7,7 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use geom::{vec2, vec3, Camera, LinearColor, Polyline3Queue, Transform, Vec2, Vec3};
+use geom::{Camera, LinearColor};
 use wgpu_engine::lighting::LightInstance;
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
@@ -25,12 +25,8 @@ use crate::rendering::{CameraHandler3D, InstancedRender, RoadRenderer, TerrainRe
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
 use common::timestep::Timestep;
-use egregoria::engine_interaction::{Selectable, WorldCommands};
-use egregoria::map_dynamic::{Itinerary, ItineraryFollower, ItineraryLeader};
-use egregoria::physics::Kinematics;
+use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
-use egregoria::vehicles::railvehicle::{Locomotive, RailWagon};
-use map_model::{IntersectionID, LanePatternBuilder, Map, MapProject, PathKind, ProjectKind};
 use networking::{Frame, PollResult, ServerPollResult};
 
 pub struct State {
@@ -60,110 +56,9 @@ impl State {
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
         log::info!("loaded imgui_render");
 
-        let mut goria: Egregoria =
+        let goria: Egregoria =
             Egregoria::load_from_disk("world").unwrap_or_else(|| Egregoria::new(10));
         let game_schedule = Egregoria::schedule();
-
-        let mut map = goria.write::<Map>();
-        let proj = |v: Vec2| {
-            let h = map.terrain.height(v).unwrap();
-            vec3(v.x, v.y, h + 0.2)
-        };
-
-        let p1 = proj(vec2(0.0, 0.0));
-        let p2 = proj(vec2(230.0, 0.0));
-        let p3 = proj(vec2(500.0, 500.0));
-        let p4 = proj(vec2(0.0, 1000.0));
-        let p5 = proj(vec2(-500.0, 500.0));
-
-        let station = map.build_trainstation(p1, p2);
-        let station = map.trainstations()[station].clone();
-
-        let mut connect = |i: IntersectionID, p: Vec3| {
-            let inter = map.intersections()[i].pos;
-            map.make_connection(
-                MapProject {
-                    pos: inter,
-                    kind: ProjectKind::Inter(i),
-                },
-                MapProject {
-                    pos: p,
-                    kind: ProjectKind::Ground,
-                },
-                Some((inter + p).xy() * 0.5 + (p - inter).xy().perpendicular() * 0.5),
-                &LanePatternBuilder::new().rail(true).build(),
-            )
-            .unwrap()
-            .0
-        };
-
-        let i = connect(station.right, p3);
-        let i = connect(i, p4);
-        let i = connect(i, p5);
-
-        drop(connect);
-
-        let ipos = map.intersections()[i].pos;
-        let leftpos = map.intersections()[station.left].pos;
-
-        map.make_connection(
-            MapProject {
-                pos: ipos,
-                kind: ProjectKind::Inter(i),
-            },
-            MapProject {
-                pos: leftpos,
-                kind: ProjectKind::Inter(station.left),
-            },
-            Some((ipos + leftpos).xy() * 0.5 + (leftpos - ipos).xy().perpendicular() * 0.5),
-            &LanePatternBuilder::new().rail(true).build(),
-        );
-
-        let (laneid, _) = map.roads()[station.track].lanes_iter().nth(1).unwrap();
-        let mut lanep = map.lanes()[laneid].points.clone();
-        lanep.reverse();
-        let (pos, segment, dir) = lanep.project_segment_dir(lanep.point_along(15.0));
-
-        let itin = Itinerary::route(pos, Vec3::new(240.0, 24.0, 0.2), &*map, PathKind::Rail);
-        drop(map);
-
-        let leader = ItineraryLeader {
-            past: Polyline3Queue::new(lanep.iter().skip(segment).copied(), pos, 150.0),
-        };
-        println!("{:?}", leader.past);
-
-        let distances = (1..6).map(|x| 1.0 + x as f32 * 16.75);
-        let followers: Vec<_> = leader.past.mk_followers(distances).collect();
-
-        let loco = goria.world_mut_unchecked().spawn((
-            Transform::new_dir(pos, -dir),
-            Kinematics::default(),
-            Selectable::new(10.0),
-            Locomotive {
-                max_speed: 50.0,
-                acc_force: 1.0,
-                dec_force: 2.5,
-            },
-            itin.unwrap(),
-            leader,
-        ));
-
-        for mut follower in followers {
-            println!("{:?}", follower);
-            let (pos, dir) = follower.update(&goria.comp::<ItineraryLeader>(loco).unwrap().past);
-
-            goria.world_mut_unchecked().spawn((
-                Transform::new_dir(pos, dir),
-                Kinematics::default(),
-                Selectable::new(10.0),
-                RailWagon,
-                ItineraryFollower {
-                    leader: loco,
-                    follower,
-                },
-            ));
-        }
-
         let mut uiworld = UiWorld::init();
 
         uiworld.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));

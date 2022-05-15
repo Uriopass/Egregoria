@@ -36,7 +36,7 @@ pub enum InputAction {
 pub struct InputCombination(Vec<UnitInput>);
 
 struct InputTree {
-    action: Option<InputAction>,
+    actions: Vec<InputAction>,
     childs: FastMap<UnitInput, Box<InputTree>>,
 }
 pub struct InputMap {
@@ -73,7 +73,7 @@ impl InputMap {
             (Zoom,          ics![Key(K::Plus) ; WheelUp]),
             (Dezoom,        ics![Key(K::Minus) ; WheelDown]),
             (Rotate,        ics![Key(K::LControl), WheelUp ; Key(K::LControl), WheelDown]),
-            (Close,         ics![Key(K::Escape)]),
+            (Close,         ics![Key(K::Escape) ; Mouse(Right)]),
             (Select,        ics![Mouse(Left)]),
             (HideInterface, ics![Key(K::H)]),
         ] {
@@ -189,7 +189,7 @@ impl Default for InputMap {
             unprojected: None,
             input_tree: InputTree {
                 childs: Default::default(),
-                action: None,
+                actions: Vec::new(),
             },
         };
         s.build_input_tree();
@@ -200,7 +200,7 @@ impl Default for InputMap {
 impl InputTree {
     pub fn new(mapping: &FastMap<InputAction, InputCombinations>) -> Self {
         let mut root = Self {
-            action: None,
+            actions: Vec::new(),
             childs: Default::default(),
         };
 
@@ -214,18 +214,14 @@ impl InputTree {
                         Entry::Occupied(_) => {}
                         Entry::Vacant(v) => {
                             v.insert(Box::new(InputTree {
-                                action: None,
+                                actions: Vec::new(),
                                 childs: Default::default(),
                             }));
                         }
                     }
                     cur = &mut **cur.childs.get_mut(inp).unwrap();
                 }
-                if cur.action.is_some() {
-                    log::error!("two inputs match to the same action, ignoring: {}", act);
-                    continue;
-                }
-                cur.action = Some(*act);
+                cur.actions.push(*act);
             }
         }
 
@@ -237,7 +233,7 @@ impl InputTree {
         kb: &FastSet<KeyCode>,
         mouse: &FastSet<MouseButton>,
         wheel: f32,
-    ) -> impl Iterator<Item = InputAction> {
+    ) -> impl Iterator<Item = InputAction> + '_ {
         let mut units: HashSet<UnitInput> = HashSet::with_capacity(kb.len() + mouse.len() + 1);
 
         units.extend(kb.iter().map(|x| UnitInput::Key(*x)));
@@ -258,8 +254,8 @@ impl InputTree {
                     if let Some(inp) = q.childs.get(&key) {
                         let mut newstack = input_stack.clone();
                         newstack.push(key);
-                        if let Some(x) = inp.action {
-                            matches.push((newstack.clone(), x));
+                        if !inp.actions.is_empty() {
+                            matches.push((newstack.clone(), &inp.actions));
                         }
                         queue.push((newstack, &**inp));
                     }
@@ -267,15 +263,20 @@ impl InputTree {
             }
         }
 
-        matches.into_iter().rev().filter_map(move |(inp, act)| {
-            if !inp.iter().all(|x| units.contains(x)) {
-                return None;
-            }
-            for v in inp {
-                units.remove(&v);
-            }
-            Some(act)
-        })
+        matches
+            .into_iter()
+            .rev()
+            .filter_map(move |(inp, act)| {
+                if !inp.iter().all(|x| units.contains(x)) {
+                    return None;
+                }
+                for v in inp {
+                    units.remove(&v);
+                }
+                Some(act)
+            })
+            .flatten()
+            .copied()
     }
 }
 

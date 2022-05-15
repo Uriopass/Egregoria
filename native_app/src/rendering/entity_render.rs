@@ -28,7 +28,9 @@ impl InstancedRender {
             cars: InstancedMeshBuilder::new(
                 load_mesh("assets/models/simple_car.glb", gfx).unwrap(),
             ),
-            trains: InstancedMeshBuilder::new(load_mesh("assets/models/train.glb", gfx).unwrap()),
+            trains: InstancedMeshBuilder::new(
+                load_mesh("assets/models/train_test.glb", gfx).unwrap(),
+            ),
             wagons: InstancedMeshBuilder::new(load_mesh("assets/models/wagon.glb", gfx).unwrap()),
             trucks: InstancedMeshBuilder::new(load_mesh("assets/models/truck.glb", gfx).unwrap()),
             pedestrians: InstancedMeshBuilder::new(
