@@ -149,7 +149,7 @@ pub fn spawn_parked_vehicle(
 ) -> Option<VehicleID> {
     let map = goria.map();
 
-    let it = Itinerary::none();
+    let it = Itinerary::NONE;
 
     let mut pm = goria.write::<ParkingManagement>();
 

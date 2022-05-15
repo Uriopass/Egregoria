@@ -102,6 +102,7 @@ impl Gui {
             (UiTex::Buildings, Tool::SpecialBuilding),
             (UiTex::Bulldozer, Tool::Bulldozer),
             (UiTex::TrainStation, Tool::TrainStation),
+            (UiTex::AddTrain, Tool::AddTrain),
         ];
 
         Window::new("Toolbox")

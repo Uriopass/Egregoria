@@ -22,6 +22,7 @@ pub mod specialbuilding;
 pub mod topgui;
 pub mod trainstation;
 
+pub mod addtrain;
 pub mod inputmap;
 pub mod windows;
 
@@ -39,6 +40,7 @@ pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     selectable::selectable(goria, uiworld);
     specialbuilding::specialbuilding(goria, uiworld);
     trainstation::trainstation(goria, uiworld);
+    addtrain::addtrain(goria, uiworld);
     hand_reset(uiworld);
 }
 
@@ -75,6 +77,7 @@ pub enum Tool {
     LotBrush,
     SpecialBuilding,
     TrainStation,
+    AddTrain,
 }
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]
@@ -86,6 +89,7 @@ pub enum UiTex {
     Buildings,
     LotBrush,
     TrainStation,
+    AddTrain,
 }
 
 const UI_TEXTURES: &[(UiTex, &str)] = &[
@@ -96,6 +100,7 @@ const UI_TEXTURES: &[(UiTex, &str)] = &[
     (UiTex::Buildings, "assets/ui/buildings.png"),
     (UiTex::LotBrush, "assets/ui/lotbrush.png"),
     (UiTex::TrainStation, "assets/ui/trainstation.png"),
+    (UiTex::AddTrain, "assets/ui/traintool.png"),
 ];
 
 pub struct UiTextures {

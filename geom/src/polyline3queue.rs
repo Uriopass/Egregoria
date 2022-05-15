@@ -38,6 +38,7 @@ impl Polyline3Queue {
                 x
             })
             .collect();
+        println!("{:?}", data.front());
         let mut s = Self {
             curlength: dist,
             maxlength,
@@ -127,8 +128,8 @@ impl Polyline3Queue {
             }
 
             loop {
-                counter += 1;
-                let newp = *self.data.get(counter - self.frontcounter).unwrap();
+                counter -= 1;
+                let newp = *self.data.get(self.frontcounter - counter).unwrap();
                 let d = lastp.distance(newp);
                 if accdist + d >= dist {
                     break;

@@ -3,6 +3,7 @@ use geom::Vec3;
 use map_model::{LaneKind, Map, ParkingSpot, ParkingSpotID, ParkingSpots};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashSet};
+use std::option::Option::None;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[repr(transparent)]
@@ -30,7 +31,7 @@ impl ParkingManagement {
     }
 
     pub fn reserve_near(&mut self, near: Vec3, map: &Map) -> Option<SpotReservation> {
-        let lane = map.nearest_lane(near, LaneKind::Driving)?;
+        let lane = map.nearest_lane(near, LaneKind::Driving, None)?;
         let lane = map.lanes().get(lane)?;
 
         let depth = 7;

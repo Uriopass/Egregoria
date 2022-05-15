@@ -1,8 +1,8 @@
 use crate::Egregoria;
 use hecs::Entity;
 use map_model::{
-    BuildingGen, BuildingID, BuildingKind, IntersectionID, LanePattern, LightPolicy, LotID, Map,
-    MapProject, RoadID, TurnPolicy,
+    BuildingGen, BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LightPolicy, LotID,
+    Map, MapProject, RoadID, TurnPolicy,
 };
 use serde::{Deserialize, Serialize};
 
@@ -37,6 +37,7 @@ pub enum WorldCommand {
     MapRemoveBuilding(BuildingID),
     MapBuildHouse(LotID),
     MapBuildTrainstation(Vec3, Vec3),
+    AddTrain(f32, u32, LaneID),
     MapMakeConnection(MapProject, MapProject, Option<Vec2>, LanePattern),
     MapUpdateIntersectionPolicy(IntersectionID, TurnPolicy, LightPolicy),
     MapBuildSpecialBuilding(RoadID, OBB, BuildingKind, BuildingGen),
@@ -50,6 +51,7 @@ pub enum WorldCommand {
 use crate::economy::Government;
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::time::GameTime;
+use crate::vehicles::railvehicle::spawn_train;
 use geom::{Transform, Vec2, Vec3, OBB};
 use WorldCommand::*;
 
@@ -88,6 +90,10 @@ impl WorldCommands {
 
     pub fn set_game_time(&mut self, gt: GameTime) {
         self.commands.push(SetGameTime(gt))
+    }
+
+    pub fn add_train(&mut self, dist: f32, n_wagons: u32, laneid: LaneID) {
+        self.commands.push(AddTrain(dist, n_wagons, laneid))
     }
 
     pub fn map_build_special_building(
@@ -175,6 +181,9 @@ impl WorldCommand {
                 }
             }
             SetGameTime(gt) => *goria.write::<GameTime>() = gt,
+            AddTrain(dist, n_wagons, lane) => {
+                spawn_train(goria, dist, n_wagons, lane);
+            }
             MapLoadParis => map_model::procgen::load_parismap(&mut *goria.map_mut()),
             MapLoadTestField(pos, size, spacing) => {
                 map_model::procgen::load_testfield(&mut *goria.map_mut(), pos, size, spacing)

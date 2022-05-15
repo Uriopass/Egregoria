@@ -1,5 +1,5 @@
+use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::Tool;
-use crate::input::{MouseButton, MouseInfo};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use common::AudioKind;
@@ -41,7 +41,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let state = &mut *uiworld.write::<RoadBuildResource>();
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();
     let immsound = &mut *uiworld.write::<ImmediateSound>();
-    let mouseinfo = uiworld.read::<MouseInfo>();
+    let inp = uiworld.read::<InputMap>();
     let tool = uiworld.read::<Tool>();
     let map = &*goria.map();
     let commands: &mut WorldCommands = &mut *uiworld.commands();
@@ -52,7 +52,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         return;
     }
 
-    let unproj = unwrap_ret!(mouseinfo.unprojected);
+    let unproj = unwrap_ret!(inp.unprojected);
     let grid_size = 15.0;
     let mousepos = if state.snap_to_grid {
         let v = unproj.xy().snap(grid_size, grid_size);
@@ -111,7 +111,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
     }
 
-    if mouseinfo.just_pressed.contains(&MouseButton::Right) {
+    if inp.just_act.contains(&InputAction::Close) {
         state.build_state = BuildState::Hover;
     }
 
@@ -195,7 +195,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid);
 
-    if is_valid && mouseinfo.just_pressed.contains(&MouseButton::Left) {
+    if is_valid && inp.just_act.contains(&InputAction::Select) {
         log::info!(
             "left clicked with state {:?} and {:?}",
             state.build_state,
