@@ -2,6 +2,8 @@ use crate::{IntersectionID, LaneID, Lanes};
 use geom::PolyLine3;
 use geom::{Spline, Vec3};
 use serde::{Deserialize, Serialize};
+use std::borrow::Borrow;
+use std::cmp::Ordering;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub struct TurnID {
@@ -42,6 +44,32 @@ pub struct Turn {
     pub points: PolyLine3,
     pub kind: TurnKind,
 }
+
+impl Borrow<TurnID> for Turn {
+    fn borrow(&self) -> &TurnID {
+        &self.id
+    }
+}
+
+impl PartialOrd for Turn {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.id.partial_cmp(&other.id)
+    }
+}
+
+impl Ord for Turn {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl PartialEq for Turn {
+    fn eq(&self, other: &Self) -> bool {
+        self.id.eq(&other.id)
+    }
+}
+
+impl Eq for Turn {}
 
 const TURN_ANG_ADD: f32 = 0.29;
 const TURN_ANG_MUL: f32 = 0.36;

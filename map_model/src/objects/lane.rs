@@ -1,6 +1,7 @@
 use crate::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
 use geom::{PolyLine3, Vec2, Vec3};
-use imgui_inspect::InspectDragf;
+use imgui_inspect::imgui::Ui;
+use imgui_inspect::{InspectArgsDefault, InspectDragf, InspectRenderDefault};
 use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -328,5 +329,23 @@ impl Lane {
         } else {
             -self.points.last_dir().unwrap_or(Vec3::X).xy()
         }
+    }
+}
+
+impl InspectRenderDefault<LaneID> for LaneID {
+    fn render(data: &[&LaneID], label: &'static str, ui: &Ui<'_>, _args: &InspectArgsDefault) {
+        let v = &data[0];
+        ui.text(format!("{}: {:?}", label, *v));
+    }
+
+    fn render_mut(
+        data: &mut [&mut LaneID],
+        label: &'static str,
+        ui: &Ui<'_>,
+        _args: &InspectArgsDefault,
+    ) -> bool {
+        let v = &data[0];
+        ui.text(format!("{}: {:?}", label, *v));
+        false
     }
 }

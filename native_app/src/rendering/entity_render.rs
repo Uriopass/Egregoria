@@ -1,6 +1,6 @@
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::{Location, Pedestrian};
-use egregoria::vehicles::railvehicle::{Locomotive, RailWagon};
+use egregoria::vehicles::trains::{Locomotive, RailWagon};
 use egregoria::vehicles::{Vehicle, VehicleKind};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec3, V3};

@@ -458,7 +458,6 @@ impl MapBuilders {
             // Walking corners
             for turn in inter
                 .turns()
-                .iter()
                 .filter(|turn| matches!(turn.kind, TurnKind::WalkingCorner))
             {
                 tess.set_color(line_col);
@@ -486,7 +485,6 @@ impl MapBuilders {
             // Rail turns
             for turn in inter
                 .turns()
-                .iter()
                 .filter(|turn| matches!(turn.kind, TurnKind::Rail))
             {
                 ppoly.clear_extend(turn.points.as_slice());

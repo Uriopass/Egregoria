@@ -200,7 +200,9 @@ impl PolyLine3 {
     }
 
     pub fn point_dir_along(&self, l: f32) -> (Vec3, Vec3) {
-        self.points_dirs_along(std::iter::once(l)).next().unwrap() // Unwrap ok: std::iter::once
+        self.points_dirs_along(std::iter::once(l))
+            .next()
+            .unwrap_or((self.last(), self.last_dir().unwrap_or(Vec3::X))) // Unwrap ok: std::iter::once
     }
 
     pub fn equipoints_dir(&self, d: f32, nolimit: bool) -> impl Iterator<Item = (Vec3, Vec3)> + '_ {

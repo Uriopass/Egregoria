@@ -9,6 +9,7 @@ use egregoria::utils::time::{GameTime, SECONDS_PER_DAY};
 use egregoria::Egregoria;
 
 use crate::gui::inputmap::InputMap;
+use egregoria::vehicles::trains::TrainReservations;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use imgui::Ui;
 use map_model::{IntersectionID, Map, RoadSegmentKind};
@@ -31,6 +32,7 @@ impl Default for DebugObjs {
     fn default() -> Self {
         DebugObjs(vec![
             (true, "Debug pathfinder", debug_pathfinder),
+            (true, "Debug train reservations", debug_trainreservations),
             (false, "Debug connectivity", debug_connectivity),
             (false, "Debug spatialmap", debug_spatialmap),
             (false, "Debug collision world", debug_coworld),
@@ -341,6 +343,31 @@ pub fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> O
 
         tess.set_color(color);
         tess.draw_circle(spot.trans.position, 2.0);
+    }
+
+    Some(())
+}
+
+pub fn debug_trainreservations(
+    tess: &mut Tesselator,
+    goria: &Egregoria,
+    _uiworld: &UiWorld,
+) -> Option<()> {
+    let reservs = goria.read::<TrainReservations>();
+    let map = goria.map();
+    tess.set_color(LinearColor::new(0.8, 0.3, 0.3, 1.0));
+    for (lid, poses) in &reservs.localisations {
+        let lane = map.lanes().get(*lid)?;
+        for (_, p) in poses {
+            let along = lane.points.point_along(lane.points.length() - 0.1 - *p);
+            tess.draw_circle(along.up(0.3), 3.0);
+        }
+    }
+
+    tess.set_color(LinearColor::new(0.3, 0.8, 0.3, 1.0));
+    for (inter, _) in &reservs.reservations {
+        let inter = map.intersections().get(*inter)?;
+        tess.draw_circle(inter.pos.up(0.3), 3.0);
     }
 
     Some(())
