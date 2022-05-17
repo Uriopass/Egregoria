@@ -186,16 +186,16 @@ impl Intersection {
             .flat_map(move |&x| roads.get(x).and_then(|r| r.other_end(self.id)))
     }
 
-    pub fn driving_neighbours<'a>(
+    pub fn vehicle_neighbours<'a>(
         &'a self,
         roads: &'a Roads,
     ) -> impl Iterator<Item = IntersectionID> + 'a {
         let id = self.id;
         self.roads.iter().flat_map(move |&x| {
             let r = roads.get(x)?;
-            r.outgoing_lanes_from(id)
-                .iter()
-                .find(|(_, kind)| matches!(kind, LaneKind::Driving))?;
+            r.outgoing_lanes_from(id).iter().find(|(_, kind)| {
+                matches!(kind, LaneKind::Driving | LaneKind::Rail | LaneKind::Bus)
+            })?;
             r.other_end(id)
         })
     }

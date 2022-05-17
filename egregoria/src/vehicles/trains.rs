@@ -144,7 +144,8 @@ pub fn traverse_forward<'a>(
     itin: &'a Itinerary,
     dist: f32,
     mut acc: f32,
-) -> impl Iterator<Item = (TraverseKind, f32)> + 'a {
+    until_length: f32,
+) -> impl Iterator<Item = (TraverseKind, f32, f32)> + 'a {
     let mut it = None;
     if let ItineraryKind::Route(route, _) = itin.kind() {
         it = Some(route);
@@ -155,10 +156,11 @@ pub fn traverse_forward<'a>(
         .flat_map(move |route| route.reversed_route.iter().rev())
         .filter_map(move |v| {
             let oldacc = acc;
-            acc += v.kind.length(lanes, inters)?;
-            Some((v.kind, oldacc))
+            let l = v.kind.length(lanes, inters)?;
+            acc += l;
+            Some((v.kind, oldacc, l))
         })
-        .take_while(move |(_, acc)| *acc < dist)
+        .take_while(move |(v, acc, l)| *acc < dist || (v.is_lane() && *l <= until_length))
 }
 
 #[profiling::function]
@@ -180,7 +182,7 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
             if let Some(travers) = itin.get_travers() {
                 match locores.past_travers.entry(travers.kind) {
                     Entry::Vacant(v) => {
-                        v.insert(-travers.kind.length(lanes, inters).unwrap_or(0.0));
+                        v.insert(10.0 - travers.kind.length(lanes, inters).unwrap_or(0.0));
                         locores.cur_travers_dist = 0.0;
                     }
                     Entry::Occupied(_) => {}
@@ -197,7 +199,13 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
 
                 // Then look ahead stop_dist to reserve all intersections
                 let stop_dist = kin.speed * kin.speed / (2.0 * loco.dec_force);
-                for (v, _) in traverse_forward(map, itin, stop_dist + 15.0, dist_to_next) {
+                for (v, _, _) in traverse_forward(
+                    map,
+                    itin,
+                    stop_dist + 15.0,
+                    dist_to_next,
+                    loco.length + 50.0,
+                ) {
                     if let TraverseKind::Turn(id) = v {
                         if inters
                             .get(id.parent)
@@ -352,7 +360,7 @@ pub fn locomotive_decision(
     kin.speed += (desired_speed - kin.speed)
         .clamp(-time.delta * loco.dec_force, time.delta * loco.acc_force);
     for v in locores.past_travers.values_mut() {
-        *v += kin.speed * time.delta;
+        *v += kin.speed.max(0.1) * time.delta;
     }
     locores.cur_travers_dist += kin.speed * time.delta;
 }
@@ -379,18 +387,15 @@ pub fn locomotive_desired_speed(
     if let Some(travers) = it.get_travers() {
         let lanes = map.lanes();
 
-        let dist_to_next = travers
+        let startl = travers
             .kind
             .length(lanes, map.intersections())
-            .unwrap_or(0.0)
-            - mydist;
+            .unwrap_or(0.0);
+        let dist_to_next = startl - mydist;
 
-        for (id, acc) in std::iter::once((travers.kind, -mydist)).chain(traverse_forward(
-            map,
-            it,
-            stop_dist + 15.0,
-            dist_to_next,
-        )) {
+        for (id, acc, travers_length) in std::iter::once((travers.kind, -mydist, startl)).chain(
+            traverse_forward(map, it, stop_dist + 15.0, dist_to_next, 0.0),
+        ) {
             match id {
                 TraverseKind::Lane(id) => {
                     if let Some(locs) = reservs.localisations.get(&id) {
@@ -399,9 +404,7 @@ pub fn locomotive_desired_speed(
                                 continue;
                             }
                             if let Some(otherloco) = locoview.get(train) {
-                                let dist_to_other = acc
-                                    + otherdist
-                                    + lanes.get(id).map(|v| v.points.length()).unwrap_or(0.0);
+                                let dist_to_other = acc + otherdist + travers_length;
                                 if dist_to_other > 0.0
                                     && dist_to_other < otherloco.length + stop_dist + 10.0
                                 {
