@@ -38,7 +38,6 @@ impl Polyline3Queue {
                 x
             })
             .collect();
-        println!("{:?}", data.front());
         let mut s = Self {
             curlength: dist,
             maxlength,
@@ -58,6 +57,10 @@ impl Polyline3Queue {
     pub fn push(&mut self, v: Vec3) {
         if v.is_close(self.head, 0.2) {
             self.update_front(v);
+            return;
+        }
+        if v.is_close(self.head, 5.0) {
+            self.real_push(v);
             return;
         }
         if self.data.len() >= 2 {
@@ -92,7 +95,7 @@ impl Polyline3Queue {
     }
 
     fn ensure_length(&mut self) {
-        while self.data.len() > 1 {
+        while self.data.len() > 2 {
             let seglen = self.segmentlen(self.data.len() - 2);
             if self.curlength <= self.maxlength + seglen + self.dh {
                 return;

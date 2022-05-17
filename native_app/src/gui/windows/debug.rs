@@ -358,17 +358,52 @@ pub fn debug_trainreservations(
     tess.set_color(LinearColor::new(0.8, 0.3, 0.3, 1.0));
     for (lid, poses) in &reservs.localisations {
         let lane = map.lanes().get(*lid)?;
-        for (_, p) in poses {
-            let along = lane.points.point_along(lane.points.length() - 0.1 - *p);
+        for p in poses.values() {
+            let along = lane.points.point_along(*p + lane.points.length());
             tess.draw_circle(along.up(0.3), 3.0);
         }
     }
 
-    tess.set_color(LinearColor::new(0.3, 0.8, 0.3, 1.0));
-    for (inter, _) in &reservs.reservations {
+    for (inter, e) in &reservs.reservations {
+        tess.set_color(LinearColor::new(0.3, 0.8, 0.3, 1.0));
         let inter = map.intersections().get(*inter)?;
         tess.draw_circle(inter.pos.up(0.3), 3.0);
+
+        let p = goria.pos(*e)?;
+
+        tess.set_color(LinearColor::new(0.2, 0.2, 0.2, 1.0));
+        tess.draw_stroke(inter.pos.up(0.5), p, 2.0);
     }
+
+    /*
+    for (_, (itin, kin, loco, locores)) in goria
+        .world()
+        .query::<(&Itinerary, &Kinematics, &Locomotive, &LocomotiveReservation)>()
+        .iter()
+    {
+        if let Some(travers) = itin.get_travers() {
+            let dist_to_next = travers
+                .kind
+                .length(map.lanes(), map.intersections())
+                .unwrap_or(0.0)
+                - locores.cur_travers_dist;
+
+            let stop_dist = kin.speed * kin.speed / (2.0 * loco.dec_force);
+            for (v, _) in egregoria::vehicles::trains::traverse_forward(
+                &*map,
+                itin,
+                stop_dist + 30.0,
+                dist_to_next,
+            ) {
+                match v {
+                    TraverseKind::Lane(_) => {}
+                    TraverseKind::Turn(t) => {
+                        tess.draw_circle(map.intersections().get(t.parent)?.pos.up(3.0), 10.0);
+                    }
+                }
+            }
+        }
+    }*/
 
     Some(())
 }
