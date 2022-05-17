@@ -221,7 +221,7 @@ pub fn debug_connectivity(tess: &mut Tesselator, goria: &Egregoria, uiw: &UiWorl
             inter
                 .get(*i)
                 .into_iter()
-                .flat_map(|i| i.driving_neighbours(roads))
+                .flat_map(|i| i.vehicle_neighbours(roads))
         });
         state.connectivity.1 = components;
     }
@@ -357,7 +357,7 @@ pub fn debug_trainreservations(
     let map = goria.map();
     tess.set_color(LinearColor::new(0.8, 0.3, 0.3, 1.0));
     for (lid, poses) in &reservs.localisations {
-        let lane = map.lanes().get(*lid)?;
+        let lane = unwrap_cont!(map.lanes().get(*lid));
         for p in poses.values() {
             let along = lane.points.point_along(*p + lane.points.length());
             tess.draw_circle(along.up(0.3), 3.0);
@@ -366,10 +366,10 @@ pub fn debug_trainreservations(
 
     for (inter, e) in &reservs.reservations {
         tess.set_color(LinearColor::new(0.3, 0.8, 0.3, 1.0));
-        let inter = map.intersections().get(*inter)?;
+        let inter = unwrap_cont!(map.intersections().get(*inter));
         tess.draw_circle(inter.pos.up(0.3), 3.0);
 
-        let p = goria.pos(*e)?;
+        let p = unwrap_cont!(goria.pos(*e));
 
         tess.set_color(LinearColor::new(0.2, 0.2, 0.2, 1.0));
         tess.draw_stroke(inter.pos.up(0.5), p, 2.0);
