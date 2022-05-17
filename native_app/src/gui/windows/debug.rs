@@ -32,7 +32,7 @@ impl Default for DebugObjs {
     fn default() -> Self {
         DebugObjs(vec![
             (true, "Debug pathfinder", debug_pathfinder),
-            (true, "Debug train reservations", debug_trainreservations),
+            (false, "Debug train reservations", debug_trainreservations),
             (false, "Debug connectivity", debug_connectivity),
             (false, "Debug spatialmap", debug_spatialmap),
             (false, "Debug collision world", debug_coworld),
