@@ -94,13 +94,23 @@ impl Itinerary {
         let start_lane = pathkind.nearest_lane(map, start)?;
         let end_lane = pathkind.nearest_lane(map, end)?;
 
+        let mut cur = Traversable::new(TraverseKind::Lane(start_lane), TraverseDirection::Forward);
+
         if start_lane == end_lane {
             if let Some(p) = pathkind.local_route(map, start_lane, start, end) {
-                return Some(Itinerary::simple(p.into_vec()));
+                return Some(Itinerary {
+                    kind: ItineraryKind::Route(
+                        Route {
+                            reversed_route: vec![],
+                            end_pos: end,
+                            cur,
+                        },
+                        pathkind,
+                    ),
+                    local_path: p.into_vec(),
+                });
             }
         }
-
-        let mut cur = Traversable::new(TraverseKind::Lane(start_lane), TraverseDirection::Forward);
 
         let mut reversed_route: Vec<Traversable> = pathkind
             .path(map, cur, end_lane)?
@@ -190,7 +200,7 @@ impl Itinerary {
     ) -> Vec3 {
         while let Some(p) = self.get_point() {
             let dist = position.distance(p);
-            if dist < dist_to_move {
+            if dist <= dist_to_move + 0.01 {
                 dist_to_move -= dist;
                 position = p;
                 if self.is_terminal() {

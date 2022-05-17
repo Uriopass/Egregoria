@@ -1,6 +1,7 @@
-use crate::{IntersectionID, LaneID, Lanes, Map, TurnID};
+use crate::{IntersectionID, Intersections, LaneID, Lanes, Map, TurnID};
 use geom::PolyLine3;
-use imgui_inspect::imgui;
+use imgui_inspect::imgui::Ui;
+use imgui_inspect::{imgui, InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +11,7 @@ pub enum TraverseDirection {
     Backward,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum TraverseKind {
     Lane(LaneID),
     Turn(TurnID),
@@ -19,6 +20,12 @@ pub enum TraverseKind {
 impl TraverseKind {
     pub fn is_lane(&self) -> bool {
         matches!(self, TraverseKind::Lane(_))
+    }
+    pub fn length(&self, lanes: &Lanes, inters: &Intersections) -> Option<f32> {
+        Some(match *self {
+            TraverseKind::Lane(i) => lanes.get(i)?.points.length(),
+            TraverseKind::Turn(t) => inters.get(t.parent)?.find_turn(t)?.points.length(),
+        })
     }
 }
 
@@ -123,5 +130,53 @@ macro_rules! enum_inspect_impl {
     };
 }
 
-enum_inspect_impl!(TraverseKind; TraverseKind::Lane(_), TraverseKind::Turn(_));
+impl InspectRenderDefault<TraverseKind> for TraverseKind {
+    fn render(
+        data: &[&TraverseKind],
+        label: &'static str,
+        ui: &Ui<'_>,
+        _args: &InspectArgsDefault,
+    ) {
+        if data.len() != 1 {
+            panic!("not implemented")
+        }
+        let d = match data.get(0) {
+            Some(x) => x,
+            None => return,
+        };
+        match d {
+            TraverseKind::Lane(l) => {
+                ui.text(format!("TraverseKind::Lane({:?}): {}", l, label));
+            }
+            TraverseKind::Turn(v) => {
+                ui.text(format!("TraverseKind::Turn({:?}): {}", v, label));
+            }
+        }
+    }
+
+    fn render_mut(
+        data: &mut [&mut TraverseKind],
+        label: &'static str,
+        ui: &Ui<'_>,
+        _args: &InspectArgsDefault,
+    ) -> bool {
+        if data.len() != 1 {
+            panic!("not implemented")
+        }
+        let d = match data.get(0) {
+            Some(x) => x,
+            None => return false,
+        };
+        match d {
+            TraverseKind::Lane(l) => {
+                ui.text(format!("TraverseKind::Lane({:?}): {}", l, label));
+            }
+            TraverseKind::Turn(v) => {
+                ui.text(format!("TraverseKind::Turn({:?}): {}", v, label));
+            }
+        }
+        false
+    }
+}
+
 enum_inspect_impl!(TraverseDirection; TraverseDirection::Forward, TraverseDirection::Backward);
