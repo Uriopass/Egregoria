@@ -211,7 +211,7 @@ impl PolyLine3 {
         let step = l / (n_step as f32 + 1.0);
 
         self.points_dirs_along(
-            (nolimit as i32..n_step.min(1000) + 1)
+            (nolimit as i32..n_step.min(100000) + 1)
                 .map(move |i| i as f32 * step)
                 .chain((!nolimit).then(|| l - 0.01)),
         )
