@@ -6,6 +6,7 @@ use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, View, World};
 use imgui_inspect_derive::*;
 use map_model::{IntersectionID, LaneID, Map, PathKind, TraverseKind};
+use ordered_float::OrderedFloat;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};
@@ -15,7 +16,7 @@ use std::collections::BTreeMap;
 #[derive(Default, Serialize, Deserialize)]
 pub struct TrainReservations {
     pub reservations: BTreeMap<IntersectionID, Entity>,
-    pub localisations: BTreeMap<LaneID, BTreeMap<Entity, f32>>,
+    pub localisations: BTreeMap<TraverseKind, BTreeMap<Entity, f32>>,
 }
 
 #[derive(Serialize, Deserialize, Inspect)]
@@ -33,6 +34,7 @@ pub struct Locomotive {
 #[derive(Serialize, Deserialize, Inspect)]
 pub struct LocomotiveReservation {
     pub cur_travers_dist: f32,
+    pub waited_for: f32,
     past_travers: BTreeMap<TraverseKind, f32>,
     upcoming_inters: Vec<IntersectionID>,
 }
@@ -110,6 +112,7 @@ pub fn spawn_train(
         },
         LocomotiveReservation {
             cur_travers_dist: dist,
+            waited_for: 0.0,
             past_travers: BTreeMap::from([(
                 TraverseKind::Lane(lane.id),
                 dist - lane.points.length(),
@@ -145,22 +148,29 @@ pub fn traverse_forward<'a>(
     dist: f32,
     mut acc: f32,
     until_length: f32,
-) -> impl Iterator<Item = (TraverseKind, f32, f32)> + 'a {
+) -> impl Iterator<Item = (TraverseKind, f32, f32, f32)> + 'a {
     let mut it = None;
     if let ItineraryKind::Route(route, _) = itin.kind() {
         it = Some(route);
     }
     let lanes = map.lanes();
     let inters = map.intersections();
+    let mut acc_inter = 0.0;
     it.into_iter()
         .flat_map(move |route| route.reversed_route.iter().rev())
         .filter_map(move |v| {
             let oldacc = acc;
             let l = v.kind.length(lanes, inters)?;
+
+            match v.kind {
+                TraverseKind::Turn(id) if inters.get(id.parent)?.roads.len() > 2 => acc_inter = 0.0,
+                _ => acc_inter += l,
+            }
+
             acc += l;
-            Some((v.kind, oldacc, l))
+            Some((v.kind, oldacc, l, acc_inter))
         })
-        .take_while(move |(v, acc, l)| *acc < dist || (v.is_lane() && *l <= until_length))
+        .take_while(move |(_, acc, _, acc_l)| *acc < dist || *acc_l <= until_length)
 }
 
 #[profiling::function]
@@ -197,31 +207,57 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
                 let dist_to_next =
                     travers.kind.length(lanes, inters).unwrap_or(0.0) - locores.cur_travers_dist;
 
+                let mut want_to_reserve = vec![];
+                let mut all_ok = true;
                 // Then look ahead stop_dist to reserve all intersections
                 let stop_dist = kin.speed * kin.speed / (2.0 * loco.dec_force);
-                for (v, _, _) in traverse_forward(
-                    map,
-                    itin,
-                    stop_dist + 15.0,
-                    dist_to_next,
-                    loco.length + 50.0,
-                ) {
-                    if let TraverseKind::Turn(id) = v {
-                        if inters
-                            .get(id.parent)
-                            .map(|i| i.roads.len() <= 2)
-                            .unwrap_or(true)
-                        {
-                            continue;
-                        }
 
-                        reservations
-                            .reservations
-                            .entry(id.parent)
-                            .or_insert_with(|| {
-                                locores.upcoming_inters.push(id.parent);
-                                me
-                            });
+                if let Some(v) = reservations.localisations.get(&travers.kind) {
+                    if v.len() >= 2 {
+                        if *v.values().max_by_key(|x| OrderedFloat(**x)).unwrap()
+                            != v.get(&me).copied().unwrap_or(f32::NEG_INFINITY)
+                        {
+                            all_ok = false;
+                        }
+                    }
+                }
+
+                if all_ok {
+                    for (id, _, _, _) in traverse_forward(
+                        map,
+                        itin,
+                        stop_dist + 15.0,
+                        dist_to_next,
+                        loco.length + 50.0,
+                    ) {
+                        if let Some(v) = reservations.localisations.get(&id) {
+                            if v.len() > 2 || (v.len() == 1 && v.get(&me).is_none()) {
+                                all_ok = false;
+                                break;
+                            }
+                        }
+                        if let TraverseKind::Turn(id) = id {
+                            if inters
+                                .get(id.parent)
+                                .map(|i| i.roads.len() <= 2)
+                                .unwrap_or(true)
+                            {
+                                continue;
+                            }
+
+                            if reservations.reservations.get(&id.parent).is_some() {
+                                all_ok = false;
+                                break;
+                            }
+                            want_to_reserve.push(id.parent);
+                        }
+                    }
+
+                    if all_ok {
+                        for id in want_to_reserve {
+                            reservations.reservations.insert(id, me);
+                            locores.upcoming_inters.push(id);
+                        }
                     }
                 }
             }
@@ -229,25 +265,24 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
             // Clean past_things and unreserve them
             let length = loco.length;
             locores.past_travers.retain(|&id, dist| {
-                match id {
-                    TraverseKind::Lane(id) => {
-                        reservations
-                            .localisations
-                            .entry(id)
-                            .or_default()
-                            .insert(me, *dist);
-                        if *dist >= length {
-                            unwrap_ret!(reservations.localisations.get_mut(&id), false).remove(&me);
-                            return false;
-                        }
+                reservations
+                    .localisations
+                    .entry(id)
+                    .or_default()
+                    .insert(me, *dist);
+                if *dist >= length {
+                    if let TraverseKind::Turn(id) = id {
+                        reservations.reservations.remove(&id.parent);
                     }
-                    TraverseKind::Turn(id) => {
-                        reservations.reservations.entry(id.parent).or_insert(me);
-                        if *dist >= length {
-                            reservations.reservations.remove(&id.parent);
-                            return false;
-                        }
+                    let l = unwrap_ret!(reservations.localisations.get_mut(&id), false);
+                    l.remove(&me);
+                    if l.is_empty() {
+                        reservations.localisations.remove(&id);
                     }
+                    return false;
+                }
+                if let TraverseKind::Turn(id) = id {
+                    reservations.reservations.entry(id.parent).or_insert(me);
                 }
 
                 true
@@ -289,7 +324,7 @@ pub fn locomotive_random_movement_system(world: &mut World, resources: &mut Reso
                                 time.seconds as f32,
                             )) as usize,
                     ) {
-                        if r.kind.is_rail() {
+                        if r.kind.is_rail() && r.points.length() > 50.0 {
                             let segments: Vec<_> = r.points.segments().collect();
 
                             *itin = Itinerary::route(
@@ -359,8 +394,16 @@ pub fn locomotive_decision(
 
     kin.speed += (desired_speed - kin.speed)
         .clamp(-time.delta * loco.dec_force, time.delta * loco.acc_force);
+    if kin.speed <= 0.001 {
+        locores.waited_for += time.delta;
+    } else {
+        locores.waited_for = 0.0;
+    }
     for v in locores.past_travers.values_mut() {
-        *v += kin.speed.max(0.1) * time.delta;
+        *v += kin.speed * time.delta;
+        if locores.waited_for > 60.0 {
+            *v += 0.1 * time.delta;
+        }
     }
     locores.cur_travers_dist += kin.speed * time.delta;
 }
@@ -393,35 +436,39 @@ pub fn locomotive_desired_speed(
             .unwrap_or(0.0);
         let dist_to_next = startl - mydist;
 
-        for (id, acc, travers_length) in std::iter::once((travers.kind, -mydist, startl)).chain(
-            traverse_forward(map, it, stop_dist + 15.0, dist_to_next, 0.0),
-        ) {
-            match id {
-                TraverseKind::Lane(id) => {
-                    if let Some(locs) = reservs.localisations.get(&id) {
-                        for (&train, &otherdist) in locs {
-                            if train == me {
-                                continue;
-                            }
-                            if let Some(otherloco) = locoview.get(train) {
-                                let dist_to_other = acc + otherdist + travers_length;
-                                if dist_to_other > 0.0
-                                    && dist_to_other < otherloco.length + stop_dist + 10.0
-                                {
-                                    return 0.0;
-                                }
-                            }
+        for (id, acc, travers_length, _) in std::iter::once((travers.kind, -mydist, startl, startl))
+            .chain(traverse_forward(
+                map,
+                it,
+                stop_dist + 15.0,
+                dist_to_next,
+                -1.0,
+            ))
+        {
+            if let Some(locs) = reservs.localisations.get(&id) {
+                for (&train, &otherdist) in locs {
+                    if train == me {
+                        continue;
+                    }
+                    if let Some(otherloco) = locoview.get(train) {
+                        let dist_to_other = acc + otherdist + travers_length;
+                        if dist_to_other > 0.0
+                            && dist_to_other < otherloco.length + stop_dist + 10.0
+                        {
+                            return 0.0;
                         }
                     }
                 }
-                TraverseKind::Turn(id) => {
-                    if let Some(inter) = map.intersections().get(id.parent) {
-                        if inter.roads.len() > 2 {
-                            if let Some(reserved_by) = reservs.reservations.get(&id.parent) {
-                                if *reserved_by != me {
-                                    return 0.0;
-                                }
+            }
+            if let TraverseKind::Turn(id) = id {
+                if let Some(inter) = map.intersections().get(id.parent) {
+                    if inter.roads.len() > 2 {
+                        if let Some(reserved_by) = reservs.reservations.get(&id.parent) {
+                            if *reserved_by != me {
+                                return 0.0;
                             }
+                        } else {
+                            return 0.0;
                         }
                     }
                 }
