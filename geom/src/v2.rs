@@ -137,6 +137,11 @@ impl Vec2 {
         }
     }
 
+    pub fn try_bisect(self, other: Self) -> Option<Self> {
+        let c = self.magnitude() * other + self * other.magnitude();
+        c.try_normalize()
+    }
+
     #[inline]
     pub fn magnitude(self) -> f32 {
         self.magnitude2().sqrt()

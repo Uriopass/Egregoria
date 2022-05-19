@@ -4,8 +4,8 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use geom::Color;
-use map_model::ProjectKind;
 use map_model::{IntersectionID, LightPolicy, TurnPolicy};
+use map_model::{ProjectFilter, ProjectKind};
 
 #[derive(Clone)]
 pub struct IntersectionComponent {
@@ -50,7 +50,7 @@ pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
                     .chain(std::iter::once(turn.points.last() + or_dst.z0() * 0.01))
                     .collect();
 
-                imm_draw.polyline(p, 1.0).color(col);
+                imm_draw.polyline(p, 1.0, false).color(col);
             }
         } else {
             state.inspect = None;
@@ -58,7 +58,7 @@ pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     let mut proj_pos = unwrap_ret!(mouseinfo.unprojected);
-    let cur_proj = unwrap_ret!(map.project(proj_pos, 0.0));
+    let cur_proj = unwrap_ret!(map.project(proj_pos, 10.0, ProjectFilter::INTER));
 
     let mut proj_col;
 

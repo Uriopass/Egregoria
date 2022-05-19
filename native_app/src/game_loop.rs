@@ -284,6 +284,7 @@ impl State {
                                 .map(|x| x.z(10.0))
                                 .collect::<Vec<_>>(),
                             5.0,
+                            false,
                         )
                         .color(col);
                 }

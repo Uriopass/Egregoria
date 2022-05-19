@@ -7,7 +7,7 @@ use crate::utils::scheduler::SeqSchedule;
 use crate::Egregoria;
 use common::logger::MyLog;
 use geom::{Vec2, Vec3};
-use map_model::{BuildingID, LanePatternBuilder};
+use map_model::{BuildingID, LanePatternBuilder, ProjectFilter};
 
 mod vehicles;
 
@@ -29,8 +29,8 @@ impl TestCtx {
     fn build_roads(&self, v: &[Vec3]) {
         let mut m = self.g.map_mut();
         for w in v.windows(2) {
-            let a = m.project(w[0], 0.0).unwrap();
-            let b = m.project(w[1], 0.0).unwrap();
+            let a = m.project(w[0], 0.0, ProjectFilter::ALL).unwrap();
+            let b = m.project(w[1], 0.0, ProjectFilter::ALL).unwrap();
             m.make_connection(a, b, None, &LanePatternBuilder::default().build());
         }
     }

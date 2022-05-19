@@ -166,6 +166,7 @@ pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
                 .map(|x| x.up(0.01))
                 .collect::<Vec<_>>(),
             0.3,
+            false,
         );
     }
 
@@ -181,6 +182,7 @@ pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
                 .map(|x| x.up(0.01))
                 .collect::<Vec<_>>(),
             0.3,
+            false,
         );
     }
     Some(())
@@ -221,7 +223,11 @@ fn draw_spline(tess: &mut Tesselator, mut sp: Spline3) {
     sp.from = sp.from.up(0.3);
     sp.to = sp.to.up(0.3);
     tess.set_color(Color::RED);
-    tess.draw_polyline(&sp.smart_points(0.1, 0.0, 1.0).collect::<Vec<_>>(), 1.0);
+    tess.draw_polyline(
+        &sp.smart_points(0.1, 0.0, 1.0).collect::<Vec<_>>(),
+        1.0,
+        false,
+    );
     tess.set_color(Color::GREEN);
 
     tess.draw_stroke(sp.from, sp.from + sp.from_derivative, 0.75);
@@ -402,6 +408,7 @@ pub fn debug_pathfinder(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWo
             .map(|x| x.up(0.15))
             .collect::<Vec<_>>(),
         1.0,
+        false,
     );
 
     if let Some(p) = itinerary.get_point() {
@@ -415,6 +422,7 @@ pub fn debug_pathfinder(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWo
                 tess.draw_polyline(
                     &*l.as_slice().iter().map(|x| x.up(0.1)).collect::<Vec<_>>(),
                     3.0,
+                    false,
                 );
             }
         }
