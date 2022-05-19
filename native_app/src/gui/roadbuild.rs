@@ -5,7 +5,7 @@ use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::Egregoria;
-use geom::{vec2, BoldSpline, PolyLine3, ShapeEnum, Spline3, Vec2, AABB, OBB};
+use geom::{vec2, BoldSpline, PolyLine3, ShapeEnum, Spline3, Vec2, Vec3, AABB, OBB};
 use geom::{Camera, Spline};
 use map_model::{
     Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
@@ -24,7 +24,7 @@ pub enum BuildState {
 
 impl Default for BuildState {
     fn default() -> Self {
-        BuildState::Hover
+        Hover
     }
 }
 
@@ -42,16 +42,17 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();
     let immsound = &mut *uiworld.write::<ImmediateSound>();
     let inp = uiworld.read::<InputMap>();
-    let tool = uiworld.read::<Tool>();
+    let tool = *uiworld.read::<Tool>();
     let map = &*goria.map();
     let commands: &mut WorldCommands = &mut *uiworld.commands();
     let cam = &*uiworld.read::<Camera>();
 
-    if !matches!(*tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
-        state.build_state = BuildState::Hover;
+    if !matches!(tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
+        state.build_state = Hover;
         return;
     }
 
+    // Prepare mousepos depending on snap to grid
     let unproj = unwrap_ret!(inp.unprojected);
     let grid_size = 15.0;
     let mousepos = if state.snap_to_grid {
@@ -64,6 +65,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let log_camheight = cam.eye().z.log10();
     let cutoff = inline_tweak::tweak!(3.3);
 
+    // Render grid if enabled
     if state.snap_to_grid && log_camheight < cutoff {
         let alpha = 1.0 - log_camheight / cutoff;
         let col = common::config().gui_primary.a(alpha);
@@ -91,45 +93,34 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
     }
 
+    // If a road was placed recently (as it is async with networking) prepare the next road
     for command in uiworld.received_commands().iter() {
-        if matches!(
-            *uiworld.read::<Tool>(),
-            Tool::RoadbuildCurved | Tool::RoadbuildStraight
-        ) {
-            if let WorldCommand::MapMakeConnection(_, to, _, _) = command {
-                let proj = map.project(to.pos, 0.0);
-                if let Some(
-                    proj @ MapProject {
-                        kind: ProjectKind::Inter(_),
-                        ..
-                    },
-                ) = proj
-                {
-                    state.build_state = BuildState::Start(proj);
-                }
+        if let WorldCommand::MapMakeConnection(_, to, _, _) = command {
+            if let Some(proj @ MapProject { kind: Inter(_), .. }) =
+                map.project(to.pos, 0.0, ProjectFilter::ALL)
+            {
+                state.build_state = Start(proj);
             }
         }
     }
 
     if inp.just_act.contains(&InputAction::Close) {
-        state.build_state = BuildState::Hover;
+        state.build_state = Hover;
     }
 
-    let mut cur_proj = unwrap_ret!(map.project(mousepos, 0.0));
-    if matches!(cur_proj.kind, ProjectKind::Lot(_)) {
-        cur_proj.kind = ProjectKind::Ground;
-    }
+    let mut cur_proj =
+        unwrap_ret!(map.project(mousepos, 10.0, ProjectFilter::INTER | ProjectFilter::ROAD));
 
     let patwidth = state.pattern_builder.width();
 
-    if let ProjectKind::Road(r_id) = cur_proj.kind {
+    if let Road(r_id) = cur_proj.kind {
         let r = &map.roads()[r_id];
         if r.points
             .first()
             .is_close(cur_proj.pos, r.interface_from(r.src) + patwidth * 0.5)
         {
             cur_proj = MapProject {
-                kind: ProjectKind::Inter(r.src),
+                kind: Inter(r.src),
                 pos: r.points.first(),
             };
         } else if r
@@ -138,17 +129,8 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
             .is_close(cur_proj.pos, r.interface_from(r.dst) + patwidth * 0.5)
         {
             cur_proj = MapProject {
-                kind: ProjectKind::Inter(r.dst),
+                kind: Inter(r.dst),
                 pos: r.points.last(),
-            };
-        }
-    }
-
-    if matches!(*tool, Tool::RoadbuildCurved) {
-        if let Start(proj) = state.build_state {
-            cur_proj = MapProject {
-                pos: mousepos.xy().z(proj.pos.z),
-                kind: ProjectKind::Ground,
             };
         }
     }
@@ -193,7 +175,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         _ => true,
     };
 
-    state.update_drawing(map, immdraw, cur_proj, patwidth, is_valid);
+    state.update_drawing(map, immdraw, cur_proj, patwidth, tool, is_valid);
 
     if is_valid && inp.just_act.contains(&InputAction::Select) {
         log::info!(
@@ -203,7 +185,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         );
 
         // FIXME: Use or patterns when stable
-        match (state.build_state, cur_proj.kind, *tool) {
+        match (state.build_state, cur_proj.kind, tool) {
             (Hover, Ground, _) | (Hover, Road(_), _) | (Hover, Inter(_), _) => {
                 // Hover selection
                 state.build_state = Start(cur_proj);
@@ -321,6 +303,7 @@ impl RoadBuildResource {
         immdraw: &mut ImmediateDraw,
         proj: MapProject,
         patwidth: f32,
+        tool: Tool,
         is_valid: bool,
     ) {
         let mut proj_pos = proj.pos;
@@ -344,11 +327,32 @@ impl RoadBuildResource {
         };
 
         let p = match self.build_state {
-            BuildState::Hover => {
+            Hover => {
                 immdraw.circle(proj_pos, patwidth * 0.5).color(col);
                 return;
             }
-            BuildState::Start(x) => {
+            Start(x) if matches!(tool, Tool::RoadbuildCurved) && proj.kind.is_ground() => {
+                let dir = unwrap_or!((proj_pos - x.pos).try_normalize(), {
+                    immdraw.circle(proj_pos, patwidth * 0.5).color(col);
+                    return;
+                });
+                let mut poly = Vec::with_capacity(33);
+                for i in 0..=32 {
+                    let ang = std::f32::consts::PI * i as f32 * (2.0 / 32.0);
+                    let mut v = Vec3::from_angle(ang, dir.z);
+                    let center = if v.dot(dir) < 0.0 { x.pos } else { proj.pos };
+
+                    v = v * patwidth * 0.5;
+                    v.z = 0.0;
+                    v += center;
+
+                    poly.push(v);
+                }
+                immdraw.polyline(poly, 3.0, true).color(col);
+
+                return;
+            }
+            Start(x) => {
                 immdraw.circle(proj_pos, patwidth * 0.5).color(col);
                 immdraw.circle(x.pos.up(0.1), patwidth * 0.5).color(col);
                 immdraw.line(proj_pos, x.pos.up(0.1), patwidth).color(col);
@@ -356,7 +360,7 @@ impl RoadBuildResource {
                 let iend = interf(-(proj_pos - x.pos).xy().normalize(), proj);
                 PolyLine3::new(vec![x.pos.up(0.1), proj_pos]).cut(istart, iend)
             }
-            BuildState::Interpolation(p, x) => {
+            Interpolation(p, x) => {
                 let sp = Spline3 {
                     from: x.pos.up(0.1),
                     to: proj_pos,
@@ -365,7 +369,7 @@ impl RoadBuildResource {
                 };
                 let points: Vec<_> = sp.smart_points(1.0, 0.0, 1.0).collect();
 
-                immdraw.polyline(&*points, patwidth).color(col);
+                immdraw.polyline(&*points, patwidth, false).color(col);
 
                 immdraw.circle(sp.get(0.0), patwidth * 0.5).color(col);
                 immdraw.circle(sp.get(1.0), patwidth * 0.5).color(col);

@@ -1,6 +1,6 @@
 use crate::geometry::earcut::earcut;
 use crate::{MeshBuilder, MeshVertex};
-use geom::{vec2, vec3, Intersect, LinearColor, Segment, Vec2, Vec3, AABB};
+use geom::{vec3, Intersect, LinearColor, Segment, Vec2, Vec3, AABB};
 use itertools::Itertools;
 
 pub struct Tesselator {
@@ -416,18 +416,33 @@ impl Tesselator {
         true
     }
 
-    pub fn draw_polyline(&mut self, points: &[Vec3], thickness: f32) -> bool {
+    pub fn draw_polyline(&mut self, points: &[Vec3], thickness: f32, loops: bool) -> bool {
         let n_points = points.len();
         if n_points < 2 || thickness <= 0.0 {
             return true;
         }
-        if n_points == 2 {
+        if n_points == 2 || (loops && n_points == 3) {
             self.draw_stroke(points[0], points[1], thickness);
             return true;
         }
+        if loops {
+            let elbow = points[0];
+            let a = points[1];
+            let c = points[points.len() - 2];
+
+            let ae = unwrap_or!((elbow - a).xy().try_normalize(), return false);
+            let dir = -ae
+                .try_bisect((elbow - c).xy())
+                .unwrap_or(-ae.perpendicular())
+                .perpendicular();
+
+            return self.draw_polyline_with_dir(points, dir, dir, thickness);
+        }
+
         let first_dir = (points[1] - points[0]).normalize();
         let n = points.len();
         let last_dir = (points[n - 1] - points[n - 2]).normalize();
+
         self.draw_polyline_with_dir(points, first_dir.xy(), last_dir.xy(), thickness)
     }
 

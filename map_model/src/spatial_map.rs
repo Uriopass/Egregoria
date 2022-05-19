@@ -4,7 +4,7 @@ use flat_spatial::ShapeGrid;
 use geom::{Circle, Intersect, Shape, ShapeEnum, Vec2, AABB};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::ops::{BitOr, Neg};
+use std::ops::{BitOr, Neg, Sub};
 
 #[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ProjectKind {
@@ -47,6 +47,10 @@ impl ProjectKind {
             ProjectKind::Lot(id) => map.lots.contains_key(id),
             ProjectKind::Ground => true,
         }
+    }
+
+    pub fn is_ground(&self) -> bool {
+        matches!(self, ProjectKind::Ground)
     }
 }
 
@@ -168,6 +172,14 @@ impl BitOr for ProjectFilter {
 
     fn bitor(self, rhs: Self) -> Self {
         Self(self.0 | rhs.0)
+    }
+}
+
+impl Sub for ProjectFilter {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 & !rhs.0)
     }
 }
 

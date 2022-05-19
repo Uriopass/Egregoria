@@ -36,6 +36,7 @@ pub enum OrderKind {
     PolyLine {
         points: Vec<Vec3>,
         thickness: f32,
+        loops: bool,
     },
     Polygon {
         poly: Polygon,
@@ -135,10 +136,12 @@ impl ImmediateDraw {
         &mut self,
         points: impl Into<Vec<Vec3>>,
         thickness: f32,
+        loops: bool,
     ) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::PolyLine {
             points: points.into(),
             thickness,
+            loops,
         })
     }
 
@@ -208,8 +211,9 @@ impl ImmediateDraw {
                 OrderKind::PolyLine {
                     ref points,
                     thickness,
+                    loops,
                 } => {
-                    tess.draw_polyline(points, thickness);
+                    tess.draw_polyline(points, thickness, loops);
                 }
                 OrderKind::Polygon { ref poly, z } => {
                     tess.draw_filled_polygon(poly.as_slice(), z);

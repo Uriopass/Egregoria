@@ -511,14 +511,11 @@ impl Map {
     }
 
     // Public helpers
-    pub fn project(&self, pos: Vec3, tolerance: f32) -> Option<MapProject> {
+    pub fn project(&self, pos: Vec3, tolerance: f32, filter: ProjectFilter) -> Option<MapProject> {
         let mk_proj = move |kind| Some(MapProject { pos, kind });
 
         let mut qroad = None;
-        for pkind in self
-            .spatial_map
-            .query_around(pos.xy(), tolerance, ProjectFilter::ALL)
-        {
+        for pkind in self.spatial_map.query_around(pos.xy(), tolerance, filter) {
             match pkind {
                 ProjectKind::Inter(id) => {
                     let inter = unwrap_contlog!(self.intersections.get(id),

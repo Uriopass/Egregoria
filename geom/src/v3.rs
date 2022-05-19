@@ -378,6 +378,14 @@ impl Vec3 {
         self.dot(self)
     }
 
+    pub fn from_angle(ang: f32, z: f32) -> Self {
+        Self {
+            x: ang.cos(),
+            y: ang.sin(),
+            z,
+        }
+    }
+
     #[inline]
     pub fn abs(self) -> Self {
         Self {
