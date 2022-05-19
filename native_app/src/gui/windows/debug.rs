@@ -40,7 +40,6 @@ impl Default for DebugObjs {
             (false, "Debug lots", debug_lots),
             (false, "Debug road points", debug_road_points),
             (false, "Debug parking", debug_parking),
-            (false, "Show grid", show_grid),
         ])
     }
 }
@@ -121,26 +120,6 @@ pub fn debug(
             ui.next_column();
         }
     });
-}
-
-pub fn show_grid(tess: &mut Tesselator, g: &Egregoria, uiworld: &UiWorld) -> Option<()> {
-    let cam = &*uiworld.read::<Camera>();
-
-    if cam.eye().z > 1000.0 {
-        return Some(());
-    }
-
-    let gray_maj = 0.5;
-    let gray_min = 0.3;
-    let map = g.map();
-    let h = |p| map.terrain.height(p);
-    if cam.eye().z < 300.0 {
-        tess.set_color(Color::new(gray_min, gray_min, gray_min, 0.5));
-        tess.draw_grid(1.0, h);
-    }
-    tess.set_color(Color::new(gray_maj, gray_maj, gray_maj, 0.5));
-    tess.draw_grid(10.0, h);
-    Some(())
 }
 
 pub fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {

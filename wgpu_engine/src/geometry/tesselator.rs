@@ -434,27 +434,4 @@ impl Tesselator {
     pub fn draw_line(&mut self, p1: Vec3, p2: Vec3) -> bool {
         self.draw_stroke(p1, p2, 1.5 / self.zoom)
     }
-
-    pub fn draw_grid(&mut self, grid_size: f32, height: impl Fn(Vec2) -> Option<f32>) {
-        let screen = self
-            .cull_rect
-            .expect("Cannot draw grid when not culling since I do not know where is the screen");
-
-        let startx = (screen.ll.x / grid_size).ceil() * grid_size;
-        let starty = (screen.ll.y / grid_size).ceil() * grid_size;
-
-        for x in 0..(screen.w() / grid_size) as i32 {
-            let x = startx + x as f32 * grid_size;
-            for y in 0..(screen.h() / grid_size) as i32 {
-                let y = starty + y as f32 * grid_size;
-                let p = vec2(x, y);
-                let p3 = p.z(unwrap_cont!(height(p)) + 0.1);
-                let px = p + Vec2::x(grid_size);
-                let py = p + Vec2::y(grid_size);
-
-                self.draw_line(p3, px.z(unwrap_cont!(height(px)) + 0.1));
-                self.draw_line(p3, py.z(unwrap_cont!(height(py)) + 0.1));
-            }
-        }
-    }
 }
