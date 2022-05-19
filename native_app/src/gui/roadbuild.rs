@@ -13,8 +13,6 @@ use map_model::{
 use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};
 
-const MAX_TURN_ANGLE: f32 = 30.0 * std::f32::consts::PI / 180.0;
-
 #[derive(Copy, Clone, Debug)]
 pub enum BuildState {
     Hover,
@@ -63,7 +61,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     };
 
     let log_camheight = cam.eye().z.log10();
-    let cutoff = inline_tweak::tweak!(3.3);
+    let cutoff = 3.3;
 
     // Render grid if enabled
     if state.snap_to_grid && log_camheight < cutoff {
@@ -108,8 +106,11 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         state.build_state = Hover;
     }
 
-    let mut cur_proj =
-        unwrap_ret!(map.project(mousepos, 10.0, ProjectFilter::INTER | ProjectFilter::ROAD));
+    let mut cur_proj = unwrap_ret!(map.project(
+        mousepos,
+        (log_camheight * 5.0).clamp(1.0, 10.0),
+        ProjectFilter::INTER | ProjectFilter::ROAD
+    ));
 
     let patwidth = state.pattern_builder.width();
 
@@ -135,6 +136,8 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
     }
 
+    let is_rail = state.pattern_builder.rail;
+
     let is_valid = match (state.build_state, cur_proj.kind) {
         (Hover, Building(_)) => false,
         (Start(selected_proj), _) => {
@@ -148,8 +151,8 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
             );
 
             compatible(map, cur_proj, selected_proj)
-                && check_angle(map, selected_proj, cur_proj.pos.xy())
-                && check_angle(map, cur_proj, selected_proj.pos.xy())
+                && check_angle(map, selected_proj, cur_proj.pos.xy(), is_rail)
+                && check_angle(map, cur_proj, selected_proj.pos.xy(), is_rail)
                 && check_intersect(map, &ShapeEnum::OBB(obb), cur_proj.kind, selected_proj.kind)
         }
         (Interpolation(interpoint, selected_proj), _) => {
@@ -162,8 +165,8 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
             };
 
             compatible(map, cur_proj, selected_proj)
-                && check_angle(map, selected_proj, interpoint)
-                && check_angle(map, cur_proj, interpoint)
+                && check_angle(map, selected_proj, interpoint, is_rail)
+                && check_angle(map, cur_proj, interpoint, is_rail)
                 && !sp.is_steep(state.pattern_builder.width())
                 && check_intersect(
                     map,
@@ -243,7 +246,13 @@ fn check_intersect(map: &Map, obj: &ShapeEnum, start: ProjectKind, end: ProjectK
         })
 }
 
-fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
+fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {
+    let max_turn_angle = if is_rail {
+        10.0 * std::f32::consts::PI / 180.0
+    } else {
+        30.0 * std::f32::consts::PI / 180.0
+    };
+
     match from.kind {
         Inter(i) => {
             let inter = &map.intersections()[i];
@@ -251,7 +260,7 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
             for &road in &inter.roads {
                 let road = &map.roads()[road];
                 let v = road.dir_from(i);
-                if v.angle(dir).abs() < MAX_TURN_ANGLE {
+                if v.angle(dir).abs() < max_turn_angle {
                     return false;
                 }
             }
@@ -262,8 +271,8 @@ fn check_angle(map: &Map, from: MapProject, to: Vec2) -> bool {
             let (proj, _, rdir1) = r.points().project_segment_dir(from.pos);
             let rdir2 = -rdir1;
             let dir = (to - proj.xy()).normalize();
-            if rdir1.xy().angle(dir).abs() < MAX_TURN_ANGLE
-                || rdir2.xy().angle(dir).abs() < MAX_TURN_ANGLE
+            if rdir1.xy().angle(dir).abs() < max_turn_angle
+                || rdir2.xy().angle(dir).abs() < max_turn_angle
             {
                 return false;
             }
