@@ -12,7 +12,7 @@ use crate::gui::inputmap::InputMap;
 use egregoria::vehicles::trains::TrainReservations;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use imgui::Ui;
-use map_model::{IntersectionID, Map, RoadSegmentKind};
+use map_model::{IntersectionID, Map, RoadSegmentKind, TraverseKind};
 use wgpu_engine::Tesselator;
 
 #[derive(Default)]
@@ -336,15 +336,23 @@ pub fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> O
 pub fn debug_trainreservations(
     tess: &mut Tesselator,
     goria: &Egregoria,
-    _uiworld: &UiWorld,
+    uiworld: &UiWorld,
 ) -> Option<()> {
     let reservs = goria.read::<TrainReservations>();
     let map = goria.map();
     tess.set_color(LinearColor::new(0.8, 0.3, 0.3, 1.0));
-    for (lid, poses) in &reservs.localisations {
-        let lane = unwrap_cont!(map.lanes().get(*lid));
+    for (id, poses) in &reservs.localisations {
+        let points = match id {
+            TraverseKind::Lane(lid) => &unwrap_cont!(map.lanes().get(*lid)).points,
+            TraverseKind::Turn(tid) => {
+                &unwrap_cont!(map.intersections().get(tid.parent))
+                    .find_turn(*tid)?
+                    .points
+            }
+        };
+
         for p in poses.values() {
-            let along = lane.points.point_along(*p + lane.points.length());
+            let along = points.point_along(*p + points.length());
             tess.draw_circle(along.up(0.3), 3.0);
         }
     }
@@ -359,13 +367,21 @@ pub fn debug_trainreservations(
         tess.set_color(LinearColor::new(0.2, 0.2, 0.2, 1.0));
         tess.draw_stroke(inter.pos.up(0.5), p, 2.0);
     }
+    let selected = uiworld.read::<InspectedEntity>().e?;
 
-    /*
-    for (_, (itin, kin, loco, locores)) in goria
+    for (me, (itin, kin, loco, locores)) in goria
         .world()
-        .query::<(&Itinerary, &Kinematics, &Locomotive, &LocomotiveReservation)>()
+        .query::<(
+            &Itinerary,
+            &egregoria::physics::Kinematics,
+            &egregoria::vehicles::trains::Locomotive,
+            &egregoria::vehicles::trains::LocomotiveReservation,
+        )>()
         .iter()
     {
+        if me != selected {
+            continue;
+        }
         if let Some(travers) = itin.get_travers() {
             let dist_to_next = travers
                 .kind
@@ -374,21 +390,30 @@ pub fn debug_trainreservations(
                 - locores.cur_travers_dist;
 
             let stop_dist = kin.speed * kin.speed / (2.0 * loco.dec_force);
-            for (v, _) in egregoria::vehicles::trains::traverse_forward(
+            for (v, _, _, _) in egregoria::vehicles::trains::traverse_forward(
                 &*map,
                 itin,
-                stop_dist + 30.0,
+                stop_dist + 15.0,
                 dist_to_next,
+                loco.length + 50.0,
             ) {
                 match v {
                     TraverseKind::Lane(_) => {}
                     TraverseKind::Turn(t) => {
-                        tess.draw_circle(map.intersections().get(t.parent)?.pos.up(3.0), 10.0);
+                        if map
+                            .intersections()
+                            .get(t.parent)
+                            .map(|i| i.roads.len() <= 2)
+                            .unwrap_or(true)
+                        {
+                            continue;
+                        }
+                        tess.draw_circle(map.intersections().get(t.parent)?.pos.up(3.0), 3.5);
                     }
                 }
             }
         }
-    }*/
+    }
 
     Some(())
 }
