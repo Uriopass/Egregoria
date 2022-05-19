@@ -622,6 +622,7 @@ impl GfxContext {
 
     pub fn color_pipeline(
         &self,
+        label: &'static str,
         layouts: &[&BindGroupLayout],
         vertex_buffers: &[VertexBufferLayout<'_>],
         vert_shader: &CompiledShader,
@@ -652,7 +653,7 @@ impl GfxContext {
         }];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
-            label: None,
+            label: Some(label),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &vert_shader.0,
@@ -855,6 +856,7 @@ impl BackgroundPipeline {
         let bg_vert = compile_shader(&gfx.device, "assets/shaders/background.vert", None);
         let bg_frag = compile_shader(&gfx.device, "assets/shaders/background.frag", None);
         let pipe = gfx.color_pipeline(
+            "background",
             &[
                 &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
                 &Texture::bindgroup_layout(&gfx.device),

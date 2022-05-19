@@ -90,6 +90,7 @@ impl Mesh {
         let frag = compile_shader(&gfx.device, "assets/shaders/pixel.frag", None);
 
         let pipe = gfx.color_pipeline(
+            "mesh",
             &[
                 &gfx.projection.layout,
                 &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),

@@ -110,6 +110,7 @@ impl SpriteBatch {
         let frag = compile_shader(&gfx.device, "assets/shaders/pixel.frag", None);
 
         let pipe = gfx.color_pipeline(
+            "spritebatch",
             &[
                 &gfx.projection.layout,
                 &gfx.render_params.layout,
