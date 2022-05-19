@@ -76,6 +76,7 @@ impl InstancedMesh {
 
         let vb = &[MeshVertex::desc(), MeshInstance::desc()];
         let pipe = gfx.color_pipeline(
+            "instanced_mesh",
             &[
                 &gfx.projection.layout,
                 &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
