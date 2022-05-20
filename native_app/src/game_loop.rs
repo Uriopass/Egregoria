@@ -311,6 +311,14 @@ impl State {
         self.imgui_render.render(ctx, window, gui.hidden, |ui| {
             gui.render(ui, uiworld, goria);
         });
+
+        if uiworld.please_save {
+            uiworld.please_save = false;
+            let cpy = self.goria.clone();
+            std::thread::spawn(move || {
+                cpy.read().unwrap().save_to_disk("world");
+            });
+        }
     }
 
     fn manage_settings(ctx: &mut Context, settings: &Settings) {
