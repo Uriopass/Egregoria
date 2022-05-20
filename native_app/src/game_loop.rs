@@ -12,7 +12,7 @@ use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
 use crate::audio::GameAudio;
 use crate::context::Context;
-use crate::gui::inputmap::InputMap;
+use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::network::NetworkConnectionInfo;
 use crate::gui::windows::settings::{Settings, ShadowQuality};
@@ -91,8 +91,6 @@ impl State {
 
     #[profiling::function]
     pub fn update(&mut self, ctx: &mut Context) {
-        let settings = *self.uiw.read::<Settings>();
-
         if !self.imgui_render.last_mouse_captured {
             let map = self.goria.map();
             let unproj = self.camera.unproject(ctx.input.mouse.screen, |p| {
@@ -110,6 +108,37 @@ impl State {
         );
         crate::gui::run_ui_systems(&self.goria, &mut self.uiw);
 
+        self.goria_update();
+
+        self.uiw.write::<Timings>().all.add_value(ctx.delta as f32);
+        self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
+
+        self.gui.hidden ^= self
+            .uiw
+            .read::<InputMap>()
+            .just_act
+            .contains(&InputAction::HideInterface);
+
+        Self::manage_settings(ctx, &*self.uiw.read::<Settings>());
+        self.manage_io(ctx);
+
+        self.terrain.update(&mut ctx.gfx, &*self.goria.map());
+
+        ctx.gfx
+            .set_time(self.goria.read::<GameTime>().timestamp as f32);
+
+        for (sound, kind) in self.uiw.write::<ImmediateSound>().orders.drain(..) {
+            ctx.audio.play(sound, kind);
+        }
+        self.all_audio
+            .update(&self.goria, &mut self.uiw, &mut ctx.audio);
+
+        self.manage_entity_follow();
+        self.camera.update(ctx);
+    }
+
+    pub fn goria_update(&mut self) {
+        let timewarp = self.uiw.read::<Settings>().time_warp;
         let commands = std::mem::take(&mut *self.uiw.write::<WorldCommands>());
         *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
 
@@ -124,7 +153,7 @@ impl State {
 
                 let has_commands = !commands.is_empty();
                 let mut commands_once = Some(commands.clone());
-                step.prepare_frame(settings.time_warp);
+                step.prepare_frame(timewarp);
                 while step.tick() || (has_commands && commands_once.is_some()) {
                     let t = goria.tick(sched, &commands_once.take().unwrap_or_default());
                     timings.world_update.add_value(t.as_secs_f32());
@@ -202,45 +231,6 @@ impl State {
             }
             *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(merged);
         }
-
-        drop(net_state);
-
-        let real_delta = ctx.delta;
-        self.uiw.write::<Timings>().all.add_value(real_delta as f32);
-
-        self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
-
-        self.gui.hidden ^= ctx.input.keyboard.just_pressed.contains(&KeyCode::H);
-
-        Self::manage_settings(ctx, &settings);
-        self.manage_io(ctx);
-
-        self.terrain.update(&mut ctx.gfx, &*self.goria.map());
-
-        let map = self.goria.map();
-        //        self.camera.movespeed = settings.camera_sensibility / 100.0;
-        self.camera.camera_movement(
-            ctx,
-            real_delta as f32,
-            &*self.uiw.read::<InputMap>(),
-            &settings,
-            |p| map.terrain.height(p),
-        );
-        *self.uiw.write::<Camera>() = self.camera.camera;
-
-        drop(map);
-
-        ctx.gfx
-            .set_time(self.goria.read::<GameTime>().timestamp as f32);
-
-        for (sound, kind) in self.uiw.write::<ImmediateSound>().orders.drain(..) {
-            ctx.audio.play(sound, kind);
-        }
-        self.all_audio
-            .update(&self.goria, &mut self.uiw, &mut ctx.audio);
-
-        self.manage_entity_follow();
-        self.camera.update(ctx);
     }
 
     #[profiling::function]
@@ -364,7 +354,7 @@ impl State {
         }
     }
 
-    fn manage_io(&mut self, ctx: &Context) {
+    fn manage_io(&mut self, ctx: &mut Context) {
         *self.uiw.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
         *self.uiw.write::<MouseInfo>() = ctx.input.mouse.clone();
 
@@ -380,6 +370,19 @@ impl State {
             mouse.pressed.clear();
             mouse.wheel_delta = 0.0;
         }
+
+        let map = self.goria.map();
+        //        self.camera.movespeed = settings.camera_sensibility / 100.0;
+        self.camera.camera_movement(
+            ctx,
+            ctx.delta as f32,
+            &*self.uiw.read::<InputMap>(),
+            &*self.uiw.read::<Settings>(),
+            |p| map.terrain.height(p),
+        );
+        *self.uiw.write::<Camera>() = self.camera.camera;
+
+        drop(map);
     }
 
     pub fn event(&mut self, window: &Window, event: &winit::event::Event<'_, ()>) {
