@@ -47,7 +47,10 @@ impl Camera {
     }
 
     pub fn znear(height: f32) -> f32 {
-        (1.0 + 6.0 * height.log10()).abs().max(3.0).min(30.0)
+        (1.0 + 2.0 * (height / 10.0).log10())
+            .abs()
+            .max(0.5)
+            .min(30.0)
     }
 
     pub fn dir(&self) -> Vec3 {
@@ -73,7 +76,7 @@ impl Camera {
 
     pub fn build_view_projection_matrix(&self) -> Matrix4 {
         let eye = self.eye();
-        let znear = 3.0;
+        let znear = Self::znear(self.offset().z);
         let view = look_to_rh(eye, -self.dir(), self.up);
         let proj = PerspectiveFovReversedZ::new(
             self.fovy / 180.0 * std::f32::consts::PI,
