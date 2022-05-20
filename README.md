@@ -1,34 +1,3 @@
-## Project over ⚰️
-
-After working for about 1.5 years, I have decided to discontinue development of Egregoria.  
-Working on a big project alone, with little feedback and sparse rewards is *hard*.  
-The base gameplay loop needs a lot of features to be played: Advanced AI, Traffic system, Basic economy, Base building.
-
-Even after so long, I am not even remotely close to the mvp.. And it's the easy part.
-
-However I still count it all as a win, as I learned:
-
-- To design highly efficient systems: Parallelization, cache efficiency and CPU architecture.
-- To make a 3D engine using low level gpu interactions.
-- A lot about computer graphics and why things look the way they do.
-- Traffic systems and car interactions. Solving gridlocking was a great moment.
-- Multiplayer/Networking using lockstep deterministic updates.
-- Big project management: Egregoria totalling about 26k lines of Rust code.
-- To design basic models in Blender.
-- A bit about audio processing and how deep it can go.
-- Road building: Lots of tricky graph shenaningans, one-off errors and complex geometry.
-- Topological skeletons and other geometric algorithms.
-- A bit about economy, what people do in their life.
-- To use Github Actions for CI+CD.
-
-I really liked working on this, publishing blogposts and videos of it to friends and followers online.  
-I will of course let the code online, if you are interested about games in Rust you might be want to see how I organized it, a good starting point is the Architecture.md file.
-
-Thank you for following the project,  
-Goodbye!
-
-----
-
 ![Screenshot of Egregoria 1](assets/screen2.jpg)
 ![Screenshot of Egregoria 2](assets/screen3.jpg)
 ![Screenshot of Egregoria 3](assets/screen4.jpg)
