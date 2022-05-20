@@ -187,7 +187,6 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
             cur_proj.kind
         );
 
-        // FIXME: Use or patterns when stable
         match (state.build_state, cur_proj.kind, tool) {
             (Hover, Ground, _) | (Hover, Road(_), _) | (Hover, Inter(_), _) => {
                 // Hover selection
