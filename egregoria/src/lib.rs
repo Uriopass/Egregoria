@@ -281,7 +281,7 @@ impl Serialize for Egregoria {
             tick: self.tick,
         }
         .serialize(serializer);
-        log::info!("took {}ms to serialize in total", t.elapsed().as_secs_f32());
+        log::info!("took {}s to serialize in total", t.elapsed().as_secs_f32());
         v
     }
 }

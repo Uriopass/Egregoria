@@ -66,14 +66,14 @@ impl Gui {
 
         self.time_controls(ui, uiworld, goria);
 
-        self.auto_save(uiworld, goria);
+        self.auto_save(uiworld);
     }
 
-    pub fn auto_save(&mut self, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn auto_save(&mut self, uiworld: &mut UiWorld) {
         let every = uiworld.read::<Settings>().auto_save_every.into();
         if let Some(every) = every {
             if self.last_save.elapsed() > every {
-                goria.save_to_disk("world");
+                uiworld.please_save = true;
                 uiworld.save_to_disk();
                 self.last_save = Instant::now();
             }
@@ -566,7 +566,7 @@ impl Gui {
 
             let h = ui.window_size()[1];
             if ui.button_with_size("Save", [80.0, h]) {
-                goria.save_to_disk("world");
+                uiworld.please_save = true;
                 uiworld.save_to_disk();
             }
 

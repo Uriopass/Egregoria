@@ -8,6 +8,7 @@ use resources::{Ref, RefMut, Resource};
 pub struct UiWorld {
     pub world: World,
     resources: resources::Resources,
+    pub please_save: bool,
 }
 
 #[allow(dead_code)]
