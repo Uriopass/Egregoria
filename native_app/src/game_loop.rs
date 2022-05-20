@@ -1,3 +1,4 @@
+use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
 use winit::dpi::PhysicalSize;
@@ -29,7 +30,7 @@ use egregoria::utils::scheduler::SeqSchedule;
 use networking::{Frame, PollResult, ServerPollResult};
 
 pub struct State {
-    goria: Egregoria,
+    goria: Arc<RwLock<Egregoria>>,
 
     uiw: UiWorld,
 
@@ -84,7 +85,7 @@ impl State {
             terrain: TerrainRender::new(&mut ctx.gfx),
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
-            goria,
+            goria: Arc::new(RwLock::new(goria)),
             immtess: Tesselator::new(None, 1.0),
         }
     }
@@ -92,7 +93,8 @@ impl State {
     #[profiling::function]
     pub fn update(&mut self, ctx: &mut Context) {
         if !self.imgui_render.last_mouse_captured {
-            let map = self.goria.map();
+            let goria = self.goria.read().unwrap();
+            let map = goria.map();
             let unproj = self.camera.unproject(ctx.input.mouse.screen, |p| {
                 map.terrain.height(p).map(|x| x + 0.01)
             });
@@ -106,7 +108,7 @@ impl State {
             !self.imgui_render.last_kb_captured,
             !self.imgui_render.last_mouse_captured,
         );
-        crate::gui::run_ui_systems(&self.goria, &mut self.uiw);
+        crate::gui::run_ui_systems(&self.goria.read().unwrap(), &mut self.uiw);
 
         self.goria_update();
 
@@ -122,22 +124,25 @@ impl State {
         Self::manage_settings(ctx, &*self.uiw.read::<Settings>());
         self.manage_io(ctx);
 
-        self.terrain.update(&mut ctx.gfx, &*self.goria.map());
+        self.terrain
+            .update(&mut ctx.gfx, &*self.goria.read().unwrap().map());
 
         ctx.gfx
-            .set_time(self.goria.read::<GameTime>().timestamp as f32);
+            .set_time(self.goria.read().unwrap().read::<GameTime>().timestamp as f32);
 
         for (sound, kind) in self.uiw.write::<ImmediateSound>().orders.drain(..) {
             ctx.audio.play(sound, kind);
         }
         self.all_audio
-            .update(&self.goria, &mut self.uiw, &mut ctx.audio);
+            .update(&self.goria.read().unwrap(), &mut self.uiw, &mut ctx.audio);
 
         self.manage_entity_follow();
         self.camera.update(ctx);
     }
 
     pub fn goria_update(&mut self) {
+        let mut goria = unwrap_orr!(self.goria.try_write(), return); // mut for tick
+
         let timewarp = self.uiw.read::<Settings>().time_warp;
         let commands = std::mem::take(&mut *self.uiw.write::<WorldCommands>());
         *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
@@ -147,7 +152,6 @@ impl State {
         let mut inputs_to_apply = None;
         match &mut *net_state {
             NetworkState::Singleplayer(ref mut step) => {
-                let goria = &mut self.goria; // mut for tick
                 let sched = &mut self.game_schedule;
                 let mut timings = self.uiw.write::<Timings>();
 
@@ -166,11 +170,11 @@ impl State {
                 }
             }
             NetworkState::Server(ref mut server) => {
-                let polled = server.get_mut().unwrap().poll(
-                    &self.goria,
-                    Frame(self.goria.get_tick()),
-                    Some(commands),
-                );
+                let polled =
+                    server
+                        .get_mut()
+                        .unwrap()
+                        .poll(&goria, Frame(goria.get_tick()), Some(commands));
                 match polled {
                     ServerPollResult::Wait(commands) => {
                         if let Some(commands) = commands {
@@ -192,7 +196,7 @@ impl State {
                         inputs_to_apply = Some(inputs);
                     }
                     PollResult::GameWorld(commands, prepared_goria) => {
-                        self.goria = prepared_goria;
+                        *goria = prepared_goria;
                         *self.uiw.write::<WorldCommands>() = commands;
                     }
                     PollResult::Disconnect(reason) => {
@@ -209,13 +213,13 @@ impl State {
         if let Some(inputs) = inputs_to_apply {
             let mut merged = WorldCommands::default();
             for frame_commands in inputs {
-                assert_eq!(frame_commands.frame.0, self.goria.get_tick() + 1);
+                assert_eq!(frame_commands.frame.0, goria.get_tick() + 1);
                 let commands: WorldCommands = frame_commands
                     .inputs
                     .iter()
                     .map(|x| x.inp.clone())
                     .collect();
-                let t = self.goria.tick(&mut self.game_schedule, &commands);
+                let t = goria.tick(&mut self.game_schedule, &commands);
                 self.uiw
                     .write::<Timings>()
                     .world_update
@@ -236,23 +240,25 @@ impl State {
     #[profiling::function]
     pub fn render(&mut self, ctx: &mut FrameContext<'_>) {
         let start = Instant::now();
+        let goria = self.goria.read().unwrap();
 
         self.terrain.draw_terrain(&self.uiw, ctx);
 
         self.immtess.meshbuilder.clear();
         self.camera.cull_tess(&mut self.immtess);
 
-        let time: GameTime = *self.goria.read::<GameTime>();
+        let time: GameTime = *self.goria.read().unwrap().read::<GameTime>();
         self.road_renderer
-            .render(&self.goria.map(), time.seconds, &mut self.immtess, ctx);
+            .render(&goria.map(), time.seconds, &mut self.immtess, ctx);
 
-        self.instanced_renderer.render(&self.goria, ctx);
+        self.instanced_renderer
+            .render(&self.goria.read().unwrap(), ctx);
 
         {
             let objs = self.uiw.read::<DebugObjs>();
             for (val, _, obj) in &objs.0 {
                 if *val {
-                    obj(&mut self.immtess, &self.goria, &self.uiw);
+                    obj(&mut self.immtess, &goria, &self.uiw);
                 }
             }
         }
@@ -299,7 +305,7 @@ impl State {
     #[profiling::function]
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext<'_, '_>) {
         let gui = &mut self.gui;
-        let goria = &self.goria;
+        let goria = &self.goria.read().unwrap();
         let uiworld = &mut self.uiw;
 
         self.imgui_render.render(ctx, window, gui.hidden, |ui| {
@@ -348,7 +354,7 @@ impl State {
         }
 
         if let Some(e) = self.uiw.read::<FollowEntity>().0 {
-            if let Some(pos) = self.goria.pos(e) {
+            if let Some(pos) = self.goria.read().unwrap().pos(e) {
                 self.camera.follow(pos);
             }
         }
@@ -371,7 +377,8 @@ impl State {
             mouse.wheel_delta = 0.0;
         }
 
-        let map = self.goria.map();
+        let goria = self.goria.read().unwrap();
+        let map = goria.map();
         //        self.camera.movespeed = settings.camera_sensibility / 100.0;
         self.camera.camera_movement(
             ctx,
