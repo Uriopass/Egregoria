@@ -2,6 +2,7 @@ struct RenderParams {
     mat4 invproj;
     mat4 sunproj;
     vec4 cam_pos;
+    vec4 cam_dir;
     vec3 sun;
     vec4 sun_col;
     vec2 viewport;

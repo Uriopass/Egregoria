@@ -2,6 +2,7 @@ struct RenderParams {
     invproj: mat4x4<f32>;
     sunproj: mat4x4<f32>;
     cam_pos: vec4<f32>;
+    cam_dir: vec4<f32>;
     sun: vec3<f32>;
     sun_col: vec4<f32>;
     viewport: vec2<f32>;

@@ -2,6 +2,7 @@ struct RenderParams {
     invproj: mat4x4<f32>;
     sunproj: mat4x4<f32>;
     cam_pos: vec4<f32>;
+    cam_dir: vec4<f32>;
     sun: vec3<f32>;
     sun_col: vec4<f32>;
     viewport: vec2<f32>;
@@ -38,7 +39,7 @@ fn main_1() {
 
     let _e6: vec3<f32> = in_pos_1;
     let _e7: vec2<f32> = _e6.xy;
-    gl_Position = vec4<f32>(_e7.x, _e7.y, 0.9999998807907104, 1.0);
+    gl_Position = vec4<f32>(_e7.x, _e7.y, 0.0, 1.0);
     let _e13: RenderParams = global.params;
     let _e15: vec3<f32> = in_pos_1;
     let _e16: vec2<f32> = _e15.xy;
@@ -47,11 +48,11 @@ fn main_1() {
     let _e27: vec3<f32> = in_pos_1;
     let _e28: vec2<f32> = _e27.xy;
     far = (_e25.invproj * vec4<f32>(_e28.x, _e28.y, 1.0, 1.0));
-    let _e36: vec4<f32> = far;
+    let _e36: vec4<f32> = near;
     let _e38: vec4<f32> = far;
-    let _e42: vec4<f32> = near;
-    let _e44: vec4<f32> = near;
-    out_pos = ((_e36.xyz / vec3<f32>(_e38.w)) - (_e42.xyz / vec3<f32>(_e44.w)));
+    let _e41: vec4<f32> = far;
+    let _e43: vec4<f32> = near;
+    out_pos = ((_e36.xyz * _e38.w) - (_e41.xyz * _e43.w));
     return;
 }
 

@@ -2,6 +2,7 @@ struct RenderParams {
     invproj: mat4x4<f32>;
     sunproj: mat4x4<f32>;
     cam_pos: vec4<f32>;
+    cam_dir: vec4<f32>;
     sun: vec3<f32>;
     sun_col: vec4<f32>;
     viewport: vec2<f32>;
@@ -214,7 +215,7 @@ fn main_1() {
             let _e229: f32 = falloff;
             let _e230: f32 = falloff;
             let _e233: f32 = dcorrected;
-            occlusion = (_e223 + smoothStep(_e229, (_e230 * 2.0), _e233));
+            occlusion = (_e223 + smoothStep(_e229, (_e230 * 2.0), -_e233));
         }
         continuing {
             let _e180: i32 = i;
