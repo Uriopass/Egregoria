@@ -164,7 +164,7 @@ impl CameraHandler3D {
             }
         }
 
-        self.targetdist = self.targetdist.clamp(30.0, 100000.0);
+        self.targetdist = self.targetdist.clamp(5.0, 100000.0);
 
         if settings.camera_smooth {
             macro_rules! lerpp {
