@@ -264,6 +264,10 @@ impl Map {
             self.parking.remove_spots(id);
         }
 
+        if road.lanes_iter().any(|(_, v)| v.is_rail()) {
+            self.trainstations.retain(|_, t| t.track != road_id);
+        }
+
         let smap = &mut self.spatial_map;
         self.lots.retain(|_, lot| {
             let to_remove = lot.parent == road_id;
