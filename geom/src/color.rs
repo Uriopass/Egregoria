@@ -336,3 +336,9 @@ impl From<&LinearColor> for [f32; 4] {
         [x.r, x.g, x.b, x.a]
     }
 }
+
+impl From<&LinearColor> for LinearColor {
+    fn from(x: &LinearColor) -> Self {
+        *x
+    }
+}
