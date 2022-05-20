@@ -1,4 +1,3 @@
-use crate::lighting::LightRender;
 use crate::wgpu::SamplerBindingType;
 use crate::{
     bg_layout_litmesh, compile_shader, BlitLinear, CompiledShader, Drawable, IndexType,
@@ -47,7 +46,6 @@ pub struct GfxContext {
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
     pub sky_bg: wgpu::BindGroup,
-    pub light: LightRender,
     #[allow(dead_code)] // keep adapter alive
     pub(crate) adapter: Adapter,
 }
@@ -213,7 +211,6 @@ impl GfxContext {
             sky_bg: Uniform::new([0.0f32; 4], &device).bindgroup,       // bogus
             bnoise_bg,
             sun_shadowmap: Self::mk_shadowmap(&device, 2048),
-            light: LightRender::new(&device),
             device,
         };
 
@@ -222,7 +219,6 @@ impl GfxContext {
         Mesh::setup(&mut me);
         InstancedMesh::setup(&mut me);
         SpriteBatch::setup(&mut me);
-        crate::lighting::setup(&mut me);
         BlitLinear::setup(&mut me);
         SSAOPipeline::setup(&mut me);
         BackgroundPipeline::setup(&mut me);

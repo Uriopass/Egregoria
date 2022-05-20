@@ -8,7 +8,6 @@ use common::History;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
 use geom::{Camera, LinearColor};
-use wgpu_engine::lighting::LightInstance;
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
 use crate::audio::GameAudio;
@@ -305,36 +304,6 @@ impl State {
             .write::<Timings>()
             .render
             .add_value(start.elapsed().as_secs_f32());
-    }
-
-    #[profiling::function]
-    pub fn lights(&self) -> Vec<LightInstance> {
-        vec![]
-        /*
-        let mut lights = vec![];
-        let map = self.goria.map();
-        for x in map.roads().values() {
-            let w = x.width * 0.5 - 5.0;
-            for (point, dir) in x.points().equipoints_dir(45.0) {
-                lights.push(LightInstance {
-                    pos: point + dir.perp_up() * w + 0.1 * V3::Z,
-                    scale: 60.0,
-                });
-                lights.push(LightInstance {
-                    pos: point - dir.perp_up() * w + 0.1 * V3::Z,
-                    scale: 60.0,
-                });
-            }
-        }
-
-        for i in map.intersections().values() {
-            lights.push(LightInstance {
-                pos: i.pos + 0.1 * V3::Z,
-                scale: 60.0,
-            });
-        }
-
-        lights*/
     }
 
     #[profiling::function]

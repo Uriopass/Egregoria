@@ -261,6 +261,8 @@ impl Serialize for Egregoria {
     where
         S: Serializer,
     {
+        log::info!("serializing egregoria");
+        let t = Instant::now();
         let mut m: FastMap<String, Vec<u8>> = FastMap::default();
 
         unsafe {
@@ -270,13 +272,17 @@ impl Serialize for Egregoria {
             }
         }
 
-        EgregoriaSer {
+        log::info!("took {}s to serialize resources", t.elapsed().as_secs_f32());
+
+        let v = EgregoriaSer {
             world: SerWorld(&self.world),
             version: goria_version::VERSION.to_string(),
             res: m,
             tick: self.tick,
         }
-        .serialize(serializer)
+        .serialize(serializer);
+        log::info!("took {}ms to serialize in total", t.elapsed().as_secs_f32());
+        v
     }
 }
 
@@ -301,7 +307,15 @@ impl<'de> Deserialize<'de> for Egregoria {
     where
         D: Deserializer<'de>,
     {
+        log::info!("deserializing egregoria");
+        let t = Instant::now();
+
         let mut goriadeser = EgregoriaDeser::deserialize(deserializer)?;
+
+        log::info!(
+            "took {}s to deserialize base deser",
+            t.elapsed().as_secs_f32()
+        );
 
         if goriadeser.version != goria_version::VERSION {
             return Err(Error::custom(format!(
@@ -323,6 +337,11 @@ impl<'de> Deserialize<'de> for Egregoria {
                 }
             }
         }
+
+        log::info!(
+            "took {}s to deserialize in total",
+            t.elapsed().as_secs_f32()
+        );
 
         Ok(goria)
     }

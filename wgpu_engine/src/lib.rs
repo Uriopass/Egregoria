@@ -7,7 +7,6 @@ pub mod u8slice;
 mod drawables;
 mod geometry;
 mod gfx;
-pub mod lighting;
 pub mod meshload;
 pub mod pbuffer;
 mod shader;

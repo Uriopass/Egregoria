@@ -213,12 +213,11 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
                 let stop_dist = kin.speed * kin.speed / (2.0 * loco.dec_force);
 
                 if let Some(v) = reservations.localisations.get(&travers.kind) {
-                    if v.len() >= 2 {
-                        if *v.values().max_by_key(|x| OrderedFloat(**x)).unwrap()
+                    if v.len() >= 2
+                        && *v.values().max_by_key(|x| OrderedFloat(**x)).unwrap()
                             != v.get(&me).copied().unwrap_or(f32::NEG_INFINITY)
-                        {
-                            all_ok = false;
-                        }
+                    {
+                        all_ok = false;
                     }
                 }
 
