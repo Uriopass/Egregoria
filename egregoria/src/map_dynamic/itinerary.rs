@@ -24,8 +24,7 @@ pub struct ItineraryLeader {
 #[derive(Default, Debug, Serialize, Deserialize, Inspect)]
 pub struct Itinerary {
     kind: ItineraryKind,
-    // fixme: replace local path with newtype stack to be popped in O(1)
-    local_path: Vec<Vec3>,
+    reversed_local_path: Vec<Vec3>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -54,20 +53,21 @@ pub const OBJECTIVE_OK_DIST: f32 = 3.0;
 impl Itinerary {
     pub const NONE: Self = Self {
         kind: ItineraryKind::None,
-        local_path: Vec::new(),
+        reversed_local_path: Vec::new(),
     };
 
-    pub fn simple(path: Vec<Vec3>) -> Self {
+    pub fn simple(mut path: Vec<Vec3>) -> Self {
+        path.reverse();
         Self {
             kind: ItineraryKind::Simple(*path.last().unwrap()),
-            local_path: path,
+            reversed_local_path: path,
         }
     }
 
     pub fn wait_until(x: f64) -> Self {
         Self {
             kind: ItineraryKind::WaitUntil(x),
-            local_path: Default::default(),
+            reversed_local_path: Default::default(),
         }
     }
 
@@ -86,7 +86,7 @@ impl Itinerary {
                 dest,
                 wait_ticks: 0,
             },
-            local_path: Default::default(),
+            reversed_local_path: Default::default(),
         }
     }
 
@@ -97,7 +97,8 @@ impl Itinerary {
         let mut cur = Traversable::new(TraverseKind::Lane(start_lane), TraverseDirection::Forward);
 
         if start_lane == end_lane {
-            if let Some(p) = pathkind.local_route(map, start_lane, start, end) {
+            if let Some(mut p) = pathkind.local_route(map, start_lane, start, end) {
+                p.reverse();
                 return Some(Itinerary {
                     kind: ItineraryKind::Route(
                         Route {
@@ -107,7 +108,7 @@ impl Itinerary {
                         },
                         pathkind,
                     ),
-                    local_path: p.into_vec(),
+                    reversed_local_path: p.into_vec(),
                 });
             }
         }
@@ -145,10 +146,11 @@ impl Itinerary {
 
         let mut points = points.into_vec();
         points.drain(..segid);
+        points.reverse();
 
         let mut it = Self {
             kind,
-            local_path: points,
+            reversed_local_path: points,
         };
         if matches!(pathkind, PathKind::Rail) {
             return Some(it);
@@ -159,17 +161,13 @@ impl Itinerary {
     }
 
     fn advance(&mut self, map: &Map) -> Option<Vec3> {
-        let v = if self.local_path.is_empty() {
-            None
-        } else {
-            Some(self.local_path.remove(0))
-        };
+        let v = self.reversed_local_path.pop();
 
-        if self.local_path.is_empty() {
+        if self.reversed_local_path.is_empty() {
             if let ItineraryKind::Route(ref mut r, pathkind) = self.kind {
                 r.cur = r.reversed_route.pop()?;
 
-                let points = match r.cur.points(map) {
+                let mut points = match r.cur.points(map) {
                     Some(x) => x,
                     None => {
                         *self = Self::wait_for_reroute(pathkind, r.end_pos);
@@ -180,11 +178,13 @@ impl Itinerary {
                 if r.reversed_route.is_empty() {
                     let (proj_pos, id) = points.project_segment(r.end_pos);
                     #[allow(clippy::indexing_slicing)]
-                    self.local_path.extend(&points.as_slice()[..id]);
-                    self.local_path.push(proj_pos);
-                    self.local_path.push(r.end_pos);
+                    self.reversed_local_path.push(r.end_pos);
+                    self.reversed_local_path.push(proj_pos);
+                    self.reversed_local_path
+                        .extend((&points.as_slice()[..id]).into_iter().rev());
                 } else {
-                    self.local_path = points.into_vec();
+                    points.reverse();
+                    self.reversed_local_path = points.into_vec();
                 }
             }
         }
@@ -256,7 +256,7 @@ impl Itinerary {
     }
 
     pub fn remaining_points(&self) -> usize {
-        self.local_path.len()
+        self.reversed_local_path.len()
     }
 
     pub fn is_terminal(&self) -> bool {
@@ -271,7 +271,7 @@ impl Itinerary {
     }
 
     pub fn get_point(&self) -> Option<Vec3> {
-        self.local_path.first().copied()
+        self.reversed_local_path.last().copied()
     }
 
     pub fn get_terminal(&self) -> Option<Vec3> {
@@ -302,18 +302,18 @@ impl Itinerary {
     }
 
     pub fn local_path(&self) -> &[Vec3] {
-        &self.local_path
+        &self.reversed_local_path
     }
 
     pub fn prepend_local_path(&mut self, points: impl IntoIterator<Item = Vec3>) {
-        self.local_path.splice(0..0, points.into_iter());
+        self.reversed_local_path.extend(points);
     }
 
     pub fn has_ended(&self, time: f64) -> bool {
         match self.kind {
             ItineraryKind::WaitUntil(x) => time > x,
             ItineraryKind::WaitForReroute { .. } => false,
-            _ => self.local_path.is_empty(),
+            _ => self.reversed_local_path.is_empty(),
         }
     }
 
