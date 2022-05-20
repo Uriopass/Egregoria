@@ -158,6 +158,7 @@ impl Context {
                         let params = self.gfx.render_params.value_mut();
                         params.sun_col = sun.z.max(0.0).sqrt().sqrt() * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
                         params.cam_pos = state.camera.camera.eye();
+                        params.cam_dir = -state.camera.camera.dir();
                         params.sun = sun;
                         params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);
                         params.sun_shadow_proj =

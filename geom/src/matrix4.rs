@@ -18,7 +18,7 @@ use crate::Vec4;
 use std::ops::Mul;
 
 /// Column major matrix
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 #[repr(C)]
 pub struct Matrix4 {
     pub x: Vec4,

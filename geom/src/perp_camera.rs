@@ -50,7 +50,7 @@ impl Camera {
         (1.0 + 6.0 * height.log10()).abs().max(3.0).min(30.0)
     }
 
-    fn dir(&self) -> Vec3 {
+    pub fn dir(&self) -> Vec3 {
         let v = Vec2::from_angle(self.yaw);
         let horiz = self.pitch.cos();
         let vert = self.pitch.sin();
@@ -73,18 +73,16 @@ impl Camera {
 
     pub fn build_view_projection_matrix(&self) -> Matrix4 {
         let eye = self.eye();
-        let znear = Self::znear(self.offset().z);
-        let zfar = znear * 1000.0;
+        let znear = 3.0;
         let view = look_to_rh(eye, -self.dir(), self.up);
-        let proj = PerspectiveFov::new(
+        let proj = PerspectiveFovReversedZ::new(
             self.fovy / 180.0 * std::f32::consts::PI,
             self.aspect,
             znear,
-            zfar,
         )
         .mk_proj();
 
-        opengl_to_wgpu_matrix() * (proj * view)
+        proj * view
     }
 
     pub fn build_sun_shadowmap_matrix(&self, mut dir: Vec3) -> Matrix4 {
@@ -114,11 +112,10 @@ impl Camera {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct PerspectiveFov {
+pub struct PerspectiveFovReversedZ {
     pub fovy_angle: f32, // Angle
     pub aspect: f32,
     pub near: f32,
-    pub far: f32,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -194,18 +191,17 @@ impl From<Ortho> for Matrix4 {
     }
 }
 
-impl PerspectiveFov {
-    pub fn new(fovy_angle: f32, aspect: f32, near: f32, far: f32) -> Self {
-        PerspectiveFov {
+impl PerspectiveFovReversedZ {
+    pub fn new(fovy_angle: f32, aspect: f32, near: f32) -> Self {
+        PerspectiveFovReversedZ {
             fovy_angle,
             aspect,
             near,
-            far,
         }
     }
 }
 
-impl PerspectiveFov {
+impl PerspectiveFovReversedZ {
     #[rustfmt::skip]
     pub fn mk_proj(&self) -> Matrix4 {
         assert!(
@@ -228,18 +224,7 @@ impl PerspectiveFov {
             "The near plane distance cannot be below zero, found: {:?}",
             self.near
         );
-        assert!(
-            self.far > 0.0,
-            "The far plane distance cannot be below zero, found: {:?}",
-            self.far
-        );
-        assert!(
-            self.far > self.near,
-            "The far plane cannot be closer than the near plane, found: far: {:?}, near: {:?}",
-            self.far,
-            self.near
-        );
-
+        /*
         let f = 1.0 / (self.fovy_angle / 2.0).tan();
 
         let a = (self.far + self.near) / (self.near - self.far);
@@ -249,6 +234,14 @@ impl PerspectiveFov {
         let c1 = [0.0            , f  , 0.0, 0.0];
         let c2 = [0.0            , 0.0, a,  -1.0];
         let c3 = [0.0            , 0.0, b,   0.0];
+        */
+
+        let f = 1.0 / (self.fovy_angle / 2.0).tan();
+
+        let c0 = [f / self.aspect, 0.0, 0.0, 0.0];
+        let c1 = [0.0            , f  , 0.0, 0.0];
+        let c2 = [0.0            , 0.0, -0.5,  -1.0];
+        let c3 = [0.0            , 0.0, self.near,   0.0];
 
         Matrix4::from([c0, c1, c2, c3])
     }

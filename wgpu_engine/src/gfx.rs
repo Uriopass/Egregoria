@@ -63,6 +63,8 @@ pub struct RenderParams {
     pub sun_shadow_proj: Matrix4,
     pub cam_pos: Vec3,
     pub _pad: f32,
+    pub cam_dir: Vec3,
+    pub _pad4: f32,
     pub sun: Vec3,
     pub _pad2: f32,
     pub sun_col: LinearColor,
@@ -86,9 +88,8 @@ impl Default for RenderParams {
             sun_shadow_proj: Matrix4::zero(),
             sun_col: Default::default(),
             cam_pos: Default::default(),
-            _pad: 0.0,
+            cam_dir: Default::default(),
             sun: Default::default(),
-            _pad2: 0.0,
             viewport: vec2(1000.0, 1000.0),
             time: 0.0,
             ssao_strength: 0.0,
@@ -99,7 +100,10 @@ impl Default for RenderParams {
             ssao_enabled: 1,
             shadow_mapping_enabled: 1,
             realistic_sky: 1,
+            _pad: 0.0,
+            _pad2: 0.0,
             _pad3: 0.0,
+            _pad4: 0.0,
         }
     }
 }
@@ -366,7 +370,7 @@ impl GfxContext {
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.fbos.depth.view,
                     depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
+                        load: wgpu::LoadOp::Clear(0.0),
                         store: true,
                     }),
                     stencil_ops: None,
@@ -669,7 +673,7 @@ impl GfxContext {
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
                 depth_write_enabled: false,
-                depth_compare: wgpu::CompareFunction::LessEqual,
+                depth_compare: wgpu::CompareFunction::GreaterEqual,
                 stencil: Default::default(),
                 bias: Default::default(),
             }),
@@ -716,7 +720,11 @@ impl GfxContext {
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::LessEqual,
+                depth_compare: if shadow_map {
+                    wgpu::CompareFunction::LessEqual
+                } else {
+                    wgpu::CompareFunction::GreaterEqual
+                },
                 stencil: Default::default(),
                 bias: if shadow_map {
                     DepthBiasState {

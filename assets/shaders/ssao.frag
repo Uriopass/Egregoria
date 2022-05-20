@@ -77,7 +77,7 @@ void main() {
         //dcorrected = dcorrected * depth;
         //dcorrected = dcorrected - ray.z;
 
-        occlusion += smoothstep(falloff, falloff * 2.0, dcorrected);
+        occlusion += smoothstep(falloff, falloff * 2.0, -dcorrected);
     }
 
     float ao = 1.0 - total_strength * occlusion * (1.0 / samples);
