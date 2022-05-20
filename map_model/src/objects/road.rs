@@ -309,11 +309,26 @@ impl Road {
                 to_derivative: to_derivative.z0(),
             },
         };
-        PolyLine3::new(
-            spline
-                .smart_points(if precise { 0.1 } else { 1.0 }, 0.0, 1.0)
-                .collect(),
-        )
+
+        let mut iter = spline.smart_points(if precise { 0.1 } else { 1.0 }, 0.0, 1.0);
+
+        let mut p = PolyLine3::new(vec![iter.next().unwrap()]);
+
+        for v in iter {
+            if v == to {
+                p.push(v);
+                break;
+            }
+            if v.is_close(from, 1.0) {
+                continue;
+            }
+            if v.is_close(to, 1.0) {
+                continue;
+            }
+            p.push(v);
+        }
+
+        p
     }
 
     pub fn interface_point(&self, id: IntersectionID) -> Vec3 {
