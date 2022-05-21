@@ -157,6 +157,8 @@ impl Context {
 
                         let params = self.gfx.render_params.value_mut();
                         params.sun_col = sun.z.max(0.0).sqrt().sqrt() * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
+                        params.sun_col = sun.z.max(0.0).sqrt().sqrt() * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
+                        params.sun_col = sun.z.max(0.0).sqrt().sqrt() * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
                         params.cam_pos = state.camera.camera.eye();
                         params.cam_dir = -state.camera.camera.dir();
                         params.sun = sun;
@@ -164,6 +166,9 @@ impl Context {
                         params.sun_shadow_proj =
                             state.camera.camera.build_sun_shadowmap_matrix(sun);
                         let c = common::config();
+                        params.grass_col = c.grass_col.into();
+                        params.sand_col = c.sand_col.into();
+                        params.sea_col = c.sea_col.into();
                         params.ssao_strength = c.ssao_strength;
                         params.ssao_radius = c.ssao_radius;
                         params.ssao_falloff = c.ssao_falloff;

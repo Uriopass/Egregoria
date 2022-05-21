@@ -35,7 +35,7 @@ pub struct Tree {
 
 #[derive(Clone)]
 pub struct Terrain {
-    pub chunks: HashMap<(i32, i32), Chunk>,
+    pub chunks: HashMap<(u32, u32), Chunk>,
     pub dirt_id: Wrapping<u32>,
 }
 
@@ -71,14 +71,17 @@ impl Terrain {
         self.dirt_id += Wrapping(v as u32)
     }
 
-    pub fn cell(p: Vec2) -> (i32, i32) {
+    pub fn cell(p: Vec2) -> (u32, u32) {
+        if p.x < 0.0 || p.y < 0.0 {
+            return (0, 0);
+        }
         (
-            p.x as i32 / CHUNK_SIZE as i32 - if p.x < 0.0 { 1 } else { 0 },
-            p.y as i32 / CHUNK_SIZE as i32 - if p.y < 0.0 { 1 } else { 0 },
+            p.x as u32 / CHUNK_SIZE as u32 - if p.x < 0.0 { 1 } else { 0 },
+            p.y as u32 / CHUNK_SIZE as u32 - if p.y < 0.0 { 1 } else { 0 },
         )
     }
 
-    fn chunks_iter(&self, aabb: AABB) -> impl Iterator<Item = (i32, i32)> {
+    fn chunks_iter(&self, aabb: AABB) -> impl Iterator<Item = (u32, u32)> {
         let ll = Self::cell(aabb.ll);
         let ur = Self::cell(aabb.ur);
         (ll.1..=ur.1).flat_map(move |y| (ll.0..=ur.0).map(move |x| (x, y)))
@@ -110,19 +113,24 @@ impl Terrain {
         })
     }
 
-    pub fn generate_chunk(&mut self, (x, y): (i32, i32)) {
+    pub fn generate_chunk(&self, (x, y): (u32, u32)) -> Option<Chunk> {
         if self.chunks.contains_key(&(x, y)) {
-            return;
+            return None;
         }
 
-        let chunk = self.chunks.entry((x, y)).or_default();
+        let mut chunk = Chunk::default();
 
         let offchunk = vec2(x as f32, y as f32) * CHUNK_SIZE as f32;
         for (y, l) in chunk.heights.iter_mut().enumerate() {
             for (x, h) in l.iter_mut().enumerate() {
                 let offcell = vec2(x as f32, y as f32) * CELL_SIZE;
-                *h = 1000.0
-                    * (crate::procgen::heightmap::height(offchunk + offcell).0 - 0.12).min(0.0);
+                let mut rh = crate::procgen::heightmap::height(offchunk + offcell).0 - 0.12;
+
+                if rh > 0.0 {
+                    rh = 0.0;
+                }
+
+                *h = 1000.0 * rh;
             }
         }
 
@@ -151,6 +159,8 @@ impl Terrain {
                 }
             }
         }
+
+        return Some(chunk);
     }
 
     pub fn trees(&self) -> impl Iterator<Item = &Tree> + '_ {
@@ -180,15 +190,15 @@ impl Tree {
 
 type SmolTree = u16;
 
-pub fn new_smoltree(pos: Vec2, chunk: (i32, i32)) -> SmolTree {
-    let diffx = pos.x - (chunk.0 * CHUNK_SIZE as i32) as f32;
-    let diffy = pos.y - (chunk.1 * CHUNK_SIZE as i32) as f32;
+pub fn new_smoltree(pos: Vec2, chunk: (u32, u32)) -> SmolTree {
+    let diffx = pos.x - (chunk.0 * CHUNK_SIZE as u32) as f32;
+    let diffy = pos.y - (chunk.1 * CHUNK_SIZE as u32) as f32;
 
     ((((diffx / CHUNK_SIZE as f32) * 256.0) as u8 as u16) << 8)
         + ((diffy / CHUNK_SIZE as f32) * 256.0) as u8 as u16
 }
 
-pub fn to_pos(encoded: SmolTree, chunk: (i32, i32)) -> Vec2 {
+pub fn to_pos(encoded: SmolTree, chunk: (u32, u32)) -> Vec2 {
     let diffx = (encoded >> 8) as u8;
     let diffy = (encoded & 0xFF) as u8;
     Vec2 {
@@ -205,7 +215,7 @@ struct SerializedChunk {
 
 #[derive(Serialize, Deserialize)]
 struct SerializedTerrain {
-    v: Vec<((i32, i32), SerializedChunk)>,
+    v: Vec<((u32, u32), SerializedChunk)>,
     dirt_id: u32,
 }
 

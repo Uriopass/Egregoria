@@ -159,7 +159,7 @@ impl CameraHandler3D {
         } else if inps.act.contains(&InputAction::CameraMove) {
             if let Some((last_pos, unprojected)) = self.last_pos.zip(unprojected) {
                 self.targetpos += (last_pos - unprojected.xy())
-                    .cap_magnitude(50000.0 * delta)
+                    .cap_magnitude(50.0 * delta * self.camera.eye().z)
                     .z0();
             }
         }
@@ -192,9 +192,7 @@ impl CameraHandler3D {
 
         self.camera.fovy = settings.camera_fov.clamp(1.0, 179.0);
 
-        self.camera.pos.z = height(self.camera.pos.xy())
-            .unwrap_or(self.camera.pos.z)
-            .max(height(self.camera.offset().xy()).unwrap_or_default());
+        self.camera.pos.z = height(self.camera.pos.xy()).unwrap_or(self.camera.pos.z);
         self.update(ctx);
         self.last_pos = self.unproject(screenpos, |_| Some(0.0)).map(Vec3::xy);
     }

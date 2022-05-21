@@ -21,13 +21,17 @@ use crate::gui::{FollowEntity, Gui, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::network::NetworkState;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
-use crate::rendering::{CameraHandler3D, InstancedRender, RoadRenderer, TerrainRender};
+use crate::rendering::{CameraHandler3D, InstancedRender, RoadRenderer};
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
 use common::timestep::Timestep;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::utils::scheduler::SeqSchedule;
 use networking::{Frame, PollResult, ServerPollResult};
+use wgpu_engine::terrain::TerrainRender;
+
+const CSIZE: usize = map_model::CHUNK_SIZE as usize;
+const CRESO: usize = map_model::CHUNK_RESOLUTION as usize;
 
 pub struct State {
     goria: Arc<RwLock<Egregoria>>,
@@ -42,7 +46,7 @@ pub struct State {
 
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
-    terrain: TerrainRender,
+    terrain: TerrainRender<CSIZE, CRESO>,
     gui: Gui,
     immtess: Tesselator,
 
@@ -56,8 +60,9 @@ impl State {
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
         log::info!("loaded imgui_render");
 
+        let default_size = 50;
         let goria: Egregoria =
-            Egregoria::load_from_disk("world").unwrap_or_else(|| Egregoria::new(10));
+            Egregoria::load_from_disk("world").unwrap_or_else(|| Egregoria::new(default_size));
         let game_schedule = Egregoria::schedule();
         let mut uiworld = UiWorld::init();
 
@@ -82,7 +87,7 @@ impl State {
             imgui_render,
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx, &goria),
-            terrain: TerrainRender::new(&mut ctx.gfx),
+            terrain: TerrainRender::new(&mut ctx.gfx, default_size as u32),
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
             goria: Arc::new(RwLock::new(goria)),
@@ -124,8 +129,7 @@ impl State {
         Self::manage_settings(ctx, &*self.uiw.read::<Settings>());
         self.manage_io(ctx);
 
-        self.terrain
-            .update(&mut ctx.gfx, &*self.goria.read().unwrap().map());
+        self.terrain_update(ctx);
 
         ctx.gfx
             .set_time(self.goria.read().unwrap().read::<GameTime>().timestamp as f32);
@@ -138,6 +142,25 @@ impl State {
 
         self.manage_entity_follow();
         self.camera.update(ctx);
+    }
+
+    pub fn terrain_update(&mut self, ctx: &mut Context) {
+        let goria = self.goria.read().unwrap();
+        let map = goria.map();
+        let ter = &map.terrain;
+        if ter.dirt_id.0 == self.terrain.dirt_id {
+            return;
+        }
+        self.terrain.dirt_id = ter.dirt_id.0;
+
+        for &cell in ter.chunks.keys() {
+            let chunk = unwrap_retlog!(ter.chunks.get(&cell), "trying to update nonexistent chunk");
+
+            self.terrain
+                .update_chunk(&mut ctx.gfx, chunk.dirt_id.0, cell, &chunk.heights)
+        }
+
+        self.terrain.update_borders(&ctx.gfx, &|p| ter.height(p));
     }
 
     pub fn goria_update(&mut self) {
@@ -242,7 +265,7 @@ impl State {
         let start = Instant::now();
         let goria = self.goria.read().unwrap();
 
-        self.terrain.draw_terrain(&self.uiw, ctx);
+        self.terrain.draw_terrain(&self.uiw.read::<Camera>(), ctx);
 
         self.immtess.meshbuilder.clear();
         self.camera.cull_tess(&mut self.immtess);
