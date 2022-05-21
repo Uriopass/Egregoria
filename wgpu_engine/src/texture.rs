@@ -83,41 +83,6 @@ impl Texture {
         )
     }
 
-    pub fn create_light_texture(
-        device: &wgpu::Device,
-        sc_desc: &wgpu::SurfaceConfiguration,
-        samples: u32,
-    ) -> MultisampledTexture {
-        let fbo = Self::create_fbo(
-            device,
-            (sc_desc.width, sc_desc.height),
-            TextureFormat::R16Float,
-            TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
-            None,
-        );
-
-        let multisample_desc = &wgpu::TextureDescriptor {
-            format: TextureFormat::R16Float,
-            size: Extent3d {
-                width: sc_desc.width,
-                height: sc_desc.height,
-                depth_or_array_layers: 1,
-            },
-            usage: TextureUsages::RENDER_ATTACHMENT,
-            mip_level_count: 1,
-            sample_count: samples,
-            dimension: wgpu::TextureDimension::D2,
-            label: Some("light texture multisampled buffer"),
-        };
-
-        MultisampledTexture {
-            target: fbo,
-            multisampled_buffer: device
-                .create_texture(multisample_desc)
-                .create_view(&TextureViewDescriptor::default()),
-        }
-    }
-
     pub fn create_ui_texture(device: &wgpu::Device, sc_desc: &wgpu::SurfaceConfiguration) -> Self {
         Self::create_fbo(
             device,
@@ -162,7 +127,7 @@ impl Texture {
                 vec![
                     wgpu::BindGroupLayoutEntry {
                         binding: i * 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
+                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
                             view_dimension: wgpu::TextureViewDimension::D2,
@@ -172,7 +137,7 @@ impl Texture {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: i * 2 + 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
+                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                         ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                         count: None,
                     },

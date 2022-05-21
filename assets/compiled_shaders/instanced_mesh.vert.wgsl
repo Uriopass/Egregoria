@@ -4,6 +4,9 @@ struct RenderParams {
     cam_dir: vec4<f32>;
     sun: vec3<f32>;
     sun_col: vec4<f32>;
+    grass_col: vec4<f32>;
+    sand_col: vec4<f32>;
+    sea_col: vec4<f32>;
     viewport: vec2<f32>;
     time: f32;
     ssao_strength: f32;

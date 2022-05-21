@@ -1,17 +1,15 @@
 #version 450
 #include "render_params.glsl"
 
-layout(location=0) in vec4 in_tint;
-layout(location=1) in vec3 in_normal;
-layout(location=2) in vec3 in_wpos;
-layout(location=3) in vec2 in_uv;
+layout(location=0) in vec3 in_normal;
+layout(location=1) in vec3 in_wpos;
 
 layout(location=0) out vec4 out_color;
 
 layout(set = 1, binding = 0) uniform Uni {RenderParams params;};
 
-layout(set = 2, binding = 0) uniform texture2D t_albedo;
-layout(set = 2, binding = 1) uniform sampler s_albedo;
+layout(set = 2, binding = 0) uniform texture2D t_terraindata;
+layout(set = 2, binding = 1) uniform sampler s_terraindata;
 
 layout(set = 3, binding = 0) uniform texture2D t_ssao;
 layout(set = 3, binding = 1) uniform sampler s_ssao;
@@ -41,7 +39,6 @@ float sampleShadow() {
 }
 
 void main() {
-    vec4 albedo = texture(sampler2D(t_albedo, s_albedo), in_uv);
     float ssao = 1;
     if (params.ssao_enabled != 0) {
        ssao = texture(sampler2D(t_ssao, s_ssao), gl_FragCoord.xy / params.viewport).r;
@@ -68,6 +65,24 @@ void main() {
         return;
     }*/
 
+    /*
+        let col: LinearColor = if height < -20.0 {
+        common::config().sea_col.into()
+    } else if height < 0.0 {
+        common::config().sand_col.into()
+    } else {
+        0.37 * LinearColor::from(common::config().grass_col)
+    };
+        */
+
+    vec4 c = params.grass_col;
+
+    float v = mod(floor(in_wpos.x * 0.01) + floor(in_wpos.y * 0.01), 2.0);
+    c += vec4(0.0, 0.02 * smoothstep(0.99, 1.01, v), 0.0, 0.0);
+
+    c = mix(params.sand_col, c, smoothstep(-5.0, 0.0, in_wpos.z));
+    c = mix(params.sea_col, c, smoothstep(-25.0, -20.0, in_wpos.z));
+
     vec3 normal = normalize(in_normal);
     vec3 cam = params.cam_pos.xyz;
 
@@ -76,11 +91,10 @@ void main() {
     vec3 V = normalize(cam - in_wpos);
 
     float specular = clamp(dot(R, V), 0.0, 1.0);
-    specular = pow(specular, 5);
+    specular = pow(specular, 2);
 
     float sun_contrib = clamp(dot(normal, params.sun), 0.0, 1.0);
 
-    vec4 c = in_tint * albedo;
     vec3 ambiant = 0.15 * c.rgb;
     float sun = (0.85 * sun_contrib + 0.5 * specular) * shadow_v;
 

@@ -1,9 +1,10 @@
+use crate::terrain::TerrainPrepared;
 use crate::wgpu::SamplerBindingType;
+use crate::ShaderType;
 use crate::{
     bg_layout_litmesh, compile_shader, BlitLinear, CompiledShader, Drawable, IndexType,
     InstancedMesh, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
 };
-use crate::{MultisampledTexture, ShaderType};
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
 use raw_window_handle::HasRawWindowHandle;
@@ -20,7 +21,6 @@ use wgpu::{
 
 pub struct FBOs {
     pub(crate) depth: Texture,
-    pub(crate) light: MultisampledTexture,
     pub(crate) color_msaa: wgpu::TextureView,
     pub(crate) ui: Texture,
     pub(crate) ssao: Texture,
@@ -68,6 +68,9 @@ pub struct RenderParams {
     pub sun: Vec3,
     pub _pad2: f32,
     pub sun_col: LinearColor,
+    pub grass_col: LinearColor,
+    pub sand_col: LinearColor,
+    pub sea_col: LinearColor,
     pub viewport: Vec2,
     pub time: f32,
     pub ssao_strength: f32,
@@ -87,6 +90,9 @@ impl Default for RenderParams {
             inv_proj: Matrix4::zero(),
             sun_shadow_proj: Matrix4::zero(),
             sun_col: Default::default(),
+            grass_col: Default::default(),
+            sand_col: Default::default(),
+            sea_col: Default::default(),
             cam_pos: Default::default(),
             cam_dir: Default::default(),
             sun: Default::default(),
@@ -220,6 +226,7 @@ impl GfxContext {
 
         me.update_simplelit_bg();
 
+        TerrainPrepared::setup(&mut me);
         Mesh::setup(&mut me);
         InstancedMesh::setup(&mut me);
         SpriteBatch::setup(&mut me);
@@ -589,7 +596,6 @@ impl GfxContext {
         );
         FBOs {
             depth: Texture::create_depth_texture(device, size, samples),
-            light: Texture::create_light_texture(device, desc, samples),
             color_msaa: Texture::create_color_msaa(device, desc, samples),
             ui: Texture::create_ui_texture(device, desc),
             ssao,
@@ -613,7 +619,6 @@ impl GfxContext {
                 self.read_texture("assets/blue_noise_512.png")
                     .expect("blue noise not initialized"),
                 &self.sun_shadowmap,
-                &self.fbos.light.target,
             ],
             &self.device,
             &bg_layout_litmesh(&self.device),
@@ -692,13 +697,28 @@ impl GfxContext {
         vert_shader: &CompiledShader,
         shadow_map: bool,
     ) -> RenderPipeline {
+        self.depth_pipeline_bglayout(
+            vertex_buffers,
+            vert_shader,
+            shadow_map,
+            &[&self.projection.layout],
+        )
+    }
+
+    pub fn depth_pipeline_bglayout(
+        &self,
+        vertex_buffers: &[VertexBufferLayout<'_>],
+        vert_shader: &CompiledShader,
+        shadow_map: bool,
+        layouts: &[&BindGroupLayout],
+    ) -> RenderPipeline {
         assert!(matches!(vert_shader.1, ShaderType::Vertex));
 
         let render_pipeline_layout =
             self.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("depth pipeline"),
-                    bind_group_layouts: &[&self.projection.layout],
+                    bind_group_layouts: layouts,
                     push_constant_ranges: &[],
                 });
 

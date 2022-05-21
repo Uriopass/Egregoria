@@ -29,6 +29,27 @@ impl VBDesc for MeshVertex {
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
+pub struct TerrainVertex {
+    pub position: [f32; 2],
+}
+
+u8slice_impl!(TerrainVertex);
+
+const ATTRS_TV: &[VertexAttribute] = &wgpu::vertex_attr_array![0 => Float32x2];
+
+impl VBDesc for TerrainVertex {
+    fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
+        use std::mem;
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<Self>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: ATTRS_TV,
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
 pub struct UvVertex {
     pub position: [f32; 3],
     pub uv: [f32; 2],

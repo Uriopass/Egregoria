@@ -311,7 +311,6 @@ impl Road {
         };
 
         let mut iter = spline.smart_points(if precise { 0.1 } else { 1.0 }, 0.0, 1.0);
-
         let mut p = PolyLine3::new(vec![iter.next().unwrap()]);
 
         for v in iter {

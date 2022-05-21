@@ -3,7 +3,7 @@ use std::sync::Arc;
 use wgpu::{
     BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BufferBinding, BufferDescriptor,
-    BufferSize, BufferUsages, Device, Queue,
+    BufferSize, BufferSlice, BufferUsages, Device, Queue,
 };
 
 /// Short for Persistent Buffer, keeps memory around to reuse it
@@ -84,6 +84,13 @@ impl PBuffer {
                     count: None,
                 }],
             })
+    }
+
+    pub fn slice(&self) -> Option<BufferSlice> {
+        if self.len == 0 {
+            return None;
+        }
+        self.inner.as_ref().map(|x| x.slice(..))
     }
 
     pub fn inner(&self) -> Option<Arc<wgpu::Buffer>> {

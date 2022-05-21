@@ -152,35 +152,50 @@ impl Drawable for Mesh {
     }
 }
 
-struct LitMeshDepth;
-struct LitMeshDepthSMap;
+pub struct LitMeshDepth;
+pub struct LitMeshDepthSMap;
+
+pub enum BgLayoutTextureType {
+    Shadow,
+    Float,
+}
 
 pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
-    let entries: Vec<BindGroupLayoutEntry> = (0..4)
-        .flat_map(|i| {
+    use BgLayoutTextureType::*;
+    bg_layout_texs(device, std::array::IntoIter::new([Float, Float, Shadow]))
+}
+pub fn bg_layout_texs(
+    device: &Device,
+    it: impl Iterator<Item = BgLayoutTextureType>,
+) -> BindGroupLayout {
+    let entries: Vec<BindGroupLayoutEntry> = it
+        .enumerate()
+        .flat_map(|(i, bgtype)| {
             vec![
                 wgpu::BindGroupLayoutEntry {
-                    binding: i * 2,
+                    binding: (i * 2) as u32,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
                         view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: if i != 2 {
-                            wgpu::TextureSampleType::Float { filterable: true }
-                        } else {
+                        sample_type: if matches!(bgtype, BgLayoutTextureType::Shadow) {
                             wgpu::TextureSampleType::Depth
+                        } else {
+                            wgpu::TextureSampleType::Float { filterable: true }
                         },
                     },
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
-                    binding: i * 2 + 1,
+                    binding: (i * 2 + 1) as u32,
                     visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(if i == 2 {
-                        wgpu::SamplerBindingType::Comparison
-                    } else {
-                        wgpu::SamplerBindingType::Filtering
-                    }),
+                    ty: wgpu::BindingType::Sampler(
+                        if matches!(bgtype, BgLayoutTextureType::Shadow) {
+                            wgpu::SamplerBindingType::Comparison
+                        } else {
+                            wgpu::SamplerBindingType::Filtering
+                        },
+                    ),
                     count: None,
                 },
             ]
