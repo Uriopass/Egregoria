@@ -16,7 +16,7 @@ use crate::context::Context;
 use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::network::NetworkConnectionInfo;
-use crate::gui::windows::settings::{Settings, ShadowQuality};
+use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, Gui, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::network::NetworkState;
