@@ -56,6 +56,21 @@ pub fn load_mesh(path: impl AsRef<Path>, gfx: &GfxContext) -> Option<Mesh> {
             continue;
         }
 
+        let shade_smooth = true;
+
+        let vtx_offset = flat_vertices.len() as IndexType;
+        if shade_smooth {
+            log::info!("{} vertices", raw.len());
+            for (pos, normal, uv) in &raw {
+                flat_vertices.push(MeshVertex {
+                    position: pos.into(),
+                    normal: *normal,
+                    uv: (*uv).into(),
+                    color: [1.0, 1.0, 1.0, 1.0],
+                })
+            }
+        }
+
         for triangle in read_indices.chunks_exact(3) {
             let (mut a, b, mut c) = if let [a, b, c] = *triangle {
                 (a, b, c)
@@ -65,6 +80,13 @@ pub fn load_mesh(path: impl AsRef<Path>, gfx: &GfxContext) -> Option<Mesh> {
 
             if invert_winding {
                 std::mem::swap(&mut a, &mut c);
+            }
+
+            if shade_smooth {
+                indices.push(vtx_offset + a as IndexType);
+                indices.push(vtx_offset + b as IndexType);
+                indices.push(vtx_offset + c as IndexType);
+                continue;
             }
 
             let a = raw[a as usize];

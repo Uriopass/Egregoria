@@ -357,14 +357,9 @@ impl State {
         ctx.gfx.render_params.value_mut().ssao_enabled = settings.ssao as i32;
         ctx.gfx.render_params.value_mut().realistic_sky = settings.realistic_sky as i32;
         ctx.gfx.render_params.value_mut().shadow_mapping_enabled =
-            !matches!(settings.shadows, ShadowQuality::NoShadows) as i32;
+            settings.shadows.size().unwrap_or(0) as i32;
 
-        if let Some(v) = match settings.shadows {
-            ShadowQuality::Low => Some(512),
-            ShadowQuality::Medium => Some(1024),
-            ShadowQuality::High => Some(2048),
-            ShadowQuality::NoShadows => None,
-        } {
+        if let Some(v) = settings.shadows.size() {
             if ctx.gfx.sun_shadowmap.extent.width != v {
                 ctx.gfx.sun_shadowmap = GfxContext::mk_shadowmap(&ctx.gfx.device, v);
                 ctx.gfx.update_simplelit_bg();
