@@ -264,6 +264,12 @@ impl From<Vec3> for [f32; 3] {
     }
 }
 
+impl From<&Vec3> for [f32; 3] {
+    fn from(v: &Vec3) -> Self {
+        [v.x, v.y, v.z]
+    }
+}
+
 impl From<[f32; 3]> for Vec3 {
     fn from(v: [f32; 3]) -> Self {
         Self {

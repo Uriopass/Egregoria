@@ -26,6 +26,17 @@ impl AsRef<str> for ShadowQuality {
     }
 }
 
+impl ShadowQuality {
+    pub(crate) fn size(&self) -> Option<u32> {
+        match self {
+            ShadowQuality::Low => Some(512),
+            ShadowQuality::Medium => Some(1024),
+            ShadowQuality::High => Some(2048),
+            ShadowQuality::NoShadows => None,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {

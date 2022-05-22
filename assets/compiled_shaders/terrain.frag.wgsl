@@ -65,7 +65,10 @@ fn dither() -> f32 {
 fn sampleShadow() -> f32 {
     var light_local: vec4<f32>;
     var corrected: vec3<f32>;
-    var v: f32;
+    var total: f32 = 0.0;
+    var offset: f32;
+    var x: i32;
+    var y: i32 = -1;
 
     let _e14: RenderParams = global.params;
     let _e16: vec3<f32> = in_wpos_1;
@@ -73,40 +76,78 @@ fn sampleShadow() -> f32 {
     let _e25: vec4<f32> = light_local;
     let _e27: vec4<f32> = light_local;
     corrected = (((_e25.xyz / vec3<f32>(_e27.w)) * vec3<f32>(0.5, -(0.5), 1.0)) + vec3<f32>(0.5, 0.5, 0.0));
-    let _e44: vec3<f32> = corrected;
-    let _e47: f32 = textureSampleCompare(t_sun_smap, s_sun_smap, _e44.xy, _e44.z);
-    v = _e47;
-    let _e49: vec4<f32> = light_local;
-    if ((_e49.z >= 1.0)) {
+    let _e46: RenderParams = global.params;
+    offset = (1.0 / f32(_e46.shadow_mapping_enabled));
+    loop {
+        let _e55: i32 = y;
+        if (!((_e55 <= 1))) {
+            break;
+        }
+        {
+            x = -(1);
+            loop {
+                let _e64: i32 = x;
+                if (!((_e64 <= 1))) {
+                    break;
+                }
+                {
+                    let _e71: f32 = total;
+                    let _e72: vec3<f32> = corrected;
+                    let _e73: f32 = offset;
+                    let _e74: i32 = x;
+                    let _e75: i32 = y;
+                    let _e83: vec3<f32> = corrected;
+                    let _e84: f32 = offset;
+                    let _e85: i32 = x;
+                    let _e86: i32 = y;
+                    let _e93: vec3<f32> = (_e83 + (_e84 * vec3<f32>(f32(_e85), f32(_e86), -(1.0))));
+                    let _e96: f32 = textureSampleCompare(t_sun_smap, s_sun_smap, _e93.xy, _e93.z);
+                    total = (_e71 + _e96);
+                }
+                continuing {
+                    let _e68: i32 = x;
+                    x = (_e68 + 1);
+                }
+            }
+        }
+        continuing {
+            let _e59: i32 = y;
+            y = (_e59 + 1);
+        }
+    }
+    let _e98: f32 = total;
+    total = (_e98 / 9.0);
+    let _e101: vec4<f32> = light_local;
+    if ((_e101.z >= 1.0)) {
         {
             return 1.0;
         }
     }
-    let _e56: vec4<f32> = light_local;
-    let _e58: vec4<f32> = light_local;
-    let _e60: vec4<f32> = light_local;
-    let _e62: vec4<f32> = light_local;
-    let _e67: vec4<f32> = light_local;
-    let _e69: vec4<f32> = light_local;
-    let _e71: vec4<f32> = light_local;
-    let _e73: vec4<f32> = light_local;
-    let _e79: f32 = v;
-    let _e82: vec4<f32> = light_local;
-    let _e84: vec4<f32> = light_local;
-    let _e86: vec4<f32> = light_local;
-    let _e88: vec4<f32> = light_local;
-    let _e93: vec4<f32> = light_local;
-    let _e95: vec4<f32> = light_local;
-    let _e97: vec4<f32> = light_local;
-    let _e99: vec4<f32> = light_local;
-    return mix(_e79, f32(1), clamp(dot(_e97.xy, _e99.xy), 0.0, 1.0));
+    let _e108: vec4<f32> = light_local;
+    let _e110: vec4<f32> = light_local;
+    let _e112: vec4<f32> = light_local;
+    let _e114: vec4<f32> = light_local;
+    let _e119: vec4<f32> = light_local;
+    let _e121: vec4<f32> = light_local;
+    let _e123: vec4<f32> = light_local;
+    let _e125: vec4<f32> = light_local;
+    let _e131: f32 = total;
+    let _e134: vec4<f32> = light_local;
+    let _e136: vec4<f32> = light_local;
+    let _e138: vec4<f32> = light_local;
+    let _e140: vec4<f32> = light_local;
+    let _e145: vec4<f32> = light_local;
+    let _e147: vec4<f32> = light_local;
+    let _e149: vec4<f32> = light_local;
+    let _e151: vec4<f32> = light_local;
+    return mix(_e131, f32(1), clamp(dot(_e149.xy, _e151.xy), 0.0, 1.0));
 }
 
 fn main_1() {
     var ssao: f32 = 1.0;
     var shadow_v: f32 = 1.0;
     var c: vec4<f32>;
-    var v_1: f32;
+    var v: f32;
     var normal: vec3<f32>;
     var cam: vec3<f32>;
     var L: vec3<f32>;
@@ -146,9 +187,9 @@ fn main_1() {
     let _e68: vec3<f32> = in_wpos_1;
     let _e73: vec3<f32> = in_wpos_1;
     let _e77: vec3<f32> = in_wpos_1;
-    v_1 = ((floor((_e68.x * 0.009999999776482582)) + floor((_e77.y * 0.009999999776482582))) % 2.0);
+    v = ((floor((_e68.x * 0.009999999776482582)) + floor((_e77.y * 0.009999999776482582))) % 2.0);
     let _e86: vec4<f32> = c;
-    let _e94: f32 = v_1;
+    let _e94: f32 = v;
     c = (_e86 + vec4<f32>(0.0, (0.019999999552965164 * smoothStep(0.9900000095367432, 1.0099999904632568, _e94)), 0.0, 0.0));
     let _e101: RenderParams = global.params;
     let _e107: vec3<f32> = in_wpos_1;
