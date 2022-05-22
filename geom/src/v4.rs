@@ -9,10 +9,18 @@ pub struct Vec4 {
     pub z: f32,
     pub w: f32,
 }
-
 impl Vec4 {
     pub fn dot(&self, other: &Vec4) -> f32 {
         (self.x * other.x + self.y * other.y) + (self.z * other.z + self.w * other.w)
+    }
+
+    pub fn new_w(v: Vec3, w: f32) -> Self {
+        Self {
+            x: v.x,
+            y: v.y,
+            z: v.z,
+            w,
+        }
     }
 
     pub fn xyz(&self) -> Vec3 {

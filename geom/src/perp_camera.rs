@@ -15,7 +15,7 @@
 // Modified for the Egregoria project by the Egregoria developers.
 
 use crate::matrix4::Matrix4;
-use crate::{Vec2, Vec3};
+use crate::{vec2, vec3, Vec2, Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
@@ -88,7 +88,7 @@ impl Camera {
         proj * view
     }
 
-    pub fn build_sun_shadowmap_matrix(&self, mut dir: Vec3) -> Matrix4 {
+    pub fn build_sun_shadowmap_matrix(&self, mut dir: Vec3, resolution: f32) -> Matrix4 {
         if dir.x == 0.0 && dir.y == 0.0 {
             dir.x = 0.01;
             dir.y = 0.01;
@@ -97,9 +97,8 @@ impl Camera {
         let d = self.dist * 2.5;
 
         let base = self.pos;
-        let suneye = base + dir;
 
-        let view = look_at_rh(suneye, base, self.up);
+        let view = look_at_rh(base + dir, base, self.up);
         let proj: Matrix4 = Ortho {
             left: -d,
             right: d,
@@ -109,8 +108,27 @@ impl Camera {
             far: d * 1.2,
         }
         .into();
+        // texel snapping
+        let projview = proj * view;
 
-        opengl_to_wgpu_matrix() * (proj * view)
+        let proj_base = projview * Vec4::from([0.0, 0.0, 0.0, 1.0]);
+
+        let texcoord = vec2(proj_base.x, proj_base.y) * 0.5 * resolution;
+
+        let rounded = (texcoord + vec2(0.5, 0.5)).floor();
+
+        let dtex = rounded - texcoord;
+
+        let dtex_orig = dtex / (0.5 * resolution);
+
+        let rounding = Matrix4::from([
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [dtex_orig.x, dtex_orig.y, 0.0, 1.0],
+        ]);
+
+        opengl_to_wgpu_matrix() * (rounding * projview)
     }
 }
 

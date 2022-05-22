@@ -164,7 +164,7 @@ impl Context {
                         params.sun = sun;
                         params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);
                         params.sun_shadow_proj =
-                            state.camera.camera.build_sun_shadowmap_matrix(sun);
+                            state.camera.camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_enabled as f32);
                         let c = common::config();
                         params.grass_col = c.grass_col.into();
                         params.sand_col = c.sand_col.into();
