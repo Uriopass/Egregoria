@@ -15,7 +15,7 @@
 // Modified for the Egregoria project by the Egregoria developers.
 
 use crate::matrix4::Matrix4;
-use crate::{vec2, vec3, Vec2, Vec3, Vec4};
+use crate::{vec2, Vec2, Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]

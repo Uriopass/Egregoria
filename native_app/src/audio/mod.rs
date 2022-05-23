@@ -15,6 +15,7 @@ use oddio::{Filter, Frames, FramesSignal, Gain, Handle, Mixer, Sample, Signal, S
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, RwLock};
+use std::time::Instant;
 
 pub struct GameAudio {
     music: Music,
@@ -122,6 +123,7 @@ impl AudioContext {
 
     fn decode(name: &str) -> Option<StoredAudio> {
         let p = format!("assets/sounds/{}.ogg", name);
+        let t = Instant::now();
         let buf = match std::fs::read(&p) {
             Ok(x) => x,
             Err(e) => {
@@ -156,18 +158,18 @@ impl AudioContext {
             }
         }
 
+        let frames = Frames::from_slice(decoder.ident_hdr.audio_sample_rate, &samples);
+
         log::info!(
-            "decoding {}: {} sps|{} total samples|{} channels",
+            "decoding {}: {} sps|{} total samples|{} channels|took {}ms",
             &p,
             decoder.ident_hdr.audio_sample_rate,
             samples.len(),
             decoder.ident_hdr.audio_channels,
+            1000.0 * t.elapsed().as_secs_f32()
         );
 
-        Some(Frames::from_slice(
-            decoder.ident_hdr.audio_sample_rate,
-            &samples,
-        ))
+        Some(frames)
     }
 
     fn get(cache: &RwLock<FastMap<String, StoredAudio>>, name: &str) -> Option<StoredAudio> {
