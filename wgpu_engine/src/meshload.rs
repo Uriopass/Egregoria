@@ -5,9 +5,13 @@ use gltf::json::texture::{MagFilter, MinFilter};
 use image::{DynamicImage, ImageBuffer};
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Instant;
 use wgpu::FilterMode;
 
 pub fn load_mesh(path: impl AsRef<Path>, gfx: &GfxContext) -> Option<Mesh> {
+    let path = path.as_ref();
+    let t = Instant::now();
+
     let mut flat_vertices: Vec<MeshVertex> = vec![];
     let mut indices = vec![];
 
@@ -60,7 +64,6 @@ pub fn load_mesh(path: impl AsRef<Path>, gfx: &GfxContext) -> Option<Mesh> {
 
         let vtx_offset = flat_vertices.len() as IndexType;
         if shade_smooth {
-            log::info!("{} vertices", raw.len());
             for (pos, normal, uv) in &raw {
                 flat_vertices.push(MeshVertex {
                     position: pos.into(),
@@ -191,5 +194,13 @@ pub fn load_mesh(path: impl AsRef<Path>, gfx: &GfxContext) -> Option<Mesh> {
     meshb.vertices = flat_vertices;
     meshb.indices = indices;
 
-    meshb.build(gfx, albedo)
+    let m = meshb.build(gfx, albedo);
+
+    log::info!(
+        "loaded mesh {:?} in {}ms",
+        path,
+        1000.0 * t.elapsed().as_secs_f32()
+    );
+
+    m
 }
