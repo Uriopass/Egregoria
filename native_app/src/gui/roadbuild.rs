@@ -52,7 +52,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     // Prepare mousepos depending on snap to grid
     let unproj = unwrap_ret!(inp.unprojected);
-    let grid_size = 15.0;
+    let grid_size = 20.0;
     let mousepos = if state.snap_to_grid {
         let v = unproj.xy().snap(grid_size, grid_size);
         v.z(unwrap_ret!(map.terrain.height(v)) + 0.3 + state.height_offset)
@@ -61,9 +61,9 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     };
 
     let log_camheight = cam.eye().z.log10();
+    /*
     let cutoff = 3.3;
 
-    // Render grid if enabled
     if state.snap_to_grid && log_camheight < cutoff {
         let alpha = 1.0 - log_camheight / cutoff;
         let col = common::config().gui_primary.a(alpha);
@@ -89,7 +89,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
                     .color(col);
             }
         }
-    }
+    }*/
 
     // If a road was placed recently (as it is async with networking) prepare the next road
     for command in uiworld.received_commands().iter() {
