@@ -89,8 +89,19 @@ void main() {
 
     vec4 c = params.grass_col;
 
-    float v = mod(floor(in_wpos.x * 0.01) + floor(in_wpos.y * 0.01), 2.0);
-    c += vec4(0.0, 0.02 * smoothstep(0.99, 1.01, v), 0.0, 0.0);
+    float level = fwidth(in_wpos.x)*0.002;//length(vec2(dFdx(in_wpos.x), dFdy(in_wpos.x))) * 0.02;
+
+    float w = 1;
+    float isIn = 0.0;
+    while(w > level) {
+        vec2 moved = fract(in_wpos.xy / (10000 * w));
+        float v = min(moved.x, moved.y);
+
+        float isOk = (1 - smoothstep(0.012, 0.0123, v)) * 2 * (1 - smoothstep(level*100*0.5, level*100, w));
+        isIn = max(isIn, isOk);
+        w = w / 10;
+    }
+    c += isIn * vec4(0.0, 0.02, 0.0, 0.0);
 
     c = mix(params.sand_col, c, smoothstep(-5.0, 0.0, in_wpos.z));
     c = mix(params.sea_col, c, smoothstep(-25.0, -20.0, in_wpos.z));
