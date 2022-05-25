@@ -67,7 +67,7 @@ impl Default for Settings {
             music_volume_percent: 100.0,
             effects_volume_percent: 100.0,
             ui_volume_percent: 100.0,
-            fullscreen: true,
+            fullscreen: false,
             vsync: VSyncOptions::Enabled,
             time_warp: 1,
             auto_save_every: AutoSaveEvery::Never,
