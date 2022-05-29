@@ -33,9 +33,11 @@ pub struct Tree {
     pub dir: Vec2,
 }
 
+pub type ChunkID = (u32, u32);
+
 #[derive(Clone)]
 pub struct Terrain {
-    pub chunks: HashMap<(u32, u32), Chunk>,
+    pub chunks: HashMap<ChunkID, Chunk>,
     pub dirt_id: Wrapping<u32>,
 }
 
@@ -161,10 +163,6 @@ impl Terrain {
         }
 
         return Some(chunk);
-    }
-
-    pub fn trees(&self) -> impl Iterator<Item = &Tree> + '_ {
-        self.chunks.values().flat_map(|x| &x.trees)
     }
 }
 
