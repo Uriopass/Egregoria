@@ -58,8 +58,8 @@ float grid() {
     vec2 curgrid = in_wpos.xy / 10000;
 
     while(w > level*100) {
-        w /= 10;
-        curgrid *= 10;
+        w /= 5;
+        curgrid *= 5;
     }
 
     while(w > level) {
@@ -68,8 +68,8 @@ float grid() {
 
         float isOk = (1 - smoothstep(0.004, 0.00415, v)) * 2 * (1 - smoothstep(level*100*0.5, level*100, w));
         isIn = max(isIn, isOk);
-        w /= 10;
-        curgrid *= 10;
+        w /= 5;
+        curgrid *= 5;
     }
     return isIn;
 }

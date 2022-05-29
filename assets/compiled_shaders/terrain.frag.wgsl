@@ -167,9 +167,9 @@ fn grid() -> f32 {
         }
         {
             let _e42: f32 = w;
-            w = (_e42 / f32(10));
+            w = (_e42 / f32(5));
             let _e46: vec2<f32> = curgrid;
-            curgrid = (_e46 * f32(10));
+            curgrid = (_e46 * f32(5));
         }
     }
     loop {
@@ -209,9 +209,9 @@ fn grid() -> f32 {
             let _e164: f32 = isOk;
             isIn = max(_e163, _e164);
             let _e166: f32 = w;
-            w = (_e166 / f32(10));
+            w = (_e166 / f32(5));
             let _e170: vec2<f32> = curgrid;
-            curgrid = (_e170 * f32(10));
+            curgrid = (_e170 * f32(5));
         }
     }
     let _e174: f32 = isIn;
