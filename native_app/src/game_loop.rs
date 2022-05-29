@@ -271,8 +271,13 @@ impl State {
         self.camera.cull_tess(&mut self.immtess);
 
         let time: GameTime = *self.goria.read().unwrap().read::<GameTime>();
-        self.road_renderer
-            .render(&goria.map(), time.seconds, &mut self.immtess, ctx);
+        self.road_renderer.render(
+            &goria.map(),
+            time.seconds,
+            &self.camera.camera,
+            &mut self.immtess,
+            ctx,
+        );
 
         self.instanced_renderer
             .render(&self.goria.read().unwrap(), ctx);

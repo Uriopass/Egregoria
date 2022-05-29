@@ -1,7 +1,8 @@
 use crate::rendering::map_mesh::MapMeshHandler;
+use common::FastMap;
 use egregoria::Egregoria;
-use geom::{Color, LinearColor, AABB};
-use map_model::{Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior};
+use geom::{vec2, vec3, Camera, Color, LinearColor, Vec3, AABB};
+use map_model::{ChunkID, Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_SIZE};
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Tesselator,
@@ -10,20 +11,24 @@ use wgpu_engine::{
 pub struct RoadRenderer {
     meshb: MapMeshHandler,
 
-    trees: Option<InstancedMesh>,
-    trees_builder: InstancedMeshBuilder,
-    trees_dirt_id: u32,
+    trees_builders: FastMap<ChunkID, (InstancedMeshBuilder, Option<(Option<InstancedMesh>, u32)>)>,
+    terrain_dirt_id: u32,
 }
 
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
+        let mesh = load_mesh("assets/models/pine.glb", gfx).expect("could not load pine");
+
         RoadRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
-            trees: None,
-            trees_builder: InstancedMeshBuilder::new(
-                load_mesh("assets/models/pine.glb", gfx).expect("could not load pine"),
-            ),
-            trees_dirt_id: 0,
+            trees_builders: goria
+                .map()
+                .terrain
+                .chunks
+                .iter()
+                .map(|(id, chunk)| (*id, (InstancedMeshBuilder::new(mesh.clone()), None)))
+                .collect(),
+            terrain_dirt_id: 0,
         }
     }
 
@@ -99,25 +104,62 @@ impl RoadRenderer {
         }
     }
 
-    pub fn trees(&mut self, map: &Map, _screen: AABB, gfx: &GfxContext) -> Option<InstancedMesh> {
-        if map.terrain.dirt_id.0 == self.trees_dirt_id {
-            if let Some(trees) = self.trees.as_ref() {
-                return Some(trees.clone());
+    pub fn build_trees(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
+        if map.terrain.dirt_id.0 == self.terrain_dirt_id {
+            return;
+        }
+        self.terrain_dirt_id = map.terrain.dirt_id.0;
+
+        for (chunkid, (builder, mesh_dirt)) in &mut self.trees_builders {
+            let chunk = if let Some(x) = map.terrain.chunks.get(chunkid) {
+                x
+            } else {
+                continue;
+            };
+
+            if let Some((_, dirt)) = mesh_dirt {
+                if *dirt == chunk.dirt_id.0 {
+                    continue;
+                }
+            }
+
+            builder.instances.clear();
+
+            for t in &chunk.trees {
+                builder.instances.push(MeshInstance {
+                    pos: t.pos.z(map.terrain.height(t.pos).unwrap_or_default()),
+                    dir: t.dir.z0() * t.size * 0.2,
+                    tint: ((1.0 - t.size * 0.05) * t.col * LinearColor::WHITE).a(1.0),
+                });
+            }
+
+            *mesh_dirt = Some((builder.build(&mut ctx.gfx), chunk.dirt_id.0));
+        }
+    }
+
+    pub fn trees(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
+        self.build_trees(map, cam, ctx);
+
+        let eye = cam.eye();
+        let dir = -cam.dir();
+
+        for (cid, (_, meshes)) in self.trees_builders.iter() {
+            let chunkcenter = vec3(
+                (cid.0 * CHUNK_SIZE + CHUNK_SIZE / 2) as f32,
+                (cid.1 * CHUNK_SIZE + CHUNK_SIZE / 2) as f32,
+                0.0,
+            );
+
+            if ((chunkcenter - eye).dot(dir) < 0.0 || chunkcenter.distance(eye) > 10000.0)
+                && !chunkcenter.xy().is_close(eye.xy(), CHUNK_SIZE as f32)
+            {
+                continue;
+            }
+
+            if let Some((Some(mesh), _)) = meshes {
+                ctx.draw(mesh.clone());
             }
         }
-
-        self.trees_dirt_id = map.terrain.dirt_id.0;
-
-        self.trees_builder.instances.clear();
-        for t in map.terrain.trees() {
-            self.trees_builder.instances.push(MeshInstance {
-                pos: t.pos.z(map.terrain.height(t.pos).unwrap_or_default()),
-                dir: t.dir.z0() * t.size * 0.2,
-                tint: ((1.0 - t.size * 0.05) * t.col * LinearColor::WHITE).a(1.0),
-            });
-        }
-
-        self.trees_builder.build(gfx)
     }
 
     #[profiling::function]
@@ -125,20 +167,13 @@ impl RoadRenderer {
         &mut self,
         map: &Map,
         time: u32,
+        cam: &Camera,
         tess: &mut Tesselator,
         ctx: &mut FrameContext<'_>,
     ) {
-        let screen = tess
-            .cull_rect
-            .expect("no cull rectangle, might render far too many trees");
-
-        self.trees = self.trees(map, screen, ctx.gfx);
+        self.trees(map, cam, ctx);
 
         if let Some(x) = self.meshb.latest_mesh(map, ctx.gfx).clone() {
-            ctx.draw(x);
-        }
-
-        if let Some(x) = self.trees.clone() {
             ctx.draw(x);
         }
 
