@@ -46,7 +46,7 @@ impl CameraHandler3D {
 
     pub fn unproject(&self, pos: Vec2, height: impl Fn(Vec2) -> Option<f32>) -> Option<Vec3> {
         let proj = self.camera.build_view_projection_matrix();
-        let inv = proj.invert().unwrap();
+        let inv = proj.invert()?;
 
         let v = inv
             * vec4(

@@ -5,7 +5,7 @@ use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::Egregoria;
-use geom::{vec2, BoldSpline, PolyLine3, ShapeEnum, Spline3, Vec2, Vec3, AABB, OBB};
+use geom::{BoldSpline, PolyLine3, ShapeEnum, Spline3, Vec2, Vec3, OBB};
 use geom::{Camera, Spline};
 use map_model::{
     Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
