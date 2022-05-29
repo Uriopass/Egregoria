@@ -23,7 +23,7 @@ const ATTRS: &[VertexAttribute] =
 
 impl VBDesc for MeshInstance {
     fn desc<'a>() -> VertexBufferLayout<'a> {
-        wgpu::VertexBufferLayout {
+        VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: ATTRS,
@@ -32,7 +32,7 @@ impl VBDesc for MeshInstance {
 }
 
 pub struct InstancedMeshBuilder {
-    mesh: Arc<Mesh>,
+    mesh: Mesh,
     ibuffer: PBuffer,
     pub instances: Vec<MeshInstance>,
 }
@@ -40,7 +40,7 @@ pub struct InstancedMeshBuilder {
 impl InstancedMeshBuilder {
     pub fn new(mesh: Mesh) -> Self {
         InstancedMeshBuilder {
-            mesh: Arc::new(mesh),
+            mesh,
             instances: Vec::with_capacity(4),
             ibuffer: PBuffer::new(BufferUsages::VERTEX),
         }
@@ -64,7 +64,7 @@ impl InstancedMeshBuilder {
 
 #[derive(Clone)]
 pub struct InstancedMesh {
-    mesh: Arc<Mesh>,
+    mesh: Mesh,
     instance_buffer: Arc<wgpu::Buffer>,
     n_instances: u32,
 }
