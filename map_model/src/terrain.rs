@@ -137,7 +137,7 @@ impl Terrain {
         let rchunk = common::rand::rand2(x as f32, y as f32);
         let pchunk = CHUNK_SIZE as f32 * vec2(x as f32, y as f32);
 
-        const RES_TREES: usize = 32;
+        const RES_TREES: usize = 8;
         const TCELLW: f32 = CHUNK_SIZE as f32 / RES_TREES as f32;
 
         for offx in 0..RES_TREES {
@@ -154,7 +154,7 @@ impl Terrain {
 
                 let tdens = tree_density(sample);
 
-                if dens_test < tdens * 2.0 - 0.3 {
+                if dens_test < tdens * 2.0 {
                     chunk.trees.push(Tree::new(sample));
                 }
             }
