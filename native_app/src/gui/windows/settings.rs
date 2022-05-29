@@ -50,6 +50,7 @@ pub struct Settings {
     pub ssao: bool,
     pub shadows: ShadowQuality,
     pub realistic_sky: bool,
+    pub terrain_grid: bool,
 
     pub music_volume_percent: f32,
     pub effects_volume_percent: f32,
@@ -76,6 +77,7 @@ impl Default for Settings {
             camera_smooth_tightness: 1.0,
             realistic_sky: true,
             camera_fov: 60.0,
+            terrain_grid: true,
         }
     }
 }
@@ -193,6 +195,7 @@ pub fn settings(
 
             ui.checkbox("Fullscreen", &mut settings.fullscreen);
             ui.checkbox("Realistic sky", &mut settings.realistic_sky);
+            ui.checkbox("Terrain Grid", &mut settings.terrain_grid);
             ui.checkbox("Ambient Occlusion (SSAO)", &mut settings.ssao);
 
             let tok = imgui::ComboBox::new("Shadow quality")

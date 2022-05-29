@@ -81,7 +81,7 @@ pub struct RenderParams {
     pub ssao_enabled: i32,
     pub shadow_mapping_enabled: i32,
     pub realistic_sky: i32,
-    pub _pad3: f32,
+    pub grid_enabled: i32,
 }
 
 impl Default for RenderParams {
@@ -108,8 +108,8 @@ impl Default for RenderParams {
             realistic_sky: 1,
             _pad: 0.0,
             _pad2: 0.0,
-            _pad3: 0.0,
             _pad4: 0.0,
+            grid_enabled: 1,
         }
     }
 }

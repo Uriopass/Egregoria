@@ -18,6 +18,7 @@ struct RenderParams {
     ssao_enabled: i32;
     shadow_mapping_enabled: i32;
     realistic_sky: i32;
+    grid_enabled: i32;
 };
 
 struct Uni {
@@ -143,16 +144,84 @@ fn sampleShadow() -> f32 {
     return mix(_e131, f32(1), clamp(dot(_e149.xy, _e151.xy), 0.0, 1.0));
 }
 
+fn grid() -> f32 {
+    var level: f32;
+    var w: f32 = 10000.0;
+    var isIn: f32 = 0.0;
+    var curgrid: vec2<f32>;
+    var moved: vec2<f32>;
+    var v: f32;
+    var isOk: f32;
+
+    let _e14: vec3<f32> = in_wpos_1;
+    let _e16: vec3<f32> = in_wpos_1;
+    let _e18: f32 = fwidth(_e16.x);
+    level = (_e18 * f32(20));
+    let _e28: vec3<f32> = in_wpos_1;
+    curgrid = (_e28.xy / vec2<f32>(f32(10000)));
+    loop {
+        let _e35: f32 = w;
+        let _e36: f32 = level;
+        if (!((_e35 > (_e36 * f32(100))))) {
+            break;
+        }
+        {
+            let _e42: f32 = w;
+            w = (_e42 / f32(10));
+            let _e46: vec2<f32> = curgrid;
+            curgrid = (_e46 * f32(10));
+        }
+    }
+    loop {
+        let _e50: f32 = w;
+        let _e51: f32 = level;
+        if (!((_e50 > _e51))) {
+            break;
+        }
+        {
+            let _e55: vec2<f32> = curgrid;
+            moved = fract(_e55);
+            let _e58: vec2<f32> = moved;
+            let _e60: vec2<f32> = moved;
+            let _e62: vec2<f32> = moved;
+            let _e64: vec2<f32> = moved;
+            let _e68: vec2<f32> = moved;
+            let _e73: vec2<f32> = moved;
+            let _e78: vec2<f32> = moved;
+            let _e83: vec2<f32> = moved;
+            let _e88: vec2<f32> = moved;
+            let _e90: vec2<f32> = moved;
+            let _e92: vec2<f32> = moved;
+            let _e94: vec2<f32> = moved;
+            let _e98: vec2<f32> = moved;
+            let _e103: vec2<f32> = moved;
+            let _e108: vec2<f32> = moved;
+            let _e113: vec2<f32> = moved;
+            v = min(min(_e92.x, _e94.y), min((f32(1) - _e108.x), (f32(1) - _e113.y)));
+            let _e126: f32 = v;
+            let _e134: f32 = level;
+            let _e140: f32 = level;
+            let _e145: f32 = level;
+            let _e151: f32 = level;
+            let _e155: f32 = w;
+            isOk = (((f32(1) - smoothStep(0.004000000189989805, 0.004149999935179949, _e126)) * f32(2)) * (f32(1) - smoothStep(((_e145 * f32(100)) * 0.5), (_e151 * f32(100)), _e155)));
+            let _e163: f32 = isIn;
+            let _e164: f32 = isOk;
+            isIn = max(_e163, _e164);
+            let _e166: f32 = w;
+            w = (_e166 / f32(10));
+            let _e170: vec2<f32> = curgrid;
+            curgrid = (_e170 * f32(10));
+        }
+    }
+    let _e174: f32 = isIn;
+    return _e174;
+}
+
 fn main_1() {
     var ssao: f32 = 1.0;
     var shadow_v: f32 = 1.0;
     var c: vec4<f32>;
-    var level: f32;
-    var w: f32 = 1.0;
-    var isIn: f32 = 0.0;
-    var moved: vec2<f32>;
-    var v: f32;
-    var isOk: f32;
     var normal: vec3<f32>;
     var cam: vec3<f32>;
     var L: vec3<f32>;
@@ -184,116 +253,86 @@ fn main_1() {
     }
     let _e41: RenderParams = global.params;
     c = _e41.grass_col;
-    let _e44: vec3<f32> = in_wpos_1;
-    let _e46: vec3<f32> = in_wpos_1;
-    let _e48: f32 = fwidth(_e46.x);
-    level = (_e48 * 0.0020000000949949026);
-    loop {
-        let _e57: f32 = w;
-        let _e58: f32 = level;
-        if (!((_e57 > _e58))) {
-            break;
-        }
+    let _e44: RenderParams = global.params;
+    if ((_e44.grid_enabled != 0)) {
         {
-            let _e61: vec3<f32> = in_wpos_1;
-            let _e64: f32 = w;
-            let _e69: vec3<f32> = in_wpos_1;
-            let _e72: f32 = w;
-            moved = fract((_e69.xy / vec2<f32>((f32(10000) * _e72))));
-            let _e79: vec2<f32> = moved;
-            let _e81: vec2<f32> = moved;
-            let _e83: vec2<f32> = moved;
-            let _e85: vec2<f32> = moved;
-            v = min(_e83.x, _e85.y);
-            let _e95: f32 = v;
-            let _e103: f32 = level;
-            let _e109: f32 = level;
-            let _e114: f32 = level;
-            let _e120: f32 = level;
-            let _e124: f32 = w;
-            isOk = (((f32(1) - smoothStep(0.012000000104308128, 0.012299999594688416, _e95)) * f32(2)) * (f32(1) - smoothStep(((_e114 * f32(100)) * 0.5), (_e120 * f32(100)), _e124)));
-            let _e132: f32 = isIn;
-            let _e133: f32 = isOk;
-            isIn = max(_e132, _e133);
-            let _e135: f32 = w;
-            w = (_e135 / f32(10));
+            let _e49: vec4<f32> = c;
+            let _e51: f32 = grid();
+            c.y = (_e49.y + (_e51 * 0.014999999664723873));
         }
     }
-    let _e139: vec4<f32> = c;
-    let _e140: f32 = isIn;
-    c = (_e139 + (_e140 * vec4<f32>(0.0, 0.019999999552965164, 0.0, 0.0)));
-    let _e148: RenderParams = global.params;
-    let _e154: vec3<f32> = in_wpos_1;
-    let _e159: vec3<f32> = in_wpos_1;
-    let _e162: RenderParams = global.params;
-    let _e164: vec4<f32> = c;
-    let _e168: vec3<f32> = in_wpos_1;
-    let _e173: vec3<f32> = in_wpos_1;
-    c = mix(_e162.sand_col, _e164, vec4<f32>(smoothStep(-(5.0), 0.0, _e173.z)));
-    let _e178: RenderParams = global.params;
-    let _e185: vec3<f32> = in_wpos_1;
-    let _e191: vec3<f32> = in_wpos_1;
-    let _e194: RenderParams = global.params;
-    let _e196: vec4<f32> = c;
-    let _e201: vec3<f32> = in_wpos_1;
-    let _e207: vec3<f32> = in_wpos_1;
-    c = mix(_e194.sea_col, _e196, vec4<f32>(smoothStep(-(25.0), -(20.0), _e207.z)));
-    let _e213: vec3<f32> = in_normal_1;
-    normal = normalize(_e213);
-    let _e216: RenderParams = global.params;
-    cam = _e216.cam_pos.xyz;
-    let _e220: RenderParams = global.params;
-    L = _e220.sun;
-    let _e224: vec3<f32> = normal;
-    let _e229: vec3<f32> = normal;
-    let _e230: vec3<f32> = L;
-    let _e233: vec3<f32> = L;
-    let _e236: vec3<f32> = normal;
-    let _e241: vec3<f32> = normal;
-    let _e242: vec3<f32> = L;
-    let _e245: vec3<f32> = L;
-    R = normalize((((f32(2) * _e236) * dot(_e241, _e242)) - _e245));
-    let _e249: vec3<f32> = cam;
-    let _e250: vec3<f32> = in_wpos_1;
-    let _e252: vec3<f32> = cam;
-    let _e253: vec3<f32> = in_wpos_1;
-    V = normalize((_e252 - _e253));
-    let _e259: vec3<f32> = R;
-    let _e260: vec3<f32> = V;
-    let _e266: vec3<f32> = R;
-    let _e267: vec3<f32> = V;
-    specular = clamp(dot(_e266, _e267), 0.0, 1.0);
-    let _e275: f32 = specular;
-    specular = pow(_e275, f32(2));
-    let _e280: RenderParams = global.params;
-    let _e282: vec3<f32> = normal;
-    let _e283: RenderParams = global.params;
-    let _e289: RenderParams = global.params;
-    let _e291: vec3<f32> = normal;
-    let _e292: RenderParams = global.params;
-    sun_contrib = clamp(dot(_e291, _e292.sun), 0.0, 1.0);
-    let _e300: vec4<f32> = c;
-    ambiant = (0.15000000596046448 * _e300.xyz);
-    let _e305: f32 = sun_contrib;
-    let _e308: f32 = specular;
-    let _e311: f32 = shadow_v;
-    sun = (((0.8500000238418579 * _e305) + (0.5 * _e308)) * _e311);
-    let _e314: vec3<f32> = ambiant;
-    final_rgb = _e314;
-    let _e316: vec3<f32> = final_rgb;
-    let _e317: f32 = sun;
-    let _e318: RenderParams = global.params;
-    let _e321: vec4<f32> = c;
-    final_rgb = (_e316 + (_e317 * (_e318.sun_col.xyz * _e321.xyz)));
-    let _e326: vec3<f32> = final_rgb;
-    let _e327: f32 = ssao;
-    final_rgb = (_e326 * _e327);
-    let _e329: vec3<f32> = final_rgb;
-    let _e330: f32 = dither();
-    final_rgb = (_e329 + vec3<f32>(_e330));
-    let _e333: vec3<f32> = final_rgb;
-    let _e334: vec4<f32> = c;
-    out_color = vec4<f32>(_e333.x, _e333.y, _e333.z, _e334.w);
+    let _e55: RenderParams = global.params;
+    let _e61: vec3<f32> = in_wpos_1;
+    let _e66: vec3<f32> = in_wpos_1;
+    let _e69: RenderParams = global.params;
+    let _e71: vec4<f32> = c;
+    let _e75: vec3<f32> = in_wpos_1;
+    let _e80: vec3<f32> = in_wpos_1;
+    c = mix(_e69.sand_col, _e71, vec4<f32>(smoothStep(-(5.0), 0.0, _e80.z)));
+    let _e85: RenderParams = global.params;
+    let _e92: vec3<f32> = in_wpos_1;
+    let _e98: vec3<f32> = in_wpos_1;
+    let _e101: RenderParams = global.params;
+    let _e103: vec4<f32> = c;
+    let _e108: vec3<f32> = in_wpos_1;
+    let _e114: vec3<f32> = in_wpos_1;
+    c = mix(_e101.sea_col, _e103, vec4<f32>(smoothStep(-(25.0), -(20.0), _e114.z)));
+    let _e120: vec3<f32> = in_normal_1;
+    normal = normalize(_e120);
+    let _e123: RenderParams = global.params;
+    cam = _e123.cam_pos.xyz;
+    let _e127: RenderParams = global.params;
+    L = _e127.sun;
+    let _e131: vec3<f32> = normal;
+    let _e136: vec3<f32> = normal;
+    let _e137: vec3<f32> = L;
+    let _e140: vec3<f32> = L;
+    let _e143: vec3<f32> = normal;
+    let _e148: vec3<f32> = normal;
+    let _e149: vec3<f32> = L;
+    let _e152: vec3<f32> = L;
+    R = normalize((((f32(2) * _e143) * dot(_e148, _e149)) - _e152));
+    let _e156: vec3<f32> = cam;
+    let _e157: vec3<f32> = in_wpos_1;
+    let _e159: vec3<f32> = cam;
+    let _e160: vec3<f32> = in_wpos_1;
+    V = normalize((_e159 - _e160));
+    let _e166: vec3<f32> = R;
+    let _e167: vec3<f32> = V;
+    let _e173: vec3<f32> = R;
+    let _e174: vec3<f32> = V;
+    specular = clamp(dot(_e173, _e174), 0.0, 1.0);
+    let _e182: f32 = specular;
+    specular = pow(_e182, f32(2));
+    let _e187: RenderParams = global.params;
+    let _e189: vec3<f32> = normal;
+    let _e190: RenderParams = global.params;
+    let _e196: RenderParams = global.params;
+    let _e198: vec3<f32> = normal;
+    let _e199: RenderParams = global.params;
+    sun_contrib = clamp(dot(_e198, _e199.sun), 0.0, 1.0);
+    let _e207: vec4<f32> = c;
+    ambiant = (0.15000000596046448 * _e207.xyz);
+    let _e212: f32 = sun_contrib;
+    let _e215: f32 = specular;
+    let _e218: f32 = shadow_v;
+    sun = (((0.8500000238418579 * _e212) + (0.5 * _e215)) * _e218);
+    let _e221: vec3<f32> = ambiant;
+    final_rgb = _e221;
+    let _e223: vec3<f32> = final_rgb;
+    let _e224: f32 = sun;
+    let _e225: RenderParams = global.params;
+    let _e228: vec4<f32> = c;
+    final_rgb = (_e223 + (_e224 * (_e225.sun_col.xyz * _e228.xyz)));
+    let _e233: vec3<f32> = final_rgb;
+    let _e234: f32 = ssao;
+    final_rgb = (_e233 * _e234);
+    let _e236: vec3<f32> = final_rgb;
+    let _e237: f32 = dither();
+    final_rgb = (_e236 + vec3<f32>(_e237));
+    let _e240: vec3<f32> = final_rgb;
+    let _e241: vec4<f32> = c;
+    out_color = vec4<f32>(_e240.x, _e240.y, _e240.z, _e241.w);
     return;
 }
 

@@ -18,4 +18,5 @@ struct RenderParams {
     int ssao_enabled;
     int shadow_mapping_enabled;
     int realistic_sky;
+    int grid_enabled;
 };
