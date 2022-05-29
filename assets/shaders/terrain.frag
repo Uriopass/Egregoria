@@ -50,6 +50,30 @@ float sampleShadow() {
     return mix(total, 1, clamp(dot(light_local.xy, light_local.xy), 0.0, 1.0));
 }
 
+float grid() {
+    float level = fwidth(in_wpos.x)*20;//length(vec2(dFdx(in_wpos.x), dFdy(in_wpos.x))) * 0.02;
+
+    float w = 10000;
+    float isIn = 0.0;
+    vec2 curgrid = in_wpos.xy / 10000;
+
+    while(w > level*100) {
+        w /= 10;
+        curgrid *= 10;
+    }
+
+    while(w > level) {
+        vec2 moved = fract(curgrid);
+        float v = min(min(moved.x, moved.y), min(1 - moved.x, 1 - moved.y));
+
+        float isOk = (1 - smoothstep(0.004, 0.00415, v)) * 2 * (1 - smoothstep(level*100*0.5, level*100, w));
+        isIn = max(isIn, isOk);
+        w /= 10;
+        curgrid *= 10;
+    }
+    return isIn;
+}
+
 void main() {
     float ssao = 1;
     if (params.ssao_enabled != 0) {
@@ -89,19 +113,9 @@ void main() {
 
     vec4 c = params.grass_col;
 
-    float level = fwidth(in_wpos.x)*0.002;//length(vec2(dFdx(in_wpos.x), dFdy(in_wpos.x))) * 0.02;
-
-    float w = 1;
-    float isIn = 0.0;
-    while(w > level) {
-        vec2 moved = fract(in_wpos.xy / (10000 * w));
-        float v = min(moved.x, moved.y);
-
-        float isOk = (1 - smoothstep(0.012, 0.0123, v)) * 2 * (1 - smoothstep(level*100*0.5, level*100, w));
-        isIn = max(isIn, isOk);
-        w = w / 10;
+    if (params.grid_enabled != 0) {
+        c.g += grid() * 0.015;
     }
-    c += isIn * vec4(0.0, 0.02, 0.0, 0.0);
 
     c = mix(params.sand_col, c, smoothstep(-5.0, 0.0, in_wpos.z));
     c = mix(params.sea_col, c, smoothstep(-25.0, -20.0, in_wpos.z));

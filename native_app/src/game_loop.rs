@@ -354,10 +354,11 @@ impl State {
         }
 
         ctx.gfx.set_present_mode(settings.vsync.into());
-        ctx.gfx.render_params.value_mut().ssao_enabled = settings.ssao as i32;
-        ctx.gfx.render_params.value_mut().realistic_sky = settings.realistic_sky as i32;
-        ctx.gfx.render_params.value_mut().shadow_mapping_enabled =
-            settings.shadows.size().unwrap_or(0) as i32;
+        let params = ctx.gfx.render_params.value_mut();
+        params.ssao_enabled = settings.ssao as i32;
+        params.realistic_sky = settings.realistic_sky as i32;
+        params.grid_enabled = settings.terrain_grid as i32;
+        params.shadow_mapping_enabled = settings.shadows.size().unwrap_or(0) as i32;
 
         if let Some(v) = settings.shadows.size() {
             if ctx.gfx.sun_shadowmap.extent.width != v {
