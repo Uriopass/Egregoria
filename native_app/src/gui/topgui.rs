@@ -2,6 +2,7 @@ use crate::gui::bulldozer::BulldozerState;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
+use crate::gui::trainstation::{TrainTool, TrainToolKind};
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::ImguiWindows;
 use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
@@ -101,8 +102,7 @@ impl Gui {
             (UiTex::LotBrush, Tool::LotBrush),
             (UiTex::Buildings, Tool::SpecialBuilding),
             (UiTex::Bulldozer, Tool::Bulldozer),
-            (UiTex::TrainStation, Tool::TrainStation),
-            (UiTex::AddTrain, Tool::AddTrain),
+            (UiTex::AddTrain, Tool::Train),
         ];
 
         Window::new("Toolbox")
@@ -181,6 +181,32 @@ impl Gui {
             }
         }
         spacing_left.pop();
+
+        if matches!(*uiworld.read::<Tool>(), Tool::Train) {
+            let rbw = 150.0;
+            Window::new("Trains")
+                .size([rbw, 83.0], imgui::Condition::Appearing)
+                .position(
+                    [w - rbw - toolbox_w, h * 0.5 - 30.0],
+                    imgui::Condition::Appearing,
+                )
+                .scroll_bar(false)
+                .title_bar(true)
+                .movable(false)
+                .collapsible(false)
+                .resizable(false)
+                .build(ui, || {
+                    let mut traintool = uiworld.write_or_default::<TrainTool>();
+
+                    if ui.button_with_size("Add train", [rbw, 30.0]) {
+                        traintool.kind = TrainToolKind::AddTrain;
+                    }
+
+                    if ui.button_with_size("Trainstation", [rbw, 30.0]) {
+                        traintool.kind = TrainToolKind::Trainstation;
+                    }
+                });
+        }
 
         if matches!(
             *uiworld.read::<Tool>(),
