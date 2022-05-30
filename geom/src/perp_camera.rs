@@ -15,14 +15,14 @@
 // Modified for the Egregoria project by the Egregoria developers.
 
 use crate::matrix4::Matrix4;
-use crate::{vec2, Vec2, Vec3, Vec4};
+use crate::{vec2, Radians, Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct Camera {
     pub pos: Vec3,
-    pub yaw: f32,
-    pub pitch: f32,
+    pub yaw: Radians,
+    pub pitch: Radians,
     pub dist: f32,
     pub viewport_w: f32,
     pub viewport_h: f32,
@@ -35,8 +35,8 @@ impl Camera {
     pub fn new(pos: Vec3, viewport_w: f32, viewport_h: f32) -> Self {
         Self {
             pos,
-            yaw: std::f32::consts::FRAC_PI_4,
-            pitch: std::f32::consts::FRAC_PI_4,
+            yaw: Radians(std::f32::consts::FRAC_PI_4),
+            pitch: Radians(std::f32::consts::FRAC_PI_4),
             dist: 5000.0,
             viewport_w,
             viewport_h,
@@ -54,7 +54,7 @@ impl Camera {
     }
 
     pub fn dir(&self) -> Vec3 {
-        let v = Vec2::from_angle(self.yaw);
+        let v = self.yaw.vec2();
         let horiz = self.pitch.cos();
         let vert = self.pitch.sin();
         (v * horiz).z(vert)

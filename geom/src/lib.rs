@@ -11,6 +11,7 @@ macro_rules! defer_inter {
 
 mod aabb;
 mod aabb3;
+mod angle;
 mod boldline;
 mod boldspline;
 mod circle;
@@ -40,6 +41,7 @@ mod v4;
 
 pub use aabb::*;
 pub use aabb3::*;
+pub use angle::*;
 pub use boldline::*;
 pub use boldspline::*;
 pub use circle::*;
