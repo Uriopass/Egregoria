@@ -105,6 +105,19 @@ impl CameraHandler3D {
         settings: &Settings,
         height: impl Fn(Vec2) -> Option<f32>,
     ) {
+        if !self.camera.pos.is_finite() {
+            self.camera.pos = Vec3::ZERO;
+        }
+        if !self.camera.dist.is_finite() {
+            self.camera.dist = 1000.0;
+        }
+        if !self.camera.yaw.0.is_finite() {
+            self.camera.yaw.0 = 0.3;
+        }
+        if !self.camera.pitch.0.is_finite() {
+            self.camera.pitch.0 = 0.3;
+        }
+
         self.save();
         let delta = delta.min(0.1);
         let off = self.camera.offset();
