@@ -24,7 +24,7 @@ pub struct TerrainChunk {
 
 pub struct TerrainRender<const CSIZE: usize, const CRESOLUTION: usize> {
     pub dirt_id: u32,
-    dirt_ids: Arc<FastMap<(u32, u32), u32>>,
+    dirt_ids: FastMap<(u32, u32), u32>,
     terrain_tex: Arc<Texture>,
     borders: Arc<Vec<Mesh>>,
     vertices: [PBuffer; LOD],
@@ -83,6 +83,11 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         }
     }
 
+    pub fn reset(&mut self) {
+        self.dirt_id = 0;
+        self.dirt_ids.clear();
+    }
+
     pub fn update_chunk(
         &mut self,
         gfx: &mut GfxContext,
@@ -127,9 +132,10 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             }
 
             if w * 4 < wgpu::COPY_BYTES_PER_ROW_ALIGNMENT {
-                for _ in 0..wgpu::COPY_BYTES_PER_ROW_ALIGNMENT - w * 4 {
-                    contents.push(0);
-                }
+                contents.resize(
+                    contents.len() + wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize - w as usize * 4,
+                    0,
+                );
             }
         }
 
@@ -169,9 +175,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         gfx.queue.submit(Some(enc.finish()));
 
-        Arc::get_mut(&mut self.dirt_ids)
-            .unwrap()
-            .insert(cell, dirtid);
+        self.dirt_ids.insert(cell, dirtid);
     }
 
     #[profiling::function]
@@ -338,7 +342,7 @@ const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![1 => Float32x2];
 
 impl VBDesc for TerrainInstance {
     fn desc<'a>() -> VertexBufferLayout<'a> {
-        wgpu::VertexBufferLayout {
+        VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: ATTRS,

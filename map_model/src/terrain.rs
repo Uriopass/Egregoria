@@ -162,7 +162,7 @@ impl Terrain {
             }
         }
 
-        return Some(chunk);
+        Some(chunk)
     }
 }
 

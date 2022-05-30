@@ -18,4 +18,4 @@ pathfinding   = "2.2.1"
 common        = { path = "../common" }
 flat_spatial  = { path = "../flat_spatial" }
 log           = "0.4.11"
-inline_tweak  = "1.0.8"
+inline_tweak = { version = "1.0.8", features=["release_tweak"] }

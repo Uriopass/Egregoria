@@ -103,6 +103,7 @@ const UI_TEXTURES: &[(UiTex, &str)] = &[
     (UiTex::AddTrain, "assets/ui/traintool.png"),
 ];
 
+#[derive(Default)]
 pub struct UiTextures {
     textures: FastMap<UiTex, TextureId>,
 }

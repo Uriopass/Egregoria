@@ -79,11 +79,13 @@ fn fnoise(ampl: f32, in_wv: Vec2) -> (f32, Vec2) {
     (noise, grad * ampl)
 }
 
-pub(crate) fn height(mut p: Vec2) -> (f32, Vec2) {
-    p -= vec2(-2000.0, 2000.0);
+pub(crate) fn height(p: Vec2) -> (f32, Vec2) {
+    //p -= vec2(-2000.0, 2000.0);
 
     let (noise, mut grad) = fnoise(0.00003, p);
-    let mut noise = noise + 0.2;
+    let ratio = 0.00005;
+    let mut noise = noise - 0.1 + (p.y - 25000.0).abs() * ratio;
+    grad += vec2(0.0, (p.y - 25000.0).signum() * ratio);
     if noise < 0.0 {
         noise = 0.0;
         grad = Vec2::ZERO;
@@ -94,9 +96,9 @@ pub(crate) fn height(mut p: Vec2) -> (f32, Vec2) {
     (noise, grad)
 }
 
-pub(crate) fn tree_density(mut p: Vec2) -> f32 {
+pub(crate) fn tree_density(p: Vec2) -> f32 {
     let h = height(p);
-    p -= vec2(-2000.0, 2000.0);
+    //p -= vec2(-2000.0, 2000.0);
 
     (simplex_noise(p * 0.00003).0 * 2.0 + 0.5).max(0.0) * (h.0 - 0.12)
 }

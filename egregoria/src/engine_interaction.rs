@@ -189,7 +189,7 @@ impl WorldCommand {
                 map_model::procgen::load_testfield(&mut *goria.map_mut(), pos, size, spacing)
             }
             ResetSave => {
-                *goria = Egregoria::new(10);
+                *goria = Egregoria::new(50);
             }
             UpdateTransform(e, t) => {
                 if let Some(mut x) = goria.comp_mut(e) {

@@ -25,7 +25,7 @@ use crate::rendering::{CameraHandler3D, InstancedRender, RoadRenderer};
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
 use common::timestep::Timestep;
-use egregoria::engine_interaction::WorldCommands;
+use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::utils::scheduler::SeqSchedule;
 use networking::{Frame, PollResult, ServerPollResult};
 use wgpu_engine::terrain::TerrainRender;
@@ -70,8 +70,6 @@ impl State {
 
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
-        uiworld.insert(WorldCommands::default());
-        uiworld.insert(InputMap::default());
 
         log::info!("version is {}", goria_version::VERSION);
 
@@ -115,6 +113,15 @@ impl State {
         );
         crate::gui::run_ui_systems(&self.goria.read().unwrap(), &mut self.uiw);
 
+        if self
+            .uiw
+            .read::<WorldCommands>()
+            .iter()
+            .any(|x| matches!(x, WorldCommand::ResetSave))
+        {
+            self.reset();
+        }
+
         self.goria_update();
 
         self.uiw.write::<Timings>().all.add_value(ctx.delta as f32);
@@ -142,6 +149,12 @@ impl State {
 
         self.manage_entity_follow();
         self.camera.update(ctx);
+    }
+
+    pub fn reset(&mut self) {
+        self.terrain.reset();
+        self.road_renderer.terrain_dirt_id = 0;
+        self.road_renderer.meshb.map_dirt_id = 0;
     }
 
     pub fn terrain_update(&mut self, ctx: &mut Context) {

@@ -1,18 +1,18 @@
 use crate::rendering::map_mesh::MapMeshHandler;
 use common::FastMap;
 use egregoria::Egregoria;
-use geom::{vec2, vec3, Camera, Color, LinearColor, Vec3, AABB};
+use geom::{vec3, Camera, Color, LinearColor};
 use map_model::{ChunkID, Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_SIZE};
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Tesselator,
 };
-
 pub struct RoadRenderer {
-    meshb: MapMeshHandler,
+    pub meshb: MapMeshHandler,
 
+    #[allow(clippy::type_complexity)]
     trees_builders: FastMap<ChunkID, (InstancedMeshBuilder, Option<(Option<InstancedMesh>, u32)>)>,
-    terrain_dirt_id: u32,
+    pub terrain_dirt_id: u32,
 }
 
 impl RoadRenderer {
@@ -26,7 +26,7 @@ impl RoadRenderer {
                 .terrain
                 .chunks
                 .iter()
-                .map(|(id, chunk)| (*id, (InstancedMeshBuilder::new(mesh.clone()), None)))
+                .map(|(id, _)| (*id, (InstancedMeshBuilder::new(mesh.clone()), None)))
                 .collect(),
             terrain_dirt_id: 0,
         }
@@ -104,7 +104,7 @@ impl RoadRenderer {
         }
     }
 
-    pub fn build_trees(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
+    pub fn build_trees(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {
         if map.terrain.dirt_id.0 == self.terrain_dirt_id {
             return;
         }
@@ -133,12 +133,12 @@ impl RoadRenderer {
                 });
             }
 
-            *mesh_dirt = Some((builder.build(&mut ctx.gfx), chunk.dirt_id.0));
+            *mesh_dirt = Some((builder.build(ctx.gfx), chunk.dirt_id.0));
         }
     }
 
     pub fn trees(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
-        self.build_trees(map, cam, ctx);
+        self.build_trees(map, ctx);
 
         let eye = cam.eye();
         let dir = -cam.dir();

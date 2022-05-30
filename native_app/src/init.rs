@@ -1,5 +1,6 @@
 use crate::game_loop::Timings;
 use crate::gui::bulldozer::BulldozerState;
+use crate::gui::inputmap::InputMap;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadbuild::RoadBuildResource;
 use crate::gui::roadeditor::RoadEditorResource;
@@ -13,6 +14,7 @@ use crate::network::NetworkState;
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::{ReceivedCommands, UiWorld};
 use common::saveload::Encoder;
+use egregoria::engine_interaction::WorldCommands;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -26,6 +28,8 @@ pub fn init() {
 
     register_resource_noserialize::<MouseInfo>();
     register_resource_noserialize::<KeyboardInfo>();
+    register_resource_noserialize::<InputMap>();
+    register_resource_noserialize::<WorldCommands>();
     register_resource_noserialize::<Timings>();
     register_resource_noserialize::<ReceivedCommands>();
     register_resource_noserialize::<RoadEditorResource>();
