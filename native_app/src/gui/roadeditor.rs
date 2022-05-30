@@ -58,7 +58,7 @@ pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     let mut proj_pos = unwrap_ret!(mouseinfo.unprojected);
-    let cur_proj = unwrap_ret!(map.project(proj_pos, 10.0, ProjectFilter::INTER));
+    let cur_proj = map.project(proj_pos, 10.0, ProjectFilter::INTER);
 
     let mut proj_col;
 

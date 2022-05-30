@@ -515,8 +515,8 @@ impl Map {
     }
 
     // Public helpers
-    pub fn project(&self, pos: Vec3, tolerance: f32, filter: ProjectFilter) -> Option<MapProject> {
-        let mk_proj = move |kind| Some(MapProject { pos, kind });
+    pub fn project(&self, pos: Vec3, tolerance: f32, filter: ProjectFilter) -> MapProject {
+        let mk_proj = move |kind| MapProject { pos, kind };
 
         let mut qroad = None;
         for pkind in self.spatial_map.query_around(pos.xy(), tolerance, filter) {
@@ -525,10 +525,10 @@ impl Map {
                     let inter = unwrap_contlog!(self.intersections.get(id),
                         "Inter does not exist anymore, you seem to have forgotten to remove it from the spatial map.");
 
-                    return Some(MapProject {
+                    return MapProject {
                         pos: inter.pos,
                         kind: pkind,
-                    });
+                    };
                 }
                 ProjectKind::Lot(id) => {
                     return mk_proj(ProjectKind::Lot(id));
@@ -551,10 +551,10 @@ impl Map {
         }
 
         if let Some((id, pos)) = qroad {
-            return Some(MapProject {
+            return MapProject {
                 pos,
                 kind: ProjectKind::Road(id),
-            });
+            };
         }
 
         mk_proj(ProjectKind::Ground)

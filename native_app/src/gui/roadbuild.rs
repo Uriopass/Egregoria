@@ -5,8 +5,8 @@ use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::Egregoria;
-use geom::{BoldSpline, PolyLine3, ShapeEnum, Spline3, Vec2, Vec3, OBB};
 use geom::{Camera, Spline};
+use geom::{PolyLine3, Spline3, Vec2, Vec3};
 use map_model::{
     Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
 };
@@ -49,6 +49,8 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         state.build_state = Hover;
         return;
     }
+
+    let nosnapping = inp.act.contains(&InputAction::NoSnapping);
 
     // Prepare mousepos depending on snap to grid
     let unproj = unwrap_ret!(inp.unprojected);
@@ -94,7 +96,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     // If a road was placed recently (as it is async with networking) prepare the next road
     for command in uiworld.received_commands().iter() {
         if let WorldCommand::MapMakeConnection(_, to, _, _) = command {
-            if let Some(proj @ MapProject { kind: Inter(_), .. }) =
+            if let proj @ MapProject { kind: Inter(_), .. } =
                 map.project(to.pos, 0.0, ProjectFilter::ALL)
             {
                 state.build_state = Start(proj);
@@ -106,11 +108,11 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         state.build_state = Hover;
     }
 
-    let mut cur_proj = unwrap_ret!(map.project(
+    let mut cur_proj = map.project(
         mousepos,
         (log_camheight * 5.0).clamp(1.0, 10.0),
-        ProjectFilter::INTER | ProjectFilter::ROAD
-    ));
+        ProjectFilter::INTER | ProjectFilter::ROAD,
+    );
 
     let patwidth = state.pattern_builder.width();
 
@@ -136,24 +138,21 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
     }
 
+    if nosnapping {
+        cur_proj = MapProject {
+            pos: mousepos,
+            kind: Ground,
+        }
+    }
+
     let is_rail = state.pattern_builder.rail;
 
     let is_valid = match (state.build_state, cur_proj.kind) {
         (Hover, Building(_)) => false,
         (Start(selected_proj), _) => {
-            let diff = selected_proj.pos.xy() - cur_proj.pos.xy();
-            let l = diff.magnitude();
-            let obb = OBB::new(
-                (selected_proj.pos.xy() + cur_proj.pos.xy()) * 0.5,
-                diff / l,
-                (l - 5.0).max(0.1),
-                patwidth,
-            );
-
             compatible(map, cur_proj, selected_proj)
                 && check_angle(map, selected_proj, cur_proj.pos.xy(), is_rail)
                 && check_angle(map, cur_proj, selected_proj.pos.xy(), is_rail)
-                && check_intersect(map, &ShapeEnum::OBB(obb), cur_proj.kind, selected_proj.kind)
         }
         (Interpolation(interpoint, selected_proj), _) => {
             let sp = Spline {
@@ -168,12 +167,6 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
                 && check_angle(map, selected_proj, interpoint, is_rail)
                 && check_angle(map, cur_proj, interpoint, is_rail)
                 && !sp.is_steep(state.pattern_builder.width())
-                && check_intersect(
-                    map,
-                    &ShapeEnum::BoldSpline(BoldSpline::new(sp, patwidth)),
-                    selected_proj.kind,
-                    cur_proj.kind,
-                )
         }
         _ => true,
     };
@@ -223,26 +216,6 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
             _ => {}
         }
     }
-}
-
-fn check_intersect(map: &Map, obj: &ShapeEnum, start: ProjectKind, end: ProjectKind) -> bool {
-    !map.spatial_map()
-        .query(obj, ProjectFilter::ROAD | ProjectFilter::INTER)
-        .any(move |x| {
-            if let Road(rid) = x {
-                if let Inter(id) = start {
-                    if map.intersections()[id].roads.contains(&rid) {
-                        return false;
-                    }
-                }
-                if let Inter(id) = end {
-                    if map.intersections()[id].roads.contains(&rid) {
-                        return false;
-                    }
-                }
-            }
-            x != start && x != end
-        })
 }
 
 fn check_angle(map: &Map, from: MapProject, to: Vec2, is_rail: bool) -> bool {

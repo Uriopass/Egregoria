@@ -25,8 +25,7 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut commands = uiworld.commands();
     let state: &BulldozerState = &*uiworld.read::<BulldozerState>();
 
-    let cur_proj =
-        unwrap_ret!(map.project(unwrap_ret!(mouseinfo.unprojected), 0.0, ProjectFilter::ALL));
+    let cur_proj = map.project(unwrap_ret!(mouseinfo.unprojected), 0.0, ProjectFilter::ALL);
 
     let col = if matches!(
         cur_proj.kind,

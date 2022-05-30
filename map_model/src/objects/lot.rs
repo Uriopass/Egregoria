@@ -40,7 +40,7 @@ impl Lot {
 
         let shape = OBB::new(at.xy() + axis * size * 0.5, axis, size, size);
 
-        let proj = map.project(shape.center().z0(), size * 0.5 - 0.5, ProjectFilter::ALL)?;
+        let proj = map.project(shape.center().z0(), size * 0.5 - 0.5, ProjectFilter::ALL);
         if !matches!(proj.kind, ProjectKind::Ground) {
             return None;
         }

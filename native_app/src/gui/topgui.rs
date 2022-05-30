@@ -217,6 +217,10 @@ impl Gui {
                         *pat = *LanePatternBuilder::new().rail(true);
                     }
 
+                    if ui.button_with_size("Rail one-way", [rbw, 30.0]) {
+                        *pat = *LanePatternBuilder::new().rail(true).one_way(true);
+                    }
+
                     if ui.button_with_size("Street", [rbw, 30.0]) {
                         *pat = LanePatternBuilder::new();
                     }
