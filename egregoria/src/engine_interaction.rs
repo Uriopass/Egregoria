@@ -51,7 +51,7 @@ pub enum WorldCommand {
 use crate::economy::Government;
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::time::GameTime;
-use crate::vehicles::trains::spawn_train;
+use crate::vehicles::trains::{spawn_train, RailWagonKind};
 use geom::{Transform, Vec2, Vec3, OBB};
 use WorldCommand::*;
 
@@ -182,7 +182,7 @@ impl WorldCommand {
             }
             SetGameTime(gt) => *goria.write::<GameTime>() = gt,
             AddTrain(dist, n_wagons, lane) => {
-                spawn_train(goria, dist, n_wagons, lane);
+                spawn_train(goria, dist, n_wagons, lane, RailWagonKind::Passenger);
             }
             MapLoadParis => map_model::procgen::load_parismap(&mut *goria.map_mut()),
             MapLoadTestField(pos, size, spacing) => {
