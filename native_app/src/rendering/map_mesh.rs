@@ -19,7 +19,7 @@ use wgpu_engine::{
 pub struct MapMeshHandler {
     builders: MapBuilders,
     cache: Option<Arc<MapMeshes>>,
-    map_dirt_id: u32,
+    pub map_dirt_id: u32,
     last_config: usize,
 }
 
