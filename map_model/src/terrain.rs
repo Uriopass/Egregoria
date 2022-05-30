@@ -233,12 +233,16 @@ struct SerializedChunk {
 struct SerializedTerrain {
     v: Vec<((u32, u32), SerializedChunk)>,
     dirt_id: u32,
+    w: u32,
+    h: u32,
 }
 
 impl From<SerializedTerrain> for Terrain {
     fn from(ser: SerializedTerrain) -> Self {
         let mut t = Terrain {
             dirt_id: Wrapping(ser.dirt_id),
+            width: ser.w,
+            height: ser.h,
             ..Self::default()
         };
 
@@ -267,6 +271,8 @@ impl From<&Terrain> for SerializedTerrain {
         let mut t = SerializedTerrain {
             v: vec![],
             dirt_id: ter.dirt_id.0,
+            w: ter.width,
+            h: ter.height,
         };
 
         for (&cell, chunk) in &ter.chunks {

@@ -29,6 +29,7 @@ pub enum InputAction {
     Rotate,
     Close,
     Select,
+    NoSnapping,
     HideInterface,
 }
 
@@ -75,6 +76,7 @@ impl InputMap {
             (Rotate,        ics![Key(K::LControl), WheelUp ; Key(K::LControl), WheelDown]),
             (Close,         ics![Key(K::Escape) ; Mouse(Right)]),
             (Select,        ics![Mouse(Left)]),
+            (NoSnapping,    ics![Key(K::LControl)]),
             (HideInterface, ics![Key(K::H)]),
         ] {
             if m.insert(k, v).is_some() {
@@ -298,6 +300,7 @@ impl Display for InputAction {
                 InputAction::Close => "Close",
                 InputAction::Select => "Select",
                 InputAction::HideInterface => "Hide interface",
+                InputAction::NoSnapping => "No Snapping",
             }
         )
     }
