@@ -42,8 +42,16 @@ pub struct LocomotiveReservation {
 #[derive(Serialize, Deserialize)]
 pub struct RandomLocomotive;
 
+#[derive(Copy, Clone, Serialize, Deserialize)]
+pub enum RailWagonKind {
+    Passenger,
+    Fret,
+}
+
 #[derive(Serialize, Deserialize)]
-pub struct RailWagon;
+pub struct RailWagon {
+    pub kind: RailWagonKind,
+}
 
 const WAGON_INTERLENGTH: f32 = 16.75;
 
@@ -76,6 +84,7 @@ pub fn spawn_train(
     dist: f32,
     n_wagons: u32,
     lane: LaneID,
+    kind: RailWagonKind,
 ) -> Option<Entity> {
     let (world, res) = goria.world_res();
 
@@ -129,7 +138,7 @@ pub fn spawn_train(
             Transform::new_dir(pos, dir),
             Kinematics::default(),
             Selectable::new(10.0),
-            RailWagon,
+            RailWagon { kind },
             ItineraryFollower {
                 leader: loco,
                 follower,
