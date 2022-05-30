@@ -19,3 +19,4 @@ common        = { path = "../common" }
 flat_spatial  = { path = "../flat_spatial" }
 log           = "0.4.11"
 inline_tweak = { version = "1.0.8", features=["release_tweak"] }
+rayon = "1.5.3"

@@ -60,9 +60,8 @@ impl State {
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
         log::info!("loaded imgui_render");
 
-        let default_size = 50;
         let goria: Egregoria =
-            Egregoria::load_from_disk("world").unwrap_or_else(|| Egregoria::new(default_size));
+            Egregoria::load_from_disk("world").unwrap_or_else(|| Egregoria::new(true));
         let game_schedule = Egregoria::schedule();
         let mut uiworld = UiWorld::init();
 
@@ -78,6 +77,9 @@ impl State {
             Self::manage_settings(ctx, &s);
         }
 
+        let w = goria.map().terrain.width;
+        let h = goria.map().terrain.height;
+
         Self {
             uiw: uiworld,
             game_schedule,
@@ -85,7 +87,7 @@ impl State {
             imgui_render,
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx, &goria),
-            terrain: TerrainRender::new(&mut ctx.gfx, default_size as u32),
+            terrain: TerrainRender::new(&mut ctx.gfx, w, h),
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
             goria: Arc::new(RwLock::new(goria)),

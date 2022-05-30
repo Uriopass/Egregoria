@@ -35,7 +35,7 @@ fn main() {
 
     let mut w = unwrap_or!(Egregoria::load_from_disk("world"), {
         log::info!("savegame not found defaulting to empty");
-        Egregoria::new(50)
+        Egregoria::new(true)
     });
 
     let mut sched = Egregoria::schedule();

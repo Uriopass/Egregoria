@@ -1,5 +1,6 @@
 use crate::procgen::heightmap::tree_density;
 use geom::{vec2, Radians, Vec2, AABB};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::num::Wrapping;
@@ -39,22 +40,38 @@ pub type ChunkID = (u32, u32);
 pub struct Terrain {
     pub chunks: HashMap<ChunkID, Chunk>,
     pub dirt_id: Wrapping<u32>,
+    pub width: u32,
+    pub height: u32,
 }
 
 defer_serialize!(Terrain, SerializedTerrain);
 
 impl Default for Terrain {
     fn default() -> Self {
-        Self::new()
+        Self::new(0, 0)
     }
 }
 
 impl Terrain {
-    pub fn new() -> Self {
-        Self {
+    pub fn new(w: u32, h: u32) -> Self {
+        let mut me = Self {
             chunks: Default::default(),
             dirt_id: Wrapping(1),
+            width: w,
+            height: h,
+        };
+        for y in 0..h {
+            let chunks: Vec<_> = (0..w)
+                .into_par_iter()
+                .map(|x| me.generate_chunk((x, y)))
+                .collect();
+            for (x, chunk) in (0..w).zip(chunks) {
+                if let Some(v) = chunk {
+                    me.chunks.insert((x, y), v);
+                }
+            }
         }
+        me
     }
 
     pub fn remove_near_filter(&mut self, bbox: AABB, should_remove: impl Fn(Vec2) -> bool) {

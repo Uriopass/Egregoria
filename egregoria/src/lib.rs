@@ -13,9 +13,8 @@ use crate::vehicles::Vehicle;
 use common::saveload::Encoder;
 use geom::{Transform, Vec3};
 use hecs::{Component, Entity, World};
-use map_model::Map;
+use map_model::{Map, Terrain};
 use pedestrians::Location;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use resources::{Ref, RefMut, Resource, Resources};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::cmp::Ordering;
@@ -101,7 +100,7 @@ impl Egregoria {
         schedule
     }
 
-    pub fn new(size: u32) -> Egregoria {
+    pub fn new(gen_terrain: bool) -> Egregoria {
         let mut goria = Egregoria {
             world: Default::default(),
             resources: Default::default(),
@@ -116,22 +115,13 @@ impl Egregoria {
             }
         }
 
-        info!("generating terrain..");
-        let t = Instant::now();
-        for y in 0..size {
-            let map = goria.map();
-            let chunks: Vec<_> = (0..size)
-                .into_par_iter()
-                .map(|x| map.terrain.generate_chunk((x, y)))
-                .collect();
-            drop(map);
-            for (x, chunk) in (0..size).zip(chunks) {
-                if let Some(v) = chunk {
-                    goria.write::<Map>().terrain.chunks.insert((x, y), v);
-                }
-            }
+        if gen_terrain {
+            info!("generating terrain..");
+            let t = Instant::now();
+            let size = 50;
+            goria.map_mut().terrain = Terrain::new(size, size);
+            info!("took {}s", t.elapsed().as_secs_f32());
         }
-        info!("took {}s", t.elapsed().as_secs_f32());
 
         goria
     }
@@ -337,7 +327,7 @@ impl<'de> Deserialize<'de> for Egregoria {
             )));
         }
 
-        let mut goria = Self::new(0);
+        let mut goria = Self::new(false);
 
         goria.world = goriadeser.world.0;
         goria.tick = goriadeser.tick;

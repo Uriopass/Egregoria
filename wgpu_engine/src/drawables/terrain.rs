@@ -32,7 +32,8 @@ pub struct TerrainRender<const CSIZE: usize, const CRESOLUTION: usize> {
     instances: [(PBuffer, u32); LOD],
     bg: Arc<wgpu::BindGroup>,
     cell_size: f32,
-    size: u32,
+    w: u32,
+    h: u32,
 }
 
 pub struct TerrainPrepared {
@@ -43,11 +44,11 @@ pub struct TerrainPrepared {
 }
 
 impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
-    pub fn new(gfx: &mut GfxContext, size: u32) -> Self {
+    pub fn new(gfx: &mut GfxContext, w: u32, h: u32) -> Self {
         let (indices, vertices) = Self::generate_indices_mesh(gfx);
         let mut tex = Texture::create_fbo(
             &gfx.device,
-            (size * CRESOLUTION as u32 + 2, size * CRESOLUTION as u32 + 2),
+            (w * CRESOLUTION as u32 + 2, h * CRESOLUTION as u32 + 2),
             TextureFormat::R32Float,
             TextureUsages::COPY_DST | TextureUsages::TEXTURE_BINDING,
             None,
@@ -78,7 +79,8 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             vertices,
             dirt_id: 0,
             cell_size: CSIZE as f32 / CRESOLUTION as f32,
-            size,
+            w,
+            h,
             instances: collect_arrlod((0..LOD).map(|_| (PBuffer::new(BufferUsages::VERTEX), 0))),
         }
     }
@@ -112,8 +114,8 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION);
 
-        let extrax = cell.0 + 1 == self.size;
-        let extray = cell.1 + 1 == self.size;
+        let extrax = cell.0 + 1 == self.w;
+        let extray = cell.1 + 1 == self.h;
 
         let w = CRESOLUTION as u32 + 2 * extrax as u32;
         let h = CRESOLUTION as u32 + 2 * extray as u32;
@@ -187,8 +189,8 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         let eye = cam.eye();
 
         let mut instances = vec![Vec::<TerrainInstance>::new(); LOD];
-        for y in 0..self.size {
-            for x in 0..self.size {
+        for y in 0..self.h {
+            for x in 0..self.w {
                 let p = vec2(x as f32, y as f32) * CSIZE as f32;
                 let lod = eye.distance(p.z0()).log2().sub(10.0).max(0.0) as usize;
                 let lod = lod.min(LOD - 1);
@@ -230,14 +232,14 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             };
 
             let mut poly = Polygon(vec![]);
-            poly.0.push(vec2(start as f32 * CSIZE as f32, -1000.0));
+            poly.0.push(vec2(start as f32 * CSIZE as f32, -3000.0));
             for along in start * CRESOLUTION as u32..=end * CRESOLUTION as u32 {
                 let along = along as f32 * cell_size;
                 let p = flip(vec2(along, c));
-                let height = unwrap_cont!(height(p - p.sign() * 0.001));
+                let height = unwrap_cont!(height(p - (p - Vec2::splat(3.0)).sign() * 1.0));
                 poly.0.push(vec2(along, height + 1.5));
             }
-            poly.0.push(vec2(end as f32 * CSIZE as f32, -1000.0));
+            poly.0.push(vec2(end as f32 * CSIZE as f32, -3000.0));
 
             poly.simplify();
 
