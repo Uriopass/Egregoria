@@ -6,19 +6,29 @@ use egregoria::Egregoria;
 use geom::{Degrees, OBB};
 use map_model::{LanePatternBuilder, ProjectFilter};
 
-pub struct TrainstationResource {
+pub enum TrainToolKind {
+    AddTrain,
+    Trainstation,
+}
+
+pub struct TrainTool {
+    pub kind: TrainToolKind,
     rotation: Degrees,
 }
 
 #[profiling::function]
 pub fn trainstation(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = *uiworld.read::<Tool>();
-    if !matches!(tool, Tool::TrainStation) {
+    if !matches!(tool, Tool::Train) {
         return;
     }
 
-    uiworld.write_or_default::<TrainstationResource>();
-    let mut res = uiworld.write::<TrainstationResource>();
+    uiworld.write_or_default::<TrainTool>();
+    let mut res = uiworld.write::<TrainTool>();
+    if !matches!(res.kind, TrainToolKind::Trainstation) {
+        return;
+    }
+
     let inp = uiworld.read::<InputMap>();
 
     let mut draw = uiworld.write::<ImmediateDraw>();
@@ -58,9 +68,10 @@ pub fn trainstation(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 }
 
-impl Default for TrainstationResource {
+impl Default for TrainTool {
     fn default() -> Self {
         Self {
+            kind: TrainToolKind::AddTrain,
             rotation: Degrees(0.0),
         }
     }

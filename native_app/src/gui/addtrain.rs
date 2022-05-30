@@ -1,5 +1,6 @@
 use super::Tool;
 use crate::gui::inputmap::{InputAction, InputMap};
+use crate::gui::trainstation::{TrainTool, TrainToolKind};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::vehicles::trains::wagons_positions;
@@ -8,18 +9,19 @@ use geom::{Color, OBB};
 use map_model::LaneKind;
 use std::option::Option::None;
 
-#[derive(Default)]
-pub struct AddTrain;
-
 #[profiling::function]
 pub fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = *uiworld.read::<Tool>();
-    if !matches!(tool, Tool::AddTrain) {
+    if !matches!(tool, Tool::Train) {
         return;
     }
 
-    uiworld.write_or_default::<AddTrain>();
-    let _res = uiworld.write::<AddTrain>();
+    uiworld.write_or_default::<TrainTool>();
+    let res = uiworld.write::<TrainTool>();
+    if !matches!(res.kind, TrainToolKind::AddTrain) {
+        return;
+    }
+
     let inp = uiworld.read::<InputMap>();
 
     let mut draw = uiworld.write::<ImmediateDraw>();

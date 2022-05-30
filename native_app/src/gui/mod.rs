@@ -76,8 +76,7 @@ pub enum Tool {
     Bulldozer,
     LotBrush,
     SpecialBuilding,
-    TrainStation,
-    AddTrain,
+    Train,
 }
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]
