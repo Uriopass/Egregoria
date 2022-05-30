@@ -1382,6 +1382,7 @@ dependencies = [
  "ordered-float",
  "pathfinding",
  "rand",
+ "rayon",
  "serde",
  "slotmap",
 ]

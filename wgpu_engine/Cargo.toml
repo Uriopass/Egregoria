@@ -18,7 +18,7 @@ naga      = { version = "0.8.5", default-features=false, features = ["glsl-in", 
 gltf      = { version = "1.0.0", default-features=false, features=["import", "utils"] }
 itertools = { version = "0.10.0", default-features = false }
 profiling = "1.0.1"
-rayon     = "1.4"
+rayon     = "1.5"
 
 [features]
 default = []

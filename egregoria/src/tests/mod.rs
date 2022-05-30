@@ -20,7 +20,7 @@ impl TestCtx {
     fn init() -> Self {
         MyLog::init();
 
-        let g = Egregoria::new(3);
+        let g = Egregoria::new(true);
         let sched = Egregoria::schedule();
 
         Self { g, sched }

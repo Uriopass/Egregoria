@@ -86,9 +86,9 @@ pub(crate) fn height(p: Vec2) -> (f32, Vec2) {
     let ratio = 0.00005;
     let mut noise = noise - 0.1 + (p.y - 25000.0).abs() * ratio;
     grad += vec2(0.0, (p.y - 25000.0).signum() * ratio);
-    if noise < 0.0 {
-        noise = 0.0;
-        grad = Vec2::ZERO;
+    if noise < -0.0 {
+        noise = noise * noise;
+        grad = 2.0 * noise * grad;
     } else if noise > 1.0 {
         noise = 1.0;
         grad = Vec2::ZERO;
