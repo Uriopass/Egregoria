@@ -1,4 +1,4 @@
-use crate::{Circle, Intersect, Polygon, Shape, Vec3, Vec3d, AABB, OBB};
+use crate::{Circle, Intersect, Polygon, Radians, Shape, Vec3, Vec3d, AABB, OBB};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
@@ -193,10 +193,10 @@ impl Vec2 {
     }
 
     #[inline]
-    pub fn from_angle(angle: f32) -> Vec2 {
+    pub fn from_angle(angle: Radians) -> Vec2 {
         Self {
-            x: angle.cos(),
-            y: angle.sin(),
+            x: angle.0.cos(),
+            y: angle.0.sin(),
         }
     }
 

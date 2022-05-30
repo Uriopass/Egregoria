@@ -2,7 +2,7 @@ use crate::context::Context;
 use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::windows::settings::Settings;
 use common::saveload::Encoder;
-use geom::{vec4, Camera, Matrix4, Plane, Ray3, Vec2, Vec3, AABB};
+use geom::{vec4, Camera, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
 
 pub struct CameraHandler3D {
@@ -10,8 +10,8 @@ pub struct CameraHandler3D {
     pub lastscreenpos: Vec2,
     pub last_pos: Option<Vec2>,
     pub targetpos: Vec3,
-    pub targetyaw: f32,
-    pub targetpitch: f32,
+    pub targetyaw: Radians,
+    pub targetpitch: Radians,
     pub targetdist: f32,
 }
 
@@ -153,9 +153,12 @@ impl CameraHandler3D {
         let unprojected = self.unproject(screenpos, |_| Some(0.0));
 
         if inps.act.contains(&InputAction::CameraRotate) {
-            self.targetyaw -= delta_mouse.x / 100.0;
-            self.targetpitch += delta_mouse.y / 100.0;
-            self.targetpitch = self.targetpitch.min(1.57).max(0.01);
+            self.targetyaw -= Radians(delta_mouse.x / 100.0);
+            self.targetpitch += Radians(delta_mouse.y / 100.0);
+            self.targetpitch = self
+                .targetpitch
+                .min(Radians::HALFPI - Radians(0.01))
+                .max(Radians(0.01));
         } else if inps.act.contains(&InputAction::CameraMove) {
             if let Some((last_pos, unprojected)) = self.last_pos.zip(unprojected) {
                 self.targetpos += (last_pos - unprojected.xy())

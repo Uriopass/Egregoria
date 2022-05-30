@@ -1,5 +1,5 @@
 use crate::procgen::heightmap::tree_density;
-use geom::{vec2, Vec2, AABB};
+use geom::{vec2, Radians, Vec2, AABB};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::num::Wrapping;
@@ -171,8 +171,9 @@ impl Tree {
         let crand = common::rand::rand3(pos.x as f32, pos.y, 1.0);
 
         let colscale = 0.7 - 0.2 * crand;
-        let angle =
-            2.0 * std::f32::consts::PI * common::rand::rand3(pos.x as f32, pos.y as f32, 2.0);
+        let angle = Radians(
+            2.0 * std::f32::consts::PI * common::rand::rand3(pos.x as f32, pos.y as f32, 2.0),
+        );
 
         let srand = common::rand::rand3(pos.x as f32, pos.y, 3.0);
         let scale = 5.0 + 3.0 * srand;
@@ -181,7 +182,7 @@ impl Tree {
             pos,
             size: scale,
             col: colscale,
-            dir: Vec2::from_angle(angle),
+            dir: angle.vec2(),
         }
     }
 }
