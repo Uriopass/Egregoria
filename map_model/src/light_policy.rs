@@ -1,6 +1,5 @@
 use crate::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
 use imgui_inspect::{imgui::Ui, InspectArgsDefault, InspectRenderDefault};
-use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
@@ -83,7 +82,7 @@ impl LightPolicy {
 
         let offset = inter.id.as_ffi();
         let inter_offset: usize =
-            rand::rngs::SmallRng::seed_from_u64(offset as u64).gen_range(0..total_length);
+            (common::rand::rand(offset as f32) * total_length as f32) as usize;
 
         for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
             let light = TrafficControl::Light(TrafficLightSchedule::from_basic(

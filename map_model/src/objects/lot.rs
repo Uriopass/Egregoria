@@ -2,7 +2,6 @@ use crate::{Map, ProjectFilter, ProjectKind, RoadID};
 use geom::Vec2;
 use geom::OBB;
 use geom::{Circle, Vec3};
-use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -65,19 +64,17 @@ impl Lot {
             let r = unwrap_ret!(map.roads.get(road));
 
             let w = r.width * 0.5;
-            let mut rng = rand::rngs::SmallRng::seed_from_u64(
-                common::rand::rand3(
-                    r.points.first().x + r.points.last().x,
-                    r.points.last().y + r.points.first().y,
-                    side * r.length(),
-                )
-                .to_bits() as u64,
-            );
-
-            let mut picksize = || match rng.gen_range(0..3) {
-                0 => 20.0,
-                1 => 30.0,
-                _ => 40.0,
+            let mut ri = 0.0;
+            let r1 = r.points.first().x + r.points.last().x;
+            let r2 = r.points.last().y + r.points.first().y;
+            let r3 = side * r.length();
+            let mut picksize = || {
+                ri += 1.0;
+                match (common::rand::rand4(r1, r2, r3, ri) * 3.0) as usize {
+                    0 => 20.0,
+                    1 => 30.0,
+                    _ => 40.0,
+                }
             };
 
             let points = r.points.clone();

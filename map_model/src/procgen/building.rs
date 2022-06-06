@@ -1,8 +1,6 @@
 use geom::skeleton::{faces_from_skeleton, skeleton};
 use geom::{minmax, vec2, Intersect, LinearColor, Polygon, Segment, Shape, Vec2, Vec3, AABB};
 use ordered_float::OrderedFloat;
-use rand::prelude::SmallRng;
-use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use std::panic::catch_unwind;
 
@@ -32,24 +30,30 @@ impl ColoredMesh {
 pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
     let mut retry_cnt = 0;
     'retry: loop {
-        let mut rng = SmallRng::seed_from_u64((retry_cnt << 32) + seed);
+        let mut ri = 0.0;
+        let realseed = ((retry_cnt << 32) + seed) as f32;
+        let mut gen_range = |a, b| -> f32 {
+            ri += 1.0;
+            common::rand::rand2(realseed, ri) * (b - a) + a
+        };
+
         retry_cnt += 1;
 
-        let width = rng.gen_range(15.0..20.0);
-        let height = rng.gen_range(20.0..28.0);
+        let width = gen_range(15.0, 20.0);
+        let height = gen_range(20.0, 28.0);
 
         let mut p = Polygon::rect(width, height);
 
-        for _ in 0..rng.gen_range(1.0..5.0) as usize {
-            let seg = rng.gen_range(0.0..p.len() as f32) as usize;
+        for _ in 0..gen_range(1.0, 5.0) as usize {
+            let seg = gen_range(0.0, p.len() as f32) as usize;
 
             let origlen = p.segment(seg).vec().magnitude();
             if origlen < 8.0 {
                 continue;
             }
 
-            let l = rng.gen_range(-0.2..0.5);
-            let r = rng.gen_range(l + 0.4..l + 1.0);
+            let l = gen_range(-0.2, 0.5);
+            let r = gen_range(l + 0.4, l + 1.0);
             if r <= 1.0 {
                 p.split_segment(seg, r);
             }
@@ -58,9 +62,9 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
 
             if l >= 0.0 {
                 p.split_segment(seg, l * origlen / newlen);
-                p.extrude(seg + 1, rng.gen_range(1.0..8.0));
+                p.extrude(seg + 1, gen_range(1.0, 8.0));
             } else {
-                p.extrude(seg, rng.gen_range(1.0..8.0));
+                p.extrude(seg, gen_range(1.0, 8.0));
             }
 
             p.simplify();
@@ -76,7 +80,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
             *x -= c;
         }
 
-        let merge_triangles = rng.gen();
+        let merge_triangles = gen_range(0.0, 1.0) < 0.5;
 
         // silence panics
         let hook = std::panic::take_hook();
@@ -134,7 +138,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
         let mut roofs = ColoredMesh::default();
         let roof_col = LinearColor::from(common::config().roof_col);
 
-        let height = 4.0 + rng.gen_range(0.0..2.0);
+        let height = 4.0 + gen_range(0.0, 2.0);
 
         for mut face in faces {
             if face.len() < 3 {
@@ -186,10 +190,10 @@ pub fn gen_exterior_farm(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
     let h_size = 30.0;
     let (mut mesh, mut door_pos) = gen_exterior_house(h_size, seed);
 
-    let mut rng = SmallRng::seed_from_u64(seed + 7);
+    let gen_range = |a, b| -> f32 { common::rand::rand(seed as f32 + 7.0) * (b - a) + a };
 
     let b = mesh.bbox();
-    let off = -b.ll - Vec2::splat(size * 0.5) + vec2(rng.gen_range(0.0..size - h_size), 3.0);
+    let off = -b.ll - Vec2::splat(size * 0.5) + vec2(gen_range(0.0, size - h_size), 3.0);
     mesh.translate(off);
     door_pos += off;
 
