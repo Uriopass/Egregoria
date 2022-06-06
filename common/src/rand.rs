@@ -13,7 +13,10 @@ fn hash2(x: u32, y: u32) -> u32 {
     hash(x ^ hash(y))
 }
 fn hash3(x: u32, y: u32, z: u32) -> u32 {
-    hash(x ^ hash(y) ^ hash(z))
+    hash(x ^ hash(y ^ hash(z)))
+}
+fn hash4(x: u32, y: u32, z: u32, w: u32) -> u32 {
+    hash(x ^ hash(y ^ hash(z ^ hash(w))))
 }
 
 // Construct a float with half-open range [0:1] using low 23 bits.
@@ -38,6 +41,9 @@ pub fn rand2(x: f32, y: f32) -> f32 {
 }
 pub fn rand3(x: f32, y: f32, z: f32) -> f32 {
     float_construct(hash3(x.to_bits(), y.to_bits(), z.to_bits()))
+}
+pub fn rand4(x: f32, y: f32, z: f32, w: f32) -> f32 {
+    float_construct(hash4(x.to_bits(), y.to_bits(), z.to_bits(), w.to_bits()))
 }
 
 pub fn randu(x: u32) -> f32 {

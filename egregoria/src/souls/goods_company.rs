@@ -8,7 +8,6 @@ use crate::vehicles::VehicleID;
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::{Transform, Vec2};
 use hecs::{Entity, World};
-use if_chain::if_chain;
 use imgui_inspect_derive::Inspect;
 use map_model::{BuildingGen, BuildingID, BuildingKind, Map};
 use resources::Resources;
@@ -648,22 +647,33 @@ pub fn company(
         return;
     }
 
-    if_chain! {
-        if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next();
-        if let Some(driver) = company.driver;
-        if let Ok(w) = world.get::<Work>(driver.0);
-        if matches!(w.kind, WorkKind::Driver { deliver_order: None, .. });
-        if let Some(owner_build) = binfos.building_owned_by(trade.buyer);
-        then {
-            log::info!("asked driver to deliver");
+    if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next() {
+        if let Some(driver) = company.driver {
+            if let Ok(w) = world.get::<Work>(driver.0) {
+                if matches!(
+                    w.kind,
+                    WorkKind::Driver {
+                        deliver_order: None,
+                        ..
+                    }
+                ) {
+                    if let Some(owner_build) = binfos.building_owned_by(trade.buyer) {
+                        log::info!("asked driver to deliver");
 
-            cbuf.exec_ent(soul.0, move |goria| {
-                if let Some(mut w) = goria.comp_mut::<Work>(driver.0) {
-                    if let WorkKind::Driver { ref mut deliver_order, .. } = w.kind {
-                        *deliver_order = Some(owner_build)
+                        cbuf.exec_ent(soul.0, move |goria| {
+                            if let Some(mut w) = goria.comp_mut::<Work>(driver.0) {
+                                if let WorkKind::Driver {
+                                    ref mut deliver_order,
+                                    ..
+                                } = w.kind
+                                {
+                                    *deliver_order = Some(owner_build)
+                                }
+                            }
+                        })
                     }
                 }
-            })
+            }
         }
     }
 

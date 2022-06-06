@@ -683,7 +683,6 @@ dependencies = [
  "geom",
  "goria_version",
  "hecs",
- "if_chain",
  "imgui",
  "imgui-inspect",
  "imgui-inspect-derive",
@@ -691,7 +690,6 @@ dependencies = [
  "log",
  "map_model",
  "ordered-float",
- "paste",
  "profiling",
  "rayon",
  "resources",
@@ -1046,12 +1044,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "if_chain"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb56e1aa765b4b4f3aadfab769793b7087bb03a4ea4920644a6d238e2df5b9ed"
-
-[[package]]
 name = "image"
 version = "0.23.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1373,7 +1365,6 @@ dependencies = [
  "log",
  "ordered-float",
  "pathfinding",
- "rand",
  "rayon",
  "serde",
  "slotmap",
@@ -2059,21 +2050,6 @@ checksum = "a1feb54ed693b93a84e14094943b84b7c4eae204c512b7ccb95ab0c66d278ad1"
 dependencies = [
  "proc-macro2",
 ]
-
-[[package]]
-name = "rand"
-version = "0.8.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
-dependencies = [
- "rand_core",
-]
-
-[[package]]
-name = "rand_core"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 
 [[package]]
 name = "range-alloc"
