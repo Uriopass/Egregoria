@@ -55,7 +55,7 @@ impl Default for InspectedEntity {
     }
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Tool {
     Hand,
     RoadbuildStraight,

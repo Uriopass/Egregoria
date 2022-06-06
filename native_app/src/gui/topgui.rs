@@ -17,7 +17,7 @@ use imgui::{StyleColor, StyleVar, Ui, Window};
 use imgui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
 };
-use map_model::{LanePatternBuilder, LightPolicy, LotKind, TurnPolicy};
+use map_model::{BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, TurnPolicy};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
@@ -219,10 +219,19 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .build(ui, || {
+                    let _tok = ui.push_style_var(StyleVar::Alpha(
+                        if *uiworld.read::<Tool>() == Tool::Train {
+                            1.0
+                        } else {
+                            0.6
+                        },
+                    ));
                     if ui.button_with_size("Add train", [rbw, 30.0]) {
                         *uiworld.write::<Tool>() = Tool::Train;
                     }
+                    drop(_tok);
 
+                    /*
                     if ui.button_with_size("Trainstation", [rbw, 30.0]) {
                         *uiworld.write::<Tool>() = Tool::SpecialBuilding;
 
@@ -239,7 +248,34 @@ impl Gui {
                             }),
                             w: h + 15.0,
                             h: 230.0,
-                            asset: "assets/models/trainstation.glb".to_string(),
+                            asset: "trainstation.glb".to_string(),
+                            road_snap: false,
+                        });
+                    }*/
+
+                    let _tok = ui.push_style_var(StyleVar::Alpha(
+                        if *uiworld.read::<Tool>() == Tool::SpecialBuilding {
+                            1.0
+                        } else {
+                            0.6
+                        },
+                    ));
+                    if ui.button_with_size("Freight station", [rbw, 30.0]) {
+                        *uiworld.write::<Tool>() = Tool::SpecialBuilding;
+
+                        uiworld.write::<SpecialBuildingResource>().opt = Some(SpecialBuildKind {
+                            make: Box::new(move |args, commands| {
+                                commands.map_build_special_building(
+                                    args.obb,
+                                    BuildingKind::RailFretStation,
+                                    BuildingGen::NoWalkway {
+                                        door_pos: args.obb.center(),
+                                    },
+                                );
+                            }),
+                            w: 200.0,
+                            h: 160.0,
+                            asset: "rail_fret_station.glb".to_string(),
                             road_snap: false,
                         });
                     }
@@ -469,10 +505,7 @@ impl Gui {
                             cur_build.opt = Some(SpecialBuildKind {
                                 road_snap: true,
                                 make: Box::new(move |args, commands| {
-                                    if let Some(rid) = args.road_id {
-                                        commands
-                                            .map_build_special_building(rid, args.obb, bkind, bgen);
-                                    }
+                                    commands.map_build_special_building(args.obb, bkind, bgen);
                                 }),
                                 w: descr.size,
                                 h: descr.size,

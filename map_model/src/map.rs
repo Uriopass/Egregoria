@@ -149,7 +149,6 @@ impl Map {
 
     pub fn build_special_building(
         &mut self,
-        road: RoadID,
         obb: &OBB,
         kind: BuildingKind,
         gen: BuildingGen,
@@ -157,12 +156,7 @@ impl Map {
         if self.building_overlaps(*obb) {
             return None;
         }
-        log::info!(
-            "build special {:?} on {:?} with shape {:?}",
-            kind,
-            road,
-            obb
-        );
+        log::info!("build special {:?} with shape {:?}", kind, obb);
         self.dirt_id += Wrapping(1);
         let to_clean: Vec<_> = self.spatial_map.query(obb, ProjectFilter::LOT).collect();
         for id in to_clean {
@@ -184,7 +178,6 @@ impl Map {
             &mut self.buildings,
             &mut self.spatial_map,
             &self.terrain,
-            self.roads.get(road)?,
             *obb,
             kind,
             gen,
@@ -239,7 +232,6 @@ impl Map {
             &mut self.buildings,
             &mut self.spatial_map,
             &self.terrain,
-            self.roads.get(lot.parent)?,
             lot.shape,
             BuildingKind::House,
             BuildingGen::House,

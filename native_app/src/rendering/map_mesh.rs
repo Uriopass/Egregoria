@@ -61,13 +61,21 @@ impl MapMeshHandler {
             );
         }
 
-        for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
-            let asset = descr.asset_location;
+        for (asset, bkind) in goria
+            .read::<GoodsCompanyRegistry>()
+            .descriptions
+            .values()
+            .map(|descr| (descr.asset_location, descr.bkind))
+            .chain(std::iter::once((
+                "rail_fret_station.glb",
+                BuildingKind::RailFretStation,
+            )))
+        {
             if !asset.ends_with(".glb") {
                 continue;
             }
             buildmeshes.insert(
-                descr.bkind,
+                bkind,
                 InstancedMeshBuilder::new(unwrap_contlog!(
                     load_mesh(asset, gfx),
                     "couldn't load obj: {}",
@@ -83,9 +91,7 @@ impl MapMeshHandler {
             tess_map: Tesselator::new(None, 15.0),
             houses_mesh: MeshBuilder::new(),
             buildmeshes,
-            trainstations: InstancedMeshBuilder::new(
-                load_mesh("assets/models/trainstation.glb", gfx).unwrap(),
-            ),
+            trainstations: InstancedMeshBuilder::new(load_mesh("trainstation.glb", gfx).unwrap()),
         };
 
         Self {

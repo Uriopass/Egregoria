@@ -17,7 +17,7 @@ pub struct RoadRenderer {
 
 impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
-        let mesh = load_mesh("assets/models/pine.glb", gfx).expect("could not load pine");
+        let mesh = load_mesh("pine.glb", gfx).expect("could not load pine");
 
         RoadRenderer {
             meshb: MapMeshHandler::new(gfx, goria),

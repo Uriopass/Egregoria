@@ -51,9 +51,7 @@ pub fn put_pedestrian_in_coworld(coworld: &mut CollisionWorld, pos: Vec3) -> Col
 impl Pedestrian {
     fn new(r: &mut RandProvider) -> Self {
         Self {
-            walking_speed: r
-                .rand_normal(1.34f32, 0.26) // https://arxiv.org/pdf/cond-mat/9805244.pdf
-                .max(0.5),
+            walking_speed: (0.8 + r.next_f32() * 0.8),
             walk_anim: 0.0,
         }
     }
@@ -72,7 +70,7 @@ pub fn random_pedestrian_shirt_color(r: &mut RandProvider) -> Color {
 
     let total: f32 = car_colors.iter().map(|x| x.1).sum();
 
-    let r = r.random::<f32>() * total;
+    let r = r.next_f32() * total;
     let mut partial = 0.0;
     for (col, freq) in &car_colors {
         partial += freq;
