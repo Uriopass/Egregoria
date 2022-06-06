@@ -40,7 +40,7 @@ pub enum WorldCommand {
     AddTrain(f32, u32, LaneID),
     MapMakeConnection(MapProject, MapProject, Option<Vec2>, LanePattern),
     MapUpdateIntersectionPolicy(IntersectionID, TurnPolicy, LightPolicy),
-    MapBuildSpecialBuilding(RoadID, OBB, BuildingKind, BuildingGen),
+    MapBuildSpecialBuilding(OBB, BuildingKind, BuildingGen),
     MapLoadParis,
     MapLoadTestField(Vec2, u32, f32),
     ResetSave,
@@ -96,15 +96,8 @@ impl WorldCommands {
         self.commands.push(AddTrain(dist, n_wagons, laneid))
     }
 
-    pub fn map_build_special_building(
-        &mut self,
-        id: RoadID,
-        obb: OBB,
-        kind: BuildingKind,
-        gen: BuildingGen,
-    ) {
-        self.commands
-            .push(MapBuildSpecialBuilding(id, obb, kind, gen))
+    pub fn map_build_special_building(&mut self, obb: OBB, kind: BuildingKind, gen: BuildingGen) {
+        self.commands.push(MapBuildSpecialBuilding(obb, kind, gen))
     }
 
     pub fn map_remove_intersection(&mut self, id: IntersectionID) {
@@ -172,11 +165,8 @@ impl WorldCommand {
                     i.turn_policy = tp;
                 })
             }
-            MapBuildSpecialBuilding(id, obb, kind, gen) => {
-                if let Some(id) = goria
-                    .write::<Map>()
-                    .build_special_building(id, &obb, kind, gen)
-                {
+            MapBuildSpecialBuilding(obb, kind, gen) => {
+                if let Some(id) = goria.write::<Map>().build_special_building(&obb, kind, gen) {
                     goria.write::<BuildingInfos>().insert(id);
                 }
             }

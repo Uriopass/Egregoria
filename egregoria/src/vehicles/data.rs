@@ -214,7 +214,7 @@ pub fn get_random_car_color(r: &mut RandProvider) -> Color {
 
     let total: f32 = car_colors.iter().map(|x| x.1).sum();
 
-    let r = r.random::<f32>() * total;
+    let r = r.next_f32() * total;
     let mut partial = 0.0;
     for (col, freq) in &car_colors {
         partial += freq;

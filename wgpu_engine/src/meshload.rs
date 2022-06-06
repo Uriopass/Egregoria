@@ -3,19 +3,22 @@ use geom::{Matrix4, Quaternion, Vec2, Vec3};
 use gltf::image::Format;
 use gltf::json::texture::{MagFilter, MinFilter};
 use image::{DynamicImage, ImageBuffer};
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 use wgpu::FilterMode;
 
-pub fn load_mesh(path: impl AsRef<Path>, gfx: &GfxContext) -> Option<Mesh> {
-    let path = path.as_ref();
+pub fn load_mesh(asset_name: &str, gfx: &GfxContext) -> Option<Mesh> {
+    let mut path = PathBuf::new();
+    path.push("assets/models/");
+    path.push(asset_name);
+
     let t = Instant::now();
 
     let mut flat_vertices: Vec<MeshVertex> = vec![];
     let mut indices = vec![];
 
-    let (doc, data, images) = gltf::import(path)
+    let (doc, data, images) = gltf::import(&path)
         .map_err(|e| log::error!("invalid mesh: {}", e))
         .ok()?;
 

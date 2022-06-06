@@ -6,13 +6,12 @@ use common::AudioKind;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::Egregoria;
 use geom::{Degrees, Intersect, Vec3, OBB};
-use map_model::{ProjectFilter, ProjectKind, RoadID};
+use map_model::{ProjectFilter, ProjectKind};
 use ordered_float::OrderedFloat;
 
 pub struct SpecialBuildArgs {
     pub obb: OBB,
     pub mpos: Vec3,
-    pub road_id: Option<RoadID>,
 }
 
 pub struct SpecialBuildKind {
@@ -151,14 +150,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     draw(obb, false);
 
     if inp.act.contains(&InputAction::Select) {
-        make(
-            &SpecialBuildArgs {
-                obb,
-                mpos,
-                road_id: rid,
-            },
-            commands,
-        );
+        make(&SpecialBuildArgs { obb, mpos }, commands);
         sound.play("road_lay", AudioKind::Ui);
         state.last_obb = Some(obb);
     }

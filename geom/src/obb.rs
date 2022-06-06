@@ -138,6 +138,12 @@ impl OBB {
         false
     }
 
+    /// Returns [bottom, right, up, left]
+    ///      3
+    ///   +--<--+
+    /// 4 v     ^ 2
+    ///   +-->--+
+    ///      1
     pub fn segments(&self) -> [Segment; 4] {
         [
             Segment::new(self.corners[0], self.corners[1]),
