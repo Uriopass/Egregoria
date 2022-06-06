@@ -1,22 +1,24 @@
 use super::Tool;
-use crate::input::{MouseButton, MouseInfo};
+use crate::gui::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::engine_interaction::WorldCommands;
 use egregoria::Egregoria;
-use geom::{Intersect, Vec2, OBB};
+use geom::{Degrees, Intersect, Vec3, OBB};
 use map_model::{ProjectFilter, ProjectKind, RoadID};
 use ordered_float::OrderedFloat;
 
 pub struct SpecialBuildArgs {
     pub obb: OBB,
+    pub mpos: Vec3,
     pub road_id: Option<RoadID>,
 }
 
 pub struct SpecialBuildKind {
     pub make: Box<dyn Fn(&SpecialBuildArgs, &mut WorldCommands) + Send + Sync + 'static>,
-    pub size: f32,
+    pub w: f32,
+    pub h: f32,
     pub asset: String,
     pub road_snap: bool,
 }
@@ -25,13 +27,14 @@ pub struct SpecialBuildKind {
 pub struct SpecialBuildingResource {
     pub opt: Option<SpecialBuildKind>,
     pub last_obb: Option<OBB>,
+    pub rotation: Degrees,
 }
 
 #[profiling::function]
 pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut state = uiworld.write::<SpecialBuildingResource>();
     let tool = *uiworld.read::<Tool>();
-    let mouseinfo = uiworld.read::<MouseInfo>();
+    let inp = uiworld.read::<InputMap>();
     let mut draw = uiworld.write::<ImmediateDraw>();
     let mut sound = uiworld.write::<ImmediateSound>();
 
@@ -42,17 +45,25 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     if !matches!(tool, Tool::SpecialBuilding) {
         return;
     }
+
+    if inp.act.contains(&InputAction::Rotate) {
+        state.rotation += Degrees(inp.wheel * 10.0);
+        state.rotation.normalize();
+    }
+
     let SpecialBuildKind {
-        size,
+        w,
+        h,
         ref asset,
         ref make,
         road_snap,
     } = *unwrap_or!(&state.opt, return);
 
-    let mpos = unwrap_ret!(mouseinfo.unprojected);
+    let mpos = unwrap_ret!(inp.unprojected);
     let roads = map.roads();
 
-    let hover_obb = OBB::new(mpos.xy(), Vec2::Y, size, size);
+    let diag = 0.5 * w.hypot(h);
+    let hover_obb = OBB::new(mpos.xy(), state.rotation.vec2(), w, h);
 
     let mut draw = |obb, red| {
         let p = asset.to_string();
@@ -76,7 +87,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     if road_snap {
         let closest_road = map
             .spatial_map()
-            .query_around(mpos.xy(), size, ProjectFilter::ROAD)
+            .query_around(mpos.xy(), diag, ProjectFilter::ROAD)
             .filter_map(|x| match x {
                 ProjectKind::Road(id) => Some(&roads[id]),
                 _ => None,
@@ -87,7 +98,7 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         let (proj, _, dir) = closest_road.points().project_segment_dir(mpos);
         let dir = dir.xy();
 
-        if !proj.is_close(mpos, size + closest_road.width * 0.5) {
+        if !proj.is_close(mpos, diag + closest_road.width * 0.5) {
             return draw(hover_obb, true);
         }
 
@@ -101,33 +112,53 @@ pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         let last = closest_road.points().last();
 
         obb = OBB::new(
-            proj.xy() + side * (size + closest_road.width + 0.5) * 0.5,
+            proj.xy() + side * (h + closest_road.width + 0.5) * 0.5,
             side,
-            size,
-            size,
+            w,
+            h,
         );
 
-        if proj.distance(first) < 0.5 * size
-            || proj.distance(last) < 0.5 * size
+        if proj.distance(first) < diag
+            || proj.distance(last) < diag
             || closest_road.sidewalks(closest_road.src).incoming.is_none()
         {
             draw(obb, true);
             return;
         }
 
-        if map.building_overlaps(obb) || state.last_obb.map(|x| x.intersects(&obb)).unwrap_or(false)
-        {
-            draw(obb, true);
-            return;
-        }
-
         rid = Some(closest_road.id);
-
-        draw(obb, false);
     }
 
-    if mouseinfo.pressed.contains(&MouseButton::Left) {
-        make(&SpecialBuildArgs { obb, road_id: rid }, commands);
+    if map
+        .spatial_map()
+        .query(
+            obb,
+            ProjectFilter::ROAD | ProjectFilter::INTER | ProjectFilter::BUILDING,
+        )
+        .any(|x| {
+            if let Some(rid) = rid {
+                ProjectKind::Road(rid) != x
+            } else {
+                true
+            }
+        })
+        || state.last_obb.map(|x| x.intersects(&obb)).unwrap_or(false)
+    {
+        draw(obb, true);
+        return;
+    }
+
+    draw(obb, false);
+
+    if inp.act.contains(&InputAction::Select) {
+        make(
+            &SpecialBuildArgs {
+                obb,
+                mpos,
+                road_id: rid,
+            },
+            commands,
+        );
         sound.play("road_lay", AudioKind::Ui);
         state.last_obb = Some(obb);
     }

@@ -199,8 +199,13 @@ impl Map {
 
         self.dirt_id += Wrapping(1);
 
-        let lefti = Intersection::make(&mut self.intersections, &mut self.spatial_map, left);
-        let righti = Intersection::make(&mut self.intersections, &mut self.spatial_map, right);
+        let lefti =
+            Intersection::make(&mut self.intersections, &mut self.spatial_map, left.up(0.3));
+        let righti = Intersection::make(
+            &mut self.intersections,
+            &mut self.spatial_map,
+            right.up(0.3),
+        );
 
         let track = self
             .connect(

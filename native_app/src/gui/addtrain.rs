@@ -1,6 +1,5 @@
 use super::Tool;
 use crate::gui::inputmap::{InputAction, InputMap};
-use crate::gui::trainstation::{TrainTool, TrainToolKind};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::vehicles::trains::wagons_positions;
@@ -13,12 +12,6 @@ use std::option::Option::None;
 pub fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = *uiworld.read::<Tool>();
     if !matches!(tool, Tool::Train) {
-        return;
-    }
-
-    uiworld.write_or_default::<TrainTool>();
-    let res = uiworld.write::<TrainTool>();
-    if !matches!(res.kind, TrainToolKind::AddTrain) {
         return;
     }
 
