@@ -1,7 +1,7 @@
 use crate::gui::bulldozer::BulldozerState;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
-use crate::gui::specialbuilding::SpecialBuildingResource;
+use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::trainstation::{TrainTool, TrainToolKind};
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::ImguiWindows;
@@ -397,7 +397,7 @@ impl Gui {
 
         let building_select_w = 160.0;
         let registry = goria.read::<GoodsCompanyRegistry>();
-        let mut gbuildings = registry.descriptions.values().peekable();
+        let gbuildings = registry.descriptions.values().peekable();
 
         if matches!(*uiworld.read::<Tool>(), Tool::SpecialBuilding) {
             Window::new("Buildings")
@@ -413,31 +413,35 @@ impl Gui {
                 .build(ui, || {
                     let mut cur_build = uiworld.write::<SpecialBuildingResource>();
 
-                    if cur_build.opt.is_none() {
-                        let d = gbuildings.peek().unwrap();
-                        cur_build.opt =
-                            Some((d.bkind, d.bgen, d.size, d.asset_location.to_string()))
-                    }
-
-                    let cur_kind = cur_build.opt.as_ref().unwrap().0;
-
                     let mut picked_descr = None;
                     for descr in gbuildings {
-                        let tok = ui.push_style_var(StyleVar::Alpha(if descr.bkind == cur_kind {
-                            picked_descr = Some(descr);
-                            1.0
-                        } else {
-                            0.5
-                        }));
+                        let cur_kind = cur_build.opt.as_ref().map(|x| &*x.asset).unwrap_or("");
+
+                        let tok = ui.push_style_var(StyleVar::Alpha(
+                            if descr.asset_location == cur_kind {
+                                picked_descr = Some(descr);
+                                1.0
+                            } else {
+                                0.5
+                            },
+                        ));
                         const SCROLLBAR_W: f32 = 10.0;
                         if ui.button_with_size(&descr.name, [building_select_w - SCROLLBAR_W, 35.0])
+                            || cur_build.opt.is_none()
                         {
-                            cur_build.opt = Some((
-                                descr.bkind,
-                                descr.bgen,
-                                descr.size,
-                                descr.asset_location.to_string(),
-                            ));
+                            let bkind = descr.bkind;
+                            let bgen = descr.bgen;
+                            cur_build.opt = Some(SpecialBuildKind {
+                                road_snap: true,
+                                make: Box::new(move |args, commands| {
+                                    if let Some(rid) = args.road_id {
+                                        commands
+                                            .map_build_special_building(rid, args.obb, bkind, bgen);
+                                    }
+                                }),
+                                size: descr.size,
+                                asset: descr.asset_location.to_string(),
+                            });
                         }
                         tok.pop();
                     }
