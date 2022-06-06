@@ -3,13 +3,12 @@ use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 use std::ops::{Add, AddAssign, Mul, Sub, SubAssign};
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialOrd, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, PartialOrd, PartialEq, Default)]
 #[serde(from = "f32", into = "f32")]
 #[repr(transparent)]
-#[derive()]
 pub struct Degrees(pub f32);
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialOrd, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, PartialOrd, PartialEq, Default)]
 #[serde(from = "f32", into = "f32")]
 #[repr(transparent)]
 pub struct Radians(pub f32);

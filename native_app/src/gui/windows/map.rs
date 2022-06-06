@@ -23,7 +23,7 @@ pub fn map(
             uiworld.commands().map_load_paris();
         }
         ui.separator();
-        uiworld.write_or_default::<TestFieldProperties>();
+        uiworld.check_present(TestFieldProperties::default);
         let mut state = uiworld.write::<TestFieldProperties>();
 
         imgui::Drag::new("size")

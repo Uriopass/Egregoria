@@ -1,8 +1,8 @@
 use crate::gui::bulldozer::BulldozerState;
+use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
-use crate::gui::trainstation::{TrainTool, TrainToolKind};
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::ImguiWindows;
 use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
@@ -87,6 +87,28 @@ impl Gui {
     }
 
     pub fn toolbox(ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+        #[derive(Copy, Clone)]
+        pub enum Tab {
+            Hand,
+            Roadbuild,
+            Roadcurved,
+            Roadeditor,
+            Lotbrush,
+            Roadbuilding,
+            Bulldozer,
+            Train,
+        }
+        uiworld.check_present(|| Tab::Hand);
+
+        if uiworld
+            .read::<InputMap>()
+            .just_act
+            .contains(&InputAction::Close)
+        {
+            *uiworld.write::<Tool>() = Tool::Hand;
+            *uiworld.write::<Tab>() = Tab::Hand;
+        }
+
         let [w, h] = ui.io().display_size;
         let _tok1 = ui.push_style_var(StyleVar::WindowPadding([0.0, 0.0]));
         let _tok2 = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
@@ -96,13 +118,13 @@ impl Gui {
         let toolbox_w = 80.0;
 
         let tools = [
-            (UiTex::Road, Tool::RoadbuildStraight),
-            (UiTex::Curved, Tool::RoadbuildCurved),
-            (UiTex::RoadEdit, Tool::RoadEditor),
-            (UiTex::LotBrush, Tool::LotBrush),
-            (UiTex::Buildings, Tool::SpecialBuilding),
-            (UiTex::Bulldozer, Tool::Bulldozer),
-            (UiTex::AddTrain, Tool::Train),
+            (UiTex::Road, Tab::Roadbuild, Tool::RoadbuildStraight),
+            (UiTex::Curved, Tab::Roadcurved, Tool::RoadbuildCurved),
+            (UiTex::RoadEdit, Tab::Roadeditor, Tool::RoadEditor),
+            (UiTex::LotBrush, Tab::Lotbrush, Tool::LotBrush),
+            (UiTex::Buildings, Tab::Roadbuilding, Tool::SpecialBuilding),
+            (UiTex::Bulldozer, Tab::Bulldozer, Tool::Bulldozer),
+            (UiTex::AddTrain, Tab::Train, Tool::Train),
         ];
 
         Window::new("Toolbox")
@@ -115,11 +137,11 @@ impl Gui {
             .resizable(false)
             .always_auto_resize(true)
             .build(ui, || {
-                let cur_tool: &mut Tool = &mut uiworld.write::<Tool>();
+                let cur_tab = *uiworld.read::<Tab>();
 
-                for (name, tool) in &tools {
+                for (name, tab, default_tool) in &tools {
                     let _tok = ui.push_style_var(StyleVar::Alpha(
-                        if std::mem::discriminant(tool) == std::mem::discriminant(cur_tool) {
+                        if std::mem::discriminant(tab) == std::mem::discriminant(&cur_tab) {
                             1.0
                         } else {
                             0.6
@@ -132,13 +154,14 @@ impl Gui {
                     .frame_padding(0)
                     .build(ui)
                     {
-                        *cur_tool = *tool;
+                        uiworld.insert::<Tool>(*default_tool);
+                        uiworld.insert(*tab);
                     }
                 }
             });
 
         let spacing_left = ui.push_style_var(StyleVar::WindowPadding([4.0, 4.0]));
-        if matches!(*uiworld.read::<Tool>(), Tool::RoadEditor) {
+        if matches!(*uiworld.read::<Tab>(), Tab::Roadeditor) {
             let state = &mut *uiworld.write::<RoadEditorResource>();
             if let Some(ref mut v) = state.inspect {
                 let dirty = &mut state.dirty;
@@ -182,7 +205,7 @@ impl Gui {
         }
         spacing_left.pop();
 
-        if matches!(*uiworld.read::<Tool>(), Tool::Train) {
+        if matches!(*uiworld.read::<Tab>(), Tab::Train) {
             let rbw = 150.0;
             Window::new("Trains")
                 .size([rbw, 83.0], imgui::Condition::Appearing)
@@ -196,22 +219,34 @@ impl Gui {
                 .collapsible(false)
                 .resizable(false)
                 .build(ui, || {
-                    let mut traintool = uiworld.write_or_default::<TrainTool>();
-
                     if ui.button_with_size("Add train", [rbw, 30.0]) {
-                        traintool.kind = TrainToolKind::AddTrain;
+                        *uiworld.write::<Tool>() = Tool::Train;
                     }
 
                     if ui.button_with_size("Trainstation", [rbw, 30.0]) {
-                        traintool.kind = TrainToolKind::Trainstation;
+                        *uiworld.write::<Tool>() = Tool::SpecialBuilding;
+
+                        let h = LanePatternBuilder::new().rail(true).n_lanes(1).width();
+
+                        uiworld.write::<SpecialBuildingResource>().opt = Some(SpecialBuildKind {
+                            make: Box::new(move |args, commands| {
+                                let d = args.obb.axis()[0].z(0.0) * 0.5;
+                                let off = args.obb.axis()[1].z(0.0).normalize_to(h * 0.5 + 10.0);
+                                commands.map_build_trainstation(
+                                    args.mpos - d - off,
+                                    args.mpos + d - off,
+                                );
+                            }),
+                            w: h + 15.0,
+                            h: 230.0,
+                            asset: "assets/models/trainstation.glb".to_string(),
+                            road_snap: false,
+                        });
                     }
                 });
         }
 
-        if matches!(
-            *uiworld.read::<Tool>(),
-            Tool::RoadbuildStraight | Tool::RoadbuildCurved
-        ) {
+        if matches!(*uiworld.read::<Tab>(), Tab::Roadbuild | Tab::Roadcurved) {
             let rbw = 220.0;
             Window::new("Road Properties")
                 .size([rbw, 380.0], imgui::Condition::Appearing)
@@ -325,7 +360,7 @@ impl Gui {
 
         let brushes = [("Residential", LotKind::Residential)];
 
-        if matches!(*uiworld.read::<Tool>(), Tool::LotBrush) {
+        if matches!(*uiworld.read::<Tab>(), Tab::Lotbrush) {
             let lbw = 130.0;
             Window::new("Lot Brush")
                 .size(
@@ -367,7 +402,7 @@ impl Gui {
                 });
         }
 
-        if matches!(*uiworld.read::<Tool>(), Tool::Bulldozer) {
+        if matches!(*uiworld.read::<Tab>(), Tab::Bulldozer) {
             let lbw = 80.0;
             Window::new("Bulldozer")
                 .size_constraints([lbw, 0.0], [lbw, 1000.0])
@@ -399,7 +434,7 @@ impl Gui {
         let registry = goria.read::<GoodsCompanyRegistry>();
         let gbuildings = registry.descriptions.values().peekable();
 
-        if matches!(*uiworld.read::<Tool>(), Tool::SpecialBuilding) {
+        if matches!(*uiworld.read::<Tab>(), Tab::Roadbuilding) {
             Window::new("Buildings")
                 .size_constraints([building_select_w, 0.0], [building_select_w, h * 0.5])
                 .position(
@@ -439,7 +474,8 @@ impl Gui {
                                             .map_build_special_building(rid, args.obb, bkind, bgen);
                                     }
                                 }),
-                                size: descr.size,
+                                w: descr.size,
+                                h: descr.size,
                                 asset: descr.asset_location.to_string(),
                             });
                         }

@@ -4,7 +4,6 @@ use hecs::Entity;
 use imgui::TextureId;
 use serde::{Deserialize, Serialize};
 
-use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use roadbuild::RoadBuildResource;
@@ -20,7 +19,6 @@ pub mod roadeditor;
 pub mod selectable;
 pub mod specialbuilding;
 pub mod topgui;
-pub mod trainstation;
 
 pub mod addtrain;
 pub mod inputmap;
@@ -39,9 +37,7 @@ pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     roadeditor::roadeditor(goria, uiworld);
     selectable::selectable(goria, uiworld);
     specialbuilding::specialbuilding(goria, uiworld);
-    trainstation::trainstation(goria, uiworld);
     addtrain::addtrain(goria, uiworld);
-    hand_reset(uiworld);
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -56,14 +52,6 @@ impl Default for InspectedEntity {
             e: None,
             dist2: 0.0,
         }
-    }
-}
-
-#[profiling::function]
-pub fn hand_reset(uiworld: &mut UiWorld) {
-    let info = uiworld.read::<KeyboardInfo>();
-    if info.just_pressed.contains(&KeyCode::Escape) {
-        *uiworld.write::<Tool>() = Tool::Hand;
     }
 }
 

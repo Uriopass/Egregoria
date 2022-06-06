@@ -46,10 +46,6 @@ impl UiWorld {
         self.world.query_one_mut::<&mut T>(e).ok()
     }
 
-    pub fn write_or_default<T: Resource + Default>(&mut self) -> RefMut<T> {
-        self.resources.entry::<T>().or_default()
-    }
-
     pub fn try_write<T: Resource>(&self) -> Option<RefMut<T>> {
         self.resources.get_mut().ok()
     }
@@ -68,6 +64,10 @@ impl UiWorld {
 
     pub fn insert<T: Resource>(&mut self, res: T) {
         self.resources.insert(res);
+    }
+
+    pub fn check_present<T: Resource>(&mut self, res: fn() -> T) {
+        self.resources.entry::<T>().or_insert_with(res);
     }
 
     fn load_from_disk(&mut self) {
