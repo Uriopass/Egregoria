@@ -375,7 +375,7 @@ dependencies = [
  "lazy_static",
  "log",
  "log-panics",
- "miniz_oxide 0.5.1",
+ "miniz_oxide 0.3.7",
  "serde",
  "serde_json",
 ]
