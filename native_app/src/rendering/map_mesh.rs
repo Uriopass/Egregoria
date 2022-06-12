@@ -26,7 +26,6 @@ pub struct MapMeshHandler {
 struct MapBuilders {
     buildsprites: FastMap<BuildingKind, SpriteBatchBuilder>,
     buildmeshes: FastMap<BuildingKind, InstancedMeshBuilder>,
-    trainstations: InstancedMeshBuilder,
     houses_mesh: MeshBuilder,
     arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: MeshBuilder,
@@ -38,7 +37,6 @@ pub struct MapMeshes {
     crosswalks: Option<Mesh>,
     bsprites: MultiSpriteBatch,
     bmeshes: Vec<InstancedMesh>,
-    trainstation: Option<InstancedMesh>,
     houses_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
 }
@@ -66,10 +64,11 @@ impl MapMeshHandler {
             .descriptions
             .values()
             .map(|descr| (descr.asset_location, descr.bkind))
-            .chain(std::iter::once((
+            .chain(Some((
                 "rail_fret_station.glb",
                 BuildingKind::RailFretStation,
             )))
+            .chain(Some(("trainstation.glb", BuildingKind::TrainStation)))
         {
             if !asset.ends_with(".glb") {
                 continue;
@@ -91,7 +90,6 @@ impl MapMeshHandler {
             tess_map: Tesselator::new(None, 15.0),
             houses_mesh: MeshBuilder::new(),
             buildmeshes,
-            trainstations: InstancedMeshBuilder::new(load_mesh("trainstation.glb", gfx).unwrap()),
         };
 
         Self {
@@ -108,7 +106,6 @@ impl MapMeshHandler {
             self.builders.arrows(map);
             self.builders.crosswalks(map);
             self.builders.bspritesmesh(map);
-            self.builders.trainstation(map);
             self.builders.houses_mesh(map);
 
             self.last_config = common::config_id();
@@ -133,7 +130,6 @@ impl MapMeshHandler {
                     .values_mut()
                     .flat_map(|x| x.build(gfx))
                     .collect(),
-                trainstation: self.builders.trainstations.build(gfx),
                 houses_mesh: self.builders.houses_mesh.build(gfx, gfx.palette()),
                 arrows: self.builders.arrow_builder.build(gfx),
             };
@@ -229,28 +225,6 @@ impl MapBuilders {
                     });
                 }
             }
-        }
-    }
-
-    fn trainstation(&mut self, map: &Map) {
-        self.trainstations.instances.clear();
-
-        let inter = map.intersections();
-        let roads = map.roads();
-
-        for station in map.trainstations().values() {
-            let lefti = inter[station.left].pos;
-            let righti = inter[station.right].pos;
-            let rw = roads[station.track].width;
-
-            let center = (lefti + righti) * 0.5;
-            let dir = (righti - lefti).normalize();
-
-            self.trainstations.instances.push(MeshInstance {
-                pos: center - dir.perp_up() * (rw * 0.5 + 10.5),
-                dir,
-                tint: LinearColor::WHITE,
-            });
         }
     }
 
@@ -528,9 +502,6 @@ impl Drawable for MapMeshes {
         if let Some(ref v) = self.crosswalks {
             v.draw(gfx, rp);
         }
-        if let Some(ref v) = self.trainstation {
-            v.draw(gfx, rp);
-        }
     }
 
     fn draw_depth<'a>(
@@ -559,9 +530,6 @@ impl Drawable for MapMeshes {
             deferdepth!(v);
         }
         if let Some(ref v) = self.crosswalks {
-            deferdepth!(v);
-        }
-        if let Some(ref v) = self.trainstation {
             deferdepth!(v);
         }
     }

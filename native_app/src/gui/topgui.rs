@@ -271,6 +271,7 @@ impl Gui {
                                     BuildingGen::NoWalkway {
                                         door_pos: args.obb.center(),
                                     },
+                                    vec![],
                                 );
                             }),
                             w: 200.0,
@@ -505,7 +506,12 @@ impl Gui {
                             cur_build.opt = Some(SpecialBuildKind {
                                 road_snap: true,
                                 make: Box::new(move |args, commands| {
-                                    commands.map_build_special_building(args.obb, bkind, bgen);
+                                    commands.map_build_special_building(
+                                        args.obb,
+                                        bkind,
+                                        bgen,
+                                        vec![],
+                                    );
                                 }),
                                 w: descr.size,
                                 h: descr.size,
