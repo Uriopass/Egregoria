@@ -2,7 +2,7 @@ use crate::Egregoria;
 use hecs::Entity;
 use map_model::{
     BuildingGen, BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LightPolicy, LotID,
-    Map, MapProject, RoadID, TurnPolicy,
+    Map, MapProject, RoadID, StraightRoadGen, TurnPolicy,
 };
 use serde::{Deserialize, Serialize};
 
@@ -36,11 +36,10 @@ pub enum WorldCommand {
     MapRemoveRoad(RoadID),
     MapRemoveBuilding(BuildingID),
     MapBuildHouse(LotID),
-    MapBuildTrainstation(Vec3, Vec3),
     AddTrain(f32, u32, LaneID),
     MapMakeConnection(MapProject, MapProject, Option<Vec2>, LanePattern),
     MapUpdateIntersectionPolicy(IntersectionID, TurnPolicy, LightPolicy),
-    MapBuildSpecialBuilding(OBB, BuildingKind, BuildingGen),
+    MapBuildSpecialBuilding(OBB, BuildingKind, BuildingGen, Vec<StraightRoadGen>),
     MapLoadParis,
     MapLoadTestField(Vec2, u32, f32),
     ResetSave,
@@ -52,7 +51,7 @@ use crate::economy::Government;
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::time::GameTime;
 use crate::vehicles::trains::{spawn_train, RailWagonKind};
-use geom::{Transform, Vec2, Vec3, OBB};
+use geom::{Transform, Vec2, OBB};
 use WorldCommand::*;
 
 impl WorldCommands {
@@ -76,10 +75,6 @@ impl WorldCommands {
         self.commands.push(MapLoadTestField(pos, size, spacing))
     }
 
-    pub fn map_build_trainstation(&mut self, left: Vec3, right: Vec3) {
-        self.commands.push(MapBuildTrainstation(left, right))
-    }
-
     pub fn update_transform(&mut self, e: Entity, trans: Transform) {
         self.commands.push(UpdateTransform(e, trans))
     }
@@ -96,8 +91,15 @@ impl WorldCommands {
         self.commands.push(AddTrain(dist, n_wagons, laneid))
     }
 
-    pub fn map_build_special_building(&mut self, obb: OBB, kind: BuildingKind, gen: BuildingGen) {
-        self.commands.push(MapBuildSpecialBuilding(obb, kind, gen))
+    pub fn map_build_special_building(
+        &mut self,
+        obb: OBB,
+        kind: BuildingKind,
+        gen: BuildingGen,
+        attachments: Vec<StraightRoadGen>,
+    ) {
+        self.commands
+            .push(MapBuildSpecialBuilding(obb, kind, gen, attachments))
     }
 
     pub fn map_remove_intersection(&mut self, id: IntersectionID) {
@@ -145,9 +147,6 @@ impl WorldCommand {
             MapRemoveIntersection(id) => goria.map_mut().remove_intersection(id),
             MapRemoveRoad(id) => drop(goria.map_mut().remove_road(id)),
             MapRemoveBuilding(id) => drop(goria.map_mut().remove_building(id)),
-            MapBuildTrainstation(left, right) => {
-                goria.map_mut().build_trainstation(left, right);
-            }
             MapBuildHouse(id) => {
                 if let Some(build) = goria.map_mut().build_house(id) {
                     let mut infos = goria.write::<BuildingInfos>();
@@ -165,8 +164,12 @@ impl WorldCommand {
                     i.turn_policy = tp;
                 })
             }
-            MapBuildSpecialBuilding(obb, kind, gen) => {
-                if let Some(id) = goria.write::<Map>().build_special_building(&obb, kind, gen) {
+            MapBuildSpecialBuilding(obb, kind, gen, ref attachments) => {
+                if let Some(id) =
+                    goria
+                        .write::<Map>()
+                        .build_special_building(&obb, kind, gen, attachments)
+                {
                     goria.write::<BuildingInfos>().insert(id);
                 }
             }

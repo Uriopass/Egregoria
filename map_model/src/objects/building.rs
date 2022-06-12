@@ -1,5 +1,5 @@
 use crate::procgen::ColoredMesh;
-use crate::{Buildings, SpatialMap, Terrain};
+use crate::{Buildings, LanePattern, RoadID, SpatialMap, Terrain};
 use geom::{Color, Vec2, Vec3, OBB};
 use imgui_inspect::debug_inspect_impl;
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,7 @@ pub enum BuildingKind {
     House,
     GoodsCompany(u32),
     RailFretStation,
+    TrainStation,
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -30,6 +31,13 @@ pub enum BuildingGen {
     },
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StraightRoadGen {
+    pub from: Vec3,
+    pub to: Vec3,
+    pub pattern: LanePattern,
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Building {
     pub id: BuildingID,
@@ -38,6 +46,7 @@ pub struct Building {
     pub mesh: ColoredMesh,
     pub obb: OBB,
     pub height: f32,
+    pub attachments: Vec<RoadID>,
 }
 
 impl Building {
@@ -48,6 +57,7 @@ impl Building {
         obb: OBB,
         kind: BuildingKind,
         gen: BuildingGen,
+        attachments: Vec<RoadID>,
     ) -> Option<BuildingID> {
         let at = obb.center().z(terrain.height(obb.center())?);
         let axis = (obb.corners[1] - obb.corners[0]).normalize();
@@ -95,6 +105,7 @@ impl Building {
                 door_pos,
                 obb,
                 height: at.z,
+                attachments,
             }
         }))
     }

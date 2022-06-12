@@ -2,7 +2,8 @@ use crate::serializing::SerializedMap;
 use crate::{
     Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
-    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain, TrainStation, TrainStationID,
+    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, StraightRoadGen, Terrain, TrainStation,
+    TrainStationID,
 };
 use geom::OBB;
 use geom::{pseudo_angle, Circle, Intersect, Shape, Spline3, Vec2, Vec3};
@@ -30,7 +31,6 @@ pub struct Map {
     pub(crate) intersections: Intersections,
     pub(crate) buildings: Buildings,
     pub(crate) lots: Lots,
-    pub(crate) trainstations: TrainStations,
     pub(crate) spatial_map: SpatialMap,
     pub terrain: Terrain,
     pub parking: ParkingSpots,
@@ -58,7 +58,6 @@ impl Map {
             terrain: Terrain::default(),
             dirt_id: Wrapping(1),
             spatial_map: SpatialMap::default(),
-            trainstations: Default::default(),
         }
     }
 
@@ -152,6 +151,7 @@ impl Map {
         obb: &OBB,
         kind: BuildingKind,
         gen: BuildingGen,
+        attachments_gen: &[StraightRoadGen],
     ) -> Option<BuildingID> {
         if self.building_overlaps(*obb) {
             return None;
@@ -174,6 +174,16 @@ impl Map {
         self.terrain
             .remove_near_filter(obb.bbox(), |p| tree_remove_mask.contains(p));
 
+        let mut attachments = vec![];
+        for attachment in attachments_gen {
+            let fromi = self.add_intersection(attachment.from);
+            let toi = self.add_intersection(attachment.to);
+            attachments.push(
+                self.connect(fromi, toi, &attachment.pattern, RoadSegmentKind::Straight)
+                    .unwrap(),
+            );
+        }
+
         let v = Building::make(
             &mut self.buildings,
             &mut self.spatial_map,
@@ -181,43 +191,11 @@ impl Map {
             *obb,
             kind,
             gen,
+            attachments,
         );
         #[cfg(debug_assertions)]
         self.check_invariants();
         v
-    }
-
-    pub fn build_trainstation(&mut self, left: Vec3, right: Vec3) -> TrainStationID {
-        info!("build_trainstation {:?} {:?}", left, right);
-
-        self.dirt_id += Wrapping(1);
-
-        let lefti =
-            Intersection::make(&mut self.intersections, &mut self.spatial_map, left.up(0.3));
-        let righti = Intersection::make(
-            &mut self.intersections,
-            &mut self.spatial_map,
-            right.up(0.3),
-        );
-
-        let track = self
-            .connect(
-                lefti,
-                righti,
-                &LanePattern {
-                    lanes_forward: vec![(LaneKind::Rail, 30.0)],
-                    lanes_backward: vec![(LaneKind::Rail, 30.0)],
-                },
-                RoadSegmentKind::Straight,
-            )
-            .unwrap();
-
-        let station = TrainStation::make(&mut self.trainstations, lefti, righti, track);
-
-        #[cfg(debug_assertions)]
-        self.check_invariants();
-
-        station
     }
 
     pub fn build_house(&mut self, id: LotID) -> Option<BuildingID> {
@@ -235,6 +213,7 @@ impl Map {
             lot.shape,
             BuildingKind::House,
             BuildingGen::House,
+            vec![],
         );
         #[cfg(debug_assertions)]
         self.check_invariants();
@@ -262,7 +241,8 @@ impl Map {
         }
 
         if road.lanes_iter().any(|(_, v)| v.is_rail()) {
-            self.trainstations.retain(|_, t| t.track != road_id);
+            self.buildings
+                .retain(|_, t| !t.attachments.contains(&road_id));
         }
 
         let smap = &mut self.spatial_map;
@@ -461,6 +441,7 @@ impl Map {
         Some(id)
     }
 
+    /// Returns None if one of the intersections don't exist
     pub(crate) fn connect(
         &mut self,
         src_id: IntersectionID,
@@ -572,9 +553,6 @@ impl Map {
     }
     pub fn buildings(&self) -> &Buildings {
         &self.buildings
-    }
-    pub fn trainstations(&self) -> &TrainStations {
-        &self.trainstations
     }
     pub fn lots(&self) -> &Lots {
         &self.lots
