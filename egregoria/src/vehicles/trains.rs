@@ -79,6 +79,10 @@ pub fn wagons_positions(
     points.points_dirs_along(positions)
 }
 
+pub fn train_length(n_wagons: u32) -> f32 {
+    1.0 + (n_wagons + 1) as f32 * WAGON_INTERLENGTH
+}
+
 pub fn spawn_train(
     goria: &mut Egregoria,
     dist: f32,
@@ -103,10 +107,10 @@ pub fn spawn_train(
         .collect::<Vec<_>>();
     points.reverse();
 
-    let train_length = 1.0 + (n_wagons + 1) as f32 * WAGON_INTERLENGTH;
+    let trainlength = train_length(n_wagons);
 
     let leader = ItineraryLeader {
-        past: Polyline3Queue::new(points.into_iter(), locopos, train_length + 20.0),
+        past: Polyline3Queue::new(points.into_iter(), locopos, trainlength + 20.0),
     };
 
     let loco = world.spawn((
@@ -117,7 +121,7 @@ pub fn spawn_train(
             max_speed: 50.0,
             acc_force: 1.0,
             dec_force: 2.5,
-            length: train_length,
+            length: trainlength,
         },
         LocomotiveReservation {
             cur_travers_dist: dist,
