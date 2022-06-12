@@ -363,7 +363,7 @@ impl MapBuilders {
         for (v, dir) in cut.equipoints_dir(1.0, !limits) {
             let up = vec3(v.x, v.y, v.z + 0.04);
             tess.draw_polyline_full(
-                std::array::IntoIter::new([up, up + dir * 0.1]),
+                IntoIterator::into_iter([up, up + dir * 0.1]),
                 dir.xy(),
                 dir.xy(),
                 2.0,
