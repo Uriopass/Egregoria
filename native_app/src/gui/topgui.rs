@@ -17,7 +17,10 @@ use imgui::{StyleColor, StyleVar, Ui, Window};
 use imgui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
 };
-use map_model::{BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, TurnPolicy};
+use map_model::{
+    BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, StraightRoadGen,
+    TurnPolicy,
+};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
@@ -265,13 +268,30 @@ impl Gui {
 
                         uiworld.write::<SpecialBuildingResource>().opt = Some(SpecialBuildKind {
                             make: Box::new(move |args, commands| {
+                                let obb = args.obb;
+                                let c = obb.center().z(args.mpos.z + 0.3);
+
+                                let [offx, offy] = obb.axis().map(|x| x.normalize().z(0.0));
+
+                                let mut tracks = vec![];
+
+                                let pat =
+                                    LanePatternBuilder::new().rail(true).one_way(true).build();
+
+                                for i in 0..4 {
+                                    tracks.push(StraightRoadGen {
+                                        from: c - offx * (15.0 + i as f32 * 20.0) - offy * 100.0,
+                                        to: c - offx * (15.0 + i as f32 * 20.0) + offy * 100.0,
+                                        pattern: pat.clone(),
+                                    });
+                                }
                                 commands.map_build_special_building(
                                     args.obb,
                                     BuildingKind::RailFretStation,
                                     BuildingGen::NoWalkway {
                                         door_pos: args.obb.center(),
                                     },
-                                    vec![],
+                                    tracks,
                                 );
                             }),
                             w: 200.0,

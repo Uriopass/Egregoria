@@ -175,7 +175,7 @@ impl WorldCommand {
             }
             SetGameTime(gt) => *goria.write::<GameTime>() = gt,
             AddTrain(dist, n_wagons, lane) => {
-                spawn_train(goria, dist, n_wagons, lane, RailWagonKind::Passenger);
+                spawn_train(goria, dist, n_wagons, lane, RailWagonKind::Fret);
             }
             MapLoadParis => map_model::procgen::load_parismap(&mut *goria.map_mut()),
             MapLoadTestField(pos, size, spacing) => {
