@@ -13,7 +13,7 @@ egregoria     = { path = "../egregoria" }
 geom          = { path = "../geom" }
 wgpu_engine   = { path = "../wgpu_engine" }
 common        = { path = "../common" }
-networking    = { path = "../networking" }
+networking    = { path = "../networking", optional=true }
 goria_version = { path = "../goria_version" }
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
@@ -39,6 +39,11 @@ rayon         = "1.5.3"
 profiling     = "1.0.1"
 include_dir   = "0.7.2"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies.imgui]
+version = "0.8"
+features = ["wasm"]
+
 [features]
 default = []
 enable_profile = ["profiling/profile-with-tracy"]
+multiplayer = ["networking"]

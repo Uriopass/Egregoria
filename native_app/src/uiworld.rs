@@ -91,6 +91,7 @@ impl UiWorld {
 pub struct ReceivedCommands(WorldCommands);
 
 impl ReceivedCommands {
+    #[allow(dead_code)]
     pub fn new(commands: WorldCommands) -> Self {
         Self(commands)
     }

@@ -15,30 +15,26 @@ use crate::audio::GameAudio;
 use crate::context::Context;
 use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::windows::debug::DebugObjs;
-use crate::gui::windows::network::NetworkConnectionInfo;
 use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, Gui, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
-use crate::network::NetworkState;
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler3D, InstancedRender, RoadRenderer};
-use crate::uiworld::{ReceivedCommands, UiWorld};
+use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
-use common::timestep::Timestep;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::utils::scheduler::SeqSchedule;
-use networking::{Frame, PollResult, ServerPollResult};
 use wgpu_engine::terrain::TerrainRender;
 
 const CSIZE: usize = map_model::CHUNK_SIZE as usize;
 const CRESO: usize = map_model::CHUNK_RESOLUTION as usize;
 
 pub struct State {
-    goria: Arc<RwLock<Egregoria>>,
+    pub goria: Arc<RwLock<Egregoria>>,
 
-    uiw: UiWorld,
+    pub uiw: UiWorld,
 
-    game_schedule: SeqSchedule,
+    pub game_schedule: SeqSchedule,
 
     pub camera: CameraHandler3D,
 
@@ -124,7 +120,7 @@ impl State {
             self.reset();
         }
 
-        self.goria_update();
+        crate::network::goria_update(self);
 
         self.uiw.write::<Timings>().all.add_value(ctx.delta as f32);
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
@@ -176,103 +172,6 @@ impl State {
         }
 
         self.terrain.update_borders(&ctx.gfx, &|p| ter.height(p));
-    }
-
-    pub fn goria_update(&mut self) {
-        let mut goria = unwrap_orr!(self.goria.try_write(), return); // mut for tick
-
-        let timewarp = self.uiw.read::<Settings>().time_warp;
-        let commands = std::mem::take(&mut *self.uiw.write::<WorldCommands>());
-        *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
-
-        let mut net_state = self.uiw.write::<NetworkState>();
-
-        let mut inputs_to_apply = None;
-        match &mut *net_state {
-            NetworkState::Singleplayer(ref mut step) => {
-                let sched = &mut self.game_schedule;
-                let mut timings = self.uiw.write::<Timings>();
-
-                let has_commands = !commands.is_empty();
-                let mut commands_once = Some(commands.clone());
-                step.prepare_frame(timewarp);
-                while step.tick() || (has_commands && commands_once.is_some()) {
-                    let t = goria.tick(sched, &commands_once.take().unwrap_or_default());
-                    timings.world_update.add_value(t.as_secs_f32());
-                }
-
-                if commands_once.is_none() {
-                    *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(commands);
-                } else {
-                    *self.uiw.write::<WorldCommands>() = commands;
-                }
-            }
-            NetworkState::Server(ref mut server) => {
-                let polled =
-                    server
-                        .get_mut()
-                        .unwrap()
-                        .poll(&goria, Frame(goria.get_tick()), Some(commands));
-                match polled {
-                    ServerPollResult::Wait(commands) => {
-                        if let Some(commands) = commands {
-                            *self.uiw.write::<WorldCommands>() = commands;
-                        }
-                    }
-                    ServerPollResult::Input(inputs) => {
-                        inputs_to_apply = Some(inputs);
-                    }
-                }
-            }
-            NetworkState::Client(ref mut client) => {
-                let polled = client.get_mut().unwrap().poll(commands);
-                match polled {
-                    PollResult::Wait(commands) => {
-                        *self.uiw.write::<WorldCommands>() = commands;
-                    }
-                    PollResult::Input(inputs) => {
-                        inputs_to_apply = Some(inputs);
-                    }
-                    PollResult::GameWorld(commands, prepared_goria) => {
-                        *goria = prepared_goria;
-                        *self.uiw.write::<WorldCommands>() = commands;
-                    }
-                    PollResult::Disconnect(reason) => {
-                        log::error!(
-                            "got disconnected :-( continuing with server world but it's sad"
-                        );
-                        *net_state = NetworkState::Singleplayer(Timestep::default());
-                        self.uiw.write::<NetworkConnectionInfo>().error = reason;
-                    }
-                }
-            }
-        }
-
-        if let Some(inputs) = inputs_to_apply {
-            let mut merged = WorldCommands::default();
-            for frame_commands in inputs {
-                assert_eq!(frame_commands.frame.0, goria.get_tick() + 1);
-                let commands: WorldCommands = frame_commands
-                    .inputs
-                    .iter()
-                    .map(|x| x.inp.clone())
-                    .collect();
-                let t = goria.tick(&mut self.game_schedule, &commands);
-                self.uiw
-                    .write::<Timings>()
-                    .world_update
-                    .add_value(t.as_secs_f32());
-                merged.merge(
-                    &frame_commands
-                        .inputs
-                        .into_iter()
-                        .filter(|x| x.sent_by_me)
-                        .map(|x| x.inp)
-                        .collect::<WorldCommands>(),
-                );
-            }
-            *self.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(merged);
-        }
     }
 
     #[profiling::function]

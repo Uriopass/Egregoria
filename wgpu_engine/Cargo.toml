@@ -20,5 +20,9 @@ itertools = { version = "0.10.0", default-features = false }
 profiling = "1.0.1"
 rayon     = "1.5"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
+version = "0.12"
+features = ["webgl"]
+
 [features]
 default = []
