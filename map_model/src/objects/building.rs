@@ -17,6 +17,7 @@ pub enum BuildingKind {
     GoodsCompany(u32),
     RailFretStation,
     TrainStation,
+    ExternalTrading,
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]

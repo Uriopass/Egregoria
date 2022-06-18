@@ -64,11 +64,11 @@ impl MapMeshHandler {
             .descriptions
             .values()
             .map(|descr| (descr.asset_location, descr.bkind))
-            .chain(Some((
-                "rail_fret_station.glb",
-                BuildingKind::RailFretStation,
-            )))
-            .chain(Some(("trainstation.glb", BuildingKind::TrainStation)))
+            .chain([
+                ("rail_fret_station.glb", BuildingKind::RailFretStation),
+                ("trainstation.glb", BuildingKind::TrainStation),
+                ("external_trading.glb", BuildingKind::ExternalTrading),
+            ])
         {
             if !asset.ends_with(".glb") {
                 continue;

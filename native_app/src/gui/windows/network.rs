@@ -1,22 +1,20 @@
-use crate::network::{Client, NetworkState, Server};
+use crate::network::NetworkState;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
 use imgui::Ui;
-use networking::{ConnectConf, Frame, ServerConfiguration, VirtualClientConf};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
-use std::net::ToSocketAddrs;
-use std::sync::Mutex;
 
 pub struct NetworkConnectionInfo {
-    name: String,
-    ip: String,
+    pub name: String,
+    pub ip: String,
     pub error: String,
     show_hashes: bool,
     hashes: BTreeMap<String, u64>,
 }
 
+#[cfg(feature = "multiplayer")]
 pub fn network(
     window: imgui::Window<'_, &'static str>,
     ui: &Ui<'_>,
@@ -43,7 +41,7 @@ pub fn network(
                 }
 
                 if ui.small_button("Start server") {
-                    if let Some(server) = start_server(&mut *info, goria) {
+                    if let Some(server) = crate::network::start_server(&mut *info, goria) {
                         *state = NetworkState::Server(server);
                     }
                 }
@@ -51,7 +49,7 @@ pub fn network(
                 ui.separator();
                 ui.input_text("IP", &mut info.ip).build();
                 if ui.small_button("Connect") {
-                    if let Some(c) = start_client(&mut info) {
+                    if let Some(c) = crate::network::start_client(&mut info) {
                         *state = NetworkState::Client(c);
                     }
                 }
@@ -82,65 +80,6 @@ fn show_hashes(ui: &Ui<'_>, goria: &Egregoria, info: &mut NetworkConnectionInfo)
     for (name, hash) in &info.hashes {
         ui.text(format!("{}: {}", name, hash));
     }
-}
-
-fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<Server> {
-    let server = match networking::Server::start(ServerConfiguration {
-        start_frame: Frame(goria.get_tick()),
-        period: common::timestep::UP_DT,
-        port: None,
-        virtual_client: Some(VirtualClientConf {
-            name: info.name.to_string(),
-        }),
-        version: goria_version::VERSION.to_string(),
-        always_run: true,
-    }) {
-        Ok(x) => x,
-        Err(e) => {
-            info.error = format!("{}", e);
-            return None;
-        }
-    };
-
-    Some(Mutex::new(server))
-}
-
-fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
-    let mut s = info.ip.to_string();
-    if !s.contains(':') {
-        s += ":80"
-    }
-    let parsed_addr = match s.to_socket_addrs() {
-        Ok(x) => match x.into_iter().next() {
-            Some(x) => x,
-            None => {
-                info.error = "no ip found with given address".to_string();
-                return None;
-            }
-        },
-        Err(e) => {
-            info.error = format!("{}", e);
-            return None;
-        }
-    };
-
-    let port = parsed_addr.port();
-
-    let client = match networking::Client::connect(ConnectConf {
-        name: info.name.clone(),
-        addr: parsed_addr.ip(),
-        port: if port != 80 { Some(port) } else { None },
-        frame_buffer_advance: 8,
-        version: goria_version::VERSION.to_string(),
-    }) {
-        Ok(x) => x,
-        Err(e) => {
-            info.error = format!("{}", e);
-            return None;
-        }
-    };
-
-    Some(Mutex::new(client))
 }
 
 impl Default for NetworkConnectionInfo {

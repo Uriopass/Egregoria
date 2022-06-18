@@ -8,6 +8,7 @@ mod config;
 pub mod debug;
 mod economy;
 mod map;
+#[cfg(feature = "multiplayer")]
 pub mod network;
 pub mod settings;
 
@@ -60,6 +61,7 @@ impl Default for ImguiWindows {
         s.insert("Config", config::config, false);
         s.insert("Debug", debug::debug, false);
         s.insert("Settings", settings::settings, false);
+        #[cfg(feature = "multiplayer")]
         s.insert("Network", network::network, false);
         s
     }

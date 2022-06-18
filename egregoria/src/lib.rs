@@ -11,7 +11,7 @@ use crate::souls::human::HumanDecision;
 use crate::vehicles::trains::{Locomotive, LocomotiveReservation, RandomLocomotive};
 use crate::vehicles::Vehicle;
 use common::saveload::Encoder;
-use geom::{Transform, Vec3};
+use geom::{vec3, Transform, Vec2, Vec3, OBB};
 use hecs::{Component, Entity, World};
 use map_model::{Map, Terrain};
 use pedestrians::Location;
@@ -121,6 +121,30 @@ impl Egregoria {
             let size = 50;
             goria.map_mut().terrain = Terrain::new(size, size);
             info!("took {}s", t.elapsed().as_secs_f32());
+
+            let c = vec3(3000.0 + 72.2 / 2.0, 200.0 / 2.0 + 1.0, 0.3);
+            let obb = OBB::new(c.xy(), -Vec2::X, 72.2, 200.0);
+
+            let [offy, offx] = obb.axis().map(|x| x.normalize().z(0.0));
+
+            let mut tracks = vec![];
+
+            let pat = map_model::LanePatternBuilder::new().rail(true).build();
+
+            for i in -1..=1 {
+                tracks.push(map_model::StraightRoadGen {
+                    from: c - offx * (i as f32 * 21.0) - offy * 100.0,
+                    to: c - offx * (i as f32 * 21.0) + offy * 120.0,
+                    pattern: pat.clone(),
+                });
+            }
+
+            goria.map_mut().build_special_building(
+                &obb,
+                map_model::BuildingKind::ExternalTrading,
+                map_model::BuildingGen::NoWalkway { door_pos: c.xy() },
+                &tracks,
+            );
         }
 
         goria

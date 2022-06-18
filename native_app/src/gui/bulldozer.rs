@@ -4,7 +4,7 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use imgui_inspect_derive::Inspect;
-use map_model::{Map, ProjectFilter, ProjectKind};
+use map_model::{BuildingKind, Map, ProjectFilter, ProjectKind};
 
 #[derive(Default, Inspect)]
 pub struct BulldozerState {
@@ -57,7 +57,11 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
                 commands.map_remove_road(id);
             }
             ProjectKind::Building(id) => {
-                commands.map_remove_building(id);
+                if let Some(b) = map.buildings().get(id) {
+                    if !matches!(b.kind, BuildingKind::ExternalTrading) {
+                        commands.map_remove_building(id);
+                    }
+                }
             }
             ProjectKind::Ground | ProjectKind::Lot(_) => {}
         }

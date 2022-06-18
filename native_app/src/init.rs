@@ -6,7 +6,6 @@ use crate::gui::roadbuild::RoadBuildResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::debug::{DebugObjs, DebugState};
-use crate::gui::windows::network::NetworkConnectionInfo;
 use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, InspectedEntity, Tool};
 use crate::input::{KeyboardInfo, MouseInfo};
@@ -23,7 +22,8 @@ pub static SOUNDS_LIST: include_dir::Dir = include_dir::include_dir!("assets/sou
 pub fn init() {
     egregoria::init::init();
     register_resource::<Settings>("settings");
-    register_resource::<NetworkConnectionInfo>("netinfo");
+    #[cfg(feature = "multiplayer")]
+    register_resource::<crate::gui::windows::network::NetworkConnectionInfo>("netinfo");
     register_resource::<LotBrushResource>("lot_brush");
 
     register_resource_noserialize::<MouseInfo>();
