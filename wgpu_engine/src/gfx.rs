@@ -153,8 +153,7 @@ impl GfxContext {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER
-                        | wgpu::Features::SPIRV_SHADER_PASSTHROUGH,
+                    features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER,
                     limits: wgpu::Limits::default(),
                 },
                 None,
