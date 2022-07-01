@@ -21,6 +21,8 @@ mod network;
 mod rendering;
 
 fn main() {
+    profiling::register_thread!("Main Thread");
+
     MyLog::init();
     init::init();
 

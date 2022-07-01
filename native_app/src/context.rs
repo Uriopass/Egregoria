@@ -85,7 +85,6 @@ impl Context {
         let mut frame: Option<_> = None;
         let mut new_size: Option<PhysicalSize<u32>> = None;
         let mut last_update = Instant::now();
-        profiling::register_thread!("Main Thread");
 
         self.el.take().unwrap().run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Poll;
