@@ -9,15 +9,46 @@ impl Default for NetworkState {
 
 #[cfg(not(feature = "multiplayer"))]
 mod inner {
-    use crate::game_loop::State;
+    use crate::game_loop::{State, Timings};
+    use crate::gui::windows::settings::Settings;
+    use crate::uiworld::ReceivedCommands;
     use common::timestep::Timestep;
+    use egregoria::engine_interaction::WorldCommands;
 
     #[allow(clippy::large_enum_variant)]
     pub enum NetworkState {
         Singleplayer(Timestep),
     }
 
-    pub fn goria_update(_state: &mut State) {}
+    pub fn goria_update(state: &mut State) {
+        let mut goria = unwrap_orr!(state.goria.try_write(), return); // mut for tick
+
+        let timewarp = state.uiw.read::<Settings>().time_warp;
+        let commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
+        *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
+
+        let sched = &mut state.game_schedule;
+        let mut timings = state.uiw.write::<Timings>();
+
+        let has_commands = !commands.is_empty();
+        let mut commands_once = Some(commands.clone());
+
+        let mut net_state = state.uiw.write::<NetworkState>();
+
+        let crate::network::NetworkState::Singleplayer(ref mut step) = *net_state;
+
+        step.prepare_frame(timewarp);
+        while step.tick() || (has_commands && commands_once.is_some()) {
+            let t = goria.tick(sched, &commands_once.take().unwrap_or_default());
+            timings.world_update.add_value(t.as_secs_f32());
+        }
+
+        if commands_once.is_none() {
+            *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(commands);
+        } else {
+            *state.uiw.write::<WorldCommands>() = commands;
+        }
+    }
 }
 
 #[cfg(feature = "multiplayer")]

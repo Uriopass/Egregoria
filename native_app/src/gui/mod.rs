@@ -67,6 +67,12 @@ pub enum Tool {
     Train,
 }
 
+impl Tool {
+    pub fn is_roadbuild(&self) -> bool {
+        matches!(self, Tool::RoadbuildStraight | Tool::RoadbuildCurved)
+    }
+}
+
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]
 pub enum UiTex {
     Road,

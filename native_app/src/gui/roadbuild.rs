@@ -39,13 +39,13 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let state = &mut *uiworld.write::<RoadBuildResource>();
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();
     let immsound = &mut *uiworld.write::<ImmediateSound>();
-    let inp = uiworld.read::<InputMap>();
+    let mut inp = uiworld.write::<InputMap>();
     let tool = *uiworld.read::<Tool>();
     let map = &*goria.map();
     let commands: &mut WorldCommands = &mut *uiworld.commands();
     let cam = &*uiworld.read::<Camera>();
 
-    if !matches!(tool, Tool::RoadbuildStraight | Tool::RoadbuildCurved) {
+    if !tool.is_roadbuild() {
         state.build_state = Hover;
         return;
     }
@@ -105,6 +105,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     if inp.just_act.contains(&InputAction::Close) {
+        inp.just_act.remove(&InputAction::Close);
         state.build_state = Hover;
     }
 
