@@ -104,7 +104,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
     }
 
-    if inp.just_act.contains(&InputAction::Close) {
+    if inp.just_act.contains(&InputAction::Close) && !matches!(state.build_state, Hover) {
         inp.just_act.remove(&InputAction::Close);
         state.build_state = Hover;
     }
