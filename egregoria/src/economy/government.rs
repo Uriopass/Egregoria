@@ -11,13 +11,13 @@ pub struct Government {
 impl Default for Government {
     fn default() -> Self {
         Self {
-            money: Money::base(10_000),
+            money: Money::new_base(10_000),
         }
     }
 }
 
 impl Government {
     pub fn action_cost(_action: &WorldCommand, _goria: &Egregoria) -> Money {
-        Money(100)
+        Money::new_cents(100)
     }
 }

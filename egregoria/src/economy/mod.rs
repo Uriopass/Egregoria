@@ -4,13 +4,14 @@ use hecs::World;
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
+use std::ops::SubAssign;
 
 mod government;
 mod market;
 
 #[derive(Serialize, Deserialize)]
 /// Money in cents, can be negative when in debt.
-pub struct Money(pub i64);
+pub struct Money(i64);
 
 impl Display for Money {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -27,13 +28,31 @@ impl Display for Money {
     }
 }
 
+impl std::ops::Sub for Money {
+    type Output = Money;
+
+    fn sub(self, other: Money) -> Money {
+        Money(self.0 - other.0)
+    }
+}
+
+impl SubAssign for Money {
+    fn sub_assign(&mut self, other: Money) {
+        self.0 -= other.0;
+    }
+}
+
 impl Money {
-    pub fn cents(cents: i64) -> Self {
+    pub fn new_cents(cents: i64) -> Self {
         Self(cents)
     }
 
-    pub fn base(base: i64) -> Self {
+    pub fn new_base(base: i64) -> Self {
         Self(base * 100)
+    }
+
+    pub fn cents(&self) -> i64 {
+        self.0
     }
 }
 
