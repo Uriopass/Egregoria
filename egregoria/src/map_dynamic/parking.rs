@@ -1,6 +1,6 @@
+use crate::map::{LaneKind, Map, ParkingSpot, ParkingSpotID, ParkingSpots};
 use common::PtrCmp;
 use geom::Vec3;
-use map_model::{LaneKind, Map, ParkingSpot, ParkingSpotID, ParkingSpots};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashSet};
 use std::option::Option::None;

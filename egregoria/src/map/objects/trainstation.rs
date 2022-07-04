@@ -1,4 +1,4 @@
-use crate::{IntersectionID, RoadID, TrainStations};
+use crate::map::{IntersectionID, RoadID, TrainStations};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 

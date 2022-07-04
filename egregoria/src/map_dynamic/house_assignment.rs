@@ -1,5 +1,5 @@
+use crate::map::BuildingID;
 use crate::SoulID;
-use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 use slotmap::SecondaryMap;
 use std::collections::BTreeMap;

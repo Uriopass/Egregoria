@@ -1,3 +1,4 @@
+use crate::map::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use crate::utils::time::GameTime;
 use crate::Kinematics;
 use geom::{Follower, Polyline3Queue, Transform, Vec3};
@@ -5,7 +6,6 @@ use hecs::{Entity, World};
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use imgui_inspect_derive::Inspect;
-use map_model::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};

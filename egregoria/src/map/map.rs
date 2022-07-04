@@ -1,5 +1,5 @@
-use crate::serializing::SerializedMap;
-use crate::{
+use crate::map::serializing::SerializedMap;
+use crate::map::{
     Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
     ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, StraightRoadGen, Terrain, TrainStation,

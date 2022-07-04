@@ -1,5 +1,5 @@
-use crate::procgen::ColoredMesh;
-use crate::{Buildings, LanePattern, RoadID, SpatialMap, Terrain};
+use crate::map::procgen::{gen_exterior_farm, gen_exterior_house, ColoredMesh};
+use crate::map::{Buildings, LanePattern, RoadID, SpatialMap, Terrain};
 use geom::{Color, Vec2, Vec3, OBB};
 use imgui_inspect::debug_inspect_impl;
 use serde::{Deserialize, Serialize};
@@ -67,8 +67,8 @@ impl Building {
         let r = common::rand::rand2(obb.center().x, obb.center().y).to_bits();
 
         let (mut mesh, door_pos) = match gen {
-            BuildingGen::House => crate::procgen::gen_exterior_house(size, r as u64),
-            BuildingGen::Farm => crate::procgen::gen_exterior_farm(size, r as u64),
+            BuildingGen::House => gen_exterior_house(size, r as u64),
+            BuildingGen::Farm => gen_exterior_farm(size, r as u64),
             BuildingGen::CenteredDoor {
                 vertical_factor, ..
             } => (Default::default(), Vec2::y(-vertical_factor * 0.5 * size)),

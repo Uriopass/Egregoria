@@ -1,3 +1,4 @@
+use crate::map::{BuildingID, BuildingKind};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::goods_company::{company_soul, CompanyKind, GoodsCompany, GoodsCompanyRegistry};
 use crate::souls::human::spawn_human;
@@ -5,7 +6,6 @@ use crate::vehicles::{spawn_parked_vehicle, VehicleKind};
 use crate::Egregoria;
 use common::FastMap;
 use geom::Vec3;
-use map_model::{BuildingID, BuildingKind};
 
 #[macro_use]
 pub mod desire;

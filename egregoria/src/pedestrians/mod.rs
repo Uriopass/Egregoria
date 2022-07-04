@@ -1,5 +1,5 @@
+use crate::map::BuildingID;
 use crate::vehicles::VehicleID;
-use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
 pub mod data;

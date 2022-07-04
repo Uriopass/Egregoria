@@ -26,8 +26,8 @@ use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::utils::scheduler::SeqSchedule;
 use wgpu_engine::terrain::TerrainRender;
 
-const CSIZE: usize = map_model::CHUNK_SIZE as usize;
-const CRESO: usize = map_model::CHUNK_RESOLUTION as usize;
+const CSIZE: usize = egregoria::map::CHUNK_SIZE as usize;
+const CRESO: usize = egregoria::map::CHUNK_RESOLUTION as usize;
 
 pub struct State {
     pub goria: Arc<RwLock<Egregoria>>,

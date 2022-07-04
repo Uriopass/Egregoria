@@ -1,4 +1,4 @@
-use crate::{BuildingID, IntersectionID, LotID, Map, RoadID};
+use crate::map::{BuildingID, IntersectionID, LotID, Map, RoadID};
 use flat_spatial::shapegrid::ShapeGridHandle;
 use flat_spatial::ShapeGrid;
 use geom::{Circle, Intersect, Shape, ShapeEnum, Vec2, AABB};

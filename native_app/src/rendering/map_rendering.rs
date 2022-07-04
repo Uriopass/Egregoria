@@ -1,8 +1,8 @@
 use crate::rendering::map_mesh::MapMeshHandler;
 use common::FastMap;
+use egregoria::map::{ChunkID, Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_SIZE};
 use egregoria::Egregoria;
 use geom::{vec3, Camera, Color, LinearColor};
-use map_model::{ChunkID, Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_SIZE};
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Tesselator,

@@ -1,6 +1,6 @@
 #![allow(clippy::indexing_slicing)]
 
-use crate::{IntersectionID, LanePatternBuilder, Map, RoadSegmentKind};
+use crate::map::{IntersectionID, LanePatternBuilder, Map, RoadSegmentKind};
 use common::FastMap;
 use flat_spatial::SparseGrid;
 use geom::{vec2, vec3, Vec2};

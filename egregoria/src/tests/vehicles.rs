@@ -3,7 +3,7 @@ use crate::map_dynamic::{Destination, Itinerary, ParkingManagement, Router};
 use crate::utils::time::GameTime;
 use crate::vehicles::{spawn_parked_vehicle, unpark, VehicleKind};
 use geom::{vec2, vec3, Vec3};
-use map_model::{Map, PathKind};
+use crate::map::{Map, PathKind};
 
 use super::*;
 use crate::pedestrians::Location;

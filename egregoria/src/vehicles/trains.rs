@@ -1,3 +1,4 @@
+use crate::map::{IntersectionID, LaneID, Map, PathKind, TraverseKind};
 use crate::map_dynamic::ItineraryKind;
 use crate::{
     Egregoria, GameTime, Itinerary, ItineraryFollower, ItineraryLeader, Kinematics, Selectable,
@@ -5,7 +6,6 @@ use crate::{
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, View, World};
 use imgui_inspect_derive::*;
-use map_model::{IntersectionID, LaneID, Map, PathKind, TraverseKind};
 use ordered_float::OrderedFloat;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use resources::Resources;

@@ -2,10 +2,10 @@ use crate::gui::Tool;
 use crate::input::{MouseButton, MouseInfo};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
+use egregoria::map::{IntersectionID, LightPolicy, TurnPolicy};
+use egregoria::map::{ProjectFilter, ProjectKind};
 use egregoria::Egregoria;
 use geom::Color;
-use map_model::{IntersectionID, LightPolicy, TurnPolicy};
-use map_model::{ProjectFilter, ProjectKind};
 
 #[derive(Clone)]
 pub struct IntersectionComponent {

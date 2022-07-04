@@ -1,5 +1,6 @@
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommands};
+use crate::map::{BuildingGen, BuildingKind, LanePatternBuilder, Map, StraightRoadGen, Terrain};
 use crate::map_dynamic::{Itinerary, ItineraryFollower, ItineraryLeader, Router};
 use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
@@ -13,7 +14,6 @@ use crate::vehicles::Vehicle;
 use common::saveload::Encoder;
 use geom::{vec3, Transform, Vec2, Vec3, OBB};
 use hecs::{Component, Entity, World};
-use map_model::{Map, Terrain};
 use pedestrians::Location;
 use resources::{Ref, RefMut, Resource, Resources};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -38,6 +38,7 @@ extern crate log as extern_log;
 pub mod economy;
 pub mod engine_interaction;
 pub mod init;
+pub mod map;
 pub mod map_dynamic;
 pub mod pedestrians;
 pub mod physics;
@@ -129,10 +130,10 @@ impl Egregoria {
 
             let mut tracks = vec![];
 
-            let pat = map_model::LanePatternBuilder::new().rail(true).build();
+            let pat = LanePatternBuilder::new().rail(true).build();
 
             for i in -1..=1 {
-                tracks.push(map_model::StraightRoadGen {
+                tracks.push(StraightRoadGen {
                     from: c - offx * (i as f32 * 21.0) - offy * 100.0,
                     to: c - offx * (i as f32 * 21.0) + offy * 120.0,
                     pattern: pat.clone(),
@@ -141,8 +142,8 @@ impl Egregoria {
 
             goria.map_mut().build_special_building(
                 &obb,
-                map_model::BuildingKind::ExternalTrading,
-                map_model::BuildingGen::NoWalkway { door_pos: c.xy() },
+                BuildingKind::ExternalTrading,
+                BuildingGen::NoWalkway { door_pos: c.xy() },
                 &tracks,
             );
         }

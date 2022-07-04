@@ -2,10 +2,10 @@ use super::Tool;
 use crate::gui::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
+use egregoria::map::LaneKind;
 use egregoria::vehicles::trains::{train_length, wagons_positions};
 use egregoria::Egregoria;
 use geom::{Color, OBB};
-use map_model::LaneKind;
 use std::option::Option::None;
 
 #[profiling::function]

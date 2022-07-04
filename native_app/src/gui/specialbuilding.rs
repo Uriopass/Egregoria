@@ -4,9 +4,9 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::engine_interaction::WorldCommands;
+use egregoria::map::{ProjectFilter, ProjectKind};
 use egregoria::Egregoria;
 use geom::{Degrees, Intersect, Vec3, OBB};
-use map_model::{ProjectFilter, ProjectKind};
 use ordered_float::OrderedFloat;
 
 pub struct SpecialBuildArgs {

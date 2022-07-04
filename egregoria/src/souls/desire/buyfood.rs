@@ -1,4 +1,5 @@
 use crate::economy::{Bought, CommodityKind, Market};
+use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination};
 use crate::pedestrians::Location;
 use crate::souls::human::HumanDecisionKind;
@@ -6,7 +7,6 @@ use crate::utils::time::{GameInstant, GameTime};
 use crate::{ParCommandBuffer, SoulID};
 use geom::Transform;
 use imgui_inspect_derive::Inspect;
-use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]

@@ -1,8 +1,8 @@
 use crate::audio::{AudioContext, AudioKind, ControlHandle, Stereo};
 use crate::uiworld::UiWorld;
+use egregoria::map::Terrain;
 use egregoria::Egregoria;
 use geom::{lerp, vec2, Camera, Vec2, AABB};
-use map_model::Terrain;
 use oddio::{Cycle, Gain};
 
 pub struct Ambient {

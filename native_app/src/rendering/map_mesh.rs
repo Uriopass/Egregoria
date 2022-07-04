@@ -1,11 +1,11 @@
 use common::FastMap;
-use egregoria::souls::goods_company::GoodsCompanyRegistry;
-use egregoria::Egregoria;
-use geom::{vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Spline, Vec2, Vec3};
-use map_model::{
+use egregoria::map::{
     BuildingKind, Intersection, LaneKind, LotKind, Map, PylonPosition, Road, Roads, Terrain,
     TurnKind, CROSSWALK_WIDTH,
 };
+use egregoria::souls::goods_company::GoodsCompanyRegistry;
+use egregoria::Egregoria;
+use geom::{vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Spline, Vec2, Vec3};
 use std::ops::{Mul, Neg};
 use std::sync::Arc;
 use wgpu_engine::earcut::earcut;

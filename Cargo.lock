@@ -688,8 +688,8 @@ dependencies = [
  "imgui-inspect-derive",
  "inline_tweak",
  "log",
- "map_model",
  "ordered-float",
+ "pathfinding",
  "profiling",
  "rayon",
  "resources",
@@ -1353,24 +1353,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "map_model"
-version = "0.1.0"
-dependencies = [
- "common",
- "flat_spatial",
- "geom",
- "imgui-inspect",
- "imgui-inspect-derive",
- "inline_tweak",
- "log",
- "ordered-float",
- "pathfinding",
- "rayon",
- "serde",
- "slotmap",
-]
-
-[[package]]
 name = "matches"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1536,7 +1518,6 @@ dependencies = [
  "inline_tweak",
  "lewton",
  "log",
- "map_model",
  "networking",
  "oddio",
  "ordered-float",

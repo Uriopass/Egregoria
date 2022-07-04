@@ -2,8 +2,8 @@ use super::Tool;
 use crate::input::{MouseButton, MouseInfo};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
+use egregoria::map::{LotKind, ProjectFilter, ProjectKind};
 use egregoria::Egregoria;
-use map_model::{LotKind, ProjectFilter, ProjectKind};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]

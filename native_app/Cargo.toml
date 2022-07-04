@@ -19,7 +19,6 @@ imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 imgui-wgpu    = { git = "https://github.com/Yatekii/imgui-wgpu-rs" }
 imgui-winit-support = { version = "0.8.2", default-features = false, features=["winit-26"] }
-map_model     = { path = "../map_model" }
 flat_spatial  = { path = "../flat_spatial" }
 log           = { version = "0.4.11", features=["max_level_debug", "release_max_level_info"] }
 inline_tweak  = "1.0.6"

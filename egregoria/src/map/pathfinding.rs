@@ -1,4 +1,4 @@
-use crate::{
+use crate::map::{
     LaneID, LaneKind, LanePatternBuilder, Map, Traversable, TraverseDirection, TraverseKind, TurnID,
 };
 use geom::{PolyLine3, Vec3};
