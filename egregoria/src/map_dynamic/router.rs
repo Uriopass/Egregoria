@@ -1,3 +1,4 @@
+use crate::map::{BuildingID, Map, PathKind};
 use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
 use crate::pedestrians::{put_pedestrian_in_coworld, Location};
 use crate::physics::{Collider, CollisionWorld, Kinematics};
@@ -7,7 +8,6 @@ use crate::{Egregoria, ParCommandBuffer};
 use geom::{Spline3, Transform, Vec3};
 use hecs::{Component, Entity, Ref, World};
 use imgui_inspect_derive::Inspect;
-use map_model::{BuildingID, Map, PathKind};
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};

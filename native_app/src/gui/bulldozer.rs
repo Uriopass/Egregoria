@@ -2,9 +2,9 @@ use super::Tool;
 use crate::input::{MouseButton, MouseInfo};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
+use egregoria::map::{BuildingKind, Map, ProjectFilter, ProjectKind};
 use egregoria::Egregoria;
 use imgui_inspect_derive::Inspect;
-use map_model::{BuildingKind, Map, ProjectFilter, ProjectKind};
 
 #[derive(Copy, Clone, Default, Inspect)]
 pub struct BulldozerState {

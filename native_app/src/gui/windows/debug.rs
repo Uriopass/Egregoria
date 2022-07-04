@@ -9,10 +9,10 @@ use egregoria::utils::time::{GameTime, SECONDS_PER_DAY};
 use egregoria::Egregoria;
 
 use crate::gui::inputmap::InputMap;
+use egregoria::map::{IntersectionID, Map, RoadSegmentKind, TraverseKind};
 use egregoria::vehicles::trains::TrainReservations;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use imgui::Ui;
-use map_model::{IntersectionID, Map, RoadSegmentKind, TraverseKind};
 use wgpu_engine::Tesselator;
 
 #[derive(Default)]
@@ -189,7 +189,7 @@ pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
 }
 
 pub fn debug_connectivity(tess: &mut Tesselator, goria: &Egregoria, uiw: &UiWorld) -> Option<()> {
-    use map_model::pathfinding_crate::directed::strongly_connected_components::strongly_connected_components;
+    use egregoria::map::pathfinding_crate::directed::strongly_connected_components::strongly_connected_components;
     let mut state = uiw.write::<DebugState>();
     let map = goria.map();
 

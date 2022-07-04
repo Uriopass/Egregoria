@@ -4,12 +4,12 @@ use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use common::AudioKind;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
+use egregoria::map::{
+    Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
+};
 use egregoria::Egregoria;
 use geom::{Camera, Spline};
 use geom::{PolyLine3, Spline3, Vec2, Vec3};
-use map_model::{
-    Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
-};
 use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};
 
@@ -367,7 +367,7 @@ impl RoadBuildResource {
             terrain_height,
             pos,
             ..
-        } in map_model::Road::pylons_positions(&p, &map.terrain)
+        } in egregoria::map::Road::pylons_positions(&p, &map.terrain)
         {
             immdraw
                 .circle(pos.xy().z(terrain_height + 0.1), patwidth * 0.5)

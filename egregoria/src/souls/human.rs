@@ -1,5 +1,6 @@
 use crate::economy::CommodityKind::JobOpening;
 use crate::economy::{Bought, Market};
+use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination, Router};
 use crate::pedestrians::{spawn_pedestrian, Location};
 use crate::souls::desire::{BuyFood, Home, Work};
@@ -9,7 +10,6 @@ use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::Transform;
 use hecs::{Entity, World};
 use imgui_inspect_derive::Inspect;
-use map_model::BuildingID;
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};

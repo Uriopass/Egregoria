@@ -1,4 +1,5 @@
 use crate::engine_interaction::Selectable;
+use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Itinerary};
 use crate::pedestrians::Location;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
@@ -8,7 +9,6 @@ use geom::Transform;
 use geom::{Color, Vec3};
 use hecs::Entity;
 use imgui_inspect_derive::Inspect;
-use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Inspect)]

@@ -1,4 +1,4 @@
-use crate::{IntersectionID, Intersections, LaneID, Lanes, Map, TurnID};
+use crate::map::{IntersectionID, Intersections, LaneID, Lanes, Map, TurnID};
 use geom::PolyLine3;
 use imgui_inspect::imgui::Ui;
 use imgui_inspect::{imgui, InspectArgsDefault, InspectRenderDefault};

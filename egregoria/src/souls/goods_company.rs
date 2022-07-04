@@ -1,6 +1,7 @@
 use super::desire::Work;
 use crate::economy::{CommodityKind, Market, Sold, Workers};
 use crate::engine_interaction::Selectable;
+use crate::map::{BuildingGen, BuildingID, BuildingKind, Map};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
 use crate::utils::time::GameTime;
@@ -9,7 +10,6 @@ use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::{Transform, Vec2};
 use hecs::{Entity, World};
 use imgui_inspect_derive::Inspect;
-use map_model::{BuildingGen, BuildingID, BuildingKind, Map};
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

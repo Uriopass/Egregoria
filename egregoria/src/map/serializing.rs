@@ -1,4 +1,6 @@
-use crate::{Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap, Terrain};
+use crate::map::{
+    Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap, Terrain,
+};
 use serde::{Deserialize, Serialize};
 use std::num::Wrapping;
 

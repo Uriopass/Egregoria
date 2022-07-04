@@ -1,4 +1,4 @@
-use crate::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
+use crate::map::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
 use flat_spatial::ShapeGrid;
 use geom::{Transform, Vec2, Vec3};
 use ordered_float::OrderedFloat;

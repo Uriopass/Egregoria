@@ -1,9 +1,9 @@
-use crate::Egregoria;
-use hecs::Entity;
-use map_model::{
+use crate::map::{
     BuildingGen, BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LightPolicy, LotID,
     Map, MapProject, RoadID, StraightRoadGen, TurnPolicy,
 };
+use crate::Egregoria;
+use hecs::Entity;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -48,6 +48,7 @@ pub enum WorldCommand {
 }
 
 use crate::economy::Government;
+use crate::map::procgen::{load_parismap, load_testfield};
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::time::GameTime;
 use crate::vehicles::trains::{spawn_train, RailWagonKind};
@@ -177,9 +178,9 @@ impl WorldCommand {
             AddTrain(dist, n_wagons, lane) => {
                 spawn_train(goria, dist, n_wagons, lane, RailWagonKind::Fret);
             }
-            MapLoadParis => map_model::procgen::load_parismap(&mut *goria.map_mut()),
+            MapLoadParis => load_parismap(&mut *goria.map_mut()),
             MapLoadTestField(pos, size, spacing) => {
-                map_model::procgen::load_testfield(&mut *goria.map_mut(), pos, size, spacing)
+                load_testfield(&mut *goria.map_mut(), pos, size, spacing)
             }
             ResetSave => {
                 *goria = Egregoria::new(true);

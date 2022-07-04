@@ -2,12 +2,12 @@
 #![cfg(test)]
 
 use crate::engine_interaction::WorldCommands;
+use crate::map::{BuildingID, LanePatternBuilder, ProjectFilter};
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::scheduler::SeqSchedule;
 use crate::Egregoria;
 use common::logger::MyLog;
 use geom::{Vec2, Vec3};
-use map_model::{BuildingID, LanePatternBuilder, ProjectFilter};
 
 mod vehicles;
 

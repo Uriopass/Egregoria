@@ -1,4 +1,5 @@
 use crate::economy::{market_update, Government, Market};
+use crate::map::Map;
 use crate::map_dynamic::{
     itinerary_update, routing_changed_system, routing_update_system, BuildingInfos,
     ParkingManagement,
@@ -18,7 +19,6 @@ use crate::{
 };
 use common::saveload::Encoder;
 use hecs::World;
-use map_model::Map;
 use resources::Resources;
 use serde::de::DeserializeOwned;
 use serde::Serialize;

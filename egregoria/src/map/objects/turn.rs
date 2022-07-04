@@ -1,4 +1,4 @@
-use crate::{IntersectionID, LaneID, Lanes};
+use crate::map::{IntersectionID, LaneID, Lanes};
 use geom::PolyLine3;
 use geom::{Spline, Vec3};
 use serde::{Deserialize, Serialize};

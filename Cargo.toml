@@ -4,7 +4,6 @@ members = [
     "geom",
     "imgui-inspect",
     "imgui-inspect-derive",
-    "map_model",
     "common",
     "native_app",
     "wgpu_engine",
@@ -28,9 +27,6 @@ opt-level = 2
 opt-level = 2
 
 [profile.dev.package.egregoria]
-opt-level = 1
-
-[profile.dev.package.map_model]
 opt-level = 1
 
 [profile.dev.package.native_app]

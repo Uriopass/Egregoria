@@ -10,16 +10,16 @@ use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::economy::Government;
+use egregoria::map::{
+    BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, StraightRoadGen,
+    TurnPolicy,
+};
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
 use imgui::{StyleColor, StyleVar, Ui, Window};
 use imgui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
-};
-use map_model::{
-    BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, StraightRoadGen,
-    TurnPolicy,
 };
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};

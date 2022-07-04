@@ -1,3 +1,4 @@
+use crate::map::{Map, TrafficBehavior, Traversable, TraverseKind};
 use crate::map_dynamic::{Itinerary, OBJECTIVE_OK_DIST};
 use crate::physics::Kinematics;
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
@@ -6,7 +7,6 @@ use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::ParCommandBuffer;
 use geom::{angle_lerpxy, Ray, Transform, Vec2, Vec3};
 use hecs::{Entity, World};
-use map_model::{Map, TrafficBehavior, Traversable, TraverseKind};
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 

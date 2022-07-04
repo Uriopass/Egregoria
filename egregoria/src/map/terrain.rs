@@ -1,4 +1,5 @@
-use crate::procgen::heightmap::tree_density;
+use crate::map::procgen::heightmap;
+use crate::map::procgen::heightmap::tree_density;
 use geom::{vec2, Radians, Vec2, AABB};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
@@ -143,7 +144,7 @@ impl Terrain {
         for (y, l) in chunk.heights.iter_mut().enumerate() {
             for (x, h) in l.iter_mut().enumerate() {
                 let offcell = vec2(x as f32, y as f32) * CELL_SIZE;
-                let mut rh = crate::procgen::heightmap::height(offchunk + offcell).0 - 0.12;
+                let mut rh = heightmap::height(offchunk + offcell).0 - 0.12;
 
                 if rh > 0.0 {
                     rh = 0.0;

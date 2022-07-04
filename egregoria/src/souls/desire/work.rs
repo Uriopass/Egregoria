@@ -1,10 +1,10 @@
+use crate::map::BuildingID;
 use crate::map_dynamic::{Destination, Router};
 use crate::pedestrians::Location;
 use crate::souls::human::HumanDecisionKind;
 use crate::utils::time::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
 use crate::vehicles::VehicleID;
 use imgui_inspect_derive::Inspect;
-use map_model::BuildingID;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]

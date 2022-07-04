@@ -1,4 +1,4 @@
-use crate::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
+use crate::map::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
 use imgui_inspect::{imgui::Ui, InspectArgsDefault, InspectRenderDefault};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;

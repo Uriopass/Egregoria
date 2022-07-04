@@ -1,4 +1,4 @@
-use crate::{Map, ProjectFilter, ProjectKind, RoadID};
+use crate::map::{Map, ProjectFilter, ProjectKind, RoadID};
 use geom::Vec2;
 use geom::OBB;
 use geom::{Circle, Vec3};
