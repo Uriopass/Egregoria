@@ -6,7 +6,7 @@ use egregoria::Egregoria;
 use imgui_inspect_derive::Inspect;
 use map_model::{BuildingKind, Map, ProjectFilter, ProjectKind};
 
-#[derive(Default, Inspect)]
+#[derive(Copy, Clone, Default, Inspect)]
 pub struct BulldozerState {
     hold: bool,
 }
@@ -38,8 +38,9 @@ pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     draw.circle(cur_proj.pos.up(0.5), 2.0).color(col);
 
-    if (!state.hold && mouseinfo.just_pressed.contains(&MouseButton::Left))
-        || (state.hold && mouseinfo.pressed.contains(&MouseButton::Left))
+    if ((!state.hold && mouseinfo.just_pressed.contains(&MouseButton::Left))
+        || (state.hold && mouseinfo.pressed.contains(&MouseButton::Left)))
+        && !matches!(cur_proj.kind, ProjectKind::Ground)
     {
         let mut potentially_empty = Vec::new();
         log::info!("bulldozer {:?}", cur_proj);
