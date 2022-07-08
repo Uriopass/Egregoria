@@ -1,5 +1,5 @@
 use crate::map::{Lane, LaneID, LaneKind, CROSSWALK_WIDTH};
-use flat_spatial::ShapeGrid;
+use flat_spatial::Grid;
 use geom::{Transform, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -22,7 +22,7 @@ pub struct ParkingSpot {
 pub struct ParkingSpots {
     spots: SlotMap<ParkingSpotID, ParkingSpot>,
     lane_spots: SecondaryMap<LaneID, Vec<ParkingSpotID>>,
-    pub(crate) reuse_spot: ShapeGrid<ParkingSpotID, Vec2>,
+    pub(crate) reuse_spot: Grid<ParkingSpotID, Vec2>,
 }
 
 impl Default for ParkingSpots {
@@ -30,7 +30,7 @@ impl Default for ParkingSpots {
         Self {
             spots: Default::default(),
             lane_spots: Default::default(),
-            reuse_spot: ShapeGrid::new(10),
+            reuse_spot: Grid::new(10),
         }
     }
 }
@@ -94,7 +94,8 @@ impl ParkingSpots {
             .points_dirs_along((0..n_spots).map(|x| (x as f32 + 0.5) * step + gap))
             .map(move |(pos, dir)| {
                 let mut iter = reuse.query_around(pos.xy(), 3.0);
-                if let Some((h, _, &spot_id)) = iter.next() {
+                if let Some((h, _)) = iter.next() {
+                    let spot_id = reuse.get(h).map(|x| x.1).copied().unwrap();
                     drop(iter);
 
                     reuse.remove(h);

@@ -1,10 +1,8 @@
-use common::FastMap;
-use geom::{Vec2, AABB};
-use serde::{Deserialize, Serialize};
+use crate::Vec2;
 
 pub type CellIdx = (i32, i32);
 
-pub fn cell_range(
+pub(crate) fn cell_range(
     (min_x, min_y): CellIdx,
     (max_x, max_y): CellIdx,
 ) -> impl Iterator<Item = CellIdx> {
@@ -29,18 +27,15 @@ pub fn cell_range(
 /// `SparseStorage` stores cells in a `FastMap` to be used in a Grid.
 /// It is Sparse because cells are eagerly allocated, and cleaned when they are empty.
 /// It implements the Storage trait.
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SparseStorage<T: Default> {
     cell_size: i32,
-    cells: FastMap<CellIdx, T>,
+    cells: fnv::FnvHashMap<CellIdx, T>,
 }
 
 impl<T: Default> SparseStorage<T> {
-    pub fn cells(&self) -> &FastMap<CellIdx, T> {
-        &self.cells
-    }
-
-    pub fn new(cell_size: i32) -> Self {
+    pub(crate) fn new(cell_size: i32) -> Self {
         assert!(
             cell_size > 0,
             "Cell size ({}) cannot be less than or equal to zero",
@@ -52,46 +47,32 @@ impl<T: Default> SparseStorage<T> {
         }
     }
 
-    pub fn cell_size(&self) -> i32 {
+    pub(crate) fn cell_size(&self) -> i32 {
         self.cell_size
     }
 
-    pub fn modify(&mut self, mut f: impl FnMut(&mut T) -> bool) {
+    pub(crate) fn modify(&mut self, mut f: impl FnMut(&mut T) -> bool) {
         self.cells.retain(move |_, cell| !f(cell));
     }
 
-    pub fn cell_mut(&mut self, pos: Vec2) -> (CellIdx, &mut T) {
+    pub(crate) fn cell_mut<V2: Vec2>(&mut self, pos: V2) -> (CellIdx, &mut T) {
         let id = self.cell_id(pos);
         (id, self.cells.entry(id).or_default())
     }
 
-    pub fn cell_mut_unchecked(&mut self, id: CellIdx) -> &mut T {
+    pub(crate) fn cell_mut_unchecked(&mut self, id: CellIdx) -> &mut T {
         self.cells.entry(id).or_default()
     }
 
-    pub fn cell(&self, id: CellIdx) -> Option<&T> {
+    pub(crate) fn cell(&self, id: CellIdx) -> Option<&T> {
         self.cells.get(&id)
     }
 
-    pub fn cell_id(&self, pos: Vec2) -> CellIdx {
+    pub(crate) fn cell_id<V2: Vec2>(&self, pos: V2) -> CellIdx {
         (
-            pos.x as i32 / self.cell_size - if pos.x < 0.0 { 1 } else { 0 },
-            pos.y as i32 / self.cell_size - if pos.y < 0.0 { 1 } else { 0 },
+            pos.x() as i32 / self.cell_size - if pos.x() < 0.0 { 1 } else { 0 },
+            pos.y() as i32 / self.cell_size - if pos.y() < 0.0 { 1 } else { 0 },
         )
-    }
-
-    pub fn cell_aabb(&self, (x, y): CellIdx) -> AABB {
-        let ll = Vec2 {
-            x: (x * self.cell_size) as f32,
-            y: (y * self.cell_size) as f32,
-        };
-
-        let ur = Vec2 {
-            x: ll.x + self.cell_size as f32,
-            y: ll.y + self.cell_size as f32,
-        };
-
-        AABB::new(ll, ur)
     }
 }
 
