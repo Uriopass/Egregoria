@@ -1,11 +1,9 @@
 use crate::cell::ShapeGridCell;
 use crate::storage::{cell_range, SparseStorage};
-use common::FastSet;
-use geom::{Circle, Intersect, Shape, Vec2, AABB};
-use serde::{Deserialize, Serialize};
+use crate::AABB;
 use slotmap::{new_key_type, SlotMap};
 
-pub type ShapeGridObjects<O, S> = SlotMap<ShapeGridHandle, StoreObject<O, S>>;
+pub type ShapeGridObjects<O, AB> = SlotMap<ShapeGridHandle, StoreObject<O, AB>>;
 
 new_key_type! {
     /// This handle is used to modify the associated object or to update its position.
@@ -14,14 +12,15 @@ new_key_type! {
 }
 
 /// The actual object stored in the store
-#[derive(Clone, Copy, Deserialize, Serialize)]
-pub struct StoreObject<O: Copy, S: Shape> {
+#[derive(Clone, Copy)]
+#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct StoreObject<O: Copy, AB: AABB> {
     /// User-defined object to be associated with a value
-    obj: O,
-    pub shape: S,
+    pub obj: O,
+    pub aabb: AB,
 }
 
-/// `ShapeGrid` is a generic shape-based spatial partitioning structure that uses a generic storage of cells which acts as a
+/// `ShapeGrid` is a generic aabb-based spatial partitioning structure that uses a generic storage of cells which acts as a
 /// grid instead of a tree.
 ///
 /// ## Fast queries
@@ -31,12 +30,12 @@ pub struct StoreObject<O: Copy, S: Shape> {
 /// be balanced to be efficient.  
 ///
 /// ## Dynamicity
-/// `ShapeGrid's` allows eager removals and position updates, however for big shapes (spanning many cells)
+/// `ShapeGrid's` allows eager removals and position updates, however for big aabbs (spanning many cells)
 /// this can be expensive, so beware.
 ///
 /// Use this grid for mostly static objects with the occasional removal/position update if needed.
 ///
-/// A `SlotMap` is used for objects managing, adding a level of indirection between shapes and objects.
+/// A `SlotMap` is used for objects managing, adding a level of indirection between aabbs and objects.
 /// `SlotMap` is used because removal doesn't alter handles given to the user, while still having constant time access.
 /// However it requires O to be copy, but `SlotMap's` author stated that they were working on a similar
 /// map where Copy isn't required.
@@ -49,23 +48,21 @@ pub struct StoreObject<O: Copy, S: Shape> {
 /// Since `()` is zero sized, it should probably optimize away a lot of the object management code.
 ///
 /// ```rust
-/// use flat_spatial::ShapeGrid;
-/// use geom::Circle;
+/// use flat_spatial::AABBGrid;
+/// use euclid::default::Rect;
 ///
-/// let mut g: ShapeGrid<(), Circle> = ShapeGrid::new(10);
-/// let handle = g.insert(Circle {
-///     center: [0.0, 0.0].into(),
-///     radius: 3.0,
-/// }, ());
+/// let mut g: AABBGrid<(), Rect<f32>> = AABBGrid::new(10);
+/// let handle = g.insert(Rect::new([0.0, 0.0].into(), [10.0, 10.0].into()), ());
 /// // Use handle however you want
 /// ```
-#[derive(Clone, Deserialize, Serialize)]
-pub struct ShapeGrid<O: Copy, S: Shape + Intersect<AABB> + Copy> {
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct AABBGrid<O: Copy, AB: AABB> {
     storage: SparseStorage<ShapeGridCell>,
-    objects: ShapeGridObjects<O, S>,
+    objects: ShapeGridObjects<O, AB>,
 }
 
-impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S> {
+impl<O: Copy, AB: AABB> AABBGrid<O, AB> {
     /// Creates an empty grid.
     /// The cell size should be about the same magnitude as your queries size.
     pub fn new(cell_size: i32) -> Self {
@@ -76,44 +73,28 @@ impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S> {
     }
 
     /// Clears the grid.
-    pub fn clear(&mut self) -> impl Iterator<Item = (S, O)> {
+    pub fn clear(&mut self) -> impl Iterator<Item = (AB, O)> {
         self.storage = SparseStorage::new(self.storage.cell_size());
         let objs = std::mem::take(&mut self.objects);
-        objs.into_iter().map(|(_, o)| (o.shape, o.obj))
-    }
-
-    fn cells_apply(
-        storage: &mut SparseStorage<ShapeGridCell>,
-        shape: &S,
-        f: impl Fn(&mut ShapeGridCell, bool),
-    ) {
-        let bbox = shape.bbox();
-        let ll = storage.cell_mut(bbox.ll).0;
-        let ur = storage.cell_mut(bbox.ur).0;
-        for id in cell_range(ll, ur) {
-            if !shape.intersects(&storage.cell_aabb(id)) {
-                continue;
-            }
-            f(storage.cell_mut_unchecked(id), ll == ur)
-        }
+        objs.into_iter().map(|(_, o)| (o.aabb, o.obj))
     }
 
     /// Inserts a new object with a position and an associated object
     /// Returns the unique and stable handle to be used with `get_obj`
-    pub fn insert(&mut self, shape: S, obj: O) -> ShapeGridHandle {
+    pub fn insert(&mut self, aabb: AB, obj: O) -> ShapeGridHandle {
         let Self {
             storage, objects, ..
         } = self;
 
-        let h = objects.insert(StoreObject { obj, shape });
-        Self::cells_apply(storage, &shape, |cell, sing_cell| {
+        let h = objects.insert(StoreObject { obj, aabb });
+        cells_apply(storage, &aabb, |cell, sing_cell| {
             cell.objs.push((h, sing_cell));
         });
         h
     }
 
-    /// Updates the shape of an object.
-    pub fn set_shape(&mut self, handle: ShapeGridHandle, shape: S) {
+    /// Updates the aabb of an object.
+    pub fn set_aabb(&mut self, handle: ShapeGridHandle, aabb: AB) {
         let obj = self
             .objects
             .get_mut(handle)
@@ -121,7 +102,7 @@ impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S> {
 
         let storage = &mut self.storage;
 
-        Self::cells_apply(storage, &obj.shape, |cell, _| {
+        cells_apply(storage, &obj.aabb, |cell, _| {
             let p = match cell.objs.iter().position(|(x, _)| *x == handle) {
                 Some(x) => x,
                 None => return,
@@ -129,11 +110,11 @@ impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S> {
             cell.objs.swap_remove(p);
         });
 
-        Self::cells_apply(storage, &shape, |cell, sing_cell| {
+        cells_apply(storage, &aabb, |cell, sing_cell| {
             cell.objs.push((handle, sing_cell))
         });
 
-        obj.shape = shape;
+        obj.aabb = aabb;
     }
 
     /// Removes an object from the grid.
@@ -141,7 +122,7 @@ impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S> {
         let st = self.objects.remove(handle)?;
 
         let storage = &mut self.storage;
-        Self::cells_apply(storage, &st.shape, |cell, _| {
+        cells_apply(storage, &st.aabb, |cell, _| {
             let p = match cell.objs.iter().position(|(x, _)| *x == handle) {
                 Some(x) => x,
                 None => return,
@@ -163,13 +144,13 @@ impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S> {
     }
 
     /// Returns a reference to the associated object and its position, using the handle.
-    pub fn get(&self, id: ShapeGridHandle) -> Option<(&S, &O)> {
-        self.objects.get(id).map(|x| (&x.shape, &x.obj))
+    pub fn get(&self, id: ShapeGridHandle) -> Option<&StoreObject<O, AB>> {
+        self.objects.get(id)
     }
 
     /// Returns a mutable reference to the associated object and its position, using the handle.
-    pub fn get_mut(&mut self, id: ShapeGridHandle) -> Option<(&S, &mut O)> {
-        self.objects.get_mut(id).map(|x| (&x.shape, &mut x.obj))
+    pub fn get_mut(&mut self, id: ShapeGridHandle) -> Option<&mut StoreObject<O, AB>> {
+        self.objects.get_mut(id)
     }
 
     /// The underlying storage
@@ -177,39 +158,34 @@ impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S> {
         &self.storage
     }
 
-    /// Queries for objects intersecting a given shape.
-    pub fn query<'a, QS: 'a + Shape + Intersect<AABB> + Intersect<S> + Clone>(
-        &'a self,
-        shape: QS,
-    ) -> impl Iterator<Item = (ShapeGridHandle, &S, &O)> + 'a {
-        self.query_broad(shape.clone())
+    /// Queries for objects intersecting a given AABB.
+    pub fn query(&self, aabb: AB) -> impl Iterator<Item = (ShapeGridHandle, &AB, &O)> + '_ {
+        self.query_broad(aabb)
             .map(move |h| {
                 let obj = &self.objects[h];
-                (h, &obj.shape, &obj.obj)
+                (h, &obj.aabb, &obj.obj)
             })
-            .filter(move |&(_, x, _)| shape.intersects(x))
+            .filter(move |&(_, x, _)| aabb.intersects(x))
     }
 
-    /// Queries for all objects in the cells intersecting the given shape
-    pub fn query_broad<'a, QS: 'a + Shape + Intersect<AABB>>(
-        &'a self,
-        shape: QS,
-    ) -> impl Iterator<Item = ShapeGridHandle> + 'a {
-        let bbox = shape.bbox();
+    /// Queries for all objects in the cells intersecting the given AABB
+    pub fn query_broad(&self, bbox: AB) -> impl Iterator<Item = ShapeGridHandle> + '_ {
         let storage = &self.storage;
 
-        let ll_id = storage.cell_id(bbox.ll);
-        let ur_id = storage.cell_id(bbox.ur);
+        let ll_id = storage.cell_id(bbox.ll());
+        let ur_id = storage.cell_id(bbox.ur());
 
         let iter = cell_range(ll_id, ur_id)
-            .filter(move |&id| shape.intersects(&storage.cell_aabb(id)))
             .flat_map(move |id| storage.cell(id))
             .flat_map(|x| x.objs.iter().copied());
 
         if ll_id == ur_id {
             QueryIter::Simple(iter)
         } else {
-            QueryIter::Dedup(common::fastset_with_capacity(5), iter)
+            QueryIter::Dedup(
+                fnv::FnvHashSet::with_capacity_and_hasher(5, fnv::FnvBuildHasher::default()),
+                iter,
+            )
         }
     }
 
@@ -226,26 +202,21 @@ impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S> {
     }
 }
 
-impl<S: Shape + Intersect<AABB> + Copy, O: Copy> ShapeGrid<O, S>
-where
-    Circle: Intersect<S>,
-{
-    /// Queries for objects around a point, same as querying a circle at pos with a given radius.
-    pub fn query_around(
-        &self,
-        pos: Vec2,
-        radius: f32,
-    ) -> impl Iterator<Item = (ShapeGridHandle, &S, &O)> + '_ {
-        self.query(Circle {
-            center: pos,
-            radius,
-        })
+fn cells_apply<AB: AABB>(
+    storage: &mut SparseStorage<ShapeGridCell>,
+    bbox: &AB,
+    f: impl Fn(&mut ShapeGridCell, bool),
+) {
+    let ll = storage.cell_mut(bbox.ll()).0;
+    let ur = storage.cell_mut(bbox.ur()).0;
+    for id in cell_range(ll, ur) {
+        f(storage.cell_mut_unchecked(id), ll == ur)
     }
 }
 
 enum QueryIter<T: Iterator<Item = (ShapeGridHandle, bool)>> {
     Simple(T),
-    Dedup(FastSet<ShapeGridHandle>, T),
+    Dedup(fnv::FnvHashSet<ShapeGridHandle>, T),
 }
 
 impl<T: Iterator<Item = (ShapeGridHandle, bool)>> Iterator for QueryIter<T> {

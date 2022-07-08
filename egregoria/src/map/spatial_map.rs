@@ -1,6 +1,6 @@
 use crate::map::{BuildingID, IntersectionID, LotID, Map, RoadID};
 use flat_spatial::shapegrid::ShapeGridHandle;
-use flat_spatial::ShapeGrid;
+use flat_spatial::AABBGrid;
 use geom::{Circle, Intersect, Shape, ShapeEnum, Vec2, AABB};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -55,7 +55,7 @@ impl ProjectKind {
 }
 
 pub struct SpatialMap {
-    broad: ShapeGrid<ProjectKind, AABB>,
+    broad: AABBGrid<ProjectKind, AABB>,
     near: BTreeMap<ProjectKind, ShapeEnum>,
     ids: BTreeMap<ProjectKind, ShapeGridHandle>,
 }
@@ -63,7 +63,7 @@ pub struct SpatialMap {
 impl Default for SpatialMap {
     fn default() -> Self {
         Self {
-            broad: ShapeGrid::new(50),
+            broad: AABBGrid::new(50),
             near: Default::default(),
             ids: Default::default(),
         }
@@ -96,7 +96,7 @@ impl SpatialMap {
         let kind = kind.into();
         let shape = shape.into();
         if let Some(id) = self.ids.get(&kind) {
-            self.broad.set_shape(*id, shape.bbox());
+            self.broad.set_aabb(*id, shape.bbox());
             self.near.insert(kind, shape);
         } else {
             warn!(
@@ -121,7 +121,7 @@ impl SpatialMap {
         filter: ProjectFilter,
     ) -> impl Iterator<Item = ProjectKind> + 'a {
         self.broad
-            .query(shape.clone())
+            .query(shape.bbox())
             .filter(move |&(_, _, p)| filter.test(p))
             .filter_map(move |(_, _, p)| shape.intersects(self.near.get(p)?).then(|| *p))
     }
@@ -130,7 +130,7 @@ impl SpatialMap {
         self.broad
             .handles()
             .filter_map(move |x| self.broad.get(x))
-            .map(|(aabb, _)| *aabb)
+            .map(|obj| obj.aabb)
     }
 
     pub fn contains<T: Into<ProjectKind>>(&self, p: T) -> bool {

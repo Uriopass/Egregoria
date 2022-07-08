@@ -1,10 +1,10 @@
 use crate::cell::{CellObject, GridCell};
 use crate::storage::{cell_range, CellIdx, SparseStorage};
-use geom::Vec2;
-use serde::{Deserialize, Serialize};
+use crate::Vec2;
 use slotmap::{new_key_type, SlotMap};
+use std::marker::PhantomData;
 
-pub type GridObjects<O> = SlotMap<GridHandle, StoreObject<O>>;
+pub type GridObjects<O, V2> = SlotMap<GridHandle, StoreObject<O, V2>>;
 
 new_key_type! {
     /// This handle is used to modify the associated object or to update its position.
@@ -13,21 +13,23 @@ new_key_type! {
 }
 
 /// State of an object, maintain() updates the internals of the grid and resets this to Unchanged
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum ObjectState {
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum ObjectState<V2: Vec2> {
     Unchanged,
-    NewPos(Vec2),
-    Relocate(Vec2, CellIdx),
+    NewPos(V2),
+    Relocate(V2, CellIdx),
     Removed,
 }
 
 /// The actual object stored in the store
-#[derive(Clone, Copy, Deserialize, Serialize)]
-pub struct StoreObject<O> {
+#[derive(Clone, Copy)]
+#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct StoreObject<O, V2: Vec2> {
     /// User-defined object to be associated with a value
     obj: O,
-    pub state: ObjectState,
-    pub pos: Vec2,
+    pub state: ObjectState<V2>,
+    pub pos: V2,
     pub cell_id: CellIdx,
 }
 
@@ -64,17 +66,16 @@ pub struct StoreObject<O> {
 /// Here is a basic example that shows most of its capabilities:
 /// ```rust
 /// use flat_spatial::Grid;
-/// use geom::Vec2;
 ///
-/// let mut g: Grid<i32> = Grid::new(10); // Creates a new grid with a cell width of 10 with an integer as extra data
-/// let a = g.insert(Vec2::ZERO, 0); // Inserts a new element with data: 0
+/// let mut g: Grid<i32, [f32; 2]> = Grid::new(10); // Creates a new grid with a cell width of 10 with an integer as extra data
+/// let a = g.insert([0.0, 0.0], 0); // Inserts a new element with data: 0
 ///
 /// {
-///     let mut before = g.query_around(Vec2::ZERO, 5.0).map(|(id, _pos)| id); // Queries for objects around a given point
+///     let mut before = g.query_around([0.0, 0.0], 5.0).map(|(id, _pos)| id); // Queries for objects around a given point
 ///     assert_eq!(before.next(), Some(a));
 ///     assert_eq!(g.get(a).unwrap().1, &0);
 /// }
-/// let b = g.insert(Vec2::ZERO, 1); // Inserts a new element, assigning a new unique and stable handle, with data: 1
+/// let b = g.insert([0.0, 0.0], 1); // Inserts a new element, assigning a new unique and stable handle, with data: 1
 ///
 /// g.remove(a); // Removes a value using the handle given by `insert`
 ///              // This won't have an effect until g.maintain() is called
@@ -83,21 +84,23 @@ pub struct StoreObject<O> {
 ///
 /// assert_eq!(g.handles().collect::<Vec<_>>(), vec![b]); // We check that the "a" object has been removed
 ///
-/// let after: Vec<_> = g.query_around(Vec2::ZERO, 5.0).map(|(id, _pos)| id).collect(); // And that b is query-able
+/// let after: Vec<_> = g.query_around([0.0, 0.0], 5.0).map(|(id, _pos)| id).collect(); // And that b is query-able
 /// assert_eq!(after, vec![b]);
 ///
 /// assert_eq!(g.get(b).unwrap().1, &1); // We also check that b still has his data associated
 /// assert_eq!(g.get(a), None); // But that a doesn't exist anymore
 /// ```
-#[derive(Clone, Deserialize, Serialize)]
-pub struct Grid<O> {
-    storage: SparseStorage<GridCell>,
-    objects: GridObjects<O>,
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Grid<O, V2: Vec2> {
+    storage: SparseStorage<GridCell<V2>>,
+    objects: GridObjects<O, V2>,
     // Cache maintain vec to avoid allocating every time maintain is called
-    to_relocate: Vec<CellObject>,
+    to_relocate: Vec<CellObject<V2>>,
+    _phantom: PhantomData<V2>,
 }
 
-impl<O: Copy> Grid<O> {
+impl<O: Copy, V2: Vec2> Grid<O, V2> {
     /// Creates an empty grid.   
     /// The cell size should be about the same magnitude as your queries size.
     pub fn new(cell_size: i32) -> Self {
@@ -105,12 +108,13 @@ impl<O: Copy> Grid<O> {
             storage: SparseStorage::new(cell_size),
             objects: SlotMap::with_key(),
             to_relocate: vec![],
+            _phantom: Default::default(),
         }
     }
 
     /// Inserts a new object with a position and an associated object
     /// Returns the unique and stable handle to be used with `get_obj`
-    pub fn insert(&mut self, pos: Vec2, obj: O) -> GridHandle {
+    pub fn insert(&mut self, pos: V2, obj: O) -> GridHandle {
         let (cell_id, cell) = self.storage.cell_mut(pos);
         let handle = self.objects.insert(StoreObject {
             obj,
@@ -124,9 +128,7 @@ impl<O: Copy> Grid<O> {
 
     /// Lazily sets the position of an object (if it is not marked for deletion).
     /// This won't be taken into account until maintain() is called.
-    pub fn set_position(&mut self, handle: GridHandle, pos: impl Into<Vec2>) {
-        let pos = pos.into();
-
+    pub fn set_position(&mut self, handle: GridHandle, pos: V2) {
         let obj = match self.objects.get_mut(handle) {
             Some(x) => x,
             None => {
@@ -155,9 +157,8 @@ impl<O: Copy> Grid<O> {
     /// # Example
     /// ```rust
     /// use flat_spatial::Grid;
-    /// use geom::Vec2;
-    /// let mut g: Grid<()> = Grid::new(10);
-    /// let h = g.insert(Vec2::new(5.0, 3.0), ());
+    /// let mut g: Grid<(), [f32; 2]> = Grid::new(10);
+    /// let h = g.insert([5.0, 3.0], ());
     /// g.remove(h);
     /// ```
     pub fn remove(&mut self, handle: GridHandle) -> Option<O> {
@@ -175,9 +176,8 @@ impl<O: Copy> Grid<O> {
     /// # Example
     /// ```rust
     /// use flat_spatial::Grid;
-    /// use geom::Vec2;
-    /// let mut g: Grid<()> = Grid::new(10);
-    /// let h = g.insert(Vec2::new(5.0, 3.0), ());
+    /// let mut g: Grid<(), [f32; 2]> = Grid::new(10);
+    /// let h = g.insert([5.0, 3.0], ());
     /// g.remove(h);
     /// ```
     pub fn remove_maintain(&mut self, handle: GridHandle) -> Option<O> {
@@ -190,7 +190,9 @@ impl<O: Copy> Grid<O> {
         Some(obj.obj)
     }
 
-    pub fn clear(&mut self) -> impl Iterator<Item = (Vec2, O)> {
+    /// Clear all objects from the grid.
+    /// Returns the objects and their positions.
+    pub fn clear(&mut self) -> impl Iterator<Item = (V2, O)> {
         let objects = std::mem::take(&mut self.objects);
         self.storage = SparseStorage::new(self.storage.cell_size());
         self.to_relocate.clear();
@@ -203,9 +205,8 @@ impl<O: Copy> Grid<O> {
     /// # Example
     /// ```rust
     /// use flat_spatial::Grid;
-    /// use geom::Vec2;
-    /// let mut g: Grid<()> = Grid::new(10);
-    /// let h = g.insert(Vec2::new(5.0, 3.0), ());
+    /// let mut g: Grid<(), [f32; 2]> = Grid::new(10);
+    /// let h = g.insert([5.0, 3.0], ());
     /// g.remove(h);
     ///
     /// assert!(g.get(h).is_some());
@@ -236,7 +237,7 @@ impl<O: Copy> Grid<O> {
     }
 
     /// Iterate over all objects
-    pub fn objects(&self) -> impl Iterator<Item = (Vec2, &O)> + '_ {
+    pub fn objects(&self) -> impl Iterator<Item = (V2, &O)> + '_ {
         self.objects.values().map(|x| (x.pos, &x.obj))
     }
 
@@ -245,12 +246,11 @@ impl<O: Copy> Grid<O> {
     /// # Example
     /// ```rust
     /// use flat_spatial::Grid;
-    /// use geom::Vec2;
-    /// let mut g: Grid<i32> = Grid::new(10);
-    /// let h = g.insert(Vec2::new(5.0, 3.0), 42);
-    /// assert_eq!(g.get(h), Some((Vec2::new(5.0, 3.0).into(), &42)));
+    /// let mut g: Grid<i32, [f32; 2]> = Grid::new(10);
+    /// let h = g.insert([5.0, 3.0], 42);
+    /// assert_eq!(g.get(h), Some(([5.0, 3.0], &42)));
     /// ```
-    pub fn get(&self, id: GridHandle) -> Option<(Vec2, &O)> {
+    pub fn get(&self, id: GridHandle) -> Option<(V2, &O)> {
         self.objects.get(id).map(|x| (x.pos, &x.obj))
     }
 
@@ -259,40 +259,41 @@ impl<O: Copy> Grid<O> {
     /// # Example
     /// ```rust
     /// use flat_spatial::Grid;
-    /// use geom::Vec2;
-    /// let mut g: Grid<i32> = Grid::new(10);
-    /// let h = g.insert(Vec2::new(5.0, 3.0), 42);
+    /// let mut g: Grid<i32, [f32; 2]> = Grid::new(10);
+    /// let h = g.insert([5.0, 3.0], 42);
     /// *g.get_mut(h).unwrap().1 = 56;
     /// assert_eq!(g.get(h).unwrap().1, &56);
     /// ```    
-    pub fn get_mut(&mut self, id: GridHandle) -> Option<(Vec2, &mut O)> {
+    pub fn get_mut(&mut self, id: GridHandle) -> Option<(V2, &mut O)> {
         self.objects.get_mut(id).map(|x| (x.pos, &mut x.obj))
     }
 
     /// The underlying storage
-    pub fn storage(&self) -> &SparseStorage<GridCell> {
+    pub fn storage(&self) -> &SparseStorage<GridCell<V2>> {
         &self.storage
     }
 
-    pub fn query_around(&self, pos: Vec2, radius: f32) -> impl Iterator<Item = CellObject> + '_ {
-        let ll = pos - Vec2::splat(radius);
-        let ur = pos + Vec2::splat(radius);
+    pub fn query_around(&self, pos: V2, radius: f32) -> impl Iterator<Item = CellObject<V2>> + '_ {
+        let ll = [pos.x() - radius, pos.y() - radius];
+        let ur = [pos.x() + radius, pos.y() + radius];
 
         let radius2 = radius * radius;
-        self.query_raw(ll, ur).filter(move |(_, pos_obj)| {
-            let x = pos_obj.x - pos.x;
-            let y = pos_obj.y - pos.y;
-            x * x + y * y < radius2
-        })
+        self.query(ll.into(), ur.into())
+            .filter(move |(_, pos_obj)| {
+                let x = pos_obj.x() - pos.x();
+                let y = pos_obj.y() - pos.y();
+                x * x + y * y < radius2
+            })
     }
 
-    pub fn query_aabb(&self, ll_: Vec2, ur_: Vec2) -> impl Iterator<Item = CellObject> + '_ {
-        let ll = ll_.min(ur_);
-        let ur = ll_.max(ur_);
+    pub fn query_aabb(&self, ll_: V2, ur_: V2) -> impl Iterator<Item = CellObject<V2>> + '_ {
+        let ll = [ll_.x().min(ur_.x()), ll_.y().min(ur_.y())];
+        let ur = [ll_.x().max(ur_.x()), ll_.y().max(ur_.y())];
 
-        self.query_raw(ll, ur).filter(move |(_, pos_obj)| {
-            (ll.x..=ur.x).contains(&pos_obj.x) && (ll.y..=ur.y).contains(&pos_obj.y)
-        })
+        self.query(ll.into(), ur.into())
+            .filter(move |(_, pos_obj)| {
+                (ll[0]..=ur[0]).contains(&pos_obj.x()) && (ll[1]..=ur[1]).contains(&pos_obj.y())
+            })
     }
 
     /// Queries for all objects in the cells intersecting an axis-aligned rectangle defined by lower left (ll) and upper right (ur)
@@ -301,17 +302,16 @@ impl<O: Copy> Grid<O> {
     /// # Example
     /// ```rust
     /// use flat_spatial::Grid;
-    /// use geom::Vec2;
     ///
-    /// let mut g: Grid<()> = Grid::new(10);
-    /// let a = g.insert(Vec2::ZERO, ());
-    /// let b = g.insert(Vec2::new(5.0, 5.0), ());
+    /// let mut g: Grid<(), [f32; 2]> = Grid::new(10);
+    /// let a = g.insert([0.0, 0.0], ());
+    /// let b = g.insert([5.0, 5.0], ());
     ///
-    /// let around: Vec<_> = g.query_raw([-1.0, -1.0].into(), [1.0, 1.0].into()).map(|(id, _pos)| id).collect();
+    /// let around: Vec<_> = g.query([-1.0, -1.0].into(), [1.0, 1.0].into()).map(|(id, _pos)| id).collect();
     ///
     /// assert_eq!(vec![a, b], around);
     /// ```
-    pub fn query_raw(&self, ll: Vec2, ur: Vec2) -> impl Iterator<Item = CellObject> + '_ {
+    pub fn query(&self, ll: V2, ur: V2) -> impl Iterator<Item = CellObject<V2>> + '_ {
         let ll_id = self.storage.cell_id(ll);
         let ur_id = self.storage.cell_id(ur);
 

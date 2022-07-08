@@ -54,8 +54,12 @@ pub fn vehicle_decision(
         let danger_length =
             (self_obj.speed.powi(2) / (2.0 * vehicle.kind.deceleration())).min(100.0);
         let neighbors = cow.query_around(trans.position.xy(), 12.0 + danger_length);
-        let objs =
-            neighbors.map(|(id, pos)| (pos, cow.get(id).expect("Handle not in collision world").1));
+        let objs = neighbors.map(|(id, pos)| {
+            (
+                pos,
+                cow.get(id).expect("Handle not in collision world").1,
+            )
+        });
 
         let (s, d) = calc_decision(me, vehicle, map, time, trans, self_obj, it, objs);
         desired_speed = s;

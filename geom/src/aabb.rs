@@ -3,6 +3,7 @@ use crate::{Circle, Intersect, Polygon, Segment, Shape, OBB};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[repr(C)]
 pub struct AABB {
     pub ll: Vec2,
     pub ur: Vec2,
@@ -151,5 +152,17 @@ impl Intersect<Segment> for AABB {
 impl Intersect<Vec2> for AABB {
     fn intersects(&self, p: &Vec2) -> bool {
         self.contains(*p)
+    }
+}
+
+impl flat_spatial::AABB for AABB {
+    type V2 = Vec2;
+
+    fn ll(&self) -> Self::V2 {
+        self.ll
+    }
+
+    fn ur(&self) -> Self::V2 {
+        self.ur
     }
 }

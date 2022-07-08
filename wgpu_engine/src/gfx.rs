@@ -356,8 +356,6 @@ impl GfxContext {
 
         prepare(&mut fc);
 
-        drop(fc);
-
         let objsref = &*objs;
         let enc_dep_ext = &mut encs.depth_prepass;
         let enc_smap_ext = &mut encs.smap;

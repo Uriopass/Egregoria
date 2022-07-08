@@ -2,7 +2,7 @@
 
 use crate::map::{IntersectionID, LanePatternBuilder, Map, RoadSegmentKind};
 use common::FastMap;
-use flat_spatial::SparseGrid;
+use flat_spatial::Grid;
 use geom::{vec2, vec3, Vec2};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -57,7 +57,7 @@ pub fn load_parismap(map: &mut Map) {
     //Scale nodes
     let scale: f64 = 90000.0;
 
-    let mut g = SparseGrid::new(50);
+    let mut g = Grid::new(50);
 
     for _ in 0..n_inters {
         let mut long = scanner.next::<f64>();
