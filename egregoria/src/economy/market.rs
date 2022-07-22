@@ -63,7 +63,7 @@ impl Market {
     /// If an order is already placed, it will be updated.
     /// Beware that you need capital to sell anything, using produce.
     pub fn sell(&mut self, soul: SoulID, near: Vec2, kind: CommodityKind, qty: i32) {
-        log::info!("{:?} sell {:?} {:?} near {:?}", soul, qty, kind, near);
+        log::debug!("{:?} sell {:?} {:?} near {:?}", soul, qty, kind, near);
         self.m(kind).sell_orders.insert(soul, (near, qty));
     }
 
@@ -78,7 +78,7 @@ impl Market {
     /// Called when an agent tells the world it wants to buy something
     /// If an order is already placed, it will be updated.
     pub fn buy(&mut self, soul: SoulID, near: Vec2, kind: CommodityKind, qty: i32) {
-        log::info!("{:?} buy {:?} {:?} near {:?}", soul, qty, kind, near);
+        log::debug!("{:?} buy {:?} {:?} near {:?}", soul, qty, kind, near);
 
         self.m(kind).buy_orders.insert(soul, (near, qty));
     }
@@ -104,7 +104,7 @@ impl Market {
     /// Called whenever an agent (like a farm) produces something on it's own
     /// for example wheat is harvested or turned into flour. Returns the new quantity owned.
     pub fn produce(&mut self, soul: SoulID, kind: CommodityKind, delta: i32) -> i32 {
-        log::info!("{:?} produced {:?} {:?}", soul, delta, kind);
+        log::debug!("{:?} produced {:?} {:?}", soul, delta, kind);
 
         let v = self.m(kind).capital.entry(soul).or_default();
         *v += delta;
