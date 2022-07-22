@@ -82,7 +82,7 @@ impl BuyFood {
                 if loc == &Location::Building(b) {
                     self.state = BuyFoodState::Empty;
                     self.last_ate = time.instant();
-                    log::info!("{:?} ate at {:?}", soul, b);
+                    log::debug!("{:?} ate at {:?}", soul, b);
                     Yield
                 } else {
                     GoTo(Destination::Building(b))

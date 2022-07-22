@@ -125,7 +125,7 @@ commodity! {
 pub fn market_update(world: &mut World, resources: &mut Resources) {
     let mut m = resources.get_mut::<Market>().unwrap();
     for trade in m.make_trades() {
-        log::info!("A trade was made! {:?}", trade);
+        log::debug!("A trade was made! {:?}", trade);
 
         match trade.kind {
             CommodityKind::JobOpening => world
