@@ -8,7 +8,6 @@ members = [
     "native_app",
     "wgpu_engine",
     "networking",
-    "flat_spatial",
     "headless",
     "goria_version"
 ]

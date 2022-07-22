@@ -95,18 +95,20 @@ impl ParkingSpots {
             .map(move |(pos, dir)| {
                 let mut iter = reuse.query_around(pos.xy(), 3.0);
                 if let Some((h, _)) = iter.next() {
-                    let spot_id = reuse.get(h).map(|x| x.1).copied().unwrap();
-                    drop(iter);
+                    if let Some((_, spot_id)) = reuse.get(h) {
+                        let spot_id = *spot_id;
+                        drop(iter);
 
-                    reuse.remove(h);
-                    if let Some(p) = spots.get_mut(spot_id) {
-                        *p = ParkingSpot {
-                            parent,
-                            trans: Transform::new_dir(pos, dir),
-                        };
-                        return spot_id;
-                    } else {
-                        log::error!("found a spot in reuse that doesn't exist anymore");
+                        reuse.remove_maintain(h);
+                        if let Some(p) = spots.get_mut(spot_id) {
+                            *p = ParkingSpot {
+                                parent,
+                                trans: Transform::new_dir(pos, dir),
+                            };
+                            return spot_id;
+                        } else {
+                            log::error!("found a spot in reuse that doesn't exist anymore");
+                        }
                     }
                 }
 

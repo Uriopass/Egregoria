@@ -15,7 +15,7 @@ serde         = { version = "1.0", features = ["derive"] }
 log           = "0.4.11"
 imgui-inspect = { path = "../imgui-inspect"}
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
-flat_spatial  = { path = "../flat_spatial" }
+flat_spatial = { version = "0.5.0", features=["serde"] }
 geom          = { path = "../geom" }
 common        = { path = "../common" }
 goria_version = { path = "../goria_version" }

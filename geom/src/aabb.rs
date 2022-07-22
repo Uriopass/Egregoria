@@ -120,6 +120,7 @@ impl Shape for AABB {
 }
 
 impl Intersect<AABB> for AABB {
+    #[inline]
     fn intersects(&self, b: &AABB) -> bool {
         let a = self;
         let x =
@@ -150,19 +151,8 @@ impl Intersect<Segment> for AABB {
 }
 
 impl Intersect<Vec2> for AABB {
+    #[inline]
     fn intersects(&self, p: &Vec2) -> bool {
         self.contains(*p)
-    }
-}
-
-impl flat_spatial::AABB for AABB {
-    type V2 = Vec2;
-
-    fn ll(&self) -> Self::V2 {
-        self.ll
-    }
-
-    fn ur(&self) -> Self::V2 {
-        self.ur
     }
 }
