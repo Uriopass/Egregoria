@@ -1052,15 +1052,3 @@ impl From<[f64; 2]> for Vec2d {
         Self { x: v[0], y: v[1] }
     }
 }
-
-impl flat_spatial::Vec2 for Vec2 {
-    #[inline]
-    fn x(&self) -> f32 {
-        self.x
-    }
-
-    #[inline]
-    fn y(&self) -> f32 {
-        self.y
-    }
-}

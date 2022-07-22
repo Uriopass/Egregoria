@@ -243,3 +243,34 @@ pub fn lerp(src: f32, dst: f32, coeff: f32) -> f32 {
     let coeff = coeff.max(0.0).min(1.0);
     src * (1.0 - coeff) + dst * coeff
 }
+
+impl flat_spatial::Vec2 for Vec2 {
+    #[inline]
+    fn x(&self) -> f32 {
+        self.x
+    }
+
+    #[inline]
+    fn y(&self) -> f32 {
+        self.y
+    }
+}
+
+impl flat_spatial::AABB for AABB {
+    type V2 = Vec2;
+
+    #[inline]
+    fn ll(&self) -> Self::V2 {
+        self.ll
+    }
+
+    #[inline]
+    fn ur(&self) -> Self::V2 {
+        self.ur
+    }
+
+    #[inline]
+    fn intersects(&self, b: &Self) -> bool {
+        <AABB as Intersect<AABB>>::intersects(self, b)
+    }
+}

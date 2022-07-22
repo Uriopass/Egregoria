@@ -1,5 +1,5 @@
 use crate::map::{BuildingID, IntersectionID, LotID, Map, RoadID};
-use flat_spatial::shapegrid::ShapeGridHandle;
+use flat_spatial::aabbgrid::AABBGridHandle;
 use flat_spatial::AABBGrid;
 use geom::{Circle, Intersect, Shape, ShapeEnum, Vec2, AABB};
 use serde::{Deserialize, Serialize};
@@ -57,7 +57,7 @@ impl ProjectKind {
 pub struct SpatialMap {
     broad: AABBGrid<ProjectKind, AABB>,
     near: BTreeMap<ProjectKind, ShapeEnum>,
-    ids: BTreeMap<ProjectKind, ShapeGridHandle>,
+    ids: BTreeMap<ProjectKind, AABBGridHandle>,
 }
 
 impl Default for SpatialMap {
