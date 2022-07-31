@@ -6,6 +6,8 @@ use networking::{Frame, Server, ServerConfiguration, ServerPollResult};
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
 
+const VERSION: &str = include_str!("../../VERSION");
+
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Egregoria headless", no_version, author = "by Uriopass")]
 struct Opt {
@@ -31,7 +33,7 @@ fn main() {
     let opt: Opt = Opt::from_args();
     MyLog::init();
 
-    log::info!("starting server with version: {}", goria_version::VERSION);
+    log::info!("starting server with version: {}", VERSION);
 
     let mut w = unwrap_or!(Egregoria::load_from_disk("world"), {
         log::info!("savegame not found defaulting to empty");
@@ -45,7 +47,7 @@ fn main() {
         period: Duration::from_millis(opt.timestep),
         port: opt.port,
         virtual_client: None,
-        version: goria_version::VERSION.to_string(),
+        version: VERSION.to_string(),
         always_run: opt.always_run,
     }) {
         Ok(x) => x,

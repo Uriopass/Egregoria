@@ -8,8 +8,7 @@ members = [
     "native_app",
     "wgpu_engine",
     "networking",
-    "headless",
-    "goria_version"
+    "headless"
 ]
 
 resolver = "2"

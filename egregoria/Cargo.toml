@@ -18,7 +18,6 @@ imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 flat_spatial = { version = "0.5.0", features=["serde"] }
 geom          = { path = "../geom" }
 common        = { path = "../common" }
-goria_version = { path = "../goria_version" }
 slotmap       = { version = "1.0.2", default-features = false, features = ["serde", "unstable"] }
 imgui         = "0.8"
 rayon         = "1.5.1"

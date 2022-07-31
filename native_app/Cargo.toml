@@ -14,7 +14,6 @@ geom          = { path = "../geom" }
 wgpu_engine   = { path = "../wgpu_engine" }
 common        = { path = "../common" }
 networking    = { path = "../networking", optional=true }
-goria_version = { path = "../goria_version" }
 imgui-inspect = { path = "../imgui-inspect" }
 imgui-inspect-derive = { path = "../imgui-inspect-derive" }
 imgui-wgpu    = { git = "https://github.com/Yatekii/imgui-wgpu-rs" }

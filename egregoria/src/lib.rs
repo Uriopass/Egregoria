@@ -88,6 +88,7 @@ pub struct Egregoria {
 unsafe impl Sync for Egregoria {}
 
 const RNG_SEED: u64 = 123;
+const VERSION: &str = include_str!("../../VERSION");
 
 impl Egregoria {
     pub fn schedule() -> SeqSchedule {
@@ -303,7 +304,7 @@ impl Serialize for Egregoria {
 
         let v = EgregoriaSer {
             world: SerWorld(&self.world),
-            version: goria_version::VERSION.to_string(),
+            version: VERSION.to_string(),
             res: m,
             tick: self.tick,
         }
@@ -344,11 +345,11 @@ impl<'de> Deserialize<'de> for Egregoria {
             t.elapsed().as_secs_f32()
         );
 
-        if goriadeser.version != goria_version::VERSION {
+        if goriadeser.version != VERSION {
             return Err(Error::custom(format!(
                 "couldn't load save, incompatible version! save is: {} - game is: {}",
                 goriadeser.version,
-                goria_version::VERSION
+                VERSION
             )));
         }
 

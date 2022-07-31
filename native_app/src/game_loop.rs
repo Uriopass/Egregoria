@@ -29,6 +29,8 @@ use wgpu_engine::terrain::TerrainRender;
 const CSIZE: usize = egregoria::map::CHUNK_SIZE as usize;
 const CRESO: usize = egregoria::map::CHUNK_RESOLUTION as usize;
 
+pub(crate) const VERSION: &str = include_str!("../../VERSION");
+
 pub struct State {
     pub goria: Arc<RwLock<Egregoria>>,
 
@@ -66,7 +68,7 @@ impl State {
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
 
-        log::info!("version is {}", goria_version::VERSION);
+        log::info!("version is {}", VERSION);
 
         {
             let s = uiworld.read::<Settings>();
