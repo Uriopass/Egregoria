@@ -53,7 +53,7 @@ mod inner {
 
 #[cfg(feature = "multiplayer")]
 mod inner {
-    use crate::game_loop::{State, Timings};
+    use crate::game_loop::{State, Timings, VERSION};
     use crate::gui::windows::network::NetworkConnectionInfo;
     use crate::gui::windows::settings::Settings;
     use crate::uiworld::ReceivedCommands;
@@ -185,7 +185,7 @@ mod inner {
             virtual_client: Some(VirtualClientConf {
                 name: info.name.to_string(),
             }),
-            version: goria_version::VERSION.to_string(),
+            version: VERSION.to_string(),
             always_run: true,
         }) {
             Ok(x) => x,
@@ -224,7 +224,7 @@ mod inner {
             addr: parsed_addr.ip(),
             port: if port != 80 { Some(port) } else { None },
             frame_buffer_advance: 8,
-            version: goria_version::VERSION.to_string(),
+            version: VERSION.to_string(),
         }) {
             Ok(x) => x,
             Err(e) => {

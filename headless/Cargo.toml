@@ -9,7 +9,6 @@ edition = "2018"
 [dependencies]
 egregoria = { path = "../egregoria" }
 networking = { path = "../networking" }
-goria_version = { path = "../goria_version" }
 common = { path = "../common" }
 structopt = "0.3.21"
 log = { version = "0.4.11", features=["max_level_debug", "release_max_level_info"] }
