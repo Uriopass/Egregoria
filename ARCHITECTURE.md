@@ -142,3 +142,57 @@ Most of the 3D graphics code is in the `wgpu_engine` crate. It uses a basic forw
 Some notable features you could add would be cascaded shadow maps, PBR and clustered lighting.
 
 As the name hints, it uses wgpu as the rendering backend which is multi-backend (vulkan, dx12 and metal).
+
+# Economy
+
+The economy is a very central part of this city building game. A model must be chosen to know how companies and individuals engage in trade.
+
+A simple "graph model" ala Factorio where commodities are directly moved from producer to consumer works well if the system is closed. As we want external trading we need some way of introducing scarcity to regulate who gets what.
+
+I think people are more interested in capitalist models where objects are priced based on a free market since that's the world we live in.  
+However we need to make sure that the model does not go out of control. If the farms go bankrupt in real life, the government will give subsidies and try to keep the economy running instead of making everyone starve to death.
+
+I am not really well versed in economics so I'm going to try to do something interesting gameplay wise while still trying to keep some form of realism.
+
+## Free market
+
+The value of money is defined by a fixed salary for an unskilled worker. Say 1000 cents per hour.
+
+Raw commodities (which are not combined from other commodities) such as ores, raw food and wood are purely based on the efficiency of workers.  
+A basic mining spot with hand tools is much less efficient than a modern heavy-machinery assisted operation. However theses require complex machines/gas/etc.  
+
+Progression can be based on this idea of efficiency. As you advance along some tech tree, you unlock more efficient ways to do things that give better yield?
+
+Then other commodity sell price is based on the price of the raw commodities + the time it take to combine them + the time it takes for transport. For example a sawmill needs to buy some wood, transport it from the wood farm then uses a machine to split them in woodplanks, but that takes time and worker time. Companies might want to take some marges to have some capital for tough times.
+
+Fixed costs should also be taken into account. A big sawmill needs maintenance, if there isn't much wood to chop it should not be worth it.
+
+In real life the selling price is also based on scarcity, to incetivize buyers to only buy things they really need. The interaction between scarcity and better efficiency is something something paretto equilibrium.
+
+Everything revolves around a central "free market" where scarcity and minimum price is tracked. Price can then be inferred from it somehow.
+
+Taxes apply through "normalized inflation": a percentage of everyone's capital constantly flow towards the government (this is the same as the government printing money, only the base unskill worker salary stays the same).
+
+Sometimes, because of inflation, an inactive company can become bankrupt (in the sense that it cannot sustain its business anymore since it cannot buy the needed commodities). The choice is left up to the player to choose to invest in them (stimulus check) or just demantle the building/company.
+
+For simplicity: A building is a company.
+
+The government's money is used to expand the city. It is what the player plays with.
+
+Companies margins and taxes should stabilize the amount they have at any point. If the player constantly reinvests in companies it might be indicating that the tax rate is too high.
+
+External trade prices are fixed since we assume the external world is big. However they are higher than producing locally because of the transport costs. It is unavoidable however since at the start the player has nothing to build upon. It must manage it's money carefully to start being profitable.
+
+To avoid having a positive flow of money then waiting for a long time, some sort of global tax rate could be introduced so that the maximum capital is roughly proportional to the amount of capital produced by the city.
+
+A path for the implementation:
+
+External prices are high because they are imports, they can lower over time as population increase to accomodate for specialization or something.
+
+Central market tracks prices and buying/selling requests to calculate prices/scarcity.
+
+To decide, player is shown what is profitable and available depending on worker availability and other things.
+
+At the start, supermarkets can be filled using external trading, although that costs quite a bit and cannot hold for very long. Local food production is quite important. Maybe a starter self-sustaining city can be provided for beginners.
+
+Transportation should be expensive to encourage smart urban planning. A big map also helps by putting the raw materials far from each other.

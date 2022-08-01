@@ -7,9 +7,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct SingleMarket {
+    // todo: change i32 to Quantity
     capital: BTreeMap<SoulID, i32>,
     buy_orders: BTreeMap<SoulID, (Vec2, i32)>,
     sell_orders: BTreeMap<SoulID, (Vec2, i32)>,
+    ext_buy: i32,
+    ext_sell: i32,
 }
 
 impl SingleMarket {
