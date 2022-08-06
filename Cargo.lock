@@ -681,7 +681,6 @@ dependencies = [
  "common",
  "flat_spatial",
  "geom",
- "goria_version",
  "hecs",
  "imgui",
  "imgui-inspect",
@@ -921,10 +920,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "goria_version"
-version = "0.4.5"
-
-[[package]]
 name = "gpu-alloc"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -987,7 +982,6 @@ version = "0.1.0"
 dependencies = [
  "common",
  "egregoria",
- "goria_version",
  "log",
  "networking",
  "structopt",
@@ -1509,7 +1503,6 @@ dependencies = [
  "flat_spatial",
  "futures",
  "geom",
- "goria_version",
  "hecs",
  "imgui",
  "imgui-inspect",

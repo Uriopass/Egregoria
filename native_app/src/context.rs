@@ -51,7 +51,7 @@ impl Context {
                 size.width as f32 * 0.8,
                 size.height as f32 * 0.8,
             ))
-            .with_title(format!("Egregoria {}", goria_version::VERSION))
+            .with_title(format!("Egregoria {}", include_str!("../../VERSION")))
             .build(&el)
             .expect("Failed to create window");
 

@@ -159,7 +159,8 @@ impl Market {
             let SingleMarket {
                 buy_orders,
                 sell_orders,
-                capital,
+                capital, 
+                ..
             } = market;
 
             all_trades.extend(
