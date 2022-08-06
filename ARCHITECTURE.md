@@ -143,7 +143,7 @@ Some notable features you could add would be cascaded shadow maps, PBR and clust
 
 As the name hints, it uses wgpu as the rendering backend which is multi-backend (vulkan, dx12 and metal).
 
-# Economy
+# Economy
 
 The economy is a very central part of this city building game. A model must be chosen to know how companies and individuals engage in trade.
 
@@ -154,7 +154,7 @@ However we need to make sure that the model does not go out of control. If the f
 
 I am not really well versed in economics so I'm going to try to do something interesting gameplay wise while still trying to keep some form of realism.
 
-## Free market
+## Free market
 
 The value of money is defined by a fixed salary for an unskilled worker. Say 1000 cents per hour.
 
