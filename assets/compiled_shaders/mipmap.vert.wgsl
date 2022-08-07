@@ -1,7 +1,7 @@
 struct VertexOutput {
-    [[location(0)]] v_TexCoord: vec2<f32>;
-    [[builtin(position)]] member: vec4<f32>;
-};
+    @location(0) v_TexCoord: vec2<f32>,
+    @builtin(position) member: vec4<f32>,
+}
 
 var<private> v_TexCoord: vec2<f32>;
 var<private> gl_VertexIndex: u32;
@@ -11,8 +11,9 @@ fn main_1() {
     var tc: vec2<f32> = vec2<f32>(0.0, 0.0);
     var pos: vec2<f32>;
 
+    _ = vec2<f32>(0.0);
     let _e5: u32 = gl_VertexIndex;
-    switch(_e5) {
+    switch _e5 {
         case 0u: {
             tc = vec2<f32>(1.0, 0.0);
         }
@@ -38,8 +39,8 @@ fn main_1() {
     return;
 }
 
-[[stage(vertex)]]
-fn main([[builtin(vertex_index)]] param: u32) -> VertexOutput {
+@vertex 
+fn main(@builtin(vertex_index) param: u32) -> VertexOutput {
     gl_VertexIndex = param;
     main_1();
     let _e5: vec2<f32> = v_TexCoord;

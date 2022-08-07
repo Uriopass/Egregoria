@@ -429,7 +429,7 @@ impl GfxContext {
 
             let mut ssao_pass = encs.end.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &self.fbos.ssao.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
@@ -441,7 +441,7 @@ impl GfxContext {
                         }),
                         store: true,
                     },
-                }],
+                })],
                 depth_stencil_attachment: None,
             });
 
@@ -457,7 +457,7 @@ impl GfxContext {
             profiling::scope!("main render pass");
             let mut render_pass = encs.end.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &self.fbos.color_msaa,
                     resolve_target: Some(frame),
                     ops: wgpu::Operations {
@@ -469,7 +469,7 @@ impl GfxContext {
                         }),
                         store: true,
                     },
-                }],
+                })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.fbos.depth.view,
                     depth_ops: Some(wgpu::Operations {
@@ -489,14 +489,14 @@ impl GfxContext {
             profiling::scope!("bg pass");
             let mut bg_pass = encs.end.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &self.fbos.color_msaa,
                     resolve_target: Some(frame),
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
                         store: true,
                     },
-                }],
+                })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.fbos.depth.view,
                     depth_ops: Some(wgpu::Operations {
@@ -526,14 +526,14 @@ impl GfxContext {
     ) {
         let rpass = encoders.end.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
-            color_attachments: &[wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &self.fbos.ui.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                     store: true,
                 },
-            }],
+            })],
             depth_stencil_attachment: None,
         });
 
@@ -552,14 +552,14 @@ impl GfxContext {
 
         let mut blit_linear = encoders.end.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
-            color_attachments: &[wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: frame,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
                     store: true,
                 },
-            }],
+            })],
             depth_stencil_attachment: None,
         });
 
@@ -641,7 +641,7 @@ impl GfxContext {
                     push_constant_ranges: &[],
                 });
 
-        let color_states = [wgpu::ColorTargetState {
+        let color_states = [Some(wgpu::ColorTargetState {
             format: self.sc_desc.format,
             blend: Some(wgpu::BlendState {
                 color: BlendComponent {
@@ -652,7 +652,7 @@ impl GfxContext {
                 alpha: BlendComponent::REPLACE,
             }),
             write_mask: wgpu::ColorWrites::ALL,
-        }];
+        })];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
             label: Some(label),
@@ -836,14 +836,14 @@ impl SSAOPipeline {
                     push_constant_ranges: &[],
                 });
 
-        let color_states = [wgpu::ColorTargetState {
+        let color_states = [Some(wgpu::ColorTargetState {
             format: gfx.fbos.ssao.format,
             write_mask: wgpu::ColorWrites::ALL,
             blend: Some(BlendState {
                 color: wgpu::BlendComponent::REPLACE,
                 alpha: wgpu::BlendComponent::REPLACE,
             }),
-        }];
+        })];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
             label: None,

@@ -30,9 +30,9 @@ fn cache_filename(p: &Path) -> Option<PathBuf> {
 fn mk_module(data: &str, device: &wgpu::Device) -> ShaderModule {
     wgpu::Device::create_shader_module(
         device,
-        &wgpu::ShaderModuleDescriptor {
+        wgpu::ShaderModuleDescriptor {
             label: None,
-            source: ShaderSource::Wgsl(std::borrow::Cow::Borrowed(data)),
+            source: ShaderSource::Wgsl(Cow::Borrowed(data)),
         },
     )
 }

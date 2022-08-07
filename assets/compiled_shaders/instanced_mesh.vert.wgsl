@@ -1,37 +1,37 @@
 struct RenderParams {
-    invproj: mat4x4<f32>;
-    sunproj: mat4x4<f32>;
-    cam_pos: vec4<f32>;
-    cam_dir: vec4<f32>;
-    sun: vec3<f32>;
-    sun_col: vec4<f32>;
-    grass_col: vec4<f32>;
-    sand_col: vec4<f32>;
-    sea_col: vec4<f32>;
-    viewport: vec2<f32>;
-    time: f32;
-    ssao_strength: f32;
-    ssao_radius: f32;
-    ssao_falloff: f32;
-    ssao_base: f32;
-    ssao_samples: i32;
-    ssao_enabled: i32;
-    shadow_mapping_enabled: i32;
-    realistic_sky: i32;
-    grid_enabled: i32;
-};
+    invproj: mat4x4<f32>,
+    sunproj: mat4x4<f32>,
+    cam_pos: vec4<f32>,
+    cam_dir: vec4<f32>,
+    sun: vec3<f32>,
+    sun_col: vec4<f32>,
+    grass_col: vec4<f32>,
+    sand_col: vec4<f32>,
+    sea_col: vec4<f32>,
+    viewport: vec2<f32>,
+    time: f32,
+    ssao_strength: f32,
+    ssao_radius: f32,
+    ssao_falloff: f32,
+    ssao_base: f32,
+    ssao_samples: i32,
+    ssao_enabled: i32,
+    shadow_mapping_enabled: i32,
+    realistic_sky: i32,
+    grid_enabled: i32,
+}
 
 struct Uniforms {
-    u_view_proj: mat4x4<f32>;
-};
+    u_view_proj: mat4x4<f32>,
+}
 
 struct VertexOutput {
-    [[location(0)]] out_color: vec4<f32>;
-    [[location(1)]] out_normal: vec3<f32>;
-    [[location(2)]] out_wpos: vec3<f32>;
-    [[location(3)]] out_uv: vec2<f32>;
-    [[builtin(position)]] member: vec4<f32>;
-};
+    @location(0) out_color: vec4<f32>,
+    @location(1) out_normal: vec3<f32>,
+    @location(2) out_wpos: vec3<f32>,
+    @location(3) out_uv: vec2<f32>,
+    @builtin(position) member: vec4<f32>,
+}
 
 var<private> in_pos_1: vec3<f32>;
 var<private> in_normal_1: vec3<f32>;
@@ -44,7 +44,7 @@ var<private> out_color: vec4<f32>;
 var<private> out_normal: vec3<f32>;
 var<private> out_wpos: vec3<f32>;
 var<private> out_uv: vec2<f32>;
-[[group(0), binding(0)]]
+@group(0) @binding(0) 
 var<uniform> global: Uniforms;
 var<private> gl_Position: vec4<f32>;
 
@@ -57,10 +57,16 @@ fn main_1() {
 
     let _e13: vec3<f32> = in_instance_dir_1;
     x = _e13;
+    _ = vec3<f32>(f32(0), f32(0), f32(1));
+    _ = x;
     let _e30: vec3<f32> = x;
     y = cross(vec3<f32>(f32(0), f32(0), f32(1)), _e30);
+    _ = x;
+    _ = y;
     let _e35: vec3<f32> = y;
+    _ = normalize(_e35);
     let _e37: vec3<f32> = x;
+    _ = y;
     let _e39: vec3<f32> = y;
     z = cross(_e37, normalize(_e39));
     let _e43: vec3<f32> = in_pos_1;
@@ -93,8 +99,8 @@ fn main_1() {
     return;
 }
 
-[[stage(vertex)]]
-fn main([[location(0)]] in_pos: vec3<f32>, [[location(1)]] in_normal: vec3<f32>, [[location(2)]] in_uv: vec2<f32>, [[location(3)]] in_color: vec4<f32>, [[location(4)]] in_instance_pos: vec3<f32>, [[location(5)]] in_instance_dir: vec3<f32>, [[location(6)]] in_instance_tint: vec4<f32>) -> VertexOutput {
+@vertex 
+fn main(@location(0) in_pos: vec3<f32>, @location(1) in_normal: vec3<f32>, @location(2) in_uv: vec2<f32>, @location(3) in_color: vec4<f32>, @location(4) in_instance_pos: vec3<f32>, @location(5) in_instance_dir: vec3<f32>, @location(6) in_instance_tint: vec4<f32>) -> VertexOutput {
     in_pos_1 = in_pos;
     in_normal_1 = in_normal;
     in_uv_1 = in_uv;

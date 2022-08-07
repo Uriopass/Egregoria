@@ -16,7 +16,7 @@ impl BlitLinear {
         let vs_module = compile_shader(&gfx.device, "assets/shaders/blit_linear.vert", None).0;
         let fs_module = compile_shader(&gfx.device, "assets/shaders/blit_linear.frag", None).0;
 
-        let color_states = [wgpu::ColorTargetState {
+        let color_states = [Some(wgpu::ColorTargetState {
             format: gfx.sc_desc.format,
             blend: Some(wgpu::BlendState {
                 color: wgpu::BlendComponent {
@@ -27,7 +27,7 @@ impl BlitLinear {
                 alpha: wgpu::BlendComponent::REPLACE,
             }),
             write_mask: wgpu::ColorWrites::ALL,
-        }];
+        })];
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
             label: None,

@@ -1,7 +1,7 @@
 struct VertexOutput {
-    [[location(0)]] out_uv: vec2<f32>;
-    [[builtin(position)]] member: vec4<f32>;
-};
+    @location(0) out_uv: vec2<f32>,
+    @builtin(position) member: vec4<f32>,
+}
 
 var<private> in_pos_1: vec3<f32>;
 var<private> in_uv_1: vec2<f32>;
@@ -17,8 +17,8 @@ fn main_1() {
     return;
 }
 
-[[stage(vertex)]]
-fn main([[location(0)]] in_pos: vec3<f32>, [[location(1)]] in_uv: vec2<f32>) -> VertexOutput {
+@vertex 
+fn main(@location(0) in_pos: vec3<f32>, @location(1) in_uv: vec2<f32>) -> VertexOutput {
     in_pos_1 = in_pos;
     in_uv_1 = in_uv;
     main_1();

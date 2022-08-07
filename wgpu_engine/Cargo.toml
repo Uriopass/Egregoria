@@ -9,19 +9,19 @@ edition = "2018"
 [dependencies]
 geom      = { path = "../geom" }
 common    = { path = "../common" }
-wgpu      = { version = "0.12.0", features = [] }
+wgpu      = { version = "0.13.1", features = [] }
 bytemuck  = "1.7.2"
-image     = { version = "0.23.14", default-features = false, features = ["png"] }
+image     = { version = "0.24.3", default-features = false, features = ["png"] }
 log       = "0.4.11"
 raw-window-handle = "0.4.3"
-naga      = { version = "0.8.5", default-features=false, features = ["glsl-in", "wgsl-out"] }
+naga      = { version = "0.9.0", default-features=false, features = ["glsl-in", "wgsl-out"] }
 gltf      = { version = "1.0.0", default-features=false, features=["import", "utils"] }
 itertools = { version = "0.10.0", default-features = false }
 profiling = "1.0.1"
 rayon     = "1.5"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
-version = "0.12"
+version = "0.13.1"
 features = ["webgl"]
 
 [features]
