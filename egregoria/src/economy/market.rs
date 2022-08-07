@@ -159,7 +159,7 @@ impl Market {
             let SingleMarket {
                 buy_orders,
                 sell_orders,
-                capital, 
+                capital,
                 ..
             } = market;
 
@@ -205,7 +205,7 @@ mod tests {
     use hecs::Entity;
 
     fn mk_ent(id: u64) -> Entity {
-        unsafe { std::mem::transmute(id) }
+        Entity::from_bits(id).unwrap()
     }
 
     #[test]

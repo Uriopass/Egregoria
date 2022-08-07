@@ -17,10 +17,8 @@ use hecs::{Component, Entity, World};
 use pedestrians::Location;
 use resources::{Ref, RefMut, Resource, Resources};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::hash::Hash;
-use std::num::NonZeroU64;
 use std::time::{Duration, Instant};
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
@@ -54,25 +52,9 @@ use common::FastMap;
 use serde::de::Error;
 pub use utils::par_command_buffer::ParCommandBuffer;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 #[repr(transparent)]
 pub struct SoulID(pub Entity);
-
-impl PartialOrd for SoulID {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        let sel: NonZeroU64 = unsafe { std::mem::transmute(self.0) };
-        let other: NonZeroU64 = unsafe { std::mem::transmute(other.0) };
-        sel.partial_cmp(&other)
-    }
-}
-
-impl Ord for SoulID {
-    fn cmp(&self, other: &Self) -> Ordering {
-        let sel: NonZeroU64 = unsafe { std::mem::transmute(self.0) };
-        let other: NonZeroU64 = unsafe { std::mem::transmute(other.0) };
-        sel.cmp(&other)
-    }
-}
 
 debug_inspect_impl!(SoulID);
 
@@ -348,8 +330,7 @@ impl<'de> Deserialize<'de> for Egregoria {
         if goriadeser.version != VERSION {
             return Err(Error::custom(format!(
                 "couldn't load save, incompatible version! save is: {} - game is: {}",
-                goriadeser.version,
-                VERSION
+                goriadeser.version, VERSION
             )));
         }
 
