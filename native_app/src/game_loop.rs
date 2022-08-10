@@ -1,3 +1,4 @@
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
 
@@ -256,11 +257,14 @@ impl State {
             gui.render(ui, uiworld, goria);
         });
 
-        if uiworld.please_save {
+        if uiworld.please_save && !uiworld.saving_status.load(Ordering::SeqCst) {
             uiworld.please_save = false;
             let cpy = self.goria.clone();
+            uiworld.saving_status.store(true, Ordering::SeqCst);
+            let status = uiworld.saving_status.clone();
             std::thread::spawn(move || {
                 cpy.read().unwrap().save_to_disk("world");
+                status.store(false, Ordering::SeqCst);
             });
         }
     }

@@ -1,5 +1,5 @@
 use crate::uiworld::UiWorld;
-use egregoria::economy::{CommodityKind, Market};
+use egregoria::economy::{ItemRegistry, Market};
 use egregoria::Egregoria;
 use imgui::{Condition, Ui};
 
@@ -10,6 +10,7 @@ pub fn economy(
     goria: &Egregoria,
 ) {
     let market = goria.read::<Market>();
+    let registry = goria.read::<ItemRegistry>();
     let [w, h] = ui.io().display_size;
 
     window
@@ -32,9 +33,9 @@ pub fn economy(
             ui.text("Capital");
             ui.next_column();
 
-            for kind in CommodityKind::values() {
-                let market = unwrap_or!(inner.get(kind), {
-                    log::warn!("market does not exist for commodity {}", kind);
+            for item in registry.iter() {
+                let market = unwrap_or!(inner.get(&item.id), {
+                    log::warn!("market does not exist for commodity {}", &item.name);
                     continue;
                 });
 
@@ -51,7 +52,7 @@ pub fn economy(
 
                 let diff = offer - demand;
 
-                ui.text(format!("{}", kind));
+                ui.text(format!("{}", &item.label));
                 ui.next_column();
 
                 if diff == 0 {

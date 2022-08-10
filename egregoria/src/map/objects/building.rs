@@ -1,5 +1,6 @@
 use crate::map::procgen::{gen_exterior_farm, gen_exterior_house, ColoredMesh};
 use crate::map::{Buildings, LanePattern, RoadID, SpatialMap, Terrain};
+use crate::souls::goods_company::GoodsCompanyID;
 use geom::{Color, Vec2, Vec3, OBB};
 use imgui_inspect::debug_inspect_impl;
 use serde::{Deserialize, Serialize};
@@ -14,10 +15,19 @@ debug_inspect_impl!(BuildingID);
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum BuildingKind {
     House,
-    GoodsCompany(u32),
+    GoodsCompany(GoodsCompanyID),
     RailFretStation,
     TrainStation,
     ExternalTrading,
+}
+
+impl BuildingKind {
+    pub fn as_goods_company(&self) -> Option<GoodsCompanyID> {
+        match self {
+            BuildingKind::GoodsCompany(id) => Some(*id),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]

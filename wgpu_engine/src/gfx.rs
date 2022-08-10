@@ -185,7 +185,7 @@ impl GfxContext {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let blue_noise = TextureBuilder::from_path("assets/blue_noise_512.png")
+        let blue_noise = TextureBuilder::from_path("assets/sprites/blue_noise_512.png")
             .with_label("blue noise")
             .with_srgb(false)
             .with_mipmaps(false)
@@ -196,7 +196,7 @@ impl GfxContext {
 
         let mut textures = FastMap::default();
         textures.insert(
-            PathBuf::from("assets/blue_noise_512.png"),
+            PathBuf::from("assets/sprites/blue_noise_512.png"),
             Arc::new(blue_noise),
         );
 
@@ -233,14 +233,14 @@ impl GfxContext {
         SSAOPipeline::setup(&mut me);
         BackgroundPipeline::setup(&mut me);
 
-        let p = TextureBuilder::from_path("assets/palette.png")
+        let p = TextureBuilder::from_path("assets/sprites/palette.png")
             .with_label("palette")
             .with_sampler(Texture::nearest_sampler())
             .build(&me.device, &me.queue);
-        me.set_texture("assets/palette.png", p);
+        me.set_texture("assets/sprites/palette.png", p);
 
-        let gs = me.texture("assets/gradientsky.png", "gradient sky");
-        let starfield = me.texture("assets/starfield.png", "starfield");
+        let gs = me.texture("assets/sprites/gradientsky.png", "gradient sky");
+        let starfield = me.texture("assets/sprites/starfield.png", "starfield");
 
         me.sky_bg = Texture::multi_bindgroup(
             &[&*gs, &*starfield],
@@ -298,7 +298,7 @@ impl GfxContext {
 
     pub fn palette(&self) -> Arc<Texture> {
         self.textures
-            .get(&*PathBuf::from("assets/palette.png"))
+            .get(&*PathBuf::from("assets/sprites/palette.png"))
             .expect("palette not loaded")
             .clone()
     }
@@ -613,7 +613,7 @@ impl GfxContext {
         self.simplelit_bg = Texture::multi_bindgroup(
             &[
                 &self.fbos.ssao,
-                self.read_texture("assets/blue_noise_512.png")
+                self.read_texture("assets/sprites/blue_noise_512.png")
                     .expect("blue noise not initialized"),
                 &self.sun_shadowmap,
             ],

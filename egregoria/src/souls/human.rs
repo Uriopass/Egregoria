@@ -1,5 +1,4 @@
-use crate::economy::CommodityKind::JobOpening;
-use crate::economy::{Bought, Market};
+use crate::economy::{Bought, ItemRegistry, Market};
 use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination, Router};
 use crate::pedestrians::{spawn_pedestrian, Location};
@@ -168,12 +167,17 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<SoulID> {
     let car = spawn_parked_vehicle(goria, VehicleKind::Car, housepos);
 
     let mut m = goria.write::<Market>();
-    m.buy(human, housepos.xy(), JobOpening, 1);
+    {}
+    let registry = goria.read::<ItemRegistry>();
+    m.buy(human, housepos.xy(), registry.id("job-opening"), 1);
     drop(m);
 
     goria.write::<BuildingInfos>().set_owner(house, human);
 
     let time = goria.read::<GameTime>().instant();
+
+    let food = BuyFood::new(time, &*registry);
+    drop(registry);
 
     goria
         .world
@@ -182,7 +186,7 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<SoulID> {
             (
                 HumanDecision::default(),
                 Home::new(house),
-                BuyFood::new(time),
+                food,
                 Bought::default(),
                 Router::new(car),
             ),

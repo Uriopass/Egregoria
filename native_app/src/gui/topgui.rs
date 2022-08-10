@@ -9,7 +9,7 @@ use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
-use egregoria::economy::Government;
+use egregoria::economy::{Government, ItemRegistry};
 use egregoria::map::{
     BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, StraightRoadGen,
     TurnPolicy,
@@ -22,6 +22,7 @@ use imgui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
 };
 use serde::{Deserialize, Serialize};
+use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 #[derive(Serialize, Deserialize)]
@@ -491,6 +492,8 @@ impl Gui {
         let registry = goria.read::<GoodsCompanyRegistry>();
         let gbuildings = registry.descriptions.values().peekable();
 
+        let iregistry = goria.read::<ItemRegistry>();
+
         if matches!(*uiworld.read::<Tab>(), Tab::Roadbuilding) {
             Window::new("Buildings")
                 .size_constraints([building_select_w, 0.0], [building_select_w, h * 0.5])
@@ -521,7 +524,7 @@ impl Gui {
                         if ui.button_with_size(&descr.name, [building_select_w - SCROLLBAR_W, 35.0])
                             || cur_build.opt.is_none()
                         {
-                            let bkind = descr.bkind;
+                            let bkind = BuildingKind::GoodsCompany(descr.id);
                             let bgen = descr.bgen;
                             cur_build.opt = Some(SpecialBuildKind {
                                 road_snap: true,
@@ -567,14 +570,14 @@ impl Gui {
                                 if !descr.recipe.consumption.is_empty() {
                                     ui.text("consumption:");
                                     for (kind, n) in &descr.recipe.consumption {
-                                        ui.text(format!("- {} x{}", kind, n));
+                                        ui.text(format!("- {} x{}", &iregistry[*kind].label, n));
                                     }
                                     ui.new_line();
                                 }
                                 if !descr.recipe.production.is_empty() {
                                     ui.text("production:");
                                     for (kind, n) in &descr.recipe.production {
-                                        ui.text(format!("- {} x{}", kind, n));
+                                        ui.text(format!("- {} x{}", &iregistry[*kind].label, n));
                                     }
                                     ui.new_line();
                                 }
@@ -694,10 +697,19 @@ impl Gui {
             self.windows.menu(ui);
 
             let h = ui.window_size()[1];
-            if ui.button_with_size("Save", [80.0, h]) {
+
+            let mut name = "Save";
+            let mut tok = None;
+            if uiworld.saving_status.load(Ordering::SeqCst) {
+                name = "Saving...";
+                tok = Some(ui.begin_disabled(true));
+            }
+
+            if ui.button_with_size(name, [80.0, h]) {
                 uiworld.please_save = true;
                 uiworld.save_to_disk();
             }
+            drop(tok);
 
             ui.text(format!("Money: {}", goria.read::<Government>().money));
         });

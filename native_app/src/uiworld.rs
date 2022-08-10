@@ -3,12 +3,15 @@ use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use hecs::{Component, DynamicBundle, QueryOne};
 use hecs::{Entity, World};
 use resources::{Ref, RefMut, Resource};
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 
 #[derive(Default)]
 pub struct UiWorld {
     pub world: World,
     resources: resources::Resources,
     pub please_save: bool,
+    pub saving_status: Arc<AtomicBool>,
 }
 
 #[allow(dead_code)]

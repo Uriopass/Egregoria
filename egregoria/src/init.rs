@@ -1,4 +1,4 @@
-use crate::economy::{market_update, Government, Market};
+use crate::economy::{market_update, Government, ItemRegistry, Market};
 use crate::map::Map;
 use crate::map_dynamic::{
     itinerary_update, routing_changed_system, routing_update_system, BuildingInfos,
@@ -42,12 +42,14 @@ pub fn init() {
     register_system("train_reservations_update", train_reservations_update);
 
     register_resource_noserialize::<GoodsCompanyRegistry>();
+    register_resource_noserialize::<ItemRegistry>();
     register_resource_noserialize::<ParCommandBuffer>();
+
+    register_resource_noinit::<Market>("market");
 
     register_resource("map", Map::default);
     register_resource("train_reservations", TrainReservations::default);
     register_resource("government", Government::default);
-    register_resource("market", Market::default);
     register_resource("pmanagement", ParkingManagement::default);
     register_resource("binfos", BuildingInfos::default);
     register_resource("game_time", || {
@@ -99,6 +101,14 @@ fn register_resource<T: 'static + Send + Sync + Serialize + DeserializeOwned>(
         INIT_FUNCS.push(InitFunc {
             f: Box::new(move |uiw| uiw.insert(initializer())),
         });
+        register_resource_noinit::<T>(name);
+    }
+}
+
+fn register_resource_noinit<T: 'static + Send + Sync + Serialize + DeserializeOwned>(
+    name: &'static str,
+) {
+    unsafe {
         SAVELOAD_FUNCS.push(SaveLoadFunc {
             name,
             save: Box::new(move |uiworld| {

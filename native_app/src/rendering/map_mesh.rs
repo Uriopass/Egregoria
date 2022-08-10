@@ -43,19 +43,19 @@ pub struct MapMeshes {
 
 impl MapMeshHandler {
     pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
-        let arrow_builder = SpriteBatchBuilder::from_path(gfx, "assets/arrow_one_way.png");
+        let arrow_builder = SpriteBatchBuilder::from_path(gfx, "assets/sprites/arrow_one_way.png");
 
         let mut buildsprites = FastMap::default();
         let mut buildmeshes = FastMap::default();
 
         for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
-            let asset = descr.asset_location;
+            let asset = &descr.asset_location;
             if !asset.ends_with(".png") {
                 continue;
             }
             buildsprites.insert(
-                descr.bkind,
-                SpriteBatchBuilder::new(gfx.texture(asset, asset)),
+                BuildingKind::GoodsCompany(descr.id),
+                SpriteBatchBuilder::new(gfx.texture(asset, "goods_company_tex")),
             );
         }
 
@@ -63,7 +63,12 @@ impl MapMeshHandler {
             .read::<GoodsCompanyRegistry>()
             .descriptions
             .values()
-            .map(|descr| (descr.asset_location, descr.bkind))
+            .map(|descr| {
+                (
+                    descr.asset_location.as_ref(),
+                    BuildingKind::GoodsCompany(descr.id),
+                )
+            })
             .chain([
                 ("rail_fret_station.glb", BuildingKind::RailFretStation),
                 ("trainstation.glb", BuildingKind::TrainStation),
@@ -113,7 +118,7 @@ impl MapMeshHandler {
 
             let m = &mut self.builders.tess_map.meshbuilder;
 
-            let cw = gfx.texture("assets/crosswalk.png", "crosswalk");
+            let cw = gfx.texture("assets/sprites/crosswalk.png", "crosswalk");
 
             let meshes = MapMeshes {
                 map: m.build(gfx, gfx.palette()),

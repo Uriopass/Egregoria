@@ -1,0 +1,146 @@
+[
+  {
+    "name": "job-opening",
+    "label": "Job opening",
+    "ext_value": 100000000,
+    "transport_cost": 0
+  },
+  {
+    "name": "cereal",
+    "label": "Cereal",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "flour",
+    "label": "Flour",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "bread",
+    "label": "Bread",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "vegetable",
+    "label": "Vegetable",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "carcass",
+    "label": "Carcass",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "raw-meat",
+    "label": "Raw meat",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "meat",
+    "label": "Meat",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "tree-log",
+    "label": "Tree Log",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "wood-plank",
+    "label": "Wood Plank",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "iron-ore",
+    "label": "Iron Ore",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "metal",
+    "label": "Metal",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "rare-metal",
+    "label": "Rare Metal",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "high-tech-product",
+    "label": "High Tech Product",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "furniture",
+    "label": "Furniture",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "flower",
+    "label": "Flower",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "wool",
+    "label": "Wool",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "textile",
+    "label": "Textile",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "cloth",
+    "label": "Cloth",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "oil",
+    "label": "Oil",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "coal",
+    "label": "Coal",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "electricity",
+    "label": "Electricity",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "polyester",
+    "label": "Polyester",
+    "ext_value": 1000,
+    "transport_cost": 10
+  },
+  {
+    "name": "petrol",
+    "label": "Petrol",
+    "ext_value": 1000,
+    "transport_cost": 10
+  }
+]

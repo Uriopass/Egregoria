@@ -1,23 +1,24 @@
 use super::desire::Work;
-use crate::economy::{CommodityKind, Market, Sold, Workers};
+use crate::economy::{ItemID, ItemRegistry, Market, Sold, Workers};
 use crate::engine_interaction::Selectable;
-use crate::map::{BuildingGen, BuildingID, BuildingKind, Map};
+use crate::map::{BuildingGen, BuildingID, Map};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
 use crate::utils::time::GameTime;
 use crate::vehicles::VehicleID;
 use crate::{Egregoria, ParCommandBuffer, SoulID};
+use common::saveload::Encoder;
 use geom::{Transform, Vec2};
 use hecs::{Entity, World};
 use imgui_inspect_derive::Inspect;
 use resources::Resources;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use slotmap::{new_key_type, SlotMap};
 
-#[derive(Clone, Serialize, Deserialize, Inspect)]
+#[derive(Debug, Clone, Serialize, Deserialize, Inspect)]
 pub struct Recipe {
-    pub consumption: Vec<(CommodityKind, i32)>,
-    pub production: Vec<(CommodityKind, i32)>,
+    pub consumption: Vec<(ItemID, i32)>,
+    pub production: Vec<(ItemID, i32)>,
 
     /// Time to execute the recipe when the facility is at full capacity, in seconds
     pub complexity: i32,
@@ -28,471 +29,139 @@ pub struct Recipe {
     pub storage_multiplier: i32,
 }
 
+new_key_type! {
+    pub struct GoodsCompanyID;
+}
+
+#[derive(Debug)]
 pub struct GoodsCompanyDescription {
-    pub name: &'static str,
-    pub bkind: BuildingKind,
+    pub id: GoodsCompanyID,
+    pub name: String,
     pub bgen: BuildingGen,
     pub kind: CompanyKind,
     pub recipe: Recipe,
     pub n_workers: i32,
     pub size: f32,
-    pub asset_location: &'static str,
+    pub asset_location: String,
 }
 
+#[derive(Default)]
 pub struct GoodsCompanyRegistry {
-    pub descriptions: BTreeMap<BuildingKind, GoodsCompanyDescription>,
+    pub descriptions: SlotMap<GoodsCompanyID, GoodsCompanyDescription>,
 }
 
-impl Default for GoodsCompanyRegistry {
-    fn default() -> Self {
-        Self {
-            descriptions: vec![
-                GoodsCompanyDescription {
-                    name: "Coal power plant", // doesn't do anything yet, was really to test my modeling skills..
-                    bkind: BuildingKind::GoodsCompany(25), // should've probably done an existing useful building instead..
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Network,
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Coal, 1)],
-                        production: vec![(CommodityKind::Electricity, 2460)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 165.0,
-                    asset_location: "coal_power_plant.glb",
+#[derive(Serialize, Deserialize)]
+struct RecipeDescription {
+    pub consumption: Vec<(String, i32)>,
+    pub production: Vec<(String, i32)>,
+    pub complexity: i32,
+    pub storage_multiplier: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+struct BuildingGenDescription {
+    pub kind: String,
+    pub vertical_factor: Option<f32>,
+    pub door_pos: Option<Vec2>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct GoodsCompanyDescriptionJSON {
+    pub name: String,
+    pub bgen: BuildingGenDescription,
+    pub kind: String,
+    pub recipe: RecipeDescription,
+    pub n_workers: i32,
+    pub n_trucks: Option<u32>,
+    pub size: f32,
+    pub asset_location: String,
+}
+
+impl GoodsCompanyRegistry {
+    pub fn load(&mut self, source: &str, registry: &ItemRegistry) {
+        let descriptions: Vec<GoodsCompanyDescriptionJSON> =
+            match common::saveload::JSON::decode(source.as_ref()) {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!("couldn't load goods company descriptions: {}", e);
+                    return;
+                }
+            };
+
+        for descr in descriptions {
+            let kind = match descr.kind.as_ref() {
+                "store" => CompanyKind::Store,
+                "network" => CompanyKind::Network,
+                "factory" => CompanyKind::Factory {
+                    n_trucks: descr
+                        .n_trucks
+                        .expect("expecting n_trucks when using kind factory"),
                 },
-                GoodsCompanyDescription {
-                    name: "Useless warehouse",
-                    bkind: BuildingKind::GoodsCompany(24),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Store,
-                    recipe: Recipe {
-                        consumption: vec![],
-                        production: vec![],
-                        complexity: 1000,
-                        storage_multiplier: 0,
-                    },
-                    n_workers: 100,
-                    size: 100.0,
-                    asset_location: "assets/warehouse.png",
+                _ => {
+                    log::error!("unknown goods company kind: {}", descr.kind);
+                    continue;
+                }
+            };
+            let recipe = Recipe {
+                consumption: descr
+                    .recipe
+                    .consumption
+                    .into_iter()
+                    .map(|(item, qty)| {
+                        let item_id = registry.id(&item);
+                        (item_id, qty)
+                    })
+                    .collect(),
+                production: descr
+                    .recipe
+                    .production
+                    .into_iter()
+                    .map(|(item, qty)| {
+                        let item_id = registry.id(&item);
+                        (item_id, qty)
+                    })
+                    .collect(),
+                complexity: descr.recipe.complexity,
+                storage_multiplier: descr.recipe.storage_multiplier,
+            };
+
+            let bgen = match descr.bgen.kind.as_ref() {
+                "farm" => BuildingGen::Farm,
+                "centered_door" => BuildingGen::CenteredDoor {
+                    vertical_factor: descr
+                        .bgen
+                        .vertical_factor
+                        .expect("expecting vertical factor when using centered_door"),
                 },
-                GoodsCompanyDescription {
-                    name: "Supermarket",
-                    bkind: BuildingKind::GoodsCompany(23),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Store,
-                    recipe: Recipe {
-                        consumption: vec![
-                            (CommodityKind::Meat, 1),
-                            (CommodityKind::Vegetable, 1),
-                            (CommodityKind::Cereal, 1),
-                        ], // TODO: actually implement stores
-                        production: vec![
-                            (CommodityKind::Meat, 1),
-                            (CommodityKind::Vegetable, 1),
-                            (CommodityKind::Cereal, 1),
-                        ],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/supermarket.png",
+                "no_walkway" => BuildingGen::NoWalkway {
+                    door_pos: descr
+                        .bgen
+                        .door_pos
+                        .expect("expecting door_pos when using no_walkway"),
                 },
-                GoodsCompanyDescription {
-                    name: "Clothes store",
-                    bkind: BuildingKind::GoodsCompany(22),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Store,
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Cloth, 1)], // TODO: actually implement stores
-                        production: vec![(CommodityKind::Cloth, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 10.0,
-                    asset_location: "assets/clothes_store.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Cloth factory",
-                    bkind: BuildingKind::GoodsCompany(21),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Polyester, 1), (CommodityKind::Wool, 1)],
-                        production: vec![(CommodityKind::Cloth, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/cloth_factory.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Polyester refinery",
-                    bkind: BuildingKind::GoodsCompany(20),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Oil, 1)],
-                        production: vec![(CommodityKind::Polyester, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 5,
-                    size: 80.0,
-                    asset_location: "assets/polyester_refinery.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Oil pump",
-                    bkind: BuildingKind::GoodsCompany(19),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![],
-                        production: vec![(CommodityKind::Oil, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 5,
-                    size: 20.0,
-                    asset_location: "assets/oil_pump.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Textile processing facility",
-                    bkind: BuildingKind::GoodsCompany(18),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Wool, 1)],
-                        production: vec![(CommodityKind::Cloth, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/textile_processing_facility.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Wool farm",
-                    bkind: BuildingKind::GoodsCompany(17),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![],
-                        production: vec![(CommodityKind::Wool, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/wool_farm.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Florist",
-                    bkind: BuildingKind::GoodsCompany(16),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Store,
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Flower, 1)], // TODO: actually implement stores
-                        production: vec![(CommodityKind::Flower, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 10.0,
-                    asset_location: "assets/florist.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Horticulturalist",
-                    bkind: BuildingKind::GoodsCompany(15),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![],
-                        production: vec![(CommodityKind::Flower, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 5,
-                    size: 80.0,
-                    asset_location: "assets/horticulturalist.png",
-                },
-                GoodsCompanyDescription {
-                    name: "High tech store",
-                    bkind: BuildingKind::GoodsCompany(14),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Store,
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::HighTechProduct, 1)], // TODO: actually implement stores
-                        production: vec![(CommodityKind::HighTechProduct, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/hightech_store.png",
-                },
-                GoodsCompanyDescription {
-                    name: "High tech facility",
-                    bkind: BuildingKind::GoodsCompany(13),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::RareMetal, 1), (CommodityKind::Metal, 1)],
-                        production: vec![(CommodityKind::HighTechProduct, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/hightech_facility.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Rare metal mine",
-                    bkind: BuildingKind::GoodsCompany(12),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![],
-                        production: vec![(CommodityKind::RareMetal, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/rare_metal_mine.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Furniture store",
-                    bkind: BuildingKind::GoodsCompany(11),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Store,
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Metal, 1), (CommodityKind::WoodPlank, 1)],
-                        production: vec![(CommodityKind::Furniture, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/furniture_store.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Foundry",
-                    bkind: BuildingKind::GoodsCompany(10),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::IronOre, 1)],
-                        production: vec![(CommodityKind::Metal, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/foundry.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Iron mine",
-                    bkind: BuildingKind::GoodsCompany(9),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![],
-                        production: vec![(CommodityKind::IronOre, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/iron_mine.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Woodmill",
-                    bkind: BuildingKind::GoodsCompany(8),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::TreeLog, 1)],
-                        production: vec![(CommodityKind::WoodPlank, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/woodmill.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Lumber yard",
-                    bkind: BuildingKind::GoodsCompany(7),
-                    bgen: BuildingGen::Farm,
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![],
-                        production: vec![(CommodityKind::TreeLog, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 200.0,
-                    asset_location: "assets/lumber_yard.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Meat facility",
-                    bkind: BuildingKind::GoodsCompany(6),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 0.6,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::RawMeat, 1)],
-                        production: vec![(CommodityKind::Meat, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "assets/meat_facility.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Slaughterhouse",
-                    bkind: BuildingKind::GoodsCompany(5),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Carcass, 1)],
-                        production: vec![(CommodityKind::RawMeat, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 5,
-                    size: 50.0,
-                    asset_location: "assets/slaughterhouse.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Animal Farm",
-                    bkind: BuildingKind::GoodsCompany(4),
-                    bgen: BuildingGen::Farm,
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Cereal, 1)],
-                        production: vec![(CommodityKind::Carcass, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 5,
-                    size: 80.0,
-                    asset_location: "assets/animal_farm.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Vegetable Farm",
-                    bkind: BuildingKind::GoodsCompany(3),
-                    bgen: BuildingGen::Farm,
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![],
-                        production: vec![(CommodityKind::Vegetable, 2)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 70.0,
-                    asset_location: "assets/vegetable_farm.png",
-                },
-                GoodsCompanyDescription {
-                    name: "Bakery",
-                    bkind: BuildingKind::GoodsCompany(2),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 1.0,
-                    },
-                    kind: CompanyKind::Store,
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Flour, 1)],
-                        production: vec![(CommodityKind::Bread, 1)],
-                        complexity: 100,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 3,
-                    size: 10.0,
-                    asset_location: "bakery.glb",
-                },
-                GoodsCompanyDescription {
-                    name: "Cereal Factory",
-                    bkind: BuildingKind::GoodsCompany(1),
-                    bgen: BuildingGen::CenteredDoor {
-                        vertical_factor: 0.6,
-                    },
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![(CommodityKind::Cereal, 1)],
-                        production: vec![(CommodityKind::Flour, 10)],
-                        complexity: 200,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 80.0,
-                    asset_location: "flour_factory.glb",
-                },
-                GoodsCompanyDescription {
-                    name: "Cereal Farm",
-                    bkind: BuildingKind::GoodsCompany(0),
-                    bgen: BuildingGen::Farm,
-                    kind: CompanyKind::Factory { n_trucks: 1 },
-                    recipe: Recipe {
-                        consumption: vec![],
-                        production: vec![(CommodityKind::Cereal, 1)],
-                        complexity: 200,
-                        storage_multiplier: 5,
-                    },
-                    n_workers: 10,
-                    size: 120.0,
-                    asset_location: "assets/cereal_farm.png",
-                },
-            ]
-            .into_iter()
-            .map(|x| (x.bkind, x))
-            .collect(),
+                _ => {
+                    log::error!("unknown building gen kind: {}", descr.bgen.kind);
+                    continue;
+                }
+            };
+            let name = descr.name;
+            let n_workers = descr.n_workers;
+            let size = descr.size;
+            let asset_location = descr.asset_location;
+            let id = self
+                .descriptions
+                .insert_with_key(move |id| GoodsCompanyDescription {
+                    id,
+                    name,
+                    bgen,
+                    kind,
+                    recipe,
+                    n_workers,
+                    size,
+                    asset_location,
+                });
+
+            log::info!("loaded {:?}", &self.descriptions[id]);
         }
     }
 }
@@ -567,10 +236,12 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
 
     let soul = SoulID(e);
 
+    let job_opening = goria.read::<ItemRegistry>().id("job-opening");
+
     {
         let m = &mut *goria.write::<Market>();
-        m.produce(soul, CommodityKind::JobOpening, company.max_workers);
-        m.sell_all(soul, door_pos.xy(), CommodityKind::JobOpening);
+        m.produce(soul, job_opening, company.max_workers);
+        m.sell_all(soul, door_pos.xy(), job_opening);
 
         company.recipe.init(soul, door_pos.xy(), m);
     }

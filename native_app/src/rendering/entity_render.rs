@@ -24,7 +24,7 @@ impl InstancedRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
         InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
-                gfx.texture("assets/path_not_found.png", "path_not_found"),
+                gfx.texture("assets/sprites/path_not_found.png", "path_not_found"),
             ),
             cars: InstancedMeshBuilder::new(load_mesh("simple_car.glb", gfx).unwrap()),
             trains: InstancedMeshBuilder::new(load_mesh("train.glb", gfx).unwrap()),

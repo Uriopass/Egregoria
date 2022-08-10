@@ -1,21 +1,31 @@
-use crate::economy::CommodityKind;
+use crate::economy::{ItemID, ItemRegistry, Money};
 use crate::SoulID;
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct SingleMarket {
     // todo: change i32 to Quantity
     capital: BTreeMap<SoulID, i32>,
-    buy_orders: BTreeMap<SoulID, (Vec2, i32)>,
-    sell_orders: BTreeMap<SoulID, (Vec2, i32)>,
-    ext_buy: i32,
-    ext_sell: i32,
+    buy_orders: BTreeMap<SoulID, (Vec2, i32, Money)>,
+    sell_orders: BTreeMap<SoulID, (Vec2, i32, Money)>,
+    ext_value: Money,
+    transport_cost: Money,
 }
 
 impl SingleMarket {
+    pub fn new(ext_value: Money, transport_cost: Money) -> Self {
+        Self {
+            capital: Default::default(),
+            buy_orders: Default::default(),
+            sell_orders: Default::default(),
+            ext_value,
+            transport_cost,
+        }
+    }
+
     pub fn capital(&self, soul: SoulID) -> Option<i32> {
         self.capital.get(&soul).copied()
     }
@@ -23,28 +33,17 @@ impl SingleMarket {
     pub fn capital_map(&self) -> &BTreeMap<SoulID, i32> {
         &self.capital
     }
-    pub fn buy_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32)> {
+    pub fn buy_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32, Money)> {
         &self.buy_orders
     }
-    pub fn sell_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32)> {
+    pub fn sell_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32, Money)> {
         &self.sell_orders
     }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Market {
-    markets: BTreeMap<CommodityKind, SingleMarket>,
-}
-
-impl Default for Market {
-    fn default() -> Self {
-        Self {
-            markets: CommodityKind::values()
-                .iter()
-                .map(|&v| (v, SingleMarket::default()))
-                .collect(),
-        }
-    }
+    markets: BTreeMap<ItemID, SingleMarket>,
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -54,23 +53,34 @@ pub struct Trade {
     pub qty: i32,
     pub sell_pos: Vec2,
     pub buy_pos: Vec2,
-    pub kind: CommodityKind,
+    pub kind: ItemID,
 }
 
 impl Market {
-    fn m(&mut self, kind: CommodityKind) -> &mut SingleMarket {
+    pub fn new(registry: &ItemRegistry) -> Self {
+        Self {
+            markets: registry
+                .iter()
+                .map(|v| (v.id, SingleMarket::new(v.ext_value, v.transport_cost)))
+                .collect(),
+        }
+    }
+
+    fn m(&mut self, kind: ItemID) -> &mut SingleMarket {
         self.markets.get_mut(&kind).unwrap()
     }
 
     /// Called when an agent tells the world it wants to sell something
     /// If an order is already placed, it will be updated.
     /// Beware that you need capital to sell anything, using produce.
-    pub fn sell(&mut self, soul: SoulID, near: Vec2, kind: CommodityKind, qty: i32) {
+    pub fn sell(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
         log::debug!("{:?} sell {:?} {:?} near {:?}", soul, qty, kind, near);
-        self.m(kind).sell_orders.insert(soul, (near, qty));
+        self.m(kind)
+            .sell_orders
+            .insert(soul, (near, qty, Money::ZERO));
     }
 
-    pub fn sell_all(&mut self, soul: SoulID, near: Vec2, kind: CommodityKind) {
+    pub fn sell_all(&mut self, soul: SoulID, near: Vec2, kind: ItemID) {
         let c = self.capital(soul, kind);
         if c == 0 {
             return;
@@ -80,13 +90,15 @@ impl Market {
 
     /// Called when an agent tells the world it wants to buy something
     /// If an order is already placed, it will be updated.
-    pub fn buy(&mut self, soul: SoulID, near: Vec2, kind: CommodityKind, qty: i32) {
+    pub fn buy(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
         log::debug!("{:?} buy {:?} {:?} near {:?}", soul, qty, kind, near);
 
-        self.m(kind).buy_orders.insert(soul, (near, qty));
+        self.m(kind)
+            .buy_orders
+            .insert(soul, (near, qty, Money::ZERO));
     }
 
-    pub fn buy_until(&mut self, soul: SoulID, near: Vec2, kind: CommodityKind, qty: i32) {
+    pub fn buy_until(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
         let c = self.capital(soul, kind);
         if c >= qty {
             return;
@@ -95,18 +107,18 @@ impl Market {
     }
 
     /// Get the capital that this agent owns
-    pub fn capital(&self, soul: SoulID, kind: CommodityKind) -> i32 {
+    pub fn capital(&self, soul: SoulID, kind: ItemID) -> i32 {
         self.markets.get(&kind).unwrap().capital(soul).unwrap_or(0)
     }
 
     /// Registers a soul to the market, not obligatory
-    pub fn register(&mut self, soul: SoulID, kind: CommodityKind) {
+    pub fn register(&mut self, soul: SoulID, kind: ItemID) {
         self.m(kind).capital.entry(soul).or_default();
     }
 
     /// Called whenever an agent (like a farm) produces something on it's own
     /// for example wheat is harvested or turned into flour. Returns the new quantity owned.
-    pub fn produce(&mut self, soul: SoulID, kind: CommodityKind, delta: i32) -> i32 {
+    pub fn produce(&mut self, soul: SoulID, kind: ItemID, delta: i32) -> i32 {
         log::debug!("{:?} produced {:?} {:?}", soul, delta, kind);
 
         let v = self.m(kind).capital.entry(soul).or_default();
@@ -123,12 +135,12 @@ impl Market {
 
         for (&kind, market) in &mut self.markets {
             // Naive O(n²) alg
-            for (&seller, &(sell_pos, qty_sell)) in &market.sell_orders {
+            for (&seller, &(sell_pos, qty_sell, _)) in &market.sell_orders {
                 let capital_sell = unwrap_or!(market.capital(seller), continue);
                 if qty_sell > capital_sell {
                     continue;
                 }
-                for (&buyer, &(buy_pos, qty_buy)) in &market.buy_orders {
+                for (&buyer, &(buy_pos, qty_buy, _)) in &market.buy_orders {
                     if seller == buyer {
                         log::warn!(
                             "{:?} is both selling and buying same commodity: {:?}",
@@ -175,7 +187,7 @@ impl Market {
                         buy_orders.remove(&trade.buyer);
                         if *complete {
                             sell_orders.remove(&trade.seller);
-                        } else if let Some((_, qty)) = sell_orders.get_mut(&trade.seller) {
+                        } else if let Some((_, qty, _)) = sell_orders.get_mut(&trade.seller) {
                             *qty -= trade.qty
                         }
 
@@ -191,7 +203,7 @@ impl Market {
         all_trades.into_iter()
     }
 
-    pub fn inner(&self) -> &BTreeMap<CommodityKind, SingleMarket> {
+    pub fn inner(&self) -> &BTreeMap<ItemID, SingleMarket> {
         &self.markets
     }
 }
@@ -199,7 +211,7 @@ impl Market {
 #[cfg(test)]
 mod tests {
     use super::Market;
-    use crate::economy::CommodityKind;
+    use crate::economy::{ItemID, ItemRegistry};
     use crate::SoulID;
     use geom::{vec2, Vec2};
     use hecs::Entity;
@@ -214,14 +226,35 @@ mod tests {
         let seller_far = SoulID(mk_ent(2));
         let buyer = SoulID(mk_ent(3));
 
-        let mut m = Market::default();
+        let mut registry = ItemRegistry::default();
 
-        m.produce(seller, CommodityKind::Cereal, 3);
-        m.produce(seller_far, CommodityKind::Cereal, 3);
+        registry.load_item_definitions(
+            r#"
+          [{
+            "name": "cereal",
+            "label": "Cereal",
+            "ext_value": 1000,
+            "transport_cost": 10
+          },
+          {
+            "name": "wheat",
+            "label": "Wheat",
+            "ext_value": 1000,
+            "transport_cost": 10
+          }]
+        "#,
+        );
 
-        m.buy(buyer, Vec2::ZERO, CommodityKind::Cereal, 2);
-        m.sell(seller, Vec2::X, CommodityKind::Cereal, 3);
-        m.sell(seller_far, vec2(10.0, 10.0), CommodityKind::Cereal, 3);
+        let mut m = Market::new(&registry);
+
+        let cereal = registry.id("cereal");
+
+        m.produce(seller, cereal, 3);
+        m.produce(seller_far, cereal, 3);
+
+        m.buy(buyer, Vec2::ZERO, cereal, 2);
+        m.sell(seller, Vec2::X, cereal, 3);
+        m.sell(seller_far, vec2(10.0, 10.0), cereal, 3);
 
         let trades = m.make_trades().collect::<Vec<_>>();
 

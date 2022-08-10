@@ -1,6 +1,6 @@
 use crate::gui::follow::FollowEntity;
 use crate::uiworld::UiWorld;
-use egregoria::economy::{Market, Workers};
+use egregoria::economy::{ItemRegistry, Market, Workers};
 use egregoria::map_dynamic::{Itinerary, Router};
 use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
@@ -123,6 +123,7 @@ impl InspectRenderer {
         }
 
         let market = goria.read::<Market>();
+        let registry = goria.read::<ItemRegistry>();
         let mut capitals = vec![];
         for (kind, market) in market.inner() {
             let cap = unwrap_or!(market.capital(SoulID(self.entity)), continue);
@@ -138,7 +139,7 @@ impl InspectRenderer {
             ui.columns(2, "markett", false);
 
             for (kind, cap) in capitals {
-                ui.text(format!("{}", kind));
+                ui.text(format!("{}", &registry[*kind].label));
                 ui.next_column();
                 ui.text(format!("{}", cap));
                 ui.next_column();

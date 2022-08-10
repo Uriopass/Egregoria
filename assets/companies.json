@@ -1,0 +1,458 @@
+[
+  {
+    "name": "Coal power plant",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "network",
+    "recipe": {
+      "consumption": [["coal", 1]],
+      "production": [["electricity", 2460]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 165.0,
+    "asset_location": "coal_power_plant.glb"
+  },
+  {
+    "name": "Useless warehouse",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "store",
+    "recipe": {
+      "consumption": [],
+      "production": [],
+      "complexity": 1000,
+      "storage_multiplier": 0
+    },
+    "n_workers": 100,
+    "size": 100.0,
+    "asset_location": "assets/sprites/warehouse.png"
+  },
+  {
+    "name": "Supermarket",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "store",
+    "recipe": {
+      "consumption": [
+        ["meat", 1],
+        ["vegetable", 1],
+        ["cereal", 1]
+      ],
+      "production": [
+        ["meat", 1],
+        ["vegetable", 1],
+        ["cereal", 1]
+      ],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/supermarket.png"
+  },
+  {
+    "name": "Clothes store",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "store",
+    "recipe": {
+      "consumption": [["cloth", 1]],
+      "production": [["cloth", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 10.0,
+    "asset_location": "assets/sprites/clothes_store.png"
+  },
+  {
+    "name": "Cloth factory",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [["polyester", 1], ["wool", 1]],
+      "production": [["cloth", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/cloth_factory.png"
+  },
+  {
+    "name": "Polyester refinery",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [["oil", 1]],
+      "production": [["polyester", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 5,
+    "size": 80.0,
+    "asset_location": "assets/sprites/polyester_refinery.png"
+  },
+  {
+    "name": "Oil pump",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [],
+      "production": [["oil", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 5,
+    "size": 20.0,
+    "asset_location": "assets/sprites/oil_pump.png"
+  },
+  {
+    "name": "Textile processing facility",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [["wool", 1]],
+      "production": [["cloth", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/textile_processing_facility.png"
+  },
+  {
+    "name": "Wool farm",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [],
+      "production": [["wool", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/wool_farm.png"
+  },
+  {
+    "name": "Florist",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "store",
+    "recipe": {
+      "consumption": [["flower", 1]],
+      "production": [["flower", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 10.0,
+    "asset_location": "assets/sprites/florist.png"
+  },
+  {
+    "name": "Horticulturalist",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [],
+      "production": [["flower", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 5,
+    "size": 80.0,
+    "asset_location": "assets/sprites/horticulturalist.png"
+  },
+  {
+    "name": "High tech store",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "store",
+    "recipe": {
+      "consumption": [["high-tech-product", 1]],
+      "production": [["high-tech-product", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/hightech_store.png"
+  },
+  {
+    "name": "High tech facility",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [["rare-metal", 1], ["metal", 1]],
+      "production": [["high-tech-product", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/hightech_facility.png"
+  },
+  {
+    "name": "Rare metal mine",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [],
+      "production": [["rare-metal", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/rare_metal_mine.png"
+  },
+  {
+    "name": "Furniture store",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "store",
+    "recipe": {
+      "consumption": [["metal", 1], ["wood-plank", 1]],
+      "production": [["furniture", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/furniture_store.png"
+  },
+  {
+    "name": "Foundry",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [["iron-ore", 1]],
+      "production": [["metal", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/foundry.png"
+  },
+  {
+    "name": "Iron mine",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [],
+      "production": [["iron-ore", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/iron_mine.png"
+  },
+  {
+    "name": "Woodmill",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [["tree-log", 1]],
+      "production": [["wood-plank", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/woodmill.png"
+  },
+  {
+    "name": "Lumber yard",
+    "bgen": {"kind": "farm"},
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [],
+      "production": [["tree-log", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 200.0,
+    "asset_location": "assets/sprites/lumber_yard.png"
+  },
+  {
+    "name": "Meat facility",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 0.6
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [["raw-meat", 1]],
+      "production": [["meat", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "assets/sprites/meat_facility.png"
+  },
+  {
+    "name": "Slaughterhouse",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [["carcass", 1]],
+      "production": [["raw-meat", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 5,
+    "size": 50.0,
+    "asset_location": "assets/sprites/slaughterhouse.png"
+  },
+  {
+    "name": "Animal Farm",
+    "bgen": {"kind": "farm"},
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [["cereal", 1]],
+      "production": [["carcass", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 5,
+    "size": 80.0,
+    "asset_location": "assets/sprites/animal_farm.png"
+  },
+  {
+    "name": "Vegetable Farm",
+    "bgen": {"kind": "farm"},
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [],
+      "production": [["vegetable", 2]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 70.0,
+    "asset_location": "assets/sprites/vegetable_farm.png"
+  },
+  {
+    "name": "Bakery",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "store",
+    "recipe": {
+      "consumption": [["flour", 1]],
+      "production": [["bread", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 3,
+    "size": 10.0,
+    "asset_location": "bakery.glb"
+  },
+  {
+    "name": "Cereal Factory",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 0.6
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [["cereal", 1]],
+      "production": [["flour", 10]],
+      "complexity": 200,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 80.0,
+    "asset_location": "flour_factory.glb"
+  },
+  {
+    "name": "Cereal Farm",
+    "bgen": {"kind": "farm"},
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [],
+      "production": [["cereal", 1]],
+      "complexity": 200,
+      "storage_multiplier": 5
+    },
+    "n_workers": 10,
+    "size": 120.0,
+    "asset_location": "assets/sprites/cereal_farm.png"
+  }
+]

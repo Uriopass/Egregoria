@@ -38,7 +38,7 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
         .get(&BuildingKind::House)
         .unwrap_or(&vec![])
         .iter()
-        .take(100)
+        .take(50)
     {
         spawn_human(goria, build_id);
         n_souls_added += 1;
@@ -46,7 +46,7 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
 
     for (bkind, &(build_id, pos)) in empty_buildings
         .iter()
-        .filter(|(kind, _)| matches!(kind, BuildingKind::GoodsCompany(_)))
+        .filter_map(|(kind, v)| kind.as_goods_company().zip(Some(v)))
         .flat_map(|(bkind, v)| v.iter().map(move |x| (bkind, x)))
     {
         let registry = goria.read::<GoodsCompanyRegistry>();

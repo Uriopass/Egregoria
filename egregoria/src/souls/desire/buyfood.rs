@@ -1,4 +1,4 @@
-use crate::economy::{Bought, CommodityKind, Market};
+use crate::economy::{Bought, ItemID, ItemRegistry, Market};
 use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination};
 use crate::pedestrians::Location;
@@ -22,13 +22,15 @@ debug_inspect_impl!(BuyFoodState);
 pub struct BuyFood {
     last_ate: GameInstant,
     state: BuyFoodState,
+    bread: ItemID,
 }
 
 impl BuyFood {
-    pub fn new(start: GameInstant) -> Self {
+    pub fn new(start: GameInstant, registry: &ItemRegistry) -> Self {
         BuyFood {
             last_ate: start,
             state: BuyFoodState::Empty,
+            bread: registry.id("bread"),
         }
     }
 
@@ -36,7 +38,7 @@ impl BuyFood {
         if matches!(self.state, BuyFoodState::WaitingForTrade)
             && bought
                 .0
-                .get(&CommodityKind::Bread)
+                .get(&self.bread)
                 .map(Vec::is_empty)
                 .unwrap_or(false)
         {
@@ -64,14 +66,15 @@ impl BuyFood {
         match self.state {
             BuyFoodState::Empty => {
                 let pos = trans.position;
+                let bread = self.bread;
                 cbuf.exec_on(soul.0, move |market: &mut Market| {
-                    market.buy(soul, pos.xy(), CommodityKind::Bread, 1)
+                    market.buy(soul, pos.xy(), bread, 1)
                 });
                 self.state = BuyFoodState::WaitingForTrade;
                 Yield
             }
             BuyFoodState::WaitingForTrade => {
-                for trade in bought.0.entry(CommodityKind::Bread).or_default().drain(..) {
+                for trade in bought.0.entry(self.bread).or_default().drain(..) {
                     if let Some(b) = binfos.building_owned_by(trade.seller) {
                         self.state = BuyFoodState::BoughtAt(b);
                     }
