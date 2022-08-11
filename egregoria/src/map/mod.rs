@@ -30,6 +30,7 @@ pub mod procgen {
 }
 
 mod light_policy;
+#[allow(clippy::module_inception)]
 mod map;
 mod pathfinding;
 mod serializing;

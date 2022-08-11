@@ -94,10 +94,8 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
                 .expect("employer has no component Workers")
                 .0
                 .push(trade.buyer);
-        } else {
-            if let Ok(mut v) = world.get_mut::<Sold>(trade.seller.0) {
-                v.0.push(trade)
-            }
+        } else if let Ok(mut v) = world.get_mut::<Sold>(trade.seller.0) {
+            v.0.push(trade)
         }
 
         if let Ok(mut v) = world.get_mut::<Bought>(trade.buyer.0) {

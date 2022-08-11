@@ -15,6 +15,7 @@ pub struct ParkingManagement {
 }
 
 impl ParkingManagement {
+    #[allow(unknown_lints)]
     #[allow(clippy::forget_non_drop)]
     pub fn free(&mut self, spot: SpotReservation) {
         if !self.reserved_spots.remove(&spot.0) {

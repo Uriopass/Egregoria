@@ -52,7 +52,7 @@ pub fn economy(
 
                 let diff = offer - demand;
 
-                ui.text(format!("{}", &item.label));
+                ui.text(&item.label);
                 ui.next_column();
 
                 if diff == 0 {

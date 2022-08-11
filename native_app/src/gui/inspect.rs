@@ -139,7 +139,7 @@ impl InspectRenderer {
             ui.columns(2, "markett", false);
 
             for (kind, cap) in capitals {
-                ui.text(format!("{}", &registry[*kind].label));
+                ui.text(&registry[*kind].label);
                 ui.next_column();
                 ui.text(format!("{}", cap));
                 ui.next_column();
