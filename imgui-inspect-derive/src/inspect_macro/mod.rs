@@ -47,7 +47,7 @@ fn handle_inspect_types(parsed_field: &mut Option<ParsedField>, f: &syn::Field) 
     );
 }
 
-fn parse_field_args(input: &syn::DeriveInput) -> Vec<ParsedField> {
+fn parse_field_args(input: &DeriveInput) -> Vec<ParsedField> {
     match input.data {
         Data::Struct(ref data) => {
             match data.fields {
@@ -259,7 +259,7 @@ fn generate(
 
 #[cfg(feature = "generate_code")]
 fn generate(
-    input: &syn::DeriveInput,
+    input: &DeriveInput,
     struct_args: InspectStructArgs,
     parsed_fields: Vec<ParsedField>,
 ) -> proc_macro::TokenStream {

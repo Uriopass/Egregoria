@@ -40,7 +40,7 @@ impl PolyLine3 {
     }
 
     pub fn flatten(&self) -> PolyLine {
-        PolyLine::new(self.points.iter().copied().map(crate::Vec3::xy).collect())
+        PolyLine::new(self.points.iter().copied().map(Vec3::xy).collect())
     }
 
     pub fn clear_push(&mut self, x: Vec3) {

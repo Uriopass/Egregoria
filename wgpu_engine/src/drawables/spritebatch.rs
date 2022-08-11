@@ -38,7 +38,7 @@ u8slice_impl!(InstanceRaw);
 
 impl VBDesc for InstanceRaw {
     fn desc<'a>() -> VertexBufferLayout<'a> {
-        wgpu::VertexBufferLayout {
+        VertexBufferLayout {
             array_stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: Box::leak(Box::new(

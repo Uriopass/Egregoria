@@ -39,13 +39,13 @@ impl Texture {
     }
 
     pub fn create_fbo(
-        device: &wgpu::Device,
+        device: &Device,
         (width, height): (u32, u32),
-        format: wgpu::TextureFormat,
+        format: TextureFormat,
         usage: TextureUsages,
         samples: Option<u32>,
     ) -> Texture {
-        let extent = wgpu::Extent3d {
+        let extent = Extent3d {
             width,
             height,
             depth_or_array_layers: 1,
@@ -73,7 +73,7 @@ impl Texture {
         }
     }
 
-    pub fn create_depth_texture(device: &wgpu::Device, size: (u32, u32), samples: u32) -> Texture {
+    pub fn create_depth_texture(device: &Device, size: (u32, u32), samples: u32) -> Texture {
         Self::create_fbo(
             device,
             size,
@@ -83,7 +83,7 @@ impl Texture {
         )
     }
 
-    pub fn create_ui_texture(device: &wgpu::Device, sc_desc: &wgpu::SurfaceConfiguration) -> Self {
+    pub fn create_ui_texture(device: &Device, sc_desc: &wgpu::SurfaceConfiguration) -> Self {
         Self::create_fbo(
             device,
             (sc_desc.width, sc_desc.height),
@@ -94,7 +94,7 @@ impl Texture {
     }
 
     pub fn create_color_msaa(
-        device: &wgpu::Device,
+        device: &Device,
         sc_desc: &wgpu::SurfaceConfiguration,
         samples: u32,
     ) -> wgpu::TextureView {
@@ -118,14 +118,14 @@ impl Texture {
     }
 
     pub fn bindgroup_layout_complex(
-        device: &wgpu::Device,
+        device: &Device,
         sample_type: TextureSampleType,
         n_tex: u32,
     ) -> BindGroupLayout {
         let entries: Vec<BindGroupLayoutEntry> = (0..n_tex)
             .flat_map(|i| {
                 vec![
-                    wgpu::BindGroupLayoutEntry {
+                    BindGroupLayoutEntry {
                         binding: i * 2,
                         visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                         ty: wgpu::BindingType::Texture {
@@ -135,7 +135,7 @@ impl Texture {
                         },
                         count: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
+                    BindGroupLayoutEntry {
                         binding: i * 2 + 1,
                         visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                         ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
@@ -151,7 +151,7 @@ impl Texture {
         })
     }
 
-    pub fn bindgroup_layout(device: &wgpu::Device) -> BindGroupLayout {
+    pub fn bindgroup_layout(device: &Device) -> BindGroupLayout {
         Self::bindgroup_layout_complex(device, TextureSampleType::Float { filterable: true }, 1)
     }
 
@@ -201,7 +201,7 @@ impl Texture {
     }
 
     pub fn depth_compare_sampler() -> SamplerDescriptor<'static> {
-        wgpu::SamplerDescriptor {
+        SamplerDescriptor {
             label: None,
             address_mode_u: wgpu::AddressMode::ClampToBorder,
             address_mode_v: wgpu::AddressMode::ClampToBorder,
@@ -216,7 +216,7 @@ impl Texture {
     }
 
     pub fn linear_sampler() -> SamplerDescriptor<'static> {
-        wgpu::SamplerDescriptor {
+        SamplerDescriptor {
             label: None,
             address_mode_u: wgpu::AddressMode::Repeat,
             address_mode_v: wgpu::AddressMode::Repeat,
@@ -229,7 +229,7 @@ impl Texture {
     }
 
     pub fn nearest_sampler() -> SamplerDescriptor<'static> {
-        wgpu::SamplerDescriptor {
+        SamplerDescriptor {
             label: None,
             address_mode_u: wgpu::AddressMode::Repeat,
             address_mode_v: wgpu::AddressMode::Repeat,
@@ -243,8 +243,8 @@ impl Texture {
 }
 
 pub struct TextureBuilder {
-    img: image::DynamicImage,
-    sampler: wgpu::SamplerDescriptor<'static>,
+    img: DynamicImage,
+    sampler: SamplerDescriptor<'static>,
     label: &'static str,
     srgb: bool,
     mipmaps: bool,
@@ -256,7 +256,7 @@ impl TextureBuilder {
         self
     }
 
-    pub fn with_sampler(mut self, sampler: wgpu::SamplerDescriptor<'static>) -> Self {
+    pub fn with_sampler(mut self, sampler: SamplerDescriptor<'static>) -> Self {
         self.sampler = sampler;
         self
     }
@@ -296,7 +296,7 @@ impl TextureBuilder {
         Some(Self::from_img(img))
     }
 
-    pub(crate) fn from_img(img: image::DynamicImage) -> Self {
+    pub(crate) fn from_img(img: DynamicImage) -> Self {
         Self {
             img,
             sampler: Texture::linear_sampler(),
@@ -306,13 +306,13 @@ impl TextureBuilder {
         }
     }
 
-    pub fn build(self, device: &wgpu::Device, queue: &wgpu::Queue) -> Texture {
+    pub fn build(self, device: &Device, queue: &wgpu::Queue) -> Texture {
         let img = self.img;
         let label = self.label;
 
         let dimensions = img.dimensions();
 
-        let extent = wgpu::Extent3d {
+        let extent = Extent3d {
             width: dimensions.0,
             height: dimensions.1,
             depth_or_array_layers: 1,
@@ -326,14 +326,14 @@ impl TextureBuilder {
         let (format, data, pixwidth): (TextureFormat, &[u8], u32) = match img {
             DynamicImage::ImageRgba8(ref img) => (
                 if self.srgb {
-                    wgpu::TextureFormat::Rgba8UnormSrgb
+                    TextureFormat::Rgba8UnormSrgb
                 } else {
-                    wgpu::TextureFormat::Rgba8Unorm
+                    TextureFormat::Rgba8Unorm
                 },
                 &*img,
                 4,
             ),
-            DynamicImage::ImageLuma8(ref gray) => (wgpu::TextureFormat::R8Unorm, &*gray, 1),
+            DynamicImage::ImageLuma8(ref gray) => (TextureFormat::R8Unorm, &*gray, 1),
             _ => unimplemented!("unsupported format {:?}", img.color()),
         };
 
@@ -390,10 +390,10 @@ impl TextureBuilder {
 }
 
 fn generate_mipmaps(
-    device: &wgpu::Device,
+    device: &Device,
     queue: &wgpu::Queue,
     texture: &wgpu::Texture,
-    format: wgpu::TextureFormat,
+    format: TextureFormat,
     mip_count: u32,
 ) {
     let vs_module = compile_shader(device, "assets/shaders/mipmap.vert", None).0;
@@ -437,7 +437,7 @@ fn generate_mipmaps(
 
     let bind_group_layout = pipeline.get_bind_group_layout(0);
 
-    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+    let sampler = device.create_sampler(&SamplerDescriptor {
         label: Some("mip"),
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -450,7 +450,7 @@ fn generate_mipmaps(
 
     let views = (0..mip_count)
         .map(|mip| {
-            texture.create_view(&wgpu::TextureViewDescriptor {
+            texture.create_view(&TextureViewDescriptor {
                 label: Some("mip"),
                 format: None,
                 dimension: None,

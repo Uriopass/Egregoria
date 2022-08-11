@@ -109,9 +109,7 @@ pub fn serv_c() {
     .unwrap();
 
     std::thread::spawn(move || loop {
-        if let ServerPollResult::Input(acts) =
-            serv.poll(&|| (world.clone(), Frame(world.tick)), Some(IncrB))
-        {
+        if let ServerPollResult::Input(acts) = serv.poll(&world, Frame(world.tick), Some(IncrB)) {
             for a in acts {
                 assert_eq!(world.tick + 1, a.frame.0);
                 log::info!(

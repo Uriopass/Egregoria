@@ -211,7 +211,7 @@ impl Market {
 #[cfg(test)]
 mod tests {
     use super::Market;
-    use crate::economy::{ItemID, ItemRegistry};
+    use crate::economy::ItemRegistry;
     use crate::SoulID;
     use geom::{vec2, Vec2};
     use hecs::Entity;

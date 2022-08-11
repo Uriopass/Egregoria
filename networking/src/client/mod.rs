@@ -333,7 +333,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                     final_consumed_frame
                 );
                 if let ClientState::CatchingUp {
-                    next_inputs: Option::None,
+                    next_inputs: None,
                     id,
                     mut consumed_frame,
                 } = self.state

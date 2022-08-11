@@ -144,7 +144,7 @@ impl InspectRenderDefault<Vec2> for InspectVec2Immutable {
 }
 
 impl InspectRenderDefault<Vec2> for Vec2 {
-    fn render(data: &[&Vec2], label: &'static str, ui: &imgui::Ui<'_>, _: &InspectArgsDefault) {
+    fn render(data: &[&Vec2], label: &'static str, ui: &Ui<'_>, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -157,7 +157,7 @@ impl InspectRenderDefault<Vec2> for Vec2 {
     fn render_mut(
         data: &mut [&mut Vec2],
         label: &'static str,
-        ui: &imgui::Ui<'_>,
+        ui: &Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
@@ -175,7 +175,7 @@ impl InspectRenderDefault<Vec2> for Vec2 {
 }
 
 impl InspectRenderDefault<Vec3> for Vec3 {
-    fn render(data: &[&Vec3], label: &'static str, ui: &imgui::Ui<'_>, _: &InspectArgsDefault) {
+    fn render(data: &[&Vec3], label: &'static str, ui: &Ui<'_>, _: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -188,7 +188,7 @@ impl InspectRenderDefault<Vec3> for Vec3 {
     fn render_mut(
         data: &mut [&mut Vec3],
         label: &'static str,
-        ui: &imgui::Ui<'_>,
+        ui: &Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {
@@ -207,12 +207,7 @@ impl InspectRenderDefault<Vec3> for Vec3 {
 }
 
 impl InspectRenderDefault<PolyLine> for PolyLine {
-    fn render(
-        data: &[&PolyLine],
-        label: &'static str,
-        ui: &imgui::Ui<'_>,
-        args: &InspectArgsDefault,
-    ) {
+    fn render(data: &[&PolyLine], label: &'static str, ui: &Ui<'_>, args: &InspectArgsDefault) {
         if data.len() != 1 {
             unimplemented!();
         }
@@ -232,7 +227,7 @@ impl InspectRenderDefault<PolyLine> for PolyLine {
     fn render_mut(
         data: &mut [&mut PolyLine],
         label: &str,
-        ui: &imgui::Ui<'_>,
+        ui: &Ui<'_>,
         args: &InspectArgsDefault,
     ) -> bool {
         if data.len() != 1 {

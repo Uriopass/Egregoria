@@ -21,7 +21,7 @@ use wgpu::{
 
 pub struct FBOs {
     pub(crate) depth: Texture,
-    pub(crate) color_msaa: wgpu::TextureView,
+    pub(crate) color_msaa: TextureView,
     pub(crate) ui: Texture,
     pub(crate) ssao: Texture,
 }
@@ -118,8 +118,8 @@ u8slice_impl!(RenderParams);
 
 pub struct GuiRenderContext<'a, 'b> {
     pub size: (u32, u32),
-    pub device: &'a wgpu::Device,
-    pub queue: &'a wgpu::Queue,
+    pub device: &'a Device,
+    pub queue: &'a Queue,
     pub rpass: Option<wgpu::RenderPass<'b>>,
 }
 
@@ -160,8 +160,8 @@ impl GfxContext {
             )
             .await
             .expect("could not find device, have you installed necessary vulkan libraries?");
-        let sc_desc = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        let sc_desc = SurfaceConfiguration {
+            usage: TextureUsages::RENDER_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
             width: win_width,
             height: win_height,
@@ -643,7 +643,7 @@ impl GfxContext {
 
         let color_states = [Some(wgpu::ColorTargetState {
             format: self.sc_desc.format,
-            blend: Some(wgpu::BlendState {
+            blend: Some(BlendState {
                 color: BlendComponent {
                     src_factor: wgpu::BlendFactor::SrcAlpha,
                     dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
@@ -668,7 +668,7 @@ impl GfxContext {
                 targets: &color_states,
             }),
             primitive: PrimitiveState {
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: Some(Face::Back),
                 front_face: FrontFace::Ccw,
                 ..Default::default()
             },
@@ -764,12 +764,12 @@ impl GfxContext {
 
     pub fn get_pipeline<T: 'static>(&self) -> &RenderPipeline {
         self.pipelines
-            .get(&std::any::TypeId::of::<T>())
+            .get(&TypeId::of::<T>())
             .expect("Pipeline was not registered in context")
     }
 
     pub fn register_pipeline<T: 'static>(&mut self, pipe: RenderPipeline) {
-        self.pipelines.insert(std::any::TypeId::of::<T>(), pipe);
+        self.pipelines.insert(TypeId::of::<T>(), pipe);
     }
 }
 
@@ -840,8 +840,8 @@ impl SSAOPipeline {
             format: gfx.fbos.ssao.format,
             write_mask: wgpu::ColorWrites::ALL,
             blend: Some(BlendState {
-                color: wgpu::BlendComponent::REPLACE,
-                alpha: wgpu::BlendComponent::REPLACE,
+                color: BlendComponent::REPLACE,
+                alpha: BlendComponent::REPLACE,
             }),
         })];
 

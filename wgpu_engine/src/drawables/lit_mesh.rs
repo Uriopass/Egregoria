@@ -172,7 +172,7 @@ pub fn bg_layout_texs(
         .enumerate()
         .flat_map(|(i, bgtype)| {
             vec![
-                wgpu::BindGroupLayoutEntry {
+                BindGroupLayoutEntry {
                     binding: (i * 2) as u32,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
@@ -186,7 +186,7 @@ pub fn bg_layout_texs(
                     },
                     count: None,
                 },
-                wgpu::BindGroupLayoutEntry {
+                BindGroupLayoutEntry {
                     binding: (i * 2 + 1) as u32,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(

@@ -9,11 +9,11 @@ use quote::quote;
 #[derive(Clone, Debug, FromField)]
 #[darling(attributes(inspect_slider))]
 pub struct InspectFieldArgsSlider {
-    ident: Option<syn::Ident>,
+    ident: Option<Ident>,
     ty: syn::Type,
 
     #[darling(default)]
-    name: Option<syn::Ident>,
+    name: Option<Ident>,
 
     #[darling(default)]
     render_trait: Option<syn::Path>,
@@ -22,7 +22,7 @@ pub struct InspectFieldArgsSlider {
     proxy_type: Option<syn::Path>,
 
     #[darling(default)]
-    on_set: Option<syn::Ident>,
+    on_set: Option<Ident>,
 
     #[darling(default)]
     skip: bool,
@@ -35,7 +35,7 @@ pub struct InspectFieldArgsSlider {
 }
 
 impl InspectFieldArgs for InspectFieldArgsSlider {
-    fn ident(&self) -> &Option<syn::Ident> {
+    fn ident(&self) -> &Option<Ident> {
         &self.ident
     }
     fn ty(&self) -> &syn::Type {
@@ -50,7 +50,7 @@ impl InspectFieldArgs for InspectFieldArgsSlider {
     fn proxy_type(&self) -> &Option<syn::Path> {
         &self.proxy_type
     }
-    fn on_set(&self) -> &Option<syn::Ident> {
+    fn on_set(&self) -> &Option<Ident> {
         &self.on_set
     }
     fn skip(&self) -> bool {

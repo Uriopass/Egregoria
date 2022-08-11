@@ -69,7 +69,7 @@ impl PBuffer {
         gfx: &GfxContext,
         visibility: wgpu::ShaderStages,
         ty: wgpu::BufferBindingType,
-    ) -> wgpu::BindGroupLayout {
+    ) -> BindGroupLayout {
         gfx.device
             .create_bind_group_layout(&BindGroupLayoutDescriptor {
                 label: Some("pbuffer bglayout"),

@@ -66,8 +66,8 @@ mod inner {
     use std::net::ToSocketAddrs;
     use std::sync::Mutex;
 
-    pub type Client = std::sync::Mutex<networking::Client<Egregoria, WorldCommands>>;
-    pub type Server = std::sync::Mutex<networking::Server<Egregoria, WorldCommands>>;
+    pub type Client = Mutex<networking::Client<Egregoria, WorldCommands>>;
+    pub type Server = Mutex<networking::Server<Egregoria, WorldCommands>>;
 
     #[allow(clippy::large_enum_variant)]
     pub enum NetworkState {

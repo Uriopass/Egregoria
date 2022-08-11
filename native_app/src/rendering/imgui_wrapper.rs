@@ -6,7 +6,7 @@ use winit::window::Window;
 
 pub struct ImguiWrapper {
     pub imgui: imgui::Context,
-    pub renderer: imgui_wgpu::Renderer,
+    pub renderer: Renderer,
     last_frame: Instant,
     platform: imgui_winit_support::WinitPlatform,
     pub last_mouse_captured: bool,
@@ -87,7 +87,7 @@ impl ImguiWrapper {
         self.imgui.io_mut().display_size = [gfx.size.0 as f32, gfx.size.1 as f32];
         self.imgui.io_mut().display_framebuffer_scale = [1.0, 1.0];
 
-        let ui: imgui::Ui<'_> = self.imgui.frame();
+        let ui: Ui<'_> = self.imgui.frame();
         ui_render(&ui);
 
         self.last_mouse_captured = ui.io().want_capture_mouse;
