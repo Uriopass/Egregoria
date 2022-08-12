@@ -1,25 +1,4 @@
-struct RenderParams {
-    invproj: mat4x4<f32>,
-    sunproj: mat4x4<f32>,
-    cam_pos: vec4<f32>,
-    cam_dir: vec4<f32>,
-    sun: vec3<f32>,
-    sun_col: vec4<f32>,
-    grass_col: vec4<f32>,
-    sand_col: vec4<f32>,
-    sea_col: vec4<f32>,
-    viewport: vec2<f32>,
-    time: f32,
-    ssao_strength: f32,
-    ssao_radius: f32,
-    ssao_falloff: f32,
-    ssao_base: f32,
-    ssao_samples: i32,
-    ssao_enabled: i32,
-    shadow_mapping_enabled: i32,
-    realistic_sky: i32,
-    grid_enabled: i32,
-}
+#include "render_params.wgsl"
 
 struct Uni {
     params: RenderParams,

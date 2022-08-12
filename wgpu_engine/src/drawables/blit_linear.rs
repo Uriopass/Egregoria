@@ -13,8 +13,8 @@ impl BlitLinear {
                     push_constant_ranges: &[],
                 });
 
-        let vs_module = compile_shader(&gfx.device, "assets/shaders/blit_linear.vert", None).0;
-        let fs_module = compile_shader(&gfx.device, "assets/shaders/blit_linear.frag", None).0;
+        let vs_module = compile_shader(&gfx.device, "blit_linear.vert").0;
+        let fs_module = compile_shader(&gfx.device, "blit_linear.frag").0;
 
         let color_states = [Some(wgpu::ColorTargetState {
             format: gfx.sc_desc.format,

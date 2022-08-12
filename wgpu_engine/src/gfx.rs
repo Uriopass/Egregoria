@@ -1,6 +1,5 @@
 use crate::terrain::TerrainPrepared;
 use crate::wgpu::SamplerBindingType;
-use crate::ShaderType;
 use crate::{
     bg_layout_litmesh, compile_shader, BlitLinear, CompiledShader, Drawable, IndexType,
     InstancedMesh, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
@@ -630,9 +629,6 @@ impl GfxContext {
         vert_shader: &CompiledShader,
         frag_shader: &CompiledShader,
     ) -> RenderPipeline {
-        assert!(matches!(vert_shader.1, ShaderType::Vertex));
-        assert!(matches!(frag_shader.1, ShaderType::Fragment));
-
         let render_pipeline_layout =
             self.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -709,8 +705,6 @@ impl GfxContext {
         shadow_map: bool,
         layouts: &[&BindGroupLayout],
     ) -> RenderPipeline {
-        assert!(matches!(vert_shader.1, ShaderType::Vertex));
-
         let render_pipeline_layout =
             self.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -798,8 +792,8 @@ struct SSAOPipeline;
 
 impl SSAOPipeline {
     pub fn setup(gfx: &mut GfxContext) {
-        let blit_linear = compile_shader(&gfx.device, "assets/shaders/blit_linear.vert", None);
-        let ssao_frag = compile_shader(&gfx.device, "assets/shaders/ssao.frag", None);
+        let blit_linear = compile_shader(&gfx.device, "blit_linear.vert");
+        let ssao_frag = compile_shader(&gfx.device, "ssao.frag");
         let render_pipeline_layout =
             gfx.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -874,8 +868,8 @@ struct BackgroundPipeline;
 
 impl BackgroundPipeline {
     pub fn setup(gfx: &mut GfxContext) {
-        let bg_vert = compile_shader(&gfx.device, "assets/shaders/background.vert", None);
-        let bg_frag = compile_shader(&gfx.device, "assets/shaders/background.frag", None);
+        let bg_vert = compile_shader(&gfx.device, "background.vert");
+        let bg_frag = compile_shader(&gfx.device, "background.frag");
         let pipe = gfx.color_pipeline(
             "background",
             &[

@@ -396,8 +396,8 @@ fn generate_mipmaps(
     format: TextureFormat,
     mip_count: u32,
 ) {
-    let vs_module = compile_shader(device, "assets/shaders/mipmap.vert", None).0;
-    let fs_module = compile_shader(device, "assets/shaders/mipmap.frag", None).0;
+    let vs_module = compile_shader(device, "mipmap.vert").0;
+    let fs_module = compile_shader(device, "mipmap.frag").0;
 
     let bglayout = Texture::bindgroup_layout(device);
 

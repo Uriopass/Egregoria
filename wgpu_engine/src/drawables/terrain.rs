@@ -354,8 +354,8 @@ impl VBDesc for TerrainInstance {
 
 impl TerrainPrepared {
     pub(crate) fn setup(gfx: &mut GfxContext) {
-        let vert = compile_shader(&gfx.device, "assets/shaders/terrain.vert", None);
-        let frag = compile_shader(&gfx.device, "assets/shaders/terrain.frag", None);
+        let vert = compile_shader(&gfx.device, "terrain.vert");
+        let frag = compile_shader(&gfx.device, "terrain.frag");
 
         let terrainlayout = Texture::bindgroup_layout_complex(
             &gfx.device,
