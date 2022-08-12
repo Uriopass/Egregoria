@@ -1,5 +1,3 @@
-#include "render_params.wgsl"
-
 struct Uniforms {
     u_view_proj: mat4x4<f32>,
 }
@@ -12,86 +10,25 @@ struct VertexOutput {
     @builtin(position) member: vec4<f32>,
 }
 
-var<private> in_pos_1: vec3<f32>;
-var<private> in_normal_1: vec3<f32>;
-var<private> in_uv_1: vec2<f32>;
-var<private> in_color_1: vec4<f32>;
-var<private> in_instance_pos_1: vec3<f32>;
-var<private> in_instance_dir_1: vec3<f32>;
-var<private> in_instance_tint_1: vec4<f32>;
-var<private> out_color: vec4<f32>;
-var<private> out_normal: vec3<f32>;
-var<private> out_wpos: vec3<f32>;
-var<private> out_uv: vec2<f32>;
-@group(0) @binding(0) 
-var<uniform> global: Uniforms;
-var<private> gl_Position: vec4<f32>;
-
-fn main_1() {
-    var x: vec3<f32>;
-    var y: vec3<f32>;
-    var z: vec3<f32>;
-    var off: vec3<f32>;
-    var normal: vec3<f32>;
-
-    let _e13: vec3<f32> = in_instance_dir_1;
-    x = _e13;
-    _ = vec3<f32>(f32(0), f32(0), f32(1));
-    _ = x;
-    let _e30: vec3<f32> = x;
-    y = cross(vec3<f32>(f32(0), f32(0), f32(1)), _e30);
-    _ = x;
-    _ = y;
-    let _e35: vec3<f32> = y;
-    _ = normalize(_e35);
-    let _e37: vec3<f32> = x;
-    _ = y;
-    let _e39: vec3<f32> = y;
-    z = cross(_e37, normalize(_e39));
-    let _e43: vec3<f32> = in_pos_1;
-    let _e45: vec3<f32> = x;
-    let _e47: vec3<f32> = in_pos_1;
-    let _e49: vec3<f32> = y;
-    let _e52: vec3<f32> = in_pos_1;
-    let _e54: vec3<f32> = z;
-    let _e57: vec3<f32> = in_instance_pos_1;
-    off = ((((_e43.x * _e45) + (_e47.y * _e49)) + (_e52.z * _e54)) + _e57);
-    let _e60: vec3<f32> = in_normal_1;
-    let _e62: vec3<f32> = x;
-    let _e64: vec3<f32> = in_normal_1;
-    let _e66: vec3<f32> = y;
-    let _e69: vec3<f32> = in_normal_1;
-    let _e71: vec3<f32> = z;
-    normal = (((_e60.x * _e62) + (_e64.y * _e66)) + (_e69.z * _e71));
-    let _e76: mat4x4<f32> = global.u_view_proj;
-    let _e77: vec3<f32> = off;
-    gl_Position = (_e76 * vec4<f32>(_e77.x, _e77.y, _e77.z, 1.0));
-    let _e84: vec4<f32> = in_instance_tint_1;
-    let _e85: vec4<f32> = in_color_1;
-    out_color = (_e84 * _e85);
-    let _e87: vec3<f32> = normal;
-    out_normal = _e87;
-    let _e88: vec3<f32> = off;
-    out_wpos = _e88;
-    let _e89: vec2<f32> = in_uv_1;
-    out_uv = _e89;
-    return;
-}
+@group(0) @binding(0) var<uniform> global: Uniforms;
 
 @vertex 
-fn main(@location(0) in_pos: vec3<f32>, @location(1) in_normal: vec3<f32>, @location(2) in_uv: vec2<f32>, @location(3) in_color: vec4<f32>, @location(4) in_instance_pos: vec3<f32>, @location(5) in_instance_dir: vec3<f32>, @location(6) in_instance_tint: vec4<f32>) -> VertexOutput {
-    in_pos_1 = in_pos;
-    in_normal_1 = in_normal;
-    in_uv_1 = in_uv;
-    in_color_1 = in_color;
-    in_instance_pos_1 = in_instance_pos;
-    in_instance_dir_1 = in_instance_dir;
-    in_instance_tint_1 = in_instance_tint;
-    main_1();
-    let _e39: vec4<f32> = out_color;
-    let _e41: vec3<f32> = out_normal;
-    let _e43: vec3<f32> = out_wpos;
-    let _e45: vec2<f32> = out_uv;
-    let _e47: vec4<f32> = gl_Position;
-    return VertexOutput(_e39, _e41, _e43, _e45, _e47);
+fn main(@location(0) in_pos: vec3<f32>,
+        @location(1) in_normal: vec3<f32>,
+        @location(2) in_uv: vec2<f32>,
+        @location(3) in_color: vec4<f32>,
+        @location(4) in_instance_pos: vec3<f32>,
+        @location(5) in_instance_dir: vec3<f32>,
+        @location(6) in_instance_tint: vec4<f32>) -> VertexOutput {
+    let x: vec3<f32> = in_instance_dir;
+    let y: vec3<f32> = cross(vec3(0.0, 0.0, 1.0), x); // Z up
+    let z: vec3<f32> = cross(x, normalize(y));
+
+    let off: vec3<f32> = in_pos.x * x + in_pos.y * y + in_pos.z * z + in_instance_pos;
+    let normal: vec3<f32> = in_normal.x * x + in_normal.y * y + in_normal.z * z;
+
+    let position: vec4<f32> = global.u_view_proj * vec4(off, 1.0);
+    let out_color = in_instance_tint * in_color;
+
+    return VertexOutput(out_color, normal, off, in_uv, position);
 }

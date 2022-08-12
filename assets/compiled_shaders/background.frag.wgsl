@@ -14,6 +14,8 @@ struct FragmentOutput {
 @group(2) @binding(2) var t_starfield: texture_2d<f32>;
 @group(2) @binding(3) var s_starfield: sampler;
 
+#include "dither.wgsl"
+
 fn rsi(r0: vec3<f32>, rd: vec3<f32>, sr: f32) -> vec2<f32> {
     // ray-sphere intersection that assumes
     // the sphere is centered at the origin.
@@ -130,11 +132,6 @@ fn atmosphere(r: vec3<f32>, pSun: vec3<f32>) -> vec3<f32> {
 
     // Calculate and return the final color.
     return iSun * (pRlh * kRlh * totalRlh + pMie * kMie * totalMie);
-}
-
-fn dither(frag: vec2<f32>) -> f32 {
-    let color: f32 = textureSample(t_bnoise, s_bnoise, frag / 512.0).r;
-    return (color - 0.5) / 255.0;
 }
 
 fn atan2(y: f32, x: f32) -> f32
