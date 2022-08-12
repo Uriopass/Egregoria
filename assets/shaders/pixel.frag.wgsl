@@ -44,8 +44,8 @@ fn sampleShadow(in_wpos: vec3<f32>) -> f32 {
     return mix(total, 1.0, clamp(dot(light_local.xy, light_local.xy), 0.0, 1.0));
 }
 
-@fragment 
-fn main(@location(0) in_tint: vec4<f32>,
+@fragment
+fn frag(@location(0) in_tint: vec4<f32>,
         @location(1) in_normal: vec3<f32>,
         @location(2) in_wpos: vec3<f32>,
         @location(3) in_uv: vec2<f32>,

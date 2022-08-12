@@ -396,8 +396,7 @@ fn generate_mipmaps(
     format: TextureFormat,
     mip_count: u32,
 ) {
-    let vs_module = compile_shader(device, "mipmap.vert").0;
-    let fs_module = compile_shader(device, "mipmap.frag").0;
+    let module = compile_shader(device, "mipmap").0;
 
     let bglayout = Texture::bindgroup_layout(device);
 
@@ -411,13 +410,13 @@ fn generate_mipmaps(
         label: Some(&*format!("mipmaps {:?}", format)),
         layout: Some(&layout),
         vertex: wgpu::VertexState {
-            module: &vs_module,
-            entry_point: "main",
+            module: &module,
+            entry_point: "vert",
             buffers: &[],
         },
         fragment: Some(wgpu::FragmentState {
-            module: &fs_module,
-            entry_point: "main",
+            module: &module,
+            entry_point: "frag",
             targets: &[Some(format.into())],
         }),
         primitive: wgpu::PrimitiveState {

@@ -141,7 +141,7 @@ fn atan2(y: f32, x: f32) -> f32
 }
 
 @fragment
-fn main(@location(0) in_pos: vec3<f32>, @builtin(position) position: vec4<f32>) -> FragmentOutput {
+fn frag(@location(0) in_pos: vec3<f32>, @builtin(position) position: vec4<f32>) -> FragmentOutput {
     var fsun: vec3<f32> = params.sun;
     fsun = vec3(fsun.x, fsun.z, fsun.y);
     var pos: vec3<f32> = normalize(in_pos.xyz);
@@ -165,4 +165,17 @@ fn main(@location(0) in_pos: vec3<f32>, @builtin(position) position: vec4<f32>) 
     // Apply exposure.
     let ocrgb = 1.0 - exp(-color) + dither(position.xy);
     return FragmentOutput(vec4(ocrgb.r, ocrgb.g, ocrgb.b, 1.0));
+}
+
+struct VertexOutput {
+    @location(0) out_pos: vec3<f32>,
+    @builtin(position) member: vec4<f32>,
+}
+
+@vertex
+fn vert(@location(0) in_pos: vec3<f32>, @location(1) in_uv: vec2<f32>) -> VertexOutput {
+    let near: vec4<f32> = (params.invproj * vec4(in_pos.xy, -1.0, 1.0));
+    let far: vec4<f32> = (params.invproj * vec4(in_pos.xy, 1.0, 1.0));
+    let out_pos = near.xyz * far.w - far.xyz * near.w;
+    return VertexOutput(out_pos, vec4(in_pos.xy, 0.0, 1.0));
 }

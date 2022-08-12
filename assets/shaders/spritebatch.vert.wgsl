@@ -12,8 +12,8 @@ struct VertexOutput {
 
 @group(0) @binding(0) var<uniform> globals: Uniforms;
 
-@vertex 
-fn main(@location(0) in_pos: vec3<f32>,
+@vertex
+fn vert(@location(0) in_pos: vec3<f32>,
         @location(1) in_uv: vec2<f32>,
         @location(2) in_tint: vec4<f32>,
         @location(3) in_instance_pos: vec3<f32>,

@@ -655,12 +655,12 @@ impl GfxContext {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &vert_shader.0,
-                entry_point: "main",
+                entry_point: "vert",
                 buffers: vertex_buffers,
             },
             fragment: Some(wgpu::FragmentState {
                 module: &frag_shader.0,
-                entry_point: "main",
+                entry_point: "frag",
                 targets: &color_states,
             }),
             primitive: PrimitiveState {
@@ -718,7 +718,7 @@ impl GfxContext {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &vert_shader.0,
-                entry_point: "main",
+                entry_point: "vert",
                 buffers: vertex_buffers,
             },
             fragment: None,
@@ -792,8 +792,8 @@ struct SSAOPipeline;
 
 impl SSAOPipeline {
     pub fn setup(gfx: &mut GfxContext) {
-        let blit_linear = compile_shader(&gfx.device, "blit_linear.vert");
-        let ssao_frag = compile_shader(&gfx.device, "ssao.frag");
+        let blit_linear = compile_shader(&gfx.device, "blit_linear");
+        let ssao_frag = compile_shader(&gfx.device, "ssao");
         let render_pipeline_layout =
             gfx.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -844,12 +844,12 @@ impl SSAOPipeline {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &blit_linear.0,
-                entry_point: "main",
+                entry_point: "vert",
                 buffers: &[UvVertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &ssao_frag.0,
-                entry_point: "main",
+                entry_point: "frag",
                 targets: &color_states,
             }),
             primitive: Default::default(),
@@ -868,8 +868,7 @@ struct BackgroundPipeline;
 
 impl BackgroundPipeline {
     pub fn setup(gfx: &mut GfxContext) {
-        let bg_vert = compile_shader(&gfx.device, "background.vert");
-        let bg_frag = compile_shader(&gfx.device, "background.frag");
+        let bg = compile_shader(&gfx.device, "background");
         let pipe = gfx.color_pipeline(
             "background",
             &[
@@ -882,8 +881,8 @@ impl BackgroundPipeline {
                 ),
             ],
             &[UvVertex::desc()],
-            &bg_vert,
-            &bg_frag,
+            &bg,
+            &bg,
         );
 
         gfx.register_pipeline::<BackgroundPipeline>(pipe);

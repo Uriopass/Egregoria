@@ -68,8 +68,8 @@ fn grid(in_wpos: vec3<f32>, wpos_fwidth_x: f32) -> f32 {
     return isIn;
 }
 
-@fragment 
-fn main(@location(0) in_normal: vec3<f32>,
+@fragment
+fn frag(@location(0) in_normal: vec3<f32>,
         @location(1) in_wpos: vec3<f32>,
         @builtin(position) position: vec4<f32>) -> FragmentOutput {
     var ssao = 1.0;

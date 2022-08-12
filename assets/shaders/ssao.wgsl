@@ -30,8 +30,8 @@ fn derivative(c: vec2<i32>, depth: f32) -> vec2<f32> {
     return vec2(depthx - depth, depthy - depth);
 }
 
-@fragment 
-fn main(@location(0) in_uv: vec2<f32>) -> FragmentOutput {
+@fragment
+fn frag(@location(0) in_uv: vec2<f32>) -> FragmentOutput {
     let total_strength: f32 = params.ssao_strength;
     let base: f32 = params.ssao_base;
 

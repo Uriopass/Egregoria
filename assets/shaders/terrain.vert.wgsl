@@ -19,8 +19,8 @@ normal: vec3(self.cell_size * scale as f32, 0.0, hx - height)
                             .normalize(),
 */
 
-@vertex 
-fn main(@location(0) in_position: vec2<f32>, @location(1) in_off: vec2<f32>) -> VertexOutput {
+@vertex
+fn vert(@location(0) in_position: vec2<f32>, @location(1) in_off: vec2<f32>) -> VertexOutput {
     let tpos: vec2<i32> =  vec2<i32>((in_position + in_off) / 32.0);
     let height: f32 = textureLoad(t_terraindata, tpos, 0).r;
 

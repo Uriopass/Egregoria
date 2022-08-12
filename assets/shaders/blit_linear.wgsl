@@ -1,3 +1,14 @@
+struct VertexOutput {
+    @location(0) out_uv: vec2<f32>,
+    @builtin(position) member: vec4<f32>,
+}
+
+@vertex
+fn vert(@location(0) in_pos: vec3<f32>,
+        @location(1) in_uv: vec2<f32>) -> VertexOutput {
+    return VertexOutput(in_uv, vec4(in_pos.xy, 1.0, 1.0));
+}
+
 struct FragmentOutput {
     @location(0) out_color: vec4<f32>,
 }
@@ -15,8 +26,8 @@ fn srgb_to_linear(srgb: vec4<f32>) -> vec4<f32> {
 }
 
 
-@fragment 
-fn main(@location(0) in_uv: vec2<f32>) -> FragmentOutput {
+@fragment
+fn frag(@location(0) in_uv: vec2<f32>) -> FragmentOutput {
     let out_color = srgb_to_linear(textureSample(t_color, s_color, in_uv));
     return FragmentOutput(out_color);
 }

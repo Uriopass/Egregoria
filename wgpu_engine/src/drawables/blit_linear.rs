@@ -13,8 +13,7 @@ impl BlitLinear {
                     push_constant_ranges: &[],
                 });
 
-        let vs_module = compile_shader(&gfx.device, "blit_linear.vert").0;
-        let fs_module = compile_shader(&gfx.device, "blit_linear.frag").0;
+        let module = compile_shader(&gfx.device, "blit_linear").0;
 
         let color_states = [Some(wgpu::ColorTargetState {
             format: gfx.sc_desc.format,
@@ -33,13 +32,13 @@ impl BlitLinear {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &vs_module,
-                entry_point: "main",
+                module: &module,
+                entry_point: "vert",
                 buffers: &[UvVertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
-                module: &fs_module,
-                entry_point: "main",
+                module: &module,
+                entry_point: "frag",
                 targets: &color_states,
             }),
             primitive: Default::default(),
