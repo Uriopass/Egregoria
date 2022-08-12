@@ -42,7 +42,6 @@ fn replace_imports(base: &Path, src: String) -> String {
     src.lines()
         .map(|x| {
             if let Some(mut loc) = x.strip_prefix("#include \"") {
-                println!("{}", x);
                 loc = loc.strip_suffix('"').expect("include does not end with \"");
                 let mut p = base.to_path_buf();
                 p.pop();
