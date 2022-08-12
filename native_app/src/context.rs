@@ -142,7 +142,6 @@ impl Context {
                     Some(sco) => {
                         profiling::finish_frame!();
                         profiling::scope!("frame");
-
                         let d = last_update.elapsed();
                         last_update = Instant::now();
                         self.delta = d.as_secs_f32();

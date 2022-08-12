@@ -1,13 +1,13 @@
 use crate::{
-    bg_layout_litmesh, compile_shader, pbuffer::PBuffer, Drawable, FrameContext, GfxContext,
-    IndexType, Mesh, MeshBuilder, MeshVertex, RenderParams, TerrainVertex, Texture, Uniform,
-    VBDesc,
+    bg_layout_litmesh, pbuffer::PBuffer, Drawable, FrameContext, GfxContext, IndexType, Mesh,
+    MeshBuilder, MeshVertex, RenderParams, TerrainVertex, Texture, Uniform, VBDesc,
 };
 use common::FastMap;
 use geom::{vec2, vec3, Camera, LinearColor, Polygon, Vec2};
 use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
 use std::ops::Sub;
+use std::rc::Rc;
 use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -354,49 +354,68 @@ impl VBDesc for TerrainInstance {
 
 impl TerrainPrepared {
     pub(crate) fn setup(gfx: &mut GfxContext) {
-        let vert = compile_shader(&gfx.device, "terrain.vert");
-        let frag = compile_shader(&gfx.device, "terrain.frag");
-
-        let terrainlayout = Texture::bindgroup_layout_complex(
+        let terrainlayout = Rc::new(Texture::bindgroup_layout_complex(
             &gfx.device,
             TextureSampleType::Float { filterable: false },
             1,
-        );
-        let pipe = gfx.color_pipeline(
-            "terrain",
-            &[
-                &gfx.projection.layout,
-                &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                &terrainlayout,
-                &bg_layout_litmesh(&gfx.device),
-            ],
-            &[TerrainVertex::desc(), TerrainInstance::desc()],
-            &vert,
-            &frag,
-        );
-        gfx.register_pipeline::<Self>(pipe);
-
-        gfx.register_pipeline::<TerrainDepth>(gfx.depth_pipeline_bglayout(
-            &[TerrainVertex::desc(), TerrainInstance::desc()],
-            &vert,
-            false,
-            &[
-                &gfx.projection.layout,
-                &gfx.render_params.layout,
-                &terrainlayout,
-            ],
         ));
 
-        gfx.register_pipeline::<TerrainDepthSMap>(gfx.depth_pipeline_bglayout(
-            &[TerrainVertex::desc(), TerrainInstance::desc()],
-            &vert,
-            true,
-            &[
-                &gfx.projection.layout,
-                &gfx.render_params.layout,
-                &terrainlayout,
-            ],
-        ));
+        let lay1 = terrainlayout.clone();
+
+        gfx.register_pipeline::<Self>(
+            &["terrain.vert", "terrain.frag"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                let frag = &m[1];
+
+                gfx.color_pipeline(
+                    "terrain",
+                    &[
+                        &gfx.projection.layout,
+                        &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                        &lay1,
+                        &bg_layout_litmesh(&gfx.device),
+                    ],
+                    &[TerrainVertex::desc(), TerrainInstance::desc()],
+                    &vert,
+                    &frag,
+                )
+            }),
+        );
+
+        let lay2 = terrainlayout.clone();
+
+        gfx.register_pipeline::<TerrainDepth>(
+            &["terrain.vert"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+
+                gfx.depth_pipeline_bglayout(
+                    &[TerrainVertex::desc(), TerrainInstance::desc()],
+                    &vert,
+                    false,
+                    &[&gfx.projection.layout, &gfx.render_params.layout, &lay2],
+                )
+            }),
+        );
+
+        gfx.register_pipeline::<TerrainDepthSMap>(
+            &["terrain.vert"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+
+                gfx.depth_pipeline_bglayout(
+                    &[TerrainVertex::desc(), TerrainInstance::desc()],
+                    &vert,
+                    true,
+                    &[
+                        &gfx.projection.layout,
+                        &gfx.render_params.layout,
+                        &terrainlayout,
+                    ],
+                )
+            }),
+        );
     }
 
     fn set_buffers<'a>(&'a self, rp: &mut RenderPass<'a>) {

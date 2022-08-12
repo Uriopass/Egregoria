@@ -1,52 +1,57 @@
-use crate::{compile_shader, GfxContext, Texture, UvVertex, VBDesc};
+use crate::{GfxContext, Texture, UvVertex, VBDesc};
 use wgpu::{BlendFactor, BlendOperation};
 
 pub struct BlitLinear;
 
 impl BlitLinear {
     pub fn setup(gfx: &mut GfxContext) {
-        let render_pipeline_layout =
-            gfx.device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("blit pipeline"),
-                    bind_group_layouts: &[&Texture::bindgroup_layout(&gfx.device)],
-                    push_constant_ranges: &[],
-                });
+        gfx.register_pipeline::<Self>(
+            &["blit_linear"],
+            Box::new(move |m, gfx| {
+                let render_pipeline_layout =
+                    gfx.device
+                        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                            label: Some("blit pipeline"),
+                            bind_group_layouts: &[&Texture::bindgroup_layout(&gfx.device)],
+                            push_constant_ranges: &[],
+                        });
 
-        let module = compile_shader(&gfx.device, "blit_linear").0;
+                let blitlinearm = &m[0];
 
-        let color_states = [Some(wgpu::ColorTargetState {
-            format: gfx.sc_desc.format,
-            blend: Some(wgpu::BlendState {
-                color: wgpu::BlendComponent {
-                    src_factor: BlendFactor::SrcAlpha,
-                    dst_factor: BlendFactor::OneMinusSrcAlpha,
-                    operation: BlendOperation::Add,
-                },
-                alpha: wgpu::BlendComponent::REPLACE,
+                let color_states = [Some(wgpu::ColorTargetState {
+                    format: gfx.sc_desc.format,
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: BlendFactor::SrcAlpha,
+                            dst_factor: BlendFactor::OneMinusSrcAlpha,
+                            operation: BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent::REPLACE,
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })];
+
+                let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
+                    label: None,
+                    layout: Some(&render_pipeline_layout),
+                    vertex: wgpu::VertexState {
+                        module: &blitlinearm,
+                        entry_point: "vert",
+                        buffers: &[UvVertex::desc()],
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &blitlinearm,
+                        entry_point: "frag",
+                        targets: &color_states,
+                    }),
+                    primitive: Default::default(),
+                    depth_stencil: None,
+                    multisample: Default::default(),
+                    multiview: None,
+                };
+
+                gfx.device.create_render_pipeline(&render_pipeline_desc)
             }),
-            write_mask: wgpu::ColorWrites::ALL,
-        })];
-
-        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &module,
-                entry_point: "vert",
-                buffers: &[UvVertex::desc()],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &module,
-                entry_point: "frag",
-                targets: &color_states,
-            }),
-            primitive: Default::default(),
-            depth_stencil: None,
-            multisample: Default::default(),
-            multiview: None,
-        };
-        let pipe = gfx.device.create_render_pipeline(&render_pipeline_desc);
-        gfx.register_pipeline::<Self>(pipe);
+        );
     }
 }

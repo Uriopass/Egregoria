@@ -1,8 +1,5 @@
 use crate::pbuffer::PBuffer;
-use crate::{
-    compile_shader, Drawable, GfxContext, IndexType, MeshVertex, RenderParams, Texture, Uniform,
-    VBDesc,
-};
+use crate::{Drawable, GfxContext, IndexType, MeshVertex, RenderParams, Texture, Uniform, VBDesc};
 use std::sync::Arc;
 use wgpu::{BindGroupLayout, BindGroupLayoutEntry, BufferUsages, Device, IndexFormat, RenderPass};
 
@@ -86,34 +83,43 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn setup(gfx: &mut GfxContext) {
-        let vert = compile_shader(&gfx.device, "lit_mesh.vert");
-        let frag = compile_shader(&gfx.device, "pixel.frag");
+        gfx.register_pipeline::<Self>(
+            &["lit_mesh.vert", "pixel.frag"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                let frag = &m[1];
 
-        let pipe = gfx.color_pipeline(
-            "mesh",
-            &[
-                &gfx.projection.layout,
-                &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                &Texture::bindgroup_layout(&gfx.device),
-                &bg_layout_litmesh(&gfx.device),
-            ],
-            &[MeshVertex::desc()],
-            &vert,
-            &frag,
+                gfx.color_pipeline(
+                    "mesh",
+                    &[
+                        &gfx.projection.layout,
+                        &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                        &Texture::bindgroup_layout(&gfx.device),
+                        &bg_layout_litmesh(&gfx.device),
+                    ],
+                    &[MeshVertex::desc()],
+                    &vert,
+                    &frag,
+                )
+            }),
         );
-        gfx.register_pipeline::<Self>(pipe);
 
-        gfx.register_pipeline::<LitMeshDepth>(gfx.depth_pipeline(
-            &[MeshVertex::desc()],
-            &vert,
-            false,
-        ));
+        gfx.register_pipeline::<LitMeshDepth>(
+            &["lit_mesh.vert"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
 
-        gfx.register_pipeline::<LitMeshDepthSMap>(gfx.depth_pipeline(
-            &[MeshVertex::desc()],
-            &vert,
-            true,
-        ));
+                gfx.depth_pipeline(&[MeshVertex::desc()], &vert, false)
+            }),
+        );
+
+        gfx.register_pipeline::<LitMeshDepthSMap>(
+            &["lit_mesh.vert"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                gfx.depth_pipeline(&[MeshVertex::desc()], &vert, true)
+            }),
+        );
     }
 }
 

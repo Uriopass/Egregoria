@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 use crate::pbuffer::PBuffer;
 use crate::{
-    bg_layout_litmesh, compile_shader, Drawable, GfxContext, Mesh, MeshVertex, RenderParams,
-    Texture, Uniform, VBDesc,
+    bg_layout_litmesh, Drawable, GfxContext, Mesh, MeshVertex, RenderParams, Texture, Uniform,
+    VBDesc,
 };
 use geom::{LinearColor, Vec3};
 use std::sync::Arc;
@@ -71,25 +71,42 @@ pub struct InstancedMesh {
 
 impl InstancedMesh {
     pub fn setup(gfx: &mut GfxContext) {
-        let vert = compile_shader(&gfx.device, "instanced_mesh.vert");
-        let frag = compile_shader(&gfx.device, "pixel.frag");
-
-        let vb = &[MeshVertex::desc(), MeshInstance::desc()];
-        let pipe = gfx.color_pipeline(
-            "instanced_mesh",
-            &[
-                &gfx.projection.layout,
-                &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                &Texture::bindgroup_layout(&gfx.device),
-                &bg_layout_litmesh(&gfx.device),
-            ],
-            vb,
-            &vert,
-            &frag,
+        gfx.register_pipeline::<Self>(
+            &["instanced_mesh.vert", "pixel.frag"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                let frag = &m[1];
+                let vb = &[MeshVertex::desc(), MeshInstance::desc()];
+                gfx.color_pipeline(
+                    "instanced_mesh",
+                    &[
+                        &gfx.projection.layout,
+                        &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                        &Texture::bindgroup_layout(&gfx.device),
+                        &bg_layout_litmesh(&gfx.device),
+                    ],
+                    vb,
+                    vert,
+                    frag,
+                )
+            }),
         );
-        gfx.register_pipeline::<Self>(pipe);
-        gfx.register_pipeline::<InstancedMeshDepth>(gfx.depth_pipeline(vb, &vert, false));
-        gfx.register_pipeline::<InstancedMeshDepthSMap>(gfx.depth_pipeline(vb, &vert, true));
+        gfx.register_pipeline::<InstancedMeshDepth>(
+            &["instanced_mesh.vert"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                let vb = &[MeshVertex::desc(), MeshInstance::desc()];
+                gfx.depth_pipeline(vb, vert, false)
+            }),
+        );
+        gfx.register_pipeline::<InstancedMeshDepthSMap>(
+            &["instanced_mesh.vert"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                let vb = &[MeshVertex::desc(), MeshInstance::desc()];
+                gfx.depth_pipeline(vb, vert, true)
+            }),
+        );
     }
 }
 

@@ -1,21 +1,23 @@
 use crate::terrain::TerrainPrepared;
 use crate::wgpu::SamplerBindingType;
 use crate::{
-    bg_layout_litmesh, compile_shader, BlitLinear, CompiledShader, Drawable, IndexType,
+    bg_layout_litmesh, compile_shader, BlitLinear, CompiledModule, Drawable, IndexType,
     InstancedMesh, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
-use std::path::PathBuf;
+use std::collections::hash_map::Entry;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::SystemTime;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState, CommandBuffer,
-    CommandEncoder, CommandEncoderDescriptor, DepthBiasState, Device, Face, FrontFace, IndexFormat,
-    MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface, SurfaceConfiguration,
-    TextureSampleType, TextureUsages, TextureView, VertexBufferLayout,
+    CommandEncoder, CommandEncoderDescriptor, DepthBiasState, Device, ErrorFilter, Face, FrontFace,
+    IndexFormat, MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface,
+    SurfaceConfiguration, TextureSampleType, TextureUsages, TextureView, VertexBufferLayout,
 };
 
 pub struct FBOs {
@@ -34,6 +36,14 @@ pub struct GfxContext {
     pub(crate) sc_desc: SurfaceConfiguration,
     pub update_sc: bool,
     pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
+    pub(crate) pipelines_builders: Vec<(
+        TypeId,
+        Vec<String>,
+        Box<dyn for<'a> Fn(Vec<CompiledModule>, &'a GfxContext) -> RenderPipeline>,
+    )>,
+    pub(crate) shader_cache: FastMap<String, CompiledModule>,
+    pub(crate) shader_watcher: FastMap<String, SystemTime>,
+    pub(crate) tick: u64,
     pub(crate) projection: Uniform<Matrix4>,
     pub(crate) sun_projection: Uniform<Matrix4>,
     pub render_params: Uniform<RenderParams>,
@@ -208,6 +218,10 @@ impl GfxContext {
             fbos,
             surface,
             pipelines: FastMap::default(),
+            pipelines_builders: vec![],
+            shader_cache: Default::default(),
+            shader_watcher: Default::default(),
+            tick: 0,
             projection,
             sun_projection: Uniform::new(Matrix4::zero(), &device),
             render_params: Uniform::new(Default::default(), &device),
@@ -577,6 +591,9 @@ impl GfxContext {
                 .chain(encoder.smap)
                 .chain(Some(encoder.end.finish())),
         );
+        #[cfg(debug_assertions)]
+        self.check_shader_updates();
+        self.tick += 1;
     }
 
     pub fn create_textures(device: &Device, desc: &SurfaceConfiguration, samples: u32) -> FBOs {
@@ -626,8 +643,8 @@ impl GfxContext {
         label: &'static str,
         layouts: &[&BindGroupLayout],
         vertex_buffers: &[VertexBufferLayout<'_>],
-        vert_shader: &CompiledShader,
-        frag_shader: &CompiledShader,
+        vert_shader: &CompiledModule,
+        frag_shader: &CompiledModule,
     ) -> RenderPipeline {
         let render_pipeline_layout =
             self.device
@@ -654,12 +671,12 @@ impl GfxContext {
             label: Some(label),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &vert_shader.0,
+                module: &vert_shader,
                 entry_point: "vert",
                 buffers: vertex_buffers,
             },
             fragment: Some(wgpu::FragmentState {
-                module: &frag_shader.0,
+                module: &frag_shader,
                 entry_point: "frag",
                 targets: &color_states,
             }),
@@ -687,7 +704,7 @@ impl GfxContext {
     pub fn depth_pipeline(
         &self,
         vertex_buffers: &[VertexBufferLayout<'_>],
-        vert_shader: &CompiledShader,
+        vert_shader: &CompiledModule,
         shadow_map: bool,
     ) -> RenderPipeline {
         self.depth_pipeline_bglayout(
@@ -701,7 +718,7 @@ impl GfxContext {
     pub fn depth_pipeline_bglayout(
         &self,
         vertex_buffers: &[VertexBufferLayout<'_>],
-        vert_shader: &CompiledShader,
+        vert_shader: &CompiledModule,
         shadow_map: bool,
         layouts: &[&BindGroupLayout],
     ) -> RenderPipeline {
@@ -717,7 +734,7 @@ impl GfxContext {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &vert_shader.0,
+                module: &vert_shader,
                 entry_point: "vert",
                 buffers: vertex_buffers,
             },
@@ -762,8 +779,104 @@ impl GfxContext {
             .expect("Pipeline was not registered in context")
     }
 
-    pub fn register_pipeline<T: 'static>(&mut self, pipe: RenderPipeline) {
-        self.pipelines.insert(TypeId::of::<T>(), pipe);
+    pub fn get_modules<'a>(
+        &'a mut self,
+        shaders: impl Iterator<Item = String> + 'a,
+    ) -> impl Iterator<Item = CompiledModule> + 'a {
+        shaders.map(move |shader| {
+            let device = &self.device;
+            self.shader_cache
+                .entry(shader)
+                .or_insert_with_key(move |key| compile_shader(device, key))
+                .clone()
+        })
+    }
+
+    pub fn check_shader_updates(&mut self) {
+        if self.tick % 30 != 0 {
+            return;
+        }
+        let mut to_invalidate = vec![];
+        for sname in self.shader_cache.keys() {
+            let meta = unwrap_cont!(std::fs::metadata(Path::new(&format!(
+                "assets/shaders/{}.wgsl",
+                sname
+            )))
+            .ok());
+            let filetime = unwrap_cont!(meta.modified().ok());
+            match self.shader_watcher.entry(sname.clone()) {
+                Entry::Occupied(mut entry) => {
+                    if entry.get() < &filetime {
+                        to_invalidate.push(sname.clone());
+                        entry.insert(filetime);
+                    }
+                }
+                Entry::Vacant(entry) => {
+                    entry.insert(filetime);
+                }
+            }
+        }
+        for sname in to_invalidate {
+            self.invalidate(&sname);
+        }
+    }
+
+    pub fn invalidate(&mut self, shader_name: &str) {
+        if let Some(x) = self.shader_cache.get_mut(shader_name) {
+            let device = &self.device;
+            device.push_error_scope(ErrorFilter::Validation);
+            let new_shader = compile_shader(device, shader_name);
+            let scope = futures::executor::block_on(device.pop_error_scope());
+            if scope.is_some() {
+                return;
+            }
+            *x = new_shader;
+        } else {
+            return;
+        }
+        for (ty, deps, pipe) in &self.pipelines_builders {
+            if deps.iter().all(|x| x != shader_name) {
+                continue;
+            }
+            let shader_cache = &mut self.shader_cache;
+            let device = &self.device;
+            let modules = deps
+                .iter()
+                .map(|x| x.to_string())
+                .map(move |shader| {
+                    shader_cache
+                        .entry(shader)
+                        .or_insert_with_key(move |key| compile_shader(device, key))
+                        .clone()
+                })
+                .collect();
+            if self.pipelines.contains_key(ty) {
+                let pipeline = pipe(modules, self);
+                self.pipelines.insert(*ty, pipeline);
+            }
+        }
+    }
+
+    pub fn register_pipeline<T: 'static>(
+        &mut self,
+        shaders: &[&str],
+        pipe: Box<dyn for<'a, 'b> Fn(Vec<CompiledModule>, &'a Self) -> RenderPipeline>,
+    ) {
+        let modules: Vec<_> = self
+            .get_modules(shaders.iter().map(|s| s.to_string()))
+            .collect();
+        let pipeline = pipe(modules, self);
+        self.pipelines_builders.push((
+            TypeId::of::<T>(),
+            shaders.iter().map(|x| x.to_string()).collect(),
+            pipe,
+        ));
+        if self.pipelines.insert(TypeId::of::<T>(), pipeline).is_some() {
+            log::error!(
+                "pipeline for same type inserted registered multiple times! {:?}",
+                TypeId::of::<T>()
+            );
+        }
     }
 }
 
@@ -792,8 +905,6 @@ struct SSAOPipeline;
 
 impl SSAOPipeline {
     pub fn setup(gfx: &mut GfxContext) {
-        let blit_linear = compile_shader(&gfx.device, "blit_linear");
-        let ssao_frag = compile_shader(&gfx.device, "ssao");
         let render_pipeline_layout =
             gfx.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -839,27 +950,33 @@ impl SSAOPipeline {
             }),
         })];
 
-        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &blit_linear.0,
-                entry_point: "vert",
-                buffers: &[UvVertex::desc()],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &ssao_frag.0,
-                entry_point: "frag",
-                targets: &color_states,
-            }),
-            primitive: Default::default(),
-            depth_stencil: None,
-            multisample: Default::default(),
-            multiview: None,
-        };
-
         gfx.register_pipeline::<SSAOPipeline>(
-            gfx.device.create_render_pipeline(&render_pipeline_desc),
+            &["blit_linear", "ssao"],
+            Box::new(move |m, gfx| {
+                let blit_linear = &m[0];
+                let ssao_frag = &m[1];
+
+                let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
+                    label: None,
+                    layout: Some(&render_pipeline_layout),
+                    vertex: wgpu::VertexState {
+                        module: &blit_linear,
+                        entry_point: "vert",
+                        buffers: &[UvVertex::desc()],
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &ssao_frag,
+                        entry_point: "frag",
+                        targets: &color_states,
+                    }),
+                    primitive: Default::default(),
+                    depth_stencil: None,
+                    multisample: Default::default(),
+                    multiview: None,
+                };
+
+                gfx.device.create_render_pipeline(&render_pipeline_desc)
+            }),
         );
     }
 }
@@ -868,23 +985,26 @@ struct BackgroundPipeline;
 
 impl BackgroundPipeline {
     pub fn setup(gfx: &mut GfxContext) {
-        let bg = compile_shader(&gfx.device, "background");
-        let pipe = gfx.color_pipeline(
-            "background",
-            &[
-                &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                &Texture::bindgroup_layout(&gfx.device),
-                &Texture::bindgroup_layout_complex(
-                    &gfx.device,
-                    TextureSampleType::Float { filterable: true },
-                    2,
-                ),
-            ],
-            &[UvVertex::desc()],
-            &bg,
-            &bg,
+        gfx.register_pipeline::<BackgroundPipeline>(
+            &["background"],
+            Box::new(move |m, gfx| {
+                let bg = &m[0];
+                gfx.color_pipeline(
+                    "background",
+                    &[
+                        &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                        &Texture::bindgroup_layout(&gfx.device),
+                        &Texture::bindgroup_layout_complex(
+                            &gfx.device,
+                            TextureSampleType::Float { filterable: true },
+                            2,
+                        ),
+                    ],
+                    &[UvVertex::desc()],
+                    bg,
+                    bg,
+                )
+            }),
         );
-
-        gfx.register_pipeline::<BackgroundPipeline>(pipe);
     }
 }

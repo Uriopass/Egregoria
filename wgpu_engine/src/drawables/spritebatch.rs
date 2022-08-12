@@ -1,5 +1,5 @@
 use crate::pbuffer::PBuffer;
-use crate::{bg_layout_litmesh, compile_shader, Drawable, GfxContext, Texture, UvVertex, VBDesc};
+use crate::{bg_layout_litmesh, Drawable, GfxContext, Texture, UvVertex, VBDesc};
 use geom::{LinearColor, Vec3};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -106,34 +106,42 @@ impl SpriteBatchBuilder {
 
 impl SpriteBatch {
     pub fn setup(gfx: &mut GfxContext) {
-        let vert = compile_shader(&gfx.device, "spritebatch.vert");
-        let frag = compile_shader(&gfx.device, "pixel.frag");
+        gfx.register_pipeline::<Self>(
+            &["spritebatch.vert", "pixel.frag"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                let frag = &m[1];
 
-        let pipe = gfx.color_pipeline(
-            "spritebatch",
-            &[
-                &gfx.projection.layout,
-                &gfx.render_params.layout,
-                &Texture::bindgroup_layout(&gfx.device),
-                &bg_layout_litmesh(&gfx.device),
-            ],
-            &[UvVertex::desc(), InstanceRaw::desc()],
-            &vert,
-            &frag,
+                gfx.color_pipeline(
+                    "spritebatch",
+                    &[
+                        &gfx.projection.layout,
+                        &gfx.render_params.layout,
+                        &Texture::bindgroup_layout(&gfx.device),
+                        &bg_layout_litmesh(&gfx.device),
+                    ],
+                    &[UvVertex::desc(), InstanceRaw::desc()],
+                    &vert,
+                    &frag,
+                )
+            }),
         );
-        gfx.register_pipeline::<Self>(pipe);
 
-        gfx.register_pipeline::<SBDepthMultisample>(gfx.depth_pipeline(
-            &[UvVertex::desc(), InstanceRaw::desc()],
-            &vert,
-            false,
-        ));
+        gfx.register_pipeline::<SBDepthMultisample>(
+            &["spritebatch.vert"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], &vert, false)
+            }),
+        );
 
-        gfx.register_pipeline::<SBDepth>(gfx.depth_pipeline(
-            &[UvVertex::desc(), InstanceRaw::desc()],
-            &vert,
-            true,
-        ));
+        gfx.register_pipeline::<SBDepth>(
+            &["spritebatch.vert"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], &vert, true)
+            }),
+        );
     }
 }
 

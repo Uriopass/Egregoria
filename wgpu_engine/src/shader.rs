@@ -1,9 +1,19 @@
 use crate::wgpu::ShaderSource;
 use std::borrow::Cow;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 use wgpu::{Device, ShaderModule};
 
-pub struct CompiledShader(pub ShaderModule);
+#[derive(Clone)]
+pub struct CompiledModule(Rc<ShaderModule>);
+
+impl Deref for CompiledModule {
+    type Target = ShaderModule;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 fn mk_module(data: String, device: &Device) -> ShaderModule {
     Device::create_shader_module(
@@ -16,7 +26,7 @@ fn mk_module(data: String, device: &Device) -> ShaderModule {
 }
 
 /// if type isn't provided it will be detected by looking at extension
-pub fn compile_shader(device: &Device, name: &str) -> CompiledShader {
+pub fn compile_shader(device: &Device, name: &str) -> CompiledModule {
     let mut p = PathBuf::new();
     p.push("assets/shaders");
     p.push(name.to_string() + ".wgsl");
@@ -35,7 +45,7 @@ pub fn compile_shader(device: &Device, name: &str) -> CompiledShader {
 
     let wgsl = mk_module(source, device);
 
-    CompiledShader(wgsl)
+    CompiledModule(Rc::new(wgsl))
 }
 
 fn replace_imports(base: &Path, src: String) -> String {

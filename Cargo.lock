@@ -2968,6 +2968,7 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "common",
+ "futures",
  "geom",
  "gltf",
  "image 0.24.3",
