@@ -18,7 +18,7 @@ fn mk_module(data: String, device: &Device) -> ShaderModule {
 /// if type isn't provided it will be detected by looking at extension
 pub fn compile_shader(device: &Device, name: &str) -> CompiledShader {
     let mut p = PathBuf::new();
-    p.push("assets/compiled_shaders");
+    p.push("assets/shaders");
     p.push(name.to_string() + ".wgsl");
 
     let mut source = std::fs::read_to_string(&p)
