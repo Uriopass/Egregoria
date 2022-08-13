@@ -9,8 +9,8 @@ use std::collections::{BTreeMap, BTreeSet};
 pub struct SingleMarket {
     // todo: change i32 to Quantity
     capital: BTreeMap<SoulID, i32>,
-    buy_orders: BTreeMap<SoulID, (Vec2, i32, Money)>,
-    sell_orders: BTreeMap<SoulID, (Vec2, i32, Money)>,
+    buy_orders: BTreeMap<SoulID, (Vec2, i32)>,
+    sell_orders: BTreeMap<SoulID, (Vec2, i32)>,
     ext_value: Money,
     transport_cost: Money,
 }
@@ -33,10 +33,10 @@ impl SingleMarket {
     pub fn capital_map(&self) -> &BTreeMap<SoulID, i32> {
         &self.capital
     }
-    pub fn buy_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32, Money)> {
+    pub fn buy_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32)> {
         &self.buy_orders
     }
-    pub fn sell_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32, Money)> {
+    pub fn sell_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32)> {
         &self.sell_orders
     }
 }
@@ -75,9 +75,7 @@ impl Market {
     /// Beware that you need capital to sell anything, using produce.
     pub fn sell(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
         log::debug!("{:?} sell {:?} {:?} near {:?}", soul, qty, kind, near);
-        self.m(kind)
-            .sell_orders
-            .insert(soul, (near, qty, Money::ZERO));
+        self.m(kind).sell_orders.insert(soul, (near, qty));
     }
 
     pub fn sell_all(&mut self, soul: SoulID, near: Vec2, kind: ItemID) {
@@ -93,9 +91,7 @@ impl Market {
     pub fn buy(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
         log::debug!("{:?} buy {:?} {:?} near {:?}", soul, qty, kind, near);
 
-        self.m(kind)
-            .buy_orders
-            .insert(soul, (near, qty, Money::ZERO));
+        self.m(kind).buy_orders.insert(soul, (near, qty));
     }
 
     pub fn buy_until(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
@@ -135,12 +131,12 @@ impl Market {
 
         for (&kind, market) in &mut self.markets {
             // Naive O(n²) alg
-            for (&seller, &(sell_pos, qty_sell, _)) in &market.sell_orders {
+            for (&seller, &(sell_pos, qty_sell)) in &market.sell_orders {
                 let capital_sell = unwrap_or!(market.capital(seller), continue);
                 if qty_sell > capital_sell {
                     continue;
                 }
-                for (&buyer, &(buy_pos, qty_buy, _)) in &market.buy_orders {
+                for (&buyer, &(buy_pos, qty_buy)) in &market.buy_orders {
                     if seller == buyer {
                         log::warn!(
                             "{:?} is both selling and buying same commodity: {:?}",
@@ -187,7 +183,7 @@ impl Market {
                         buy_orders.remove(&trade.buyer);
                         if *complete {
                             sell_orders.remove(&trade.seller);
-                        } else if let Some((_, qty, _)) = sell_orders.get_mut(&trade.seller) {
+                        } else if let Some((_, qty)) = sell_orders.get_mut(&trade.seller) {
                             *qty -= trade.qty
                         }
 

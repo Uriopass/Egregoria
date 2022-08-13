@@ -154,45 +154,34 @@ However we need to make sure that the model does not go out of control. If the f
 
 I am not really well versed in economics so I'm going to try to do something interesting gameplay wise while still trying to keep some form of realism.
 
-## Free market
+## External trade based market
 
-The value of money is defined by a fixed salary for an unskilled worker. Say 1000 cents per hour.
+The whole city only has one capital: The money of the player is supposed to be "equally distributed" among its city.
 
-Raw commodities (which are not combined from other commodities) such as ores, raw food and wood are purely based on the efficiency of workers.  
-A basic mining spot with hand tools is much less efficient than a modern heavy-machinery assisted operation. However theses require complex machines/gas/etc.  
+If a bakery wants to buy flour, it either tries to fetch it from a local flour industry or it gets it from external trade.
 
-Progression can be based on this idea of efficiency. As you advance along some tech tree, you unlock more efficient ways to do things that give better yield?
+Getting through local economy doesn't involve money, it is basically "free".
+Getting through the external trade removes money from the government capital.
 
-Then other commodity sell price is based on the price of the raw commodities + the time it take to combine them + the time it takes for transport. For example a sawmill needs to buy some wood, transport it from the wood farm then uses a machine to split them in woodplanks, but that takes time and worker time. Companies might want to take some marges to have some capital for tough times.
+If a flour company makes too much flour, it can sell to the external trading platform, this surplus is where you get money to invest in the rest of the city.
 
-Fixed costs should also be taken into account. A big sawmill needs maintenance, if there isn't much wood to chop it should not be worth it.
+Theoretically, if you produce all your goods locally you don't need to pay for anything and money is not an issue,
+but big projects (big buildings, roads, electricy...) involve external workers that do cost money.
 
-In real life the selling price is also based on scarcity, to incetivize buyers to only buy things they really need. The interaction between scarcity and better efficiency is something something paretto equilibrium.
+That way the player does manage "everything", but you still have incentive to produce locally.
 
-Everything revolves around a central "free market" where scarcity and minimum price is tracked. Price can then be inferred from it somehow.
+A path for implementation:
 
-Taxes apply through "normalized inflation": a percentage of everyone's capital constantly flow towards the government (this is the same as the government printing money, only the base unskill worker salary stays the same).
+The external market has fixed (maybe varying in later time) trading costs.
 
-Sometimes, because of inflation, an inactive company can become bankrupt (in the sense that it cannot sustain its business anymore since it cannot buy the needed commodities). The choice is left up to the player to choose to invest in them (stimulus check) or just demantle the building/company.
+Local markets can trade, but surplus wins money and shortage costs money.
 
-For simplicity: A building is a company.
+Buildings things usually costs less than buying from trade (because of the transportation costs) and that's how you can expand.
 
-The government's money is used to expand the city. It is what the player plays with.
+External value can be calculated from the Goods graph.
 
-Companies margins and taxes should stabilize the amount they have at any point. If the player constantly reinvests in companies it might be indicating that the tax rate is too high.
+This is a good "simple" model than stills instills progress and is quite easy to simulate.
+Basically a hybrid of factorio and free market, but simple because there is only one economic actor.
 
-External trade prices are fixed since we assume the external world is big. However they are higher than producing locally because of the transport costs. It is unavoidable however since at the start the player has nothing to build upon. It must manage it's money carefully to start being profitable.
-
-To avoid having a positive flow of money then waiting for a long time, some sort of global tax rate could be introduced so that the maximum capital is roughly proportional to the amount of capital produced by the city.
-
-A path for the implementation:
-
-External prices are high because they are imports, they can lower over time as population increase to accomodate for specialization or something.
-
-Central market tracks prices and buying/selling requests to calculate prices/scarcity.
-
-To decide, player is shown what is profitable and available depending on worker availability and other things.
-
-At the start, supermarkets can be filled using external trading, although that costs quite a bit and cannot hold for very long. Local food production is quite important. Maybe a starter self-sustaining city can be provided for beginners.
-
-Transportation should be expensive to encourage smart urban planning. A big map also helps by putting the raw materials far from each other.
+It does seem less interesting from the "citizens" point of view that don't need to make individual decisions.
+However each citizen thinking is just too hard for me, maybe later.
