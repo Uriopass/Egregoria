@@ -36,6 +36,7 @@ pub struct GfxContext {
     pub(crate) sc_desc: SurfaceConfiguration,
     pub update_sc: bool,
     pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
+    #[allow(clippy::type_complexity)]
     pub(crate) pipelines_builders: Vec<(
         TypeId,
         Vec<String>,
@@ -671,12 +672,12 @@ impl GfxContext {
             label: Some(label),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &vert_shader,
+                module: vert_shader,
                 entry_point: "vert",
                 buffers: vertex_buffers,
             },
             fragment: Some(wgpu::FragmentState {
-                module: &frag_shader,
+                module: frag_shader,
                 entry_point: "frag",
                 targets: &color_states,
             }),
@@ -734,7 +735,7 @@ impl GfxContext {
             label: None,
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &vert_shader,
+                module: vert_shader,
                 entry_point: "vert",
                 buffers: vertex_buffers,
             },
@@ -857,6 +858,7 @@ impl GfxContext {
         }
     }
 
+    #[allow(clippy::type_complexity)]
     pub fn register_pipeline<T: 'static>(
         &mut self,
         shaders: &[&str],
@@ -960,12 +962,12 @@ impl SSAOPipeline {
                     label: None,
                     layout: Some(&render_pipeline_layout),
                     vertex: wgpu::VertexState {
-                        module: &blit_linear,
+                        module: blit_linear,
                         entry_point: "vert",
                         buffers: &[UvVertex::desc()],
                     },
                     fragment: Some(wgpu::FragmentState {
-                        module: &ssao_frag,
+                        module: ssao_frag,
                         entry_point: "frag",
                         targets: &color_states,
                     }),

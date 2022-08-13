@@ -98,8 +98,8 @@ impl Mesh {
                         &bg_layout_litmesh(&gfx.device),
                     ],
                     &[MeshVertex::desc()],
-                    &vert,
-                    &frag,
+                    vert,
+                    frag,
                 )
             }),
         );
@@ -109,7 +109,7 @@ impl Mesh {
             Box::new(move |m, gfx| {
                 let vert = &m[0];
 
-                gfx.depth_pipeline(&[MeshVertex::desc()], &vert, false)
+                gfx.depth_pipeline(&[MeshVertex::desc()], vert, false)
             }),
         );
 
@@ -117,7 +117,7 @@ impl Mesh {
             &["lit_mesh.vert"],
             Box::new(move |m, gfx| {
                 let vert = &m[0];
-                gfx.depth_pipeline(&[MeshVertex::desc()], &vert, true)
+                gfx.depth_pipeline(&[MeshVertex::desc()], vert, true)
             }),
         );
     }

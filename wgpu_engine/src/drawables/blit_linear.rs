@@ -35,12 +35,12 @@ impl BlitLinear {
                     label: None,
                     layout: Some(&render_pipeline_layout),
                     vertex: wgpu::VertexState {
-                        module: &blitlinearm,
+                        module: blitlinearm,
                         entry_point: "vert",
                         buffers: &[UvVertex::desc()],
                     },
                     fragment: Some(wgpu::FragmentState {
-                        module: &blitlinearm,
+                        module: blitlinearm,
                         entry_point: "frag",
                         targets: &color_states,
                     }),

@@ -376,8 +376,8 @@ impl TerrainPrepared {
                         &bg_layout_litmesh(&gfx.device),
                     ],
                     &[TerrainVertex::desc(), TerrainInstance::desc()],
-                    &vert,
-                    &frag,
+                    vert,
+                    frag,
                 )
             }),
         );
@@ -391,7 +391,7 @@ impl TerrainPrepared {
 
                 gfx.depth_pipeline_bglayout(
                     &[TerrainVertex::desc(), TerrainInstance::desc()],
-                    &vert,
+                    vert,
                     false,
                     &[&gfx.projection.layout, &gfx.render_params.layout, &lay2],
                 )
@@ -405,7 +405,7 @@ impl TerrainPrepared {
 
                 gfx.depth_pipeline_bglayout(
                     &[TerrainVertex::desc(), TerrainInstance::desc()],
-                    &vert,
+                    vert,
                     true,
                     &[
                         &gfx.projection.layout,

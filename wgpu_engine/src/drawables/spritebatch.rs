@@ -121,8 +121,8 @@ impl SpriteBatch {
                         &bg_layout_litmesh(&gfx.device),
                     ],
                     &[UvVertex::desc(), InstanceRaw::desc()],
-                    &vert,
-                    &frag,
+                    vert,
+                    frag,
                 )
             }),
         );
@@ -131,7 +131,7 @@ impl SpriteBatch {
             &["spritebatch.vert"],
             Box::new(move |m, gfx| {
                 let vert = &m[0];
-                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], &vert, false)
+                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], vert, false)
             }),
         );
 
@@ -139,7 +139,7 @@ impl SpriteBatch {
             &["spritebatch.vert"],
             Box::new(move |m, gfx| {
                 let vert = &m[0];
-                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], &vert, true)
+                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], vert, true)
             }),
         );
     }
