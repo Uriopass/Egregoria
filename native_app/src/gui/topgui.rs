@@ -332,63 +332,65 @@ impl Gui {
                     tok.pop(ui);
                     let pat = &mut roadbuild.pattern_builder;
 
-                    if ui.button_with_size("Rail", [rbw, 30.0]) {
-                        *pat = *LanePatternBuilder::new().rail(true);
-                    }
+                    static BUILDERS: &[(&str, LanePatternBuilder)] = &[
+                        ("Rail", LanePatternBuilder::new().rail(true)),
+                        (
+                            "Rail one-way",
+                            LanePatternBuilder::new().rail(true).one_way(true),
+                        ),
+                        ("Street", LanePatternBuilder::new()),
+                        ("Street one-way", LanePatternBuilder::new().one_way(true)),
+                        (
+                            "Avenue",
+                            LanePatternBuilder::new().n_lanes(2).speed_limit(13.0),
+                        ),
+                        (
+                            "Avenue one-way",
+                            LanePatternBuilder::new()
+                                .n_lanes(2)
+                                .one_way(true)
+                                .speed_limit(13.0),
+                        ),
+                        (
+                            "Drive",
+                            LanePatternBuilder::new()
+                                .parking(false)
+                                .sidewalks(false)
+                                .speed_limit(13.0),
+                        ),
+                        (
+                            "Drive one-way",
+                            LanePatternBuilder::new()
+                                .parking(false)
+                                .sidewalks(false)
+                                .one_way(true)
+                                .speed_limit(13.0),
+                        ),
+                        (
+                            "Highway",
+                            LanePatternBuilder::new()
+                                .n_lanes(3)
+                                .speed_limit(25.0)
+                                .parking(false)
+                                .sidewalks(false),
+                        ),
+                        (
+                            "Highway one-way",
+                            LanePatternBuilder::new()
+                                .n_lanes(3)
+                                .speed_limit(25.0)
+                                .parking(false)
+                                .sidewalks(false)
+                                .one_way(true),
+                        ),
+                    ];
 
-                    if ui.button_with_size("Rail one-way", [rbw, 30.0]) {
-                        *pat = *LanePatternBuilder::new().rail(true).one_way(true);
-                    }
-
-                    if ui.button_with_size("Street", [rbw, 30.0]) {
-                        *pat = LanePatternBuilder::new();
-                    }
-
-                    if ui.button_with_size("Street one-way", [rbw, 30.0]) {
-                        *pat = *LanePatternBuilder::new().one_way(true);
-                    }
-
-                    if ui.button_with_size("Avenue", [rbw, 30.0]) {
-                        *pat = *LanePatternBuilder::new().n_lanes(2).speed_limit(13.0);
-                    }
-
-                    if ui.button_with_size("Avenue one-way", [rbw, 30.0]) {
-                        *pat = *LanePatternBuilder::new()
-                            .n_lanes(2)
-                            .one_way(true)
-                            .speed_limit(13.0);
-                    }
-
-                    if ui.button_with_size("Drive", [rbw, 30.0]) {
-                        *pat = *LanePatternBuilder::new()
-                            .parking(false)
-                            .sidewalks(false)
-                            .speed_limit(13.0);
-                    }
-
-                    if ui.button_with_size("Drive one-way", [rbw, 30.0]) {
-                        *pat = *LanePatternBuilder::new()
-                            .parking(false)
-                            .sidewalks(false)
-                            .one_way(true)
-                            .speed_limit(13.0);
-                    }
-
-                    if ui.button_with_size("Highway", [rbw, 30.0]) {
-                        *pat = *LanePatternBuilder::new()
-                            .n_lanes(3)
-                            .speed_limit(25.0)
-                            .parking(false)
-                            .sidewalks(false);
-                    }
-
-                    if ui.button_with_size("Highway one-way", [rbw, 30.0]) {
-                        *pat = *LanePatternBuilder::new()
-                            .n_lanes(3)
-                            .speed_limit(25.0)
-                            .parking(false)
-                            .sidewalks(false)
-                            .one_way(true);
+                    for (name, lpat) in BUILDERS {
+                        let _tok =
+                            ui.push_style_var(StyleVar::Alpha(if lpat == pat { 1.0 } else { 0.6 }));
+                        if ui.button_with_size(name, [rbw, 30.0]) {
+                            *pat = *lpat;
+                        }
                     }
 
                     ui.new_line();

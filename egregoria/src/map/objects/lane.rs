@@ -97,7 +97,7 @@ impl LanePattern {
     }
 }
 
-#[derive(Copy, Clone, Inspect)]
+#[derive(PartialEq, Copy, Clone, Inspect)]
 pub struct LanePatternBuilder {
     pub n_lanes: u32,
     #[inspect(
@@ -113,6 +113,7 @@ pub struct LanePatternBuilder {
     pub one_way: bool,
     pub rail: bool,
 }
+impl Eq for LanePatternBuilder {}
 
 impl Default for LanePatternBuilder {
     fn default() -> Self {
@@ -132,32 +133,32 @@ impl LanePatternBuilder {
         }
     }
 
-    pub fn n_lanes(&mut self, n_lanes: u32) -> &mut Self {
-        self.n_lanes = n_lanes.min(10);
+    pub const fn n_lanes(mut self, n_lanes: u32) -> Self {
+        self.n_lanes = if n_lanes > 10 { 10 } else { n_lanes };
         self
     }
 
-    pub fn sidewalks(&mut self, sidewalks: bool) -> &mut Self {
+    pub const fn sidewalks(mut self, sidewalks: bool) -> Self {
         self.sidewalks = sidewalks;
         self
     }
 
-    pub fn speed_limit(&mut self, limit: f32) -> &mut Self {
+    pub const fn speed_limit(mut self, limit: f32) -> Self {
         self.speed_limit = limit;
         self
     }
 
-    pub fn parking(&mut self, parking: bool) -> &mut Self {
+    pub const fn parking(mut self, parking: bool) -> Self {
         self.parking = parking;
         self
     }
 
-    pub fn one_way(&mut self, one_way: bool) -> &mut Self {
+    pub const fn one_way(mut self, one_way: bool) -> Self {
         self.one_way = one_way;
         self
     }
 
-    pub fn rail(&mut self, rail: bool) -> &mut Self {
+    pub const fn rail(mut self, rail: bool) -> Self {
         self.rail = rail;
         self
     }
