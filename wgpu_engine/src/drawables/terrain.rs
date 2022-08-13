@@ -4,7 +4,6 @@ use crate::{
 };
 use common::FastMap;
 use geom::{vec2, vec3, Camera, LinearColor, Polygon, Vec2};
-use std::mem::MaybeUninit;
 use std::num::NonZeroU32;
 use std::ops::Sub;
 use std::rc::Rc;
@@ -470,24 +469,6 @@ impl Drawable for TerrainPrepared {
 }
 
 fn collect_arrlod<T>(x: impl IntoIterator<Item = T>) -> [T; LOD] {
-    let mut arr = MaybeUninit::uninit();
-
-    let mut ptr = arr.as_mut_ptr() as *mut T;
-    let mut i = 0;
-    for v in x {
-        if i == LOD {
-            panic!("not 4")
-        }
-        unsafe {
-            ptr.write(v);
-            ptr = ptr.add(1);
-        }
-        i += 1;
-    }
-
-    if i < LOD {
-        panic!("not 4")
-    }
-
-    unsafe { arr.assume_init() }
+    let mut iter = x.into_iter();
+    [(); LOD].map(move |_| iter.next().expect("iterator too short"))
 }
