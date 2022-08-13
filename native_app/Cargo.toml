@@ -22,7 +22,7 @@ flat_spatial  = "0.5.0"
 log           = { version = "0.4.11", features=["max_level_debug", "release_max_level_info"] }
 inline_tweak  = "1.0.6"
 imgui         = "0.8"
-hecs          = "0.7.6"
+hecs          = "0.9.0"
 resources     = "1.1.0"
 ordered-float = { version = "2.7.0", default-features = false }
 serde         = "1.0"

@@ -101,13 +101,13 @@ impl ParCommandBuffer {
         deleted.sort_unstable();
 
         for entity in deleted {
-            if let Ok(mut v) = goria.world.get_mut::<Collider>(entity) {
+            if let Ok(mut v) = goria.world.get::<&mut Collider>(entity) {
                 ComponentDrop::drop(&mut *v, &mut goria.resources, entity);
             }
-            if let Ok(mut v) = goria.world.get_mut::<Vehicle>(entity) {
+            if let Ok(mut v) = goria.world.get::<&mut Vehicle>(entity) {
                 ComponentDrop::drop(&mut *v, &mut goria.resources, entity);
             }
-            if let Ok(mut v) = goria.world.get_mut::<Router>(entity) {
+            if let Ok(mut v) = goria.world.get::<&mut Router>(entity) {
                 ComponentDrop::drop(&mut *v, &mut goria.resources, entity);
             }
         }

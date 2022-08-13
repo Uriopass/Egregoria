@@ -219,19 +219,13 @@ impl Egregoria {
             log::error!("trying to add component to entity but it doesn't exist");
         }
     }
-    pub fn comptest<T: Component>(&self, e: Entity) -> Option<&T> {
-        match self.world.get::<&T>(e).ok() {
-            None => None,
-            Some(x) => Some(*x),
-        }
-    }
 
     pub fn comp<T: Component>(&self, e: Entity) -> Option<hecs::Ref<T>> {
-        self.world.get(e).ok()
+        self.world.get::<&T>(e).ok()
     }
 
     pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<hecs::RefMut<T>> {
-        self.world.get_mut(e).ok()
+        self.world.get::<&mut T>(e).ok()
     }
 
     pub fn write_or_default<T: Resource + Default>(&mut self) -> RefMut<T> {
@@ -411,23 +405,23 @@ macro_rules! register {
             fn serialize_component_ids<S: serde::ser::SerializeTuple>(
                 &mut self,
                 archetype: &hecs::Archetype,
-                out: &mut S,
-            ) -> Result<(), S::Error> {
+                mut out: S,
+            ) -> Result<S::Ok, S::Error> {
                 $(
-                    hecs::serialize::column::try_serialize_id::<$t, _, _>(archetype, &ComponentId::$p, out)?;
+                    hecs::serialize::column::try_serialize_id::<$t, _, _>(archetype, &ComponentId::$p, &mut out)?;
                 )+
-                Ok(())
+                out.end()
             }
 
             fn serialize_components<S: serde::ser::SerializeTuple>(
                 &mut self,
                 archetype: &hecs::Archetype,
-                out: &mut S,
-            ) -> Result<(), S::Error> {
+                mut out: S,
+            ) -> Result<S::Ok, S::Error> {
                 $(
-                    hecs::serialize::column::try_serialize::<$t, _>(archetype, out)?;
+                    hecs::serialize::column::try_serialize::<$t, _>(archetype, &mut out)?;
                 )+
-                Ok(())
+                out.end()
             }
         }
 

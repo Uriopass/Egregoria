@@ -245,7 +245,7 @@ impl ComponentDrop for Router {
 }
 
 fn comp<T: Component>(sw: &World, e: Entity) -> Option<Ref<T>> {
-    sw.get(e).ok()
+    sw.get::<&T>(e).ok()
 }
 
 fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, kin: &mut Kinematics) {

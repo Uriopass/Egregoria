@@ -90,15 +90,15 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
 
         if trade.kind == job_opening {
             world
-                .get_mut::<Workers>(trade.seller.0)
+                .get::<&mut Workers>(trade.seller.0)
                 .expect("employer has no component Workers")
                 .0
                 .push(trade.buyer);
-        } else if let Ok(mut v) = world.get_mut::<Sold>(trade.seller.0) {
+        } else if let Ok(mut v) = world.get::<&mut Sold>(trade.seller.0) {
             v.0.push(trade)
         }
 
-        if let Ok(mut v) = world.get_mut::<Bought>(trade.buyer.0) {
+        if let Ok(mut v) = world.get::<&mut Bought>(trade.buyer.0) {
             v.0.entry(trade.kind).or_default().push(trade);
         }
     }

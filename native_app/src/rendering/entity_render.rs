@@ -55,7 +55,11 @@ impl InstancedRender {
         }
 
         self.trains.instances.clear();
-        for (_, trans) in goria.world().query::<With<Locomotive, &Transform>>().iter() {
+        for (_, trans) in goria
+            .world()
+            .query::<With<&Transform, &Locomotive>>()
+            .iter()
+        {
             let instance = MeshInstance {
                 pos: trans.position,
                 dir: trans.dir,

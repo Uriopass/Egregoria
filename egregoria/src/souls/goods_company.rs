@@ -320,7 +320,7 @@ pub fn company(
 
     if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next() {
         if let Some(driver) = company.driver {
-            if let Ok(w) = world.get::<Work>(driver.0) {
+            if let Ok(w) = world.get::<&Work>(driver.0) {
                 if matches!(
                     w.kind,
                     WorkKind::Driver {
@@ -349,7 +349,7 @@ pub fn company(
     }
 
     for &worker in workers.0.iter() {
-        if world.get::<Work>(worker.0).is_err() {
+        if world.get::<&Work>(worker.0).is_err() {
             let mut kind = WorkKind::Worker;
 
             if let Some(truck) = company.trucks.get(0) {

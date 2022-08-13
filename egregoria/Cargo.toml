@@ -22,7 +22,7 @@ slotmap       = { version = "1.0.2", default-features = false, features = ["serd
 imgui         = "0.8"
 rayon         = "1.5.1"
 atomic_refcell = "0.1.6"
-hecs          = { version = "0.7.6", features=["column-serialize"] }
+hecs         = { version = "0.9.0", features=["column-serialize"] }
 resources     = "1.1.0"
 profiling     = "1.0.5"
 inline_tweak  = "1.0.8"

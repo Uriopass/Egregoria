@@ -407,7 +407,7 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
         .par_bridge()
         .for_each(|chunk| {
             chunk.for_each(|(_, (trans, follow))| {
-                let leader = unwrap_orr!(world.get::<ItineraryLeader>(follow.leader), return);
+                let leader = unwrap_orr!(world.get::<&ItineraryLeader>(follow.leader), return);
                 let (pos, dir) = follow.follower.update(&leader.past);
                 trans.position = pos;
                 trans.dir = dir;
