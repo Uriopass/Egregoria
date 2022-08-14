@@ -2,18 +2,17 @@ use crate::map::serializing::SerializedMap;
 use crate::map::{
     Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
-    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, StraightRoadGen, Terrain, TrainStation,
-    TrainStationID,
+    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, StraightRoadGen, Terrain,
 };
 use geom::OBB;
 use geom::{pseudo_angle, Circle, Intersect, Shape, Spline3, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
+use std::collections::BTreeMap;
 use std::num::Wrapping;
 
 pub type Roads = DenseSlotMap<RoadID, Road>;
-pub type TrainStations = DenseSlotMap<TrainStationID, TrainStation>;
 pub type Lanes = DenseSlotMap<LaneID, Lane>;
 pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
 pub type Buildings = DenseSlotMap<BuildingID, Building>;
@@ -32,6 +31,7 @@ pub struct Map {
     pub(crate) buildings: Buildings,
     pub(crate) lots: Lots,
     pub(crate) spatial_map: SpatialMap,
+    pub(crate) bkinds: BTreeMap<BuildingKind, Vec<BuildingID>>,
     pub terrain: Terrain,
     pub parking: ParkingSpots,
     pub dirt_id: Wrapping<u32>,
@@ -58,6 +58,7 @@ impl Map {
             terrain: Terrain::default(),
             dirt_id: Wrapping(1),
             spatial_map: SpatialMap::default(),
+            bkinds: Default::default(),
         }
     }
 
@@ -103,6 +104,12 @@ impl Map {
         self.spatial_map.remove(b.id);
 
         self.dirt_id += Wrapping(1);
+
+        if let BuildingKind::RailFretStation = b.kind {
+            self.bkinds
+                .entry(b.kind)
+                .and_modify(|v| v.retain(|id| *id != b.id));
+        }
 
         #[cfg(debug_assertions)]
         self.check_invariants();
@@ -193,6 +200,13 @@ impl Map {
             gen,
             attachments,
         );
+
+        if let BuildingKind::RailFretStation = kind {
+            if let Some(id) = v {
+                self.bkinds.entry(kind).or_default().push(id);
+            }
+        }
+
         #[cfg(debug_assertions)]
         self.check_invariants();
         v

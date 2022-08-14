@@ -1,10 +1,10 @@
-use crate::economy::{Bought, ItemID, ItemRegistry, Market};
+use crate::economy::{find_trade_place, Bought, ItemID, ItemRegistry, Market};
 use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination};
 use crate::pedestrians::Location;
 use crate::souls::human::HumanDecisionKind;
 use crate::utils::time::{GameInstant, GameTime};
-use crate::{ParCommandBuffer, SoulID};
+use crate::{Map, ParCommandBuffer, SoulID};
 use geom::Transform;
 use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
@@ -56,6 +56,7 @@ impl BuyFood {
         &mut self,
         cbuf: &ParCommandBuffer,
         binfos: &BuildingInfos,
+        map: &Map,
         time: &GameTime,
         soul: SoulID,
         trans: &Transform,
@@ -75,7 +76,7 @@ impl BuyFood {
             }
             BuyFoodState::WaitingForTrade => {
                 for trade in bought.0.entry(self.bread).or_default().drain(..) {
-                    if let Some(b) = binfos.building_owned_by(trade.seller) {
+                    if let Some(b) = find_trade_place(trade.seller, trans.position.xy(), binfos, map) {
                         self.state = BuyFoodState::BoughtAt(b);
                     }
                 }

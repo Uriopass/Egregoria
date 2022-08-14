@@ -9,8 +9,12 @@ use std::ops::Index;
 struct ItemDefinition {
     name: String,
     label: String,
+    #[serde(default)]
     ext_value: Money,
+    #[serde(default)]
     transport_cost: Money,
+    #[serde(default)]
+    optout_exttrade: bool,
 }
 
 new_key_type! {
@@ -39,6 +43,7 @@ pub struct Item {
     pub label: String,
     pub ext_value: Money,
     pub transport_cost: Money,
+    pub optout_exttrade: bool,
 }
 
 impl ItemRegistry {
@@ -78,6 +83,7 @@ impl ItemRegistry {
                 label: definition.label,
                 ext_value: definition.ext_value,
                 transport_cost: definition.transport_cost,
+                optout_exttrade: definition.optout_exttrade,
             });
             self.item_names.insert(name, id);
             log::info!("loaded {:?}", &self.items[id]);

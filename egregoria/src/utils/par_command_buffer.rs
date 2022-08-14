@@ -1,7 +1,8 @@
+use crate::economy::Market;
 use crate::map_dynamic::Router;
 use crate::physics::Collider;
 use crate::vehicles::Vehicle;
-use crate::Egregoria;
+use crate::{Egregoria, SoulID};
 use hecs::{Component, Entity};
 use resources::{Resource, Resources};
 use std::any::TypeId;
@@ -101,6 +102,7 @@ impl ParCommandBuffer {
         deleted.sort_unstable();
 
         for entity in deleted {
+            goria.write::<Market>().remove(SoulID(entity));
             if let Ok(mut v) = goria.world.get::<&mut Collider>(entity) {
                 ComponentDrop::drop(&mut *v, &mut goria.resources, entity);
             }

@@ -1,5 +1,5 @@
 use super::desire::Work;
-use crate::economy::{ItemID, ItemRegistry, Market, Sold, Workers};
+use crate::economy::{find_trade_place, ItemID, ItemRegistry, Market, Sold, Workers};
 use crate::engine_interaction::Selectable;
 use crate::map::{BuildingGen, BuildingID, Map};
 use crate::map_dynamic::BuildingInfos;
@@ -226,7 +226,7 @@ pub struct GoodsCompany {
 
 pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<SoulID> {
     let map = goria.map();
-    let b = &map.buildings().get(company.building)?;
+    let b = map.buildings().get(company.building)?;
     let door_pos = b.door_pos;
     let obb = b.obb;
     let height = b.height;
@@ -296,6 +296,10 @@ pub fn company(
 ) {
     let n_workers = workers.0.len();
     let soul = SoulID(me);
+    let b = unwrap_or!(map.buildings.get(company.building), {
+        cbuf.kill(me);
+        return;
+    });
 
     if company.recipe.should_produce(soul, market) {
         company.progress += n_workers as f32
@@ -328,7 +332,9 @@ pub fn company(
                         ..
                     }
                 ) {
-                    if let Some(owner_build) = binfos.building_owned_by(trade.buyer) {
+                    if let Some(owner_build) =
+                        find_trade_place(trade.buyer, b.door_pos.xy(), binfos, map)
+                    {
                         log::info!("asked driver to deliver");
 
                         cbuf.exec_ent(soul.0, move |goria| {

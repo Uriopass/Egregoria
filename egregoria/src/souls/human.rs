@@ -5,7 +5,7 @@ use crate::pedestrians::{spawn_pedestrian, Location};
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::utils::time::GameTime;
 use crate::vehicles::{spawn_parked_vehicle, VehicleID, VehicleKind};
-use crate::{Egregoria, ParCommandBuffer, SoulID};
+use crate::{Egregoria, Map, ParCommandBuffer, SoulID};
 use geom::Transform;
 use hecs::{Entity, World};
 use imgui_inspect_derive::Inspect;
@@ -71,6 +71,7 @@ pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &*resources.get().unwrap();
     let rc = &*resources.get().unwrap();
+    let rd = &*resources.get().unwrap();
     world
         .query::<(
             &Transform,
@@ -86,7 +87,7 @@ pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
         .par_bridge()
         .for_each(|batch| {
             batch.for_each(|(ent, (a, b, c, d, e, f, g, h))| {
-                update_decision(ra, rb, rc, ent, a, b, c, d, e, f, g, h);
+                update_decision(ra, rb, rc, rd, ent, a, b, c, d, e, f, g, h);
             })
         })
 }
@@ -95,6 +96,7 @@ pub fn update_decision(
     cbuf: &ParCommandBuffer,
     time: &GameTime,
     binfos: &BuildingInfos,
+    map: &Map,
     me: Entity,
     trans: &Transform,
     loc: &Location,
@@ -151,7 +153,7 @@ pub fn update_decision(
         NextDesire::Home(home) => decision.kind = home.apply(),
         NextDesire::Work(work) => decision.kind = work.apply(loc, router),
         NextDesire::Food(food) => {
-            decision.kind = food.apply(cbuf, binfos, time, soul, trans, loc, bought)
+            decision.kind = food.apply(cbuf, binfos, map, time, soul, trans, loc, bought)
         }
         NextDesire::None => {}
     }

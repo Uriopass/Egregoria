@@ -1,5 +1,7 @@
 use crate::economy::{ItemID, ItemRegistry, Money};
-use crate::SoulID;
+use crate::map::BuildingID;
+use crate::map_dynamic::BuildingInfos;
+use crate::{BuildingKind, Map, SoulID};
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -11,18 +13,20 @@ pub struct SingleMarket {
     capital: BTreeMap<SoulID, i32>,
     buy_orders: BTreeMap<SoulID, (Vec2, i32)>,
     sell_orders: BTreeMap<SoulID, (Vec2, i32)>,
-    ext_value: Money,
-    transport_cost: Money,
+    pub(crate) ext_value: Money,
+    pub(crate) transport_cost: Money,
+    optout_exttrade: bool,
 }
 
 impl SingleMarket {
-    pub fn new(ext_value: Money, transport_cost: Money) -> Self {
+    pub fn new(ext_value: Money, transport_cost: Money, optout_exttrade: bool) -> Self {
         Self {
             capital: Default::default(),
             buy_orders: Default::default(),
             sell_orders: Default::default(),
             ext_value,
             transport_cost,
+            optout_exttrade,
         }
     }
 
@@ -46,14 +50,51 @@ pub struct Market {
     markets: BTreeMap<ItemID, SingleMarket>,
 }
 
+#[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone, Debug, Serialize, Deserialize)]
+pub enum TradeTarget {
+    Soul(SoulID),
+    ExternalTrade,
+}
+
+impl TradeTarget {
+    pub(crate) fn soul(self) -> SoulID {
+        match self {
+            TradeTarget::Soul(soul) => soul,
+            TradeTarget::ExternalTrade => panic!("Cannot get soul from external trade"),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Trade {
-    pub buyer: SoulID,
-    pub seller: SoulID,
+    pub buyer: TradeTarget,
+    pub seller: TradeTarget,
     pub qty: i32,
-    pub sell_pos: Vec2,
-    pub buy_pos: Vec2,
     pub kind: ItemID,
+}
+
+pub fn find_trade_place(
+    target: TradeTarget,
+    pos: Vec2,
+    binfos: &BuildingInfos,
+    map: &Map,
+) -> Option<BuildingID> {
+    match target {
+        TradeTarget::Soul(id) => binfos.building_owned_by(id),
+        TradeTarget::ExternalTrade => {
+            map.bkinds
+                .get(&BuildingKind::RailFretStation)
+                .and_then(|b| {
+                    b.iter().copied().min_by_key(|&bid| {
+                        let b = map
+                            .buildings
+                            .get(bid)
+                            .expect("building in bkind is not real anymore");
+                        OrderedFloat(b.door_pos.xy().distance2(pos))
+                    })
+                })
+        }
+    }
 }
 
 impl Market {
@@ -61,12 +102,17 @@ impl Market {
         Self {
             markets: registry
                 .iter()
-                .map(|v| (v.id, SingleMarket::new(v.ext_value, v.transport_cost)))
+                .map(|v| {
+                    (
+                        v.id,
+                        SingleMarket::new(v.ext_value, v.transport_cost, v.optout_exttrade),
+                    )
+                })
                 .collect(),
         }
     }
 
-    fn m(&mut self, kind: ItemID) -> &mut SingleMarket {
+    pub fn m(&mut self, kind: ItemID) -> &mut SingleMarket {
         self.markets.get_mut(&kind).unwrap()
     }
 
@@ -84,6 +130,15 @@ impl Market {
             return;
         }
         self.sell(soul, near, kind, c);
+    }
+
+    /// An agent was removed from the world, we need to clean after him
+    pub fn remove(&mut self, soul: SoulID) {
+        for market in self.markets.values_mut() {
+            market.sell_orders.remove(&soul);
+            market.buy_orders.remove(&soul);
+            market.capital.remove(&soul);
+        }
     }
 
     /// Called when an agent tells the world it wants to buy something
@@ -125,7 +180,7 @@ impl Market {
     /// Returns a list of buy and sell orders matched together.
     /// A trade updates the buy and sell orders from the market, and the capital of the buyers and sellers.
     /// A trade can only be completed if the seller has enough capital.
-    pub fn make_trades(&mut self) -> impl Iterator<Item = Trade> + '_ {
+    pub fn make_trades(&mut self) -> impl Iterator<Item = Trade> {
         let mut all_trades = vec![];
         let mut potential = vec![];
 
@@ -150,11 +205,9 @@ impl Market {
                         potential.push((
                             score,
                             Trade {
-                                buyer,
-                                seller,
+                                buyer: TradeTarget::Soul(buyer),
+                                seller: TradeTarget::Soul(seller),
                                 qty: qty_buy,
-                                sell_pos,
-                                buy_pos,
                                 kind,
                             },
                             qty_buy == qty_sell,
@@ -168,32 +221,67 @@ impl Market {
                 buy_orders,
                 sell_orders,
                 capital,
+                optout_exttrade,
                 ..
             } = market;
 
             all_trades.extend(
                 potential
                     .drain(..)
-                    .filter(move |(_, trade, complete)| {
-                        let ok =
-                            already_sold.insert(trade.buyer) && already_sold.insert(trade.seller);
+                    .filter(|(_, trade, complete)| {
+                        let buyer = trade.buyer.soul();
+                        let seller = trade.seller.soul();
+                        let ok = already_sold.insert(buyer) && already_sold.insert(seller);
                         if !ok {
                             return false;
                         }
-                        buy_orders.remove(&trade.buyer);
+                        buy_orders.remove(&buyer);
                         if *complete {
-                            sell_orders.remove(&trade.seller);
-                        } else if let Some((_, qty)) = sell_orders.get_mut(&trade.seller) {
+                            sell_orders.remove(&seller);
+                        } else if let Some((_, qty)) = sell_orders.get_mut(&seller) {
                             *qty -= trade.qty
                         }
 
-                        *capital.entry(trade.buyer).or_default() += trade.qty;
-                        *capital.entry(trade.seller).or_default() -= trade.qty;
+                        *capital.entry(buyer).or_default() += trade.qty;
+                        *capital.entry(seller).or_default() -= trade.qty;
 
                         true
                     })
                     .map(|(_, x, _)| x),
-            )
+            );
+
+            if !*optout_exttrade {
+                let btaken = std::mem::take(buy_orders);
+                all_trades.reserve(btaken.len());
+                for (buyer, (_, qty_buy)) in btaken {
+                    *capital.entry(buyer).or_default() += qty_buy;
+
+                    all_trades.push(Trade {
+                        buyer: TradeTarget::Soul(buyer),
+                        seller: TradeTarget::ExternalTrade,
+                        qty: qty_buy,
+                        kind,
+                    });
+                }
+
+                let staken = std::mem::take(sell_orders);
+                all_trades.reserve(staken.len());
+                for (seller, (_, qty_sell)) in staken {
+                    let cap = capital.entry(seller).or_default();
+                    if *cap < qty_sell {
+                        log::warn!("{:?} is selling more than it has: {:?}", &seller, qty_sell);
+                        continue;
+                    }
+                    *cap -= qty_sell;
+
+                    all_trades.push(Trade {
+                        buyer: TradeTarget::ExternalTrade,
+                        seller: TradeTarget::Soul(seller),
+                        qty: qty_sell,
+                        kind,
+                    });
+                }
+            }
         }
 
         all_trades.into_iter()
@@ -256,8 +344,8 @@ mod tests {
 
         assert_eq!(trades.len(), 1);
         let t0 = trades[0];
-        assert_eq!(t0.seller, seller);
-        assert_eq!(t0.buyer, buyer);
+        assert_eq!(t0.seller.soul(), seller);
+        assert_eq!(t0.buyer.soul(), buyer);
         assert_eq!(t0.qty, 2);
     }
 }

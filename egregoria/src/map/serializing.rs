@@ -1,7 +1,10 @@
 use crate::map::{
-    Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap, Terrain,
+    BuildingID, Buildings, Intersections, Lanes, Lots, Map, ParkingSpots, Roads, SpatialMap,
+    Terrain,
 };
+use crate::BuildingKind;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::num::Wrapping;
 
 #[derive(Default, Serialize, Deserialize)]
@@ -14,6 +17,7 @@ pub(crate) struct SerializedMap {
     pub lots: Lots,
     pub terrain: Terrain,
     pub dirt_id: u32,
+    pub bkinds: BTreeMap<BuildingKind, Vec<BuildingID>>,
 }
 
 impl From<&Map> for SerializedMap {
@@ -26,6 +30,7 @@ impl From<&Map> for SerializedMap {
             parking: m.parking.clone(),
             lots: m.lots.clone(),
             terrain: m.terrain.clone(),
+            bkinds: m.bkinds.clone(),
             dirt_id: m.dirt_id.0,
         }
     }
@@ -44,6 +49,7 @@ impl From<SerializedMap> for Map {
             parking: sel.parking,
             terrain: sel.terrain,
             dirt_id: Wrapping(sel.dirt_id),
+            bkinds: sel.bkinds,
         }
     }
 }

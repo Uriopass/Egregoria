@@ -1,4 +1,4 @@
-use crate::economy::{Bought, ItemRegistry, Market, Sold, Workers};
+use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommands};
 use crate::map::{BuildingGen, BuildingKind, LanePatternBuilder, Map, StraightRoadGen, Terrain};
 use crate::map_dynamic::{Itinerary, ItineraryFollower, ItineraryLeader, Router};
@@ -98,18 +98,6 @@ impl Egregoria {
                 (s.f)(&mut goria);
             }
         }
-
-        goria
-            .write::<ItemRegistry>()
-            .load_item_definitions(&*std::fs::read_to_string("assets/items.json").unwrap());
-
-        goria.write::<GoodsCompanyRegistry>().load(
-            &*std::fs::read_to_string("assets/companies.json").unwrap(),
-            &*goria.read::<ItemRegistry>(),
-        );
-
-        let market = Market::new(&*goria.read::<ItemRegistry>());
-        goria.insert(market);
 
         if gen_terrain {
             info!("generating terrain..");

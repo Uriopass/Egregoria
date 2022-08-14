@@ -1,4 +1,4 @@
-use crate::economy::{market_update, Government, ItemRegistry, Market};
+use crate::economy::{init_market, market_update, Government, ItemRegistry, Market};
 use crate::map::Map;
 use crate::map_dynamic::{
     itinerary_update, routing_changed_system, routing_update_system, BuildingInfos,
@@ -44,8 +44,9 @@ pub fn init() {
     register_resource_noserialize::<GoodsCompanyRegistry>();
     register_resource_noserialize::<ItemRegistry>();
     register_resource_noserialize::<ParCommandBuffer>();
-
     register_resource_noinit::<Market>("market");
+
+    register_init(init_market);
 
     register_resource("map", Map::default);
     register_resource("train_reservations", TrainReservations::default);
@@ -76,6 +77,14 @@ pub(crate) struct GSystem {
 pub(crate) static mut INIT_FUNCS: Vec<InitFunc> = Vec::new();
 pub(crate) static mut SAVELOAD_FUNCS: Vec<SaveLoadFunc> = Vec::new();
 pub(crate) static mut GSYSTEMS: Vec<GSystem> = Vec::new();
+
+fn register_init(s: fn(&mut World, &mut Resources)) {
+    unsafe {
+        INIT_FUNCS.push(InitFunc {
+            f: Box::new(move |goria| s(&mut goria.world, &mut goria.resources)),
+        });
+    }
+}
 
 fn register_system(name: &'static str, s: fn(&mut World, &mut Resources)) {
     unsafe {

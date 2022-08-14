@@ -3,7 +3,8 @@
     "name": "job-opening",
     "label": "Job opening",
     "ext_value": 100000000,
-    "transport_cost": 0
+    "transport_cost": 0,
+    "optout_exttrade": true
   },
   {
     "name": "cereal",
