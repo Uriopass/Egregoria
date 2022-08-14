@@ -7,7 +7,6 @@ use egregoria::Egregoria;
 mod config;
 pub mod debug;
 mod economy;
-mod map;
 #[cfg(feature = "multiplayer")]
 pub mod network;
 pub mod settings;
@@ -56,7 +55,6 @@ impl Default for ImguiWindows {
             windows: vec![],
             opened: vec![],
         };
-        s.insert("Map", map::map, true);
         s.insert("Economy", economy::economy, false);
         s.insert("Config", config::config, false);
         s.insert("Debug", debug::debug, false);

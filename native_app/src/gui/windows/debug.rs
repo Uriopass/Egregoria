@@ -2,6 +2,7 @@
 
 use crate::game_loop::Timings;
 use crate::gui::InspectedEntity;
+use crate::network::NetworkState;
 use crate::uiworld::UiWorld;
 use egregoria::map_dynamic::{Itinerary, ParkingManagement};
 use egregoria::physics::CollisionWorld;
@@ -10,7 +11,9 @@ use egregoria::Egregoria;
 
 use crate::gui::inputmap::InputMap;
 use egregoria::map::{IntersectionID, Map, RoadSegmentKind, TraverseKind};
+use egregoria::pedestrians::Pedestrian;
 use egregoria::vehicles::trains::TrainReservations;
+use egregoria::vehicles::Vehicle;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use imgui::Ui;
 use wgpu_engine::Tesselator;
@@ -44,6 +47,21 @@ impl Default for DebugObjs {
     }
 }
 
+#[derive(Clone)]
+struct TestFieldProperties {
+    size: u32,
+    spacing: f32,
+}
+
+impl Default for TestFieldProperties {
+    fn default() -> Self {
+        Self {
+            size: 10,
+            spacing: 150.0,
+        }
+    }
+}
+
 pub fn debug(
     window: imgui::Window<'_, &'static str>,
     ui: &Ui<'_>,
@@ -51,6 +69,8 @@ pub fn debug(
     goria: &Egregoria,
 ) {
     window.build(ui, || {
+        uiworld.check_present(TestFieldProperties::default);
+
         let mut objs = uiworld.write::<DebugObjs>();
         for (val, name, _) in &mut objs.0 {
             ui.checkbox(name, val);
@@ -104,6 +124,48 @@ pub fn debug(
             ui.text(format!("World mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
         }
         ui.text(format!("Cam center:      {:.1} {:.1}", cam.x, cam.y));
+        ui.separator();
+
+        if ui.small_button("load Paris map") {
+            uiworld.commands().map_load_paris();
+        }
+        ui.separator();
+        let mut state = uiworld.write::<TestFieldProperties>();
+
+        imgui::Drag::new("size")
+            .range(2, 100)
+            .build(ui, &mut state.size);
+
+        imgui::Drag::new("spacing")
+            .range(30.0, 1000.0)
+            .display_format("%.0f")
+            .build(ui, &mut state.spacing);
+
+        if ui.small_button("load test field") {
+            uiworld.commands().map_load_testfield(
+                uiworld.read::<Camera>().pos.xy(),
+                state.size,
+                state.spacing,
+            );
+        }
+
+        if matches!(
+            *uiworld.read::<NetworkState>(),
+            NetworkState::Singleplayer { .. }
+        ) && ui.small_button("reset the save")
+        {
+            uiworld.commands().reset_save();
+        }
+
+        ui.text(format!(
+            "{} pedestrians",
+            goria.world().query::<&Pedestrian>().iter().count()
+        ));
+        ui.text(format!(
+            "{} vehicles",
+            goria.world().query::<&Vehicle>().iter().count()
+        ));
+
         ui.separator();
         ui.text("Game system times");
 
