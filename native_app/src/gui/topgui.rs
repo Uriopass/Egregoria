@@ -17,6 +17,7 @@ use egregoria::map::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
+use geom::Vec2;
 use imgui::{StyleColor, StyleVar, Ui, Window};
 use imgui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
@@ -290,7 +291,7 @@ impl Gui {
                                     args.obb,
                                     BuildingKind::RailFretStation,
                                     BuildingGen::NoWalkway {
-                                        door_pos: args.obb.center(),
+                                        door_pos: Vec2::ZERO,
                                     },
                                     tracks,
                                 );

@@ -4,7 +4,7 @@ use hecs::World;
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::{AddAssign, Mul, SubAssign};
+use std::ops::{Add, AddAssign, Mul, SubAssign};
 
 mod government;
 mod item;
@@ -51,6 +51,14 @@ impl std::ops::Sub for Money {
 impl SubAssign for Money {
     fn sub_assign(&mut self, other: Money) {
         self.0 -= other.0;
+    }
+}
+
+impl Add for Money {
+    type Output = Money;
+
+    fn add(self, other: Money) -> Money {
+        Money(self.0 + other.0)
     }
 }
 
@@ -127,7 +135,7 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
                 .push(trade.buyer.soul());
         }
 
-        match trade.buyer {
+        match trade.seller {
             TradeTarget::Soul(id) => {
                 if trade.kind != job_opening {
                     if let Ok(mut v) = world.get::<&mut Sold>(id.0) {
@@ -137,17 +145,20 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
             }
             TradeTarget::ExternalTrade => {
                 let singlem = m.m(trade.kind);
-                gvt.money += (singlem.ext_value - singlem.transport_cost) * trade.qty as i64;
+                gvt.money -= (singlem.ext_value + singlem.transport_cost) * trade.qty as i64;
             }
         }
 
-        match trade.seller {
+        match trade.buyer {
             TradeTarget::Soul(id) => {
                 if let Ok(mut v) = world.get::<&mut Bought>(id.0) {
                     v.0.entry(trade.kind).or_default().push(trade);
                 }
             }
-            TradeTarget::ExternalTrade => {}
+            TradeTarget::ExternalTrade => {
+                let singlem = m.m(trade.kind);
+                gvt.money += (singlem.ext_value - singlem.transport_cost) * trade.qty as i64;
+            }
         }
     }
 }

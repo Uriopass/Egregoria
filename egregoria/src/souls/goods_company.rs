@@ -348,6 +348,8 @@ pub fn company(
                                 }
                             }
                         })
+                    } else {
+                        log::warn!("driver can't find the place to deliver for {:?}", &trade);
                     }
                 }
             }

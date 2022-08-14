@@ -105,7 +105,7 @@ impl Map {
 
         self.dirt_id += Wrapping(1);
 
-        if let BuildingKind::RailFretStation = b.kind {
+        if b.kind.is_cached_in_bkinds() {
             self.bkinds
                 .entry(b.kind)
                 .and_modify(|v| v.retain(|id| *id != b.id));
@@ -163,7 +163,12 @@ impl Map {
         if self.building_overlaps(*obb) {
             return None;
         }
-        log::info!("build special {:?} with shape {:?}", kind, obb);
+        log::info!(
+            "build special {:?} with shape {:?} and gen {:?}",
+            kind,
+            obb,
+            gen
+        );
         self.dirt_id += Wrapping(1);
         let to_clean: Vec<_> = self.spatial_map.query(obb, ProjectFilter::LOT).collect();
         for id in to_clean {
@@ -201,7 +206,7 @@ impl Map {
             attachments,
         );
 
-        if let BuildingKind::RailFretStation = kind {
+        if kind.is_cached_in_bkinds() {
             if let Some(id) = v {
                 self.bkinds.entry(kind).or_default().push(id);
             }

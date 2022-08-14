@@ -126,7 +126,9 @@ impl Egregoria {
             goria.map_mut().build_special_building(
                 &obb,
                 BuildingKind::ExternalTrading,
-                BuildingGen::NoWalkway { door_pos: c.xy() },
+                BuildingGen::NoWalkway {
+                    door_pos: Vec2::ZERO,
+                },
                 &tracks,
             );
         }

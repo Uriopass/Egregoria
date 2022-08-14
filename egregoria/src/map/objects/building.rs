@@ -28,6 +28,10 @@ impl BuildingKind {
             _ => None,
         }
     }
+
+    pub fn is_cached_in_bkinds(&self) -> bool {
+        matches!(self, BuildingKind::RailFretStation)
+    }
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -38,7 +42,7 @@ pub enum BuildingGen {
         vertical_factor: f32, // 1.0 means that the door is at the bottom, just on the street
     },
     NoWalkway {
-        door_pos: Vec2,
+        door_pos: Vec2, // door_pos is relative to the center of the building
     },
 }
 

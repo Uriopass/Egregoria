@@ -92,6 +92,7 @@ pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
         })
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_decision(
     cbuf: &ParCommandBuffer,
     time: &GameTime,

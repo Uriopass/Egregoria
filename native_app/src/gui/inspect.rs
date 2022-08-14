@@ -7,7 +7,7 @@ use egregoria::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
 use egregoria::souls::desire::{BuyFood, Home, Work};
 use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::souls::human::HumanDecision;
-use egregoria::vehicles::{Vehicle, VehicleID, VehicleState};
+use egregoria::vehicles::{Vehicle, VehicleID};
 use egregoria::{Egregoria, SoulID};
 
 use egregoria::vehicles::trains::{Locomotive, LocomotiveReservation};
@@ -53,6 +53,15 @@ impl InspectRenderer {
     }
 
     pub fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui<'_>) {
+        let mut custom_ent = self.entity.id() as i32;
+        if ui.input_int("enter id directly", &mut custom_ent).build() {
+            if let Some(ent) = Entity::from_bits(1 << 32 | custom_ent as u64) {
+                if goria.world().contains(ent) {
+                    self.entity = ent;
+                }
+            }
+        }
+
         ui.text(format!("{:?}", self.entity));
         self.inspect_transform(goria, uiworld, ui);
         self.inspect_component::<Vehicle>(goria, ui);
@@ -70,16 +79,14 @@ impl InspectRenderer {
         self.inspect_component::<Locomotive>(goria, ui);
         self.inspect_component::<LocomotiveReservation>(goria, ui);
 
-        if let Some(v) = goria.comp::<Vehicle>(self.entity) {
-            if matches!(v.state, VehicleState::Driving | VehicleState::Panicking(_)) {
-                for (e, loc) in goria.world().query::<&Location>().iter() {
-                    let loc: &Location = loc;
-                    if loc == &Location::Vehicle(VehicleID(self.entity))
-                        && ui.small_button(&*format!("inspect inside vehicle: {:?}", e))
-                    {
-                        self.entity = e;
-                        return;
-                    }
+        if goria.comp::<Vehicle>(self.entity).is_some() {
+            for (e, loc) in goria.world().query::<&Location>().iter() {
+                let loc: &Location = loc;
+                if loc == &Location::Vehicle(VehicleID(self.entity))
+                    && ui.small_button(&*format!("inspect inside vehicle: {:?}", e))
+                {
+                    self.entity = e;
+                    return;
                 }
             }
         }
