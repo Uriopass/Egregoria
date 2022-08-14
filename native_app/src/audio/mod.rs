@@ -61,11 +61,11 @@ type BaseSignal = FramesSignal<Stereo>;
 impl AudioContext {
     pub fn empty<T: Debug>(x: T) -> Self {
         log::error!("Couldn't initialize audio because: {:?}", x);
-        return Self {
+        Self {
             stream: None,
             scene_handle: None,
             cache: Default::default(),
-        };
+        }
     }
     pub fn new() -> Self {
         let host = cpal::default_host();
