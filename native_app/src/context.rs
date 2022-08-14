@@ -131,7 +131,8 @@ impl Context {
                                 frame = Some(swapchainframe);
                             }
                             Err(wgpu_engine::wgpu::SurfaceError::Outdated)
-                            | Err(wgpu_engine::wgpu::SurfaceError::Lost) => {
+                            | Err(wgpu_engine::wgpu::SurfaceError::Lost)
+                            | Err(wgpu_engine::wgpu::SurfaceError::Timeout) => {
                                 self.gfx.resize(size.0, size.1);
                                 state.resized(&mut self, PhysicalSize::new(size.0, size.1));
                                 log::error!("swapchain has been lost or is outdated, recreating before retrying");
