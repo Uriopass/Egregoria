@@ -13,6 +13,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use egregoria::Egregoria;
 use oddio::{Filter, Frames, FramesSignal, Gain, Handle, Mixer, Sample, Signal, Smoothed, Stop};
 use std::cell::RefCell;
+use std::fmt::{Debug, Display};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
@@ -58,12 +59,26 @@ type Stereo = [Sample; 2];
 type BaseSignal = FramesSignal<Stereo>;
 
 impl AudioContext {
+    pub fn empty<T: Debug>(x: T) -> Self {
+        log::error!("Couldn't initialize audio because: {:?}", x);
+        return Self {
+            stream: None,
+            scene_handle: None,
+            cache: Default::default(),
+        };
+    }
     pub fn new() -> Self {
         let host = cpal::default_host();
-        let device = host
-            .default_output_device()
-            .expect("no output device available");
-        let sample_rate = device.default_output_config().unwrap().sample_rate();
+        let device = match host.default_output_device() {
+            Some(x) => x,
+            None => return Self::empty("no output device found"),
+        };
+        let sample_rate = match device.default_output_config() {
+            Ok(x) => x,
+            Err(e) => return Self::empty(e),
+        }
+        .sample_rate();
+
         let config = cpal::StreamConfig {
             channels: 2,
             sample_rate,
@@ -83,16 +98,12 @@ impl AudioContext {
             },
         ) {
             Ok(x) => x,
-            Err(e) => {
-                log::error!("Couldn't initialize audio because of {:?}", e);
-                return Self {
-                    stream: None,
-                    scene_handle: None,
-                    cache: Default::default(),
-                };
-            }
+            Err(e) => return Self::empty(e),
         };
-        stream.play().unwrap();
+        match stream.play() {
+            Ok(_) => {}
+            Err(e) => return Self::empty(e),
+        };
 
         Self {
             stream: Some(stream),
@@ -133,7 +144,7 @@ impl AudioContext {
         };
 
         let mut decoder =
-            lewton::inside_ogg::OggStreamReader::new(std::io::Cursor::new(buf)).unwrap();
+            lewton::inside_ogg::OggStreamReader::new(std::io::Cursor::new(buf)).ok()?;
 
         let mut samples = vec![];
         let mono = decoder.ident_hdr.audio_channels == 1;
@@ -141,15 +152,15 @@ impl AudioContext {
         while let Some(packets) = decoder.read_dec_packet().expect("error decoding") {
             if mono {
                 let mut it = packets.into_iter();
-                let center = it.next().unwrap();
+                let center = it.next()?;
                 samples.extend(center.into_iter().map(|x| {
                     let v = x as f32 / (i16::MAX as f32);
                     [v, v]
                 }))
             } else {
                 let mut it = packets.into_iter();
-                let left = it.next().unwrap();
-                let right = it.next().unwrap();
+                let left = it.next()?;
+                let right = it.next()?;
                 samples.extend(
                     left.into_iter()
                         .zip(right)
