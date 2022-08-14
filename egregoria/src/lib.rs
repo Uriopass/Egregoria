@@ -167,7 +167,6 @@ impl Egregoria {
         }
 
         game_schedule.execute(self);
-        add_souls_to_empty_buildings(self);
         t.elapsed()
     }
 
