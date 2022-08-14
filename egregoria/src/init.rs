@@ -14,8 +14,8 @@ use crate::vehicles::trains::{
     TrainReservations,
 };
 use crate::{
-    utils, CollisionWorld, Egregoria, GameTime, ParCommandBuffer, RandProvider, RunnableSystem,
-    RNG_SEED, SECONDS_PER_DAY, SECONDS_PER_HOUR,
+    add_souls_to_empty_buildings, utils, CollisionWorld, Egregoria, GameTime, ParCommandBuffer,
+    RandProvider, RunnableSystem, RNG_SEED, SECONDS_PER_DAY, SECONDS_PER_HOUR,
 };
 use common::saveload::Encoder;
 use hecs::World;
@@ -40,6 +40,8 @@ pub fn init() {
     register_system("itinerary_update", itinerary_update);
     register_system("market_update", market_update);
     register_system("train_reservations_update", train_reservations_update);
+
+    register_system_goria("add_souls_to_empty_buildings", add_souls_to_empty_buildings);
 
     register_resource_noserialize::<GoodsCompanyRegistry>();
     register_resource_noserialize::<ItemRegistry>();
@@ -87,6 +89,19 @@ fn register_init(s: fn(&mut World, &mut Resources)) {
 }
 
 fn register_system(name: &'static str, s: fn(&mut World, &mut Resources)) {
+    unsafe {
+        GSYSTEMS.push(GSystem {
+            s: Box::new(move || {
+                Box::new(utils::scheduler::RunnableFn {
+                    f: move |goria| s(&mut goria.world, &mut goria.resources),
+                    name,
+                })
+            }),
+        });
+    }
+}
+
+fn register_system_goria(name: &'static str, s: fn(&mut Egregoria)) {
     unsafe {
         GSYSTEMS.push(GSystem {
             s: Box::new(move || Box::new(utils::scheduler::RunnableFn { f: s, name })),

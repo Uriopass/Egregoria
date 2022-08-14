@@ -1,5 +1,6 @@
 use crate::map::{BuildingID, BuildingKind};
 use crate::map_dynamic::BuildingInfos;
+use crate::souls::fret_station::freight_station_soul;
 use crate::souls::goods_company::{company_soul, CompanyKind, GoodsCompany, GoodsCompanyRegistry};
 use crate::souls::human::spawn_human;
 use crate::vehicles::{spawn_parked_vehicle, VehicleKind};
@@ -10,9 +11,11 @@ use geom::Vec3;
 #[macro_use]
 pub mod desire;
 
+pub mod fret_station;
 pub mod goods_company;
 pub mod human;
 
+/// Adds souls to empty buildings
 #[profiling::function]
 pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
     let map = goria.map();
@@ -41,6 +44,15 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
         .take(50)
     {
         spawn_human(goria, build_id);
+        n_souls_added += 1;
+    }
+
+    for &(build_id, _) in empty_buildings
+        .get(&BuildingKind::RailFretStation)
+        .unwrap_or(&vec![])
+        .iter()
+    {
+        freight_station_soul(goria, build_id);
         n_souls_added += 1;
     }
 

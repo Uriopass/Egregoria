@@ -1,23 +1,21 @@
 use crate::{Egregoria, ParCommandBuffer};
 use common::History;
-use hecs::World;
 use ordered_float::OrderedFloat;
-use resources::Resources;
 use std::time::Instant;
 
 pub trait RunnableSystem {
-    fn run(&mut self, world: &mut World, res: &mut Resources);
+    fn run(&mut self, goria: &mut Egregoria);
     fn name(&self) -> &'static str;
 }
 
-pub struct RunnableFn<F: FnMut(&mut World, &mut Resources)> {
+pub struct RunnableFn<F: FnMut(&mut Egregoria)> {
     pub f: F,
     pub name: &'static str,
 }
 
-impl<F: FnMut(&mut World, &mut Resources)> RunnableSystem for RunnableFn<F> {
-    fn run(&mut self, world: &mut World, res: &mut Resources) {
-        (self.f)(world, res)
+impl<F: FnMut(&mut Egregoria)> RunnableSystem for RunnableFn<F> {
+    fn run(&mut self, goria: &mut Egregoria) {
+        (self.f)(goria)
     }
 
     fn name(&self) -> &'static str {
@@ -39,11 +37,9 @@ impl SeqSchedule {
     #[profiling::function]
     pub fn execute(&mut self, goria: &mut Egregoria) {
         for (sys, h) in &mut self.systems {
-            let world = &mut goria.world;
-            let res = &mut goria.resources;
             let start = Instant::now();
 
-            sys.run(world, res);
+            sys.run(goria);
 
             ParCommandBuffer::apply(goria);
 

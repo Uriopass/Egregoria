@@ -10,7 +10,6 @@ fn create_file(path: &str) -> Option<File> {
 fn open_file(path: &str) -> Option<File> {
     File::open(path).ok()
 }
-
 pub trait Encoder {
     const EXTENSION: &'static str;
 
