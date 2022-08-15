@@ -191,7 +191,10 @@ pub fn settings(
                 .build(ui, &mut settings.camera_fov);
 
             ui.new_line();
-            ui.text("Graphics");
+
+            let fps = ui.io().framerate;
+
+            ui.text(format!("Graphics - {:.1}FPS", fps));
 
             ui.checkbox("Fullscreen", &mut settings.fullscreen);
             ui.checkbox("Realistic sky", &mut settings.realistic_sky);
