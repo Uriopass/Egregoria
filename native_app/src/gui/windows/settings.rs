@@ -71,7 +71,7 @@ impl Default for Settings {
             fullscreen: false,
             vsync: VSyncOptions::Enabled,
             time_warp: 1,
-            auto_save_every: AutoSaveEvery::Never,
+            auto_save_every: AutoSaveEvery::FiveMinutes,
             ssao: true,
             shadows: ShadowQuality::High,
             camera_smooth_tightness: 1.0,
