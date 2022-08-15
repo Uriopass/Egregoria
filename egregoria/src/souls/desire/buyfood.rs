@@ -76,7 +76,9 @@ impl BuyFood {
             }
             BuyFoodState::WaitingForTrade => {
                 for trade in bought.0.entry(self.bread).or_default().drain(..) {
-                    if let Some(b) = find_trade_place(trade.seller, trans.position.xy(), binfos, map) {
+                    if let Some(b) =
+                        find_trade_place(trade.seller, trans.position.xy(), binfos, map)
+                    {
                         self.state = BuyFoodState::BoughtAt(b);
                     }
                 }
