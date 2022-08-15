@@ -47,6 +47,7 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     if !tool.is_roadbuild() {
         state.build_state = Hover;
+        state.height_offset = 0.0;
         return;
     }
 
@@ -110,12 +111,12 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     if inp.just_act.contains(&InputAction::UpElevation) {
-        state.height_offset += 1.0;
+        state.height_offset += 5.0;
         state.height_offset = state.height_offset.min(100.0);
     }
 
     if inp.just_act.contains(&InputAction::DownElevation) {
-        state.height_offset -= 1.0;
+        state.height_offset -= 5.0;
         state.height_offset = state.height_offset.max(0.0);
     }
 
