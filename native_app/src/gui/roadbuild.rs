@@ -109,6 +109,16 @@ pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
         state.build_state = Hover;
     }
 
+    if inp.just_act.contains(&InputAction::UpElevation) {
+        state.height_offset += 1.0;
+        state.height_offset = state.height_offset.min(100.0);
+    }
+
+    if inp.just_act.contains(&InputAction::DownElevation) {
+        state.height_offset -= 1.0;
+        state.height_offset = state.height_offset.max(0.0);
+    }
+
     let mut cur_proj = map.project(
         mousepos,
         (log_camheight * 5.0).clamp(1.0, 10.0),

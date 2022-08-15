@@ -31,6 +31,8 @@ pub enum InputAction {
     Select,
     NoSnapping,
     HideInterface,
+    UpElevation,
+    DownElevation,
 }
 
 // All unit inputs need to match
@@ -78,6 +80,8 @@ impl InputMap {
             (Select,        ics![Mouse(Left)]),
             (NoSnapping,    ics![Key(K::LControl)]),
             (HideInterface, ics![Key(K::H)]),
+            (UpElevation,   ics![Key(K::LControl), WheelUp]),
+            (DownElevation, ics![Key(K::LControl), WheelDown]),
         ] {
             if m.insert(k, v).is_some() {
                 log::error!("inserting same action twice!");
@@ -301,6 +305,8 @@ impl Display for InputAction {
                 InputAction::Select => "Select",
                 InputAction::HideInterface => "Hide interface",
                 InputAction::NoSnapping => "No Snapping",
+                InputAction::UpElevation => "Up Elevation",
+                InputAction::DownElevation => "Down Elevation",
             }
         )
     }
