@@ -706,6 +706,12 @@ impl Map {
             }
         }
 
+        for (_, bs) in &self.bkinds {
+            for &b in bs {
+                assert!(self.buildings.contains_key(b));
+            }
+        }
+
         for road in self.roads.values() {
             log::debug!("{:?}", road.id);
             let src = self.intersections.get(road.src).unwrap();

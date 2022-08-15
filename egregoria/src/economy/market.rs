@@ -85,13 +85,11 @@ pub fn find_trade_place(
             map.bkinds
                 .get(&BuildingKind::RailFretStation)
                 .and_then(|b| {
-                    b.iter().copied().min_by_key(|&bid| {
-                        let b = map
-                            .buildings
-                            .get(bid)
-                            .expect("building in bkind is not real anymore");
+                    b.iter().filter_map(|&bid| map
+                        .buildings
+                        .get(bid)).min_by_key(|&b| {
                         OrderedFloat(b.door_pos.xy().distance2(pos))
-                    })
+                    }).map(|x| x.id)
                 })
         }
     }
