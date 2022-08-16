@@ -7,8 +7,8 @@ use crate::audio::car_sounds::CarSounds;
 use crate::audio::music::Music;
 use crate::gui::windows::settings::Settings;
 use crate::uiworld::UiWorld;
-use common::AudioKind;
 use common::FastMap;
+use common::{AudioKind, FastSet};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use egregoria::Egregoria;
 use oddio::{Filter, Frames, FramesSignal, Gain, Handle, Mixer, Sample, Signal, Smoothed, Stop};
@@ -16,7 +16,7 @@ use std::cell::RefCell;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, RwLock};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 pub struct GameAudio {
     music: Music,
@@ -26,6 +26,7 @@ pub struct GameAudio {
 
 impl GameAudio {
     pub fn new(ctx: &mut AudioContext) -> Self {
+        defer!(log::info!("finished init of game audio"));
         Self {
             music: Music::new(),
             ambiant: Ambient::new(ctx),
@@ -48,6 +49,7 @@ pub struct AudioContext {
     stream: Option<cpal::Stream>,
     scene_handle: Option<Handle<Mixer<[Sample; 2]>>>,
     cache: Arc<RwLock<FastMap<String, StoredAudio>>>,
+    preloading: FastSet<String>,
 }
 
 static MUSIC_SHARED: AtomicU32 = AtomicU32::new(0);
@@ -65,6 +67,7 @@ impl AudioContext {
             stream: None,
             scene_handle: None,
             cache: Default::default(),
+            preloading: Default::default(),
         }
     }
     pub fn new() -> Self {
@@ -109,11 +112,13 @@ impl AudioContext {
             stream: Some(stream),
             scene_handle: Some(scene_handle),
             cache: Default::default(),
+            preloading: Default::default(),
         }
     }
 
     pub fn preload<'a>(&mut self, sounds: impl Iterator<Item = &'a str> + Send + 'static) {
         sounds.for_each(move |v| {
+            self.preloading.insert(v.to_string());
             let s = v.to_string();
             let cache = self.cache.clone();
             rayon::spawn(move || {
@@ -183,7 +188,19 @@ impl AudioContext {
         Some(frames)
     }
 
-    fn get(cache: &RwLock<FastMap<String, StoredAudio>>, name: &str) -> Option<StoredAudio> {
+    fn get(
+        preloading: &FastSet<String>,
+        cache: &RwLock<FastMap<String, StoredAudio>>,
+        name: &str,
+    ) -> Option<StoredAudio> {
+        if preloading.contains(name) {
+            for _ in 0..100 {
+                if let Some(v) = cache.read().unwrap().get(name) {
+                    return Some(v.clone());
+                }
+                std::thread::sleep(Duration::from_millis(100))
+            }
+        }
         if let Some(v) = cache.read().unwrap().get(name) {
             return Some(v.clone());
         }
@@ -200,7 +217,7 @@ impl AudioContext {
     pub fn play(&mut self, name: &'static str, kind: AudioKind) {
         let vol = self.g_volume(kind);
         if let Some(ref mut h) = self.scene_handle {
-            if let Some(x) = Self::get(&self.cache, name) {
+            if let Some(x) = Self::get(&self.preloading, &self.cache, name) {
                 if let AudioKind::Music = kind {
                     log::error!("shouldn't play music with base play as it's not affected by global volume changes");
                 }
@@ -208,6 +225,10 @@ impl AudioContext {
                 h.control().play(Gain::new(FramesSignal::new(x, 0.0), vol));
             }
         }
+    }
+
+    pub fn is_all_ready(&self) -> bool {
+        self.cache.read().unwrap().len() >= self.preloading.len()
     }
 
     pub fn play_with_control<S: 'static>(
@@ -220,7 +241,7 @@ impl AudioContext {
         S: Signal<Frame = [Sample; 2]> + Send,
     {
         if let Some(ref mut h) = self.scene_handle {
-            if let Some(x) = Self::get(&self.cache, name) {
+            if let Some(x) = Self::get(&self.preloading, &self.cache, name) {
                 let test = GlobalGain {
                     volume: RefCell::new(Smoothed::new(1.0)),
                     kind,

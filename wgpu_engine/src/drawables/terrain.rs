@@ -62,6 +62,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             ..Default::default()
         });
 
+        defer!(log::info!("finished init of terrain render"));
         Self {
             bg: Arc::new(tex.bindgroup(
                 &gfx.device,
@@ -95,14 +96,14 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         dirtid: u32,
         cell: (u32, u32),
         chunk: &[[f32; CRESOLUTION]; CRESOLUTION],
-    ) {
+    ) -> bool {
         if self
             .dirt_ids
             .get(&cell)
             .map(|x| *x == dirtid)
             .unwrap_or_default()
         {
-            return;
+            return false;
         }
 
         let mut enc = gfx
@@ -177,6 +178,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         gfx.queue.submit(Some(enc.finish()));
 
         self.dirt_ids.insert(cell, dirtid);
+        true
     }
 
     #[profiling::function]

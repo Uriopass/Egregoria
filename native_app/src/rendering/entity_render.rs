@@ -22,6 +22,7 @@ pub struct InstancedRender {
 
 impl InstancedRender {
     pub fn new(gfx: &mut GfxContext) -> Self {
+        defer!(log::info!("finished init of instanced render"));
         InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 gfx.texture("assets/sprites/path_not_found.png", "path_not_found"),

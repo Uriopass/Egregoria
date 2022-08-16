@@ -83,6 +83,21 @@ macro_rules! unwrap_contlog {
 }
 
 #[macro_export]
+macro_rules! defer {
+    ($e: expr) => {
+        struct Defer;
+
+        impl Drop for Defer {
+            fn drop(&mut self) {
+                $e
+            }
+        }
+
+        let _guard = Defer;
+    };
+}
+
+#[macro_export]
 macro_rules! defer_serialize {
     ($me:ty, $defered:ty) => {
         impl serde::Serialize for $me {

@@ -23,6 +23,9 @@ impl Music {
     }
 
     pub fn update(&mut self, ctx: &mut AudioContext) {
+        if !ctx.is_all_ready() {
+            return;
+        }
         if let Some(ref mut x) = self.cur_track {
             if !x.control::<Stop<_>, _>().is_stopped() {
                 return;

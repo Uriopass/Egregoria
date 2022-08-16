@@ -79,6 +79,8 @@ impl State {
         let w = goria.map().terrain.width;
         let h = goria.map().terrain.height;
 
+        defer!(log::info!("finished init of game loop"));
+
         Self {
             uiw: uiworld,
             game_schedule,
@@ -165,13 +167,28 @@ impl State {
         if ter.dirt_id.0 == self.terrain.dirt_id {
             return;
         }
-        self.terrain.dirt_id = ter.dirt_id.0;
 
+        let mut update_count = 0;
         for &cell in ter.chunks.keys() {
             let chunk = unwrap_retlog!(ter.chunks.get(&cell), "trying to update nonexistent chunk");
 
-            self.terrain
+            if self
+                .terrain
                 .update_chunk(&mut ctx.gfx, chunk.dirt_id.0, cell, &chunk.heights)
+            {
+                update_count += 1;
+                #[cfg(not(debug_assertions))]
+                const UPD_PER_FRAME: usize = 20;
+
+                #[cfg(debug_assertions)]
+                const UPD_PER_FRAME: usize = 8;
+                if update_count > UPD_PER_FRAME {
+                    break;
+                }
+            }
+        }
+        if update_count == 0 {
+            self.terrain.dirt_id = ter.dirt_id.0;
         }
 
         self.terrain.update_borders(&ctx.gfx, &|p| ter.height(p));

@@ -19,6 +19,7 @@ impl RoadRenderer {
     pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         let mesh = load_mesh("pine.glb", gfx).expect("could not load pine");
 
+        defer!(log::info!("finished init of road render"));
         RoadRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
             trees_builders: goria
