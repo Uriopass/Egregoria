@@ -1,6 +1,5 @@
 use crate::game_loop::Timings;
 use crate::gui::bulldozer::BulldozerState;
-use crate::gui::inputmap::InputMap;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadbuild::RoadBuildResource;
 use crate::gui::roadeditor::RoadEditorResource;
@@ -9,6 +8,7 @@ use crate::gui::windows::debug::{DebugObjs, DebugState};
 use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, InspectedEntity, Tool};
 use crate::input::{KeyboardInfo, MouseInfo};
+use crate::inputmap::InputMap;
 use crate::network::NetworkState;
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::{ReceivedCommands, UiWorld};

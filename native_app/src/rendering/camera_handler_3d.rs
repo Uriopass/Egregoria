@@ -1,6 +1,6 @@
 use crate::context::Context;
-use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::windows::settings::Settings;
+use crate::inputmap::{InputAction, InputMap};
 use common::saveload::Encoder;
 use geom::{vec4, Camera, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;

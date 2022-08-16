@@ -14,11 +14,11 @@ use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
 use crate::audio::GameAudio;
 use crate::context::Context;
-use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, Gui, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
+use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::imgui_wrapper::ImguiWrapper;
 use crate::rendering::{CameraHandler3D, InstancedRender, RoadRenderer};
 use crate::uiworld::UiWorld;

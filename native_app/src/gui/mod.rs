@@ -21,7 +21,6 @@ pub mod specialbuilding;
 pub mod topgui;
 
 pub mod addtrain;
-pub mod inputmap;
 pub mod windows;
 
 pub use follow::FollowEntity;

@@ -9,7 +9,7 @@ use egregoria::physics::CollisionWorld;
 use egregoria::utils::time::{GameTime, SECONDS_PER_DAY};
 use egregoria::Egregoria;
 
-use crate::gui::inputmap::InputMap;
+use crate::inputmap::InputMap;
 use egregoria::map::{IntersectionID, Map, RoadSegmentKind, TraverseKind};
 use egregoria::pedestrians::Pedestrian;
 use egregoria::vehicles::trains::TrainReservations;

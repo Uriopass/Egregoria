@@ -1,4 +1,4 @@
-use crate::gui::inputmap::InputMap;
+use crate::inputmap::InputMap;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;

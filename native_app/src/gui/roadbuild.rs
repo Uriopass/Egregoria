@@ -1,5 +1,5 @@
-use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::Tool;
+use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use common::AudioKind;

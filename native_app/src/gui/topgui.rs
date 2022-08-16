@@ -1,5 +1,4 @@
 use crate::gui::bulldozer::BulldozerState;
-use crate::gui::inputmap::{InputAction, InputMap};
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
@@ -7,6 +6,7 @@ use crate::gui::windows::settings::Settings;
 use crate::gui::windows::ImguiWindows;
 use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo};
+use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::economy::{Government, ItemRegistry};
