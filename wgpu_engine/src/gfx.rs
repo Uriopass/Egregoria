@@ -8,7 +8,6 @@ use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
-use std::collections::hash_map::Entry;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -43,7 +42,7 @@ pub struct GfxContext {
         Box<dyn for<'a> Fn(Vec<CompiledModule>, &'a GfxContext) -> RenderPipeline>,
     )>,
     pub(crate) shader_cache: FastMap<String, CompiledModule>,
-    pub(crate) shader_watcher: FastMap<String, SystemTime>,
+    pub(crate) shader_watcher: FastMap<String, (Vec<String>, Option<SystemTime>)>,
     pub(crate) tick: u64,
     pub(crate) projection: Uniform<Matrix4>,
     pub(crate) sun_projection: Uniform<Matrix4>,
@@ -798,22 +797,22 @@ impl GfxContext {
             return;
         }
         let mut to_invalidate = vec![];
-        for sname in self.shader_cache.keys() {
-            let meta = unwrap_cont!(std::fs::metadata(Path::new(&format!(
-                "assets/shaders/{}.wgsl",
-                sname
-            )))
-            .ok());
+        for (sname, (parents, entry)) in &mut self.shader_watcher {
+            let meta =
+                unwrap_cont!(
+                    std::fs::metadata(Path::new(&format!("assets/shaders/{}", sname))).ok()
+                );
             let filetime = unwrap_cont!(meta.modified().ok());
-            match self.shader_watcher.entry(sname.clone()) {
-                Entry::Occupied(mut entry) => {
-                    if entry.get() < &filetime {
+            match entry.as_mut() {
+                Some(entry) => {
+                    if *entry < filetime {
                         to_invalidate.push(sname.clone());
-                        entry.insert(filetime);
+                        to_invalidate.extend(parents.iter().cloned());
+                        *entry = filetime;
                     }
                 }
-                Entry::Vacant(entry) => {
-                    entry.insert(filetime);
+                None => {
+                    *entry = Some(filetime);
                 }
             }
         }
@@ -864,15 +863,28 @@ impl GfxContext {
         shaders: &[&str],
         pipe: Box<dyn for<'a, 'b> Fn(Vec<CompiledModule>, &'a Self) -> RenderPipeline>,
     ) {
+        let shaders: Vec<_> = shaders.iter().map(|x| x.to_string() + ".wgsl").collect();
+
         let modules: Vec<_> = self
             .get_modules(shaders.iter().map(|s| s.to_string()))
             .collect();
+
+        #[cfg(debug_assertions)]
+        for (sname, module) in shaders.iter().zip(&modules) {
+            for dep in module.get_deps() {
+                self.shader_watcher
+                    .entry(dep.to_string())
+                    .or_insert((vec![], None))
+                    .0
+                    .push(sname.to_string());
+            }
+        }
+
         let pipeline = pipe(modules, self);
-        self.pipelines_builders.push((
-            TypeId::of::<T>(),
-            shaders.iter().map(|x| x.to_string()).collect(),
-            pipe,
-        ));
+
+        #[cfg(debug_assertions)]
+        self.pipelines_builders
+            .push((TypeId::of::<T>(), shaders, pipe));
         if self.pipelines.insert(TypeId::of::<T>(), pipeline).is_some() {
             log::error!(
                 "pipeline for same type inserted registered multiple times! {:?}",

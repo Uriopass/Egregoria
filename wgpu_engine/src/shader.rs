@@ -6,12 +6,18 @@ use std::rc::Rc;
 use wgpu::{Device, ShaderModule};
 
 #[derive(Clone)]
-pub struct CompiledModule(Rc<ShaderModule>);
+pub struct CompiledModule(Rc<(ShaderModule, Vec<String>)>);
 
 impl Deref for CompiledModule {
     type Target = ShaderModule;
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.0 .0
+    }
+}
+
+impl CompiledModule {
+    pub fn get_deps(&self) -> &[String] {
+        &self.0 .1
     }
 }
 
@@ -29,7 +35,7 @@ fn mk_module(data: String, device: &Device) -> ShaderModule {
 pub fn compile_shader(device: &Device, name: &str) -> CompiledModule {
     let mut p = PathBuf::new();
     p.push("assets/shaders");
-    p.push(name.to_string() + ".wgsl");
+    p.push(name);
 
     let mut source = std::fs::read_to_string(&p)
         .map_err(|e| {
@@ -41,24 +47,26 @@ pub fn compile_shader(device: &Device, name: &str) -> CompiledModule {
         })
         .unwrap();
 
-    source = replace_imports(&p, source);
+    let mut deps = vec![];
+    source = replace_imports(&p, source, &mut deps);
 
     let wgsl = mk_module(source, device);
 
-    CompiledModule(Rc::new(wgsl))
+    CompiledModule(Rc::new((wgsl, deps)))
 }
 
-fn replace_imports(base: &Path, src: String) -> String {
+fn replace_imports(base: &Path, src: String, deps: &mut Vec<String>) -> String {
     src.lines()
-        .map(|x| {
+        .map(move |x| {
             if let Some(mut loc) = x.strip_prefix("#include \"") {
                 loc = loc.strip_suffix('"').expect("include does not end with \"");
+                deps.push(loc.to_string());
                 let mut p = base.to_path_buf();
                 p.pop();
                 p.push(loc);
-                return Cow::Owned(
-                    std::fs::read_to_string(p).expect("could not find included file"),
-                );
+                let mut s = std::fs::read_to_string(p).expect("could not find included file");
+                s = replace_imports(base, s, deps);
+                return Cow::Owned(s);
             }
             Cow::Borrowed(x)
         })
