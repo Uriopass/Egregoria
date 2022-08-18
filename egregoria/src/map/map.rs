@@ -706,7 +706,7 @@ impl Map {
             }
         }
 
-        for (_, bs) in &self.bkinds {
+        for bs in self.bkinds.values() {
             for &b in bs {
                 assert!(self.buildings.contains_key(b));
             }
