@@ -29,10 +29,10 @@ impl Context {
     pub fn new() -> Self {
         let el = EventLoop::new();
 
-        let size = el
-            .primary_monitor()
-            .expect("app needs a monitor to run")
-            .size();
+        let size = match el.primary_monitor() {
+            Some(monitor) => monitor.size(),
+            None => el.available_monitors().next().unwrap().size(),
+        };
 
         let wb = WindowBuilder::new();
 
