@@ -8,4 +8,5 @@ world/*
 world
 *.bc
 *.exe
+*.tar.gz
 __pycache__
