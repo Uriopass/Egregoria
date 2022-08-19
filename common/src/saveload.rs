@@ -124,9 +124,7 @@ impl Encoder for CompressedBincode {
 
     fn encode(x: &impl Serialize) -> Result<Vec<u8>> {
         let encoded = &*Bincode::encode(x)?;
-        let t = Instant::now();
         let compressed = miniz_oxide::deflate::compress_to_vec(encoded, 1); // bigger level values take far too long and only compress a bit better (about 5%)
-        log::info!("took {}s to compress", t.elapsed().as_secs_f32());
         Ok(compressed)
     }
 
