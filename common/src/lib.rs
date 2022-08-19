@@ -98,6 +98,19 @@ macro_rules! defer {
 }
 
 #[macro_export]
+macro_rules! assert_delta {
+    ($x:expr, $y:expr, $d:expr) => {
+        assert!(
+            $x - $y < $d || $y - $x < $d,
+            "assert_delta failed: |{} - {}| < {}",
+            $x,
+            $y,
+            $d
+        );
+    };
+}
+
+#[macro_export]
 macro_rules! defer_serialize {
     ($me:ty, $defered:ty) => {
         impl serde::Serialize for $me {

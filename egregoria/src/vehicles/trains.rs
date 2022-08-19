@@ -135,8 +135,9 @@ pub fn spawn_train(
         RandomLocomotive,
         Itinerary::NONE,
     ));
-
+    log::info!("{:?}", leader.past);
     for mut follower in leader.past.mk_followers(wagons_dists_to_loco(n_wagons)) {
+        log::info!("{:?}", follower);
         let (pos, dir) = follower.update(&leader.past);
         world.spawn((
             Transform::new_dir(pos, dir),

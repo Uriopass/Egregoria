@@ -69,6 +69,19 @@ pub use v2::*;
 pub use v3::*;
 pub use v4::*;
 
+#[macro_export]
+macro_rules! assert_delta {
+    ($x:expr, $y:expr, $d:expr) => {
+        assert!(
+            $x - $y < $d || $y - $x < $d,
+            "assert_delta failed: |{} - {}| < {}",
+            $x,
+            $y,
+            $d
+        );
+    };
+}
+
 pub trait Intersect<T: Shape>: Shape {
     fn intersects(&self, shape: &T) -> bool;
 }
