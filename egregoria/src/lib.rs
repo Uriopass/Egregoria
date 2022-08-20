@@ -47,6 +47,7 @@ pub mod vehicles;
 
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::utils::scheduler::RunnableSystem;
+use crate::utils::time::Tick;
 use crate::vehicles::trains::RailWagon;
 use common::FastMap;
 use serde::de::Error;
@@ -61,7 +62,6 @@ debug_inspect_impl!(SoulID);
 pub struct Egregoria {
     pub(crate) world: World,
     resources: Resources,
-    tick: u32,
 }
 
 /// Safety: Resources must be Send+Sync.
@@ -88,7 +88,6 @@ impl Egregoria {
         let mut goria = Egregoria {
             world: Default::default(),
             resources: Default::default(),
-            tick: 0,
         };
 
         info!("Seed is {}", RNG_SEED);
@@ -149,7 +148,7 @@ impl Egregoria {
 
     #[profiling::function]
     pub fn tick(&mut self, game_schedule: &mut SeqSchedule, commands: &WorldCommands) -> Duration {
-        self.tick += 1;
+        self.write::<Tick>().0 += 1;
         const WORLD_TICK_DT: f32 = 0.05;
 
         let t = Instant::now();
@@ -171,12 +170,11 @@ impl Egregoria {
     }
 
     pub fn get_tick(&self) -> u32 {
-        self.tick
+        self.resources.get::<Tick>().unwrap().0
     }
 
     pub fn hashes(&self) -> BTreeMap<String, u64> {
         let mut hashes = BTreeMap::new();
-        hashes.insert("tick".to_string(), self.tick as u64);
         let ser = common::saveload::Bincode::encode(&SerWorld(&self.world)).unwrap();
         hashes.insert("world".to_string(), common::hash_u64(&*ser));
 
@@ -283,7 +281,6 @@ impl Serialize for Egregoria {
             world: SerWorld(&self.world),
             version: VERSION.to_string(),
             res: m,
-            tick: self.tick,
         }
         .serialize(serializer);
         log::info!("took {}s to serialize in total", t.elapsed().as_secs_f32());
@@ -296,7 +293,6 @@ struct EgregoriaSer<'a> {
     world: SerWorld<'a>,
     version: String,
     res: FastMap<String, Vec<u8>>,
-    tick: u32,
 }
 
 #[derive(Deserialize)]
@@ -304,7 +300,6 @@ struct EgregoriaDeser {
     world: DeserWorld,
     version: String,
     res: FastMap<String, Vec<u8>>,
-    tick: u32,
 }
 
 impl<'de> Deserialize<'de> for Egregoria {
@@ -332,7 +327,6 @@ impl<'de> Deserialize<'de> for Egregoria {
         let mut goria = Self::new(false);
 
         goria.world = goriadeser.world.0;
-        goria.tick = goriadeser.tick;
 
         unsafe {
             for l in &SAVELOAD_FUNCS {

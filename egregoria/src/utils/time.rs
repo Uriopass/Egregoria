@@ -5,6 +5,11 @@ pub const SECONDS_PER_HOUR: i32 = 100;
 pub const HOURS_PER_DAY: i32 = 24;
 pub const SECONDS_PER_DAY: i32 = SECONDS_PER_HOUR * HOURS_PER_DAY;
 
+/// The amount of time the game was updated
+/// Used as a resource
+#[derive(Default, Copy, Clone, Serialize, Deserialize)]
+pub struct Tick(pub u32);
+
 /// An in-game instant used to measure time differences
 #[derive(Inspect, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct GameInstant {

@@ -1,4 +1,4 @@
-use crate::economy::{init_market, market_update, Government, ItemRegistry, Market};
+use crate::economy::{init_market, market_update, EcoStats, Government, ItemRegistry, Market};
 use crate::map::Map;
 use crate::map_dynamic::{
     itinerary_update, routing_changed_system, routing_update_system, BuildingInfos,
@@ -8,6 +8,7 @@ use crate::pedestrians::pedestrian_decision_system;
 use crate::physics::systems::coworld_synchronize;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
+use crate::utils::time::Tick;
 use crate::vehicles::systems::{vehicle_decision_system, vehicle_state_update_system};
 use crate::vehicles::trains::{
     locomotive_random_movement_system, locomotive_system, train_reservations_update,
@@ -47,9 +48,11 @@ pub fn init() {
     register_resource_noserialize::<ItemRegistry>();
     register_resource_noserialize::<ParCommandBuffer>();
     register_resource_noinit::<Market>("market");
+    register_resource_noinit::<EcoStats>("ecostats");
 
     register_init(init_market);
 
+    register_resource("tick", Tick::default);
     register_resource("map", Map::default);
     register_resource("train_reservations", TrainReservations::default);
     register_resource("government", Government::default);

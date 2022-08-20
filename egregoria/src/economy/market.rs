@@ -177,7 +177,7 @@ impl Market {
     /// Returns a list of buy and sell orders matched together.
     /// A trade updates the buy and sell orders from the market, and the capital of the buyers and sellers.
     /// A trade can only be completed if the seller has enough capital.
-    pub fn make_trades(&mut self) -> impl Iterator<Item = Trade> {
+    pub fn make_trades(&mut self) -> Vec<Trade> {
         let mut all_trades = vec![];
         let mut potential = vec![];
 
@@ -281,7 +281,7 @@ impl Market {
             }
         }
 
-        all_trades.into_iter()
+        all_trades
     }
 
     pub fn inner(&self) -> &BTreeMap<ItemID, SingleMarket> {

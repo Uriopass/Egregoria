@@ -6,10 +6,13 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, AddAssign, Mul, SubAssign};
 
+mod ecostats;
 mod government;
 mod item;
 mod market;
 
+use crate::utils::time::Tick;
+pub use ecostats::*;
 pub use government::*;
 pub use item::*;
 pub use market::*;
@@ -115,6 +118,8 @@ pub fn init_market(_: &mut World, res: &mut Resources) {
 
     let market = Market::new(&*res.get::<ItemRegistry>().unwrap());
     res.insert(market);
+    let stats = EcoStats::new(&*res.get::<ItemRegistry>().unwrap());
+    res.insert(stats);
 }
 
 #[profiling::function]
@@ -122,8 +127,16 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
     let mut m = resources.get_mut::<Market>().unwrap();
     let job_opening = resources.get::<ItemRegistry>().unwrap().id("job-opening");
     let mut gvt = resources.get_mut::<Government>().unwrap();
+    let tick = resources.get::<Tick>().unwrap().0;
 
-    for trade in m.make_trades() {
+    let trades = m.make_trades();
+
+    resources
+        .get_mut::<EcoStats>()
+        .unwrap()
+        .advance(tick, &trades);
+
+    for trade in trades {
         log::debug!("A trade was made! {:?}", trade);
 
         if trade.kind == job_opening {
