@@ -46,5 +46,6 @@ pub(crate) enum AuthentResponse {
 #[derive(Serialize, Deserialize)]
 pub(crate) struct WorldDataFragment {
     pub is_over: Option<Frame>,
+    pub data_size: usize,
     pub data: Vec<u8>,
 }

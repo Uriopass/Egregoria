@@ -65,6 +65,7 @@ impl WorldSend {
                 c.reliable,
                 &*encode(&ServerReliablePacket::WorldSend(WorldDataFragment {
                     is_over,
+                    data_size: state.data.len(),
                     data: Vec::from(&state.data[state.sent..state.sent + to_send]),
                 })),
             );
@@ -89,14 +90,33 @@ impl WorldSend {
 
 #[derive(Debug)]
 pub(crate) enum WorldReceive<W> {
-    Downloading { data_so_far: Vec<u8> },
-    Finished { frame: Frame, world: W },
+    Downloading {
+        datasize: usize,
+        data_so_far: Vec<u8>,
+    },
+    Finished {
+        frame: Frame,
+        world: W,
+    },
     Errored,
+}
+
+impl<W> WorldReceive<W> {
+    pub fn progress(&self) -> Option<(usize, usize)> {
+        match self {
+            WorldReceive::Downloading {
+                datasize,
+                data_so_far,
+            } => Some((data_so_far.len(), *datasize)),
+            _ => None,
+        }
+    }
 }
 
 impl<W> Default for WorldReceive<W> {
     fn default() -> Self {
         Self::Downloading {
+            datasize: 0,
             data_so_far: vec![],
         }
     }
@@ -105,9 +125,14 @@ impl<W> Default for WorldReceive<W> {
 impl<W: DeserializeOwned> WorldReceive<W> {
     pub fn handle(&mut self, fragment: WorldDataFragment, net: &mut Network, tcp: Endpoint) {
         if let WorldReceive::Downloading {
+            ref mut datasize,
             ref mut data_so_far,
         } = self
         {
+            *datasize = fragment.data_size;
+            if data_so_far.capacity() == 0 {
+                data_so_far.reserve(fragment.data_size)
+            }
             data_so_far.extend(fragment.data);
             if let Some(frame) = fragment.is_over {
                 log::info!("received last fragment at {:?}", frame);

@@ -393,7 +393,17 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
     pub fn describe(&self) -> String {
         match self.state {
             ClientState::Connecting => "Connecting...".to_string(),
-            ClientState::Downloading { .. } => "Downloading map...".to_string(),
+            ClientState::Downloading { ref wr, .. } => {
+                if let Some((cur, total)) = wr.progress() {
+                    format!(
+                        "Downloading map... {:.1}M/{:.1}M",
+                        (cur as f32) / 1000000.0,
+                        (total as f32) / 1000000.0
+                    )
+                } else {
+                    format!("Downloading map...")
+                }
+            }
             ClientState::CatchingUp { .. } => "Catching up...".to_string(),
             ClientState::Playing {
                 buffer: ref buf, ..
