@@ -18,7 +18,7 @@ use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
 use geom::Vec2;
-use imgui::{StyleColor, StyleVar, Ui, Window};
+use imgui::{Condition, StyleColor, StyleVar, Ui, Window};
 use imgui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
 };
@@ -699,7 +699,7 @@ impl Gui {
         ui.main_menu_bar(|| {
             self.windows.menu(ui);
 
-            let h = ui.window_size()[1];
+            let [w, h] = ui.window_size();
 
             let mut name = "Save";
             let mut tok = None;
@@ -715,6 +715,87 @@ impl Gui {
             drop(tok);
 
             ui.text(format!("Money: {}", goria.read::<Government>().money));
+
+            let mut estate = uiworld.write::<ExitState>();
+            let mut please_save = uiworld.please_save;
+
+            match *estate {
+                ExitState::NoExit => {}
+                ExitState::ExitAsk | ExitState::Saving => {
+                    let [w, h] = ui.io().display_size;
+                    Window::new("Exit Menu")
+                        .position([w * 0.5, h * 0.5], Condition::Appearing)
+                        .always_auto_resize(true)
+                        .position_pivot([0.5, 0.5])
+                        .build(ui, || {
+                            let _tok = ui.push_style_var(StyleVar::ItemSpacing([2.0, 5.0]));
+                            if let ExitState::Saving = *estate {
+                                ui.text("Saving...");
+                                if !uiworld.please_save
+                                    && !uiworld.saving_status.load(Ordering::SeqCst)
+                                {
+                                    std::process::exit(0);
+                                }
+                                return;
+                            }
+                            if ui.button("Save and exit") {
+                                if let ExitState::ExitAsk = *estate {
+                                    please_save = true;
+                                    *estate = ExitState::Saving;
+                                }
+                            }
+                            if ui.button("Exit") {
+                                std::process::exit(0);
+                            }
+                            if ui.button("Cancel") {
+                                *estate = ExitState::NoExit;
+                            }
+                        });
+                }
+            }
+
+            {
+                let off = if matches!(*estate, ExitState::ExitAsk) {
+                    110.0
+                } else {
+                    65.0
+                };
+                let _red = ui.push_style_color(StyleColor::Button, [0.7, 0.3, 0.3, 1.0]);
+                ui.same_line_with_pos(w - off);
+
+                match *estate {
+                    ExitState::NoExit => {
+                        if ui.button_with_size("Exit", [50.0, h]) {
+                            *estate = ExitState::ExitAsk;
+                        }
+                    }
+                    ExitState::ExitAsk => {
+                        if ui.button("Save and exit") {
+                            if let ExitState::ExitAsk = *estate {
+                                please_save = true;
+                                *estate = ExitState::Saving;
+                            }
+                        }
+                    }
+                    ExitState::Saving => {
+                        ui.text("Saving...");
+                    }
+                }
+            }
+            drop(estate);
+            uiworld.please_save = please_save;
         });
+    }
+}
+
+pub(crate) enum ExitState {
+    NoExit,
+    ExitAsk,
+    Saving,
+}
+
+impl Default for ExitState {
+    fn default() -> Self {
+        Self::NoExit
     }
 }

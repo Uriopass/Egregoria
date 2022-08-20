@@ -6,7 +6,7 @@ use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::debug::{DebugObjs, DebugState};
 use crate::gui::windows::settings::Settings;
-use crate::gui::{FollowEntity, InspectedEntity, Tool};
+use crate::gui::{ExitState, FollowEntity, InspectedEntity, Tool};
 use crate::input::{KeyboardInfo, MouseInfo};
 use crate::inputmap::InputMap;
 use crate::network::NetworkState;
@@ -35,6 +35,7 @@ pub fn init() {
     register_resource_noserialize::<RoadEditorResource>();
     register_resource_noserialize::<RoadBuildResource>();
     register_resource_noserialize::<DebugState>();
+    register_resource_noserialize::<ExitState>();
     register_resource_noserialize::<DebugObjs>();
     register_resource_noserialize::<FollowEntity>();
     register_resource_noserialize::<BulldozerState>();

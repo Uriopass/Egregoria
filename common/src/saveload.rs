@@ -77,7 +77,6 @@ pub struct Bincode;
 
 use ::bincode::{DefaultOptions, Options};
 use std::io::Result;
-use std::time::Instant;
 
 impl Encoder for Bincode {
     const EXTENSION: &'static str = "bc";
