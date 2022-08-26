@@ -10,18 +10,18 @@ use wgpu_engine::{
     FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder,
 };
 
-pub struct InstancedRender {
-    pub path_not_found: SpriteBatchBuilder,
-    pub cars: InstancedMeshBuilder,
-    pub trains: InstancedMeshBuilder,
-    pub wagons_passenger: InstancedMeshBuilder,
-    pub wagons_fret: InstancedMeshBuilder,
-    pub trucks: InstancedMeshBuilder,
-    pub pedestrians: InstancedMeshBuilder,
+pub(crate) struct InstancedRender {
+    pub(crate) path_not_found: SpriteBatchBuilder,
+    pub(crate) cars: InstancedMeshBuilder,
+    pub(crate) trains: InstancedMeshBuilder,
+    pub(crate) wagons_passenger: InstancedMeshBuilder,
+    pub(crate) wagons_fret: InstancedMeshBuilder,
+    pub(crate) trucks: InstancedMeshBuilder,
+    pub(crate) pedestrians: InstancedMeshBuilder,
 }
 
 impl InstancedRender {
-    pub fn new(gfx: &mut GfxContext) -> Self {
+    pub(crate) fn new(gfx: &mut GfxContext) -> Self {
         defer!(log::info!("finished init of instanced render"));
         InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
@@ -37,7 +37,7 @@ impl InstancedRender {
     }
 
     #[profiling::function]
-    pub fn render(&mut self, goria: &Egregoria, fctx: &mut FrameContext<'_>) {
+    pub(crate) fn render(&mut self, goria: &Egregoria, fctx: &mut FrameContext<'_>) {
         self.cars.instances.clear();
         self.trucks.instances.clear();
         self.pedestrians.instances.clear();

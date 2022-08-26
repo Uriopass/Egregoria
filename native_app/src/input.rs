@@ -4,20 +4,20 @@ use std::fmt::Debug;
 use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 
 #[derive(Default)]
-pub struct InputContext {
-    pub mouse: MouseInfo,
-    pub keyboard: KeyboardInfo,
+pub(crate) struct InputContext {
+    pub(crate) mouse: MouseInfo,
+    pub(crate) keyboard: KeyboardInfo,
 }
 
 impl InputContext {
-    pub fn end_frame(&mut self) {
+    pub(crate) fn end_frame(&mut self) {
         self.mouse.just_pressed.clear();
         self.keyboard.just_pressed.clear();
         self.keyboard.last_characters.clear();
         self.mouse.wheel_delta = 0.0;
     }
 
-    pub fn handle(&mut self, event: &WindowEvent<'_>) -> bool {
+    pub(crate) fn handle(&mut self, event: &WindowEvent<'_>) -> bool {
         match event {
             WindowEvent::ReceivedCharacter(c) => {
                 self.keyboard.last_characters.push(*c);
@@ -74,19 +74,19 @@ impl InputContext {
 }
 
 #[derive(Clone, Default)]
-pub struct MouseInfo {
-    pub wheel_delta: f32,
-    pub screen: Vec2,
-    pub unprojected: Option<Vec3>,
-    pub pressed: FastSet<MouseButton>,
-    pub just_pressed: FastSet<MouseButton>,
+pub(crate) struct MouseInfo {
+    pub(crate) wheel_delta: f32,
+    pub(crate) screen: Vec2,
+    pub(crate) unprojected: Option<Vec3>,
+    pub(crate) pressed: FastSet<MouseButton>,
+    pub(crate) just_pressed: FastSet<MouseButton>,
 }
 
 #[derive(Clone, Default)]
-pub struct KeyboardInfo {
-    pub just_pressed: FastSet<KeyCode>,
-    pub pressed: FastSet<KeyCode>,
-    pub last_characters: Vec<char>,
+pub(crate) struct KeyboardInfo {
+    pub(crate) just_pressed: FastSet<KeyCode>,
+    pub(crate) pressed: FastSet<KeyCode>,
+    pub(crate) last_characters: Vec<char>,
 }
 
 impl From<winit::event::MouseButton> for MouseButton {
@@ -271,7 +271,7 @@ impl From<VirtualKeyCode> for KeyCode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-pub enum MouseButton {
+pub(crate) enum MouseButton {
     Left,
     Right,
     Middle,
@@ -289,7 +289,7 @@ impl KeyCode {
 /// Symbolic name for a keyboard key.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u32)]
-pub enum KeyCode {
+pub(crate) enum KeyCode {
     Key1,
     Key2,
     Key3,

@@ -5,13 +5,13 @@ use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 
 mod config;
-pub mod debug;
+pub(crate) mod debug;
 mod economy;
 #[cfg(feature = "multiplayer")]
-pub mod network;
-pub mod settings;
+pub(crate) mod network;
+pub(crate) mod settings;
 
-pub trait ImguiWindow: Send + Sync {
+pub(crate) trait ImguiWindow: Send + Sync {
     fn render_window(
         &mut self,
         window: imgui::Window<'_, &'static str>,
@@ -43,7 +43,7 @@ struct ImguiWindowStruct {
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
-pub struct ImguiWindows {
+pub(crate) struct ImguiWindows {
     #[serde(skip)]
     windows: Vec<ImguiWindowStruct>,
     opened: Vec<bool>,
@@ -66,7 +66,12 @@ impl Default for ImguiWindows {
 }
 
 impl ImguiWindows {
-    pub fn insert(&mut self, name: &'static str, w: impl ImguiWindow + 'static, opened: bool) {
+    pub(crate) fn insert(
+        &mut self,
+        name: &'static str,
+        w: impl ImguiWindow + 'static,
+        opened: bool,
+    ) {
         self.windows.push(ImguiWindowStruct {
             w: Box::new(w),
             name,
@@ -76,7 +81,7 @@ impl ImguiWindows {
         }
     }
 
-    pub fn menu(&mut self, ui: &Ui<'_>) {
+    pub(crate) fn menu(&mut self, ui: &Ui<'_>) {
         if self.opened.len() < self.windows.len() {
             self.opened
                 .extend(std::iter::repeat(false).take(self.windows.len() - self.opened.len()))
@@ -89,7 +94,7 @@ impl ImguiWindows {
         }
     }
 
-    pub fn render(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn render(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         for (ws, opened) in self.windows.iter_mut().zip(self.opened.iter_mut()) {
             if *opened {
                 ws.w.render_window(

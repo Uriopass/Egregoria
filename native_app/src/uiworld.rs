@@ -7,16 +7,16 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 #[derive(Default)]
-pub struct UiWorld {
-    pub world: World,
+pub(crate) struct UiWorld {
+    pub(crate) world: World,
     resources: resources::Resources,
-    pub please_save: bool,
-    pub saving_status: Arc<AtomicBool>,
+    pub(crate) please_save: bool,
+    pub(crate) saving_status: Arc<AtomicBool>,
 }
 
 #[allow(dead_code)]
 impl UiWorld {
-    pub fn init() -> UiWorld {
+    pub(crate) fn init() -> UiWorld {
         let mut w = UiWorld::default();
         unsafe {
             for s in &INIT_FUNCS {
@@ -27,49 +27,49 @@ impl UiWorld {
         w
     }
 
-    pub fn commands(&self) -> RefMut<WorldCommands> {
+    pub(crate) fn commands(&self) -> RefMut<WorldCommands> {
         self.write::<WorldCommands>()
     }
 
-    pub fn received_commands(&self) -> Ref<ReceivedCommands> {
+    pub(crate) fn received_commands(&self) -> Ref<ReceivedCommands> {
         self.read::<ReceivedCommands>()
     }
 
-    pub fn add_comp(&mut self, e: Entity, c: impl DynamicBundle) {
+    pub(crate) fn add_comp(&mut self, e: Entity, c: impl DynamicBundle) {
         if self.world.insert(e, c).is_err() {
             log::error!("trying to add component to entity but it doesn't exist");
         }
     }
 
-    pub fn comp<T: Component>(&self, e: Entity) -> Option<QueryOne<&T>> {
+    pub(crate) fn comp<T: Component>(&self, e: Entity) -> Option<QueryOne<&T>> {
         self.world.query_one::<&T>(e).ok()
     }
 
-    pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
+    pub(crate) fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
         self.world.query_one_mut::<&mut T>(e).ok()
     }
 
-    pub fn try_write<T: Resource>(&self) -> Option<RefMut<T>> {
+    pub(crate) fn try_write<T: Resource>(&self) -> Option<RefMut<T>> {
         self.resources.get_mut().ok()
     }
 
-    pub fn write<T: Resource>(&self) -> RefMut<T> {
+    pub(crate) fn write<T: Resource>(&self) -> RefMut<T> {
         self.resources
             .get_mut()
             .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn read<T: Resource>(&self) -> Ref<T> {
+    pub(crate) fn read<T: Resource>(&self) -> Ref<T> {
         self.resources
             .get()
             .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn insert<T: Resource>(&mut self, res: T) {
+    pub(crate) fn insert<T: Resource>(&mut self, res: T) {
         self.resources.insert(res);
     }
 
-    pub fn check_present<T: Resource>(&mut self, res: fn() -> T) {
+    pub(crate) fn check_present<T: Resource>(&mut self, res: fn() -> T) {
         self.resources.entry::<T>().or_insert_with(res);
     }
 
@@ -91,14 +91,14 @@ impl UiWorld {
 }
 
 #[derive(Default)]
-pub struct ReceivedCommands(WorldCommands);
+pub(crate) struct ReceivedCommands(WorldCommands);
 
 impl ReceivedCommands {
     #[allow(dead_code)]
-    pub fn new(commands: WorldCommands) -> Self {
+    pub(crate) fn new(commands: WorldCommands) -> Self {
         Self(commands)
     }
-    pub fn iter(&self) -> impl Iterator<Item = &WorldCommand> {
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &WorldCommand> {
         self.0.iter()
     }
 }

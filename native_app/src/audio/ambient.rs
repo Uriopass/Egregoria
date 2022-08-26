@@ -5,13 +5,13 @@ use egregoria::Egregoria;
 use geom::{lerp, vec2, Camera, Vec2, AABB};
 use oddio::{Cycle, Gain};
 
-pub struct Ambient {
+pub(crate) struct Ambient {
     wind: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
     forest: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
 }
 
 impl Ambient {
-    pub fn new(ctx: &mut AudioContext) -> Self {
+    pub(crate) fn new(ctx: &mut AudioContext) -> Self {
         let wind = ctx.play_with_control(
             "calm_wind",
             |s| Gain::new(Cycle::new(s), 0.0),
@@ -26,7 +26,7 @@ impl Ambient {
         Self { wind, forest }
     }
 
-    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld) {
+    pub(crate) fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld) {
         let eye = uiworld.read::<Camera>().eye();
         let map = goria.map();
 

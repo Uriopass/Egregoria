@@ -32,14 +32,14 @@ const CRESO: usize = egregoria::map::CHUNK_RESOLUTION as usize;
 
 pub(crate) const VERSION: &str = include_str!("../../VERSION");
 
-pub struct State {
-    pub goria: Arc<RwLock<Egregoria>>,
+pub(crate) struct State {
+    pub(crate) goria: Arc<RwLock<Egregoria>>,
 
-    pub uiw: UiWorld,
+    pub(crate) uiw: UiWorld,
 
-    pub game_schedule: SeqSchedule,
+    pub(crate) game_schedule: SeqSchedule,
 
-    pub camera: CameraHandler3D,
+    pub(crate) camera: CameraHandler3D,
 
     imgui_render: ImguiWrapper,
 
@@ -53,7 +53,7 @@ pub struct State {
 }
 
 impl State {
-    pub fn new(ctx: &mut Context) -> Self {
+    pub(crate) fn new(ctx: &mut Context) -> Self {
         let camera = CameraHandler3D::load(ctx.gfx.size);
 
         let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
@@ -97,7 +97,7 @@ impl State {
     }
 
     #[profiling::function]
-    pub fn update(&mut self, ctx: &mut Context) {
+    pub(crate) fn update(&mut self, ctx: &mut Context) {
         if !self.imgui_render.last_mouse_captured {
             let goria = self.goria.read().unwrap();
             let map = goria.map();
@@ -154,13 +154,13 @@ impl State {
         self.camera.update(ctx);
     }
 
-    pub fn reset(&mut self) {
+    pub(crate) fn reset(&mut self) {
         self.terrain.reset();
         self.road_renderer.terrain_dirt_id = 0;
         self.road_renderer.meshb.map_dirt_id = 0;
     }
 
-    pub fn terrain_update(&mut self, ctx: &mut Context) {
+    pub(crate) fn terrain_update(&mut self, ctx: &mut Context) {
         let goria = self.goria.read().unwrap();
         let map = goria.map();
         let ter = &map.terrain;
@@ -195,7 +195,7 @@ impl State {
     }
 
     #[profiling::function]
-    pub fn render(&mut self, ctx: &mut FrameContext<'_>) {
+    pub(crate) fn render(&mut self, ctx: &mut FrameContext<'_>) {
         let start = Instant::now();
         let goria = self.goria.read().unwrap();
 
@@ -265,7 +265,7 @@ impl State {
     }
 
     #[profiling::function]
-    pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext<'_, '_>) {
+    pub(crate) fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext<'_, '_>) {
         let gui = &mut self.gui;
         let goria = &self.goria.read().unwrap();
         let uiworld = &mut self.uiw;
@@ -361,20 +361,20 @@ impl State {
         drop(map);
     }
 
-    pub fn event(&mut self, window: &Window, event: &winit::event::Event<'_, ()>) {
+    pub(crate) fn event(&mut self, window: &Window, event: &winit::event::Event<'_, ()>) {
         self.imgui_render.handle_event(window, event);
     }
 
-    pub fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {
+    pub(crate) fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {
         self.camera
             .resize(ctx, size.width as f32, size.height as f32);
     }
 }
 
 #[derive(Default)]
-pub struct Timings {
-    pub all: History,
-    pub world_update: History,
-    pub render: History,
-    pub per_game_system: Vec<(String, f32)>,
+pub(crate) struct Timings {
+    pub(crate) all: History,
+    pub(crate) world_update: History,
+    pub(crate) render: History,
+    pub(crate) per_game_system: Vec<(String, f32)>,
 }

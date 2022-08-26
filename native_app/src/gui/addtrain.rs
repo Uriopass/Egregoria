@@ -9,7 +9,7 @@ use geom::{Color, OBB};
 use std::option::Option::None;
 
 #[profiling::function]
-pub fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = *uiworld.read::<Tool>();
     if !matches!(tool, Tool::Train) {
         return;

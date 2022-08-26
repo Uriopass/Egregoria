@@ -4,7 +4,7 @@ use egregoria::Egregoria;
 use imgui::{Condition, Ui};
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
-pub fn config(
+pub(crate) fn config(
     window: imgui::Window<'_, &'static str>,
     ui: &Ui<'_>,
     _: &mut UiWorld,

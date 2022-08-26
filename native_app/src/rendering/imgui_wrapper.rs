@@ -4,17 +4,17 @@ use std::time::Instant;
 use wgpu_engine::{GfxContext, GuiRenderContext};
 use winit::window::Window;
 
-pub struct ImguiWrapper {
-    pub imgui: imgui::Context,
-    pub renderer: Renderer,
+pub(crate) struct ImguiWrapper {
+    pub(crate) imgui: imgui::Context,
+    pub(crate) renderer: Renderer,
     last_frame: Instant,
     platform: imgui_winit_support::WinitPlatform,
-    pub last_mouse_captured: bool,
-    pub last_kb_captured: bool,
+    pub(crate) last_mouse_captured: bool,
+    pub(crate) last_kb_captured: bool,
 }
 
 impl ImguiWrapper {
-    pub fn new(gfx: &mut GfxContext, window: &Window) -> Self {
+    pub(crate) fn new(gfx: &mut GfxContext, window: &Window) -> Self {
         let mut imgui = imgui::Context::create();
 
         let mut platform = imgui_winit_support::WinitPlatform::init(&mut imgui);
@@ -65,7 +65,7 @@ impl ImguiWrapper {
         }
     }
 
-    pub fn render(
+    pub(crate) fn render(
         &mut self,
         mut gfx: GuiRenderContext<'_, '_>,
         window: &Window,
@@ -104,7 +104,7 @@ impl ImguiWrapper {
         }
     }
 
-    pub fn handle_event(&mut self, window: &Window, e: &winit::event::Event<'_, ()>) {
+    pub(crate) fn handle_event(&mut self, window: &Window, e: &winit::event::Event<'_, ()>) {
         self.platform.handle_event(self.imgui.io_mut(), window, e);
     }
 }

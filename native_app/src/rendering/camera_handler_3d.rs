@@ -5,18 +5,18 @@ use common::saveload::Encoder;
 use geom::{vec4, Camera, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
 
-pub struct CameraHandler3D {
-    pub camera: Camera,
-    pub lastscreenpos: Vec2,
-    pub last_pos: Option<Vec2>,
-    pub targetpos: Vec3,
-    pub targetyaw: Radians,
-    pub targetpitch: Radians,
-    pub targetdist: f32,
+pub(crate) struct CameraHandler3D {
+    pub(crate) camera: Camera,
+    pub(crate) lastscreenpos: Vec2,
+    pub(crate) last_pos: Option<Vec2>,
+    pub(crate) targetpos: Vec3,
+    pub(crate) targetyaw: Radians,
+    pub(crate) targetpitch: Radians,
+    pub(crate) targetdist: f32,
 }
 
 impl CameraHandler3D {
-    pub fn update(&mut self, ctx: &mut Context) {
+    pub(crate) fn update(&mut self, ctx: &mut Context) {
         let proj = self.camera.build_view_projection_matrix();
         let inv_proj = proj.invert().unwrap_or_else(Matrix4::zero);
 
@@ -24,27 +24,31 @@ impl CameraHandler3D {
         ctx.gfx.set_inv_proj(inv_proj);
     }
 
-    pub fn height(&self) -> f32 {
+    pub(crate) fn height(&self) -> f32 {
         self.camera.offset().z
     }
 
-    pub fn cull_tess(&self, tess: &mut Tesselator) {
+    pub(crate) fn cull_tess(&self, tess: &mut Tesselator) {
         let p = self.camera.pos;
         tess.cull_rect = Some(AABB::new(p.xy(), p.xy()).expand(2000.0));
         tess.zoom = 1000.0 / self.height();
     }
 
-    pub fn follow(&mut self, p: Vec3) {
+    pub(crate) fn follow(&mut self, p: Vec3) {
         self.camera.pos = p;
         self.targetpos = p;
     }
 
-    pub fn resize(&mut self, ctx: &mut Context, width: f32, height: f32) {
+    pub(crate) fn resize(&mut self, ctx: &mut Context, width: f32, height: f32) {
         self.camera.set_viewport(width, height);
         self.update(ctx);
     }
 
-    pub fn unproject(&self, pos: Vec2, height: impl Fn(Vec2) -> Option<f32>) -> Option<Vec3> {
+    pub(crate) fn unproject(
+        &self,
+        pos: Vec2,
+        height: impl Fn(Vec2) -> Option<f32>,
+    ) -> Option<Vec3> {
         let proj = self.camera.build_view_projection_matrix();
         let inv = proj.invert()?;
 
@@ -82,7 +86,7 @@ impl CameraHandler3D {
         });
     }
 
-    pub fn load(viewport: (u32, u32)) -> Self {
+    pub(crate) fn load(viewport: (u32, u32)) -> Self {
         let camera = common::saveload::JSON::load("camera3D")
             .unwrap_or_else(|| Camera::new(Vec3::ZERO, viewport.0 as f32, viewport.1 as f32));
 
@@ -97,7 +101,7 @@ impl CameraHandler3D {
         }
     }
 
-    pub fn camera_movement(
+    pub(crate) fn camera_movement(
         &mut self,
         ctx: &mut Context,
         delta: f32,

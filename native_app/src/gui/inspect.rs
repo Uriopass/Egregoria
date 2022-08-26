@@ -16,8 +16,8 @@ use hecs::{Component, Entity};
 use imgui::Ui;
 use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
-pub struct InspectRenderer {
-    pub entity: Entity,
+pub(crate) struct InspectRenderer {
+    pub(crate) entity: Entity,
 }
 
 impl InspectRenderer {
@@ -52,7 +52,7 @@ impl InspectRenderer {
         }
     }
 
-    pub fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui<'_>) {
+    pub(crate) fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui<'_>) {
         let mut custom_ent = self.entity.id() as i32;
         if ui.input_int("enter id directly", &mut custom_ent).build() {
             if let Some(ent) = Entity::from_bits(1 << 32 | custom_ent as u64) {

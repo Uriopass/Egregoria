@@ -16,10 +16,10 @@ use wgpu_engine::{
     MeshVertex, MultiSpriteBatch, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 
-pub struct MapMeshHandler {
+pub(crate) struct MapMeshHandler {
     builders: MapBuilders,
     cache: Option<Arc<MapMeshes>>,
-    pub map_dirt_id: u32,
+    pub(crate) map_dirt_id: u32,
     last_config: usize,
 }
 
@@ -32,7 +32,7 @@ struct MapBuilders {
     tess_map: Tesselator,
 }
 
-pub struct MapMeshes {
+pub(crate) struct MapMeshes {
     map: Option<Mesh>,
     crosswalks: Option<Mesh>,
     bsprites: MultiSpriteBatch,
@@ -42,7 +42,7 @@ pub struct MapMeshes {
 }
 
 impl MapMeshHandler {
-    pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
+    pub(crate) fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         let arrow_builder = SpriteBatchBuilder::from_path(gfx, "assets/sprites/arrow_one_way.png");
 
         let mut buildsprites = FastMap::default();
@@ -105,7 +105,11 @@ impl MapMeshHandler {
         }
     }
 
-    pub fn latest_mesh(&mut self, map: &Map, gfx: &mut GfxContext) -> &Option<Arc<MapMeshes>> {
+    pub(crate) fn latest_mesh(
+        &mut self,
+        map: &Map,
+        gfx: &mut GfxContext,
+    ) -> &Option<Arc<MapMeshes>> {
         if map.dirt_id.0 != self.map_dirt_id || self.last_config != common::config_id() {
             self.builders.map_mesh(map);
             self.builders.arrows(map);

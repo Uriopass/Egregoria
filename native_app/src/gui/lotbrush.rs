@@ -7,13 +7,13 @@ use egregoria::Egregoria;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-pub struct LotBrushResource {
-    pub kind: LotKind,
-    pub radius: f32,
+pub(crate) struct LotBrushResource {
+    pub(crate) kind: LotKind,
+    pub(crate) radius: f32,
 }
 
 #[profiling::function]
-pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub(crate) fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     let res = uiworld.read::<LotBrushResource>();
     let tool = *uiworld.read::<Tool>();
     let mouseinfo = uiworld.read::<MouseInfo>();

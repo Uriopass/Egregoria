@@ -28,19 +28,19 @@ use std::time::{Duration, Instant};
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
-pub struct Gui {
-    pub windows: ImguiWindows,
+pub(crate) struct Gui {
+    pub(crate) windows: ImguiWindows,
     #[serde(skip)]
-    pub last_save: Instant,
+    pub(crate) last_save: Instant,
     #[serde(skip)]
-    pub last_gui_save: Instant,
+    pub(crate) last_gui_save: Instant,
     #[serde(skip)]
-    pub n_cars: i32,
+    pub(crate) n_cars: i32,
     #[serde(skip)]
-    pub n_pedestrians: i32,
-    pub depause_warp: u32,
+    pub(crate) n_pedestrians: i32,
+    pub(crate) depause_warp: u32,
     #[serde(skip)]
-    pub hidden: bool,
+    pub(crate) hidden: bool,
 }
 
 impl Default for Gui {
@@ -58,7 +58,7 @@ impl Default for Gui {
 }
 
 impl Gui {
-    pub fn render(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn render(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         let _tw = ui.push_style_color(StyleColor::WindowBg, common::config().gui_bg_col.into());
         let _tt = ui.push_style_color(StyleColor::TitleBg, common::config().gui_title_col.into());
 
@@ -75,7 +75,7 @@ impl Gui {
         self.auto_save(uiworld);
     }
 
-    pub fn auto_save(&mut self, uiworld: &mut UiWorld) {
+    pub(crate) fn auto_save(&mut self, uiworld: &mut UiWorld) {
         let every = uiworld.read::<Settings>().auto_save_every.into();
         if let Some(every) = every {
             if self.last_save.elapsed() > every {
@@ -91,9 +91,9 @@ impl Gui {
         }
     }
 
-    pub fn toolbox(ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn toolbox(ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         #[derive(Copy, Clone)]
-        pub enum Tab {
+        pub(crate) enum Tab {
             Hand,
             Roadbuild,
             Roadcurved,
@@ -595,7 +595,7 @@ impl Gui {
         }
     }
 
-    pub fn inspector(ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn inspector(ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         let mut inspected = *uiworld.read::<InspectedEntity>();
         let e = unwrap_or!(inspected.e, return);
 
@@ -615,7 +615,7 @@ impl Gui {
         *uiworld.write::<InspectedEntity>() = inspected;
     }
 
-    pub fn time_controls(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn time_controls(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         let time = goria.read::<GameTime>().daytime;
         let warp = &mut uiworld.write::<Settings>().time_warp;
         let depause_warp = &mut self.depause_warp;
@@ -693,7 +693,7 @@ impl Gui {
             });
     }
 
-    pub fn menu_bar(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn menu_bar(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
         let _t = ui.push_style_var(StyleVar::ItemSpacing([3.0, 0.0]));
 
         ui.main_menu_bar(|| {

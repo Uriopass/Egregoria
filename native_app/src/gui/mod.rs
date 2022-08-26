@@ -9,26 +9,25 @@ use egregoria::Egregoria;
 use roadbuild::RoadBuildResource;
 use wgpu_engine::GfxContext;
 
-pub mod bulldozer;
-pub mod follow;
-pub mod inspect;
-pub mod inspected_aura;
-pub mod lotbrush;
-pub mod roadbuild;
-pub mod roadeditor;
-pub mod selectable;
-pub mod specialbuilding;
-pub mod topgui;
+pub(crate) mod bulldozer;
+pub(crate) mod follow;
+pub(crate) mod inspect;
+pub(crate) mod inspected_aura;
+pub(crate) mod lotbrush;
+pub(crate) mod roadbuild;
+pub(crate) mod roadeditor;
+pub(crate) mod selectable;
+pub(crate) mod specialbuilding;
+pub(crate) mod topgui;
 
-pub mod addtrain;
-pub mod windows;
+pub(crate) mod addtrain;
+pub(crate) mod windows;
 
-pub use follow::FollowEntity;
-pub use inspect::*;
-pub use topgui::*;
+pub(crate) use follow::FollowEntity;
+pub(crate) use topgui::*;
 
 #[profiling::function]
-pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub(crate) fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     bulldozer::bulldozer(goria, uiworld);
     inspected_aura::inspected_aura(goria, uiworld);
     lotbrush::lotbrush(goria, uiworld);
@@ -40,9 +39,9 @@ pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct InspectedEntity {
-    pub e: Option<Entity>,
-    pub dist2: f32,
+pub(crate) struct InspectedEntity {
+    pub(crate) e: Option<Entity>,
+    pub(crate) dist2: f32,
 }
 
 impl Default for InspectedEntity {
@@ -55,7 +54,7 @@ impl Default for InspectedEntity {
 }
 
 #[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]
-pub enum Tool {
+pub(crate) enum Tool {
     Hand,
     RoadbuildStraight,
     RoadbuildCurved,
@@ -67,13 +66,13 @@ pub enum Tool {
 }
 
 impl Tool {
-    pub fn is_roadbuild(&self) -> bool {
+    pub(crate) fn is_roadbuild(&self) -> bool {
         matches!(self, Tool::RoadbuildStraight | Tool::RoadbuildCurved)
     }
 }
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]
-pub enum UiTex {
+pub(crate) enum UiTex {
     Road,
     Curved,
     RoadEdit,
@@ -96,12 +95,12 @@ const UI_TEXTURES: &[(UiTex, &str)] = &[
 ];
 
 #[derive(Default)]
-pub struct UiTextures {
+pub(crate) struct UiTextures {
     textures: FastMap<UiTex, TextureId>,
 }
 
 impl UiTextures {
-    pub fn new(gfx: &GfxContext, renderer: &mut imgui_wgpu::Renderer) -> Self {
+    pub(crate) fn new(gfx: &GfxContext, renderer: &mut imgui_wgpu::Renderer) -> Self {
         let mut textures = common::fastmap_with_capacity(UI_TEXTURES.len());
         for &(name, path) in UI_TEXTURES {
             let (img, width, height) = wgpu_engine::Texture::read_image(path)
@@ -119,7 +118,7 @@ impl UiTextures {
         Self { textures }
     }
 
-    pub fn get(&self, name: UiTex) -> TextureId {
+    pub(crate) fn get(&self, name: UiTex) -> TextureId {
         *self.textures.get(&name).unwrap()
     }
 }

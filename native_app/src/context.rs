@@ -16,17 +16,17 @@ use winit::{
     window::WindowBuilder,
 };
 
-pub struct Context {
-    pub gfx: GfxContext,
-    pub input: InputContext,
-    pub audio: AudioContext,
-    pub window: Window,
-    pub el: Option<EventLoop<()>>,
-    pub delta: f32,
+pub(crate) struct Context {
+    pub(crate) gfx: GfxContext,
+    pub(crate) input: InputContext,
+    pub(crate) audio: AudioContext,
+    pub(crate) window: Window,
+    pub(crate) el: Option<EventLoop<()>>,
+    pub(crate) delta: f32,
 }
 
 impl Context {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let el = EventLoop::new();
 
         let size = match el.primary_monitor() {
@@ -81,7 +81,7 @@ impl Context {
         }
     }
 
-    pub fn start(mut self, mut state: game_loop::State) {
+    pub(crate) fn start(mut self, mut state: game_loop::State) {
         let mut frame: Option<_> = None;
         let mut new_size: Option<PhysicalSize<u32>> = None;
         let mut last_update = Instant::now();

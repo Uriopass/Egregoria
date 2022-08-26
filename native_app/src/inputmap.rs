@@ -6,7 +6,7 @@ use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
 
 // Either combinations can work
-pub struct InputCombinations(pub(crate) Vec<InputCombination>);
+pub(crate) struct InputCombinations(pub(crate) Vec<InputCombination>);
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 enum UnitInput {
@@ -17,7 +17,7 @@ enum UnitInput {
 }
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
-pub enum InputAction {
+pub(crate) enum InputAction {
     GoLeft,
     GoRight,
     GoForward,
@@ -36,24 +36,24 @@ pub enum InputAction {
 }
 
 // All unit inputs need to match
-pub struct InputCombination(Vec<UnitInput>);
+pub(crate) struct InputCombination(Vec<UnitInput>);
 
 struct InputTree {
     actions: Vec<InputAction>,
     childs: FastMap<UnitInput, Box<InputTree>>,
 }
-pub struct InputMap {
-    pub just_act: FastSet<InputAction>,
-    pub act: FastSet<InputAction>,
-    pub input_mapping: FastMap<InputAction, InputCombinations>,
-    pub wheel: f32,
-    pub unprojected: Option<Vec3>,
+pub(crate) struct InputMap {
+    pub(crate) just_act: FastSet<InputAction>,
+    pub(crate) act: FastSet<InputAction>,
+    pub(crate) input_mapping: FastMap<InputAction, InputCombinations>,
+    pub(crate) wheel: f32,
+    pub(crate) unprojected: Option<Vec3>,
     input_tree: InputTree,
 }
 
 impl InputMap {
     #[rustfmt::skip]
-    pub fn default_mapping() -> FastMap<InputAction, InputCombinations> {
+    pub(crate) fn default_mapping() -> FastMap<InputAction, InputCombinations> {
         let mut m = FastMap::default();
         use InputAction::*;
         use UnitInput::*;
@@ -100,7 +100,7 @@ impl InputMap {
         self.input_tree = InputTree::new(&self.input_mapping);
     }
 
-    pub fn prepare_frame(&mut self, input: &InputContext, kb: bool, mouse: bool) {
+    pub(crate) fn prepare_frame(&mut self, input: &InputContext, kb: bool, mouse: bool) {
         self.just_act.clear();
         let empty1 = FastSet::default();
         let empty2 = FastSet::default();
@@ -204,7 +204,7 @@ impl Default for InputMap {
 }
 
 impl InputTree {
-    pub fn new(mapping: &FastMap<InputAction, InputCombinations>) -> Self {
+    pub(crate) fn new(mapping: &FastMap<InputAction, InputCombinations>) -> Self {
         let mut root = Self {
             actions: Vec::new(),
             childs: Default::default(),
@@ -234,7 +234,7 @@ impl InputTree {
         root
     }
 
-    pub fn query(
+    pub(crate) fn query(
         &self,
         kb: &FastSet<KeyCode>,
         mouse: &FastSet<MouseButton>,

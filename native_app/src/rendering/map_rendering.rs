@@ -7,16 +7,16 @@ use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Tesselator,
 };
-pub struct RoadRenderer {
-    pub meshb: MapMeshHandler,
+pub(crate) struct RoadRenderer {
+    pub(crate) meshb: MapMeshHandler,
 
     #[allow(clippy::type_complexity)]
     trees_builders: FastMap<ChunkID, (InstancedMeshBuilder, Option<(Option<InstancedMesh>, u32)>)>,
-    pub terrain_dirt_id: u32,
+    pub(crate) terrain_dirt_id: u32,
 }
 
 impl RoadRenderer {
-    pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
+    pub(crate) fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         let mesh = load_mesh("pine.glb", gfx).expect("could not load pine");
 
         defer!(log::info!("finished init of road render"));
@@ -105,7 +105,7 @@ impl RoadRenderer {
         }
     }
 
-    pub fn build_trees(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {
+    pub(crate) fn build_trees(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {
         if map.terrain.dirt_id.0 == self.terrain_dirt_id {
             return;
         }
@@ -138,7 +138,7 @@ impl RoadRenderer {
         }
     }
 
-    pub fn trees(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
+    pub(crate) fn trees(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
         self.build_trees(map, ctx);
 
         let eye = cam.eye();
@@ -164,7 +164,7 @@ impl RoadRenderer {
     }
 
     #[profiling::function]
-    pub fn render(
+    pub(crate) fn render(
         &mut self,
         map: &Map,
         time: u32,

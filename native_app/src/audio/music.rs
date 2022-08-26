@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 const TRACKS: &[&str] = &["music2", "music1"];
 
-pub struct Music {
+pub(crate) struct Music {
     track_id: usize,
     time_between_tracks: Duration,
     last_played: Instant,
@@ -13,7 +13,7 @@ pub struct Music {
 }
 
 impl Music {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             track_id: 0,
             time_between_tracks: Duration::new(5, 0),
@@ -22,7 +22,7 @@ impl Music {
         }
     }
 
-    pub fn update(&mut self, ctx: &mut AudioContext) {
+    pub(crate) fn update(&mut self, ctx: &mut AudioContext) {
         if !ctx.is_all_ready() {
             return;
         }

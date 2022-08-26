@@ -9,28 +9,28 @@ use egregoria::Egregoria;
 use geom::{Degrees, Intersect, Vec3, OBB};
 use ordered_float::OrderedFloat;
 
-pub struct SpecialBuildArgs {
-    pub obb: OBB,
-    pub mpos: Vec3,
+pub(crate) struct SpecialBuildArgs {
+    pub(crate) obb: OBB,
+    pub(crate) mpos: Vec3,
 }
 
-pub struct SpecialBuildKind {
-    pub make: Box<dyn Fn(&SpecialBuildArgs, &mut WorldCommands) + Send + Sync + 'static>,
-    pub w: f32,
-    pub h: f32,
-    pub asset: String,
-    pub road_snap: bool,
+pub(crate) struct SpecialBuildKind {
+    pub(crate) make: Box<dyn Fn(&SpecialBuildArgs, &mut WorldCommands) + Send + Sync + 'static>,
+    pub(crate) w: f32,
+    pub(crate) h: f32,
+    pub(crate) asset: String,
+    pub(crate) road_snap: bool,
 }
 
 #[derive(Default)]
-pub struct SpecialBuildingResource {
-    pub opt: Option<SpecialBuildKind>,
-    pub last_obb: Option<OBB>,
-    pub rotation: Degrees,
+pub(crate) struct SpecialBuildingResource {
+    pub(crate) opt: Option<SpecialBuildKind>,
+    pub(crate) last_obb: Option<OBB>,
+    pub(crate) rotation: Degrees,
 }
 
 #[profiling::function]
-pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut state = uiworld.write::<SpecialBuildingResource>();
     let tool = *uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();

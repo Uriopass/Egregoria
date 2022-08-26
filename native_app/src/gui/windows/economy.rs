@@ -3,7 +3,7 @@ use egregoria::economy::{ItemRegistry, Market};
 use egregoria::Egregoria;
 use imgui::{Condition, Ui};
 
-pub fn economy(
+pub(crate) fn economy(
     window: imgui::Window<'_, &'static str>,
     ui: &Ui<'_>,
     _: &mut UiWorld,

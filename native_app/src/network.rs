@@ -1,4 +1,4 @@
-pub use self::inner::*;
+pub(crate) use self::inner::*;
 use common::timestep::Timestep;
 
 impl Default for NetworkState {
@@ -16,11 +16,11 @@ mod inner {
     use egregoria::engine_interaction::WorldCommands;
 
     #[allow(clippy::large_enum_variant)]
-    pub enum NetworkState {
+    pub(crate) enum NetworkState {
         Singleplayer(Timestep),
     }
 
-    pub fn goria_update(state: &mut State) {
+    pub(crate) fn goria_update(state: &mut State) {
         let mut goria = unwrap_orr!(state.goria.try_write(), return); // mut for tick
 
         let timewarp = state.uiw.read::<Settings>().time_warp;
@@ -66,17 +66,17 @@ mod inner {
     use std::net::ToSocketAddrs;
     use std::sync::Mutex;
 
-    pub type Client = Mutex<networking::Client<Egregoria, WorldCommands>>;
-    pub type Server = Mutex<networking::Server<Egregoria, WorldCommands>>;
+    pub(crate) type Client = Mutex<networking::Client<Egregoria, WorldCommands>>;
+    pub(crate) type Server = Mutex<networking::Server<Egregoria, WorldCommands>>;
 
     #[allow(clippy::large_enum_variant)]
-    pub enum NetworkState {
+    pub(crate) enum NetworkState {
         Singleplayer(Timestep),
         Client(Client),
         Server(Server),
     }
 
-    pub fn goria_update(state: &mut State) {
+    pub(crate) fn goria_update(state: &mut State) {
         let mut goria = unwrap_orr!(state.goria.try_write(), return); // mut for tick
 
         let timewarp = state.uiw.read::<Settings>().time_warp;
@@ -198,7 +198,7 @@ mod inner {
         Some(Mutex::new(server))
     }
 
-    pub fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
+    pub(crate) fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
         let mut s = info.ip.to_string();
         if !s.contains(':') {
             s += ":80"

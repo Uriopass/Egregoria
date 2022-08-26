@@ -17,9 +17,9 @@ use egregoria::engine_interaction::WorldCommands;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-pub static SOUNDS_LIST: include_dir::Dir = include_dir::include_dir!("assets/sounds");
+pub(crate) static SOUNDS_LIST: include_dir::Dir = include_dir::include_dir!("assets/sounds");
 
-pub fn init() {
+pub(crate) fn init() {
     egregoria::init::init();
     register_resource::<Settings>("settings");
     #[cfg(feature = "multiplayer")]
@@ -47,17 +47,17 @@ pub fn init() {
     register_resource_noserialize::<ImmediateDraw>();
 }
 
-pub struct InitFunc {
-    pub f: Box<dyn Fn(&mut UiWorld) + 'static>,
+pub(crate) struct InitFunc {
+    pub(crate) f: Box<dyn Fn(&mut UiWorld) + 'static>,
 }
 
-pub struct SaveLoadFunc {
-    pub save: Box<dyn Fn(&UiWorld) + 'static>,
-    pub load: Box<dyn Fn(&mut UiWorld) + 'static>,
+pub(crate) struct SaveLoadFunc {
+    pub(crate) save: Box<dyn Fn(&UiWorld) + 'static>,
+    pub(crate) load: Box<dyn Fn(&mut UiWorld) + 'static>,
 }
 
-pub static mut INIT_FUNCS: Vec<InitFunc> = Vec::new();
-pub static mut SAVELOAD_FUNCS: Vec<SaveLoadFunc> = Vec::new();
+pub(crate) static mut INIT_FUNCS: Vec<InitFunc> = Vec::new();
+pub(crate) static mut SAVELOAD_FUNCS: Vec<SaveLoadFunc> = Vec::new();
 
 fn register_resource_noserialize<T: 'static + Default + Send + Sync>() {
     unsafe {

@@ -8,7 +8,7 @@ use std::time::Duration;
 const SETTINGS_SAVE_NAME: &str = "settings";
 
 #[derive(Serialize, Deserialize, Copy, Clone)]
-pub enum ShadowQuality {
+pub(crate) enum ShadowQuality {
     NoShadows,
     Low,
     Medium,
@@ -39,25 +39,25 @@ impl ShadowQuality {
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct Settings {
-    pub camera_border_move: bool,
-    pub camera_smooth: bool,
-    pub camera_smooth_tightness: f32,
-    pub camera_fov: f32,
+pub(crate) struct Settings {
+    pub(crate) camera_border_move: bool,
+    pub(crate) camera_smooth: bool,
+    pub(crate) camera_smooth_tightness: f32,
+    pub(crate) camera_fov: f32,
 
-    pub fullscreen: bool,
-    pub vsync: VSyncOptions,
-    pub ssao: bool,
-    pub shadows: ShadowQuality,
-    pub realistic_sky: bool,
-    pub terrain_grid: bool,
+    pub(crate) fullscreen: bool,
+    pub(crate) vsync: VSyncOptions,
+    pub(crate) ssao: bool,
+    pub(crate) shadows: ShadowQuality,
+    pub(crate) realistic_sky: bool,
+    pub(crate) terrain_grid: bool,
 
-    pub music_volume_percent: f32,
-    pub effects_volume_percent: f32,
-    pub ui_volume_percent: f32,
+    pub(crate) music_volume_percent: f32,
+    pub(crate) effects_volume_percent: f32,
+    pub(crate) ui_volume_percent: f32,
 
-    pub time_warp: u32,
-    pub auto_save_every: AutoSaveEvery,
+    pub(crate) time_warp: u32,
+    pub(crate) auto_save_every: AutoSaveEvery,
 }
 
 impl Default for Settings {
@@ -83,7 +83,7 @@ impl Default for Settings {
 }
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
-pub enum VSyncOptions {
+pub(crate) enum VSyncOptions {
     Disabled,
     Enabled,
     LowLatency,
@@ -110,7 +110,7 @@ impl AsRef<str> for VSyncOptions {
 }
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
-pub enum AutoSaveEvery {
+pub(crate) enum AutoSaveEvery {
     Never,
     OneMinute,
     FiveMinutes,
@@ -136,7 +136,7 @@ impl AsRef<str> for AutoSaveEvery {
     }
 }
 
-pub fn settings(
+pub(crate) fn settings(
     window: imgui::Window<'_, &'static str>,
     ui: &Ui<'_>,
     uiworld: &mut UiWorld,

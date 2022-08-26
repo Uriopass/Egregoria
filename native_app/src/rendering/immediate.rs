@@ -6,19 +6,19 @@ use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatch, Tesselator};
 
 #[derive(Default)]
-pub struct ImmediateSound {
-    pub orders: Vec<(&'static str, AudioKind)>,
+pub(crate) struct ImmediateSound {
+    pub(crate) orders: Vec<(&'static str, AudioKind)>,
 }
 
 impl ImmediateSound {
-    pub fn play(&mut self, sound: &'static str, kind: AudioKind) {
+    pub(crate) fn play(&mut self, sound: &'static str, kind: AudioKind) {
         self.orders.push((sound, kind))
     }
 }
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Clone)]
-pub enum OrderKind {
+pub(crate) enum OrderKind {
     Circle {
         pos: Vec3,
         radius: f32,
@@ -59,31 +59,31 @@ pub enum OrderKind {
 }
 
 #[derive(Clone)]
-pub struct ImmediateOrder {
-    pub kind: OrderKind,
-    pub color: LinearColor,
+pub(crate) struct ImmediateOrder {
+    pub(crate) kind: OrderKind,
+    pub(crate) color: LinearColor,
 }
 
 #[derive(Default)]
-pub struct ImmediateDraw {
-    pub orders: Vec<ImmediateOrder>,
-    pub persistent_orders: Vec<ImmediateOrder>,
-    pub mesh_cache: FastMap<String, InstancedMeshBuilder>,
+pub(crate) struct ImmediateDraw {
+    pub(crate) orders: Vec<ImmediateOrder>,
+    pub(crate) persistent_orders: Vec<ImmediateOrder>,
+    pub(crate) mesh_cache: FastMap<String, InstancedMeshBuilder>,
 }
 
-pub struct ImmediateBuilder<'a> {
+pub(crate) struct ImmediateBuilder<'a> {
     draw: &'a mut ImmediateDraw,
     order: ImmediateOrder,
     persistent: bool,
 }
 
 impl<'a> ImmediateBuilder<'a> {
-    pub fn color(&mut self, col: impl Into<LinearColor>) -> &mut Self {
+    pub(crate) fn color(&mut self, col: impl Into<LinearColor>) -> &mut Self {
         self.order.color = col.into();
         self
     }
 
-    pub fn persistent(&mut self) -> &mut Self {
+    pub(crate) fn persistent(&mut self) -> &mut Self {
         self.persistent = true;
         self
     }
@@ -120,11 +120,11 @@ impl ImmediateDraw {
             persistent: false,
         }
     }
-    pub fn circle(&mut self, pos: Vec3, radius: f32) -> ImmediateBuilder<'_> {
+    pub(crate) fn circle(&mut self, pos: Vec3, radius: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::Circle { pos, radius })
     }
 
-    pub fn line(&mut self, from: Vec3, to: Vec3, thickness: f32) -> ImmediateBuilder<'_> {
+    pub(crate) fn line(&mut self, from: Vec3, to: Vec3, thickness: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::Line {
             from,
             to,
@@ -132,7 +132,7 @@ impl ImmediateDraw {
         })
     }
 
-    pub fn polyline(
+    pub(crate) fn polyline(
         &mut self,
         points: impl Into<Vec<Vec3>>,
         thickness: f32,
@@ -145,11 +145,11 @@ impl ImmediateDraw {
         })
     }
 
-    pub fn polygon(&mut self, poly: Polygon, z: f32) -> ImmediateBuilder<'_> {
+    pub(crate) fn polygon(&mut self, poly: Polygon, z: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::Polygon { poly, z })
     }
 
-    pub fn stroke_circle(
+    pub(crate) fn stroke_circle(
         &mut self,
         pos: Vec3,
         radius: f32,
@@ -162,30 +162,30 @@ impl ImmediateDraw {
         })
     }
 
-    pub fn obb(&mut self, obb: OBB, z: f32) -> ImmediateBuilder<'_> {
+    pub(crate) fn obb(&mut self, obb: OBB, z: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::OBB { obb, z })
     }
 
-    pub fn aabb(&mut self, aabb: AABB, z: f32) -> ImmediateBuilder<'_> {
+    pub(crate) fn aabb(&mut self, aabb: AABB, z: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::OBB {
             obb: OBB::new(aabb.center(), Vec2::X, aabb.w(), aabb.h()),
             z,
         })
     }
 
-    pub fn textured_obb(&mut self, obb: OBB, path: String, z: f32) -> ImmediateBuilder<'_> {
+    pub(crate) fn textured_obb(&mut self, obb: OBB, path: String, z: f32) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::TexturedOBB { obb, path, z })
     }
 
-    pub fn mesh(&mut self, path: String, pos: Vec3, dir: Vec3) -> ImmediateBuilder<'_> {
+    pub(crate) fn mesh(&mut self, path: String, pos: Vec3, dir: Vec3) -> ImmediateBuilder<'_> {
         self.builder(OrderKind::Mesh { path, pos, dir })
     }
 
-    pub fn clear_persistent(&mut self) {
+    pub(crate) fn clear_persistent(&mut self) {
         self.persistent_orders.clear();
     }
 
-    pub fn apply(&mut self, tess: &mut Tesselator, ctx: &mut FrameContext<'_>) {
+    pub(crate) fn apply(&mut self, tess: &mut Tesselator, ctx: &mut FrameContext<'_>) {
         for ImmediateOrder { kind, color } in
             self.persistent_orders.iter().chain(self.orders.iter())
         {

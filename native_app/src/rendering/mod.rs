@@ -1,10 +1,10 @@
-pub use camera_handler_3d::*;
-pub use entity_render::*;
-pub use map_rendering::*;
+pub(crate) use camera_handler_3d::*;
+pub(crate) use entity_render::*;
+pub(crate) use map_rendering::*;
 
 mod camera_handler_3d;
 mod entity_render;
-pub mod imgui_wrapper;
-pub mod immediate;
+pub(crate) mod imgui_wrapper;
+pub(crate) mod immediate;
 mod map_mesh;
 mod map_rendering;

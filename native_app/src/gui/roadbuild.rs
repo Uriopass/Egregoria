@@ -14,7 +14,7 @@ use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};
 
 #[derive(Copy, Clone, Debug)]
-pub enum BuildState {
+pub(crate) enum BuildState {
     Hover,
     Start(MapProject),
     Interpolation(Vec2, MapProject),
@@ -27,15 +27,15 @@ impl Default for BuildState {
 }
 
 #[derive(Default)]
-pub struct RoadBuildResource {
-    pub build_state: BuildState,
-    pub pattern_builder: LanePatternBuilder,
-    pub snap_to_grid: bool,
-    pub height_offset: f32,
+pub(crate) struct RoadBuildResource {
+    pub(crate) build_state: BuildState,
+    pub(crate) pattern_builder: LanePatternBuilder,
+    pub(crate) snap_to_grid: bool,
+    pub(crate) height_offset: f32,
 }
 
 #[profiling::function]
-pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let state = &mut *uiworld.write::<RoadBuildResource>();
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();
     let immsound = &mut *uiworld.write::<ImmediateSound>();
@@ -290,7 +290,7 @@ fn compatible(map: &Map, x: MapProject, y: MapProject) -> bool {
 }
 
 impl RoadBuildResource {
-    pub fn update_drawing(
+    pub(crate) fn update_drawing(
         &self,
         map: &Map,
         immdraw: &mut ImmediateDraw,

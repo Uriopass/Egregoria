@@ -8,18 +8,18 @@ use geom::{Camera, AABB};
 use oddio::{Cycle, Gain, Seek, Speed, Stop};
 use slotmap::SecondaryMap;
 
-pub struct CarSound {
+pub(crate) struct CarSound {
     road: Option<ControlHandle<Speed<Gain<Cycle<Stereo>>>>>,
     engine: Option<ControlHandle<Speed<Gain<Cycle<Stereo>>>>>,
 }
 
-pub struct CarSounds {
+pub(crate) struct CarSounds {
     sounds: SecondaryMap<GridHandle, CarSound>,
     generic_car_sound: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
 }
 
 impl CarSounds {
-    pub fn new(ctx: &mut AudioContext) -> Self {
+    pub(crate) fn new(ctx: &mut AudioContext) -> Self {
         Self {
             sounds: SecondaryMap::new(),
             generic_car_sound: ctx.play_with_control(
@@ -30,7 +30,12 @@ impl CarSounds {
         }
     }
 
-    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
+    pub(crate) fn update(
+        &mut self,
+        goria: &Egregoria,
+        uiworld: &mut UiWorld,
+        ctx: &mut AudioContext,
+    ) {
         let coworld = goria.read::<CollisionWorld>();
         let campos = uiworld.read::<Camera>().eye();
         let cambox = AABB::new(campos.xy(), campos.xy()).expand(100.0);

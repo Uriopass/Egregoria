@@ -6,16 +6,16 @@ use imgui::Ui;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 
-pub struct NetworkConnectionInfo {
-    pub name: String,
-    pub ip: String,
-    pub error: String,
+pub(crate) struct NetworkConnectionInfo {
+    pub(crate) name: String,
+    pub(crate) ip: String,
+    pub(crate) error: String,
     show_hashes: bool,
     hashes: BTreeMap<String, u64>,
 }
 
 #[cfg(feature = "multiplayer")]
-pub fn network(
+pub(crate) fn network(
     window: imgui::Window<'_, &'static str>,
     ui: &Ui<'_>,
     uiworld: &mut UiWorld,
