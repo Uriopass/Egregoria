@@ -28,6 +28,7 @@ impl OBB {
         Self { corners }
     }
 
+    #[inline]
     pub fn axis(&self) -> [Vec2; 2] {
         [
             self.corners[1] - self.corners[0],
@@ -35,6 +36,7 @@ impl OBB {
         ]
     }
 
+    #[inline]
     pub fn center(&self) -> Vec2 {
         (self.corners[2] + self.corners[0]) * 0.5
     }
@@ -102,6 +104,7 @@ impl OBB {
         true
     }
 
+    #[inline]
     pub fn contains(&self, p: Vec2) -> bool {
         let ok0 = (self.corners[1] - self.corners[0]).dot(p - self.corners[0]) > 0.0;
         let ok1 = (self.corners[2] - self.corners[1]).dot(p - self.corners[1]) > 0.0;
@@ -155,6 +158,7 @@ impl OBB {
 }
 
 impl Shape for OBB {
+    #[inline]
     fn bbox(&self) -> AABB {
         let (min, max) = match super::minmax(self.corners.iter().copied()) {
             Some(x) => x,
@@ -166,12 +170,14 @@ impl Shape for OBB {
 }
 
 impl Intersect<Vec2> for OBB {
+    #[inline]
     fn intersects(&self, &p: &Vec2) -> bool {
         self.contains(p)
     }
 }
 
 impl Intersect<OBB> for OBB {
+    #[inline]
     fn intersects(&self, other: &OBB) -> bool {
         self.intersects1way(other) && other.intersects1way(self)
     }
@@ -180,6 +186,7 @@ impl Intersect<OBB> for OBB {
 defer_inter!(OBB => Polygon);
 
 impl Intersect<Circle> for OBB {
+    #[inline]
     fn intersects(&self, shape: &Circle) -> bool {
         self.contains(shape.center)
             || self
@@ -213,6 +220,7 @@ impl Intersect<AABB> for OBB {
 }
 
 impl From<&AABB> for OBB {
+    #[inline]
     fn from(aabb: &AABB) -> Self {
         Self {
             corners: [

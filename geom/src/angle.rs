@@ -65,6 +65,7 @@ impl Degrees {
 impl Sub for Degrees {
     type Output = Self;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0 - rhs.0)
     }
@@ -73,18 +74,21 @@ impl Sub for Degrees {
 impl Sub for Radians {
     type Output = Self;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0 - rhs.0)
     }
 }
 
 impl SubAssign for Radians {
+    #[inline]
     fn sub_assign(&mut self, rhs: Self) {
         self.0 -= rhs.0;
     }
 }
 
 impl SubAssign for Degrees {
+    #[inline]
     fn sub_assign(&mut self, rhs: Self) {
         self.0 -= rhs.0;
     }
@@ -93,6 +97,7 @@ impl SubAssign for Degrees {
 impl Add for Degrees {
     type Output = Self;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
@@ -101,18 +106,21 @@ impl Add for Degrees {
 impl Add for Radians {
     type Output = Self;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }
 }
 
 impl AddAssign for Degrees {
+    #[inline]
     fn add_assign(&mut self, rhs: Self) {
         self.0 += rhs.0;
     }
 }
 
 impl AddAssign for Radians {
+    #[inline]
     fn add_assign(&mut self, rhs: Self) {
         self.0 += rhs.0;
     }

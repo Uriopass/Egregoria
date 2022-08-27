@@ -540,6 +540,7 @@ impl Vec2d {
         }
     }
 
+    #[inline]
     pub fn modulo(self, v: f64) -> Self {
         Self {
             x: self.x % v,
@@ -547,6 +548,7 @@ impl Vec2d {
         }
     }
 
+    #[inline]
     pub fn floor(self) -> Self {
         Self {
             x: self.x.floor(),
@@ -554,6 +556,7 @@ impl Vec2d {
         }
     }
 
+    #[inline]
     pub fn fract(self) -> Self {
         Self {
             x: self.x.fract(),
@@ -583,6 +586,7 @@ impl Vec2d {
 }
 
 impl Shape for Vec2 {
+    #[inline]
     fn bbox(&self) -> AABB {
         AABB {
             ll: (*self),
@@ -592,30 +596,35 @@ impl Shape for Vec2 {
 }
 
 impl Intersect<AABB> for Vec2 {
+    #[inline]
     fn intersects(&self, aabb: &AABB) -> bool {
         aabb.contains(*self)
     }
 }
 
 impl Intersect<OBB> for Vec2 {
+    #[inline]
     fn intersects(&self, shape: &OBB) -> bool {
         shape.contains(*self)
     }
 }
 
 impl Intersect<Polygon> for Vec2 {
+    #[inline]
     fn intersects(&self, shape: &Polygon) -> bool {
         shape.contains(*self)
     }
 }
 
 impl Intersect<Circle> for Vec2 {
+    #[inline]
     fn intersects(&self, shape: &Circle) -> bool {
         shape.intersects(self)
     }
 }
 
 impl Intersect<Vec2> for Vec2 {
+    #[inline]
     fn intersects(&self, shape: &Vec2) -> bool {
         self == shape
     }
@@ -626,6 +635,7 @@ impl Eq for Vec2 {}
 impl Add for Vec2 {
     type Output = Self;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x + rhs.x,
@@ -637,6 +647,7 @@ impl Add for Vec2 {
 impl Add for &Vec2 {
     type Output = Vec2;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Vec2 {
             x: self.x + rhs.x,
@@ -648,6 +659,7 @@ impl Add for &Vec2 {
 impl Add<Vec2> for &Vec2 {
     type Output = Vec2;
 
+    #[inline]
     fn add(self, rhs: Vec2) -> Self::Output {
         Vec2 {
             x: self.x + rhs.x,
@@ -659,6 +671,7 @@ impl Add<Vec2> for &Vec2 {
 impl Add<&Vec2> for Vec2 {
     type Output = Vec2;
 
+    #[inline]
     fn add(self, rhs: &Vec2) -> Self::Output {
         Vec2 {
             x: self.x + rhs.x,
@@ -668,6 +681,7 @@ impl Add<&Vec2> for Vec2 {
 }
 
 impl AddAssign for Vec2 {
+    #[inline]
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
@@ -677,6 +691,7 @@ impl AddAssign for Vec2 {
 impl Sub for Vec2 {
     type Output = Self;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x - rhs.x,
@@ -688,6 +703,7 @@ impl Sub for Vec2 {
 impl Sub for &Vec2 {
     type Output = Vec2;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Vec2 {
             x: self.x - rhs.x,
@@ -697,6 +713,7 @@ impl Sub for &Vec2 {
 }
 
 impl SubAssign for Vec2 {
+    #[inline]
     fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs
     }
@@ -705,6 +722,7 @@ impl SubAssign for Vec2 {
 impl Mul<Vec2> for f32 {
     type Output = Vec2;
 
+    #[inline]
     fn mul(self, rhs: Vec2) -> Self::Output {
         Vec2 {
             x: self * rhs.x,
@@ -716,6 +734,7 @@ impl Mul<Vec2> for f32 {
 impl Mul<f32> for Vec2 {
     type Output = Vec2;
 
+    #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x * rhs,
@@ -727,7 +746,8 @@ impl Mul<f32> for Vec2 {
 impl Mul<Vec2> for Vec2 {
     type Output = Vec2;
 
-    fn mul(self, rhs: Vec2) -> Self::Output {
+    #[inline]
+    fn mul(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x * rhs.x,
             y: self.y * rhs.y,
@@ -736,12 +756,14 @@ impl Mul<Vec2> for Vec2 {
 }
 
 impl MulAssign<Vec2> for Vec2 {
+    #[inline]
     fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs
     }
 }
 
 impl MulAssign<f32> for Vec2 {
+    #[inline]
     fn mul_assign(&mut self, rhs: f32) {
         *self = *self * rhs
     }
@@ -750,6 +772,7 @@ impl MulAssign<f32> for Vec2 {
 impl Div<Vec2> for f32 {
     type Output = Vec2;
 
+    #[inline]
     fn div(self, rhs: Vec2) -> Self::Output {
         Vec2 {
             x: self / rhs.x,
@@ -761,6 +784,7 @@ impl Div<Vec2> for f32 {
 impl Div<f32> for Vec2 {
     type Output = Vec2;
 
+    #[inline]
     fn div(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x / rhs,
@@ -772,7 +796,8 @@ impl Div<f32> for Vec2 {
 impl Div<Vec2> for Vec2 {
     type Output = Vec2;
 
-    fn div(self, rhs: Vec2) -> Self::Output {
+    #[inline]
+    fn div(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x / rhs.x,
             y: self.y / rhs.y,
@@ -783,6 +808,7 @@ impl Div<Vec2> for Vec2 {
 impl Neg for Vec2 {
     type Output = Self;
 
+    #[inline]
     fn neg(self) -> Self::Output {
         Self {
             x: -self.x,
@@ -812,6 +838,7 @@ impl<'a> std::iter::Sum<&'a Vec2> for Vec2 {
 }
 
 impl DivAssign for Vec2 {
+    #[inline]
     fn div_assign(&mut self, rhs: Self) {
         self.x /= rhs.x;
         self.y /= rhs.y;
@@ -819,6 +846,7 @@ impl DivAssign for Vec2 {
 }
 
 impl DivAssign<f32> for Vec2 {
+    #[inline]
     fn div_assign(&mut self, rhs: f32) {
         self.x /= rhs;
         self.y /= rhs;
@@ -826,12 +854,14 @@ impl DivAssign<f32> for Vec2 {
 }
 
 impl From<Vec2> for [f32; 2] {
+    #[inline]
     fn from(v: Vec2) -> Self {
         [v.x, v.y]
     }
 }
 
 impl From<[f32; 2]> for Vec2 {
+    #[inline]
     fn from(v: [f32; 2]) -> Self {
         Self { x: v[0], y: v[1] }
     }
@@ -842,6 +872,7 @@ impl Eq for Vec2d {}
 impl Add for Vec2d {
     type Output = Self;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x + rhs.x,
@@ -853,6 +884,7 @@ impl Add for Vec2d {
 impl Add for &Vec2d {
     type Output = Vec2d;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Vec2d {
             x: self.x + rhs.x,
@@ -864,6 +896,7 @@ impl Add for &Vec2d {
 impl Add<Vec2d> for &Vec2d {
     type Output = Vec2d;
 
+    #[inline]
     fn add(self, rhs: Vec2d) -> Self::Output {
         Vec2d {
             x: self.x + rhs.x,
@@ -875,6 +908,7 @@ impl Add<Vec2d> for &Vec2d {
 impl Add<&Vec2d> for Vec2d {
     type Output = Vec2d;
 
+    #[inline]
     fn add(self, rhs: &Vec2d) -> Self::Output {
         Vec2d {
             x: self.x + rhs.x,
@@ -884,6 +918,7 @@ impl Add<&Vec2d> for Vec2d {
 }
 
 impl AddAssign for Vec2d {
+    #[inline]
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
@@ -893,6 +928,7 @@ impl AddAssign for Vec2d {
 impl Sub for Vec2d {
     type Output = Self;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x - rhs.x,
@@ -904,6 +940,7 @@ impl Sub for Vec2d {
 impl Sub for &Vec2d {
     type Output = Vec2d;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Vec2d {
             x: self.x - rhs.x,
@@ -913,6 +950,7 @@ impl Sub for &Vec2d {
 }
 
 impl SubAssign for Vec2d {
+    #[inline]
     fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs
     }
@@ -921,6 +959,7 @@ impl SubAssign for Vec2d {
 impl Mul<Vec2d> for f64 {
     type Output = Vec2d;
 
+    #[inline]
     fn mul(self, rhs: Vec2d) -> Self::Output {
         Vec2d {
             x: self * rhs.x,
@@ -932,6 +971,7 @@ impl Mul<Vec2d> for f64 {
 impl Mul<f64> for Vec2d {
     type Output = Vec2d;
 
+    #[inline]
     fn mul(self, rhs: f64) -> Self::Output {
         Self {
             x: self.x * rhs,
@@ -943,6 +983,7 @@ impl Mul<f64> for Vec2d {
 impl Mul<Vec2d> for Vec2d {
     type Output = Vec2d;
 
+    #[inline]
     fn mul(self, rhs: Vec2d) -> Self::Output {
         Self {
             x: self.x * rhs.x,
@@ -952,12 +993,14 @@ impl Mul<Vec2d> for Vec2d {
 }
 
 impl MulAssign<Vec2d> for Vec2d {
+    #[inline]
     fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs
     }
 }
 
 impl MulAssign<f64> for Vec2d {
+    #[inline]
     fn mul_assign(&mut self, rhs: f64) {
         *self = *self * rhs
     }
@@ -966,6 +1009,7 @@ impl MulAssign<f64> for Vec2d {
 impl Div<Vec2d> for f64 {
     type Output = Vec2d;
 
+    #[inline]
     fn div(self, rhs: Vec2d) -> Self::Output {
         Vec2d {
             x: self / rhs.x,
@@ -977,6 +1021,7 @@ impl Div<Vec2d> for f64 {
 impl Div<f64> for Vec2d {
     type Output = Vec2d;
 
+    #[inline]
     fn div(self, rhs: f64) -> Self::Output {
         Self {
             x: self.x / rhs,
@@ -988,6 +1033,7 @@ impl Div<f64> for Vec2d {
 impl Div<Vec2d> for Vec2d {
     type Output = Vec2d;
 
+    #[inline]
     fn div(self, rhs: Vec2d) -> Self::Output {
         Self {
             x: self.x / rhs.x,
@@ -999,6 +1045,7 @@ impl Div<Vec2d> for Vec2d {
 impl Neg for Vec2d {
     type Output = Self;
 
+    #[inline]
     fn neg(self) -> Self::Output {
         Self {
             x: -self.x,
@@ -1028,6 +1075,7 @@ impl<'a> std::iter::Sum<&'a Vec2d> for Vec2d {
 }
 
 impl DivAssign for Vec2d {
+    #[inline]
     fn div_assign(&mut self, rhs: Self) {
         self.x /= rhs.x;
         self.y /= rhs.y;
@@ -1035,6 +1083,7 @@ impl DivAssign for Vec2d {
 }
 
 impl DivAssign<f64> for Vec2d {
+    #[inline]
     fn div_assign(&mut self, rhs: f64) {
         self.x /= rhs;
         self.y /= rhs;
@@ -1042,12 +1091,14 @@ impl DivAssign<f64> for Vec2d {
 }
 
 impl From<Vec2d> for [f64; 2] {
+    #[inline]
     fn from(v: Vec2d) -> Self {
         [v.x, v.y]
     }
 }
 
 impl From<[f64; 2]> for Vec2d {
+    #[inline]
     fn from(v: [f64; 2]) -> Self {
         Self { x: v[0], y: v[1] }
     }

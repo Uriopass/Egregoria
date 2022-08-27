@@ -8,12 +8,14 @@ pub struct Circle {
 }
 
 impl Circle {
+    #[inline]
     pub fn new(center: Vec2, radius: f32) -> Self {
         Self { center, radius }
     }
 }
 
 impl Shape for Circle {
+    #[inline]
     fn bbox(&self) -> AABB {
         AABB {
             ll: self.center - Vec2::splat(self.radius),
@@ -23,6 +25,7 @@ impl Shape for Circle {
 }
 
 impl Intersect<AABB> for Circle {
+    #[inline]
     fn intersects(&self, b: &AABB) -> bool {
         let proj = self.center.min(b.ur).max(b.ll);
         self.center.is_close(proj, self.radius)
@@ -30,18 +33,21 @@ impl Intersect<AABB> for Circle {
 }
 
 impl Intersect<Circle> for Circle {
+    #[inline]
     fn intersects(&self, c: &Circle) -> bool {
         self.center.is_close(c.center, self.radius + c.radius)
     }
 }
 
 impl Intersect<Segment> for Circle {
+    #[inline]
     fn intersects(&self, s: &Segment) -> bool {
         s.project(self.center).is_close(self.center, self.radius)
     }
 }
 
 impl Intersect<Vec2> for Circle {
+    #[inline]
     fn intersects(&self, p: &Vec2) -> bool {
         self.center.is_close(*p, self.radius)
     }

@@ -10,6 +10,7 @@ pub struct Transform {
 }
 
 impl Transform {
+    #[inline]
     pub fn zero() -> Self {
         Self::new(Vec3::ZERO)
     }
@@ -22,14 +23,17 @@ impl Transform {
         }
     }
 
+    #[inline]
     pub fn new_dir(position: Vec3, dir: Vec3) -> Self {
         Self { position, dir }
     }
 
+    #[inline]
     pub fn angle(&self) -> f32 {
         f32::atan2(self.dir.y, self.dir.x)
     }
 
+    #[inline]
     pub fn normalxy(&self) -> Vec2 {
         vec2(-self.dir.y, self.dir.x)
     }
@@ -47,10 +51,12 @@ impl Transform {
         }
     }
 
+    #[inline]
     pub fn apply_rotation(&self, point: Vec3) -> Vec3 {
         point.rotate_up(self.dir)
     }
 
+    #[inline]
     pub fn project(&self, point: Vec3) -> Vec3 {
         point.rotate_up(self.dir) + self.position
     }

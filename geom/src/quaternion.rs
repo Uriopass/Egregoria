@@ -13,6 +13,7 @@ pub struct Quaternion {
 impl Mul<Vec3> for Quaternion {
     type Output = Vec3;
 
+    #[inline]
     fn mul(self, v: Vec3) -> Vec3 {
         let qv = vec3(self.x, self.y, self.z);
         let qs = self.w;
@@ -21,6 +22,7 @@ impl Mul<Vec3> for Quaternion {
 }
 
 impl From<[f32; 4]> for Quaternion {
+    #[inline]
     fn from(x: [f32; 4]) -> Self {
         unsafe { std::mem::transmute(x) }
     }

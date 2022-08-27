@@ -24,6 +24,7 @@ impl Default for Spline {
 }
 
 impl Spline {
+    #[inline]
     pub fn get(&self, t: f32) -> Vec2 {
         (1.0 - t).powi(3) * self.from
             + 3.0 * t * (1.0 - t).powi(2) * (self.from + self.from_derivative)
@@ -31,6 +32,7 @@ impl Spline {
             + t.powi(3) * self.to
     }
 
+    #[inline]
     pub fn derivative(&self, t: f32) -> Vec2 {
         -3.0 * (t - 1.0).powi(2) * self.from
             + 3.0 * (t - 1.0) * (3.0 * t - 1.0) * (self.from + self.from_derivative)
@@ -38,6 +40,7 @@ impl Spline {
             + 3.0 * t.powi(2) * self.to
     }
 
+    #[inline]
     pub fn derivative_2(&self, t: f32) -> Vec2 {
         6.0 * (1.0 - t) * self.from
             + (18.0 * t - 12.0) * (self.from + self.from_derivative)
@@ -238,6 +241,7 @@ impl Spline {
         PolyLine::new(self.smart_points(detail, 0.0, 1.0).collect()).length()
     }
 
+    #[inline]
     fn step(&self, t: f32, detail: f32) -> f32 {
         let dot = self
             .derivative(t)

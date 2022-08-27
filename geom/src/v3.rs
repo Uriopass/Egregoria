@@ -55,6 +55,7 @@ pub const fn vec3(x: f32, y: f32, z: f32) -> Vec3 {
 impl Add for Vec3 {
     type Output = Self;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x + rhs.x,
@@ -67,6 +68,7 @@ impl Add for Vec3 {
 impl Add for &Vec3 {
     type Output = Vec3;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Vec3 {
             x: self.x + rhs.x,
@@ -79,6 +81,7 @@ impl Add for &Vec3 {
 impl Add<Vec3> for &Vec3 {
     type Output = Vec3;
 
+    #[inline]
     fn add(self, rhs: Vec3) -> Self::Output {
         Vec3 {
             x: self.x + rhs.x,
@@ -91,6 +94,7 @@ impl Add<Vec3> for &Vec3 {
 impl Add<&Vec3> for Vec3 {
     type Output = Vec3;
 
+    #[inline]
     fn add(self, rhs: &Vec3) -> Self::Output {
         Vec3 {
             x: self.x + rhs.x,
@@ -101,6 +105,7 @@ impl Add<&Vec3> for Vec3 {
 }
 
 impl AddAssign for Vec3 {
+    #[inline]
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
@@ -111,6 +116,7 @@ impl AddAssign for Vec3 {
 impl Sub for Vec3 {
     type Output = Self;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x - rhs.x,
@@ -123,6 +129,7 @@ impl Sub for Vec3 {
 impl Sub for &Vec3 {
     type Output = Vec3;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Vec3 {
             x: self.x - rhs.x,
@@ -135,6 +142,7 @@ impl Sub for &Vec3 {
 impl Mul<Vec3> for f32 {
     type Output = Vec3;
 
+    #[inline]
     fn mul(self, rhs: Vec3) -> Self::Output {
         Vec3 {
             x: self * rhs.x,
@@ -147,6 +155,7 @@ impl Mul<Vec3> for f32 {
 impl Mul<f32> for Vec3 {
     type Output = Vec3;
 
+    #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x * rhs,
@@ -159,6 +168,7 @@ impl Mul<f32> for Vec3 {
 impl Mul<Vec3> for Vec3 {
     type Output = Vec3;
 
+    #[inline]
     fn mul(self, rhs: Vec3) -> Self::Output {
         Self {
             x: self.x * rhs.x,
@@ -169,6 +179,7 @@ impl Mul<Vec3> for Vec3 {
 }
 
 impl MulAssign for Vec3 {
+    #[inline]
     fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs
     }
@@ -177,6 +188,7 @@ impl MulAssign for Vec3 {
 impl Div<Vec3> for f32 {
     type Output = Vec3;
 
+    #[inline]
     fn div(self, rhs: Vec3) -> Self::Output {
         Vec3 {
             x: self / rhs.x,
@@ -189,6 +201,7 @@ impl Div<Vec3> for f32 {
 impl Div<f32> for Vec3 {
     type Output = Vec3;
 
+    #[inline]
     fn div(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x / rhs,
@@ -201,6 +214,7 @@ impl Div<f32> for Vec3 {
 impl Div<Vec3> for Vec3 {
     type Output = Vec3;
 
+    #[inline]
     fn div(self, rhs: Vec3) -> Self::Output {
         Self {
             x: self.x / rhs.x,
@@ -213,6 +227,7 @@ impl Div<Vec3> for Vec3 {
 impl Neg for Vec3 {
     type Output = Self;
 
+    #[inline]
     fn neg(self) -> Self::Output {
         Self {
             x: -self.x,
@@ -243,6 +258,7 @@ impl<'a> std::iter::Sum<&'a Vec3> for Vec3 {
 }
 
 impl DivAssign for Vec3 {
+    #[inline]
     fn div_assign(&mut self, rhs: Self) {
         self.x /= rhs.x;
         self.y /= rhs.y;
@@ -251,6 +267,7 @@ impl DivAssign for Vec3 {
 }
 
 impl DivAssign<f32> for Vec3 {
+    #[inline]
     fn div_assign(&mut self, rhs: f32) {
         self.x /= rhs;
         self.y /= rhs;
@@ -259,18 +276,21 @@ impl DivAssign<f32> for Vec3 {
 }
 
 impl From<Vec3> for [f32; 3] {
+    #[inline]
     fn from(v: Vec3) -> Self {
         [v.x, v.y, v.z]
     }
 }
 
 impl From<&Vec3> for [f32; 3] {
+    #[inline]
     fn from(v: &Vec3) -> Self {
         [v.x, v.y, v.z]
     }
 }
 
 impl From<[f32; 3]> for Vec3 {
+    #[inline]
     fn from(v: [f32; 3]) -> Self {
         Self {
             x: v[0],
@@ -281,6 +301,7 @@ impl From<[f32; 3]> for Vec3 {
 }
 
 impl From<(f32, f32, f32)> for Vec3 {
+    #[inline]
     fn from((x, y, z): (f32, f32, f32)) -> Self {
         Self { x, y, z }
     }
@@ -359,6 +380,7 @@ impl Vec3 {
         }
     }
 
+    #[inline]
     pub fn rotate_up(self, dir: Vec3) -> Self {
         let y = dir.cross(Vec3::Z).try_normalize().unwrap_or(Vec3::Y);
         let z = dir.cross(y).try_normalize().unwrap_or(Vec3::Z);

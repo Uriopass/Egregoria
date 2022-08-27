@@ -256,6 +256,7 @@ impl LinearColor {
 impl Add for LinearColor {
     type Output = Self;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             r: self.r + rhs.r,

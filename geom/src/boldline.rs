@@ -17,6 +17,7 @@ impl BoldLine {
 }
 
 impl Shape for BoldLine {
+    #[inline]
     fn bbox(&self) -> AABB {
         self.line.bbox().expand(self.radius)
     }
@@ -71,6 +72,7 @@ impl Intersect<BoldLine> for BoldLine {
 
 defer_inter!(AABB => BoldLine);
 impl Intersect<AABB> for BoldLine {
+    #[inline]
     fn intersects(&self, p: &AABB) -> bool {
         let big = p.expand(self.radius);
         self.line.segments().any(|x| x.intersects(&big))
@@ -79,6 +81,7 @@ impl Intersect<AABB> for BoldLine {
 
 defer_inter!(OBB => BoldLine);
 impl Intersect<OBB> for BoldLine {
+    #[inline]
     fn intersects(&self, p: &OBB) -> bool {
         let big = p.expand(self.radius);
         self.line.segments().any(|x| x.intersects(&big))

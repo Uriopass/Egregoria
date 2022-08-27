@@ -33,12 +33,14 @@ impl Vec4 {
 }
 
 impl From<[f32; 4]> for Vec4 {
+    #[inline]
     fn from(x: [f32; 4]) -> Self {
         unsafe { std::mem::transmute(x) }
     }
 }
 
 impl From<Vec4> for [f32; 4] {
+    #[inline]
     fn from(x: Vec4) -> Self {
         unsafe { std::mem::transmute(x) }
     }
@@ -54,6 +56,7 @@ pub const fn vec4(x: f32, y: f32, z: f32, w: f32) -> Vec4 {
 impl Add for Vec4 {
     type Output = Self;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x + rhs.x,
@@ -67,6 +70,7 @@ impl Add for Vec4 {
 impl Add for &Vec4 {
     type Output = Vec4;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Vec4 {
             x: self.x + rhs.x,
@@ -80,6 +84,7 @@ impl Add for &Vec4 {
 impl Add<Vec4> for &Vec4 {
     type Output = Vec4;
 
+    #[inline]
     fn add(self, rhs: Vec4) -> Self::Output {
         Vec4 {
             x: self.x + rhs.x,
@@ -93,6 +98,7 @@ impl Add<Vec4> for &Vec4 {
 impl Add<&Vec4> for Vec4 {
     type Output = Vec4;
 
+    #[inline]
     fn add(self, rhs: &Vec4) -> Self::Output {
         Vec4 {
             x: self.x + rhs.x,
@@ -104,6 +110,7 @@ impl Add<&Vec4> for Vec4 {
 }
 
 impl AddAssign for Vec4 {
+    #[inline]
     fn add_assign(&mut self, rhs: Self) {
         self.x += rhs.x;
         self.y += rhs.y;
@@ -115,6 +122,7 @@ impl AddAssign for Vec4 {
 impl Sub for Vec4 {
     type Output = Self;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self {
             x: self.x - rhs.x,
@@ -128,6 +136,7 @@ impl Sub for Vec4 {
 impl Sub for &Vec4 {
     type Output = Vec4;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Vec4 {
             x: self.x - rhs.x,
@@ -141,6 +150,7 @@ impl Sub for &Vec4 {
 impl Mul<Vec4> for f32 {
     type Output = Vec4;
 
+    #[inline]
     fn mul(self, rhs: Vec4) -> Self::Output {
         Vec4 {
             x: self * rhs.x,
@@ -154,6 +164,7 @@ impl Mul<Vec4> for f32 {
 impl Mul<f32> for Vec4 {
     type Output = Vec4;
 
+    #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x * rhs,
@@ -167,6 +178,7 @@ impl Mul<f32> for Vec4 {
 impl Mul<Vec4> for Vec4 {
     type Output = Vec4;
 
+    #[inline]
     fn mul(self, rhs: Vec4) -> Self::Output {
         Self {
             x: self.x * rhs.x,
@@ -178,6 +190,7 @@ impl Mul<Vec4> for Vec4 {
 }
 
 impl MulAssign for Vec4 {
+    #[inline]
     fn mul_assign(&mut self, rhs: Self) {
         *self = *self * rhs
     }
@@ -186,6 +199,7 @@ impl MulAssign for Vec4 {
 impl Div<Vec4> for f32 {
     type Output = Vec4;
 
+    #[inline]
     fn div(self, rhs: Vec4) -> Self::Output {
         Vec4 {
             x: self / rhs.x,
@@ -199,6 +213,7 @@ impl Div<Vec4> for f32 {
 impl Div<f32> for Vec4 {
     type Output = Vec4;
 
+    #[inline]
     fn div(self, rhs: f32) -> Self::Output {
         Self {
             x: self.x / rhs,
@@ -212,6 +227,7 @@ impl Div<f32> for Vec4 {
 impl Div<Vec4> for Vec4 {
     type Output = Vec4;
 
+    #[inline]
     fn div(self, rhs: Vec4) -> Self::Output {
         Self {
             x: self.x / rhs.x,
@@ -225,6 +241,7 @@ impl Div<Vec4> for Vec4 {
 impl Neg for Vec4 {
     type Output = Self;
 
+    #[inline]
     fn neg(self) -> Self::Output {
         Self {
             x: -self.x,

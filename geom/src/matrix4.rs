@@ -69,6 +69,7 @@ impl Mul<Vec4> for Matrix4 {
 impl Mul for Matrix4 {
     type Output = Matrix4;
 
+    #[inline]
     fn mul(self, rhs: Self) -> Self::Output {
         Matrix4::from([
             self.x * rhs.x.x + self.y * rhs.x.y + self.z * rhs.x.z + self.w * rhs.x.w,

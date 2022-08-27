@@ -38,6 +38,7 @@ pub(crate) type MergedInputs = Vec<(AuthentID, PlayerInput)>;
 
 impl Add for Frame {
     type Output = Self;
+    #[inline]
     fn add(self, rhs: Self) -> Self::Output {
         Self(self.0 + rhs.0)
     }

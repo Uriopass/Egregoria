@@ -178,6 +178,7 @@ impl BitOr for ProjectFilter {
 impl Sub for ProjectFilter {
     type Output = Self;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
         Self(self.0 & !rhs.0)
     }
@@ -186,6 +187,7 @@ impl Sub for ProjectFilter {
 impl Neg for ProjectFilter {
     type Output = Self;
 
+    #[inline]
     fn neg(self) -> Self::Output {
         Self(!self.0)
     }

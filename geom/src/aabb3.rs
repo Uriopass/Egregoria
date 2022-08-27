@@ -8,10 +8,12 @@ pub struct AABB3 {
 }
 
 impl AABB3 {
+    #[inline]
     pub const fn new(ll: Vec3, ur: Vec3) -> Self {
         Self { ll, ur }
     }
 
+    #[inline]
     pub fn centered(pos: Vec3, size: Vec3) -> Self {
         Self {
             ll: pos - size * 0.5,
@@ -19,6 +21,7 @@ impl AABB3 {
         }
     }
 
+    #[inline]
     pub const fn zero() -> Self {
         Self {
             ll: Vec3::ZERO,
@@ -26,14 +29,17 @@ impl AABB3 {
         }
     }
 
+    #[inline]
     pub fn w(&self) -> f32 {
         self.ur.x - self.ll.x
     }
 
+    #[inline]
     pub fn h(&self) -> f32 {
         self.ur.y - self.ll.y
     }
 
+    #[inline]
     pub fn union(self, other: Self) -> Self {
         Self {
             ll: self.ll.min(other.ll),
@@ -41,10 +47,12 @@ impl AABB3 {
         }
     }
 
+    #[inline]
     pub fn center(&self) -> Vec3 {
         self.ll * 0.5 + self.ur * 0.5
     }
 
+    #[inline]
     pub fn expand(self, w: f32) -> Self {
         Self {
             ll: self.ll - Vec3::splat(w),
@@ -64,6 +72,7 @@ impl AABB3 {
             | (TOP * (p.y > self.ur.y) as u8)
     }
 
+    #[inline]
     pub fn contains(&self, p: Vec3) -> bool {
         p.x >= self.ll.x
             && p.y >= self.ll.y
@@ -73,6 +82,7 @@ impl AABB3 {
             && p.z <= self.ur.z
     }
 
+    #[inline]
     pub fn contains_within(&self, point: Vec3, tolerance: f32) -> bool {
         point.x >= self.ll.x - tolerance
             && point.x <= self.ur.x + tolerance

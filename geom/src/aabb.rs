@@ -25,6 +25,7 @@ impl AABB {
     }
 
     /// Create a new `AABB` with all values zero.
+    #[inline]
     pub const fn zero() -> Self {
         Self {
             ll: Vec2::ZERO,
@@ -114,6 +115,7 @@ impl AABB {
 }
 
 impl Shape for AABB {
+    #[inline]
     fn bbox(&self) -> AABB {
         *self
     }
@@ -137,6 +139,7 @@ defer_inter!(AABB => Polygon);
 defer_inter!(AABB => OBB);
 
 impl Intersect<Segment> for AABB {
+    #[inline]
     fn intersects(&self, s: &Segment) -> bool {
         let outcode0 = self.compute_code(s.src);
         let outcode1 = self.compute_code(s.dst);

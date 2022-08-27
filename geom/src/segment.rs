@@ -192,16 +192,19 @@ impl Segmentd {
         self.resize(self.vec().magnitude() * scale)
     }
 
+    #[inline]
     pub fn vec(&self) -> Vec2d {
         self.dst - self.src
     }
 
+    #[inline]
     pub fn middle(&self) -> Vec2d {
         (self.src + self.dst) * 0.5
     }
 }
 
 impl Shape for Segment {
+    #[inline]
     fn bbox(&self) -> AABB {
         AABB::new(self.src, self.dst)
     }
@@ -212,6 +215,7 @@ fn ccw(a: Vec2, b: Vec2, c: Vec2) -> bool {
 }
 
 impl Intersect<Segment> for Segment {
+    #[inline]
     fn intersects(&self, s: &Segment) -> bool {
         ccw(self.src, s.src, s.dst) != ccw(self.dst, s.src, s.dst)
             && ccw(self.src, self.dst, s.src) != ccw(self.src, self.dst, s.dst)
@@ -222,6 +226,7 @@ defer_inter!(Segment => Circle);
 defer_inter!(Segment => AABB);
 
 impl Intersect<Vec2> for Segment {
+    #[inline]
     fn intersects(&self, _p: &Vec2) -> bool {
         false
     }
