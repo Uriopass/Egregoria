@@ -71,7 +71,6 @@ impl Map {
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
 
-        #[cfg(debug_assertions)]
         self.check_invariants()
     }
 
@@ -81,7 +80,6 @@ impl Map {
 
         self.remove_intersection_inner(src);
 
-        #[cfg(debug_assertions)]
         self.check_invariants()
     }
 
@@ -111,7 +109,6 @@ impl Map {
                 .and_modify(|v| v.retain(|id| *id != b.id));
         }
 
-        #[cfg(debug_assertions)]
         self.check_invariants();
 
         Some(b)
@@ -147,7 +144,6 @@ impl Map {
 
         let r = self.connect(from, to, pattern, connection_segment)?;
 
-        #[cfg(debug_assertions)]
         self.check_invariants();
 
         Some((to, r))
@@ -212,7 +208,6 @@ impl Map {
             }
         }
 
-        #[cfg(debug_assertions)]
         self.check_invariants();
         v
     }
@@ -234,7 +229,6 @@ impl Map {
             BuildingGen::House,
             vec![],
         );
-        #[cfg(debug_assertions)]
         self.check_invariants();
         v
     }
@@ -245,10 +239,7 @@ impl Map {
         self.dirt_id += Wrapping(1);
 
         let v = self.remove_road_inner(road_id);
-
-        #[cfg(debug_assertions)]
         self.check_invariants();
-
         v
     }
 
@@ -294,7 +285,6 @@ impl Map {
         self.terrain = before.terrain;
         self.dirt_id = before.dirt_id + Wrapping(1);
 
-        #[cfg(debug_assertions)]
         self.check_invariants();
     }
 
@@ -662,6 +652,10 @@ impl Map {
         Some(pos - dir * 4.0)
     }
 
+    #[cfg(not(debug_assertions))]
+    pub fn check_invariants(&self) {}
+
+    #[cfg(debug_assertions)]
     pub fn check_invariants(&self) {
         if std::env::var("MAP_INVARIANT_CHECK").is_err() {
             return;
