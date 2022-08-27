@@ -46,6 +46,7 @@ pub mod utils;
 pub mod vehicles;
 
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
+use crate::souls::fret_station::FreightStation;
 use crate::utils::scheduler::RunnableSystem;
 use crate::utils::time::Tick;
 use crate::vehicles::trains::RailWagon;
@@ -483,4 +484,5 @@ register!(
         ItineraryLeader => _20,
         ItineraryFollower => _21,
         LocomotiveReservation => _22,
+        FreightStation => _23,
 );

@@ -3,7 +3,9 @@ use crate::map_dynamic::BuildingInfos;
 use crate::vehicles::VehicleID;
 use crate::{Egregoria, Selectable, SoulID};
 use geom::Transform;
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct FreightStation {
     pub building: BuildingID,
     pub active: bool,
