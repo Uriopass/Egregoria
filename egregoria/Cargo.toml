@@ -13,13 +13,12 @@ edition = "2018"
 ordered-float = { version = "2.7.0", default-features = false }
 serde         = { version = "1.0", features = ["derive"] }
 log           = "0.4.11"
-imgui-inspect = { path = "../imgui-inspect"}
-imgui-inspect-derive = { path = "../imgui-inspect-derive" }
+egui-inspect = { path = "../egui-inspect"}
+egui-inspect-derive = { path = "../egui-inspect-derive" }
 flat_spatial = { version = "0.5.0", features=["serde"] }
 geom          = { path = "../geom" }
 common        = { path = "../common" }
 slotmap       = { version = "1.0.2", default-features = false, features = ["serde", "unstable"] }
-imgui         = "0.8"
 rayon         = "1.5.1"
 atomic_refcell = "0.1.6"
 hecs         = { version = "0.9.0", features=["column-serialize"] }

@@ -1,11 +1,9 @@
 use crate::map::{IntersectionID, Intersections, LaneID, Lanes, Map, TurnID};
+use egui_inspect_derive::Inspect;
 use geom::PolyLine3;
-use imgui_inspect::imgui::Ui;
-use imgui_inspect::{imgui, InspectArgsDefault, InspectRenderDefault};
-use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Hash, Inspect)]
 pub enum TraverseDirection {
     Forward,
     Backward,
@@ -87,96 +85,4 @@ impl Traversable {
     }
 }
 
-macro_rules! enum_inspect_impl {
-    ($t: ty; $($x: pat),+) => {
-        impl imgui_inspect::InspectRenderDefault<$t> for $t {
-            fn render(data: &[&$t], label: &'static str, ui: &imgui::Ui<'_>, _: &imgui_inspect::InspectArgsDefault,
-            ) {
-                if data.len() != 1 {
-                    unimplemented!()
-                }
-                let d = unwrap_ret!(data.get(0));
-                let mut aha = "No match";
-                $(
-                    if let $x = d {
-                        aha = stringify!($x);
-                    }
-                )+
-
-                ui.text(format!("{} {}", &aha, label));
-            }
-
-            fn render_mut(
-                data: &mut [&mut $t],
-                label: &'static str,
-                ui: &imgui::Ui<'_>,
-                _: &imgui_inspect::InspectArgsDefault,
-            ) -> bool {
-                if data.len() != 1 {
-                    unimplemented!()
-                }
-                let d = unwrap_ret!(data.get_mut(0), false);
-                let mut aha = "No match";
-                $(
-                    if let $x = d {
-                        aha = stringify!($x);
-                    }
-                )+
-
-                ui.text(format!("{} {}", &aha, label));
-                false
-            }
-        }
-    };
-}
-
-impl InspectRenderDefault<TraverseKind> for TraverseKind {
-    fn render(
-        data: &[&TraverseKind],
-        label: &'static str,
-        ui: &Ui<'_>,
-        _args: &InspectArgsDefault,
-    ) {
-        if data.len() != 1 {
-            panic!("not implemented")
-        }
-        let d = match data.get(0) {
-            Some(x) => x,
-            None => return,
-        };
-        match d {
-            TraverseKind::Lane(l) => {
-                ui.text(format!("TraverseKind::Lane({:?}): {}", l, label));
-            }
-            TraverseKind::Turn(v) => {
-                ui.text(format!("TraverseKind::Turn({:?}): {}", v, label));
-            }
-        }
-    }
-
-    fn render_mut(
-        data: &mut [&mut TraverseKind],
-        label: &'static str,
-        ui: &Ui<'_>,
-        _args: &InspectArgsDefault,
-    ) -> bool {
-        if data.len() != 1 {
-            panic!("not implemented")
-        }
-        let d = match data.get(0) {
-            Some(x) => x,
-            None => return false,
-        };
-        match d {
-            TraverseKind::Lane(l) => {
-                ui.text(format!("TraverseKind::Lane({:?}): {}", l, label));
-            }
-            TraverseKind::Turn(v) => {
-                ui.text(format!("TraverseKind::Turn({:?}): {}", v, label));
-            }
-        }
-        false
-    }
-}
-
-enum_inspect_impl!(TraverseDirection; TraverseDirection::Forward, TraverseDirection::Backward);
+debug_inspect_impl!(TraverseKind);

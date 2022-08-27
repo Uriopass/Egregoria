@@ -11,10 +11,10 @@ use egregoria::vehicles::{Vehicle, VehicleID};
 use egregoria::{Egregoria, SoulID};
 
 use egregoria::vehicles::trains::{Locomotive, LocomotiveReservation};
+use egui::Ui;
+use egui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use geom::{Transform, Vec2};
 use hecs::{Component, Entity};
-use imgui::Ui;
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
 pub(crate) struct InspectRenderer {
     pub(crate) entity: Entity,
@@ -24,7 +24,7 @@ impl InspectRenderer {
     fn inspect_component<T: Component + InspectRenderDefault<T>>(
         &self,
         goria: &Egregoria,
-        ui: &Ui<'_>,
+        ui: &mut Ui,
     ) {
         let c = goria.comp::<T>(self.entity);
         if let Some(x) = c {
@@ -37,7 +37,7 @@ impl InspectRenderer {
         }
     }
 
-    fn inspect_transform(&self, goria: &Egregoria, uiw: &mut UiWorld, ui: &Ui<'_>) {
+    fn inspect_transform(&self, goria: &Egregoria, uiw: &mut UiWorld, ui: &mut Ui) {
         let c = goria.comp(self.entity);
         if let Some(x) = c {
             let mut t = *x;
@@ -52,7 +52,7 @@ impl InspectRenderer {
         }
     }
 
-    pub(crate) fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &Ui<'_>) {
+    pub(crate) fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui) {
         let mut custom_ent = self.entity.id() as i32;
         if ui.input_int("enter id directly", &mut custom_ent).build() {
             if let Some(ent) = Entity::from_bits(1 << 32 | custom_ent as u64) {
@@ -93,7 +93,7 @@ impl InspectRenderer {
 
         if let Some(coll) = goria.comp::<Collider>(self.entity) {
             if let Some((pos, po)) = goria.read::<CollisionWorld>().get(coll.0) {
-                if imgui::CollapsingHeader::new("Physics Object").build(ui) {
+                if egui::CollapsingHeader::new("Physics Object").build(ui) {
                     <Vec2 as InspectRenderDefault<Vec2>>::render(
                         &[&pos],
                         "pos",
@@ -141,7 +141,7 @@ impl InspectRenderer {
             return;
         }
 
-        if imgui::CollapsingHeader::new("Capital").build(ui) {
+        if egui::CollapsingHeader::new("Capital").build(ui) {
             ui.indent();
             ui.columns(2, "markett", false);
 

@@ -2,7 +2,7 @@ use crate::inputmap::InputMap;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
-use imgui::{Condition, Ui};
+use egui::Ui;
 use std::time::Duration;
 
 const SETTINGS_SAVE_NAME: &str = "settings";
@@ -110,8 +110,8 @@ impl AsRef<str> for AutoSaveEvery {
 }
 
 pub(crate) fn settings(
-    window: imgui::Window<'_, &'static str>,
-    ui: &Ui<'_>,
+    window: egui::Window<'_>,
+    ui: &mut Ui,
     uiworld: &mut UiWorld,
     _: &Egregoria,
 ) {
@@ -126,17 +126,17 @@ pub(crate) fn settings(
         .collapsible(false)
         .build(ui, || {
             ui.text("Gameplay");
-            let tok = imgui::ComboBox::new("Autosave")
+            let tok = egui::ComboBox::new("Autosave")
                 .preview_value(settings.auto_save_every.as_ref())
                 .begin(ui);
             if let Some(tok) = tok {
-                if imgui::Selectable::new("Never").build(ui) {
+                if egui::Selectable::new("Never").build(ui) {
                     settings.auto_save_every = AutoSaveEvery::Never;
                 }
-                if imgui::Selectable::new("Minute").build(ui) {
+                if egui::Selectable::new("Minute").build(ui) {
                     settings.auto_save_every = AutoSaveEvery::OneMinute;
                 }
-                if imgui::Selectable::new("Five Minutes").build(ui) {
+                if egui::Selectable::new("Five Minutes").build(ui) {
                     settings.auto_save_every = AutoSaveEvery::FiveMinutes;
                 }
                 tok.end();
@@ -152,12 +152,12 @@ pub(crate) fn settings(
             ui.checkbox("Camera smooth", &mut settings.camera_smooth);
 
             if settings.camera_smooth {
-                imgui::Drag::new("Camera smoothing tightness")
+                egui::Drag::new("Camera smoothing tightness")
                     .display_format("%.2f")
                     .speed(0.01)
                     .build(ui, &mut settings.camera_smooth_tightness);
             }
-            imgui::Drag::new("Camera Field of View (FOV)")
+            egui::Drag::new("Camera Field of View (FOV)")
                 .display_format("%.1f")
                 .range(1.0, 179.0)
                 .speed(0.1)
@@ -174,20 +174,20 @@ pub(crate) fn settings(
             ui.checkbox("Terrain Grid", &mut settings.terrain_grid);
             ui.checkbox("Ambient Occlusion (SSAO)", &mut settings.ssao);
 
-            let tok = imgui::ComboBox::new("Shadow quality")
+            let tok = egui::ComboBox::new("Shadow quality")
                 .preview_value(settings.shadows.as_ref())
                 .begin(ui);
             if let Some(tok) = tok {
-                if imgui::Selectable::new("No Shadows").build(ui) {
+                if egui::Selectable::new("No Shadows").build(ui) {
                     settings.shadows = ShadowQuality::NoShadows;
                 }
-                if imgui::Selectable::new("Low").build(ui) {
+                if egui::Selectable::new("Low").build(ui) {
                     settings.shadows = ShadowQuality::Low;
                 }
-                if imgui::Selectable::new("Medium").build(ui) {
+                if egui::Selectable::new("Medium").build(ui) {
                     settings.shadows = ShadowQuality::Medium;
                 }
-                if imgui::Selectable::new("High").build(ui) {
+                if egui::Selectable::new("High").build(ui) {
                     settings.shadows = ShadowQuality::High;
                 }
                 tok.end();
@@ -198,13 +198,13 @@ pub(crate) fn settings(
             ui.new_line();
             ui.text("Audio");
 
-            imgui::Slider::new("Music volume", 0.0, 100.0)
+            egui::Slider::new("Music volume", 0.0, 100.0)
                 .display_format("%.0f")
                 .build(ui, &mut settings.music_volume_percent);
-            imgui::Slider::new("Effects volume", 0.0, 100.0)
+            egui::Slider::new("Effects volume", 0.0, 100.0)
                 .display_format("%.0f")
                 .build(ui, &mut settings.effects_volume_percent);
-            imgui::Slider::new("Ui volume", 0.0, 100.0)
+            egui::Slider::new("Ui volume", 0.0, 100.0)
                 .display_format("%.0f")
                 .build(ui, &mut settings.ui_volume_percent);
 

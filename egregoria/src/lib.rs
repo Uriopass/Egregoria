@@ -28,7 +28,7 @@ use utils::time::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 extern crate common;
 
 #[macro_use]
-extern crate imgui_inspect;
+extern crate egui_inspect;
 
 #[macro_use]
 extern crate log as extern_log;

@@ -19,7 +19,7 @@ use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, Gui, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::inputmap::{InputAction, InputMap};
-use crate::rendering::imgui_wrapper::ImguiWrapper;
+use crate::rendering::egui_wrapper::EguiWrapper;
 use crate::rendering::{CameraHandler3D, InstancedRender, RoadRenderer};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
@@ -42,7 +42,7 @@ pub(crate) struct State {
 
     pub(crate) camera: CameraHandler3D,
 
-    imgui_render: ImguiWrapper,
+    egui_render: EguiWrapper,
 
     instanced_renderer: InstancedRender,
     road_renderer: RoadRenderer,
@@ -57,7 +57,7 @@ impl State {
     pub(crate) fn new(ctx: &mut Context) -> Self {
         let camera = CameraHandler3D::load(ctx.gfx.size);
 
-        let mut imgui_render = ImguiWrapper::new(&mut ctx.gfx, &ctx.window);
+        let mut egui_render = EguiWrapper::new(&mut ctx.gfx, &ctx.el.as_ref().unwrap());
         log::info!("loaded imgui_render");
 
         let goria: Egregoria =
@@ -65,7 +65,7 @@ impl State {
         let game_schedule = Egregoria::schedule();
         let mut uiworld = UiWorld::init();
 
-        uiworld.insert(UiTextures::new(&ctx.gfx, &mut imgui_render.renderer));
+        uiworld.insert(UiTextures::new(&ctx.gfx, &mut egui_render.egui));
 
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
@@ -86,7 +86,7 @@ impl State {
             uiw: uiworld,
             game_schedule,
             camera,
-            imgui_render,
+            egui_render,
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             road_renderer: RoadRenderer::new(&mut ctx.gfx, &goria),
             terrain: TerrainRender::new(&mut ctx.gfx, w, h),
@@ -99,7 +99,7 @@ impl State {
 
     #[profiling::function]
     pub(crate) fn update(&mut self, ctx: &mut Context) {
-        if !self.imgui_render.last_mouse_captured {
+        if !self.egui_render.last_mouse_captured {
             let goria = self.goria.read().unwrap();
             let map = goria.map();
             let unproj = self.camera.unproject(ctx.input.mouse.screen, |p| {
@@ -112,8 +112,8 @@ impl State {
 
         self.uiw.write::<InputMap>().prepare_frame(
             &ctx.input,
-            !self.imgui_render.last_kb_captured,
-            !self.imgui_render.last_mouse_captured,
+            !self.egui_render.last_kb_captured,
+            !self.egui_render.last_mouse_captured,
         );
         crate::gui::run_ui_systems(&self.goria.read().unwrap(), &mut self.uiw);
 
@@ -271,7 +271,7 @@ impl State {
         let goria = &self.goria.read().unwrap();
         let uiworld = &mut self.uiw;
 
-        self.imgui_render.render(ctx, window, gui.hidden, |ui| {
+        self.egui_render.render(ctx, window, gui.hidden, |ui| {
             gui.render(ui, uiworld, goria);
         });
 
@@ -338,13 +338,13 @@ impl State {
         *self.uiw.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
         *self.uiw.write::<MouseInfo>() = ctx.input.mouse.clone();
 
-        if self.imgui_render.last_kb_captured {
+        if self.egui_render.last_kb_captured {
             let kb: &mut KeyboardInfo = &mut self.uiw.write::<KeyboardInfo>();
             kb.just_pressed.clear();
             kb.pressed.clear();
         }
 
-        if self.imgui_render.last_mouse_captured {
+        if self.egui_render.last_mouse_captured {
             let mouse: &mut MouseInfo = &mut self.uiw.write::<MouseInfo>();
             mouse.just_pressed.clear();
             mouse.pressed.clear();
@@ -367,7 +367,7 @@ impl State {
     }
 
     pub(crate) fn event(&mut self, window: &Window, event: &winit::event::Event<'_, ()>) {
-        self.imgui_render.handle_event(window, event);
+        self.egui_render.handle_event(window, event);
     }
 
     pub(crate) fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {

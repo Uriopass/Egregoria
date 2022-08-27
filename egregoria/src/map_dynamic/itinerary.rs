@@ -1,11 +1,11 @@
 use crate::map::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use crate::utils::time::GameTime;
 use crate::Kinematics;
+use egui_inspect::egui::Ui;
+use egui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use egui_inspect_derive::Inspect;
 use geom::{Follower, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, World};
-use imgui::Ui;
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
-use imgui_inspect_derive::Inspect;
 use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};
@@ -329,49 +329,47 @@ impl Default for ItineraryKind {
 }
 
 impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
-    fn render(
-        data: &[&ItineraryKind],
-        label: &'static str,
-        ui: &Ui<'_>,
-        args: &InspectArgsDefault,
-    ) {
-        let d = *unwrap_ret!(data.get(0));
-
+    fn render(d: &ItineraryKind, label: &'static str, ui: &mut Ui, args: &InspectArgsDefault) {
         match d {
-            ItineraryKind::None => ui.text(format!("None {}", label)),
-            ItineraryKind::WaitUntil(time) => ui.text(format!("WaitUntil({}) {}", time, label)),
-            ItineraryKind::Simple(e) => ui.text(format!("Simple {} to {}", label, e)),
+            ItineraryKind::None => {
+                ui.label(format!("None {}", label));
+            }
+            ItineraryKind::WaitUntil(time) => {
+                ui.label(format!("WaitUntil({}) {}", time, label));
+            }
+            ItineraryKind::Simple(e) => {
+                ui.label(format!("Simple {} to {}", label, e));
+            }
             ItineraryKind::Route(r, _) => {
-                <Route as InspectRenderDefault<Route>>::render(&[r], label, ui, args);
+                <Route as InspectRenderDefault<Route>>::render(r, label, ui, args);
             }
             ItineraryKind::WaitForReroute { wait_ticks, .. } => {
-                ui.text(format!("wait for reroute: {}", *wait_ticks));
+                ui.label(format!("wait for reroute: {}", *wait_ticks));
             }
         };
     }
 
     fn render_mut(
-        data: &mut [&mut ItineraryKind],
+        d: &mut ItineraryKind,
         label: &'static str,
-        ui: &Ui<'_>,
+        ui: &mut Ui,
         args: &InspectArgsDefault,
     ) -> bool {
-        let d = &mut *unwrap_ret!(data.get_mut(0), false);
-
         match d {
-            ItineraryKind::None => ui.text(format!("None {}", label)),
-            ItineraryKind::WaitUntil(time) => ui.text(format!("WaitUntil({}) {}", time, label)),
-            ItineraryKind::Simple(e) => ui.text(format!("Simple {} to {}", label, e)),
+            ItineraryKind::None => {
+                ui.label(format!("None {}", label));
+            }
+            ItineraryKind::WaitUntil(time) => {
+                ui.label(format!("WaitUntil({}) {}", time, label));
+            }
+            ItineraryKind::Simple(e) => {
+                ui.label(format!("Simple {} to {}", label, e));
+            }
             ItineraryKind::Route(r, _) => {
-                return <Route as InspectRenderDefault<Route>>::render_mut(
-                    &mut [r],
-                    label,
-                    ui,
-                    args,
-                );
+                return <Route as InspectRenderDefault<Route>>::render_mut(r, label, ui, args);
             }
             ItineraryKind::WaitForReroute { wait_ticks, .. } => {
-                ui.text(format!("wait for reroute: {}", *wait_ticks));
+                ui.label(format!("wait for reroute: {}", *wait_ticks));
             }
         };
         false

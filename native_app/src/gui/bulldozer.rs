@@ -4,7 +4,7 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::map::{BuildingKind, Map, ProjectFilter, ProjectKind};
 use egregoria::Egregoria;
-use imgui_inspect_derive::Inspect;
+use egui_inspect_derive::Inspect;
 
 #[derive(Copy, Clone, Default, Inspect)]
 pub(crate) struct BulldozerState {

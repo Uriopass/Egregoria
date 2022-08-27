@@ -2,8 +2,8 @@
 members = [
     "egregoria",
     "geom",
-    "imgui-inspect",
-    "imgui-inspect-derive",
+    "egui-inspect",
+    "egui-inspect-derive",
     "common",
     "native_app",
     "wgpu_engine",
@@ -30,10 +30,10 @@ opt-level = 1
 [profile.dev.package.native_app]
 opt-level = 0
 
-[profile.dev.package.imgui-inspect]
+[profile.dev.package.egui-inspect]
 opt-level = 1
 
-[profile.dev.package.imgui-inspect-derive]
+[profile.dev.package.egui-inspect-derive]
 opt-level = 1
 
 [profile.release]

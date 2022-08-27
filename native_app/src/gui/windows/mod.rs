@@ -1,4 +1,4 @@
-use imgui::{StyleVar, Ui};
+use egui::{Context, Ui};
 use serde::{Deserialize, Serialize};
 
 use crate::uiworld::UiWorld;
@@ -14,8 +14,8 @@ pub(crate) mod settings;
 pub(crate) trait ImguiWindow: Send + Sync {
     fn render_window(
         &mut self,
-        window: imgui::Window<'_, &'static str>,
-        ui: &Ui<'_>,
+        window: egui::Window<'_>,
+        ui: &mut Ui,
         uiworld: &mut UiWorld,
         goria: &Egregoria,
     );
@@ -23,12 +23,12 @@ pub(crate) trait ImguiWindow: Send + Sync {
 
 impl<F> ImguiWindow for F
 where
-    F: Fn(imgui::Window<'_, &'static str>, &Ui<'_>, &mut UiWorld, &Egregoria) + Send + Sync,
+    F: Fn(egui::Window<'_>, &Ui<'_>, &mut UiWorld, &Egregoria) + Send + Sync,
 {
     fn render_window(
         &mut self,
-        window: imgui::Window<'_, &'static str>,
-        ui: &Ui<'_>,
+        window: egui::Window<'_>,
+        ui: &mut Ui,
         uiworld: &mut UiWorld,
         goria: &Egregoria,
     ) {
@@ -81,7 +81,7 @@ impl ImguiWindows {
         }
     }
 
-    pub(crate) fn menu(&mut self, ui: &Ui<'_>) {
+    pub(crate) fn menu(&mut self, ui: &mut Ui) {
         if self.opened.len() < self.windows.len() {
             self.opened
                 .extend(std::iter::repeat(false).take(self.windows.len() - self.opened.len()))
@@ -94,11 +94,11 @@ impl ImguiWindows {
         }
     }
 
-    pub(crate) fn render(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         for (ws, opened) in self.windows.iter_mut().zip(self.opened.iter_mut()) {
             if *opened {
                 ws.w.render_window(
-                    imgui::Window::new(ws.name).opened(opened),
+                    egui::Window::new(ws.name).opened(opened),
                     ui,
                     uiworld,
                     goria,

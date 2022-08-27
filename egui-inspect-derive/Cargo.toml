@@ -1,0 +1,24 @@
+[package]
+name = "egui-inspect-derive"
+version = "0.4.1"
+authors = ["Paris DOUADY <paris.douady@hotmail.fr>"]
+edition = "2018"
+description = "Traits and default implementations for inspecting values with egui."
+license = "MIT or Apache-2.0"
+readme = "../README.md"
+keywords = ["game", "imgui"]
+categories = ["gui", "visualization"]
+
+[lib]
+name="egui_inspect_derive"
+proc-macro = true
+
+[features]
+default = ["generate_code"]
+generate_code = []
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "1.0"
+darling = "0.13"

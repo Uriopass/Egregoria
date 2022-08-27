@@ -1,6 +1,6 @@
 use crate::map::{Intersection, IntersectionID, LaneID, LaneKind, Lanes, Roads, TurnID, TurnKind};
+use egui_inspect_derive::Inspect;
 use geom::{vec2, Vec2};
-use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 use std::iter::{Extend, Iterator};
 

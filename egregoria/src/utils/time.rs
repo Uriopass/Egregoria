@@ -1,4 +1,4 @@
-use imgui_inspect_derive::Inspect;
+use egui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 
 pub const SECONDS_PER_HOUR: i32 = 100;

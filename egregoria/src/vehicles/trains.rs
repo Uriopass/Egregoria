@@ -3,9 +3,9 @@ use crate::map_dynamic::ItineraryKind;
 use crate::{
     Egregoria, GameTime, Itinerary, ItineraryFollower, ItineraryLeader, Kinematics, Selectable,
 };
+use egui_inspect_derive::*;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, View, World};
-use imgui_inspect_derive::*;
 use ordered_float::OrderedFloat;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use resources::Resources;

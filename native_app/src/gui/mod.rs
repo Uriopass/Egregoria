@@ -1,7 +1,7 @@
 use common::FastMap;
 use hecs::Entity;
 
-use imgui::TextureId;
+use egui::TextureId;
 use serde::{Deserialize, Serialize};
 
 use crate::uiworld::UiWorld;
@@ -100,7 +100,7 @@ pub(crate) struct UiTextures {
 }
 
 impl UiTextures {
-    pub(crate) fn new(gfx: &GfxContext, renderer: &mut imgui_wgpu::Renderer) -> Self {
+    pub(crate) fn new(gfx: &GfxContext, ctx: &mut egui::Context) -> Self {
         let mut textures = common::fastmap_with_capacity(UI_TEXTURES.len());
         for &(name, path) in UI_TEXTURES {
             let (img, width, height) = wgpu_engine::Texture::read_image(path)

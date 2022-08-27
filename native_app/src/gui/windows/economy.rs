@@ -1,20 +1,15 @@
 use crate::uiworld::UiWorld;
 use egregoria::economy::{EcoStats, ItemHistories, ItemRegistry, Market, LEVEL_FREQS};
 use egregoria::Egregoria;
+use egui::Ui;
 use geom::{vec2, Color, Vec2};
-use imgui::{Condition, ImColor32, Ui};
 use slotmap::Key;
 
 struct EconomyState {
     pub curlevel: usize,
 }
 
-pub(crate) fn economy(
-    window: imgui::Window<'_, &'static str>,
-    ui: &Ui<'_>,
-    uiw: &mut UiWorld,
-    goria: &Egregoria,
-) {
+pub(crate) fn economy(window: egui::Window<'_>, ui: &mut Ui, uiw: &mut UiWorld, goria: &Egregoria) {
     uiw.check_present(|| EconomyState { curlevel: 0 });
     let mut state = uiw.write::<EconomyState>();
     let market = goria.read::<Market>();
@@ -62,12 +57,12 @@ pub(crate) fn economy(
                 .build();
             };
 
-            if let Some(level) = imgui::ComboBox::new("Level")
+            if let Some(level) = egui::ComboBox::new("Level")
                 .preview_value(format!("{}", state.curlevel))
                 .begin(ui)
             {
                 for (i, l) in LEVEL_FREQS.iter().enumerate() {
-                    if imgui::Selectable::new(format!("{}", l)).build(ui) {
+                    if egui::Selectable::new(format!("{}", l)).build(ui) {
                         state.curlevel = i;
                     }
                 }

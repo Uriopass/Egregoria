@@ -1,8 +1,8 @@
 use crate::map::procgen::{gen_exterior_farm, gen_exterior_house, ColoredMesh};
 use crate::map::{Buildings, LanePattern, RoadID, SpatialMap, Terrain};
 use crate::souls::goods_company::GoodsCompanyID;
+use egui_inspect::debug_inspect_impl;
 use geom::{Color, Vec2, Vec3, OBB};
-use imgui_inspect::debug_inspect_impl;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 

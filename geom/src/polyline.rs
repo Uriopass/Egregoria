@@ -322,6 +322,9 @@ impl PolyLine {
     pub fn as_slice(&self) -> &[Vec2] {
         self.points.as_slice()
     }
+    pub fn as_mut_slice(&mut self) -> &mut [Vec2] {
+        self.points.as_mut_slice()
+    }
 
     pub fn iter(&self) -> Iter<'_, Vec2> {
         self.points.iter()

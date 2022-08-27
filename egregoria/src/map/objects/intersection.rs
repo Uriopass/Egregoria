@@ -4,8 +4,6 @@ use crate::map::{
 };
 use geom::{pseudo_angle, Circle};
 use geom::{Vec2, Vec3};
-use imgui_inspect::imgui::Ui;
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
@@ -236,25 +234,4 @@ impl Intersection {
     }
 }
 
-impl InspectRenderDefault<IntersectionID> for IntersectionID {
-    fn render(
-        data: &[&IntersectionID],
-        label: &'static str,
-        ui: &Ui<'_>,
-        _args: &InspectArgsDefault,
-    ) {
-        let v = &data[0];
-        ui.text(format!("{}: {:?}", label, *v));
-    }
-
-    fn render_mut(
-        data: &mut [&mut IntersectionID],
-        label: &'static str,
-        ui: &Ui<'_>,
-        _args: &InspectArgsDefault,
-    ) -> bool {
-        let v = &data[0];
-        ui.text(format!("{}: {:?}", label, *v));
-        false
-    }
-}
+debug_inspect_impl!(IntersectionID);

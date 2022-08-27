@@ -2,7 +2,7 @@ use crate::network::NetworkState;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
-use imgui::Ui;
+use egui::Ui;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 
@@ -16,8 +16,8 @@ pub(crate) struct NetworkConnectionInfo {
 
 #[cfg(feature = "multiplayer")]
 pub(crate) fn network(
-    window: imgui::Window<'_, &'static str>,
-    ui: &Ui<'_>,
+    window: egui::Window<'_>,
+    ui: &mut Ui,
     uiworld: &mut UiWorld,
     goria: &Egregoria,
 ) {
@@ -67,7 +67,7 @@ pub(crate) fn network(
     });
 }
 
-fn show_hashes(ui: &Ui<'_>, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
+fn show_hashes(ui: &mut Ui, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
     ui.checkbox("show hashes", &mut info.show_hashes);
     if !info.show_hashes {
         return;

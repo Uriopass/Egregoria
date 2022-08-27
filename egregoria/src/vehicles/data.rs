@@ -5,11 +5,10 @@ use crate::utils::par_command_buffer::ComponentDrop;
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::GameInstant;
 use crate::Egregoria;
+use egui_inspect_derive::Inspect;
 use geom::Transform;
 use geom::{Color, Spline3, Vec3};
 use hecs::Entity;
-use imgui_inspect::InspectDragf;
-use imgui_inspect_derive::Inspect;
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 
@@ -42,9 +41,7 @@ pub enum VehicleKind {
 
 #[derive(Debug, Serialize, Deserialize, Inspect)]
 pub struct Vehicle {
-    #[inspect(proxy_type = "InspectDragf")]
     pub ang_velocity: f32,
-    #[inspect(proxy_type = "InspectDragf")]
     pub wait_time: f32,
 
     pub state: VehicleState,

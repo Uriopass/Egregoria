@@ -1,8 +1,6 @@
 use crate::map::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
+use egui_inspect_derive::Inspect;
 use geom::{PolyLine3, Vec2, Vec3};
-use imgui_inspect::imgui::Ui;
-use imgui_inspect::{InspectArgsDefault, InspectDragf, InspectRenderDefault};
-use imgui_inspect_derive::Inspect;
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;
 
@@ -100,13 +98,7 @@ impl LanePattern {
 #[derive(PartialEq, Copy, Clone, Inspect)]
 pub struct LanePatternBuilder {
     pub n_lanes: u32,
-    #[inspect(
-        name = "speed",
-        proxy_type = "InspectDragf",
-        step = 1.0,
-        min_value = 4.0,
-        max_value = 40.0
-    )]
+    #[inspect(name = "speed", step = 1.0, min_value = 4.0, max_value = 40.0)]
     pub speed_limit: f32,
     pub sidewalks: bool,
     pub parking: bool,
@@ -333,20 +325,4 @@ impl Lane {
     }
 }
 
-impl InspectRenderDefault<LaneID> for LaneID {
-    fn render(data: &[&LaneID], label: &'static str, ui: &Ui<'_>, _args: &InspectArgsDefault) {
-        let v = &data[0];
-        ui.text(format!("{}: {:?}", label, *v));
-    }
-
-    fn render_mut(
-        data: &mut [&mut LaneID],
-        label: &'static str,
-        ui: &Ui<'_>,
-        _args: &InspectArgsDefault,
-    ) -> bool {
-        let v = &data[0];
-        ui.text(format!("{}: {:?}", label, *v));
-        false
-    }
-}
+debug_inspect_impl!(LaneID);

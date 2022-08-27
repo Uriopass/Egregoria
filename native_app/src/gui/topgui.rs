@@ -17,11 +17,11 @@ use egregoria::map::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use geom::Vec2;
-use imgui::{Condition, StyleColor, StyleVar, Ui, Window};
-use imgui_inspect::{
+use egui::{Context, RichText, Ui, Widget, Window};
+use egui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
 };
+use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
@@ -58,15 +58,14 @@ impl Default for Gui {
 }
 
 impl Gui {
-    pub(crate) fn render(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
-        let _tw = ui.push_style_color(StyleColor::WindowBg, common::config().gui_bg_col.into());
-        let _tt = ui.push_style_color(StyleColor::TitleBg, common::config().gui_title_col.into());
+    pub(crate) fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        //let _tw = ui.push_style_color(StyleColor::WindowBg, common::config().gui_bg_col.into());
+        //let _tt = ui.push_style_color(StyleColor::TitleBg, common::config().gui_title_col.into());
+        self.menu_bar(ui, uiworld, goria);
 
         Self::inspector(ui, uiworld, goria);
 
         self.windows.render(ui, uiworld, goria);
-
-        self.menu_bar(ui, uiworld, goria);
 
         Self::toolbox(ui, uiworld, goria);
 
@@ -91,7 +90,7 @@ impl Gui {
         }
     }
 
-    pub(crate) fn toolbox(ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn toolbox(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         #[derive(Copy, Clone)]
         pub(crate) enum Tab {
             Hand,
@@ -114,11 +113,11 @@ impl Gui {
             *uiworld.write::<Tab>() = Tab::Hand;
         }
 
-        let [w, h] = ui.io().display_size;
-        let _tok1 = ui.push_style_var(StyleVar::WindowPadding([0.0, 0.0]));
-        let _tok2 = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
-        let _tok3 = ui.push_style_var(StyleVar::WindowRounding(0.0));
-        let _tok4 = ui.push_style_var(StyleVar::ItemSpacing([0.0, 0.0]));
+        let [w, h] = ui.available_rect().size().into();
+        //        let _tok1 = ui.push_style_var(StyleVar::WindowPadding([0.0, 0.0]));
+        //        let _tok2 = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
+        //        let _tok3 = ui.push_style_var(StyleVar::WindowRounding(0.0));
+        //        let _tok4 = ui.push_style_var(StyleVar::ItemSpacing([0.0, 0.0]));
 
         let toolbox_w = 80.0;
 
@@ -133,31 +132,30 @@ impl Gui {
         ];
 
         Window::new("Toolbox")
-            .size_constraints([toolbox_w, 0.0], [toolbox_w, 1000.0])
-            .position([w - toolbox_w, h * 0.5 - 30.0], imgui::Condition::Always)
-            .scroll_bar(false)
+            .min_width(toolbox_w)
+            .fixed_pos([w - toolbox_w, h * 0.5 - 30.0])
+            .vscroll(false)
             .title_bar(true)
-            .movable(false)
             .collapsible(false)
             .resizable(false)
-            .always_auto_resize(true)
-            .build(ui, || {
+            .auto_sized()
+            .show(ui, |ui| {
                 let cur_tab = *uiworld.read::<Tab>();
 
                 for (name, tab, default_tool) in &tools {
-                    let _tok = ui.push_style_var(StyleVar::Alpha(
-                        if std::mem::discriminant(tab) == std::mem::discriminant(&cur_tab) {
-                            1.0
-                        } else {
-                            0.6
-                        },
-                    ));
-                    if imgui::ImageButton::new(
+                    let alpha = if std::mem::discriminant(tab) == std::mem::discriminant(&cur_tab) {
+                        1.0
+                    } else {
+                        0.6
+                    };
+                    if egui::ImageButton::new(
                         uiworld.read::<UiTextures>().get(*name),
                         [toolbox_w, 30.0],
                     )
-                    .frame_padding(0)
-                    .build(ui)
+                    .tint([1.0, 1.0, 1.0, alpha])
+                    .frame(false)
+                    .ui(ui)
+                    .clicked()
                     {
                         uiworld.insert::<Tool>(*default_tool);
                         uiworld.insert(*tab);
@@ -165,26 +163,21 @@ impl Gui {
                 }
             });
 
-        let spacing_left = ui.push_style_var(StyleVar::WindowPadding([4.0, 4.0]));
         if matches!(*uiworld.read::<Tab>(), Tab::Roadeditor) {
             let state = &mut *uiworld.write::<RoadEditorResource>();
             if let Some(ref mut v) = state.inspect {
                 let dirty = &mut state.dirty;
                 Window::new("Road Properties")
-                    .size([150.0, 200.0], imgui::Condition::Appearing)
-                    .position(
-                        [w - 150.0 - toolbox_w, h * 0.5 - 30.0],
-                        imgui::Condition::Appearing,
-                    )
-                    .scroll_bar(false)
+                    .fixed_size([150.0, 200.0])
+                    .fixed_pos([w - 150.0 - toolbox_w, h * 0.5 - 30.0])
+                    .vscroll(false)
                     .title_bar(true)
-                    .movable(false)
                     .collapsible(false)
                     .resizable(false)
-                    .build(ui, || {
-                        ui.text("Light policy");
+                    .show(ui, |ui| {
+                        ui.label("Light policy");
                         *dirty |= <LightPolicy as InspectRenderDefault<LightPolicy>>::render_mut(
-                            &mut [&mut v.light_policy],
+                            &mut v.light_policy,
                             "",
                             ui,
                             &InspectArgsDefault {
@@ -193,10 +186,10 @@ impl Gui {
                                 ..Default::default()
                             },
                         );
-                        ui.new_line();
-                        ui.text("Turn policy");
+                        ui.add_space(10.0);
+                        ui.label("Turn policy");
                         *dirty |= <TurnPolicy as InspectRenderDefault<TurnPolicy>>::render_mut(
-                            &mut [&mut v.turn_policy],
+                            &mut v.turn_policy,
                             "Turn policy",
                             ui,
                             &InspectArgsDefault {
@@ -208,33 +201,26 @@ impl Gui {
                     });
             }
         }
-        spacing_left.pop();
 
         if matches!(*uiworld.read::<Tab>(), Tab::Train) {
             let rbw = 150.0;
             Window::new("Trains")
-                .size([rbw, 83.0], imgui::Condition::Appearing)
-                .position(
-                    [w - rbw - toolbox_w, h * 0.5 - 30.0],
-                    imgui::Condition::Appearing,
-                )
-                .scroll_bar(false)
+                .fixed_size([rbw, 83.0])
+                .fixed_pos([w - rbw - toolbox_w, h * 0.5 - 30.0])
+                .hscroll(false)
                 .title_bar(true)
-                .movable(false)
                 .collapsible(false)
                 .resizable(false)
-                .build(ui, || {
-                    let _tok = ui.push_style_var(StyleVar::Alpha(
-                        if *uiworld.read::<Tool>() == Tool::Train {
-                            1.0
-                        } else {
-                            0.6
-                        },
-                    ));
-                    if ui.button_with_size("Add train", [rbw, 30.0]) {
+                .build(ui, |ui: &mut Ui| {
+                    ui.style_mut().spacing.interact_size = [rbw, 30.0].into();
+
+                    let addtrain = RichText::new("Add Train");
+                    if *uiworld.read::<Tool>() == Tool::Train {
+                        addtrain.strong();
+                    };
+                    if ui.button(addtrain).clicked() {
                         *uiworld.write::<Tool>() = Tool::Train;
                     }
-                    drop(_tok);
 
                     /*
                     if ui.button_with_size("Trainstation", [rbw, 30.0]) {
@@ -258,14 +244,11 @@ impl Gui {
                         });
                     }*/
 
-                    let _tok = ui.push_style_var(StyleVar::Alpha(
-                        if *uiworld.read::<Tool>() == Tool::SpecialBuilding {
-                            1.0
-                        } else {
-                            0.6
-                        },
-                    ));
-                    if ui.button_with_size("Freight station", [rbw, 30.0]) {
+                    let freightstation = RichText::new("Freight station");
+                    if *uiworld.read::<Tool>() == Tool::SpecialBuilding {
+                        freightstation.strong();
+                    };
+                    if ui.button(freightstation) {
                         *uiworld.write::<Tool>() = Tool::SpecialBuilding;
 
                         uiworld.write::<SpecialBuildingResource>().opt = Some(SpecialBuildKind {
@@ -308,29 +291,24 @@ impl Gui {
         if matches!(*uiworld.read::<Tab>(), Tab::Roadbuild | Tab::Roadcurved) {
             let rbw = 220.0;
             Window::new("Road Properties")
-                .size([rbw, 380.0], imgui::Condition::Appearing)
-                .position(
-                    [w - rbw - toolbox_w, h * 0.5 - 30.0],
-                    imgui::Condition::Appearing,
-                )
+                .fixed_size([rbw, 380.0])
+                .fixed_pos([w - rbw - toolbox_w, h * 0.5 - 30.0])
                 .title_bar(true)
-                .movable(false)
                 .collapsible(false)
                 .resizable(false)
-                .build(ui, || {
+                .show(ui, |ui| {
                     let mut roadbuild = uiworld.write::<RoadBuildResource>();
-                    ui.checkbox("snap to grid", &mut roadbuild.snap_to_grid);
-                    if ui.button_with_size("zero ", [40.0, 23.0]) {
-                        roadbuild.height_offset = 0.0;
-                    }
-                    ui.same_line_with_spacing(0.0, 10.0);
-                    let tok = ui.push_item_width(50.0);
-                    imgui::Drag::new("height off")
-                        .range(0.0, 100.0)
-                        .speed(1.0)
-                        .display_format("%.0f")
-                        .build(ui, &mut roadbuild.height_offset);
-                    tok.pop(ui);
+                    ui.checkbox(&mut roadbuild.snap_to_grid, "snap to grid");
+                    ui.horizontal(|ui| {
+                        if ui.button("zero") {
+                            roadbuild.height_offset = 0.0;
+                        }
+                        egui::DragValue::new(&mut roadbuild.height_offset)
+                            .clamp_range(0.0..=100.0)
+                            .speed(1.0)
+                            .ui(ui);
+                        ui.label("height off");
+                    });
                     let pat = &mut roadbuild.pattern_builder;
 
                     static BUILDERS: &[(&str, LanePatternBuilder)] = &[
@@ -386,19 +364,24 @@ impl Gui {
                         ),
                     ];
 
+                    let before = ui.style().spacing.interact_size;
+                    ui.style_mut().spacing.interact_size = [rbw, 30.0].into();
                     for (name, lpat) in BUILDERS {
-                        let _tok =
-                            ui.push_style_var(StyleVar::Alpha(if lpat == pat { 1.0 } else { 0.6 }));
-                        if ui.button_with_size(name, [rbw, 30.0]) {
+                        let text = RichText::new(name);
+                        if lpat == pat {
+                            text.strong();
+                        }
+                        if ui.button_with_size(text) {
                             *pat = *lpat;
                         }
                     }
+                    ui.style_mut().spacing.interact_size = before;
 
-                    ui.new_line();
+                    ui.add_space(10.0);
 
-                    if imgui::CollapsingHeader::new("custom").build(ui) {
+                    if egui::CollapsingHeader::new("custom").build(ui) {
                         <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
-                            &mut [pat],
+                            pat,
                             "Road shape",
                             ui,
                             &InspectArgsStruct {
@@ -424,62 +407,50 @@ impl Gui {
         if matches!(*uiworld.read::<Tab>(), Tab::Lotbrush) {
             let lbw = 130.0;
             Window::new("Lot Brush")
-                .size(
-                    [lbw, 50.0 + brushes.len() as f32 * 35.0],
-                    imgui::Condition::Appearing,
-                )
-                .position(
-                    [w - toolbox_w - lbw, h * 0.5 - 30.0],
-                    imgui::Condition::Appearing,
-                )
-                .scroll_bar(false)
+                .fixed_size([lbw, 50.0 + brushes.len() as f32 * 35.0])
+                .fixed_pos([w - toolbox_w - lbw, h * 0.5 - 30.0])
+                .hscroll(false)
                 .title_bar(true)
-                .movable(false)
                 .collapsible(false)
                 .resizable(false)
-                .build(ui, || {
+                .show(ui, |ui| {
                     let mut cur_brush = uiworld.write::<LotBrushResource>();
 
+                    ui.style_mut().spacing.interact_size = [lbw, 35.0].into();
                     for (name, brush) in &brushes {
-                        let tok = ui.push_style_var(StyleVar::Alpha(
-                            if std::mem::discriminant(brush)
-                                == std::mem::discriminant(&cur_brush.kind)
-                            {
-                                1.0
-                            } else {
-                                0.5
-                            },
-                        ));
-                        if ui.button_with_size(name, [lbw, 35.0]) {
+                        let t = RichText::new(name);
+                        if std::mem::discriminant(brush) == std::mem::discriminant(&cur_brush.kind)
+                        {
+                            t.strong();
+                        }
+                        if ui.button_with_size(t) {
                             cur_brush.kind = *brush;
                         }
-                        tok.pop();
                     }
 
-                    imgui::Drag::new("size")
-                        .range(10.0, 300.0)
-                        .display_format("%.0f")
-                        .build(ui, &mut cur_brush.radius);
+                    ui.horizontal(|ui| {
+                        egui::DragValue::new(&mut cur_brush.radius)
+                            .clamp_range(10.0..=300.0)
+                            .build(ui);
+                        ui.label("radius");
+                    })
                 });
         }
 
         if matches!(*uiworld.read::<Tab>(), Tab::Bulldozer) {
             let lbw = 80.0;
             Window::new("Bulldozer")
-                .size_constraints([lbw, 0.0], [lbw, 1000.0])
-                .position(
-                    [w - toolbox_w - lbw, h * 0.5 - 30.0],
-                    imgui::Condition::Appearing,
-                )
-                .scroll_bar(false)
+                .min_width(lbw)
+                .auto_sized()
+                .fixed_pos([w - toolbox_w - lbw, h * 0.5 - 30.0])
+                .hscroll(false)
                 .title_bar(true)
-                .movable(false)
                 .collapsible(false)
                 .resizable(false)
-                .build(ui, || {
+                .show(ui, |ui| {
                     let mut state = uiworld.write::<BulldozerState>();
                     <BulldozerState as InspectRenderDefault<BulldozerState>>::render_mut(
-                        &mut [&mut *state],
+                        &mut *state,
                         "Bulldozer",
                         ui,
                         &InspectArgsDefault {
@@ -499,34 +470,28 @@ impl Gui {
 
         if matches!(*uiworld.read::<Tab>(), Tab::Roadbuilding) {
             Window::new("Buildings")
-                .size_constraints([building_select_w, 0.0], [building_select_w, h * 0.5])
-                .position(
-                    [w - toolbox_w - building_select_w, h * 0.5 - 30.0],
-                    imgui::Condition::Appearing,
-                )
+                .min_width(building_select_w)
+                .default_height(500.0.min(h * 0.5) as f32)
+                .vscroll(true)
+                .fixed_pos([w - toolbox_w - building_select_w, h * 0.5 - 30.0])
                 .title_bar(true)
-                .movable(false)
                 .collapsible(false)
                 .resizable(false)
-                .build(ui, || {
+                .show(ui, |ui| {
                     let mut cur_build = uiworld.write::<SpecialBuildingResource>();
 
                     let mut picked_descr = None;
+                    ui.style_mut().spacing.interact_size = [building_select_w - 5.0, 35.0].into();
+
                     for descr in gbuildings {
                         let cur_kind = cur_build.opt.as_ref().map(|x| &*x.asset).unwrap_or("");
 
-                        let tok = ui.push_style_var(StyleVar::Alpha(
-                            if descr.asset_location == cur_kind {
-                                picked_descr = Some(descr);
-                                1.0
-                            } else {
-                                0.5
-                            },
-                        ));
-                        const SCROLLBAR_W: f32 = 10.0;
-                        if ui.button_with_size(&descr.name, [building_select_w - SCROLLBAR_W, 35.0])
-                            || cur_build.opt.is_none()
-                        {
+                        let name = RichText::new(&descr.name);
+                        if descr.asset_location == cur_kind {
+                            picked_descr = Some(descr);
+                            name.strong();
+                        };
+                        if ui.button(name).clicked() || cur_build.opt.is_none() {
                             let bkind = BuildingKind::GoodsCompany(descr.id);
                             let bgen = descr.bgen;
                             cur_build.opt = Some(SpecialBuildKind {
@@ -544,48 +509,43 @@ impl Gui {
                                 asset: descr.asset_location.to_string(),
                             });
                         }
-                        tok.pop();
                     }
 
                     let bdescrpt_w = 180.0;
 
                     if let Some(descr) = picked_descr {
-                        let _tok1 = ui.push_style_var(StyleVar::WindowPadding([5.0, 5.0]));
-                        let _tok2 = ui.push_style_var(StyleVar::ItemSpacing([0.0, 3.0]));
+                        //let _tok1 = ui.push_style_var(StyleVar::WindowPadding([5.0, 5.0]));
+                        //let _tok2 = ui.push_style_var(StyleVar::ItemSpacing([0.0, 3.0]));
                         Window::new("Building description")
-                            .size_constraints([bdescrpt_w, 10.0], [bdescrpt_w, 10000.0])
-                            .always_auto_resize(true)
-                            .position(
-                                [
-                                    w - toolbox_w - building_select_w - bdescrpt_w,
-                                    h * 0.5 - 30.0,
-                                ],
-                                imgui::Condition::Appearing,
-                            )
-                            .scroll_bar(false)
+                            .default_width(bdescrpt_w)
+                            .auto_sized()
+                            .fixed_pos([
+                                w - toolbox_w - building_select_w - bdescrpt_w,
+                                h * 0.5 - 30.0,
+                            ])
+                            .hscroll(false)
                             .title_bar(true)
-                            .movable(false)
                             .collapsible(false)
                             .resizable(false)
-                            .build(ui, || {
-                                ui.text(format!("workers: {}", descr.n_workers));
-                                ui.new_line();
+                            .show(ui.ctx(), |ui| {
+                                ui.label(format!("workers: {}", descr.n_workers));
+                                ui.add_space(10.0);
                                 if !descr.recipe.consumption.is_empty() {
-                                    ui.text("consumption:");
+                                    ui.label("consumption:");
                                     for (kind, n) in &descr.recipe.consumption {
-                                        ui.text(format!("- {} x{}", &iregistry[*kind].label, n));
+                                        ui.label(format!("- {} x{}", &iregistry[*kind].label, n));
                                     }
-                                    ui.new_line();
+                                    ui.add_space(10.0);
                                 }
                                 if !descr.recipe.production.is_empty() {
-                                    ui.text("production:");
+                                    ui.label("production:");
                                     for (kind, n) in &descr.recipe.production {
-                                        ui.text(format!("- {} x{}", &iregistry[*kind].label, n));
+                                        ui.label(format!("- {} x{}", &iregistry[*kind].label, n));
                                     }
-                                    ui.new_line();
+                                    ui.add_space(10.0);
                                 }
-                                ui.text(format!("time: {}s", descr.recipe.complexity));
-                                ui.text(format!(
+                                ui.label(format!("time: {}s", descr.recipe.complexity));
+                                ui.label(format!(
                                     "storage multiplier: {}",
                                     descr.recipe.storage_multiplier
                                 ));
@@ -595,14 +555,14 @@ impl Gui {
         }
     }
 
-    pub(crate) fn inspector(ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         let mut inspected = *uiworld.read::<InspectedEntity>();
         let e = unwrap_or!(inspected.e, return);
 
         let mut is_open = true;
         Window::new("Inspect")
-            .size([300.0, 300.0], imgui::Condition::Appearing)
-            .position([30.0, 160.0], imgui::Condition::Appearing)
+            .size([300.0, 300.0], egui::Condition::Appearing)
+            .position([30.0, 160.0], egui::Condition::Appearing)
             .opened(&mut is_open)
             .build(ui, || {
                 let mut ins = crate::gui::inspect::InspectRenderer { entity: e };
@@ -615,7 +575,7 @@ impl Gui {
         *uiworld.write::<InspectedEntity>() = inspected;
     }
 
-    pub(crate) fn time_controls(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn time_controls(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         let time = goria.read::<GameTime>().daytime;
         let warp = &mut uiworld.write::<Settings>().time_warp;
         let depause_warp = &mut self.depause_warp;
@@ -636,21 +596,21 @@ impl Gui {
         let _tok1 = ui.push_style_var(StyleVar::WindowRounding(0.0));
         let _tok2 = ui.push_style_var(StyleVar::ItemSpacing([10.0, 7.0]));
         Window::new("Time controls")
-            .size([165.0, 55.0], imgui::Condition::Always)
-            .position([-1.0, h - 52.0], imgui::Condition::Always)
+            .size([165.0, 55.0], egui::Condition::Always)
+            .position([-1.0, h - 52.0], egui::Condition::Always)
             .no_decoration()
             .collapsible(false)
             .resizable(false)
             .build(ui, || {
-                ui.text(format!(" Day {}", time.day));
+                ui.label(format!(" Day {}", time.day));
 
                 ui.same_line_with_pos(115.0);
 
-                ui.text(format!("{:02}:{:02}", time.hour, time.second));
+                ui.label(format!("{:02}:{:02}", time.hour, time.second));
 
                 let red = ui.push_style_color(StyleColor::Header, [0.7, 0.2, 0.2, 0.5]);
 
-                if imgui::Selectable::new("   ||")
+                if egui::Selectable::new("   ||")
                     .size([29.0, 15.0])
                     .selected(*warp == 0)
                     .build(ui)
@@ -663,7 +623,7 @@ impl Gui {
 
                 ui.same_line();
 
-                if imgui::Selectable::new("  1x")
+                if egui::Selectable::new("  1x")
                     .size([27.0, 15.0])
                     .selected(*warp == 1)
                     .build(ui)
@@ -673,7 +633,7 @@ impl Gui {
 
                 ui.same_line();
 
-                if imgui::Selectable::new("  3x")
+                if egui::Selectable::new("  3x")
                     .size([27.0, 15.0])
                     .selected(*warp == 3)
                     .build(ui)
@@ -683,7 +643,7 @@ impl Gui {
 
                 ui.same_line();
 
-                if imgui::Selectable::new(" Max")
+                if egui::Selectable::new(" Max")
                     .size([33.0, 15.0])
                     .selected(*warp == 1000)
                     .build(ui)
@@ -693,7 +653,7 @@ impl Gui {
             });
     }
 
-    pub(crate) fn menu_bar(&mut self, ui: &Ui<'_>, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub(crate) fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         let _t = ui.push_style_var(StyleVar::ItemSpacing([3.0, 0.0]));
 
         ui.main_menu_bar(|| {
@@ -714,7 +674,7 @@ impl Gui {
             }
             drop(tok);
 
-            ui.text(format!("Money: {}", goria.read::<Government>().money));
+            ui.label(format!("Money: {}", goria.read::<Government>().money));
 
             let mut estate = uiworld.write::<ExitState>();
             let mut please_save = uiworld.please_save;
@@ -730,7 +690,7 @@ impl Gui {
                         .build(ui, || {
                             let _tok = ui.push_style_var(StyleVar::ItemSpacing([2.0, 5.0]));
                             if let ExitState::Saving = *estate {
-                                ui.text("Saving...");
+                                ui.label("Saving...");
                                 if !uiworld.please_save
                                     && !uiworld.saving_status.load(Ordering::SeqCst)
                                 {
@@ -778,7 +738,7 @@ impl Gui {
                         }
                     }
                     ExitState::Saving => {
-                        ui.text("Saving...");
+                        ui.label("Saving...");
                     }
                 }
             }

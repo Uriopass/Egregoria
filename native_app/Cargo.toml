@@ -14,14 +14,9 @@ geom          = { path = "../geom" }
 wgpu_engine   = { path = "../wgpu_engine" }
 common        = { path = "../common" }
 networking    = { path = "../networking", optional=true }
-imgui-inspect = { path = "../imgui-inspect" }
-imgui-inspect-derive = { path = "../imgui-inspect-derive" }
-imgui-wgpu    = { git = "https://github.com/Yatekii/imgui-wgpu-rs" }
-imgui-winit-support = { version = "0.8.2", default-features = false, features=["winit-26"] }
 flat_spatial  = "0.5.0"
 log           = { version = "0.4.11", features=["max_level_debug", "release_max_level_info"] }
 inline_tweak  = "1.0.6"
-imgui         = "0.8"
 hecs          = "0.9.0"
 resources     = "1.1.0"
 ordered-float = { version = "2.7.0", default-features = false }
@@ -30,16 +25,17 @@ oddio         = "0.5.0"
 cpal          = "0.13.5"
 lewton        = "0.10.2"
 slotmap       = { version = "1.0.2", default-features = false }
-winit         = "0.26.1"
+winit         = "0.27.2"
 paste         = "1.0.4"
 atomic_refcell = "0.1.6"
 rayon         = "1.5.3"
 profiling     = "1.0.1"
 include_dir   = "0.7.2"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies.imgui]
-version = "0.8"
-features = ["wasm"]
+egui-inspect = { path = "../egui-inspect" }
+egui-inspect-derive = { path = "../egui-inspect-derive" }
+egui = { version = "0.19.0", default-features = false }
+egui-winit = "0.19.0"
+egui-wgpu = "0.19.0"
 
 [features]
 default = []

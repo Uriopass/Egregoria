@@ -1,32 +1,20 @@
 use crate::uiworld::UiWorld;
 use common::Config;
 use egregoria::Egregoria;
-use imgui::{Condition, Ui};
-use imgui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use egui::Ui;
+use egui_inspect::{InspectArgsDefault, InspectRenderDefault};
 
-pub(crate) fn config(
-    window: imgui::Window<'_, &'static str>,
-    ui: &Ui<'_>,
-    _: &mut UiWorld,
-    _: &Egregoria,
-) {
-    window
-        .size([600.0, 500.0], Condition::Appearing)
-        .build(ui, || {
-            let mut config = (**common::config()).clone();
+pub(crate) fn config(window: egui::Window<'_>, ui: &mut Ui, _: &mut UiWorld, _: &Egregoria) {
+    window.default_size([600.0, 500.0]).build(ui, || {
+        let mut config = (**common::config()).clone();
 
-            let args = InspectArgsDefault {
-                header: Some(false),
-                indent_children: Some(false),
-                ..InspectArgsDefault::default()
-            };
-            if <Config as InspectRenderDefault<Config>>::render_mut(
-                &mut [&mut config],
-                "",
-                ui,
-                &args,
-            ) {
-                common::update_config(config);
-            }
-        });
+        let args = InspectArgsDefault {
+            header: Some(false),
+            indent_children: Some(false),
+            ..InspectArgsDefault::default()
+        };
+        if <Config as InspectRenderDefault<Config>>::render_mut(&mut config, "", ui, &args) {
+            common::update_config(config);
+        }
+    });
 }

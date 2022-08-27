@@ -14,8 +14,8 @@ use egregoria::map::{IntersectionID, Map, RoadSegmentKind, TraverseKind};
 use egregoria::pedestrians::Pedestrian;
 use egregoria::vehicles::trains::TrainReservations;
 use egregoria::vehicles::Vehicle;
+use egui::Ui;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
-use imgui::Ui;
 use wgpu_engine::Tesselator;
 
 #[derive(Default)]
@@ -63,8 +63,8 @@ impl Default for TestFieldProperties {
 }
 
 pub(crate) fn debug(
-    window: imgui::Window<'_, &'static str>,
-    ui: &Ui<'_>,
+    window: egui::Window<'_>,
+    ui: &mut Ui,
     uiworld: &mut UiWorld,
     goria: &Egregoria,
 ) {
@@ -132,11 +132,11 @@ pub(crate) fn debug(
         ui.separator();
         let mut state = uiworld.write::<TestFieldProperties>();
 
-        imgui::Drag::new("size")
+        egui::Drag::new("size")
             .range(2, 100)
             .build(ui, &mut state.size);
 
-        imgui::Drag::new("spacing")
+        egui::Drag::new("spacing")
             .range(30.0, 1000.0)
             .display_format("%.0f")
             .build(ui, &mut state.spacing);

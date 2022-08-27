@@ -1,7 +1,6 @@
 use crate::map::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
-use imgui_inspect::{imgui::Ui, InspectArgsDefault, InspectRenderDefault};
+use egui_inspect::{egui, egui::Ui, InspectArgsDefault, InspectRenderDefault};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LightPolicy {
@@ -100,20 +99,17 @@ impl LightPolicy {
 }
 
 impl InspectRenderDefault<LightPolicy> for LightPolicy {
-    fn render(_: &[&LightPolicy], _: &'static str, _: &Ui<'_>, _: &InspectArgsDefault) {
+    fn render(_: &LightPolicy, _: &'static str, _: &mut Ui, _: &InspectArgsDefault) {
         unimplemented!()
     }
 
     fn render_mut(
-        data: &mut [&mut LightPolicy],
+        data: &mut LightPolicy,
         label: &'static str,
-        ui: &Ui<'_>,
+        ui: &mut Ui,
         _: &InspectArgsDefault,
     ) -> bool {
-        if data.len() != 1 {
-            unimplemented!()
-        }
-        let p = unwrap_ret!(data.get_mut(0), false);
+        let p = data;
         let mut id = match p {
             LightPolicy::NoLights => 0,
             LightPolicy::StopSigns => 1,
@@ -121,34 +117,26 @@ impl InspectRenderDefault<LightPolicy> for LightPolicy {
             LightPolicy::Auto => 3,
         };
 
-        #[allow(clippy::indexing_slicing)]
-        let changed = ui.combo(
-            label,
-            &mut id,
-            &[
-                LightPolicy::NoLights,
-                LightPolicy::StopSigns,
-                LightPolicy::Lights,
-                LightPolicy::Auto,
-            ],
-            |x| {
-                Cow::Borrowed(match *x {
-                    LightPolicy::NoLights => "No lights",
-                    LightPolicy::StopSigns => "Stop signs",
-                    LightPolicy::Lights => "Lights",
-                    LightPolicy::Auto => "Auto",
-                })
-            },
-        );
+        let tostr = |x: LightPolicy| match x {
+            LightPolicy::NoLights => "No lights",
+            LightPolicy::StopSigns => "Stop signs",
+            LightPolicy::Lights => "Lights",
+            LightPolicy::Auto => "Auto",
+        };
 
+        let get = |i| match i {
+            0 => LightPolicy::NoLights,
+            1 => LightPolicy::StopSigns,
+            2 => LightPolicy::Lights,
+            3 => LightPolicy::Auto,
+            _ => unreachable!(),
+        };
+
+        let changed = egui::ComboBox::from_label(label)
+            .show_index(ui, &mut id, 4, |i| tostr(get(i)).to_string())
+            .changed();
         if changed {
-            match id {
-                0 => **p = LightPolicy::NoLights,
-                1 => **p = LightPolicy::StopSigns,
-                2 => **p = LightPolicy::Lights,
-                3 => **p = LightPolicy::Auto,
-                _ => unreachable!(),
-            }
+            *p = get(id);
         }
 
         changed
