@@ -26,6 +26,7 @@ use common::saveload::Encoder;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::utils::scheduler::SeqSchedule;
 use wgpu_engine::terrain::TerrainRender;
+use wgpu_engine::wgpu::PresentMode;
 
 const CSIZE: usize = egregoria::map::CHUNK_SIZE as usize;
 const CRESO: usize = egregoria::map::CHUNK_RESOLUTION as usize;
@@ -295,7 +296,11 @@ impl State {
             ctx.window.set_fullscreen(None);
         }
 
-        ctx.gfx.set_present_mode(settings.vsync.into());
+        ctx.gfx.set_present_mode(if settings.vsync {
+            PresentMode::AutoVsync
+        } else {
+            PresentMode::AutoNoVsync
+        });
         let params = ctx.gfx.render_params.value_mut();
         params.ssao_enabled = settings.ssao as i32;
         params.realistic_sky = settings.realistic_sky as i32;

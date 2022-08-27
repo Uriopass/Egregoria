@@ -101,7 +101,8 @@ impl Egregoria {
         if gen_terrain {
             info!("generating terrain..");
             let t = Instant::now();
-            let size = 50;
+            let size = if cfg!(debug_assertions) { 10 } else { 50 };
+
             goria.map_mut().terrain = Terrain::new(size, size);
             info!("took {}s", t.elapsed().as_secs_f32());
 

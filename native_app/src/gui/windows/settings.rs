@@ -46,7 +46,7 @@ pub(crate) struct Settings {
     pub(crate) camera_fov: f32,
 
     pub(crate) fullscreen: bool,
-    pub(crate) vsync: VSyncOptions,
+    pub(crate) vsync: bool,
     pub(crate) ssao: bool,
     pub(crate) shadows: ShadowQuality,
     pub(crate) realistic_sky: bool,
@@ -69,7 +69,7 @@ impl Default for Settings {
             effects_volume_percent: 100.0,
             ui_volume_percent: 100.0,
             fullscreen: false,
-            vsync: VSyncOptions::Enabled,
+            vsync: true,
             time_warp: 1,
             auto_save_every: AutoSaveEvery::FiveMinutes,
             ssao: true,
@@ -78,33 +78,6 @@ impl Default for Settings {
             realistic_sky: true,
             camera_fov: 60.0,
             terrain_grid: true,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Serialize, Deserialize)]
-pub(crate) enum VSyncOptions {
-    Disabled,
-    Enabled,
-    LowLatency,
-}
-
-impl From<VSyncOptions> for wgpu_engine::wgpu::PresentMode {
-    fn from(x: VSyncOptions) -> Self {
-        match x {
-            VSyncOptions::Disabled => wgpu_engine::wgpu::PresentMode::Immediate,
-            VSyncOptions::Enabled => wgpu_engine::wgpu::PresentMode::Fifo,
-            VSyncOptions::LowLatency => wgpu_engine::wgpu::PresentMode::Mailbox,
-        }
-    }
-}
-
-impl AsRef<str> for VSyncOptions {
-    fn as_ref(&self) -> &str {
-        match self {
-            VSyncOptions::Disabled => "No VSync",
-            VSyncOptions::Enabled => "VSync Enabled",
-            VSyncOptions::LowLatency => "Low Latency VSync",
         }
     }
 }
@@ -220,21 +193,7 @@ pub(crate) fn settings(
                 tok.end();
             }
 
-            if let Some(tok) = imgui::ComboBox::new("VSync")
-                .preview_value(settings.vsync.as_ref())
-                .begin(ui)
-            {
-                if imgui::Selectable::new("No VSync").build(ui) {
-                    settings.vsync = VSyncOptions::Disabled;
-                }
-                if imgui::Selectable::new("VSync Enabled").build(ui) {
-                    settings.vsync = VSyncOptions::Enabled;
-                }
-                if imgui::Selectable::new("Low latency VSync").build(ui) {
-                    settings.vsync = VSyncOptions::LowLatency;
-                }
-                tok.end();
-            }
+            ui.checkbox("VSync", &mut settings.vsync);
 
             ui.new_line();
             ui.text("Audio");

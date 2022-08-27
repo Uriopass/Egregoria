@@ -5,7 +5,7 @@ use crate::map::{
     ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, StraightRoadGen, Terrain,
 };
 use geom::OBB;
-use geom::{pseudo_angle, Circle, Intersect, Shape, Spline3, Vec2, Vec3};
+use geom::{Circle, Intersect, Shape, Spline3, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
@@ -667,7 +667,7 @@ impl Map {
             let mut last_angle = -f32::INFINITY;
             for &road in &inter.roads {
                 let road = self.roads.get(road).expect("road does not exist");
-                let ang = pseudo_angle(road.dir_from(inter.id));
+                let ang = geom::pseudo_angle(road.dir_from(inter.id));
                 assert!(ang > last_angle);
                 last_angle = ang;
             }
