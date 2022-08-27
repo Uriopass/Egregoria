@@ -1,8 +1,8 @@
 use crate::economy::Money;
 use common::saveload::Encoder;
+use common::FastMap;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
-use std::collections::HashMap;
 use std::ops::Index;
 
 #[derive(Serialize, Deserialize)]
@@ -26,7 +26,7 @@ debug_inspect_impl!(ItemID);
 #[derive(Default, Serialize, Deserialize)]
 pub struct ItemRegistry {
     items: SlotMap<ItemID, Item>,
-    item_names: HashMap<String, ItemID>,
+    item_names: FastMap<String, ItemID>,
 }
 
 impl Index<ItemID> for ItemRegistry {

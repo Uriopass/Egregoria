@@ -4,7 +4,7 @@ use flat_spatial::Grid;
 use geom::{vec2, Radians, Vec2, AABB};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::num::Wrapping;
 
 pub const CHUNK_SIZE: u32 = 1024;
@@ -40,7 +40,7 @@ pub type ChunkID = (u32, u32);
 
 #[derive(Clone)]
 pub struct Terrain {
-    pub chunks: HashMap<ChunkID, Chunk>,
+    pub chunks: BTreeMap<ChunkID, Chunk>,
     pub dirt_id: Wrapping<u32>,
     pub width: u32,
     pub height: u32,
