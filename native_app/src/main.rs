@@ -9,6 +9,9 @@ extern crate egregoria;
 extern crate core;
 
 #[macro_use]
+extern crate inline_tweak;
+
+#[macro_use]
 mod uiworld;
 
 mod audio;

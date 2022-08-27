@@ -3,18 +3,18 @@ use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::collections::BTreeMap;
 
-const HISTORY_SIZE: usize = 128;
+pub const HISTORY_SIZE: usize = 128;
 /// Tick to wait before the new bin
 /// Corresponds to 5s, 1m, 10m, 1h, 10h, 50h
 /// Which can be recovred from FREQ * HISTORY_SIZZ / TICK_RATE
-const LEVEL_FREQS: [u32; 6] = [2, 25, 250, 1500, 15000, 75000];
+pub const LEVEL_FREQS: [u32; 6] = [2, 25, 250, 1500, 15000, 75000];
 
 /// One history of one item at one frequency level
 /// The past_ring is controlled by a shared cursor for all items
 #[derive(Serialize, Deserialize)]
 pub struct ItemHistoryLevel {
     #[serde(with = "BigArray")]
-    past_ring: [u32; HISTORY_SIZE],
+    pub past_ring: [u32; HISTORY_SIZE],
 }
 
 impl Default for ItemHistoryLevel {
@@ -27,7 +27,7 @@ impl Default for ItemHistoryLevel {
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct ItemHistory {
-    pub levels: [ItemHistoryLevel; LEVEL_FREQS.len()],
+    levels: [ItemHistoryLevel; LEVEL_FREQS.len()],
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,6 +52,15 @@ impl ItemHistories {
                 .collect(),
             cursors: [0; LEVEL_FREQS.len()],
         }
+    }
+
+    pub fn iter_histories(
+        &self,
+        level: usize,
+    ) -> impl Iterator<Item = (ItemID, &ItemHistoryLevel)> {
+        self.m
+            .iter()
+            .filter_map(move |(id, history)| Some((*id, history.levels.get(level)?)))
     }
 
     pub fn handle_trade(&mut self, trade: &Trade) {
@@ -102,5 +111,15 @@ impl EcoStats {
             }
             self.internal_trade.handle_trade(trade);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::economy::HISTORY_SIZE;
+
+    #[test]
+    fn history_is_not_zero() {
+        assert!(HISTORY_SIZE > 0);
     }
 }
