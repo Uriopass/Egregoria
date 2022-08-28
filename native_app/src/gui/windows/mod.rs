@@ -81,11 +81,8 @@ impl GUIWindows {
             self.opened
                 .extend(std::iter::repeat(false).take(self.windows.len() - self.opened.len()))
         }
-        let h = ui.available_height();
         for (opened, w) in self.opened.iter_mut().zip(self.windows.iter()) {
-            //let tok = ui.push_style_var(StyleVar::Alpha(if *opened { 1.0 } else { 0.5 }));
-            *opened ^= ui.button(w.name).clicked();
-            //tok.pop();
+            *opened ^= ui.selectable_label(*opened, w.name).clicked();
         }
     }
 

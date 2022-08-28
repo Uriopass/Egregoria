@@ -1,5 +1,5 @@
 use crate::uiworld::UiWorld;
-use egregoria::economy::{EcoStats, ItemHistories, ItemRegistry, Market, LEVEL_FREQS};
+use egregoria::economy::{EcoStats, ItemHistories, LEVEL_FREQS};
 use egregoria::Egregoria;
 use egui::{Align2, Color32, Rect, Rounding, Stroke};
 use geom::{vec2, Color, Vec2};
@@ -17,8 +17,6 @@ pub(crate) fn economy(
 ) {
     uiw.check_present(|| EconomyState { curlevel: 0 });
     let mut state = uiw.write::<EconomyState>();
-    let market = goria.read::<Market>();
-    let registry = goria.read::<ItemRegistry>();
     let ecostats = goria.read::<EcoStats>();
     let [w, h]: [f32; 2] = ui.available_rect().size().into();
 
@@ -27,8 +25,6 @@ pub(crate) fn economy(
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .default_size([600.0, h * 0.6])
         .show(ui, move |ui| {
-            let inner = market.inner();
-
             egui::ComboBox::from_label("Level").show_index(
                 ui,
                 &mut state.curlevel,
@@ -118,62 +114,5 @@ pub(crate) fn economy(
             );
 
             ui.add_space(tweak!(210.0));
-
-            ui.label("hi");
-
-            /*
-            ui.columns(5, |ui| {
-                ui.text("Commodity");
-                ui.text("Satisfaction");
-                ui.text("Offer");
-                ui.text("Demand");
-                ui.text("Capital");
-            });
-
-            ui.columns(5, "Economy", false);
-
-            for item in registry.iter() {
-                let market = unwrap_or!(inner.get(&item.id), {
-                    log::warn!("market does not exist for commodity {}", &item.name);
-                    continue;
-                });
-
-                let buy = market.buy_orders();
-                let sell = market.sell_orders();
-                let capital = market.capital_map();
-                let tot_capital = capital.values().sum::<i32>();
-                let offer = sell.values().map(|x| x.1).sum::<i32>();
-                let demand = buy.values().map(|x| x.1).sum::<i32>();
-
-                if tot_capital == 0 && offer == 0 && demand == 0 {
-                    continue;
-                }
-
-                let diff = offer - demand;
-
-                ui.text(&item.label);
-                ui.next_column();
-
-                if diff == 0 {
-                    ui.text_colored([0.8, 0.4, 0.2, 1.0], "±0");
-                }
-                if diff > 0 {
-                    ui.text_colored([0.0, 1.0, 0.0, 1.0], format!("+{}", diff));
-                }
-                if diff < 0 {
-                    ui.text_colored([1.0, 0.0, 0.0, 1.0], format!("{}", diff));
-                }
-                ui.next_column();
-
-                ui.text(format!("{}", offer));
-                ui.next_column();
-
-                ui.text(format!("{}", demand));
-                ui.next_column();
-
-                ui.text(format!("{}", tot_capital));
-                ui.next_column();
-            }
-            */
         });
 }

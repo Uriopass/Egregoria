@@ -17,7 +17,7 @@ use egregoria::map::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use egui::{Align2, Color32, Context, Frame, RichText, Widget, Window};
+use egui::{Align2, Color32, Context, RichText, Widget, Window};
 use egui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
 };
@@ -667,8 +667,6 @@ impl Gui {
             egui::menu::bar(ui, |ui| {
                 self.windows.menu(ui);
 
-                let [w, h]: [f32; 2] = ui.available_size().into();
-
                 let mut name = "Save";
                 let mut enabled = true;
                 if uiworld.saving_status.load(Ordering::SeqCst) {
@@ -721,32 +719,22 @@ impl Gui {
                     }
                 }
 
-                {
-                    let off = if matches!(*estate, ExitState::ExitAsk) {
-                        110.0
-                    } else {
-                        65.0
-                    };
-                    //let _red = ui.push_style_color(StyleColor::Button, [0.7, 0.3, 0.3, 1.0]);
-                    //ui.same_line_with_pos(w - off);
-
-                    match *estate {
-                        ExitState::NoExit => {
-                            if ui.button("Exit").clicked() {
-                                *estate = ExitState::ExitAsk;
+                match *estate {
+                    ExitState::NoExit => {
+                        if ui.button("Exit").clicked() {
+                            *estate = ExitState::ExitAsk;
+                        }
+                    }
+                    ExitState::ExitAsk => {
+                        if ui.button("Save and exit").clicked() {
+                            if let ExitState::ExitAsk = *estate {
+                                please_save = true;
+                                *estate = ExitState::Saving;
                             }
                         }
-                        ExitState::ExitAsk => {
-                            if ui.button("Save and exit").clicked() {
-                                if let ExitState::ExitAsk = *estate {
-                                    please_save = true;
-                                    *estate = ExitState::Saving;
-                                }
-                            }
-                        }
-                        ExitState::Saving => {
-                            ui.label("Saving...");
-                        }
+                    }
+                    ExitState::Saving => {
+                        ui.label("Saving...");
                     }
                 }
                 drop(estate);

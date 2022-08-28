@@ -2,7 +2,6 @@ use egui::{FontData, FontDefinitions, TextureId};
 use egui_wgpu::renderer;
 use egui_wgpu::renderer::ScreenDescriptor;
 use egui_wgpu::wgpu::TextureFormat;
-use std::time::Instant;
 use wgpu_engine::{GfxContext, GuiRenderContext};
 use winit::event_loop::EventLoopWindowTarget;
 use winit::window::Window;
@@ -10,7 +9,6 @@ use winit::window::Window;
 pub(crate) struct EguiWrapper {
     pub(crate) egui: egui::Context,
     pub(crate) renderer: renderer::RenderPass,
-    last_frame: Instant,
     platform: egui_winit::State,
     pub(crate) last_mouse_captured: bool,
     pub(crate) last_kb_captured: bool,
@@ -44,7 +42,6 @@ impl EguiWrapper {
         Self {
             egui,
             renderer,
-            last_frame: Instant::now(),
             last_mouse_captured: false,
             last_kb_captured: false,
             platform,
@@ -62,10 +59,6 @@ impl EguiWrapper {
         for id in self.to_remove.drain(..) {
             self.renderer.free_texture(&id);
         }
-        let now = Instant::now();
-        let delta = now - self.last_frame;
-        let delta_s = delta.as_secs() as f32 + delta.subsec_nanos() as f32 / 1_000_000_000.0;
-        self.last_frame = now;
 
         let rinput = self.platform.take_egui_input(window);
 

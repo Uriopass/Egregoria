@@ -929,21 +929,20 @@ impl SSAOPipeline {
         })];
 
         gfx.register_pipeline::<SSAOPipeline>(
-            &["blit_linear", "ssao"],
+            &["ssao"],
             Box::new(move |m, gfx| {
-                let blit_linear = &m[0];
-                let ssao_frag = &m[1];
+                let ssao = &m[0];
 
                 let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
                     label: None,
                     layout: Some(&render_pipeline_layout),
                     vertex: wgpu::VertexState {
-                        module: blit_linear,
+                        module: ssao,
                         entry_point: "vert",
                         buffers: &[UvVertex::desc()],
                     },
                     fragment: Some(wgpu::FragmentState {
-                        module: ssao_frag,
+                        module: ssao,
                         entry_point: "frag",
                         targets: &color_states,
                     }),
