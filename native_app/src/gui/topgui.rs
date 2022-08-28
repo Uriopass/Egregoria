@@ -17,7 +17,7 @@ use egregoria::map::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use egui::{Align2, Color32, Context, Frame, RichText, Style, Widget, Window};
+use egui::{Align2, Context, Frame, RichText, Style, Widget, Window};
 use egui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
 };
