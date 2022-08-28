@@ -141,7 +141,7 @@ pub(crate) fn debug(
 
         ui.horizontal(|ui| {
             egui::DragValue::new(&mut state.spacing)
-                .clamp_range(30.0..=1000.0 as f32)
+                .clamp_range(30.0..=1000.0f32)
                 .ui(ui);
             ui.label("spacing");
         });

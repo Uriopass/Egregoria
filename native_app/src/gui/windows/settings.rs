@@ -172,7 +172,7 @@ pub(crate) fn settings(
             }
             ui.horizontal(|ui| {
                 egui::DragValue::new(&mut settings.camera_fov)
-                    .clamp_range(1.0..=179.0 as f32)
+                    .clamp_range(1.0..=179.0f32)
                     .speed(0.1)
                     .ui(ui);
                 ui.label("Camera Field of View (FOV)");

@@ -2,6 +2,7 @@ use crate::context::Context;
 use crate::gui::windows::settings::Settings;
 use crate::inputmap::{InputAction, InputMap};
 use common::saveload::Encoder;
+use egregoria::map::CHUNK_SIZE;
 use geom::{vec4, Camera, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
 
@@ -211,6 +212,9 @@ impl CameraHandler3D {
         }
 
         self.camera.fovy = settings.camera_fov.clamp(1.0, 179.0);
+
+        self.camera.pos.x = self.camera.pos.x.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
+        self.camera.pos.y = self.camera.pos.y.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
 
         self.camera.pos.z = height(self.camera.pos.xy()).unwrap_or(self.camera.pos.z);
         self.update(ctx);
