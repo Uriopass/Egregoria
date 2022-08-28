@@ -17,7 +17,7 @@ use egregoria::map::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use egui::{Align2, Color32, Context, RichText, Style, Widget, Window};
+use egui::{Align2, Color32, Context, Frame, RichText, Style, Widget, Window};
 use egui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
 };
@@ -123,7 +123,7 @@ impl Gui {
         //        let _tok3 = ui.push_style_var(StyleVar::WindowRounding(0.0));
         //        let _tok4 = ui.push_style_var(StyleVar::ItemSpacing([0.0, 0.0]));
 
-        let toolbox_w = 80.0;
+        let toolbox_w = 85.0;
 
         let tools = [
             (UiTex::Road, Tab::Roadbuild, Tool::RoadbuildStraight),
@@ -137,9 +137,11 @@ impl Gui {
 
         Window::new("Toolbox")
             .min_width(toolbox_w)
-            .fixed_pos([w - toolbox_w, h * 0.5 - 30.0])
+            .fixed_pos([w, h * 0.5])
             .vscroll(false)
-            .title_bar(true)
+            .frame(Frame::window(&ui.style()).rounding(0.0))
+            .anchor(Align2::RIGHT_CENTER, [0.0, 0.0])
+            .title_bar(false)
             .collapsible(false)
             .resizable(false)
             .auto_sized()
@@ -147,21 +149,11 @@ impl Gui {
                 let cur_tab = *uiworld.read::<Tab>();
 
                 for (name, tab, default_tool) in &tools {
-                    let alpha = if std::mem::discriminant(tab) == std::mem::discriminant(&cur_tab) {
-                        1.0
-                    } else {
-                        0.6
-                    };
                     if egui::ImageButton::new(
                         uiworld.read::<UiTextures>().get(*name),
                         [toolbox_w, 30.0],
                     )
-                    .tint(Color32::from_rgba_unmultiplied(
-                        255,
-                        255,
-                        255,
-                        (alpha * 255.0) as u8,
-                    ))
+                    .selected(std::mem::discriminant(tab) == std::mem::discriminant(&cur_tab))
                     .frame(false)
                     .ui(ui)
                     .clicked()
