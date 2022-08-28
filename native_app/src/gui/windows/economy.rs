@@ -1,7 +1,7 @@
 use crate::uiworld::UiWorld;
 use egregoria::economy::{EcoStats, ItemHistories, ItemRegistry, Market, LEVEL_FREQS};
 use egregoria::Egregoria;
-use egui::Ui;
+use egui::{Align2, Color32, Rect, Rounding, Stroke};
 use geom::{vec2, Color, Vec2};
 use slotmap::Key;
 
@@ -9,65 +9,66 @@ struct EconomyState {
     pub curlevel: usize,
 }
 
-pub(crate) fn economy(window: egui::Window<'_>, ui: &mut Ui, uiw: &mut UiWorld, goria: &Egregoria) {
+pub(crate) fn economy(
+    window: egui::Window<'_>,
+    ui: &egui::Context,
+    uiw: &mut UiWorld,
+    goria: &Egregoria,
+) {
     uiw.check_present(|| EconomyState { curlevel: 0 });
     let mut state = uiw.write::<EconomyState>();
     let market = goria.read::<Market>();
     let registry = goria.read::<ItemRegistry>();
     let ecostats = goria.read::<EcoStats>();
-    let [w, h] = ui.io().display_size;
+    let [w, h]: [f32; 2] = ui.available_rect().size().into();
 
     window
-        .position([w * 0.5, h * 0.5], Condition::Appearing)
-        .position_pivot([0.5, 0.5])
-        .size([600.0, h * 0.6], Condition::Appearing)
-        .build(ui, || {
+        .default_pos([w * 0.5, h * 0.5])
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .default_size([600.0, h * 0.6])
+        .show(ui, move |ui| {
             let inner = market.inner();
 
-            let r = ui.get_window_draw_list();
-            let [wx, wy] = ui.window_pos();
-            let [wh, _] = ui.window_size();
-            let off = vec2(wx, wy);
+            egui::ComboBox::from_label("Level").show_index(
+                ui,
+                &mut state.curlevel,
+                LEVEL_FREQS.len(),
+                |i| LEVEL_FREQS[i].to_string(),
+            );
+
+            let r = ui.painter();
+            let [wh, _]: [f32; 2] = ui.available_size().into();
 
             let draw_line = |start: Vec2, end: Vec2, c: Color| {
-                r.add_line(
-                    (off + start).into(),
-                    (off + end).into(),
-                    ImColor32::from_rgba(
-                        (c.r * 255.0) as u8,
-                        (c.g * 255.0) as u8,
-                        (c.b * 255.0) as u8,
-                        (c.a * 255.0) as u8,
+                r.line_segment(
+                    [[start.x, start.y].into(), [end.x, end.y].into()],
+                    Stroke::new(
+                        1.0,
+                        Color32::from_rgba_unmultiplied(
+                            (c.r * 255.0) as u8,
+                            (c.g * 255.0) as u8,
+                            (c.b * 255.0) as u8,
+                            (c.a * 255.0) as u8,
+                        ),
                     ),
-                )
-                .build();
+                );
             };
 
             let draw_rect = |pos: Vec2, size: Vec2, c: Color| {
-                r.add_rect(
-                    (off + pos).into(),
-                    (off + pos + size).into(),
-                    ImColor32::from_rgba(
-                        (c.r * 255.0) as u8,
-                        (c.g * 255.0) as u8,
-                        (c.b * 255.0) as u8,
-                        (c.a * 255.0) as u8,
+                r.rect_stroke(
+                    Rect::from_min_size([pos.x, pos.y].into(), [size.x, size.y].into()),
+                    Rounding::none(),
+                    Stroke::new(
+                        1.0,
+                        Color32::from_rgba_unmultiplied(
+                            (c.r * 255.0) as u8,
+                            (c.g * 255.0) as u8,
+                            (c.b * 255.0) as u8,
+                            (c.a * 255.0) as u8,
+                        ),
                     ),
                 )
-                .build();
             };
-
-            if let Some(level) = egui::ComboBox::new("Level")
-                .preview_value(format!("{}", state.curlevel))
-                .begin(ui)
-            {
-                for (i, l) in LEVEL_FREQS.iter().enumerate() {
-                    if egui::Selectable::new(format!("{}", l)).build(ui) {
-                        state.curlevel = i;
-                    }
-                }
-                level.end();
-            }
 
             let render_history = |history: &ItemHistories, offx, offy, width, height| {
                 const PADDING: f32 = 5.0;
@@ -116,20 +117,20 @@ pub(crate) fn economy(window: egui::Window<'_>, ui: &mut Ui, uiw: &mut UiWorld, 
                 tweak!(95.0),
             );
 
-            ui.dummy([0.0, tweak!(210.0)]);
+            ui.add_space(tweak!(210.0));
+
+            ui.label("hi");
+
+            /*
+            ui.columns(5, |ui| {
+                ui.text("Commodity");
+                ui.text("Satisfaction");
+                ui.text("Offer");
+                ui.text("Demand");
+                ui.text("Capital");
+            });
 
             ui.columns(5, "Economy", false);
-
-            ui.text("Commodity");
-            ui.next_column();
-            ui.text("Satisfaction");
-            ui.next_column();
-            ui.text("Offer");
-            ui.next_column();
-            ui.text("Demand");
-            ui.next_column();
-            ui.text("Capital");
-            ui.next_column();
 
             for item in registry.iter() {
                 let market = unwrap_or!(inner.get(&item.id), {
@@ -173,5 +174,6 @@ pub(crate) fn economy(window: egui::Window<'_>, ui: &mut Ui, uiw: &mut UiWorld, 
                 ui.text(format!("{}", tot_capital));
                 ui.next_column();
             }
+            */
         });
 }

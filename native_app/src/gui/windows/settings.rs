@@ -2,7 +2,7 @@ use crate::inputmap::InputMap;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
-use egui::Ui;
+use egui::{Align2, Context, Widget};
 use std::time::Duration;
 
 const SETTINGS_SAVE_NAME: &str = "settings";
@@ -22,6 +22,18 @@ impl AsRef<str> for ShadowQuality {
             ShadowQuality::Low => "Low",
             ShadowQuality::Medium => "Medium",
             ShadowQuality::High => "High",
+        }
+    }
+}
+
+impl From<u8> for ShadowQuality {
+    fn from(v: u8) -> Self {
+        match v {
+            0 => ShadowQuality::NoShadows,
+            1 => ShadowQuality::Low,
+            2 => ShadowQuality::Medium,
+            3 => ShadowQuality::High,
+            _ => ShadowQuality::High,
         }
     }
 }
@@ -83,6 +95,7 @@ impl Default for Settings {
 }
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
+#[repr(u8)]
 pub(crate) enum AutoSaveEvery {
     Never,
     OneMinute,
@@ -99,6 +112,17 @@ impl From<AutoSaveEvery> for Option<Duration> {
     }
 }
 
+impl From<u8> for AutoSaveEvery {
+    fn from(v: u8) -> Self {
+        match v {
+            0 => Self::Never,
+            1 => Self::OneMinute,
+            2 => Self::FiveMinutes,
+            _ => Self::Never,
+        }
+    }
+}
+
 impl AsRef<str> for AutoSaveEvery {
     fn as_ref(&self) -> &str {
         match self {
@@ -111,122 +135,99 @@ impl AsRef<str> for AutoSaveEvery {
 
 pub(crate) fn settings(
     window: egui::Window<'_>,
-    ui: &mut Ui,
+    ui: &Context,
     uiworld: &mut UiWorld,
     _: &Egregoria,
 ) {
     let mut settings = uiworld.write::<Settings>();
-    let [w, h] = ui.io().display_size;
+    let [w, h]: [f32; 2] = ui.available_rect().size().into();
 
     window
-        .position([w * 0.5, h * 0.5], Condition::Appearing)
-        .size([600.0, 600.0], Condition::Appearing)
-        .position_pivot([0.5, 0.5])
-        .movable(true)
+        .default_pos([w * 0.5, h * 0.5])
+        .default_size([600.0, 600.0])
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .collapsible(false)
-        .build(ui, || {
-            ui.text("Gameplay");
-            let tok = egui::ComboBox::new("Autosave")
-                .preview_value(settings.auto_save_every.as_ref())
-                .begin(ui);
-            if let Some(tok) = tok {
-                if egui::Selectable::new("Never").build(ui) {
-                    settings.auto_save_every = AutoSaveEvery::Never;
-                }
-                if egui::Selectable::new("Minute").build(ui) {
-                    settings.auto_save_every = AutoSaveEvery::OneMinute;
-                }
-                if egui::Selectable::new("Five Minutes").build(ui) {
-                    settings.auto_save_every = AutoSaveEvery::FiveMinutes;
-                }
-                tok.end();
-            }
+        .show(ui, |ui| {
+            ui.label("Gameplay");
 
-            ui.new_line();
-            ui.text("Input");
+            let mut id = settings.auto_save_every as u8 as usize;
+            egui::ComboBox::from_label("Autosave").show_index(ui, &mut id, 3, |i| {
+                AutoSaveEvery::from(i as u8).as_ref().to_string()
+            });
+            settings.auto_save_every = AutoSaveEvery::from(id as u8);
+
+            ui.label("Input");
 
             ui.checkbox(
-                "Border screen camera movement",
                 &mut settings.camera_border_move,
+                "Border screen camera movement",
             );
-            ui.checkbox("Camera smooth", &mut settings.camera_smooth);
+            ui.checkbox(&mut settings.camera_smooth, "Camera smooth");
 
             if settings.camera_smooth {
-                egui::Drag::new("Camera smoothing tightness")
-                    .display_format("%.2f")
-                    .speed(0.01)
-                    .build(ui, &mut settings.camera_smooth_tightness);
+                ui.horizontal(|ui| {
+                    ui.add(egui::DragValue::new(&mut settings.camera_smooth_tightness).speed(0.01));
+                    ui.label("Camera smoothing tightness");
+                });
             }
-            egui::Drag::new("Camera Field of View (FOV)")
-                .display_format("%.1f")
-                .range(1.0, 179.0)
-                .speed(0.1)
-                .build(ui, &mut settings.camera_fov);
+            ui.horizontal(|ui| {
+                egui::DragValue::new(&mut settings.camera_fov)
+                    .clamp_range(1.0..=179.0 as f32)
+                    .speed(0.1)
+                    .ui(ui);
+                ui.label("Camera Field of View (FOV)");
+            });
 
-            ui.new_line();
+            let fps = 60.0;
 
-            let fps = ui.io().framerate;
+            ui.separator();
+            ui.label(format!("Graphics - {:.1}FPS", fps));
 
-            ui.text(format!("Graphics - {:.1}FPS", fps));
+            ui.checkbox(&mut settings.fullscreen, "Fullscreen");
+            ui.checkbox(&mut settings.realistic_sky, "Realistic sky");
+            ui.checkbox(&mut settings.terrain_grid, "Terrain Grid");
+            ui.checkbox(&mut settings.ssao, "Ambient Occlusion (SSAO)");
 
-            ui.checkbox("Fullscreen", &mut settings.fullscreen);
-            ui.checkbox("Realistic sky", &mut settings.realistic_sky);
-            ui.checkbox("Terrain Grid", &mut settings.terrain_grid);
-            ui.checkbox("Ambient Occlusion (SSAO)", &mut settings.ssao);
+            // shadow quality combobox
+            let mut id = settings.shadows as u8 as usize;
+            egui::ComboBox::from_label("Shadow Quality").show_index(ui, &mut id, 3, |i| {
+                ShadowQuality::from(i as u8).as_ref().to_string()
+            });
+            settings.shadows = ShadowQuality::from(id as u8);
 
-            let tok = egui::ComboBox::new("Shadow quality")
-                .preview_value(settings.shadows.as_ref())
-                .begin(ui);
-            if let Some(tok) = tok {
-                if egui::Selectable::new("No Shadows").build(ui) {
-                    settings.shadows = ShadowQuality::NoShadows;
-                }
-                if egui::Selectable::new("Low").build(ui) {
-                    settings.shadows = ShadowQuality::Low;
-                }
-                if egui::Selectable::new("Medium").build(ui) {
-                    settings.shadows = ShadowQuality::Medium;
-                }
-                if egui::Selectable::new("High").build(ui) {
-                    settings.shadows = ShadowQuality::High;
-                }
-                tok.end();
-            }
+            ui.checkbox(&mut settings.vsync, "VSync");
 
-            ui.checkbox("VSync", &mut settings.vsync);
+            ui.separator();
+            ui.label("Audio");
 
-            ui.new_line();
-            ui.text("Audio");
+            ui.add(
+                egui::Slider::new(&mut settings.music_volume_percent, 0.0..=100.0)
+                    .text("Music volume"),
+            );
+            ui.add(
+                egui::Slider::new(&mut settings.effects_volume_percent, 0.0..=100.0)
+                    .text("Effects volume"),
+            );
+            ui.add(
+                egui::Slider::new(&mut settings.ui_volume_percent, 0.0..=100.0).text("Ui volume"),
+            );
 
-            egui::Slider::new("Music volume", 0.0, 100.0)
-                .display_format("%.0f")
-                .build(ui, &mut settings.music_volume_percent);
-            egui::Slider::new("Effects volume", 0.0, 100.0)
-                .display_format("%.0f")
-                .build(ui, &mut settings.effects_volume_percent);
-            egui::Slider::new("Ui volume", 0.0, 100.0)
-                .display_format("%.0f")
-                .build(ui, &mut settings.ui_volume_percent);
-
-            ui.new_line();
-            ui.text("Keybinds");
+            ui.separator();
+            ui.label("Keybinds");
 
             let im = uiworld.read::<InputMap>();
-            ui.columns(3, &*"input_map", false);
-            ui.text("Action");
-            ui.next_column();
-            ui.text("Input");
-            ui.next_column();
-            ui.next_column();
 
-            for (act, comb) in &im.input_mapping {
-                ui.text(format!("{}", act));
-                ui.next_column();
-                ui.text(format!("{}", comb));
-                ui.next_column();
-                ui.text("cannot change bindings for now");
-                ui.next_column();
-            }
+            ui.columns(3, |ui| {
+                ui[0].label("Action");
+                ui[1].label("Input");
+                ui[2].label("...");
+
+                for (act, comb) in &im.input_mapping {
+                    ui[0].label(format!("{}", act));
+                    ui[1].label(format!("{}", comb));
+                    ui[2].label("cannot change bindings for now");
+                }
+            });
 
             common::saveload::JSON::save_silent(&*settings, SETTINGS_SAVE_NAME);
         });

@@ -3,7 +3,7 @@ use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::windows::settings::Settings;
-use crate::gui::windows::ImguiWindows;
+use crate::gui::windows::GUIWindows;
 use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
 use crate::input::{KeyCode, KeyboardInfo};
 use crate::inputmap::{InputAction, InputMap};
@@ -17,7 +17,7 @@ use egregoria::map::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use egui::{Context, RichText, Ui, Widget, Window};
+use egui::{Align2, Color32, Context, Frame, RichText, Widget, Window};
 use egui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
 };
@@ -29,7 +29,7 @@ use std::time::{Duration, Instant};
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct Gui {
-    pub(crate) windows: ImguiWindows,
+    pub(crate) windows: GUIWindows,
     #[serde(skip)]
     pub(crate) last_save: Instant,
     #[serde(skip)]
@@ -46,7 +46,7 @@ pub(crate) struct Gui {
 impl Default for Gui {
     fn default() -> Self {
         Self {
-            windows: ImguiWindows::default(),
+            windows: GUIWindows::default(),
             last_save: Instant::now(),
             last_gui_save: Instant::now(),
             n_cars: 100,
@@ -113,7 +113,7 @@ impl Gui {
             *uiworld.write::<Tab>() = Tab::Hand;
         }
 
-        let [w, h] = ui.available_rect().size().into();
+        let [w, h]: [f32; 2] = ui.available_rect().size().into();
         //        let _tok1 = ui.push_style_var(StyleVar::WindowPadding([0.0, 0.0]));
         //        let _tok2 = ui.push_style_var(StyleVar::WindowBorderSize(0.0));
         //        let _tok3 = ui.push_style_var(StyleVar::WindowRounding(0.0));
@@ -152,7 +152,12 @@ impl Gui {
                         uiworld.read::<UiTextures>().get(*name),
                         [toolbox_w, 30.0],
                     )
-                    .tint([1.0, 1.0, 1.0, alpha])
+                    .tint(Color32::from_rgba_unmultiplied(
+                        255,
+                        255,
+                        255,
+                        (alpha * 255.0) as u8,
+                    ))
                     .frame(false)
                     .ui(ui)
                     .clicked()
@@ -211,12 +216,12 @@ impl Gui {
                 .title_bar(true)
                 .collapsible(false)
                 .resizable(false)
-                .build(ui, |ui: &mut Ui| {
+                .show(ui, |ui| {
                     ui.style_mut().spacing.interact_size = [rbw, 30.0].into();
 
-                    let addtrain = RichText::new("Add Train");
+                    let mut addtrain = RichText::new("Add Train");
                     if *uiworld.read::<Tool>() == Tool::Train {
-                        addtrain.strong();
+                        addtrain = addtrain.strong();
                     };
                     if ui.button(addtrain).clicked() {
                         *uiworld.write::<Tool>() = Tool::Train;
@@ -244,11 +249,11 @@ impl Gui {
                         });
                     }*/
 
-                    let freightstation = RichText::new("Freight station");
+                    let mut freightstation = RichText::new("Freight station");
                     if *uiworld.read::<Tool>() == Tool::SpecialBuilding {
-                        freightstation.strong();
+                        freightstation = freightstation.strong();
                     };
-                    if ui.button(freightstation) {
+                    if ui.button(freightstation).clicked() {
                         *uiworld.write::<Tool>() = Tool::SpecialBuilding;
 
                         uiworld.write::<SpecialBuildingResource>().opt = Some(SpecialBuildKind {
@@ -300,11 +305,11 @@ impl Gui {
                     let mut roadbuild = uiworld.write::<RoadBuildResource>();
                     ui.checkbox(&mut roadbuild.snap_to_grid, "snap to grid");
                     ui.horizontal(|ui| {
-                        if ui.button("zero") {
+                        if ui.button("zero").clicked() {
                             roadbuild.height_offset = 0.0;
                         }
                         egui::DragValue::new(&mut roadbuild.height_offset)
-                            .clamp_range(0.0..=100.0)
+                            .clamp_range(0.0..=100.0f32)
                             .speed(1.0)
                             .ui(ui);
                         ui.label("height off");
@@ -367,11 +372,11 @@ impl Gui {
                     let before = ui.style().spacing.interact_size;
                     ui.style_mut().spacing.interact_size = [rbw, 30.0].into();
                     for (name, lpat) in BUILDERS {
-                        let text = RichText::new(name);
+                        let mut text = RichText::new(*name);
                         if lpat == pat {
-                            text.strong();
+                            text = text.strong();
                         }
-                        if ui.button_with_size(text) {
+                        if ui.button(text).clicked() {
                             *pat = *lpat;
                         }
                     }
@@ -379,7 +384,7 @@ impl Gui {
 
                     ui.add_space(10.0);
 
-                    if egui::CollapsingHeader::new("custom").build(ui) {
+                    egui::CollapsingHeader::new("custom").show(ui, |ui| {
                         <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
                             pat,
                             "Road shape",
@@ -398,7 +403,7 @@ impl Gui {
                         if pat.n_lanes > 10 {
                             pat.n_lanes = 10;
                         }
-                    }
+                    });
                 });
         }
 
@@ -418,20 +423,20 @@ impl Gui {
 
                     ui.style_mut().spacing.interact_size = [lbw, 35.0].into();
                     for (name, brush) in &brushes {
-                        let t = RichText::new(name);
+                        let mut t = RichText::new(*name);
                         if std::mem::discriminant(brush) == std::mem::discriminant(&cur_brush.kind)
                         {
-                            t.strong();
+                            t = t.strong();
                         }
-                        if ui.button_with_size(t) {
+                        if ui.button(t).clicked() {
                             cur_brush.kind = *brush;
                         }
                     }
 
                     ui.horizontal(|ui| {
                         egui::DragValue::new(&mut cur_brush.radius)
-                            .clamp_range(10.0..=300.0)
-                            .build(ui);
+                            .clamp_range(10.0..=300.0f32)
+                            .ui(ui);
                         ui.label("radius");
                     })
                 });
@@ -471,7 +476,7 @@ impl Gui {
         if matches!(*uiworld.read::<Tab>(), Tab::Roadbuilding) {
             Window::new("Buildings")
                 .min_width(building_select_w)
-                .default_height(500.0.min(h * 0.5) as f32)
+                .default_height(500.0f32.min(h * 0.5) as f32)
                 .vscroll(true)
                 .fixed_pos([w - toolbox_w - building_select_w, h * 0.5 - 30.0])
                 .title_bar(true)
@@ -486,10 +491,10 @@ impl Gui {
                     for descr in gbuildings {
                         let cur_kind = cur_build.opt.as_ref().map(|x| &*x.asset).unwrap_or("");
 
-                        let name = RichText::new(&descr.name);
+                        let mut name = RichText::new(&descr.name);
                         if descr.asset_location == cur_kind {
                             picked_descr = Some(descr);
-                            name.strong();
+                            name = name.strong();
                         };
                         if ui.button(name).clicked() || cur_build.opt.is_none() {
                             let bkind = BuildingKind::GoodsCompany(descr.id);
@@ -561,10 +566,11 @@ impl Gui {
 
         let mut is_open = true;
         Window::new("Inspect")
-            .size([300.0, 300.0], egui::Condition::Appearing)
-            .position([30.0, 160.0], egui::Condition::Appearing)
-            .opened(&mut is_open)
-            .build(ui, || {
+            .default_size([400.0, 500.0])
+            .default_pos([30.0, 160.0])
+            .resizable(true)
+            .open(&mut is_open)
+            .show(ui, |ui| {
                 let mut ins = crate::gui::inspect::InspectRenderer { entity: e };
                 ins.render(uiworld, goria, ui);
                 inspected.e = Some(ins.entity);
@@ -592,158 +598,160 @@ impl Gui {
             }
         }
 
-        let [_, h] = ui.io().display_size;
-        let _tok1 = ui.push_style_var(StyleVar::WindowRounding(0.0));
-        let _tok2 = ui.push_style_var(StyleVar::ItemSpacing([10.0, 7.0]));
+        let [_, h]: [f32; 2] = ui.available_rect().size().into();
+
+        //let _tok1 = ui.push_style_var(StyleVar::WindowRounding(0.0));
+        //let _tok2 = ui.push_style_var(StyleVar::ItemSpacing([10.0, 7.0]));
         Window::new("Time controls")
-            .size([165.0, 55.0], egui::Condition::Always)
-            .position([-1.0, h - 52.0], egui::Condition::Always)
-            .no_decoration()
+            .fixed_size([165.0, 55.0])
+            .fixed_pos([-1.0, h - 52.0])
+            .title_bar(false)
             .collapsible(false)
             .resizable(false)
-            .build(ui, || {
-                ui.label(format!(" Day {}", time.day));
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label(format!(" Day {}", time.day));
+                    ui.add_space(115.0);
+                    ui.label(format!("{:02}:{:02}", time.hour, time.second));
+                });
 
-                ui.same_line_with_pos(115.0);
+                //let red = ui.push_style_color(StyleColor::Header, [0.7, 0.2, 0.2, 0.5]);
 
-                ui.label(format!("{:02}:{:02}", time.hour, time.second));
+                ui.horizontal(|ui| {
+                    let mut text = RichText::new("   ||").color(Color32::from_rgba_unmultiplied(
+                        (0.7 * 255.0) as u8,
+                        (0.2 * 255.0) as u8,
+                        (0.2 * 255.0) as u8,
+                        (1.0 * 255.0) as u8,
+                    ));
+                    if *warp == 0 {
+                        text = text.strong();
+                    }
 
-                let red = ui.push_style_color(StyleColor::Header, [0.7, 0.2, 0.2, 0.5]);
+                    if ui.label(text).clicked() {
+                        *depause_warp = *warp;
+                        *warp = 0;
+                    }
 
-                if egui::Selectable::new("   ||")
-                    .size([29.0, 15.0])
-                    .selected(*warp == 0)
-                    .build(ui)
-                {
-                    *depause_warp = *warp;
-                    *warp = 0;
-                }
+                    let mut text = RichText::new("   1x");
+                    if *warp == 1 {
+                        text = text.strong();
+                    }
+                    if ui.label(text).clicked() {
+                        *warp = 1;
+                    }
 
-                red.pop();
+                    let mut text = RichText::new("   3x");
+                    if *warp == 3 {
+                        text = text.strong();
+                    }
+                    if ui.label(text).clicked() {
+                        *warp = 3;
+                    }
 
-                ui.same_line();
-
-                if egui::Selectable::new("  1x")
-                    .size([27.0, 15.0])
-                    .selected(*warp == 1)
-                    .build(ui)
-                {
-                    *warp = 1;
-                }
-
-                ui.same_line();
-
-                if egui::Selectable::new("  3x")
-                    .size([27.0, 15.0])
-                    .selected(*warp == 3)
-                    .build(ui)
-                {
-                    *warp = 3;
-                }
-
-                ui.same_line();
-
-                if egui::Selectable::new(" Max")
-                    .size([33.0, 15.0])
-                    .selected(*warp == 1000)
-                    .build(ui)
-                {
-                    *warp = 1000;
-                }
+                    let mut text = RichText::new("   Max");
+                    if *warp == 1000 {
+                        text = text.strong();
+                    }
+                    if ui.label(text).clicked() {
+                        *warp = 1000;
+                    }
+                })
             });
     }
 
     pub(crate) fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
-        let _t = ui.push_style_var(StyleVar::ItemSpacing([3.0, 0.0]));
+        //let _t = ui.push_style_var(StyleVar::ItemSpacing([3.0, 0.0]));
 
-        ui.main_menu_bar(|| {
-            self.windows.menu(ui);
+        egui::TopBottomPanel::top("top_menu").show(ui, |ui| {
+            egui::menu::bar(ui, |ui| {
+                self.windows.menu(ui);
 
-            let [w, h] = ui.window_size();
+                let [w, h]: [f32; 2] = ui.available_size().into();
 
-            let mut name = "Save";
-            let mut tok = None;
-            if uiworld.saving_status.load(Ordering::SeqCst) {
-                name = "Saving...";
-                tok = Some(ui.begin_disabled(true));
-            }
+                let mut name = "Save";
+                let mut enabled = true;
+                if uiworld.saving_status.load(Ordering::SeqCst) {
+                    name = "Saving...";
+                    enabled = false;
+                }
 
-            if ui.button_with_size(name, [80.0, h]) {
-                uiworld.please_save = true;
-                uiworld.save_to_disk();
-            }
-            drop(tok);
+                if ui.add_enabled(enabled, egui::Button::new(name)).clicked() {
+                    uiworld.please_save = true;
+                    uiworld.save_to_disk();
+                }
 
-            ui.label(format!("Money: {}", goria.read::<Government>().money));
+                ui.label(format!("Money: {}", goria.read::<Government>().money));
 
-            let mut estate = uiworld.write::<ExitState>();
-            let mut please_save = uiworld.please_save;
+                let mut estate = uiworld.write::<ExitState>();
+                let mut please_save = uiworld.please_save;
 
-            match *estate {
-                ExitState::NoExit => {}
-                ExitState::ExitAsk | ExitState::Saving => {
-                    let [w, h] = ui.io().display_size;
-                    Window::new("Exit Menu")
-                        .position([w * 0.5, h * 0.5], Condition::Appearing)
-                        .always_auto_resize(true)
-                        .position_pivot([0.5, 0.5])
-                        .build(ui, || {
-                            let _tok = ui.push_style_var(StyleVar::ItemSpacing([2.0, 5.0]));
-                            if let ExitState::Saving = *estate {
-                                ui.label("Saving...");
-                                if !uiworld.please_save
-                                    && !uiworld.saving_status.load(Ordering::SeqCst)
-                                {
+                match *estate {
+                    ExitState::NoExit => {}
+                    ExitState::ExitAsk | ExitState::Saving => {
+                        let [w, h]: [f32; 2] = ui.available_size().into();
+                        Window::new("Exit Menu")
+                            .default_pos([w * 0.5, h * 0.5])
+                            .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+                            .auto_sized()
+                            .show(ui.ctx(), |ui| {
+                                //let _tok = ui.push_style_var(StyleVar::ItemSpacing([2.0, 5.0]));
+                                if let ExitState::Saving = *estate {
+                                    ui.label("Saving...");
+                                    if !uiworld.please_save
+                                        && !uiworld.saving_status.load(Ordering::SeqCst)
+                                    {
+                                        std::process::exit(0);
+                                    }
+                                    return;
+                                }
+                                if ui.button("Save and exit").clicked() {
+                                    if let ExitState::ExitAsk = *estate {
+                                        please_save = true;
+                                        *estate = ExitState::Saving;
+                                    }
+                                }
+                                if ui.button("Exit").clicked() {
                                     std::process::exit(0);
                                 }
-                                return;
+                                if ui.button("Cancel").clicked() {
+                                    *estate = ExitState::NoExit;
+                                }
+                            });
+                    }
+                }
+
+                {
+                    let off = if matches!(*estate, ExitState::ExitAsk) {
+                        110.0
+                    } else {
+                        65.0
+                    };
+                    //let _red = ui.push_style_color(StyleColor::Button, [0.7, 0.3, 0.3, 1.0]);
+                    //ui.same_line_with_pos(w - off);
+
+                    match *estate {
+                        ExitState::NoExit => {
+                            if ui.button("Exit").clicked() {
+                                *estate = ExitState::ExitAsk;
                             }
-                            if ui.button("Save and exit") {
+                        }
+                        ExitState::ExitAsk => {
+                            if ui.button("Save and exit").clicked() {
                                 if let ExitState::ExitAsk = *estate {
                                     please_save = true;
                                     *estate = ExitState::Saving;
                                 }
                             }
-                            if ui.button("Exit") {
-                                std::process::exit(0);
-                            }
-                            if ui.button("Cancel") {
-                                *estate = ExitState::NoExit;
-                            }
-                        });
-                }
-            }
-
-            {
-                let off = if matches!(*estate, ExitState::ExitAsk) {
-                    110.0
-                } else {
-                    65.0
-                };
-                let _red = ui.push_style_color(StyleColor::Button, [0.7, 0.3, 0.3, 1.0]);
-                ui.same_line_with_pos(w - off);
-
-                match *estate {
-                    ExitState::NoExit => {
-                        if ui.button_with_size("Exit", [50.0, h]) {
-                            *estate = ExitState::ExitAsk;
+                        }
+                        ExitState::Saving => {
+                            ui.label("Saving...");
                         }
                     }
-                    ExitState::ExitAsk => {
-                        if ui.button("Save and exit") {
-                            if let ExitState::ExitAsk = *estate {
-                                please_save = true;
-                                *estate = ExitState::Saving;
-                            }
-                        }
-                    }
-                    ExitState::Saving => {
-                        ui.label("Saving...");
-                    }
                 }
-            }
-            drop(estate);
-            uiworld.please_save = please_save;
+                drop(estate);
+                uiworld.please_save = please_save;
+            });
         });
     }
 }

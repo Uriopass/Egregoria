@@ -58,14 +58,14 @@ impl State {
         let camera = CameraHandler3D::load(ctx.gfx.size);
 
         let mut egui_render = EguiWrapper::new(&mut ctx.gfx, &ctx.el.as_ref().unwrap());
-        log::info!("loaded imgui_render");
+        log::info!("loaded egui_render");
 
         let goria: Egregoria =
             Egregoria::load_from_disk("world").unwrap_or_else(|| Egregoria::new(true));
         let game_schedule = Egregoria::schedule();
         let mut uiworld = UiWorld::init();
 
-        uiworld.insert(UiTextures::new(&ctx.gfx, &mut egui_render.egui));
+        uiworld.insert(UiTextures::new(&mut egui_render.egui));
 
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
@@ -366,8 +366,8 @@ impl State {
         drop(map);
     }
 
-    pub(crate) fn event(&mut self, window: &Window, event: &winit::event::Event<'_, ()>) {
-        self.egui_render.handle_event(window, event);
+    pub(crate) fn event(&mut self, event: &winit::event::WindowEvent<'_>) {
+        self.egui_render.handle_event(event);
     }
 
     pub(crate) fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {

@@ -1,10 +1,11 @@
 use crate::{GfxContext, Texture, UvVertex, VBDesc};
-use wgpu::{BlendFactor, BlendOperation};
+use wgpu::{BlendFactor, BlendOperation, MultisampleState, TextureSampleType};
 
 pub struct BlitLinear;
 
 impl BlitLinear {
     pub fn setup(gfx: &mut GfxContext) {
+        return;
         gfx.register_pipeline::<Self>(
             &["blit_linear"],
             Box::new(move |m, gfx| {
@@ -12,7 +13,12 @@ impl BlitLinear {
                     gfx.device
                         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                             label: Some("blit pipeline"),
-                            bind_group_layouts: &[&Texture::bindgroup_layout(&gfx.device)],
+                            bind_group_layouts: &[&Texture::bindgroup_layout_complex(
+                                &gfx.device,
+                                TextureSampleType::Float { filterable: true },
+                                1,
+                                true,
+                            )],
                             push_constant_ranges: &[],
                         });
 
@@ -46,7 +52,10 @@ impl BlitLinear {
                     }),
                     primitive: Default::default(),
                     depth_stencil: None,
-                    multisample: Default::default(),
+                    multisample: MultisampleState {
+                        count: 4,
+                        ..Default::default()
+                    },
                     multiview: None,
                 };
 

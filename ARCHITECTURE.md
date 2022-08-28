@@ -127,7 +127,7 @@ Modding support is nonexistent so everything goes through static links in the co
 ## UI
 
 All the UI related code is in the `native_app` crate, more specifically in the `gui` module. It contains code for the road editor, building placement, inspect window, top gui and others.
-topgui.rs contains most of the imgui code.
+topgui.rs contains most of the egui code.
 
 The other files follow one file = one system.
 

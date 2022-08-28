@@ -48,9 +48,6 @@ pub struct InspectArgsDefault {
 /// Renders a value using the default widget
 pub trait InspectRenderDefault<T: ?Sized> {
     /// Render the element in an immutable way (i.e. static text)
-    ///
-    /// (Hopefully in the future this can be better. See
-    /// <https://github.com/ocornut/imgui/issues/211>)
     fn render(data: &T, label: &'static str, ui: &mut egui::Ui, args: &InspectArgsDefault);
 
     /// Render the element in a mutable way. Using this trait, the default widget to use is based

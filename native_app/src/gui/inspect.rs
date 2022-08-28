@@ -11,7 +11,7 @@ use egregoria::vehicles::{Vehicle, VehicleID};
 use egregoria::{Egregoria, SoulID};
 
 use egregoria::vehicles::trains::{Locomotive, LocomotiveReservation};
-use egui::Ui;
+use egui::{Color32, RichText, Ui};
 use egui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use geom::{Transform, Vec2};
 use hecs::{Component, Entity};
@@ -29,7 +29,7 @@ impl InspectRenderer {
         let c = goria.comp::<T>(self.entity);
         if let Some(x) = c {
             <T as InspectRenderDefault<T>>::render(
-                &[&*x],
+                &x,
                 std::any::type_name::<T>().split("::").last().unwrap_or(""),
                 ui,
                 &InspectArgsDefault::default(),
@@ -42,7 +42,7 @@ impl InspectRenderer {
         if let Some(x) = c {
             let mut t = *x;
             if <Transform as InspectRenderDefault<Transform>>::render_mut(
-                &mut [&mut t],
+                &mut t,
                 "Transform",
                 ui,
                 &InspectArgsDefault::default(),
@@ -54,15 +54,19 @@ impl InspectRenderer {
 
     pub(crate) fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui) {
         let mut custom_ent = self.entity.id() as i32;
-        if ui.input_int("enter id directly", &mut custom_ent).build() {
-            if let Some(ent) = Entity::from_bits(1 << 32 | custom_ent as u64) {
-                if goria.world().contains(ent) {
-                    self.entity = ent;
+
+        ui.horizontal(|ui| {
+            if ui.add(egui::DragValue::new(&mut custom_ent)).changed() {
+                if let Some(ent) = Entity::from_bits(1 << 32 | custom_ent as u64) {
+                    if goria.world().contains(ent) {
+                        self.entity = ent;
+                    }
                 }
             }
-        }
+            ui.label("Entity ID");
+        });
 
-        ui.text(format!("{:?}", self.entity));
+        ui.label(format!("{:?}", self.entity));
         self.inspect_transform(goria, uiworld, ui);
         self.inspect_component::<Vehicle>(goria, ui);
         self.inspect_component::<Pedestrian>(goria, ui);
@@ -83,7 +87,9 @@ impl InspectRenderer {
             for (e, loc) in goria.world().query::<&Location>().iter() {
                 let loc: &Location = loc;
                 if loc == &Location::Vehicle(VehicleID(self.entity))
-                    && ui.small_button(&*format!("inspect inside vehicle: {:?}", e))
+                    && ui
+                        .small_button(&*format!("inspect inside vehicle: {:?}", e))
+                        .clicked()
                 {
                     self.entity = e;
                     return;
@@ -93,15 +99,15 @@ impl InspectRenderer {
 
         if let Some(coll) = goria.comp::<Collider>(self.entity) {
             if let Some((pos, po)) = goria.read::<CollisionWorld>().get(coll.0) {
-                if egui::CollapsingHeader::new("Physics Object").build(ui) {
+                egui::CollapsingHeader::new("Physics Object").show(ui, |ui| {
                     <Vec2 as InspectRenderDefault<Vec2>>::render(
-                        &[&pos],
+                        &pos,
                         "pos",
                         ui,
                         &InspectArgsDefault::default(),
                     );
                     <PhysicsObject as InspectRenderDefault<PhysicsObject>>::render(
-                        &[po],
+                        po,
                         "aaaa",
                         ui,
                         &InspectArgsDefault {
@@ -112,19 +118,22 @@ impl InspectRenderer {
                             step: None,
                         },
                     )
-                }
+                });
             } else {
-                ui.text_colored([1.0, 0.0, 0.0, 1.0], "Invalid coll handle!");
+                ui.label(
+                    RichText::new("Invalid coll handle")
+                        .color(Color32::from_rgba_unmultiplied(255, 0, 0, 255)),
+                );
             }
         }
 
         if goria.comp::<Kinematics>(self.entity).is_some() {
             let follow = &mut uiworld.write::<FollowEntity>().0;
             if follow.is_none() {
-                if ui.small_button("Follow") {
+                if ui.small_button("Follow").clicked() {
                     follow.replace(self.entity);
                 }
-            } else if ui.small_button("Unfollow") {
+            } else if ui.small_button("Unfollow").clicked() {
                 follow.take();
             }
         }
@@ -141,16 +150,13 @@ impl InspectRenderer {
             return;
         }
 
-        if egui::CollapsingHeader::new("Capital").build(ui) {
-            ui.indent();
-            ui.columns(2, "markett", false);
-
-            for (kind, cap) in capitals {
-                ui.text(&registry[*kind].label);
-                ui.next_column();
-                ui.text(format!("{}", cap));
-                ui.next_column();
-            }
-        }
+        egui::CollapsingHeader::new("Capital").show(ui, |ui| {
+            ui.columns(2, |ui| {
+                for (kind, cap) in capitals {
+                    ui[0].label(&registry[*kind].label);
+                    ui[1].label(format!("{}", cap));
+                }
+            });
+        });
     }
 }

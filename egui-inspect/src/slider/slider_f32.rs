@@ -14,11 +14,7 @@ impl InspectRenderSlider<f32> for f32 {
     ) -> bool {
         let min = args.min_value.unwrap_or(-100.0);
         let max = args.max_value.unwrap_or(100.0);
-        let mut changed = false;
-        ui.horizontal(|ui| {
-            ui.label(label);
-            changed = ui.add(egui::Slider::new(value, min..=max)).changed();
-        });
-        changed
+        ui.add(egui::Slider::new(value, min..=max).text(label))
+            .changed()
     }
 }

@@ -14,7 +14,7 @@ use egregoria::map::{IntersectionID, Map, RoadSegmentKind, TraverseKind};
 use egregoria::pedestrians::Pedestrian;
 use egregoria::vehicles::trains::TrainReservations;
 use egregoria::vehicles::Vehicle;
-use egui::Ui;
+use egui::Widget;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use wgpu_engine::Tesselator;
 
@@ -64,43 +64,43 @@ impl Default for TestFieldProperties {
 
 pub(crate) fn debug(
     window: egui::Window<'_>,
-    ui: &mut Ui,
+    ui: &egui::Context,
     uiworld: &mut UiWorld,
     goria: &Egregoria,
 ) {
-    window.build(ui, || {
+    window.show(ui, |ui| {
         uiworld.check_present(TestFieldProperties::default);
 
         let mut objs = uiworld.write::<DebugObjs>();
         for (val, name, _) in &mut objs.0 {
-            ui.checkbox(name, val);
+            ui.checkbox(val, *name);
         }
         drop(objs);
 
         let time = goria.read::<GameTime>().timestamp;
         let daysecleft = SECONDS_PER_DAY - goria.read::<GameTime>().daytime.daysec();
 
-        if ui.small_button("set night") {
+        if ui.small_button("set night").clicked() {
             uiworld
                 .commands()
                 .set_game_time(GameTime::new(0.1, time + daysecleft as f64));
         }
 
-        if ui.small_button("set morning") {
+        if ui.small_button("set morning").clicked() {
             uiworld.commands().set_game_time(GameTime::new(
                 0.1,
                 time + daysecleft as f64 + 7.0 * GameTime::HOUR as f64,
             ));
         }
 
-        if ui.small_button("set day") {
+        if ui.small_button("set day").clicked() {
             uiworld.commands().set_game_time(GameTime::new(
                 0.1,
                 time + daysecleft as f64 + 12.0 * GameTime::HOUR as f64,
             ));
         }
 
-        if ui.small_button("set dawn") {
+        if ui.small_button("set dawn").clicked() {
             uiworld.commands().set_game_time(GameTime::new(
                 0.1,
                 time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64,
@@ -110,38 +110,43 @@ pub(crate) fn debug(
         let mouse = uiworld.read::<InputMap>().unprojected;
         let cam = uiworld.read::<Camera>().pos;
 
-        ui.text("Averaged over last 10 frames: ");
-        ui.text(format!("Total time: {:.1}ms", timings.all.avg() * 1000.0));
-        ui.text(format!(
+        ui.label("Averaged over last 10 frames: ");
+        ui.label(format!("Total time: {:.1}ms", timings.all.avg() * 1000.0));
+        ui.label(format!(
             "World update time: {:.1}ms",
             timings.world_update.avg() * 1000.0
         ));
-        ui.text(format!(
+        ui.label(format!(
             "Render prepare time: {:.1}ms",
             timings.render.avg() * 1000.0
         ));
         if let Some(mouse) = mouse {
-            ui.text(format!("World mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
+            ui.label(format!("World mouse pos: {:.1} {:.1}", mouse.x, mouse.y));
         }
-        ui.text(format!("Cam center:      {:.1} {:.1}", cam.x, cam.y));
+        ui.label(format!("Cam center:      {:.1} {:.1}", cam.x, cam.y));
         ui.separator();
 
-        if ui.small_button("load Paris map") {
+        if ui.small_button("load Paris map").clicked() {
             uiworld.commands().map_load_paris();
         }
         ui.separator();
         let mut state = uiworld.write::<TestFieldProperties>();
 
-        egui::Drag::new("size")
-            .range(2, 100)
-            .build(ui, &mut state.size);
+        ui.horizontal(|ui| {
+            egui::DragValue::new(&mut state.size)
+                .clamp_range(2..=100 as u32)
+                .ui(ui);
+            ui.label("size");
+        });
 
-        egui::Drag::new("spacing")
-            .range(30.0, 1000.0)
-            .display_format("%.0f")
-            .build(ui, &mut state.spacing);
+        ui.horizontal(|ui| {
+            egui::DragValue::new(&mut state.spacing)
+                .clamp_range(30.0..=1000.0 as f32)
+                .ui(ui);
+            ui.label("spacing");
+        });
 
-        if ui.small_button("load test field") {
+        if ui.small_button("load test field").clicked() {
             uiworld.commands().map_load_testfield(
                 uiworld.read::<Camera>().pos.xy(),
                 state.size,
@@ -152,35 +157,32 @@ pub(crate) fn debug(
         if matches!(
             *uiworld.read::<NetworkState>(),
             NetworkState::Singleplayer { .. }
-        ) && ui.small_button("reset the save")
+        ) && ui.small_button("reset the save").clicked()
         {
             uiworld.commands().reset_save();
         }
 
-        ui.text(format!(
+        ui.label(format!(
             "{} pedestrians",
             goria.world().query::<&Pedestrian>().iter().count()
         ));
-        ui.text(format!(
+        ui.label(format!(
             "{} vehicles",
             goria.world().query::<&Vehicle>().iter().count()
         ));
 
         ui.separator();
-        ui.text("Game system times");
+        ui.label("Game system times");
 
-        ui.columns(2, "game times", false);
-        ui.text("System name");
-        ui.next_column();
-        ui.text("Time avg in ms over last 100 ticks");
-        ui.next_column();
+        ui.columns(2, |ui| {
+            ui[0].label("Systen name");
+            ui[1].label("Time (ms) over last 100 ticks");
 
-        for (name, time) in &timings.per_game_system {
-            ui.text(name);
-            ui.next_column();
-            ui.text(format!("{:.3}", *time));
-            ui.next_column();
-        }
+            for (name, time) in &timings.per_game_system {
+                ui[0].label(name);
+                ui[1].label(format!("{:.3}", *time));
+            }
+        });
     });
 }
 

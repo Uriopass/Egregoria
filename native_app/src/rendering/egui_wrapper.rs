@@ -1,4 +1,4 @@
-use egui::{FontData, FontDefinitions};
+use egui::{FontData, FontDefinitions, TextureId};
 use egui_wgpu::renderer;
 use egui_wgpu::renderer::ScreenDescriptor;
 use egui_wgpu::wgpu::TextureFormat;
@@ -14,13 +14,14 @@ pub(crate) struct EguiWrapper {
     platform: egui_winit::State,
     pub(crate) last_mouse_captured: bool,
     pub(crate) last_kb_captured: bool,
+    pub to_remove: Vec<TextureId>,
 }
 
 impl EguiWrapper {
     pub(crate) fn new(gfx: &mut GfxContext, el: &EventLoopWindowTarget<()>) -> Self {
-        let mut egui = egui::Context::default();
+        let egui = egui::Context::default();
 
-        let mut platform = egui_winit::State::new(el);
+        let platform = egui_winit::State::new(el);
 
         let data = std::fs::read("assets/roboto-medium.ttf");
         match data {
@@ -38,7 +39,7 @@ impl EguiWrapper {
             }
         };
 
-        let renderer = renderer::RenderPass::new(&gfx.device, TextureFormat::Rgba8UnormSrgb, 4);
+        let renderer = renderer::RenderPass::new(&gfx.device, TextureFormat::Bgra8UnormSrgb, 1);
 
         Self {
             egui,
@@ -47,6 +48,7 @@ impl EguiWrapper {
             last_mouse_captured: false,
             last_kb_captured: false,
             platform,
+            to_remove: vec![],
         }
     }
 
@@ -57,6 +59,9 @@ impl EguiWrapper {
         hidden: bool,
         ui_render: impl for<'ui> FnOnce(&'ui egui::Context),
     ) {
+        for id in self.to_remove.drain(..) {
+            self.renderer.free_texture(&id);
+        }
         let now = Instant::now();
         let delta = now - self.last_frame;
         let delta_s = delta.as_secs() as f32 + delta.subsec_nanos() as f32 / 1_000_000_000.0;
@@ -69,24 +74,31 @@ impl EguiWrapper {
         });
         let clipped_primitives = self.egui.tessellate(output.shapes);
 
-        let mut rpass = gfx.rpass.take().unwrap();
+        //let mut rpass = gfx.rpass.take().unwrap();
         for (id, delta) in output.textures_delta.set {
             self.renderer
                 .update_texture(&gfx.device, &gfx.queue, id, &delta);
         }
-        for id in output.textures_delta.free {
-            self.renderer.free_texture(&id);
-        }
+        let desc = ScreenDescriptor {
+            size_in_pixels: [gfx.size.0, gfx.size.1],
+            pixels_per_point: 1.0,
+        };
+        self.renderer
+            .update_buffers(&gfx.device, &gfx.queue, &clipped_primitives, &desc);
+
+        self.to_remove = output.textures_delta.free;
 
         if !hidden {
-            self.renderer.execute_with_renderpass(
-                &mut rpass,
+            self.renderer.execute(
+                &mut gfx.encoder,
+                &gfx.view,
                 &clipped_primitives,
-                &ScreenDescriptor {
-                    size_in_pixels: [gfx.size.0, gfx.size.1],
-                    pixels_per_point: 1.0,
-                },
+                &desc,
+                None,
             );
+            /*
+            self.renderer
+                .execute_with_renderpass(&mut rpass, &clipped_primitives, &desc);*/
         }
 
         self.platform

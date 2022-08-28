@@ -2,7 +2,7 @@ use crate::network::NetworkState;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
-use egui::Ui;
+use egui::{Context, RichText, Ui};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 
@@ -17,11 +17,11 @@ pub(crate) struct NetworkConnectionInfo {
 #[cfg(feature = "multiplayer")]
 pub(crate) fn network(
     window: egui::Window<'_>,
-    ui: &mut Ui,
+    ui: &Context,
     uiworld: &mut UiWorld,
     goria: &Egregoria,
 ) {
-    window.build(ui, || {
+    window.show(ui, |ui| {
         let mut state = uiworld.write::<NetworkState>();
         let mut info = uiworld.write::<NetworkConnectionInfo>();
         common::saveload::JSON::save_silent(&*info, "netinfo");
@@ -29,14 +29,17 @@ pub(crate) fn network(
         match *state {
             NetworkState::Singleplayer(_) => {
                 if !info.error.is_empty() {
-                    ui.text_colored([1.0, 0.0, 0.0, 1.0], &info.error);
+                    ui.label(RichText::new(&info.error).color([1.0, 0.0, 0.0, 1.0]));
                     ui.separator();
                 }
 
-                ui.input_text("name", &mut info.name).build();
+                ui.horizontal(|ui| {
+                    ui.text_edit_singleline(&mut info.name);
+                    ui.label("Name");
+                });
 
                 if info.name.is_empty() {
-                    ui.text("please enter your name");
+                    ui.label("please enter your name");
                     return;
                 }
 
@@ -47,7 +50,11 @@ pub(crate) fn network(
                 }
 
                 ui.separator();
-                ui.input_text("IP", &mut info.ip).build();
+
+                ui.horizontal(|ui| {
+                    ui.text_edit_singleline(&mut info.ip);
+                    ui.label("IP");
+                });
                 if ui.small_button("Connect") {
                     if let Some(c) = crate::network::start_client(&mut info) {
                         *state = NetworkState::Client(c);
@@ -68,7 +75,7 @@ pub(crate) fn network(
 }
 
 fn show_hashes(ui: &mut Ui, goria: &Egregoria, info: &mut NetworkConnectionInfo) {
-    ui.checkbox("show hashes", &mut info.show_hashes);
+    ui.checkbox(&mut info.show_hashes, "show hashes");
     if !info.show_hashes {
         return;
     }

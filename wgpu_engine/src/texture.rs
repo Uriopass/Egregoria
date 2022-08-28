@@ -89,7 +89,7 @@ impl Texture {
             (sc_desc.width, sc_desc.height),
             TextureFormat::Rgba8Unorm,
             TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
-            None,
+            Some(4),
         )
     }
 
@@ -121,6 +121,7 @@ impl Texture {
         device: &Device,
         sample_type: TextureSampleType,
         n_tex: u32,
+        multisampled: bool,
     ) -> BindGroupLayout {
         let entries: Vec<BindGroupLayoutEntry> = (0..n_tex)
             .flat_map(|i| {
@@ -129,7 +130,7 @@ impl Texture {
                         binding: i * 2,
                         visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                         ty: wgpu::BindingType::Texture {
-                            multisampled: false,
+                            multisampled,
                             view_dimension: wgpu::TextureViewDimension::D2,
                             sample_type,
                         },
@@ -152,7 +153,12 @@ impl Texture {
     }
 
     pub fn bindgroup_layout(device: &Device) -> BindGroupLayout {
-        Self::bindgroup_layout_complex(device, TextureSampleType::Float { filterable: true }, 1)
+        Self::bindgroup_layout_complex(
+            device,
+            TextureSampleType::Float { filterable: true },
+            1,
+            false,
+        )
     }
 
     pub fn bindgroup(&self, device: &Device, layout: &BindGroupLayout) -> BindGroup {

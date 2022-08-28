@@ -126,6 +126,8 @@ impl Default for RenderParams {
 u8slice_impl!(RenderParams);
 
 pub struct GuiRenderContext<'a, 'b> {
+    pub encoder: &'a mut CommandEncoder,
+    pub view: &'a TextureView,
     pub size: (u32, u32),
     pub device: &'a Device,
     pub queue: &'a Queue,
@@ -262,6 +264,7 @@ impl GfxContext {
                 &me.device,
                 TextureSampleType::Float { filterable: true },
                 2,
+                false,
             ),
         );
 
@@ -537,6 +540,7 @@ impl GfxContext {
         frame: &TextureView,
         mut render_gui: impl FnMut(GuiRenderContext<'_, '_>),
     ) {
+        /*
         let rpass = encoders.end.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -548,15 +552,17 @@ impl GfxContext {
                 },
             })],
             depth_stencil_attachment: None,
-        });
+        });*/
 
         render_gui(GuiRenderContext {
+            encoder: &mut encoders.end,
+            view: &frame,
             size: self.size,
             device: &self.device,
             queue: &self.queue,
-            rpass: Some(rpass),
+            rpass: None,
         });
-
+        /*
         let pipeline = &self.get_pipeline::<BlitLinear>();
         let bg = self
             .fbos
@@ -581,6 +587,7 @@ impl GfxContext {
         blit_linear.set_vertex_buffer(0, self.screen_uv_vertices.slice(..));
         blit_linear.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
         blit_linear.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
+        */
     }
 
     pub fn finish_frame(&mut self, encoder: Encoders) {
@@ -1012,6 +1019,7 @@ impl BackgroundPipeline {
                             &gfx.device,
                             TextureSampleType::Float { filterable: true },
                             2,
+                            false,
                         ),
                     ],
                     &[UvVertex::desc()],

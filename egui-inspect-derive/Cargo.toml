@@ -6,7 +6,7 @@ edition = "2018"
 description = "Traits and default implementations for inspecting values with egui."
 license = "MIT or Apache-2.0"
 readme = "../README.md"
-keywords = ["game", "imgui"]
+keywords = ["game", "egui"]
 categories = ["gui", "visualization"]
 
 [lib]

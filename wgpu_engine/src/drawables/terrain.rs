@@ -70,6 +70,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                     &gfx.device,
                     TextureSampleType::Float { filterable: false },
                     1,
+                    false,
                 ),
             )),
             dirt_ids: Default::default(),
@@ -359,6 +360,7 @@ impl TerrainPrepared {
             &gfx.device,
             TextureSampleType::Float { filterable: false },
             1,
+            false,
         ));
 
         let lay1 = terrainlayout.clone();

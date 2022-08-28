@@ -1,13 +1,12 @@
 use common::FastMap;
 use hecs::Entity;
 
-use egui::TextureId;
+use egui::{ColorImage, ImageData, TextureFilter, TextureHandle, TextureId};
 use serde::{Deserialize, Serialize};
 
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 use roadbuild::RoadBuildResource;
-use wgpu_engine::GfxContext;
 
 pub(crate) mod bulldozer;
 pub(crate) mod follow;
@@ -96,30 +95,32 @@ const UI_TEXTURES: &[(UiTex, &str)] = &[
 
 #[derive(Default)]
 pub(crate) struct UiTextures {
-    textures: FastMap<UiTex, TextureId>,
+    textures: FastMap<UiTex, TextureHandle>,
 }
 
 impl UiTextures {
-    pub(crate) fn new(gfx: &GfxContext, ctx: &mut egui::Context) -> Self {
+    pub(crate) fn new(ctx: &mut egui::Context) -> Self {
         let mut textures = common::fastmap_with_capacity(UI_TEXTURES.len());
         for &(name, path) in UI_TEXTURES {
             let (img, width, height) = wgpu_engine::Texture::read_image(path)
                 .expect(&*format!("Couldn't load gui texture {}", path));
 
-            let mut config = imgui_wgpu::TextureConfig::default();
-            config.size.width = width;
-            config.size.height = height;
+            let h = ctx.load_texture(
+                path,
+                ImageData::Color(ColorImage::from_rgba_unmultiplied(
+                    [width as usize, height as usize],
+                    &img,
+                )),
+                TextureFilter::Linear,
+            );
 
-            let imgui_tex = imgui_wgpu::Texture::new(&gfx.device, renderer, config);
-            imgui_tex.write(&gfx.queue, &img, width, height);
-
-            textures.insert(name, renderer.textures.insert(imgui_tex));
+            textures.insert(name, h);
         }
         Self { textures }
     }
 
     pub(crate) fn get(&self, name: UiTex) -> TextureId {
-        *self.textures.get(&name).unwrap()
+        self.textures.get(&name).unwrap().id()
     }
 }
 

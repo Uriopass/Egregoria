@@ -88,9 +88,9 @@ impl Context {
 
         self.el.take().unwrap().run(move |event, _, control_flow| {
             *control_flow = ControlFlow::Poll;
-            state.event(&self.window, &event);
             match event {
                 Event::WindowEvent { event, .. } => {
+                    state.event(&event);
                     let managed = self.input.handle(&event);
 
                     if !managed {
