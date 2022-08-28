@@ -57,7 +57,7 @@ impl State {
     pub(crate) fn new(ctx: &mut Context) -> Self {
         let camera = CameraHandler3D::load(ctx.gfx.size);
 
-        let mut egui_render = EguiWrapper::new(&mut ctx.gfx, &ctx.el.as_ref().unwrap());
+        let mut egui_render = EguiWrapper::new(&mut ctx.gfx, ctx.el.as_ref().unwrap());
         Gui::set_style(&egui_render.egui);
         log::info!("loaded egui_render");
 

@@ -51,7 +51,7 @@ impl EguiWrapper {
 
     pub(crate) fn render(
         &mut self,
-        mut gfx: GuiRenderContext<'_, '_>,
+        gfx: GuiRenderContext<'_, '_>,
         window: &Window,
         hidden: bool,
         ui_render: impl for<'ui> FnOnce(&'ui egui::Context),
@@ -70,25 +70,20 @@ impl EguiWrapper {
         //let mut rpass = gfx.rpass.take().unwrap();
         for (id, delta) in output.textures_delta.set {
             self.renderer
-                .update_texture(&gfx.device, &gfx.queue, id, &delta);
+                .update_texture(gfx.device, gfx.queue, id, &delta);
         }
         let desc = ScreenDescriptor {
             size_in_pixels: [gfx.size.0, gfx.size.1],
             pixels_per_point: 1.0,
         };
         self.renderer
-            .update_buffers(&gfx.device, &gfx.queue, &clipped_primitives, &desc);
+            .update_buffers(gfx.device, gfx.queue, &clipped_primitives, &desc);
 
         self.to_remove = output.textures_delta.free;
 
         if !hidden {
-            self.renderer.execute(
-                &mut gfx.encoder,
-                &gfx.view,
-                &clipped_primitives,
-                &desc,
-                None,
-            );
+            self.renderer
+                .execute(gfx.encoder, gfx.view, &clipped_primitives, &desc, None);
             /*
             self.renderer
                 .execute_with_renderpass(&mut rpass, &clipped_primitives, &desc);*/

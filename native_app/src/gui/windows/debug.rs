@@ -134,7 +134,7 @@ pub(crate) fn debug(
 
         ui.horizontal(|ui| {
             egui::DragValue::new(&mut state.size)
-                .clamp_range(2..=100 as u32)
+                .clamp_range(2..=100u32)
                 .ui(ui);
             ui.label("size");
         });

@@ -540,7 +540,7 @@ impl GfxContext {
     ) {
         render_gui(GuiRenderContext {
             encoder: &mut encoders.end,
-            view: &frame,
+            view: frame,
             size: self.size,
             device: &self.device,
             queue: &self.queue,
