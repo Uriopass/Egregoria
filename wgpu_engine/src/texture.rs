@@ -83,16 +83,6 @@ impl Texture {
         )
     }
 
-    pub fn create_ui_texture(device: &Device, sc_desc: &wgpu::SurfaceConfiguration) -> Self {
-        Self::create_fbo(
-            device,
-            (sc_desc.width, sc_desc.height),
-            TextureFormat::Rgba8Unorm,
-            TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
-            Some(4),
-        )
-    }
-
     pub fn create_color_msaa(
         device: &Device,
         sc_desc: &wgpu::SurfaceConfiguration,

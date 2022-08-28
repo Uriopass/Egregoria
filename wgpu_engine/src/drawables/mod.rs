@@ -1,14 +1,12 @@
 use crate::GfxContext;
 use wgpu::RenderPass;
 
-mod blit_linear;
 mod instanced_mesh;
 mod lit_mesh;
 mod multispritebatch;
 mod spritebatch;
 pub mod terrain;
 
-pub use blit_linear::*;
 pub use instanced_mesh::*;
 pub use lit_mesh::*;
 pub use multispritebatch::*;

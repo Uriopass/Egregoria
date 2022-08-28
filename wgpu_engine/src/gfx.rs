@@ -1,8 +1,8 @@
 use crate::terrain::TerrainPrepared;
 use crate::wgpu::SamplerBindingType;
 use crate::{
-    bg_layout_litmesh, compile_shader, BlitLinear, CompiledModule, Drawable, IndexType,
-    InstancedMesh, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
+    bg_layout_litmesh, compile_shader, CompiledModule, Drawable, IndexType, InstancedMesh, Mesh,
+    SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
@@ -22,7 +22,6 @@ use wgpu::{
 pub struct FBOs {
     pub(crate) depth: Texture,
     pub(crate) color_msaa: TextureView,
-    pub(crate) ui: Texture,
     pub(crate) ssao: Texture,
 }
 
@@ -244,7 +243,6 @@ impl GfxContext {
         Mesh::setup(&mut me);
         InstancedMesh::setup(&mut me);
         SpriteBatch::setup(&mut me);
-        BlitLinear::setup(&mut me);
         SSAOPipeline::setup(&mut me);
         BackgroundPipeline::setup(&mut me);
 
@@ -540,20 +538,6 @@ impl GfxContext {
         frame: &TextureView,
         mut render_gui: impl FnMut(GuiRenderContext<'_, '_>),
     ) {
-        /*
-        let rpass = encoders.end.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: None,
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &self.fbos.ui.view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                    store: true,
-                },
-            })],
-            depth_stencil_attachment: None,
-        });*/
-
         render_gui(GuiRenderContext {
             encoder: &mut encoders.end,
             view: &frame,
@@ -562,32 +546,6 @@ impl GfxContext {
             queue: &self.queue,
             rpass: None,
         });
-        /*
-        let pipeline = &self.get_pipeline::<BlitLinear>();
-        let bg = self
-            .fbos
-            .ui
-            .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
-
-        let mut blit_linear = encoders.end.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: None,
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: frame,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
-                    store: true,
-                },
-            })],
-            depth_stencil_attachment: None,
-        });
-
-        blit_linear.set_pipeline(pipeline);
-        blit_linear.set_bind_group(0, &bg, &[]);
-        blit_linear.set_vertex_buffer(0, self.screen_uv_vertices.slice(..));
-        blit_linear.set_index_buffer(self.rect_indices.slice(..), IndexFormat::Uint32);
-        blit_linear.draw_indexed(0..UV_INDICES.len() as u32, 0, 0..1);
-        */
     }
 
     pub fn finish_frame(&mut self, encoder: Encoders) {
@@ -617,7 +575,6 @@ impl GfxContext {
         FBOs {
             depth: Texture::create_depth_texture(device, size, samples),
             color_msaa: Texture::create_color_msaa(device, desc, samples),
-            ui: Texture::create_ui_texture(device, desc),
             ssao,
         }
     }
