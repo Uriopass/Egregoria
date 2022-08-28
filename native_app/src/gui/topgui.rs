@@ -17,7 +17,7 @@ use egregoria::map::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use egui::{Align2, Color32, Context, RichText, Widget, Window};
+use egui::{Align2, Color32, Context, RichText, Style, Widget, Window};
 use egui_inspect::{
     InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
 };
@@ -58,9 +58,13 @@ impl Default for Gui {
 }
 
 impl Gui {
+    pub fn set_style(ui: &Context) {
+        let mut style: Style = (*ui.style()).clone();
+        style.visuals.window_shadow.extrusion = 2.0;
+        ui.set_style(style);
+    }
+
     pub(crate) fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
-        //let _tw = ui.push_style_color(StyleColor::WindowBg, common::config().gui_bg_col.into());
-        //let _tt = ui.push_style_color(StyleColor::TitleBg, common::config().gui_title_col.into());
         self.menu_bar(ui, uiworld, goria);
 
         Self::inspector(ui, uiworld, goria);
@@ -604,56 +608,35 @@ impl Gui {
         //let _tok2 = ui.push_style_var(StyleVar::ItemSpacing([10.0, 7.0]));
         Window::new("Time controls")
             .fixed_size([165.0, 55.0])
-            .fixed_pos([-1.0, h - 52.0])
+            .fixed_pos([-1.0, h])
             .title_bar(false)
             .collapsible(false)
             .resizable(false)
+            .anchor(Align2::LEFT_BOTTOM, [0.0, 0.0])
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.label(format!(" Day {}", time.day));
-                    ui.add_space(115.0);
+                    ui.add_space(70.0);
                     ui.label(format!("{:02}:{:02}", time.hour, time.second));
                 });
 
                 //let red = ui.push_style_color(StyleColor::Header, [0.7, 0.2, 0.2, 0.5]);
 
                 ui.horizontal(|ui| {
-                    let mut text = RichText::new("   ||").color(Color32::from_rgba_unmultiplied(
-                        (0.7 * 255.0) as u8,
-                        (0.2 * 255.0) as u8,
-                        (0.2 * 255.0) as u8,
-                        (1.0 * 255.0) as u8,
-                    ));
-                    if *warp == 0 {
-                        text = text.strong();
-                    }
-
-                    if ui.label(text).clicked() {
+                    if ui.selectable_label(*warp == 0, " || ").clicked() {
                         *depause_warp = *warp;
                         *warp = 0;
                     }
 
-                    let mut text = RichText::new("   1x");
-                    if *warp == 1 {
-                        text = text.strong();
-                    }
-                    if ui.label(text).clicked() {
+                    if ui.selectable_label(*warp == 1, " 1x ").clicked() {
                         *warp = 1;
                     }
 
-                    let mut text = RichText::new("   3x");
-                    if *warp == 3 {
-                        text = text.strong();
-                    }
-                    if ui.label(text).clicked() {
+                    if ui.selectable_label(*warp == 3, " 3x ").clicked() {
                         *warp = 3;
                     }
 
-                    let mut text = RichText::new("   Max");
-                    if *warp == 1000 {
-                        text = text.strong();
-                    }
-                    if ui.label(text).clicked() {
+                    if ui.selectable_label(*warp == 1000, " Max ").clicked() {
                         *warp = 1000;
                     }
                 })
