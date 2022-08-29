@@ -4,7 +4,7 @@ use egregoria::economy::{
     EcoStats, ItemHistories, ItemRegistry, HISTORY_SIZE, LEVEL_FREQS, LEVEL_NAMES,
 };
 use egregoria::Egregoria;
-use egui::plot::{HLine, Line, PlotPoints};
+use egui::plot::{Line, PlotPoints};
 use egui::{Align2, Color32, Ui};
 use geom::Color;
 use slotmap::Key;
@@ -47,6 +47,7 @@ pub(crate) fn economy(
                     .height(200.0)
                     .allow_boxed_zoom(false)
                     .include_y(0.0)
+                    .include_x(0.0)
                     .allow_drag(false)
                     .allow_scroll(false)
                     .allow_zoom(false)
@@ -72,12 +73,19 @@ pub(crate) fn economy(
 
                             let c_next = (cursor + 1) % HISTORY_SIZE;
 
+                            let mut first_zeros = false;
                             let heights = history.past_ring[c_next..HISTORY_SIZE]
                                 .iter()
                                 .chain(history.past_ring[0..c_next].iter())
                                 .copied()
                                 .zip(xs.iter())
-                                .map(|(v, x)| [*x as f64, v as f64]);
+                                .map(|(v, x)| [*x as f64, v as f64])
+                                .filter(|[_, y]| {
+                                    if !first_zeros && *y > 0.0 {
+                                        first_zeros = true;
+                                    }
+                                    first_zeros
+                                });
 
                             let iname = &registry[id].name;
 
@@ -92,10 +100,19 @@ pub(crate) fn economy(
                                     .name(iname),
                             );
                         }
-                        ui.hline(
-                            HLine::new(overallmax as f64 * 1.25)
-                                .color(Color32::from_white_alpha(1))
-                                .width(0.0),
+                        ui.line(
+                            Line::new(
+                                IntoIterator::into_iter([
+                                    [0.0, 0.0],
+                                    [
+                                        HISTORY_SIZE as f64 * seconds_per_step,
+                                        1.0 + 1.25 * overallmax as f64,
+                                    ],
+                                ])
+                                .collect::<PlotPoints>(),
+                            )
+                            .width(0.001)
+                            .color(Color32::from_white_alpha(1)),
                         );
                     });
 
