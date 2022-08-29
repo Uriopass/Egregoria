@@ -17,7 +17,7 @@ impl<T: Inspect<T>> Inspect<Vec<T>> for Vec<T> {
 
 impl<T: Inspect<T>> Inspect<[T]> for [T] {
     fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, args: &InspectArgs) {
-        ui.collapsing(label, |ui| {
+        ui.collapsing(format!("{} [{}]", label, data.len()), |ui| {
             for (i, x) in data.iter().enumerate() {
                 ui.push_id(i, |ui| {
                     <T as Inspect<T>>::render(x, "", ui, args);
@@ -34,7 +34,7 @@ impl<T: Inspect<T>> Inspect<[T]> for [T] {
     ) -> bool {
         let mut changed = false;
 
-        ui.collapsing(label, |ui| {
+        ui.collapsing(format!("{} [{}]", label, data.len()), |ui| {
             for (i, x) in data.iter_mut().enumerate() {
                 ui.push_id(i, |ui| {
                     changed |= <T as Inspect<T>>::render_mut(x, "", ui, args);
