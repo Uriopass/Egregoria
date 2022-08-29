@@ -200,17 +200,27 @@ pub(crate) fn settings(
             ui.separator();
             ui.label("Audio");
 
-            ui.add(
-                egui::Slider::new(&mut settings.music_volume_percent, 0.0..=100.0)
-                    .text("Music volume"),
-            );
-            ui.add(
-                egui::Slider::new(&mut settings.effects_volume_percent, 0.0..=100.0)
-                    .text("Effects volume"),
-            );
-            ui.add(
-                egui::Slider::new(&mut settings.ui_volume_percent, 0.0..=100.0).text("Ui volume"),
-            );
+            ui.horizontal(|ui| {
+                ui.add(
+                    egui::Slider::new(&mut settings.music_volume_percent, 0.0..=100.0)
+                        .custom_formatter(|x, _| format!("{:.0}%", x)),
+                );
+                ui.label("Music volume");
+            });
+            ui.horizontal(|ui| {
+                ui.add(
+                    egui::Slider::new(&mut settings.effects_volume_percent, 0.0..=100.0)
+                        .custom_formatter(|x, _| format!("{:.0}%", x)),
+                );
+                ui.label("Effects volume");
+            });
+            ui.horizontal(|ui| {
+                ui.add(
+                    egui::Slider::new(&mut settings.ui_volume_percent, 0.0..=100.0)
+                        .custom_formatter(|x, _| format!("{:.0}%", x)),
+                );
+                ui.label("Ui volume");
+            });
 
             ui.separator();
             ui.label("Keybinds");
