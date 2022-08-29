@@ -14,8 +14,8 @@ pub fn impl_inspect_macro(input: proc_macro::TokenStream) -> proc_macro::TokenSt
 }
 
 struct ParsedField {
-    render: proc_macro2::TokenStream,
-    render_mut: proc_macro2::TokenStream,
+    render: TokenStream,
+    render_mut: TokenStream,
     //skip: bool
 }
 
@@ -92,8 +92,8 @@ fn try_handle_inspect_type<
     parsed_field: &mut Option<ParsedField>,
     f: &syn::Field,
     path: &syn::Path,
-    default_render_trait: proc_macro2::TokenStream,
-    arg_type: proc_macro2::TokenStream,
+    default_render_trait: TokenStream,
+    arg_type: TokenStream,
 ) {
     if f.attrs.iter().any(|x| x.path == *path) {
         handle_inspect_type::<FieldArgsT, ArgsT>(parsed_field, f, default_render_trait, arg_type);
@@ -108,8 +108,8 @@ fn handle_inspect_type<
 >(
     parsed_field: &mut Option<ParsedField>,
     f: &syn::Field,
-    default_render_trait: proc_macro2::TokenStream,
-    arg_type: proc_macro2::TokenStream,
+    default_render_trait: TokenStream,
+    arg_type: TokenStream,
 ) {
     //TODO: Improve error message
     if parsed_field.is_some() {
@@ -184,10 +184,7 @@ fn create_render_mut_call_unit_struct(data: &FieldsUnnamed) -> TokenStream {
     }}
 }
 
-fn create_render_call_enum(
-    data: &syn::DataEnum,
-    args: &InspectStructArgs,
-) -> proc_macro2::TokenStream {
+fn create_render_call_enum(data: &syn::DataEnum, args: &InspectStructArgs) -> TokenStream {
     let variants = data.variants.iter().map(|v| {
         let variant_name = &v.ident;
         if !v.fields.is_empty() {
@@ -207,10 +204,7 @@ fn create_render_call_enum(
     }}
 }
 
-fn create_render_mut_call_enum(
-    data: &syn::DataEnum,
-    args: &InspectStructArgs,
-) -> proc_macro2::TokenStream {
+fn create_render_mut_call_enum(data: &syn::DataEnum, args: &InspectStructArgs) -> TokenStream {
     let variants = data.variants.iter().map(|v| {
         let variant_name = &v.ident;
         if !v.fields.is_empty() {
@@ -238,7 +232,7 @@ fn create_render_call<T: ToTokens>(
     proxy_type: &Option<syn::Path>,
     arg_type: &syn::Type,
     args: &T,
-) -> proc_macro2::TokenStream {
+) -> TokenStream {
     use quote::format_ident;
     let args_name1 = format_ident!("_inspect_args_{}", field_name);
     let args_name2 = args_name1.clone();
@@ -268,7 +262,7 @@ fn create_render_mut_call<T: ToTokens>(
     proxy_type: &Option<syn::Path>,
     arg_type: &syn::Type,
     args: &T,
-) -> proc_macro2::TokenStream {
+) -> TokenStream {
     use quote::format_ident;
     let args_name1 = format_ident!("_inspect_args_{}", field_name);
     let args_name2 = args_name1.clone();
