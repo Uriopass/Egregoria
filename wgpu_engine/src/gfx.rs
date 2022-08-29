@@ -16,13 +16,15 @@ use wgpu::{
     Adapter, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState, CommandBuffer,
     CommandEncoder, CommandEncoderDescriptor, DepthBiasState, Device, ErrorFilter, Face, FrontFace,
     IndexFormat, MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface,
-    SurfaceConfiguration, TextureSampleType, TextureUsages, TextureView, VertexBufferLayout,
+    SurfaceConfiguration, TextureFormat, TextureSampleType, TextureUsages, TextureView,
+    VertexBufferLayout,
 };
 
 pub struct FBOs {
     pub(crate) depth: Texture,
     pub(crate) color_msaa: TextureView,
     pub(crate) ssao: Texture,
+    pub format: TextureFormat,
 }
 
 pub struct GfxContext {
@@ -146,7 +148,7 @@ impl<'a> FrameContext<'a> {
 
 impl GfxContext {
     pub async fn new<W: HasRawWindowHandle>(window: &W, win_width: u32, win_height: u32) -> Self {
-        let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
+        let instance = wgpu::Instance::new(wgpu::Backends::all());
 
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
@@ -159,25 +161,41 @@ impl GfxContext {
             .expect(
                 "failed to find a suitable adapter, have you installed necessary vulkan libraries?",
             );
+
+        let limit = if cfg!(target_arch = "wasm32") {
+            wgpu::Limits::downlevel_webgl2_defaults()
+        } else {
+            wgpu::Limits::default()
+        };
+
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    features: wgpu::Features::ADDRESS_MODE_CLAMP_TO_BORDER,
-                    limits: wgpu::Limits::default(),
+                    features: wgpu::Features::empty(),
+                    limits: limit,
                 },
                 None,
             )
             .await
             .expect("could not find device, have you installed necessary vulkan libraries?");
+
+        let formats = surface.get_supported_formats(&adapter);
+
+        let format = *formats
+            .iter()
+            .filter(|x| x.describe().srgb)
+            .next()
+            .unwrap_or_else(|| &formats[0]);
+
         let sc_desc = SurfaceConfiguration {
             usage: TextureUsages::RENDER_ATTACHMENT,
-            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            format,
             width: win_width,
             height: win_height,
             present_mode: wgpu::PresentMode::Fifo,
         };
-        let samples = 4;
+        let samples = if cfg!(target_arch = "wasm32") { 1 } else { 4 };
         let fbos = Self::create_textures(&device, &sc_desc, samples);
         surface.configure(&device, &sc_desc);
 
@@ -576,6 +594,7 @@ impl GfxContext {
             depth: Texture::create_depth_texture(device, size, samples),
             color_msaa: Texture::create_color_msaa(device, desc, samples),
             ssao,
+            format: desc.format,
         }
     }
 
@@ -896,7 +915,7 @@ impl SSAOPipeline {
                                         binding: 0,
                                         visibility: wgpu::ShaderStages::FRAGMENT,
                                         ty: wgpu::BindingType::Texture {
-                                            multisampled: true,
+                                            multisampled: cfg!(not(target_arch = "wasm32")),
                                             view_dimension: wgpu::TextureViewDimension::D2,
                                             sample_type: TextureSampleType::Float {
                                                 filterable: true,

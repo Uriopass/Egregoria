@@ -8,7 +8,8 @@ members = [
     "native_app",
     "wgpu_engine",
     "networking",
-    "headless"
+    "headless",
+    "run-wasm"
 ]
 
 resolver = "2"

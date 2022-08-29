@@ -3,7 +3,6 @@ use crate::game_loop;
 use crate::init::SOUNDS_LIST;
 use crate::input::InputContext;
 use egregoria::utils::time::GameTime;
-use futures::executor;
 use geom::{vec2, vec3, LinearColor};
 use std::time::Instant;
 use wgpu_engine::wgpu::TextureViewDescriptor;
@@ -13,7 +12,6 @@ use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
 };
 
 pub(crate) struct Context {
@@ -26,40 +24,13 @@ pub(crate) struct Context {
 }
 
 impl Context {
-    pub(crate) fn new() -> Self {
-        let el = EventLoop::new();
-
-        let size = match el.primary_monitor() {
-            Some(monitor) => monitor.size(),
-            None => el.available_monitors().next().unwrap().size(),
-        };
-
-        let wb = WindowBuilder::new();
-
-        let window;
-        #[cfg(target_os = "windows")]
-        {
-            use winit::platform::windows::WindowBuilderExtWindows;
-            window = wb.with_drag_and_drop(false);
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            window = wb;
-        }
-        let window = window
-            .with_inner_size(PhysicalSize::new(
-                size.width as f32 * 0.8,
-                size.height as f32 * 0.8,
-            ))
-            .with_title(format!("Egregoria {}", include_str!("../../VERSION")))
-            .build(&el)
-            .expect("Failed to create window");
-
-        let gfx = executor::block_on(GfxContext::new(
+    pub(crate) async fn new(el: EventLoop<()>, window: Window) -> Self {
+        let gfx = GfxContext::new(
             &window,
             window.inner_size().width,
             window.inner_size().height,
-        ));
+        )
+        .await;
         let input = InputContext::default();
         let mut audio = AudioContext::new();
 

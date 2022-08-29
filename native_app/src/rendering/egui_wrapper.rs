@@ -1,7 +1,6 @@
 use egui::{FontData, FontDefinitions, TextureId};
 use egui_wgpu::renderer;
 use egui_wgpu::renderer::ScreenDescriptor;
-use egui_wgpu::wgpu::TextureFormat;
 use wgpu_engine::{GfxContext, GuiRenderContext};
 use winit::event_loop::EventLoopWindowTarget;
 use winit::window::Window;
@@ -37,7 +36,7 @@ impl EguiWrapper {
             }
         };
 
-        let renderer = renderer::RenderPass::new(&gfx.device, TextureFormat::Bgra8UnormSrgb, 1);
+        let renderer = renderer::RenderPass::new(&gfx.device, gfx.fbos.format, 1);
 
         Self {
             egui,

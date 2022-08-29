@@ -21,11 +21,6 @@ pub struct Texture {
     pub extent: Extent3d,
 }
 
-pub struct MultisampledTexture {
-    pub target: Texture,
-    pub multisampled_buffer: wgpu::TextureView,
-}
-
 impl Texture {
     pub fn read_image(p: impl AsRef<Path>) -> Option<(Vec<u8>, u32, u32)> {
         let mut buf = vec![];
@@ -199,9 +194,9 @@ impl Texture {
     pub fn depth_compare_sampler() -> SamplerDescriptor<'static> {
         SamplerDescriptor {
             label: None,
-            address_mode_u: wgpu::AddressMode::ClampToBorder,
-            address_mode_v: wgpu::AddressMode::ClampToBorder,
-            address_mode_w: wgpu::AddressMode::ClampToBorder,
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Nearest,
