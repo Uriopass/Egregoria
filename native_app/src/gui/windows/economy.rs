@@ -1,9 +1,15 @@
 use crate::uiworld::UiWorld;
-use egregoria::economy::{EcoStats, ItemHistories, LEVEL_FREQS};
+use common::timestep::UP_DT;
+use egregoria::economy::{
+    EcoStats, ItemHistories, ItemRegistry, HISTORY_SIZE, LEVEL_FREQS, LEVEL_NAMES,
+};
 use egregoria::Egregoria;
-use egui::{Align2, Color32, Rect, Rounding, Stroke};
-use geom::{vec2, Color, Vec2};
+use egui::plot::{HLine, Line, PlotPoints};
+use egui::{Align2, Color32, Ui};
+use geom::Color;
 use slotmap::Key;
+use std::cmp::Reverse;
+use std::iter::FromIterator;
 
 struct EconomyState {
     pub curlevel: usize,
@@ -18,101 +24,116 @@ pub(crate) fn economy(
     uiw.check_present(|| EconomyState { curlevel: 0 });
     let mut state = uiw.write::<EconomyState>();
     let ecostats = goria.read::<EcoStats>();
-    let [w, h]: [f32; 2] = ui.available_rect().size().into();
+    let registry = goria.read::<ItemRegistry>();
 
     window
-        .default_pos([w * 0.5, h * 0.5])
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-        .default_size([600.0, h * 0.6])
+        .fixed_size([700.0, 500.0])
         .show(ui, move |ui| {
-            egui::ComboBox::from_label("Level").show_index(
-                ui,
-                &mut state.curlevel,
-                LEVEL_FREQS.len(),
-                |i| LEVEL_FREQS[i].to_string(),
-            );
-
-            let r = ui.painter();
-            let [wh, _]: [f32; 2] = ui.available_size().into();
-
-            let draw_line = |start: Vec2, end: Vec2, c: Color| {
-                r.line_segment(
-                    [[start.x, start.y].into(), [end.x, end.y].into()],
-                    Stroke::new(
-                        1.0,
-                        Color32::from_rgba_unmultiplied(
-                            (c.r * 255.0) as u8,
-                            (c.g * 255.0) as u8,
-                            (c.b * 255.0) as u8,
-                            (c.a * 255.0) as u8,
-                        ),
-                    ),
-                );
-            };
-
-            let draw_rect = |pos: Vec2, size: Vec2, c: Color| {
-                r.rect_stroke(
-                    Rect::from_min_size([pos.x, pos.y].into(), [size.x, size.y].into()),
-                    Rounding::none(),
-                    Stroke::new(
-                        1.0,
-                        Color32::from_rgba_unmultiplied(
-                            (c.r * 255.0) as u8,
-                            (c.g * 255.0) as u8,
-                            (c.b * 255.0) as u8,
-                            (c.a * 255.0) as u8,
-                        ),
-                    ),
-                )
-            };
-
-            let render_history = |history: &ItemHistories, offx, offy, width, height| {
-                const PADDING: f32 = 5.0;
-                draw_rect(vec2(offx, offy), vec2(width, height), Color::gray(0.5));
-                for (id, history) in history.iter_histories(state.curlevel) {
-                    let h = common::hash_u64(id.data().as_ffi());
-                    let random_col = Color::new(
-                        common::rand::rand2(h as f32, 0.0),
-                        common::rand::rand2(h as f32, 1.0),
-                        common::rand::rand2(h as f32, 2.0),
-                        1.0,
-                    );
-
-                    let maxval = history.past_ring.iter().copied().max().unwrap() as f32;
-
-                    let heights = history
-                        .past_ring
-                        .iter()
-                        .copied()
-                        .map(|v| height - (height - PADDING * 2.0) * v as f32 / maxval);
-
-                    let step = (width - PADDING * 2.0) / (heights.len() as f32);
-                    for (x, (a, b)) in heights.clone().zip(heights.skip(1)).enumerate() {
-                        let x = x as f32;
-                        // Draw line from a to b
-                        let a = Vec2::new(PADDING + offx + x * step, offy + a - PADDING);
-                        let b = Vec2::new(PADDING + offx + (x + 1.0) * step, offy + b - PADDING);
-                        draw_line(a, b, random_col);
+            ui.horizontal(|ui| {
+                for (i, level) in LEVEL_NAMES.iter().enumerate() {
+                    if ui.selectable_label(i == state.curlevel, *level).clicked() {
+                        state.curlevel = i;
                     }
                 }
+            });
+
+            let seconds_per_step = LEVEL_FREQS[state.curlevel] as f64 * UP_DT.as_secs_f64();
+            let xs: Vec<f64> = (0..HISTORY_SIZE)
+                .map(|i| i as f64 * seconds_per_step)
+                .collect();
+            let render_history = |ui: &mut Ui, history: &ItemHistories| {
+                egui::plot::Plot::new("ecoplot")
+                    .height(200.0)
+                    .allow_boxed_zoom(false)
+                    .include_y(0.0)
+                    .allow_drag(false)
+                    .allow_scroll(false)
+                    .allow_zoom(false)
+                    .show(ui, |ui| {
+                        let mut overallmax = 0;
+                        let cursor = history.cursors()[state.curlevel];
+                        for (id, history) in history.iter_histories(state.curlevel) {
+                            let maxval = *history.past_ring.iter().max().unwrap();
+                            if maxval == 0 {
+                                continue;
+                            }
+                            if maxval > overallmax {
+                                overallmax = maxval;
+                            }
+
+                            let h = common::hash_u64(id.data().as_ffi());
+                            let random_col = Color::new(
+                                0.5 + 0.5 * common::rand::rand2(h as f32, 0.0),
+                                0.5 + 0.5 * common::rand::rand2(h as f32, 1.0),
+                                0.5 + 0.5 * common::rand::rand2(h as f32, 2.0),
+                                1.0,
+                            );
+
+                            let c_next = (cursor + 1) % HISTORY_SIZE;
+
+                            let heights = history.past_ring[c_next..HISTORY_SIZE]
+                                .iter()
+                                .chain(history.past_ring[0..c_next].iter())
+                                .copied()
+                                .zip(xs.iter())
+                                .map(|(v, x)| [*x as f64, v as f64]);
+
+                            let iname = &registry[id].name;
+
+                            ui.line(
+                                Line::new(PlotPoints::from_iter(heights))
+                                    .color(Color32::from_rgba_unmultiplied(
+                                        (random_col.r * 255.0) as u8,
+                                        (random_col.g * 255.0) as u8,
+                                        (random_col.b * 255.0) as u8,
+                                        (random_col.a * 255.0) as u8,
+                                    ))
+                                    .name(iname),
+                            );
+                        }
+                        ui.hline(
+                            HLine::new(overallmax as f64 * 1.25)
+                                .color(Color32::from_white_alpha(1))
+                                .width(0.0),
+                        );
+                    });
+
+                egui::ScrollArea::vertical()
+                    .max_height(300.0)
+                    .vscroll(true)
+                    .show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.add_space(ui.available_width());
+                        });
+                        egui::Grid::new("ecogrid").show(ui, |ui| {
+                            let mut histories: Vec<_> = history
+                                .iter_histories(state.curlevel)
+                                .map(|(id, level)| (id, level.past_ring.iter().sum::<u32>()))
+                                .filter(|(_, x)| *x > 0)
+                                .collect();
+                            histories.sort_by_key(|(_, sum)| Reverse(*sum));
+
+                            for (id, sum) in histories {
+                                let iname = &registry[id].name;
+                                ui.label(iname);
+                                ui.label(format!("{}", sum));
+                                ui.end_row();
+                            }
+                        });
+                    });
             };
 
-            render_history(
-                &ecostats.imports,
-                tweak!(10.0),
-                tweak!(70.0),
-                wh * 0.5 - tweak!(12.0),
-                tweak!(95.0),
-            );
-
-            render_history(
-                &ecostats.exports,
-                wh * 0.5 + tweak!(2.0),
-                tweak!(70.0),
-                wh * 0.5 - tweak!(12.0),
-                tweak!(95.0),
-            );
-
-            ui.add_space(tweak!(210.0));
+            ui.columns(2, |ui| {
+                ui[0].push_id(0, |ui| {
+                    ui.label("Imports");
+                    render_history(ui, &ecostats.imports);
+                });
+                ui[1].push_id(1, |ui| {
+                    ui.label("Exports");
+                    render_history(ui, &ecostats.exports);
+                });
+            });
+            ui.allocate_space(ui.available_size());
         });
 }

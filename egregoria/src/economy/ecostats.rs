@@ -5,9 +5,9 @@ use std::collections::BTreeMap;
 
 pub const HISTORY_SIZE: usize = 128;
 /// Tick to wait before the new bin
-/// Corresponds to 5s, 1m, 10m, 1h, 10h, 50h
 /// Which can be recovred from FREQ * HISTORY_SIZZ / TICK_RATE
 pub const LEVEL_FREQS: [u32; 6] = [2, 25, 250, 1500, 15000, 75000];
+pub const LEVEL_NAMES: [&str; 6] = ["5s", "1m", "10m", "1h", "10h", "50h"];
 
 /// One history of one item at one frequency level
 /// The past_ring is controlled by a shared cursor for all items
@@ -54,6 +54,10 @@ impl ItemHistories {
         }
     }
 
+    pub fn cursors(&self) -> &[usize] {
+        &self.cursors
+    }
+
     pub fn iter_histories(
         &self,
         level: usize,
@@ -78,9 +82,12 @@ impl ItemHistories {
     }
 
     pub fn advance(&mut self, tick: u32) {
-        for (c, freq) in self.cursors.iter_mut().zip(&LEVEL_FREQS) {
+        for (c_i, (c, freq)) in self.cursors.iter_mut().zip(&LEVEL_FREQS).enumerate() {
             if tick % *freq == 0 {
                 *c = (*c + 1) % HISTORY_SIZE;
+                self.m.values_mut().for_each(|h| {
+                    h.levels[c_i].past_ring[*c] = 0;
+                });
             }
         }
     }

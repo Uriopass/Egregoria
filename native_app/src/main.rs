@@ -8,6 +8,7 @@ extern crate common;
 extern crate egregoria;
 extern crate core;
 
+#[allow(unused_imports)]
 #[macro_use]
 extern crate inline_tweak;
 

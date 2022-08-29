@@ -29,7 +29,7 @@ pub(crate) fn network(
         match *state {
             NetworkState::Singleplayer(_) => {
                 if !info.error.is_empty() {
-                    ui.label(RichText::new(&info.error).color([1.0, 0.0, 0.0, 1.0]));
+                    ui.label(RichText::new(&info.error));
                     ui.separator();
                 }
 
@@ -43,7 +43,7 @@ pub(crate) fn network(
                     return;
                 }
 
-                if ui.small_button("Start server") {
+                if ui.small_button("Start server").clicked() {
                     if let Some(server) = crate::network::start_server(&mut *info, goria) {
                         *state = NetworkState::Server(server);
                     }
@@ -55,19 +55,19 @@ pub(crate) fn network(
                     ui.text_edit_singleline(&mut info.ip);
                     ui.label("IP");
                 });
-                if ui.small_button("Connect") {
+                if ui.small_button("Connect").clicked() {
                     if let Some(c) = crate::network::start_client(&mut info) {
                         *state = NetworkState::Client(c);
                     }
                 }
             }
             NetworkState::Client(ref client) => {
-                ui.text(client.lock().unwrap().describe());
+                ui.label(client.lock().unwrap().describe());
                 show_hashes(ui, goria, &mut *info);
             }
             NetworkState::Server(ref server) => {
-                ui.text("Running server");
-                ui.text(server.lock().unwrap().describe());
+                ui.label("Running server");
+                ui.label(server.lock().unwrap().describe());
                 show_hashes(ui, goria, &mut *info);
             }
         }
@@ -85,7 +85,7 @@ fn show_hashes(ui: &mut Ui, goria: &Egregoria, info: &mut NetworkConnectionInfo)
     }
 
     for (name, hash) in &info.hashes {
-        ui.text(format!("{}: {}", name, hash));
+        ui.label(format!("{}: {}", name, hash));
     }
 }
 
