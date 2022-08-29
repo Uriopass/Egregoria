@@ -1,2 +1,1 @@
-mod geometry;
-pub use geometry::*;
+pub use crate::default::geometry::*;

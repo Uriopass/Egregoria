@@ -63,7 +63,7 @@ impl InspectFieldArgs for InspectFieldArgsDefault {
 }
 
 #[derive(Debug)]
-pub struct InspectArgsDefault {
+pub struct InspectArgs {
     min_value: Option<f32>,
     max_value: Option<f32>,
     step: Option<f32>,
@@ -71,7 +71,7 @@ pub struct InspectArgsDefault {
     indent_children: Option<bool>,
 }
 
-impl From<InspectFieldArgsDefault> for InspectArgsDefault {
+impl From<InspectFieldArgsDefault> for InspectArgs {
     fn from(field_args: InspectFieldArgsDefault) -> Self {
         Self {
             min_value: field_args.min_value,
@@ -83,7 +83,7 @@ impl From<InspectFieldArgsDefault> for InspectArgsDefault {
     }
 }
 
-impl quote::ToTokens for InspectArgsDefault {
+impl quote::ToTokens for InspectArgs {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         let min_value = expand_to_tokens(&self.min_value);
         let max_value = expand_to_tokens(&self.max_value);
@@ -93,7 +93,7 @@ impl quote::ToTokens for InspectArgsDefault {
 
         use quote::TokenStreamExt;
         tokens.append_all(quote!(
-            egui_inspect::InspectArgsDefault {
+            egui_inspect::InspectArgs {
                 min_value: #min_value,
                 max_value: #max_value,
                 step: #step,

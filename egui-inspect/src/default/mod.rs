@@ -13,6 +13,7 @@ mod default_u64;
 mod default_u8;
 mod default_usize;
 mod default_vec;
+pub mod geometry;
 
 pub use super::*;
 
@@ -25,11 +26,11 @@ pub use super::*;
 /// Marking a struct element with something like `#[inspect(min_value = 5.0, max_value = 53.0)]`
 /// will make the widget for that member default to those values.
 #[derive(Clone, Default, Debug)]
-pub struct InspectArgsDefault {
+pub struct InspectArgs {
     /// If true, the struct will have a visual/expandable header added to it. This defaults to true.
     ///
     /// To customize this, disable this header programmatically by passing your own
-    /// InspectArgsDefault into `render` or `render_mut`
+    /// InspectArgs into `render` or `render_mut`
     pub header: Option<bool>,
 
     /// If true, any child elements (i.e. struct members) will be indented. This defaults to true.
@@ -46,16 +47,12 @@ pub struct InspectArgsDefault {
 }
 
 /// Renders a value using the default widget
-pub trait InspectRenderDefault<T: ?Sized> {
+pub trait Inspect<T: ?Sized> {
     /// Render the element in an immutable way (i.e. static text)
-    fn render(data: &T, label: &'static str, ui: &mut egui::Ui, args: &InspectArgsDefault);
+    fn render(data: &T, label: &'static str, ui: &mut egui::Ui, args: &InspectArgs);
 
     /// Render the element in a mutable way. Using this trait, the default widget to use is based
     /// on the type.
-    fn render_mut(
-        data: &mut T,
-        label: &'static str,
-        ui: &mut egui::Ui,
-        args: &InspectArgsDefault,
-    ) -> bool;
+    fn render_mut(data: &mut T, label: &'static str, ui: &mut egui::Ui, args: &InspectArgs)
+        -> bool;
 }

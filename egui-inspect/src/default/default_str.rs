@@ -1,7 +1,7 @@
-use super::{InspectArgsDefault, InspectRenderDefault};
+use super::{Inspect, InspectArgs};
 
-impl InspectRenderDefault<&'static str> for &'static str {
-    fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, _args: &InspectArgsDefault) {
+impl Inspect<&'static str> for &'static str {
+    fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, _args: &InspectArgs) {
         // Values are consistent
         ui.label(&format!("{}: {}", label, data));
     }
@@ -10,7 +10,7 @@ impl InspectRenderDefault<&'static str> for &'static str {
         data: &mut Self,
         label: &'static str,
         ui: &mut egui::Ui,
-        _args: &InspectArgsDefault,
+        _args: &InspectArgs,
     ) -> bool {
         Self::render(data, label, ui, _args);
         false

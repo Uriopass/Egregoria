@@ -1,5 +1,5 @@
 use crate::map::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
-use egui_inspect::{egui, egui::Ui, InspectArgsDefault, InspectRenderDefault};
+use egui_inspect::{egui, egui::Ui, Inspect, InspectArgs};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -98,8 +98,8 @@ impl LightPolicy {
     }
 }
 
-impl InspectRenderDefault<LightPolicy> for LightPolicy {
-    fn render(_: &LightPolicy, _: &'static str, _: &mut Ui, _: &InspectArgsDefault) {
+impl Inspect<LightPolicy> for LightPolicy {
+    fn render(_: &LightPolicy, _: &'static str, _: &mut Ui, _: &InspectArgs) {
         unimplemented!()
     }
 
@@ -107,7 +107,7 @@ impl InspectRenderDefault<LightPolicy> for LightPolicy {
         data: &mut LightPolicy,
         label: &'static str,
         ui: &mut Ui,
-        _: &InspectArgsDefault,
+        _: &InspectArgs,
     ) -> bool {
         let p = data;
         let mut id = match p {

@@ -1,7 +1,7 @@
-use super::{InspectArgsDefault, InspectRenderDefault};
+use super::{Inspect, InspectArgs};
 
-impl InspectRenderDefault<bool> for bool {
-    fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, _args: &InspectArgsDefault) {
+impl Inspect<bool> for bool {
+    fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, _args: &InspectArgs) {
         ui.label(&format!("{}: {}", label, data));
     }
 
@@ -9,7 +9,7 @@ impl InspectRenderDefault<bool> for bool {
         data: &mut Self,
         label: &'static str,
         ui: &mut egui::Ui,
-        _args: &InspectArgsDefault,
+        _args: &InspectArgs,
     ) -> bool {
         ui.checkbox(data, label).changed()
     }

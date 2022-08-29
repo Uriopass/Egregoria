@@ -1,7 +1,7 @@
-use super::{InspectArgsDefault, InspectRenderDefault};
+use super::{Inspect, InspectArgs};
 
-impl InspectRenderDefault<String> for String {
-    fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, _args: &InspectArgsDefault) {
+impl Inspect<String> for String {
+    fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, _args: &InspectArgs) {
         ui.label(&format!("{}: {}", label, data));
     }
 
@@ -9,7 +9,7 @@ impl InspectRenderDefault<String> for String {
         data: &mut Self,
         label: &'static str,
         ui: &mut egui::Ui,
-        _args: &InspectArgsDefault,
+        _args: &InspectArgs,
     ) -> bool {
         let mut changed = false;
         ui.horizontal(|ui| {

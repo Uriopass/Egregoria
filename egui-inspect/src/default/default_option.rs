@@ -1,9 +1,9 @@
-use super::{InspectArgsDefault, InspectRenderDefault};
+use super::{Inspect, InspectArgs};
 
-impl<T: InspectRenderDefault<T>> InspectRenderDefault<Option<T>> for Option<T> {
-    fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, args: &InspectArgsDefault) {
+impl<T: Inspect<T>> Inspect<Option<T>> for Option<T> {
+    fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, args: &InspectArgs) {
         match data {
-            Some(value) => <T as InspectRenderDefault<T>>::render(value, label, ui, args),
+            Some(value) => <T as Inspect<T>>::render(value, label, ui, args),
             None => {
                 ui.label(&format!("{}: None", label));
             }
@@ -14,10 +14,10 @@ impl<T: InspectRenderDefault<T>> InspectRenderDefault<Option<T>> for Option<T> {
         data: &mut Self,
         label: &'static str,
         ui: &mut egui::Ui,
-        args: &InspectArgsDefault,
+        args: &InspectArgs,
     ) -> bool {
         match data {
-            Some(value) => <T as InspectRenderDefault<T>>::render_mut(value, label, ui, args),
+            Some(value) => <T as Inspect<T>>::render_mut(value, label, ui, args),
             None => {
                 ui.label(&format!("{}: None", label));
                 false

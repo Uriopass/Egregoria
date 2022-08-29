@@ -1,7 +1,7 @@
-use super::{InspectArgsDefault, InspectRenderDefault};
+use super::{Inspect, InspectArgs};
 
-impl InspectRenderDefault<u64> for u64 {
-    fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, _args: &InspectArgsDefault) {
+impl Inspect<u64> for u64 {
+    fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, _args: &InspectArgs) {
         // Values are consistent
         let mut cp = *data;
         ui.horizontal(|ui| {
@@ -14,7 +14,7 @@ impl InspectRenderDefault<u64> for u64 {
         data: &mut Self,
         label: &'static str,
         ui: &mut egui::Ui,
-        args: &InspectArgsDefault,
+        args: &InspectArgs,
     ) -> bool {
         let before = *data;
         ui.horizontal(|ui| {

@@ -12,7 +12,7 @@ use egregoria::{Egregoria, SoulID};
 
 use egregoria::vehicles::trains::{Locomotive, LocomotiveReservation};
 use egui::{Color32, RichText, Ui};
-use egui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use egui_inspect::{Inspect, InspectArgs};
 use geom::{Transform, Vec2};
 use hecs::{Component, Entity};
 
@@ -21,18 +21,14 @@ pub(crate) struct InspectRenderer {
 }
 
 impl InspectRenderer {
-    fn inspect_component<T: Component + InspectRenderDefault<T>>(
-        &self,
-        goria: &Egregoria,
-        ui: &mut Ui,
-    ) {
+    fn inspect_component<T: Component + Inspect<T>>(&self, goria: &Egregoria, ui: &mut Ui) {
         let c = goria.comp::<T>(self.entity);
         if let Some(x) = c {
-            <T as InspectRenderDefault<T>>::render(
+            <T as Inspect<T>>::render(
                 &x,
                 std::any::type_name::<T>().split("::").last().unwrap_or(""),
                 ui,
-                &InspectArgsDefault::default(),
+                &InspectArgs::default(),
             )
         }
     }
@@ -41,11 +37,11 @@ impl InspectRenderer {
         let c = goria.comp(self.entity);
         if let Some(x) = c {
             let mut t = *x;
-            if <Transform as InspectRenderDefault<Transform>>::render_mut(
+            if <Transform as Inspect<Transform>>::render_mut(
                 &mut t,
                 "Transform",
                 ui,
-                &InspectArgsDefault::default(),
+                &InspectArgs::default(),
             ) {
                 uiw.commands().update_transform(self.entity, t);
             }
@@ -100,17 +96,12 @@ impl InspectRenderer {
         if let Some(coll) = goria.comp::<Collider>(self.entity) {
             if let Some((pos, po)) = goria.read::<CollisionWorld>().get(coll.0) {
                 egui::CollapsingHeader::new("Physics Object").show(ui, |ui| {
-                    <Vec2 as InspectRenderDefault<Vec2>>::render(
-                        &pos,
-                        "pos",
-                        ui,
-                        &InspectArgsDefault::default(),
-                    );
-                    <PhysicsObject as InspectRenderDefault<PhysicsObject>>::render(
+                    <Vec2 as Inspect<Vec2>>::render(&pos, "pos", ui, &InspectArgs::default());
+                    <PhysicsObject as Inspect<PhysicsObject>>::render(
                         po,
                         "aaaa",
                         ui,
-                        &InspectArgsDefault {
+                        &InspectArgs {
                             header: Some(false),
                             indent_children: Some(false),
                             min_value: None,

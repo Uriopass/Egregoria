@@ -18,7 +18,7 @@ use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
 use egui::{Align2, Context, Frame, RichText, Style, Widget, Window};
-use egui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use egui_inspect::{Inspect, InspectArgs};
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
@@ -175,11 +175,11 @@ impl Gui {
                     .resizable(false)
                     .show(ui, |ui| {
                         ui.label("Light policy");
-                        *dirty |= <LightPolicy as InspectRenderDefault<LightPolicy>>::render_mut(
+                        *dirty |= <LightPolicy as Inspect<LightPolicy>>::render_mut(
                             &mut v.light_policy,
                             "",
                             ui,
-                            &InspectArgsDefault {
+                            &InspectArgs {
                                 header: Some(false),
                                 indent_children: Some(false),
                                 ..Default::default()
@@ -187,11 +187,11 @@ impl Gui {
                         );
                         ui.add_space(10.0);
                         ui.label("Turn policy");
-                        *dirty |= <TurnPolicy as InspectRenderDefault<TurnPolicy>>::render_mut(
+                        *dirty |= <TurnPolicy as Inspect<TurnPolicy>>::render_mut(
                             &mut v.turn_policy,
                             "Turn policy",
                             ui,
-                            &InspectArgsDefault {
+                            &InspectArgs {
                                 header: Some(false),
                                 indent_children: Some(false),
                                 ..Default::default()
@@ -379,11 +379,11 @@ impl Gui {
                     ui.add_space(10.0);
 
                     egui::CollapsingHeader::new("custom").show(ui, |ui| {
-                        <LanePatternBuilder as InspectRenderDefault<LanePatternBuilder>>::render_mut(
+                        <LanePatternBuilder as Inspect<LanePatternBuilder>>::render_mut(
                             pat,
                             "Road shape",
                             ui,
-                            &InspectArgsDefault {
+                            &InspectArgs {
                                 header: Some(false),
                                 indent_children: Some(false),
                                 ..Default::default()
@@ -449,11 +449,11 @@ impl Gui {
                 .resizable(false)
                 .show(ui, |ui| {
                     let mut state = uiworld.write::<BulldozerState>();
-                    <BulldozerState as InspectRenderDefault<BulldozerState>>::render_mut(
+                    <BulldozerState as Inspect<BulldozerState>>::render_mut(
                         &mut *state,
                         "Bulldozer",
                         ui,
-                        &InspectArgsDefault {
+                        &InspectArgs {
                             header: Some(false),
                             indent_children: Some(false),
                             ..Default::default()

@@ -4,7 +4,7 @@ use quote::{quote, ToTokens};
 use syn::{parse_macro_input, Data, DeriveInput, Fields, FieldsUnnamed};
 
 mod args;
-use args::{InspectArgsDefault, InspectFieldArgs, InspectFieldArgsDefault, InspectStructArgs};
+use args::{InspectArgs, InspectFieldArgs, InspectFieldArgsDefault, InspectStructArgs};
 
 pub fn impl_inspect_macro(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -25,12 +25,12 @@ fn handle_inspect_types(parsed_field: &mut Option<ParsedField>, f: &syn::Field) 
     #[allow(non_snake_case)]
     let INSPECT_DEFAULT_PATH = syn::parse2::<syn::Path>(quote!(inspect)).unwrap();
 
-    try_handle_inspect_type::<InspectFieldArgsDefault, InspectArgsDefault>(
+    try_handle_inspect_type::<InspectFieldArgsDefault, InspectArgs>(
         parsed_field,
         f,
         &INSPECT_DEFAULT_PATH,
-        quote!(egui_inspect::InspectRenderDefault),
-        quote!(egui_inspect::InspectArgsDefault),
+        quote!(egui_inspect::Inspect),
+        quote!(egui_inspect::InspectArgs),
     );
 }
 
@@ -49,11 +49,11 @@ fn parse_field_args(input: &DeriveInput, struct_args: &InspectStructArgs) -> Vec
                             handle_inspect_types(&mut parsed_field, f);
 
                             if parsed_field.is_none() {
-                                handle_inspect_type::<InspectFieldArgsDefault, InspectArgsDefault>(
+                                handle_inspect_type::<InspectFieldArgsDefault, InspectArgs>(
                                     &mut parsed_field,
                                     f,
-                                    quote!(egui_inspect::InspectRenderDefault),
-                                    quote!(egui_inspect::InspectArgsDefault),
+                                    quote!(egui_inspect::Inspect),
+                                    quote!(egui_inspect::InspectArgs),
                                 );
                             }
 
@@ -171,7 +171,7 @@ fn create_render_call_unit_struct(data: &FieldsUnnamed) -> TokenStream {
     let ty = &ty.ty;
 
     quote! {{
-        <#ty as egui_inspect::InspectRenderDefault<#ty>>::render(&data.0, "", ui, args)
+        <#ty as egui_inspect::Inspect<#ty>>::render(&data.0, "", ui, args)
     }}
 }
 
@@ -180,7 +180,7 @@ fn create_render_mut_call_unit_struct(data: &FieldsUnnamed) -> TokenStream {
     let ty = &ty.ty;
 
     quote! {{
-        <#ty as egui_inspect::InspectRenderDefault<#ty>>::render_mut(&mut data.0, "", ui, args)
+        <#ty as egui_inspect::Inspect<#ty>>::render_mut(&mut data.0, "", ui, args)
     }}
 }
 
@@ -322,19 +322,19 @@ fn generate(
 
     let struct_impl = quote! {
         impl #impl_generics #struct_name2 #ty_generics #where_clause {
-            fn impls(data: &Self, ui: &mut egui_inspect::egui::Ui, args: &egui_inspect::InspectArgsDefault, header: bool, indent_children: bool) {
+            fn impls(data: &Self, ui: &mut egui_inspect::egui::Ui, args: &egui_inspect::InspectArgs, header: bool, indent_children: bool) {
                 #(#render_impls)*
             }
 
-            fn impls_mut(data: &mut Self, ui: &mut egui_inspect::egui::Ui, args: &egui_inspect::InspectArgsDefault, header: bool, indent_children: bool) -> bool {
+            fn impls_mut(data: &mut Self, ui: &mut egui_inspect::egui::Ui, args: &egui_inspect::InspectArgs, header: bool, indent_children: bool) -> bool {
                 let mut _has_any_field_changed = false;
                 #(#render_mut_impls)*
                 ;_has_any_field_changed
             }
         }
 
-        impl #impl_generics egui_inspect::InspectRenderDefault<#struct_name1> for #struct_name2 #ty_generics #where_clause {
-            fn render(data: &Self, label: &'static str, ui: &mut egui_inspect::egui::Ui, args: &egui_inspect::InspectArgsDefault) {
+        impl #impl_generics egui_inspect::Inspect<#struct_name1> for #struct_name2 #ty_generics #where_clause {
+            fn render(data: &Self, label: &'static str, ui: &mut egui_inspect::egui::Ui, args: &egui_inspect::InspectArgs) {
                 let header_name = stringify!(#struct_name3);
 
                 let mut header = true;
@@ -356,7 +356,7 @@ fn generate(
                 };
             }
 
-            fn render_mut(data: &mut Self, label: &'static str, ui: &mut egui_inspect::egui::Ui, args: &egui_inspect::InspectArgsDefault) -> bool {
+            fn render_mut(data: &mut Self, label: &'static str, ui: &mut egui_inspect::egui::Ui, args: &egui_inspect::InspectArgs) -> bool {
                 let header_name = stringify!(#struct_name4);
 
                 let mut header = true;

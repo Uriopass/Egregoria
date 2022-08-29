@@ -2,7 +2,7 @@ use crate::map::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, Trav
 use crate::utils::time::GameTime;
 use crate::Kinematics;
 use egui_inspect::egui::Ui;
-use egui_inspect::{InspectArgsDefault, InspectRenderDefault};
+use egui_inspect::{Inspect, InspectArgs};
 use egui_inspect_derive::Inspect;
 use geom::{Follower, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, World};
@@ -328,8 +328,8 @@ impl Default for ItineraryKind {
     }
 }
 
-impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
-    fn render(d: &ItineraryKind, label: &'static str, ui: &mut Ui, args: &InspectArgsDefault) {
+impl Inspect<ItineraryKind> for ItineraryKind {
+    fn render(d: &ItineraryKind, label: &'static str, ui: &mut Ui, args: &InspectArgs) {
         match d {
             ItineraryKind::None => {
                 ui.label(format!("None {}", label));
@@ -341,7 +341,7 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
                 ui.label(format!("Simple {} to {}", label, e));
             }
             ItineraryKind::Route(r, _) => {
-                <Route as InspectRenderDefault<Route>>::render(r, label, ui, args);
+                <Route as Inspect<Route>>::render(r, label, ui, args);
             }
             ItineraryKind::WaitForReroute { wait_ticks, .. } => {
                 ui.label(format!("wait for reroute: {}", *wait_ticks));
@@ -353,7 +353,7 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
         d: &mut ItineraryKind,
         label: &'static str,
         ui: &mut Ui,
-        args: &InspectArgsDefault,
+        args: &InspectArgs,
     ) -> bool {
         match d {
             ItineraryKind::None => {
@@ -366,7 +366,7 @@ impl InspectRenderDefault<ItineraryKind> for ItineraryKind {
                 ui.label(format!("Simple {} to {}", label, e));
             }
             ItineraryKind::Route(r, _) => {
-                return <Route as InspectRenderDefault<Route>>::render_mut(r, label, ui, args);
+                return <Route as Inspect<Route>>::render_mut(r, label, ui, args);
             }
             ItineraryKind::WaitForReroute { wait_ticks, .. } => {
                 ui.label(format!("wait for reroute: {}", *wait_ticks));

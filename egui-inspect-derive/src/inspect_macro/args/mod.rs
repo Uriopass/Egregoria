@@ -3,7 +3,7 @@ mod default_args;
 use darling::FromDeriveInput;
 use quote::quote;
 
-pub use default_args::InspectArgsDefault;
+pub use default_args::InspectArgs;
 pub use default_args::InspectFieldArgsDefault;
 
 // Utility function to convert an Option<T> to tokens
