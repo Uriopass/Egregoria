@@ -1,19 +1,19 @@
-mod default_bool;
-mod default_btrees;
-mod default_f32;
-mod default_f64;
-mod default_i32;
-mod default_option;
-mod default_str;
-mod default_string;
-mod default_tuple;
-mod default_u16;
-mod default_u32;
-mod default_u64;
-mod default_u8;
-mod default_usize;
-mod default_vec;
+mod bool;
+mod btrees;
+mod f32;
+mod f64;
 pub mod geometry;
+mod i32;
+mod option;
+mod str;
+mod string;
+mod tuple;
+mod u16;
+mod u32;
+mod u64;
+mod u8;
+mod usize;
+mod vec;
 
 pub use super::*;
 

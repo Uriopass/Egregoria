@@ -1,5 +1,5 @@
-use crate::default::Inspect;
-use crate::default::InspectArgs;
+use crate::impls::Inspect;
+use crate::impls::InspectArgs;
 use egui::color_picker::Alpha;
 use egui::Color32;
 use geom::{Color, LinearColor, PolyLine, Transform, Vec2, Vec3};

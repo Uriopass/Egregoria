@@ -1,9 +1,8 @@
-mod default;
-mod scale;
+mod impls;
 
-pub use default::*;
 pub use egui;
-pub use scale::*;
+pub use impls::geometry::*;
+pub use impls::*;
 
 #[rustfmt::skip]
 #[macro_export]
