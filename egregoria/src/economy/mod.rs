@@ -1,6 +1,6 @@
 use crate::{GoodsCompanyRegistry, SoulID};
 use common::FastMap;
-use egui_inspect_derive::Inspect;
+use egui_inspect::Inspect;
 use hecs::World;
 use resources::Resources;
 use serde::{Deserialize, Serialize};

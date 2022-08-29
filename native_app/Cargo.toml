@@ -32,7 +32,6 @@ rayon         = "1.5.3"
 profiling     = "1.0.1"
 include_dir   = "0.7.2"
 egui-inspect = { path = "../egui-inspect" }
-egui-inspect-derive = { path = "../egui-inspect-derive" }
 egui = { version = "0.19.0", default-features = false }
 egui-winit = "0.19.0"
 egui-wgpu = "0.19.0"

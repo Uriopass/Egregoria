@@ -465,7 +465,6 @@ dependencies = [
  "arc-swap",
  "bincode",
  "egui-inspect",
- "egui-inspect-derive",
  "fnv",
  "geom",
  "inline_tweak",
@@ -794,7 +793,6 @@ dependencies = [
  "atomic_refcell",
  "common",
  "egui-inspect",
- "egui-inspect-derive",
  "flat_spatial",
  "geom",
  "hecs",
@@ -827,6 +825,7 @@ name = "egui-inspect"
 version = "0.4.0"
 dependencies = [
  "egui",
+ "egui-inspect-derive",
  "geom",
 ]
 
@@ -1758,7 +1757,6 @@ dependencies = [
  "egregoria",
  "egui",
  "egui-inspect",
- "egui-inspect-derive",
  "egui-wgpu",
  "egui-winit",
  "flat_spatial",

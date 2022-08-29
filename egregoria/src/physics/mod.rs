@@ -1,5 +1,5 @@
+use egui_inspect::Inspect;
 use egui_inspect::InspectVec2Rotation;
-use egui_inspect_derive::Inspect;
 use flat_spatial::grid::GridHandle;
 use serde::{Deserialize, Serialize};
 

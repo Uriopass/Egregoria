@@ -6,7 +6,7 @@ use crate::souls::desire::{BuyFood, Home, Work};
 use crate::utils::time::GameTime;
 use crate::vehicles::{spawn_parked_vehicle, VehicleID, VehicleKind};
 use crate::{Egregoria, Map, ParCommandBuffer, SoulID};
-use egui_inspect_derive::Inspect;
+use egui_inspect::Inspect;
 use geom::Transform;
 use hecs::{Entity, World};
 use rayon::prelude::{ParallelBridge, ParallelIterator};

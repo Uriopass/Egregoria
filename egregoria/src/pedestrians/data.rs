@@ -5,7 +5,7 @@ use crate::pedestrians::Location;
 use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
 use crate::utils::rand_provider::RandProvider;
 use crate::{Egregoria, SoulID};
-use egui_inspect_derive::Inspect;
+use egui_inspect::Inspect;
 use geom::Transform;
 use geom::{Color, Vec3};
 use hecs::Entity;

@@ -14,7 +14,6 @@ ordered-float = { version = "2.7.0", default-features = false }
 serde         = { version = "1.0", features = ["derive"] }
 log           = "0.4.11"
 egui-inspect = { path = "../egui-inspect"}
-egui-inspect-derive = { path = "../egui-inspect-derive" }
 flat_spatial = { version = "0.5.0", features=["serde"] }
 geom          = { path = "../geom" }
 common        = { path = "../common" }

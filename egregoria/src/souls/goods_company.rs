@@ -8,7 +8,7 @@ use crate::utils::time::GameTime;
 use crate::vehicles::VehicleID;
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use common::saveload::Encoder;
-use egui_inspect_derive::Inspect;
+use egui_inspect::Inspect;
 use geom::{Transform, Vec2};
 use hecs::{Entity, World};
 use resources::Resources;

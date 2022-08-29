@@ -3,7 +3,6 @@ use crate::utils::time::GameTime;
 use crate::Kinematics;
 use egui_inspect::egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
-use egui_inspect_derive::Inspect;
 use geom::{Follower, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, World};
 use rayon::prelude::{ParallelBridge, ParallelIterator};

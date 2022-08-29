@@ -1,7 +1,7 @@
 use crate::map::BuildingID;
 use crate::map_dynamic::Destination;
 use crate::souls::human::HumanDecisionKind;
-use egui_inspect_derive::Inspect;
+use egui_inspect::Inspect;
 use serde::{Deserialize, Serialize};
 
 #[derive(Inspect, Clone, Serialize, Deserialize, Debug)]

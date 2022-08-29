@@ -1,5 +1,5 @@
 use arc_swap::{ArcSwap, Guard};
-use egui_inspect_derive::Inspect;
+use egui_inspect::Inspect;
 use geom::Color;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};

@@ -5,7 +5,7 @@ use crate::physics::{Collider, CollisionWorld, Kinematics};
 use crate::utils::par_command_buffer::ComponentDrop;
 use crate::vehicles::{unpark, Vehicle, VehicleID, VehicleState};
 use crate::{Egregoria, ParCommandBuffer};
-use egui_inspect_derive::Inspect;
+use egui_inspect::Inspect;
 use geom::{Spline3, Transform, Vec3};
 use hecs::{Component, Entity, Ref, World};
 use rayon::prelude::{ParallelBridge, ParallelIterator};

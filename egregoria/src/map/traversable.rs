@@ -1,5 +1,5 @@
 use crate::map::{IntersectionID, Intersections, LaneID, Lanes, Map, TurnID};
-use egui_inspect_derive::Inspect;
+use egui_inspect::Inspect;
 use geom::PolyLine3;
 use serde::{Deserialize, Serialize};
 

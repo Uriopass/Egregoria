@@ -13,7 +13,6 @@ serde_json    = "1.0.59"
 log           = "0.4.11"
 geom          = { path = "../geom" }
 egui-inspect = { path = "../egui-inspect" }
-egui-inspect-derive = { path = "../egui-inspect-derive" }
 lazy_static   = "1.4.0"
 arc-swap      = "1.3.0"
 miniz_oxide   = "0.3.7"

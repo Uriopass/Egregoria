@@ -3,7 +3,7 @@ use crate::map_dynamic::ItineraryKind;
 use crate::{
     Egregoria, GameTime, Itinerary, ItineraryFollower, ItineraryLeader, Kinematics, Selectable,
 };
-use egui_inspect_derive::*;
+use egui_inspect::Inspect;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, View, World};
 use ordered_float::OrderedFloat;

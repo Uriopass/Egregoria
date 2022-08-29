@@ -1,5 +1,5 @@
 use crate::map::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDirection};
-use egui_inspect_derive::Inspect;
+use egui_inspect::Inspect;
 use geom::{PolyLine3, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 use slotmap::new_key_type;

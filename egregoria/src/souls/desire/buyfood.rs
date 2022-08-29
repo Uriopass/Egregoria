@@ -5,7 +5,7 @@ use crate::pedestrians::Location;
 use crate::souls::human::HumanDecisionKind;
 use crate::utils::time::{GameInstant, GameTime};
 use crate::{Map, ParCommandBuffer, SoulID};
-use egui_inspect_derive::Inspect;
+use egui_inspect::Inspect;
 use geom::Transform;
 use serde::{Deserialize, Serialize};
 

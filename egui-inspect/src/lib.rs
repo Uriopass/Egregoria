@@ -4,6 +4,9 @@ pub use egui;
 pub use impls::geometry::*;
 pub use impls::*;
 
+#[cfg(feature = "derive")]
+pub use egui_inspect_derive::Inspect;
+
 #[rustfmt::skip]
 #[macro_export]
 macro_rules! debug_inspect_impl {
