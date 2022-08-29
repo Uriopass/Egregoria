@@ -18,9 +18,7 @@ use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
 use egui::{Align2, Context, Frame, RichText, Style, Widget, Window};
-use egui_inspect::{
-    InspectArgsDefault, InspectArgsStruct, InspectRenderDefault, InspectRenderStruct,
-};
+use egui_inspect::{InspectArgsDefault, InspectRenderDefault};
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
@@ -381,13 +379,14 @@ impl Gui {
                     ui.add_space(10.0);
 
                     egui::CollapsingHeader::new("custom").show(ui, |ui| {
-                        <LanePatternBuilder as InspectRenderStruct<LanePatternBuilder>>::render_mut(
+                        <LanePatternBuilder as InspectRenderDefault<LanePatternBuilder>>::render_mut(
                             pat,
                             "Road shape",
                             ui,
-                            &InspectArgsStruct {
+                            &InspectArgsDefault {
                                 header: Some(false),
                                 indent_children: Some(false),
+                                ..Default::default()
                             },
                         );
 

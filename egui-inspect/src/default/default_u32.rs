@@ -5,8 +5,8 @@ impl InspectRenderDefault<u32> for u32 {
         // Values are consistent
         let mut cp = *data;
         ui.horizontal(|ui| {
-            ui.add(egui::DragValue::new(&mut cp));
             ui.label(label);
+            ui.add(egui::DragValue::new(&mut cp));
         });
     }
 

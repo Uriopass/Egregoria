@@ -1,16 +1,10 @@
 mod default_args;
-mod slider_args;
-mod struct_args;
 
 use darling::FromDeriveInput;
 use quote::quote;
 
 pub use default_args::InspectArgsDefault;
 pub use default_args::InspectFieldArgsDefault;
-pub use slider_args::InspectArgsSlider;
-pub use slider_args::InspectFieldArgsSlider;
-pub use struct_args::InspectArgsStruct;
-pub use struct_args::InspectFieldArgsStruct;
 
 // Utility function to convert an Option<T> to tokens
 pub fn expand_to_tokens<T: quote::ToTokens>(input: &Option<T>) -> proc_macro2::TokenStream {

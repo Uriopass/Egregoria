@@ -1,5 +1,6 @@
 use crate::{GoodsCompanyRegistry, SoulID};
 use common::FastMap;
+use egui_inspect_derive::Inspect;
 use hecs::World;
 use resources::Resources;
 use serde::{Deserialize, Serialize};
@@ -101,10 +102,8 @@ pub struct Sold(pub Vec<Trade>);
 #[derive(Default, Serialize, Deserialize)]
 pub struct Bought(pub FastMap<ItemID, Vec<Trade>>);
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Inspect)]
 pub struct Workers(pub Vec<SoulID>);
-
-debug_inspect_impl!(Workers);
 
 pub fn init_market(_: &mut World, res: &mut Resources) {
     res.get_mut::<ItemRegistry>()
