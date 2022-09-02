@@ -94,7 +94,7 @@ impl Building {
                 *v = v.rotate_z(axis) + at;
             }
         }
-        let door_pos = door_pos.rotated_by(axis).z0() + at;
+        let door_pos = door_pos.rotated_by(axis).z0() + at + Vec3::z(0.1);
 
         if let BuildingGen::House | BuildingGen::Farm | BuildingGen::CenteredDoor { .. } = gen {
             let bot = obb.segments()[0];
