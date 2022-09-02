@@ -809,7 +809,7 @@ impl GfxContext {
             let device = &self.device;
             device.push_error_scope(ErrorFilter::Validation);
             let new_shader = compile_shader(device, shader_name);
-            let scope = futures::executor::block_on(device.pop_error_scope());
+            let scope = beul::execute(device.pop_error_scope());
             if scope.is_some() {
                 return;
             }

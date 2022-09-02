@@ -94,6 +94,6 @@ fn main() {
             .with_title(format!("Egregoria {}", include_str!("../../VERSION")))
             .build(&el)
             .expect("Failed to create window");
-        futures::executor::block_on(run(el, window))
+        beul::execute(run(el, window))
     }
 }

@@ -18,7 +18,7 @@ gltf      = { git = "https://github.com/gltf-rs/gltf", default-features=false, f
 itertools = { version = "0.10.0", default-features = false }
 profiling = "1.0.1"
 rayon     = "1.5"
-futures       = { version = "0.3.4", default-features = false, features = ["executor"] }
+beul      = "0.1.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
 version = "0.13.1"
