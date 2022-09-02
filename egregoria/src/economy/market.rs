@@ -8,18 +8,18 @@ use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-#[derive(Serialize, Deserialize)]
-struct SellOrder {
-    pos: Vec2,
-    qty: u32,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SellOrder {
+    pub pos: Vec2,
+    pub qty: u32,
     /// When selling less than stock, should not enable external trading
-    stock: u32,
+    pub stock: u32,
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
-struct BuyOrder {
-    pos: Vec2,
-    qty: u32,
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub struct BuyOrder {
+    pub pos: Vec2,
+    pub qty: u32,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,6 +47,12 @@ impl SingleMarket {
 
     pub fn capital(&self, soul: SoulID) -> Option<i32> {
         self.capital.get(&soul).copied()
+    }
+    pub fn buy_order(&self, soul: SoulID) -> Option<&BuyOrder> {
+        self.buy_orders.get(&soul)
+    }
+    pub fn sell_order(&self, soul: SoulID) -> Option<&SellOrder> {
+        self.sell_orders.get(&soul)
     }
 
     pub fn capital_map(&self) -> &BTreeMap<SoulID, i32> {
@@ -130,7 +136,7 @@ impl Market {
     /// If an order is already placed, it will be updated.
     /// Beware that you need capital to sell anything, using produce.
     pub fn sell(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: u32, stock: u32) {
-        log::debug!("{:?} sell {:?} {:?} near {:?}", soul, qty, kind, near);
+        log::info!("{:?} sell {:?} {:?} near {:?}", soul, qty, kind, near);
         self.m(kind).sell_orders.insert(
             soul,
             SellOrder {
@@ -160,24 +166,20 @@ impl Market {
 
     /// Called when an agent tells the world it wants to buy something
     /// If an order is already placed, it will be updated.
-    pub fn buy(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
+    pub fn buy(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: u32) {
         log::debug!("{:?} buy {:?} {:?} near {:?}", soul, qty, kind, near);
 
-        self.m(kind).buy_orders.insert(
-            soul,
-            BuyOrder {
-                pos: near,
-                qty: qty as u32,
-            },
-        );
+        self.m(kind)
+            .buy_orders
+            .insert(soul, BuyOrder { pos: near, qty });
     }
 
-    pub fn buy_until(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
+    pub fn buy_until(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: u32) {
         let c = self.capital(soul, kind);
-        if c >= qty {
+        if c >= qty as i32 {
             return;
         }
-        self.buy(soul, near, kind, qty - c);
+        self.buy(soul, near, kind, qty - c as u32);
     }
 
     /// Get the capital that this agent owns
@@ -303,9 +305,7 @@ impl Market {
                 }
 
                 // Seller surplus goes to external trading
-                let staken = std::mem::take(sell_orders);
-                all_trades.reserve(staken.len());
-                for (seller, order) in staken {
+                for (&seller, order) in sell_orders.iter_mut() {
                     let qty_sell = order.qty as i32 - order.stock as i32;
                     if qty_sell <= 0 {
                         continue;
@@ -315,8 +315,8 @@ impl Market {
                         log::warn!("{:?} is selling more than it has: {:?}", &seller, qty_sell);
                         continue;
                     }
-
                     *cap -= qty_sell;
+                    order.qty -= qty_sell as u32;
 
                     all_trades.push(Trade {
                         buyer: TradeTarget::ExternalTrade,

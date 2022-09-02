@@ -132,22 +132,50 @@ impl InspectRenderer {
         let market = goria.read::<Market>();
         let registry = goria.read::<ItemRegistry>();
         let mut capitals = vec![];
+        let mut borders = vec![];
+        let mut sellorders = vec![];
         for (kind, market) in market.inner() {
             let cap = unwrap_or!(market.capital(SoulID(self.entity)), continue);
             capitals.push((kind, cap));
+            if let Some(b) = market.buy_order(SoulID(self.entity)) {
+                borders.push((kind, b));
+            }
+            if let Some(s) = market.sell_order(SoulID(self.entity)) {
+                sellorders.push((kind, s));
+            }
         }
 
-        if capitals.is_empty() {
-            return;
-        }
-
-        egui::CollapsingHeader::new("Capital").show(ui, |ui| {
-            ui.columns(2, |ui| {
-                for (kind, cap) in capitals {
-                    ui[0].label(&registry[*kind].label);
-                    ui[1].label(format!("{}", cap));
-                }
+        if !capitals.is_empty() {
+            egui::CollapsingHeader::new("Capital").show(ui, |ui| {
+                ui.columns(2, |ui| {
+                    for (kind, cap) in capitals {
+                        ui[0].label(&registry[*kind].label);
+                        ui[1].label(format!("{}", cap));
+                    }
+                });
             });
-        });
+        }
+
+        if !borders.is_empty() {
+            egui::CollapsingHeader::new("Buy orders").show(ui, |ui| {
+                ui.columns(2, |ui| {
+                    for (kind, b) in borders {
+                        ui[0].label(&registry[*kind].label);
+                        ui[1].label(format!("{:#?}", b));
+                    }
+                });
+            });
+        }
+
+        if !sellorders.is_empty() {
+            egui::CollapsingHeader::new("Sell orders").show(ui, |ui| {
+                ui.columns(2, |ui| {
+                    for (kind, b) in sellorders {
+                        ui[0].label(&registry[*kind].label);
+                        ui[1].label(format!("{:#?}", b));
+                    }
+                });
+            });
+        }
     }
 }

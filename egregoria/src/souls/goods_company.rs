@@ -169,7 +169,7 @@ impl GoodsCompanyRegistry {
 impl Recipe {
     pub fn init(&self, soul: SoulID, near: Vec2, market: &mut Market) {
         for &(kind, qty) in &self.consumption {
-            market.buy_until(soul, near, kind, qty)
+            market.buy_until(soul, near, kind, qty as u32)
         }
         for &(kind, _) in &self.production {
             market.register(soul, kind);
@@ -191,7 +191,7 @@ impl Recipe {
     pub fn act(&self, soul: SoulID, near: Vec2, market: &mut Market) {
         for &(kind, qty) in &self.consumption {
             market.produce(soul, kind, -qty);
-            market.buy_until(soul, near, kind, qty);
+            market.buy_until(soul, near, kind, qty as u32);
         }
         for &(kind, qty) in &self.production {
             market.produce(soul, kind, qty);

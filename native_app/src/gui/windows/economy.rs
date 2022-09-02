@@ -10,8 +10,14 @@ use geom::Color;
 use slotmap::Key;
 use std::cmp::Reverse;
 
+enum EconomyTab {
+    ImportExports,
+    InternalTrade,
+}
+
 struct EconomyState {
     pub curlevel: usize,
+    pub tab: EconomyTab,
 }
 
 pub(crate) fn economy(
@@ -20,7 +26,10 @@ pub(crate) fn economy(
     uiw: &mut UiWorld,
     goria: &Egregoria,
 ) {
-    uiw.check_present(|| EconomyState { curlevel: 0 });
+    uiw.check_present(|| EconomyState {
+        curlevel: 0,
+        tab: EconomyTab::ImportExports,
+    });
     let mut state = uiw.write::<EconomyState>();
     let ecostats = goria.read::<EcoStats>();
     let registry = goria.read::<ItemRegistry>();
@@ -29,6 +38,27 @@ pub(crate) fn economy(
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
         .fixed_size([700.0, 500.0])
         .show(ui, move |ui| {
+            ui.horizontal(|ui| {
+                if ui
+                    .selectable_label(
+                        matches!(state.tab, EconomyTab::ImportExports),
+                        "Import/Exports",
+                    )
+                    .clicked()
+                {
+                    state.tab = EconomyTab::ImportExports;
+                }
+                if ui
+                    .selectable_label(
+                        matches!(state.tab, EconomyTab::InternalTrade),
+                        "Internal Trade",
+                    )
+                    .clicked()
+                {
+                    state.tab = EconomyTab::InternalTrade;
+                }
+            });
+
             ui.horizontal(|ui| {
                 for (i, level) in LEVEL_NAMES.iter().enumerate() {
                     if ui.selectable_label(i == state.curlevel, *level).clicked() {
@@ -141,16 +171,23 @@ pub(crate) fn economy(
                     });
             };
 
-            ui.columns(2, |ui| {
-                ui[0].push_id(0, |ui| {
-                    ui.label("Imports");
-                    render_history(ui, &ecostats.imports);
-                });
-                ui[1].push_id(1, |ui| {
-                    ui.label("Exports");
-                    render_history(ui, &ecostats.exports);
-                });
-            });
+            match state.tab {
+                EconomyTab::ImportExports => {
+                    ui.columns(2, |ui| {
+                        ui[0].push_id(0, |ui| {
+                            ui.label("Imports");
+                            render_history(ui, &ecostats.imports);
+                        });
+                        ui[1].push_id(1, |ui| {
+                            ui.label("Exports");
+                            render_history(ui, &ecostats.exports);
+                        });
+                    });
+                }
+                EconomyTab::InternalTrade => {
+                    render_history(ui, &ecostats.internal_trade);
+                }
+            }
             ui.allocate_space(ui.available_size());
         });
 }
