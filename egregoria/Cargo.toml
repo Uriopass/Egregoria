@@ -2,7 +2,7 @@
 name = "egregoria"
 version = "0.1.0"
 authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
-edition = "2018"
+edition = "2021"
 
 # Yes I have many dependencies.
 # Yes, I know it takes a while to compile.

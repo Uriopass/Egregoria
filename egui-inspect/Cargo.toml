@@ -2,7 +2,7 @@
 name = "egui-inspect"
 version = "0.4.0"
 authors = ["Paris DOUADY <paris.douady@hotmail.fr>"]
-edition = "2018"
+edition = "2021"
 description = "Traits and default implementations for inspecting values with egui."
 license = "MIT or Apache-2.0"
 readme = "../README.md"

@@ -184,8 +184,7 @@ impl GfxContext {
 
         let format = *formats
             .iter()
-            .filter(|x| x.describe().srgb)
-            .next()
+            .find(|x| x.describe().srgb)
             .unwrap_or_else(|| &formats[0]);
 
         let sc_desc = SurfaceConfiguration {
