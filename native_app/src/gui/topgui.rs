@@ -152,7 +152,6 @@ impl Gui {
                         [toolbox_w, 30.0],
                     )
                     .selected(std::mem::discriminant(tab) == std::mem::discriminant(&cur_tab))
-                    .frame(false)
                     .ui(ui)
                     .clicked()
                     {
