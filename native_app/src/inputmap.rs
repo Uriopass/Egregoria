@@ -33,6 +33,7 @@ pub(crate) enum InputAction {
     HideInterface,
     UpElevation,
     DownElevation,
+    OpenEconomyMenu,
 }
 
 // All unit inputs need to match
@@ -67,21 +68,22 @@ impl InputMap {
         }
 
         for (k, v) in vec![
-            (GoForward,     ics![Key(K::Z) ; Key(K::Up)]),
-            (GoBackward,    ics![Key(K::S) ; Key(K::Down)]),
-            (GoLeft,        ics![Key(K::Q) ; Key(K::Left)]),
-            (GoRight,       ics![Key(K::D) ; Key(K::Right)]),
-            (CameraMove,    ics![Mouse(Right)]),
-            (CameraRotate,  ics![Key(K::LShift), Mouse(Right) ; Mouse(Middle)]),
-            (Zoom,          ics![Key(K::Plus) ; WheelUp]),
-            (Dezoom,        ics![Key(K::Minus) ; WheelDown]),
-            (Rotate,        ics![Key(K::LControl), WheelUp ; Key(K::LControl), WheelDown]),
-            (Close,         ics![Key(K::Escape) ; Mouse(Right)]),
-            (Select,        ics![Mouse(Left)]),
-            (NoSnapping,    ics![Key(K::LControl)]),
-            (HideInterface, ics![Key(K::H)]),
-            (UpElevation,   ics![Key(K::LControl), WheelUp]),
-            (DownElevation, ics![Key(K::LControl), WheelDown]),
+            (GoForward,       ics![Key(K::Z) ; Key(K::Up)]),
+            (GoBackward,      ics![Key(K::S) ; Key(K::Down)]),
+            (GoLeft,          ics![Key(K::Q) ; Key(K::Left)]),
+            (GoRight,         ics![Key(K::D) ; Key(K::Right)]),
+            (CameraMove,      ics![Mouse(Right)]),
+            (CameraRotate,    ics![Key(K::LShift), Mouse(Right) ; Mouse(Middle)]),
+            (Zoom,            ics![Key(K::Plus) ; WheelUp]),
+            (Dezoom,          ics![Key(K::Minus) ; WheelDown]),
+            (Rotate,          ics![Key(K::LControl), WheelUp ; Key(K::LControl), WheelDown]),
+            (Close,           ics![Key(K::Escape) ; Mouse(Right)]),
+            (Select,          ics![Mouse(Left)]),
+            (NoSnapping,      ics![Key(K::LControl)]),
+            (HideInterface,   ics![Key(K::H)]),
+            (UpElevation,     ics![Key(K::LControl), WheelUp]),
+            (DownElevation,   ics![Key(K::LControl), WheelDown]),
+            (OpenEconomyMenu, ics![Key(K::E)]),
         ] {
             if m.insert(k, v).is_some() {
                 log::error!("inserting same action twice!");
@@ -307,6 +309,7 @@ impl Display for InputAction {
                 InputAction::NoSnapping => "No Snapping",
                 InputAction::UpElevation => "Up Elevation",
                 InputAction::DownElevation => "Down Elevation",
+                InputAction::OpenEconomyMenu => "Economy Menu",
             }
         )
     }

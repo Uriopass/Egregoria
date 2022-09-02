@@ -1,6 +1,7 @@
 use egui::{Context, Ui};
 use serde::{Deserialize, Serialize};
 
+use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 
@@ -87,6 +88,17 @@ impl GUIWindows {
     }
 
     pub(crate) fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        if uiworld
+            .write::<InputMap>()
+            .just_act
+            .contains(&InputAction::OpenEconomyMenu)
+        {
+            for (i, w) in self.windows.iter().enumerate() {
+                if w.name == "Economy" {
+                    self.opened[i] ^= true;
+                }
+            }
+        }
         for (ws, opened) in self.windows.iter_mut().zip(self.opened.iter_mut()) {
             if *opened {
                 ws.w.render_window(egui::Window::new(ws.name).open(opened), ui, uiworld, goria);

@@ -184,7 +184,7 @@ impl Recipe {
             &&
             // Has enough storage
             self.production.iter().all(move |&(kind, qty)| {
-                market.capital(soul, kind) < qty * self.storage_multiplier
+                market.capital(soul, kind) < qty * (self.storage_multiplier + 1)
             })
     }
 
@@ -310,11 +310,7 @@ pub fn company(
     if company.progress >= 1.0 {
         company.progress = 0.0;
         let recipe = company.recipe.clone();
-        let bpos = unwrap_or!(map.buildings().get(company.building), {
-            cbuf.kill(me);
-            return;
-        })
-        .door_pos;
+        let bpos = b.door_pos;
 
         cbuf.exec_on(soul.0, move |market| {
             recipe.act(soul, bpos.xy(), market);

@@ -33,6 +33,7 @@ pub fn pedestrian_decision(
     let (desired_v, desired_dir) = calc_decision(pedestrian, trans, it);
 
     pedestrian.walk_anim += 7.0 * kin.speed * time.delta / pedestrian.walking_speed;
+    pedestrian.walk_anim %= 2.0 * std::f32::consts::PI;
     physics(kin, trans, time, desired_v, desired_dir);
 }
 

@@ -163,9 +163,13 @@ impl Market {
     pub fn buy(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
         log::debug!("{:?} buy {:?} {:?} near {:?}", soul, qty, kind, near);
 
-        self.m(kind)
-            .buy_orders
-            .insert(soul, BuyOrder { pos: near, qty: 0 });
+        self.m(kind).buy_orders.insert(
+            soul,
+            BuyOrder {
+                pos: near,
+                qty: qty as u32,
+            },
+        );
     }
 
     pub fn buy_until(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
@@ -346,9 +350,9 @@ mod tests {
 
     #[test]
     fn test_match_orders() {
-        let seller = SoulID(mk_ent(1));
-        let seller_far = SoulID(mk_ent(2));
-        let buyer = SoulID(mk_ent(3));
+        let seller = SoulID(mk_ent((1 << 32) | 1));
+        let seller_far = SoulID(mk_ent((1 << 32) | 2));
+        let buyer = SoulID(mk_ent((1 << 32) | 3));
 
         let mut registry = ItemRegistry::default();
 
