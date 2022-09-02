@@ -1,5 +1,4 @@
 use crate::{Drawable, GfxContext, SpriteBatch};
-use std::iter::FromIterator;
 use wgpu::RenderPass;
 
 pub struct MultiSpriteBatch {

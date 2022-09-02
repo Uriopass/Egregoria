@@ -9,7 +9,6 @@ use egui::{Align2, Color32, Ui};
 use geom::Color;
 use slotmap::Key;
 use std::cmp::Reverse;
-use std::iter::FromIterator;
 
 struct EconomyState {
     pub curlevel: usize,
@@ -102,13 +101,14 @@ pub(crate) fn economy(
                         }
                         ui.line(
                             Line::new(
-                                IntoIterator::into_iter([
+                                [
                                     [0.0, 0.0],
                                     [
                                         HISTORY_SIZE as f64 * seconds_per_step,
                                         1.0 + 1.25 * overallmax as f64,
                                     ],
-                                ])
+                                ]
+                                .into_iter()
                                 .collect::<PlotPoints>(),
                             )
                             .width(0.001)

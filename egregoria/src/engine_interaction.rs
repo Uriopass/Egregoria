@@ -194,7 +194,7 @@ impl WorldCommand {
     }
 }
 
-impl std::iter::FromIterator<WorldCommands> for WorldCommands {
+impl FromIterator<WorldCommands> for WorldCommands {
     fn from_iter<T: IntoIterator<Item = WorldCommands>>(iter: T) -> Self {
         Self {
             commands: iter.into_iter().flat_map(|x| x.commands).collect(),

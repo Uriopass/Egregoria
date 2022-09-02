@@ -3,7 +3,6 @@ use crate::aabb::AABB;
 use crate::segment::Segment;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use std::convert::TryInto;
 use std::hint::unreachable_unchecked;
 use std::ops::{Index, Range};
 use std::slice::{Iter, IterMut, SliceIndex, Windows};

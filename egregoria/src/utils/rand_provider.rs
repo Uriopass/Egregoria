@@ -1,6 +1,5 @@
 use core::num::Wrapping as w;
 use serde::{Deserialize, Serialize};
-use std::convert::TryInto;
 
 #[derive(Serialize, Deserialize)]
 pub struct RandProvider {

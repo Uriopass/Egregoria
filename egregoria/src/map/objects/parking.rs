@@ -4,7 +4,6 @@ use geom::{Transform, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SecondaryMap, SlotMap};
-use std::convert::TryFrom;
 
 new_key_type! {
     pub struct ParkingSpotID;

@@ -1,7 +1,6 @@
 use crate::{vec3, PolyLine, Segment3, Vec3, AABB3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use std::convert::TryInto;
 use std::hint::unreachable_unchecked;
 use std::ops::{Index, Range};
 use std::slice::{Iter, IterMut, SliceIndex, Windows};

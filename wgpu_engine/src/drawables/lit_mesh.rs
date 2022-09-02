@@ -168,7 +168,7 @@ pub enum BgLayoutTextureType {
 
 pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
     use BgLayoutTextureType::*;
-    bg_layout_texs(device, IntoIterator::into_iter([Float, Float, Shadow]))
+    bg_layout_texs(device, [Float, Float, Shadow].into_iter())
 }
 pub fn bg_layout_texs(
     device: &Device,
