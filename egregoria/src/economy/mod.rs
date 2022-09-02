@@ -135,7 +135,7 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
         .unwrap()
         .advance(tick, &trades);
 
-    for trade in trades {
+    for &trade in trades.iter() {
         log::debug!("A trade was made! {:?}", trade);
 
         if trade.kind == job_opening {

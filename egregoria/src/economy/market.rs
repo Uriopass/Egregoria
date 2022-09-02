@@ -6,13 +6,28 @@ use geom::Vec2;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
+
+#[derive(Serialize, Deserialize)]
+struct SellOrder {
+    pos: Vec2,
+    qty: u32,
+    /// When selling less than stock, should not enable external trading
+    stock: u32,
+}
+
+#[derive(Copy, Clone, Serialize, Deserialize)]
+struct BuyOrder {
+    pos: Vec2,
+    qty: u32,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct SingleMarket {
     // todo: change i32 to Quantity
     capital: BTreeMap<SoulID, i32>,
-    buy_orders: BTreeMap<SoulID, (Vec2, i32)>,
-    sell_orders: BTreeMap<SoulID, (Vec2, i32)>,
+    buy_orders: BTreeMap<SoulID, BuyOrder>,
+    sell_orders: BTreeMap<SoulID, SellOrder>,
     pub(crate) ext_value: Money,
     pub(crate) transport_cost: Money,
     optout_exttrade: bool,
@@ -37,17 +52,14 @@ impl SingleMarket {
     pub fn capital_map(&self) -> &BTreeMap<SoulID, i32> {
         &self.capital
     }
-    pub fn buy_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32)> {
-        &self.buy_orders
-    }
-    pub fn sell_orders(&self) -> &BTreeMap<SoulID, (Vec2, i32)> {
-        &self.sell_orders
-    }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Market {
     markets: BTreeMap<ItemID, SingleMarket>,
+    // reuse the trade vec to avoid allocations
+    #[serde(skip)]
+    all_trades: Arc<Vec<Trade>>,
 }
 
 #[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone, Debug, Serialize, Deserialize)]
@@ -106,6 +118,7 @@ impl Market {
                     )
                 })
                 .collect(),
+            all_trades: Default::default(),
         }
     }
 
@@ -116,17 +129,24 @@ impl Market {
     /// Called when an agent tells the world it wants to sell something
     /// If an order is already placed, it will be updated.
     /// Beware that you need capital to sell anything, using produce.
-    pub fn sell(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
+    pub fn sell(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: u32, stock: u32) {
         log::debug!("{:?} sell {:?} {:?} near {:?}", soul, qty, kind, near);
-        self.m(kind).sell_orders.insert(soul, (near, qty));
+        self.m(kind).sell_orders.insert(
+            soul,
+            SellOrder {
+                pos: near,
+                qty,
+                stock,
+            },
+        );
     }
 
-    pub fn sell_all(&mut self, soul: SoulID, near: Vec2, kind: ItemID) {
+    pub fn sell_all(&mut self, soul: SoulID, near: Vec2, kind: ItemID, stock: u32) {
         let c = self.capital(soul, kind);
-        if c == 0 {
+        if c <= 0 {
             return;
         }
-        self.sell(soul, near, kind, c);
+        self.sell(soul, near, kind, c as u32, stock);
     }
 
     /// An agent was removed from the world, we need to clean after him
@@ -143,7 +163,9 @@ impl Market {
     pub fn buy(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
         log::debug!("{:?} buy {:?} {:?} near {:?}", soul, qty, kind, near);
 
-        self.m(kind).buy_orders.insert(soul, (near, qty));
+        self.m(kind)
+            .buy_orders
+            .insert(soul, BuyOrder { pos: near, qty: 0 });
     }
 
     pub fn buy_until(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: i32) {
@@ -177,18 +199,29 @@ impl Market {
     /// Returns a list of buy and sell orders matched together.
     /// A trade updates the buy and sell orders from the market, and the capital of the buyers and sellers.
     /// A trade can only be completed if the seller has enough capital.
-    pub fn make_trades(&mut self) -> Vec<Trade> {
-        let mut all_trades = vec![];
+    /// Please do not keep the trades around much, it needs to be destroyed by the next time you call this function.
+    pub fn make_trades(&mut self) -> Arc<Vec<Trade>> {
+        let all_trades: &mut Vec<Trade> = match Arc::get_mut(&mut self.all_trades) {
+            None => {
+                log::warn!("Market trades not dropped in time");
+                self.all_trades = Default::default();
+                Arc::get_mut(&mut self.all_trades).unwrap()
+            }
+            Some(x) => x,
+        };
+        all_trades.clear();
         let mut potential = vec![];
 
         for (&kind, market) in &mut self.markets {
             // Naive O(n²) alg
-            for (&seller, &(sell_pos, qty_sell)) in &market.sell_orders {
+            for (&seller, sorder) in &market.sell_orders {
+                let qty_sell = sorder.qty as i32;
+
                 let capital_sell = unwrap_or!(market.capital(seller), continue);
                 if qty_sell > capital_sell {
                     continue;
                 }
-                for (&buyer, &(buy_pos, qty_buy)) in &market.buy_orders {
+                for (&buyer, &border) in &market.buy_orders {
                     if seller == buyer {
                         log::warn!(
                             "{:?} is both selling and buying same commodity: {:?}",
@@ -197,8 +230,9 @@ impl Market {
                         );
                         continue;
                     }
+                    let qty_buy = border.qty as i32;
                     if qty_buy <= qty_sell {
-                        let score = sell_pos.distance2(buy_pos);
+                        let score = sorder.pos.distance2(border.pos);
                         potential.push((
                             score,
                             Trade {
@@ -235,8 +269,8 @@ impl Market {
                         buy_orders.remove(&buyer);
                         if *complete {
                             sell_orders.remove(&seller);
-                        } else if let Some((_, qty)) = sell_orders.get_mut(&seller) {
-                            *qty -= trade.qty
+                        } else if let Some(order) = sell_orders.get_mut(&seller) {
+                            order.qty -= trade.qty as u32;
                         }
 
                         *capital.entry(buyer).or_default() += trade.qty;
@@ -247,10 +281,13 @@ impl Market {
                     .map(|(_, x, _)| x),
             );
 
+            // External trading
             if !*optout_exttrade {
+                // All buyers can fullfil since they can buy externally
                 let btaken = std::mem::take(buy_orders);
                 all_trades.reserve(btaken.len());
-                for (buyer, (_, qty_buy)) in btaken {
+                for (buyer, order) in btaken {
+                    let qty_buy = order.qty as i32;
                     *capital.entry(buyer).or_default() += qty_buy;
 
                     all_trades.push(Trade {
@@ -261,14 +298,20 @@ impl Market {
                     });
                 }
 
+                // Seller surplus goes to external trading
                 let staken = std::mem::take(sell_orders);
                 all_trades.reserve(staken.len());
-                for (seller, (_, qty_sell)) in staken {
+                for (seller, order) in staken {
+                    let qty_sell = order.qty as i32 - order.stock as i32;
+                    if qty_sell <= 0 {
+                        continue;
+                    }
                     let cap = capital.entry(seller).or_default();
                     if *cap < qty_sell {
                         log::warn!("{:?} is selling more than it has: {:?}", &seller, qty_sell);
                         continue;
                     }
+
                     *cap -= qty_sell;
 
                     all_trades.push(Trade {
@@ -281,7 +324,7 @@ impl Market {
             }
         }
 
-        all_trades
+        self.all_trades.clone()
     }
 
     pub fn inner(&self) -> &BTreeMap<ItemID, SingleMarket> {
@@ -334,10 +377,10 @@ mod tests {
         m.produce(seller_far, cereal, 3);
 
         m.buy(buyer, Vec2::ZERO, cereal, 2);
-        m.sell(seller, Vec2::X, cereal, 3);
-        m.sell(seller_far, vec2(10.0, 10.0), cereal, 3);
+        m.sell(seller, Vec2::X, cereal, 3, 5);
+        m.sell(seller_far, vec2(10.0, 10.0), cereal, 3, 5);
 
-        let trades = m.make_trades().collect::<Vec<_>>();
+        let trades = m.make_trades();
 
         assert_eq!(trades.len(), 1);
         let t0 = trades[0];

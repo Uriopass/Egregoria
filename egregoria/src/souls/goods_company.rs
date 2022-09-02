@@ -195,7 +195,7 @@ impl Recipe {
         }
         for &(kind, qty) in &self.production {
             market.produce(soul, kind, qty);
-            market.sell_all(soul, near, kind);
+            market.sell_all(soul, near, kind, (qty * self.storage_multiplier) as u32);
         }
     }
 }
@@ -241,7 +241,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
     {
         let m = &mut *goria.write::<Market>();
         m.produce(soul, job_opening, company.max_workers);
-        m.sell_all(soul, door_pos.xy(), job_opening);
+        m.sell_all(soul, door_pos.xy(), job_opening, 0);
 
         company.recipe.init(soul, door_pos.xy(), m);
     }
