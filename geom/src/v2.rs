@@ -138,17 +138,17 @@ impl Vec2 {
     }
 
     pub fn try_bisect(self, other: Self) -> Option<Self> {
-        let c = self.magnitude() * other + self * other.magnitude();
+        let c = self.mag() * other + self * other.mag();
         c.try_normalize()
     }
 
     #[inline]
-    pub fn magnitude(self) -> f32 {
-        self.magnitude2().sqrt()
+    pub fn mag(self) -> f32 {
+        self.mag2().sqrt()
     }
 
     #[inline]
-    pub fn magnitude2(self) -> f32 {
+    pub fn mag2(self) -> f32 {
         self.dot(self)
     }
 
@@ -178,12 +178,12 @@ impl Vec2 {
 
     #[inline]
     pub fn distance2(self, rhs: Self) -> f32 {
-        (self - rhs).magnitude2()
+        (self - rhs).mag2()
     }
 
     #[inline]
     pub fn distance(self, rhs: Self) -> f32 {
-        (self - rhs).magnitude()
+        (self - rhs).mag()
     }
 
     /// Returns the angle between self and other in range [-pi; pi]
@@ -202,7 +202,7 @@ impl Vec2 {
 
     #[inline]
     pub fn try_normalize(self) -> Option<Vec2> {
-        let m = self.magnitude();
+        let m = self.mag();
         if m > f32::EPSILON {
             Some(self / m)
         } else {
@@ -228,13 +228,13 @@ impl Vec2 {
 
     #[inline]
     pub fn normalize(self) -> Vec2 {
-        let m = self.magnitude();
+        let m = self.mag();
         self / m
     }
 
     #[inline]
     pub fn try_normalize_to(self, v: f32) -> Option<Vec2> {
-        let m = self.magnitude();
+        let m = self.mag();
         if m > 0.0 {
             Some(self * (v / m))
         } else {
@@ -244,13 +244,13 @@ impl Vec2 {
 
     #[inline]
     pub fn normalize_to(self, v: f32) -> Vec2 {
-        let m = self.magnitude();
+        let m = self.mag();
         self * (v / m)
     }
 
     #[inline]
     pub fn dir_dist(self) -> Option<(Vec2, f32)> {
-        let m = self.magnitude();
+        let m = self.mag();
         if m > 0.0 {
             Some((self / m, m))
         } else {
@@ -315,7 +315,7 @@ impl Vec2 {
 
     #[inline]
     pub fn cap_magnitude(self, max: f32) -> Vec2 {
-        let m = self.magnitude();
+        let m = self.mag();
         if m > max {
             self * max / m
         } else {

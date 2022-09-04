@@ -252,9 +252,9 @@ impl MapBuilders {
             if let Some(x) = self.buildsprites.get_mut(&building.kind) {
                 let axis = building.obb.axis();
                 let c = building.obb.center();
-                let w = axis[0].magnitude();
+                let w = axis[0].mag();
                 let d = axis[0] / w;
-                let h = axis[1].magnitude();
+                let h = axis[1].mag();
                 x.push(
                     c.z(building.height + 0.1),
                     d.z0(),
@@ -715,8 +715,7 @@ fn intersection_mesh(meshb: &mut MeshBuilder, inter: &Intersection, roads: &Road
         const TURN_ANG_MUL: f32 = 0.36;
         const TURN_MUL: f32 = 0.46;
 
-        let dist =
-            (next_right - left).magnitude() * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL) * TURN_MUL;
+        let dist = (next_right - left).mag() * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL) * TURN_MUL;
 
         let spline = Spline {
             from: left,

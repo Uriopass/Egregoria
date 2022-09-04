@@ -68,8 +68,8 @@ impl OBB {
 
         // Make the length of each axis 1/edge length so we know any
         // dot product must be less than 1 to fall within the edge.
-        axis[0] /= axis[0].magnitude2();
-        axis[1] /= axis[1].magnitude2();
+        axis[0] /= axis[0].mag2();
+        axis[1] /= axis[1].mag2();
 
         for &axis in &axis {
             let origin = self.corners[0].dot(axis);
@@ -237,8 +237,8 @@ defer_inter!(Segment => OBB);
 impl Intersect<Segment> for OBB {
     fn intersects(&self, shape: &Segment) -> bool {
         let axis = self.axis();
-        let w = axis[0].magnitude();
-        let h = axis[1].magnitude();
+        let w = axis[0].mag();
+        let h = axis[1].mag();
         let tr = Segment {
             src: (shape.src - self.corners[0]).rotated_by(axis[0].flipy()),
             dst: (shape.dst - self.corners[0]).rotated_by(axis[0].flipy()),

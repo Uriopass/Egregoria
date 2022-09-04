@@ -258,7 +258,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
                 Workers::default(),
                 Sold::default(),
                 Transform::new(obb.center().z(height)),
-                Selectable::new(obb.axis()[0].magnitude() * 0.5),
+                Selectable::new(obb.axis()[0].mag() * 0.5),
             ),
         )
         .unwrap();

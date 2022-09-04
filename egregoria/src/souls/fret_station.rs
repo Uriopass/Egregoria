@@ -25,7 +25,7 @@ pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Opti
     let height = b.height;
     let obb = b.obb;
     let pos = obb.center();
-    let [w2, h2] = obb.axis().map(|x| x.magnitude2());
+    let [w2, h2] = obb.axis().map(|x| x.mag2());
 
     drop(map);
 

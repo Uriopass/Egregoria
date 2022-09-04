@@ -179,7 +179,7 @@ impl Polygon {
                             unsafe { unreachable_unchecked() } // windows(2)
                         }
                     })
-                    .min_by_key(|&(proj, _)| OrderedFloat((p - proj).magnitude2()))
+                    .min_by_key(|&(proj, _)| OrderedFloat((p - proj).mag2()))
                     .unwrap()
             } // Unwrap ok: n_points > 2
         }

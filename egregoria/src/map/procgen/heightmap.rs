@@ -33,8 +33,7 @@ pub(crate) fn simplex_noise(pos: Vec2) -> (f32, Vec2) {
     i.x %= 289.0;
     i.y %= 289.0;
 
-    let t: Vec3 = (Vec3::splat(0.5) - vec3(x0.magnitude2(), v1.magnitude2(), v2.magnitude2()))
-        .max(Vec3::ZERO);
+    let t: Vec3 = (Vec3::splat(0.5) - vec3(x0.mag2(), v1.mag2(), v2.mag2())).max(Vec3::ZERO);
     let t2: Vec3 = t * t;
     let t4 = t2 * t2;
 

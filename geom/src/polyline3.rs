@@ -168,7 +168,7 @@ impl PolyLine3 {
                         i + 1,
                     )
                 })
-                .min_by_key(|&(proj, _)| OrderedFloat((p - proj).xy().magnitude()))
+                .min_by_key(|&(proj, _)| OrderedFloat((p - proj).xy().mag()))
                 .unwrap(), // Unwrap ok: n_points > 2
         }
     }

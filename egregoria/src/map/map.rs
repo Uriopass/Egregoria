@@ -756,7 +756,7 @@ impl Map {
 
         for lot in self.lots.values() {
             log::debug!("{:?}", lot.id);
-            assert!(lot.shape.axis().iter().all(|x| x.magnitude() > 0.0));
+            assert!(lot.shape.axis().iter().all(|x| x.mag() > 0.0));
             assert!(self.roads.contains_key(lot.parent), "{:?}", lot.parent);
             assert!(self.spatial_map.contains(lot.id));
         }

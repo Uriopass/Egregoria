@@ -47,7 +47,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
         for _ in 0..gen_range(1.0, 5.0) as usize {
             let seg = gen_range(0.0, p.len() as f32) as usize;
 
-            let origlen = p.segment(seg).vec().magnitude();
+            let origlen = p.segment(seg).vec().mag();
             if origlen < 8.0 {
                 continue;
             }
@@ -58,7 +58,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
                 p.split_segment(seg, r);
             }
 
-            let newlen = p.segment(seg).vec().magnitude();
+            let newlen = p.segment(seg).vec().mag();
 
             if l >= 0.0 {
                 p.split_segment(seg, l * origlen / newlen);

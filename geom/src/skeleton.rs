@@ -948,7 +948,7 @@ pub fn faces_from_skeleton(
     }
 
     for tree in skeleton {
-        if tree.source.magnitude2() > 1e10 {
+        if tree.source.mag2() > 1e10 {
             return None;
         }
         heights.insert(tree.source, tree.height);
@@ -956,7 +956,7 @@ pub fn faces_from_skeleton(
             if v == tree.source {
                 continue;
             }
-            if v.magnitude2() > 1e10 {
+            if v.mag2() > 1e10 {
                 return None;
             }
             graph.entry(tree.source).or_default().push(v);

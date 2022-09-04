@@ -217,7 +217,7 @@ pub fn minmax3(x: impl IntoIterator<Item = Vec3>) -> Option<(Vec3, Vec3)> {
 
 #[inline]
 pub fn pseudo_angle(v: Vec2) -> f32 {
-    debug_assert!((v.magnitude2() - 1.0).abs() <= 1e-5);
+    debug_assert!((v.mag2() - 1.0).abs() <= 1e-5);
     let dx = v.x;
     let dy = v.y;
     let p = dx / (dx.abs() + dy.abs());
@@ -242,7 +242,7 @@ pub fn angle_lerp(src: Vec2, dst: Vec2, ang_amount: f32) -> Vec2 {
 
 #[inline]
 pub fn angle_lerpxy(src: Vec3, dst: Vec3, ang_amount: f32) -> Vec3 {
-    let m = dst.xy().magnitude();
+    let m = dst.xy().mag();
     let lerped = angle_lerp(src.xy() / m, dst.xy() / m, ang_amount);
     (lerped * m).z(dst.z)
 }

@@ -53,19 +53,19 @@ impl PolyLine {
             None => unsafe { unreachable_unchecked() },
         };
         self.check_empty();
-        self.l -= (v - self.last()).magnitude();
+        self.l -= (v - self.last()).mag();
         v
     }
 
     pub fn push(&mut self, item: Vec2) {
-        self.l += (self.last() - item).magnitude();
+        self.l += (self.last() - item).mag();
         self.points.push(item);
     }
 
     pub fn pop_first(&mut self) -> Vec2 {
         let v = self.points.remove(0);
         self.check_empty();
-        self.l -= (self.first() - v).magnitude();
+        self.l -= (self.first() - v).mag();
         v
     }
 
@@ -134,7 +134,7 @@ impl PolyLine {
                 .array_windows::<2>()
                 .enumerate()
                 .map(|(i, &[a, b])| (Segment { src: a, dst: b }.project(p), i + 1))
-                .min_by_key(|&(proj, _)| OrderedFloat((p - proj).magnitude2()))
+                .min_by_key(|&(proj, _)| OrderedFloat((p - proj).mag2()))
                 .unwrap(), // Unwrap ok: n_points > 2
         }
     }
@@ -226,7 +226,7 @@ impl PolyLine {
             [x] => PolyLine::new(vec![x]),
             [f, l] => {
                 let v = l - f;
-                let m = v.magnitude();
+                let m = v.mag();
                 dst = dst.min(m);
 
                 PolyLine::new(vec![f + v * (dst / m), l])
@@ -388,5 +388,5 @@ impl<'a> PointsAlongs<'a> {
 }
 
 fn length(v: &[Vec2]) -> f32 {
-    v.windows(2).map(|x| (x[1] - x[0]).magnitude()).sum()
+    v.windows(2).map(|x| (x[1] - x[0]).mag()).sum()
 }

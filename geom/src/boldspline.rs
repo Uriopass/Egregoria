@@ -121,8 +121,8 @@ impl Intersect<OBB> for BoldSpline {
     fn intersects(&self, p: &OBB) -> bool {
         let mut s = self.spline;
         let [v1, v2] = p.axis();
-        let w = v1.magnitude();
-        let h = v2.magnitude();
+        let w = v1.mag();
+        let h = v2.mag();
 
         let rot = v1.flipy();
 

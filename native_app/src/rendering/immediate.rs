@@ -222,8 +222,8 @@ impl ImmediateDraw {
                     let [ax1, ax2] = obb.axis();
                     tess.draw_rect_cos_sin(
                         obb.center().z(z),
-                        ax1.magnitude(),
-                        ax2.magnitude(),
+                        ax1.mag(),
+                        ax2.mag(),
                         ax1.normalize(),
                     );
                 }

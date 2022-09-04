@@ -30,7 +30,7 @@ pub(crate) fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
                 let mut v = f32::INFINITY;
                 let mut ent = None;
                 for (e, (trans, select)) in chunk {
-                    let dist2 = (trans.position.xy() - unproj.xy()).magnitude2();
+                    let dist2 = (trans.position.xy() - unproj.xy()).mag2();
                     if dist2 >= select.radius * select.radius || dist2 >= v {
                         continue;
                     }
