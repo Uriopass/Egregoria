@@ -5,7 +5,8 @@ use crate::{BuildingKind, Map, SoulID};
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::btree_map::Entry;
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -66,6 +67,9 @@ pub struct Market {
     // reuse the trade vec to avoid allocations
     #[serde(skip)]
     all_trades: Arc<Vec<Trade>>,
+    // reuse the potential vec to avoid allocations
+    #[serde(skip)]
+    potential: Vec<(Trade, f32)>,
 }
 
 #[derive(PartialOrd, Ord, PartialEq, Eq, Copy, Clone, Debug, Serialize, Deserialize)]
@@ -125,6 +129,7 @@ impl Market {
                 })
                 .collect(),
             all_trades: Default::default(),
+            potential: Default::default(),
         }
     }
 
@@ -216,10 +221,11 @@ impl Market {
             Some(x) => x,
         };
         all_trades.clear();
-        let mut potential = vec![];
+        let potential = &mut self.potential;
 
         for (&kind, market) in &mut self.markets {
             // Naive O(n²) alg
+            // We don't immediatly apply the trades, because we want to find the nearest-positioned trades
             for (&seller, sorder) in &market.sell_orders {
                 let qty_sell = sorder.qty as i32;
 
@@ -237,23 +243,22 @@ impl Market {
                         continue;
                     }
                     let qty_buy = border.qty as i32;
-                    if qty_buy <= qty_sell {
-                        let score = sorder.pos.distance2(border.pos);
-                        potential.push((
-                            score,
-                            Trade {
-                                buyer: TradeTarget::Soul(buyer),
-                                seller: TradeTarget::Soul(seller),
-                                qty: qty_buy,
-                                kind,
-                            },
-                            qty_buy == qty_sell,
-                        ))
+                    if qty_buy > qty_sell {
+                        continue;
                     }
+                    let score = sorder.pos.distance2(border.pos);
+                    potential.push((
+                        Trade {
+                            buyer: TradeTarget::Soul(buyer),
+                            seller: TradeTarget::Soul(seller),
+                            qty: qty_buy,
+                            kind,
+                        },
+                        score,
+                    ))
                 }
             }
-            potential.sort_unstable_by_key(|(x, _, _)| OrderedFloat(*x));
-            let mut already_sold = BTreeSet::default();
+            potential.sort_unstable_by_key(|(_, x)| OrderedFloat(*x));
             let SingleMarket {
                 buy_orders,
                 sell_orders,
@@ -262,30 +267,49 @@ impl Market {
                 ..
             } = market;
 
-            all_trades.extend(
-                potential
-                    .drain(..)
-                    .filter(|(_, trade, complete)| {
-                        let buyer = trade.buyer.soul();
-                        let seller = trade.seller.soul();
-                        let ok = already_sold.insert(buyer) && already_sold.insert(seller);
-                        if !ok {
-                            return false;
-                        }
-                        buy_orders.remove(&buyer);
-                        if *complete {
-                            sell_orders.remove(&seller);
-                        } else if let Some(order) = sell_orders.get_mut(&seller) {
-                            order.qty -= trade.qty as u32;
-                        }
+            all_trades.extend(potential.drain(..).filter_map(|(trade, _)| {
+                let buyer = trade.buyer.soul();
+                let seller = trade.seller.soul();
 
-                        *capital.entry(buyer).or_default() += trade.qty;
-                        *capital.entry(seller).or_default() -= trade.qty;
+                let cap_seller = capital.entry(seller).or_default() as *mut _;
+                // Safety: buyer cannot be the same as seller
+                if unsafe { *cap_seller } < trade.qty {
+                    return None;
+                }
 
-                        true
-                    })
-                    .map(|(_, x, _)| x),
-            );
+                let cap_buyer = capital.entry(buyer).or_default();
+                let border = buy_orders.entry(buyer);
+
+                match border {
+                    Entry::Vacant(_) => return None,
+                    Entry::Occupied(o) => o.remove(),
+                };
+
+                let sorderent = sell_orders.entry(seller);
+
+                let mut sorderocc = match sorderent {
+                    Entry::Vacant(_) => return None,
+                    Entry::Occupied(o) => o,
+                };
+
+                let sorder = sorderocc.get_mut();
+
+                if sorder.qty < trade.qty as u32 {
+                    return None;
+                }
+
+                sorder.qty -= trade.qty as u32;
+
+                if sorder.qty == 0 {
+                    sorderocc.remove();
+                }
+
+                // Safety: buyer cannot be the same as seller
+                *cap_buyer += trade.qty;
+                unsafe { *cap_seller -= trade.qty };
+
+                Some(trade)
+            }));
 
             // External trading
             if !*optout_exttrade {
