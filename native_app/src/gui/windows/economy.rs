@@ -9,6 +9,7 @@ use egui::{Align2, Color32, Ui};
 use geom::Color;
 use slotmap::Key;
 use std::cmp::Reverse;
+use std::collections::HashSet;
 
 enum EconomyTab {
     ImportExports,
@@ -71,7 +72,13 @@ pub(crate) fn economy(
             let xs: Vec<f64> = (0..HISTORY_SIZE)
                 .map(|i| i as f64 * seconds_per_step)
                 .collect();
+            let EconomyState { curlevel, ref tab } = *state;
             let render_history = |ui: &mut Ui, history: &ItemHistories| {
+                let filterid = ui.id().with("filter");
+                let mut filter = ui
+                    .data()
+                    .get_temp_mut_or_insert_with(filterid, || HashSet::new())
+                    .clone();
                 egui::plot::Plot::new("ecoplot")
                     .height(200.0)
                     .allow_boxed_zoom(false)
@@ -82,8 +89,11 @@ pub(crate) fn economy(
                     .allow_zoom(false)
                     .show(ui, |ui| {
                         let mut overallmax = 0;
-                        let cursor = history.cursors()[state.curlevel];
-                        for (id, history) in history.iter_histories(state.curlevel) {
+                        let cursor = history.cursors()[curlevel];
+                        for (id, history) in history.iter_histories(curlevel) {
+                            if !filter.is_empty() && !filter.contains(&id) {
+                                continue;
+                            }
                             let maxval = *history.past_ring.iter().max().unwrap();
                             if maxval == 0 {
                                 continue;
@@ -155,7 +165,7 @@ pub(crate) fn economy(
                         });
                         egui::Grid::new("ecogrid").show(ui, |ui| {
                             let mut histories: Vec<_> = history
-                                .iter_histories(state.curlevel)
+                                .iter_histories(curlevel)
                                 .map(|(id, level)| (id, level.past_ring.iter().sum::<u32>()))
                                 .filter(|(_, x)| *x > 0)
                                 .collect();
@@ -163,15 +173,23 @@ pub(crate) fn economy(
 
                             for (id, sum) in histories {
                                 let iname = &registry[id].name;
-                                ui.label(iname);
+                                let mut enabled = filter.contains(&id);
+                                if ui.checkbox(&mut enabled, iname).changed() {
+                                    if enabled {
+                                        filter.insert(id);
+                                    } else {
+                                        filter.remove(&id);
+                                    }
+                                }
                                 ui.label(format!("{}", sum));
                                 ui.end_row();
                             }
                         });
                     });
+                ui.data().insert_temp(filterid, filter);
             };
 
-            match state.tab {
+            match tab {
                 EconomyTab::ImportExports => {
                     ui.columns(2, |ui| {
                         ui[0].push_id(0, |ui| {
@@ -185,7 +203,9 @@ pub(crate) fn economy(
                     });
                 }
                 EconomyTab::InternalTrade => {
-                    render_history(ui, &ecostats.internal_trade);
+                    ui.push_id(2, |ui| {
+                        render_history(ui, &ecostats.internal_trade);
+                    });
                 }
             }
             ui.allocate_space(ui.available_size());
