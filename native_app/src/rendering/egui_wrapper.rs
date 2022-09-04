@@ -59,7 +59,11 @@ impl EguiWrapper {
             self.renderer.free_texture(&id);
         }
 
-        let rinput = self.platform.take_egui_input(window);
+        let mut rinput = self.platform.take_egui_input(window);
+        rinput.screen_rect = Some(egui::Rect::from_min_size(
+            Default::default(),
+            egui::vec2(gfx.size.0 as f32, gfx.size.1 as f32),
+        ));
 
         let output = self.egui.run(rinput, |ctx| {
             ui_render(ctx);

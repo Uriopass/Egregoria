@@ -62,18 +62,16 @@ impl Context {
             match event {
                 Event::WindowEvent { event, .. } => {
                     state.event(&event);
-                    let managed = self.input.handle(&event);
+                    self.input.handle(&event);
 
-                    if !managed {
-                        match event {
-                            WindowEvent::Resized(physical_size) => {
-                                log::info!("resized: {:?}", physical_size);
-                                new_size = Some(physical_size);
-                                frame.take();
-                            }
-                            WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                            _ => (),
+                    match event {
+                        WindowEvent::Resized(physical_size) => {
+                            log::info!("resized: {:?}", physical_size);
+                            new_size = Some(physical_size);
+                            frame.take();
                         }
+                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                        _ => (),
                     }
                 }
                 Event::MainEventsCleared => match frame.take() {
@@ -111,6 +109,7 @@ impl Context {
                             Err(e) => panic!("error getting swapchain: {}", e),
                         };
                     }
+                    Some(_) if new_size.is_some() => {}
                     Some(sco) => {
                         profiling::finish_frame!();
                         profiling::scope!("frame");
