@@ -1,6 +1,6 @@
 use crate::economy::Money;
 use crate::engine_interaction::WorldCommand;
-use crate::Egregoria;
+use crate::{BuildingKind, Egregoria, GoodsCompanyRegistry};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -17,7 +17,25 @@ impl Default for Government {
 }
 
 impl Government {
-    pub fn action_cost(_action: &WorldCommand, _goria: &Egregoria) -> Money {
-        Money::new_cents(100)
+    pub fn action_cost(action: &WorldCommand, goria: &Egregoria) -> Money {
+        Money::new_base(match action {
+            WorldCommand::MapBuildHouse(_) => 100,
+            WorldCommand::AddTrain(_, n_wagons, _) => 1000 + 100 * (*n_wagons as i64),
+            WorldCommand::MapMakeConnection(p1, p2, _, pat) => {
+                let dist = p1.pos.distance(p2.pos);
+                50 + 1
+                    * ((0.1 * dist) as i64).max(1)
+                    * (pat.lanes_forward.len() + pat.lanes_backward.len()) as i64
+            }
+            WorldCommand::MapBuildSpecialBuilding(_, x, _, _) => match x {
+                BuildingKind::GoodsCompany(x) => {
+                    goria.read::<GoodsCompanyRegistry>().descriptions[*x].price
+                }
+                BuildingKind::RailFretStation => 1000,
+                BuildingKind::TrainStation => 1000,
+                _ => 0,
+            },
+            _ => 0,
+        })
     }
 }

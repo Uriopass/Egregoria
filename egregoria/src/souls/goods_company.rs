@@ -43,6 +43,7 @@ pub struct GoodsCompanyDescription {
     pub n_workers: i32,
     pub size: f32,
     pub asset_location: String,
+    pub price: i64,
 }
 
 #[derive(Default)]
@@ -75,6 +76,7 @@ struct GoodsCompanyDescriptionJSON {
     pub n_trucks: Option<u32>,
     pub size: f32,
     pub asset_location: String,
+    pub price: i64,
 }
 
 impl GoodsCompanyRegistry {
@@ -144,21 +146,18 @@ impl GoodsCompanyRegistry {
                     continue;
                 }
             };
-            let name = descr.name;
-            let n_workers = descr.n_workers;
-            let size = descr.size;
-            let asset_location = descr.asset_location;
             let id = self
                 .descriptions
                 .insert_with_key(move |id| GoodsCompanyDescription {
                     id,
-                    name,
+                    name: descr.name,
                     bgen,
                     kind,
                     recipe,
-                    n_workers,
-                    size,
-                    asset_location,
+                    n_workers: descr.n_workers,
+                    size: descr.size,
+                    asset_location: descr.asset_location,
+                    price: descr.price,
                 });
 
             log::info!("loaded {:?}", &self.descriptions[id]);

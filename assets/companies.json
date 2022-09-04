@@ -1,5 +1,4 @@
 [
-
   {
     "name": "Bakery",
     "bgen": {
@@ -15,7 +14,8 @@
     },
     "n_workers": 3,
     "size": 10.0,
-    "asset_location": "bakery.glb"
+    "asset_location": "bakery.glb",
+    "price": 1000
   },
   {
     "name": "Cereal Factory",
@@ -33,7 +33,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "flour_factory.glb"
+    "asset_location": "flour_factory.glb",
+    "price": 1000
   },
   {
     "name": "Cereal Farm",
@@ -48,7 +49,8 @@
     },
     "n_workers": 10,
     "size": 120.0,
-    "asset_location": "assets/sprites/cereal_farm.png"
+    "asset_location": "assets/sprites/cereal_farm.png",
+    "price": 1000
   },
   {
     "name": "Coal power plant",
@@ -65,7 +67,8 @@
     },
     "n_workers": 10,
     "size": 165.0,
-    "asset_location": "coal_power_plant.glb"
+    "asset_location": "coal_power_plant.glb",
+    "price": 1000
   },
   {
     "name": "Useless warehouse",
@@ -82,7 +85,8 @@
     },
     "n_workers": 100,
     "size": 100.0,
-    "asset_location": "assets/sprites/warehouse.png"
+    "asset_location": "assets/sprites/warehouse.png",
+    "price": 1000
   },
   {
     "name": "Supermarket",
@@ -107,7 +111,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/supermarket.png"
+    "asset_location": "assets/sprites/supermarket.png",
+    "price": 1000
   },
   {
     "name": "Clothes store",
@@ -124,7 +129,8 @@
     },
     "n_workers": 10,
     "size": 10.0,
-    "asset_location": "assets/sprites/clothes_store.png"
+    "asset_location": "assets/sprites/clothes_store.png",
+    "price": 1000
   },
   {
     "name": "Cloth factory",
@@ -142,7 +148,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/cloth_factory.png"
+    "asset_location": "assets/sprites/cloth_factory.png",
+    "price": 1000
   },
   {
     "name": "Polyester refinery",
@@ -160,7 +167,8 @@
     },
     "n_workers": 5,
     "size": 80.0,
-    "asset_location": "assets/sprites/polyester_refinery.png"
+    "asset_location": "assets/sprites/polyester_refinery.png",
+    "price": 1000
   },
   {
     "name": "Oil pump",
@@ -178,7 +186,8 @@
     },
     "n_workers": 5,
     "size": 20.0,
-    "asset_location": "assets/sprites/oil_pump.png"
+    "asset_location": "assets/sprites/oil_pump.png",
+    "price": 1000
   },
   {
     "name": "Textile processing facility",
@@ -196,7 +205,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/textile_processing_facility.png"
+    "asset_location": "assets/sprites/textile_processing_facility.png",
+    "price": 1000
   },
   {
     "name": "Wool farm",
@@ -214,7 +224,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/wool_farm.png"
+    "asset_location": "assets/sprites/wool_farm.png",
+    "price": 1000
   },
   {
     "name": "Florist",
@@ -231,7 +242,8 @@
     },
     "n_workers": 10,
     "size": 10.0,
-    "asset_location": "assets/sprites/florist.png"
+    "asset_location": "assets/sprites/florist.png",
+    "price": 1000
   },
   {
     "name": "Horticulturalist",
@@ -249,7 +261,8 @@
     },
     "n_workers": 5,
     "size": 80.0,
-    "asset_location": "assets/sprites/horticulturalist.png"
+    "asset_location": "assets/sprites/horticulturalist.png",
+    "price": 1000
   },
   {
     "name": "High tech store",
@@ -266,7 +279,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/hightech_store.png"
+    "asset_location": "assets/sprites/hightech_store.png",
+    "price": 1000
   },
   {
     "name": "High tech facility",
@@ -284,7 +298,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/hightech_facility.png"
+    "asset_location": "assets/sprites/hightech_facility.png",
+    "price": 1000
   },
   {
     "name": "Rare metal mine",
@@ -302,7 +317,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/rare_metal_mine.png"
+    "asset_location": "assets/sprites/rare_metal_mine.png",
+    "price": 1000
   },
   {
     "name": "Furniture store",
@@ -319,7 +335,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/furniture_store.png"
+    "asset_location": "assets/sprites/furniture_store.png",
+    "price": 1000
   },
   {
     "name": "Foundry",
@@ -337,7 +354,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/foundry.png"
+    "asset_location": "assets/sprites/foundry.png",
+    "price": 1000
   },
   {
     "name": "Iron mine",
@@ -355,7 +373,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/iron_mine.png"
+    "asset_location": "assets/sprites/iron_mine.png",
+    "price": 1000
   },
   {
     "name": "Woodmill",
@@ -373,7 +392,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/woodmill.png"
+    "asset_location": "assets/sprites/woodmill.png",
+    "price": 1000
   },
   {
     "name": "Lumber yard",
@@ -388,7 +408,8 @@
     },
     "n_workers": 10,
     "size": 200.0,
-    "asset_location": "assets/sprites/lumber_yard.png"
+    "asset_location": "assets/sprites/lumber_yard.png",
+    "price": 1000
   },
   {
     "name": "Meat facility",
@@ -406,7 +427,8 @@
     },
     "n_workers": 10,
     "size": 80.0,
-    "asset_location": "assets/sprites/meat_facility.png"
+    "asset_location": "assets/sprites/meat_facility.png",
+    "price": 1000
   },
   {
     "name": "Slaughterhouse",
@@ -424,7 +446,8 @@
     },
     "n_workers": 5,
     "size": 50.0,
-    "asset_location": "assets/sprites/slaughterhouse.png"
+    "asset_location": "assets/sprites/slaughterhouse.png",
+    "price": 1000
   },
   {
     "name": "Animal Farm",
@@ -439,7 +462,8 @@
     },
     "n_workers": 5,
     "size": 80.0,
-    "asset_location": "assets/sprites/animal_farm.png"
+    "asset_location": "assets/sprites/animal_farm.png",
+    "price": 1000
   },
   {
     "name": "Vegetable Farm",
@@ -454,6 +478,7 @@
     },
     "n_workers": 10,
     "size": 70.0,
-    "asset_location": "assets/sprites/vegetable_farm.png"
+    "asset_location": "assets/sprites/vegetable_farm.png",
+    "price": 1000
   }
 ]
