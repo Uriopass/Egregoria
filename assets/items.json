@@ -2,146 +2,98 @@
   {
     "name": "job-opening",
     "label": "Job opening",
-    "ext_value": 100000000,
-    "transport_cost": 0,
     "optout_exttrade": true
   },
   {
     "name": "cereal",
-    "label": "Cereal",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Cereal"
   },
   {
     "name": "flour",
-    "label": "Flour",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Flour"
   },
   {
     "name": "bread",
-    "label": "Bread",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Bread"
   },
   {
     "name": "vegetable",
-    "label": "Vegetable",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Vegetable"
   },
   {
     "name": "carcass",
-    "label": "Carcass",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Carcass"
   },
   {
     "name": "raw-meat",
-    "label": "Raw meat",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Raw meat"
   },
   {
     "name": "meat",
-    "label": "Meat",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Meat"
   },
   {
     "name": "tree-log",
-    "label": "Tree Log",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Tree Log"
   },
   {
     "name": "wood-plank",
-    "label": "Wood Plank",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Wood Plank"
   },
   {
     "name": "iron-ore",
-    "label": "Iron Ore",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Iron Ore"
   },
   {
     "name": "metal",
-    "label": "Metal",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Metal"
   },
   {
     "name": "rare-metal",
-    "label": "Rare Metal",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Rare Metal"
   },
   {
     "name": "high-tech-product",
-    "label": "High Tech Product",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "High Tech Product"
   },
   {
     "name": "furniture",
-    "label": "Furniture",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Furniture"
   },
   {
     "name": "flower",
-    "label": "Flower",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Flower"
   },
   {
     "name": "wool",
-    "label": "Wool",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Wool"
   },
   {
     "name": "textile",
-    "label": "Textile",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Textile"
   },
   {
     "name": "cloth",
-    "label": "Cloth",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Cloth"
   },
   {
     "name": "oil",
-    "label": "Oil",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Oil"
   },
   {
     "name": "coal",
-    "label": "Coal",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Coal"
   },
   {
     "name": "electricity",
-    "label": "Electricity",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Electricity"
   },
   {
     "name": "polyester",
-    "label": "Polyester",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Polyester"
   },
   {
     "name": "petrol",
-    "label": "Petrol",
-    "ext_value": 1000,
-    "transport_cost": 10
+    "label": "Petrol"
   }
 ]
