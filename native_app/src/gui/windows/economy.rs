@@ -1,7 +1,7 @@
 use crate::uiworld::UiWorld;
 use common::timestep::UP_DT;
 use egregoria::economy::{
-    EcoStats, ItemHistories, ItemRegistry, HISTORY_SIZE, LEVEL_FREQS, LEVEL_NAMES,
+    EcoStats, ItemHistories, ItemRegistry, Market, HISTORY_SIZE, LEVEL_FREQS, LEVEL_NAMES,
 };
 use egregoria::Egregoria;
 use egui::plot::{Line, PlotPoints};
@@ -14,6 +14,7 @@ use std::collections::HashSet;
 enum EconomyTab {
     ImportExports,
     InternalTrade,
+    MarketPrices,
 }
 
 struct EconomyState {
@@ -57,6 +58,15 @@ pub(crate) fn economy(
                     .clicked()
                 {
                     state.tab = EconomyTab::InternalTrade;
+                }
+                if ui
+                    .selectable_label(
+                        matches!(state.tab, EconomyTab::MarketPrices),
+                        "Market Prices",
+                    )
+                    .clicked()
+                {
+                    state.tab = EconomyTab::MarketPrices;
                 }
             });
 
@@ -207,7 +217,24 @@ pub(crate) fn economy(
                         render_history(ui, &ecostats.internal_trade);
                     });
                 }
+                EconomyTab::MarketPrices => {
+                    ui.push_id(3, |ui| {
+                        render_market_prices(goria, ui);
+                    });
+                }
             }
             ui.allocate_space(ui.available_size());
         });
+}
+
+fn render_market_prices(goria: &Egregoria, ui: &mut Ui) {
+    let registry = goria.read::<ItemRegistry>();
+    let market = goria.read::<Market>();
+    egui::Grid::new("marketprices").show(ui, |ui| {
+        for (id, market) in market.iter() {
+            ui.label(&registry[*id].name);
+            ui.label(format!("{}", market.ext_value));
+            ui.end_row();
+        }
+    });
 }

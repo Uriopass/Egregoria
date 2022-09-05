@@ -1,4 +1,3 @@
-use crate::economy::Money;
 use common::saveload::Encoder;
 use common::FastMap;
 use serde::{Deserialize, Serialize};
@@ -9,10 +8,6 @@ use std::ops::Index;
 struct ItemDefinition {
     name: String,
     label: String,
-    #[serde(default)]
-    ext_value: Money,
-    #[serde(default)]
-    transport_cost: Money,
     #[serde(default)]
     optout_exttrade: bool,
 }
@@ -41,8 +36,6 @@ pub struct Item {
     pub id: ItemID,
     pub name: String,
     pub label: String,
-    pub ext_value: Money,
-    pub transport_cost: Money,
     pub optout_exttrade: bool,
 }
 
@@ -81,8 +74,6 @@ impl ItemRegistry {
                 id,
                 name: definition.name,
                 label: definition.label,
-                ext_value: definition.ext_value,
-                transport_cost: definition.transport_cost,
                 optout_exttrade: definition.optout_exttrade,
             });
             self.item_names.insert(name, id);

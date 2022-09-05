@@ -1,7 +1,8 @@
-use crate::economy::{ItemID, ItemRegistry, Money};
+use crate::economy::{Item, ItemID, ItemRegistry, Money, WORKER_SALARY_PER_SECOND};
 use crate::map::BuildingID;
 use crate::map_dynamic::BuildingInfos;
-use crate::{BuildingKind, Map, SoulID};
+use crate::souls::goods_company::GoodsCompanyID;
+use crate::{BuildingKind, GoodsCompanyRegistry, Map, SoulID};
 use geom::Vec2;
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
@@ -29,8 +30,8 @@ pub struct SingleMarket {
     capital: BTreeMap<SoulID, i32>,
     buy_orders: BTreeMap<SoulID, BuyOrder>,
     sell_orders: BTreeMap<SoulID, SellOrder>,
-    pub(crate) ext_value: Money,
-    pub(crate) transport_cost: Money,
+    pub ext_value: Money,
+    pub transport_cost: Money,
     optout_exttrade: bool,
 }
 
@@ -117,14 +118,15 @@ pub fn find_trade_place(
 }
 
 impl Market {
-    pub fn new(registry: &ItemRegistry) -> Self {
+    pub fn new(registry: &ItemRegistry, companies: &GoodsCompanyRegistry) -> Self {
+        let prices = calculate_prices(registry, companies);
         Self {
             markets: registry
                 .iter()
                 .map(|v| {
                     (
                         v.id,
-                        SingleMarket::new(v.ext_value, v.transport_cost, v.optout_exttrade),
+                        SingleMarket::new(prices[&v.id], Money::new_base(10), v.optout_exttrade),
                     )
                 })
                 .collect(),
@@ -135,6 +137,10 @@ impl Market {
 
     pub fn m(&mut self, kind: ItemID) -> &mut SingleMarket {
         self.markets.get_mut(&kind).unwrap()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = (&ItemID, &SingleMarket)> {
+        self.markets.iter()
     }
 
     /// Called when an agent tells the world it wants to sell something
@@ -360,11 +366,69 @@ impl Market {
     }
 }
 
+fn calculate_prices(
+    registry: &ItemRegistry,
+    companies: &GoodsCompanyRegistry,
+) -> BTreeMap<ItemID, Money> {
+    let mut item_graph: BTreeMap<ItemID, Vec<GoodsCompanyID>> = BTreeMap::new();
+    for (id, company) in companies.descriptions.iter() {
+        for (itemid, _) in &company.recipe.production {
+            item_graph.entry(*itemid).or_default().push(id);
+        }
+    }
+
+    let mut prices = BTreeMap::new();
+    fn calculate_price_inner(
+        registry: &ItemRegistry,
+        companies: &GoodsCompanyRegistry,
+        item_graph: &BTreeMap<ItemID, Vec<GoodsCompanyID>>,
+        item: &Item,
+        prices: &mut BTreeMap<ItemID, Money>,
+    ) {
+        if prices.contains_key(&item.id) {
+            return;
+        }
+
+        let mut minprice = None;
+        for &comp in item_graph.get(&item.id).unwrap_or(&vec![]) {
+            let company = &companies.descriptions[comp];
+            let mut price_consumption = Money::ZERO;
+            for &(itemid, qty) in &company.recipe.consumption {
+                calculate_price_inner(registry, companies, item_graph, &registry[itemid], prices);
+                price_consumption += prices[&itemid] * qty as i64;
+            }
+            let qty = company
+                .recipe
+                .production
+                .iter()
+                .find_map(|x| (x.0 == item.id).then(|| x.1))
+                .unwrap_or(0) as i64;
+            let price_workers = company.recipe.complexity as i64
+                * company.n_workers as i64
+                * WORKER_SALARY_PER_SECOND
+                / qty;
+
+            let newprice = price_consumption + price_workers;
+
+            minprice = minprice.map(|x: Money| x.min(newprice)).or(Some(newprice));
+        }
+
+        prices.insert(item.id, minprice.unwrap_or(Money::ZERO));
+    }
+
+    for item in registry.iter() {
+        calculate_price_inner(registry, companies, &item_graph, item, &mut prices);
+    }
+
+    prices
+}
+
 #[cfg(test)]
 mod tests {
     use super::Market;
-    use crate::economy::ItemRegistry;
-    use crate::SoulID;
+    use crate::economy::{ItemRegistry, WORKER_SALARY_PER_SECOND};
+    use crate::souls::goods_company::{CompanyKind, GoodsCompanyDescription, Recipe};
+    use crate::{BuildingGen, GoodsCompanyRegistry, SoulID};
     use geom::{vec2, Vec2};
     use hecs::Entity;
 
@@ -384,20 +448,18 @@ mod tests {
             r#"
           [{
             "name": "cereal",
-            "label": "Cereal",
-            "ext_value": 1000,
-            "transport_cost": 10
+            "label": "Cereal"
           },
           {
             "name": "wheat",
-            "label": "Wheat",
-            "ext_value": 1000,
-            "transport_cost": 10
+            "label": "Wheat"
           }]
         "#,
         );
 
-        let mut m = Market::new(&registry);
+        let g = GoodsCompanyRegistry::default();
+
+        let mut m = Market::new(&registry, &g);
 
         let cereal = registry.id("cereal");
 
@@ -415,5 +477,76 @@ mod tests {
         assert_eq!(t0.seller.soul(), seller);
         assert_eq!(t0.buyer.soul(), buyer);
         assert_eq!(t0.qty, 2);
+    }
+
+    #[test]
+    fn calculate_prices() {
+        let mut registry = ItemRegistry::default();
+
+        registry.load_item_definitions(
+            r#"
+          [{
+            "name": "cereal",
+            "label": "Cereal"
+          },
+          {
+            "name": "wheat",
+            "label": "Wheat"
+          }]
+        "#,
+        );
+
+        let cereal = registry.id("cereal");
+        let wheat = registry.id("wheat");
+
+        let mut companies = GoodsCompanyRegistry::default();
+
+        companies
+            .descriptions
+            .insert_with_key(|id| GoodsCompanyDescription {
+                id,
+                name: "Cereal farm".to_string(),
+                bgen: BuildingGen::House,
+                kind: CompanyKind::Store,
+                recipe: Recipe {
+                    production: vec![(cereal, 3)],
+                    complexity: 3,
+                    consumption: vec![],
+                    storage_multiplier: 5,
+                },
+                n_workers: 2,
+                size: 0.0,
+                asset_location: "".to_string(),
+                price: 0,
+            });
+
+        companies
+            .descriptions
+            .insert_with_key(|id| GoodsCompanyDescription {
+                id,
+                name: "Wheat factory".to_string(),
+                bgen: BuildingGen::House,
+                kind: CompanyKind::Store,
+                recipe: Recipe {
+                    production: vec![(wheat, 1)],
+                    complexity: 10,
+                    consumption: vec![(cereal, 2)],
+                    storage_multiplier: 5,
+                },
+                n_workers: 5,
+                size: 0.0,
+                asset_location: "".to_string(),
+                price: 0,
+            });
+
+        let prices = super::calculate_prices(&registry, &companies);
+
+        assert_eq!(prices.len(), 2);
+        let price_cereal = 2 * WORKER_SALARY_PER_SECOND;
+        assert_eq!(prices[&cereal], price_cereal);
+        assert_eq!(
+            prices[&wheat],
+            price_cereal * 2 + 5 * WORKER_SALARY_PER_SECOND * 10
+        );
     }
 }

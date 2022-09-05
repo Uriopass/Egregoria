@@ -5,7 +5,7 @@ use hecs::World;
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::{Add, AddAssign, Mul, SubAssign};
+use std::ops::{Add, AddAssign, Div, Mul, SubAssign};
 
 mod ecostats;
 mod government;
@@ -18,8 +18,10 @@ pub use government::*;
 pub use item::*;
 pub use market::*;
 
+const WORKER_SALARY_PER_SECOND: Money = Money::new_base(1);
+
 /// Money in cents, can be negative when expressing debt.
-#[derive(Default, Copy, Clone, Serialize, Deserialize)]
+#[derive(Default, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 #[serde(transparent)]
 pub struct Money(i64);
 
@@ -80,14 +82,31 @@ impl Mul<i64> for Money {
     }
 }
 
+impl Mul<Money> for i64 {
+    type Output = Money;
+
+    fn mul(self, rhs: Money) -> Self::Output {
+        Money(self * rhs.0)
+    }
+}
+
+impl Div<i64> for Money {
+    type Output = Money;
+
+    fn div(self, rhs: i64) -> Self::Output {
+        Money(self.0 / rhs)
+    }
+}
+
 impl Money {
     pub const ZERO: Money = Money(0);
+    pub const MAX: Money = Money(i64::MAX);
 
-    pub fn new_cents(cents: i64) -> Self {
+    pub const fn new_cents(cents: i64) -> Self {
         Self(cents)
     }
 
-    pub fn new_base(base: i64) -> Self {
+    pub const fn new_base(base: i64) -> Self {
         Self(base * 100)
     }
 
@@ -115,7 +134,10 @@ pub fn init_market(_: &mut World, res: &mut Resources) {
         &*res.get::<ItemRegistry>().unwrap(),
     );
 
-    let market = Market::new(&*res.get::<ItemRegistry>().unwrap());
+    let market = Market::new(
+        &*res.get::<ItemRegistry>().unwrap(),
+        &*res.get::<GoodsCompanyRegistry>().unwrap(),
+    );
     res.insert(market);
     let stats = EcoStats::new(&*res.get::<ItemRegistry>().unwrap());
     res.insert(stats);

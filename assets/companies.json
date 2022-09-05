@@ -101,11 +101,7 @@
         ["vegetable", 1],
         ["cereal", 1]
       ],
-      "production": [
-        ["meat", 1],
-        ["vegetable", 1],
-        ["cereal", 1]
-      ],
+      "production": [],
       "complexity": 100,
       "storage_multiplier": 5
     },
@@ -123,7 +119,7 @@
     "kind": "store",
     "recipe": {
       "consumption": [["cloth", 1]],
-      "production": [["cloth", 1]],
+      "production": [],
       "complexity": 100,
       "storage_multiplier": 5
     },
@@ -236,7 +232,7 @@
     "kind": "store",
     "recipe": {
       "consumption": [["flower", 1]],
-      "production": [["flower", 1]],
+      "production": [],
       "complexity": 100,
       "storage_multiplier": 5
     },
@@ -273,7 +269,7 @@
     "kind": "store",
     "recipe": {
       "consumption": [["high-tech-product", 1]],
-      "production": [["high-tech-product", 1]],
+      "production": [],
       "complexity": 100,
       "storage_multiplier": 5
     },
