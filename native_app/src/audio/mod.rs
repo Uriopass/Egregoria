@@ -227,7 +227,9 @@ impl AudioContext {
                     log::error!("shouldn't play music with base play as it's not affected by global volume changes");
                 }
                 log::info!("playing {}", name);
-                h.control().play(Gain::new(FramesSignal::new(x, 0.0), vol));
+                let mut g = Gain::new(FramesSignal::new(x, 0.0));
+                g.set_amplitude_ratio(vol);
+                h.control().play(g);
             }
         }
     }
@@ -325,10 +327,6 @@ impl<T: Signal<Frame = [Sample; 2]>> Signal for GlobalGain<T> {
         }
     }
 
-    fn remaining(&self) -> f32 {
-        self.inner.remaining()
-    }
-
     fn handle_dropped(&self) {
         self.inner.handle_dropped()
     }
@@ -374,10 +372,6 @@ impl<T: Signal<Frame = [Sample; 2]>> Signal for FadeIn<T> {
             x[1] *= *advance;
             *advance += interval / self.fadetime;
         }
-    }
-
-    fn remaining(&self) -> f32 {
-        self.inner.remaining()
     }
 
     fn handle_dropped(&self) {

@@ -24,7 +24,11 @@ impl CarSounds {
             sounds: SecondaryMap::new(),
             generic_car_sound: ctx.play_with_control(
                 "car_loop",
-                |x| Gain::new(Cycle::new(x), 0.0),
+                |x| {
+                    let mut g = Gain::new(Cycle::new(x));
+                    g.set_amplitude_ratio(0.0);
+                    g
+                },
                 AudioKind::Effect,
             ),
         }
@@ -91,7 +95,9 @@ impl CarSounds {
                     |x| {
                         let cycle = Cycle::new(x);
                         cycle.seek(common::rand::rand2(pos.x, pos.y));
-                        Speed::new(Gain::new(cycle, 0.0))
+                        let mut g = Gain::new(cycle);
+                        g.set_amplitude_ratio(0.0);
+                        Speed::new(g)
                     },
                     AudioKind::Effect,
                 );
@@ -101,7 +107,9 @@ impl CarSounds {
                     |x| {
                         let cycle = Cycle::new(x);
                         cycle.seek(common::rand::rand2(pos.x, pos.y));
-                        Speed::new(Gain::new(cycle, 0.0))
+                        let mut g = Gain::new(cycle);
+                        g.set_amplitude_ratio(0.0);
+                        Speed::new(g)
                     },
                     AudioKind::Effect,
                 );

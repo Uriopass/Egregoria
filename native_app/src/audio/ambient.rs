@@ -14,12 +14,20 @@ impl Ambient {
     pub(crate) fn new(ctx: &mut AudioContext) -> Self {
         let wind = ctx.play_with_control(
             "calm_wind",
-            |s| Gain::new(Cycle::new(s), 0.0),
+            |s| {
+                let mut g = Gain::new(Cycle::new(s));
+                g.set_amplitude_ratio(0.0);
+                g
+            },
             AudioKind::Effect,
         );
         let forest = ctx.play_with_control(
             "forest",
-            |s| Gain::new(Cycle::new(s), 0.0),
+            |s| {
+                let mut g = Gain::new(Cycle::new(s));
+                g.set_amplitude_ratio(0.0);
+                g
+            },
             AudioKind::Effect,
         );
 
