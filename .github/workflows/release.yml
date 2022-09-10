@@ -52,7 +52,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
 
       - name: install deps for linux
-        run: sudo apt-get install libasound2-dev libudev-dev pkg-config
+        run: sudo apt-get install libasound2-dev libudev-dev pkg-config libx11-dev
         if: matrix.os == 'ubuntu-latest'
 
       - name: Build app
