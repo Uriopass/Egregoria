@@ -1,4 +1,4 @@
-use crate::economy::{Item, ItemID, ItemRegistry, Money, WORKER_SALARY_PER_SECOND};
+use crate::economy::{Item, ItemID, ItemRegistry, Money, WORKER_CONSUMPTION_PER_SECOND};
 use crate::map::BuildingID;
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::goods_company::GoodsCompanyID;
@@ -405,7 +405,7 @@ fn calculate_prices(
                 .unwrap_or(0) as i64;
             let price_workers = company.recipe.complexity as i64
                 * company.n_workers as i64
-                * WORKER_SALARY_PER_SECOND
+                * WORKER_CONSUMPTION_PER_SECOND
                 / qty;
 
             let newprice = price_consumption + price_workers;
@@ -426,7 +426,7 @@ fn calculate_prices(
 #[cfg(test)]
 mod tests {
     use super::Market;
-    use crate::economy::{ItemRegistry, WORKER_SALARY_PER_SECOND};
+    use crate::economy::{ItemRegistry, WORKER_CONSUMPTION_PER_SECOND};
     use crate::souls::goods_company::{CompanyKind, GoodsCompanyDescription, Recipe};
     use crate::{BuildingGen, GoodsCompanyRegistry, SoulID};
     use geom::{vec2, Vec2};
@@ -542,11 +542,11 @@ mod tests {
         let prices = super::calculate_prices(&registry, &companies);
 
         assert_eq!(prices.len(), 2);
-        let price_cereal = 2 * WORKER_SALARY_PER_SECOND;
+        let price_cereal = 2 * WORKER_CONSUMPTION_PER_SECOND;
         assert_eq!(prices[&cereal], price_cereal);
         assert_eq!(
             prices[&wheat],
-            price_cereal * 2 + 5 * WORKER_SALARY_PER_SECOND * 10
+            price_cereal * 2 + 5 * WORKER_CONSUMPTION_PER_SECOND * 10
         );
     }
 }

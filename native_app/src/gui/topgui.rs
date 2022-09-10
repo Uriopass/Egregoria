@@ -165,7 +165,7 @@ impl Gui {
             let state = &mut *uiworld.write::<RoadEditorResource>();
             if let Some(ref mut v) = state.inspect {
                 let dirty = &mut state.dirty;
-                Window::new("Road Properties")
+                Window::new("Editor")
                     .fixed_size([150.0, 200.0])
                     .fixed_pos([w - 150.0 - toolbox_w, h * 0.5 - 30.0])
                     .vscroll(false)
@@ -290,7 +290,7 @@ impl Gui {
             let rbw = 220.0;
             Window::new("Road Properties")
                 .fixed_size([rbw, 380.0])
-                .fixed_pos([w - rbw - toolbox_w, h * 0.5 - 30.0])
+                .fixed_pos([w - rbw - toolbox_w + tweak!(40.0), h * 0.5 - tweak!(125.0)])
                 .title_bar(true)
                 .collapsible(false)
                 .resizable(false)
@@ -404,10 +404,10 @@ impl Gui {
         let brushes = [("Residential", LotKind::Residential)];
 
         if matches!(*uiworld.read::<Tab>(), Tab::Lotbrush) {
-            let lbw = 130.0;
+            let lbw = 120.0;
             Window::new("Lot Brush")
                 .fixed_size([lbw, 50.0 + brushes.len() as f32 * 35.0])
-                .fixed_pos([w - toolbox_w - lbw, h * 0.5 - 30.0])
+                .fixed_pos([w - toolbox_w - lbw - 10.0, h * 0.5 - 30.0])
                 .hscroll(false)
                 .title_bar(true)
                 .collapsible(false)
@@ -415,7 +415,7 @@ impl Gui {
                 .show(ui, |ui| {
                     let mut cur_brush = uiworld.write::<LotBrushResource>();
 
-                    ui.style_mut().spacing.interact_size = [lbw, 35.0].into();
+                    ui.style_mut().spacing.interact_size = [lbw * 0.5, 35.0].into();
                     for (name, brush) in &brushes {
                         let mut t = RichText::new(*name);
                         if std::mem::discriminant(brush) == std::mem::discriminant(&cur_brush.kind)
@@ -461,7 +461,7 @@ impl Gui {
                 });
         }
 
-        let building_select_w = 160.0;
+        let building_select_w = 200.0;
         let registry = goria.read::<GoodsCompanyRegistry>();
         let gbuildings = registry.descriptions.values().peekable();
 
@@ -472,7 +472,7 @@ impl Gui {
                 .min_width(building_select_w)
                 .default_height(500.0f32.min(h * 0.5) as f32)
                 .vscroll(true)
-                .fixed_pos([w - toolbox_w - building_select_w, h * 0.5 - 30.0])
+                .fixed_pos([w - toolbox_w - building_select_w, h * 0.5 - 100.0])
                 .title_bar(true)
                 .collapsible(false)
                 .resizable(false)

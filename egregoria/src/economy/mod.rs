@@ -18,7 +18,7 @@ pub use government::*;
 pub use item::*;
 pub use market::*;
 
-const WORKER_SALARY_PER_SECOND: Money = Money::new_base(1);
+const WORKER_CONSUMPTION_PER_SECOND: Money = Money::new_cents(1);
 
 /// Money in cents, can be negative when expressing debt.
 #[derive(Default, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]

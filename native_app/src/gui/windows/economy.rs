@@ -87,7 +87,7 @@ pub(crate) fn economy(
                 let filterid = ui.id().with("filter");
                 let mut filter = ui
                     .data()
-                    .get_temp_mut_or_insert_with(filterid, || HashSet::new())
+                    .get_temp_mut_or_insert_with(filterid, HashSet::new)
                     .clone();
                 egui::plot::Plot::new("ecoplot")
                     .height(200.0)
