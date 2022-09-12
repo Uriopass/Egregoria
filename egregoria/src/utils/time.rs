@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub const SECONDS_PER_HOUR: i32 = 100;
 pub const HOURS_PER_DAY: i32 = 24;
 pub const SECONDS_PER_DAY: i32 = SECONDS_PER_HOUR * HOURS_PER_DAY;
+pub const TICKS_PER_SECOND: u32 = 50;
 
 /// The amount of time the game was updated
 /// Used as a resource
@@ -188,5 +189,15 @@ impl GameInstant {
     /// Time elapsed since instant was taken, in seconds
     pub fn elapsed(&self, time: &GameTime) -> f64 {
         time.timestamp - self.timestamp
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use common::timestep::UP_DT;
+
+    #[test]
+    fn assert_up_dt_ticks_per_second_match() {
+        assert!((1.0 / UP_DT.as_secs_f64() - super::TICKS_PER_SECOND as f64).abs() < 0.0001);
     }
 }

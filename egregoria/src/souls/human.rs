@@ -13,6 +13,8 @@ use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 
+pub struct BasicWorker;
+
 #[derive(Inspect, Serialize, Deserialize, Default)]
 pub struct HumanDecision {
     kind: HumanDecisionKind,
@@ -192,6 +194,7 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<SoulID> {
                 food,
                 Bought::default(),
                 Router::new(car),
+                BasicWorker,
             ),
         )
         .unwrap();

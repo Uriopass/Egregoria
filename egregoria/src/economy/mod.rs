@@ -12,7 +12,8 @@ mod government;
 mod item;
 mod market;
 
-use crate::utils::time::Tick;
+use crate::souls::human::BasicWorker;
+use crate::utils::time::{Tick, TICKS_PER_SECOND};
 pub use ecostats::*;
 pub use government::*;
 pub use item::*;
@@ -145,10 +146,16 @@ pub fn init_market(_: &mut World, res: &mut Resources) {
 
 #[profiling::function]
 pub fn market_update(world: &mut World, resources: &mut Resources) {
+    let n_workers = world.query::<&BasicWorker>().into_iter().len();
+
     let mut m = resources.get_mut::<Market>().unwrap();
     let job_opening = resources.get::<ItemRegistry>().unwrap().id("job-opening");
     let mut gvt = resources.get_mut::<Government>().unwrap();
     let tick = resources.get::<Tick>().unwrap().0;
+
+    if tick % TICKS_PER_SECOND == 0 {
+        gvt.money -= n_workers as i64 * WORKER_CONSUMPTION_PER_SECOND;
+    }
 
     let trades = m.make_trades();
 

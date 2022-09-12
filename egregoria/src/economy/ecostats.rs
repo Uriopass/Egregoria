@@ -6,8 +6,8 @@ use std::collections::BTreeMap;
 pub const HISTORY_SIZE: usize = 128;
 /// Tick to wait before the new bin
 /// Which can be recovred from FREQ * HISTORY_SIZZ / TICK_RATE
-pub const LEVEL_FREQS: [u32; 6] = [2, 25, 250, 1500, 15000, 75000];
-pub const LEVEL_NAMES: [&str; 6] = ["5s", "1m", "10m", "1h", "10h", "50h"];
+pub const LEVEL_FREQS: [u32; 4] = [250, 1500, 15000, 75000];
+pub const LEVEL_NAMES: [&str; 4] = ["10m", "1h", "10h", "50h"];
 
 /// One history of one item at one frequency level
 /// The past_ring is controlled by a shared cursor for all items
