@@ -1,14 +1,36 @@
 use crate::{Circle, Intersect, Polygon, Radians, Shape, Vec3, Vec3d, AABB, OBB};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::{Hash, Hasher};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-#[derive(Copy, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, PartialEq)]
 #[repr(C)]
 pub struct Vec2 {
     pub x: f32,
     pub y: f32,
+}
+
+impl Serialize for Vec2 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let encoded = (f32::to_bits(self.x) as u64) << 32 | f32::to_bits(self.y) as u64;
+        serializer.serialize_u64(encoded)
+    }
+}
+
+impl<'de> Deserialize<'de> for Vec2 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let encoded = u64::deserialize(deserializer)?;
+        let x = f32::from_bits(((encoded >> 32) & 0xFFFF_FFFF) as u32);
+        let y = f32::from_bits((encoded & 0xFFFF_FFFF) as u32);
+        Ok(Vec2 { x, y })
+    }
 }
 
 #[derive(Copy, Clone, Default, PartialEq)]

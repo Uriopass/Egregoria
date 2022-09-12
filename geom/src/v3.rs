@@ -1,16 +1,35 @@
 use crate::{vec2, vec4, Vec2, Vec4};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
 pub type V3 = Vec3;
 
-#[derive(Copy, Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Debug, PartialEq)]
 #[repr(C)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,
     pub z: f32,
+}
+
+impl Serialize for Vec3 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        (self.x, self.y, self.z).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Vec3 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let (x, y, z) = Deserialize::deserialize(deserializer)?;
+        Ok(Vec3 { x, y, z })
+    }
 }
 
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
