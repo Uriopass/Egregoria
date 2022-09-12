@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommands};
 use crate::map::{BuildingGen, BuildingKind, LanePatternBuilder, Map, StraightRoadGen, Terrain};
