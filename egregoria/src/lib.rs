@@ -384,7 +384,7 @@ macro_rules! register {
                     $(
                         t == std::any::TypeId::of::<$t>() ||
                     )+
-                    true
+                    false
                     })
                     .count()
             }
