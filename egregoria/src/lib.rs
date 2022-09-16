@@ -30,6 +30,9 @@ use utils::time::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
 extern crate common;
 
 #[macro_use]
+extern crate inline_tweak;
+
+#[macro_use]
 extern crate egui_inspect;
 
 #[macro_use]

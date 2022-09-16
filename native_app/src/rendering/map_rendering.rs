@@ -16,6 +16,16 @@ pub(crate) struct RoadRenderer {
 }
 
 impl RoadRenderer {
+    pub(crate) fn reset(&mut self) {
+        self.terrain_dirt_id = 0;
+        self.meshb.map_dirt_id = 0;
+        for v in self.trees_builders.values_mut() {
+            v.1 = None;
+        }
+    }
+}
+
+impl RoadRenderer {
     pub(crate) fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         let mesh = load_mesh("pine.glb", gfx).expect("could not load pine");
 

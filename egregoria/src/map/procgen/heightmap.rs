@@ -95,9 +95,7 @@ pub(crate) fn height(p: Vec2) -> (f32, Vec2) {
     (noise, grad)
 }
 
-pub(crate) fn tree_density(p: Vec2) -> f32 {
-    let h = height(p);
-    //p -= vec2(-2000.0, 2000.0);
-
-    (simplex_noise(p * 0.00003).0 * 2.0 + 0.5).max(0.0) * (h.0 - 0.12)
+pub(crate) fn tree_density(mut p: Vec2) -> f32 {
+    p -= vec2(-20000.0, 20000.0);
+    (simplex_noise(p * 0.0003).0 * 1.5 + 0.5).max(0.0) + -0.1
 }

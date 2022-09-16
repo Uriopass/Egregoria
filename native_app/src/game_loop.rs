@@ -158,6 +158,7 @@ impl State {
 
     pub(crate) fn reset(&mut self) {
         self.terrain.reset();
+        self.road_renderer.reset();
         self.road_renderer.terrain_dirt_id = 0;
         self.road_renderer.meshb.map_dirt_id = 0;
     }

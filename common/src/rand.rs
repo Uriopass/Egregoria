@@ -36,12 +36,18 @@ fn float_construct(mut m: u32) -> f32 {
 pub fn rand(x: f32) -> f32 {
     float_construct(hash(x.to_bits()))
 }
+
+// Pseudo-random value in half-open range [0:1].
 pub fn rand2(x: f32, y: f32) -> f32 {
     float_construct(hash2(x.to_bits(), y.to_bits()))
 }
+
+// Pseudo-random value in half-open range [0:1].
 pub fn rand3(x: f32, y: f32, z: f32) -> f32 {
     float_construct(hash3(x.to_bits(), y.to_bits(), z.to_bits()))
 }
+
+// Pseudo-random value in half-open range [0:1].
 pub fn rand4(x: f32, y: f32, z: f32, w: f32) -> f32 {
     float_construct(hash4(x.to_bits(), y.to_bits(), z.to_bits(), w.to_bits()))
 }

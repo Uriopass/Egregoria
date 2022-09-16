@@ -1,6 +1,5 @@
 use crate::map::procgen::heightmap;
 use crate::map::procgen::heightmap::tree_density;
-use flat_spatial::Grid;
 use geom::{vec2, Radians, Vec2, AABB};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
@@ -158,68 +157,37 @@ impl Terrain {
         let rchunk = common::rand::rand2(x as f32, y as f32);
         let pchunk = CHUNK_SIZE as f32 * vec2(x as f32, y as f32);
 
-        const RES_TREES: usize = 1;
+        const RES_TREES: usize = 64;
         const TCELLW: f32 = CHUNK_SIZE as f32 / RES_TREES as f32;
 
         for offx in 0..RES_TREES {
             for offy in 0..RES_TREES {
-                let rcell = common::rand::rand2(offx as f32, offy as f32);
+                let cellpos = vec2(offx as f32, offy as f32) * TCELLW;
 
+                let rcell = common::rand::rand2(cellpos.x, cellpos.y);
                 let jitterx = common::rand::rand3(rchunk, rcell, 1.0);
                 let jittery = common::rand::rand3(rchunk, rcell, 2.0);
                 let dens_test = common::rand::rand3(rchunk, rcell, 3.0);
 
-                let sample = pchunk
-                    + vec2(offx as f32, offy as f32) * TCELLW
-                    + vec2(jitterx, jittery) * TCELLW * 0.5;
+                let sample = cellpos + vec2(jitterx, jittery) * TCELLW;
 
-                let tdens = tree_density(sample);
+                let tdens = tree_density(pchunk + sample);
 
-                if dens_test < tdens {
-                    let mut existing = Grid::new(10);
-                    const RES_FOREST: i32 = 35;
-                    for y in 0..(RES_FOREST) {
-                        for x in 0..(RES_FOREST) {
-                            if (x - RES_FOREST / 2) * (x - RES_FOREST / 2)
-                                + (y - RES_FOREST / 2) * (y - RES_FOREST / 2)
-                                > 170
-                                    + (50.0
-                                        * common::rand::rand3(
-                                            x as f32,
-                                            y as f32,
-                                            (offx * 1000 + offy) as f32,
-                                        )) as i32
-                            {
-                                continue;
-                            }
-
-                            let jitterx = common::rand::rand3(
-                                rchunk,
-                                rcell,
-                                10.0 + y as f32 * 100.0 + x as f32,
-                            );
-                            let jittery = common::rand::rand3(
-                                rchunk,
-                                rcell,
-                                1000.0 + y as f32 * 100.0 + x as f32,
-                            );
-
-                            let newpos =
-                                sample + (vec2(x as f32, y as f32) + vec2(jitterx, jittery)) * 20.0;
-
-                            if existing.query_around(newpos, 12.0).next().is_some() {
-                                continue;
-                            }
-
-                            existing.insert(newpos, ());
-                            chunk.trees.push(Tree::new(newpos));
-                        }
-                    }
+                if dens_test < tdens && chunk.height(sample) >= 0.0 {
+                    chunk.trees.push(Tree::new(pchunk + sample));
                 }
             }
         }
 
         Some(chunk)
+    }
+}
+
+impl Chunk {
+    pub fn height(&self, p: Vec2) -> f32 {
+        let v = p / CHUNK_SIZE as f32;
+        let v = v * CHUNK_RESOLUTION as f32;
+        self.heights[v.y as usize][v.x as usize]
     }
 }
 
