@@ -8,6 +8,7 @@ use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
 use raw_window_handle::HasRawWindowHandle;
 use std::any::TypeId;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -798,7 +799,7 @@ impl GfxContext {
         if self.tick % 30 != 0 {
             return;
         }
-        let mut to_invalidate = vec![];
+        let mut to_invalidate = HashSet::new();
         for (sname, (parents, entry)) in &mut self.shader_watcher {
             let meta =
                 unwrap_cont!(
@@ -808,7 +809,7 @@ impl GfxContext {
             match entry.as_mut() {
                 Some(entry) => {
                     if *entry < filetime {
-                        to_invalidate.push(sname.clone());
+                        to_invalidate.insert(sname.clone());
                         to_invalidate.extend(parents.iter().cloned());
                         *entry = filetime;
                     }
@@ -819,6 +820,7 @@ impl GfxContext {
             }
         }
         for sname in to_invalidate {
+            log::info!("invalidating shader {}", sname);
             self.invalidate(&sname);
         }
     }
@@ -830,6 +832,7 @@ impl GfxContext {
             let new_shader = compile_shader(device, shader_name);
             let scope = beul::execute(device.pop_error_scope());
             if scope.is_some() {
+                log::error!("failed to compile shader for invalidation {}", shader_name);
                 return;
             }
             *x = new_shader;
@@ -880,6 +883,11 @@ impl GfxContext {
                     .0
                     .push(sname.to_string());
             }
+            self.shader_watcher
+                .entry(sname.to_string())
+                .or_insert((vec![], None))
+                .0
+                .push(sname.to_string());
         }
 
         let pipeline = pipe(modules, self);
