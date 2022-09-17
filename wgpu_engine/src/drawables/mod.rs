@@ -6,11 +6,14 @@ mod lit_mesh;
 mod multispritebatch;
 mod spritebatch;
 pub mod terrain;
+mod water;
 
 pub use instanced_mesh::*;
 pub use lit_mesh::*;
 pub use multispritebatch::*;
 pub use spritebatch::*;
+pub use water::*;
+
 use std::sync::Arc;
 
 pub type IndexType = u32;

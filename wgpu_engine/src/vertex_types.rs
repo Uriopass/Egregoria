@@ -11,6 +11,17 @@ pub struct MeshVertex {
     pub color: [f32; 4],
 }
 
+impl Default for MeshVertex {
+    fn default() -> Self {
+        Self {
+            position: [0.0, 0.0, 0.0],
+            normal: Vec3::z(1.0),
+            uv: [0.0, 0.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+        }
+    }
+}
+
 u8slice_impl!(MeshVertex);
 
 const ATTRS_MV: &[VertexAttribute] =

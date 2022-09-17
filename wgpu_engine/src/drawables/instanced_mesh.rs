@@ -88,6 +88,7 @@ impl InstancedMesh {
                     vb,
                     vert,
                     frag,
+                    0,
                 )
             }),
         );

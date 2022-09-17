@@ -2,7 +2,7 @@ use crate::terrain::TerrainPrepared;
 use crate::wgpu::SamplerBindingType;
 use crate::{
     bg_layout_litmesh, compile_shader, CompiledModule, Drawable, IndexType, InstancedMesh, Mesh,
-    SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
+    SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc, Water,
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
@@ -22,6 +22,7 @@ use wgpu::{
 
 pub struct FBOs {
     pub(crate) depth: Texture,
+    pub(crate) depth_bg: wgpu::BindGroup,
     pub(crate) color_msaa: TextureView,
     pub(crate) ssao: Texture,
     pub format: TextureFormat,
@@ -148,7 +149,12 @@ impl<'a> FrameContext<'a> {
 
 impl GfxContext {
     pub async fn new<W: HasRawWindowHandle>(window: &W, win_width: u32, win_height: u32) -> Self {
-        let instance = wgpu::Instance::new(wgpu::Backends::all());
+        let mut backends = wgpu::Backends::all();
+        if std::env::var("RENDERDOC").is_ok() {
+            backends = wgpu::Backends::VULKAN;
+        }
+
+        let instance = wgpu::Instance::new(backends);
 
         let surface = unsafe { instance.create_surface(window) };
         let adapter = instance
@@ -262,6 +268,7 @@ impl GfxContext {
         SpriteBatch::setup(&mut me);
         SSAOPipeline::setup(&mut me);
         BackgroundPipeline::setup(&mut me);
+        Water::setup(&mut me);
 
         let p = TextureBuilder::from_path("assets/sprites/palette.png")
             .with_label("palette")
@@ -503,10 +510,7 @@ impl GfxContext {
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.fbos.depth.view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: true,
-                    }),
+                    depth_ops: None,
                     stencil_ops: None,
                 }),
             });
@@ -583,14 +587,25 @@ impl GfxContext {
         let ssao = Texture::create_fbo(
             device,
             size,
-            wgpu::TextureFormat::R8Unorm,
+            TextureFormat::R8Unorm,
             TextureUsages::RENDER_ATTACHMENT
                 | TextureUsages::TEXTURE_BINDING
                 | TextureUsages::COPY_SRC,
             None,
         );
+        let depth = Texture::create_depth_texture(device, size, samples);
+        let depth_bg = depth.bindgroup(
+            device,
+            &Texture::bindgroup_layout_complex(
+                device,
+                TextureSampleType::Float { filterable: false },
+                1,
+                samples > 1,
+            ),
+        );
         FBOs {
-            depth: Texture::create_depth_texture(device, size, samples),
+            depth,
+            depth_bg,
             color_msaa: Texture::create_color_msaa(device, desc, samples),
             ssao,
             format: desc.format,
@@ -627,11 +642,12 @@ impl GfxContext {
         vertex_buffers: &[VertexBufferLayout<'_>],
         vert_shader: &CompiledModule,
         frag_shader: &CompiledModule,
+        depth_bias: i32,
     ) -> RenderPipeline {
         let render_pipeline_layout =
             self.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("color pipeline"),
+                    label: Some(label),
                     bind_group_layouts: layouts,
                     push_constant_ranges: &[],
                 });
@@ -668,11 +684,15 @@ impl GfxContext {
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
-                format: wgpu::TextureFormat::Depth32Float,
+                format: TextureFormat::Depth32Float,
                 depth_write_enabled: false,
                 depth_compare: wgpu::CompareFunction::GreaterEqual,
                 stencil: Default::default(),
-                bias: Default::default(),
+                bias: DepthBiasState {
+                    constant: depth_bias,
+                    slope_scale: 0.2 * depth_bias.signum() as f32,
+                    clamp: 0.0,
+                },
             }),
             multisample: MultisampleState {
                 count: self.samples,
@@ -728,7 +748,7 @@ impl GfxContext {
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
-                format: wgpu::TextureFormat::Depth32Float,
+                format: TextureFormat::Depth32Float,
                 depth_write_enabled: true,
                 depth_compare: if shadow_map {
                     wgpu::CompareFunction::LessEqual
@@ -999,6 +1019,7 @@ impl BackgroundPipeline {
                     &[UvVertex::desc()],
                     bg,
                     bg,
+                    0,
                 )
             }),
         );

@@ -100,6 +100,7 @@ impl Mesh {
                     &[MeshVertex::desc()],
                     vert,
                     frag,
+                    0,
                 )
             }),
         );

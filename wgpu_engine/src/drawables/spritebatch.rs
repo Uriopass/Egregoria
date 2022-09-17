@@ -122,6 +122,7 @@ impl SpriteBatch {
                     &[UvVertex::desc(), InstanceRaw::desc()],
                     vert,
                     frag,
+                    0,
                 )
             }),
         );

@@ -1,17 +1,19 @@
 use crate::rendering::map_mesh::MapMeshHandler;
 use crate::Context;
 use common::FastMap;
-use egregoria::map::{ChunkID, Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_SIZE};
+use egregoria::map::{
+    ChunkID, Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_RESOLUTION, CHUNK_SIZE,
+};
 use egregoria::Egregoria;
 use geom::{vec3, Camera, Color, LinearColor};
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::terrain::TerrainRender;
 use wgpu_engine::{
-    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Tesselator,
+    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Tesselator, Water,
 };
 
-const CSIZE: usize = egregoria::map::CHUNK_SIZE as usize;
-const CRESO: usize = egregoria::map::CHUNK_RESOLUTION as usize;
+const CSIZE: usize = CHUNK_SIZE as usize;
+const CRESO: usize = CHUNK_RESOLUTION as usize;
 
 pub(crate) struct MapRenderer {
     pub(crate) meshb: MapMeshHandler,
@@ -21,6 +23,7 @@ pub(crate) struct MapRenderer {
     #[allow(clippy::type_complexity)]
     trees_builders: FastMap<ChunkID, (InstancedMeshBuilder, Option<(Option<InstancedMesh>, u32)>)>,
     pub(crate) terrain_dirt_id: u32,
+    water: Water,
 }
 
 impl MapRenderer {
@@ -54,6 +57,7 @@ impl MapRenderer {
                 .collect(),
             terrain_dirt_id: 0,
             terrain: TerrainRender::new(gfx, w, h),
+            water: Water::new(gfx, (w * CHUNK_SIZE) as f32, (h * CHUNK_SIZE) as f32),
         }
     }
 
@@ -198,6 +202,7 @@ impl MapRenderer {
     pub(crate) fn trees(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
         self.build_trees(map, ctx);
 
+        let camcenter = cam.pos.xy();
         let eye = cam.eye();
         let dir = -cam.dir();
 
@@ -208,7 +213,8 @@ impl MapRenderer {
                 0.0,
             );
 
-            if ((chunkcenter - eye).dot(dir) < 0.0 || chunkcenter.distance(eye) > 10000.0)
+            if ((chunkcenter - eye).dot(dir) < 0.0
+                || chunkcenter.xy().distance(camcenter) > 10000.0)
                 && !chunkcenter.xy().is_close(eye.xy(), CHUNK_SIZE as f32)
             {
                 continue;
@@ -238,5 +244,7 @@ impl MapRenderer {
         }
 
         Self::signals_render(map, time, tess);
+
+        ctx.draw(self.water.clone());
     }
 }

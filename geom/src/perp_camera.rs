@@ -47,10 +47,7 @@ impl Camera {
     }
 
     pub fn znear(height: f32) -> f32 {
-        (1.0 + 2.0 * (height / 10.0).log10())
-            .abs()
-            .max(0.5)
-            .min(30.0)
+        (height * 0.4 - 200.0).max(0.5)
     }
 
     pub fn dir(&self) -> Vec3 {
