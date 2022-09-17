@@ -1,23 +1,33 @@
 use crate::rendering::map_mesh::MapMeshHandler;
+use crate::Context;
 use common::FastMap;
 use egregoria::map::{ChunkID, Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_SIZE};
 use egregoria::Egregoria;
 use geom::{vec3, Camera, Color, LinearColor};
 use wgpu_engine::meshload::load_mesh;
+use wgpu_engine::terrain::TerrainRender;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Tesselator,
 };
-pub(crate) struct RoadRenderer {
+
+const CSIZE: usize = egregoria::map::CHUNK_SIZE as usize;
+const CRESO: usize = egregoria::map::CHUNK_RESOLUTION as usize;
+
+pub(crate) struct MapRenderer {
     pub(crate) meshb: MapMeshHandler,
+
+    terrain: TerrainRender<CSIZE, CRESO>,
 
     #[allow(clippy::type_complexity)]
     trees_builders: FastMap<ChunkID, (InstancedMeshBuilder, Option<(Option<InstancedMesh>, u32)>)>,
     pub(crate) terrain_dirt_id: u32,
 }
 
-impl RoadRenderer {
+impl MapRenderer {
     pub(crate) fn reset(&mut self) {
         self.terrain_dirt_id = 0;
+        self.terrain.reset();
+
         self.meshb.map_dirt_id = 0;
         for v in self.trees_builders.values_mut() {
             v.1 = None;
@@ -25,12 +35,15 @@ impl RoadRenderer {
     }
 }
 
-impl RoadRenderer {
+impl MapRenderer {
     pub(crate) fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         let mesh = load_mesh("pine.glb", gfx).expect("could not load pine");
 
+        let w = goria.map().terrain.width;
+        let h = goria.map().terrain.height;
+
         defer!(log::info!("finished init of road render"));
-        RoadRenderer {
+        MapRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
             trees_builders: goria
                 .map()
@@ -40,6 +53,7 @@ impl RoadRenderer {
                 .map(|(id, _)| (*id, (InstancedMeshBuilder::new(mesh.clone()), None)))
                 .collect(),
             terrain_dirt_id: 0,
+            terrain: TerrainRender::new(gfx, w, h),
         }
     }
 
@@ -115,6 +129,39 @@ impl RoadRenderer {
         }
     }
 
+    pub(crate) fn terrain_update(&mut self, ctx: &mut Context, goria: &Egregoria) {
+        let map = goria.map();
+        let ter = &map.terrain;
+        if ter.dirt_id.0 == self.terrain.dirt_id {
+            return;
+        }
+
+        let mut update_count = 0;
+        for &cell in ter.chunks.keys() {
+            let chunk = unwrap_retlog!(ter.chunks.get(&cell), "trying to update nonexistent chunk");
+
+            if self
+                .terrain
+                .update_chunk(&mut ctx.gfx, chunk.dirt_id.0, cell, &chunk.heights)
+            {
+                update_count += 1;
+                #[cfg(not(debug_assertions))]
+                const UPD_PER_FRAME: usize = 20;
+
+                #[cfg(debug_assertions)]
+                const UPD_PER_FRAME: usize = 8;
+                if update_count > UPD_PER_FRAME {
+                    break;
+                }
+            }
+        }
+        if update_count == 0 {
+            self.terrain.dirt_id = ter.dirt_id.0;
+        }
+
+        self.terrain.update_borders(&ctx.gfx, &|p| ter.height(p));
+    }
+
     pub(crate) fn build_trees(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {
         if map.terrain.dirt_id.0 == self.terrain_dirt_id {
             return;
@@ -182,6 +229,8 @@ impl RoadRenderer {
         tess: &mut Tesselator,
         ctx: &mut FrameContext<'_>,
     ) {
+        self.terrain.draw_terrain(cam, ctx);
+
         self.trees(map, cam, ctx);
 
         if let Some(x) = self.meshb.latest_mesh(map, ctx.gfx).clone() {
