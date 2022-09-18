@@ -1,9 +1,9 @@
 use crate::{GoodsCompanyRegistry, SoulID};
-use common::FastMap;
 use egui_inspect::Inspect;
 use hecs::World;
 use resources::Resources;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, AddAssign, Div, Mul, SubAssign};
 
@@ -120,7 +120,7 @@ impl Money {
 pub struct Sold(pub Vec<Trade>);
 
 #[derive(Default, Serialize, Deserialize)]
-pub struct Bought(pub FastMap<ItemID, Vec<Trade>>);
+pub struct Bought(pub BTreeMap<ItemID, Vec<Trade>>);
 
 #[derive(Debug, Default, Serialize, Deserialize, Inspect)]
 pub struct Workers(pub Vec<SoulID>);
