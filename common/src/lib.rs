@@ -181,13 +181,13 @@ pub enum AudioKind {
     Ui,
 }
 
-pub type FastMap<K, V> = fnv::FnvHashMap<K, V>;
-pub type FastSet<V> = fnv::FnvHashSet<V>;
+pub type FastMap<K, V> = rustc_hash::FxHashMap<K, V>;
+pub type FastSet<V> = rustc_hash::FxHashSet<V>;
 
 pub fn fastmap_with_capacity<K, V>(cap: usize) -> FastMap<K, V> {
-    FastMap::with_capacity_and_hasher(cap, fnv::FnvBuildHasher::default())
+    FastMap::with_capacity_and_hasher(cap, Default::default())
 }
 
 pub fn fastset_with_capacity<V>(cap: usize) -> FastSet<V> {
-    FastSet::with_capacity_and_hasher(cap, fnv::FnvBuildHasher::default())
+    FastSet::with_capacity_and_hasher(cap, Default::default())
 }
