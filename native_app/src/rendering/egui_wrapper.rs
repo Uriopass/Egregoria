@@ -100,6 +100,17 @@ impl EguiWrapper {
     }
 
     pub(crate) fn handle_event(&mut self, e: &winit::event::WindowEvent<'_>) {
+        if let winit::event::WindowEvent::KeyboardInput {
+            input:
+                winit::event::KeyboardInput {
+                    virtual_keycode: Some(winit::event::VirtualKeyCode::Tab),
+                    ..
+                },
+            ..
+        } = e
+        {
+            return;
+        }
         self.platform.on_event(&self.egui, e);
     }
 }
