@@ -170,7 +170,7 @@ impl Display for UnitInput {
             UnitInput::WheelDown => {
                 write!(f, "Scroll Down")
             }
-            UnitInput::KeyScan(scan) => write!(f, "ScanCode({})", scan.to_string()),
+            UnitInput::KeyScan(scan) => write!(f, "ScanCode({})", scan),
         }
     }
 }
