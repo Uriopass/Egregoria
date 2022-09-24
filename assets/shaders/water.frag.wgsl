@@ -9,72 +9,20 @@ struct FragmentOutput {
 @group(2) @binding(0) var t_depth: texture_multisampled_2d<f32>;
 @group(2) @binding(1) var s_depth: sampler;
 
-
-
-fn hash(x1: vec2<f32> ) -> vec2<f32>  // replace this by something better
-{
-    let k: vec2<f32> = vec2( 0.3183099, 0.3678794 );
-    let x: vec2<f32> = x1*k + k.yx;
-    return -1.0 + 2.0*fract( 16.0 * k*fract( x.x*x.y*(x.x+x.y)) );
-}
-
-
-// return gradient noise (in x) and its derivatives (in yz)
-fn noised( p: vec2<f32> ) -> vec2<f32>
-{
-    let i: vec2<f32> = floor( p );
-    let f: vec2<f32> = fract( p );
-
-    // quintic interpolation
-    let u: vec2<f32> = f*f*f*(f*(f*6.0 - 15.0) + 10.0);
-    let du: vec2<f32> = 30.0*f*f*(f*(f - 2.0) + 1.0);
-
-    let ga: vec2<f32> = hash( i + vec2(0.0,0.0) );
-    let gb: vec2<f32> = hash( i + vec2(1.0,0.0) );
-    let gc: vec2<f32> = hash( i + vec2(0.0,1.0) );
-    let gd: vec2<f32> = hash( i + vec2(1.0,1.0) );
-
-    let va: f32 = dot( ga, f - vec2(0.0,0.0) );
-    let vb: f32 = dot( gb, f - vec2(1.0,0.0) );
-    let vc: f32 = dot( gc, f - vec2(0.0,1.0) );
-    let vd: f32 = dot( gd, f - vec2(1.0,1.0) );
-
-    return vec2( //va + u.x*(vb-va) + u.y*(vc-va) + u.x*u.y*(va-vb-vc+vd),   // value
-                 ga + u.x*(gb-ga) + u.y*(gc-ga) + u.x*u.y*(ga-gb-gc+gd) +  // derivatives
-                 du * (u.yx*(va-vb-vc+vd) + vec2(vb,vc) - va));
-}
-
-
-fn fnoise(pos: vec2<f32>, ampl: f32) -> vec2<f32> {
-    let FBM_MAG: f32 = 0.4;
-    var dec: vec2<f32> = 70.69 + pos * ampl;
-
-    var amplitude: f32 = 1.0;
-    var acc_grad: vec2<f32> = vec2(0.0);
-
-    for (var i = 0; i < 3; i++) {
-        let grad: vec2<f32> = noised(dec);
-        acc_grad += amplitude * grad;
-
-        dec *= 1.0 / FBM_MAG;
-        amplitude *= FBM_MAG;
-    }
-
-    return acc_grad;
-}
-
 // wave is (length, amplitude, dir)
 fn gerstnerWaveNormal(p: vec2<f32>, t: f32) -> vec3<f32> {
-    var waves: array<vec4<f32>, 4u> = array<vec4<f32>, 4u>(
-    vec4(2.0, 0.1 * 0.5, 0.0, -1.0),
-    vec4(4.0, 0.1 * 0.125, 0.0, 1.0),
-    vec4(6.0, 0.1 * 0.15*0.25, 1.0, 1.0),
-    vec4(2.0, 0.1 * 0.4*0.2, 1.0, 1.0)
+    let N_WAVES: i32 = 6;
+    var waves: array<vec4<f32>, 6u> = array<vec4<f32>, 6u>(
+    vec4(2.0, 0.05, 0.0, -1.0),
+    vec4(4.0, 0.0125, 0.0, 1.0),
+    vec4(6.0, 0.0037, 1.0, 1.0),
+    vec4(2.0, 0.008, 1.0, 1.0),
+    vec4(0.8, 0.001, -0.5, 0.3),
+    vec4(0.3, 0.0005, 0.5, -1.0)
     );
     let speed: f32 = 0.5;
     let steepness: f32 = 0.3;
 	var normal: vec3<f32> = vec3<f32>(0.0, 0.0, 1.0);
-    let N_WAVES: i32 = 4;
 	for (var i = 0; i < N_WAVES; i++)
 	{
 	    let ii: i32 = i;
@@ -90,7 +38,7 @@ fn gerstnerWaveNormal(p: vec2<f32>, t: f32) -> vec3<f32> {
 		normal.y -= dir.y * c_dir;
 		normal.z -= Qi * WA * sin(rad);
 	}
-	return normalize(normal);
+	return normal;
 }
 
 @fragment
@@ -104,10 +52,7 @@ fn frag(@location(0) _in_tint: vec4<f32>,
     let cam: vec3<f32> = params.cam_pos.xyz;
 //    let normal: vec3<f32> = normalize(vec3<f32>(0.05 * sin(t + wpos.x * 0.01), 0.05 * sin(wpos.y * 0.01), 1.0));
     //let normal: vec3<f32> = vec3(0.0, 0.0, 1.0);
-    let normal1 = gerstnerWaveNormal(wpos.xy * 0.01, params.time);
-    let off = 0.03 * abs(fnoise(wpos.xy + params.time, 0.01));
-    let normal = normalize(vec3(normal1.xy + off.xy, normal1.z));
-    //let normal = normalize(vec3(off.xy, 1.0));
+    let normal = normalize(gerstnerWaveNormal(wpos.xy * 0.01, params.time));
     let sun_col: vec3<f32> = params.sun_col.xyz;
 
     let R: vec3<f32> = normalize(2.0 * normal * dot(normal,sun) - sun);
