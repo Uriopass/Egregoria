@@ -19,6 +19,7 @@ fn grad2(p: Vec2) -> Vec2 {
 
 /* return range is [-0.5; 0.5] */
 #[allow(clippy::many_single_char_names)]
+#[inline(always)]
 pub(crate) fn simplex_noise(pos: Vec2) -> (f32, Vec2) {
     let mut i: Vec2 = Vec2::floor(pos + Vec2::splat(Vec2::dot(pos, CY)));
     let x0: Vec2 = pos - i + Vec2::splat(Vec2::dot(i, CX));
@@ -97,5 +98,6 @@ pub(crate) fn height(p: Vec2) -> (f32, Vec2) {
 
 pub(crate) fn tree_density(mut p: Vec2) -> f32 {
     p -= vec2(-20000.0, 20000.0);
-    (simplex_noise(p * 0.0003).0 * 1.5 + 0.5).max(0.0) + -0.1
+    let major = simplex_noise((p - vec2(-1000.0, 10000.0)) * 0.0003).0 * 0.5 + 0.5;
+    (-major * 1.0 + simplex_noise(p * 0.0003).0 * 1.5 + 0.5).max(0.0) + -0.1
 }
