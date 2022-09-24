@@ -46,8 +46,8 @@ impl Camera {
         }
     }
 
-    pub fn znear(height: f32) -> f32 {
-        (height * 0.4 - 200.0).max(0.5)
+    pub fn znear(_: f32) -> f32 {
+        1.0
     }
 
     pub fn dir(&self) -> Vec3 {
@@ -258,7 +258,7 @@ impl PerspectiveFovReversedZ {
 
         let c0 = [f / self.aspect, 0.0, 0.0, 0.0];
         let c1 = [0.0            , f  , 0.0, 0.0];
-        let c2 = [0.0            , 0.0, -0.5,  -1.0];
+        let c2 = [0.0            , 0.0, 0.0,  -1.0];
         let c3 = [0.0            , 0.0, self.near,   0.0];
 
         Matrix4::from([c0, c1, c2, c3])

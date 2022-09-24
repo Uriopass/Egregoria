@@ -73,7 +73,7 @@ fn frag(@location(0) in_uv: vec2<f32>) -> FragmentOutput {
     let derivative: vec2<f32> = derivative(pos, depth);
 //    let normal: vec3<f32> = cross(vec3(1, 0, derivative.x), vec3(0, 1, derivative.y));
 
-    let radius_depth: f32 = radius / depth;
+    let radius_depth: f32 = radius * depth;
     var occlusion: f32 = 0.0;
     for(var i=0; i < samples; i++) {
         let ii: i32 = i;
@@ -84,12 +84,12 @@ fn frag(@location(0) in_uv: vec2<f32>) -> FragmentOutput {
         let off: vec2<f32> = uv2s(ray.xy);
 
         let occ_depth: f32 = sample_depth(pos + vec2<i32>(off));
-        let difference: f32 = depth - occ_depth;
-        let dcorrected: f32 = difference + dot(off, derivative);
+        let difference: f32 = occ_depth - depth;
+        let dcorrected: f32 = difference - dot(off, derivative);
         //dcorrected = dcorrected * depth;
         //dcorrected = dcorrected - ray.z;
 
-        occlusion += smoothstep(falloff, falloff * 2.0, -dcorrected);
+        occlusion += smoothstep(falloff, falloff * 2.0, dcorrected);
     }
 
     let ao: f32 = 1.0 - total_strength * occlusion * (1.0 / f32(samples));
