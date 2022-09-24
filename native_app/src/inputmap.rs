@@ -70,11 +70,12 @@ impl InputMap {
             }
         }
 
+        // https://stackoverflow.com/a/38068969/5000800
         for (k, v) in vec![
-            (GoForward,       ics![Key(K::Z) ; Key(K::Up)]),
-            (GoBackward,      ics![Key(K::S) ; Key(K::Down)]),
-            (GoLeft,          ics![Key(K::Q) ; Key(K::Left)]),
-            (GoRight,         ics![Key(K::D) ; Key(K::Right)]),
+            (GoForward,       ics![KeyScan(17) ; Key(K::Up)]),
+            (GoBackward,      ics![KeyScan(31) ; Key(K::Down)]),
+            (GoLeft,          ics![KeyScan(30) ; Key(K::Left)]),
+            (GoRight,         ics![KeyScan(32) ; Key(K::Right)]),
             (CameraMove,      ics![Mouse(Right)]),
             (CameraRotate,    ics![Key(K::LShift), Mouse(Right) ; Mouse(Middle)]),
             (Zoom,            ics![Key(K::Plus) ; WheelUp]),
@@ -110,11 +111,17 @@ impl InputMap {
         self.just_act.clear();
         let empty1 = FastSet::default();
         let empty2 = FastSet::default();
+        let empty3 = FastSet::default();
         let mut acts: FastSet<_> = self
             .input_tree
             .query(
                 if kb { &input.keyboard.pressed } else { &empty1 },
-                if mouse { &input.mouse.pressed } else { &empty2 },
+                if kb {
+                    &input.keyboard.pressed_scancode
+                } else {
+                    &empty2
+                },
+                if mouse { &input.mouse.pressed } else { &empty3 },
                 if mouse { input.mouse.wheel_delta } else { 0.0 },
             )
             .collect();
@@ -244,6 +251,7 @@ impl InputTree {
     pub(crate) fn query(
         &self,
         kb: &FastSet<KeyCode>,
+        kb_scans: &FastSet<ScanCode>,
         mouse: &FastSet<MouseButton>,
         wheel: f32,
     ) -> impl Iterator<Item = InputAction> + '_ {
@@ -251,6 +259,7 @@ impl InputTree {
 
         units.extend(kb.iter().map(|x| UnitInput::Key(*x)));
         units.extend(mouse.iter().map(|x| UnitInput::Mouse(*x)));
+        units.extend(kb_scans.iter().map(|x| UnitInput::KeyScan(*x)));
         if wheel > 0.0 {
             units.insert(UnitInput::WheelUp);
         }

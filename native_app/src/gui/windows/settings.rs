@@ -232,7 +232,12 @@ pub(crate) fn settings(
                 ui[1].label("Input");
                 ui[2].label("...");
 
-                for (act, comb) in &im.input_mapping {
+                let mut sorted_inps = im.input_mapping.keys().collect::<Vec<_>>();
+                sorted_inps.sort();
+                for (act, comb) in sorted_inps
+                    .into_iter()
+                    .map(|x| (x, im.input_mapping.get(x).unwrap()))
+                {
                     ui[0].label(format!("{}", act));
                     ui[1].label(format!("{}", comb));
                     ui[2].label("cannot change bindings for now");
