@@ -108,6 +108,7 @@ impl Egregoria {
         if gen_terrain {
             info!("generating terrain..");
             let t = Instant::now();
+            #[allow(clippy::if_same_then_else)]
             let size = if cfg!(debug_assertions) { 50 } else { 50 };
 
             goria.map_mut().terrain = Terrain::new(size, size);
