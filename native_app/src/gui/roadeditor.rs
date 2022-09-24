@@ -1,5 +1,5 @@
 use crate::gui::Tool;
-use crate::input::{MouseButton, MouseInfo};
+use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::map::{IntersectionID, LightPolicy, TurnPolicy};
@@ -23,7 +23,7 @@ pub(crate) struct RoadEditorResource {
 #[profiling::function]
 pub(crate) fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = uiworld.read::<Tool>();
-    let mouseinfo = uiworld.read::<MouseInfo>();
+    let inp = uiworld.read::<InputMap>();
     let mut state = uiworld.write::<RoadEditorResource>();
     let mut imm_draw = uiworld.write::<ImmediateDraw>();
     let map = goria.map();
@@ -57,7 +57,7 @@ pub(crate) fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
     }
 
-    let mut proj_pos = unwrap_ret!(mouseinfo.unprojected);
+    let mut proj_pos = unwrap_ret!(inp.unprojected);
     let cur_proj = map.project(proj_pos, 10.0, ProjectFilter::INTER);
 
     let mut proj_col;
@@ -71,7 +71,7 @@ pub(crate) fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
         proj_col = common::config().gui_disabled;
     }
 
-    if mouseinfo.pressed.contains(&MouseButton::Left) {
+    if inp.act.contains(&InputAction::Select) {
         if let ProjectKind::Inter(id) = cur_proj.kind {
             proj_col = common::config().gui_success;
             proj_pos = cur_proj.pos;

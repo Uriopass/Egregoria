@@ -7,7 +7,6 @@ use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::debug::{DebugObjs, DebugState};
 use crate::gui::windows::settings::Settings;
 use crate::gui::{ExitState, FollowEntity, InspectedEntity, Tool};
-use crate::input::{KeyboardInfo, MouseInfo};
 use crate::inputmap::InputMap;
 use crate::network::NetworkState;
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
@@ -26,8 +25,6 @@ pub(crate) fn init() {
     register_resource::<crate::gui::windows::network::NetworkConnectionInfo>("netinfo");
     register_resource::<LotBrushResource>("lot_brush");
 
-    register_resource_noserialize::<MouseInfo>();
-    register_resource_noserialize::<KeyboardInfo>();
     register_resource_noserialize::<InputMap>();
     register_resource_noserialize::<WorldCommands>();
     register_resource_noserialize::<Timings>();

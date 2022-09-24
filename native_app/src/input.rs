@@ -1,7 +1,9 @@
 use common::FastSet;
-use geom::{vec2, Vec2, Vec3};
+use geom::{vec2, Vec2};
 use std::fmt::Debug;
-use winit::event::{ElementState, KeyboardInput, MouseScrollDelta, VirtualKeyCode, WindowEvent};
+use winit::event::{
+    ElementState, KeyboardInput, MouseScrollDelta, ScanCode, VirtualKeyCode, WindowEvent,
+};
 
 #[derive(Default)]
 pub(crate) struct InputContext {
@@ -11,8 +13,6 @@ pub(crate) struct InputContext {
 
 impl InputContext {
     pub(crate) fn end_frame(&mut self) {
-        self.mouse.just_pressed.clear();
-        self.keyboard.just_pressed.clear();
         self.keyboard.last_characters.clear();
         self.mouse.wheel_delta = 0.0;
     }
@@ -28,6 +28,7 @@ impl InputContext {
                     KeyboardInput {
                         state,
                         virtual_keycode: Some(kc),
+                        scancode,
                         ..
                     },
                 ..
@@ -36,10 +37,11 @@ impl InputContext {
                 match state {
                     ElementState::Pressed => {
                         self.keyboard.pressed.insert(code);
-                        self.keyboard.just_pressed.insert(code);
+                        self.keyboard.pressed_scancode.insert(*scancode);
                     }
                     ElementState::Released => {
                         self.keyboard.pressed.remove(&code);
+                        self.keyboard.pressed_scancode.remove(scancode);
                     }
                 };
                 true
@@ -52,7 +54,6 @@ impl InputContext {
                 let b = MouseButton::from(*button);
                 match state {
                     ElementState::Pressed => {
-                        self.mouse.just_pressed.insert(b);
                         self.mouse.pressed.insert(b);
                     }
                     ElementState::Released => {
@@ -77,15 +78,13 @@ impl InputContext {
 pub(crate) struct MouseInfo {
     pub(crate) wheel_delta: f32,
     pub(crate) screen: Vec2,
-    pub(crate) unprojected: Option<Vec3>,
     pub(crate) pressed: FastSet<MouseButton>,
-    pub(crate) just_pressed: FastSet<MouseButton>,
 }
 
 #[derive(Clone, Default)]
 pub(crate) struct KeyboardInfo {
-    pub(crate) just_pressed: FastSet<KeyCode>,
     pub(crate) pressed: FastSet<KeyCode>,
+    pub(crate) pressed_scancode: FastSet<ScanCode>,
     pub(crate) last_characters: Vec<char>,
 }
 

@@ -1,5 +1,5 @@
 use crate::gui::{InspectedEntity, Tool};
-use crate::input::{KeyCode, KeyboardInfo, MouseButton, MouseInfo};
+use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::Selectable;
 use egregoria::Egregoria;
@@ -11,15 +11,14 @@ use std::sync::Mutex;
 #[profiling::function]
 pub(crate) fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut inspected = uiworld.write::<InspectedEntity>();
-    let mouse = uiworld.read::<MouseInfo>();
-    let kbinfo = uiworld.read::<KeyboardInfo>();
+    let inp = uiworld.read::<InputMap>();
     let tool = uiworld.read::<Tool>();
 
-    if mouse.just_pressed.contains(&MouseButton::Left) && matches!(*tool, Tool::Hand) {
+    if inp.just_act.contains(&InputAction::Select) && matches!(*tool, Tool::Hand) {
         let mut inspectcpy = *inspected;
         inspectcpy.dist2 = f32::INFINITY;
         let protec = Mutex::new(inspectcpy);
-        let unproj = unwrap_ret!(mouse.unprojected);
+        let unproj = unwrap_ret!(inp.unprojected);
 
         goria
             .world()
@@ -52,7 +51,7 @@ pub(crate) fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
     }
 
-    if kbinfo.just_pressed.contains(&KeyCode::Escape) || matches!(*tool, Tool::Bulldozer) {
+    if inp.just_act.contains(&InputAction::Close) || matches!(*tool, Tool::Bulldozer) {
         inspected.e = None;
     }
 }

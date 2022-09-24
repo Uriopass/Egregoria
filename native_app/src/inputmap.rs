@@ -4,6 +4,7 @@ use geom::Vec3;
 use std::collections::hash_map::Entry;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
+use winit::event::ScanCode;
 
 // Either combinations can work
 pub(crate) struct InputCombinations(pub(crate) Vec<InputCombination>);
@@ -11,6 +12,7 @@ pub(crate) struct InputCombinations(pub(crate) Vec<InputCombination>);
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 enum UnitInput {
     Key(KeyCode),
+    KeyScan(ScanCode),
     Mouse(MouseButton),
     WheelUp,
     WheelDown,
@@ -34,6 +36,7 @@ pub(crate) enum InputAction {
     UpElevation,
     DownElevation,
     OpenEconomyMenu,
+    PausePlay,
 }
 
 // All unit inputs need to match
@@ -84,6 +87,7 @@ impl InputMap {
             (UpElevation,     ics![Key(K::LControl), WheelUp]),
             (DownElevation,   ics![Key(K::LControl), WheelDown]),
             (OpenEconomyMenu, ics![Key(K::E)]),
+            (PausePlay,       ics![Key(K::Space)]),
         ] {
             if m.insert(k, v).is_some() {
                 log::error!("inserting same action twice!");
@@ -159,6 +163,7 @@ impl Display for UnitInput {
             UnitInput::WheelDown => {
                 write!(f, "Scroll Down")
             }
+            UnitInput::KeyScan(scan) => write!(f, "ScanCode({})", scan.to_string()),
         }
     }
 }
@@ -310,6 +315,7 @@ impl Display for InputAction {
                 InputAction::UpElevation => "Up Elevation",
                 InputAction::DownElevation => "Down Elevation",
                 InputAction::OpenEconomyMenu => "Economy Menu",
+                InputAction::PausePlay => "Pause/Play",
             }
         )
     }

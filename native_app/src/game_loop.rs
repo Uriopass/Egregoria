@@ -17,7 +17,6 @@ use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, Gui, UiTextures};
-use crate::input::{KeyCode, KeyboardInfo, MouseInfo};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::egui_wrapper::EguiWrapper;
 use crate::rendering::{CameraHandler3D, InstancedRender, MapRenderer};
@@ -98,7 +97,6 @@ impl State {
                 map.terrain.height(p).map(|x| x + 0.01)
             });
 
-            self.uiw.write::<MouseInfo>().unprojected = unproj;
             self.uiw.write::<InputMap>().unprojected = unproj;
         }
 
@@ -277,9 +275,9 @@ impl State {
     fn manage_entity_follow(&mut self) {
         if self
             .uiw
-            .read::<KeyboardInfo>()
-            .just_pressed
-            .contains(&KeyCode::Escape)
+            .read::<InputMap>()
+            .just_act
+            .contains(&InputAction::Close)
         {
             self.uiw.write::<FollowEntity>().0.take();
         }
@@ -292,22 +290,6 @@ impl State {
     }
 
     fn manage_io(&mut self, ctx: &mut Context) {
-        *self.uiw.write::<KeyboardInfo>() = ctx.input.keyboard.clone();
-        *self.uiw.write::<MouseInfo>() = ctx.input.mouse.clone();
-
-        if self.egui_render.last_kb_captured {
-            let kb: &mut KeyboardInfo = &mut self.uiw.write::<KeyboardInfo>();
-            kb.just_pressed.clear();
-            kb.pressed.clear();
-        }
-
-        if self.egui_render.last_mouse_captured {
-            let mouse: &mut MouseInfo = &mut self.uiw.write::<MouseInfo>();
-            mouse.just_pressed.clear();
-            mouse.pressed.clear();
-            mouse.wheel_delta = 0.0;
-        }
-
         let goria = self.goria.read().unwrap();
         let map = goria.map();
         //        self.camera.movespeed = settings.camera_sensibility / 100.0;

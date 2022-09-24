@@ -1,5 +1,5 @@
 use super::Tool;
-use crate::input::{MouseButton, MouseInfo};
+use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::map::{LotKind, ProjectFilter, ProjectKind};
@@ -16,7 +16,7 @@ pub(crate) struct LotBrushResource {
 pub(crate) fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     let res = uiworld.read::<LotBrushResource>();
     let tool = *uiworld.read::<Tool>();
-    let mouseinfo = uiworld.read::<MouseInfo>();
+    let inp = uiworld.read::<InputMap>();
     let mut draw = uiworld.write::<ImmediateDraw>();
     let map = goria.map();
     let commands = &mut *uiworld.commands();
@@ -34,10 +34,10 @@ pub(crate) fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     col.a = 0.2;
 
-    let mpos = unwrap_ret!(mouseinfo.unprojected);
+    let mpos = unwrap_ret!(inp.unprojected);
     draw.circle(mpos.up(0.8), res.radius).color(col);
 
-    if mouseinfo.pressed.contains(&MouseButton::Left) {
+    if inp.act.contains(&InputAction::Select) {
         for v in map
             .spatial_map()
             .query_around(mpos.xy(), res.radius, ProjectFilter::LOT)

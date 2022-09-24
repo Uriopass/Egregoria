@@ -5,7 +5,6 @@ use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
 use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
-use crate::input::{KeyCode, KeyboardInfo};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
@@ -580,9 +579,9 @@ impl Gui {
         let warp = &mut uiworld.write::<Settings>().time_warp;
         let depause_warp = &mut self.depause_warp;
         if uiworld
-            .read::<KeyboardInfo>()
-            .just_pressed
-            .contains(&KeyCode::Space)
+            .read::<InputMap>()
+            .just_act
+            .contains(&InputAction::PausePlay)
         {
             if *warp == 0 {
                 *warp = *depause_warp;

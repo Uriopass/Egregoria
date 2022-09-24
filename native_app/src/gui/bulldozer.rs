@@ -1,5 +1,5 @@
 use super::Tool;
-use crate::input::{MouseButton, MouseInfo};
+use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::map::{BuildingKind, Map, ProjectFilter, ProjectKind};
@@ -19,13 +19,13 @@ pub(crate) fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
         return;
     }
 
-    let mouseinfo: &MouseInfo = &*uiworld.read::<MouseInfo>();
+    let inp: &InputMap = &*uiworld.read::<InputMap>();
     let map: &Map = &*goria.map();
     let draw: &mut ImmediateDraw = &mut *uiworld.write::<ImmediateDraw>();
     let mut commands = uiworld.commands();
     let state: &BulldozerState = &*uiworld.read::<BulldozerState>();
 
-    let cur_proj = map.project(unwrap_ret!(mouseinfo.unprojected), 0.0, ProjectFilter::ALL);
+    let cur_proj = map.project(unwrap_ret!(inp.unprojected), 0.0, ProjectFilter::ALL);
 
     let col = if matches!(
         cur_proj.kind,
@@ -38,8 +38,8 @@ pub(crate) fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     draw.circle(cur_proj.pos.up(0.5), 2.0).color(col);
 
-    if ((!state.hold && mouseinfo.just_pressed.contains(&MouseButton::Left))
-        || (state.hold && mouseinfo.pressed.contains(&MouseButton::Left)))
+    if ((!state.hold && inp.just_act.contains(&InputAction::Select))
+        || (state.hold && inp.act.contains(&InputAction::Select)))
         && !matches!(cur_proj.kind, ProjectKind::Ground)
     {
         let mut potentially_empty = Vec::new();
