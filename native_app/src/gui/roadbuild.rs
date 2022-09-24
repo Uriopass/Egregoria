@@ -8,7 +8,7 @@ use egregoria::map::{
     Intersection, LanePatternBuilder, Map, MapProject, ProjectFilter, ProjectKind, PylonPosition,
 };
 use egregoria::Egregoria;
-use geom::{Camera, Spline};
+use geom::{BoldLine, BoldSpline, Camera, PolyLine, ShapeEnum, Spline};
 use geom::{PolyLine3, Spline3, Vec2, Vec3};
 use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};
@@ -162,9 +162,21 @@ pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let is_valid = match (state.build_state, cur_proj.kind) {
         (Hover, Building(_)) => false,
         (Start(selected_proj), _) => {
+            let sp = BoldLine::new(
+                PolyLine::new(vec![selected_proj.pos.xy(), cur_proj.pos.xy()]),
+                patwidth * 0.5,
+            );
+
             compatible(map, cur_proj, selected_proj)
                 && check_angle(map, selected_proj, cur_proj.pos.xy(), is_rail)
                 && check_angle(map, cur_proj, selected_proj.pos.xy(), is_rail)
+                && !check_intersect(
+                    map,
+                    &ShapeEnum::BoldLine(sp),
+                    (selected_proj.pos.z + cur_proj.pos.z) / 2.0,
+                    cur_proj.kind,
+                    selected_proj.kind,
+                )
         }
         (Interpolation(interpoint, selected_proj), _) => {
             let sp = Spline {
@@ -179,6 +191,13 @@ pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
                 && check_angle(map, selected_proj, interpoint, is_rail)
                 && check_angle(map, cur_proj, interpoint, is_rail)
                 && !sp.is_steep(state.pattern_builder.width())
+                && !check_intersect(
+                    map,
+                    &ShapeEnum::BoldSpline(BoldSpline::new(sp, patwidth * 0.5)),
+                    (selected_proj.pos.z + cur_proj.pos.z) / 2.0,
+                    selected_proj.kind,
+                    cur_proj.kind,
+                )
         }
         _ => true,
     };
@@ -287,6 +306,37 @@ fn compatible(map: &Map, x: MapProject, y: MapProject) -> bool {
         }
         _ => false,
     }
+}
+
+/// Check if the given shape intersects with any existing road or intersection
+fn check_intersect(
+    map: &Map,
+    obj: &ShapeEnum,
+    z: f32,
+    start: ProjectKind,
+    end: ProjectKind,
+) -> bool {
+    map.spatial_map()
+        .query(obj, ProjectFilter::ROAD | ProjectFilter::INTER)
+        .any(move |x| {
+            if let Road(rid) = x {
+                let r = &map.roads()[rid];
+                if (r.points.first().z - z).abs() > 0.1 || (r.points.last().z - z).abs() > 0.1 {
+                    return false;
+                }
+                if let Inter(id) = start {
+                    if r.src == id || r.dst == id {
+                        return false;
+                    }
+                }
+                if let Inter(id) = end {
+                    if r.src == id || r.dst == id {
+                        return false;
+                    }
+                }
+            }
+            x != start && x != end
+        })
 }
 
 impl RoadBuildResource {
