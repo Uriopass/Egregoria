@@ -1,13 +1,15 @@
 use crate::{Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, Texture, VBDesc};
-use wgpu::{RenderPass, TextureSampleType};
+use std::sync::Arc;
+use wgpu::{BindGroup, RenderPass, TextureSampleType};
 
 #[derive(Clone)]
 pub struct Water {
     mesh: Mesh,
+    wavy_bg: Arc<BindGroup>,
 }
 
 impl Water {
-    pub fn new(gfx: &GfxContext, w: f32, h: f32) -> Self {
+    pub fn new(gfx: &mut GfxContext, w: f32, h: f32) -> Self {
         let mut mb = MeshBuilder::new();
 
         mb.vertices.extend_from_slice(&[
@@ -34,7 +36,11 @@ impl Water {
         // unwrap ok: we just added vertices
         let mesh = mb.build(gfx, gfx.palette()).unwrap();
 
-        Self { mesh }
+        let wavy = gfx.texture("assets/sprites/wavy.jpeg", "wavy");
+        let wavy_bg =
+            Arc::new(wavy.bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device)));
+
+        Self { mesh, wavy_bg }
     }
 
     pub(crate) fn setup(gfx: &mut GfxContext) {
@@ -53,6 +59,7 @@ impl Water {
                         1,
                         gfx.samples > 1,
                     ),
+                    &Texture::bindgroup_layout(&gfx.device),
                 ];
 
                 gfx.color_pipeline(
@@ -76,6 +83,7 @@ impl Drawable for Water {
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(2, &gfx.fbos.depth_bg, &[]);
+        rp.set_bind_group(3, &self.wavy_bg, &[]);
 
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);

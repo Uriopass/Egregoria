@@ -10,6 +10,7 @@ struct RenderParams {
     sea_col: vec4<f32>,
     viewport: vec2<f32>,
     time: f32,
+    time_always: f32,
     ssao_strength: f32,
     ssao_radius: f32,
     ssao_falloff: f32,

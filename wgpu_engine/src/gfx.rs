@@ -85,6 +85,7 @@ pub struct RenderParams {
     pub sea_col: LinearColor,
     pub viewport: Vec2,
     pub time: f32,
+    pub time_always: f32,
     pub ssao_strength: f32,
     pub ssao_radius: f32,
     pub ssao_falloff: f32,
@@ -94,6 +95,7 @@ pub struct RenderParams {
     pub shadow_mapping_enabled: i32,
     pub realistic_sky: i32,
     pub grid_enabled: i32,
+    pub _pad5: [f32; 3],
 }
 
 impl Default for RenderParams {
@@ -110,6 +112,7 @@ impl Default for RenderParams {
             sun: Default::default(),
             viewport: vec2(1000.0, 1000.0),
             time: 0.0,
+            time_always: 0.0,
             ssao_strength: 0.0,
             ssao_radius: 0.0,
             ssao_falloff: 0.0,
@@ -118,10 +121,11 @@ impl Default for RenderParams {
             ssao_enabled: 1,
             shadow_mapping_enabled: 1,
             realistic_sky: 1,
+            grid_enabled: 1,
             _pad: 0.0,
             _pad2: 0.0,
             _pad4: 0.0,
-            grid_enabled: 1,
+            _pad5: Default::default(),
         }
     }
 }
