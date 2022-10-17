@@ -1,4 +1,4 @@
-use egui::{FontData, FontDefinitions, TextureId};
+use egui::TextureId;
 use egui_wgpu::renderer;
 use egui_wgpu::renderer::ScreenDescriptor;
 use wgpu_engine::{GfxContext, GuiRenderContext};
@@ -7,7 +7,7 @@ use winit::window::Window;
 
 pub(crate) struct EguiWrapper {
     pub(crate) egui: egui::Context,
-    pub(crate) renderer: renderer::RenderPass,
+    pub(crate) renderer: renderer::Renderer,
     platform: egui_winit::State,
     pub(crate) last_mouse_captured: bool,
     pub(crate) last_kb_captured: bool,
@@ -20,23 +20,7 @@ impl EguiWrapper {
 
         let platform = egui_winit::State::new(el);
 
-        let data = std::fs::read("assets/roboto-medium.ttf");
-        match data {
-            Ok(bold) => {
-                let mut defs = FontDefinitions::empty();
-                defs.families.insert(
-                    egui::FontFamily::Proportional,
-                    vec![format!("Roboto Medium")],
-                );
-                defs.font_data
-                    .insert("Roboto Medium".to_string(), FontData::from_owned(bold));
-            }
-            Err(err) => {
-                panic!("font not found: {}", err);
-            }
-        };
-
-        let renderer = renderer::RenderPass::new(&gfx.device, gfx.fbos.format, 1);
+        let renderer = renderer::Renderer::new(&gfx.device, gfx.fbos.format, None, 1);
 
         Self {
             egui,
@@ -79,17 +63,34 @@ impl EguiWrapper {
             size_in_pixels: [gfx.size.0, gfx.size.1],
             pixels_per_point: 1.0,
         };
-        self.renderer
-            .update_buffers(gfx.device, gfx.queue, &clipped_primitives, &desc);
+        self.renderer.update_buffers(
+            gfx.device,
+            gfx.queue,
+            gfx.encoder,
+            &clipped_primitives,
+            &desc,
+        );
 
         self.to_remove = output.textures_delta.free;
 
         if !hidden {
+            let mut render_pass =
+                gfx.encoder
+                    .begin_render_pass(&wgpu_engine::wgpu::RenderPassDescriptor {
+                        color_attachments: &[Some(wgpu_engine::wgpu::RenderPassColorAttachment {
+                            view: gfx.view,
+                            resolve_target: None,
+                            ops: wgpu_engine::wgpu::Operations {
+                                load: wgpu_engine::wgpu::LoadOp::Load,
+                                store: true,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        label: Some("egui_render"),
+                    });
+
             self.renderer
-                .execute(gfx.encoder, gfx.view, &clipped_primitives, &desc, None);
-            /*
-            self.renderer
-                .execute_with_renderpass(&mut rpass, &clipped_primitives, &desc);*/
+                .render(&mut render_pass, &clipped_primitives, &desc);
         }
 
         self.platform
@@ -111,6 +112,6 @@ impl EguiWrapper {
         {
             return;
         }
-        self.platform.on_event(&self.egui, e);
+        let _ = self.platform.on_event(&self.egui, e);
     }
 }

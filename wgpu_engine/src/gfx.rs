@@ -6,7 +6,7 @@ use crate::{
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
-use raw_window_handle::HasRawWindowHandle;
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use std::any::TypeId;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -15,10 +15,10 @@ use std::time::SystemTime;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState, CommandBuffer,
-    CommandEncoder, CommandEncoderDescriptor, DepthBiasState, Device, ErrorFilter, Face, FrontFace,
-    IndexFormat, MultisampleState, PrimitiveState, Queue, RenderPipeline, Surface,
-    SurfaceConfiguration, TextureFormat, TextureSampleType, TextureUsages, TextureView,
-    VertexBufferLayout,
+    CommandEncoder, CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device,
+    ErrorFilter, Face, FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue,
+    RenderPipeline, Surface, SurfaceConfiguration, TextureFormat, TextureSampleType, TextureUsages,
+    TextureView, VertexBufferLayout,
 };
 
 pub struct FBOs {
@@ -153,7 +153,11 @@ impl<'a> FrameContext<'a> {
 }
 
 impl GfxContext {
-    pub async fn new<W: HasRawWindowHandle>(window: &W, win_width: u32, win_height: u32) -> Self {
+    pub async fn new<W: HasRawWindowHandle + HasRawDisplayHandle>(
+        window: &W,
+        win_width: u32,
+        win_height: u32,
+    ) -> Self {
         let mut backends = wgpu::Backends::all();
         if std::env::var("RENDERDOC").is_ok() {
             backends = wgpu::Backends::VULKAN;
@@ -204,6 +208,7 @@ impl GfxContext {
             width: win_width,
             height: win_height,
             present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: CompositeAlphaMode::Opaque,
         };
         let samples = if cfg!(target_arch = "wasm32") { 1 } else { 4 };
         let fbos = Self::create_textures(&device, &sc_desc, samples);

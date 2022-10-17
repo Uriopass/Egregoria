@@ -10,7 +10,7 @@ keywords = ["game", "egui"]
 categories = ["gui", "visualization"]
 
 [dependencies]
-egui = "0.19.0"
+egui = { git = "https://github.com/emilk/egui", rev = "a0b3f1126b158d41db91c3418695f12133bc1329", default-features = false }
 geom = { path = "../geom" }
 egui-inspect-derive = { path = "../egui-inspect-derive", optional = true }
 

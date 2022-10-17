@@ -1,7 +1,7 @@
 use common::FastMap;
 use hecs::Entity;
 
-use egui::{ColorImage, ImageData, TextureFilter, TextureHandle, TextureId};
+use egui::{ColorImage, ImageData, TextureHandle, TextureId, TextureOptions};
 use serde::{Deserialize, Serialize};
 
 use crate::uiworld::UiWorld;
@@ -115,7 +115,7 @@ impl UiTextures {
                     [width as usize, height as usize],
                     &img,
                 )),
-                TextureFilter::Linear,
+                TextureOptions::LINEAR,
             );
 
             textures.insert(name, h);
