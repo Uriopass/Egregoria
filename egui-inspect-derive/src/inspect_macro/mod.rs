@@ -111,7 +111,6 @@ fn handle_inspect_type<
     default_render_trait: TokenStream,
     arg_type: TokenStream,
 ) {
-    //TODO: Improve error message
     if parsed_field.is_some() {
         panic!(
             "Too many inspect attributes on a single member {:?}",

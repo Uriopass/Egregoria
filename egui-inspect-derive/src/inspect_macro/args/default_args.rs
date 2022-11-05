@@ -32,11 +32,9 @@ pub struct InspectFieldArgsDefault {
     #[darling(default)]
     step: Option<f32>,
 
-    //TODO: Default to true
     #[darling(default)]
     header: Option<bool>,
 
-    //TODO: Default to true
     #[darling(default)]
     indent_children: Option<bool>,
 }
