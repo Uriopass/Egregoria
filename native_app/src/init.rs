@@ -6,7 +6,7 @@ use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::debug::{DebugObjs, DebugState};
 use crate::gui::windows::settings::Settings;
-use crate::gui::{ExitState, FollowEntity, InspectedEntity, Tool};
+use crate::gui::{ExitState, FollowEntity, InspectedEntity, PotentialCommand, Tool};
 use crate::inputmap::InputMap;
 use crate::network::NetworkState;
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
@@ -25,23 +25,24 @@ pub(crate) fn init() {
     register_resource::<crate::gui::windows::network::NetworkConnectionInfo>("netinfo");
     register_resource::<LotBrushResource>("lot_brush");
 
-    register_resource_noserialize::<InputMap>();
-    register_resource_noserialize::<WorldCommands>();
-    register_resource_noserialize::<Timings>();
-    register_resource_noserialize::<ReceivedCommands>();
-    register_resource_noserialize::<RoadEditorResource>();
-    register_resource_noserialize::<RoadBuildResource>();
+    register_resource_noserialize::<BulldozerState>();
+    register_resource_noserialize::<DebugObjs>();
     register_resource_noserialize::<DebugState>();
     register_resource_noserialize::<ExitState>();
-    register_resource_noserialize::<DebugObjs>();
     register_resource_noserialize::<FollowEntity>();
-    register_resource_noserialize::<BulldozerState>();
-    register_resource_noserialize::<InspectedEntity>();
-    register_resource_noserialize::<Tool>();
-    register_resource_noserialize::<SpecialBuildingResource>();
-    register_resource_noserialize::<NetworkState>();
-    register_resource_noserialize::<ImmediateSound>();
     register_resource_noserialize::<ImmediateDraw>();
+    register_resource_noserialize::<ImmediateSound>();
+    register_resource_noserialize::<InputMap>();
+    register_resource_noserialize::<InspectedEntity>();
+    register_resource_noserialize::<NetworkState>();
+    register_resource_noserialize::<PotentialCommand>();
+    register_resource_noserialize::<ReceivedCommands>();
+    register_resource_noserialize::<RoadBuildResource>();
+    register_resource_noserialize::<RoadEditorResource>();
+    register_resource_noserialize::<SpecialBuildingResource>();
+    register_resource_noserialize::<Timings>();
+    register_resource_noserialize::<Tool>();
+    register_resource_noserialize::<WorldCommands>();
 }
 
 pub(crate) struct InitFunc {

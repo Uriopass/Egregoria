@@ -1,6 +1,6 @@
 use crate::input::{InputContext, KeyCode, MouseButton};
 use common::{FastMap, FastSet};
-use geom::Vec3;
+use geom::{Vec2, Vec3};
 use std::collections::hash_map::Entry;
 use std::collections::HashSet;
 use std::fmt::{Debug, Display, Formatter};
@@ -52,6 +52,7 @@ pub(crate) struct InputMap {
     pub(crate) input_mapping: FastMap<InputAction, InputCombinations>,
     pub(crate) wheel: f32,
     pub(crate) unprojected: Option<Vec3>,
+    pub(crate) screen: Vec2,
     input_tree: InputTree,
 }
 
@@ -131,6 +132,7 @@ impl InputMap {
                 self.just_act.insert(*v);
             }
         }
+        self.screen = input.mouse.screen;
         self.wheel = input.mouse.wheel_delta;
     }
 }
@@ -207,6 +209,7 @@ impl Default for InputMap {
             input_mapping: Self::default_mapping(),
             wheel: 0.0,
             unprojected: None,
+            screen: Default::default(),
             input_tree: InputTree {
                 childs: Default::default(),
                 actions: Vec::new(),

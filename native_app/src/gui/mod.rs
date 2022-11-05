@@ -5,6 +5,7 @@ use egui::{ColorImage, ImageData, TextureFilter, TextureHandle, TextureId};
 use serde::{Deserialize, Serialize};
 
 use crate::uiworld::UiWorld;
+use egregoria::engine_interaction::WorldCommand;
 use egregoria::Egregoria;
 use roadbuild::RoadBuildResource;
 
@@ -36,6 +37,9 @@ pub(crate) fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     specialbuilding::specialbuilding(goria, uiworld);
     addtrain::addtrain(goria, uiworld);
 }
+
+#[derive(Default, Clone, Debug)]
+pub struct PotentialCommand(pub Option<WorldCommand>);
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct InspectedEntity {

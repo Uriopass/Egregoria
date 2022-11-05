@@ -4,7 +4,7 @@ use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
-use crate::gui::{InspectedEntity, RoadBuildResource, Tool, UiTex, UiTextures};
+use crate::gui::{InspectedEntity, PotentialCommand, RoadBuildResource, Tool, UiTex, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
@@ -16,9 +16,9 @@ use egregoria::map::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
-use egui::{Align2, Context, Frame, RichText, Style, Widget, Window};
+use egui::{Align2, Color32, Context, Frame, RichText, Style, Widget, Window};
 use egui_inspect::{Inspect, InspectArgs};
-use geom::Vec2;
+use geom::{vec2, Vec2};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
@@ -73,6 +73,34 @@ impl Gui {
         self.time_controls(ui, uiworld, goria);
 
         self.auto_save(uiworld);
+
+        self.tooltip_command_cost(ui, uiworld, goria);
+    }
+
+    pub(crate) fn tooltip_command_cost(
+        &mut self,
+        ui: &Context,
+        uiworld: &mut UiWorld,
+        goria: &Egregoria,
+    ) {
+        if let Some(ref cmd) = uiworld.read::<PotentialCommand>().0 {
+            let cost = Government::action_cost(cmd, goria);
+            let txt = format!("{}", cost);
+
+            let inp = uiworld.read::<InputMap>();
+
+            Window::new("tooltip")
+                .fixed_pos((inp.screen + vec2(20.0, 0.0)).to_arr())
+                .title_bar(false)
+                .resizable(false)
+                .show(ui, |ui| {
+                    if cost > goria.read::<Government>().money {
+                        ui.colored_label(Color32::RED, format!("{} too expensive", txt));
+                    } else {
+                        ui.label(txt);
+                    }
+                });
+        }
     }
 
     pub(crate) fn auto_save(&mut self, uiworld: &mut UiWorld) {

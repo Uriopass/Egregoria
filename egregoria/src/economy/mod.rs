@@ -37,7 +37,7 @@ impl Display for Money {
             }
             Display::fmt(&cent, f)?;
         }
-        f.write_str("¢")
+        f.write_str("$")
     }
 }
 

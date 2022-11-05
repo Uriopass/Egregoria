@@ -37,7 +37,7 @@ pub enum WorldCommand {
     MapRemoveBuilding(BuildingID),
     MapBuildHouse(LotID),
     AddTrain(f32, u32, LaneID),
-    MapMakeConnection(MapProject, MapProject, Option<Vec2>, LanePattern),
+    MapMakeConnection(MapProject, MapProject, Option<Vec2>, LanePattern), // todo: allow lane pattern builder
     MapUpdateIntersectionPolicy(IntersectionID, TurnPolicy, LightPolicy),
     MapBuildSpecialBuilding(OBB, BuildingKind, BuildingGen, Vec<StraightRoadGen>),
     MapLoadParis,
@@ -56,6 +56,10 @@ use geom::{Transform, Vec2, OBB};
 use WorldCommand::*;
 
 impl WorldCommands {
+    pub fn push(&mut self, cmd: WorldCommand) {
+        self.commands.push(cmd);
+    }
+
     pub fn merge(&mut self, src: &WorldCommands) {
         self.commands.extend_from_slice(&src.commands);
     }

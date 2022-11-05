@@ -165,6 +165,11 @@ impl Vec2 {
     }
 
     #[inline]
+    pub fn to_arr(self) -> [f32; 2] {
+        [self.x, self.y]
+    }
+
+    #[inline]
     pub fn mag(self) -> f32 {
         self.mag2().sqrt()
     }

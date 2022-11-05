@@ -1,4 +1,4 @@
-use crate::gui::Tool;
+use crate::gui::{PotentialCommand, Tool};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
@@ -39,6 +39,7 @@ pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let state = &mut *uiworld.write::<RoadBuildResource>();
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();
     let immsound = &mut *uiworld.write::<ImmediateSound>();
+    let potential_command = &mut *uiworld.write::<PotentialCommand>();
     let mut inp = uiworld.write::<InputMap>();
     let tool = *uiworld.read::<Tool>();
     let map = &*goria.map();
@@ -204,6 +205,22 @@ pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     state.update_drawing(map, immdraw, cur_proj, patwidth, tool, is_valid);
 
+    potential_command.0 = match state.build_state {
+        Hover => None,
+        Start(selected_proj) => Some(WorldCommand::MapMakeConnection(
+            selected_proj,
+            cur_proj,
+            None,
+            state.pattern_builder.build(),
+        )),
+        Interpolation(interpoint, selected_proj) => Some(WorldCommand::MapMakeConnection(
+            selected_proj,
+            cur_proj,
+            Some(interpoint),
+            state.pattern_builder.build(),
+        )),
+    };
+
     if is_valid && inp.just_act.contains(&InputAction::Select) {
         log::info!(
             "left clicked with state {:?} and {:?}",
@@ -220,27 +237,21 @@ pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
                 // Set interpolation point
                 state.build_state = Interpolation(mousepos.xy(), v);
             }
-            (Start(selected_proj), _, _) => {
+            (Start(_), _, _) => {
                 // Straight connection to something
                 immsound.play("road_lay", AudioKind::Ui);
-                commands.map_make_connection(
-                    selected_proj,
-                    cur_proj,
-                    None,
-                    state.pattern_builder.build(),
-                );
+                if let Some(wc) = potential_command.0.take() {
+                    commands.push(wc);
+                }
 
                 state.build_state = Hover;
             }
-            (Interpolation(interpoint, selected_proj), _, _) => {
+            (Interpolation(_, _), _, _) => {
                 // Interpolated connection to something
                 immsound.play("road_lay", AudioKind::Ui);
-                commands.map_make_connection(
-                    selected_proj,
-                    cur_proj,
-                    Some(interpoint),
-                    state.pattern_builder.build(),
-                );
+                if let Some(wc) = potential_command.0.take() {
+                    commands.push(wc);
+                }
 
                 state.build_state = Hover;
             }
