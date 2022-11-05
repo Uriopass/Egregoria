@@ -186,6 +186,25 @@
     "price": 1000
   },
   {
+    "name": "Coal mine",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "factory",
+    "n_trucks": 1,
+    "recipe": {
+      "consumption": [],
+      "production": [["coal", 1]],
+      "complexity": 100,
+      "storage_multiplier": 5
+    },
+    "n_workers": 5,
+    "size": 20.0,
+    "asset_location": "assets/sprites/oil_pump.png",
+    "price": 1000
+  },
+  {
     "name": "Textile processing facility",
     "bgen": {
       "kind": "centered_door",

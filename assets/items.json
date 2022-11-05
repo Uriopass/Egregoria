@@ -69,10 +69,6 @@
     "label": "Wool"
   },
   {
-    "name": "textile",
-    "label": "Textile"
-  },
-  {
     "name": "cloth",
     "label": "Cloth"
   },
@@ -91,9 +87,5 @@
   {
     "name": "polyester",
     "label": "Polyester"
-  },
-  {
-    "name": "petrol",
-    "label": "Petrol"
   }
 ]
