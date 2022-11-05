@@ -9,6 +9,7 @@ use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::economy::{Government, ItemRegistry};
+use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::{
     BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, StraightRoadGen,
     TurnPolicy,
@@ -83,8 +84,8 @@ impl Gui {
         uiworld: &mut UiWorld,
         goria: &Egregoria,
     ) {
-        if let Some(ref cmd) = uiworld.read::<PotentialCommand>().0 {
-            let cost = Government::action_cost(cmd, goria);
+        if let Some(cmd) = uiworld.write::<PotentialCommand>().0.take() {
+            let cost = Government::action_cost(&cmd, goria);
             let txt = format!("{}", cost);
 
             let inp = uiworld.read::<InputMap>();
@@ -277,7 +278,7 @@ impl Gui {
                         *uiworld.write::<Tool>() = Tool::SpecialBuilding;
 
                         uiworld.write::<SpecialBuildingResource>().opt = Some(SpecialBuildKind {
-                            make: Box::new(move |args, commands| {
+                            make: Box::new(move |args| {
                                 let obb = args.obb;
                                 let c = obb.center().z(args.mpos.z + 0.3);
 
@@ -295,14 +296,14 @@ impl Gui {
                                         pattern: pat.clone(),
                                     });
                                 }
-                                commands.map_build_special_building(
+                                WorldCommand::MapBuildSpecialBuilding(
                                     args.obb,
                                     BuildingKind::RailFretStation,
                                     BuildingGen::NoWalkway {
                                         door_pos: Vec2::ZERO,
                                     },
                                     tracks,
-                                );
+                                )
                             }),
                             w: 200.0,
                             h: 160.0,
@@ -522,13 +523,13 @@ impl Gui {
                             let bgen = descr.bgen;
                             cur_build.opt = Some(SpecialBuildKind {
                                 road_snap: true,
-                                make: Box::new(move |args, commands| {
-                                    commands.map_build_special_building(
+                                make: Box::new(move |args| {
+                                    WorldCommand::MapBuildSpecialBuilding(
                                         args.obb,
                                         bkind,
                                         bgen,
                                         vec![],
-                                    );
+                                    )
                                 }),
                                 w: descr.size,
                                 h: descr.size,

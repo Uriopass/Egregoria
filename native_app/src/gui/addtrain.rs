@@ -1,7 +1,9 @@
 use super::Tool;
+use crate::gui::PotentialCommand;
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
+use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::LaneKind;
 use egregoria::vehicles::trains::{train_length, wagons_positions};
 use egregoria::Egregoria;
@@ -16,6 +18,7 @@ pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     let inp = uiworld.read::<InputMap>();
+    let mut potential = uiworld.write::<PotentialCommand>();
 
     let mut draw = uiworld.write::<ImmediateDraw>();
     let map = goria.map();
@@ -53,7 +56,10 @@ pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     drawtrain(common::config().gui_primary);
 
+    let cmd = WorldCommand::AddTrain(dist, n_wagons, nearbylane.id);
     if inp.just_act.contains(&InputAction::Select) {
-        commands.add_train(dist, n_wagons, nearbylane.id);
+        commands.push(cmd);
+    } else {
+        potential.0 = Some(cmd);
     }
 }

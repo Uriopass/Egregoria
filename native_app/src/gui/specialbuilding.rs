@@ -1,9 +1,10 @@
 use super::Tool;
+use crate::gui::PotentialCommand;
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
 use common::AudioKind;
-use egregoria::engine_interaction::WorldCommands;
+use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::{ProjectFilter, ProjectKind};
 use egregoria::Egregoria;
 use geom::{Degrees, Intersect, Vec3, OBB};
@@ -15,7 +16,7 @@ pub(crate) struct SpecialBuildArgs {
 }
 
 pub(crate) struct SpecialBuildKind {
-    pub(crate) make: Box<dyn Fn(&SpecialBuildArgs, &mut WorldCommands) + Send + Sync + 'static>,
+    pub(crate) make: Box<dyn Fn(&SpecialBuildArgs) -> WorldCommand + Send + Sync + 'static>,
     pub(crate) w: f32,
     pub(crate) h: f32,
     pub(crate) asset: String,
@@ -149,9 +150,12 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     draw(obb, false);
 
+    let cmd: WorldCommand = make(&SpecialBuildArgs { obb, mpos });
     if inp.act.contains(&InputAction::Select) {
-        make(&SpecialBuildArgs { obb, mpos }, commands);
+        commands.push(cmd);
         sound.play("road_lay", AudioKind::Ui);
         state.last_obb = Some(obb);
+    } else {
+        uiworld.write::<PotentialCommand>().0 = Some(cmd);
     }
 }
