@@ -144,7 +144,7 @@ pub(crate) fn settings(
     _: &Egregoria,
 ) {
     let mut settings = uiworld.write::<Settings>();
-    let [w, h]: [f32; 2] = ui.available_rect().size().into();
+    let [_, h]: [f32; 2] = ui.available_rect().size().into();
 
     window
         .default_size([500.0, h * 0.8])
