@@ -7,21 +7,18 @@
 
 # Egregoria
 
-Egregoria is a simulation of modern day society, from the bottom-up. 
+Egregoria is an indie city builder, mostly inspired by Cities:Skylines.  
 Each individual has its own thought model, meaning every action has its importance and influences the environment.  
+Egregoria is focused on the socio-economical aspect of a city, with a logistics element.
+The game is still in early development, but you can already play it and give some feedback through
+[issues](https://github.com/Uriopass/Egregoria/issues) or on [discord](https://discord.gg/CAaZhUJ).  
 
-#### Why Egregoria ?
+By being open source, the hope is to get more people involved in the development of the game.  
+Mod support is wanted but the design has not been found yet.
 
-An Egregor is an autonomous psychic entity made up of, and influencing, the thoughts of a group of people.  
-It represents emergence at its purest form, where individuals come together to become a collective force.  
+## How to play
 
-## How ?  
-
-This is of course very ambitious, so a minimal viable product will be made where features are increasingly added.
-
-The first [milestone](https://github.com/Uriopass/Egregoria/projects/1) will introduce humans into the world. They will have their own homes and a workplace, traveling by foot or using the road system.
-
-As of January 2021, this milestone is now achieved :-) I'm focusing on making more interesting interactions now, but I don't have the next milestone well-defined yet.
+A small tutorial is available on the [github wiki]((https://github.com/Uriopass/Egregoria/wiki/Introduction-Guide)) to get you started.
 
 ## Devblog  
 
@@ -44,23 +41,30 @@ git lfs pull
 ### Windows/Mac
 I personally use Windows 10 and Mac OS 10.11, and it compiles fine once the [rust toolchain is installed](https://www.rust-lang.org/tools/install).
 ```bash
-cargo run
+cargo run --release
 ```
+
+Don't forget to add the `--release` flag, otherwise the game will be very slow.  
+Don't forget to pull the lfs files, otherwise the game will crash with a file not found error.
 
 ### Ubuntu/Debian on x11
 There are a few libraries to install that some of my dependencies need:
 
 ```
 sudo apt-get install libasound2-dev libudev-dev pkg-config libx11-dev
-cargo run
+cargo run --release
 ```
+
+Don't forget to add the `--release` flag, otherwise the game will be very slow.  
+Don't forget to pull the lfs files, otherwise the game will crash with a file not found error.
 
 A GitHub Action tests the builds on Ubuntu.
 
+## Why Egregoria ?
 
+An Egregor is an autonomous psychic entity made up of, and influencing, the thoughts of a group of people.  
+It represents emergence at its purest form, where individuals come together to become a collective force.
 
 ## Special thanks to
 
-- [`@shika-blyat`](https://github.com/shika-blyat): For his work on the wgpu renderer
 - [`@dabreegster`](https://github.com/dabreegster): For inspiration on the map model
-- [`@kosuru`](https://soundcloud.com/kosuru-980687955): For his wonderful ambient music
