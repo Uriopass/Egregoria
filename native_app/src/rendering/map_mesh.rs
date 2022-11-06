@@ -7,6 +7,7 @@ use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
 use geom::{vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Spline, Vec2, Vec3};
 use std::ops::{Mul, Neg};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use wgpu_engine::earcut::earcut;
 use wgpu_engine::meshload::load_mesh;
@@ -39,6 +40,7 @@ pub(crate) struct MapMeshes {
     bmeshes: Vec<InstancedMesh>,
     houses_mesh: Option<Mesh>,
     arrows: Option<SpriteBatch>,
+    pub enable_arrows: AtomicBool,
 }
 
 impl MapMeshHandler {
@@ -141,6 +143,7 @@ impl MapMeshHandler {
                     .collect(),
                 houses_mesh: self.builders.houses_mesh.build(gfx, gfx.palette()),
                 arrows: self.builders.arrow_builder.build(gfx),
+                enable_arrows: Default::default(),
             };
 
             self.cache = Some(Arc::new(meshes));
@@ -162,7 +165,7 @@ impl MapBuilders {
             .mul(0.2)
             .clamp(0.0, 1.0);
 
-            let r_lanes = road.lanes_iter().filter(|(_, kind)| kind.vehicles());
+            let r_lanes = road.lanes_iter().filter(|(_, kind)| kind.needs_arrows());
             let n_arrows = ((road.length() / 50.0) as i32).max(1);
 
             for (id, _) in r_lanes {
@@ -505,8 +508,10 @@ impl Drawable for MapMeshes {
         if let Some(ref v) = self.houses_mesh {
             v.draw(gfx, rp);
         }
-        if let Some(ref v) = self.arrows {
-            v.draw(gfx, rp);
+        if self.enable_arrows.load(Ordering::SeqCst) {
+            if let Some(ref v) = self.arrows {
+                v.draw(gfx, rp);
+            }
         }
         if let Some(ref v) = self.crosswalks {
             v.draw(gfx, rp);
@@ -535,8 +540,10 @@ impl Drawable for MapMeshes {
         if let Some(ref v) = self.houses_mesh {
             deferdepth!(v);
         }
-        if let Some(ref v) = self.arrows {
-            deferdepth!(v);
+        if self.enable_arrows.load(Ordering::SeqCst) {
+            if let Some(ref v) = self.arrows {
+                deferdepth!(v);
+            }
         }
         if let Some(ref v) = self.crosswalks {
             deferdepth!(v);

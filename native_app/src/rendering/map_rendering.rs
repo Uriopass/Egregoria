@@ -6,6 +6,7 @@ use egregoria::map::{
 };
 use egregoria::Egregoria;
 use geom::{vec3, Camera, Color, LinearColor};
+use std::sync::atomic::Ordering;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::terrain::TerrainRender;
 use wgpu_engine::{
@@ -24,6 +25,10 @@ pub(crate) struct MapRenderer {
     trees_builders: FastMap<ChunkID, (InstancedMeshBuilder, Option<(Option<InstancedMesh>, u32)>)>,
     pub(crate) terrain_dirt_id: u32,
     water: Water,
+}
+
+pub struct MapRenderOptions {
+    pub(crate) show_arrows: bool,
 }
 
 impl MapRenderer {
@@ -232,6 +237,7 @@ impl MapRenderer {
         map: &Map,
         time: u32,
         cam: &Camera,
+        options: MapRenderOptions,
         tess: &mut Tesselator,
         ctx: &mut FrameContext<'_>,
     ) {
@@ -240,6 +246,9 @@ impl MapRenderer {
         self.trees(map, cam, ctx);
 
         if let Some(x) = self.meshb.latest_mesh(map, ctx.gfx).clone() {
+            x.as_ref()
+                .enable_arrows
+                .store(options.show_arrows, Ordering::SeqCst);
             ctx.draw(x);
         }
 

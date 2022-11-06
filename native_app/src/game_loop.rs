@@ -16,10 +16,10 @@ use crate::audio::GameAudio;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::Settings;
-use crate::gui::{FollowEntity, Gui, UiTextures};
+use crate::gui::{FollowEntity, Gui, Tool, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::egui_wrapper::EguiWrapper;
-use crate::rendering::{CameraHandler3D, InstancedRender, MapRenderer};
+use crate::rendering::{CameraHandler3D, InstancedRender, MapRenderOptions, MapRenderer};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
@@ -161,10 +161,14 @@ impl State {
         self.camera.cull_tess(&mut self.immtess);
 
         let time: GameTime = *self.goria.read().unwrap().read::<GameTime>();
+
         self.road_renderer.render(
             &goria.map(),
             time.seconds,
             &self.camera.camera,
+            MapRenderOptions {
+                show_arrows: self.uiw.read::<Tool>().show_arrows(),
+            },
             &mut self.immtess,
             ctx,
         );

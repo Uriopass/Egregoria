@@ -72,6 +72,17 @@ impl Tool {
     pub(crate) fn is_roadbuild(&self) -> bool {
         matches!(self, Tool::RoadbuildStraight | Tool::RoadbuildCurved)
     }
+
+    pub fn show_arrows(&self) -> bool {
+        matches!(
+            self,
+            Tool::RoadbuildStraight
+                | Tool::RoadbuildCurved
+                | Tool::RoadEditor
+                | Tool::Bulldozer
+                | Tool::Train
+        )
+    }
 }
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq)]

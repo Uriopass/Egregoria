@@ -31,6 +31,14 @@ impl LaneKind {
     }
 
     #[inline]
+    pub fn needs_arrows(self) -> bool {
+        matches!(
+            self,
+            LaneKind::Driving | LaneKind::Biking | LaneKind::Bus | LaneKind::Rail
+        )
+    }
+
+    #[inline]
     pub fn is_rail(self) -> bool {
         matches!(self, LaneKind::Rail)
     }
