@@ -1,3 +1,4 @@
+use crate::game_loop::Timings;
 use crate::inputmap::InputMap;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
@@ -181,7 +182,7 @@ pub(crate) fn settings(
                 ui.label("Camera Field of View (FOV)");
             });
 
-            let fps = 60.0;
+            let fps = 1.0 / uiworld.read::<Timings>().all.avg();
 
             ui.separator();
             ui.label(format!("Graphics - {:.1}FPS", fps));
