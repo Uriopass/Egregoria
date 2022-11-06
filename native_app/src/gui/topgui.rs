@@ -19,7 +19,7 @@ use egregoria::utils::time::GameTime;
 use egregoria::Egregoria;
 use egui::{Align2, Color32, Context, Frame, RichText, Style, Widget, Window};
 use egui_inspect::{Inspect, InspectArgs};
-use geom::{vec2, Vec2};
+use geom::Vec2;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
@@ -84,14 +84,14 @@ impl Gui {
         uiworld: &mut UiWorld,
         goria: &Egregoria,
     ) {
-        if let Some(cmd) = uiworld.write::<PotentialCommand>().0.take() {
+        let inpos = ui.input().pointer.hover_pos();
+
+        if let Some((cmd, inpos)) = uiworld.write::<PotentialCommand>().0.take().zip(inpos) {
             let cost = Government::action_cost(&cmd, goria);
             let txt = format!("{}", cost);
 
-            let inp = uiworld.read::<InputMap>();
-
             Window::new("tooltip")
-                .fixed_pos((inp.screen + vec2(20.0, 0.0)).to_arr())
+                .fixed_pos(inpos + egui::Vec2::new(20.0 / ui.pixels_per_point(), 0.0))
                 .title_bar(false)
                 .resizable(false)
                 .show(ui, |ui| {

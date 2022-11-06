@@ -225,10 +225,12 @@ impl State {
         let gui = &mut self.gui;
         let goria = &self.goria.read().unwrap();
         let uiworld = &mut self.uiw;
+        let pixels_per_point = uiworld.read::<Settings>().gui_scale;
 
-        self.egui_render.render(ctx, window, gui.hidden, |ui| {
-            gui.render(ui, uiworld, goria);
-        });
+        self.egui_render
+            .render(ctx, window, gui.hidden, pixels_per_point, |ui| {
+                gui.render(ui, uiworld, goria);
+            });
 
         if uiworld.please_save && !uiworld.saving_status.load(Ordering::SeqCst) {
             uiworld.please_save = false;

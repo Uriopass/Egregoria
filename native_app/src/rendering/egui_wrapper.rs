@@ -37,6 +37,7 @@ impl EguiWrapper {
         gfx: GuiRenderContext<'_, '_>,
         window: &Window,
         hidden: bool,
+        pixels_per_point: f32,
         ui_render: impl for<'ui> FnOnce(&'ui egui::Context),
     ) {
         for id in self.to_remove.drain(..) {
@@ -46,8 +47,12 @@ impl EguiWrapper {
         let mut rinput = self.platform.take_egui_input(window);
         rinput.screen_rect = Some(egui::Rect::from_min_size(
             Default::default(),
-            egui::vec2(gfx.size.0 as f32, gfx.size.1 as f32),
+            egui::vec2(
+                gfx.size.0 as f32 / pixels_per_point,
+                gfx.size.1 as f32 / pixels_per_point,
+            ),
         ));
+        rinput.pixels_per_point = Some(pixels_per_point);
 
         let output = self.egui.run(rinput, |ctx| {
             ui_render(ctx);
@@ -61,7 +66,7 @@ impl EguiWrapper {
         }
         let desc = ScreenDescriptor {
             size_in_pixels: [gfx.size.0, gfx.size.1],
-            pixels_per_point: 1.0,
+            pixels_per_point,
         };
         self.renderer.update_buffers(
             gfx.device,

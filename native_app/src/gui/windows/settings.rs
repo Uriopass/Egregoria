@@ -64,6 +64,8 @@ pub(crate) struct Settings {
     pub(crate) realistic_sky: bool,
     pub(crate) terrain_grid: bool,
 
+    pub(crate) gui_scale: f32,
+
     pub(crate) music_volume_percent: f32,
     pub(crate) effects_volume_percent: f32,
     pub(crate) ui_volume_percent: f32,
@@ -90,6 +92,7 @@ impl Default for Settings {
             realistic_sky: true,
             camera_fov: 60.0,
             terrain_grid: true,
+            gui_scale: 1.0,
         }
     }
 }
@@ -143,9 +146,9 @@ pub(crate) fn settings(
     let [w, h]: [f32; 2] = ui.available_rect().size().into();
 
     window
-        .default_pos([w * 0.5, h * 0.5])
-        .default_size([600.0, 600.0])
+        .default_size([500.0, h * 0.8])
         .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .vscroll(true)
         .collapsible(false)
         .show(ui, |ui| {
             ui.label("Gameplay");
@@ -190,12 +193,24 @@ pub(crate) fn settings(
 
             // shadow quality combobox
             let mut id = settings.shadows as u8 as usize;
-            egui::ComboBox::from_label("Shadow Quality").show_index(ui, &mut id, 3, |i| {
+            egui::ComboBox::from_label("Shadow Quality").show_index(ui, &mut id, 4, |i| {
                 ShadowQuality::from(i as u8).as_ref().to_string()
             });
             settings.shadows = ShadowQuality::from(id as u8);
 
             ui.checkbox(&mut settings.vsync, "VSync");
+
+            ui.separator();
+            ui.label("GUI");
+            ui.horizontal(|ui| {
+                // we only change gui_scale at end of interaction to avoid feedback loops
+                let mut gui_scale = settings.gui_scale;
+                let res = ui.add(egui::Slider::new(&mut gui_scale, 0.5..=3.0));
+                if res.drag_released() {
+                    settings.gui_scale = gui_scale;
+                }
+                ui.label("GUI Scale");
+            });
 
             ui.separator();
             ui.label("Audio");
