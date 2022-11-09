@@ -206,7 +206,7 @@ pub(crate) fn settings(
             ui.horizontal(|ui| {
                 // we only change gui_scale at end of interaction to avoid feedback loops
                 let mut gui_scale = settings.gui_scale;
-                let res = ui.add(egui::Slider::new(&mut gui_scale, 0.5..=3.0));
+                let res = ui.add(egui::Slider::new(&mut gui_scale, 0.5..=2.0));
                 if res.drag_released() {
                     settings.gui_scale = gui_scale;
                 }
