@@ -180,7 +180,7 @@ impl MapBuilders {
                         mid.up(0.03),
                         dir,
                         LinearColor::gray(0.3 + fade * 0.1),
-                        (2.0, 2.0),
+                        (4.0, 4.0),
                     );
                 }
             }
