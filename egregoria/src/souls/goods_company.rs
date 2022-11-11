@@ -146,6 +146,7 @@ impl GoodsCompanyRegistry {
                     continue;
                 }
             };
+            #[allow(unused_variables)]
             let id = self
                 .descriptions
                 .insert_with_key(move |id| GoodsCompanyDescription {
@@ -160,6 +161,7 @@ impl GoodsCompanyRegistry {
                     price: descr.price,
                 });
 
+            #[cfg(not(test))]
             log::info!("loaded {:?}", &self.descriptions[id]);
         }
     }

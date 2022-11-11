@@ -10,6 +10,7 @@ use egregoria::souls::human::HumanDecision;
 use egregoria::vehicles::{Vehicle, VehicleID};
 use egregoria::{Egregoria, SoulID};
 
+use egregoria::souls::fret_station::FreightStation;
 use egregoria::vehicles::trains::{Locomotive, LocomotiveReservation};
 use egui::{Color32, RichText, Ui};
 use egui_inspect::{Inspect, InspectArgs};
@@ -71,6 +72,7 @@ impl InspectRenderer {
         self.inspect_component::<Itinerary>(goria, ui);
         self.inspect_component::<Router>(goria, ui);
         self.inspect_component::<HumanDecision>(goria, ui);
+        self.inspect_component::<FreightStation>(goria, ui);
         self.inspect_component::<Workers>(goria, ui);
         self.inspect_component::<Work>(goria, ui);
         self.inspect_component::<Home>(goria, ui);

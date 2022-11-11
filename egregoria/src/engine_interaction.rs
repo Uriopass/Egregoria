@@ -68,6 +68,10 @@ impl WorldCommands {
         self.commands.iter()
     }
 
+    pub fn as_ref(&self) -> &[WorldCommand] {
+        &self.commands
+    }
+
     pub fn is_empty(&self) -> bool {
         self.commands.is_empty()
     }

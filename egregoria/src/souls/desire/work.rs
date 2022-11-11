@@ -55,6 +55,7 @@ impl Work {
                     MultiStack(vec![
                         SetVehicle(router.personal_car),
                         GoTo(Destination::Building(self.workplace)),
+                        DeliverAtBuilding(b),
                         GoTo(Destination::Building(b)),
                         SetVehicle(Some(truck)),
                     ])

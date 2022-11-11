@@ -11,7 +11,7 @@ pub struct Government {
 impl Default for Government {
     fn default() -> Self {
         Self {
-            money: Money::new_base(30_000),
+            money: Money::new_base(150_000),
         }
     }
 }

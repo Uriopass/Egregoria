@@ -157,6 +157,7 @@ impl Map {
         attachments_gen: &[StraightRoadGen],
     ) -> Option<BuildingID> {
         if self.building_overlaps(*obb) {
+            log::warn!("did not build {:?}: building overlaps", kind);
             return None;
         }
         log::info!(

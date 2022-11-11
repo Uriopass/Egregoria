@@ -40,6 +40,10 @@ impl BuildingInfos {
         self.owners.insert(soul, building);
     }
 
+    pub fn owner(&self, building: BuildingID) -> Option<SoulID> {
+        self.assignment.get(building).and_then(|x| x.owner)
+    }
+
     pub fn get_in(&mut self, building: BuildingID, e: SoulID) {
         let b = unwrap_ret!(self.get_mut(building));
         if cfg!(debug_assertions) && b.inside.contains(&e) {

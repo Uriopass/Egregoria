@@ -14,7 +14,7 @@ wgpu_engine   = { path = "../wgpu_engine" }
 common        = { path = "../common" }
 networking    = { path = "../networking", optional=true }
 flat_spatial  = "0.5.0"
-log           = { version = "0.4.11", features=["max_level_debug", "release_max_level_info"] }
+log           = { version = "0.4.11", features=["max_level_info", "release_max_level_info"] }
 inline_tweak  = "1.0.6"
 hecs          = "0.9.0"
 resources     = "1.1.0"

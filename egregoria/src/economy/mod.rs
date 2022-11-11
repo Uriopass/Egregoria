@@ -125,13 +125,23 @@ pub struct Bought(pub BTreeMap<ItemID, Vec<Trade>>);
 #[derive(Debug, Default, Serialize, Deserialize, Inspect)]
 pub struct Workers(pub Vec<SoulID>);
 
+#[cfg(not(test))]
+const ITEMS_PATH: &'static str = "assets/items.json";
+#[cfg(not(test))]
+const COMPANIES_PATH: &'static str = "assets/companies.json";
+
+#[cfg(test)]
+const ITEMS_PATH: &'static str = "../assets/items.json";
+#[cfg(test)]
+const COMPANIES_PATH: &'static str = "../assets/companies.json";
+
 pub fn init_market(_: &mut World, res: &mut Resources) {
     res.get_mut::<ItemRegistry>()
         .unwrap()
-        .load_item_definitions(&*std::fs::read_to_string("assets/items.json").unwrap());
+        .load_item_definitions(&*std::fs::read_to_string(ITEMS_PATH).unwrap());
 
     res.get_mut::<GoodsCompanyRegistry>().unwrap().load(
-        &*std::fs::read_to_string("assets/companies.json").unwrap(),
+        &*std::fs::read_to_string(COMPANIES_PATH).unwrap(),
         &*res.get::<ItemRegistry>().unwrap(),
     );
 

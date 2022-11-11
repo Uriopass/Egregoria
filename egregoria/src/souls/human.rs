@@ -5,7 +5,7 @@ use crate::pedestrians::{spawn_pedestrian, Location};
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::utils::time::GameTime;
 use crate::vehicles::{spawn_parked_vehicle, VehicleID, VehicleKind};
-use crate::{Egregoria, Map, ParCommandBuffer, SoulID};
+use crate::{BuildingKind, Egregoria, FreightStation, Map, ParCommandBuffer, SoulID};
 use egui_inspect::Inspect;
 use geom::Transform;
 use hecs::{Entity, World};
@@ -17,8 +17,8 @@ pub struct BasicWorker;
 
 #[derive(Inspect, Serialize, Deserialize, Default)]
 pub struct HumanDecision {
-    kind: HumanDecisionKind,
-    wait: u8,
+    pub kind: HumanDecisionKind,
+    pub wait: u8,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,6 +26,7 @@ pub enum HumanDecisionKind {
     Yield,
     SetVehicle(Option<VehicleID>),
     GoTo(Destination),
+    DeliverAtBuilding(BuildingID),
     MultiStack(Vec<HumanDecisionKind>),
 }
 
@@ -38,12 +39,18 @@ impl Default for HumanDecisionKind {
 }
 
 impl HumanDecisionKind {
-    pub fn update(&mut self, router: &mut Router) -> bool {
+    pub fn update(
+        &mut self,
+        router: &mut Router,
+        binfos: &BuildingInfos,
+        map: &Map,
+        cbuf: &ParCommandBuffer,
+    ) -> bool {
         match *self {
             HumanDecisionKind::GoTo(dest) => router.go_to(dest),
             HumanDecisionKind::MultiStack(ref mut decisions) => {
                 if let Some(d) = decisions.last_mut() {
-                    if d.update(router) {
+                    if d.update(router, binfos, map, cbuf) {
                         decisions.pop();
                     }
                     false
@@ -53,6 +60,18 @@ impl HumanDecisionKind {
             }
             HumanDecisionKind::SetVehicle(id) => {
                 router.use_vehicle(id);
+                true
+            }
+            HumanDecisionKind::DeliverAtBuilding(bid) => {
+                let Some(b) = map.buildings().get(bid) else { return true };
+                if matches!(b.kind, BuildingKind::RailFretStation) {
+                    let Some(b) = binfos.owner(bid) else { return true };
+                    cbuf.exec_ent(b.0, move |e| {
+                        if let Some(mut f) = e.comp_mut::<FreightStation>(b.0) {
+                            f.waiting_cargo += 1;
+                        }
+                    });
+                }
                 true
             }
             HumanDecisionKind::Yield => true,
@@ -116,7 +135,7 @@ pub fn update_decision(
     }
     let pos = trans.position;
     decision.wait = (30.0 + common::rand::rand2(pos.x, pos.y) * 50.0) as u8;
-    if !decision.kind.update(router) {
+    if !decision.kind.update(router, binfos, map, cbuf) {
         return;
     }
 

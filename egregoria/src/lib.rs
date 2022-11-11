@@ -1,7 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::economy::{Bought, Sold, Workers};
-use crate::engine_interaction::{Selectable, WorldCommands};
+use crate::engine_interaction::{Selectable, WorldCommand};
 use crate::map::{BuildingGen, BuildingKind, LanePatternBuilder, Map, StraightRoadGen, Terrain};
 use crate::map_dynamic::{Itinerary, ItineraryFollower, ItineraryLeader, Router};
 use crate::pedestrians::Pedestrian;
@@ -79,6 +79,16 @@ unsafe impl Sync for Egregoria {}
 const RNG_SEED: u64 = 123;
 const VERSION: &str = include_str!("../../VERSION");
 
+pub struct EgregoriaOptions {
+    pub terrain_size: u32,
+}
+
+impl Default for EgregoriaOptions {
+    fn default() -> Self {
+        EgregoriaOptions { terrain_size: 50 }
+    }
+}
+
 impl Egregoria {
     pub fn schedule() -> SeqSchedule {
         let mut schedule = SeqSchedule::default();
@@ -90,8 +100,13 @@ impl Egregoria {
         }
         schedule
     }
-
     pub fn new(gen_terrain: bool) -> Egregoria {
+        Egregoria::new_with_options(EgregoriaOptions {
+            terrain_size: if gen_terrain { 50 } else { 0 },
+        })
+    }
+
+    pub fn new_with_options(opts: EgregoriaOptions) -> Egregoria {
         let mut goria = Egregoria {
             world: Default::default(),
             resources: Default::default(),
@@ -105,11 +120,10 @@ impl Egregoria {
             }
         }
 
-        if gen_terrain {
+        if opts.terrain_size > 0 {
             info!("generating terrain..");
             let t = Instant::now();
-            #[allow(clippy::if_same_then_else)]
-            let size = if cfg!(debug_assertions) { 50 } else { 50 };
+            let size = opts.terrain_size;
 
             goria.map_mut().terrain = Terrain::new(size, size);
             info!("took {}s", t.elapsed().as_secs_f32());
@@ -131,14 +145,20 @@ impl Egregoria {
                 });
             }
 
-            goria.map_mut().build_special_building(
-                &obb,
-                BuildingKind::ExternalTrading,
-                BuildingGen::NoWalkway {
-                    door_pos: Vec2::ZERO,
-                },
-                &tracks,
-            );
+            if goria
+                .map_mut()
+                .build_special_building(
+                    &obb,
+                    BuildingKind::ExternalTrading,
+                    BuildingGen::NoWalkway {
+                        door_pos: Vec2::ZERO,
+                    },
+                    &tracks,
+                )
+                .is_none()
+            {
+                log::error!("failed to build external trading");
+            }
         }
 
         goria
@@ -156,7 +176,7 @@ impl Egregoria {
     }
 
     #[profiling::function]
-    pub fn tick(&mut self, game_schedule: &mut SeqSchedule, commands: &WorldCommands) -> Duration {
+    pub fn tick(&mut self, game_schedule: &mut SeqSchedule, commands: &[WorldCommand]) -> Duration {
         self.write::<Tick>().0 += 1;
         const WORLD_TICK_DT: f32 = 0.05;
 
@@ -169,7 +189,7 @@ impl Egregoria {
 
         {
             profiling::scope!("applying commands");
-            for command in &commands.commands {
+            for command in commands {
                 command.apply(self);
             }
         }

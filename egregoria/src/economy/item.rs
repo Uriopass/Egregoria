@@ -77,6 +77,7 @@ impl ItemRegistry {
                 optout_exttrade: definition.optout_exttrade,
             });
             self.item_names.insert(name, id);
+            #[cfg(not(test))]
             log::info!("loaded {:?}", &self.items[id]);
         }
     }

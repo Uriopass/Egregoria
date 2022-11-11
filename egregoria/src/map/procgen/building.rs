@@ -4,7 +4,7 @@ use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use std::panic::catch_unwind;
 
-#[derive(Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ColoredMesh {
     pub faces: Vec<(Vec<Vec3>, LinearColor)>,
 }

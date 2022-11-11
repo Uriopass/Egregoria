@@ -53,7 +53,7 @@ pub struct StraightRoadGen {
     pub pattern: LanePattern,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Building {
     pub id: BuildingID,
     pub door_pos: Vec3,
