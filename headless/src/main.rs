@@ -1,6 +1,6 @@
 use common::logger::MyLog;
 use common::unwrap_or;
-use egregoria::engine_interaction::WorldCommands;
+use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::Egregoria;
 use networking::{Frame, Server, ServerConfiguration, ServerPollResult};
 use std::time::{Duration, Instant};
@@ -64,8 +64,8 @@ fn main() {
         if let ServerPollResult::Input(inputs) = server.poll(&w, Frame(w.get_tick()), None) {
             for frame in inputs {
                 assert_eq!(frame.frame.0, w.get_tick() + 1);
-                let merged = frame.inputs.into_iter().map(|x| x.inp).collect();
-                w.tick(&mut sched, &merged);
+                let merged: WorldCommands = frame.inputs.into_iter().map(|x| x.inp).collect();
+                w.tick(&mut sched, merged.as_ref());
             }
         }
 
