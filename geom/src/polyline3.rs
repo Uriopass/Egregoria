@@ -124,7 +124,7 @@ impl PolyLine3 {
         proj.distance2(p)
     }
 
-    /// Distance squared from the projection to p
+    /// Distance from the projection to p
     pub fn project_dist(&self, p: Vec3) -> f32 {
         let proj = self.project(p);
         proj.distance(p)

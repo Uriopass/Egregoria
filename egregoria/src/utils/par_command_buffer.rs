@@ -1,5 +1,5 @@
 use crate::economy::Market;
-use crate::map_dynamic::Router;
+use crate::map_dynamic::{DispatchKind, Router};
 use crate::physics::Collider;
 use crate::vehicles::Vehicle;
 use crate::{Egregoria, SoulID};
@@ -110,6 +110,9 @@ impl ParCommandBuffer {
                 ComponentDrop::drop(&mut *v, &mut goria.resources, entity);
             }
             if let Ok(mut v) = goria.world.get::<&mut Router>(entity) {
+                ComponentDrop::drop(&mut *v, &mut goria.resources, entity);
+            }
+            if let Ok(mut v) = goria.world.get::<&mut DispatchKind>(entity) {
                 ComponentDrop::drop(&mut *v, &mut goria.resources, entity);
             }
         }

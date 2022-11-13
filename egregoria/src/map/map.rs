@@ -771,3 +771,12 @@ impl Map {
         assert!(self.parking.reuse_spot.is_empty());
     }
 }
+
+impl MapProject {
+    pub fn ground(pos: Vec3) -> Self {
+        Self {
+            pos,
+            kind: ProjectKind::Ground,
+        }
+    }
+}

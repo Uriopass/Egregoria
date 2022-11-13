@@ -1,8 +1,8 @@
 use crate::economy::{init_market, market_update, EcoStats, Government, ItemRegistry, Market};
 use crate::map::Map;
 use crate::map_dynamic::{
-    itinerary_update, routing_changed_system, routing_update_system, BuildingInfos,
-    ParkingManagement,
+    dispatch_system, itinerary_update, routing_changed_system, routing_update_system,
+    BuildingInfos, Dispatcher, ParkingManagement,
 };
 use crate::pedestrians::pedestrian_decision_system;
 use crate::physics::systems::coworld_synchronize;
@@ -25,6 +25,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 pub fn init() {
+    register_system("dispatch_system", dispatch_system);
     register_system("update_decision_system", update_decision_system);
     register_system("company_system", company_system);
     register_system("pedestrian_decision_system", pedestrian_decision_system);
@@ -63,6 +64,7 @@ pub fn init() {
     });
     register_resource("coworld", || CollisionWorld::new(100));
     register_resource("randprovider", || RandProvider::new(RNG_SEED));
+    register_resource("dispatcher", || Dispatcher::default());
 }
 
 pub struct InitFunc {
