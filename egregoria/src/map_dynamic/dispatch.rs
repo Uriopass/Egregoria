@@ -116,62 +116,9 @@ impl Dispatcher {
         target: DispatchQueryTarget,
     ) -> Option<Entity> {
         let disp = self.dispatches.get_mut(&kind)?;
-
-        let mut start_along = f32::MAX;
-
-        let target_lane = match target {
-            DispatchQueryTarget::Pos(pos) => {
-                let lid = map.nearest_lane(pos, kind.lane_kind(), Some(50.0))?;
-                let lane = map.lanes().get(lid)?;
-                let proj = lane.points.project(pos);
-                start_along = lane.points.length_at_proj(proj);
-                lid
-            }
-            DispatchQueryTarget::Lane(lane) => {
-                if map.lanes().get(lane).is_none() {
-                    return None;
-                }
-                lane
-            }
-        };
-
-        let mut best_dist = f32::MAX;
-        let mut best_ent = None;
-
-        // do a backward breadth first search, looking for lanes with matching entities
-        for lane in pathfinding::directed::bfs::bfs_reach(target_lane, move |&lid| {
-            let l = &map.lanes[lid];
-            let start_i = l.src;
-            let int = &map.intersections[start_i];
-            int.turns_to(lid).map(|(tid, dir)| match dir {
-                TraverseDirection::Forward => tid.src,
-                TraverseDirection::Backward => tid.dst,
-            })
-        }) {
-            let Some(ents) = disp.lanes.get(&lane) else { continue };
-            for ent in ents {
-                let pos = disp.positions.get(ent).unwrap();
-                let dist = -pos.dist_along; // since dist_along is from start to end, a good dist_along is one that is big
-                if lane == target_lane {
-                    if pos.dist_along > start_along {
-                        continue;
-                    }
-                }
-                if dist < best_dist {
-                    best_dist = dist;
-                    best_ent = Some(*ent);
-                }
-            }
-            if best_ent.is_some() {
-                break;
-            }
-        }
-
-        let Some(ent) = best_ent else { return None };
-
-        disp.reserve(ent, me);
-
-        Some(ent)
+        let best_ent = disp.query(map, kind, target)?;
+        disp.reserve(best_ent, me);
+        Some(best_ent)
     }
 }
 
@@ -249,6 +196,68 @@ impl DispatchOne {
         let Some(pos) = self.positions.remove(&id) else { return };
         self.lanes.get_mut(&pos.lane).unwrap().retain(|e| *e != id);
     }
+
+    pub fn query(
+        &mut self,
+        map: &Map,
+        kind: DispatchKind,
+        target: DispatchQueryTarget,
+    ) -> Option<Entity> {
+        // todo: handle the case where there are few (or zero) entities in the cache
+        // todo: probably some kind of astar on good candidates
+
+        let mut start_along = f32::MAX;
+
+        let target_lane = match target {
+            DispatchQueryTarget::Pos(pos) => {
+                let lid = map.nearest_lane(pos, kind.lane_kind(), Some(50.0))?;
+                let lane = map.lanes().get(lid)?;
+                let proj = lane.points.project(pos);
+                start_along = lane.points.length_at_proj(proj);
+                lid
+            }
+            DispatchQueryTarget::Lane(lane) => {
+                if map.lanes().get(lane).is_none() {
+                    return None;
+                }
+                lane
+            }
+        };
+
+        let mut best_dist = f32::MAX;
+        let mut best_ent = None;
+
+        // do a backward breadth first search, looking for lanes with matching entities
+        for lane in pathfinding::directed::bfs::bfs_reach(target_lane, move |&lid| {
+            let l = &map.lanes[lid];
+            let start_i = l.src;
+            let int = &map.intersections[start_i];
+            int.turns_to(lid).map(|(tid, dir)| match dir {
+                TraverseDirection::Forward => tid.src,
+                TraverseDirection::Backward => tid.dst,
+            })
+        }) {
+            let Some(ents) = self.lanes.get(&lane) else { continue };
+            for ent in ents {
+                let pos = self.positions.get(ent).unwrap();
+                let dist = -pos.dist_along; // since dist_along is from start to end, a good dist_along is one that is big
+                if lane == target_lane {
+                    if pos.dist_along > start_along {
+                        continue;
+                    }
+                }
+                if dist < best_dist {
+                    best_dist = dist;
+                    best_ent = Some(*ent);
+                }
+            }
+            if best_ent.is_some() {
+                break;
+            }
+        }
+
+        best_ent
+    }
 }
 
 pub fn dispatch_system(world: &mut World, resources: &mut Resources) {
@@ -270,6 +279,7 @@ mod tests {
     use super::*;
     use crate::map::{MapProject, ProjectKind};
     use crate::LanePatternBuilder;
+    use common::rand::rand2;
     #[test]
     fn dispatch_one_register_one_works() {
         let mut disp = DispatchOne::new(LaneKind::Rail);
@@ -513,6 +523,137 @@ mod tests {
                 DispatchQueryTarget::Lane(lid),
             ),
             Some(ent2)
+        );
+    }
+
+    use crate::map::procgen::load_parismap;
+    use easybench::bench;
+
+    #[test]
+    fn bench_query() {
+        /* if 1 == 1 {
+            return;
+        }*/
+
+        let mut m = Map::default();
+        load_parismap(&mut m);
+
+        let mut minx = f32::MAX;
+        let mut maxx = f32::MIN;
+        let mut miny = f32::MAX;
+        let mut maxy = f32::MIN;
+        for pos in m.intersections.iter().map(|i| i.1.pos) {
+            minx = minx.min(pos.x);
+            maxx = maxx.max(pos.x);
+            miny = miny.min(pos.y);
+            maxy = maxy.max(pos.y);
+        }
+        let w = maxx - minx;
+        let h = maxy - miny;
+
+        let mut start = DispatchOne::new(LaneKind::Driving);
+        let mut i = 0;
+        println!(
+            "query empty: {}",
+            bench(|| {
+                i += 1;
+                start.query(
+                    &m,
+                    DispatchKind::SmallTruck,
+                    DispatchQueryTarget::Pos(Vec3::new(
+                        minx + w * rand2(i as f32, 12.0),
+                        miny + h * rand2(i as f32, 11.0),
+                        0.0,
+                    )),
+                )
+            })
+        );
+
+        for i in 0..100 {
+            start.register(
+                Entity::from_bits((1 << 32) + i).unwrap(),
+                &m,
+                Vec3::new(
+                    minx + w * rand2(i as f32, 2.0),
+                    miny + h * rand2(i as f32, 1.0),
+                    0.0,
+                ),
+            );
+        }
+
+        let mut i = 0;
+        println!(
+            "query 100: {}",
+            bench(|| {
+                i += 1;
+                start.query(
+                    &m,
+                    DispatchKind::SmallTruck,
+                    DispatchQueryTarget::Pos(Vec3::new(
+                        minx + w * rand2(i as f32, 12.0),
+                        miny + h * rand2(i as f32, 11.0),
+                        0.0,
+                    )),
+                )
+            })
+        );
+
+        for i in 100..1000 {
+            start.register(
+                Entity::from_bits((1 << 32) + i).unwrap(),
+                &m,
+                Vec3::new(
+                    minx + w * rand2(i as f32, 2.0),
+                    miny + h * rand2(i as f32, 1.0),
+                    0.0,
+                ),
+            );
+        }
+
+        let mut i = 0;
+        println!(
+            "query 1000: {}",
+            bench(|| {
+                i += 1;
+                start.query(
+                    &m,
+                    DispatchKind::SmallTruck,
+                    DispatchQueryTarget::Pos(Vec3::new(
+                        minx + w * rand2(i as f32, 12.0),
+                        miny + h * rand2(i as f32, 11.0),
+                        0.0,
+                    )),
+                )
+            })
+        );
+
+        for i in 1000..10000 {
+            start.register(
+                Entity::from_bits((1 << 32) + i).unwrap(),
+                &m,
+                Vec3::new(
+                    minx + w * rand2(i as f32, 2.0),
+                    miny + h * rand2(i as f32, 1.0),
+                    0.0,
+                ),
+            );
+        }
+
+        let mut i = 0;
+        println!(
+            "query 10000: {}",
+            bench(|| {
+                i += 1;
+                start.query(
+                    &m,
+                    DispatchKind::SmallTruck,
+                    DispatchQueryTarget::Pos(Vec3::new(
+                        minx + w * rand2(i as f32, 12.0),
+                        miny + h * rand2(i as f32, 11.0),
+                        0.0,
+                    )),
+                )
+            })
         );
     }
 }

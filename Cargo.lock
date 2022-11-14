@@ -781,11 +781,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "easybench"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "355215cf95ddc4db0459d5313c9b146bedd43453305e3f0f1c4e8fde7f8d3884"
+
+[[package]]
 name = "egregoria"
 version = "0.1.0"
 dependencies = [
  "atomic_refcell",
  "common",
+ "easybench",
  "egui-inspect",
  "flat_spatial",
  "geom",

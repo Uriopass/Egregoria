@@ -4,44 +4,41 @@ use crate::map::{IntersectionID, LanePatternBuilder, Map, RoadSegmentKind};
 use common::FastMap;
 use flat_spatial::Grid;
 use geom::{vec2, vec3, Vec2};
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, Cursor};
 
-struct Scanner {
+struct Scanner<T> {
     buffer: Vec<String>,
-    file: BufReader<File>,
+    reader: T,
 }
 
-impl Scanner {
-    pub fn new(file: BufReader<File>) -> Self {
+impl<T> Scanner<T> {
+    pub fn new(reader: T) -> Self {
         Self {
             buffer: vec![],
-            file,
+            reader,
         }
     }
 }
 
-impl Scanner {
+impl<R: BufRead> Scanner<R> {
     fn next<T: std::str::FromStr>(&mut self) -> T {
         loop {
             if let Some(token) = self.buffer.pop() {
                 return token.parse().ok().expect("Failed parse");
             }
             let mut input = String::new();
-            self.file.read_line(&mut input).expect("Failed read");
+            self.reader.read_line(&mut input).expect("Failed read");
             self.buffer = input.split_whitespace().rev().map(String::from).collect();
         }
     }
 }
 
+static PARISMAP_STR: &str = include_str!("../../../../assets/paris_54000.txt");
+
 pub fn load_parismap(map: &mut Map) {
     let time = std::time::Instant::now();
-    let file = unwrap_or!(File::open("assets/paris_54000.txt").ok(), {
-        error!("Couldn't open parismap file");
-        return;
-    });
 
-    let mut scanner = Scanner::new(BufReader::new(file));
+    let mut scanner = Scanner::new(Cursor::new(PARISMAP_STR));
 
     let n_inters = scanner.next::<i32>();
     let n_roads = scanner.next::<i32>();
