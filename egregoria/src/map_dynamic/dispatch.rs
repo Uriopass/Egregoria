@@ -1,4 +1,4 @@
-use crate::map::{LaneID, LaneKind};
+use crate::map::{LaneID, LaneKind, TraverseDirection};
 use crate::utils::par_command_buffer::ComponentDrop;
 use crate::Map;
 use geom::{Transform, Vec3};
@@ -24,11 +24,12 @@ pub struct Dispatcher {
 }
 
 /// Dispatcher specialized to one kind
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct DispatchOne {
     positions: BTreeMap<Entity, DispatchPosition>,
     lanes: BTreeMap<LaneID, Vec<Entity>>,
     reserved_by: BTreeMap<Entity, Entity>,
+    lanekind: LaneKind,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -71,12 +72,17 @@ impl Dispatcher {
         world: &World,
         mut query: QueryBorrow<(&Transform, &DispatchKind)>,
     ) {
-        let mut disp: &mut DispatchOne =
-            self.dispatches.entry(DispatchKind::FretTrain).or_default();
+        let mut disp: &mut DispatchOne = self
+            .dispatches
+            .entry(DispatchKind::FretTrain)
+            .or_insert_with(|| DispatchOne::new(DispatchKind::FretTrain.lane_kind()));
         let mut last_kind: DispatchKind = DispatchKind::FretTrain;
         for (ent, (trans, kind)) in query.iter() {
             if last_kind != *kind {
-                disp = self.dispatches.entry(*kind).or_default();
+                disp = self
+                    .dispatches
+                    .entry(*kind)
+                    .or_insert_with(|| DispatchOne::new(kind.lane_kind()));
                 last_kind = *kind;
             }
 
@@ -87,7 +93,7 @@ impl Dispatcher {
                     return;
                 }
             }
-            disp.register(ent, *kind, map, trans.position);
+            disp.register(ent, map, trans.position);
         }
     }
 
@@ -111,46 +117,54 @@ impl Dispatcher {
     ) -> Option<Entity> {
         let disp = self.dispatches.get_mut(&kind)?;
 
-        let mut start_along = 0.0;
+        let mut start_along = f32::MAX;
 
         let target_lane = match target {
             DispatchQueryTarget::Pos(pos) => {
                 let lid = map.nearest_lane(pos, kind.lane_kind(), Some(50.0))?;
                 let lane = map.lanes().get(lid)?;
                 let proj = lane.points.project(pos);
-                start_along = -lane.points.length_at_proj(proj);
+                start_along = lane.points.length_at_proj(proj);
                 lid
             }
-            DispatchQueryTarget::Lane(lane) => lane,
+            DispatchQueryTarget::Lane(lane) => {
+                if map.lanes().get(lane).is_none() {
+                    return None;
+                }
+                lane
+            }
         };
 
         let mut best_dist = f32::MAX;
         let mut best_ent = None;
 
-        let mut queue = vec![];
         // do a backward breadth first search, looking for lanes with matching entities
-
-        queue.push(target_lane);
-        while let Some(lane) = queue.pop() {
-            if let Some(ents) = disp.lanes.get(&lane) {
-                for ent in ents {
-                    let pos = disp.positions.get(ent).unwrap();
-                    let dist = -pos.dist_along; // since dist_along is from start to end, a good dist_along is one that is big
-                    if lane == target_lane {
-                        if pos.dist_along > start_along {
-                            continue;
-                        }
-                    }
-                    if dist < best_dist {
-                        best_dist = dist;
-                        best_ent = Some(*ent);
+        for lane in pathfinding::directed::bfs::bfs_reach(target_lane, move |&lid| {
+            let l = &map.lanes[lid];
+            let start_i = l.src;
+            let int = &map.intersections[start_i];
+            int.turns_to(lid).map(|(tid, dir)| match dir {
+                TraverseDirection::Forward => tid.src,
+                TraverseDirection::Backward => tid.dst,
+            })
+        }) {
+            let Some(ents) = disp.lanes.get(&lane) else { continue };
+            for ent in ents {
+                let pos = disp.positions.get(ent).unwrap();
+                let dist = -pos.dist_along; // since dist_along is from start to end, a good dist_along is one that is big
+                if lane == target_lane {
+                    if pos.dist_along > start_along {
+                        continue;
                     }
                 }
+                if dist < best_dist {
+                    best_dist = dist;
+                    best_ent = Some(*ent);
+                }
             }
-            /*
-            for l in map.lanes.get(lane)?.iter() {
-                queue.push(*l);
-            }*/
+            if best_ent.is_some() {
+                break;
+            }
         }
 
         let Some(ent) = best_ent else { return None };
@@ -162,30 +176,45 @@ impl Dispatcher {
 }
 
 impl DispatchOne {
-    fn register(&mut self, id: Entity, kind: DispatchKind, map: &Map, pos: Vec3) {
+    fn new(lanekind: LaneKind) -> Self {
+        Self {
+            positions: BTreeMap::new(),
+            lanes: BTreeMap::new(),
+            reserved_by: BTreeMap::new(),
+            lanekind,
+        }
+    }
+
+    fn register(&mut self, id: Entity, map: &Map, pos: Vec3) {
         let ent = self.positions.entry(id);
 
-        let find_lane = || map.nearest_lane(pos, kind.lane_kind(), Some(50.0));
+        let lanekind = self.lanekind;
+        let find_lane = move || map.nearest_lane(pos, lanekind, Some(50.0));
 
         match ent {
             Entry::Vacant(v) => {
                 let Some(n) = find_lane() else { return };
+                let newl = &map.lanes[n];
+                let proj = newl.points.project(pos);
+
                 self.lanes.entry(n).or_default().push(id);
                 v.insert(DispatchPosition {
                     lane: n,
                     pos,
-                    dist_along: 0.0,
+                    dist_along: newl.points.length_at_proj(proj),
                 });
             }
             Entry::Occupied(mut o) => {
-                let dp = o.get();
+                let dp = o.get_mut();
 
                 if dp.pos.distance2(pos) < PRECISION_RADIUS_2 {
                     return;
                 }
 
                 if let Some(l) = map.lanes().get(dp.lane) {
-                    if l.points.project_dist2(pos) < PRECISION_RADIUS_2 {
+                    let projected = l.points.project(pos);
+                    if projected.distance2(pos) < PRECISION_RADIUS_2 {
+                        dp.dist_along = l.points.length_at_proj(projected);
                         return;
                     }
                 }
@@ -193,11 +222,15 @@ impl DispatchOne {
                 let Some(n) = find_lane() else { return };
                 self.lanes.get_mut(&dp.lane).unwrap().retain(|e| *e != id);
                 self.lanes.entry(n).or_default().push(id);
-                o.insert(DispatchPosition {
+
+                let newl = &map.lanes[n];
+
+                let projected = newl.points.project(pos);
+                *dp = DispatchPosition {
                     lane: n,
                     pos,
-                    dist_along: 0.0,
-                });
+                    dist_along: newl.points.length_at_proj(projected),
+                };
             }
         }
     }
@@ -235,11 +268,11 @@ impl ComponentDrop for DispatchKind {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::map::MapProject;
+    use crate::map::{MapProject, ProjectKind};
     use crate::LanePatternBuilder;
     #[test]
     fn dispatch_one_register_one_works() {
-        let mut disp = DispatchOne::default();
+        let mut disp = DispatchOne::new(LaneKind::Rail);
         let mut map = Map::default();
 
         let (_, r) = map
@@ -255,7 +288,7 @@ mod tests {
 
         // first insert
         let ent = Entity::from_bits(1 << 32).unwrap();
-        disp.register(ent, DispatchKind::FretTrain, &map, Vec3::new(0.0, 0.0, 0.0));
+        disp.register(ent, &map, Vec3::new(0.0, 0.0, 0.0));
         assert_eq!(disp.positions.len(), 1);
         assert_eq!(disp.lanes.len(), 1);
         assert_eq!(disp.lanes.values().next().unwrap()[0], ent);
@@ -263,24 +296,14 @@ mod tests {
 
         // second insert in same lane
         let ent2 = Entity::from_bits(1 << 32 + 1).unwrap();
-        disp.register(
-            ent2,
-            DispatchKind::FretTrain,
-            &map,
-            Vec3::new(0.0, 0.0, 0.0),
-        );
+        disp.register(ent2, &map, Vec3::new(0.0, 0.0, 0.0));
         assert_eq!(disp.positions.len(), 2);
         assert_eq!(disp.lanes.len(), 1);
         assert_eq!(disp.lanes.values().next().unwrap(), &vec![ent, ent2]);
 
         // insert in another lane
         let ent3 = Entity::from_bits(1 << 32 + 2).unwrap();
-        disp.register(
-            ent3,
-            DispatchKind::FretTrain,
-            &map,
-            Vec3::new(100.0, 10.0, 0.0),
-        );
+        disp.register(ent3, &map, Vec3::new(100.0, 10.0, 0.0));
         assert_eq!(disp.positions.len(), 3);
         assert_eq!(disp.lanes.len(), 2);
         let mut v = disp.lanes.values();
@@ -304,25 +327,192 @@ mod tests {
         assert_eq!(v.next().unwrap(), &vec![ent3]);
 
         // ent3 moves from a lane to another
-        disp.register(
-            ent3,
-            DispatchKind::FretTrain,
-            &map,
-            Vec3::new(100.0, -1.0, 0.0),
-        );
+        disp.register(ent3, &map, Vec3::new(100.0, -1.0, 0.0));
         let mut v = disp.lanes.values();
         assert_eq!(v.next().unwrap(), &vec![ent3]);
         assert_eq!(v.next().unwrap(), &vec![]);
 
         // ent3 doesn't change lane because it's close to the old one
-        disp.register(
-            ent3,
-            DispatchKind::FretTrain,
-            &map,
-            Vec3::new(100.0, 1.0, 0.0),
-        );
+        disp.register(ent3, &map, Vec3::new(100.0, 1.0, 0.0));
         let mut v = disp.lanes.values();
         assert_eq!(v.next().unwrap(), &vec![ent3]);
         assert_eq!(v.next().unwrap(), &vec![]);
+    }
+
+    #[test]
+    fn query_same_lane_works() {
+        let mut d = Dispatcher::default();
+        let mut map = Map::default();
+
+        let (_, r) = map
+            .make_connection(
+                MapProject::ground(Vec3::ZERO),
+                MapProject::ground(Vec3::x(100.0)),
+                None,
+                &LanePatternBuilder::new().one_way(true).rail(true).build(),
+            )
+            .unwrap();
+
+        let (lid, _) = map.roads[r].lanes_iter().next().unwrap();
+
+        let mut register = |id: Entity, pos: f32| {
+            d.dispatches
+                .entry(DispatchKind::FretTrain)
+                .or_insert(DispatchOne::new(DispatchKind::FretTrain.lane_kind()))
+                .register(id, &map, Vec3::x(pos))
+        };
+
+        let ent0 = Entity::from_bits(1 << 32).unwrap();
+        let ent1 = Entity::from_bits((1 << 32) + 1).unwrap();
+        let ent2 = Entity::from_bits((1 << 32) + 2).unwrap();
+        let me = Entity::from_bits((1 << 32) + 3).unwrap();
+
+        register(ent0, 0.0);
+        register(ent1, 10.0);
+        register(ent2, 100.0);
+
+        assert_eq!(
+            d.query(
+                &map,
+                me,
+                DispatchKind::FretTrain,
+                DispatchQueryTarget::Pos(Vec3::x(70.0)),
+            ),
+            Some(ent1)
+        );
+        d.dispatches[&DispatchKind::FretTrain]
+            .reserved_by
+            .contains_key(&Entity::from_bits((1 << 32) + 1).unwrap());
+
+        assert_eq!(
+            d.query(
+                &map,
+                me,
+                DispatchKind::FretTrain,
+                DispatchQueryTarget::Pos(Vec3::x(50.0)),
+            ),
+            Some(ent0)
+        );
+        d.dispatches[&DispatchKind::FretTrain]
+            .reserved_by
+            .contains_key(&Entity::from_bits(1 << 32).unwrap());
+
+        assert!(d
+            .query(
+                &map,
+                me,
+                DispatchKind::FretTrain,
+                DispatchQueryTarget::Pos(Vec3::x(50.0)),
+            )
+            .is_none());
+
+        assert_eq!(
+            d.query(
+                &map,
+                me,
+                DispatchKind::FretTrain,
+                DispatchQueryTarget::Lane(lid),
+            ),
+            Some(ent2)
+        );
+    }
+
+    #[test]
+    fn query_two_lanes_bfs() {
+        let mut d = Dispatcher::default();
+        let mut map = Map::default();
+
+        let (i, _) = map
+            .make_connection(
+                MapProject::ground(Vec3::ZERO),
+                MapProject::ground(Vec3::x(100.0)),
+                None,
+                &LanePatternBuilder::new().one_way(true).rail(true).build(),
+            )
+            .unwrap();
+
+        let (_, r2) = map
+            .make_connection(
+                MapProject {
+                    kind: ProjectKind::Inter(i),
+                    pos: Vec3::x(100.0),
+                },
+                MapProject::ground(Vec3::x(200.0)),
+                None,
+                &LanePatternBuilder::new().one_way(true).rail(true).build(),
+            )
+            .unwrap();
+
+        // unrelated
+        map.make_connection(
+            MapProject::ground(Vec3::new(0.0, 10.0, 0.0)),
+            MapProject::ground(Vec3::new(100.0, 10.0, 0.0)),
+            None,
+            &LanePatternBuilder::new().one_way(true).rail(true).build(),
+        )
+        .unwrap();
+
+        let (lid, _) = map.roads[r2].lanes_iter().next().unwrap();
+
+        let mut register = |id: Entity, pos: f32| {
+            d.dispatches
+                .entry(DispatchKind::FretTrain)
+                .or_insert(DispatchOne::new(DispatchKind::FretTrain.lane_kind()))
+                .register(id, &map, Vec3::x(pos))
+        };
+
+        let ent0 = Entity::from_bits(1 << 32).unwrap();
+        let ent1 = Entity::from_bits((1 << 32) + 1).unwrap();
+        let ent2 = Entity::from_bits((1 << 32) + 2).unwrap();
+        let me = Entity::from_bits((1 << 32) + 3).unwrap();
+
+        register(ent0, 0.0);
+        register(ent1, 10.0);
+        register(ent2, 200.0);
+
+        assert_eq!(
+            d.query(
+                &map,
+                me,
+                DispatchKind::FretTrain,
+                DispatchQueryTarget::Pos(Vec3::x(70.0)),
+            ),
+            Some(ent1)
+        );
+        d.dispatches[&DispatchKind::FretTrain]
+            .reserved_by
+            .contains_key(&Entity::from_bits((1 << 32) + 1).unwrap());
+
+        assert_eq!(
+            d.query(
+                &map,
+                me,
+                DispatchKind::FretTrain,
+                DispatchQueryTarget::Pos(Vec3::x(50.0)),
+            ),
+            Some(ent0)
+        );
+        d.dispatches[&DispatchKind::FretTrain]
+            .reserved_by
+            .contains_key(&Entity::from_bits(1 << 32).unwrap());
+
+        assert!(d
+            .query(
+                &map,
+                me,
+                DispatchKind::FretTrain,
+                DispatchQueryTarget::Pos(Vec3::x(50.0)),
+            )
+            .is_none());
+
+        assert_eq!(
+            d.query(
+                &map,
+                me,
+                DispatchKind::FretTrain,
+                DispatchQueryTarget::Lane(lid),
+            ),
+            Some(ent2)
+        );
     }
 }
