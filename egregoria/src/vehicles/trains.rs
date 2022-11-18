@@ -1,5 +1,5 @@
 use crate::map::{IntersectionID, LaneID, Map, PathKind, TraverseKind};
-use crate::map_dynamic::ItineraryKind;
+use crate::map_dynamic::{DispatchKind, ItineraryKind};
 use crate::{
     Egregoria, GameTime, Itinerary, ItineraryFollower, ItineraryLeader, Kinematics, Selectable,
 };
@@ -12,6 +12,11 @@ use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TrainID(pub Entity);
+
+debug_inspect_impl!(TrainID);
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct TrainReservations {
@@ -123,6 +128,7 @@ pub fn spawn_train(
             dec_force: 2.5,
             length: trainlength,
         },
+        DispatchKind::FretTrain,
         LocomotiveReservation {
             cur_travers_dist: dist,
             waited_for: 0.0,

@@ -1,14 +1,16 @@
 use crate::map::BuildingID;
 use crate::map_dynamic::BuildingInfos;
-use crate::vehicles::VehicleID;
+use crate::vehicles::trains::TrainID;
 use crate::{Egregoria, Selectable, SoulID};
 use geom::Transform;
+use hecs::World;
+use resources::Resources;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Inspect)]
 pub struct FreightStation {
     pub building: BuildingID,
-    pub trains: Vec<VehicleID>,
+    pub trains: Vec<TrainID>,
     pub waiting_cargo: u32,
 }
 
@@ -40,6 +42,15 @@ pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Opti
     goria.write::<BuildingInfos>().set_owner(building, soul);
 
     Some(soul)
+}
+
+pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
+    for (ent, (pos, soul)) in world
+        .query_mut::<(&Transform, &mut FreightStation)>()
+        .into_iter()
+    {
+        if soul.waiting_cargo > 5 {}
+    }
 }
 
 #[cfg(test)]

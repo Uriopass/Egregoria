@@ -23,6 +23,7 @@ use hecs::World;
 use resources::Resources;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use crate::souls::fret_station::freight_station_system;
 
 pub fn init() {
     register_system("dispatch_system", dispatch_system);
@@ -42,6 +43,7 @@ pub fn init() {
     register_system("itinerary_update", itinerary_update);
     register_system("market_update", market_update);
     register_system("train_reservations_update", train_reservations_update);
+    register_system("freight_station", freight_station_system);
 
     register_system_goria("add_souls_to_empty_buildings", add_souls_to_empty_buildings);
 
