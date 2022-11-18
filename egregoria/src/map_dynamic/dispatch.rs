@@ -64,7 +64,7 @@ pub enum DispatchQueryTarget {
 }
 
 impl Dispatcher {
-    /// Update updates the dispatcher cache about the dispatachable entities to know where they are relative
+    /// Updates the dispatcher cache about the dispatachable entities to know where they are relative
     /// to the map, so that queries can be answered quickly
     pub fn update(
         &mut self,
@@ -97,7 +97,7 @@ impl Dispatcher {
         }
     }
 
-    /// free says that the entity is no longer used by the target
+    /// Frees the entity as it is no longer used
     /// For example if a train is no longer used by a station, it should be freed so that other stations can use it
     /// It should be re-added to the cache at the next update iteration
     pub fn free(&mut self, kind: DispatchKind, ent: Entity) {
@@ -105,7 +105,7 @@ impl Dispatcher {
         disp.reserved_by.remove(&ent);
     }
 
-    /// query reserves an entity (if it is found) and returns it
+    /// Reserves an entity that is closest to the target (if it is found) and returns it
     /// it takes `me` as an argument so that if `me` is killed, the reservation is cancelled
     /// If no entity is found, returns None
     pub fn query(
@@ -197,16 +197,22 @@ impl DispatchOne {
         self.lanes.get_mut(&pos.lane).unwrap().retain(|e| *e != id);
     }
 
+    /// Finds an entity that is closest to the target and returns it
+    /// If no entity is found, returns None
     pub fn query(
         &mut self,
         map: &Map,
         kind: DispatchKind,
         target: DispatchQueryTarget,
     ) -> Option<Entity> {
-        // todo: handle the case where there are few (or zero) entities in the cache
+        // todo: handle the case where there are few entities in the cache
         // todo: probably some kind of astar on good candidates
 
         let mut start_along = f32::MAX;
+
+        if self.positions.len() == 0 {
+            return None;
+        }
 
         let target_lane = match target {
             DispatchQueryTarget::Pos(pos) => {
