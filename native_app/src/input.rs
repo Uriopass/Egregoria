@@ -66,7 +66,7 @@ impl InputContext {
                 match delta {
                     // Provided mainly by the scroll wheel of computer mouse devices
                     MouseScrollDelta::LineDelta(_, y) => {
-                        self.mouse.wheel_delta = *y;
+                        self.mouse.wheel_delta = *y * 10.0;
                     }
                     // Provided by touchpads and drawing tablets
                     MouseScrollDelta::PixelDelta(pos) => {

@@ -2,6 +2,7 @@ use crate::context::Context;
 use crate::gui::windows::settings::Settings;
 use crate::inputmap::{InputAction, InputMap};
 use common::saveload::Encoder;
+use egregoria::map::pathfinding_crate::num_traits::Pow;
 use egregoria::map::CHUNK_SIZE;
 use geom::{vec4, Camera, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
@@ -143,11 +144,11 @@ impl CameraHandler3D {
         }
 
         if inps.act.contains(&InputAction::Zoom) {
-            self.targetdist *= 1.0 / 1.1;
+            self.targetdist *= (1.0f32 / 1.05).pow(0.5 + 0.1 * inps.wheel.abs());
         }
 
         if inps.act.contains(&InputAction::Dezoom) {
-            self.targetdist *= 1.1;
+            self.targetdist *= 1.05f32.pow(0.5 + 0.1 * inps.wheel.abs());
         }
 
         if settings.camera_border_move {
