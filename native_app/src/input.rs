@@ -62,11 +62,18 @@ impl InputContext {
                 };
                 true
             }
-            WindowEvent::MouseWheel {
-                delta: MouseScrollDelta::LineDelta(_, y),
-                ..
-            } => {
-                self.mouse.wheel_delta = *y;
+            WindowEvent::MouseWheel { delta, .. } => {
+                match delta {
+                    // Provided mainly by the scroll wheel of computer mouse devices
+                    MouseScrollDelta::LineDelta(_, y) => {
+                        self.mouse.wheel_delta = *y;
+                    }
+                    // Provided by touchpads and drawing tablets
+                    MouseScrollDelta::PixelDelta(pos) => {
+                        self.mouse.wheel_delta = pos.y as f32;
+                    }
+                }
+
                 true
             }
             _ => false,
