@@ -6,14 +6,12 @@ use crate::map_dynamic::{
 };
 use crate::pedestrians::pedestrian_decision_system;
 use crate::physics::systems::coworld_synchronize;
+use crate::souls::fret_station::freight_station_system;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
 use crate::utils::time::Tick;
 use crate::vehicles::systems::{vehicle_decision_system, vehicle_state_update_system};
-use crate::vehicles::trains::{
-    locomotive_random_movement_system, locomotive_system, train_reservations_update,
-    TrainReservations,
-};
+use crate::vehicles::trains::{locomotive_system, train_reservations_update, TrainReservations};
 use crate::{
     add_souls_to_empty_buildings, utils, CollisionWorld, Egregoria, GameTime, ParCommandBuffer,
     RandProvider, RunnableSystem, RNG_SEED, SECONDS_PER_DAY, SECONDS_PER_HOUR,
@@ -23,7 +21,6 @@ use hecs::World;
 use resources::Resources;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use crate::souls::fret_station::freight_station_system;
 
 pub fn init() {
     register_system("dispatch_system", dispatch_system);
@@ -32,10 +29,6 @@ pub fn init() {
     register_system("pedestrian_decision_system", pedestrian_decision_system);
     register_system("coworld_synchronize", coworld_synchronize);
     register_system("locomotive_system", locomotive_system);
-    register_system(
-        "locomotive_random_movement_system",
-        locomotive_random_movement_system,
-    );
     register_system("vehicle_decision_system", vehicle_decision_system);
     register_system("vehicle_state_update_system", vehicle_state_update_system);
     register_system("routing_changed_system", routing_changed_system);

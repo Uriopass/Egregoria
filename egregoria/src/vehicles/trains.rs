@@ -1,4 +1,4 @@
-use crate::map::{IntersectionID, LaneID, Map, PathKind, TraverseKind};
+use crate::map::{IntersectionID, LaneID, Map, TraverseKind};
 use crate::map_dynamic::{DispatchKind, ItineraryKind};
 use crate::{
     Egregoria, GameTime, Itinerary, ItineraryFollower, ItineraryLeader, Kinematics, Selectable,
@@ -7,7 +7,6 @@ use egui_inspect::Inspect;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, View, World};
 use ordered_float::OrderedFloat;
-use rayon::iter::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::collections::btree_map::Entry;
@@ -307,57 +306,6 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
                 true
             });
         });
-}
-
-#[profiling::function]
-pub fn locomotive_random_movement_system(world: &mut World, resources: &mut Resources) {
-    let map = &*resources.get::<Map>().unwrap();
-    let time = &*resources.get::<GameTime>().unwrap();
-    world
-        .query::<(
-            &mut Itinerary,
-            &mut Transform,
-            &Locomotive,
-            &RandomLocomotive,
-        )>()
-        .iter_batched(32)
-        .par_bridge()
-        .for_each(|batch| {
-            batch.for_each(|(_, (itin, trans, _, _))| {
-                let mut reroute = false;
-                if let Some(t) = itin.get_terminal() {
-                    if t.is_close(trans.position, 1.0) {
-                        reroute = true;
-                    }
-                }
-                if itin.is_none() || itin.is_wait_for_reroute().is_some() {
-                    reroute = true;
-                }
-
-                if reroute {
-                    if let Some(r) = map.lanes().values().nth(
-                        (map.lanes().len() as f32
-                            * common::rand::rand3(
-                                trans.position.x,
-                                trans.position.y,
-                                time.seconds as f32,
-                            )) as usize,
-                    ) {
-                        if r.kind.is_rail() && r.points.length() > 50.0 {
-                            let segments: Vec<_> = r.points.segments().collect();
-
-                            *itin = Itinerary::route(
-                                trans.position,
-                                segments[segments.len() / 2].middle(),
-                                map,
-                                PathKind::Rail,
-                            )
-                            .unwrap_or(Itinerary::NONE);
-                        }
-                    }
-                }
-            })
-        })
 }
 
 #[profiling::function]
