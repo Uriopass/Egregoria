@@ -236,7 +236,6 @@ impl Pathfinder for CarPath {
         v.push(p_start);
         v.extend_from_slice(segs);
         v.push(p_end);
-        v.push(end);
         Some(PolyLine3::new(v))
     }
 }

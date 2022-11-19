@@ -30,7 +30,10 @@ impl BuildingKind {
     }
 
     pub fn is_cached_in_bkinds(&self) -> bool {
-        matches!(self, BuildingKind::RailFretStation)
+        matches!(
+            self,
+            BuildingKind::RailFretStation | BuildingKind::ExternalTrading
+        )
     }
 }
 

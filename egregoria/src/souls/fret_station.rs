@@ -1,5 +1,6 @@
-use crate::map::BuildingID;
-use crate::map_dynamic::BuildingInfos;
+use crate::map::{BuildingID, BuildingKind, Map, PathKind};
+use crate::map_dynamic::{BuildingInfos, DispatchKind, DispatchQueryTarget, Dispatcher, Itinerary};
+use crate::utils::time::GameTime;
 use crate::vehicles::trains::TrainID;
 use crate::{Egregoria, Selectable, SoulID};
 use geom::Transform;
@@ -7,10 +8,25 @@ use hecs::World;
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, Inspect)]
+pub enum FreightTrainState {
+    /// The train is coming to the station
+    Arriving,
+    /// The train is waiting for the station to load goods
+    Loading,
+    /// The train is going to the destination
+    Moving,
+}
+
+const MAX_TRAINS_PER_STATION: usize = 2;
+
+/// A freight train station
+/// A component that identifies freight station souls, managing freight station logic
+/// and the freight trains that are associated with them.
 #[derive(Serialize, Deserialize, Inspect)]
 pub struct FreightStation {
     pub building: BuildingID,
-    pub trains: Vec<TrainID>,
+    pub trains: Vec<(TrainID, FreightTrainState)>,
     pub waiting_cargo: u32,
 }
 
@@ -19,7 +35,7 @@ pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Opti
 
     let f = FreightStation {
         building,
-        trains: vec![],
+        trains: Vec::with_capacity(MAX_TRAINS_PER_STATION),
         waiting_cargo: 0,
     };
     let b = map.buildings.get(building)?;
@@ -45,11 +61,86 @@ pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Opti
 }
 
 pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
-    for (ent, (pos, soul)) in world
-        .query_mut::<(&Transform, &mut FreightStation)>()
+    let mut dispatch = resources.get_mut::<Dispatcher>().unwrap();
+    let map = resources.get::<Map>().unwrap();
+    let time = resources.get::<GameTime>().unwrap();
+
+    let mut trainqry = world.query::<(&Transform, &mut Itinerary)>();
+    let mut train = trainqry.view();
+
+    for (me, (pos, soul)) in world
+        .query::<(&Transform, &mut FreightStation)>()
         .into_iter()
     {
-        if soul.waiting_cargo > 5 {}
+        // update our trains, and remove the ones that are done
+        let mut to_clean = vec![];
+        for (trainid, state) in &mut soul.trains {
+            let Some((tpos, itin)) = train.get_mut(trainid.0) else {
+                to_clean.push(*trainid);
+                continue
+            };
+            match state {
+                FreightTrainState::Arriving => {
+                    if itin.has_ended(0.0) {
+                        *state = FreightTrainState::Loading;
+                        soul.waiting_cargo -= 10;
+                        *itin = Itinerary::wait_until(time.timestamp + 10.0);
+                    }
+                }
+                FreightTrainState::Loading => {
+                    if itin.has_ended(time.timestamp) {
+                        *state = FreightTrainState::Moving;
+
+                        let ext = map.bkinds.get(&BuildingKind::ExternalTrading).unwrap()[0];
+                        let bpos = map.buildings[ext].obb.center().z(0.0);
+
+                        *itin = if let Some(r) =
+                            Itinerary::route(tpos.position, bpos, &map, PathKind::Rail)
+                        {
+                            r
+                        } else {
+                            // TODO: handle no route found to external trade
+                            continue;
+                        };
+                    }
+                }
+                FreightTrainState::Moving => {
+                    if itin.has_ended(time.timestamp) {
+                        to_clean.push(*trainid);
+                    }
+                }
+            }
+        }
+        for v in to_clean {
+            soul.trains.retain(|x| x.0 != v);
+            dispatch.free(DispatchKind::FretTrain, v.0)
+        }
+
+        // If enough goods are waiting, query for a train to take them to the external trading station
+        if soul.trains.len() >= MAX_TRAINS_PER_STATION {
+            continue;
+        }
+        if soul.waiting_cargo < 10 {
+            continue;
+        }
+        let Some(trainid) = dispatch.query(
+            &*map,
+            me,
+            DispatchKind::FretTrain,
+            DispatchQueryTarget::Pos(pos.position),
+        ) else {
+            continue;
+        };
+        let trainid = TrainID(trainid);
+
+        let (tpos, titin) = train.get_mut(trainid.0).unwrap();
+
+        *titin = unwrap_or!(
+            Itinerary::route(tpos.position, pos.position, &map, PathKind::Rail,),
+            continue
+        );
+
+        soul.trains.push((trainid, FreightTrainState::Arriving));
     }
 }
 
