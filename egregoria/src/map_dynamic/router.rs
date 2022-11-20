@@ -20,7 +20,7 @@ pub struct Router {
     cur_dest: Option<Destination>,
     vehicle: Option<VehicleID>,
     pub personal_car: Option<VehicleID>,
-    // TODO: pub last_error: Option<RouterError>,
+    pub last_error: Option<RouterError>,
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -82,8 +82,7 @@ pub fn routing_changed(
                 router.steps = match router.steps_to(pos, parking, map, loc, world) {
                     Ok(x) => x,
                     Err(e) => {
-                        //TODO: router.last_error = Some(e);
-                        log::error!("Router error: {:?}", e);
+                        router.last_error = Some(e);
                         return;
                     }
                 };
@@ -96,12 +95,18 @@ pub fn routing_changed(
                     }
                 }
 
-                let door_pos = unwrap_ret!(map.buildings().get(build)).door_pos;
+                let bobj = match map.buildings.get(build) {
+                    Some(x) => x,
+                    None => {
+                        router.cur_dest = router.target_dest;
+                        return;
+                    }
+                };
+                let door_pos = bobj.door_pos;
                 router.steps = match router.steps_to(door_pos, parking, map, loc, world) {
                     Ok(x) => x,
                     Err(e) => {
-                        //TODO: router.last_error = Some(e);
-                        log::error!("Router error: {:?}", e);
+                        router.last_error = Some(e);
                         return;
                     }
                 };
@@ -323,7 +328,7 @@ impl Router {
             personal_car,
             vehicle: personal_car,
             cur_dest: None,
-            //TODO: last_error: None,
+            last_error: None,
         }
     }
 
