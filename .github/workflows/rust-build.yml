@@ -6,6 +6,9 @@ on:
       - master
     tags-ignore:
       - v*  # don't run on tags since release does that
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build:
