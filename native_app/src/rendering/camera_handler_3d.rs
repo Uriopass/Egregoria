@@ -214,8 +214,8 @@ impl CameraHandler3D {
 
         self.camera.fovy = settings.camera_fov.clamp(1.0, 179.0);
 
-        self.camera.pos.x = self.camera.pos.x.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
-        self.camera.pos.y = self.camera.pos.y.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
+        self.targetpos.x = self.targetpos.x.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
+        self.targetpos.y = self.targetpos.y.clamp(0.0, CHUNK_SIZE as f32 * 50.0);
 
         self.camera.pos.z = height(self.camera.pos.xy()).unwrap_or(self.camera.pos.z);
         self.update(ctx);
