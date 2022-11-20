@@ -34,7 +34,7 @@ pub trait Encoder {
         format!("world/{}.{}", name, Self::EXTENSION)
     }
 
-    fn load_reader(name: &'static str) -> Option<BufReader<File>> {
+    fn load_reader(name: &str) -> Option<BufReader<File>> {
         let file = open_file(&Self::filename(name))?;
         Some(BufReader::new(file))
     }
@@ -58,7 +58,7 @@ pub trait Encoder {
         Some(())
     }
 
-    fn load<T: DeserializeOwned>(name: &'static str) -> Option<T> {
+    fn load<T: DeserializeOwned>(name: &str) -> Option<T> {
         Self::decode_reader(Self::load_reader(name)?)
             .map_err(|err| log::error!("failed deserializing {}: {}", name, err))
             .map(|x| {

@@ -8,7 +8,7 @@ pub const TICKS_PER_SECOND: u32 = 50;
 
 /// The amount of time the game was updated
 /// Used as a resource
-#[derive(Default, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialOrd, Ord, PartialEq, Eq, Copy, Clone, Serialize, Deserialize)]
 pub struct Tick(pub u32);
 
 /// An in-game instant used to measure time differences

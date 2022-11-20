@@ -43,6 +43,8 @@ pub(crate) fn init() {
     register_resource_noserialize::<Timings>();
     register_resource_noserialize::<Tool>();
     register_resource_noserialize::<WorldCommands>();
+    register_resource_noserialize::<crate::gui::windows::load::LoadState>();
+    register_resource_noserialize::<crate::uiworld::SaveLoadState>();
 }
 
 pub(crate) struct InitFunc {

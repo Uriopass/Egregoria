@@ -35,6 +35,7 @@ impl SeqSchedule {
     }
 
     #[profiling::function]
+    #[inline(never)]
     pub fn execute(&mut self, goria: &mut Egregoria) {
         for (sys, h) in &mut self.systems {
             let start = Instant::now();

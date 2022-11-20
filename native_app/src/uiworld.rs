@@ -1,5 +1,6 @@
 use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
+use egregoria::Replay;
 use hecs::{Component, DynamicBundle, QueryOne};
 use hecs::{Entity, World};
 use resources::{Ref, RefMut, Resource};
@@ -10,8 +11,13 @@ use std::sync::Arc;
 pub(crate) struct UiWorld {
     pub(crate) world: World,
     resources: resources::Resources,
-    pub(crate) please_save: bool,
-    pub(crate) saving_status: Arc<AtomicBool>,
+}
+
+#[derive(Default)]
+pub struct SaveLoadState {
+    pub please_load: Option<Replay>,
+    pub please_save: bool,
+    pub saving_status: Arc<AtomicBool>,
 }
 
 #[allow(dead_code)]

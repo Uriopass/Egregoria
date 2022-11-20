@@ -8,7 +8,7 @@ use winit::window::{Fullscreen, Window};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
-use egregoria::Egregoria;
+use egregoria::{Egregoria, EgregoriaOptions};
 use geom::{Camera, LinearColor};
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
@@ -20,7 +20,7 @@ use crate::gui::{FollowEntity, Gui, Tool, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::egui_wrapper::EguiWrapper;
 use crate::rendering::{CameraHandler3D, InstancedRender, MapRenderOptions, MapRenderer};
-use crate::uiworld::UiWorld;
+use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::utils::scheduler::SeqSchedule;
@@ -227,24 +227,38 @@ impl State {
     #[profiling::function]
     pub(crate) fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext<'_, '_>) {
         let gui = &mut self.gui;
-        let goria = &self.goria.read().unwrap();
         let uiworld = &mut self.uiw;
         let pixels_per_point = uiworld.read::<Settings>().gui_scale;
 
-        self.egui_render
-            .render(ctx, window, gui.hidden, pixels_per_point, |ui| {
-                gui.render(ui, uiworld, goria);
-            });
+        {
+            let goria = self.goria.read().unwrap();
+            self.egui_render
+                .render(ctx, window, gui.hidden, pixels_per_point, |ui| {
+                    gui.render(ui, uiworld, &goria);
+                });
+        }
 
-        if uiworld.please_save && !uiworld.saving_status.load(Ordering::SeqCst) {
-            uiworld.please_save = false;
+        let mut slstate = uiworld.write::<SaveLoadState>();
+        if slstate.please_save && !slstate.saving_status.load(Ordering::SeqCst) {
+            slstate.please_save = false;
             let cpy = self.goria.clone();
-            uiworld.saving_status.store(true, Ordering::SeqCst);
-            let status = uiworld.saving_status.clone();
+            slstate.saving_status.store(true, Ordering::SeqCst);
+            let status = slstate.saving_status.clone();
             std::thread::spawn(move || {
                 cpy.read().unwrap().save_to_disk("world");
                 status.store(false, Ordering::SeqCst);
             });
+        }
+
+        // We might be saving egregoria, wait for it to finish
+        if let Ok(mut goria) = self.goria.try_write() {
+            if let Some(replay) = slstate.please_load.take() {
+                let mut opts = goria.read::<EgregoriaOptions>().clone();
+                opts.from_replay = Some(replay);
+                log::info!("loading replay");
+                let newgoria = Egregoria::new_with_options(opts);
+                *goria = newgoria;
+            }
         }
     }
 

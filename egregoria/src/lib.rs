@@ -2,7 +2,7 @@
 
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommand};
-use crate::map::{BuildingGen, BuildingKind, LanePatternBuilder, Map, StraightRoadGen, Terrain};
+use crate::map::{BuildingKind, Map};
 use crate::map_dynamic::{Itinerary, ItineraryFollower, ItineraryLeader, Router};
 use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
@@ -14,7 +14,7 @@ use crate::souls::human::HumanDecision;
 use crate::vehicles::trains::{Locomotive, LocomotiveReservation, RandomLocomotive};
 use crate::vehicles::Vehicle;
 use common::saveload::Encoder;
-use geom::{vec3, Transform, Vec2, Vec3, OBB};
+use geom::{Transform, Vec3};
 use hecs::{Component, Entity, World};
 use pedestrians::Location;
 use resources::{Ref, RefMut, Resource, Resources};
@@ -51,6 +51,7 @@ mod tests;
 pub mod utils;
 pub mod vehicles;
 
+use crate::engine_interaction::WorldCommand::GenerateTerrain;
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::souls::fret_station::FreightStation;
 use crate::utils::scheduler::RunnableSystem;
@@ -79,6 +80,7 @@ unsafe impl Sync for Egregoria {}
 const RNG_SEED: u64 = 123;
 const VERSION: &str = include_str!("../../VERSION");
 
+#[derive(Clone)]
 pub struct EgregoriaOptions {
     pub terrain_size: u32,
     pub save_replay: bool,
@@ -95,7 +97,7 @@ impl Default for EgregoriaOptions {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Replay {
     pub enabled: bool,
     pub commands: Vec<(Tick, WorldCommand)>,
@@ -133,63 +135,43 @@ impl Egregoria {
             }
         }
 
+        let mut opts_clone = opts.clone();
+        opts_clone.from_replay = None;
+        goria.resources.insert(opts_clone);
+
         if opts.save_replay {
             goria.resources.get_mut::<Replay>().unwrap().enabled = true;
         }
 
-        if opts.terrain_size > 0 {
-            info!("generating terrain..");
-            let t = Instant::now();
-            let size = opts.terrain_size;
-
-            goria.map_mut().terrain = Terrain::new(size, size);
-            info!("took {}s", t.elapsed().as_secs_f32());
-
-            let c = vec3(3000.0 + 72.2 / 2.0, 200.0 / 2.0 + 1.0, 0.3);
-            let obb = OBB::new(c.xy(), -Vec2::X, 72.2, 200.0);
-
-            let [offy, offx] = obb.axis().map(|x| x.normalize().z(0.0));
-
-            let mut tracks = vec![];
-
-            let pat = LanePatternBuilder::new().rail(true).build();
-
-            for i in -1..=1 {
-                tracks.push(StraightRoadGen {
-                    from: c - offx * (i as f32 * 21.0) - offy * 100.0,
-                    to: c - offx * (i as f32 * 21.0) + offy * 120.0,
-                    pattern: pat.clone(),
-                });
-            }
-
-            if goria
-                .map_mut()
-                .build_special_building(
-                    &obb,
-                    BuildingKind::ExternalTrading,
-                    BuildingGen::NoWalkway {
-                        door_pos: Vec2::ZERO,
-                    },
-                    &tracks,
-                )
-                .is_none()
-            {
-                log::error!("failed to build external trading");
-            }
-        }
-
         if let Some(replay) = opts.from_replay {
             let mut schedule = Egregoria::schedule();
-            let mut acc = vec![];
-            let t = 1;
-            for (tick, cmd) in replay.commands {
-                if tick.0 > t {
-                    goria.tick(&mut schedule, &acc);
-                    acc.clear();
+            let mut pastt = Tick::default();
+            let mut idx = 0;
+
+            // iterate through tick grouped commands
+            while idx < replay.commands.len() {
+                let curt = replay.commands[idx].0;
+                while pastt < curt {
+                    goria.tick(&mut schedule, &[]);
+                    pastt.0 += 1;
                 }
-                acc.push(cmd);
+
+                let idx_start = idx;
+                while idx < replay.commands.len() && replay.commands[idx].0 == curt {
+                    idx += 1;
+                }
+                let command_slice = &replay.commands[idx_start..idx];
+
+                log::info!("[replay] acttick {:?} ({})", pastt, command_slice.len());
+                goria.tick(&mut schedule, command_slice.into_iter().map(|(_, c)| c));
+                pastt.0 += 1;
             }
-            goria.tick(&mut schedule, &acc);
+
+            return goria;
+        }
+
+        if opts.terrain_size > 0 {
+            GenerateTerrain(opts.terrain_size).apply(&mut goria);
         }
 
         goria
@@ -207,12 +189,13 @@ impl Egregoria {
     }
 
     #[profiling::function]
-    pub fn tick(&mut self, game_schedule: &mut SeqSchedule, commands: &[WorldCommand]) -> Duration {
-        self.write::<Tick>().0 += 1;
-        const WORLD_TICK_DT: f32 = 0.05;
-
+    pub fn tick<'a>(
+        &mut self,
+        game_schedule: &mut SeqSchedule,
+        commands: impl IntoIterator<Item = &'a WorldCommand>,
+    ) -> Duration {
         let t = Instant::now();
-
+        const WORLD_TICK_DT: f32 = 0.05;
         {
             let mut time = self.write::<GameTime>();
             *time = GameTime::new(WORLD_TICK_DT, time.timestamp + WORLD_TICK_DT as f64);
@@ -226,6 +209,8 @@ impl Egregoria {
         }
 
         game_schedule.execute(self);
+        self.write::<Tick>().0 += 1;
+
         t.elapsed()
     }
 
@@ -248,12 +233,18 @@ impl Egregoria {
         hashes
     }
 
-    pub fn load_from_disk(save_name: &'static str) -> Option<Self> {
+    pub fn load_replay_from_disk(save_name: &str) -> Option<Replay> {
+        let path = format!("{}_replay", save_name);
+        let replay: Replay = common::saveload::JSON::load(&path)?;
+        Some(replay)
+    }
+
+    pub fn load_from_disk(save_name: &str) -> Option<Self> {
         let goria: Egregoria = common::saveload::CompressedBincode::load(save_name)?;
         Some(goria)
     }
 
-    pub fn save_to_disk(&self, save_name: &'static str) {
+    pub fn save_to_disk(&self, save_name: &str) {
         common::saveload::CompressedBincode::save(&self, save_name);
         let rep = self.resources.get::<Replay>().unwrap();
         if rep.enabled {

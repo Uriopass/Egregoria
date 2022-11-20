@@ -8,6 +8,7 @@ use egregoria::Egregoria;
 mod config;
 pub(crate) mod debug;
 mod economy;
+pub(crate) mod load;
 #[cfg(feature = "multiplayer")]
 pub(crate) mod network;
 pub(crate) mod settings;
@@ -62,6 +63,7 @@ impl Default for GUIWindows {
         s.insert("Settings", settings::settings, false);
         #[cfg(feature = "multiplayer")]
         s.insert("Network", network::network, false);
+        s.insert("Load", load::load, false);
         s
     }
 }

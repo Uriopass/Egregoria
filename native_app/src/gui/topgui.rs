@@ -6,7 +6,7 @@ use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
 use crate::gui::{InspectedEntity, PotentialCommand, RoadBuildResource, Tool, UiTex, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
-use crate::uiworld::UiWorld;
+use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
 use egregoria::economy::{Government, ItemRegistry};
 use egregoria::engine_interaction::WorldCommand;
@@ -108,7 +108,7 @@ impl Gui {
         let every = uiworld.read::<Settings>().auto_save_every.into();
         if let Some(every) = every {
             if self.last_save.elapsed() > every {
-                uiworld.please_save = true;
+                uiworld.write::<SaveLoadState>().please_save = true;
                 uiworld.save_to_disk();
                 self.last_save = Instant::now();
             }
@@ -670,20 +670,20 @@ impl Gui {
 
                 let mut name = "Save";
                 let mut enabled = true;
-                if uiworld.saving_status.load(Ordering::SeqCst) {
+                let mut slstate = uiworld.write::<SaveLoadState>();
+                if slstate.saving_status.load(Ordering::SeqCst) {
                     name = "Saving...";
                     enabled = false;
                 }
 
                 if ui.add_enabled(enabled, egui::Button::new(name)).clicked() {
-                    uiworld.please_save = true;
+                    slstate.please_save = true;
                     uiworld.save_to_disk();
                 }
 
                 ui.label(format!("Money: {}", goria.read::<Government>().money));
 
                 let mut estate = uiworld.write::<ExitState>();
-                let mut please_save = uiworld.please_save;
 
                 match *estate {
                     ExitState::NoExit => {}
@@ -697,8 +697,8 @@ impl Gui {
                                 //let _tok = ui.push_style_var(StyleVar::ItemSpacing([2.0, 5.0]));
                                 if let ExitState::Saving = *estate {
                                     ui.label("Saving...");
-                                    if !uiworld.please_save
-                                        && !uiworld.saving_status.load(Ordering::SeqCst)
+                                    if !slstate.please_save
+                                        && !slstate.saving_status.load(Ordering::SeqCst)
                                     {
                                         std::process::exit(0);
                                     }
@@ -706,7 +706,7 @@ impl Gui {
                                 }
                                 if ui.button("Save and exit").clicked() {
                                     if let ExitState::ExitAsk = *estate {
-                                        please_save = true;
+                                        slstate.please_save = true;
                                         *estate = ExitState::Saving;
                                     }
                                 }
@@ -729,7 +729,7 @@ impl Gui {
                     ExitState::ExitAsk => {
                         if ui.button("Save and exit").clicked() {
                             if let ExitState::ExitAsk = *estate {
-                                please_save = true;
+                                slstate.please_save = true;
                                 *estate = ExitState::Saving;
                             }
                         }
@@ -738,8 +738,6 @@ impl Gui {
                         ui.label("Saving...");
                     }
                 }
-                drop(estate);
-                uiworld.please_save = please_save;
             });
         });
     }
