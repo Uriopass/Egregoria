@@ -29,7 +29,7 @@ impl ParkingManagement {
     }
 
     pub fn is_spot_free(&self, spot: ParkingSpotID) -> bool {
-        self.reserved_spots.contains(&spot)
+        !self.reserved_spots.contains(&spot)
     }
 
     pub fn reserve_near(&mut self, near: Vec3, map: &Map) -> Option<SpotReservation> {
