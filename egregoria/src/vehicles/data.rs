@@ -150,7 +150,7 @@ pub fn spawn_parked_vehicle(
 
     let mut pm = goria.write::<ParkingManagement>();
 
-    let spot_id = pm.reserve_near(near, &map)?;
+    let spot_id = pm.reserve_near(near, &map).ok()?;
 
     let pos = spot_id.get(&map.parking).unwrap().trans; // Unwrap ok: Gotten using reserve_near
 

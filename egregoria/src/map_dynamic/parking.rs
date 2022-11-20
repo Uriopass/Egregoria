@@ -14,6 +14,13 @@ pub struct ParkingManagement {
     reserved_spots: BTreeSet<ParkingSpotID>,
 }
 
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+pub enum ParkingReserveError {
+    FindingNearestLane,
+    FetchingLaneData,
+    NoSpotFoundAfterSearch,
+}
+
 impl ParkingManagement {
     #[allow(unknown_lints)]
     #[allow(clippy::forget_non_drop)]
@@ -32,9 +39,16 @@ impl ParkingManagement {
         !self.reserved_spots.contains(&spot)
     }
 
-    pub fn reserve_near(&mut self, near: Vec3, map: &Map) -> Option<SpotReservation> {
-        let lane = map.nearest_lane(near, LaneKind::Driving, None)?;
-        let lane = map.lanes().get(lane)?;
+    pub fn reserve_near(
+        &mut self,
+        near: Vec3,
+        map: &Map,
+    ) -> Result<SpotReservation, ParkingReserveError> {
+        use ParkingReserveError as E;
+        let lane = map
+            .nearest_lane(near, LaneKind::Driving, None)
+            .ok_or(E::FindingNearestLane)?;
+        let lane = map.lanes().get(lane).ok_or(E::FetchingLaneData)?;
 
         let depth = 7;
 
@@ -46,17 +60,6 @@ impl ParkingManagement {
         for _ in 0..depth {
             for lane in potential.drain() {
                 let lane = lane.0;
-                let parent = unwrap_or!(roads.get(lane.parent), continue);
-
-                let plane = unwrap_or!(parent.parking_next_to(lane), continue);
-
-                if let Some(p_iter) = map.parking.closest_spots(plane, near) {
-                    for spot in p_iter {
-                        if self.reserved_spots.insert(spot) {
-                            return Some(SpotReservation(spot));
-                        }
-                    }
-                }
 
                 let inter_dst = unwrap_or!(intersections.get(lane.dst), continue);
                 let inter_src = unwrap_or!(intersections.get(lane.src), continue);
@@ -71,11 +74,22 @@ impl ParkingManagement {
                     inter_src
                         .turns_to(lane.id)
                         .flat_map(|(turn, _)| Some(PtrCmp(map.lanes().get(turn.src)?))),
-                )
+                );
+
+                let parent = unwrap_or!(roads.get(lane.parent), continue);
+                let plane = unwrap_or!(parent.parking_next_to(lane), continue);
+
+                if let Some(p_iter) = map.parking.closest_spots(plane, near) {
+                    for spot in p_iter {
+                        if self.reserved_spots.insert(spot) {
+                            return Ok(SpotReservation(spot));
+                        }
+                    }
+                }
             }
             std::mem::swap(&mut potential, &mut next);
         }
-        None
+        Err(E::NoSpotFoundAfterSearch)
     }
 }
 

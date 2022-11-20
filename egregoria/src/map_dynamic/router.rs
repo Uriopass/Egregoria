@@ -1,5 +1,5 @@
 use crate::map::{BuildingID, Map, PathKind};
-use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
+use crate::map_dynamic::{Itinerary, ParkingManagement, ParkingReserveError, SpotReservation};
 use crate::pedestrians::{put_pedestrian_in_coworld, Location};
 use crate::physics::{Collider, CollisionWorld, Kinematics};
 use crate::utils::par_command_buffer::ComponentDrop;
@@ -20,7 +20,17 @@ pub struct Router {
     cur_dest: Option<Destination>,
     vehicle: Option<VehicleID>,
     pub personal_car: Option<VehicleID>,
+    // TODO: pub last_error: Option<RouterError>,
 }
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+pub enum RouterError {
+    ReservingParkingSpot(ParkingReserveError),
+    TranslatingParkingSpotToDrivePos,
+    LocatingVehicle,
+}
+
+debug_inspect_impl!(RouterError);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Destination {
@@ -69,7 +79,14 @@ pub fn routing_changed(
         router.clear_steps(parking);
         match dest {
             Destination::Outside(pos) => {
-                router.steps = unwrap_ret!(router.steps_to(pos, parking, map, loc, world));
+                router.steps = match router.steps_to(pos, parking, map, loc, world) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        //TODO: router.last_error = Some(e);
+                        log::error!("Router error: {:?}", e);
+                        return;
+                    }
+                };
             }
             Destination::Building(build) => {
                 if let Location::Building(cur_build) = loc {
@@ -80,7 +97,14 @@ pub fn routing_changed(
                 }
 
                 let door_pos = unwrap_ret!(map.buildings().get(build)).door_pos;
-                router.steps = unwrap_ret!(router.steps_to(door_pos, parking, map, loc, world));
+                router.steps = match router.steps_to(door_pos, parking, map, loc, world) {
+                    Ok(x) => x,
+                    Err(e) => {
+                        //TODO: router.last_error = Some(e);
+                        log::error!("Router error: {:?}", e);
+                        return;
+                    }
+                };
                 router.steps.push(RoutingStep::GetInBuilding(build));
             }
         }
@@ -299,6 +323,7 @@ impl Router {
             personal_car,
             vehicle: personal_car,
             cur_dest: None,
+            //TODO: last_error: None,
         }
     }
 
@@ -336,19 +361,21 @@ impl Router {
         map: &Map,
         loc: &Location,
         world: &World,
-    ) -> Option<Vec<RoutingStep>> {
+    ) -> Result<Vec<RoutingStep>, RouterError> {
         let mut steps = vec![];
         if let Location::Building(cur_build) = loc {
             steps.push(RoutingStep::GetOutBuilding(*cur_build));
         }
 
         if let Some(car) = self.vehicle {
-            let spot_resa = parking.reserve_near(obj, map)?;
+            let spot_resa = parking
+                .reserve_near(obj, map)
+                .map_err(RouterError::ReservingParkingSpot)?;
             let parking_pos = match spot_resa.park_pos(map) {
                 Some(x) => x,
                 None => {
                     parking.free(spot_resa);
-                    return None;
+                    return Err(RouterError::TranslatingParkingSpotToDrivePos);
                 }
             };
 
@@ -360,7 +387,7 @@ impl Router {
                 } else {
                     parking.free(spot_resa);
                     self.vehicle = None;
-                    return None;
+                    return Err(RouterError::LocatingVehicle);
                 }
             }
 
@@ -370,6 +397,6 @@ impl Router {
         }
 
         steps.push(RoutingStep::WalkTo(obj));
-        Some(steps)
+        Ok(steps)
     }
 }
