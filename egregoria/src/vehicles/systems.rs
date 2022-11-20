@@ -236,7 +236,7 @@ pub fn calc_decision<'a>(
     vehicle.flag = 0;
 
     if let Some(term_pos) = it.get_terminal() {
-        if term_pos.is_close(position, 1.0 + stop_dist) {
+        if term_pos.is_close(position, stop_dist) {
             return (0.0, dir_to_pos);
         }
     }
