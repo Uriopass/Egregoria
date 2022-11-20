@@ -21,7 +21,11 @@ impl TestCtx {
         MyLog::init();
         crate::init::init();
 
-        let g = Egregoria::new_with_options(EgregoriaOptions { terrain_size: 1 });
+        let g = Egregoria::new_with_options(EgregoriaOptions {
+            terrain_size: 1,
+            save_replay: false,
+            ..Default::default()
+        });
         let sched = Egregoria::schedule();
 
         Self { g, sched }

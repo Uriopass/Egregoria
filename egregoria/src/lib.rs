@@ -81,12 +81,24 @@ const VERSION: &str = include_str!("../../VERSION");
 
 pub struct EgregoriaOptions {
     pub terrain_size: u32,
+    pub save_replay: bool,
+    pub from_replay: Option<Replay>,
 }
 
 impl Default for EgregoriaOptions {
     fn default() -> Self {
-        EgregoriaOptions { terrain_size: 50 }
+        EgregoriaOptions {
+            terrain_size: 50,
+            save_replay: true,
+            from_replay: None,
+        }
     }
+}
+
+pub struct SaveReplay;
+
+pub struct Replay {
+    pub commands: Vec<(Tick, WorldCommand)>,
 }
 
 impl Egregoria {
@@ -103,6 +115,7 @@ impl Egregoria {
     pub fn new(gen_terrain: bool) -> Egregoria {
         Egregoria::new_with_options(EgregoriaOptions {
             terrain_size: if gen_terrain { 50 } else { 0 },
+            ..Default::default()
         })
     }
 
@@ -118,6 +131,10 @@ impl Egregoria {
             for s in &INIT_FUNCS {
                 (s.f)(&mut goria);
             }
+        }
+
+        if opts.save_replay {
+            goria.resources.insert(SaveReplay);
         }
 
         if opts.terrain_size > 0 {
@@ -159,6 +176,20 @@ impl Egregoria {
             {
                 log::error!("failed to build external trading");
             }
+        }
+
+        if let Some(replay) = opts.from_replay {
+            let mut schedule = Egregoria::schedule();
+            let mut acc = vec![];
+            let t = 1;
+            for (tick, cmd) in replay.commands {
+                if tick.0 > t {
+                    goria.tick(&mut schedule, &acc);
+                    acc.clear();
+                }
+                acc.push(cmd);
+            }
+            goria.tick(&mut schedule, &acc);
         }
 
         goria
