@@ -283,8 +283,7 @@ impl ComponentDrop for DispatchKind {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::map::{MapProject, ProjectKind};
-    use crate::LanePatternBuilder;
+    use crate::map::{LanePatternBuilder, MapProject, ProjectKind};
     use common::rand::rand2;
     #[test]
     fn dispatch_one_register_one_works() {

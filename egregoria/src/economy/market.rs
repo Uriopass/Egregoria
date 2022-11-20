@@ -428,7 +428,7 @@ mod tests {
     use super::Market;
     use crate::economy::{ItemRegistry, WORKER_CONSUMPTION_PER_SECOND};
     use crate::souls::goods_company::{CompanyKind, GoodsCompanyDescription, Recipe};
-    use crate::{BuildingGen, GoodsCompanyRegistry, SoulID};
+    use crate::{map::BuildingGen, GoodsCompanyRegistry, SoulID};
     use geom::{vec2, Vec2};
     use hecs::Entity;
 

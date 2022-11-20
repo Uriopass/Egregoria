@@ -11,10 +11,10 @@ pub struct MyLog {
 
 impl MyLog {
     fn new() -> Self {
-        let _ = std::fs::create_dir("logs");
         let log_file;
         #[cfg(not(debug_assertions))]
         {
+            let _ = std::fs::create_dir("logs");
             use std::time::SystemTime;
             log_file = File::create(format!(
                 "logs/log_{}.log",
