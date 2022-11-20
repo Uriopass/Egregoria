@@ -24,7 +24,7 @@ pub(crate) fn network(
     window.show(ui, |ui| {
         let mut state = uiworld.write::<NetworkState>();
         let mut info = uiworld.write::<NetworkConnectionInfo>();
-        common::saveload::JSON::save_silent(&*info, "netinfo");
+        common::saveload::JSONPretty::save_silent(&*info, "netinfo");
 
         match *state {
             NetworkState::Singleplayer(_) => {

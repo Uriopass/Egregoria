@@ -84,7 +84,7 @@ impl CameraHandler3D {
     fn save(&self) {
         let cam = self.camera;
         rayon::spawn(move || {
-            common::saveload::JSON::save_silent(&cam, "camera3D");
+            common::saveload::JSONPretty::save_silent(&cam, "camera3D");
         });
     }
 

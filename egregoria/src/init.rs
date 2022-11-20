@@ -14,7 +14,7 @@ use crate::vehicles::systems::{vehicle_decision_system, vehicle_state_update_sys
 use crate::vehicles::trains::{locomotive_system, train_reservations_update, TrainReservations};
 use crate::{
     add_souls_to_empty_buildings, utils, CollisionWorld, Egregoria, GameTime, ParCommandBuffer,
-    RandProvider, RunnableSystem, RNG_SEED, SECONDS_PER_DAY, SECONDS_PER_HOUR,
+    RandProvider, Replay, RunnableSystem, RNG_SEED, SECONDS_PER_DAY, SECONDS_PER_HOUR,
 };
 use common::saveload::Encoder;
 use hecs::World;
@@ -60,6 +60,7 @@ pub fn init() {
     register_resource("coworld", || CollisionWorld::new(100));
     register_resource("randprovider", || RandProvider::new(RNG_SEED));
     register_resource("dispatcher", || Dispatcher::default());
+    register_resource("replay", || Replay::default());
 }
 
 pub struct InitFunc {

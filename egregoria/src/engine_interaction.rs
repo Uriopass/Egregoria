@@ -2,13 +2,9 @@ use crate::map::{
     BuildingGen, BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LightPolicy, LotID,
     Map, MapProject, RoadID, StraightRoadGen, TurnPolicy,
 };
-use crate::{Egregoria, SaveReplay};
-use common::saveload::Encoder;
+use crate::{Egregoria, Replay};
 use hecs::Entity;
-use resources::Ref;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io::Write;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Selectable {
@@ -157,12 +153,12 @@ impl WorldCommand {
         let cost = Government::action_cost(self, goria);
         goria.write::<Government>().money -= cost;
 
-        if goria.resources.contains::<SaveReplay>() {
+        let mut rep = goria.resources.get_mut::<Replay>().unwrap();
+        if rep.enabled {
             let tick = goria.read::<Tick>();
-            if self.write_to_log(tick).is_none() {
-                log::warn!("failed to write replay to log");
-            }
+            rep.commands.push((*tick, self.clone()));
         }
+        drop(rep);
 
         match *self {
             MapRemoveIntersection(id) => goria.map_mut().remove_intersection(id),
@@ -211,22 +207,6 @@ impl WorldCommand {
                 }
             }
         }
-    }
-
-    fn write_to_log(&self, tick: Ref<Tick>) -> Option<()> {
-        let to_write = common::saveload::JSON::encode(self).unwrap();
-        let mut f = File::options()
-            .create(true)
-            .append(true)
-            .truncate(false)
-            .open("world/replay.jsonl")
-            .ok()?;
-        f.write_all(format!("{{\"tick\":{}}}\n", tick.0).as_ref())
-            .ok()?;
-        f.write_all(&to_write).ok()?;
-        f.write_all(b"\n").ok()?;
-        f.flush().ok()?;
-        Some(())
     }
 }
 

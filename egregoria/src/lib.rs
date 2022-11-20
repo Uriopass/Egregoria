@@ -95,9 +95,9 @@ impl Default for EgregoriaOptions {
     }
 }
 
-pub struct SaveReplay;
-
+#[derive(Default, Serialize, Deserialize)]
 pub struct Replay {
+    pub enabled: bool,
     pub commands: Vec<(Tick, WorldCommand)>,
 }
 
@@ -134,7 +134,7 @@ impl Egregoria {
         }
 
         if opts.save_replay {
-            goria.resources.insert(SaveReplay);
+            goria.resources.get_mut::<Replay>().unwrap().enabled = true;
         }
 
         if opts.terrain_size > 0 {
@@ -255,6 +255,10 @@ impl Egregoria {
 
     pub fn save_to_disk(&self, save_name: &'static str) {
         common::saveload::CompressedBincode::save(&self, save_name);
+        let rep = self.resources.get::<Replay>().unwrap();
+        if rep.enabled {
+            common::saveload::JSONPretty::save(&*rep, &format!("{}_replay", save_name));
+        }
     }
 
     pub fn pos(&self, e: Entity) -> Option<Vec3> {
@@ -370,7 +374,7 @@ impl<'de> Deserialize<'de> for Egregoria {
         log::info!("deserializing egregoria");
         let t = Instant::now();
 
-        let mut goriadeser = EgregoriaDeser::deserialize(deserializer)?;
+        let mut goriadeser = <EgregoriaDeser as Deserialize>::deserialize(deserializer)?;
 
         log::info!(
             "took {}s to deserialize base deser",

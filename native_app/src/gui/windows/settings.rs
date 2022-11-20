@@ -260,6 +260,6 @@ pub(crate) fn settings(
                 }
             });
 
-            common::saveload::JSON::save_silent(&*settings, SETTINGS_SAVE_NAME);
+            common::saveload::JSONPretty::save_silent(&*settings, SETTINGS_SAVE_NAME);
         });
 }

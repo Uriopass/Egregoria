@@ -30,7 +30,7 @@ pub trait Encoder {
         Self::decode(&*buf)
     }
 
-    fn filename(name: &'static str) -> String {
+    fn filename(name: &str) -> String {
         format!("world/{}.{}", name, Self::EXTENSION)
     }
 
@@ -39,13 +39,13 @@ pub trait Encoder {
         Some(BufReader::new(file))
     }
 
-    fn save(x: &impl Serialize, name: &'static str) -> Option<()> {
+    fn save(x: &impl Serialize, name: &str) -> Option<()> {
         Self::save_silent(x, name)?;
         log::info!("successfully saved {}", name);
         Some(())
     }
 
-    fn save_silent(x: &impl Serialize, name: &'static str) -> Option<()> {
+    fn save_silent(x: &impl Serialize, name: &str) -> Option<()> {
         let _ = std::fs::create_dir("world");
 
         let file = create_file(&Self::filename(name))?;
@@ -150,6 +150,33 @@ impl Encoder for JSON {
 
     fn encode(x: &impl Serialize) -> Result<Vec<u8>> {
         serde_json::to_vec(x).map_err(Into::into)
+    }
+
+    fn decode<T: DeserializeOwned>(x: &[u8]) -> Result<T> {
+        serde_json::from_slice(x).map_err(Into::into)
+    }
+
+    fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(seed: S, x: &[u8]) -> Result<V> {
+        seed.deserialize(&mut serde_json::Deserializer::from_slice(x))
+            .map_err(Into::into)
+    }
+
+    fn encode_writer(x: &impl Serialize, w: impl Write) -> Result<()> {
+        serde_json::to_writer(w, x).map_err(Into::into)
+    }
+
+    fn decode_reader<T: DeserializeOwned>(r: impl Read) -> Result<T> {
+        serde_json::from_reader(r).map_err(Into::into)
+    }
+}
+
+pub struct JSONPretty;
+
+impl Encoder for JSONPretty {
+    const EXTENSION: &'static str = "json";
+
+    fn encode(x: &impl Serialize) -> Result<Vec<u8>> {
+        serde_json::to_vec_pretty(x).map_err(Into::into)
     }
 
     fn decode<T: DeserializeOwned>(x: &[u8]) -> Result<T> {

@@ -115,7 +115,7 @@ impl Gui {
         }
 
         if self.last_gui_save.elapsed() > Duration::from_secs(1) {
-            common::saveload::JSON::save_silent(self, "gui");
+            common::saveload::JSONPretty::save_silent(self, "gui");
             self.last_gui_save = Instant::now();
         }
     }
