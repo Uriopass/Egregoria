@@ -399,7 +399,7 @@ pub(crate) fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorl
         };
 
         tess.set_color(color);
-        tess.draw_circle(spot.trans.position, 2.0);
+        tess.draw_circle(spot.trans.position.up(0.5), 2.0);
     }
 
     Some(())
