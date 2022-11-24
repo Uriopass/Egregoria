@@ -40,7 +40,7 @@ defer_serialize!(WorldCommands, Vec<WorldCommand>);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WorldCommand {
-    GenerateTerrain(u32),
+    Init(Box<EgregoriaOptions>),
     MapRemoveIntersection(IntersectionID),
     MapRemoveRoad(RoadID),
     MapRemoveBuilding(BuildingID),
@@ -208,8 +208,21 @@ impl WorldCommand {
                     *x = t
                 }
             }
-            GenerateTerrain(size) => {
-                generate_terrain(goria, size);
+            Init(ref opts) => {
+                if opts.save_replay {
+                    let mut rep = goria.resources.get_mut::<Replay>().unwrap();
+                    rep.enabled = true;
+                    let tick = goria.read::<Tick>();
+                    rep.commands.push((*tick, Init(opts.clone())));
+                }
+
+                if opts.terrain_size > 0 {
+                    generate_terrain(goria, opts.terrain_size);
+                }
+
+                goria
+                    .resources
+                    .insert::<EgregoriaOptions>(EgregoriaOptions::clone(opts));
             }
         }
     }

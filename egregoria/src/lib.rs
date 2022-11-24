@@ -51,7 +51,7 @@ mod tests;
 pub mod utils;
 pub mod vehicles;
 
-use crate::engine_interaction::WorldCommand::GenerateTerrain;
+use crate::engine_interaction::WorldCommand::Init;
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::souls::fret_station::FreightStation;
 use crate::utils::scheduler::RunnableSystem;
@@ -80,10 +80,11 @@ unsafe impl Sync for Egregoria {}
 const RNG_SEED: u64 = 123;
 const VERSION: &str = include_str!("../../VERSION");
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EgregoriaOptions {
     pub terrain_size: u32,
     pub save_replay: bool,
+    // If from replay is given, all other options are ignored
     pub from_replay: Option<Replay>,
 }
 
@@ -128,19 +129,12 @@ impl Egregoria {
         };
 
         info!("Seed is {}", RNG_SEED);
+        info!("{:?}", opts);
 
         unsafe {
             for s in &INIT_FUNCS {
                 (s.f)(&mut goria);
             }
-        }
-
-        let mut opts_clone = opts.clone();
-        opts_clone.from_replay = None;
-        goria.resources.insert(opts_clone);
-
-        if opts.save_replay {
-            goria.resources.get_mut::<Replay>().unwrap().enabled = true;
         }
 
         if let Some(replay) = opts.from_replay {
@@ -170,9 +164,7 @@ impl Egregoria {
             return goria;
         }
 
-        if opts.terrain_size > 0 {
-            GenerateTerrain(opts.terrain_size).apply(&mut goria);
-        }
+        Init(Box::new(opts)).apply(&mut goria);
 
         goria
     }

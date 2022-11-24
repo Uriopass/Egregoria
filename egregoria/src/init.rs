@@ -13,8 +13,9 @@ use crate::utils::time::Tick;
 use crate::vehicles::systems::{vehicle_decision_system, vehicle_state_update_system};
 use crate::vehicles::trains::{locomotive_system, train_reservations_update, TrainReservations};
 use crate::{
-    add_souls_to_empty_buildings, utils, CollisionWorld, Egregoria, GameTime, ParCommandBuffer,
-    RandProvider, Replay, RunnableSystem, RNG_SEED, SECONDS_PER_DAY, SECONDS_PER_HOUR,
+    add_souls_to_empty_buildings, utils, CollisionWorld, Egregoria, EgregoriaOptions, GameTime,
+    ParCommandBuffer, RandProvider, Replay, RunnableSystem, RNG_SEED, SECONDS_PER_DAY,
+    SECONDS_PER_HOUR,
 };
 use common::saveload::Encoder;
 use hecs::World;
@@ -45,6 +46,7 @@ pub fn init() {
     register_resource_noserialize::<ParCommandBuffer>();
     register_resource_noinit::<Market>("market");
     register_resource_noinit::<EcoStats>("ecostats");
+    register_resource_noinit::<EgregoriaOptions>("egregoriaoptions");
 
     register_init(init_market);
 
