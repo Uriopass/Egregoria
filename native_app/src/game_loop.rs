@@ -8,7 +8,7 @@ use winit::window::{Fullscreen, Window};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use common::History;
 use egregoria::utils::time::GameTime;
-use egregoria::{Egregoria, EgregoriaOptions};
+use egregoria::Egregoria;
 use geom::{Camera, LinearColor};
 use wgpu_engine::{FrameContext, GfxContext, GuiRenderContext, Tesselator};
 
@@ -253,10 +253,8 @@ impl State {
         // We might be saving egregoria, wait for it to finish
         if let Ok(mut goria) = self.goria.try_write() {
             if let Some(replay) = slstate.please_load.take() {
-                let mut opts = goria.read::<EgregoriaOptions>().clone();
-                opts.from_replay = Some(replay);
                 log::info!("loading replay");
-                let newgoria = Egregoria::new_with_options(opts);
+                let newgoria = Egregoria::from_replay(replay);
                 *goria = newgoria;
             }
         }

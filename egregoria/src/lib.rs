@@ -84,8 +84,6 @@ const VERSION: &str = include_str!("../../VERSION");
 pub struct EgregoriaOptions {
     pub terrain_size: u32,
     pub save_replay: bool,
-    // If from replay is given, all other options are ignored
-    pub from_replay: Option<Replay>,
 }
 
 impl Default for EgregoriaOptions {
@@ -93,7 +91,6 @@ impl Default for EgregoriaOptions {
         EgregoriaOptions {
             terrain_size: 50,
             save_replay: true,
-            from_replay: None,
         }
     }
 }
@@ -115,14 +112,23 @@ impl Egregoria {
         }
         schedule
     }
+
     pub fn new(gen_terrain: bool) -> Egregoria {
-        Egregoria::new_with_options(EgregoriaOptions {
+        Self::new_with_options(EgregoriaOptions {
             terrain_size: if gen_terrain { 50 } else { 0 },
             ..Default::default()
         })
     }
 
+    pub fn from_replay(replay: Replay) -> Egregoria {
+        Self::_new(EgregoriaOptions::default(), Some(replay))
+    }
+
     pub fn new_with_options(opts: EgregoriaOptions) -> Egregoria {
+        Self::_new(opts, None)
+    }
+
+    fn _new(opts: EgregoriaOptions, replay: Option<Replay>) -> Egregoria {
         let mut goria = Egregoria {
             world: Default::default(),
             resources: Default::default(),
@@ -137,7 +143,7 @@ impl Egregoria {
             }
         }
 
-        if let Some(replay) = opts.from_replay {
+        if let Some(replay) = replay {
             let mut schedule = Egregoria::schedule();
             let mut pastt = Tick::default();
             let mut idx = 0;
