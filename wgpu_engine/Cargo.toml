@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 geom      = { path = "../geom" }
 common    = { path = "../common" }
-wgpu      = { version = "0.14", features = [] }
+wgpu      = { version = "0.14", features = ["vulkan-portability"] }
 bytemuck  = "1.7.2"
 image     = { version = "0.24.3", default-features = false, features = ["png"] }
 log       = "0.4.11"

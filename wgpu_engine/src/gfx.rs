@@ -12,11 +12,11 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
+use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState, CommandBuffer,
-    CommandEncoder, CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device,
-    ErrorFilter, Face, FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue,
+    Adapter, Backends, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState,
+    CommandBuffer, CommandEncoder, CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState,
+    Device, ErrorFilter, Face, FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue,
     RenderPipeline, Surface, SurfaceConfiguration, TextureFormat, TextureSampleType, TextureUsages,
     TextureView, VertexBufferLayout,
 };
@@ -158,9 +158,9 @@ impl GfxContext {
         win_width: u32,
         win_height: u32,
     ) -> Self {
-        let mut backends = wgpu::Backends::all();
+        let mut backends = backend_bits_from_env().unwrap_or_else(Backends::all);
         if std::env::var("RENDERDOC").is_ok() {
-            backends = wgpu::Backends::VULKAN;
+            backends = Backends::VULKAN;
         }
 
         let instance = wgpu::Instance::new(backends);
