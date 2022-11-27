@@ -1,7 +1,7 @@
 use egui_inspect::Inspect;
 use serde::{Deserialize, Serialize};
 
-pub const SECONDS_PER_HOUR: i32 = 100;
+pub const SECONDS_PER_HOUR: i32 = 200;
 pub const HOURS_PER_DAY: i32 = 24;
 pub const SECONDS_PER_DAY: i32 = SECONDS_PER_HOUR * HOURS_PER_DAY;
 pub const TICKS_PER_SECOND: u32 = 50;

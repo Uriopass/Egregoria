@@ -15,7 +15,7 @@ use egregoria::map::{
     TurnPolicy,
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
-use egregoria::utils::time::GameTime;
+use egregoria::utils::time::{GameTime, SECONDS_PER_HOUR};
 use egregoria::Egregoria;
 use egui::{Align2, Color32, Context, Frame, RichText, Style, Widget, Window};
 use egui_inspect::{Inspect, InspectArgs};
@@ -634,8 +634,14 @@ impl Gui {
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.label(format!(" Day {}", time.day));
-                    ui.add_space(70.0);
-                    ui.label(format!("{:02}:{:02}", time.hour, time.second));
+                    ui.add_space(40.0);
+                    const OFF: i32 = SECONDS_PER_HOUR / 60;
+                    ui.label(format!(
+                        "{:02}:{:02}:{:02}",
+                        time.hour,
+                        time.second / OFF,
+                        time.second % OFF * 60 / OFF
+                    ));
                 });
 
                 //let red = ui.push_style_color(StyleColor::Header, [0.7, 0.2, 0.2, 0.5]);
