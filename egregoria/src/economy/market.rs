@@ -405,10 +405,9 @@ fn calculate_prices(
                 .unwrap_or(0) as i64;
             let price_workers = company.recipe.complexity as i64
                 * company.n_workers as i64
-                * WORKER_CONSUMPTION_PER_SECOND
-                / qty;
+                * WORKER_CONSUMPTION_PER_SECOND;
 
-            let newprice = price_consumption + price_workers;
+            let newprice = (price_consumption + price_workers) / qty;
 
             minprice = minprice.map(|x: Money| x.min(newprice)).or(Some(newprice));
         }
@@ -528,7 +527,7 @@ mod tests {
                 bgen: BuildingGen::House,
                 kind: CompanyKind::Store,
                 recipe: Recipe {
-                    production: vec![(wheat, 1)],
+                    production: vec![(wheat, 2)],
                     complexity: 10,
                     consumption: vec![(cereal, 2)],
                     storage_multiplier: 5,
@@ -546,7 +545,7 @@ mod tests {
         assert_eq!(prices[&cereal], price_cereal);
         assert_eq!(
             prices[&wheat],
-            price_cereal * 2 + 5 * WORKER_CONSUMPTION_PER_SECOND * 10
+            (price_cereal * 2 + 5 * WORKER_CONSUMPTION_PER_SECOND * 10) / 2
         );
     }
 }
