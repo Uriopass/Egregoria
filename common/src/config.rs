@@ -53,7 +53,7 @@ pub struct Config {
 
 fn load_config_start() -> Config {
     let c = std::fs::read("assets/config.json")
-        .and_then(|x| serde_json::from_slice(&*x).map_err(Into::into))
+        .and_then(|x| serde_json::from_slice(&x).map_err(Into::into))
         .map_err(|x| {
             log::error!("couldn't read config: {}", x);
         })

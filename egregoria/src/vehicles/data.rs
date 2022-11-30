@@ -158,7 +158,7 @@ pub fn spawn_parked_vehicle(
     drop(pm);
 
     let tint = match kind {
-        VehicleKind::Car => get_random_car_color(&mut *goria.write::<RandProvider>()),
+        VehicleKind::Car => get_random_car_color(&mut goria.write::<RandProvider>()),
         _ => Color::WHITE,
     };
 

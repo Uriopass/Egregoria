@@ -13,17 +13,17 @@ pub(crate) struct BulldozerState {
 
 #[profiling::function]
 pub(crate) fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
-    let tool: &Tool = &*uiworld.read::<Tool>();
+    let tool: &Tool = &uiworld.read::<Tool>();
 
     if !matches!(*tool, Tool::Bulldozer) {
         return;
     }
 
-    let inp: &InputMap = &*uiworld.read::<InputMap>();
-    let map: &Map = &*goria.map();
-    let draw: &mut ImmediateDraw = &mut *uiworld.write::<ImmediateDraw>();
+    let inp: &InputMap = &uiworld.read::<InputMap>();
+    let map: &Map = &goria.map();
+    let draw: &mut ImmediateDraw = &mut uiworld.write::<ImmediateDraw>();
     let mut commands = uiworld.commands();
-    let state: &BulldozerState = &*uiworld.read::<BulldozerState>();
+    let state: &BulldozerState = &uiworld.read::<BulldozerState>();
 
     let cur_proj = map.project(unwrap_ret!(inp.unprojected), 0.0, ProjectFilter::ALL);
 

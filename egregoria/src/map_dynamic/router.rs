@@ -269,7 +269,7 @@ pub fn routing_update(
 
 impl ComponentDrop for Router {
     fn drop(&mut self, res: &mut Resources, _: Entity) {
-        self.clear_steps(&mut *res.get_mut::<ParkingManagement>().unwrap())
+        self.clear_steps(&mut res.get_mut::<ParkingManagement>().unwrap())
     }
 }
 

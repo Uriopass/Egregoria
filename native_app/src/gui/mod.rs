@@ -118,7 +118,7 @@ impl UiTextures {
         let mut textures = common::fastmap_with_capacity(UI_TEXTURES.len());
         for &(name, path) in UI_TEXTURES {
             let (img, width, height) = wgpu_engine::Texture::read_image(path)
-                .expect(&*format!("Couldn't load gui texture {}", path));
+                .expect(&format!("Couldn't load gui texture {}", path));
 
             let h = ctx.load_texture(
                 path,

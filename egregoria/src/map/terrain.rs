@@ -96,8 +96,8 @@ impl Terrain {
             return (0, 0);
         }
         (
-            p.x as u32 / CHUNK_SIZE as u32 - if p.x < 0.0 { 1 } else { 0 },
-            p.y as u32 / CHUNK_SIZE as u32 - if p.y < 0.0 { 1 } else { 0 },
+            p.x as u32 / CHUNK_SIZE as u32 - (p.x < 0.0) as u32,
+            p.y as u32 / CHUNK_SIZE as u32 - (p.y < 0.0) as u32,
         )
     }
 

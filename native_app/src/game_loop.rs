@@ -127,11 +127,11 @@ impl State {
             .just_act
             .contains(&InputAction::HideInterface);
 
-        Self::manage_settings(ctx, &*self.uiw.read::<Settings>());
+        Self::manage_settings(ctx, &self.uiw.read::<Settings>());
         self.manage_io(ctx);
 
         self.road_renderer
-            .terrain_update(ctx, &*self.goria.read().unwrap());
+            .terrain_update(ctx, &self.goria.read().unwrap());
 
         ctx.gfx
             .set_time(self.goria.read().unwrap().read::<GameTime>().timestamp as f32);
@@ -314,8 +314,8 @@ impl State {
         self.camera.camera_movement(
             ctx,
             ctx.delta as f32,
-            &*self.uiw.read::<InputMap>(),
-            &*self.uiw.read::<Settings>(),
+            &self.uiw.read::<InputMap>(),
+            &self.uiw.read::<Settings>(),
             |p| map.terrain.height(p),
         );
         *self.uiw.write::<Camera>() = self.camera.camera;

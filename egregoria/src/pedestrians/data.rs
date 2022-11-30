@@ -20,10 +20,10 @@ pub struct Pedestrian {
 const PED_SIZE: f32 = 0.5;
 
 pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Option<Entity> {
-    let _color = random_pedestrian_shirt_color(&mut *goria.write::<RandProvider>());
+    let _color = random_pedestrian_shirt_color(&mut goria.write::<RandProvider>());
 
     let hpos = goria.map().buildings().get(house)?.door_pos;
-    let p = Pedestrian::new(&mut *goria.write::<RandProvider>());
+    let p = Pedestrian::new(&mut goria.write::<RandProvider>());
     let e = goria.world.spawn((
         Transform::new(hpos),
         Location::Building(house),

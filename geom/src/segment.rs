@@ -3,13 +3,13 @@ use crate::polygon::Polygon;
 use crate::{Circle, Intersect, Line, Lined, Shape, AABB};
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Segment {
     pub src: Vec2,
     pub dst: Vec2,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Segmentd {
     pub src: Vec2d,
     pub dst: Vec2d,

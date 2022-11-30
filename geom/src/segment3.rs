@@ -1,7 +1,7 @@
 use crate::{Line3, Segment, Vec3};
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Segment3 {
     pub src: Vec3,
     pub dst: Vec3,

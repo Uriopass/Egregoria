@@ -61,8 +61,8 @@ pub fn init() {
     });
     register_resource("coworld", || CollisionWorld::new(100));
     register_resource("randprovider", || RandProvider::new(RNG_SEED));
-    register_resource("dispatcher", || Dispatcher::default());
-    register_resource("replay", || Replay::default());
+    register_resource("dispatcher", Dispatcher::default);
+    register_resource("replay", Replay::default);
 }
 
 pub struct InitFunc {

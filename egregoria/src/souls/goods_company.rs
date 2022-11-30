@@ -279,7 +279,7 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
         .query::<(&mut GoodsCompany, &mut Sold, &Workers)>()
         .iter()
     {
-        company(&*ra, &*rb, &*rc, &*rd, &*re, ent, a, b, c, world);
+        company(&ra, &rb, &rc, &rd, &re, ent, a, b, c, world);
     }
 }
 

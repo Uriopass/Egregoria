@@ -195,9 +195,9 @@ impl WorldCommand {
             AddTrain(dist, n_wagons, lane) => {
                 spawn_train(goria, dist, n_wagons, lane, RailWagonKind::Fret);
             }
-            MapLoadParis => load_parismap(&mut *goria.map_mut()),
+            MapLoadParis => load_parismap(&mut goria.map_mut()),
             MapLoadTestField(pos, size, spacing) => {
-                load_testfield(&mut *goria.map_mut(), pos, size, spacing)
+                load_testfield(&mut goria.map_mut(), pos, size, spacing)
             }
             ResetSave => {
                 let opts = goria.read::<EgregoriaOptions>().clone();
