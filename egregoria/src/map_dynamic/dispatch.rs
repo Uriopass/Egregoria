@@ -210,7 +210,7 @@ impl DispatchOne {
 
         let mut start_along = f32::MAX;
 
-        if self.positions.len() == 0 {
+        if self.positions.is_empty() {
             return None;
         }
 

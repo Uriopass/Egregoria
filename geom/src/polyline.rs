@@ -26,7 +26,7 @@ impl PolyLine {
             panic!("Vec must have at least one point")
         }
         Self {
-            l: length(&*x),
+            l: length(&x),
             points: x,
         }
     }

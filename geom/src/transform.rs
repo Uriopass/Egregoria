@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 const UP: Vec3 = Vec3::Z;
 
-#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Transform {
     pub position: Vec3,
     pub dir: Vec3,

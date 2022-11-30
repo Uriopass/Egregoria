@@ -35,7 +35,7 @@ pub(crate) fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWor
                 uiw.write::<SaveLoadState>().please_load = replay;
             }
         }
-        if lstate.load_fail.len() > 0 {
+        if !lstate.load_fail.is_empty() {
             ui.colored_label(Color32::RED, &lstate.load_fail);
         }
     });

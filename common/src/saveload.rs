@@ -21,13 +21,13 @@ pub trait Encoder {
 
     fn encode_writer(x: &impl Serialize, mut w: impl Write) -> Result<()> {
         let buf = Self::encode(x)?;
-        w.write_all(&*buf)
+        w.write_all(&buf)
     }
 
     fn decode_reader<T: DeserializeOwned>(mut r: impl Read) -> Result<T> {
         let mut buf = vec![];
         r.read_to_end(&mut buf)?;
-        Self::decode(&*buf)
+        Self::decode(&buf)
     }
 
     fn filename(name: &str) -> String {

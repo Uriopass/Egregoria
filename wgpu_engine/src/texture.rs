@@ -26,7 +26,7 @@ impl Texture {
         let mut buf = vec![];
         let mut f = File::open(p).ok()?;
         f.read_to_end(&mut buf).ok()?;
-        image::load_from_memory(&*buf).ok().map(|x| {
+        image::load_from_memory(&buf).ok().map(|x| {
             let w = x.width();
             let h = x.height();
             (x.into_rgba8().into_raw(), w, h)

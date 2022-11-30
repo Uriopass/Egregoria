@@ -43,7 +43,7 @@ pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut inp = uiworld.write::<InputMap>();
     let tool = *uiworld.read::<Tool>();
     let map = &*goria.map();
-    let commands: &mut WorldCommands = &mut *uiworld.commands();
+    let commands: &mut WorldCommands = &mut uiworld.commands();
     let cam = &*uiworld.read::<Camera>();
 
     if !tool.is_roadbuild() {

@@ -127,7 +127,7 @@ impl AudioContext {
             let s = v.to_string();
             let cache = self.cache.clone();
             rayon::spawn(move || {
-                if let Some(audio) = Self::decode(&*s) {
+                if let Some(audio) = Self::decode(&s) {
                     cache.write().unwrap().insert(s, audio);
                 }
             });

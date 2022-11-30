@@ -200,7 +200,7 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<SoulID> {
 
     let time = goria.read::<GameTime>().instant();
 
-    let food = BuyFood::new(time, &*registry);
+    let food = BuyFood::new(time, &registry);
     drop(registry);
 
     goria

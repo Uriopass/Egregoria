@@ -24,7 +24,7 @@ impl PolyLine3 {
             panic!("Vec must have at least one point")
         }
         Self {
-            l: length(&*x),
+            l: length(&x),
             points: x,
         }
     }
@@ -33,7 +33,7 @@ impl PolyLine3 {
     /// Must not be used with advanced functions if passed vector is empty, as it would lead to UB
     pub unsafe fn new_unchecked(x: Vec<Vec3>) -> Self {
         Self {
-            l: length(&*x),
+            l: length(&x),
             points: x,
         }
     }

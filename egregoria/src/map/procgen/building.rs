@@ -156,7 +156,7 @@ pub fn gen_exterior_house(size: f32, seed: u64) -> (ColoredMesh, Vec2) {
 
         let mut walls = Vec::with_capacity(contour.len());
 
-        for (a, b, c) in geom::skeleton::window(&*contour) {
+        for (a, b, c) in geom::skeleton::window(&contour) {
             let ba = (a - b).normalize().xy();
             let bc = (c - b).normalize().xy();
 

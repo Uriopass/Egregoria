@@ -34,7 +34,7 @@ pub trait Drawable: Sync {
 
 impl<T: Drawable + Send> Drawable for Arc<T> {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        let s: &T = &*self;
+        let s: &T = self;
         s.draw(gfx, rp);
     }
 
@@ -45,7 +45,7 @@ impl<T: Drawable + Send> Drawable for Arc<T> {
         shadow_map: bool,
         proj: &'a wgpu::BindGroup,
     ) {
-        let s: &T = &*self;
+        let s: &T = self;
         s.draw_depth(gfx, rp, shadow_map, proj);
     }
 }

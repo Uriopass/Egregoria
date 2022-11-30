@@ -227,7 +227,7 @@ pub(crate) fn debug_road_points(
             tess.draw_circle(p.up(0.02), 0.3);
         }
         tess.draw_polyline(
-            &*road
+            &road
                 .points()
                 .as_slice()
                 .iter()
@@ -243,7 +243,7 @@ pub(crate) fn debug_road_points(
         tess.set_color(Color::hsv(r * 360.0, 0.8, 0.6, 0.5));
 
         tess.draw_polyline(
-            &*lane
+            &lane
                 .points
                 .as_slice()
                 .iter()
@@ -463,7 +463,7 @@ pub(crate) fn debug_trainreservations(
 
             let stop_dist = kin.speed * kin.speed / (2.0 * loco.dec_force);
             for (v, _, _, _) in egregoria::vehicles::trains::traverse_forward(
-                &*map,
+                &map,
                 itin,
                 stop_dist + 15.0,
                 dist_to_next,
@@ -503,7 +503,7 @@ pub(crate) fn debug_pathfinder(
 
     tess.set_color(LinearColor::GREEN);
     tess.draw_polyline(
-        &*itinerary
+        &itinerary
             .local_path()
             .iter()
             .map(|x| x.up(0.15))
@@ -521,7 +521,7 @@ pub(crate) fn debug_pathfinder(
         for l in &r.reversed_route {
             if let Some(l) = l.raw_points(map) {
                 tess.draw_polyline(
-                    &*l.as_slice().iter().map(|x| x.up(0.1)).collect::<Vec<_>>(),
+                    &l.as_slice().iter().map(|x| x.up(0.1)).collect::<Vec<_>>(),
                     3.0,
                     false,
                 );

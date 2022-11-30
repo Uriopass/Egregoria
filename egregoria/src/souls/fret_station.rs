@@ -124,7 +124,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
             continue;
         }
         let Some(trainid) = dispatch.query(
-            &*map,
+            &map,
             me,
             DispatchKind::FretTrain,
             DispatchQueryTarget::Pos(pos.position),
