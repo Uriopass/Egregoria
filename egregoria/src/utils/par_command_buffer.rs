@@ -102,6 +102,9 @@ impl ParCommandBuffer {
         deleted.sort_unstable();
 
         for entity in deleted {
+            if goria.world.despawn(entity).is_err() {
+                continue;
+            }
             goria.write::<Market>().remove(SoulID(entity));
             if let Ok(mut v) = goria.world.get::<&mut Collider>(entity) {
                 ComponentDrop::drop(&mut *v, &mut goria.resources, entity);

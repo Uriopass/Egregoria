@@ -2,7 +2,7 @@ use crate::map::{BuildingID, BuildingKind, Map, PathKind};
 use crate::map_dynamic::{BuildingInfos, DispatchKind, DispatchQueryTarget, Dispatcher, Itinerary};
 use crate::utils::time::GameTime;
 use crate::vehicles::trains::TrainID;
-use crate::{Egregoria, Selectable, SoulID};
+use crate::{Egregoria, ParCommandBuffer, Selectable, SoulID};
 use geom::Transform;
 use hecs::World;
 use resources::Resources;
@@ -61,6 +61,7 @@ pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Opti
 }
 
 pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
+    let cbuf = resources.get::<ParCommandBuffer>().unwrap();
     let mut dispatch = resources.get_mut::<Dispatcher>().unwrap();
     let map = resources.get::<Map>().unwrap();
     let time = resources.get::<GameTime>().unwrap();
@@ -72,6 +73,11 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
         .query::<(&Transform, &mut FreightStation)>()
         .into_iter()
     {
+        if !map.buildings.contains_key(soul.building) {
+            cbuf.kill(me);
+            continue;
+        }
+
         // update our trains, and remove the ones that are done
         let mut to_clean = vec![];
         for (trainid, state) in &mut soul.trains {
