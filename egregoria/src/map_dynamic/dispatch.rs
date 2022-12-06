@@ -41,7 +41,7 @@ struct DispatchPosition {
 
 /// DispatchKind is a component that is added to entities that can be dispatched
 /// Usually constant.
-#[derive(Serialize, Deserialize, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Inspect)]
 pub enum DispatchKind {
     FretTrain,
     SmallTruck,

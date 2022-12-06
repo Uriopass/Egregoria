@@ -1,7 +1,7 @@
 use crate::gui::follow::FollowEntity;
 use crate::uiworld::UiWorld;
 use egregoria::economy::{ItemRegistry, Market, Workers};
-use egregoria::map_dynamic::{Itinerary, Router};
+use egregoria::map_dynamic::{DispatchKind, Itinerary, Router};
 use egregoria::pedestrians::{Location, Pedestrian};
 use egregoria::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
 use egregoria::souls::desire::{BuyFood, Home, Work};
@@ -80,6 +80,7 @@ impl InspectRenderer {
         self.inspect_component::<GoodsCompany>(goria, ui);
         self.inspect_component::<Locomotive>(goria, ui);
         self.inspect_component::<LocomotiveReservation>(goria, ui);
+        self.inspect_component::<DispatchKind>(goria, ui);
 
         if goria.comp::<Vehicle>(self.entity).is_some() {
             for (e, loc) in goria.world().query::<&Location>().iter() {

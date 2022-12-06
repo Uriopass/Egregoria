@@ -1,4 +1,5 @@
 use super::Tool;
+use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
@@ -42,6 +43,8 @@ pub(crate) fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
         || (state.hold && inp.act.contains(&InputAction::Select)))
         && !matches!(cur_proj.kind, ProjectKind::Ground)
     {
+        uiworld.write::<SpecialBuildingResource>().last_obb = None;
+
         let mut potentially_empty = Vec::new();
         log::info!("bulldozer {:?}", cur_proj);
         match cur_proj.kind {
