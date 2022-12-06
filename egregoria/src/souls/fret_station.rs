@@ -89,8 +89,6 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
                 }
                 FreightTrainState::Loading => {
                     if itin.has_ended(time.timestamp) {
-                        *state = FreightTrainState::Moving;
-
                         let ext = map.bkinds.get(&BuildingKind::ExternalTrading).unwrap()[0];
                         let bpos = map.buildings[ext].obb.center().z(0.0);
 
@@ -99,9 +97,10 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
                         {
                             r
                         } else {
-                            // TODO: handle no route found to external trade
+                            Itinerary::wait_until(time.timestamp + 10.0);
                             continue;
                         };
+                        *state = FreightTrainState::Moving;
                     }
                 }
                 FreightTrainState::Moving => {

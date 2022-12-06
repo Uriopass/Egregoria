@@ -312,6 +312,12 @@ impl Itinerary {
         match self.kind {
             ItineraryKind::WaitUntil(x) => time > x,
             ItineraryKind::WaitForReroute { .. } => false,
+            ItineraryKind::Route(
+                Route {
+                    ref reversed_route, ..
+                },
+                _,
+            ) => reversed_route.is_empty() && self.reversed_local_path.is_empty(),
             _ => self.reversed_local_path.is_empty(),
         }
     }
