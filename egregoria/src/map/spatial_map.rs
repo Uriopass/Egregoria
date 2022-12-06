@@ -123,7 +123,7 @@ impl SpatialMap {
         self.broad
             .query(shape.bbox())
             .filter(move |&(_, _, p)| filter.test(p))
-            .filter_map(move |(_, _, p)| shape.intersects(self.near.get(p)?).then(|| *p))
+            .filter_map(move |(_, _, p)| shape.intersects(self.near.get(p)?).then_some(*p))
     }
 
     pub fn debug_grid(&self) -> impl Iterator<Item = AABB> + '_ {

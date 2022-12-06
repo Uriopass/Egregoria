@@ -401,7 +401,7 @@ fn calculate_prices(
                 .recipe
                 .production
                 .iter()
-                .find_map(|x| (x.0 == item.id).then(|| x.1))
+                .find_map(|x| (x.0 == item.id).then_some(x.1))
                 .unwrap_or(0) as i64;
             let price_workers = company.recipe.complexity as i64
                 * company.n_workers as i64

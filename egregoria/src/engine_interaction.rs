@@ -56,6 +56,12 @@ pub enum WorldCommand {
     UpdateTransform(Entity, Transform),
 }
 
+impl AsRef<[WorldCommand]> for WorldCommands {
+    fn as_ref(&self) -> &[WorldCommand] {
+        &self.commands
+    }
+}
+
 impl WorldCommands {
     pub fn push(&mut self, cmd: WorldCommand) {
         self.commands.push(cmd);
@@ -67,10 +73,6 @@ impl WorldCommands {
 
     pub fn iter(&self) -> impl Iterator<Item = &WorldCommand> {
         self.commands.iter()
-    }
-
-    pub fn as_ref(&self) -> &[WorldCommand] {
-        &self.commands
     }
 
     pub fn is_empty(&self) -> bool {

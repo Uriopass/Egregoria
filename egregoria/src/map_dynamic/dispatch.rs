@@ -223,6 +223,7 @@ impl DispatchOne {
                 lid
             }
             DispatchQueryTarget::Lane(lane) => {
+                #[allow(clippy::question_mark)]
                 if map.lanes().get(lane).is_none() {
                     return None;
                 }
@@ -247,10 +248,8 @@ impl DispatchOne {
             for ent in ents {
                 let pos = self.positions.get(ent).unwrap();
                 let dist = -pos.dist_along; // since dist_along is from start to end, a good dist_along is one that is big
-                if lane == target_lane {
-                    if pos.dist_along > start_along {
-                        continue;
-                    }
+                if lane == target_lane && pos.dist_along > start_along {
+                    continue;
                 }
                 if dist < best_dist {
                     best_dist = dist;

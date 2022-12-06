@@ -652,7 +652,7 @@ fn point_in_triangle(a: &Node, b: &Node, c: &Node, p: &Node) -> bool {
 
 pub fn earcut(data: &[Vec2], on_triangle: impl FnMut(usize, usize, usize)) {
     // Safe because Vector2 and [f32; 2] have the same layout (Vec2 is repr(c))
-    let points: &[[f32; 2]] = unsafe { &*(&*data as *const [Vec2] as *const [[f32; 2]]) };
+    let points: &[[f32; 2]] = unsafe { &*(data as *const [Vec2] as *const [[f32; 2]]) };
 
     earcut_inner(bytemuck::cast_slice(points), on_triangle)
 }

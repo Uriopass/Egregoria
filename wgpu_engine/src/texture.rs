@@ -321,10 +321,10 @@ impl TextureBuilder {
                 } else {
                     TextureFormat::Rgba8Unorm
                 },
-                &*img,
+                img,
                 4,
             ),
-            DynamicImage::ImageLuma8(ref gray) => (TextureFormat::R8Unorm, &*gray, 1),
+            DynamicImage::ImageLuma8(ref gray) => (TextureFormat::R8Unorm, gray, 1),
             _ => unimplemented!("unsupported format {:?}", img.color()),
         };
 

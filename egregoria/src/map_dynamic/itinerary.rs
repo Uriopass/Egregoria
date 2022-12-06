@@ -180,7 +180,7 @@ impl Itinerary {
                     self.reversed_local_path.push(r.end_pos);
                     self.reversed_local_path.push(proj_pos);
                     self.reversed_local_path
-                        .extend((&points.as_slice()[..id]).iter().rev());
+                        .extend(points.as_slice()[..id].iter().rev());
                 } else {
                     points.reverse();
                     self.reversed_local_path = points.into_vec();

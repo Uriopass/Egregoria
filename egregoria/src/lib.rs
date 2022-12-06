@@ -1,4 +1,5 @@
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::type_complexity)]
 
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommand};
@@ -163,7 +164,7 @@ impl Egregoria {
                 let command_slice = &replay.commands[idx_start..idx];
 
                 log::info!("[replay] acttick {:?} ({})", pastt, command_slice.len());
-                goria.tick(&mut schedule, command_slice.into_iter().map(|(_, c)| c));
+                goria.tick(&mut schedule, command_slice.iter().map(|(_, c)| c));
                 pastt.0 += 1;
             }
 

@@ -212,7 +212,7 @@ impl PolyLine3 {
         self.points_dirs_along(
             (nolimit as i32..n_step.min(100000) + 1)
                 .map(move |i| i as f32 * step)
-                .chain((!nolimit).then(|| l - 0.01)),
+                .chain((!nolimit).then_some(l - 0.01)),
         )
     }
 
