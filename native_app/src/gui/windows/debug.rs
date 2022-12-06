@@ -106,6 +106,12 @@ pub(crate) fn debug(
                 time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64,
             ));
         }
+
+        ui.label(format!(
+            "World timestamp: {:.1}",
+            goria.read::<GameTime>().timestamp
+        ));
+
         let timings = uiworld.read::<Timings>();
         let mouse = uiworld.read::<InputMap>().unprojected;
         let cam = uiworld.read::<Camera>().pos;
