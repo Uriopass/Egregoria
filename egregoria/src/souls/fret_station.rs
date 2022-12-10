@@ -155,7 +155,8 @@ mod tests {
     use crate::map_dynamic::BuildingInfos;
     use crate::souls::human::{spawn_human, HumanDecisionKind};
     use crate::tests::TestCtx;
-    use crate::{BuildingKind, FreightStation, HumanDecision, WorldCommand};
+    use crate::{BuildingKind, Egregoria, FreightStation, HumanDecision, WorldCommand};
+    use common::saveload::Encoder;
     use geom::{vec2, vec3, OBB};
 
     #[test]
@@ -192,8 +193,24 @@ mod tests {
         let stationsoul = binfos.owner(station).unwrap();
         drop(binfos);
 
-        for _ in 0..100 {
+        for i in 0..100 {
             test.tick();
+
+            let serialized = common::saveload::Bincode::encode(&test.g).unwrap();
+            let deserialized: Egregoria = common::saveload::Bincode::decode(&serialized).unwrap();
+
+            assert_eq!(deserialized.hashes(), test.g.hashes());
+            // do the same assert in a loop
+            let testhashes = test.g.hashes();
+            for (key, hash) in deserialized.hashes().iter() {
+                assert_eq!(
+                    testhashes.get(key),
+                    Some(hash),
+                    "key: {:?} at tick {}",
+                    key,
+                    i
+                );
+            }
 
             if test
                 .g
