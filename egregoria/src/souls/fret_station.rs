@@ -36,7 +36,7 @@ pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Opti
     let f = FreightStation {
         building,
         trains: Vec::with_capacity(MAX_TRAINS_PER_STATION),
-        waiting_cargo: 0,
+        waiting_cargo: 20,
     };
     let b = map.buildings.get(building)?;
 

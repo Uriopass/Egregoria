@@ -1,10 +1,9 @@
 use egregoria::map_dynamic::Itinerary;
 use egregoria::pedestrians::{Location, Pedestrian};
-use egregoria::vehicles::trains::{Locomotive, RailWagon, RailWagonKind};
+use egregoria::vehicles::trains::{RailWagon, RailWagonKind};
 use egregoria::vehicles::{Vehicle, VehicleKind};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec3, V3};
-use hecs::With;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder,
@@ -13,7 +12,7 @@ use wgpu_engine::{
 pub(crate) struct InstancedRender {
     pub(crate) path_not_found: SpriteBatchBuilder,
     pub(crate) cars: InstancedMeshBuilder,
-    pub(crate) trains: InstancedMeshBuilder,
+    pub(crate) locomotives: InstancedMeshBuilder,
     pub(crate) wagons_passenger: InstancedMeshBuilder,
     pub(crate) wagons_fret: InstancedMeshBuilder,
     pub(crate) trucks: InstancedMeshBuilder,
@@ -28,7 +27,7 @@ impl InstancedRender {
                 gfx.texture("assets/sprites/path_not_found.png", "path_not_found"),
             ),
             cars: InstancedMeshBuilder::new(load_mesh("simple_car.glb", gfx).unwrap()),
-            trains: InstancedMeshBuilder::new(load_mesh("train.glb", gfx).unwrap()),
+            locomotives: InstancedMeshBuilder::new(load_mesh("train.glb", gfx).unwrap()),
             wagons_fret: InstancedMeshBuilder::new(load_mesh("wagon_fret.glb", gfx).unwrap()),
             wagons_passenger: InstancedMeshBuilder::new(load_mesh("wagon.glb", gfx).unwrap()),
             trucks: InstancedMeshBuilder::new(load_mesh("truck.glb", gfx).unwrap()),
@@ -55,20 +54,7 @@ impl InstancedRender {
             }
         }
 
-        self.trains.instances.clear();
-        for (_, trans) in goria
-            .world()
-            .query::<With<&Transform, &Locomotive>>()
-            .iter()
-        {
-            let instance = MeshInstance {
-                pos: trans.position,
-                dir: trans.dir,
-                tint: LinearColor::WHITE,
-            };
-            self.trains.instances.push(instance);
-        }
-
+        self.locomotives.instances.clear();
         self.wagons_passenger.instances.clear();
         self.wagons_fret.instances.clear();
         for (_, (trans, wagon)) in goria.world().query::<(&Transform, &RailWagon)>().iter() {
@@ -84,6 +70,9 @@ impl InstancedRender {
                 }
                 RailWagonKind::Fret => {
                     self.wagons_fret.instances.push(instance);
+                }
+                RailWagonKind::Locomotive => {
+                    self.locomotives.instances.push(instance);
                 }
             }
         }
@@ -136,7 +125,7 @@ impl InstancedRender {
         if let Some(x) = self.pedestrians.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }
-        if let Some(x) = self.trains.build(fctx.gfx) {
+        if let Some(x) = self.locomotives.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }
         if let Some(x) = self.wagons_passenger.build(fctx.gfx) {

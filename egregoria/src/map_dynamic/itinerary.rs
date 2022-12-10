@@ -16,6 +16,13 @@ pub struct ItineraryFollower {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct ItineraryFollower2 {
+    pub leader: Entity,
+    pub head: Follower,
+    pub tail: Follower,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ItineraryLeader {
     pub past: Polyline3Queue,
 }
@@ -398,7 +405,6 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
     world
         .query::<(&Transform, &mut ItineraryLeader)>()
         .iter_batched(32)
-        .par_bridge()
         .for_each(|chunk| {
             chunk.for_each(|(_, (trans, leader))| {
                 leader.past.push(trans.position);
@@ -407,13 +413,24 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
     world
         .query::<(&mut Transform, &mut ItineraryFollower)>()
         .iter_batched(32)
-        .par_bridge()
         .for_each(|chunk| {
             chunk.for_each(|(_, (trans, follow))| {
                 let leader = unwrap_orr!(world.get::<&ItineraryLeader>(follow.leader), return);
                 let (pos, dir) = follow.follower.update(&leader.past);
                 trans.position = pos;
                 trans.dir = dir;
+            })
+        });
+    world
+        .query::<(&mut Transform, &mut ItineraryFollower2)>()
+        .iter_batched(32)
+        .for_each(|chunk| {
+            chunk.for_each(|(_, (trans, follow))| {
+                let leader = unwrap_orr!(world.get::<&ItineraryLeader>(follow.leader), return);
+                let (pos, dir) = follow.head.update(&leader.past);
+                let (pos2, dir2) = follow.tail.update(&leader.past);
+                trans.position = (pos + pos2) * 0.5;
+                trans.dir = (dir + dir2).try_normalize().unwrap_or(dir);
             })
         });
 }

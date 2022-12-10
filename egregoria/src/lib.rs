@@ -12,7 +12,7 @@ use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::goods_company::{GoodsCompany, GoodsCompanyRegistry};
 use crate::souls::human::HumanDecision;
-use crate::vehicles::trains::{Locomotive, LocomotiveReservation, RandomLocomotive};
+use crate::vehicles::trains::{Locomotive, LocomotiveReservation};
 use crate::vehicles::Vehicle;
 use common::saveload::Encoder;
 use geom::{Transform, Vec3};
@@ -532,7 +532,6 @@ register!(
         Workers => _16,
         Locomotive => _17,
         RailWagon => _18,
-        RandomLocomotive => _19,
         ItineraryLeader => _20,
         ItineraryFollower => _21,
         LocomotiveReservation => _22,

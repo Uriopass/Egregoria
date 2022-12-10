@@ -1,8 +1,6 @@
 use crate::map::{IntersectionID, LaneID, Map, TraverseKind};
-use crate::map_dynamic::{DispatchKind, ItineraryKind};
-use crate::{
-    Egregoria, GameTime, Itinerary, ItineraryFollower, ItineraryLeader, Kinematics, Selectable,
-};
+use crate::map_dynamic::{DispatchKind, ItineraryFollower2, ItineraryKind};
+use crate::{Egregoria, GameTime, Itinerary, ItineraryLeader, Kinematics, Selectable};
 use egui_inspect::Inspect;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, View, World};
@@ -43,11 +41,9 @@ pub struct LocomotiveReservation {
     upcoming_inters: Vec<IntersectionID>,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct RandomLocomotive;
-
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub enum RailWagonKind {
+    Locomotive,
     Passenger,
     Fret,
 }
@@ -60,16 +56,16 @@ pub struct RailWagon {
 const WAGON_INTERLENGTH: f32 = 16.75;
 
 pub fn wagons_dists_to_loco(n_wagons: u32) -> impl DoubleEndedIterator<Item = f32> {
-    (1..n_wagons + 1).map(|x| 1.0 + x as f32 * 16.75)
+    (0..n_wagons + 1).map(|x| x as f32 * 16.75)
 }
 
-pub fn wagons_positions(
+pub fn wagons_positions_for_render(
     points: &PolyLine3,
     dist: f32,
     n_wagons: u32,
 ) -> impl Iterator<Item = (Vec3, Vec3)> + '_ {
     let positions = std::iter::once(0.0)
-        .chain(wagons_dists_to_loco(n_wagons))
+        .chain(wagons_dists_to_loco(n_wagons).map(|x| x + WAGON_INTERLENGTH * 0.5))
         .rev()
         .filter_map(move |wdist| {
             let pos = dist - wdist;
@@ -137,21 +133,35 @@ pub fn spawn_train(
             )]),
             upcoming_inters: Default::default(),
         },
-        RandomLocomotive,
         Itinerary::NONE,
     ));
     log::info!("{:?}", leader.past);
-    for mut follower in leader.past.mk_followers(wagons_dists_to_loco(n_wagons)) {
+    let mut followers: Vec<_> = leader
+        .past
+        .mk_followers(
+            wagons_dists_to_loco(n_wagons)
+                .flat_map(|x| [x + WAGON_INTERLENGTH * 0.1, x + WAGON_INTERLENGTH * 0.9]),
+        )
+        .collect();
+    for (i, follower) in followers.chunks_exact_mut(2).enumerate() {
         log::info!("{:?}", follower);
-        let (pos, dir) = follower.update(&leader.past);
+        let (pos, dir) = follower[0].update(&leader.past);
+        let (pos2, dir2) = follower[1].update(&leader.past);
         world.spawn((
-            Transform::new_dir(pos, dir),
+            Transform::new_dir(pos * 0.5 + pos2 * 0.5, (0.5 * (dir + dir2)).normalize()),
             Kinematics::default(),
             Selectable::new(10.0),
-            RailWagon { kind },
-            ItineraryFollower {
+            RailWagon {
+                kind: if i == 0 {
+                    RailWagonKind::Locomotive
+                } else {
+                    kind
+                },
+            },
+            ItineraryFollower2 {
                 leader: loco,
-                follower,
+                head: follower[0],
+                tail: follower[1],
             },
         ));
     }
@@ -244,9 +254,9 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
                     for (id, _, _, _) in traverse_forward(
                         map,
                         itin,
-                        stop_dist + 15.0,
+                        stop_dist + 5.0,
                         dist_to_next,
-                        loco.length + 50.0,
+                        loco.length + 25.0,
                     ) {
                         if let Some(v) = reservations.localisations.get(&id) {
                             if v.len() > 2 || (v.len() == 1 && v.get(&me).is_none()) {

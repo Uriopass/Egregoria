@@ -5,7 +5,7 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::LaneKind;
-use egregoria::vehicles::trains::{train_length, wagons_positions};
+use egregoria::vehicles::trains::{train_length, wagons_positions_for_render};
 use egregoria::Egregoria;
 use geom::{Color, OBB};
 use std::option::Option::None;
@@ -43,7 +43,7 @@ pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     let trainlength = train_length(n_wagons);
 
     let mut drawtrain = |col: Color| {
-        for (p, dir) in wagons_positions(&nearbylane.points, dist, n_wagons) {
+        for (p, dir) in wagons_positions_for_render(&nearbylane.points, dist, n_wagons) {
             draw.obb(OBB::new(p.xy(), dir.xy(), 16.5, 3.0), p.z + 0.5)
                 .color(col);
         }
