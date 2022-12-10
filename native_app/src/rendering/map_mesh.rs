@@ -498,24 +498,14 @@ impl MapBuilders {
 
 impl Drawable for MapMeshes {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        if let Some(ref v) = self.map {
-            v.draw(gfx, rp);
-        }
+        self.map.draw(gfx, rp);
         self.bsprites.draw(gfx, rp);
-        for v in &self.bmeshes {
-            v.draw(gfx, rp);
-        }
-        if let Some(ref v) = self.houses_mesh {
-            v.draw(gfx, rp);
-        }
+        self.bmeshes.draw(gfx, rp);
+        self.houses_mesh.draw(gfx, rp);
         if self.enable_arrows.load(Ordering::SeqCst) {
-            if let Some(ref v) = self.arrows {
-                v.draw(gfx, rp);
-            }
+            self.arrows.draw(gfx, rp);
         }
-        if let Some(ref v) = self.crosswalks {
-            v.draw(gfx, rp);
-        }
+        self.crosswalks.draw(gfx, rp);
     }
 
     fn draw_depth<'a>(
@@ -525,29 +515,14 @@ impl Drawable for MapMeshes {
         shadow_map: bool,
         proj: &'a wgpu_engine::wgpu::BindGroup,
     ) {
-        macro_rules! deferdepth {
-            ($x:expr) => {
-                $x.draw_depth(gfx, rp, shadow_map, proj);
-            };
-        }
-        if let Some(ref map) = self.map {
-            map.draw_depth(gfx, rp, shadow_map, proj);
-        }
-        deferdepth!(self.bsprites);
-        for v in &self.bmeshes {
-            deferdepth!(v);
-        }
-        if let Some(ref v) = self.houses_mesh {
-            deferdepth!(v);
-        }
+        self.map.draw_depth(gfx, rp, shadow_map, proj);
+        self.bsprites.draw_depth(gfx, rp, shadow_map, proj);
+        self.bmeshes.draw_depth(gfx, rp, shadow_map, proj);
+        self.houses_mesh.draw_depth(gfx, rp, shadow_map, proj);
         if self.enable_arrows.load(Ordering::SeqCst) {
-            if let Some(ref v) = self.arrows {
-                deferdepth!(v);
-            }
+            self.arrows.draw_depth(gfx, rp, shadow_map, proj);
         }
-        if let Some(ref v) = self.crosswalks {
-            deferdepth!(v);
-        }
+        self.crosswalks.draw_depth(gfx, rp, shadow_map, proj);
     }
 }
 

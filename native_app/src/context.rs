@@ -5,7 +5,6 @@ use crate::input::InputContext;
 use egregoria::utils::time::GameTime;
 use geom::{vec2, vec3, LinearColor};
 use std::time::Instant;
-use wgpu_engine::wgpu::TextureViewDescriptor;
 use wgpu_engine::GfxContext;
 use winit::window::Window;
 use winit::{
@@ -148,10 +147,7 @@ impl Context {
 
                         self.gfx.render_params.upload_to_gpu(&self.gfx.queue);
 
-                        let view = sco
-                            .texture
-                            .create_view(&TextureViewDescriptor::default());
-                        let mut enc = self.gfx.start_frame();
+                        let (mut enc, view) = self.gfx.start_frame(&sco);
                         self.gfx.render_objs(&mut enc, &view, |fc| state.render(fc));
 
                         let window = &self.window;

@@ -24,7 +24,6 @@ use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::utils::scheduler::SeqSchedule;
-use wgpu_engine::wgpu::PresentMode;
 
 pub(crate) const VERSION: &str = include_str!("../../VERSION");
 
@@ -269,11 +268,7 @@ impl State {
             ctx.window.set_fullscreen(None);
         }
 
-        ctx.gfx.set_present_mode(if settings.vsync {
-            PresentMode::AutoVsync
-        } else {
-            PresentMode::AutoNoVsync
-        });
+        ctx.gfx.set_vsync(settings.vsync);
         let params = ctx.gfx.render_params.value_mut();
         params.ssao_enabled = settings.ssao as i32;
         params.realistic_sky = settings.realistic_sky as i32;

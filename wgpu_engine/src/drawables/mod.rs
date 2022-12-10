@@ -49,3 +49,44 @@ impl<T: Drawable + Send> Drawable for Arc<T> {
         s.draw_depth(gfx, rp, shadow_map, proj);
     }
 }
+
+impl<T: Drawable> Drawable for Option<T> {
+    fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        if let Some(s) = self {
+            s.draw(gfx, rp);
+        }
+    }
+
+    fn draw_depth<'a>(
+        &'a self,
+        gfx: &'a GfxContext,
+        rp: &mut RenderPass<'a>,
+        shadow_map: bool,
+        proj: &'a wgpu::BindGroup,
+    ) {
+        if let Some(s) = self {
+            s.draw_depth(gfx, rp, shadow_map, proj);
+        }
+    }
+}
+
+// impl drawable for slices of drawables
+impl<T: Drawable> Drawable for [T] {
+    fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        for s in self {
+            s.draw(gfx, rp);
+        }
+    }
+
+    fn draw_depth<'a>(
+        &'a self,
+        gfx: &'a GfxContext,
+        rp: &mut RenderPass<'a>,
+        shadow_map: bool,
+        proj: &'a wgpu::BindGroup,
+    ) {
+        for s in self {
+            s.draw_depth(gfx, rp, shadow_map, proj);
+        }
+    }
+}

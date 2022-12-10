@@ -7,9 +7,7 @@ pub struct MultiSpriteBatch {
 
 impl Drawable for MultiSpriteBatch {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        for v in &self.sbs {
-            v.draw(gfx, rp);
-        }
+        self.sbs.draw(gfx, rp);
     }
 
     fn draw_depth<'a>(
@@ -19,9 +17,7 @@ impl Drawable for MultiSpriteBatch {
         shadow_map: bool,
         proj: &'a wgpu::BindGroup,
     ) {
-        for v in &self.sbs {
-            v.draw_depth(gfx, rp, shadow_map, proj);
-        }
+        self.sbs.draw_depth(gfx, rp, shadow_map, proj);
     }
 }
 

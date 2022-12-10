@@ -17,8 +17,8 @@ use wgpu::{
     Adapter, Backends, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState,
     CommandBuffer, CommandEncoder, CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState,
     Device, ErrorFilter, Face, FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue,
-    RenderPipeline, Surface, SurfaceConfiguration, TextureFormat, TextureSampleType, TextureUsages,
-    TextureView, VertexBufferLayout,
+    RenderPipeline, Surface, SurfaceConfiguration, SurfaceTexture, TextureFormat,
+    TextureSampleType, TextureUsages, TextureView, TextureViewDescriptor, VertexBufferLayout,
 };
 
 pub struct FBOs {
@@ -351,9 +351,14 @@ impl GfxContext {
             .clone()
     }
 
-    pub fn set_present_mode(&mut self, mode: wgpu::PresentMode) {
-        if self.sc_desc.present_mode != mode {
-            self.sc_desc.present_mode = mode;
+    pub fn set_vsync(&mut self, vsync: bool) {
+        let present_mode = if vsync {
+            wgpu::PresentMode::AutoVsync
+        } else {
+            wgpu::PresentMode::AutoNoVsync
+        };
+        if self.sc_desc.present_mode != present_mode {
+            self.sc_desc.present_mode = present_mode;
             self.update_sc = true;
         }
     }
@@ -370,7 +375,7 @@ impl GfxContext {
         self.render_params.value_mut().inv_proj = proj;
     }
 
-    pub fn start_frame(&mut self) -> Encoders {
+    pub fn start_frame(&mut self, sco: &SurfaceTexture) -> (Encoders, TextureView) {
         let end = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor {
@@ -382,11 +387,14 @@ impl GfxContext {
         self.projection.upload_to_gpu(&self.queue);
         self.sun_projection.upload_to_gpu(&self.queue);
 
-        Encoders {
-            smap: None,
-            depth_prepass: None,
-            end,
-        }
+        (
+            Encoders {
+                smap: None,
+                depth_prepass: None,
+                end,
+            },
+            sco.texture.create_view(&TextureViewDescriptor::default()),
+        )
     }
 
     #[profiling::function]
