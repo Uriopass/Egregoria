@@ -30,8 +30,8 @@ rayon         = "1.5.3"
 profiling     = "1.0.1"
 include_dir   = "0.7.2"
 egui-inspect = { path = "../egui-inspect" }
-egui = { git = "https://github.com/emilk/egui", rev = "a0b3f1126b158d41db91c3418695f12133bc1329" }
-egui-wgpu = { git = "https://github.com/emilk/egui", rev = "a0b3f1126b158d41db91c3418695f12133bc1329"}
+egui = "0.20.0"
+egui-wgpu = "0.20.0"
 
 [features]
 default = []
@@ -39,11 +39,11 @@ enable_profile = ["profiling/profile-with-tracy"]
 multiplayer = ["networking"]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-egui-winit = { git = "https://github.com/emilk/egui", rev = "a0b3f1126b158d41db91c3418695f12133bc1329", default-features = false }
+egui-winit = { version = "0.20.0", default-features = false }
 beul = "0.1.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-egui-winit = { git = "https://github.com/emilk/egui", rev = "a0b3f1126b158d41db91c3418695f12133bc1329"}
+egui-winit = "0.20.0"
 getrandom = { version = "0.2", features = ["js"] } # used by ahash used by egui
 console_error_panic_hook = "0.1"
 console_log = "0.2"
