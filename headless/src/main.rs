@@ -1,6 +1,6 @@
 use common::logger::MyLog;
 use common::unwrap_or;
-use egregoria::engine_interaction::{WorldCommand, WorldCommands};
+use egregoria::engine_interaction::WorldCommands;
 use egregoria::Egregoria;
 use networking::{Frame, Server, ServerConfiguration, ServerPollResult};
 use std::time::{Duration, Instant};
