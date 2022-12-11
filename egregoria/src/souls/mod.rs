@@ -3,7 +3,7 @@ use crate::map_dynamic::BuildingInfos;
 use crate::souls::fret_station::freight_station_soul;
 use crate::souls::goods_company::{company_soul, CompanyKind, GoodsCompany, GoodsCompanyRegistry};
 use crate::souls::human::spawn_human;
-use crate::vehicles::{spawn_parked_vehicle, VehicleKind};
+use crate::transportation::{spawn_parked_vehicle, VehicleKind};
 use crate::Egregoria;
 use geom::Vec3;
 use std::collections::BTreeMap;

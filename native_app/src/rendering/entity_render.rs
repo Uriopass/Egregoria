@@ -1,7 +1,6 @@
 use egregoria::map_dynamic::Itinerary;
-use egregoria::pedestrians::{Location, Pedestrian};
-use egregoria::vehicles::trains::{RailWagon, RailWagonKind};
-use egregoria::vehicles::{Vehicle, VehicleKind};
+use egregoria::transportation::train::{RailWagon, RailWagonKind};
+use egregoria::transportation::{Location, Pedestrian, Vehicle, VehicleKind};
 use egregoria::Egregoria;
 use geom::{LinearColor, Transform, Vec3, V3};
 use wgpu_engine::meshload::load_mesh;

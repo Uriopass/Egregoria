@@ -1,6 +1,6 @@
 use crate::map::{IntersectionID, LaneID, Map, TraverseKind};
 use crate::map_dynamic::{DispatchKind, ItineraryFollower2, ItineraryKind};
-use crate::{Egregoria, GameTime, Itinerary, ItineraryLeader, Kinematics, Selectable};
+use crate::{Egregoria, GameTime, Itinerary, ItineraryLeader, Selectable, Speed};
 use egui_inspect::Inspect;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, View, World};
@@ -115,7 +115,7 @@ pub fn spawn_train(
 
     let loco = world.spawn((
         Transform::new_dir(locopos, locodir),
-        Kinematics::default(),
+        Speed::default(),
         Selectable::new(10.0),
         Locomotive {
             max_speed: 50.0,
@@ -149,7 +149,7 @@ pub fn spawn_train(
         let (pos2, dir2) = follower[1].update(&leader.past);
         world.spawn((
             Transform::new_dir(pos * 0.5 + pos2 * 0.5, (0.5 * (dir + dir2)).normalize()),
-            Kinematics::default(),
+            Speed::default(),
             Selectable::new(10.0),
             RailWagon {
                 kind: if i == 0 {
@@ -209,12 +209,7 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
     let lanes = map.lanes();
     let inters = map.intersections();
     world
-        .query_mut::<(
-            &Itinerary,
-            &Locomotive,
-            &mut LocomotiveReservation,
-            &Kinematics,
-        )>()
+        .query_mut::<(&Itinerary, &Locomotive, &mut LocomotiveReservation, &Speed)>()
         .into_iter()
         .for_each(move |(me, (itin, loco, locores, kin))| {
             // Remember when we've been
@@ -331,7 +326,7 @@ pub fn locomotive_system(world: &mut World, resources: &mut Resources) {
         .query::<(
             &mut Itinerary,
             &mut Transform,
-            &mut Kinematics,
+            &mut Speed,
             &Locomotive,
             &mut LocomotiveReservation,
         )>()
@@ -351,7 +346,7 @@ pub fn locomotive_decision(
     me: Entity,
     it: &mut Itinerary,
     trans: &mut Transform,
-    kin: &mut Kinematics,
+    kin: &mut Speed,
     loco: &Locomotive,
     locores: &mut LocomotiveReservation,
 ) {
@@ -391,7 +386,7 @@ pub fn locomotive_desired_speed(
     reservs: &TrainReservations,
     locoview: &View<&Locomotive>,
     trans: &Transform,
-    kin: &Kinematics,
+    kin: &Speed,
     it: &Itinerary,
     loco: &Locomotive,
     locores: &LocomotiveReservation,

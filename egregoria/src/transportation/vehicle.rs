@@ -1,6 +1,6 @@
 use crate::engine_interaction::Selectable;
 use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
-use crate::physics::{Collider, CollisionWorld, Kinematics, PhysicsGroup, PhysicsObject};
+use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject, Speed};
 use crate::utils::par_command_buffer::ComponentDrop;
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::GameInstant;
@@ -179,13 +179,9 @@ pub fn make_vehicle_entity(
     mk_collider: bool,
 ) -> Entity {
     let w = vehicle.kind.width();
-    let e = goria.world.spawn((
-        trans,
-        Kinematics::default(),
-        Selectable::default(),
-        vehicle,
-        it,
-    ));
+    let e = goria
+        .world
+        .spawn((trans, Speed::default(), Selectable::default(), vehicle, it));
 
     if mk_collider {
         let c = put_vehicle_in_coworld(goria, w, trans);

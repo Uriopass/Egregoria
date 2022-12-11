@@ -1,13 +1,18 @@
+use crate::transportation::Vehicle;
+use crate::utils::par_command_buffer::ComponentDrop;
 use egui_inspect::Inspect;
 use egui_inspect::InspectVec2Rotation;
 use flat_spatial::grid::GridHandle;
+use geom::Transform;
+use geom::Vec2;
+use hecs::{Entity, World};
+use resources::Resources;
 use serde::{Deserialize, Serialize};
 
-mod kinematics;
-pub mod systems;
-
-use geom::Vec2;
-pub use kinematics::*;
+#[derive(Clone, Default, Debug, Serialize, Deserialize, Inspect)]
+pub struct Speed {
+    pub speed: f32,
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PhysicsGroup {
@@ -48,3 +53,30 @@ pub type CollisionWorld = flat_spatial::Grid<PhysicsObject, Vec2>;
 pub struct Collider(pub GridHandle);
 
 debug_inspect_impl!(Collider);
+
+#[profiling::function]
+pub fn coworld_synchronize(world: &mut World, resources: &mut Resources) {
+    let mut coworld = resources.get_mut::<CollisionWorld>().unwrap();
+    world
+        .query_mut::<(&Transform, &Speed, &Collider, Option<&Vehicle>)>()
+        .into_iter()
+        .for_each(|(_, (trans, kin, coll, v))| {
+            coworld.set_position(coll.0, trans.position.xy());
+            let (_, po) = coworld.get_mut(coll.0).unwrap(); // Unwrap ok: handle is deleted only when entity is deleted too
+            po.dir = trans.dir.xy();
+            po.speed = kin.speed;
+            po.height = trans.position.z;
+            if let Some(v) = v {
+                po.flag = v.flag;
+            }
+        });
+    coworld.maintain();
+}
+
+impl ComponentDrop for Collider {
+    fn drop(&mut self, res: &mut Resources, _: Entity) {
+        res.get_mut::<CollisionWorld>()
+            .unwrap()
+            .remove_maintain(self.0);
+    }
+}

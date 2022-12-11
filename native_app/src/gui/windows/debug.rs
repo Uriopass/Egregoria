@@ -11,9 +11,8 @@ use egregoria::Egregoria;
 
 use crate::inputmap::InputMap;
 use egregoria::map::{IntersectionID, Map, RoadSegmentKind, TraverseKind};
-use egregoria::pedestrians::Pedestrian;
-use egregoria::vehicles::trains::TrainReservations;
-use egregoria::vehicles::Vehicle;
+use egregoria::transportation::train::TrainReservations;
+use egregoria::transportation::{Pedestrian, Vehicle};
 use egui::Widget;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use wgpu_engine::Tesselator;
@@ -451,9 +450,9 @@ pub(crate) fn debug_trainreservations(
         .world()
         .query::<(
             &Itinerary,
-            &egregoria::physics::Kinematics,
-            &egregoria::vehicles::trains::Locomotive,
-            &egregoria::vehicles::trains::LocomotiveReservation,
+            &egregoria::physics::Speed,
+            &egregoria::transportation::train::Locomotive,
+            &egregoria::transportation::train::LocomotiveReservation,
         )>()
         .iter()
     {
@@ -468,7 +467,7 @@ pub(crate) fn debug_trainreservations(
                 - locores.cur_travers_dist;
 
             let stop_dist = kin.speed * kin.speed / (2.0 * loco.dec_force);
-            for (v, _, _, _) in egregoria::vehicles::trains::traverse_forward(
+            for (v, _, _, _) in egregoria::transportation::train::traverse_forward(
                 &map,
                 itin,
                 stop_dist + 15.0,

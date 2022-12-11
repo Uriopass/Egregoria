@@ -1,12 +1,13 @@
 use crate::map::BuildingID;
-use crate::vehicles::VehicleID;
 use serde::{Deserialize, Serialize};
 
-pub mod data;
-pub mod systems;
+pub mod pedestrian;
+pub mod road;
+pub mod train;
+mod vehicle;
 
-pub use data::*;
-pub use systems::*;
+pub use pedestrian::*;
+pub use vehicle::*;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Location {
@@ -14,5 +15,4 @@ pub enum Location {
     Vehicle(VehicleID),
     Building(BuildingID),
 }
-
 debug_inspect_impl!(Location);

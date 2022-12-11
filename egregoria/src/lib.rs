@@ -5,24 +5,23 @@ use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommand};
 use crate::map::{BuildingKind, Map};
 use crate::map_dynamic::{Itinerary, ItineraryFollower, ItineraryLeader, Router};
-use crate::pedestrians::Pedestrian;
 use crate::physics::CollisionWorld;
-use crate::physics::{Collider, Kinematics};
+use crate::physics::{Collider, Speed};
 use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::goods_company::{GoodsCompany, GoodsCompanyRegistry};
 use crate::souls::human::HumanDecision;
-use crate::vehicles::trains::{Locomotive, LocomotiveReservation};
-use crate::vehicles::Vehicle;
+use crate::transportation::train::{Locomotive, LocomotiveReservation};
+use crate::transportation::{Pedestrian, Vehicle};
 use common::saveload::Encoder;
 use geom::{Transform, Vec3};
 use hecs::{Component, Entity, World};
-use pedestrians::Location;
 use resources::{Ref, RefMut, Resource, Resources};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::time::{Duration, Instant};
+use transportation::Location;
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
 use utils::time::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
@@ -45,19 +44,18 @@ pub mod engine_interaction;
 pub mod init;
 pub mod map;
 pub mod map_dynamic;
-pub mod pedestrians;
 pub mod physics;
 pub mod souls;
 mod tests;
+pub mod transportation;
 pub mod utils;
-pub mod vehicles;
 
 use crate::engine_interaction::WorldCommand::Init;
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::souls::fret_station::FreightStation;
+use crate::transportation::train::RailWagon;
 use crate::utils::scheduler::RunnableSystem;
 use crate::utils::time::Tick;
-use crate::vehicles::trains::RailWagon;
 use common::FastMap;
 use serde::de::Error;
 pub use utils::par_command_buffer::ParCommandBuffer;
@@ -521,7 +519,7 @@ register!(
         Home => _5,
         HumanDecision => _6,
         Itinerary => _7,
-        Kinematics => _8,
+        Speed => _8,
         Location => _9,
         Pedestrian => _10,
         Router => _11,

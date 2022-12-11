@@ -1,6 +1,6 @@
 use crate::map::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use crate::utils::time::GameTime;
-use crate::Kinematics;
+use crate::Speed;
 use egui_inspect::egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Follower, Polyline3Queue, Transform, Vec3};
@@ -393,7 +393,7 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
     let time = &*resources.get::<GameTime>().unwrap();
     let map = &*resources.get::<Map>().unwrap();
     world
-        .query::<(&mut Transform, &Kinematics, &mut Itinerary)>()
+        .query::<(&mut Transform, &Speed, &mut Itinerary)>()
         .iter_batched(32)
         .par_bridge()
         .for_each(|chunk| {

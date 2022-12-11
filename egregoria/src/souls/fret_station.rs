@@ -1,7 +1,7 @@
 use crate::map::{BuildingID, BuildingKind, Map, PathKind};
 use crate::map_dynamic::{BuildingInfos, DispatchKind, DispatchQueryTarget, Dispatcher, Itinerary};
+use crate::transportation::train::TrainID;
 use crate::utils::time::GameTime;
-use crate::vehicles::trains::TrainID;
 use crate::{Egregoria, ParCommandBuffer, Selectable, SoulID};
 use geom::Transform;
 use hecs::World;

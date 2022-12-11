@@ -5,8 +5,8 @@ use crate::map::{
     LightPolicy, LotID, Map, MapProject, RoadID, StraightRoadGen, Terrain, TurnPolicy,
 };
 use crate::map_dynamic::BuildingInfos;
+use crate::transportation::train::{spawn_train, RailWagonKind};
 use crate::utils::time::{GameTime, Tick};
-use crate::vehicles::trains::{spawn_train, RailWagonKind};
 use crate::{Egregoria, EgregoriaOptions, Replay};
 use geom::{vec3, Transform, Vec2, OBB};
 use hecs::Entity;

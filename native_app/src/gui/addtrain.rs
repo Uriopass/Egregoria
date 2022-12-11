@@ -5,7 +5,7 @@ use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::LaneKind;
-use egregoria::vehicles::trains::{train_length, wagons_positions_for_render};
+use egregoria::transportation::train::{train_length, wagons_positions_for_render};
 use egregoria::Egregoria;
 use geom::{Color, OBB};
 use std::option::Option::None;

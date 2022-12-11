@@ -1,7 +1,7 @@
 use crate::economy::Market;
 use crate::map_dynamic::{DispatchKind, Router};
 use crate::physics::Collider;
-use crate::vehicles::Vehicle;
+use crate::transportation::Vehicle;
 use crate::{Egregoria, SoulID};
 use hecs::{Component, Entity};
 use resources::{Resource, Resources};

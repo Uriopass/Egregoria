@@ -2,7 +2,7 @@ use crate::gui::InspectedEntity;
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::Selectable;
-use egregoria::pedestrians::Location;
+use egregoria::transportation::Location;
 use egregoria::Egregoria;
 use geom::Color;
 

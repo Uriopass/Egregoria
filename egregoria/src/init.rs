@@ -4,14 +4,16 @@ use crate::map_dynamic::{
     dispatch_system, itinerary_update, routing_changed_system, routing_update_system,
     BuildingInfos, Dispatcher, ParkingManagement,
 };
-use crate::pedestrians::pedestrian_decision_system;
-use crate::physics::systems::coworld_synchronize;
+use crate::physics::coworld_synchronize;
 use crate::souls::fret_station::freight_station_system;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
+use crate::transportation::pedestrian_decision_system;
+use crate::transportation::road::{vehicle_decision_system, vehicle_state_update_system};
+use crate::transportation::train::{
+    locomotive_system, train_reservations_update, TrainReservations,
+};
 use crate::utils::time::Tick;
-use crate::vehicles::systems::{vehicle_decision_system, vehicle_state_update_system};
-use crate::vehicles::trains::{locomotive_system, train_reservations_update, TrainReservations};
 use crate::{
     add_souls_to_empty_buildings, utils, CollisionWorld, Egregoria, EgregoriaOptions, GameTime,
     ParCommandBuffer, RandProvider, Replay, RunnableSystem, RNG_SEED, SECONDS_PER_DAY,

@@ -1,9 +1,10 @@
 use crate::map::{BuildingID, Map, PathKind};
 use crate::map_dynamic::{Itinerary, ParkingManagement, ParkingReserveError, SpotReservation};
-use crate::pedestrians::{put_pedestrian_in_coworld, Location};
-use crate::physics::{Collider, CollisionWorld, Kinematics};
+use crate::physics::{Collider, CollisionWorld, Speed};
+use crate::transportation::{
+    put_pedestrian_in_coworld, unpark, Location, Vehicle, VehicleID, VehicleState,
+};
 use crate::utils::par_command_buffer::ComponentDrop;
-use crate::vehicles::{unpark, Vehicle, VehicleID, VehicleState};
 use crate::{Egregoria, ParCommandBuffer};
 use egui_inspect::Inspect;
 use geom::{Spline3, Transform, Vec3};
@@ -130,7 +131,7 @@ pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
             &Itinerary,
             &mut Router,
             &mut Location,
-            &mut Kinematics,
+            &mut Speed,
         )>()
         .iter_batched(32)
         .par_bridge()
@@ -147,7 +148,7 @@ pub fn routing_update(
     itin: &Itinerary,
     router: &mut Router,
     loc: &mut Location,
-    kin: &mut Kinematics,
+    kin: &mut Speed,
     world: &World,
 ) {
     if router.cur_step.is_none() && router.steps.is_empty() {
@@ -277,7 +278,7 @@ fn comp<T: Component>(sw: &World, e: Entity) -> Option<Ref<T>> {
     sw.get::<&T>(e).ok()
 }
 
-fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, kin: &mut Kinematics) {
+fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, kin: &mut Speed) {
     cbuf.remove_component_drop::<Collider>(body);
     kin.speed = 0.0;
     cbuf.add_component(body, Itinerary::NONE)
@@ -315,7 +316,7 @@ fn park(vehicle: VehicleID, spot_resa: SpotReservation) -> impl FnOnce(&mut Egre
 
         unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0)).state =
             VehicleState::RoadToPark(s, 0.0, spot_resa);
-        unwrap_ret!(goria.comp_mut::<Kinematics>(vehicle.0)).speed = 0.0;
+        unwrap_ret!(goria.comp_mut::<Speed>(vehicle.0)).speed = 0.0;
     }
 }
 

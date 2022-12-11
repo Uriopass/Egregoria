@@ -1,8 +1,8 @@
 use crate::economy::{find_trade_place, Bought, ItemID, ItemRegistry, Market};
 use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination};
-use crate::pedestrians::Location;
 use crate::souls::human::HumanDecisionKind;
+use crate::transportation::Location;
 use crate::utils::time::{GameInstant, GameTime};
 use crate::{Map, ParCommandBuffer, SoulID};
 use egui_inspect::Inspect;

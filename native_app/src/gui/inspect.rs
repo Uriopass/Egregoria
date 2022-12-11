@@ -2,16 +2,15 @@ use crate::gui::follow::FollowEntity;
 use crate::uiworld::UiWorld;
 use egregoria::economy::{ItemRegistry, Market, Workers};
 use egregoria::map_dynamic::{DispatchKind, Itinerary, Router};
-use egregoria::pedestrians::{Location, Pedestrian};
-use egregoria::physics::{Collider, CollisionWorld, Kinematics, PhysicsObject};
+use egregoria::physics::{Collider, CollisionWorld, PhysicsObject, Speed};
 use egregoria::souls::desire::{BuyFood, Home, Work};
 use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::souls::human::HumanDecision;
-use egregoria::vehicles::{Vehicle, VehicleID};
+use egregoria::transportation::{Location, Pedestrian, Vehicle, VehicleID};
 use egregoria::{Egregoria, SoulID};
 
 use egregoria::souls::fret_station::FreightStation;
-use egregoria::vehicles::trains::{Locomotive, LocomotiveReservation};
+use egregoria::transportation::train::{Locomotive, LocomotiveReservation};
 use egui::{Color32, RichText, Ui};
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Transform, Vec2};
@@ -68,7 +67,7 @@ impl InspectRenderer {
         self.inspect_component::<Vehicle>(goria, ui);
         self.inspect_component::<Pedestrian>(goria, ui);
         self.inspect_component::<Location>(goria, ui);
-        self.inspect_component::<Kinematics>(goria, ui);
+        self.inspect_component::<Speed>(goria, ui);
         self.inspect_component::<Itinerary>(goria, ui);
         self.inspect_component::<Router>(goria, ui);
         self.inspect_component::<HumanDecision>(goria, ui);
@@ -121,7 +120,7 @@ impl InspectRenderer {
             }
         }
 
-        if goria.comp::<Kinematics>(self.entity).is_some() {
+        if goria.comp::<Speed>(self.entity).is_some() {
             let follow = &mut uiworld.write::<FollowEntity>().0;
             if follow.is_none() {
                 if ui.small_button("Follow").clicked() {

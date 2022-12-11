@@ -1,9 +1,9 @@
 use crate::map::{Map, TrafficBehavior, Traversable, TraverseKind};
 use crate::map_dynamic::{Itinerary, OBJECTIVE_OK_DIST};
-use crate::physics::Kinematics;
+use crate::physics::Speed;
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
+use crate::transportation::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::utils::time::GameTime;
-use crate::vehicles::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::ParCommandBuffer;
 use geom::{angle_lerpxy, Ray, Transform, Vec2, Vec3};
 use hecs::{Entity, World};
@@ -19,7 +19,7 @@ pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
         .query::<(
             &mut Itinerary,
             &mut Transform,
-            &mut Kinematics,
+            &mut Speed,
             &mut Vehicle,
             &Collider,
         )>()
@@ -39,7 +39,7 @@ pub fn vehicle_decision(
     me: Entity,
     it: &mut Itinerary,
     trans: &mut Transform,
-    kin: &mut Kinematics,
+    kin: &mut Speed,
     vehicle: &mut Vehicle,
     collider: &Collider,
 ) {
@@ -80,7 +80,7 @@ pub fn vehicle_state_update_system(world: &mut World, resources: &mut Resources)
     let rb = &*resources.get().unwrap();
     let rc = &*resources.get().unwrap();
     world
-        .query::<(&mut Vehicle, &mut Transform, &mut Kinematics)>()
+        .query::<(&mut Vehicle, &mut Transform, &mut Speed)>()
         .iter_batched(32)
         .par_bridge()
         .for_each(|batch| {
@@ -98,7 +98,7 @@ pub fn vehicle_state_update(
     ent: Entity,
     vehicle: &mut Vehicle,
     trans: &mut Transform,
-    kin: &mut Kinematics,
+    kin: &mut Speed,
 ) {
     match vehicle.state {
         VehicleState::RoadToPark(_, ref mut t, _) => {
@@ -131,7 +131,7 @@ pub fn vehicle_state_update(
 /// Handles actually moving the vehicles around, including acceleration and other physics stuff.
 fn physics(
     trans: &mut Transform,
-    kin: &mut Kinematics,
+    kin: &mut Speed,
     vehicle: &mut Vehicle,
     time: &GameTime,
     obj: &PhysicsObject,

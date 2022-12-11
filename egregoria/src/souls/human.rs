@@ -1,10 +1,11 @@
 use crate::economy::{Bought, ItemRegistry, Market};
 use crate::map::BuildingID;
 use crate::map_dynamic::{BuildingInfos, Destination, Router};
-use crate::pedestrians::{spawn_pedestrian, Location};
 use crate::souls::desire::{BuyFood, Home, Work};
+use crate::transportation::{
+    spawn_parked_vehicle, spawn_pedestrian, Location, VehicleID, VehicleKind,
+};
 use crate::utils::time::GameTime;
-use crate::vehicles::{spawn_parked_vehicle, VehicleID, VehicleKind};
 use crate::{BuildingKind, Egregoria, FreightStation, Map, ParCommandBuffer, SoulID};
 use egui_inspect::Inspect;
 use geom::Transform;
