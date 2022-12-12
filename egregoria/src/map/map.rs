@@ -200,7 +200,6 @@ impl Map {
             *obb,
             kind,
             gen,
-            attachments,
         );
 
         if kind.is_cached_in_bkinds() {
@@ -228,7 +227,6 @@ impl Map {
             lot.shape,
             BuildingKind::House,
             BuildingGen::House,
-            vec![],
         );
         self.check_invariants();
         v
@@ -249,11 +247,6 @@ impl Map {
 
         for (id, _) in road.lanes_iter() {
             self.parking.remove_spots(id);
-        }
-
-        if road.lanes_iter().any(|(_, v)| v.is_rail()) {
-            self.buildings
-                .retain(|_, t| !t.attachments.contains(&road_id));
         }
 
         let smap = &mut self.spatial_map;
