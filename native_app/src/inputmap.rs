@@ -41,7 +41,7 @@ pub(crate) enum InputAction {
 }
 
 // All unit inputs need to match
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub(crate) struct InputCombination(Vec<UnitInput>);
 
 #[derive(Default)]

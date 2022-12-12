@@ -1,9 +1,10 @@
 use crate::game_loop::Timings;
-use crate::inputmap::Bindings;
+use crate::inputmap::{Bindings, InputMap};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
 use egui::{Align2, Context, Widget};
+use egui_extras::Column;
 use std::time::Duration;
 
 const SETTINGS_SAVE_NAME: &str = "settings";
@@ -239,26 +240,66 @@ pub(crate) fn settings(
             });
 
             ui.separator();
-            ui.label("Keybinds");
+            let mut bindings = uiworld.write::<Bindings>();
+            ui.horizontal(|ui| {
+                ui.label("Keybinds");
 
-            ui.columns(3, |ui| {
-                ui[0].label("Action");
-                ui[1].label("Input");
-                ui[2].label("...");
-
-                let bindings = uiworld.write::<Bindings>();
-
-                let mut sorted_inps = bindings.0.keys().collect::<Vec<_>>();
-                sorted_inps.sort();
-                for (act, comb) in sorted_inps
-                    .into_iter()
-                    .map(|x| (x, bindings.0.get(x).unwrap()))
-                {
-                    ui[0].label(format!("{}", act));
-                    ui[1].label(format!("{}", comb));
-                    ui[2].label("cannot change bindings for now");
+                if ui.button("Reset").clicked() {
+                    *bindings = Bindings::default();
+                    uiworld.write::<InputMap>().build_input_tree(&mut bindings);
                 }
             });
+
+            let mut sorted_inps = bindings.0.keys().copied().collect::<Vec<_>>();
+            sorted_inps.sort();
+
+            egui_extras::TableBuilder::new(ui)
+                .column(Column::initial(150.0))
+                .column(Column::initial(150.0))
+                .column(Column::initial(150.0))
+                .column(Column::initial(50.0))
+                .header(30.0, |mut header| {
+                    header.col(|ui| {
+                        ui.label("Action");
+                    });
+                    header.col(|ui| {
+                        ui.label("Primary");
+                    });
+                    header.col(|ui| {
+                        ui.label("Secondary");
+                    });
+                })
+                .body(|body| {
+                    body.rows(25.0, sorted_inps.len(), |i, mut ui| {
+                        let action = &sorted_inps[i];
+                        let comb = bindings.0.get_mut(action).unwrap();
+
+                        ui.col(|ui| {
+                            ui.label(format!("{}", action));
+                        });
+                        ui.col(|ui| {
+                            let resp = if !comb.0.is_empty() {
+                                ui.button(format!("{}", comb.0[0]))
+                            } else {
+                                ui.button("<empty>")
+                            };
+                            if resp.clicked() {}
+                        });
+                        ui.col(|ui| {
+                            let resp = if comb.0.len() > 1 {
+                                ui.button(format!("{}", comb.0[1]))
+                            } else {
+                                ui.button("<empty>")
+                            };
+                            if resp.clicked() {}
+                        });
+                        ui.col(|ui| {
+                            if ui.button("↺").clicked() {
+                                comb.0 = Bindings::default().0.remove(action).unwrap().0;
+                            }
+                        });
+                    })
+                });
 
             common::saveload::JSONPretty::save_silent(&*settings, SETTINGS_SAVE_NAME);
         });

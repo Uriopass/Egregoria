@@ -32,6 +32,7 @@ include_dir   = "0.7.2"
 egui-inspect = { path = "../egui-inspect" }
 egui = "0.20.0"
 egui-wgpu = "0.20.0"
+egui_extras = "0.20.0"
 
 [features]
 default = []
