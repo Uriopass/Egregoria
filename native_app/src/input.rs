@@ -276,7 +276,7 @@ impl From<VirtualKeyCode> for KeyCode {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
 pub(crate) enum MouseButton {
     Left,
     Right,
@@ -293,7 +293,7 @@ impl KeyCode {
 }
 
 /// Symbolic name for a keyboard key.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[repr(u32)]
 pub(crate) enum KeyCode {
     Key1,

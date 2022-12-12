@@ -2,14 +2,15 @@ use crate::input::{InputContext, KeyCode, MouseButton};
 use common::{FastMap, FastSet};
 use geom::{Vec2, Vec3};
 use std::collections::hash_map::Entry;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::fmt::{Debug, Display, Formatter};
 use winit::event::ScanCode;
 
 // Either combinations can work
+#[derive(Serialize, Deserialize)]
 pub(crate) struct InputCombinations(pub(crate) Vec<InputCombination>);
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 enum UnitInput {
     Key(KeyCode),
     KeyScan(ScanCode),
@@ -18,7 +19,7 @@ enum UnitInput {
     WheelDown,
 }
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub(crate) enum InputAction {
     GoLeft,
     GoRight,
@@ -40,26 +41,32 @@ pub(crate) enum InputAction {
 }
 
 // All unit inputs need to match
+#[derive(Serialize, Deserialize)]
 pub(crate) struct InputCombination(Vec<UnitInput>);
 
+#[derive(Default)]
 struct InputTree {
     actions: Vec<InputAction>,
     childs: FastMap<UnitInput, Box<InputTree>>,
 }
+
+#[derive(Default)]
 pub(crate) struct InputMap {
     pub(crate) just_act: FastSet<InputAction>,
     pub(crate) act: FastSet<InputAction>,
-    pub(crate) input_mapping: FastMap<InputAction, InputCombinations>,
     pub(crate) wheel: f32,
     pub(crate) unprojected: Option<Vec3>,
     pub(crate) screen: Vec2,
     input_tree: InputTree,
 }
 
-impl InputMap {
+#[derive(Serialize, Deserialize)]
+pub struct Bindings(pub(crate) BTreeMap<InputAction, InputCombinations>);
+
+impl Default for Bindings {
     #[rustfmt::skip]
-    pub(crate) fn default_mapping() -> FastMap<InputAction, InputCombinations> {
-        let mut m = FastMap::default();
+    fn default() -> Self {
+        let mut m = BTreeMap::default();
         use InputAction::*;
         use UnitInput::*;
         use MouseButton::*;
@@ -96,16 +103,18 @@ impl InputMap {
             }
         }
 
-        m
+        Bindings(m)
     }
+}
 
-    fn build_input_tree(&mut self) {
-        for v in &mut self.input_mapping.values_mut() {
+impl InputMap {
+    pub fn build_input_tree(&mut self, bindings: &mut Bindings) {
+        for v in &mut bindings.0.values_mut() {
             for x in &mut v.0 {
                 x.0.sort()
             }
         }
-        self.input_tree = InputTree::new(&self.input_mapping);
+        self.input_tree = InputTree::new(bindings);
     }
 
     pub(crate) fn prepare_frame(&mut self, input: &InputContext, kb: bool, mouse: bool) {
@@ -201,33 +210,14 @@ impl Debug for InputAction {
     }
 }
 
-impl Default for InputMap {
-    fn default() -> Self {
-        let mut s = Self {
-            just_act: Default::default(),
-            act: Default::default(),
-            input_mapping: Self::default_mapping(),
-            wheel: 0.0,
-            unprojected: None,
-            screen: Default::default(),
-            input_tree: InputTree {
-                childs: Default::default(),
-                actions: Vec::new(),
-            },
-        };
-        s.build_input_tree();
-        s
-    }
-}
-
 impl InputTree {
-    pub(crate) fn new(mapping: &FastMap<InputAction, InputCombinations>) -> Self {
+    pub(crate) fn new(bindings: &Bindings) -> Self {
         let mut root = Self {
             actions: Vec::new(),
             childs: Default::default(),
         };
 
-        for (act, combs) in mapping {
+        for (act, combs) in &bindings.0 {
             log::info!("{} {}", act, combs);
             for comb in &combs.0 {
                 let mut cur: &mut InputTree = &mut root;

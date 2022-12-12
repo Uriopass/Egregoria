@@ -7,7 +7,7 @@ use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::debug::{DebugObjs, DebugState};
 use crate::gui::windows::settings::Settings;
 use crate::gui::{ExitState, FollowEntity, InspectedEntity, PotentialCommand, Tool};
-use crate::inputmap::InputMap;
+use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::{ReceivedCommands, UiWorld};
@@ -24,6 +24,7 @@ pub(crate) fn init() {
     #[cfg(feature = "multiplayer")]
     register_resource::<crate::gui::windows::network::NetworkConnectionInfo>("netinfo");
     register_resource::<LotBrushResource>("lot_brush");
+    register_resource::<Bindings>("bindings");
 
     register_resource_noserialize::<BulldozerState>();
     register_resource_noserialize::<DebugObjs>();
@@ -76,7 +77,7 @@ fn register_resource<T: 'static + Default + Send + Sync + Serialize + Deserializ
         });
         SAVELOAD_FUNCS.push(SaveLoadFunc {
             save: Box::new(move |uiworld| {
-                <common::saveload::JSON as Encoder>::save(&*uiworld.read::<T>(), name);
+                <common::saveload::JSONPretty as Encoder>::save(&*uiworld.read::<T>(), name);
             }),
             load: Box::new(move |uiworld| {
                 if let Some(res) = <common::saveload::JSON as Encoder>::load::<T>(name) {

@@ -1,5 +1,5 @@
 use crate::game_loop::Timings;
-use crate::inputmap::InputMap;
+use crate::inputmap::Bindings;
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
@@ -241,18 +241,18 @@ pub(crate) fn settings(
             ui.separator();
             ui.label("Keybinds");
 
-            let im = uiworld.read::<InputMap>();
-
             ui.columns(3, |ui| {
                 ui[0].label("Action");
                 ui[1].label("Input");
                 ui[2].label("...");
 
-                let mut sorted_inps = im.input_mapping.keys().collect::<Vec<_>>();
+                let bindings = uiworld.write::<Bindings>();
+
+                let mut sorted_inps = bindings.0.keys().collect::<Vec<_>>();
                 sorted_inps.sort();
                 for (act, comb) in sorted_inps
                     .into_iter()
-                    .map(|x| (x, im.input_mapping.get(x).unwrap()))
+                    .map(|x| (x, bindings.0.get(x).unwrap()))
                 {
                     ui[0].label(format!("{}", act));
                     ui[1].label(format!("{}", comb));

@@ -17,7 +17,7 @@ use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::Settings;
 use crate::gui::{FollowEntity, Gui, Tool, UiTextures};
-use crate::inputmap::{InputAction, InputMap};
+use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::rendering::egui_wrapper::EguiWrapper;
 use crate::rendering::{CameraHandler3D, InstancedRender, MapRenderOptions, MapRenderer};
 use crate::uiworld::{SaveLoadState, UiWorld};
@@ -58,6 +58,17 @@ impl State {
             Egregoria::load_from_disk("world").unwrap_or_else(|| Egregoria::new(true));
         let game_schedule = Egregoria::schedule();
         let mut uiworld = UiWorld::init();
+
+        let mut bindings = uiworld.write::<Bindings>();
+        let default_bindings = Bindings::default();
+        bindings
+            .0
+            .retain(|act, _| default_bindings.0.contains_key(act));
+        for (act, comb) in default_bindings.0 {
+            bindings.0.entry(act).or_insert(comb);
+        }
+        uiworld.write::<InputMap>().build_input_tree(&mut bindings);
+        drop(bindings);
 
         uiworld.insert(UiTextures::new(&mut egui_render.egui));
 
