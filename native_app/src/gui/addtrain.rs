@@ -39,7 +39,7 @@ pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     let proj = nearbylane.points.project(mpos);
     let dist = nearbylane.points.length_at_proj(proj);
 
-    let n_wagons = 8;
+    let n_wagons = 7;
     let trainlength = train_length(n_wagons);
 
     let mut drawtrain = |col: Color| {

@@ -1,3 +1,4 @@
+#![allow(clippy::type_complexity)]
 use crate::context::Context;
 use winit::event_loop::EventLoop;
 use winit::window::{Window, WindowBuilder};

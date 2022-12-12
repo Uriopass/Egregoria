@@ -85,11 +85,11 @@ impl Gui {
     ) {
         let inpos = ui.input().pointer.hover_pos();
 
-        let pot = &uiworld.write::<PotentialCommands>().0;
+        let pot = &mut uiworld.write::<PotentialCommands>().0;
 
         let cost: Money = pot
-            .iter()
-            .map(|cmd| Government::action_cost(cmd, goria))
+            .drain(..)
+            .map(|cmd| Government::action_cost(&cmd, goria))
             .sum();
         if let Some(inpos) = inpos {
             if cost > Money::default() {
@@ -294,18 +294,26 @@ impl Gui {
                                     LanePatternBuilder::new().rail(true).one_way(true).build();
 
                                 let mut commands = Vec::with_capacity(5);
-                                for i in 0..4 {
-                                    commands.push(WorldCommand::MapMakeConnection(
-                                        MapProject::ground(
-                                            c - offx * (15.0 + i as f32 * 20.0) - offy * 100.0,
-                                        ),
-                                        MapProject::ground(
-                                            c - offx * (15.0 + i as f32 * 20.0) + offy * 100.0,
-                                        ),
-                                        None,
-                                        pat.clone(),
+
+                                let mut projs = Vec::with_capacity(6);
+                                let mut links = Vec::with_capacity(6);
+
+                                projs.push(MapProject::ground(c + offy * 200.0 - offx * 45.0));
+                                projs.push(MapProject::ground(c - offy * 200.0 - offx * 45.0));
+
+                                for i in 1..5 {
+                                    projs.push(MapProject::ground(
+                                        c - offx * (-5.0 + i as f32 * 20.0) - offy * 100.0,
                                     ));
+                                    projs.push(MapProject::ground(
+                                        c - offx * (-5.0 + i as f32 * 20.0) + offy * 100.0,
+                                    ));
+                                    links.push((i * 2, i * 2 + 1, None, pat.clone()));
+                                    links.push((i * 2 + 1, 0, None, pat.clone()));
+                                    links.push((1, i * 2, None, pat.clone()));
                                 }
+                                commands
+                                    .push(WorldCommand::MapMakeMultipleConnections(projs, links));
                                 commands.push(WorldCommand::MapBuildSpecialBuilding(
                                     args.obb,
                                     BuildingKind::RailFretStation,
@@ -475,7 +483,7 @@ impl Gui {
         }
 
         if matches!(*uiworld.read::<Tab>(), Tab::Bulldozer) {
-            let lbw = 80.0;
+            let lbw = 120.0;
             Window::new("Bulldozer")
                 .min_width(lbw)
                 .auto_sized()

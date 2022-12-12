@@ -2,7 +2,7 @@ use crate::economy::Government;
 use crate::map::procgen::{load_parismap, load_testfield};
 use crate::map::{
     BuildingGen, BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LanePatternBuilder,
-    LightPolicy, LotID, Map, MapProject, RoadID, Terrain, TurnPolicy,
+    LightPolicy, LotID, Map, MapProject, ProjectKind, RoadID, Terrain, TurnPolicy,
 };
 use crate::map_dynamic::BuildingInfos;
 use crate::transportation::train::{spawn_train, RailWagonKind};
@@ -11,6 +11,7 @@ use crate::{Egregoria, EgregoriaOptions, Replay};
 use geom::{vec3, Transform, Vec2, OBB};
 use hecs::Entity;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::time::Instant;
 use WorldCommand::*;
 
@@ -47,6 +48,10 @@ pub enum WorldCommand {
     MapBuildHouse(LotID),
     AddTrain(f32, u32, LaneID),
     MapMakeConnection(MapProject, MapProject, Option<Vec2>, LanePattern), // todo: allow lane pattern builder
+    MapMakeMultipleConnections(
+        Vec<MapProject>,
+        Vec<(usize, usize, Option<Vec2>, LanePattern)>,
+    ),
     MapUpdateIntersectionPolicy(IntersectionID, TurnPolicy, LightPolicy),
     MapBuildSpecialBuilding(OBB, BuildingKind, BuildingGen),
     MapLoadParis,
@@ -174,6 +179,30 @@ impl WorldCommand {
                 goria
                     .write::<Map>()
                     .make_connection(from, to, interpoint, pat);
+            }
+            MapMakeMultipleConnections(ref projects, ref links) => {
+                let mut map = goria.map_mut();
+                let mut inters = BTreeMap::new();
+                for (from, to, interpoint, pat) in links {
+                    let mut fromproj = projects[*from];
+                    let mut toproj = projects[*to];
+
+                    if let Some(i) = inters.get(from) {
+                        fromproj.kind = ProjectKind::Inter(*i);
+                    }
+                    if let Some(i) = inters.get(to) {
+                        toproj.kind = ProjectKind::Inter(*i);
+                    }
+
+                    if let Some((_, r)) = map.make_connection(fromproj, toproj, *interpoint, pat) {
+                        if fromproj.kind.is_ground() {
+                            inters.insert(*from, map.roads[r].src);
+                        }
+                        if toproj.kind.is_ground() {
+                            inters.insert(*to, map.roads[r].dst);
+                        }
+                    }
+                }
             }
             MapUpdateIntersectionPolicy(id, tp, lp) => {
                 goria.map_mut().update_intersection(id, move |i| {
