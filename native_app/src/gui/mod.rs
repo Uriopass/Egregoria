@@ -39,7 +39,14 @@ pub(crate) fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
 }
 
 #[derive(Default, Clone, Debug)]
-pub struct PotentialCommand(pub Option<WorldCommand>);
+pub struct PotentialCommands(pub Vec<WorldCommand>);
+
+impl PotentialCommands {
+    pub fn set(&mut self, cmd: WorldCommand) {
+        self.0.clear();
+        self.0.push(cmd);
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct InspectedEntity {

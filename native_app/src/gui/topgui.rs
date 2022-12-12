@@ -4,15 +4,14 @@ use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
-use crate::gui::{InspectedEntity, PotentialCommand, RoadBuildResource, Tool, UiTex, UiTextures};
+use crate::gui::{InspectedEntity, PotentialCommands, RoadBuildResource, Tool, UiTex, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
-use egregoria::economy::{Government, ItemRegistry};
+use egregoria::economy::{Government, ItemRegistry, Money};
 use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::{
-    BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, StraightRoadGen,
-    TurnPolicy,
+    BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, MapProject, TurnPolicy,
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::{GameTime, SECONDS_PER_HOUR};
@@ -86,21 +85,28 @@ impl Gui {
     ) {
         let inpos = ui.input().pointer.hover_pos();
 
-        if let Some((cmd, inpos)) = uiworld.write::<PotentialCommand>().0.take().zip(inpos) {
-            let cost = Government::action_cost(&cmd, goria);
-            let txt = format!("{}", cost);
+        let pot = &uiworld.write::<PotentialCommands>().0;
 
-            Window::new("tooltip")
-                .fixed_pos(inpos + egui::Vec2::new(20.0 / ui.pixels_per_point(), 0.0))
-                .title_bar(false)
-                .resizable(false)
-                .show(ui, |ui| {
-                    if cost > goria.read::<Government>().money {
-                        ui.colored_label(Color32::RED, format!("{} too expensive", txt));
-                    } else {
-                        ui.label(txt);
-                    }
-                });
+        let cost: Money = pot
+            .iter()
+            .map(|cmd| Government::action_cost(cmd, goria))
+            .sum();
+        if let Some(inpos) = inpos {
+            if cost > Money::default() {
+                let txt = format!("{}", cost);
+
+                Window::new("tooltip")
+                    .fixed_pos(inpos + egui::Vec2::new(20.0 / ui.pixels_per_point(), 0.0))
+                    .title_bar(false)
+                    .resizable(false)
+                    .show(ui, |ui| {
+                        if cost > goria.read::<Government>().money {
+                            ui.colored_label(Color32::RED, format!("{} too expensive", txt));
+                        } else {
+                            ui.label(txt);
+                        }
+                    });
+            }
         }
     }
 
@@ -284,26 +290,30 @@ impl Gui {
 
                                 let [offx, offy] = obb.axis().map(|x| x.normalize().z(0.0));
 
-                                let mut tracks = vec![];
-
                                 let pat =
                                     LanePatternBuilder::new().rail(true).one_way(true).build();
 
+                                let mut commands = Vec::with_capacity(5);
                                 for i in 0..4 {
-                                    tracks.push(StraightRoadGen {
-                                        from: c - offx * (15.0 + i as f32 * 20.0) - offy * 100.0,
-                                        to: c - offx * (15.0 + i as f32 * 20.0) + offy * 100.0,
-                                        pattern: pat.clone(),
-                                    });
+                                    commands.push(WorldCommand::MapMakeConnection(
+                                        MapProject::ground(
+                                            c - offx * (15.0 + i as f32 * 20.0) - offy * 100.0,
+                                        ),
+                                        MapProject::ground(
+                                            c - offx * (15.0 + i as f32 * 20.0) + offy * 100.0,
+                                        ),
+                                        None,
+                                        pat.clone(),
+                                    ));
                                 }
-                                WorldCommand::MapBuildSpecialBuilding(
+                                commands.push(WorldCommand::MapBuildSpecialBuilding(
                                     args.obb,
                                     BuildingKind::RailFretStation,
                                     BuildingGen::NoWalkway {
                                         door_pos: Vec2::ZERO,
                                     },
-                                    tracks,
-                                )
+                                ));
+                                commands
                             }),
                             w: 200.0,
                             h: 160.0,
@@ -524,12 +534,9 @@ impl Gui {
                             cur_build.opt = Some(SpecialBuildKind {
                                 road_snap: true,
                                 make: Box::new(move |args| {
-                                    WorldCommand::MapBuildSpecialBuilding(
-                                        args.obb,
-                                        bkind,
-                                        bgen,
-                                        vec![],
-                                    )
+                                    vec![WorldCommand::MapBuildSpecialBuilding(
+                                        args.obb, bkind, bgen,
+                                    )]
                                 }),
                                 w: descr.size,
                                 h: descr.size,

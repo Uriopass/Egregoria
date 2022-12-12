@@ -26,7 +26,7 @@ impl Government {
                 50 + ((0.03 * dist) as i64).max(1)
                     * (pat.lanes_forward.len() + pat.lanes_backward.len()) as i64
             }
-            WorldCommand::MapBuildSpecialBuilding(_, x, _, _) => match x {
+            WorldCommand::MapBuildSpecialBuilding(_, x, _) => match x {
                 BuildingKind::GoodsCompany(x) => {
                     goria.read::<GoodsCompanyRegistry>().descriptions[*x].price
                 }

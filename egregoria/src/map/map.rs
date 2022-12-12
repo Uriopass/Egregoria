@@ -2,7 +2,7 @@ use crate::map::serializing::SerializedMap;
 use crate::map::{
     Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
-    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, StraightRoadGen, Terrain,
+    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain,
 };
 use geom::OBB;
 use geom::{Circle, Intersect, Shape, Spline3, Vec2, Vec3};
@@ -154,7 +154,6 @@ impl Map {
         obb: &OBB,
         kind: BuildingKind,
         gen: BuildingGen,
-        attachments_gen: &[StraightRoadGen],
     ) -> Option<BuildingID> {
         if self.building_overlaps(*obb) {
             log::warn!("did not build {:?}: building overlaps", kind);
@@ -182,16 +181,6 @@ impl Map {
         let tree_remove_mask = obb.expand(10.0);
         self.terrain
             .remove_near_filter(obb.bbox(), |p| tree_remove_mask.contains(p));
-
-        let mut attachments = vec![];
-        for attachment in attachments_gen {
-            let fromi = self.add_intersection(attachment.from);
-            let toi = self.add_intersection(attachment.to);
-            attachments.push(
-                self.connect(fromi, toi, &attachment.pattern, RoadSegmentKind::Straight)
-                    .unwrap(),
-            );
-        }
 
         let v = Building::make(
             &mut self.buildings,

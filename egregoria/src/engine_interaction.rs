@@ -2,7 +2,7 @@ use crate::economy::Government;
 use crate::map::procgen::{load_parismap, load_testfield};
 use crate::map::{
     BuildingGen, BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LanePatternBuilder,
-    LightPolicy, LotID, Map, MapProject, RoadID, StraightRoadGen, Terrain, TurnPolicy,
+    LightPolicy, LotID, Map, MapProject, RoadID, Terrain, TurnPolicy,
 };
 use crate::map_dynamic::BuildingInfos;
 use crate::transportation::train::{spawn_train, RailWagonKind};
@@ -48,7 +48,7 @@ pub enum WorldCommand {
     AddTrain(f32, u32, LaneID),
     MapMakeConnection(MapProject, MapProject, Option<Vec2>, LanePattern), // todo: allow lane pattern builder
     MapUpdateIntersectionPolicy(IntersectionID, TurnPolicy, LightPolicy),
-    MapBuildSpecialBuilding(OBB, BuildingKind, BuildingGen, Vec<StraightRoadGen>),
+    MapBuildSpecialBuilding(OBB, BuildingKind, BuildingGen),
     MapLoadParis,
     MapLoadTestField(Vec2, u32, f32),
     ResetSave,
@@ -65,6 +65,10 @@ impl AsRef<[WorldCommand]> for WorldCommands {
 impl WorldCommands {
     pub fn push(&mut self, cmd: WorldCommand) {
         self.commands.push(cmd);
+    }
+
+    pub fn extend(&mut self, cmds: impl IntoIterator<Item = WorldCommand>) {
+        self.commands.extend(cmds);
     }
 
     pub fn merge(&mut self, src: &WorldCommands) {
@@ -103,15 +107,8 @@ impl WorldCommands {
         self.commands.push(AddTrain(dist, n_wagons, laneid))
     }
 
-    pub fn map_build_special_building(
-        &mut self,
-        obb: OBB,
-        kind: BuildingKind,
-        gen: BuildingGen,
-        attachments: Vec<StraightRoadGen>,
-    ) {
-        self.commands
-            .push(MapBuildSpecialBuilding(obb, kind, gen, attachments))
+    pub fn map_build_special_building(&mut self, obb: OBB, kind: BuildingKind, gen: BuildingGen) {
+        self.commands.push(MapBuildSpecialBuilding(obb, kind, gen))
     }
 
     pub fn map_remove_intersection(&mut self, id: IntersectionID) {
@@ -184,12 +181,8 @@ impl WorldCommand {
                     i.turn_policy = tp;
                 })
             }
-            MapBuildSpecialBuilding(obb, kind, gen, ref attachments) => {
-                if let Some(id) =
-                    goria
-                        .write::<Map>()
-                        .build_special_building(&obb, kind, gen, attachments)
-                {
+            MapBuildSpecialBuilding(obb, kind, gen) => {
+                if let Some(id) = goria.write::<Map>().build_special_building(&obb, kind, gen) {
                     goria.write::<BuildingInfos>().insert(id);
                 }
             }
@@ -242,16 +235,15 @@ fn generate_terrain(goria: &mut Egregoria, size: u32) {
 
     let [offy, offx] = obb.axis().map(|x| x.normalize().z(0.0));
 
-    let mut tracks = vec![];
-
     let pat = LanePatternBuilder::new().rail(true).build();
 
     for i in -1..=1 {
-        tracks.push(StraightRoadGen {
-            from: c - offx * (i as f32 * 21.0) - offy * 100.0,
-            to: c - offx * (i as f32 * 21.0) + offy * 120.0,
-            pattern: pat.clone(),
-        });
+        goria.map_mut().make_connection(
+            MapProject::ground(c - offx * (i as f32 * 21.0) - offy * 100.0),
+            MapProject::ground(c - offx * (i as f32 * 21.0) + offy * 120.0),
+            None,
+            &pat,
+        );
     }
 
     if goria
@@ -262,7 +254,6 @@ fn generate_terrain(goria: &mut Egregoria, size: u32) {
             BuildingGen::NoWalkway {
                 door_pos: Vec2::ZERO,
             },
-            &tracks,
         )
         .is_none()
     {

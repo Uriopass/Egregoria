@@ -5,6 +5,7 @@ use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
+use std::iter::Sum;
 use std::ops::{Add, AddAssign, Div, Mul, SubAssign};
 
 mod ecostats;
@@ -38,6 +39,12 @@ impl Display for Money {
             Display::fmt(&cent, f)?;
         }
         f.write_str("$")
+    }
+}
+
+impl Sum for Money {
+    fn sum<I: Iterator<Item = Money>>(iter: I) -> Self {
+        iter.fold(Money::new_base(0), |a, b| a + b)
     }
 }
 

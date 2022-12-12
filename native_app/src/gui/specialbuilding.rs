@@ -1,5 +1,5 @@
 use super::Tool;
-use crate::gui::PotentialCommand;
+use crate::gui::PotentialCommands;
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
@@ -16,7 +16,7 @@ pub(crate) struct SpecialBuildArgs {
 }
 
 pub(crate) struct SpecialBuildKind {
-    pub(crate) make: Box<dyn Fn(&SpecialBuildArgs) -> WorldCommand + Send + Sync + 'static>,
+    pub(crate) make: Box<dyn Fn(&SpecialBuildArgs) -> Vec<WorldCommand> + Send + Sync + 'static>,
     pub(crate) w: f32,
     pub(crate) h: f32,
     pub(crate) asset: String,
@@ -150,12 +150,12 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     draw(obb, false);
 
-    let cmd: WorldCommand = make(&SpecialBuildArgs { obb, mpos });
+    let cmds: Vec<WorldCommand> = make(&SpecialBuildArgs { obb, mpos });
     if inp.act.contains(&InputAction::Select) {
-        commands.push(cmd);
+        commands.extend(cmds);
         sound.play("road_lay", AudioKind::Ui);
         state.last_obb = Some(obb);
-    } else {
-        uiworld.write::<PotentialCommand>().0 = Some(cmd);
+    } else if let Some(last) = cmds.last() {
+        uiworld.write::<PotentialCommands>().set(last.clone());
     }
 }

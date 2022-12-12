@@ -1,5 +1,5 @@
 use super::Tool;
-use crate::gui::PotentialCommand;
+use crate::gui::PotentialCommands;
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
@@ -18,7 +18,7 @@ pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     let inp = uiworld.read::<InputMap>();
-    let mut potential = uiworld.write::<PotentialCommand>();
+    let mut potential = uiworld.write::<PotentialCommands>();
 
     let mut draw = uiworld.write::<ImmediateDraw>();
     let map = goria.map();
@@ -60,6 +60,6 @@ pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     if inp.just_act.contains(&InputAction::Select) {
         commands.push(cmd);
     } else {
-        potential.0 = Some(cmd);
+        potential.set(cmd);
     }
 }
