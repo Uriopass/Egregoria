@@ -295,25 +295,13 @@ impl Gui {
 
                                 let mut commands = Vec::with_capacity(5);
 
-                                let mut projs = Vec::with_capacity(6);
-                                let mut links = Vec::with_capacity(6);
+                                commands.push(WorldCommand::MapMakeConnection(
+                                    MapProject::ground(c - offx * 45.0 - offy * 100.0),
+                                    MapProject::ground(c - offx * 45.0 + offy * 100.0),
+                                    None,
+                                    pat.clone(),
+                                ));
 
-                                projs.push(MapProject::ground(c + offy * 200.0 - offx * 45.0));
-                                projs.push(MapProject::ground(c - offy * 200.0 - offx * 45.0));
-
-                                for i in 1..5 {
-                                    projs.push(MapProject::ground(
-                                        c - offx * (-5.0 + i as f32 * 20.0) - offy * 100.0,
-                                    ));
-                                    projs.push(MapProject::ground(
-                                        c - offx * (-5.0 + i as f32 * 20.0) + offy * 100.0,
-                                    ));
-                                    links.push((i * 2, i * 2 + 1, None, pat.clone()));
-                                    links.push((i * 2 + 1, 0, None, pat.clone()));
-                                    links.push((1, i * 2, None, pat.clone()));
-                                }
-                                commands
-                                    .push(WorldCommand::MapMakeMultipleConnections(projs, links));
                                 commands.push(WorldCommand::MapBuildSpecialBuilding(
                                     args.obb,
                                     BuildingKind::RailFretStation,

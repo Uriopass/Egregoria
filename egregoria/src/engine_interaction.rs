@@ -262,18 +262,16 @@ fn generate_terrain(goria: &mut Egregoria, size: u32) {
     let c = vec3(3000.0 + 72.2 / 2.0, 200.0 / 2.0 + 1.0, 0.3);
     let obb = OBB::new(c.xy(), -Vec2::X, 72.2, 200.0);
 
-    let [offy, offx] = obb.axis().map(|x| x.normalize().z(0.0));
+    let [offy, _] = obb.axis().map(|x| x.normalize().z(0.0));
 
     let pat = LanePatternBuilder::new().rail(true).build();
 
-    for i in -1..=1 {
-        goria.map_mut().make_connection(
-            MapProject::ground(c - offx * (i as f32 * 21.0) - offy * 100.0),
-            MapProject::ground(c - offx * (i as f32 * 21.0) + offy * 120.0),
-            None,
-            &pat,
-        );
-    }
+    goria.map_mut().make_connection(
+        MapProject::ground(c - offy * 100.0),
+        MapProject::ground(c + offy * 120.0),
+        None,
+        &pat,
+    );
 
     if goria
         .map_mut()

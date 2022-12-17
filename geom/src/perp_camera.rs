@@ -35,9 +35,9 @@ impl Camera {
     pub fn new(pos: Vec3, viewport_w: f32, viewport_h: f32) -> Self {
         Self {
             pos,
-            yaw: Radians(std::f32::consts::FRAC_PI_4),
-            pitch: Radians(std::f32::consts::FRAC_PI_4),
-            dist: 5000.0,
+            yaw: Radians(-0.21086383),
+            pitch: Radians(0.8478442),
+            dist: 932.0,
             viewport_w,
             viewport_h,
             up: (0.0, 0.0, 1.0).into(),

@@ -89,8 +89,13 @@ impl CameraHandler3D {
     }
 
     pub(crate) fn load(viewport: (u32, u32)) -> Self {
-        let camera = common::saveload::JSON::load("camera3D")
-            .unwrap_or_else(|| Camera::new(Vec3::ZERO, viewport.0 as f32, viewport.1 as f32));
+        let camera = common::saveload::JSON::load("camera3D").unwrap_or_else(|| {
+            Camera::new(
+                Vec3::new(6511.0, 9590.0, 0.0),
+                viewport.0 as f32,
+                viewport.1 as f32,
+            )
+        });
 
         Self {
             camera,

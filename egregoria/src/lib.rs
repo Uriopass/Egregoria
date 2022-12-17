@@ -171,6 +171,13 @@ impl Egregoria {
 
         Init(Box::new(opts)).apply(&mut goria);
 
+        let start_commands: Vec<(u32, WorldCommand)> =
+            common::saveload::JSON::decode(START_COMMANDS.as_bytes()).unwrap();
+
+        for (_, command) in start_commands {
+            command.apply(&mut goria);
+        }
+
         goria
     }
 
@@ -535,3 +542,429 @@ register!(
         LocomotiveReservation => _22,
         FreightStation => _23,
 );
+
+const START_COMMANDS: &str = r#"
+[
+     [
+      0,
+      {
+        "MapMakeConnection": [
+          {
+            "pos": [
+              6514.85,
+              9394.27,
+              0.31
+            ],
+            "kind": "Ground"
+          },
+          {
+            "pos": [
+              6333.2446,
+              9478.051,
+              0.31
+            ],
+            "kind": "Ground"
+          },
+          null,
+          {
+            "lanes_forward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ],
+            "lanes_backward": []
+          }
+        ]
+      }
+    ],
+    [
+      0,
+      {
+        "MapBuildSpecialBuilding": [
+          {
+            "corners": [
+              5029150247999392244,
+              5029739809570328344,
+              5028142390973947448,
+              5027552829403011348
+            ]
+          },
+          "RailFretStation",
+          {
+            "NoWalkway": {
+              "door_pos": 0
+            }
+          }
+        ]
+      }
+    ],
+    [
+      1,
+      {
+        "MapMakeConnection": [
+          {
+            "pos": [
+              3036.1,
+              221.0,
+              0.3
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 2,
+                "version": 1
+              }
+            }
+          },
+          {
+            "pos": [
+              4246.6924,
+              3259.3774,
+              0.31
+            ],
+            "kind": "Ground"
+          },
+          4991505619838112483,
+          {
+            "lanes_forward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ],
+            "lanes_backward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ]
+          }
+        ]
+      }
+    ],
+    [
+      2,
+      {
+        "MapMakeConnection": [
+          {
+            "pos": [
+              4246.6924,
+              3259.3774,
+              0.31
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 5,
+                "version": 1
+              }
+            }
+          },
+          {
+            "pos": [
+              6147.913,
+              7315.1196,
+              0.31
+            ],
+            "kind": "Ground"
+          },
+          5024504635272202713,
+          {
+            "lanes_forward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ],
+            "lanes_backward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ]
+          }
+        ]
+      }
+    ],
+    [
+      3,
+      {
+        "MapMakeConnection": [
+          {
+            "pos": [
+              6147.913,
+              7315.1196,
+              0.31
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 6,
+                "version": 1
+              }
+            }
+          },
+          {
+            "pos": [
+              6271.2505,
+              8647.945,
+              0.31
+            ],
+            "kind": "Ground"
+          },
+          5026585735910612163,
+          {
+            "lanes_forward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ],
+            "lanes_backward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ]
+          }
+        ]
+      }
+    ],
+    [
+      4,
+      {
+        "MapMakeConnection": [
+          {
+            "pos": [
+              6271.2505,
+              8647.945,
+              0.31
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 7,
+                "version": 1
+              }
+            }
+          },
+          {
+            "pos": [
+              6469.385,
+              8973.193,
+              0.31
+            ],
+            "kind": "Ground"
+          },
+          5027576078060451273,
+          {
+            "lanes_forward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ],
+            "lanes_backward": []
+          }
+        ]
+      }
+    ],
+    [
+      5,
+      {
+        "MapMakeConnection": [
+          {
+            "pos": [
+              6469.385,
+              8973.193,
+              0.31
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 8,
+                "version": 1
+              }
+            }
+          },
+          {
+            "pos": [
+              6627.6006,
+              9225.364,
+              0.31
+            ],
+            "kind": "Ground"
+          },
+          5030126116108291542,
+          {
+            "lanes_forward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ],
+            "lanes_backward": []
+          }
+        ]
+      }
+    ],
+    [
+      6,
+      {
+        "MapMakeConnection": [
+          {
+            "pos": [
+              6627.6006,
+              9225.364,
+              0.31
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 9,
+                "version": 1
+              }
+            }
+          },
+          {
+            "pos": [
+              6514.85,
+              9394.27,
+              0.31
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 3,
+                "version": 1
+              }
+            }
+          },
+          5030305808950368141,
+          {
+            "lanes_forward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ],
+            "lanes_backward": []
+          }
+        ]
+      }
+    ],
+    [
+      7,
+      {
+        "MapMakeConnection": [
+          {
+            "pos": [
+              6333.2446,
+              9478.051,
+              0.31
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 4,
+                "version": 1
+              }
+            }
+          },
+          {
+            "pos": [
+              6120.8,
+              9363.014,
+              0.31
+            ],
+            "kind": "Ground"
+          },
+          5026096268554115102,
+          {
+            "lanes_forward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ],
+            "lanes_backward": []
+          }
+        ]
+      }
+    ],
+    [
+      8,
+      {
+        "MapMakeConnection": [
+          {
+            "pos": [
+              6120.8,
+              9363.014,
+              0.31
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 10,
+                "version": 1
+              }
+            }
+          },
+          {
+            "pos": [
+              6202.4365,
+              8983.185,
+              0.31
+            ],
+            "kind": "Ground"
+          },
+          5025518762956125798,
+          {
+            "lanes_forward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ],
+            "lanes_backward": []
+          }
+        ]
+      }
+    ],
+    [
+      9,
+      {
+        "MapMakeConnection": [
+          {
+            "pos": [
+              6202.4365,
+              8983.185,
+              0.31
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 11,
+                "version": 1
+              }
+            }
+          },
+          {
+            "pos": [
+              6271.2505,
+              8647.945,
+              0.31
+            ],
+            "kind": {
+              "Inter": {
+                "idx": 7,
+                "version": 1
+              }
+            }
+          },
+          5026925811421779699,
+          {
+            "lanes_forward": [
+              [
+                "Rail",
+                9.0
+              ]
+            ],
+            "lanes_backward": []
+          }
+        ]
+      }
+    ]
+]
+"#;

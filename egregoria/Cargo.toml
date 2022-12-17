@@ -5,10 +5,7 @@ authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
 edition = "2021"
 
 # Yes I have many dependencies.
-# Yes, I know it takes a while to compile.
-# However, it slows me down, and there's incremental compilation.
-# I'll prune some of them when I feel it's worth it.
-
+# But it's ok, read this: https://wiki.alopex.li/LetsBeRealAboutDependencies
 [dependencies]
 ordered-float = { version = "2.7.0", default-features = false }
 serde         = { version = "1.0", features = ["derive"] }
