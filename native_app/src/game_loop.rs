@@ -199,10 +199,10 @@ impl State {
             let immediate = &mut *self.uiw.write::<ImmediateDraw>();
 
             let mut col = LinearColor::WHITE;
-            col.a = 0.1;
+            col.a = 1.0;
             unsafe {
                 for v in &geom::DEBUG_OBBS {
-                    immediate.obb(*v, 2.0).color(col);
+                    immediate.obb(*v, 3.0).color(col);
                 }
                 for v in &geom::DEBUG_SPLINES {
                     immediate

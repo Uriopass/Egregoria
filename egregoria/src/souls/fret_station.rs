@@ -43,13 +43,14 @@ pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Opti
     let height = b.height;
     let obb = b.obb;
     let pos = obb.center();
-    let [w2, h2] = obb.axis().map(|x| x.mag2());
+    let axis = obb.axis();
+    let [w2, h2] = axis.map(|x| x.mag2());
 
     drop(map);
 
     let soul = SoulID(goria.world.spawn((
         f,
-        Transform::new(pos.z(height)),
+        Transform::new_dir(pos.z(height), axis[1].z(0.0).normalize()),
         Selectable {
             radius: w2.max(h2).sqrt() * 0.5,
         },
@@ -128,11 +129,14 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
         if soul.waiting_cargo < 10 {
             continue;
         }
+
+        let destination = pos.position + pos.dir * 75.0 - pos.dir.perp_up() * 40.0;
+
         let Some(trainid) = dispatch.query(
             &map,
             me,
             DispatchKind::FretTrain,
-            DispatchQueryTarget::Pos(pos.position),
+            DispatchQueryTarget::Pos(destination),
         ) else {
             continue;
         };
@@ -141,7 +145,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
         let (tpos, titin) = train.get_mut(trainid.0).unwrap();
 
         *titin = unwrap_or!(
-            Itinerary::route(tpos.position, pos.position, &map, PathKind::Rail,),
+            Itinerary::route(tpos.position, destination, &map, PathKind::Rail,),
             continue
         );
 
@@ -173,7 +177,6 @@ mod tests {
             BuildingGen::NoWalkway {
                 door_pos: vec2(50.0, 50.0),
             },
-            vec![],
         )]);
         test.tick();
 

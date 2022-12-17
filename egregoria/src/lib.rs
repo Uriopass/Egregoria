@@ -965,6 +965,18 @@ const START_COMMANDS: &str = r#"
           }
         ]
       }
+    ],
+    [ 10,
+      {
+        "AddTrain": [
+          150.0,
+          7,
+          {
+            "idx": 3,
+            "version": 1
+          }
+        ]
+      }
     ]
 ]
 "#;
