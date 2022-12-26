@@ -4,7 +4,9 @@ use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
-use crate::gui::{InspectedEntity, PotentialCommands, RoadBuildResource, Tool, UiTextures};
+use crate::gui::{
+    ErrorTooltip, InspectedEntity, PotentialCommands, RoadBuildResource, Tool, UiTextures,
+};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
@@ -74,21 +76,26 @@ impl Gui {
 
         self.auto_save(uiworld);
 
-        self.tooltip_command_cost(ui, uiworld, goria);
+        self.tooltip(ui, uiworld, goria);
     }
 
-    pub(crate) fn tooltip_command_cost(
-        &mut self,
-        ui: &Context,
-        uiworld: &mut UiWorld,
-        goria: &Egregoria,
-    ) {
-        let pot = &mut uiworld.write::<PotentialCommands>().0;
+    pub(crate) fn tooltip(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        if let Some(tip) = uiworld.write::<ErrorTooltip>().0.take() {
+            let s = ui.available_rect().size();
+            egui::show_tooltip_at(
+                ui,
+                Id::new("tooltip_error"),
+                Some(egui::Pos2::new(s.x, s.y)),
+                |ui| ui.label(RichText::new(tip).color(Color32::from_rgb(255, 100, 100))),
+            );
+        }
 
+        let pot = &mut uiworld.write::<PotentialCommands>().0;
         let cost: Money = pot
             .drain(..)
             .map(|cmd| Government::action_cost(&cmd, goria))
             .sum();
+
         if cost > Money::default() {
             let txt = format!("{}", cost);
 

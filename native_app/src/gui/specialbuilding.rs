@@ -1,5 +1,5 @@
 use super::Tool;
-use crate::gui::PotentialCommands;
+use crate::gui::{ErrorTooltip, PotentialCommands};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
@@ -9,6 +9,7 @@ use egregoria::map::{ProjectFilter, ProjectKind};
 use egregoria::Egregoria;
 use geom::{Degrees, Intersect, Vec3, OBB};
 use ordered_float::OrderedFloat;
+use std::borrow::Cow;
 
 pub(crate) struct SpecialBuildArgs {
     pub(crate) obb: OBB,
@@ -93,12 +94,16 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
                 _ => None,
             })
             .min_by_key(move |p| OrderedFloat(p.points().project_dist2(mpos)));
-        let closest_road = unwrap_or!(closest_road, return draw(hover_obb, true));
+        let Some(closest_road) = closest_road else {
+            uiworld.write::<ErrorTooltip>().0 = Some(Cow::Borrowed("No road nearby"));
+            return draw(hover_obb, true)
+        };
 
         let (proj, _, dir) = closest_road.points().project_segment_dir(mpos);
         let dir = dir.xy();
 
         if !proj.is_close(mpos, diag + closest_road.width * 0.5) {
+            uiworld.write::<ErrorTooltip>().0 = Some(Cow::Borrowed("No road nearby"));
             return draw(hover_obb, true);
         }
 
@@ -118,10 +123,14 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
             h,
         );
 
-        if proj.distance(first) < diag
-            || proj.distance(last) < diag
-            || closest_road.sidewalks(closest_road.src).incoming.is_none()
-        {
+        if proj.distance(first) < diag || proj.distance(last) < diag {
+            uiworld.write::<ErrorTooltip>().0 = Some(Cow::Borrowed("Too close to side"));
+            draw(obb, true);
+            return;
+        }
+
+        if closest_road.sidewalks(closest_road.src).incoming.is_none() {
+            uiworld.write::<ErrorTooltip>().0 = Some(Cow::Borrowed("Sidewalk required"));
             draw(obb, true);
             return;
         }
@@ -144,6 +153,7 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         })
         || state.last_obb.map(|x| x.intersects(&obb)).unwrap_or(false)
     {
+        uiworld.write::<ErrorTooltip>().0 = Some(Cow::Borrowed("Intersecting with something"));
         draw(obb, true);
         return;
     }

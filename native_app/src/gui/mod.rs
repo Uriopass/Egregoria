@@ -1,5 +1,6 @@
 use common::FastMap;
 use hecs::Entity;
+use std::borrow::Cow;
 use std::path::Path;
 
 use egui::{ColorImage, ImageData, TextureHandle, TextureId, TextureOptions};
@@ -38,6 +39,9 @@ pub(crate) fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     specialbuilding::specialbuilding(goria, uiworld);
     addtrain::addtrain(goria, uiworld);
 }
+
+#[derive(Default, Clone, Debug)]
+pub struct ErrorTooltip(pub Option<Cow<'static, str>>);
 
 #[derive(Default, Clone, Debug)]
 pub struct PotentialCommands(pub Vec<WorldCommand>);
