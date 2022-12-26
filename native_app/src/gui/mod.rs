@@ -1,5 +1,6 @@
 use common::FastMap;
 use hecs::Entity;
+use std::path::Path;
 
 use egui::{ColorImage, ImageData, TextureHandle, TextureId, TextureOptions};
 use serde::{Deserialize, Serialize};
@@ -92,43 +93,33 @@ impl Tool {
     }
 }
 
-#[derive(Copy, Clone, Hash, Eq, PartialEq)]
-pub(crate) enum UiTex {
-    Road,
-    Curved,
-    RoadEdit,
-    Bulldozer,
-    Buildings,
-    LotBrush,
-    TrainStation,
-    AddTrain,
-}
-
-const UI_TEXTURES: &[(UiTex, &str)] = &[
-    (UiTex::Road, "assets/ui/road.png"),
-    (UiTex::Curved, "assets/ui/curved.png"),
-    (UiTex::RoadEdit, "assets/ui/road_edit.png"),
-    (UiTex::Bulldozer, "assets/ui/bulldozer.png"),
-    (UiTex::Buildings, "assets/ui/buildings.png"),
-    (UiTex::LotBrush, "assets/ui/lotbrush.png"),
-    (UiTex::TrainStation, "assets/ui/trainstation.png"),
-    (UiTex::AddTrain, "assets/ui/traintool.png"),
-];
-
 #[derive(Default)]
 pub(crate) struct UiTextures {
-    textures: FastMap<UiTex, TextureHandle>,
+    textures: FastMap<String, TextureHandle>,
 }
 
 impl UiTextures {
     pub(crate) fn new(ctx: &mut egui::Context) -> Self {
-        let mut textures = common::fastmap_with_capacity(UI_TEXTURES.len());
-        for &(name, path) in UI_TEXTURES {
-            let (img, width, height) = wgpu_engine::Texture::read_image(path)
-                .unwrap_or_else(|| panic!("Couldn't load gui texture {}", path));
+        let texdirs = [("assets/ui", ""), ("assets/ui/icons", "icon/")];
+
+        let mut textures: FastMap<String, TextureHandle> = Default::default();
+        for (prefix, path) in texdirs.iter().flat_map(|(path, prefix)| {
+            common::saveload::walkdir(Path::new(path)).map(move |x| (prefix, x))
+        }) {
+            let name = prefix.to_string()
+                + path
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .trim_end_matches(".png")
+                    .trim_end_matches(".jpg");
+
+            let (img, width, height) = wgpu_engine::Texture::read_image(&path)
+                .unwrap_or_else(|| panic!("Couldn't load gui texture {:?}", &path));
 
             let h = ctx.load_texture(
-                path,
+                &name,
                 ImageData::Color(ColorImage::from_rgba_unmultiplied(
                     [width as usize, height as usize],
                     &img,
@@ -141,8 +132,12 @@ impl UiTextures {
         Self { textures }
     }
 
-    pub(crate) fn get(&self, name: UiTex) -> TextureId {
-        self.textures.get(&name).unwrap().id()
+    pub(crate) fn get(&self, name: &str) -> TextureId {
+        self.textures.get(name).unwrap().id()
+    }
+
+    pub(crate) fn try_get(&self, name: &str) -> Option<TextureId> {
+        self.textures.get(name).map(TextureHandle::id)
     }
 }
 

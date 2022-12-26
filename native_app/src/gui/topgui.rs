@@ -4,11 +4,11 @@ use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
-use crate::gui::{InspectedEntity, PotentialCommands, RoadBuildResource, Tool, UiTex, UiTextures};
+use crate::gui::{InspectedEntity, PotentialCommands, RoadBuildResource, Tool, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
-use egregoria::economy::{Government, ItemRegistry, Money};
+use egregoria::economy::{Government, Item, ItemRegistry, Money};
 use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::{
     BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, MapProject, TurnPolicy,
@@ -16,7 +16,7 @@ use egregoria::map::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::{GameTime, SECONDS_PER_HOUR};
 use egregoria::Egregoria;
-use egui::{Align2, Color32, Context, Frame, RichText, Style, Widget, Window};
+use egui::{Align2, Color32, Context, Frame, Id, Response, RichText, Style, Ui, Widget, Window};
 use egui_inspect::{Inspect, InspectArgs};
 use geom::Vec2;
 use serde::{Deserialize, Serialize};
@@ -83,30 +83,22 @@ impl Gui {
         uiworld: &mut UiWorld,
         goria: &Egregoria,
     ) {
-        let inpos = ui.input().pointer.hover_pos();
-
         let pot = &mut uiworld.write::<PotentialCommands>().0;
 
         let cost: Money = pot
             .drain(..)
             .map(|cmd| Government::action_cost(&cmd, goria))
             .sum();
-        if let Some(inpos) = inpos {
-            if cost > Money::default() {
-                let txt = format!("{}", cost);
+        if cost > Money::default() {
+            let txt = format!("{}", cost);
 
-                Window::new("tooltip")
-                    .fixed_pos(inpos + egui::Vec2::new(20.0 / ui.pixels_per_point(), 0.0))
-                    .title_bar(false)
-                    .resizable(false)
-                    .show(ui, |ui| {
-                        if cost > goria.read::<Government>().money {
-                            ui.colored_label(Color32::RED, format!("{} too expensive", txt));
-                        } else {
-                            ui.label(txt);
-                        }
-                    });
-            }
+            egui::show_tooltip(ui, Id::new("tooltip_command_cost"), |ui| {
+                if cost > goria.read::<Government>().money {
+                    ui.colored_label(Color32::RED, format!("{} too expensive", txt));
+                } else {
+                    ui.label(txt);
+                }
+            });
         }
     }
 
@@ -158,13 +150,13 @@ impl Gui {
         let toolbox_w = 85.0;
 
         let tools = [
-            (UiTex::Road, Tab::Roadbuild, Tool::RoadbuildStraight),
-            (UiTex::Curved, Tab::Roadcurved, Tool::RoadbuildCurved),
-            (UiTex::RoadEdit, Tab::Roadeditor, Tool::RoadEditor),
-            (UiTex::LotBrush, Tab::Lotbrush, Tool::LotBrush),
-            (UiTex::Buildings, Tab::Roadbuilding, Tool::SpecialBuilding),
-            (UiTex::Bulldozer, Tab::Bulldozer, Tool::Bulldozer),
-            (UiTex::AddTrain, Tab::Train, Tool::Train),
+            ("road", Tab::Roadbuild, Tool::RoadbuildStraight),
+            ("curved", Tab::Roadcurved, Tool::RoadbuildCurved),
+            ("road_edit", Tab::Roadeditor, Tool::RoadEditor),
+            ("lotbrush", Tab::Lotbrush, Tool::LotBrush),
+            ("buildings", Tab::Roadbuilding, Tool::SpecialBuilding),
+            ("bulldozer", Tab::Bulldozer, Tool::Bulldozer),
+            ("traintool", Tab::Train, Tool::Train),
         ];
 
         Window::new("Toolbox")
@@ -182,7 +174,7 @@ impl Gui {
 
                 for (name, tab, default_tool) in &tools {
                     if egui::ImageButton::new(
-                        uiworld.read::<UiTextures>().get(*name),
+                        uiworld.read::<UiTextures>().get(name),
                         [toolbox_w, 30.0],
                     )
                     .selected(std::mem::discriminant(tab) == std::mem::discriminant(&cur_tab))
@@ -299,7 +291,7 @@ impl Gui {
                                     MapProject::ground(c - offx * 45.0 - offy * 100.0),
                                     MapProject::ground(c - offx * 45.0 + offy * 100.0),
                                     None,
-                                    pat.clone(),
+                                    pat,
                                 ));
 
                                 commands.push(WorldCommand::MapBuildSpecialBuilding(
@@ -544,8 +536,6 @@ impl Gui {
                     let bdescrpt_w = 180.0;
 
                     if let Some(descr) = picked_descr {
-                        //let _tok1 = ui.push_style_var(StyleVar::WindowPadding([5.0, 5.0]));
-                        //let _tok2 = ui.push_style_var(StyleVar::ItemSpacing([0.0, 3.0]));
                         Window::new("Building description")
                             .default_width(bdescrpt_w)
                             .auto_sized()
@@ -563,14 +553,14 @@ impl Gui {
                                 if !descr.recipe.consumption.is_empty() {
                                     ui.label("consumption:");
                                     for (kind, n) in &descr.recipe.consumption {
-                                        ui.label(format!("- {} x{}", &iregistry[*kind].label, n));
+                                        item_icon(ui, uiworld, &iregistry[*kind], *n);
                                     }
                                     ui.add_space(10.0);
                                 }
                                 if !descr.recipe.production.is_empty() {
                                     ui.label("production:");
                                     for (kind, n) in &descr.recipe.production {
-                                        ui.label(format!("- {} x{}", &iregistry[*kind].label, n));
+                                        item_icon(ui, uiworld, &iregistry[*kind], *n);
                                     }
                                     ui.add_space(10.0);
                                 }
@@ -750,6 +740,27 @@ impl Gui {
             });
         });
     }
+}
+
+pub(crate) fn item_icon(ui: &mut Ui, uiworld: &UiWorld, item: &Item, multiplier: i32) -> Response {
+    ui.horizontal(move |ui| {
+        if let Some(id) = uiworld
+            .read::<UiTextures>()
+            .try_get(&format!("icon/{}", item.name))
+        {
+            if ui.image(id, (32.0, 32.0)).hovered() {
+                egui::show_tooltip_text(
+                    ui.ctx(),
+                    ui.make_persistent_id("icon tooltip"),
+                    format!("{} x{}", item.name, multiplier),
+                );
+            }
+        } else {
+            ui.label(format!("- {} ", &item.label));
+        }
+        ui.label(format!("x{}", multiplier))
+    })
+    .inner
 }
 
 pub(crate) enum ExitState {

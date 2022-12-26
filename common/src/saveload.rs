@@ -7,6 +7,22 @@ fn create_file(path: &str) -> Option<File> {
     File::create(path).map_err(|e| log::error!("{}", e)).ok()
 }
 
+pub fn walkdir(dir: &Path) -> impl Iterator<Item = PathBuf> {
+    let mut paths = Vec::new();
+    for entry in std::fs::read_dir(dir).expect("dir not found") {
+        let Ok(entry) = entry else {
+            continue;
+        };
+        let ftype = entry.file_type().unwrap();
+        if ftype.is_dir() {
+            paths.extend(walkdir(&entry.path()));
+        } else if ftype.is_file() {
+            paths.push(entry.path());
+        }
+    }
+    paths.into_iter()
+}
+
 fn open_file(path: &str) -> Option<File> {
     File::open(path).ok()
 }
@@ -77,6 +93,7 @@ pub struct Bincode;
 
 use ::bincode::{DefaultOptions, Options};
 use std::io::Result;
+use std::path::{Path, PathBuf};
 
 impl Encoder for Bincode {
     const EXTENSION: &'static str = "bc";

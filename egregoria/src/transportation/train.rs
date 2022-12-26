@@ -135,7 +135,6 @@ pub fn spawn_train(
         },
         Itinerary::NONE,
     ));
-    log::info!("{:?}", leader.past);
     let mut followers: Vec<_> = leader
         .past
         .mk_followers(
@@ -144,7 +143,6 @@ pub fn spawn_train(
         )
         .collect();
     for (i, follower) in followers.chunks_exact_mut(2).enumerate() {
-        log::info!("{:?}", follower);
         let (pos, dir) = follower[0].update(&leader.past);
         let (pos2, dir2) = follower[1].update(&leader.past);
         world.spawn((

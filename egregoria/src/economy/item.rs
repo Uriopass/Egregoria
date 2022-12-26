@@ -12,6 +12,14 @@ struct ItemDefinition {
     optout_exttrade: bool,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Item {
+    pub id: ItemID,
+    pub name: String,
+    pub label: String,
+    pub optout_exttrade: bool,
+}
+
 new_key_type! {
     pub struct ItemID;
 }
@@ -29,14 +37,6 @@ impl Index<ItemID> for ItemRegistry {
     fn index(&self, index: ItemID) -> &Self::Output {
         &self.items[index]
     }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Item {
-    pub id: ItemID,
-    pub name: String,
-    pub label: String,
-    pub optout_exttrade: bool,
 }
 
 impl ItemRegistry {
@@ -78,7 +78,7 @@ impl ItemRegistry {
             });
             self.item_names.insert(name, id);
             #[cfg(not(test))]
-            log::info!("loaded {:?}", &self.items[id]);
+            log::debug!("loaded {:?}", &self.items[id]);
         }
     }
 }

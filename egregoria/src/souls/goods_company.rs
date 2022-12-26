@@ -162,7 +162,7 @@ impl GoodsCompanyRegistry {
                 });
 
             #[cfg(not(test))]
-            log::info!("loaded {:?}", &self.descriptions[id]);
+            log::debug!("loaded {:?}", &self.descriptions[id]);
         }
     }
 }
