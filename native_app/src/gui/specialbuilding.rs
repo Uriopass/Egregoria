@@ -95,7 +95,7 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
             })
             .min_by_key(move |p| OrderedFloat(p.points().project_dist2(mpos)));
         let Some(closest_road) = closest_road else {
-            uiworld.write::<ErrorTooltip>().0 = Some(Cow::Borrowed("No road nearby"));
+            *uiworld.write::<ErrorTooltip>() = ErrorTooltip::new(Cow::Borrowed("No road nearby"));
             return draw(hover_obb, true)
         };
 
@@ -103,7 +103,7 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         let dir = dir.xy();
 
         if !proj.is_close(mpos, diag + closest_road.width * 0.5) {
-            uiworld.write::<ErrorTooltip>().0 = Some(Cow::Borrowed("No road nearby"));
+            *uiworld.write::<ErrorTooltip>() = ErrorTooltip::new(Cow::Borrowed("No road nearby"));
             return draw(hover_obb, true);
         }
 
@@ -124,13 +124,15 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         );
 
         if proj.distance(first) < diag || proj.distance(last) < diag {
-            uiworld.write::<ErrorTooltip>().0 = Some(Cow::Borrowed("Too close to side"));
+            *uiworld.write::<ErrorTooltip>() =
+                ErrorTooltip::new(Cow::Borrowed("Too close to side"));
             draw(obb, true);
             return;
         }
 
         if closest_road.sidewalks(closest_road.src).incoming.is_none() {
-            uiworld.write::<ErrorTooltip>().0 = Some(Cow::Borrowed("Sidewalk required"));
+            *uiworld.write::<ErrorTooltip>() =
+                ErrorTooltip::new(Cow::Borrowed("Sidewalk required"));
             draw(obb, true);
             return;
         }
@@ -153,7 +155,8 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
         })
         || state.last_obb.map(|x| x.intersects(&obb)).unwrap_or(false)
     {
-        uiworld.write::<ErrorTooltip>().0 = Some(Cow::Borrowed("Intersecting with something"));
+        *uiworld.write::<ErrorTooltip>() =
+            ErrorTooltip::new(Cow::Borrowed("Intersecting with something"));
         draw(obb, true);
         return;
     }

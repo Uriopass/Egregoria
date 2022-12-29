@@ -306,7 +306,7 @@
     "kind": "factory",
     "n_trucks": 1,
     "recipe": {
-      "consumption": [["rare-metal", 1], ["metal", 1]],
+      "consumption": [["gold", 1], ["metal", 1]],
       "production": [["high-tech-product", 1]],
       "complexity": 100,
       "storage_multiplier": 5
@@ -317,7 +317,7 @@
     "price": 1000
   },
   {
-    "name": "Rare metal mine",
+    "name": "Gold mine",
     "bgen": {
       "kind": "centered_door",
       "vertical_factor": 1.0
@@ -326,7 +326,7 @@
     "n_trucks": 1,
     "recipe": {
       "consumption": [],
-      "production": [["rare-metal", 1]],
+      "production": [["gold", 1]],
       "complexity": 100,
       "storage_multiplier": 5
     },

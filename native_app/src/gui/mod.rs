@@ -41,7 +41,29 @@ pub(crate) fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
 }
 
 #[derive(Default, Clone, Debug)]
-pub struct ErrorTooltip(pub Option<Cow<'static, str>>);
+pub struct ErrorTooltip {
+    pub msg: Option<Cow<'static, str>>,
+    // Whether this tooltip is about something happening in the game world
+    // Avoid showing tooltip when the UI is hovered
+    pub isworld: bool,
+}
+
+impl ErrorTooltip {
+    pub fn new(msg: impl Into<Cow<'static, str>>) -> Self {
+        Self {
+            msg: Some(msg.into()),
+            isworld: true,
+        }
+    }
+
+    #[allow(unused)]
+    pub fn new_ui(msg: impl Into<Cow<'static, str>>) -> Self {
+        Self {
+            msg: Some(msg.into()),
+            isworld: false,
+        }
+    }
+}
 
 #[derive(Default, Clone, Debug)]
 pub struct PotentialCommands(pub Vec<WorldCommand>);

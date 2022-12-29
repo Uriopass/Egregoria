@@ -80,16 +80,22 @@ impl Gui {
     }
 
     pub(crate) fn tooltip(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
-        if let Some(tip) = uiworld.write::<ErrorTooltip>().0.take() {
-            let s = ui.available_rect().size();
-            egui::show_tooltip_at(
-                ui,
-                Id::new("tooltip_error"),
-                Some(egui::Pos2::new(s.x, s.y)),
-                |ui| ui.label(RichText::new(tip).color(Color32::from_rgb(255, 100, 100))),
-            );
+        let tooltip = std::mem::take(&mut *uiworld.write::<ErrorTooltip>());
+        if let Some(msg) = tooltip.msg {
+            if !(tooltip.isworld && ui.is_pointer_over_area()) {
+                let s = ui.available_rect().size();
+                egui::show_tooltip_at(
+                    ui,
+                    Id::new("tooltip_error"),
+                    Some(egui::Pos2::new(s.x, s.y)),
+                    |ui| ui.label(RichText::new(msg).color(Color32::from_rgb(255, 100, 100))),
+                );
+            }
         }
 
+        if ui.is_pointer_over_area() {
+            return;
+        }
         let pot = &mut uiworld.write::<PotentialCommands>().0;
         let cost: Money = pot
             .drain(..)
@@ -756,11 +762,10 @@ pub(crate) fn item_icon(ui: &mut Ui, uiworld: &UiWorld, item: &Item, multiplier:
             .try_get(&format!("icon/{}", item.name))
         {
             if ui.image(id, (32.0, 32.0)).hovered() {
-                egui::show_tooltip_text(
-                    ui.ctx(),
-                    ui.make_persistent_id("icon tooltip"),
-                    format!("{} x{}", item.name, multiplier),
-                );
+                egui::show_tooltip(ui.ctx(), ui.make_persistent_id("icon tooltip"), |ui| {
+                    ui.image(id, (64.0, 64.0));
+                    ui.label(format!("{} x{}", item.name, multiplier));
+                });
             }
         } else {
             ui.label(format!("- {} ", &item.label));
