@@ -1,5 +1,4 @@
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
+use std::hash::{BuildHasher, Hash, Hasher};
 
 pub use config::*;
 pub use history::*;
@@ -140,11 +139,12 @@ macro_rules! defer_serialize {
     };
 }
 
+#[inline]
 pub fn hash_u64<T>(obj: T) -> u64
 where
     T: Hash,
 {
-    let mut hasher = DefaultHasher::new();
+    let mut hasher = FxHasher::default();
     obj.hash(&mut hasher);
     hasher.finish()
 }
@@ -173,6 +173,7 @@ pub mod saveload;
 pub mod timestep;
 
 pub use inline_tweak as tw;
+use rustc_hash::FxHasher;
 
 #[derive(Copy, Clone)]
 pub enum AudioKind {
@@ -190,4 +191,29 @@ pub fn fastmap_with_capacity<K, V>(cap: usize) -> FastMap<K, V> {
 
 pub fn fastset_with_capacity<V>(cap: usize) -> FastSet<V> {
     FastSet::with_capacity_and_hasher(cap, Default::default())
+}
+
+#[derive(Default)]
+pub struct TransparentHasherU64(u64);
+
+impl Hasher for TransparentHasherU64 {
+    fn finish(&self) -> u64 {
+        self.0
+    }
+
+    fn write(&mut self, _: &[u8]) {
+        panic!("can only use u64 for transparenthasher")
+    }
+
+    fn write_u64(&mut self, i: u64) {
+        self.0 = i;
+    }
+}
+
+impl BuildHasher for TransparentHasherU64 {
+    type Hasher = TransparentHasherU64;
+
+    fn build_hasher(&self) -> Self::Hasher {
+        TransparentHasherU64(self.0)
+    }
 }

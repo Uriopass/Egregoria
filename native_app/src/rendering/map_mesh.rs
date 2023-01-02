@@ -80,14 +80,15 @@ impl MapMeshHandler {
             if !asset.ends_with(".glb") {
                 continue;
             }
-            buildmeshes.insert(
-                bkind,
-                InstancedMeshBuilder::new(unwrap_contlog!(
-                    load_mesh(asset, gfx),
-                    "couldn't load obj: {}",
-                    asset
-                )),
-            );
+            let m = match load_mesh(asset, gfx) {
+                Ok(m) => m,
+                Err(e) => {
+                    log::error!("Failed to load mesh {}: {:?}", asset, e);
+                    continue;
+                }
+            };
+
+            buildmeshes.insert(bkind, InstancedMeshBuilder::new(m));
         }
 
         let builders = MapBuilders {

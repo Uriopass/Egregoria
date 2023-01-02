@@ -3,12 +3,115 @@ use geom::{Matrix4, Quaternion, Vec2, Vec3};
 use gltf::image::Format;
 use gltf::json::texture::{MagFilter, MinFilter};
 use image::{DynamicImage, ImageBuffer};
+use std::collections::hash_map::Entry;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 use wgpu::FilterMode;
 
-pub fn load_mesh(asset_name: &str, gfx: &GfxContext) -> Option<Mesh> {
+#[derive(Debug)]
+pub enum ImageLoadError {
+    InvalidFormat(Format),
+    InvalidData,
+}
+
+pub fn load_image(
+    gfx: &GfxContext,
+    data: gltf::image::Data,
+    sampl: gltf::texture::Sampler,
+) -> Result<Arc<crate::Texture>, ImageLoadError> {
+    let hash = common::hash_u64((
+        &data.pixels,
+        data.width,
+        data.height,
+        sampl.min_filter().map(|x| x.as_gl_enum()),
+        sampl.mag_filter().map(|x| x.as_gl_enum()),
+    ));
+
+    let mut cache = gfx.texture_cache_bytes.lock().unwrap();
+
+    let ent = cache.entry(hash);
+
+    let ent = match ent {
+        Entry::Occupied(ent) => {
+            return Ok(ent.get().clone());
+        }
+        Entry::Vacant(v) => v,
+    };
+
+    let w = data.width;
+    let h = data.height;
+    let d = data.pixels;
+    let albedo_img = match data.format {
+        Format::R8 => DynamicImage::ImageLuma8(
+            ImageBuffer::from_raw(w, h, d).ok_or(ImageLoadError::InvalidData)?,
+        ),
+        Format::R8G8 => DynamicImage::ImageLumaA8(
+            ImageBuffer::from_raw(w, h, d).ok_or(ImageLoadError::InvalidData)?,
+        ),
+        Format::R8G8B8 => DynamicImage::ImageRgb8(
+            ImageBuffer::from_raw(w, h, d).ok_or(ImageLoadError::InvalidData)?,
+        ),
+        Format::R8G8B8A8 => DynamicImage::ImageRgba8(
+            ImageBuffer::from_raw(w, h, d).ok_or(ImageLoadError::InvalidData)?,
+        ),
+        f => {
+            return Err(ImageLoadError::InvalidFormat(f));
+        }
+    };
+
+    let (min, mipmap) = sampl
+        .min_filter()
+        .map(|x| {
+            use MinFilter::*;
+            match x {
+                Nearest | NearestMipmapLinear => (FilterMode::Nearest, FilterMode::Linear),
+                Linear | LinearMipmapLinear => (FilterMode::Linear, FilterMode::Linear),
+                NearestMipmapNearest => (FilterMode::Nearest, FilterMode::Nearest),
+                LinearMipmapNearest => (FilterMode::Linear, FilterMode::Nearest),
+            }
+        })
+        .unwrap_or_default();
+
+    let sampler = wgpu::SamplerDescriptor {
+        label: Some("mesh sampler"),
+        address_mode_u: Default::default(),
+        address_mode_v: Default::default(),
+        address_mode_w: Default::default(),
+        mag_filter: sampl
+            .mag_filter()
+            .map(|x| match x {
+                MagFilter::Nearest => FilterMode::Nearest,
+                MagFilter::Linear => FilterMode::Linear,
+            })
+            .unwrap_or_default(),
+        min_filter: min,
+        mipmap_filter: mipmap,
+        ..Default::default()
+    };
+
+    let tex = Arc::new(
+        TextureBuilder::from_img(albedo_img)
+            .with_label("some material albedo")
+            .with_sampler(sampler)
+            .build(&gfx.device, &gfx.queue),
+    );
+
+    Ok(ent.insert(tex).clone())
+}
+
+#[derive(Debug)]
+pub enum LoadMeshError {
+    GltfLoadError(gltf::Error),
+    NotSingleMaterial(usize),
+    NoIndices,
+    NoVertices,
+    NoBaseColorTexture,
+    ImageNotFound,
+    InvalidImage(ImageLoadError),
+}
+
+pub fn load_mesh(asset_name: &str, gfx: &GfxContext) -> Result<Mesh, LoadMeshError> {
     let mut path = PathBuf::new();
     path.push("assets/models/");
     path.push(asset_name);
@@ -18,18 +121,12 @@ pub fn load_mesh(asset_name: &str, gfx: &GfxContext) -> Option<Mesh> {
     let mut flat_vertices: Vec<MeshVertex> = vec![];
     let mut indices = vec![];
 
-    let (doc, data, images) = gltf::import(&path)
-        .map_err(|e| log::error!("invalid mesh: {}", e))
-        .ok()?;
+    let (doc, data, images) = gltf::import(&path).map_err(|e| LoadMeshError::GltfLoadError(e))?;
 
     let nodes = doc.nodes();
 
     if doc.materials().len() != 1 {
-        log::error!(
-            "invalid mesh: only 1 material is supported. got: {}",
-            doc.materials().len()
-        );
-        return None;
+        return Err(LoadMeshError::NotSingleMaterial(doc.materials().len()));
     }
 
     for node in nodes {
@@ -120,84 +217,28 @@ pub fn load_mesh(asset_name: &str, gfx: &GfxContext) -> Option<Mesh> {
     }
 
     if indices.is_empty() {
-        log::error!("invalid mesh: no valid mesh in obj");
-        return None;
+        return Err(LoadMeshError::NoIndices);
     }
 
-    let mat = unwrap_or!(doc.materials().next(), {
-        log::error!("invalid mesh: no material in mesh");
-        return None;
-    });
+    let mat = doc.materials().next().unwrap();
     let tex = unwrap_or!(mat.pbr_metallic_roughness().base_color_texture(), {
-        log::error!("invalid mesh: no base color texture");
-        return None;
+        return Err(LoadMeshError::NoBaseColorTexture);
     })
     .texture();
 
     //    let sampler = tex.sampler().mag_filter().unwrap()
-    let albedo_data = unwrap_or!(images.into_iter().nth(tex.source().index()), {
-        log::error!("invalid mesh: couldn't find nth image");
-        return None;
+    let data = unwrap_or!(images.into_iter().nth(tex.source().index()), {
+        return Err(LoadMeshError::ImageNotFound);
     });
-
-    let w = albedo_data.width;
-    let h = albedo_data.height;
-    let d = albedo_data.pixels;
-    let albedo_img = match albedo_data.format {
-        Format::R8 => DynamicImage::ImageLuma8(ImageBuffer::from_raw(w, h, d)?),
-        Format::R8G8 => DynamicImage::ImageLumaA8(ImageBuffer::from_raw(w, h, d)?),
-        Format::R8G8B8 => DynamicImage::ImageRgb8(ImageBuffer::from_raw(w, h, d)?),
-        Format::R8G8B8A8 => DynamicImage::ImageRgba8(ImageBuffer::from_raw(w, h, d)?),
-        _ => {
-            log::error!("invalid mesh: unsupported 16 bits pixel texture");
-            return None;
-        }
-    };
-
-    let sampl = tex.sampler();
-
-    let (min, mipmap) = sampl
-        .min_filter()
-        .map(|x| {
-            use MinFilter::*;
-            match x {
-                Nearest | NearestMipmapLinear => (FilterMode::Nearest, FilterMode::Linear),
-                Linear | LinearMipmapLinear => (FilterMode::Linear, FilterMode::Linear),
-                NearestMipmapNearest => (FilterMode::Nearest, FilterMode::Nearest),
-                LinearMipmapNearest => (FilterMode::Linear, FilterMode::Nearest),
-            }
-        })
-        .unwrap_or_default();
-
-    let sampler = wgpu::SamplerDescriptor {
-        label: Some("mesh sampler"),
-        address_mode_u: Default::default(),
-        address_mode_v: Default::default(),
-        address_mode_w: Default::default(),
-        mag_filter: sampl
-            .mag_filter()
-            .map(|x| match x {
-                MagFilter::Nearest => FilterMode::Nearest,
-                MagFilter::Linear => FilterMode::Linear,
-            })
-            .unwrap_or_default(),
-        min_filter: min,
-        mipmap_filter: mipmap,
-        ..Default::default()
-    };
-
-    let albedo = Arc::new(
-        TextureBuilder::from_img(albedo_img)
-            .with_label("some material albedo")
-            .with_sampler(sampler)
-            .build(&gfx.device, &gfx.queue),
-    );
 
     let mut meshb = MeshBuilder::new();
     meshb.vertices = flat_vertices;
     meshb.indices = indices;
 
-    let m = meshb.build(gfx, albedo);
+    let albedo =
+        load_image(gfx, data, tex.sampler()).map_err(|e| LoadMeshError::InvalidImage(e))?;
+
+    let m = meshb.build(gfx, albedo).ok_or(LoadMeshError::NoVertices)?;
 
     log::info!(
         "loaded mesh {:?} in {}ms",
@@ -205,5 +246,5 @@ pub fn load_mesh(asset_name: &str, gfx: &GfxContext) -> Option<Mesh> {
         1000.0 * t.elapsed().as_secs_f32()
     );
 
-    m
+    Ok(m)
 }

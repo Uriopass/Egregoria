@@ -243,7 +243,7 @@ impl ImmediateDraw {
                     } else {
                         self.mesh_cache.insert(
                             path.clone(),
-                            InstancedMeshBuilder::new(unwrap_cont!(load_mesh(path, ctx.gfx))),
+                            InstancedMeshBuilder::new(load_mesh(path, ctx.gfx).unwrap()),
                         );
                         self.mesh_cache.get_mut(path).unwrap()
                     };

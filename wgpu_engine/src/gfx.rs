@@ -8,9 +8,9 @@ use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use std::any::TypeId;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -50,7 +50,8 @@ pub struct GfxContext {
     pub(crate) projection: Uniform<Matrix4>,
     pub(crate) sun_projection: Uniform<Matrix4>,
     pub render_params: Uniform<RenderParams>,
-    pub(crate) textures: FastMap<PathBuf, Arc<Texture>>,
+    pub(crate) texture_cache_paths: FastMap<PathBuf, Arc<Texture>>,
+    pub(crate) texture_cache_bytes: Mutex<HashMap<u64, Arc<Texture>, common::TransparentHasherU64>>,
     pub(crate) samples: u32,
     pub(crate) screen_uv_vertices: wgpu::Buffer,
     pub(crate) rect_indices: wgpu::Buffer,
@@ -259,7 +260,8 @@ impl GfxContext {
             projection,
             sun_projection: Uniform::new(Matrix4::zero(), &device),
             render_params: Uniform::new(Default::default(), &device),
-            textures,
+            texture_cache_paths: textures,
+            texture_cache_bytes: Default::default(),
             samples,
             screen_uv_vertices,
             rect_indices,
@@ -311,7 +313,7 @@ impl GfxContext {
 
     pub fn set_texture(&mut self, path: impl Into<PathBuf>, tex: Texture) {
         let p = path.into();
-        self.textures.insert(p, Arc::new(tex));
+        self.texture_cache_paths.insert(p, Arc::new(tex));
     }
 
     pub fn texture(&mut self, path: impl Into<PathBuf>, label: &'static str) -> Arc<Texture> {
@@ -328,7 +330,7 @@ impl GfxContext {
     }
 
     fn texture_inner(&mut self, p: PathBuf, label: &'static str) -> Option<Arc<Texture>> {
-        if let Some(tex) = self.textures.get(&p) {
+        if let Some(tex) = self.texture_cache_paths.get(&p) {
             return Some(tex.clone());
         }
         let tex = Arc::new(
@@ -336,16 +338,16 @@ impl GfxContext {
                 .with_label(label)
                 .build(&self.device, &self.queue),
         );
-        self.textures.insert(p, tex.clone());
+        self.texture_cache_paths.insert(p, tex.clone());
         Some(tex)
     }
 
     pub fn read_texture(&self, path: impl Into<PathBuf>) -> Option<&Arc<Texture>> {
-        self.textures.get(&path.into())
+        self.texture_cache_paths.get(&path.into())
     }
 
     pub fn palette(&self) -> Arc<Texture> {
-        self.textures
+        self.texture_cache_paths
             .get(&*PathBuf::from("assets/sprites/palette.png"))
             .expect("palette not loaded")
             .clone()
