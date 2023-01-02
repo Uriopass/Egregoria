@@ -37,6 +37,7 @@ pub(crate) struct Gui {
     pub(crate) n_cars: i32,
     #[serde(skip)]
     pub(crate) n_pedestrians: i32,
+    #[serde(skip)]
     pub(crate) depause_warp: u32,
     #[serde(skip)]
     pub(crate) hidden: bool,

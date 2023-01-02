@@ -72,6 +72,7 @@ pub(crate) struct Settings {
     pub(crate) effects_volume_percent: f32,
     pub(crate) ui_volume_percent: f32,
 
+    #[serde(skip)]
     pub(crate) time_warp: u32,
     pub(crate) auto_save_every: AutoSaveEvery,
 }
