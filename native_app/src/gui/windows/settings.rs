@@ -284,6 +284,13 @@ pub(crate) fn settings(
                             } else {
                                 ui.button("<empty>")
                             };
+                            if resp.hovered() {
+                                egui::show_tooltip_text(
+                                    ui.ctx(),
+                                    ui.make_persistent_id("notimplemented"),
+                                    "Not implemented yet",
+                                );
+                            }
                             if resp.clicked() {}
                         });
                         ui.col(|ui| {
@@ -292,6 +299,13 @@ pub(crate) fn settings(
                             } else {
                                 ui.button("<empty>")
                             };
+                            if resp.hovered() {
+                                egui::show_tooltip_text(
+                                    ui.ctx(),
+                                    ui.make_persistent_id("notimplemented"),
+                                    "Not implemented yet",
+                                );
+                            }
                             if resp.clicked() {}
                         });
                         ui.col(|ui| {
