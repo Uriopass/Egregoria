@@ -21,8 +21,10 @@ impl Government {
     pub fn action_cost(action: &WorldCommand, goria: &Egregoria) -> Money {
         Money::new_base(match action {
             WorldCommand::MapBuildHouse(_) => 100,
-            WorldCommand::AddTrain(_, n_wagons, _) => 1000 + 100 * (*n_wagons as i64),
-            WorldCommand::MapMakeConnection(p1, p2, _, pat) => Self::connection_cost(p1, p2, pat),
+            WorldCommand::AddTrain { n_wagons, .. } => 1000 + 100 * (*n_wagons as i64),
+            WorldCommand::MapMakeConnection { from, to, pat, .. } => {
+                Self::connection_cost(from, to, pat)
+            }
             WorldCommand::MapMakeMultipleConnections(ref projs, ref links) => {
                 let mut total = 0;
                 for (from, to, _, pat) in links.iter() {
@@ -30,7 +32,7 @@ impl Government {
                 }
                 total
             }
-            WorldCommand::MapBuildSpecialBuilding(_, x, _) => match x {
+            WorldCommand::MapBuildSpecialBuilding { kind: x, .. } => match x {
                 BuildingKind::GoodsCompany(x) => {
                     goria.read::<GoodsCompanyRegistry>().descriptions[*x].price
                 }

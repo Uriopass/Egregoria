@@ -4,8 +4,8 @@ use crate::map::{
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
     ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain,
 };
-use geom::OBB;
 use geom::{Circle, Intersect, Shape, Spline3, Vec2, Vec3};
+use geom::{Polygon, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
@@ -154,16 +154,18 @@ impl Map {
         obb: &OBB,
         kind: BuildingKind,
         gen: BuildingGen,
+        zone: Option<Polygon>,
     ) -> Option<BuildingID> {
         if self.building_overlaps(*obb) {
             log::warn!("did not build {:?}: building overlaps", kind);
             return None;
         }
         log::info!(
-            "build special {:?} with shape {:?} and gen {:?}",
+            "build special {:?} with shape {:?} and gen {:?} and zone {:?}",
             kind,
             obb,
-            gen
+            gen,
+            zone
         );
         self.dirt_id += Wrapping(1);
         let to_clean: Vec<_> = self.spatial_map.query(obb, ProjectFilter::LOT).collect();
@@ -189,6 +191,7 @@ impl Map {
             *obb,
             kind,
             gen,
+            zone,
         );
 
         if kind.is_cached_in_bkinds() {
@@ -216,6 +219,7 @@ impl Map {
             lot.shape,
             BuildingKind::House,
             BuildingGen::House,
+            None,
         );
         self.check_invariants();
         v

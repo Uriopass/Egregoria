@@ -44,6 +44,7 @@ pub struct GoodsCompanyDescription {
     pub size: f32,
     pub asset_location: String,
     pub price: i64,
+    pub has_zone: bool,
 }
 
 #[derive(Default)]
@@ -77,6 +78,8 @@ struct GoodsCompanyDescriptionJSON {
     pub size: f32,
     pub asset_location: String,
     pub price: i64,
+    #[serde(default)]
+    pub has_zone: bool,
 }
 
 impl GoodsCompanyRegistry {
@@ -159,6 +162,7 @@ impl GoodsCompanyRegistry {
                     size: descr.size,
                     asset_location: descr.asset_location,
                     price: descr.price,
+                    has_zone: descr.has_zone,
                 });
 
             #[cfg(not(test))]

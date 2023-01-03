@@ -548,8 +548,8 @@ const START_COMMANDS: &str = r#"
      [
       0,
       {
-        "MapMakeConnection": [
-          {
+        "MapMakeConnection": {
+          "from": {
             "pos": [
               6514.85,
               9394.27,
@@ -557,7 +557,7 @@ const START_COMMANDS: &str = r#"
             ],
             "kind": "Ground"
           },
-          {
+          "to": {
             "pos": [
               6333.2446,
               9478.051,
@@ -565,8 +565,8 @@ const START_COMMANDS: &str = r#"
             ],
             "kind": "Ground"
           },
-          null,
-          {
+          "inter": null,
+          "pat": {
             "lanes_forward": [
               [
                 "Rail",
@@ -575,14 +575,14 @@ const START_COMMANDS: &str = r#"
             ],
             "lanes_backward": []
           }
-        ]
+        }
       }
     ],
     [
       0,
       {
-        "MapBuildSpecialBuilding": [
-          {
+        "MapBuildSpecialBuilding": {
+          "pos": {
             "corners": [
               5029150247999392244,
               5029739809570328344,
@@ -590,20 +590,20 @@ const START_COMMANDS: &str = r#"
               5027552829403011348
             ]
           },
-          "RailFretStation",
-          {
+          "kind": "RailFretStation",
+          "gen": {
             "NoWalkway": {
               "door_pos": 0
             }
           }
-        ]
+        }
       }
     ],
     [
       1,
       {
-        "MapMakeConnection": [
-          {
+        "MapMakeConnection": {
+          "from": {
             "pos": [
               3036.1,
               221.0,
@@ -616,7 +616,7 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          {
+          "to": {
             "pos": [
               4246.6924,
               3259.3774,
@@ -624,8 +624,8 @@ const START_COMMANDS: &str = r#"
             ],
             "kind": "Ground"
           },
-          4991505619838112483,
-          {
+          "inter": 4991505619838112483,
+          "pat": {
             "lanes_forward": [
               [
                 "Rail",
@@ -639,14 +639,14 @@ const START_COMMANDS: &str = r#"
               ]
             ]
           }
-        ]
+        }
       }
     ],
     [
       2,
       {
-        "MapMakeConnection": [
-          {
+        "MapMakeConnection": {
+          "from": {
             "pos": [
               4246.6924,
               3259.3774,
@@ -659,7 +659,7 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          {
+          "to": {
             "pos": [
               6147.913,
               7315.1196,
@@ -667,8 +667,8 @@ const START_COMMANDS: &str = r#"
             ],
             "kind": "Ground"
           },
-          5024504635272202713,
-          {
+          "inter": 5024504635272202713,
+          "pat": {
             "lanes_forward": [
               [
                 "Rail",
@@ -682,14 +682,14 @@ const START_COMMANDS: &str = r#"
               ]
             ]
           }
-        ]
+        }
       }
     ],
     [
       3,
       {
-        "MapMakeConnection": [
-          {
+        "MapMakeConnection": {
+          "from": {
             "pos": [
               6147.913,
               7315.1196,
@@ -702,7 +702,7 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          {
+          "to": {
             "pos": [
               6271.2505,
               8647.945,
@@ -710,8 +710,8 @@ const START_COMMANDS: &str = r#"
             ],
             "kind": "Ground"
           },
-          5026585735910612163,
-          {
+          "inter": 5026585735910612163,
+          "pat": {
             "lanes_forward": [
               [
                 "Rail",
@@ -725,14 +725,14 @@ const START_COMMANDS: &str = r#"
               ]
             ]
           }
-        ]
+        }
       }
     ],
     [
       4,
       {
-        "MapMakeConnection": [
-          {
+        "MapMakeConnection": {
+          "from": {
             "pos": [
               6271.2505,
               8647.945,
@@ -745,7 +745,7 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          {
+          "to": {
             "pos": [
               6469.385,
               8973.193,
@@ -753,8 +753,8 @@ const START_COMMANDS: &str = r#"
             ],
             "kind": "Ground"
           },
-          5027576078060451273,
-          {
+          "inter": 5027576078060451273,
+          "pat": {
             "lanes_forward": [
               [
                 "Rail",
@@ -763,14 +763,14 @@ const START_COMMANDS: &str = r#"
             ],
             "lanes_backward": []
           }
-        ]
+        }
       }
     ],
     [
       5,
       {
-        "MapMakeConnection": [
-          {
+        "MapMakeConnection": {
+          "from": {
             "pos": [
               6469.385,
               8973.193,
@@ -783,7 +783,7 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          {
+          "to": {
             "pos": [
               6627.6006,
               9225.364,
@@ -791,8 +791,8 @@ const START_COMMANDS: &str = r#"
             ],
             "kind": "Ground"
           },
-          5030126116108291542,
-          {
+          "inter": 5030126116108291542,
+          "pat": {
             "lanes_forward": [
               [
                 "Rail",
@@ -801,14 +801,14 @@ const START_COMMANDS: &str = r#"
             ],
             "lanes_backward": []
           }
-        ]
+        }
       }
     ],
     [
       6,
       {
-        "MapMakeConnection": [
-          {
+        "MapMakeConnection": {
+          "from": {
             "pos": [
               6627.6006,
               9225.364,
@@ -821,7 +821,7 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          {
+          "to": {
             "pos": [
               6514.85,
               9394.27,
@@ -834,8 +834,8 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          5030305808950368141,
-          {
+          "inter": 5030305808950368141,
+          "pat": {
             "lanes_forward": [
               [
                 "Rail",
@@ -844,14 +844,14 @@ const START_COMMANDS: &str = r#"
             ],
             "lanes_backward": []
           }
-        ]
+        }
       }
     ],
     [
       7,
       {
-        "MapMakeConnection": [
-          {
+        "MapMakeConnection": {
+          "from": {
             "pos": [
               6333.2446,
               9478.051,
@@ -864,7 +864,7 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          {
+          "to": {
             "pos": [
               6120.8,
               9363.014,
@@ -872,8 +872,8 @@ const START_COMMANDS: &str = r#"
             ],
             "kind": "Ground"
           },
-          5026096268554115102,
-          {
+          "inter": 5026096268554115102,
+          "pat": {
             "lanes_forward": [
               [
                 "Rail",
@@ -882,14 +882,14 @@ const START_COMMANDS: &str = r#"
             ],
             "lanes_backward": []
           }
-        ]
+        }
       }
     ],
     [
       8,
       {
-        "MapMakeConnection": [
-          {
+        "MapMakeConnection": {
+          "from": {
             "pos": [
               6120.8,
               9363.014,
@@ -902,7 +902,7 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          {
+          "to": {
             "pos": [
               6202.4365,
               8983.185,
@@ -910,8 +910,8 @@ const START_COMMANDS: &str = r#"
             ],
             "kind": "Ground"
           },
-          5025518762956125798,
-          {
+          "inter": 5025518762956125798,
+          "pat": {
             "lanes_forward": [
               [
                 "Rail",
@@ -920,14 +920,14 @@ const START_COMMANDS: &str = r#"
             ],
             "lanes_backward": []
           }
-        ]
+        }
       }
     ],
     [
       9,
       {
-        "MapMakeConnection": [
-          {
+        "MapMakeConnection": {
+          "from": {
             "pos": [
               6202.4365,
               8983.185,
@@ -940,7 +940,7 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          {
+          "to": {
             "pos": [
               6271.2505,
               8647.945,
@@ -953,8 +953,8 @@ const START_COMMANDS: &str = r#"
               }
             }
           },
-          5026925811421779699,
-          {
+          "inter": 5026925811421779699,
+          "pat": {
             "lanes_forward": [
               [
                 "Rail",
@@ -963,19 +963,19 @@ const START_COMMANDS: &str = r#"
             ],
             "lanes_backward": []
           }
-        ]
+        }
       }
     ],
     [ 10,
       {
-        "AddTrain": [
-          150.0,
-          7,
-          {
+        "AddTrain": {
+          "dist": 150.0,
+          "n_wagons": 7,
+          "lane": {
             "idx": 3,
             "version": 1
           }
-        ]
+        }
       }
     ]
 ]

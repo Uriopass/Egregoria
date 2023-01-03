@@ -20,7 +20,7 @@ use egregoria::utils::time::{GameTime, SECONDS_PER_HOUR};
 use egregoria::Egregoria;
 use egui::{Align2, Color32, Context, Frame, Id, Response, RichText, Style, Ui, Widget, Window};
 use egui_inspect::{Inspect, InspectArgs};
-use geom::Vec2;
+use geom::{Polygon, Vec2};
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
@@ -301,20 +301,21 @@ impl Gui {
 
                                 let mut commands = Vec::with_capacity(5);
 
-                                commands.push(WorldCommand::MapMakeConnection(
-                                    MapProject::ground(c - offx * 45.0 - offy * 100.0),
-                                    MapProject::ground(c - offx * 45.0 + offy * 100.0),
-                                    None,
+                                commands.push(WorldCommand::MapMakeConnection {
+                                    from: MapProject::ground(c - offx * 45.0 - offy * 100.0),
+                                    to: MapProject::ground(c - offx * 45.0 + offy * 100.0),
+                                    inter: None,
                                     pat,
-                                ));
+                                });
 
-                                commands.push(WorldCommand::MapBuildSpecialBuilding(
-                                    args.obb,
-                                    BuildingKind::RailFretStation,
-                                    BuildingGen::NoWalkway {
+                                commands.push(WorldCommand::MapBuildSpecialBuilding {
+                                    pos: args.obb,
+                                    kind: BuildingKind::RailFretStation,
+                                    gen: BuildingGen::NoWalkway {
                                         door_pos: Vec2::ZERO,
                                     },
-                                ));
+                                    zone: None,
+                                });
                                 commands
                             }),
                             w: 200.0,
@@ -533,12 +534,17 @@ impl Gui {
                         if ui.button(name).clicked() || cur_build.opt.is_none() {
                             let bkind = BuildingKind::GoodsCompany(descr.id);
                             let bgen = descr.bgen;
+                            let has_zone = descr.has_zone;
                             cur_build.opt = Some(SpecialBuildKind {
                                 road_snap: true,
                                 make: Box::new(move |args| {
-                                    vec![WorldCommand::MapBuildSpecialBuilding(
-                                        args.obb, bkind, bgen,
-                                    )]
+                                    vec![WorldCommand::MapBuildSpecialBuilding {
+                                        pos: args.obb,
+                                        kind: bkind,
+                                        gen: bgen,
+                                        zone: has_zone
+                                            .then(|| Polygon::from(args.obb.corners.as_slice())),
+                                    }]
                                 }),
                                 w: descr.size,
                                 h: descr.size,

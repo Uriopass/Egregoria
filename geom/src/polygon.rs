@@ -8,6 +8,7 @@ use std::hint::unreachable_unchecked;
 use std::ops::Index;
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
+/// A polygon in clockwise order
 pub struct Polygon(pub Vec<Vec2>);
 
 impl Polygon {
@@ -69,6 +70,20 @@ impl Polygon {
         self.0.insert(seg + 1, src + perp * dist);
         self.0.insert(seg + 2, dst + perp * dist);
         self
+    }
+
+    #[inline]
+    pub fn area(&self) -> f32 {
+        let mut s = 0.0;
+        for i in 0..self.0.len() {
+            let src = unsafe { self.0.get_unchecked(i) };
+            let dst = unsafe {
+                self.0
+                    .get_unchecked(if i + 1 == self.0.len() { 0 } else { i + 1 })
+            };
+            s += src.x * dst.y - src.y * dst.x;
+        }
+        s.abs() * 0.5
     }
 
     #[inline]
@@ -294,6 +309,13 @@ impl From<Vec<Vec2>> for Polygon {
     #[inline]
     fn from(v: Vec<Vec2>) -> Self {
         Self(v)
+    }
+}
+
+impl<'a> From<&'a [Vec2]> for Polygon {
+    #[inline]
+    fn from(v: &'a [Vec2]) -> Self {
+        Self(v.to_vec())
     }
 }
 

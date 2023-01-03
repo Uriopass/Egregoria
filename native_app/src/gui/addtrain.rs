@@ -56,7 +56,11 @@ pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     drawtrain(common::config().gui_primary);
 
-    let cmd = WorldCommand::AddTrain(dist, n_wagons, nearbylane.id);
+    let cmd = WorldCommand::AddTrain {
+        dist,
+        n_wagons,
+        lane: nearbylane.id,
+    };
     if inp.just_act.contains(&InputAction::Select) {
         commands.push(cmd);
     } else {

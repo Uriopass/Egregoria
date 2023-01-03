@@ -171,13 +171,14 @@ mod tests {
         let house = test.build_house_near(vec2(50.0, 50.0));
         let human = spawn_human(&mut test.g, house).unwrap();
 
-        test.apply(&[WorldCommand::MapBuildSpecialBuilding(
-            OBB::new(vec2(50.0, 50.0), vec2(1.0, 0.0), 5.0, 5.0),
-            BuildingKind::RailFretStation,
-            BuildingGen::NoWalkway {
+        test.apply(&[WorldCommand::MapBuildSpecialBuilding {
+            pos: OBB::new(vec2(50.0, 50.0), vec2(1.0, 0.0), 5.0, 5.0),
+            kind: BuildingKind::RailFretStation,
+            gen: BuildingGen::NoWalkway {
                 door_pos: vec2(50.0, 50.0),
             },
-        )]);
+            zone: None,
+        }]);
         test.tick();
 
         let station = test

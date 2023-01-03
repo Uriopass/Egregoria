@@ -8,7 +8,7 @@ use crate::map_dynamic::BuildingInfos;
 use crate::transportation::train::{spawn_train, RailWagonKind};
 use crate::utils::time::{GameTime, Tick};
 use crate::{Egregoria, EgregoriaOptions, Replay};
-use geom::{vec3, Transform, Vec2, OBB};
+use geom::{vec3, Polygon, Transform, Vec2, OBB};
 use hecs::Entity;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -46,16 +46,39 @@ pub enum WorldCommand {
     MapRemoveRoad(RoadID),
     MapRemoveBuilding(BuildingID),
     MapBuildHouse(LotID),
-    AddTrain(f32, u32, LaneID),
-    MapMakeConnection(MapProject, MapProject, Option<Vec2>, LanePattern), // todo: allow lane pattern builder
+    AddTrain {
+        dist: f32,
+        n_wagons: u32,
+        lane: LaneID,
+    },
+    MapMakeConnection {
+        from: MapProject,
+        to: MapProject,
+        inter: Option<Vec2>,
+        pat: LanePattern,
+    }, // todo: allow lane pattern builder
     MapMakeMultipleConnections(
         Vec<MapProject>,
         Vec<(usize, usize, Option<Vec2>, LanePattern)>,
     ),
-    MapUpdateIntersectionPolicy(IntersectionID, TurnPolicy, LightPolicy),
-    MapBuildSpecialBuilding(OBB, BuildingKind, BuildingGen),
+    MapUpdateIntersectionPolicy {
+        inter: IntersectionID,
+        turn: TurnPolicy,
+        light: LightPolicy,
+    },
+    MapBuildSpecialBuilding {
+        pos: OBB,
+        kind: BuildingKind,
+        gen: BuildingGen,
+        #[serde(default)]
+        zone: Option<Polygon>,
+    },
     MapLoadParis,
-    MapLoadTestField(Vec2, u32, f32),
+    MapLoadTestField {
+        pos: Vec2,
+        size: u32,
+        spacing: f32,
+    },
     ResetSave,
     SetGameTime(GameTime),
     UpdateTransform(Entity, Transform),
@@ -93,7 +116,7 @@ impl WorldCommands {
     }
 
     pub fn map_load_testfield(&mut self, pos: Vec2, size: u32, spacing: f32) {
-        self.commands.push(MapLoadTestField(pos, size, spacing))
+        self.commands.push(MapLoadTestField { pos, size, spacing })
     }
 
     pub fn update_transform(&mut self, e: Entity, trans: Transform) {
@@ -109,11 +132,26 @@ impl WorldCommands {
     }
 
     pub fn add_train(&mut self, dist: f32, n_wagons: u32, laneid: LaneID) {
-        self.commands.push(AddTrain(dist, n_wagons, laneid))
+        self.commands.push(AddTrain {
+            dist,
+            n_wagons,
+            lane: laneid,
+        })
     }
 
-    pub fn map_build_special_building(&mut self, obb: OBB, kind: BuildingKind, gen: BuildingGen) {
-        self.commands.push(MapBuildSpecialBuilding(obb, kind, gen))
+    pub fn map_build_special_building(
+        &mut self,
+        obb: OBB,
+        kind: BuildingKind,
+        gen: BuildingGen,
+        zone: Option<Polygon>,
+    ) {
+        self.commands.push(MapBuildSpecialBuilding {
+            pos: obb,
+            kind,
+            gen,
+            zone,
+        })
     }
 
     pub fn map_remove_intersection(&mut self, id: IntersectionID) {
@@ -139,8 +177,12 @@ impl WorldCommands {
         interpoint: Option<Vec2>,
         pat: LanePattern,
     ) {
-        self.commands
-            .push(MapMakeConnection(from, to, interpoint, pat))
+        self.commands.push(MapMakeConnection {
+            from,
+            to,
+            inter: interpoint,
+            pat,
+        })
     }
 
     pub fn map_update_intersection_policy(
@@ -149,7 +191,11 @@ impl WorldCommands {
         tp: TurnPolicy,
         lp: LightPolicy,
     ) {
-        self.commands.push(MapUpdateIntersectionPolicy(id, tp, lp))
+        self.commands.push(MapUpdateIntersectionPolicy {
+            inter: id,
+            turn: tp,
+            light: lp,
+        })
     }
 }
 
@@ -175,10 +221,13 @@ impl WorldCommand {
                     infos.insert(build);
                 }
             }
-            MapMakeConnection(from, to, interpoint, ref pat) => {
-                goria
-                    .write::<Map>()
-                    .make_connection(from, to, interpoint, pat);
+            MapMakeConnection {
+                from,
+                to,
+                inter,
+                ref pat,
+            } => {
+                goria.write::<Map>().make_connection(from, to, inter, pat);
             }
             MapMakeMultipleConnections(ref projects, ref links) => {
                 let mut map = goria.map_mut();
@@ -204,23 +253,38 @@ impl WorldCommand {
                     }
                 }
             }
-            MapUpdateIntersectionPolicy(id, tp, lp) => {
-                goria.map_mut().update_intersection(id, move |i| {
-                    i.light_policy = lp;
-                    i.turn_policy = tp;
-                })
-            }
-            MapBuildSpecialBuilding(obb, kind, gen) => {
-                if let Some(id) = goria.write::<Map>().build_special_building(&obb, kind, gen) {
+            MapUpdateIntersectionPolicy {
+                inter: id,
+                turn: tp,
+                light: lp,
+            } => goria.map_mut().update_intersection(id, move |i| {
+                i.light_policy = lp;
+                i.turn_policy = tp;
+            }),
+            MapBuildSpecialBuilding {
+                pos: obb,
+                kind,
+                gen,
+                ref zone,
+            } => {
+                if let Some(id) =
+                    goria
+                        .write::<Map>()
+                        .build_special_building(&obb, kind, gen, zone.clone())
+                {
                     goria.write::<BuildingInfos>().insert(id);
                 }
             }
             SetGameTime(gt) => *goria.write::<GameTime>() = gt,
-            AddTrain(dist, n_wagons, lane) => {
+            AddTrain {
+                dist,
+                n_wagons,
+                lane,
+            } => {
                 spawn_train(goria, dist, n_wagons, lane, RailWagonKind::Fret);
             }
             MapLoadParis => load_parismap(&mut goria.map_mut()),
-            MapLoadTestField(pos, size, spacing) => {
+            MapLoadTestField { pos, size, spacing } => {
                 load_testfield(&mut goria.map_mut(), pos, size, spacing)
             }
             ResetSave => {
@@ -281,6 +345,7 @@ fn generate_terrain(goria: &mut Egregoria, size: u32) {
             BuildingGen::NoWalkway {
                 door_pos: Vec2::ZERO,
             },
+            None,
         )
         .is_none()
     {

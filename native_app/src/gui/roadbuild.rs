@@ -97,7 +97,7 @@ pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     // If a road was placed recently (as it is async with networking) prepare the next road
     for command in uiworld.received_commands().iter() {
-        if let WorldCommand::MapMakeConnection(_, to, _, _) = command {
+        if let WorldCommand::MapMakeConnection { to, .. } = command {
             if let proj @ MapProject { kind: Inter(_), .. } =
                 map.project(to.pos, 0.0, ProjectFilter::ALL)
             {
@@ -207,19 +207,19 @@ pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     potential_command.0.clear();
     match state.build_state {
         Hover => {}
-        Start(selected_proj) => potential_command.set(WorldCommand::MapMakeConnection(
-            selected_proj,
-            cur_proj,
-            None,
-            state.pattern_builder.build(),
-        )),
+        Start(selected_proj) => potential_command.set(WorldCommand::MapMakeConnection {
+            from: selected_proj,
+            to: cur_proj,
+            inter: None,
+            pat: state.pattern_builder.build(),
+        }),
         Interpolation(interpoint, selected_proj) => {
-            potential_command.set(WorldCommand::MapMakeConnection(
-                selected_proj,
-                cur_proj,
-                Some(interpoint),
-                state.pattern_builder.build(),
-            ))
+            potential_command.set(WorldCommand::MapMakeConnection {
+                from: selected_proj,
+                to: cur_proj,
+                inter: Some(interpoint),
+                pat: state.pattern_builder.build(),
+            })
         }
     }
 
