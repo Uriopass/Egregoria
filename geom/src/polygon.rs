@@ -11,10 +11,12 @@ use std::ops::Index;
 pub struct Polygon(pub Vec<Vec2>);
 
 impl Polygon {
+    #[inline]
     pub fn rect(w: f32, h: f32) -> Self {
         Self(vec![Vec2::ZERO, vec2(w, 0.0), vec2(w, h), vec2(0.0, h)])
     }
 
+    #[inline]
     pub fn centered_rect(pos: Vec2, w: f32, h: f32) -> Self {
         Self(vec![
             pos + vec2(-w * 0.5, -h * 0.5),
@@ -24,6 +26,7 @@ impl Polygon {
         ])
     }
 
+    #[inline]
     pub fn translate(&mut self, p: Vec2) -> &mut Self {
         for x in self.0.iter_mut() {
             *x += p
@@ -31,6 +34,7 @@ impl Polygon {
         self
     }
 
+    #[inline]
     pub fn rotate(&mut self, cossin: Vec2) -> &mut Self {
         for x in self.0.iter_mut() {
             *x = x.rotated_by(cossin)
@@ -38,6 +42,7 @@ impl Polygon {
         self
     }
 
+    #[inline]
     pub fn segment(&self, seg: usize) -> Segment {
         Segment::new(
             self.0[seg],
@@ -45,6 +50,7 @@ impl Polygon {
         )
     }
 
+    #[inline]
     pub fn split_segment(&mut self, seg: usize, coeff: f32) -> &mut Self {
         let Segment { src, dst } = self.segment(seg);
         self.0.insert(seg + 1, src + (dst - src) * coeff);
@@ -65,6 +71,9 @@ impl Polygon {
         self
     }
 
+    #[inline]
+    /// Checks if the polygon contains a point.
+    /// Assumes a bbox check has already been performed.
     pub fn contains(&self, p: Vec2) -> bool {
         let nvert = self.0.len();
 
@@ -89,6 +98,39 @@ impl Polygon {
         c
     }
 
+    pub fn is_convex(&self) -> bool {
+        let nvert = self.0.len();
+        if nvert <= 3 {
+            return true;
+        }
+
+        let mut j = nvert - 1;
+        let mut k = nvert - 2;
+        let mut lastsign: Option<bool> = None;
+
+        for i in 0..nvert {
+            let verti = unsafe { self.0.get_unchecked(i) };
+            let vertj = unsafe { self.0.get_unchecked(j) };
+            let vertk = unsafe { self.0.get_unchecked(k) };
+
+            let offj = vertj - verti;
+            let offk = vertk - vertj;
+
+            let cross = offj.cross(offk);
+            let sign = Some(cross < 0.0);
+
+            if sign != lastsign {
+                return false;
+            }
+            lastsign = sign;
+
+            k = j;
+            j = i;
+        }
+        true
+    }
+
+    #[inline]
     pub fn project(&self, pos: Vec2) -> Vec2 {
         self.project_segment(pos).0
     }
@@ -111,6 +153,7 @@ impl Polygon {
         }
     }
 
+    #[inline]
     pub fn get_prev(&self, i: usize) -> &Vec2 {
         if i == 0 {
             self.get(self.len() - 1)
@@ -119,6 +162,7 @@ impl Polygon {
         }
     }
 
+    #[inline]
     pub fn get_next(&self, i: usize) -> &Vec2 {
         if i == self.len() - 1 {
             self.get(0)
@@ -127,22 +171,27 @@ impl Polygon {
         }
     }
 
+    #[inline]
     pub fn get(&self, i: usize) -> &Vec2 {
         self.0.get(i).unwrap()
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
+    #[inline]
     pub fn first(&self) -> Vec2 {
         *self.0.first().unwrap()
     }
 
+    #[inline]
     pub fn last(&self) -> Vec2 {
         *self.0.last().unwrap()
     }
@@ -185,10 +234,12 @@ impl Polygon {
         }
     }
 
+    #[inline]
     pub fn barycenter(&self) -> Vec2 {
         self.0.iter().sum::<Vec2>() / (self.0.len() as f32)
     }
 
+    #[inline]
     pub fn bcircle(&self) -> Circle {
         let center = self.barycenter();
         let radius = self
@@ -202,17 +253,21 @@ impl Polygon {
         Circle { center, radius }
     }
 
+    #[inline]
     pub fn iter(&self) -> std::slice::Iter<'_, Vec2> {
         self.0.iter()
     }
+    #[inline]
     pub fn iter_mut(&mut self) -> std::slice::IterMut<'_, Vec2> {
         self.0.iter_mut()
     }
 
+    #[inline]
     pub fn as_slice(&self) -> &[Vec2] {
         self.0.as_slice()
     }
 
+    #[inline]
     pub fn clear(&mut self) {
         self.0.clear()
     }
@@ -229,18 +284,21 @@ impl Polygon {
 impl Index<usize> for Polygon {
     type Output = Vec2;
 
+    #[inline]
     fn index(&self, index: usize) -> &Vec2 {
         &self.0[index]
     }
 }
 
 impl From<Vec<Vec2>> for Polygon {
+    #[inline]
     fn from(v: Vec<Vec2>) -> Self {
         Self(v)
     }
 }
 
 impl Shape for Polygon {
+    #[inline]
     fn bbox(&self) -> AABB {
         let (min, max) = match super::minmax(self.0.iter().copied()) {
             Some(x) => x,
@@ -252,18 +310,21 @@ impl Shape for Polygon {
 }
 
 impl Intersect<AABB> for Polygon {
+    #[inline]
     fn intersects(&self, shape: &AABB) -> bool {
         self.segments().any(|s| s.intersects(shape)) || self.contains(shape.ll)
     }
 }
 
 impl Intersect<Vec2> for Polygon {
+    #[inline]
     fn intersects(&self, &shape: &Vec2) -> bool {
         self.contains(shape)
     }
 }
 
 impl Intersect<Circle> for Polygon {
+    #[inline]
     fn intersects(&self, shape: &Circle) -> bool {
         self.segments().any(|s| s.intersects(shape)) || self.contains(shape.center)
     }
@@ -274,15 +335,13 @@ impl Intersect<Polygon> for Polygon {
         let mybbox = self.bbox();
         let his_bbox = other.bbox();
 
-        mybbox.intersects(&his_bbox)
-            && (self
+        self.0
+            .iter()
+            .any(|&point| his_bbox.contains(point) && other.contains(point))
+            || other
                 .0
                 .iter()
-                .any(|&point| his_bbox.contains(point) && other.contains(point))
-                || other
-                    .0
-                    .iter()
-                    .any(|&point| mybbox.contains(point) && self.contains(point)))
+                .any(|&point| mybbox.contains(point) && self.contains(point))
     }
 }
 

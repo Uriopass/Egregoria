@@ -25,6 +25,7 @@ impl Shape for BoldLine {
 
 defer_inter!(Vec2 => BoldLine);
 impl Intersect<Vec2> for BoldLine {
+    #[inline]
     fn intersects(&self, p: &Vec2) -> bool {
         self.line.project(*p).is_close(*p, self.radius)
     }
@@ -32,6 +33,7 @@ impl Intersect<Vec2> for BoldLine {
 
 defer_inter!(Circle => BoldLine);
 impl Intersect<Circle> for BoldLine {
+    #[inline]
     fn intersects(&self, p: &Circle) -> bool {
         self.line
             .project(p.center)
@@ -41,8 +43,27 @@ impl Intersect<Circle> for BoldLine {
 
 defer_inter!(Polygon => BoldLine);
 impl Intersect<Polygon> for BoldLine {
-    fn intersects(&self, _: &Polygon) -> bool {
-        println!("collision between polygon and boldline not implemented");
+    fn intersects(&self, p: &Polygon) -> bool {
+        if p.len() == 0 {
+            return false;
+        }
+        if p.len() == 1 {
+            return self.intersects(&p[0]);
+        }
+        if p.contains(self.line.first()) {
+            return true;
+        }
+        let pbox = p.bbox().expand(self.radius);
+        for s in self.line.segments() {
+            if !pbox.intersects(&s) {
+                continue;
+            }
+            for s2 in p.segments() {
+                if s.distance(&s2) <= self.radius {
+                    return true;
+                }
+            }
+        }
         false
     }
 }

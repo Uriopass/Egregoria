@@ -83,10 +83,15 @@ macro_rules! assert_delta {
     };
 }
 
+/// Intersect trait is trait to check if two shapes intersect
+/// It does not do bbox checks on purpose to avoid doing it twice since
+/// we assume you use a broadphase to filter out objects that don't
+/// intersect the bbox
 pub trait Intersect<T: Shape>: Shape {
     fn intersects(&self, shape: &T) -> bool;
 }
 
+/// Shape trait means that the object has a bounding box
 pub trait Shape {
     fn bbox(&self) -> AABB;
 }
@@ -105,6 +110,7 @@ impl<T: Shape, U: Shape> Intersect<T> for &U
 where
     U: Intersect<T>,
 {
+    #[inline]
     fn intersects(&self, shape: &T) -> bool {
         U::intersects(self, shape)
     }
@@ -114,12 +120,14 @@ impl<T> Shape for &T
 where
     T: Shape,
 {
+    #[inline]
     fn bbox(&self) -> AABB {
         T::bbox(self)
     }
 }
 
 impl Shape for ShapeEnum {
+    #[inline]
     fn bbox(&self) -> AABB {
         match self {
             ShapeEnum::OBB(s) => s.bbox(),
@@ -134,6 +142,7 @@ impl Shape for ShapeEnum {
 }
 
 impl Intersect<ShapeEnum> for ShapeEnum {
+    #[inline]
     fn intersects(&self, shape: &ShapeEnum) -> bool {
         match self {
             ShapeEnum::OBB(x) => x.intersects(shape),
@@ -151,6 +160,7 @@ macro_rules! impl_shape_enum {
     ($($t: ident),+) => {
         $(
             impl Intersect<$t> for ShapeEnum {
+                #[inline]
                 fn intersects(&self, shape: &$t) -> bool {
                     match self {
                         ShapeEnum::OBB(x) => x.intersects(shape),
@@ -165,6 +175,7 @@ macro_rules! impl_shape_enum {
             }
 
             impl Intersect<ShapeEnum> for $t {
+                #[inline]
                 fn intersects(&self, shape: &ShapeEnum) -> bool {
                     match shape {
                         ShapeEnum::OBB(x) => self.intersects(x),
@@ -179,6 +190,7 @@ macro_rules! impl_shape_enum {
             }
 
             impl From<$t> for ShapeEnum {
+                #[inline]
                 fn from(v: $t) -> Self {
                     Self::$t(v)
                 }

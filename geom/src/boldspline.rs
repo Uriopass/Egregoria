@@ -1,6 +1,6 @@
 use super::Vec2;
 use crate::aabb::AABB;
-use crate::{vec2, BoldLine, Circle, Intersect, Polygon, Shape, Spline, OBB};
+use crate::{vec2, BoldLine, Circle, Intersect, Polygon, Segment, Shape, Spline, OBB};
 use serde::{Deserialize, Serialize};
 
 /// An ordered list of at least one point forming a broken line
@@ -45,8 +45,37 @@ impl Intersect<Circle> for BoldSpline {
 
 defer_inter!(Polygon => BoldSpline);
 impl Intersect<Polygon> for BoldSpline {
-    fn intersects(&self, _: &Polygon) -> bool {
-        println!("collision between polygon and boldline not implemented");
+    fn intersects(&self, p: &Polygon) -> bool {
+        if p.len() == 0 {
+            return false;
+        }
+        if p.len() == 1 {
+            return self.intersects(&p[0]);
+        }
+
+        let mut points = self.spline.smart_points(0.1, 0.0, 1.0).peekable();
+        if let Some(&v) = points.peek() {
+            if p.contains(v) {
+                return true;
+            }
+        }
+
+        let bbox = p.bbox().expand(self.radius);
+        while let Some(v) = points.next() {
+            let Some(&peek) = points.peek() else { return false; };
+
+            let segment = Segment::new(v, peek);
+            if !bbox.intersects(&segment) {
+                continue;
+            }
+
+            for s in p.segments() {
+                if segment.distance(&s) <= self.radius {
+                    return true;
+                }
+            }
+        }
+
         false
     }
 }

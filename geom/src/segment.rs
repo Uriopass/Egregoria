@@ -55,6 +55,18 @@ impl Segment {
         }
     }
 
+    #[rustfmt::skip]
+    pub fn distance(&self, s: &Segment) -> f32 {
+        if self.intersects(s) {
+            return 0.0;
+        }
+                   s.project(self.src).distance2(self.src)
+        .min(s.project(self.dst).distance2(self.dst))
+        .min(self.project(s.src).distance2(s.src))
+        .min(self.project(s.dst).distance2(s.dst))
+        .sqrt()
+    }
+
     pub fn as_line(&self) -> Line {
         Line {
             src: self.src,

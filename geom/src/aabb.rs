@@ -11,6 +11,7 @@ pub struct AABB {
 
 impl AABB {
     /// Create a new `AABB`.
+    #[inline]
     pub const fn new(ll: Vec2, ur: Vec2) -> Self {
         AABB { ll, ur }
     }
@@ -69,6 +70,16 @@ impl AABB {
         }
     }
 
+    #[inline]
+    pub fn points(self) -> [Vec2; 4] {
+        [
+            self.ll,
+            Vec2::new(self.ur.x, self.ll.y),
+            self.ur,
+            Vec2::new(self.ll.x, self.ur.y),
+        ]
+    }
+
     #[inline(always)]
     pub fn compute_code(&self, p: Vec2) -> u8 {
         const LEFT: u8 = 1; // 0001
@@ -95,6 +106,7 @@ impl AABB {
             && point.y >= self.ll.y - tolerance
     }
 
+    #[inline]
     pub fn segments(&self) -> impl Iterator<Item = Segment> {
         let ul = Vec2 {
             x: self.ll.x,
