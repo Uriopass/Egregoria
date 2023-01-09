@@ -44,7 +44,13 @@ pub struct GoodsCompanyDescription {
     pub size: f32,
     pub asset_location: String,
     pub price: i64,
-    pub has_zone: bool,
+    pub zone: Option<Box<Zone>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Zone {
+    pub floor: String,
+    pub filler: String,
 }
 
 #[derive(Default)]
@@ -78,8 +84,8 @@ struct GoodsCompanyDescriptionJSON {
     pub size: f32,
     pub asset_location: String,
     pub price: i64,
-    #[serde(default)]
-    pub has_zone: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub zone: Option<Box<Zone>>,
 }
 
 impl GoodsCompanyRegistry {
@@ -162,7 +168,7 @@ impl GoodsCompanyRegistry {
                     size: descr.size,
                     asset_location: descr.asset_location,
                     price: descr.price,
-                    has_zone: descr.has_zone,
+                    zone: descr.zone,
                 });
 
             #[cfg(not(test))]

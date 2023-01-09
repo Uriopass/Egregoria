@@ -25,12 +25,12 @@ impl InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 gfx.texture("assets/sprites/path_not_found.png", "path_not_found"),
             ),
-            cars: InstancedMeshBuilder::new(load_mesh("simple_car.glb", gfx).unwrap()),
-            locomotives: InstancedMeshBuilder::new(load_mesh("train.glb", gfx).unwrap()),
-            wagons_fret: InstancedMeshBuilder::new(load_mesh("wagon_fret.glb", gfx).unwrap()),
-            wagons_passenger: InstancedMeshBuilder::new(load_mesh("wagon.glb", gfx).unwrap()),
-            trucks: InstancedMeshBuilder::new(load_mesh("truck.glb", gfx).unwrap()),
-            pedestrians: InstancedMeshBuilder::new(load_mesh("pedestrian.glb", gfx).unwrap()),
+            cars: InstancedMeshBuilder::new(load_mesh(gfx, "simple_car.glb").unwrap()),
+            locomotives: InstancedMeshBuilder::new(load_mesh(gfx, "train.glb").unwrap()),
+            wagons_fret: InstancedMeshBuilder::new(load_mesh(gfx, "wagon_fret.glb").unwrap()),
+            wagons_passenger: InstancedMeshBuilder::new(load_mesh(gfx, "wagon.glb").unwrap()),
+            trucks: InstancedMeshBuilder::new(load_mesh(gfx, "truck.glb").unwrap()),
+            pedestrians: InstancedMeshBuilder::new(load_mesh(gfx, "pedestrian.glb").unwrap()),
         }
     }
 

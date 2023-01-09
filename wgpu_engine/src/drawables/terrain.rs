@@ -221,7 +221,6 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         let maxx = unwrap_ret!(self.dirt_ids.keys().map(|x| x.0).max()) + 1;
         let miny = unwrap_ret!(self.dirt_ids.keys().map(|x| x.1).min());
         let maxy = unwrap_ret!(self.dirt_ids.keys().map(|x| x.1).max()) + 1;
-        let albedo = gfx.palette();
         let cell_size = self.cell_size;
         let mk_bord = |start, end, c, is_x, rev| {
             let c = c as f32 * CSIZE as f32;
@@ -254,7 +253,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 indices.push(b as IndexType);
                 indices.push(c as IndexType);
             });
-            let mut mb = MeshBuilder::new();
+            let mut mb = MeshBuilder::new(gfx.palette());
             mb.indices = indices;
             mb.vertices = poly
                 .0
@@ -272,7 +271,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                     color: LinearColor::from(common::config().border_col).into(),
                 })
                 .collect();
-            mb.build(gfx, albedo.clone())
+            mb.build(gfx)
         };
 
         let borders = Arc::get_mut(&mut self.borders).unwrap();

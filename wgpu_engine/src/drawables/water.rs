@@ -10,7 +10,7 @@ pub struct Water {
 
 impl Water {
     pub fn new(gfx: &mut GfxContext, w: f32, h: f32) -> Self {
-        let mut mb = MeshBuilder::new();
+        let mut mb = MeshBuilder::new(gfx.palette());
 
         mb.vertices.extend_from_slice(&[
             MeshVertex {
@@ -34,7 +34,7 @@ impl Water {
         mb.indices.extend_from_slice(&[0, 1, 2, 2, 3, 0]);
 
         // unwrap ok: we just added vertices
-        let mesh = mb.build(gfx, gfx.palette()).unwrap();
+        let mesh = mb.build(gfx).unwrap();
 
         let wavy = gfx.texture("assets/sprites/wavy.jpeg", "wavy");
         let wavy_bg =

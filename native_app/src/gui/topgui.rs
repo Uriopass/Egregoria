@@ -534,7 +534,7 @@ impl Gui {
                         if ui.button(name).clicked() || cur_build.opt.is_none() {
                             let bkind = BuildingKind::GoodsCompany(descr.id);
                             let bgen = descr.bgen;
-                            let has_zone = descr.has_zone;
+                            let has_zone = descr.zone.is_some();
                             cur_build.opt = Some(SpecialBuildKind {
                                 road_snap: true,
                                 make: Box::new(move |args| {

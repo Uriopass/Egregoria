@@ -111,7 +111,7 @@ pub enum LoadMeshError {
     InvalidImage(ImageLoadError),
 }
 
-pub fn load_mesh(asset_name: &str, gfx: &GfxContext) -> Result<Mesh, LoadMeshError> {
+pub fn load_mesh(gfx: &GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshError> {
     let mut path = PathBuf::new();
     path.push("assets/models/");
     path.push(asset_name);
@@ -231,14 +231,13 @@ pub fn load_mesh(asset_name: &str, gfx: &GfxContext) -> Result<Mesh, LoadMeshErr
         return Err(LoadMeshError::ImageNotFound);
     });
 
-    let mut meshb = MeshBuilder::new();
-    meshb.vertices = flat_vertices;
-    meshb.indices = indices;
-
     let albedo =
         load_image(gfx, data, tex.sampler()).map_err(|e| LoadMeshError::InvalidImage(e))?;
 
-    let m = meshb.build(gfx, albedo).ok_or(LoadMeshError::NoVertices)?;
+    let mut meshb = MeshBuilder::new(albedo);
+    meshb.vertices = flat_vertices;
+    meshb.indices = indices;
+    let m = meshb.build(gfx).ok_or(LoadMeshError::NoVertices)?;
 
     log::info!(
         "loaded mesh {:?} in {}ms",

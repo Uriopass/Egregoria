@@ -45,7 +45,7 @@ impl MapRenderer {
 
 impl MapRenderer {
     pub(crate) fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
-        let mesh = load_mesh("pine.glb", gfx).expect("could not load pine");
+        let mesh = load_mesh(gfx, "pine.glb").expect("could not load pine");
 
         let w = goria.map().terrain.width;
         let h = goria.map().terrain.height;

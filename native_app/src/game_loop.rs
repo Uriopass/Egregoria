@@ -94,7 +94,7 @@ impl State {
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
             goria: Arc::new(RwLock::new(goria)),
-            immtess: Tesselator::new(None, 1.0),
+            immtess: Tesselator::new(&ctx.gfx, None, 1.0),
         }
     }
 
@@ -223,7 +223,7 @@ impl State {
             immediate.orders.clear();
         }
 
-        if let Some(mut x) = self.immtess.meshbuilder.build(ctx.gfx, ctx.gfx.palette()) {
+        if let Some(mut x) = self.immtess.meshbuilder.build(ctx.gfx) {
             x.translucent = true;
             ctx.draw(x)
         }

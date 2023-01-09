@@ -74,7 +74,7 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
             common::config().special_building_col
         };
 
-        if p.ends_with(".png") {
+        if p.ends_with(".png") || p.ends_with(".jpg") {
             draw.textured_obb(obb, p, mpos.z + 0.1).color(col);
         } else if p.ends_with(".glb") {
             draw.mesh(p, obb.center().z(mpos.z), obb.axis()[0].normalize().z0())

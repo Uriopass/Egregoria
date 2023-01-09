@@ -4,25 +4,21 @@ use std::sync::Arc;
 use wgpu::{BindGroupLayout, BindGroupLayoutEntry, BufferUsages, Device, IndexFormat, RenderPass};
 
 pub struct MeshBuilder {
-    pub vertices: Vec<MeshVertex>,
-    pub indices: Vec<IndexType>,
-    pub vbuffer: PBuffer,
-    pub ibuffer: PBuffer,
-}
-
-impl Default for MeshBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
+    pub(crate) vertices: Vec<MeshVertex>,
+    pub(crate) indices: Vec<IndexType>,
+    pub(crate) vbuffer: PBuffer,
+    pub(crate) ibuffer: PBuffer,
+    pub(crate) albedo: Arc<Texture>,
 }
 
 impl MeshBuilder {
-    pub fn new() -> Self {
+    pub fn new(albedo: Arc<Texture>) -> Self {
         Self {
             vertices: vec![],
             indices: vec![],
             vbuffer: PBuffer::new(BufferUsages::VERTEX),
             ibuffer: PBuffer::new(BufferUsages::INDEX),
+            albedo,
         }
     }
 
@@ -49,7 +45,7 @@ impl MeshBuilder {
         f(vertices, &mut x);
     }
 
-    pub fn build(&mut self, gfx: &GfxContext, albedo: Arc<Texture>) -> Option<Mesh> {
+    pub fn build(&mut self, gfx: &GfxContext) -> Option<Mesh> {
         if self.vertices.is_empty() {
             return None;
         }
@@ -62,9 +58,10 @@ impl MeshBuilder {
             vertex_buffer: self.vbuffer.inner()?,
             index_buffer: self.ibuffer.inner()?,
             albedo_bg: Arc::new(
-                albedo.bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device)),
+                self.albedo
+                    .bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device)),
             ),
-            albedo,
+            albedo: self.albedo.clone(),
             n_indices: self.indices.len() as u32,
             translucent: false,
         })

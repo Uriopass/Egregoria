@@ -28,6 +28,7 @@ struct MapBuilders {
     buildsprites: FastMap<BuildingKind, SpriteBatchBuilder>,
     buildmeshes: FastMap<BuildingKind, InstancedMeshBuilder>,
     houses_mesh: MeshBuilder,
+    zonemeshes: FastMap<BuildingKind, (MeshBuilder, InstancedMeshBuilder)>,
     arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: MeshBuilder,
     tess_map: Tesselator,
@@ -39,6 +40,7 @@ pub(crate) struct MapMeshes {
     bsprites: MultiSpriteBatch,
     bmeshes: Vec<InstancedMesh>,
     houses_mesh: Option<Mesh>,
+    zone_meshes: Vec<(Option<Mesh>, Option<InstancedMesh>)>,
     arrows: Option<SpriteBatch>,
     pub enable_arrows: AtomicBool,
 }
@@ -49,10 +51,14 @@ impl MapMeshHandler {
 
         let mut buildsprites = FastMap::default();
         let mut buildmeshes = FastMap::default();
+        let mut zonemeshes = FastMap::default();
 
         for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
             let asset = &descr.asset_location;
-            if !asset.ends_with(".png") {
+            if !asset.ends_with(".png") && !asset.ends_with(".jpg") {
+                continue;
+            }
+            if descr.zone.is_some() {
                 continue;
             }
             buildsprites.insert(
@@ -80,7 +86,7 @@ impl MapMeshHandler {
             if !asset.ends_with(".glb") {
                 continue;
             }
-            let m = match load_mesh(asset, gfx) {
+            let m = match load_mesh(gfx, asset) {
                 Ok(m) => m,
                 Err(e) => {
                     log::error!("Failed to load mesh {}: {:?}", asset, e);
@@ -91,13 +97,39 @@ impl MapMeshHandler {
             buildmeshes.insert(bkind, InstancedMeshBuilder::new(m));
         }
 
+        for descr in goria.read::<GoodsCompanyRegistry>().descriptions.values() {
+            let Some(ref z) = descr.zone else { continue };
+            let floor = &z.floor;
+            let filler = &z.filler;
+
+            let floor_mesh = MeshBuilder::new(gfx.texture(floor, "zone_floor_tex"));
+
+            let m = match load_mesh(gfx, filler) {
+                Ok(m) => m,
+                Err(e) => {
+                    log::error!("Failed to load mesh for zone {}: {:?}", filler, e);
+                    continue;
+                }
+            };
+
+            let filler_mesh = InstancedMeshBuilder::new(m);
+
+            zonemeshes.insert(
+                BuildingKind::GoodsCompany(descr.id),
+                (floor_mesh, filler_mesh),
+            );
+        }
+
         let builders = MapBuilders {
             arrow_builder,
             buildsprites,
-            crosswalk_builder: MeshBuilder::new(),
-            tess_map: Tesselator::new(None, 15.0),
-            houses_mesh: MeshBuilder::new(),
+            crosswalk_builder: MeshBuilder::new(
+                gfx.texture("assets/sprites/crosswalk.png", "crosswalk"),
+            ),
+            tess_map: Tesselator::new(gfx, None, 15.0),
+            houses_mesh: MeshBuilder::new(gfx.palette()),
             buildmeshes,
+            zonemeshes,
         };
 
         Self {
@@ -119,17 +151,16 @@ impl MapMeshHandler {
             self.builders.crosswalks(map);
             self.builders.bspritesmesh(map);
             self.builders.houses_mesh(map);
+            self.builders.zone_mesh(map);
 
             self.last_config = common::config_id();
             self.map_dirt_id = map.dirt_id.0;
 
             let m = &mut self.builders.tess_map.meshbuilder;
 
-            let cw = gfx.texture("assets/sprites/crosswalk.png", "crosswalk");
-
             let meshes = MapMeshes {
-                map: m.build(gfx, gfx.palette()),
-                crosswalks: self.builders.crosswalk_builder.build(gfx, cw),
+                map: m.build(gfx),
+                crosswalks: self.builders.crosswalk_builder.build(gfx),
                 bsprites: self
                     .builders
                     .buildsprites
@@ -142,7 +173,13 @@ impl MapMeshHandler {
                     .values_mut()
                     .flat_map(|x| x.build(gfx))
                     .collect(),
-                houses_mesh: self.builders.houses_mesh.build(gfx, gfx.palette()),
+                houses_mesh: self.builders.houses_mesh.build(gfx),
+                zone_meshes: self
+                    .builders
+                    .zonemeshes
+                    .values_mut()
+                    .map(|(a, b)| (a.build(gfx), b.build(gfx)))
+                    .collect(),
                 arrows: self.builders.arrow_builder.build(gfx),
                 enable_arrows: Default::default(),
             };
@@ -277,6 +314,41 @@ impl MapBuilders {
                     tint: LinearColor::WHITE,
                 });
             }
+        }
+    }
+
+    fn zone_mesh(&mut self, map: &Map) {
+        self.zonemeshes.values_mut().for_each(|x| {
+            x.0.clear();
+            x.1.instances.clear();
+        });
+
+        for building in map.buildings().values() {
+            let Some(zone) = &building.zone else { continue };
+            let Some((zone_mesh, filler)) = self.zonemeshes.get_mut(&building.kind) else { continue };
+
+            filler.instances.push(MeshInstance {
+                pos: building.obb.center().z(building.height),
+                dir: building.obb.axis()[0].normalize().z0(),
+                tint: LinearColor::WHITE,
+            });
+
+            zone_mesh.extend_with(|vertices, add_index| {
+                for p in &zone.0 {
+                    vertices.push(MeshVertex {
+                        position: p.z(building.height + 0.05).into(),
+                        normal: Vec3::Z.into(),
+                        uv: (*p * 0.05).into(),
+                        color: [1.0; 4],
+                    });
+                }
+
+                earcut(&zone.0, |a, b, c| {
+                    add_index(a as u32);
+                    add_index(b as u32);
+                    add_index(c as u32);
+                });
+            })
         }
     }
 
@@ -503,6 +575,7 @@ impl Drawable for MapMeshes {
         self.bsprites.draw(gfx, rp);
         self.bmeshes.draw(gfx, rp);
         self.houses_mesh.draw(gfx, rp);
+        self.zone_meshes.draw(gfx, rp);
         if self.enable_arrows.load(Ordering::SeqCst) {
             self.arrows.draw(gfx, rp);
         }
@@ -520,6 +593,7 @@ impl Drawable for MapMeshes {
         self.bsprites.draw_depth(gfx, rp, shadow_map, proj);
         self.bmeshes.draw_depth(gfx, rp, shadow_map, proj);
         self.houses_mesh.draw_depth(gfx, rp, shadow_map, proj);
+        self.zone_meshes.draw_depth(gfx, rp, shadow_map, proj);
         if self.enable_arrows.load(Ordering::SeqCst) {
             self.arrows.draw_depth(gfx, rp, shadow_map, proj);
         }

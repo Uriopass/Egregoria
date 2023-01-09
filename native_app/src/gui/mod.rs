@@ -132,14 +132,7 @@ impl UiTextures {
         for (prefix, path) in texdirs.iter().flat_map(|(path, prefix)| {
             common::saveload::walkdir(Path::new(path)).map(move |x| (prefix, x))
         }) {
-            let name = prefix.to_string()
-                + path
-                    .file_name()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .trim_end_matches(".png")
-                    .trim_end_matches(".jpg");
+            let name = prefix.to_string() + path.file_stem().unwrap().to_str().unwrap();
 
             let (img, width, height) = wgpu_engine::Texture::read_image(&path)
                 .unwrap_or_else(|| panic!("Couldn't load gui texture {:?}", &path));
