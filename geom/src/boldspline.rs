@@ -46,7 +46,7 @@ impl Intersect<Circle> for BoldSpline {
 defer_inter!(Polygon => BoldSpline);
 impl Intersect<Polygon> for BoldSpline {
     fn intersects(&self, p: &Polygon) -> bool {
-        if p.len() == 0 {
+        if p.is_empty() {
             return false;
         }
         if p.len() == 1 {

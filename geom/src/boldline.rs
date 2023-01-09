@@ -44,7 +44,7 @@ impl Intersect<Circle> for BoldLine {
 defer_inter!(Polygon => BoldLine);
 impl Intersect<Polygon> for BoldLine {
     fn intersects(&self, p: &Polygon) -> bool {
-        if p.len() == 0 {
+        if p.is_empty() {
             return false;
         }
         if p.len() == 1 {

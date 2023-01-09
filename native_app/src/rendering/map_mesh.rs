@@ -337,7 +337,7 @@ impl MapBuilders {
                 for p in &zone.0 {
                     vertices.push(MeshVertex {
                         position: p.z(building.height + 0.05).into(),
-                        normal: Vec3::Z.into(),
+                        normal: Vec3::Z,
                         uv: (*p * 0.05).into(),
                         color: [1.0; 4],
                     });

@@ -121,7 +121,7 @@ pub fn load_mesh(gfx: &GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshErr
     let mut flat_vertices: Vec<MeshVertex> = vec![];
     let mut indices = vec![];
 
-    let (doc, data, images) = gltf::import(&path).map_err(|e| LoadMeshError::GltfLoadError(e))?;
+    let (doc, data, images) = gltf::import(&path).map_err(LoadMeshError::GltfLoadError)?;
 
     let nodes = doc.nodes();
 
@@ -231,8 +231,7 @@ pub fn load_mesh(gfx: &GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshErr
         return Err(LoadMeshError::ImageNotFound);
     });
 
-    let albedo =
-        load_image(gfx, data, tex.sampler()).map_err(|e| LoadMeshError::InvalidImage(e))?;
+    let albedo = load_image(gfx, data, tex.sampler()).map_err(LoadMeshError::InvalidImage)?;
 
     let mut meshb = MeshBuilder::new(albedo);
     meshb.vertices = flat_vertices;
