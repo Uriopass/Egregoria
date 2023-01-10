@@ -295,6 +295,7 @@ impl KeyCode {
 /// Symbolic name for a keyboard key.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[repr(u32)]
+#[serde(from = "u32", into = "u32")]
 pub(crate) enum KeyCode {
     Key1,
     Key2,
@@ -480,4 +481,16 @@ pub(crate) enum KeyCode {
     Copy,
     Paste,
     Cut,
+}
+
+impl From<u32> for KeyCode {
+    fn from(x: u32) -> Self {
+        x.try_into().unwrap_or(KeyCode::Space)
+    }
+}
+
+impl From<KeyCode> for u32 {
+    fn from(x: KeyCode) -> Self {
+        x as u32
+    }
 }
