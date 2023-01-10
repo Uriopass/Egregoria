@@ -149,6 +149,20 @@ impl Map {
         Some((to, r))
     }
 
+    pub fn update_zone(&mut self, id: BuildingID, f: impl Fn(&mut Polygon)) {
+        info!("update_zone {:?}", id);
+
+        let Some(b) = self.buildings.get_mut(id) else { return; };
+        let Some(ref mut z) = b.zone else { return; };
+
+        f(z);
+
+        self.spatial_map.insert(id, z.clone());
+
+        self.dirt_id += Wrapping(1);
+        self.check_invariants()
+    }
+
     pub fn build_special_building(
         &mut self,
         obb: &OBB,

@@ -113,6 +113,15 @@ impl Polygon {
         c
     }
 
+    #[inline]
+    pub fn distance(&self, p: Vec2) -> f32 {
+        self.segments()
+            .map(|x| x.project(p).distance2(p))
+            .min_by_key(|&x| OrderedFloat(x))
+            .unwrap_or(0.0)
+            .sqrt()
+    }
+
     pub fn is_convex(&self) -> bool {
         let nvert = self.0.len();
         if nvert <= 3 {

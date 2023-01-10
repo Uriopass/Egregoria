@@ -481,11 +481,17 @@ pub(crate) enum KeyCode {
     Copy,
     Paste,
     Cut,
+
+    LastValue,
 }
 
 impl From<u32> for KeyCode {
     fn from(x: u32) -> Self {
-        x.try_into().unwrap_or(KeyCode::Space)
+        if x <= KeyCode::LastValue as u32 {
+            unsafe { std::mem::transmute(x) }
+        } else {
+            KeyCode::Unlabeled
+        }
     }
 }
 

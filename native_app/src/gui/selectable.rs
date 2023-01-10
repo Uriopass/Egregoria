@@ -14,7 +14,10 @@ pub(crate) fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
     let inp = uiworld.read::<InputMap>();
     let tool = uiworld.read::<Tool>();
 
-    if inp.just_act.contains(&InputAction::Select) && matches!(*tool, Tool::Hand) {
+    if inp.just_act.contains(&InputAction::Select)
+        && matches!(*tool, Tool::Hand)
+        && !inspected.dontclear
+    {
         let mut inspectcpy = *inspected;
         inspectcpy.dist2 = f32::INFINITY;
         let protec = Mutex::new(inspectcpy);
@@ -44,6 +47,8 @@ pub(crate) fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
             });
         *inspected = protec.into_inner().unwrap();
     }
+
+    inspected.dontclear = false;
 
     if let Some(e) = inspected.e {
         if !goria.world().contains(e) {

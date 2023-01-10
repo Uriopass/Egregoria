@@ -6,6 +6,7 @@ use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::debug::{DebugObjs, DebugState};
 use crate::gui::windows::settings::Settings;
+use crate::gui::zoneedit::ZoneEditState;
 use crate::gui::{ErrorTooltip, ExitState, FollowEntity, InspectedEntity, PotentialCommands, Tool};
 use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
@@ -38,6 +39,7 @@ pub(crate) fn init() {
     register_resource_noserialize::<InspectedEntity>();
     register_resource_noserialize::<NetworkState>();
     register_resource_noserialize::<PotentialCommands>();
+    register_resource_noserialize::<ZoneEditState>();
     register_resource_noserialize::<ReceivedCommands>();
     register_resource_noserialize::<RoadBuildResource>();
     register_resource_noserialize::<RoadEditorResource>();

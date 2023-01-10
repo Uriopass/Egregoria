@@ -24,6 +24,7 @@ pub(crate) mod topgui;
 
 pub(crate) mod addtrain;
 pub(crate) mod windows;
+pub(crate) mod zoneedit;
 
 pub(crate) use follow::FollowEntity;
 pub(crate) use topgui::*;
@@ -35,9 +36,12 @@ pub(crate) fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     lotbrush::lotbrush(goria, uiworld);
     roadbuild::roadbuild(goria, uiworld);
     roadeditor::roadeditor(goria, uiworld);
-    selectable::selectable(goria, uiworld);
     specialbuilding::specialbuilding(goria, uiworld);
     addtrain::addtrain(goria, uiworld);
+    zoneedit::zoneedit(goria, uiworld);
+
+    // run last so other systems can have the chance to cancel select
+    selectable::selectable(goria, uiworld);
 }
 
 #[derive(Default, Clone, Debug)]
@@ -79,6 +83,7 @@ impl PotentialCommands {
 pub(crate) struct InspectedEntity {
     pub(crate) e: Option<Entity>,
     pub(crate) dist2: f32,
+    pub(crate) dontclear: bool,
 }
 
 impl Default for InspectedEntity {
@@ -86,6 +91,7 @@ impl Default for InspectedEntity {
         Self {
             e: None,
             dist2: 0.0,
+            dontclear: false,
         }
     }
 }

@@ -33,6 +33,8 @@ new_key_type! {
     pub struct GoodsCompanyID;
 }
 
+debug_inspect_impl!(GoodsCompanyID);
+
 #[derive(Debug)]
 pub struct GoodsCompanyDescription {
     pub id: GoodsCompanyID,

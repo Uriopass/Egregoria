@@ -5,7 +5,10 @@ use egregoria::map::{
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
-use geom::{vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Spline, Vec2, Vec3};
+use geom::{
+    vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Spline, Vec2, Vec3, DEBUG_OBBS, OBB,
+};
+use ordered_float::OrderedFloat;
 use std::ops::{Mul, Neg};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -327,18 +330,55 @@ impl MapBuilders {
             let Some(zone) = &building.zone else { continue };
             let Some((zone_mesh, filler)) = self.zonemeshes.get_mut(&building.kind) else { continue };
 
-            filler.instances.push(MeshInstance {
-                pos: building.obb.center().z(building.height),
-                dir: building.obb.axis()[0].normalize().z0(),
-                tint: LinearColor::WHITE,
-            });
+            let principal_axis = building.obb.axis()[0].normalize();
+            let secondary = principal_axis.perpendicular();
+
+            let origin = *zone
+                .iter()
+                .min_by_key(|x| OrderedFloat(x.dot(principal_axis)))
+                .unwrap();
+
+            let max = *zone
+                .iter()
+                .max_by_key(|x| OrderedFloat(x.dot(principal_axis)))
+                .unwrap();
+
+            unsafe {
+                DEBUG_OBBS.push(OBB::new(origin, Vec2::X, 5.0, 5.0));
+                DEBUG_OBBS.push(OBB::new(max, Vec2::X, 5.0, 5.0));
+            }
+
+            let principal_dist = (max - origin).dot(principal_axis);
+            let secondary_dist = (max - origin).dot(secondary);
+
+            for principal_offset in (0..=(principal_dist as i32)).step_by(4) {
+                for secondary_offset in (0..=(secondary_dist as i32)).step_by(4) {
+                    let pos = origin
+                        + principal_axis * principal_offset as f32
+                        + secondary * secondary_offset as f32;
+                    if !zone.contains(pos) {
+                        continue;
+                    }
+                    if zone.distance(pos) < 3.0 {
+                        continue;
+                    }
+
+                    filler.instances.push(MeshInstance {
+                        pos: pos.z(building.height),
+                        dir: principal_axis.perpendicular().z0(),
+                        tint: LinearColor::WHITE,
+                    });
+                }
+            }
+
+            let avg = -zone.0.iter().sum::<Vec2>() / zone.len() as f32;
 
             zone_mesh.extend_with(|vertices, add_index| {
                 for p in &zone.0 {
                     vertices.push(MeshVertex {
                         position: p.z(building.height + 0.05).into(),
                         normal: Vec3::Z,
-                        uv: (*p * 0.05).into(),
+                        uv: ((*p + avg) * 0.05).into(),
                         color: [1.0; 4],
                     });
                 }

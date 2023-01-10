@@ -115,7 +115,11 @@ impl Building {
         }
 
         Some(buildings.insert_with_key(move |id| {
-            spatial_map.insert(id, obb);
+            if let Some(zone) = zone.clone() {
+                spatial_map.insert(id, zone);
+            } else {
+                spatial_map.insert(id, obb);
+            }
             Self {
                 id,
                 mesh,
