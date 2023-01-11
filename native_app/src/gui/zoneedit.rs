@@ -56,8 +56,13 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     let bid = comp.building;
     const MAX_ZONE_AREA: f32 = 100000.0;
+    const MAX_PERIMETER: f32 = 3000.0;
     if area > MAX_ZONE_AREA {
         invalidmsg = format!("Area too big ({} > {MAX_ZONE_AREA})", area);
+    } else if perimeter > MAX_PERIMETER {
+        invalidmsg = format!("Perimeter too big ({} > {MAX_PERIMETER})", perimeter);
+    } else if !newpoly.contains(b.obb.center()) {
+        invalidmsg = format!("Zone must be near the building");
     } else {
         if let Some(v) = map
             .spatial_map()
