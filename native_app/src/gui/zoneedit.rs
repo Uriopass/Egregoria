@@ -7,7 +7,7 @@ use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::Egregoria;
 use geom::Vec2;
 
-#[derive(Default)]
+#[derive(Copy, Clone, Default)]
 pub(crate) struct ZoneEditState {
     offset: Option<Vec2>,
     i: usize,
@@ -31,21 +31,34 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     let inp = uiworld.read::<InputMap>();
     let mut commands = uiworld.commands();
 
-    for (p1, p2) in zone.iter().zip(zone.iter().cycle().skip(1)) {
+    let scpy = *state;
+    let unproj = inp.unprojected;
+
+    let zoneiter = zone.iter().enumerate().map(move |(i, x)| {
+        if i == scpy.i {
+            if let Some((unproj, offset)) = unproj.zip(scpy.offset) {
+                return unproj.xy() - offset;
+            }
+        }
+        *x
+    });
+
+    for (p1, p2) in zoneiter.clone().zip(zoneiter.clone().cycle().skip(1)) {
         draw.line(p1.z(1.0), p2.z(1.0), 2.0)
             .color(common::config().gui_primary);
     }
 
-    for (i, p) in zone.iter().enumerate() {
+    for (i, p) in zoneiter.enumerate() {
         if let Some(unproj) = inp.unprojected {
             let unproj = unproj.xy();
 
-            if unproj.is_close(*p, 5.0) {
+            if unproj.is_close(p, 5.0) {
+                if state.i == i {}
                 draw.circle(p.z(1.1), 5.0)
                     .color(common::config().gui_success);
 
                 if inp.just_act.contains(&InputAction::Select) {
-                    state.offset = Some(unproj - *p);
+                    state.offset = Some(unproj - p);
                     state.i = i;
                 }
                 continue;
@@ -58,23 +71,19 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     if let Some(offset) = state.offset {
         if inp.act.contains(&InputAction::Select) {
+            inspected.dontclear = true;
+        }
+        if !inp.act.contains(&InputAction::Select) {
             if let Some(unproj) = inp.unprojected {
                 let unproj = unproj.xy();
                 let newpos = unproj - offset;
 
-                let oldpos = zone[state.i];
-
-                if !newpos.is_close(oldpos, 0.1) {
-                    commands.push(WorldCommand::MoveZonePoint {
-                        building: comp.building,
-                        i: state.i,
-                        pos: newpos,
-                    });
-                }
-
-                inspected.dontclear = true;
+                commands.push(WorldCommand::MoveZonePoint {
+                    building: comp.building,
+                    i: state.i,
+                    pos: newpos,
+                });
             }
-        } else {
             state.offset = None;
         }
     }

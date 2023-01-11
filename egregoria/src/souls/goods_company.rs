@@ -46,11 +46,11 @@ pub struct GoodsCompanyDescription {
     pub size: f32,
     pub asset_location: String,
     pub price: i64,
-    pub zone: Option<Box<Zone>>,
+    pub zone: Option<Box<ZoneDescription>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Zone {
+pub struct ZoneDescription {
     pub floor: String,
     pub filler: String,
 }
@@ -87,7 +87,7 @@ struct GoodsCompanyDescriptionJSON {
     pub asset_location: String,
     pub price: i64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub zone: Option<Box<Zone>>,
+    pub zone: Option<Box<ZoneDescription>>,
 }
 
 impl GoodsCompanyRegistry {

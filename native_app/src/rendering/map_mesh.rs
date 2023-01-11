@@ -5,10 +5,7 @@ use egregoria::map::{
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
-use geom::{
-    vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Spline, Vec2, Vec3, DEBUG_OBBS, OBB,
-};
-use ordered_float::OrderedFloat;
+use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Spline, Vec2, Vec3};
 use std::ops::{Mul, Neg};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -330,36 +327,40 @@ impl MapBuilders {
             let Some(zone) = &building.zone else { continue };
             let Some((zone_mesh, filler)) = self.zonemeshes.get_mut(&building.kind) else { continue };
 
+            let mut hull = building
+                .mesh
+                .faces
+                .iter()
+                .flat_map(|x| x.0.iter())
+                .map(|x| x.xy())
+                .collect::<Polygon>()
+                .convex_hull();
+            hull.simplify();
+            hull.scale_from(hull.barycenter(), 1.8);
+
             let principal_axis = building.obb.axis()[0].normalize();
-            let secondary = principal_axis.perpendicular();
 
-            let origin = *zone
-                .iter()
-                .min_by_key(|x| OrderedFloat(x.dot(principal_axis)))
-                .unwrap();
+            let Some((mut min, mut max)) = minmax(zone.iter().map(|x| x.rotated_by(principal_axis.flipy()))) else { continue };
+            min = min.rotated_by(principal_axis);
+            max = max.rotated_by(principal_axis);
 
-            let max = *zone
-                .iter()
-                .max_by_key(|x| OrderedFloat(x.dot(principal_axis)))
-                .unwrap();
+            let secondary_axis = -principal_axis.perpendicular();
 
-            unsafe {
-                DEBUG_OBBS.push(OBB::new(origin, Vec2::X, 5.0, 5.0));
-                DEBUG_OBBS.push(OBB::new(max, Vec2::X, 5.0, 5.0));
-            }
-
-            let principal_dist = (max - origin).dot(principal_axis);
-            let secondary_dist = (max - origin).dot(secondary);
+            let principal_dist = (max - min).dot(principal_axis).abs();
+            let secondary_dist = (max - min).dot(secondary_axis).abs();
 
             for principal_offset in (0..=(principal_dist as i32)).step_by(4) {
                 for secondary_offset in (0..=(secondary_dist as i32)).step_by(4) {
-                    let pos = origin
+                    let pos = min
                         + principal_axis * principal_offset as f32
-                        + secondary * secondary_offset as f32;
+                        + secondary_axis * secondary_offset as f32;
                     if !zone.contains(pos) {
                         continue;
                     }
                     if zone.distance(pos) < 3.0 {
+                        continue;
+                    }
+                    if hull.contains(pos) {
                         continue;
                     }
 

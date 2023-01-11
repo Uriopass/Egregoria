@@ -122,6 +122,51 @@ impl Polygon {
             .sqrt()
     }
 
+    pub fn scale_from(&mut self, center: Vec2, scale: f32) {
+        for x in self.0.iter_mut() {
+            *x = center + (*x - center) * scale;
+        }
+    }
+
+    /// Compute convex hull of a set of points using the Graham scan algorithm.
+    pub fn convex_hull(&self) -> Self {
+        if self.len() <= 3 {
+            return self.clone();
+        }
+
+        let mut points = self.0.clone();
+        points.sort_by_key(|x| OrderedFloat(x.y));
+
+        let mut hull: Vec<Vec2> = Vec::with_capacity(points.len());
+        for &p in &points {
+            while hull.len() >= 2
+                && Vec2::cross(
+                    hull[hull.len() - 1] - hull[hull.len() - 2],
+                    p - hull[hull.len() - 2],
+                ) <= 0.0
+            {
+                hull.pop();
+            }
+            hull.push(p);
+        }
+
+        let t = hull.len() + 1;
+        for &p in points.iter().rev() {
+            while hull.len() >= t
+                && Vec2::cross(
+                    hull[hull.len() - 1] - hull[hull.len() - 2],
+                    p - hull[hull.len() - 2],
+                ) <= 0.0
+            {
+                hull.pop();
+            }
+            hull.push(p);
+        }
+
+        hull.pop();
+        Self(hull)
+    }
+
     pub fn is_convex(&self) -> bool {
         let nvert = self.0.len();
         if nvert <= 3 {
@@ -379,5 +424,11 @@ impl Intersect<Polygon> for Polygon {
 impl Intersect<OBB> for Polygon {
     fn intersects(&self, shape: &OBB) -> bool {
         self.segments().any(|s| shape.intersects(&s)) || self.contains(shape.corners[0])
+    }
+}
+
+impl FromIterator<Vec2> for Polygon {
+    fn from_iter<T: IntoIterator<Item = Vec2>>(iter: T) -> Self {
+        Self(iter.into_iter().collect())
     }
 }
