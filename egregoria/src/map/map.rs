@@ -149,7 +149,7 @@ impl Map {
         Some((to, r))
     }
 
-    pub fn update_zone(&mut self, id: BuildingID, f: impl Fn(&mut Polygon)) {
+    pub fn update_zone(&mut self, id: BuildingID, f: impl FnOnce(&mut Polygon)) {
         info!("update_zone {:?}", id);
 
         let Some(b) = self.buildings.get_mut(id) else { return; };

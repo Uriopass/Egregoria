@@ -16,7 +16,7 @@ impl Line3 {
 
         let proj1 = diff2.dot(r);
 
-        let d = proj1 / r.magnitude2();
+        let d = proj1 / r.mag2();
         self.src + r * d
     }
 

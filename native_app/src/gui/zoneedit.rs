@@ -50,11 +50,12 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
         .collect();
 
     let area = newpoly.area();
+    let perimeter = newpoly.perimeter();
 
     let mut invalidmsg = format!("");
 
     let bid = comp.building;
-    const MAX_ZONE_AREA: f32 = 75000.0;
+    const MAX_ZONE_AREA: f32 = 100000.0;
     if area > MAX_ZONE_AREA {
         invalidmsg = format!("Area too big ({} > {MAX_ZONE_AREA})", area);
     } else {
@@ -105,22 +106,16 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
         draw.circle(p.z(1.0), 5.0).color(base_col);
     }
 
-    if let Some(offset) = state.offset {
+    if state.offset.is_some() {
         if inp.act.contains(&InputAction::Select) {
             inspected.dontclear = true;
         }
         if !inp.act.contains(&InputAction::Select) {
-            if let Some(unproj) = inp.unprojected {
-                if isvalid {
-                    let unproj = unproj.xy();
-                    let newpos = unproj - offset;
-
-                    commands.push(WorldCommand::MoveZonePoint {
-                        building: comp.building,
-                        i: state.i,
-                        pos: newpos,
-                    });
-                }
+            if isvalid {
+                commands.push(WorldCommand::UpdateZone {
+                    building: comp.building,
+                    zone: newpoly,
+                });
             }
             state.offset = None;
         }

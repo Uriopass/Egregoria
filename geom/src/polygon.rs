@@ -86,6 +86,19 @@ impl Polygon {
         s.abs() * 0.5
     }
 
+    pub fn perimeter(&self) -> f32 {
+        let mut s = 0.0;
+        for i in 0..self.0.len() {
+            let src = unsafe { self.0.get_unchecked(i) };
+            let dst = unsafe {
+                self.0
+                    .get_unchecked(if i + 1 == self.0.len() { 0 } else { i + 1 })
+            };
+            s += (dst - src).mag();
+        }
+        s
+    }
+
     #[inline]
     /// Checks if the polygon contains a point.
     /// Assumes a bbox check has already been performed.

@@ -25,7 +25,7 @@ impl Segment3 {
         } else if proj2 <= 0.0 {
             self.dst
         } else {
-            let lol = proj1 / diff.magnitude2();
+            let lol = proj1 / diff.mag2();
             self.src + diff * lol
         }
     }
@@ -54,7 +54,7 @@ impl Segment3 {
     }
 
     pub fn scale(&mut self, scale: f32) -> &mut Self {
-        self.resize(self.vec().magnitude() * scale)
+        self.resize(self.vec().magn() * scale)
     }
 
     pub fn vec(&self) -> Vec3 {

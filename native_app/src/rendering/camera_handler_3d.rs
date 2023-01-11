@@ -206,8 +206,7 @@ impl CameraHandler3D {
                 };
             }
 
-            lerpp!(self.camera.pos, self.targetpos, 8.0, |v: Vec3| v
-                .magnitude2());
+            lerpp!(self.camera.pos, self.targetpos, 8.0, |v: Vec3| v.mag2());
             lerpp!(self.camera.yaw, self.targetyaw, 16.0, |x: Radians| x
                 .0
                 .abs());

@@ -88,19 +88,19 @@ impl PolyLine3 {
             None => unsafe { unreachable_unchecked() },
         };
         self.check_empty();
-        self.l -= (v - self.last()).magnitude();
+        self.l -= (v - self.last()).magn();
         v
     }
 
     pub fn push(&mut self, item: Vec3) {
-        self.l += (self.last() - item).magnitude();
+        self.l += (self.last() - item).magn();
         self.points.push(item);
     }
 
     pub fn pop_first(&mut self) -> Vec3 {
         let v = self.points.remove(0);
         self.check_empty();
-        self.l -= (self.first() - v).magnitude();
+        self.l -= (self.first() - v).magn();
         v
     }
 
@@ -286,7 +286,7 @@ impl PolyLine3 {
             [x] => Self::new(vec![x]),
             [f, l] => {
                 let v = l - f;
-                let m = v.magnitude();
+                let m = v.magn();
                 dst = dst.min(m);
 
                 Self::new(vec![f + v * (dst / m), l])
@@ -449,5 +449,5 @@ impl<'a> PointsAlongs<'a> {
 }
 
 fn length(v: &[Vec3]) -> f32 {
-    v.windows(2).map(|x| (x[1] - x[0]).magnitude()).sum()
+    v.windows(2).map(|x| (x[1] - x[0]).magn()).sum()
 }

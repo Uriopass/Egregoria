@@ -79,10 +79,9 @@ pub enum WorldCommand {
         size: u32,
         spacing: f32,
     },
-    MoveZonePoint {
+    UpdateZone {
         building: BuildingID,
-        i: usize,
-        pos: Vec2,
+        zone: Polygon,
     },
     ResetSave,
     SetGameTime(GameTime),
@@ -317,13 +316,10 @@ impl WorldCommand {
                     .resources
                     .insert::<EgregoriaOptions>(EgregoriaOptions::clone(opts));
             }
-            MoveZonePoint { building, i, pos } => {
+            UpdateZone { building, ref zone } => {
                 let mut map = goria.map_mut();
 
-                map.update_zone(building, |z| {
-                    let Some(p) = z.0.get_mut(i) else { return; };
-                    *p = pos;
-                });
+                map.update_zone(building, move |z| *z = zone.clone());
             }
         }
     }

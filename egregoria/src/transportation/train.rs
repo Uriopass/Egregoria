@@ -354,7 +354,7 @@ pub fn locomotive_decision(
         .get_point()
         .and_then(|x| {
             let d = x - trans.position;
-            if d.magnitude2() < 0.5 {
+            if d.mag2() < 0.5 {
                 return None;
             }
             d.try_normalize()

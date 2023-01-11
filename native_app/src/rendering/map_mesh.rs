@@ -241,7 +241,7 @@ impl MapBuilders {
                     let from = lanes[id.src].get_inter_node_pos(inter_id).up(0.01);
                     let to = lanes[id.dst].get_inter_node_pos(inter_id).up(0.01);
 
-                    let l = (to - from).magnitude();
+                    let l = (to - from).magn();
 
                     if l < walking_w {
                         continue;

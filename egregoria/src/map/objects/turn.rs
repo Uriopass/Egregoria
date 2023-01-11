@@ -105,7 +105,7 @@ impl Turn {
         let ang = src_dir.angle(dst_dir);
 
         let dist =
-            (pos_dst - pos_src).magnitude() * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL) * TURN_MUL;
+            (pos_dst - pos_src).magn() * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL) * TURN_MUL;
 
         let derivative_src = src_dir * dist;
         let derivative_dst = dst_dir * dist;
