@@ -1,11 +1,13 @@
-use crate::gui::InspectedEntity;
+use crate::gui::{ErrorTooltip, InspectedEntity};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::WorldCommand;
+use egregoria::map::{ProjectFilter, ProjectKind};
 use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::Egregoria;
-use geom::Vec2;
+use geom::{Polygon, Vec2};
+use std::borrow::Cow;
 
 #[derive(Copy, Clone, Default)]
 pub(crate) struct ZoneEditState {
@@ -34,21 +36,56 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     let scpy = *state;
     let unproj = inp.unprojected;
 
-    let zoneiter = zone.iter().enumerate().map(move |(i, x)| {
-        if i == scpy.i {
-            if let Some((unproj, offset)) = unproj.zip(scpy.offset) {
-                return unproj.xy() - offset;
+    let newpoly: Polygon = zone
+        .iter()
+        .enumerate()
+        .map(move |(i, x)| {
+            if i == scpy.i {
+                if let Some((unproj, offset)) = unproj.zip(scpy.offset) {
+                    return unproj.xy() - offset;
+                }
             }
-        }
-        *x
-    });
+            *x
+        })
+        .collect();
 
-    for (p1, p2) in zoneiter.clone().zip(zoneiter.clone().cycle().skip(1)) {
-        draw.line(p1.z(1.0), p2.z(1.0), 2.0)
-            .color(common::config().gui_primary);
+    let area = newpoly.area();
+
+    let mut invalidmsg = format!("");
+
+    let bid = comp.building;
+    const MAX_ZONE_AREA: f32 = 75000.0;
+    if area > MAX_ZONE_AREA {
+        invalidmsg = format!("Area too big ({} > {MAX_ZONE_AREA})", area);
+    } else {
+        if let Some(v) = map
+            .spatial_map()
+            .query(
+                &newpoly,
+                ProjectFilter::INTER | ProjectFilter::BUILDING | ProjectFilter::ROAD,
+            )
+            .filter(move |x| x != &ProjectKind::Building(bid))
+            .next()
+        {
+            invalidmsg = format!("Zone intersects with {:?}", v);
+        }
     }
 
-    for (i, p) in zoneiter.enumerate() {
+    let isvalid = invalidmsg.is_empty();
+
+    let base_col = if !isvalid {
+        uiworld.write::<ErrorTooltip>().msg = Some(Cow::Owned(invalidmsg));
+        uiworld.write::<ErrorTooltip>().isworld = true;
+        common::config().gui_danger
+    } else {
+        common::config().gui_primary
+    };
+
+    for (p1, p2) in newpoly.iter().zip(newpoly.iter().cycle().skip(1)) {
+        draw.line(p1.z(1.0), p2.z(1.0), 2.0).color(base_col);
+    }
+
+    for (i, &p) in newpoly.iter().enumerate() {
         if let Some(unproj) = inp.unprojected {
             let unproj = unproj.xy();
 
@@ -65,8 +102,7 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
             }
         }
 
-        draw.circle(p.z(1.0), 5.0)
-            .color(common::config().gui_primary);
+        draw.circle(p.z(1.0), 5.0).color(base_col);
     }
 
     if let Some(offset) = state.offset {
@@ -75,14 +111,16 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
         if !inp.act.contains(&InputAction::Select) {
             if let Some(unproj) = inp.unprojected {
-                let unproj = unproj.xy();
-                let newpos = unproj - offset;
+                if isvalid {
+                    let unproj = unproj.xy();
+                    let newpos = unproj - offset;
 
-                commands.push(WorldCommand::MoveZonePoint {
-                    building: comp.building,
-                    i: state.i,
-                    pos: newpos,
-                });
+                    commands.push(WorldCommand::MoveZonePoint {
+                        building: comp.building,
+                        i: state.i,
+                        pos: newpos,
+                    });
+                }
             }
             state.offset = None;
         }
