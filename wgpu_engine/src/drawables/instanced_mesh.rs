@@ -132,7 +132,7 @@ impl Drawable for InstancedMesh {
         shadow_map: bool,
         proj: &'a wgpu::BindGroup,
     ) {
-        if self.mesh.translucent {
+        if self.mesh.transparent {
             return;
         }
         if shadow_map {

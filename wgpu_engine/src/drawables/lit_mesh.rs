@@ -63,7 +63,7 @@ impl MeshBuilder {
             ),
             albedo: self.albedo.clone(),
             n_indices: self.indices.len() as u32,
-            translucent: false,
+            transparent: false,
         })
     }
 }
@@ -75,7 +75,7 @@ pub struct Mesh {
     pub albedo: Arc<Texture>,
     pub albedo_bg: Arc<wgpu::BindGroup>,
     pub n_indices: u32,
-    pub translucent: bool,
+    pub transparent: bool,
 }
 
 impl Mesh {
@@ -140,7 +140,7 @@ impl Drawable for Mesh {
         shadow_map: bool,
         proj: &'a wgpu::BindGroup,
     ) {
-        if self.translucent {
+        if self.transparent {
             return;
         }
         if shadow_map {
