@@ -73,18 +73,23 @@ pub fn load_image(
         })
         .unwrap_or_default();
 
+    let mag = sampl
+        .mag_filter()
+        .map(|x| {
+            use MagFilter::*;
+            match x {
+                Nearest => FilterMode::Nearest,
+                Linear => FilterMode::Linear,
+            }
+        })
+        .unwrap_or_default();
+
     let sampler = wgpu::SamplerDescriptor {
         label: Some("mesh sampler"),
         address_mode_u: Default::default(),
         address_mode_v: Default::default(),
         address_mode_w: Default::default(),
-        mag_filter: sampl
-            .mag_filter()
-            .map(|x| match x {
-                MagFilter::Nearest => FilterMode::Nearest,
-                MagFilter::Linear => FilterMode::Linear,
-            })
-            .unwrap_or_default(),
+        mag_filter: mag,
         min_filter: min,
         mipmap_filter: mipmap,
         ..Default::default()

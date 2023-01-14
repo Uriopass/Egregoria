@@ -330,7 +330,7 @@ impl TextureBuilder {
 
         let mip_level_count = if self.mipmaps {
             let m = dimensions.0.min(dimensions.1);
-            (m.next_power_of_two().trailing_zeros()).max(1).min(5)
+            (m.next_power_of_two().trailing_zeros()).max(1)
         } else {
             1
         };
