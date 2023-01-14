@@ -55,7 +55,7 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     let area = newpoly.area();
     let perimeter = newpoly.perimeter();
 
-    let mut invalidmsg = format!("");
+    let mut invalidmsg = String::new();
 
     let bid = comp.building;
     const MAX_ZONE_AREA: f32 = 100000.0;
@@ -65,19 +65,16 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     } else if perimeter > MAX_PERIMETER {
         invalidmsg = format!("Perimeter too big ({} > {MAX_PERIMETER})", perimeter);
     } else if !newpoly.contains(b.obb.center()) {
-        invalidmsg = format!("Zone must be near the building");
-    } else {
-        if let Some(v) = map
-            .spatial_map()
-            .query(
-                &newpoly,
-                ProjectFilter::INTER | ProjectFilter::BUILDING | ProjectFilter::ROAD,
-            )
-            .filter(move |x| x != &ProjectKind::Building(bid))
-            .next()
-        {
-            invalidmsg = format!("Zone intersects with {:?}", v);
-        }
+        invalidmsg = String::from("Zone must be near the building");
+    } else if let Some(v) = map
+        .spatial_map()
+        .query(
+            &newpoly,
+            ProjectFilter::INTER | ProjectFilter::BUILDING | ProjectFilter::ROAD,
+        )
+        .find(move |x| x != &ProjectKind::Building(bid))
+    {
+        invalidmsg = format!("Zone intersects with {:?}", v);
     }
 
     let isvalid = invalidmsg.is_empty();
