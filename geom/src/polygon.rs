@@ -235,6 +235,28 @@ impl Polygon {
         }
     }
 
+    /// simplify_by is a method that simplifies a polygon by removing points that make angles that are too steep
+    /// It takes in a single parameter, minsin, which represents the minimum sine value of the angle between three consecutive points.
+    /// Points that form an angle with a sine value less than minsin will be removed from the vector.
+    pub fn simplify_by(&mut self, minsin: f32) {
+        let mut to_remove = vec![];
+        for i in (0..self.len()).rev() {
+            let prev = self.get_prev(i);
+            let cur = self.get(i);
+            let next = self.get_next(i);
+
+            if prev.approx_eq(*cur)
+                || (cur - prev).normalize().dot((next - cur).normalize()) > 1.0 - minsin
+            {
+                to_remove.push(i);
+            }
+        }
+
+        for v in to_remove {
+            self.0.remove(v);
+        }
+    }
+
     #[inline]
     pub fn get_prev(&self, i: usize) -> &Vec2 {
         if i == 0 {

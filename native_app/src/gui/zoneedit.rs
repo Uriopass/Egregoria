@@ -7,12 +7,14 @@ use egregoria::map::{ProjectFilter, ProjectKind};
 use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::Egregoria;
 use geom::{Polygon, Vec2};
+use ordered_float::OrderedFloat;
 use std::borrow::Cow;
 
-#[derive(Copy, Clone, Default)]
+#[derive(Debug, Copy, Clone, Default)]
 pub(crate) struct ZoneEditState {
     offset: Option<Vec2>,
     i: usize,
+    insert: bool,
 }
 
 #[profiling::function]
@@ -33,21 +35,22 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     let inp = uiworld.read::<InputMap>();
     let mut commands = uiworld.commands();
 
-    let scpy = *state;
-    let unproj = inp.unprojected;
+    let mut newpoly = Vec::with_capacity(zone.len() + 1);
 
-    let newpoly: Polygon = zone
-        .iter()
-        .enumerate()
-        .map(move |(i, x)| {
-            if i == scpy.i {
-                if let Some((unproj, offset)) = unproj.zip(scpy.offset) {
-                    return unproj.xy() - offset;
+    for (i, &x) in zone.iter().enumerate() {
+        if i == state.i {
+            if let Some((unproj, offset)) = inp.unprojected.zip(state.offset) {
+                if state.insert {
+                    newpoly.push(x);
                 }
+                newpoly.push(unproj.xy() - offset);
+                continue;
             }
-            *x
-        })
-        .collect();
+        }
+        newpoly.push(x)
+    }
+    let mut newpoly = Polygon(newpoly);
+    newpoly.simplify_by(0.01);
 
     let area = newpoly.area();
     let perimeter = newpoly.perimeter();
@@ -91,24 +94,52 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
         draw.line(p1.z(1.0), p2.z(1.0), 2.0).color(base_col);
     }
 
-    for (i, &p) in newpoly.iter().enumerate() {
+    // Find closest interesting point within 20 meters
+    let closest = inp.unprojected.and_then(|unproj| {
+        newpoly
+            .iter()
+            .copied()
+            .enumerate()
+            .map(|(a, b)| (a, b, false))
+            .chain(
+                // add the segments between points
+                newpoly
+                    .segments()
+                    .enumerate()
+                    .map(|(i, x)| (i, x.center(), true)),
+            )
+            .min_by_key(|(_, x, _)| OrderedFloat(x.distance2(unproj.xy())))
+            .filter(|(_, x, _)| x.is_close(unproj.xy(), 20.0))
+    });
+
+    if inp.just_act.contains(&InputAction::Select) {
         if let Some(unproj) = inp.unprojected {
-            let unproj = unproj.xy();
-
-            if unproj.is_close(p, 5.0) {
-                if state.i == i {}
-                draw.circle(p.z(1.1), 5.0)
-                    .color(common::config().gui_success);
-
-                if inp.just_act.contains(&InputAction::Select) {
-                    state.offset = Some(unproj - p);
-                    state.i = i;
-                }
-                continue;
+            if let Some((i, closest, insert)) = closest {
+                state.insert = insert;
+                state.offset = Some(unproj.xy() - closest);
+                state.i = i;
             }
+        }
+    }
+
+    for (i, &p) in newpoly.iter().enumerate() {
+        if Some((i, p, false)) == closest {
+            draw.circle(p.z(1.1), 6.0)
+                .color(common::config().gui_success);
+            continue;
         }
 
         draw.circle(p.z(1.0), 5.0).color(base_col);
+    }
+
+    for (i, p) in newpoly.segments().map(|s| s.center()).enumerate() {
+        if Some((i, p, true)) == closest {
+            draw.circle(p.z(1.1), 3.0)
+                .color(common::config().gui_success);
+            continue;
+        }
+
+        draw.circle(p.z(1.0), 2.5).color(base_col);
     }
 
     if state.offset.is_some() {
