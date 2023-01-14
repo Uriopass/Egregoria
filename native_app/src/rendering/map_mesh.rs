@@ -326,6 +326,7 @@ impl MapBuilders {
         for building in map.buildings().values() {
             let Some(zone) = &building.zone else { continue };
             let Some((zone_mesh, filler)) = self.zonemeshes.get_mut(&building.kind) else { continue };
+            let zone = &zone.poly;
 
             let mut hull = building
                 .mesh

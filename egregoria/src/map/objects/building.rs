@@ -57,6 +57,21 @@ pub struct StraightRoadGen {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Zone {
+    pub poly: Polygon,
+    pub area: f32,
+}
+
+impl Zone {
+    pub fn new(p: Polygon) -> Self {
+        Self {
+            area: p.area(),
+            poly: p,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Building {
     pub id: BuildingID,
     pub door_pos: Vec3,
@@ -64,7 +79,7 @@ pub struct Building {
     pub mesh: ColoredMesh,
     pub obb: OBB,
     pub height: f32,
-    pub zone: Option<Polygon>,
+    pub zone: Option<Zone>,
 }
 
 impl Building {
@@ -75,7 +90,7 @@ impl Building {
         obb: OBB,
         kind: BuildingKind,
         gen: BuildingGen,
-        zone: Option<Polygon>,
+        zone: Option<Zone>,
     ) -> Option<BuildingID> {
         let at = obb.center().z(terrain.height(obb.center())?);
         let axis = (obb.corners[1] - obb.corners[0]).normalize();
@@ -116,7 +131,7 @@ impl Building {
 
         Some(buildings.insert_with_key(move |id| {
             if let Some(zone) = zone.clone() {
-                spatial_map.insert(id, zone);
+                spatial_map.insert(id, zone.poly);
             } else {
                 spatial_map.insert(id, obb);
             }

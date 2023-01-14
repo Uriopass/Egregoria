@@ -2,13 +2,13 @@ use crate::economy::Government;
 use crate::map::procgen::{load_parismap, load_testfield};
 use crate::map::{
     BuildingGen, BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LanePatternBuilder,
-    LightPolicy, LotID, Map, MapProject, ProjectKind, RoadID, Terrain, TurnPolicy,
+    LightPolicy, LotID, Map, MapProject, ProjectKind, RoadID, Terrain, TurnPolicy, Zone,
 };
 use crate::map_dynamic::BuildingInfos;
 use crate::transportation::train::{spawn_train, RailWagonKind};
 use crate::utils::time::{GameTime, Tick};
 use crate::{Egregoria, EgregoriaOptions, Replay};
-use geom::{vec3, Polygon, Transform, Vec2, OBB};
+use geom::{vec3, Transform, Vec2, OBB};
 use hecs::Entity;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -71,7 +71,7 @@ pub enum WorldCommand {
         kind: BuildingKind,
         gen: BuildingGen,
         #[serde(default)]
-        zone: Option<Polygon>,
+        zone: Option<Zone>,
     },
     MapLoadParis,
     MapLoadTestField {
@@ -81,7 +81,7 @@ pub enum WorldCommand {
     },
     UpdateZone {
         building: BuildingID,
-        zone: Polygon,
+        zone: Zone,
     },
     ResetSave,
     SetGameTime(GameTime),
@@ -148,7 +148,7 @@ impl WorldCommands {
         obb: OBB,
         kind: BuildingKind,
         gen: BuildingGen,
-        zone: Option<Polygon>,
+        zone: Option<Zone>,
     ) {
         self.commands.push(MapBuildSpecialBuilding {
             pos: obb,

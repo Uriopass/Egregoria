@@ -14,6 +14,7 @@ use egregoria::economy::{Government, Item, ItemRegistry, Money};
 use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::{
     BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, MapProject, TurnPolicy,
+    Zone,
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::{GameTime, SECONDS_PER_HOUR};
@@ -542,8 +543,9 @@ impl Gui {
                                         pos: args.obb,
                                         kind: bkind,
                                         gen: bgen,
-                                        zone: has_zone
-                                            .then(|| Polygon::from(args.obb.corners.as_slice())),
+                                        zone: has_zone.then(|| {
+                                            Zone::new(Polygon::from(args.obb.corners.as_slice()))
+                                        }),
                                     }]
                                 }),
                                 w: descr.size,

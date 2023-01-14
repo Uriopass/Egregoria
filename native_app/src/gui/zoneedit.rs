@@ -3,7 +3,7 @@ use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::WorldCommand;
-use egregoria::map::{ProjectFilter, ProjectKind};
+use egregoria::map::{ProjectFilter, ProjectKind, Zone};
 use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::Egregoria;
 use geom::{Polygon, Vec2};
@@ -30,6 +30,7 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     let Some(b) = map.buildings().get(comp.building) else { return; };
 
     let Some(ref zone) = b.zone else { return; };
+    let zone = &zone.poly;
 
     let mut draw = uiworld.write::<ImmediateDraw>();
     let inp = uiworld.read::<InputMap>();
@@ -147,7 +148,7 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
             if isvalid {
                 commands.push(WorldCommand::UpdateZone {
                     building: comp.building,
-                    zone: newpoly,
+                    zone: Zone::new(newpoly),
                 });
             }
             state.offset = None;

@@ -2,10 +2,10 @@ use crate::map::serializing::SerializedMap;
 use crate::map::{
     Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
     LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
-    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain,
+    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain, Zone,
 };
+use geom::OBB;
 use geom::{Circle, Intersect, Shape, Spline3, Vec2, Vec3};
-use geom::{Polygon, OBB};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
@@ -149,7 +149,7 @@ impl Map {
         Some((to, r))
     }
 
-    pub fn update_zone(&mut self, id: BuildingID, f: impl FnOnce(&mut Polygon)) {
+    pub fn update_zone(&mut self, id: BuildingID, f: impl FnOnce(&mut Zone)) {
         info!("update_zone {:?}", id);
 
         let Some(b) = self.buildings.get_mut(id) else { return; };
@@ -157,7 +157,7 @@ impl Map {
 
         f(z);
 
-        self.spatial_map.insert(id, z.clone());
+        self.spatial_map.insert(id, z.poly.clone());
 
         self.dirt_id += Wrapping(1);
         self.check_invariants()
@@ -168,7 +168,7 @@ impl Map {
         obb: &OBB,
         kind: BuildingKind,
         gen: BuildingGen,
-        zone: Option<Polygon>,
+        zone: Option<Zone>,
     ) -> Option<BuildingID> {
         if self.building_overlaps(*obb) {
             log::warn!("did not build {:?}: building overlaps", kind);
