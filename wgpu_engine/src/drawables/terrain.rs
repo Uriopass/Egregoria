@@ -396,6 +396,7 @@ impl TerrainPrepared {
                 gfx.depth_pipeline_bglayout(
                     &[TerrainVertex::desc(), TerrainInstance::desc()],
                     vert,
+                    None,
                     false,
                     &[&gfx.projection.layout, &gfx.render_params.layout, &lay2],
                 )
@@ -410,6 +411,7 @@ impl TerrainPrepared {
                 gfx.depth_pipeline_bglayout(
                     &[TerrainVertex::desc(), TerrainInstance::desc()],
                     vert,
+                    None,
                     true,
                     &[
                         &gfx.projection.layout,

@@ -230,6 +230,12 @@ pub fn load_mesh(gfx: &GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshErr
         return Err(LoadMeshError::NoBaseColorTexture);
     })
     .texture();
+    let mut is_transparent = false;
+    if let Some(e) = mat.extras() {
+        if e.get().contains("transparent") {
+            is_transparent = true;
+        }
+    }
 
     //    let sampler = tex.sampler().mag_filter().unwrap()
     let data = unwrap_or!(images.into_iter().nth(tex.source().index()), {
@@ -241,7 +247,8 @@ pub fn load_mesh(gfx: &GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshErr
     let mut meshb = MeshBuilder::new(albedo);
     meshb.vertices = flat_vertices;
     meshb.indices = indices;
-    let m = meshb.build(gfx).ok_or(LoadMeshError::NoVertices)?;
+    let mut m = meshb.build(gfx).ok_or(LoadMeshError::NoVertices)?;
+    m.transparent = is_transparent;
 
     log::info!(
         "loaded mesh {:?} in {}ms",

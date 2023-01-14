@@ -131,7 +131,7 @@ impl SpriteBatch {
             &["spritebatch.vert"],
             Box::new(move |m, gfx| {
                 let vert = &m[0];
-                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], vert, false)
+                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], vert, None, false)
             }),
         );
 
@@ -139,7 +139,7 @@ impl SpriteBatch {
             &["spritebatch.vert"],
             Box::new(move |m, gfx| {
                 let vert = &m[0];
-                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], vert, true)
+                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], vert, None, true)
             }),
         );
     }

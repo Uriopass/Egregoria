@@ -97,7 +97,25 @@ impl InstancedMesh {
             Box::new(move |m, gfx| {
                 let vert = &m[0];
                 let vb = &[MeshVertex::desc(), MeshInstance::desc()];
-                gfx.depth_pipeline(vb, vert, false)
+                gfx.depth_pipeline(vb, vert, None, false)
+            }),
+        );
+        gfx.register_pipeline::<InstancedMeshDepthAlpha>(
+            &["instanced_mesh.vert", "alpha_discard.frag"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                let frag = &m[1];
+                let vb = &[MeshVertex::desc(), MeshInstance::desc()];
+                gfx.depth_pipeline_bglayout(
+                    vb,
+                    vert,
+                    Some(frag),
+                    false,
+                    &[
+                        &gfx.projection.layout,
+                        &Texture::bindgroup_layout(&gfx.device),
+                    ],
+                )
             }),
         );
         gfx.register_pipeline::<InstancedMeshDepthSMap>(
@@ -105,7 +123,25 @@ impl InstancedMesh {
             Box::new(move |m, gfx| {
                 let vert = &m[0];
                 let vb = &[MeshVertex::desc(), MeshInstance::desc()];
-                gfx.depth_pipeline(vb, vert, true)
+                gfx.depth_pipeline(vb, vert, None, true)
+            }),
+        );
+        gfx.register_pipeline::<InstancedMeshDepthSMapAlpha>(
+            &["instanced_mesh.vert", "alpha_discard.frag"],
+            Box::new(move |m, gfx| {
+                let vert = &m[0];
+                let frag = &m[1];
+                let vb = &[MeshVertex::desc(), MeshInstance::desc()];
+                gfx.depth_pipeline_bglayout(
+                    vb,
+                    vert,
+                    Some(frag),
+                    true,
+                    &[
+                        &gfx.projection.layout,
+                        &Texture::bindgroup_layout(&gfx.device),
+                    ],
+                )
             }),
         );
     }
@@ -133,15 +169,23 @@ impl Drawable for InstancedMesh {
         proj: &'a wgpu::BindGroup,
     ) {
         if self.mesh.transparent {
-            return;
-        }
-        if shadow_map {
-            rp.set_pipeline(gfx.get_pipeline::<InstancedMeshDepthSMap>());
+            if shadow_map {
+                rp.set_pipeline(gfx.get_pipeline::<InstancedMeshDepthSMapAlpha>());
+            } else {
+                rp.set_pipeline(gfx.get_pipeline::<InstancedMeshDepthAlpha>());
+            }
         } else {
-            rp.set_pipeline(gfx.get_pipeline::<InstancedMeshDepth>());
+            if shadow_map {
+                rp.set_pipeline(gfx.get_pipeline::<InstancedMeshDepthSMap>());
+            } else {
+                rp.set_pipeline(gfx.get_pipeline::<InstancedMeshDepth>());
+            }
         }
 
         rp.set_bind_group(0, proj, &[]);
+        if self.mesh.transparent {
+            rp.set_bind_group(1, &self.mesh.albedo_bg, &[]);
+        }
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);
@@ -151,3 +195,5 @@ impl Drawable for InstancedMesh {
 
 struct InstancedMeshDepth;
 struct InstancedMeshDepthSMap;
+struct InstancedMeshDepthAlpha;
+struct InstancedMeshDepthSMapAlpha;

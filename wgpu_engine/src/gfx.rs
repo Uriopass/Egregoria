@@ -727,11 +727,13 @@ impl GfxContext {
         &self,
         vertex_buffers: &[VertexBufferLayout<'_>],
         vert_shader: &CompiledModule,
+        frag_shader: Option<&CompiledModule>,
         shadow_map: bool,
     ) -> RenderPipeline {
         self.depth_pipeline_bglayout(
             vertex_buffers,
             vert_shader,
+            frag_shader,
             shadow_map,
             &[&self.projection.layout],
         )
@@ -741,6 +743,7 @@ impl GfxContext {
         &self,
         vertex_buffers: &[VertexBufferLayout<'_>],
         vert_shader: &CompiledModule,
+        frag_shader: Option<&CompiledModule>,
         shadow_map: bool,
         layouts: &[&BindGroupLayout],
     ) -> RenderPipeline {
@@ -760,7 +763,11 @@ impl GfxContext {
                 entry_point: "vert",
                 buffers: vertex_buffers,
             },
-            fragment: None,
+            fragment: frag_shader.map(|frag_shader| wgpu::FragmentState {
+                module: frag_shader,
+                entry_point: "frag",
+                targets: &[],
+            }),
             primitive: PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 cull_mode: Some(Face::Back),

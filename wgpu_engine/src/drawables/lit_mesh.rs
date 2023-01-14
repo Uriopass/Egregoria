@@ -107,7 +107,7 @@ impl Mesh {
             Box::new(move |m, gfx| {
                 let vert = &m[0];
 
-                gfx.depth_pipeline(&[MeshVertex::desc()], vert, false)
+                gfx.depth_pipeline(&[MeshVertex::desc()], vert, None, false)
             }),
         );
 
@@ -115,7 +115,7 @@ impl Mesh {
             &["lit_mesh.vert"],
             Box::new(move |m, gfx| {
                 let vert = &m[0];
-                gfx.depth_pipeline(&[MeshVertex::desc()], vert, true)
+                gfx.depth_pipeline(&[MeshVertex::desc()], vert, None, true)
             }),
         );
     }
