@@ -50,7 +50,7 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
         newpoly.push(x)
     }
     let mut newpoly = Polygon(newpoly);
-    newpoly.simplify_by(0.01);
+    newpoly.simplify_by(0.003);
 
     let area = newpoly.area();
     let perimeter = newpoly.perimeter();
