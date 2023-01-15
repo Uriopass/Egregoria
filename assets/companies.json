@@ -57,6 +57,28 @@
     }
   },
   {
+    "name": "Solar Panels",
+    "bgen": {
+      "kind": "centered_door",
+      "vertical_factor": 1.0
+    },
+    "kind": "network",
+    "recipe": {
+      "consumption": [],
+      "production": [["electricity", 100]],
+      "complexity": 200,
+      "storage_multiplier": 5
+    },
+    "n_workers": 1,
+    "size": 120.0,
+    "asset_location": "assets/sprites/cement.jpg",
+    "price": 1000,
+    "zone": {
+      "floor": "assets/sprites/cement.jpg",
+      "filler": "solarpanel.glb"
+    }
+  },
+  {
     "name": "Coal power plant",
     "bgen": {
       "kind": "centered_door",
