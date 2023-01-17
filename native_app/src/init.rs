@@ -7,7 +7,10 @@ use crate::gui::specialbuilding::SpecialBuildingResource;
 use crate::gui::windows::debug::{DebugObjs, DebugState};
 use crate::gui::windows::settings::Settings;
 use crate::gui::zoneedit::ZoneEditState;
-use crate::gui::{ErrorTooltip, ExitState, FollowEntity, InspectedEntity, PotentialCommands, Tool};
+use crate::gui::{
+    ErrorTooltip, ExitState, FollowEntity, InspectedBuilding, InspectedEntity, PotentialCommands,
+    Tool,
+};
 use crate::inputmap::{Bindings, InputMap};
 use crate::network::NetworkState;
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
@@ -37,6 +40,7 @@ pub(crate) fn init() {
     register_resource_noserialize::<ImmediateSound>();
     register_resource_noserialize::<InputMap>();
     register_resource_noserialize::<InspectedEntity>();
+    register_resource_noserialize::<InspectedBuilding>();
     register_resource_noserialize::<NetworkState>();
     register_resource_noserialize::<PotentialCommands>();
     register_resource_noserialize::<ZoneEditState>();

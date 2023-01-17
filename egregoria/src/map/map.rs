@@ -150,8 +150,6 @@ impl Map {
     }
 
     pub fn update_zone(&mut self, id: BuildingID, f: impl FnOnce(&mut Zone)) {
-        info!("update_zone {:?}", id);
-
         let Some(b) = self.buildings.get_mut(id) else { return; };
         let Some(ref mut z) = b.zone else { return; };
 

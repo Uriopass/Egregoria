@@ -1,6 +1,5 @@
 use super::desire::Work;
 use crate::economy::{find_trade_place, ItemID, ItemRegistry, Market, Sold, Workers};
-use crate::engine_interaction::Selectable;
 use crate::map::{BuildingGen, BuildingID, Map};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
@@ -272,7 +271,6 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
                 Workers::default(),
                 Sold::default(),
                 Transform::new(obb.center().z(height)),
-                Selectable::new(obb.axis()[0].mag() * 0.5),
             ),
         )
         .unwrap();

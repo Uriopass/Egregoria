@@ -204,7 +204,19 @@ impl WorldCommands {
 }
 
 impl WorldCommand {
-    pub(crate) fn apply(&self, goria: &mut Egregoria) {
+    /// Returns true if the command can be applied without any systems needed to be run afterward
+    pub fn is_instant(&self) -> bool {
+        matches!(
+            self,
+            MapBuildHouse(_)
+                | MapUpdateIntersectionPolicy { .. }
+                | UpdateZone { .. }
+                | SetGameTime(_)
+                | UpdateTransform(_, _)
+        )
+    }
+
+    pub fn apply(&self, goria: &mut Egregoria) {
         let cost = Government::action_cost(self, goria);
         goria.write::<Government>().money -= cost;
 

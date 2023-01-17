@@ -199,17 +199,19 @@ impl Egregoria {
         commands: impl IntoIterator<Item = &'a WorldCommand>,
     ) -> Duration {
         let t = Instant::now();
-        const WORLD_TICK_DT: f32 = 0.05;
-        {
-            let mut time = self.write::<GameTime>();
-            *time = GameTime::new(WORLD_TICK_DT, time.timestamp + WORLD_TICK_DT as f64);
-        }
-
+        // It is very important that the first thing being done is applying commands
+        // so that instant commands work on single player but the game is still deterministic
         {
             profiling::scope!("applying commands");
             for command in commands {
                 command.apply(self);
             }
+        }
+
+        const WORLD_TICK_DT: f32 = 0.05;
+        {
+            let mut time = self.write::<GameTime>();
+            *time = GameTime::new(WORLD_TICK_DT, time.timestamp + WORLD_TICK_DT as f64);
         }
 
         game_schedule.execute(self);

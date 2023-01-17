@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::WorldCommand;
+use egregoria::map::BuildingID;
 use egregoria::Egregoria;
 use roadbuild::RoadBuildResource;
 
@@ -23,6 +24,7 @@ pub(crate) mod specialbuilding;
 pub(crate) mod topgui;
 
 pub(crate) mod addtrain;
+pub(crate) mod inspect_building;
 pub(crate) mod windows;
 pub(crate) mod zoneedit;
 
@@ -77,6 +79,12 @@ impl PotentialCommands {
         self.0.clear();
         self.0.push(cmd);
     }
+}
+
+#[derive(Copy, Clone, Debug, Default)]
+pub(crate) struct InspectedBuilding {
+    pub(crate) e: Option<BuildingID>,
+    pub(crate) dontclear: bool,
 }
 
 #[derive(Copy, Clone, Debug)]

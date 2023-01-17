@@ -13,7 +13,7 @@ mod inner {
     use crate::gui::windows::settings::Settings;
     use crate::uiworld::ReceivedCommands;
     use common::timestep::Timestep;
-    use egregoria::engine_interaction::WorldCommands;
+    use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 
     #[allow(clippy::large_enum_variant)]
     pub(crate) enum NetworkState {
@@ -24,21 +24,29 @@ mod inner {
         let mut goria = unwrap_orr!(state.goria.try_write(), return); // mut for tick
 
         let timewarp = state.uiw.read::<Settings>().time_warp;
-        let commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
+        let mut commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
         *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
 
         let sched = &mut state.game_schedule;
         let mut timings = state.uiw.write::<Timings>();
 
-        let has_commands = !commands.is_empty();
-        let mut commands_once = Some(commands.clone());
+        let mut has_commands = !commands.is_empty();
+
+        if has_commands && commands.iter().all(WorldCommand::is_instant) {
+            for v in commands.iter() {
+                v.apply(&mut goria);
+            }
+            commands = WorldCommands::default();
+            has_commands = false;
+        }
 
         let mut net_state = state.uiw.write::<NetworkState>();
 
         let crate::network::NetworkState::Singleplayer(ref mut step) = *net_state;
 
+        let mut commands_once = Some(commands.clone());
         step.prepare_frame(timewarp);
-        while step.tick() || (has_commands && commands_once.is_some()) {
+        while step.tick() || has_commands {
             let t = goria.tick(sched, commands_once.take().unwrap_or_default().as_ref());
             timings.world_update.add_value(t.as_secs_f32());
         }
@@ -58,7 +66,7 @@ mod inner {
     use crate::gui::windows::settings::Settings;
     use crate::uiworld::ReceivedCommands;
     use common::timestep::Timestep;
-    use egregoria::engine_interaction::WorldCommands;
+    use egregoria::engine_interaction::{WorldCommand, WorldCommands};
     use egregoria::Egregoria;
     use networking::{
         ConnectConf, Frame, PollResult, ServerConfiguration, ServerPollResult, VirtualClientConf,
@@ -80,7 +88,7 @@ mod inner {
         let mut goria = unwrap_orr!(state.goria.try_write(), return); // mut for tick
 
         let timewarp = state.uiw.read::<Settings>().time_warp;
-        let commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
+        let mut commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
         *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
 
         let mut net_state = state.uiw.write::<NetworkState>();
@@ -91,10 +99,19 @@ mod inner {
                 let sched = &mut state.game_schedule;
                 let mut timings = state.uiw.write::<Timings>();
 
-                let has_commands = !commands.is_empty();
+                let mut has_commands = !commands.is_empty();
+
+                if has_commands && commands.iter().all(WorldCommand::is_instant) {
+                    has_commands = false;
+                    for v in commands.iter() {
+                        v.apply(&mut goria);
+                    }
+                    commands = WorldCommands::default();
+                }
+
                 let mut commands_once = Some(commands.clone());
                 step.prepare_frame(timewarp);
-                while step.tick() || (has_commands && commands_once.is_some()) {
+                while step.tick() || has_commands {
                     let t = goria.tick(sched, commands_once.take().unwrap_or_default().as_ref());
                     timings.world_update.add_value(t.as_secs_f32());
                 }

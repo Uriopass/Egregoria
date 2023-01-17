@@ -1,10 +1,9 @@
-use crate::gui::{ErrorTooltip, InspectedEntity};
+use crate::gui::{ErrorTooltip, InspectedBuilding};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::{ProjectFilter, ProjectKind, Zone};
-use egregoria::souls::goods_company::GoodsCompany;
 use egregoria::Egregoria;
 use geom::{Polygon, Vec2};
 use ordered_float::OrderedFloat;
@@ -19,17 +18,16 @@ pub(crate) struct ZoneEditState {
 
 #[profiling::function]
 pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
-    let mut inspected = uiworld.write::<InspectedEntity>();
+    let mut inspected_b = uiworld.write::<InspectedBuilding>();
     let mut state = uiworld.write::<ZoneEditState>();
 
-    let Some(e) = inspected.e else { state.offset = None; return; };
-
-    let Some(comp) = goria.comp::<GoodsCompany>(e) else { return; };
+    let Some(bid) = inspected_b.e else { state.offset = None; return; };
 
     let map = goria.map();
-    let Some(b) = map.buildings().get(comp.building) else { return; };
+    let Some(b) = map.buildings().get(bid) else { return; };
 
     let Some(ref zone) = b.zone else { return; };
+    let filldir = zone.filldir;
     let zone = &zone.poly;
 
     let mut draw = uiworld.write::<ImmediateDraw>();
@@ -58,7 +56,6 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     let mut invalidmsg = String::new();
 
-    let bid = comp.building;
     const MAX_ZONE_AREA: f32 = 100000.0;
     const MAX_PERIMETER: f32 = 3000.0;
     if area > MAX_ZONE_AREA {
@@ -142,13 +139,13 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     if state.offset.is_some() {
         if inp.act.contains(&InputAction::Select) {
-            inspected.dontclear = true;
+            inspected_b.dontclear = true;
         }
         if !inp.act.contains(&InputAction::Select) {
             if isvalid {
                 commands.push(WorldCommand::UpdateZone {
-                    building: comp.building,
-                    zone: Zone::new(newpoly),
+                    building: bid,
+                    zone: Zone::new(newpoly, filldir),
                 });
             }
             state.offset = None;

@@ -1,11 +1,13 @@
 use crate::gui::bulldozer::BulldozerState;
+use crate::gui::inspect_building::inspect_building;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
 use crate::gui::{
-    ErrorTooltip, InspectedEntity, PotentialCommands, RoadBuildResource, Tool, UiTextures,
+    ErrorTooltip, InspectedBuilding, InspectedEntity, PotentialCommands, RoadBuildResource, Tool,
+    UiTextures,
 };
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
@@ -544,7 +546,10 @@ impl Gui {
                                         kind: bkind,
                                         gen: bgen,
                                         zone: has_zone.then(|| {
-                                            Zone::new(Polygon::from(args.obb.corners.as_slice()))
+                                            Zone::new(
+                                                Polygon::from(args.obb.corners.as_slice()),
+                                                args.obb.axis()[0].normalize(),
+                                            )
                                         }),
                                     }]
                                 }),
@@ -598,6 +603,11 @@ impl Gui {
     }
 
     pub(crate) fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        let inspected_building = *uiworld.read::<InspectedBuilding>();
+        if let Some(b) = inspected_building.e {
+            inspect_building(uiworld, goria, ui, b);
+        }
+
         let mut inspected = *uiworld.read::<InspectedEntity>();
         let e = unwrap_or!(inspected.e, return);
 

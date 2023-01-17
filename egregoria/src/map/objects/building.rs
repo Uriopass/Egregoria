@@ -60,13 +60,20 @@ pub struct StraightRoadGen {
 pub struct Zone {
     pub poly: Polygon,
     pub area: f32,
+    #[serde(default = "unit_x")]
+    pub filldir: Vec2,
+}
+
+fn unit_x() -> Vec2 {
+    Vec2::X
 }
 
 impl Zone {
-    pub fn new(p: Polygon) -> Self {
+    pub fn new(p: Polygon, filldir: Vec2) -> Self {
         Self {
             area: p.area(),
             poly: p,
+            filldir,
         }
     }
 }

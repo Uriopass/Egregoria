@@ -49,6 +49,13 @@ impl ProjectKind {
         }
     }
 
+    pub fn as_building(&self) -> Option<BuildingID> {
+        match *self {
+            Self::Building(b) => Some(b),
+            _ => None,
+        }
+    }
+
     pub fn is_ground(&self) -> bool {
         matches!(self, ProjectKind::Ground)
     }
