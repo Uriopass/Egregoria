@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(clippy::collapsible_else_if)]
 use crate::pbuffer::PBuffer;
 use crate::{
     bg_layout_litmesh, Drawable, GfxContext, Mesh, MeshVertex, RenderParams, Texture, Uniform,
