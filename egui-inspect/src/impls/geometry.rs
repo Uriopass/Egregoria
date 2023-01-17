@@ -195,13 +195,14 @@ impl Inspect<Vec2> for InspectVec2Rotation {
         data: &mut Vec2,
         label: &'static str,
         ui: &mut egui::Ui,
-        _args: &InspectArgs,
+        args: &InspectArgs,
     ) -> bool {
         let mut changed = false;
-        let mut ang = f32::atan2(data.y, data.x);
-        changed |= <f32 as Inspect<f32>>::render_mut(&mut ang, label, ui, &InspectArgs::default());
-        data.x = f32::cos(ang);
-        data.y = f32::sin(ang);
+        let mut ang: f64 = f64::atan2(data.y as f64, data.x as f64) * 180.0 / std::f64::consts::PI;
+        changed |= <f64 as Inspect<f64>>::render_mut(&mut ang, label, ui, args);
+        let ang = ang * std::f64::consts::PI / 180.0;
+        data.x = f64::cos(ang) as f32;
+        data.y = f64::sin(ang) as f32;
         changed
     }
 }

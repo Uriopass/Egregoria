@@ -46,7 +46,7 @@ mod inner {
 
         let mut commands_once = Some(commands.clone());
         step.prepare_frame(timewarp);
-        while step.tick() || has_commands {
+        while step.tick() || (has_commands && commands_once.is_some()) {
             let t = goria.tick(sched, commands_once.take().unwrap_or_default().as_ref());
             timings.world_update.add_value(t.as_secs_f32());
         }
@@ -111,7 +111,7 @@ mod inner {
 
                 let mut commands_once = Some(commands.clone());
                 step.prepare_frame(timewarp);
-                while step.tick() || has_commands {
+                while step.tick() || (has_commands && commands_once.is_some()) {
                     let t = goria.tick(sched, commands_once.take().unwrap_or_default().as_ref());
                     timings.world_update.add_value(t.as_secs_f32());
                 }

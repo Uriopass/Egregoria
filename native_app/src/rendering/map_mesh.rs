@@ -324,9 +324,9 @@ impl MapBuilders {
         });
 
         for building in map.buildings().values() {
-            let Some(zone) = &building.zone else { continue };
+            let Some(bzone) = &building.zone else { continue };
             let Some((zone_mesh, filler)) = self.zonemeshes.get_mut(&building.kind) else { continue };
-            let zone = &zone.poly;
+            let zone = &bzone.poly;
 
             let mut hull = building
                 .mesh
@@ -339,7 +339,7 @@ impl MapBuilders {
             hull.simplify();
             hull.scale_from(hull.barycenter(), 1.8);
 
-            let principal_axis = building.obb.axis()[0].normalize();
+            let principal_axis = building.obb.axis()[0].normalize().rotated_by(bzone.filldir);
 
             let Some((mut min, mut max)) = minmax(zone.iter().map(|x| x.rotated_by(principal_axis.flipy()))) else { continue };
             min = min.rotated_by(principal_axis);
