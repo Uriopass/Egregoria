@@ -1,3 +1,4 @@
+use crate::impls::f64::InspectF64Deg;
 use crate::impls::Inspect;
 use crate::impls::InspectArgs;
 use egui::color_picker::Alpha;
@@ -199,7 +200,7 @@ impl Inspect<Vec2> for InspectVec2Rotation {
     ) -> bool {
         let mut changed = false;
         let mut ang: f64 = f64::atan2(data.y as f64, data.x as f64) * 180.0 / std::f64::consts::PI;
-        changed |= <f64 as Inspect<f64>>::render_mut(&mut ang, label, ui, args);
+        changed |= <InspectF64Deg as Inspect<f64>>::render_mut(&mut ang, label, ui, args);
         let ang = ang * std::f64::consts::PI / 180.0;
         data.x = f64::cos(ang) as f32;
         data.y = f64::sin(ang) as f32;

@@ -25,7 +25,8 @@ pub(crate) fn inspect_building(
 
         if let Some(ref zone) = building.zone {
             let mut cpy = zone.filldir;
-            if InspectVec2Rotation::render_mut(&mut cpy, "fill dir", ui, &InspectArgs::default()) {
+            if InspectVec2Rotation::render_mut(&mut cpy, "fill angle", ui, &InspectArgs::default())
+            {
                 uiworld.commands().push(WorldCommand::UpdateZone {
                     building: id,
                     zone: Zone {
