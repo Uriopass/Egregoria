@@ -52,6 +52,11 @@ pub struct GoodsCompanyDescription {
 pub struct ZoneDescription {
     pub floor: String,
     pub filler: String,
+    /// Area required for each production unit
+    /// If area_per_production is 1000 and the zone area is 10000, then the production will be multiplied by 10
+    pub area_per_production: i64,
+    /// The price for each "production unit"
+    pub price_per_area: i64,
 }
 
 #[derive(Default)]

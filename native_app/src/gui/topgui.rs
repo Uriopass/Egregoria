@@ -106,17 +106,18 @@ impl Gui {
             .map(|cmd| Government::action_cost(&cmd, goria))
             .sum();
 
-        if cost > Money::default() {
-            let txt = format!("{}", cost);
-
-            egui::show_tooltip(ui, Id::new("tooltip_command_cost"), |ui| {
-                if cost > goria.read::<Government>().money {
-                    ui.colored_label(Color32::RED, format!("{} too expensive", txt));
-                } else {
-                    ui.label(txt);
-                }
-            });
+        if cost == Money::default() {
+            return;
         }
+        let txt = format!("{}", cost);
+
+        egui::show_tooltip(ui, Id::new("tooltip_command_cost"), |ui| {
+            if cost > goria.read::<Government>().money {
+                ui.colored_label(Color32::RED, format!("{} too expensive", txt));
+            } else {
+                ui.label(txt);
+            }
+        });
     }
 
     pub(crate) fn auto_save(&mut self, uiworld: &mut UiWorld) {
@@ -548,7 +549,7 @@ impl Gui {
                                         zone: has_zone.then(|| {
                                             Zone::new(
                                                 Polygon::from(args.obb.corners.as_slice()),
-                                                args.obb.axis()[0].normalize(),
+                                                Vec2::X,
                                             )
                                         }),
                                     }]

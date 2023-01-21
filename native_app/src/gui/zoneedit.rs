@@ -1,4 +1,4 @@
-use crate::gui::{ErrorTooltip, InspectedBuilding};
+use crate::gui::{ErrorTooltip, InspectedBuilding, PotentialCommands};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
@@ -20,6 +20,7 @@ pub(crate) struct ZoneEditState {
 pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut inspected_b = uiworld.write::<InspectedBuilding>();
     let mut state = uiworld.write::<ZoneEditState>();
+    let mut potentialcommand = uiworld.write::<PotentialCommands>();
 
     let Some(bid) = inspected_b.e else { state.offset = None; return; };
 
@@ -138,15 +139,18 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     if state.offset.is_some() {
+        let cmd = WorldCommand::UpdateZone {
+            building: bid,
+            zone: Zone::new(newpoly, filldir),
+        };
         if inp.act.contains(&InputAction::Select) {
             inspected_b.dontclear = true;
-        }
-        if !inp.act.contains(&InputAction::Select) {
             if isvalid {
-                commands.push(WorldCommand::UpdateZone {
-                    building: bid,
-                    zone: Zone::new(newpoly, filldir),
-                });
+                potentialcommand.set(cmd);
+            }
+        } else {
+            if isvalid {
+                commands.push(cmd);
             }
             state.offset = None;
         }

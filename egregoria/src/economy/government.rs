@@ -25,6 +25,23 @@ impl Government {
             WorldCommand::MapMakeConnection { from, to, pat, .. } => {
                 Self::connection_cost(from, to, pat)
             }
+            WorldCommand::UpdateZone {
+                building: bid,
+                zone: z,
+            } => {
+                let m = goria.map();
+                let Some(b) = m.buildings.get(*bid) else { return Money::ZERO; };
+                let Some(gc) = b.kind.as_goods_company() else { return Money::ZERO; };
+                let registry = goria.read::<GoodsCompanyRegistry>();
+                let zonedescr = registry.descriptions[gc].zone.as_ref().unwrap();
+
+                let oldarea = b.zone.as_ref().map(|z| z.area).unwrap_or(0.0);
+                let newarea = z.area;
+                return Money::new_base(
+                    (newarea - oldarea) as i64 * zonedescr.price_per_area
+                        / zonedescr.area_per_production,
+                );
+            }
             WorldCommand::MapMakeMultipleConnections(ref projs, ref links) => {
                 let mut total = 0;
                 for (from, to, _, pat) in links.iter() {
@@ -34,7 +51,16 @@ impl Government {
             }
             WorldCommand::MapBuildSpecialBuilding { kind: x, .. } => match x {
                 BuildingKind::GoodsCompany(x) => {
-                    goria.read::<GoodsCompanyRegistry>().descriptions[*x].price
+                    let descr = &goria.read::<GoodsCompanyRegistry>().descriptions[*x];
+                    descr.price
+                        + descr
+                            .zone
+                            .as_ref()
+                            .map(|z| {
+                                z.price_per_area * (descr.size * descr.size) as i64
+                                    / z.area_per_production
+                            })
+                            .unwrap_or(0)
                 }
                 BuildingKind::RailFretStation => 1000,
                 BuildingKind::TrainStation => 1000,

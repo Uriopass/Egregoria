@@ -50,10 +50,12 @@
     "n_workers": 10,
     "size": 120.0,
     "asset_location": "assets/sprites/dirt.jpg",
-    "price": 1000,
+    "price": 200,
     "zone": {
       "floor": "assets/sprites/dirt.jpg",
-      "filler": "wheat_up.glb"
+      "filler": "wheat_up.glb",
+      "area_per_production": 1000,
+      "price_per_area": 100
     }
   },
   {
@@ -65,17 +67,19 @@
     "kind": "network",
     "recipe": {
       "consumption": [],
-      "production": [["electricity", 100]],
+      "production": [["electricity", 1]],
       "complexity": 200,
       "storage_multiplier": 5
     },
     "n_workers": 1,
     "size": 120.0,
     "asset_location": "assets/sprites/cement.jpg",
-    "price": 1000,
+    "price": 0,
     "zone": {
       "floor": "assets/sprites/cement.jpg",
-      "filler": "solarpanel.glb"
+      "filler": "solarpanel.glb",
+      "area_per_production": 100,
+      "price_per_area": 10
     }
   },
   {
