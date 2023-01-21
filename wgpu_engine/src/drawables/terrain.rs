@@ -107,12 +107,6 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             return false;
         }
 
-        let mut enc = gfx
-            .device
-            .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("write to terrain"),
-            });
-
         let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION);
 
         let extrax = cell.0 + 1 == self.w;
@@ -142,23 +136,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             }
         }
 
-        let buf = gfx.device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("write terrain buffer"),
-            contents: &contents,
-            usage: BufferUsages::COPY_SRC,
-        });
-
-        enc.copy_buffer_to_texture(
-            ImageCopyBuffer {
-                buffer: &buf,
-                layout: ImageDataLayout {
-                    offset: 0,
-                    bytes_per_row: Some(
-                        NonZeroU32::new((w * 4).max(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)).unwrap(),
-                    ),
-                    rows_per_image: Some(NonZeroU32::new(h).unwrap()),
-                },
-            },
+        gfx.queue.write_texture(
             ImageCopyTexture {
                 texture: &self.terrain_tex.texture,
                 mip_level: 0,
@@ -169,14 +147,20 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 },
                 aspect: Default::default(),
             },
+            &contents,
+            ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(
+                    NonZeroU32::new((w * 4).max(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)).unwrap(),
+                ),
+                rows_per_image: Some(NonZeroU32::new(h).unwrap()),
+            },
             Extent3d {
                 width: w,
                 height: h,
                 depth_or_array_layers: 1,
             },
         );
-
-        gfx.queue.submit(Some(enc.finish()));
 
         self.dirt_ids.insert(cell, dirtid);
         true
