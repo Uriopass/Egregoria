@@ -8,11 +8,10 @@ use std::num::NonZeroU32;
 use std::ops::Sub;
 use std::rc::Rc;
 use std::sync::Arc;
-use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    BufferUsages, CommandEncoderDescriptor, Extent3d, FilterMode, ImageCopyBuffer,
-    ImageCopyTexture, ImageDataLayout, IndexFormat, Origin3d, RenderPass, TextureFormat,
-    TextureSampleType, TextureUsages, VertexAttribute, VertexBufferLayout,
+    BufferUsages, Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, IndexFormat, Origin3d,
+    RenderPass, TextureFormat, TextureSampleType, TextureUsages, VertexAttribute,
+    VertexBufferLayout,
 };
 
 const LOD: usize = 4;

@@ -5,7 +5,7 @@ use crate::map::{
     ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain, Zone,
 };
 use geom::OBB;
-use geom::{Circle, Intersect, Shape, Spline3, Vec2, Vec3};
+use geom::{Spline3, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::DenseSlotMap;
@@ -155,6 +155,8 @@ impl Map {
 
         f(z);
 
+        self.terrain.remove_near(&z.poly);
+
         self.spatial_map.insert(id, z.poly.clone());
 
         self.dirt_id += Wrapping(1);
@@ -192,9 +194,7 @@ impl Map {
             }
         }
 
-        let tree_remove_mask = obb.expand(10.0);
-        self.terrain
-            .remove_near_filter(obb.bbox(), |p| tree_remove_mask.contains(p));
+        self.terrain.remove_near(obb.expand(10.0));
 
         let v = Building::make(
             &mut self.buildings,
@@ -490,12 +490,9 @@ impl Map {
 
         #[allow(clippy::indexing_slicing)]
         let r = &self.roads[id];
-        let d = r.width + 50.0;
-        let b = r.boldline();
-        self.terrain.remove_near_filter(b.bbox().expand(d), |tpos| {
-            let rd = common::rand::rand3(tpos.x, tpos.y, 391.0) * 20.0;
-            b.intersects(&Circle::new(tpos, d - rd))
-        });
+        let mut b = r.boldline();
+        b.expand(40.0);
+        self.terrain.remove_near(&b);
 
         Some(id)
     }

@@ -9,10 +9,13 @@ pub struct BoldLine {
     pub line: PolyLine,
     pub radius: f32,
 }
-
 impl BoldLine {
     pub fn new(line: PolyLine, radius: f32) -> Self {
         BoldLine { line, radius }
+    }
+
+    pub fn expand(&mut self, r: f32) {
+        self.radius += r;
     }
 }
 

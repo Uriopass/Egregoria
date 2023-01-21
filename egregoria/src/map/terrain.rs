@@ -1,6 +1,6 @@
 use crate::map::procgen::heightmap;
 use crate::map::procgen::heightmap::tree_density;
-use geom::{vec2, Radians, Vec2, AABB};
+use geom::{vec2, Intersect, Radians, Vec2, AABB};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -75,13 +75,13 @@ impl Terrain {
         me
     }
 
-    pub fn remove_near_filter(&mut self, bbox: AABB, should_remove: impl Fn(Vec2) -> bool) {
+    pub fn remove_near(&mut self, obj: impl Intersect<Vec2>) {
         let mut v = false;
-        for cell in self.chunks_iter(bbox) {
+        for cell in self.chunks_iter(obj.bbox()) {
             let chunk = unwrap_cont!(self.chunks.get_mut(&cell));
             let mut vcell = false;
             chunk.trees.retain(|t| {
-                let rem = should_remove(t.pos);
+                let rem = obj.intersects(&t.pos);
                 vcell |= rem;
                 !rem
             });
