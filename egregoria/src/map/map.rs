@@ -159,6 +159,12 @@ impl Map {
 
         self.spatial_map.insert(id, z.poly.clone());
 
+        let toclean = self
+            .spatial_map
+            .query(&z.poly, ProjectFilter::LOT)
+            .collect();
+        self.clean_lots_inner(toclean);
+
         self.dirt_id += Wrapping(1);
         self.check_invariants()
     }
@@ -182,17 +188,8 @@ impl Map {
             zone
         );
         self.dirt_id += Wrapping(1);
-        let to_clean: Vec<_> = self.spatial_map.query(obb, ProjectFilter::LOT).collect();
-        for id in to_clean {
-            if let ProjectKind::Lot(id) = id {
-                self.spatial_map.remove(id);
 
-                unwrap_contlog!(
-                    &self.lots.remove(id),
-                    "Lot was present in spatial map but not in Lots struct"
-                );
-            }
-        }
+        self.clean_lots_inner(self.spatial_map.query(obb, ProjectFilter::LOT).collect());
 
         self.terrain.remove_near(obb.expand(10.0));
 
@@ -245,6 +242,19 @@ impl Map {
         let v = self.remove_road_inner(road_id);
         self.check_invariants();
         v
+    }
+
+    fn clean_lots_inner(&mut self, to_clean: Vec<ProjectKind>) {
+        for id in to_clean {
+            if let ProjectKind::Lot(id) = id {
+                self.spatial_map.remove(id);
+
+                unwrap_contlog!(
+                    &self.lots.remove(id),
+                    "Lot was present in spatial map but not in Lots struct"
+                );
+            }
+        }
     }
 
     fn remove_road_inner(&mut self, road_id: RoadID) -> Option<Road> {
