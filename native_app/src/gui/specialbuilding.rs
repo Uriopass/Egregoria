@@ -48,7 +48,7 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     }
 
     if inp.act.contains(&InputAction::Rotate) {
-        state.rotation += Degrees(inp.wheel * 10.0);
+        state.rotation += Degrees(inp.wheel * 0.1);
         state.rotation.normalize();
     }
 

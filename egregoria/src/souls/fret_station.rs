@@ -2,7 +2,7 @@ use crate::map::{BuildingID, BuildingKind, Map, PathKind};
 use crate::map_dynamic::{BuildingInfos, DispatchKind, DispatchQueryTarget, Dispatcher, Itinerary};
 use crate::transportation::train::TrainID;
 use crate::utils::time::GameTime;
-use crate::{Egregoria, ParCommandBuffer, Selectable, SoulID};
+use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::Transform;
 use hecs::World;
 use resources::Resources;
@@ -44,16 +44,12 @@ pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Opti
     let obb = b.obb;
     let pos = obb.center();
     let axis = obb.axis();
-    let [w2, h2] = axis.map(|x| x.mag2());
 
     drop(map);
 
     let soul = SoulID(goria.world.spawn((
         f,
         Transform::new_dir(pos.z(height), axis[1].z(0.0).normalize()),
-        Selectable {
-            radius: w2.max(h2).sqrt() * 0.5,
-        },
     )));
 
     goria.write::<BuildingInfos>().set_owner(building, soul);

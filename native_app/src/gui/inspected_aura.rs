@@ -1,4 +1,4 @@
-use crate::gui::InspectedEntity;
+use crate::gui::{InspectedBuilding, InspectedEntity};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::Selectable;
@@ -9,6 +9,7 @@ use geom::Color;
 #[profiling::function]
 pub(crate) fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
     let inspected = uiworld.write::<InspectedEntity>();
+    let inspected_b = uiworld.write::<InspectedBuilding>();
     let map = goria.map();
     let mut draw = uiworld.write::<ImmediateDraw>();
 
@@ -31,5 +32,17 @@ pub(crate) fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
             )
             .color(Color::gray(0.7));
         }
+    }
+
+    if let Some(sel) = inspected_b.e {
+        let b = map.buildings().get(sel).unwrap();
+
+        // already shown by zonedit
+        if b.zone.is_some() {
+            return;
+        }
+
+        draw.obb(b.obb, b.height + 0.01)
+            .color(common::config().gui_primary);
     }
 }

@@ -322,8 +322,8 @@ impl Gui {
                                 });
                                 commands
                             }),
-                            w: 200.0,
-                            h: 160.0,
+                            w: 160.0,
+                            h: 200.0,
                             asset: "rail_fret_station.glb".to_string(),
                             road_snap: false,
                         });
