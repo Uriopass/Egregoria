@@ -3,7 +3,7 @@ use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::ImmediateDraw;
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::WorldCommand;
-use egregoria::map::{ProjectFilter, ProjectKind, Zone};
+use egregoria::map::{ProjectFilter, ProjectKind, Zone, MAX_ZONE_AREA};
 use egregoria::Egregoria;
 use geom::{Polygon, Vec2};
 use ordered_float::OrderedFloat;
@@ -57,12 +57,11 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     let mut invalidmsg = String::new();
 
-    const MAX_ZONE_AREA: f32 = 100000.0;
     const MAX_PERIMETER: f32 = 3000.0;
     if area > MAX_ZONE_AREA {
-        invalidmsg = format!("Area too big ({} > {MAX_ZONE_AREA})", area);
+        invalidmsg = format!("Area too big ({area} > {MAX_ZONE_AREA})");
     } else if perimeter > MAX_PERIMETER {
-        invalidmsg = format!("Perimeter too big ({} > {MAX_PERIMETER})", perimeter);
+        invalidmsg = format!("Perimeter too big ({perimeter} > {MAX_PERIMETER})");
     } else if !newpoly.contains(b.obb.center()) {
         invalidmsg = String::from("Zone must be near the building");
     } else if let Some(v) = map
@@ -73,7 +72,7 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
         )
         .find(move |x| x != &ProjectKind::Building(bid))
     {
-        invalidmsg = format!("Zone intersects with {:?}", v);
+        invalidmsg = format!("Zone intersects with {v:?}");
     }
 
     let isvalid = invalidmsg.is_empty();

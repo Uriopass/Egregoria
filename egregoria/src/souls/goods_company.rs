@@ -1,6 +1,6 @@
 use super::desire::Work;
 use crate::economy::{find_trade_place, ItemID, ItemRegistry, Market, Sold, Workers};
-use crate::map::{BuildingGen, BuildingID, Map};
+use crate::map::{Building, BuildingGen, BuildingID, Map};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
 use crate::transportation::VehicleID;
@@ -285,24 +285,26 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
 
 #[profiling::function]
 pub fn company_system(world: &mut World, res: &mut Resources) {
-    let ra = res.get().unwrap();
+    let delta = res.get::<GameTime>().unwrap().delta;
     let rb = res.get().unwrap();
     let rc = res.get().unwrap();
     let rd = res.get().unwrap();
     let re = res.get().unwrap();
+    let rf = res.get().unwrap();
     for (ent, (a, b, c)) in world
         .query::<(&mut GoodsCompany, &mut Sold, &Workers)>()
         .iter()
     {
-        company(&ra, &rb, &rc, &rd, &re, ent, a, b, c, world);
+        company(delta, &rb, &rc, &rd, &re, &rf, ent, a, b, c, world);
     }
 }
 
 pub fn company(
-    time: &GameTime,
+    delta: f32,
     cbuf: &ParCommandBuffer,
     binfos: &BuildingInfos,
     market: &Market,
+    registry: &GoodsCompanyRegistry,
     map: &Map,
     me: Entity,
     company: &mut GoodsCompany,
@@ -312,19 +314,26 @@ pub fn company(
 ) {
     let n_workers = workers.0.len();
     let soul = SoulID(me);
-    let b = unwrap_or!(map.buildings.get(company.building), {
+    let b: &Building = unwrap_or!(map.buildings.get(company.building), {
         cbuf.kill(me);
         return;
     });
 
     if company.recipe.should_produce(soul, market) {
-        company.progress += n_workers as f32
+        let mut productivity = 1.0;
+
+        if let Some(ref z) = b.zone {
+            let d = &registry.descriptions[b.kind.as_goods_company().unwrap()];
+            productivity = z.area / d.zone.as_ref().unwrap().area_per_production as f32;
+        }
+
+        company.progress += n_workers as f32 * productivity
             / (company.recipe.complexity as f32 * company.max_workers as f32)
-            * time.delta;
+            * delta;
     }
 
     if company.progress >= 1.0 {
-        company.progress = 0.0;
+        company.progress -= 1.0;
         let recipe = company.recipe.clone();
         let bpos = b.door_pos;
 

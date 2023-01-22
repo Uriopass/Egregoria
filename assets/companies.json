@@ -44,7 +44,7 @@
     "recipe": {
       "consumption": [],
       "production": [["cereal", 1]],
-      "complexity": 200,
+      "complexity": 2000,
       "storage_multiplier": 5
     },
     "n_workers": 10,

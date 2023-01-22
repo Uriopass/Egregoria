@@ -56,6 +56,8 @@ pub struct StraightRoadGen {
     pub pattern: LanePattern,
 }
 
+pub const MAX_ZONE_AREA: f32 = 50000.0; // in m²
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Zone {
     pub poly: Polygon,
