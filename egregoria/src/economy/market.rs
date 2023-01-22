@@ -517,6 +517,7 @@ mod tests {
                 size: 0.0,
                 asset_location: "".to_string(),
                 price: 0,
+                zone: None,
             });
 
         companies
@@ -536,6 +537,7 @@ mod tests {
                 size: 0.0,
                 asset_location: "".to_string(),
                 price: 0,
+                zone: None,
             });
 
         let prices = super::calculate_prices(&registry, &companies);
