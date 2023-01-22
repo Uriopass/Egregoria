@@ -1,4 +1,4 @@
-use serde::de::{DeserializeOwned, DeserializeSeed};
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, ErrorKind, Read, Write};
@@ -32,8 +32,6 @@ pub trait Encoder {
     fn encode(x: &impl Serialize) -> Result<Vec<u8>>;
 
     fn decode<T: DeserializeOwned>(x: &[u8]) -> Result<T>;
-
-    fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(seed: S, x: &[u8]) -> Result<V>;
 
     fn encode_writer(x: &impl Serialize, mut w: impl Write) -> Result<()> {
         let buf = Self::encode(x)?;
@@ -83,10 +81,6 @@ pub trait Encoder {
             })
             .ok()
     }
-
-    fn load_or_default<T: DeserializeOwned + Default>(name: &'static str) -> T {
-        Self::load(name).unwrap_or_default()
-    }
 }
 
 pub struct Bincode;
@@ -110,14 +104,6 @@ impl Encoder for Bincode {
         DefaultOptions::new()
             .deserialize(x)
             .map_err(|x| std::io::Error::new(ErrorKind::Other, x))
-    }
-
-    fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(seed: S, x: &[u8]) -> Result<V> {
-        seed.deserialize(&mut ::bincode::Deserializer::from_slice(
-            x,
-            DefaultOptions::new(),
-        ))
-        .map_err(|x| std::io::Error::new(ErrorKind::Other, x))
     }
 
     fn encode_writer(x: &impl Serialize, w: impl Write) -> Result<()> {
@@ -149,15 +135,6 @@ impl Encoder for CompressedBincode {
             .map_err(|_| std::io::Error::new(ErrorKind::Other, "could not decode zipped file"))?;
         Bincode::decode(v)
     }
-
-    fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(
-        seed: S,
-        data: &[u8],
-    ) -> Result<V> {
-        let v = &miniz_oxide::inflate::decompress_to_vec(data)
-            .map_err(|_| std::io::Error::new(ErrorKind::Other, "could not decode zipped file"))?;
-        Bincode::decode_seed(seed, v)
-    }
 }
 
 pub struct JSON;
@@ -172,12 +149,6 @@ impl Encoder for JSON {
     fn decode<T: DeserializeOwned>(x: &[u8]) -> Result<T> {
         serde_json::from_slice(x).map_err(Into::into)
     }
-
-    fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(seed: S, x: &[u8]) -> Result<V> {
-        seed.deserialize(&mut serde_json::Deserializer::from_slice(x))
-            .map_err(Into::into)
-    }
-
     fn encode_writer(x: &impl Serialize, w: impl Write) -> Result<()> {
         serde_json::to_writer(w, x).map_err(Into::into)
     }
@@ -198,11 +169,6 @@ impl Encoder for JSONPretty {
 
     fn decode<T: DeserializeOwned>(x: &[u8]) -> Result<T> {
         serde_json::from_slice(x).map_err(Into::into)
-    }
-
-    fn decode_seed<V, S: for<'a> DeserializeSeed<'a, Value = V>>(seed: S, x: &[u8]) -> Result<V> {
-        seed.deserialize(&mut serde_json::Deserializer::from_slice(x))
-            .map_err(Into::into)
     }
 
     fn encode_writer(x: &impl Serialize, w: impl Write) -> Result<()> {
