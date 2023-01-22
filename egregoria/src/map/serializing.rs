@@ -56,8 +56,12 @@ impl From<SerializedMap> for Map {
 
 fn mk_spatial_map(m: &SerializedMap) -> SpatialMap {
     let mut sm = SpatialMap::default();
-    for h in m.buildings.values() {
-        sm.insert(h.id, h.obb);
+    for b in m.buildings.values() {
+        if let Some(ref z) = b.zone {
+            sm.insert(b.id, z.poly.clone());
+            continue;
+        }
+        sm.insert(b.id, b.obb);
     }
     for r in m.roads.values() {
         sm.insert(r.id, r.boldline());
