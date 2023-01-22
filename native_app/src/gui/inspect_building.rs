@@ -29,7 +29,7 @@ pub(crate) fn inspect_building(
             BuildingKind::House => ui.label("House"),
             BuildingKind::GoodsCompany(id) => {
                 let descr = &goodcompregistry.descriptions[id];
-                ui.label(format!("{}", descr.name))
+                ui.label(&descr.name)
             }
             BuildingKind::RailFretStation => ui.label("Rail Fret Station"),
             BuildingKind::TrainStation => ui.label("Train Station"),
