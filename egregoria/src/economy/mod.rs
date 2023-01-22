@@ -145,10 +145,10 @@ const COMPANIES_PATH: &str = "../assets/companies.json";
 pub fn init_market(_: &mut World, res: &mut Resources) {
     res.get_mut::<ItemRegistry>()
         .unwrap()
-        .load_item_definitions(&std::fs::read_to_string(ITEMS_PATH).unwrap());
+        .load_item_definitions(&common::saveload::load_string(ITEMS_PATH).unwrap());
 
     res.get_mut::<GoodsCompanyRegistry>().unwrap().load(
-        &std::fs::read_to_string(COMPANIES_PATH).unwrap(),
+        &common::saveload::load_string(COMPANIES_PATH).unwrap(),
         &res.get::<ItemRegistry>().unwrap(),
     );
 

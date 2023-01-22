@@ -145,7 +145,7 @@ impl AudioContext {
     fn decode(name: &str) -> Option<StoredAudio> {
         let p = format!("assets/sounds/{}.ogg", name);
         let t = Instant::now();
-        let buf = match std::fs::read(&p) {
+        let buf = match common::saveload::load_raw(&p) {
             Ok(x) => x,
             Err(e) => {
                 log::error!("Could not load sound {}: {}", name, e);

@@ -213,3 +213,15 @@ impl Encoder for JSONPretty {
         serde_json::from_reader(r).map_err(Into::into)
     }
 }
+
+pub fn load_raw(
+    p: impl AsRef<Path>,
+) -> std::result::Result<Vec<u8>, Box<dyn std::error::Error + 'static>> {
+    std::fs::read(p).map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+}
+
+pub fn load_string(
+    p: impl AsRef<Path>,
+) -> std::result::Result<String, Box<dyn std::error::Error + 'static>> {
+    std::fs::read_to_string(p).map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+}
