@@ -277,9 +277,8 @@ impl Market {
                 let buyer = trade.buyer.soul();
                 let seller = trade.seller.soul();
 
-                let cap_seller = capital.entry(seller).or_default() as *mut _;
-                // Safety: buyer cannot be the same as seller
-                if unsafe { *cap_seller } < trade.qty {
+                let cap_seller = capital.entry(seller).or_default();
+                if *cap_seller < trade.qty {
                     return None;
                 }
 
@@ -312,7 +311,7 @@ impl Market {
 
                 // Safety: buyer cannot be the same as seller
                 *cap_buyer += trade.qty;
-                unsafe { *cap_seller -= trade.qty };
+                *capital.get_mut(&seller).unwrap() -= trade.qty;
 
                 Some(trade)
             }));
