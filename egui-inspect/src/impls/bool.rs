@@ -2,7 +2,7 @@ use super::{Inspect, InspectArgs};
 
 impl Inspect<bool> for bool {
     fn render(data: &Self, label: &'static str, ui: &mut egui::Ui, _args: &InspectArgs) {
-        ui.label(&format!("{}: {}", label, data));
+        ui.label(&format!("{label}: {data}"));
     }
 
     fn render_mut(

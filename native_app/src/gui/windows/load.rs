@@ -25,7 +25,7 @@ pub(crate) fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWor
         drop(inp);
 
         if let Some(ref path) = lstate.curpath {
-            ui.label(format!("path: {:?}", path));
+            ui.label(format!("path: {path:?}"));
         }
 
         if ui.button("Load").clicked() {

@@ -5,7 +5,7 @@ impl<T: Inspect<T>> Inspect<Option<T>> for Option<T> {
         match data {
             Some(value) => <T as Inspect<T>>::render(value, label, ui, args),
             None => {
-                ui.label(&format!("{}: None", label));
+                ui.label(&format!("{label}: None"));
             }
         };
     }
@@ -19,7 +19,7 @@ impl<T: Inspect<T>> Inspect<Option<T>> for Option<T> {
         match data {
             Some(value) => <T as Inspect<T>>::render_mut(value, label, ui, args),
             None => {
-                ui.label(&format!("{}: None", label));
+                ui.label(&format!("{label}: None"));
                 false
             }
         }

@@ -398,7 +398,7 @@ fn generate_mipmaps(
     });
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some(&*format!("mipmaps {:?}", format)),
+        label: Some(&*format!("mipmaps {format:?}")),
         layout: Some(&layout),
         vertex: wgpu::VertexState {
             module: &module,

@@ -342,21 +342,21 @@ impl Default for ItineraryKind {
 
 impl Inspect<ItineraryKind> for ItineraryKind {
     fn render(d: &ItineraryKind, label: &'static str, ui: &mut Ui, args: &InspectArgs) {
-        match d {
+        match *d {
             ItineraryKind::None => {
-                ui.label(format!("None {}", label));
+                ui.label(format!("None {label}"));
             }
             ItineraryKind::WaitUntil(time) => {
-                ui.label(format!("WaitUntil({}) {}", time, label));
+                ui.label(format!("WaitUntil({time}) {label}"));
             }
             ItineraryKind::Simple(e) => {
-                ui.label(format!("Simple {} to {}", label, e));
+                ui.label(format!("Simple {label} to {e}"));
             }
-            ItineraryKind::Route(r, _) => {
+            ItineraryKind::Route(ref r, _) => {
                 <Route as Inspect<Route>>::render(r, label, ui, args);
             }
             ItineraryKind::WaitForReroute { wait_ticks, .. } => {
-                ui.label(format!("wait for reroute: {}", *wait_ticks));
+                ui.label(format!("wait for reroute: {wait_ticks}"));
             }
         };
     }
@@ -367,21 +367,21 @@ impl Inspect<ItineraryKind> for ItineraryKind {
         ui: &mut Ui,
         args: &InspectArgs,
     ) -> bool {
-        match d {
+        match *d {
             ItineraryKind::None => {
                 ui.label(format!("None {}", label));
             }
             ItineraryKind::WaitUntil(time) => {
-                ui.label(format!("WaitUntil({}) {}", time, label));
+                ui.label(format!("WaitUntil({time}) {label}"));
             }
             ItineraryKind::Simple(e) => {
-                ui.label(format!("Simple {} to {}", label, e));
+                ui.label(format!("Simple {label} to {e}"));
             }
-            ItineraryKind::Route(r, _) => {
+            ItineraryKind::Route(ref mut r, _) => {
                 return <Route as Inspect<Route>>::render_mut(r, label, ui, args);
             }
             ItineraryKind::WaitForReroute { wait_ticks, .. } => {
-                ui.label(format!("wait for reroute: {}", *wait_ticks));
+                ui.label(format!("wait for reroute: {wait_ticks}"));
             }
         };
         false

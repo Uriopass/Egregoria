@@ -191,7 +191,7 @@ pub(crate) fn economy(
                                         filter.remove(&id);
                                     }
                                 }
-                                ui.label(format!("{}", sum));
+                                ui.label(sum.to_string());
                                 ui.end_row();
                             }
                         });
@@ -233,7 +233,7 @@ fn render_market_prices(goria: &Egregoria, ui: &mut Ui) {
     egui::Grid::new("marketprices").show(ui, |ui| {
         for (id, market) in market.iter() {
             ui.label(&registry[*id].name);
-            ui.label(format!("{}", market.ext_value));
+            ui.label(market.ext_value.to_string());
             ui.end_row();
         }
     });

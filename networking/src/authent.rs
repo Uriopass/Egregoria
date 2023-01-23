@@ -88,7 +88,7 @@ impl Authent {
 
             if self.register(name.clone()) {
                 return Some(AuthentResponse::Refused {
-                    reason: format!("name is already in use: {}", name),
+                    reason: format!("name is already in use: {name}"),
                 });
             }
 

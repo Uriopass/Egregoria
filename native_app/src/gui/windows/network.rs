@@ -85,7 +85,7 @@ fn show_hashes(ui: &mut Ui, goria: &Egregoria, info: &mut NetworkConnectionInfo)
     }
 
     for (name, hash) in &info.hashes {
-        ui.label(format!("{}: {}", name, hash));
+        ui.label(format!("{name}: {hash}"));
     }
 }
 

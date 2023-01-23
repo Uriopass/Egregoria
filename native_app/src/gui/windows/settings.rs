@@ -187,7 +187,7 @@ pub(crate) fn settings(
             let fps = 1.0 / uiworld.read::<Timings>().all.avg();
 
             ui.separator();
-            ui.label(format!("Graphics - {:.1}FPS", fps));
+            ui.label(format!("Graphics - {fps:.1}FPS"));
 
             ui.checkbox(&mut settings.fullscreen, "Fullscreen");
             ui.checkbox(&mut settings.realistic_sky, "Realistic sky");
@@ -221,21 +221,21 @@ pub(crate) fn settings(
             ui.horizontal(|ui| {
                 ui.add(
                     egui::Slider::new(&mut settings.music_volume_percent, 0.0..=100.0)
-                        .custom_formatter(|x, _| format!("{:.0}%", x)),
+                        .custom_formatter(|x, _| format!("{x:.0}%")),
                 );
                 ui.label("Music volume");
             });
             ui.horizontal(|ui| {
                 ui.add(
                     egui::Slider::new(&mut settings.effects_volume_percent, 0.0..=100.0)
-                        .custom_formatter(|x, _| format!("{:.0}%", x)),
+                        .custom_formatter(|x, _| format!("{x:.0}%")),
                 );
                 ui.label("Effects volume");
             });
             ui.horizontal(|ui| {
                 ui.add(
                     egui::Slider::new(&mut settings.ui_volume_percent, 0.0..=100.0)
-                        .custom_formatter(|x, _| format!("{:.0}%", x)),
+                        .custom_formatter(|x, _| format!("{x:.0}%")),
                 );
                 ui.label("Ui volume");
             });
@@ -276,7 +276,7 @@ pub(crate) fn settings(
                         let comb = bindings.0.get_mut(action).unwrap();
 
                         ui.col(|ui| {
-                            ui.label(format!("{}", action));
+                            ui.label(action.to_string());
                         });
                         ui.col(|ui| {
                             let resp = if !comb.0.is_empty() {

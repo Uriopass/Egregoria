@@ -828,9 +828,7 @@ impl GfxContext {
         let mut to_invalidate = HashSet::new();
         for (sname, (parents, entry)) in &mut self.shader_watcher {
             let meta =
-                unwrap_cont!(
-                    std::fs::metadata(Path::new(&format!("assets/shaders/{}", sname))).ok()
-                );
+                unwrap_cont!(std::fs::metadata(Path::new(&format!("assets/shaders/{sname}"))).ok());
             let filetime = unwrap_cont!(meta.modified().ok());
             match entry.as_mut() {
                 Some(entry) => {

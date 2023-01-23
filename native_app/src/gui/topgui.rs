@@ -109,13 +109,12 @@ impl Gui {
         if cost == Money::default() {
             return;
         }
-        let txt = format!("{}", cost);
 
         egui::show_tooltip(ui, Id::new("tooltip_command_cost"), |ui| {
             if cost > goria.read::<Government>().money {
-                ui.colored_label(Color32::RED, format!("{} too expensive", txt));
+                ui.colored_label(Color32::RED, format!("{cost} too expensive"));
             } else {
-                ui.label(txt);
+                ui.label(cost.to_string());
             }
         });
     }
@@ -790,7 +789,7 @@ pub(crate) fn item_icon(ui: &mut Ui, uiworld: &UiWorld, item: &Item, multiplier:
         } else {
             ui.label(format!("- {} ", &item.label));
         }
-        ui.label(format!("x{}", multiplier))
+        ui.label(format!("x{multiplier}"))
     })
     .inner
 }

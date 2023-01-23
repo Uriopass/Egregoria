@@ -240,7 +240,7 @@ impl Egregoria {
     }
 
     pub fn load_replay_from_disk(save_name: &str) -> Option<Replay> {
-        let path = format!("{}_replay", save_name);
+        let path = format!("{save_name}_replay");
         let replay: Replay = common::saveload::JSON::load(&path)?;
         Some(replay)
     }
@@ -254,7 +254,7 @@ impl Egregoria {
         common::saveload::CompressedBincode::save(&self, save_name);
         let rep = self.resources.get::<Replay>().unwrap();
         if rep.enabled {
-            common::saveload::JSONPretty::save(&*rep, &format!("{}_replay", save_name));
+            common::saveload::JSONPretty::save(&*rep, &format!("{save_name}_replay"));
         }
     }
 

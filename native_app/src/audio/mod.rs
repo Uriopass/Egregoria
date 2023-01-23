@@ -143,7 +143,7 @@ impl AudioContext {
     }
 
     fn decode(name: &str) -> Option<StoredAudio> {
-        let p = format!("assets/sounds/{}.ogg", name);
+        let p = format!("assets/sounds/{name}.ogg");
         let t = Instant::now();
         let buf = match common::saveload::load_raw(&p) {
             Ok(x) => x,

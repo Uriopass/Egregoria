@@ -20,9 +20,9 @@ macro_rules! debug_inspect_impl {
             ) {
                 let d = data;
                 if label == "" {
-                    ui.label(format!("{:?}", d));
+                    ui.label(format!("{d:?}"));
                 } else {
-                    ui.label(format!("{}: {:?}", label, d));
+                    ui.label(format!("{label}: {d:?}"));
                 }
             }
 
@@ -34,9 +34,9 @@ macro_rules! debug_inspect_impl {
             ) -> bool {
                 let d = data;
                 if label == "" {
-                    ui.label(format!("{:?}", d));
+                    ui.label(format!("{d:?}"));
                 } else {
-                    ui.label(format!("{}: {:?}", label, d));
+                    ui.label(format!("{label}: {d:?}"));
                 }
                 false
             }

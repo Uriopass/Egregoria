@@ -207,7 +207,7 @@ mod inner {
         }) {
             Ok(x) => x,
             Err(e) => {
-                info.error = format!("{}", e);
+                info.error = e.to_string();
                 return None;
             }
         };
@@ -229,7 +229,7 @@ mod inner {
                 }
             },
             Err(e) => {
-                info.error = format!("{}", e);
+                info.error = e.to_string();
                 return None;
             }
         };
@@ -245,7 +245,7 @@ mod inner {
         }) {
             Ok(x) => x,
             Err(e) => {
-                info.error = format!("{}", e);
+                info.error = e.to_string();
                 return None;
             }
         };

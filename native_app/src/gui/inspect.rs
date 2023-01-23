@@ -86,7 +86,7 @@ impl InspectRenderer {
                 let loc: &Location = loc;
                 if loc == &Location::Vehicle(VehicleID(self.entity))
                     && ui
-                        .small_button(&*format!("inspect inside vehicle: {:?}", e))
+                        .small_button(&*format!("inspect inside vehicle: {e:?}"))
                         .clicked()
                 {
                     self.entity = e;
@@ -152,7 +152,7 @@ impl InspectRenderer {
                 ui.columns(2, |ui| {
                     for (kind, cap) in capitals {
                         ui[0].label(&registry[*kind].label);
-                        ui[1].label(format!("{}", cap));
+                        ui[1].label(format!("{cap}"));
                     }
                 });
             });
@@ -163,7 +163,7 @@ impl InspectRenderer {
                 ui.columns(2, |ui| {
                     for (kind, b) in borders {
                         ui[0].label(&registry[*kind].label);
-                        ui[1].label(format!("{:#?}", b));
+                        ui[1].label(format!("{b:#?}"));
                     }
                 });
             });
@@ -174,7 +174,7 @@ impl InspectRenderer {
                 ui.columns(2, |ui| {
                     for (kind, b) in sellorders {
                         ui[0].label(&registry[*kind].label);
-                        ui[1].label(format!("{:#?}", b));
+                        ui[1].label(format!("{b:#?}"));
                     }
                 });
             });

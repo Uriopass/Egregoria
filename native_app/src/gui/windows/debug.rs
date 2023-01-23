@@ -183,9 +183,9 @@ pub(crate) fn debug(
             ui[0].label("Systen name");
             ui[1].label("Time (ms) over last 100 ticks");
 
-            for (name, time) in &timings.per_game_system {
+            for &(ref name, time) in &timings.per_game_system {
                 ui[0].label(name);
-                ui[1].label(format!("{:.3}", *time));
+                ui[1].label(format!("{time:.3}"));
             }
         });
     });
