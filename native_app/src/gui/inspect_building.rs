@@ -1,5 +1,5 @@
 use crate::uiworld::UiWorld;
-use egregoria::economy::{ItemRegistry, Workers};
+use egregoria::economy::{ItemRegistry, Market, Workers};
 use egregoria::engine_interaction::WorldCommand;
 use egregoria::Egregoria;
 use egui::{Context, Ui, Widget};
@@ -54,8 +54,9 @@ pub(crate) fn inspect_building(
         let Some(goods) = goria.comp::<GoodsCompany>(soul.0) else { return; };
         let Some(workers) = goria.comp::<Workers>(soul.0) else { return; };
 
+        let market = goria.read::<Market>();
+        let itemregistry = goria.read::<ItemRegistry>();
         let max_workers = goods.max_workers;
-
         egui::ProgressBar::new(workers.0.len() as f32 / max_workers as f32)
             .text(format!("workers: {}/{}", workers.0.len(), max_workers))
             .desired_width(200.0)
@@ -67,6 +68,20 @@ pub(crate) fn inspect_building(
             .show_percentage()
             .desired_width(200.0)
             .ui(ui);
+
+        ui.add_space(10.0);
+        ui.label("Storage");
+
+        let jobopening = itemregistry.id("job-opening");
+        for (&id, m) in market.iter() {
+            let Some(v) = m.capital(soul) else { continue };
+            if id == jobopening && v == 0 {
+                continue;
+            }
+            let Some(item) = itemregistry.get(id) else { continue };
+
+            item_icon(ui, uiworld, item, v);
+        }
     });
 }
 

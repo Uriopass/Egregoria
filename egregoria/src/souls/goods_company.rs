@@ -356,8 +356,6 @@ pub fn company(
                     if let Some(owner_build) =
                         find_trade_place(trade.buyer, b.door_pos.xy(), binfos, map)
                     {
-                        log::info!("asked driver to deliver");
-
                         cbuf.exec_ent(soul.0, move |goria| {
                             if let Some(mut w) = goria.comp_mut::<Work>(driver.0) {
                                 if let WorkKind::Driver {
