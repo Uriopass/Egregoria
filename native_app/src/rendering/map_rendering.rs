@@ -14,7 +14,7 @@ use wgpu_engine::{
 };
 
 const CSIZE: usize = CHUNK_SIZE as usize;
-const CRESO: usize = CHUNK_RESOLUTION as usize;
+const CRESO: usize = CHUNK_RESOLUTION;
 
 pub(crate) struct MapRenderer {
     pub(crate) meshb: MapMeshHandler,
@@ -57,8 +57,8 @@ impl MapRenderer {
                 .map()
                 .terrain
                 .chunks
-                .iter()
-                .map(|(id, _)| (*id, (InstancedMeshBuilder::new(mesh.clone()), None)))
+                .keys()
+                .map(|id| (*id, (InstancedMeshBuilder::new(mesh.clone()), None)))
                 .collect(),
             terrain_dirt_id: 0,
             terrain: TerrainRender::new(gfx, w, h),

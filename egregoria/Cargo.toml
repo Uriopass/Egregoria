@@ -7,7 +7,7 @@ edition = "2021"
 # Yes I have many dependencies.
 # But it's ok, read this: https://wiki.alopex.li/LetsBeRealAboutDependencies
 [dependencies]
-ordered-float = { version = "2.7.0", default-features = false }
+ordered-float = { version = "3.4.0", default-features = false }
 serde         = { version = "1.0", features = ["derive"] }
 log           = "0.4.11"
 egui-inspect = { path = "../egui-inspect"}
@@ -21,7 +21,7 @@ hecs         = { version = "0.9.0", features=["column-serialize"] }
 resources     = "1.1.0"
 profiling     = "1.0.5"
 inline_tweak = { version = "1.0.8", features = ["release_tweak"] }
-pathfinding   = "2.2.1"
+pathfinding   = "4.2.1"
 serde-big-array = "0.4.1"
 
 [dev-dependencies]

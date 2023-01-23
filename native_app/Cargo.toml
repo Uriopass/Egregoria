@@ -18,7 +18,7 @@ log           = { version = "0.4.11", features=["max_level_info", "release_max_l
 inline_tweak  = "1.0.6"
 hecs          = "0.9.0"
 resources     = "1.1.0"
-ordered-float = { version = "2.7.0", default-features = false }
+ordered-float = { version = "3.4.0", default-features = false }
 serde         = "1.0"
 oddio         = "0.6.2"
 cpal          = "0.14.0"

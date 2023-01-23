@@ -157,7 +157,7 @@ impl ParkingSpots {
                 .map(|i| if i & 1 == 0 { i >> 1 } else { -(i >> 1) })
                 .filter_map(move |offset| {
                     let i = unwrap_orr!(usize::try_from(closest + offset), return None);
-                    lspots.get(i as usize)
+                    lspots.get(i)
                 })
                 .copied(),
         )

@@ -96,8 +96,8 @@ impl Terrain {
             return (0, 0);
         }
         (
-            p.x as u32 / CHUNK_SIZE as u32 - (p.x < 0.0) as u32,
-            p.y as u32 / CHUNK_SIZE as u32 - (p.y < 0.0) as u32,
+            p.x as u32 / CHUNK_SIZE - (p.x < 0.0) as u32,
+            p.y as u32 / CHUNK_SIZE - (p.y < 0.0) as u32,
         )
     }
 
@@ -193,14 +193,12 @@ impl Chunk {
 
 impl Tree {
     pub fn new(pos: Vec2) -> Self {
-        let crand = common::rand::rand3(pos.x as f32, pos.y, 1.0);
+        let crand = common::rand::rand3(pos.x, pos.y, 1.0);
 
         let colscale = 0.7 - 0.2 * crand;
-        let angle = Radians(
-            2.0 * std::f32::consts::PI * common::rand::rand3(pos.x as f32, pos.y as f32, 2.0),
-        );
+        let angle = Radians(2.0 * std::f32::consts::PI * common::rand::rand3(pos.x, pos.y, 2.0));
 
-        let srand = common::rand::rand3(pos.x as f32, pos.y, 3.0);
+        let srand = common::rand::rand3(pos.x, pos.y, 3.0);
         let scale = 5.0 + 3.0 * srand;
 
         Tree {
@@ -215,8 +213,8 @@ impl Tree {
 type SmolTree = u16;
 
 pub fn new_smoltree(pos: Vec2, chunk: (u32, u32)) -> SmolTree {
-    let diffx = pos.x - (chunk.0 * CHUNK_SIZE as u32) as f32;
-    let diffy = pos.y - (chunk.1 * CHUNK_SIZE as u32) as f32;
+    let diffx = pos.x - (chunk.0 * CHUNK_SIZE) as f32;
+    let diffy = pos.y - (chunk.1 * CHUNK_SIZE) as f32;
 
     ((((diffx / CHUNK_SIZE as f32) * 256.0) as u8 as u16) << 8)
         + ((diffy / CHUNK_SIZE as f32) * 256.0) as u8 as u16

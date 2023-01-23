@@ -128,7 +128,7 @@ impl State {
 
         crate::network::goria_update(self);
 
-        self.uiw.write::<Timings>().all.add_value(ctx.delta as f32);
+        self.uiw.write::<Timings>().all.add_value(ctx.delta);
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
 
         self.gui.hidden ^= self
@@ -319,7 +319,7 @@ impl State {
         //        self.camera.movespeed = settings.camera_sensibility / 100.0;
         self.camera.camera_movement(
             ctx,
-            ctx.delta as f32,
+            ctx.delta,
             &self.uiw.read::<InputMap>(),
             &self.uiw.read::<Settings>(),
             |p| map.terrain.height(p),

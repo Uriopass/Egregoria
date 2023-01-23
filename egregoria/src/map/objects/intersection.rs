@@ -143,7 +143,7 @@ impl Intersection {
             let dir1 = r1.dir_from(id);
             let dir2 = r2.dir_from(id);
 
-            let d = dir1.dot(dir2).max(0.0).min(1.0);
+            let d = dir1.dot(dir2).clamp(0.0, 1.0);
             let sin = (1.0 - d * d).sqrt();
 
             let min_dist = w * 1.1 / sin;
@@ -166,7 +166,7 @@ impl Intersection {
             let w = width1.hypot(width);
             let dir1 = r1.dir_from(id);
 
-            let d = dir1.dot(dir).max(0.0).min(1.0);
+            let d = dir1.dot(dir).clamp(0.0, 1.0);
             let sin = (1.0 - d * d).sqrt();
 
             let min_dist = w * 1.1 / sin;

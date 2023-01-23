@@ -128,7 +128,7 @@ pub(crate) fn economy(
                                 .chain(history.past_ring[0..c_next].iter())
                                 .copied()
                                 .zip(xs.iter())
-                                .map(|(v, x)| [*x as f64, v as f64])
+                                .map(|(v, x)| [*x, v as f64])
                                 .filter(|[_, y]| {
                                     if !first_zeros && *y > 0.0 {
                                         first_zeros = true;

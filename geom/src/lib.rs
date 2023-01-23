@@ -261,12 +261,12 @@ pub fn angle_lerpxy(src: Vec3, dst: Vec3, ang_amount: f32) -> Vec3 {
 
 #[inline]
 pub fn abs_lerp(src: f32, dst: f32, amount: f32) -> f32 {
-    src + (dst - src).min(amount).max(-amount)
+    src + (dst - src).clamp(-amount, amount)
 }
 
 #[inline]
 pub fn lerp(src: f32, dst: f32, coeff: f32) -> f32 {
-    let coeff = coeff.max(0.0).min(1.0);
+    let coeff = coeff.clamp(0.0, 1.0);
     src * (1.0 - coeff) + dst * coeff
 }
 

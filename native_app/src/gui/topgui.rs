@@ -515,7 +515,7 @@ impl Gui {
         if matches!(*uiworld.read::<Tab>(), Tab::Roadbuilding) {
             Window::new("Buildings")
                 .min_width(building_select_w)
-                .default_height(500.0f32.min(h * 0.5) as f32)
+                .default_height(500.0f32.min(h * 0.5))
                 .vscroll(true)
                 .fixed_pos([w - toolbox_w - building_select_w, h * 0.5 - 100.0])
                 .title_bar(true)
