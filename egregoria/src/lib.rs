@@ -71,11 +71,6 @@ pub struct Egregoria {
     resources: Resources,
 }
 
-/// Safety: Resources must be Send+Sync.
-/// Guaranteed by `Egregoria::insert`.
-/// World is Send+Sync and `SeqSchedule` too
-unsafe impl Sync for Egregoria {}
-
 const RNG_SEED: u64 = 123;
 const VERSION: &str = include_str!("../../VERSION");
 
