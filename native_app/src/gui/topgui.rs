@@ -15,8 +15,7 @@ use common::saveload::Encoder;
 use egregoria::economy::{Government, Item, ItemRegistry, Money};
 use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::{
-    BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, LotKind, MapProject, TurnPolicy,
-    Zone,
+    BuildingGen, BuildingKind, LanePatternBuilder, LightPolicy, MapProject, TurnPolicy, Zone,
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::{GameTime, SECONDS_PER_HOUR};
@@ -142,7 +141,7 @@ impl Gui {
             Roadbuild,
             Roadcurved,
             Roadeditor,
-            Lotbrush,
+            Housebrush,
             Roadbuilding,
             Bulldozer,
             Train,
@@ -170,7 +169,7 @@ impl Gui {
             ("road", Tab::Roadbuild, Tool::RoadbuildStraight),
             ("curved", Tab::Roadcurved, Tool::RoadbuildCurved),
             ("road_edit", Tab::Roadeditor, Tool::RoadEditor),
-            ("lotbrush", Tab::Lotbrush, Tool::LotBrush),
+            ("housebrush", Tab::Housebrush, Tool::LotBrush),
             ("buildings", Tab::Roadbuilding, Tool::SpecialBuilding),
             ("bulldozer", Tab::Bulldozer, Tool::Bulldozer),
             ("traintool", Tab::Train, Tool::Train),
@@ -445,12 +444,10 @@ impl Gui {
                 });
         }
 
-        let brushes = [("Residential", LotKind::Residential)];
-
-        if matches!(*uiworld.read::<Tab>(), Tab::Lotbrush) {
+        if matches!(*uiworld.read::<Tab>(), Tab::Housebrush) {
             let lbw = 120.0;
-            Window::new("Lot Brush")
-                .fixed_size([lbw, 50.0 + brushes.len() as f32 * 35.0])
+            Window::new("House Brush")
+                .fixed_size([lbw, 50.0])
                 .fixed_pos([w - toolbox_w - lbw - 10.0, h * 0.5 - 30.0])
                 .hscroll(false)
                 .title_bar(true)
@@ -458,18 +455,6 @@ impl Gui {
                 .resizable(false)
                 .show(ui, |ui| {
                     let mut cur_brush = uiworld.write::<LotBrushResource>();
-
-                    ui.style_mut().spacing.interact_size = [lbw * 0.5, 35.0].into();
-                    for (name, brush) in &brushes {
-                        let mut t = RichText::new(*name);
-                        if std::mem::discriminant(brush) == std::mem::discriminant(&cur_brush.kind)
-                        {
-                            t = t.strong();
-                        }
-                        if ui.button(t).clicked() {
-                            cur_brush.kind = *brush;
-                        }
-                    }
 
                     ui.horizontal(|ui| {
                         egui::DragValue::new(&mut cur_brush.radius)

@@ -147,7 +147,7 @@ impl Market {
     /// If an order is already placed, it will be updated.
     /// Beware that you need capital to sell anything, using produce.
     pub fn sell(&mut self, soul: SoulID, near: Vec2, kind: ItemID, qty: u32, stock: u32) {
-        log::info!("{:?} sell {:?} {:?} near {:?}", soul, qty, kind, near);
+        log::debug!("{:?} sell {:?} {:?} near {:?}", soul, qty, kind, near);
         self.m(kind).sell_orders.insert(
             soul,
             SellOrder {
