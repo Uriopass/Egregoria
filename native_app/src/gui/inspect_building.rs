@@ -4,9 +4,10 @@ use egregoria::engine_interaction::WorldCommand;
 use egregoria::Egregoria;
 use egui::{Context, Ui, Widget};
 
-use crate::gui::item_icon;
-use egregoria::map::{BuildingID, BuildingKind, Zone};
+use crate::gui::{item_icon, InspectedEntity};
+use egregoria::map::{Building, BuildingID, BuildingKind, Zone};
 use egregoria::map_dynamic::BuildingInfos;
+use egregoria::souls::fret_station::{FreightStation, FreightTrainState};
 use egregoria::souls::goods_company::{GoodsCompany, GoodsCompanyRegistry, Recipe};
 use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
 
@@ -18,71 +19,137 @@ pub(crate) fn inspect_building(
 ) {
     let map = goria.map();
     let Some(building) = map.buildings().get(id) else { return; };
+    let gregistry = goria.read::<GoodsCompanyRegistry>();
 
-    let owner = goria.read::<BuildingInfos>().owner(building.id);
-    let goodcompregistry = goria.read::<GoodsCompanyRegistry>();
+    let title: &str = match building.kind {
+        BuildingKind::House => "House",
+        BuildingKind::GoodsCompany(id) => &*gregistry.descriptions[id].name,
+        BuildingKind::RailFretStation => "Rail Fret Station",
+        BuildingKind::TrainStation => "Train Station",
+        BuildingKind::ExternalTrading => "External Trading",
+    };
 
-    egui::Window::new("Building").show(ui, |ui| {
-        ui.label(format!("{:?}", building.id));
-
-        match building.kind {
-            BuildingKind::House => ui.label("House"),
-            BuildingKind::GoodsCompany(id) => {
-                let descr = &goodcompregistry.descriptions[id];
-                ui.label(&descr.name)
+    egui::Window::new(title)
+        .resizable(false)
+        .auto_sized()
+        .show(ui, |ui| {
+            if cfg!(debug_assertions) {
+                ui.label(format!("{:?}", building.id));
             }
-            BuildingKind::RailFretStation => ui.label("Rail Fret Station"),
-            BuildingKind::TrainStation => ui.label("Train Station"),
-            BuildingKind::ExternalTrading => ui.label("External Trading"),
-        };
 
-        if let Some(ref zone) = building.zone {
-            let mut cpy = zone.filldir;
-            if InspectVec2Rotation::render_mut(&mut cpy, "fill angle", ui, &InspectArgs::default())
-            {
-                uiworld.commands().push(WorldCommand::UpdateZone {
-                    building: id,
-                    zone: Zone {
-                        filldir: cpy,
-                        ..zone.clone()
-                    },
-                })
+            match building.kind {
+                BuildingKind::House => render_house(ui, uiworld, goria, building),
+                BuildingKind::GoodsCompany(_) => {
+                    render_goodscompany(ui, uiworld, goria, building);
+                }
+                BuildingKind::RailFretStation => {
+                    render_fretstation(ui, uiworld, goria, building);
+                }
+                BuildingKind::TrainStation => {}
+                BuildingKind::ExternalTrading => {}
+            };
+
+            if let Some(ref zone) = building.zone {
+                let mut cpy = zone.filldir;
+                if InspectVec2Rotation::render_mut(
+                    &mut cpy,
+                    "fill angle",
+                    ui,
+                    &InspectArgs::default(),
+                ) {
+                    uiworld.commands().push(WorldCommand::UpdateZone {
+                        building: id,
+                        zone: Zone {
+                            filldir: cpy,
+                            ..zone.clone()
+                        },
+                    })
+                }
             }
+        });
+}
+
+fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
+    let binfos = goria.read::<BuildingInfos>();
+    let Some(info) = binfos.get(b.id) else { return; };
+    let Some(owner) = info.owner else { return; };
+
+    let mut inspected = uiworld.write::<InspectedEntity>();
+
+    if ui.button(format!("Owner: {:?}", owner)).clicked() {
+        inspected.e = Some(owner.0);
+    }
+
+    ui.label("Currently in the house:");
+    for &soul in info.inside.iter() {
+        if ui.button(format!("{:?}", soul)).clicked() {
+            inspected.e = Some(soul.0);
         }
+    }
+}
 
-        let Some(soul) = owner else { return; };
-        let Some(goods) = goria.comp::<GoodsCompany>(soul.0) else { return; };
-        let Some(workers) = goria.comp::<Workers>(soul.0) else { return; };
+fn render_fretstation(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
+    let Some(owner) = goria.read::<BuildingInfos>().owner(b.id) else { return; };
 
-        let market = goria.read::<Market>();
-        let itemregistry = goria.read::<ItemRegistry>();
-        let max_workers = goods.max_workers;
-        egui::ProgressBar::new(workers.0.len() as f32 / max_workers as f32)
-            .text(format!("workers: {}/{}", workers.0.len(), max_workers))
-            .desired_width(200.0)
-            .ui(ui);
+    let Some(fret) = goria.comp::<FreightStation>(owner.0) else { return; };
 
-        render_recipe(ui, uiworld, goria, &goods.recipe);
+    ui.label(format!("Waiting cargo: {}", fret.waiting_cargo));
 
-        egui::ProgressBar::new(goods.progress)
-            .show_percentage()
-            .desired_width(200.0)
-            .ui(ui);
-
-        ui.add_space(10.0);
-        ui.label("Storage");
-
-        let jobopening = itemregistry.id("job-opening");
-        for (&id, m) in market.iter() {
-            let Some(v) = m.capital(soul) else { continue };
-            if id == jobopening && v == 0 {
-                continue;
+    ui.add_space(10.0);
+    ui.label("Trains:");
+    for (tid, state) in &fret.trains {
+        ui.horizontal(|ui| {
+            ui.label(format!("{:?} ", tid));
+            match state {
+                FreightTrainState::Arriving => {
+                    ui.label("Arriving");
+                }
+                FreightTrainState::Loading => {
+                    ui.label("Loading");
+                }
+                FreightTrainState::Moving => {
+                    ui.label("Moving");
+                }
             }
-            let Some(item) = itemregistry.get(id) else { continue };
+        });
+    }
+}
 
-            item_icon(ui, uiworld, item, v);
+fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
+    let owner = goria.read::<BuildingInfos>().owner(b.id);
+
+    let Some(soul) = owner else { return; };
+    let Some(goods) = goria.comp::<GoodsCompany>(soul.0) else { return; };
+    let Some(workers) = goria.comp::<Workers>(soul.0) else { return; };
+
+    let market = goria.read::<Market>();
+    let itemregistry = goria.read::<ItemRegistry>();
+    let max_workers = goods.max_workers;
+    egui::ProgressBar::new(workers.0.len() as f32 / max_workers as f32)
+        .text(format!("workers: {}/{}", workers.0.len(), max_workers))
+        .desired_width(200.0)
+        .ui(ui);
+
+    render_recipe(ui, uiworld, goria, &goods.recipe);
+
+    egui::ProgressBar::new(goods.progress)
+        .show_percentage()
+        .desired_width(200.0)
+        .ui(ui);
+
+    ui.add_space(10.0);
+    ui.label("Storage");
+
+    let jobopening = itemregistry.id("job-opening");
+    for (&id, m) in market.iter() {
+        let Some(v) = m.capital(soul) else { continue };
+        if id == jobopening && v == 0 {
+            continue;
         }
-    });
+        let Some(item) = itemregistry.get(id) else { continue };
+
+        item_icon(ui, uiworld, item, v);
+    }
 }
 
 fn render_recipe(ui: &mut Ui, uiworld: &UiWorld, goria: &Egregoria, recipe: &Recipe) {
