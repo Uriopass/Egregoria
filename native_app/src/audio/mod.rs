@@ -102,7 +102,7 @@ impl AudioContext {
                 oddio::run(&scene, sample_rate.0, frames);
             },
             move |err| {
-                eprintln!("{:?}", err);
+                eprintln!("{err:?}");
             },
         ) {
             Ok(x) => x,

@@ -61,12 +61,12 @@ pub struct PylonPosition {
 
 impl Road {
     /// Builds the road and its associated lanes
-    pub fn make<'a>(
+    pub fn make(
         src: &Intersection,
         dst: &Intersection,
         segment: RoadSegmentKind,
         lane_pattern: &LanePattern,
-        roads: &'a mut Roads,
+        roads: &mut Roads,
         lanes: &mut Lanes,
         parking: &mut ParkingSpots,
         spatial: &mut SpatialMap,

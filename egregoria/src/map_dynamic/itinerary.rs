@@ -369,7 +369,7 @@ impl Inspect<ItineraryKind> for ItineraryKind {
     ) -> bool {
         match *d {
             ItineraryKind::None => {
-                ui.label(format!("None {}", label));
+                ui.label(format!("None {label}"));
             }
             ItineraryKind::WaitUntil(time) => {
                 ui.label(format!("WaitUntil({time}) {label}"));

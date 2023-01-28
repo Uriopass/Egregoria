@@ -23,7 +23,7 @@ pub(crate) fn inspect_building(
 
     let title: &str = match building.kind {
         BuildingKind::House => "House",
-        BuildingKind::GoodsCompany(id) => &*gregistry.descriptions[id].name,
+        BuildingKind::GoodsCompany(id) => &gregistry.descriptions[id].name,
         BuildingKind::RailFretStation => "Rail Fret Station",
         BuildingKind::TrainStation => "Train Station",
         BuildingKind::ExternalTrading => "External Trading",
@@ -76,19 +76,19 @@ fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Build
 
     let mut inspected = uiworld.write::<InspectedEntity>();
 
-    if ui.button(format!("Owner: {:?}", owner)).clicked() {
+    if ui.button(format!("Owner: {owner:?}")).clicked() {
         inspected.e = Some(owner.0);
     }
 
     ui.label("Currently in the house:");
     for &soul in info.inside.iter() {
-        if ui.button(format!("{:?}", soul)).clicked() {
+        if ui.button(format!("{soul:?}")).clicked() {
             inspected.e = Some(soul.0);
         }
     }
 }
 
-fn render_fretstation(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
+fn render_fretstation(ui: &mut Ui, _uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
     let Some(owner) = goria.read::<BuildingInfos>().owner(b.id) else { return; };
 
     let Some(fret) = goria.comp::<FreightStation>(owner.0) else { return; };
@@ -99,7 +99,7 @@ fn render_fretstation(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: 
     ui.label("Trains:");
     for (tid, state) in &fret.trains {
         ui.horizontal(|ui| {
-            ui.label(format!("{:?} ", tid));
+            ui.label(format!("{tid:?} "));
             match state {
                 FreightTrainState::Arriving => {
                     ui.label("Arriving");

@@ -44,7 +44,7 @@ impl ItemRegistry {
         self.item_names
             .get(name)
             .copied()
-            .unwrap_or_else(|| panic!("no item in registry named {}", name))
+            .unwrap_or_else(|| panic!("no item in registry named {name}"))
     }
 
     pub fn try_id(&self, name: &str) -> Option<ItemID> {

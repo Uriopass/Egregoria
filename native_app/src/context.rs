@@ -105,7 +105,7 @@ impl Context {
                                 state.resized(&mut self, PhysicalSize::new(size.0, size.1));
                                 log::error!("swapchain has been lost or is outdated, recreating before retrying");
                             }
-                            Err(e) => panic!("error getting swapchain: {}", e),
+                            Err(e) => panic!("error getting swapchain: {e}"),
                         };
                     }
                     Some(_) if new_size.is_some() => {}
