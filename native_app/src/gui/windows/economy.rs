@@ -85,10 +85,10 @@ pub(crate) fn economy(
             let EconomyState { curlevel, ref tab } = *state;
             let render_history = |ui: &mut Ui, history: &ItemHistories| {
                 let filterid = ui.id().with("filter");
-                let mut filter = ui
-                    .data()
-                    .get_temp_mut_or_insert_with(filterid, HashSet::new)
-                    .clone();
+                let mut filter = ui.data_mut(|d| {
+                    d.get_temp_mut_or_insert_with(filterid, HashSet::new)
+                        .clone()
+                });
                 egui::plot::Plot::new("ecoplot")
                     .height(200.0)
                     .allow_boxed_zoom(false)
@@ -196,7 +196,9 @@ pub(crate) fn economy(
                             }
                         });
                     });
-                ui.data().insert_temp(filterid, filter);
+                ui.data_mut(move |d| {
+                    d.insert_temp(filterid, filter);
+                });
             };
 
             match tab {

@@ -33,19 +33,19 @@ fn rsi(r0: vec3<f32>, rd: vec3<f32>, sr: f32) -> vec2<f32> {
     );
 }
 
-let PI: f32 = 3.141592;
-let iSteps: i32 = 12;
-let jSteps: i32 = 4;
+const PI: f32 = 3.141592;
+const iSteps: i32 = 12;
+const jSteps: i32 = 4;
 
-let r0: vec3<f32>    = vec3<f32>(0.0,6372000.0,0.0);          // ray origin
-let iSun: f32        = 22.0;                           // intensity of the sun
-let rPlanet: f32     = 6371e3;                         // radius of the planet in meters
-let rAtmos: f32      = 6471e3;                         // radius of the atmosphere in meters
-let kRlh: vec3<f32>  = vec3<f32>(5.5e-6, 13.0e-6, 22.4e-6); // Rayleigh scattering coefficient
-let kMie: f32        = 21e-6;                          // Mie scattering coefficient
-let shRlh: f32       = 8e3;                            // Rayleigh scale height
-let shMie: f32       = 1.2e3;                          // Mie scale height
-let g: f32           = 0.758;                          // Mie preferred scattering direction
+const r0: vec3<f32>    = vec3<f32>(0.0,6372000.0,0.0);          // ray origin
+const iSun: f32        = 22.0;                           // intensity of the sun
+const rPlanet: f32     = 6371e3;                         // radius of the planet in meters
+const rAtmos: f32      = 6471e3;                         // radius of the atmosphere in meters
+const kRlh: vec3<f32>  = vec3<f32>(5.5e-6, 13.0e-6, 22.4e-6); // Rayleigh scattering coefficient
+const kMie: f32        = 21e-6;                          // Mie scattering coefficient
+const shRlh: f32       = 8e3;                            // Rayleigh scale height
+const shMie: f32       = 1.2e3;                          // Mie scale height
+const g: f32           = 0.758;                          // Mie preferred scattering direction
 
 // r and pSun are normalized
 fn atmosphere(r: vec3<f32>, pSun: vec3<f32>) -> vec3<f32> {

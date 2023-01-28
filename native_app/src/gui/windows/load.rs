@@ -14,11 +14,11 @@ pub(crate) fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWor
     window.show(ui, |ui| {
         let mut lstate = uiw.write::<LoadState>();
 
-        let has_save = *ui
-            .data()
-            .get_persisted_mut_or_insert_with(ui.make_persistent_id("has_save"), || {
+        let has_save = ui.data_mut(|d| {
+            *d.get_persisted_mut_or_insert_with(ui.make_persistent_id("has_save"), || {
                 std::fs::metadata("world/world_replay.json").is_ok()
-            });
+            })
+        });
 
         if has_save {
             if ui.button("Load world/world_replay.json").clicked() {

@@ -54,6 +54,7 @@ impl Texture {
             sample_count: samples.unwrap_or(1),
             dimension: wgpu::TextureDimension::D2,
             label: Some("fbo texture"),
+            view_formats: &[],
         };
         let texture = device.create_texture(&desc);
 
@@ -97,6 +98,7 @@ impl Texture {
             sample_count: samples,
             dimension: wgpu::TextureDimension::D2,
             label: Some("color texture"),
+            view_formats: &[],
         };
 
         device
@@ -357,6 +359,7 @@ impl TextureBuilder {
             usage: TextureUsages::TEXTURE_BINDING
                 | TextureUsages::COPY_DST
                 | TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
         });
 
         queue.write_texture(

@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 geom      = { path = "../geom" }
 common    = { path = "../common" }
-wgpu      = { version = "0.14", default-features = false }
+wgpu      = { version = "0.15.0", default-features = false, features=["wgsl"] }
 bytemuck  = "1.7.2"
 image     = { version = "0.24.3", default-features = false, features = ["png"] }
 log       = "0.4.11"
@@ -21,7 +21,7 @@ rayon     = "1.5"
 beul      = "0.1.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
-version = "0.14.0"
+version = "0.15.0"
 features = ["webgl"]
 
 [features]

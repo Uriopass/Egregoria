@@ -16,9 +16,10 @@ use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, Backends, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState,
     CommandBuffer, CommandEncoder, CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState,
-    Device, ErrorFilter, Face, FrontFace, IndexFormat, MultisampleState, PrimitiveState, Queue,
-    RenderPipeline, Surface, SurfaceConfiguration, SurfaceTexture, TextureFormat,
-    TextureSampleType, TextureUsages, TextureView, TextureViewDescriptor, VertexBufferLayout,
+    Device, ErrorFilter, Face, FrontFace, IndexFormat, InstanceDescriptor, MultisampleState,
+    PrimitiveState, Queue, RenderPipeline, Surface, SurfaceConfiguration, SurfaceTexture,
+    TextureFormat, TextureSampleType, TextureUsages, TextureView, TextureViewDescriptor,
+    VertexBufferLayout,
 };
 
 pub struct FBOs {
@@ -164,9 +165,12 @@ impl GfxContext {
             backends = Backends::VULKAN;
         }
 
-        let instance = wgpu::Instance::new(backends);
+        let instance = wgpu::Instance::new(InstanceDescriptor {
+            backends,
+            dx12_shader_compiler: Default::default(),
+        });
 
-        let surface = unsafe { instance.create_surface(window) };
+        let surface = unsafe { instance.create_surface(window).unwrap() };
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -196,12 +200,13 @@ impl GfxContext {
             .await
             .expect("could not find device, have you installed necessary vulkan libraries?");
 
-        let formats = surface.get_supported_formats(&adapter);
+        let capabilities = surface.get_capabilities(&adapter);
 
-        let format = *formats
+        let format = *capabilities
+            .formats
             .iter()
             .find(|x| x.describe().srgb)
-            .unwrap_or_else(|| &formats[0]);
+            .unwrap_or_else(|| &capabilities.formats[0]);
 
         let sc_desc = SurfaceConfiguration {
             usage: TextureUsages::RENDER_ATTACHMENT,
@@ -210,6 +215,7 @@ impl GfxContext {
             height: win_height,
             present_mode: wgpu::PresentMode::Fifo,
             alpha_mode: CompositeAlphaMode::Opaque,
+            view_formats: vec![],
         };
         let samples = if cfg!(target_arch = "wasm32") { 1 } else { 4 };
         let fbos = Self::create_textures(&device, &sc_desc, samples);
@@ -987,7 +993,7 @@ impl SSAOPipeline {
                                             multisampled: cfg!(not(target_arch = "wasm32")),
                                             view_dimension: wgpu::TextureViewDimension::D2,
                                             sample_type: TextureSampleType::Float {
-                                                filterable: true,
+                                                filterable: false,
                                             },
                                         },
                                         count: None,

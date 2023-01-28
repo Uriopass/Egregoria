@@ -20,7 +20,7 @@ struct FragmentOutput {
 @group(0) @binding(1) var s_depth: sampler;
 @group(1) @binding(0) var<uniform> params: RenderParams;
 
-let PHI: f32 = 1.6180340051651;
+const PHI: f32 = 1.6180340051651;
 
 fn fastnoise(xy: vec2<f32>, seed: f32) -> f32 {
     return fract(tan(distance(xy*PHI, xy)*seed)*xy.x);

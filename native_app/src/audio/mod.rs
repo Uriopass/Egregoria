@@ -104,6 +104,7 @@ impl AudioContext {
             move |err| {
                 eprintln!("{err:?}");
             },
+            Some(Duration::from_secs(1)),
         ) {
             Ok(x) => x,
             Err(e) => return Self::empty(e),

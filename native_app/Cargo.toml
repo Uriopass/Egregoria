@@ -21,18 +21,18 @@ resources     = "1.1.0"
 ordered-float = { version = "3.4.0", default-features = false }
 serde         = "1.0"
 oddio         = "0.6.2"
-cpal          = "0.14.0"
+cpal          = "0.15.0"
 lewton        = "0.10.2"
 slotmap       = { version = "1.0.2", default-features = false }
-winit = { version = "0.27.4" }
+winit = { version = "0.28.1" }
 atomic_refcell = "0.1.6"
 rayon         = "1.5.3"
 profiling     = "1.0.1"
 include_dir   = "0.7.2"
 egui-inspect = { path = "../egui-inspect" }
-egui = "0.20.0"
-egui-wgpu = "0.20.0"
-egui_extras = "0.20.0"
+egui = "0.21.0"
+egui-wgpu = "0.21.0"
+egui_extras = "0.21.0"
 
 [features]
 default = []
@@ -40,11 +40,11 @@ enable_profile = ["profiling/profile-with-tracy"]
 multiplayer = ["networking"]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-egui-winit = { version = "0.20.0", default-features = false }
+egui-winit = { version = "0.21.0", default-features = false }
 beul = "0.1.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-egui-winit = "0.20.0"
+egui-winit = "0.21.0"
 getrandom = { version = "0.2", features = ["js"] } # used by ahash used by egui
 console_error_panic_hook = "0.1"
 console_log = "0.2"
