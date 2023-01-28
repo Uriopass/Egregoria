@@ -82,7 +82,7 @@ fn frag(@location(0) in_normal: vec3<f32>,
     c = mix(params.sea_col, c, smoothstep(-25.0, -20.0, in_wpos.z));
 
     let final_rgb: vec3<f32> = render(params.sun,
-                                      params.cam_dir.xyz,
+                                      params.cam_pos.xyz,
                                       in_wpos,
                                       position.xy,
                                       normalize(in_normal),

@@ -54,7 +54,7 @@ fn frag(@location(0) in_tint: vec4<f32>,
 
     let c = in_tint * albedo;
     let final_rgb: vec3<f32> = render(params.sun,
-                                      params.cam_dir.xyz,
+                                      params.cam_pos.xyz,
                                       in_wpos,
                                       position.xy,
                                       normalize(in_normal),
