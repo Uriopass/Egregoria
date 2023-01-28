@@ -423,8 +423,6 @@ fn calculate_prices(
         calculate_price_inner(registry, companies, &item_graph, item, &mut prices);
     }
 
-    dbg!(&prices);
-
     prices
 }
 

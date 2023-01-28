@@ -1088,10 +1088,7 @@ mod tests {
             vec2(-28.707237, 0.0),
         ];
 
-        dbg!(&poly);
-
         let skeleton = skeleton(poly, &[]);
-        dbg!(&skeleton);
         let faces = faces_from_skeleton(poly, &skeleton, false).unwrap().0;
         assert_eq!(faces.len(), 10);
     }
@@ -1127,7 +1124,6 @@ mod tests {
         .rev()
         .collect::<Vec<_>>();
         let skeleton = skeleton(&poly, &[]);
-        dbg!(&skeleton);
         let _ = faces_from_skeleton(&poly, &skeleton, false).unwrap().0;
     }
 

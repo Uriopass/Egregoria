@@ -32,6 +32,7 @@ struct Opt {
 fn main() {
     let opt: Opt = Opt::from_args();
     MyLog::init();
+    egregoria::init::init();
 
     log::info!("starting server with version: {}", VERSION);
 
