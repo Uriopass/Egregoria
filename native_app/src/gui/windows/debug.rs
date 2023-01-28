@@ -6,7 +6,7 @@ use crate::network::NetworkState;
 use crate::uiworld::UiWorld;
 use egregoria::map_dynamic::{Itinerary, ParkingManagement};
 use egregoria::physics::CollisionWorld;
-use egregoria::utils::time::{GameTime, SECONDS_PER_DAY};
+use egregoria::utils::time::{GameTime, Tick, SECONDS_PER_DAY};
 use egregoria::Egregoria;
 
 use crate::inputmap::InputMap;
@@ -110,6 +110,8 @@ pub(crate) fn debug(
             "World timestamp: {:.1}",
             goria.read::<GameTime>().timestamp
         ));
+
+        ui.label(format!("Tick: {}", goria.read::<Tick>().0));
 
         let timings = uiworld.read::<Timings>();
         let mouse = uiworld.read::<InputMap>().unprojected;
