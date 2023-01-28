@@ -92,7 +92,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
         let addr = conf.addr;
         let port = conf.port.unwrap_or(DEFAULT_PORT);
         let (tcp, _) = network.connect(Transport::FramedTcp, SocketAddr::new(addr, port))?;
-        let (udp, _) = network.connect(Transport::Udp, SocketAddr::new(addr, port + 1))?;
+        let (udp, _) = network.connect(Transport::Udp, SocketAddr::new(addr, port))?;
 
         Ok(Self {
             network,

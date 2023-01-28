@@ -71,7 +71,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
 
         let port = conf.port.unwrap_or(DEFAULT_PORT);
         let (_, tcp_addr) = network.listen(Transport::FramedTcp, format!("0.0.0.0:{}", port))?;
-        let (_, udp_addr) = network.listen(Transport::Udp, format!("0.0.0.0:{}", port + 1))?;
+        let (_, udp_addr) = network.listen(Transport::Udp, format!("0.0.0.0:{}", port))?;
 
         let mut authent = Authent::new(conf.version);
         let v_client = conf.virtual_client.map(|c| VirtualClient { name: c.name });
