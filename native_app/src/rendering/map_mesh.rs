@@ -28,7 +28,7 @@ struct MapBuilders {
     buildsprites: FastMap<BuildingKind, SpriteBatchBuilder>,
     buildmeshes: FastMap<BuildingKind, InstancedMeshBuilder>,
     houses_mesh: MeshBuilder,
-    zonemeshes: FastMap<BuildingKind, (MeshBuilder, InstancedMeshBuilder)>,
+    zonemeshes: FastMap<BuildingKind, (MeshBuilder, InstancedMeshBuilder, bool)>,
     arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: MeshBuilder,
     tess_map: Tesselator,
@@ -116,7 +116,7 @@ impl MapMeshHandler {
 
             zonemeshes.insert(
                 BuildingKind::GoodsCompany(descr.id),
-                (floor_mesh, filler_mesh),
+                (floor_mesh, filler_mesh, z.randomize_filler),
             );
         }
 
@@ -178,7 +178,7 @@ impl MapMeshHandler {
                     .builders
                     .zonemeshes
                     .values_mut()
-                    .map(|(a, b)| (a.build(gfx), b.build(gfx)))
+                    .map(|(a, b, _)| (a.build(gfx), b.build(gfx)))
                     .collect(),
                 arrows: self.builders.arrow_builder.build(gfx),
                 enable_arrows: Default::default(),
@@ -325,8 +325,9 @@ impl MapBuilders {
 
         for building in map.buildings().values() {
             let Some(bzone) = &building.zone else { continue };
-            let Some((zone_mesh, filler)) = self.zonemeshes.get_mut(&building.kind) else { continue };
+            let Some((zone_mesh, filler, randomize)) = self.zonemeshes.get_mut(&building.kind) else { continue };
             let zone = &bzone.poly;
+            let randomize = *randomize;
 
             let mut hull = building
                 .mesh
@@ -352,9 +353,18 @@ impl MapBuilders {
 
             for principal_offset in (0..=(principal_dist as i32)).step_by(4) {
                 for secondary_offset in (0..=(secondary_dist as i32)).step_by(4) {
-                    let pos = min
+                    let mut pos = min
                         + principal_axis * principal_offset as f32
                         + secondary_axis * secondary_offset as f32;
+                    if randomize {
+                        pos = pos
+                            + vec2(
+                                common::rand::rand3(pos.x, pos.y, 10.0),
+                                common::rand::rand3(pos.x, pos.y, 20.0),
+                            ) * 2.0
+                            - 1.0 * Vec2::XY;
+                    }
+
                     if !zone.contains(pos) {
                         continue;
                     }

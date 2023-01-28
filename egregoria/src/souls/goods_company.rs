@@ -57,6 +57,9 @@ pub struct ZoneDescription {
     pub area_per_production: i64,
     /// The price for each "production unit"
     pub price_per_area: i64,
+    /// Wether the zone filler positions should be randomized
+    #[serde(default)]
+    pub randomize_filler: bool,
 }
 
 #[derive(Default)]

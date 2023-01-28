@@ -55,7 +55,8 @@
       "floor": "assets/sprites/dirt.jpg",
       "filler": "wheat_up.glb",
       "area_per_production": 1000,
-      "price_per_area": 100
+      "price_per_area": 100,
+      "randomize_filler": true
     }
   },
   {

@@ -150,6 +150,7 @@ impl Vec2 {
     pub const ZERO: Self = Self { x: 0.0, y: 0.0 };
     pub const X: Self = Self { x: 1.0, y: 0.0 };
     pub const Y: Self = Self { x: 0.0, y: 1.0 };
+    pub const XY: Self = Self { x: 1.0, y: 1.0 };
 
     /// perpendicular return a vector rotated 90 degrees clockwise
     /// [1, 0] -> [0, -1]
