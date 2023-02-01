@@ -19,6 +19,7 @@ pub struct Texture {
     pub sampler: wgpu::Sampler,
     pub format: TextureFormat,
     pub extent: Extent3d,
+    pub transparent: bool,
 }
 
 impl Texture {
@@ -65,6 +66,7 @@ impl Texture {
             sampler,
             format,
             extent,
+            transparent: false,
         }
     }
 
@@ -309,9 +311,19 @@ impl TextureBuilder {
             depth_or_array_layers: 1,
         };
 
+        let mut transparent = false;
+
         let img = match img {
             DynamicImage::ImageRgb8(_) => DynamicImage::ImageRgba8(img.to_rgba8()),
-            _ => img,
+            _ => {
+                for (_, _, pixel) in img.pixels() {
+                    if pixel.0[3] != 255 {
+                        transparent = true;
+                        break;
+                    }
+                }
+                img
+            }
         };
 
         let (format, data, pixwidth): (TextureFormat, &[u8], u32) = match img {
@@ -376,6 +388,7 @@ impl TextureBuilder {
             sampler,
             format,
             extent,
+            transparent,
         }
     }
 }

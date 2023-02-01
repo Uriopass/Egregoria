@@ -64,6 +64,7 @@ impl MeshBuilder {
             albedo: self.albedo.clone(),
             n_indices: self.indices.len() as u32,
             transparent: false,
+            double_sided: false,
         })
     }
 }
@@ -76,54 +77,109 @@ pub struct Mesh {
     pub albedo_bg: Arc<wgpu::BindGroup>,
     pub n_indices: u32,
     pub transparent: bool,
+    pub double_sided: bool,
+}
+
+#[derive(Clone, Copy, Hash)]
+struct LitMeshPipeline {
+    alpha: bool,
+    smap: bool,
+    depth: bool,
+    double_sided: bool,
 }
 
 impl Mesh {
     pub fn setup(gfx: &mut GfxContext) {
-        gfx.register_pipeline::<Self>(
-            &["lit_mesh.vert", "pixel.frag"],
-            Box::new(move |m, gfx| {
-                let vert = &m[0];
-                let frag = &m[1];
+        for double_sided in [false, true] {
+            let pipeline = LitMeshPipeline {
+                alpha: false,
+                smap: false,
+                depth: false,
+                double_sided,
+            };
 
-                gfx.color_pipeline(
-                    "mesh",
-                    &[
-                        &gfx.projection.layout,
-                        &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                        &Texture::bindgroup_layout(&gfx.device),
-                        &bg_layout_litmesh(&gfx.device),
-                    ],
-                    &[MeshVertex::desc()],
-                    vert,
-                    frag,
-                    0,
-                )
-            }),
-        );
+            gfx.register_pipeline(
+                pipeline,
+                &["lit_mesh.vert", "pixel.frag"],
+                Box::new(move |m, gfx| {
+                    let vert = &m[0];
+                    let frag = &m[1];
+                    let vb = &[MeshVertex::desc()];
+                    gfx.color_pipeline(
+                        "lit_mesh",
+                        &[
+                            &gfx.projection.layout,
+                            &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                            &Texture::bindgroup_layout(&gfx.device),
+                            &bg_layout_litmesh(&gfx.device),
+                        ],
+                        vb,
+                        vert,
+                        frag,
+                        0,
+                        double_sided,
+                    )
+                }),
+            );
 
-        gfx.register_pipeline::<LitMeshDepth>(
-            &["lit_mesh.vert"],
-            Box::new(move |m, gfx| {
-                let vert = &m[0];
+            for smap in [false, true] {
+                let pipeline_depth = LitMeshPipeline {
+                    alpha: false,
+                    smap,
+                    depth: true,
+                    double_sided,
+                };
+                gfx.register_pipeline(
+                    pipeline_depth,
+                    &["lit_mesh.vert"],
+                    Box::new(move |m, gfx| {
+                        let vert = &m[0];
+                        let vb = &[MeshVertex::desc()];
 
-                gfx.depth_pipeline(&[MeshVertex::desc()], vert, None, false)
-            }),
-        );
+                        gfx.depth_pipeline(vb, vert, None, smap, double_sided)
+                    }),
+                );
 
-        gfx.register_pipeline::<LitMeshDepthSMap>(
-            &["lit_mesh.vert"],
-            Box::new(move |m, gfx| {
-                let vert = &m[0];
-                gfx.depth_pipeline(&[MeshVertex::desc()], vert, None, true)
-            }),
-        );
+                let pipeline_depth_alpha = LitMeshPipeline {
+                    alpha: true,
+                    smap,
+                    depth: true,
+                    double_sided,
+                };
+                gfx.register_pipeline(
+                    pipeline_depth_alpha,
+                    &["lit_mesh.vert", "alpha_discard.frag"],
+                    Box::new(move |m, gfx| {
+                        let vert = &m[0];
+                        let frag = &m[1];
+                        let vb = &[MeshVertex::desc()];
+
+                        gfx.depth_pipeline_bglayout(
+                            vb,
+                            vert,
+                            Some(frag),
+                            smap,
+                            &[
+                                &gfx.projection.layout,
+                                &Texture::bindgroup_layout(&gfx.device),
+                            ],
+                            double_sided,
+                        )
+                    }),
+                );
+            }
+        }
     }
 }
 
 impl Drawable for Mesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        rp.set_pipeline(gfx.get_pipeline::<Self>());
+        rp.set_pipeline(gfx.get_pipeline(LitMeshPipeline {
+            alpha: false,
+            smap: false,
+            depth: false,
+            double_sided: self.double_sided,
+        }));
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(2, &self.albedo_bg, &[]);
@@ -140,16 +196,17 @@ impl Drawable for Mesh {
         shadow_map: bool,
         proj: &'a wgpu::BindGroup,
     ) {
-        if self.transparent {
-            return;
-        }
-        if shadow_map {
-            rp.set_pipeline(gfx.get_pipeline::<LitMeshDepthSMap>());
-        } else {
-            rp.set_pipeline(gfx.get_pipeline::<LitMeshDepth>());
-        }
+        rp.set_pipeline(gfx.get_pipeline(LitMeshPipeline {
+            alpha: self.transparent,
+            smap: shadow_map,
+            depth: true,
+            double_sided: self.double_sided,
+        }));
 
         rp.set_bind_group(0, proj, &[]);
+        if self.transparent {
+            rp.set_bind_group(1, &self.albedo_bg, &[]);
+        }
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..self.n_indices, 0, 0..1);

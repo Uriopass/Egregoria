@@ -525,6 +525,12 @@
     "n_workers": 10,
     "size": 70.0,
     "asset_location": "assets/sprites/vegetable_farm.png",
-    "price": 1000
+    "price": 1000,
+    "zone": {
+      "floor": "assets/sprites/dirt.jpg",
+      "filler": "salad.glb",
+      "area_per_production": 1000,
+      "price_per_area": 100
+    }
   }
 ]

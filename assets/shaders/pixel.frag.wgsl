@@ -24,7 +24,10 @@ fn frag(@location(0) in_tint: vec4<f32>,
         @location(1) in_normal: vec3<f32>,
         @location(2) in_wpos: vec3<f32>,
         @location(3) in_uv: vec2<f32>,
-        @builtin(position) position: vec4<f32>) -> FragmentOutput {
+        @builtin(position) position: vec4<f32>,
+        @builtin(front_facing) front_facing: bool,
+        ) -> FragmentOutput {
+
     let albedo: vec4<f32> = textureSample(t_albedo, s_albedo, in_uv);
     var ssao = 1.0;
     if (params.ssao_enabled != 0) {
@@ -51,13 +54,17 @@ fn frag(@location(0) in_tint: vec4<f32>,
         out_color = vec4(vec3(texture(sampler2DShadow(t_sun_smap, s_sun_smap), vec3(p / 500, 1))), 1);
         return;
     }*/
+    var normal = normalize(in_normal);
+    if (!front_facing) {
+        normal = -normal;
+    }
 
     let c = in_tint * albedo;
     let final_rgb: vec3<f32> = render(params.sun,
                                       params.cam_pos.xyz,
                                       in_wpos,
                                       position.xy,
-                                      normalize(in_normal),
+                                      normal,
                                       c.rgb,
                                       params.sun_col.rgb,
                                       shadow_v,

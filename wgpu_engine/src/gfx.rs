@@ -7,8 +7,8 @@ use crate::{
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
-use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
@@ -37,10 +37,10 @@ pub struct GfxContext {
     pub size: (u32, u32),
     pub(crate) sc_desc: SurfaceConfiguration,
     pub update_sc: bool,
-    pub(crate) pipelines: FastMap<TypeId, RenderPipeline>,
+    pub(crate) pipelines: HashMap<u64, RenderPipeline, common::TransparentHasherU64>,
     #[allow(clippy::type_complexity)]
     pub(crate) pipelines_builders: Vec<(
-        TypeId,
+        u64,
         Vec<String>,
         Box<dyn for<'a> Fn(Vec<CompiledModule>, &'a GfxContext) -> RenderPipeline>,
     )>,
@@ -252,7 +252,7 @@ impl GfxContext {
             adapter,
             fbos,
             surface,
-            pipelines: FastMap::default(),
+            pipelines: HashMap::default(),
             pipelines_builders: vec![],
             shader_cache: Default::default(),
             shader_watcher: Default::default(),
@@ -479,7 +479,7 @@ impl GfxContext {
 
         if self.render_params.value().ssao_enabled != 0 {
             profiling::scope!("ssao");
-            let pipeline = self.get_pipeline::<SSAOPipeline>();
+            let pipeline = self.get_pipeline(SSAOPipeline);
             let bg = self
                 .fbos
                 .depth
@@ -562,7 +562,7 @@ impl GfxContext {
                 }),
             });
 
-            bg_pass.set_pipeline(self.get_pipeline::<BackgroundPipeline>());
+            bg_pass.set_pipeline(self.get_pipeline(BackgroundPipeline));
             bg_pass.set_bind_group(0, &self.render_params.bindgroup, &[]);
             bg_pass.set_bind_group(1, &self.bnoise_bg, &[]);
             bg_pass.set_bind_group(2, &self.sky_bg, &[]);
@@ -663,6 +663,7 @@ impl GfxContext {
         vert_shader: &CompiledModule,
         frag_shader: &CompiledModule,
         depth_bias: i32,
+        double_sided: bool,
     ) -> RenderPipeline {
         let render_pipeline_layout =
             self.device
@@ -699,7 +700,7 @@ impl GfxContext {
                 targets: &color_states,
             }),
             primitive: PrimitiveState {
-                cull_mode: Some(Face::Back),
+                cull_mode: (!double_sided).then_some(Face::Back),
                 front_face: FrontFace::Ccw,
                 ..Default::default()
             },
@@ -729,6 +730,7 @@ impl GfxContext {
         vert_shader: &CompiledModule,
         frag_shader: Option<&CompiledModule>,
         shadow_map: bool,
+        double_sided: bool,
     ) -> RenderPipeline {
         self.depth_pipeline_bglayout(
             vertex_buffers,
@@ -736,6 +738,7 @@ impl GfxContext {
             frag_shader,
             shadow_map,
             &[&self.projection.layout],
+            double_sided,
         )
     }
 
@@ -746,6 +749,7 @@ impl GfxContext {
         frag_shader: Option<&CompiledModule>,
         shadow_map: bool,
         layouts: &[&BindGroupLayout],
+        double_sided: bool,
     ) -> RenderPipeline {
         let render_pipeline_layout =
             self.device
@@ -756,7 +760,7 @@ impl GfxContext {
                 });
 
         let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
-            label: None,
+            label: Some("depth pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: vert_shader,
@@ -770,7 +774,7 @@ impl GfxContext {
             }),
             primitive: PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
-                cull_mode: Some(Face::Back),
+                cull_mode: (!double_sided).then_some(Face::Back),
                 front_face: FrontFace::Ccw,
                 ..Default::default()
             },
@@ -802,9 +806,9 @@ impl GfxContext {
         self.device.create_render_pipeline(&render_pipeline_desc)
     }
 
-    pub fn get_pipeline<T: 'static>(&self) -> &RenderPipeline {
+    pub fn get_pipeline(&self, obj: impl Hash + 'static) -> &RenderPipeline {
         self.pipelines
-            .get(&TypeId::of::<T>())
+            .get(&common::hash_type_u64(obj))
             .expect("Pipeline was not registered in context")
     }
 
@@ -887,11 +891,30 @@ impl GfxContext {
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn register_pipeline<T: 'static>(
+    pub fn register_pipeline(
         &mut self,
+        obj: impl Hash + 'static,
         shaders: &[&str],
         pipe: Box<dyn for<'a, 'b> Fn(Vec<CompiledModule>, &'a Self) -> RenderPipeline>,
     ) {
+        self._register_pipeline(common::hash_type_u64(obj), shaders, pipe);
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn _register_pipeline(
+        &mut self,
+        hash: u64,
+        shaders: &[&str],
+        pipe: Box<dyn for<'a, 'b> Fn(Vec<CompiledModule>, &'a Self) -> RenderPipeline>,
+    ) {
+        if self.pipelines.contains_key(&hash) {
+            log::warn!(
+                "pipeline for same type inserted registered multiple times! {:?}",
+                hash
+            );
+            return;
+        }
+
         let shaders: Vec<_> = shaders.iter().map(|x| x.to_string() + ".wgsl").collect();
 
         let modules: Vec<_> = self
@@ -917,14 +940,8 @@ impl GfxContext {
         let pipeline = pipe(modules, self);
 
         #[cfg(debug_assertions)]
-        self.pipelines_builders
-            .push((TypeId::of::<T>(), shaders, pipe));
-        if self.pipelines.insert(TypeId::of::<T>(), pipeline).is_some() {
-            log::error!(
-                "pipeline for same type inserted registered multiple times! {:?}",
-                TypeId::of::<T>()
-            );
-        }
+        self.pipelines_builders.push((hash, shaders, pipe));
+        self.pipelines.insert(hash, pipeline);
     }
 }
 
@@ -949,6 +966,7 @@ const SCREEN_UV_VERTICES: &[UvVertex] = &[
 
 const UV_INDICES: &[IndexType] = &[0, 1, 2, 0, 2, 3];
 
+#[derive(Copy, Clone, Hash)]
 struct SSAOPipeline;
 
 impl SSAOPipeline {
@@ -998,7 +1016,8 @@ impl SSAOPipeline {
             }),
         })];
 
-        gfx.register_pipeline::<SSAOPipeline>(
+        gfx.register_pipeline(
+            SSAOPipeline,
             &["ssao"],
             Box::new(move |m, gfx| {
                 let ssao = &m[0];
@@ -1028,11 +1047,13 @@ impl SSAOPipeline {
     }
 }
 
+#[derive(Hash)]
 struct BackgroundPipeline;
 
 impl BackgroundPipeline {
     pub fn setup(gfx: &mut GfxContext) {
-        gfx.register_pipeline::<BackgroundPipeline>(
+        gfx.register_pipeline(
+            BackgroundPipeline,
             &["background"],
             Box::new(move |m, gfx| {
                 let bg = &m[0];
@@ -1052,6 +1073,7 @@ impl BackgroundPipeline {
                     bg,
                     bg,
                     0,
+                    false,
                 )
             }),
         );

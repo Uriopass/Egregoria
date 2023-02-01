@@ -82,8 +82,6 @@ impl SpriteBatchBuilder {
     }
 
     pub fn build(&mut self, gfx: &GfxContext) -> Option<SpriteBatch> {
-        let pipeline = gfx.get_pipeline::<SpriteBatch>();
-
         if self.instances.is_empty() {
             return None;
         }
@@ -93,7 +91,7 @@ impl SpriteBatchBuilder {
 
         let albedo_bg = self
             .albedo
-            .bindgroup(&gfx.device, &pipeline.get_bind_group_layout(2));
+            .bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device));
 
         Some(SpriteBatch {
             instance_buf: self.instance_sbuffer.inner().unwrap(),
@@ -105,7 +103,8 @@ impl SpriteBatchBuilder {
 
 impl SpriteBatch {
     pub fn setup(gfx: &mut GfxContext) {
-        gfx.register_pipeline::<Self>(
+        gfx.register_pipeline(
+            SBPipeline,
             &["spritebatch.vert", "pixel.frag"],
             Box::new(move |m, gfx| {
                 let vert = &m[0];
@@ -123,23 +122,8 @@ impl SpriteBatch {
                     vert,
                     frag,
                     0,
+                    false,
                 )
-            }),
-        );
-
-        gfx.register_pipeline::<SBDepthMultisample>(
-            &["spritebatch.vert"],
-            Box::new(move |m, gfx| {
-                let vert = &m[0];
-                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], vert, None, false)
-            }),
-        );
-
-        gfx.register_pipeline::<SBDepth>(
-            &["spritebatch.vert"],
-            Box::new(move |m, gfx| {
-                let vert = &m[0];
-                gfx.depth_pipeline(&[UvVertex::desc(), InstanceRaw::desc()], vert, None, true)
             }),
         );
     }
@@ -147,7 +131,7 @@ impl SpriteBatch {
 
 impl Drawable for SpriteBatch {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        let pipeline = &gfx.get_pipeline::<Self>();
+        let pipeline = &gfx.get_pipeline(SBPipeline);
         rp.set_pipeline(pipeline);
         rp.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
         rp.set_vertex_buffer(1, self.instance_buf.slice(..));
@@ -158,22 +142,7 @@ impl Drawable for SpriteBatch {
         rp.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..6, 0, 0..self.n_instances);
     }
-    /*fn draw_depth<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        return;
-        if gfx.samples == 1 {
-            rp.set_pipeline(&gfx.get_pipeline::<SBDepth>());
-        } else {
-            return;
-            rp.set_pipeline(&gfx.get_pipeline::<SBDepthMultisample>());
-        }
-        rp.set_vertex_buffer(0, gfx.screen_uv_vertices.slice(..));
-        rp.set_vertex_buffer(1, self.instance_buf.slice(..));
-        rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
-        rp.set_bind_group(1, &self.tex_bg, &[]);
-        rp.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
-        rp.draw_indexed(0..6, 0, 0..self.n_instances);
-    }*/
 }
 
-struct SBDepthMultisample;
-struct SBDepth;
+#[derive(Hash)]
+struct SBPipeline;

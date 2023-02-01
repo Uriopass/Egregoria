@@ -8,6 +8,9 @@ pub struct Water {
     wavy_bg: Arc<BindGroup>,
 }
 
+#[derive(Hash)]
+struct WaterPipeline;
+
 impl Water {
     pub fn new(gfx: &mut GfxContext, w: f32, h: f32) -> Self {
         let mut mb = MeshBuilder::new(gfx.palette());
@@ -44,7 +47,8 @@ impl Water {
     }
 
     pub(crate) fn setup(gfx: &mut GfxContext) {
-        gfx.register_pipeline::<Self>(
+        gfx.register_pipeline(
+            WaterPipeline,
             &["lit_mesh.vert", "water.frag"],
             Box::new(move |m, gfx| {
                 let vert = &m[0];
@@ -69,6 +73,7 @@ impl Water {
                     vert,
                     frag,
                     0,
+                    false,
                 )
             }),
         );
@@ -77,7 +82,7 @@ impl Water {
 
 impl Drawable for Water {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        let pipeline = gfx.get_pipeline::<Self>();
+        let pipeline = gfx.get_pipeline(WaterPipeline);
 
         rp.set_pipeline(pipeline);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);

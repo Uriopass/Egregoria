@@ -1,3 +1,4 @@
+use std::any::TypeId;
 use std::hash::{BuildHasher, Hash, Hasher};
 
 pub use config::*;
@@ -145,6 +146,18 @@ where
     T: Hash,
 {
     let mut hasher = FxHasher::default();
+    obj.hash(&mut hasher);
+    hasher.finish()
+}
+
+#[inline]
+/// Hashes the object's type plus content to make sure that the hash is unique even across zero sized types
+pub fn hash_type_u64<T>(obj: T) -> u64
+where
+    T: Hash + 'static,
+{
+    let mut hasher = FxHasher::default();
+    TypeId::of::<T>().hash(&mut hasher);
     obj.hash(&mut hasher);
     hasher.finish()
 }

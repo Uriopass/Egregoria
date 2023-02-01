@@ -313,8 +313,11 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
     }
 }
 
-pub struct TerrainDepth;
-pub struct TerrainDepthSMap;
+#[derive(Hash)]
+struct TerrainPipeline {
+    depth: bool,
+    smap: bool,
+}
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -347,7 +350,11 @@ impl TerrainPrepared {
 
         let lay1 = terrainlayout.clone();
 
-        gfx.register_pipeline::<Self>(
+        gfx.register_pipeline(
+            TerrainPipeline {
+                depth: false,
+                smap: false,
+            },
             &["terrain.vert", "terrain.frag"],
             Box::new(move |m, gfx| {
                 let vert = &m[0];
@@ -365,45 +372,30 @@ impl TerrainPrepared {
                     vert,
                     frag,
                     0,
-                )
-            }),
-        );
-
-        let lay2 = terrainlayout.clone();
-
-        gfx.register_pipeline::<TerrainDepth>(
-            &["terrain.vert"],
-            Box::new(move |m, gfx| {
-                let vert = &m[0];
-
-                gfx.depth_pipeline_bglayout(
-                    &[TerrainVertex::desc(), TerrainInstance::desc()],
-                    vert,
-                    None,
                     false,
-                    &[&gfx.projection.layout, &gfx.render_params.layout, &lay2],
                 )
             }),
         );
 
-        gfx.register_pipeline::<TerrainDepthSMap>(
-            &["terrain.vert"],
-            Box::new(move |m, gfx| {
-                let vert = &m[0];
+        for smap in [false, true] {
+            let lay2 = terrainlayout.clone();
+            gfx.register_pipeline(
+                TerrainPipeline { depth: true, smap },
+                &["terrain.vert"],
+                Box::new(move |m, gfx| {
+                    let vert = &m[0];
 
-                gfx.depth_pipeline_bglayout(
-                    &[TerrainVertex::desc(), TerrainInstance::desc()],
-                    vert,
-                    None,
-                    true,
-                    &[
-                        &gfx.projection.layout,
-                        &gfx.render_params.layout,
-                        &terrainlayout,
-                    ],
-                )
-            }),
-        );
+                    gfx.depth_pipeline_bglayout(
+                        &[TerrainVertex::desc(), TerrainInstance::desc()],
+                        vert,
+                        None,
+                        smap,
+                        &[&gfx.projection.layout, &gfx.render_params.layout, &lay2],
+                        false,
+                    )
+                }),
+            );
+        }
     }
 
     fn set_buffers<'a>(&'a self, rp: &mut RenderPass<'a>) {
@@ -426,7 +418,10 @@ impl TerrainPrepared {
 
 impl Drawable for TerrainPrepared {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        let pipeline = gfx.get_pipeline::<Self>();
+        let pipeline = gfx.get_pipeline(TerrainPipeline {
+            depth: false,
+            smap: false,
+        });
 
         rp.set_pipeline(pipeline);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
@@ -444,11 +439,10 @@ impl Drawable for TerrainPrepared {
         shadow_map: bool,
         proj: &'a wgpu::BindGroup,
     ) {
-        if shadow_map {
-            rp.set_pipeline(gfx.get_pipeline::<TerrainDepthSMap>());
-        } else {
-            rp.set_pipeline(gfx.get_pipeline::<TerrainDepth>());
-        }
+        rp.set_pipeline(gfx.get_pipeline(TerrainPipeline {
+            depth: true,
+            smap: shadow_map,
+        }));
         rp.set_bind_group(0, proj, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
         rp.set_bind_group(2, &self.terrainbg, &[]);
