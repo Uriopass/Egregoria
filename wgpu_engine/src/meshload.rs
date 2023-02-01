@@ -247,14 +247,11 @@ pub fn load_mesh(gfx: &GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshErr
     m.double_sided = mat.double_sided();
 
     log::info!(
-        "loaded mesh {:?} in {}ms{}",
+        "loaded mesh {:?} in {}ms ({} tris{})",
         path,
         1000.0 * t.elapsed().as_secs_f32(),
-        if m.double_sided {
-            " (double sided)"
-        } else {
-            ""
-        }
+        m.n_indices / 3,
+        if m.double_sided { ", double sided" } else { "" }
     );
 
     Ok(m)
