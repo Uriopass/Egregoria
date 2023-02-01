@@ -509,7 +509,17 @@ impl Vec3 {
     }
 
     #[inline]
+    /// True if the distance to self is less than dist
     pub fn is_close(self, rhs: Self, dist: f32) -> bool {
+        self.distance2(rhs) < dist * dist
+    }
+
+    #[inline]
+    /// True if the distance to self is less than dist, but dist can be negative
+    pub fn is_close_signed(self, rhs: Self, dist: f32) -> bool {
+        if dist <= 0.0 {
+            return false;
+        }
         self.distance2(rhs) < dist * dist
     }
 
