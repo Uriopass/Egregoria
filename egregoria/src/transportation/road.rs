@@ -266,7 +266,8 @@ pub fn calc_decision<'a>(
                     }
                 }
                 TrafficBehavior::STOP => {
-                    if light.is_close(position, OBJECTIVE_OK_DIST * 0.95 + stop_dist) {
+                    if light.is_close_signed(position, stop_dist) && !light.is_close(position, 1.0)
+                    {
                         return (0.0, dir_to_pos);
                     }
                 }
