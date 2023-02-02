@@ -63,42 +63,44 @@ pub(crate) struct InputMap {
 #[derive(Serialize, Deserialize)]
 pub struct Bindings(pub(crate) BTreeMap<InputAction, InputCombinations>);
 
+use InputAction::*;
+use KeyCode as K;
+use MouseButton::*;
+use UnitInput::*;
+
+// https://stackoverflow.com/a/38068969/5000800 for key scans
+#[rustfmt::skip]
+const DEFAULT_BINDINGS: &[(InputAction, &[&[UnitInput]])] = &[
+    (GoForward,       &[&[KeyScan(17)], &[Key(K::Up)]]),
+    (GoBackward,      &[&[KeyScan(31)], &[Key(K::Down)]]),
+    (GoLeft,          &[&[KeyScan(30)], &[Key(K::Left)]]),
+    (GoRight,         &[&[KeyScan(32)], &[Key(K::Right)]]),
+    (CameraRotate,    &[&[Mouse(Right)]]),
+    (CameraMove,      &[&[Key(K::LShift), Mouse(Right)], &[Mouse(Middle)]]),
+    (Zoom,            &[&[Key(K::Plus)], &[WheelUp]]),
+    (Dezoom,          &[&[Key(K::Minus)], &[WheelDown]]),
+    (Rotate,          &[&[Key(K::LControl), WheelUp], &[Key(K::LControl), WheelDown]]),
+    (Close,           &[&[Key(K::Escape)], &[Mouse(Right)]]),
+    (Select,          &[&[Mouse(Left)]]),
+    (NoSnapping,      &[&[Key(K::LControl)]]),
+    (HideInterface,   &[&[Key(K::H)]]),
+    (UpElevation,     &[&[Key(K::LControl), WheelUp]]),
+    (DownElevation,   &[&[Key(K::LControl), WheelDown]]),
+    (OpenEconomyMenu, &[&[Key(K::E)]]),
+    (PausePlay,       &[&[Key(K::Space)]]),
+];
+
 impl Default for Bindings {
-    #[rustfmt::skip]
     fn default() -> Self {
         let mut m = BTreeMap::default();
-        use InputAction::*;
-        use UnitInput::*;
-        use MouseButton::*;
-        use KeyCode as K;
 
-        macro_rules! ics {
-            [$($($v:expr),+);+] => {
-                InputCombinations(vec![$(InputCombination(vec![$($v),+])),+])
-            }
-        }
-
-        // https://stackoverflow.com/a/38068969/5000800
-        for (k, v) in vec![
-            (GoForward,       ics![KeyScan(17) ; Key(K::Up)]),
-            (GoBackward,      ics![KeyScan(31) ; Key(K::Down)]),
-            (GoLeft,          ics![KeyScan(30) ; Key(K::Left)]),
-            (GoRight,         ics![KeyScan(32) ; Key(K::Right)]),
-            (CameraRotate,    ics![Mouse(Right)]),
-            (CameraMove,      ics![Key(K::LShift), Mouse(Right) ; Mouse(Middle)]),
-            (Zoom,            ics![Key(K::Plus) ; WheelUp]),
-            (Dezoom,          ics![Key(K::Minus) ; WheelDown]),
-            (Rotate,          ics![Key(K::LControl), WheelUp ; Key(K::LControl), WheelDown]),
-            (Close,           ics![Key(K::Escape) ; Mouse(Right)]),
-            (Select,          ics![Mouse(Left)]),
-            (NoSnapping,      ics![Key(K::LControl)]),
-            (HideInterface,   ics![Key(K::H)]),
-            (UpElevation,     ics![Key(K::LControl), WheelUp]),
-            (DownElevation,   ics![Key(K::LControl), WheelDown]),
-            (OpenEconomyMenu, ics![Key(K::E)]),
-            (PausePlay,       ics![Key(K::Space)]),
-        ] {
-            if m.insert(k, v).is_some() {
+        for &(k, v) in DEFAULT_BINDINGS {
+            if m.insert(
+                k,
+                InputCombinations(v.iter().map(|&x| InputCombination(x.to_vec())).collect()),
+            )
+            .is_some()
+            {
                 log::error!("inserting same action twice!");
             }
         }
