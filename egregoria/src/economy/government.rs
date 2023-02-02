@@ -35,7 +35,7 @@ impl Government {
                 let registry = goria.read::<GoodsCompanyRegistry>();
                 let zonedescr = registry.descriptions[gc].zone.as_ref().unwrap();
 
-                let oldarea = b.zone.as_ref().map(|z| z.area).unwrap_or(0.0);
+                let oldarea = b.zone.as_ref().map_or(0.0, |z| z.area);
                 let newarea = z.area;
                 return Money::new_base(
                     (newarea - oldarea) as i64 * zonedescr.price_per_area

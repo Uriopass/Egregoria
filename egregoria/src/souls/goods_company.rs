@@ -1,6 +1,6 @@
 use super::desire::Work;
 use crate::economy::{find_trade_place, ItemID, ItemRegistry, Market, Sold, Workers};
-use crate::map::{Building, BuildingGen, BuildingID, Map};
+use crate::map::{Building, BuildingGen, BuildingID, Map, Zone, MAX_ZONE_AREA};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
 use crate::transportation::VehicleID;
@@ -242,6 +242,12 @@ pub struct GoodsCompany {
     pub progress: f32,
     pub driver: Option<SoulID>,
     pub trucks: Vec<VehicleID>,
+}
+
+impl GoodsCompany {
+    pub fn productivity(&self, workers: usize, zone: Option<&Zone>) -> f32 {
+        workers as f32 / self.max_workers as f32 * zone.map_or(1.0, |z| z.area / MAX_ZONE_AREA)
+    }
 }
 
 pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<SoulID> {

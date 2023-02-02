@@ -5,7 +5,7 @@ use egregoria::Egregoria;
 use egui::{Context, Ui, Widget};
 
 use crate::gui::{item_icon, InspectedEntity};
-use egregoria::map::{Building, BuildingID, BuildingKind, Zone};
+use egregoria::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
 use egregoria::map_dynamic::BuildingInfos;
 use egregoria::souls::fret_station::{FreightStation, FreightTrainState};
 use egregoria::souls::goods_company::{GoodsCompany, GoodsCompanyRegistry, Recipe};
@@ -65,6 +65,10 @@ pub(crate) fn inspect_building(
                         },
                     })
                 }
+                egui::ProgressBar::new(zone.area / MAX_ZONE_AREA)
+                    .text(format!("area: {}/{}", zone.area, MAX_ZONE_AREA))
+                    .desired_width(200.0)
+                    .ui(ui);
             }
         });
 }
@@ -129,6 +133,14 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b:
         .text(format!("workers: {}/{}", workers.0.len(), max_workers))
         .desired_width(200.0)
         .ui(ui);
+    let productivity = goods.productivity(workers.0.len(), b.zone.as_ref());
+    let productivity = (productivity * 100.0).round();
+    if productivity < 100.0 {
+        egui::ProgressBar::new(productivity)
+            .text(format!("productivity: {productivity:.0}%"))
+            .desired_width(200.0)
+            .ui(ui);
+    }
 
     render_recipe(ui, uiworld, goria, &goods.recipe);
 
