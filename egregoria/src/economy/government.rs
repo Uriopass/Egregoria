@@ -1,6 +1,6 @@
 use crate::economy::Money;
 use crate::engine_interaction::WorldCommand;
-use crate::map::{LanePattern, MapProject};
+use crate::map::{LanePattern, MapProject, MAX_ZONE_AREA};
 use crate::{BuildingKind, Egregoria, GoodsCompanyRegistry};
 use serde::{Deserialize, Serialize};
 
@@ -38,8 +38,7 @@ impl Government {
                 let oldarea = b.zone.as_ref().map_or(0.0, |z| z.area);
                 let newarea = z.area;
                 return Money::new_base(
-                    (newarea - oldarea) as i64 * zonedescr.price_per_area
-                        / zonedescr.area_per_production,
+                    (newarea - oldarea) as i64 * zonedescr.price_per_area / MAX_ZONE_AREA as i64,
                 );
             }
             WorldCommand::MapMakeMultipleConnections(ref projs, ref links) => {
@@ -58,7 +57,7 @@ impl Government {
                             .as_ref()
                             .map(|z| {
                                 z.price_per_area * (descr.size * descr.size) as i64
-                                    / z.area_per_production
+                                    / MAX_ZONE_AREA as i64
                             })
                             .unwrap_or(0)
                 }

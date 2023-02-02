@@ -44,7 +44,7 @@
     "recipe": {
       "consumption": [],
       "production": [["cereal", 1]],
-      "complexity": 2000,
+      "complexity": 40,
       "storage_multiplier": 5
     },
     "n_workers": 10,
@@ -54,7 +54,6 @@
     "zone": {
       "floor": "assets/sprites/dirt.jpg",
       "filler": "wheat_up.glb",
-      "area_per_production": 1000,
       "price_per_area": 100,
       "randomize_filler": true
     }
@@ -68,8 +67,8 @@
     "kind": "network",
     "recipe": {
       "consumption": [],
-      "production": [["electricity", 1]],
-      "complexity": 200,
+      "production": [["electricity", 3]],
+      "complexity": 1,
       "storage_multiplier": 5
     },
     "n_workers": 1,
@@ -79,7 +78,6 @@
     "zone": {
       "floor": "assets/sprites/cement.jpg",
       "filler": "solarpanel.glb",
-      "area_per_production": 100,
       "price_per_area": 10
     }
   },
@@ -519,7 +517,7 @@
     "recipe": {
       "consumption": [],
       "production": [["vegetable", 2]],
-      "complexity": 100,
+      "complexity": 2,
       "storage_multiplier": 5
     },
     "n_workers": 10,
@@ -529,7 +527,6 @@
     "zone": {
       "floor": "assets/sprites/dirt.jpg",
       "filler": "salad.glb",
-      "area_per_production": 1000,
       "price_per_area": 100
     }
   }

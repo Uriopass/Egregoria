@@ -52,9 +52,6 @@ pub struct GoodsCompanyDescription {
 pub struct ZoneDescription {
     pub floor: String,
     pub filler: String,
-    /// Area required for each production unit
-    /// If area_per_production is 1000 and the zone area is 10000, then the production will be multiplied by 10
-    pub area_per_production: i64,
     /// The price for each "production unit"
     pub price_per_area: i64,
     /// Wether the zone filler positions should be randomized
@@ -299,12 +296,11 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
     let rc = res.get().unwrap();
     let rd = res.get().unwrap();
     let re = res.get().unwrap();
-    let rf = res.get().unwrap();
     for (ent, (a, b, c)) in world
         .query::<(&mut GoodsCompany, &mut Sold, &Workers)>()
         .iter()
     {
-        company(delta, &rb, &rc, &rd, &re, &rf, ent, a, b, c, world);
+        company(delta, &rb, &rc, &rd, &re, ent, a, b, c, world);
     }
 }
 
@@ -313,7 +309,6 @@ pub fn company(
     cbuf: &ParCommandBuffer,
     binfos: &BuildingInfos,
     market: &Market,
-    registry: &GoodsCompanyRegistry,
     map: &Map,
     me: Entity,
     company: &mut GoodsCompany,
@@ -329,15 +324,8 @@ pub fn company(
     });
 
     if company.recipe.should_produce(soul, market) {
-        let mut productivity = 1.0;
-
-        if let Some(ref z) = b.zone {
-            let d = &registry.descriptions[b.kind.as_goods_company().unwrap()];
-            productivity = z.area / d.zone.as_ref().unwrap().area_per_production as f32;
-        }
-
-        company.progress += n_workers as f32 * productivity
-            / (company.recipe.complexity as f32 * company.max_workers as f32)
+        company.progress += company.productivity(n_workers, b.zone.as_ref())
+            / company.recipe.complexity as f32
             * delta;
     }
 

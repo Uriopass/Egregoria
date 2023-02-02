@@ -1,5 +1,5 @@
 use crate::economy::{Item, ItemID, ItemRegistry, Money, WORKER_CONSUMPTION_PER_SECOND};
-use crate::map::{BuildingID, MAX_ZONE_AREA};
+use crate::map::BuildingID;
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::goods_company::GoodsCompanyID;
 use crate::{BuildingKind, GoodsCompanyRegistry, Map, SoulID};
@@ -396,16 +396,12 @@ fn calculate_prices(
                 calculate_price_inner(registry, companies, item_graph, &registry[itemid], prices);
                 price_consumption += prices[&itemid] * qty as i64;
             }
-            let mut qty = company
+            let qty = company
                 .recipe
                 .production
                 .iter()
                 .find_map(|x| (x.0 == item.id).then_some(x.1))
                 .unwrap_or(0) as i64;
-
-            if let Some(ref z) = company.zone {
-                qty *= (MAX_ZONE_AREA / z.area_per_production as f32) as i64;
-            }
 
             let price_workers = company.recipe.complexity as i64
                 * company.n_workers as i64
