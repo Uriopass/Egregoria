@@ -525,8 +525,23 @@ pub(crate) fn debug_pathfinder(
 
     if let egregoria::map_dynamic::ItineraryKind::Route(r, _) = itinerary.kind() {
         tess.set_color(LinearColor::RED);
-        for l in &r.reversed_route {
+        for (i, l) in r.reversed_route.iter().enumerate() {
             if let Some(l) = l.raw_points(map) {
+                if i == 0 {
+                    tess.set_color(LinearColor::GREEN);
+                    let to_cut = l.length() - l.length_at_proj(l.project(r.end_pos));
+                    tess.draw_polyline(
+                        &l.cut(0.0, to_cut)
+                            .as_slice()
+                            .iter()
+                            .map(|x| x.up(0.1))
+                            .collect::<Vec<_>>(),
+                        3.0,
+                        false,
+                    );
+                    continue;
+                }
+                tess.set_color(LinearColor::RED);
                 tess.draw_polyline(
                     &l.as_slice().iter().map(|x| x.up(0.1)).collect::<Vec<_>>(),
                     3.0,
