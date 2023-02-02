@@ -379,6 +379,10 @@ fn calc_front_dist<'a>(
             continue;
         }
 
+        if nei_physics_obj.speed <= 0.01 {
+            continue;
+        }
+
         if my_dist - speed.min(2.5) - my_radius
             < his_dist - nei_physics_obj.speed.min(2.5) - nei_physics_obj.radius
         {
