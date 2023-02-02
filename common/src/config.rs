@@ -1,10 +1,9 @@
+use crate::saveload::Encoder;
 use arc_swap::{ArcSwap, Guard};
 use egui_inspect::Inspect;
 use geom::Color;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use std::fs::OpenOptions;
-use std::io::BufWriter;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -52,7 +51,7 @@ pub struct Config {
 }
 
 fn load_config_start() -> Config {
-    let c = std::fs::read("assets/config.json")
+    let c = crate::saveload::load_raw("assets/config.json")
         .and_then(|x| serde_json::from_slice(&x).map_err(Into::into))
         .map_err(|x| {
             log::error!("couldn't read config: {}", x);
@@ -63,14 +62,7 @@ fn load_config_start() -> Config {
 }
 
 fn save_config(config: &Config) {
-    if let Err(e) = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open("assets/config.json")
-        .and_then(|x| serde_json::to_writer_pretty(BufWriter::new(x), config).map_err(Into::into))
-    {
-        log::error!("could not save config: {}", e)
-    }
+    crate::saveload::JSONPretty::save_silent(config, "config");
 }
 
 lazy_static! {
