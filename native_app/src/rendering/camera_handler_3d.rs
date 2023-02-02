@@ -10,6 +10,7 @@ use wgpu_engine::Tesselator;
 pub(crate) struct CameraHandler3D {
     pub(crate) camera: Camera,
     pub(crate) lastscreenpos: Vec2,
+    pub(crate) last_pos: Option<Vec2>,
     pub(crate) targetpos: Vec3,
     pub(crate) targetyaw: Radians,
     pub(crate) targetpitch: Radians,
@@ -99,6 +100,7 @@ impl CameraHandler3D {
         Self {
             camera,
             lastscreenpos: Default::default(),
+            last_pos: Default::default(),
             targetpos: camera.pos,
             targetyaw: camera.yaw,
             targetpitch: camera.pitch,
@@ -172,6 +174,8 @@ impl CameraHandler3D {
         let delta_mouse = screenpos - self.lastscreenpos;
         self.lastscreenpos = screenpos;
 
+        let unprojected = self.unproject(screenpos, |_| Some(0.0));
+
         if inps.act.contains(&InputAction::CameraRotate) {
             self.targetyaw -= Radians(delta_mouse.x / 100.0);
             self.targetpitch += Radians(delta_mouse.y / 100.0);
@@ -179,6 +183,12 @@ impl CameraHandler3D {
                 .targetpitch
                 .min(Radians::HALFPI - Radians(0.01))
                 .max(Radians(0.01));
+        } else if inps.act.contains(&InputAction::CameraMove) {
+            if let Some((last_pos, unprojected)) = self.last_pos.zip(unprojected) {
+                self.targetpos += (last_pos - unprojected.xy())
+                    .cap_magnitude(50.0 * delta * self.camera.eye().z)
+                    .z0();
+            }
         }
 
         self.targetdist = self.targetdist.clamp(5.0, 100000.0);
@@ -218,5 +228,6 @@ impl CameraHandler3D {
 
         self.camera.pos.z = height(self.camera.pos.xy()).unwrap_or(self.camera.pos.z);
         self.update(ctx);
+        self.last_pos = self.unproject(screenpos, |_| Some(0.0)).map(Vec3::xy);
     }
 }
