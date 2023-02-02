@@ -80,7 +80,7 @@ const DEFAULT_BINDINGS: &[(InputAction, &[&[UnitInput]])] = &[
     (Zoom,            &[&[Key(K::Plus)], &[WheelUp]]),
     (Dezoom,          &[&[Key(K::Minus)], &[WheelDown]]),
     (Rotate,          &[&[Key(K::LControl), WheelUp], &[Key(K::LControl), WheelDown]]),
-    (Close,           &[&[Key(K::Escape)], &[Mouse(Right)]]),
+    (Close,           &[&[Key(K::Escape)]]),
     (Select,          &[&[Mouse(Left)]]),
     (NoSnapping,      &[&[Key(K::LControl)]]),
     (HideInterface,   &[&[Key(K::H)]]),
