@@ -79,7 +79,7 @@ pub struct RandGen {
 
 impl RandGen {
     #[inline]
-    pub fn next(&mut self) -> f32 {
+    pub fn next_f32(&mut self) -> f32 {
         self.x = self
             .x
             .wrapping_mul(6364136223846793005)
