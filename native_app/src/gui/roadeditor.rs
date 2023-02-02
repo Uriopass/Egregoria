@@ -48,6 +48,7 @@ pub(crate) fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
                 let p: Vec<_> = std::iter::once(turn.points.first() + or_src.z0() * 0.01)
                     .chain(turn.points.iter().copied())
                     .chain(std::iter::once(turn.points.last() + or_dst.z0() * 0.01))
+                    .map(|x| x.up(0.05 + r * 0.01))
                     .collect();
 
                 imm_draw.polyline(p, 1.0, false).color(col);
