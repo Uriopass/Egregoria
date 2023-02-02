@@ -1,13 +1,21 @@
 use crate::map::{
     LaneID, LaneKind, LanePatternBuilder, Map, Traversable, TraverseDirection, TraverseKind, TurnID,
 };
+use crate::utils::time::Tick;
+use common::hash_u64;
 use geom::{PolyLine3, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmap::Key;
 
 pub trait Pathfinder {
-    fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>>;
+    fn path(
+        &self,
+        map: &Map,
+        tick: Tick,
+        start: Traversable,
+        end: LaneID,
+    ) -> Option<Vec<Traversable>>;
     fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID>;
     fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3>;
 }
@@ -20,11 +28,17 @@ pub enum PathKind {
 }
 
 impl Pathfinder for PathKind {
-    fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
+    fn path(
+        &self,
+        map: &Map,
+        tick: Tick,
+        start: Traversable,
+        end: LaneID,
+    ) -> Option<Vec<Traversable>> {
         match self {
-            PathKind::Pedestrian => PedestrianPath.path(map, start, end),
-            PathKind::Vehicle => CarPath.path(map, start, end),
-            PathKind::Rail => RailPath.path(map, start, end),
+            PathKind::Pedestrian => PedestrianPath.path(map, tick, start, end),
+            PathKind::Vehicle => CarPath.path(map, tick, start, end),
+            PathKind::Rail => RailPath.path(map, tick, start, end),
         }
     }
 
@@ -48,7 +62,13 @@ impl Pathfinder for PathKind {
 struct PedestrianPath;
 
 impl Pathfinder for PedestrianPath {
-    fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
+    fn path(
+        &self,
+        map: &Map,
+        _tick: Tick,
+        start: Traversable,
+        end: LaneID,
+    ) -> Option<Vec<Traversable>> {
         let inters = &map.intersections;
         let lanes = &map.lanes;
 
@@ -130,8 +150,14 @@ impl Pathfinder for PedestrianPath {
 struct RailPath;
 
 impl Pathfinder for RailPath {
-    fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
-        CarPath.path(map, start, end)
+    fn path(
+        &self,
+        map: &Map,
+        tick: Tick,
+        start: Traversable,
+        end: LaneID,
+    ) -> Option<Vec<Traversable>> {
+        CarPath.path(map, tick, start, end)
     }
 
     fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID> {
@@ -146,7 +172,13 @@ impl Pathfinder for RailPath {
 struct CarPath;
 
 impl Pathfinder for CarPath {
-    fn path(&self, map: &Map, start: Traversable, end: LaneID) -> Option<Vec<Traversable>> {
+    fn path(
+        &self,
+        map: &Map,
+        tick: Tick,
+        start: Traversable,
+        end: LaneID,
+    ) -> Option<Vec<Traversable>> {
         let inters = &map.intersections;
         let lanes = &map.lanes;
 
@@ -167,7 +199,9 @@ impl Pathfinder for CarPath {
             OrderedFloat(pos.distance(end_pos) * 1.2 / HEURISTIC_SPEED) // Inexact but (much) faster
         };
 
-        let successors = |&p: &LaneID| {
+        let base_random = hash_u64((start_lane.data().as_ffi(), tick.0)) as u32;
+
+        let successors = move |&p: &LaneID| {
             let l;
             let p = if p == dummy {
                 l = lanes.get(start_lane);
@@ -176,14 +210,17 @@ impl Pathfinder for CarPath {
                 l = lanes.get(p);
                 p
             };
-            l.and_then(|x| inters.get(x.dst))
+            l.and_then(move |x| inters.get(x.dst))
                 .into_iter()
                 .flat_map(move |inter| {
                     inter.turns_from(p).map(move |(x, _)| {
-                        let cost = lanes
-                            .get(x.dst)
-                            .map(|p| p.points.length() / p.speed_limit)
-                            .unwrap_or(f32::INFINITY);
+                        let mut cost = f32::INFINITY;
+
+                        if let Some(l) = lanes.get(x.dst) {
+                            cost = l.points.length() / l.speed_limit;
+                            cost += common::rand::randu(l.dist_from_bottom.to_bits() ^ base_random);
+                        }
+
                         (x.dst, OrderedFloat(cost))
                     })
                 })

@@ -1,7 +1,7 @@
 use crate::map::{BuildingID, BuildingKind, Map, PathKind};
 use crate::map_dynamic::{BuildingInfos, DispatchKind, DispatchQueryTarget, Dispatcher, Itinerary};
 use crate::transportation::train::TrainID;
-use crate::utils::time::GameTime;
+use crate::utils::time::{GameTime, Tick};
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::Transform;
 use hecs::World;
@@ -62,6 +62,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
     let mut dispatch = resources.get_mut::<Dispatcher>().unwrap();
     let map = resources.get::<Map>().unwrap();
     let time = resources.get::<GameTime>().unwrap();
+    let tick = *resources.get::<Tick>().unwrap();
 
     let mut trainqry = world.query::<(&Transform, &mut Itinerary)>();
     let mut train = trainqry.view();
@@ -96,7 +97,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
                         let bpos = map.buildings[ext].obb.center().z(0.0);
 
                         *itin = if let Some(r) =
-                            Itinerary::route(tpos.position, bpos, &map, PathKind::Rail)
+                            Itinerary::route(tick, tpos.position, bpos, &map, PathKind::Rail)
                         {
                             r
                         } else {
@@ -141,7 +142,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
         let (tpos, titin) = train.get_mut(trainid.0).unwrap();
 
         *titin = unwrap_or!(
-            Itinerary::route(tpos.position, destination, &map, PathKind::Rail,),
+            Itinerary::route(tick, tpos.position, destination, &map, PathKind::Rail,),
             continue
         );
 

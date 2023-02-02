@@ -1,5 +1,5 @@
 use crate::map::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
-use crate::utils::time::GameTime;
+use crate::utils::time::{GameTime, Tick};
 use crate::Speed;
 use egui_inspect::egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
@@ -96,7 +96,13 @@ impl Itinerary {
         }
     }
 
-    pub fn route(start: Vec3, end: Vec3, map: &Map, pathkind: PathKind) -> Option<Itinerary> {
+    pub fn route(
+        tick: Tick,
+        start: Vec3,
+        end: Vec3,
+        map: &Map,
+        pathkind: PathKind,
+    ) -> Option<Itinerary> {
         let start_lane = pathkind.nearest_lane(map, start)?;
         let end_lane = pathkind.nearest_lane(map, end)?;
 
@@ -120,7 +126,7 @@ impl Itinerary {
         }
 
         let mut reversed_route: Vec<Traversable> = pathkind
-            .path(map, cur, end_lane)?
+            .path(map, tick, cur, end_lane)?
             .into_iter()
             .rev()
             .collect();
@@ -201,6 +207,7 @@ impl Itinerary {
         &mut self,
         mut position: Vec3,
         mut dist_to_move: f32,
+        tick: Tick,
         time: u32,
         map: &Map,
     ) -> Vec3 {
@@ -244,7 +251,7 @@ impl Itinerary {
                 *wait_ticks -= 1;
                 return position;
             }
-            *self = unwrap_or!(Self::route(position, dest, map, kind), {
+            *self = unwrap_or!(Self::route(tick, position, dest, map, kind), {
                 *wait_ticks = 200;
                 return position;
             });
@@ -392,14 +399,20 @@ impl Inspect<ItineraryKind> for ItineraryKind {
 pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
     let time = &*resources.get::<GameTime>().unwrap();
     let map = &*resources.get::<Map>().unwrap();
+    let tick = *resources.get::<Tick>().unwrap();
     world
         .query::<(&mut Transform, &Speed, &mut Itinerary)>()
         .iter_batched(32)
         .par_bridge()
         .for_each(|chunk| {
             chunk.for_each(|(_, (trans, kin, it))| {
-                trans.position =
-                    it.update_rail(trans.position, kin.speed * time.delta, time.seconds, map);
+                trans.position = it.update_rail(
+                    trans.position,
+                    kin.speed * time.delta,
+                    tick,
+                    time.seconds,
+                    map,
+                );
             })
         });
     world

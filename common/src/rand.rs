@@ -33,25 +33,57 @@ fn float_construct(mut m: u32) -> f32 {
 }
 
 // Pseudo-random value in half-open range [0:1].
+#[inline]
 pub fn rand(x: f32) -> f32 {
     float_construct(hash(x.to_bits()))
 }
 
 // Pseudo-random value in half-open range [0:1].
+#[inline]
 pub fn rand2(x: f32, y: f32) -> f32 {
     float_construct(hash2(x.to_bits(), y.to_bits()))
 }
 
 // Pseudo-random value in half-open range [0:1].
+#[inline]
 pub fn rand3(x: f32, y: f32, z: f32) -> f32 {
     float_construct(hash3(x.to_bits(), y.to_bits(), z.to_bits()))
 }
 
 // Pseudo-random value in half-open range [0:1].
+#[inline]
 pub fn rand4(x: f32, y: f32, z: f32, w: f32) -> f32 {
     float_construct(hash4(x.to_bits(), y.to_bits(), z.to_bits(), w.to_bits()))
 }
 
+#[inline]
 pub fn randu(x: u32) -> f32 {
     float_construct(hash(x))
+}
+
+#[inline]
+pub fn randu64(x: u64) -> f32 {
+    float_construct(hash2(x as u32, (x >> 32) as u32))
+}
+
+#[inline]
+pub fn gen(seed: u64) -> RandGen {
+    RandGen { x: seed }
+}
+
+#[derive(Copy, Clone)]
+#[repr(transparent)]
+pub struct RandGen {
+    x: u64,
+}
+
+impl RandGen {
+    #[inline]
+    pub fn next(&mut self) -> f32 {
+        self.x = self
+            .x
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407); // https://en.wikipedia.org/wiki/Linear_congruential_generator Donald Knuth's LCG
+        float_construct(self.x as u32)
+    }
 }
