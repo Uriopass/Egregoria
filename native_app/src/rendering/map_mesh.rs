@@ -138,48 +138,42 @@ impl MapMeshHandler {
         ctx: &mut FrameContext<'_>,
     ) {
         if map.dirt_id.0 != self.map_dirt_id || self.last_config != common::config_id() {
-            self.builders.map_mesh(map);
-            self.builders.arrows(map);
-            self.builders.crosswalks(map);
-            self.builders.bspritesmesh(map);
-            self.builders.houses_mesh(map);
-            self.builders.zone_mesh(map);
+            let b = &mut self.builders;
+            b.map_mesh(map);
+            b.arrows(map);
+            b.crosswalks(map);
+            b.bspritesmesh(map);
+            b.houses_mesh(map);
+            b.zone_mesh(map);
 
             self.last_config = common::config_id();
             self.map_dirt_id = map.dirt_id.0;
 
-            let m = &mut self.builders.tess_map.meshbuilder;
-
-            let meshes: Vec<Arc<dyn Drawable>> = vec![
-                Arc::new(m.build(ctx.gfx)),
-                Arc::new(self.builders.crosswalk_builder.build(ctx.gfx)),
+            self.cache_arrow = Some(Arc::new(b.arrow_builder.build(ctx.gfx)));
+            self.cache = vec![
+                Arc::new(b.tess_map.meshbuilder.build(ctx.gfx)),
+                Arc::new(b.crosswalk_builder.build(ctx.gfx)),
                 Arc::new(
-                    self.builders
-                        .buildsprites
+                    b.buildsprites
                         .values_mut()
                         .flat_map(|x| x.build(ctx.gfx))
                         .collect::<Vec<_>>(),
                 ),
                 Arc::new(
-                    self.builders
-                        .buildmeshes
+                    b.buildmeshes
                         .values_mut()
                         .flat_map(|x| x.build(ctx.gfx))
                         .collect::<Vec<_>>(),
                 ),
-                Arc::new(self.builders.houses_mesh.build(ctx.gfx)),
+                Arc::new(b.houses_mesh.build(ctx.gfx)),
                 Arc::new(
-                    self.builders
-                        .zonemeshes
+                    b.zonemeshes
                         .values_mut()
                         .map(|(a, b, _)| (a.build(ctx.gfx), b.build(ctx.gfx)))
                         .collect::<Vec<_>>(),
                 ),
-                Arc::new(self.builders.stop_signs.build(ctx.gfx)),
+                Arc::new(b.stop_signs.build(ctx.gfx)),
             ];
-
-            self.cache_arrow = Some(Arc::new(self.builders.arrow_builder.build(ctx.gfx)));
-            self.cache = meshes;
         }
 
         ctx.draw(Vec::clone(&self.cache));
