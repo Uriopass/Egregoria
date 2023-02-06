@@ -6,7 +6,6 @@ use egregoria::map::{
 };
 use egregoria::Egregoria;
 use geom::{vec3, Camera, Color, LinearColor};
-use std::sync::atomic::Ordering;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::terrain::TerrainRender;
 use wgpu_engine::{
@@ -245,12 +244,7 @@ impl MapRenderer {
 
         self.trees(map, cam, ctx);
 
-        if let Some(x) = self.meshb.latest_mesh(map, ctx.gfx).clone() {
-            x.as_ref()
-                .enable_arrows
-                .store(options.show_arrows, Ordering::SeqCst);
-            ctx.draw(x);
-        }
+        self.meshb.latest_mesh(map, options, ctx);
 
         Self::signals_render(map, time, tess);
 

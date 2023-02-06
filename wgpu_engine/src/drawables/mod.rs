@@ -1,5 +1,5 @@
 use crate::GfxContext;
-use wgpu::RenderPass;
+use wgpu::{BindGroup, RenderPass};
 
 mod instanced_mesh;
 mod lit_mesh;
@@ -18,7 +18,7 @@ use std::sync::Arc;
 
 pub type IndexType = u32;
 
-pub trait Drawable: Sync {
+pub trait Drawable {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>);
 
     #[allow(unused)]
@@ -32,7 +32,7 @@ pub trait Drawable: Sync {
     }
 }
 
-impl<T: Drawable + Send> Drawable for Arc<T> {
+impl<T: ?Sized + Drawable> Drawable for Arc<T> {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
         let s: &T = self;
         s.draw(gfx, rp);
@@ -83,6 +83,26 @@ impl<T: Drawable> Drawable for [T] {
         rp: &mut RenderPass<'a>,
         shadow_map: bool,
         proj: &'a wgpu::BindGroup,
+    ) {
+        for s in self {
+            s.draw_depth(gfx, rp, shadow_map, proj);
+        }
+    }
+}
+
+impl<T: Drawable> Drawable for Vec<T> {
+    fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+        for s in self {
+            s.draw(gfx, rp);
+        }
+    }
+
+    fn draw_depth<'a>(
+        &'a self,
+        gfx: &'a GfxContext,
+        rp: &mut RenderPass<'a>,
+        shadow_map: bool,
+        proj: &'a BindGroup,
     ) {
         for s in self {
             s.draw_depth(gfx, rp, shadow_map, proj);

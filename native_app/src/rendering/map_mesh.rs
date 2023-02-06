@@ -1,3 +1,4 @@
+use crate::rendering::MapRenderOptions;
 use common::FastMap;
 use egregoria::map::{
     BuildingKind, Intersection, LaneKind, LotKind, Map, PylonPosition, Road, Roads, Terrain,
@@ -7,19 +8,18 @@ use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
 use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Spline, Vec2, Vec3};
 use std::ops::{Mul, Neg};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use wgpu_engine::earcut::earcut;
 use wgpu_engine::meshload::load_mesh;
-use wgpu_engine::wgpu::RenderPass;
 use wgpu_engine::{
-    Drawable, GfxContext, InstancedMesh, InstancedMeshBuilder, Mesh, MeshBuilder, MeshInstance,
-    MeshVertex, MultiSpriteBatch, SpriteBatch, SpriteBatchBuilder, Tesselator,
+    Drawable, FrameContext, GfxContext, InstancedMeshBuilder, MeshBuilder, MeshInstance,
+    MeshVertex, SpriteBatchBuilder, Tesselator,
 };
 
 pub(crate) struct MapMeshHandler {
     builders: MapBuilders,
-    cache: Option<Arc<MapMeshes>>,
+    cache: Vec<Arc<dyn Drawable>>,
+    cache_arrow: Option<Arc<dyn Drawable>>,
     pub(crate) map_dirt_id: u32,
     last_config: usize,
 }
@@ -32,17 +32,7 @@ struct MapBuilders {
     arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: MeshBuilder,
     tess_map: Tesselator,
-}
-
-pub(crate) struct MapMeshes {
-    map: Option<Mesh>,
-    crosswalks: Option<Mesh>,
-    bsprites: MultiSpriteBatch,
-    bmeshes: Vec<InstancedMesh>,
-    houses_mesh: Option<Mesh>,
-    zone_meshes: Vec<(Option<Mesh>, Option<InstancedMesh>)>,
-    arrows: Option<SpriteBatch>,
-    pub enable_arrows: AtomicBool,
+    stop_signs: InstancedMeshBuilder,
 }
 
 impl MapMeshHandler {
@@ -129,11 +119,13 @@ impl MapMeshHandler {
             houses_mesh: MeshBuilder::new(gfx.palette()),
             buildmeshes,
             zonemeshes,
+            stop_signs: InstancedMeshBuilder::new(load_mesh(gfx, "stop_sign.glb").unwrap()),
         };
 
         Self {
             builders,
-            cache: None,
+            cache: vec![],
+            cache_arrow: None,
             map_dirt_id: 0,
             last_config: common::config_id(),
         }
@@ -142,8 +134,9 @@ impl MapMeshHandler {
     pub(crate) fn latest_mesh(
         &mut self,
         map: &Map,
-        gfx: &mut GfxContext,
-    ) -> &Option<Arc<MapMeshes>> {
+        options: MapRenderOptions,
+        ctx: &mut FrameContext<'_>,
+    ) {
         if map.dirt_id.0 != self.map_dirt_id || self.last_config != common::config_id() {
             self.builders.map_mesh(map);
             self.builders.arrows(map);
@@ -157,35 +150,43 @@ impl MapMeshHandler {
 
             let m = &mut self.builders.tess_map.meshbuilder;
 
-            let meshes = MapMeshes {
-                map: m.build(gfx),
-                crosswalks: self.builders.crosswalk_builder.build(gfx),
-                bsprites: self
-                    .builders
-                    .buildsprites
-                    .values_mut()
-                    .flat_map(|x| x.build(gfx))
-                    .collect(),
-                bmeshes: self
-                    .builders
-                    .buildmeshes
-                    .values_mut()
-                    .flat_map(|x| x.build(gfx))
-                    .collect(),
-                houses_mesh: self.builders.houses_mesh.build(gfx),
-                zone_meshes: self
-                    .builders
-                    .zonemeshes
-                    .values_mut()
-                    .map(|(a, b, _)| (a.build(gfx), b.build(gfx)))
-                    .collect(),
-                arrows: self.builders.arrow_builder.build(gfx),
-                enable_arrows: Default::default(),
-            };
+            let meshes: Vec<Arc<dyn Drawable>> = vec![
+                Arc::new(m.build(ctx.gfx)),
+                Arc::new(self.builders.crosswalk_builder.build(ctx.gfx)),
+                Arc::new(
+                    self.builders
+                        .buildsprites
+                        .values_mut()
+                        .flat_map(|x| x.build(ctx.gfx))
+                        .collect::<Vec<_>>(),
+                ),
+                Arc::new(
+                    self.builders
+                        .buildmeshes
+                        .values_mut()
+                        .flat_map(|x| x.build(ctx.gfx))
+                        .collect::<Vec<_>>(),
+                ),
+                Arc::new(self.builders.houses_mesh.build(ctx.gfx)),
+                Arc::new(
+                    self.builders
+                        .zonemeshes
+                        .values_mut()
+                        .map(|(a, b, _)| (a.build(ctx.gfx), b.build(ctx.gfx)))
+                        .collect::<Vec<_>>(),
+                ),
+                Arc::new(self.builders.stop_signs.build(ctx.gfx)),
+            ];
 
-            self.cache = Some(Arc::new(meshes));
+            self.cache_arrow = Some(Arc::new(self.builders.arrow_builder.build(ctx.gfx)));
+            self.cache = meshes;
         }
-        &self.cache
+
+        ctx.draw(Vec::clone(&self.cache));
+
+        if options.show_arrows {
+            ctx.draw(self.cache_arrow.clone());
+        }
     }
 }
 
@@ -617,38 +618,6 @@ impl MapBuilders {
             tess.set_color(col);
             tess.draw_filled_polygon(&lot.shape.corners, lot.height + 0.3);
         }
-    }
-}
-
-impl Drawable for MapMeshes {
-    fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        self.map.draw(gfx, rp);
-        self.bsprites.draw(gfx, rp);
-        self.bmeshes.draw(gfx, rp);
-        self.houses_mesh.draw(gfx, rp);
-        self.zone_meshes.draw(gfx, rp);
-        if self.enable_arrows.load(Ordering::SeqCst) {
-            self.arrows.draw(gfx, rp);
-        }
-        self.crosswalks.draw(gfx, rp);
-    }
-
-    fn draw_depth<'a>(
-        &'a self,
-        gfx: &'a GfxContext,
-        rp: &mut RenderPass<'a>,
-        shadow_map: bool,
-        proj: &'a wgpu_engine::wgpu::BindGroup,
-    ) {
-        self.map.draw_depth(gfx, rp, shadow_map, proj);
-        self.bsprites.draw_depth(gfx, rp, shadow_map, proj);
-        self.bmeshes.draw_depth(gfx, rp, shadow_map, proj);
-        self.houses_mesh.draw_depth(gfx, rp, shadow_map, proj);
-        self.zone_meshes.draw_depth(gfx, rp, shadow_map, proj);
-        if self.enable_arrows.load(Ordering::SeqCst) {
-            self.arrows.draw_depth(gfx, rp, shadow_map, proj);
-        }
-        self.crosswalks.draw_depth(gfx, rp, shadow_map, proj);
     }
 }
 
