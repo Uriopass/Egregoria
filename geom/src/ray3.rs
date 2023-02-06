@@ -15,13 +15,13 @@ impl Ray3 {
     pub fn intersection_plane(&self, p: &Plane) -> Option<Vec3> {
         // assuming vectors are all normalized
         let denom = p.n.dot(self.dir);
-        if denom.abs() > 1e-7 {
-            let diff = p.p - self.from;
-            let t = diff.dot(p.n) / denom;
-            if t >= 0.0 {
-                return Some(self.from + self.dir * t);
-            }
+        if denom.abs() <= 1e-6 {
+            return None;
         }
-        None
+        let t = (-self.from.dot(p.n) - p.o) / denom;
+        if t < 0.0 {
+            return None;
+        }
+        Some(self.from + self.dir * t)
     }
 }

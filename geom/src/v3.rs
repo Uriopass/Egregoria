@@ -1,4 +1,4 @@
-use crate::{vec2, vec4, Vec2, Vec4};
+use crate::{vec2, vec4, Shape3, Vec2, Vec4, AABB3};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
@@ -11,6 +11,12 @@ pub struct Vec3 {
     pub x: f32,
     pub y: f32,
     pub z: f32,
+}
+
+impl Shape3 for Vec3 {
+    fn bbox(&self) -> AABB3 {
+        AABB3::new(*self, *self)
+    }
 }
 
 impl Serialize for Vec3 {

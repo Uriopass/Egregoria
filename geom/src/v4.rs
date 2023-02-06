@@ -14,6 +14,10 @@ impl Vec4 {
         (self.x * other.x + self.y * other.y) + (self.z * other.z + self.w * other.w)
     }
 
+    pub fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
+        Self { x, y, z, w }
+    }
+
     pub fn new_w(v: Vec3, w: f32) -> Self {
         Self {
             x: v.x,

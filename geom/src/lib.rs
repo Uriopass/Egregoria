@@ -10,6 +10,17 @@ macro_rules! defer_inter {
     };
 }
 
+macro_rules! defer_inter3 {
+    ($a:ty => $b:ty) => {
+        impl Intersect3<$b> for $a {
+            #[inline]
+            fn intersects(&self, other: &$b) -> bool {
+                other.intersects(self)
+            }
+        }
+    };
+}
+
 mod aabb;
 mod aabb3;
 mod angle;
@@ -17,6 +28,8 @@ mod boldline;
 mod boldspline;
 mod circle;
 mod color;
+mod frustrum;
+mod infinite_frustrum;
 mod line;
 mod line3;
 mod matrix4;
@@ -47,6 +60,8 @@ pub use boldline::*;
 pub use boldspline::*;
 pub use circle::*;
 pub use color::*;
+pub use frustrum::*;
+pub use infinite_frustrum::*;
 pub use line::*;
 pub use line3::*;
 pub use matrix4::*;
@@ -64,7 +79,6 @@ pub use segment::*;
 pub use segment3::*;
 pub use spline3::*;
 pub use splines::*;
-pub use transform::*;
 pub use transform::*;
 pub use v2::*;
 pub use v3::*;
@@ -94,6 +108,19 @@ pub trait Intersect<T: Shape>: Shape {
 /// Shape trait means that the object has a bounding box
 pub trait Shape {
     fn bbox(&self) -> AABB;
+}
+
+/// Intersect trait is trait to check if two shapes intersect
+/// It does not do bbox checks on purpose to avoid doing it twice since
+/// we assume you use a broadphase to filter out objects that don't
+/// intersect the bbox
+pub trait Intersect3<T: Shape3>: Shape3 {
+    fn intersects(&self, shape: &T) -> bool;
+}
+
+/// Shape trait means that the object has a bounding box
+pub trait Shape3 {
+    fn bbox(&self) -> AABB3;
 }
 
 pub enum ShapeEnum {

@@ -4,7 +4,7 @@ use crate::inputmap::{InputAction, InputMap};
 use common::saveload::Encoder;
 use egregoria::map::pathfinding_crate::num_traits::Pow;
 use egregoria::map::CHUNK_SIZE;
-use geom::{vec4, Camera, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
+use geom::{vec4, Camera, InfiniteFrustrum, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
 
 pub(crate) struct CameraHandler3D {
@@ -15,15 +15,19 @@ pub(crate) struct CameraHandler3D {
     pub(crate) targetyaw: Radians,
     pub(crate) targetpitch: Radians,
     pub(crate) targetdist: f32,
+    pub(crate) frustrum: InfiniteFrustrum,
 }
 
 impl CameraHandler3D {
     pub(crate) fn update(&mut self, ctx: &mut Context) {
-        let proj = self.camera.build_view_projection_matrix();
-        let inv_proj = proj.invert().unwrap_or_else(Matrix4::zero);
+        let viewproj = self.camera.build_view_projection_matrix();
+        let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
 
-        ctx.gfx.set_proj(proj);
-        ctx.gfx.set_inv_proj(inv_proj);
+        self.frustrum =
+            InfiniteFrustrum::from_reversez_invviewproj(self.camera.eye(), inv_viewproj);
+
+        ctx.gfx.set_proj(viewproj);
+        ctx.gfx.set_inv_proj(inv_viewproj);
     }
 
     pub(crate) fn height(&self) -> f32 {
@@ -72,10 +76,7 @@ impl CameraHandler3D {
             dir: v.normalize(),
         };
 
-        let p = Plane {
-            p: Vec3::ZERO,
-            n: Vec3::Z,
-        };
+        let p = Plane { n: Vec3::Z, o: 0.0 };
 
         let p = r.intersection_plane(&p)?.xy();
         Some(p.z(height(p)?))
@@ -105,6 +106,7 @@ impl CameraHandler3D {
             targetyaw: camera.yaw,
             targetpitch: camera.pitch,
             targetdist: camera.dist,
+            frustrum: InfiniteFrustrum::new([Plane::new(Vec3::ZERO, 0.0); 5]),
         }
     }
 

@@ -5,7 +5,7 @@ use egregoria::map::{
     ChunkID, Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_RESOLUTION, CHUNK_SIZE,
 };
 use egregoria::Egregoria;
-use geom::{vec3, Camera, Color, LinearColor};
+use geom::{vec3, Camera, Color, InfiniteFrustrum, Intersect3, LinearColor, AABB3};
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::terrain::TerrainRender;
 use wgpu_engine::{
@@ -203,12 +203,16 @@ impl MapRenderer {
         }
     }
 
-    pub(crate) fn trees(&mut self, map: &Map, cam: &Camera, ctx: &mut FrameContext<'_>) {
+    pub(crate) fn trees(
+        &mut self,
+        map: &Map,
+        cam: &Camera,
+        frustrum: &InfiniteFrustrum,
+        ctx: &mut FrameContext<'_>,
+    ) {
         self.build_trees(map, ctx);
 
         let camcenter = cam.pos.xy();
-        let eye = cam.eye();
-        let dir = -cam.dir();
 
         for (cid, (_, meshes)) in self.trees_builders.iter() {
             let chunkcenter = vec3(
@@ -217,9 +221,10 @@ impl MapRenderer {
                 0.0,
             );
 
-            if ((chunkcenter - eye).dot(dir) < 0.0
-                || chunkcenter.xy().distance(camcenter) > 10000.0)
-                && !chunkcenter.xy().is_close(eye.xy(), CHUNK_SIZE as f32)
+            if !frustrum.intersects(&AABB3::centered(
+                chunkcenter,
+                vec3(5.0 + CHUNK_SIZE as f32, 5.0 + CHUNK_SIZE as f32, 100.0),
+            )) || camcenter.distance(chunkcenter.xy()) > 5000.0
             {
                 continue;
             }
@@ -236,13 +241,14 @@ impl MapRenderer {
         map: &Map,
         time: u32,
         cam: &Camera,
+        frustrum: &InfiniteFrustrum,
         options: MapRenderOptions,
         tess: &mut Tesselator,
         ctx: &mut FrameContext<'_>,
     ) {
-        self.terrain.draw_terrain(cam, ctx);
+        self.terrain.draw_terrain(cam, frustrum, ctx);
 
-        self.trees(map, cam, ctx);
+        self.trees(map, cam, frustrum, ctx);
 
         self.meshb.latest_mesh(map, options, ctx);
 

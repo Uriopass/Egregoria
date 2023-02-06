@@ -176,6 +176,7 @@ impl State {
             &goria.map(),
             time.seconds,
             &self.camera.camera,
+            &self.camera.frustrum,
             MapRenderOptions {
                 show_arrows: self.uiw.read::<Tool>().show_arrows(),
             },

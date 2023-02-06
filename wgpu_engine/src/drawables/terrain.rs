@@ -3,7 +3,7 @@ use crate::{
     MeshBuilder, MeshVertex, RenderParams, TerrainVertex, Texture, Uniform, VBDesc,
 };
 use common::FastMap;
-use geom::{vec2, vec3, Camera, LinearColor, Polygon, Vec2};
+use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Polygon, Vec2, AABB3};
 use std::num::NonZeroU32;
 use std::ops::Sub;
 use std::rc::Rc;
@@ -166,7 +166,12 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
     }
 
     #[profiling::function]
-    pub fn draw_terrain(&mut self, cam: &Camera, fctx: &mut FrameContext<'_>) {
+    pub fn draw_terrain(
+        &mut self,
+        cam: &Camera,
+        frustrum: &InfiniteFrustrum,
+        fctx: &mut FrameContext<'_>,
+    ) {
         for b in self.borders.iter() {
             fctx.objs.push(Box::new(b.clone()));
         }
@@ -177,6 +182,14 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         for y in 0..self.h {
             for x in 0..self.w {
                 let p = vec2(x as f32, y as f32) * CSIZE as f32;
+
+                if !frustrum.intersects(&AABB3::centered(
+                    (p + Vec2::splat(CSIZE as f32 * 0.5)).z(0.0),
+                    vec3(CSIZE as f32, CSIZE as f32, 1000.0),
+                )) {
+                    continue;
+                }
+
                 let lod = eye.distance(p.z0()).log2().sub(10.0).max(0.0) as usize;
                 let lod = lod.min(LOD - 1);
 

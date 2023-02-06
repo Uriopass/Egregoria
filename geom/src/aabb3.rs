@@ -1,10 +1,17 @@
 use super::Vec3;
+use crate::Shape3;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct AABB3 {
     pub ll: Vec3,
     pub ur: Vec3,
+}
+
+impl Shape3 for AABB3 {
+    fn bbox(&self) -> AABB3 {
+        *self
+    }
 }
 
 impl AABB3 {
