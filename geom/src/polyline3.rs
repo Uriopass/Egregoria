@@ -48,6 +48,10 @@ impl PolyLine3 {
         self.l = 0.0;
     }
 
+    pub fn len(&self) -> usize {
+        self.points.len()
+    }
+
     pub fn clear_extend<A, T>(&mut self, s: T)
     where
         T: IntoIterator<Item = A>,

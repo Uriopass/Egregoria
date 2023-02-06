@@ -64,6 +64,10 @@ impl LightPolicy {
         }
     }
 
+    pub fn is_stop_signs(&self) -> bool {
+        matches!(self, LightPolicy::StopSigns)
+    }
+
     fn stop_signs(in_road_lanes: Vec<Vec<LaneID>>, lanes: &mut Lanes) {
         for incoming_lanes in in_road_lanes {
             for lane in incoming_lanes {

@@ -486,6 +486,7 @@ impl MapBuilders {
     fn map_mesh(&mut self, map: &Map) {
         let tess = &mut self.tess_map;
         tess.meshbuilder.clear();
+        self.stop_signs.instances.clear();
 
         let low_col: LinearColor = common::config().road_low_col.into();
         let mid_col: LinearColor = common::config().road_mid_col.into();
@@ -500,14 +501,36 @@ impl MapBuilders {
 
         for road in roads.values() {
             let cut = road.interfaced_points();
+            let first_dir = unwrap_cont!(cut.first_dir());
+            let last_dir = unwrap_cont!(cut.last_dir());
+
+            if inters[road.dst].light_policy.is_stop_signs() {
+                self.stop_signs.instances.push(MeshInstance {
+                    pos: cut.last()
+                        + last_dir.perp_up() * (road.width * 0.5 - 3.0)
+                        + last_dir * -1.3,
+                    dir: last_dir.perp_up(),
+                    tint: LinearColor::WHITE,
+                });
+            }
+
+            if inters[road.src].light_policy.is_stop_signs() {
+                self.stop_signs.instances.push(MeshInstance {
+                    pos: cut.first()
+                        - first_dir.perp_up() * (road.width * 0.5 - 3.0)
+                        - first_dir * -1.3,
+                    dir: last_dir.perp_up(),
+                    tint: LinearColor::WHITE,
+                });
+            }
 
             road_pylons(&mut tess.meshbuilder, terrain, road);
 
             tess.normal.z = -1.0;
             tess.draw_polyline_full(
                 cut.iter().map(|x| x.up(-0.3)),
-                cut.first_dir().unwrap_or_default().xy(),
-                cut.last_dir().unwrap_or_default().xy(),
+                first_dir.xy(),
+                last_dir.xy(),
                 road.width,
                 0.0,
             );
@@ -517,8 +540,8 @@ impl MapBuilders {
                 tess.set_color(col);
                 tess.draw_polyline_full(
                     cut.as_slice().iter().copied(),
-                    unwrap_ret!(cut.first_dir()).xy(),
-                    unwrap_ret!(cut.last_dir()).xy(),
+                    first_dir.xy(),
+                    last_dir.xy(),
                     w,
                     off,
                 );
