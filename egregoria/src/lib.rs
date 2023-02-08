@@ -4,7 +4,9 @@
 use crate::economy::{Bought, Sold, Workers};
 use crate::engine_interaction::{Selectable, WorldCommand};
 use crate::map::{BuildingKind, Map};
-use crate::map_dynamic::{DispatchKind, Itinerary, ItineraryFollower, ItineraryLeader, Router};
+use crate::map_dynamic::{
+    DispatchKind, Itinerary, ItineraryFollower, ItineraryFollower2, ItineraryLeader, Router,
+};
 use crate::physics::CollisionWorld;
 use crate::physics::{Collider, Speed};
 use crate::souls::add_souls_to_empty_buildings;
@@ -536,6 +538,7 @@ register!(
         RailWagon => _18,
         ItineraryLeader => _20,
         ItineraryFollower => _21,
+        ItineraryFollower2 => _25,
         LocomotiveReservation => _22,
         FreightStation => _23,
         DispatchKind => _24,
