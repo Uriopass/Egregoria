@@ -20,7 +20,7 @@ pub struct ParCommandBuffer {
     to_kill: Mutex<Vec<Entity>>,
     add_comp: Mutex<BTreeMap<(Entity, TypeId), ExecType>>,
     remove_comp: Mutex<BTreeMap<(Entity, TypeId), ExecType>>,
-    exec_ent: Mutex<BTreeMap<Entity, ExecType>>,
+    exec_ent: Mutex<BTreeMap<Entity, Vec<ExecType>>>,
     exec_on: Mutex<BTreeMap<(Entity, TypeId), ExecType>>,
 }
 
@@ -35,10 +35,12 @@ impl ParCommandBuffer {
     }
 
     pub fn exec_ent(&self, e: Entity, f: impl for<'a> FnOnce(&'a mut Egregoria) + 'static + Send) {
-        let v = self.exec_ent.lock().unwrap().insert(e, Box::new(f));
-        if v.is_some() {
-            log::error!("executing two closures relating to an entity. Might cause desyncs");
-        }
+        self.exec_ent
+            .lock()
+            .unwrap()
+            .entry(e)
+            .or_default()
+            .push(Box::new(f))
     }
 
     pub fn exec_on<T: Resource>(
@@ -152,8 +154,10 @@ impl ParCommandBuffer {
                 .unwrap(),
         );
 
-        for (_, exec) in exec_ent {
-            exec(goria);
+        for (_, execs) in exec_ent {
+            for exec in execs {
+                exec(goria);
+            }
         }
 
         let exec_ent =
