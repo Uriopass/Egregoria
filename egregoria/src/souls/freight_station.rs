@@ -89,8 +89,8 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
                 FreightTrainState::Arriving => {
                     if itin.has_ended(0.0) {
                         *state = FreightTrainState::Loading;
-                        soul.waiting_cargo = soul.waiting_cargo.saturating_sub(10);
-                        soul.wanted_cargo = soul.wanted_cargo.saturating_sub(10);
+                        soul.waiting_cargo = soul.waiting_cargo.saturating_sub(100);
+                        soul.wanted_cargo = soul.wanted_cargo.saturating_sub(100);
                         *itin = Itinerary::wait_until(time.timestamp + 10.0);
                     }
                 }
