@@ -90,7 +90,7 @@ impl Dispatcher {
                 if !world.contains(*o.get()) {
                     o.remove();
                 } else {
-                    return;
+                    continue;
                 }
             }
             disp.register(ent, map, trans.position);
