@@ -9,7 +9,7 @@ use egregoria::souls::human::HumanDecision;
 use egregoria::transportation::{Location, Pedestrian, Vehicle, VehicleID};
 use egregoria::{Egregoria, SoulID};
 
-use egregoria::souls::fret_station::FreightStation;
+use egregoria::souls::freight_station::FreightStation;
 use egregoria::transportation::train::{Locomotive, LocomotiveReservation};
 use egui::{Color32, RichText, Ui};
 use egui_inspect::{Inspect, InspectArgs};

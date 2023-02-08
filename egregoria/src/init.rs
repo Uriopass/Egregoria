@@ -5,7 +5,7 @@ use crate::map_dynamic::{
     BuildingInfos, Dispatcher, ParkingManagement,
 };
 use crate::physics::coworld_synchronize;
-use crate::souls::fret_station::freight_station_system;
+use crate::souls::freight_station::freight_station_system;
 use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
 use crate::transportation::pedestrian_decision_system;

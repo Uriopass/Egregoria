@@ -1,6 +1,6 @@
 use crate::map::{BuildingID, BuildingKind};
 use crate::map_dynamic::BuildingInfos;
-use crate::souls::fret_station::freight_station_soul;
+use crate::souls::freight_station::freight_station_soul;
 use crate::souls::goods_company::{company_soul, CompanyKind, GoodsCompany, GoodsCompanyRegistry};
 use crate::souls::human::spawn_human;
 use crate::transportation::{spawn_parked_vehicle, VehicleKind};
@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 #[macro_use]
 pub mod desire;
 
-pub mod fret_station;
+pub mod freight_station;
 pub mod goods_company;
 pub mod human;
 
@@ -48,7 +48,7 @@ pub(crate) fn add_souls_to_empty_buildings(goria: &mut Egregoria) {
     }
 
     for &(build_id, _) in empty_buildings
-        .get(&BuildingKind::RailFretStation)
+        .get(&BuildingKind::RailFreightStation)
         .unwrap_or(&vec![])
         .iter()
     {

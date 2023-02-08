@@ -61,7 +61,7 @@ impl Government {
                             })
                             .unwrap_or(0)
                 }
-                BuildingKind::RailFretStation => 1000,
+                BuildingKind::RailFreightStation => 1000,
                 BuildingKind::TrainStation => 1000,
                 _ => 0,
             },

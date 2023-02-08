@@ -16,7 +16,7 @@ debug_inspect_impl!(BuildingID);
 pub enum BuildingKind {
     House,
     GoodsCompany(GoodsCompanyID),
-    RailFretStation,
+    RailFreightStation,
     TrainStation,
     ExternalTrading,
 }
@@ -32,7 +32,7 @@ impl BuildingKind {
     pub fn is_cached_in_bkinds(&self) -> bool {
         matches!(
             self,
-            BuildingKind::RailFretStation | BuildingKind::ExternalTrading
+            BuildingKind::RailFreightStation | BuildingKind::ExternalTrading
         )
     }
 }

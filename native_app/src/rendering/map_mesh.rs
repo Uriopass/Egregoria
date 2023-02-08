@@ -68,7 +68,7 @@ impl MapMeshHandler {
                 )
             })
             .chain([
-                ("rail_fret_station.glb", BuildingKind::RailFretStation),
+                ("rail_freight_station.glb", BuildingKind::RailFreightStation),
                 ("external_trading.glb", BuildingKind::ExternalTrading),
             ])
         {

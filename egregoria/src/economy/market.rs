@@ -106,7 +106,7 @@ pub fn find_trade_place(
         TradeTarget::Soul(id) => binfos.building_owned_by(id),
         TradeTarget::ExternalTrade => {
             map.bkinds
-                .get(&BuildingKind::RailFretStation)
+                .get(&BuildingKind::RailFreightStation)
                 .and_then(|b| {
                     b.iter()
                         .filter_map(|&bid| map.buildings.get(bid))

@@ -52,7 +52,7 @@ pub mod utils;
 
 use crate::engine_interaction::WorldCommand::Init;
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
-use crate::souls::fret_station::FreightStation;
+use crate::souls::freight_station::FreightStation;
 use crate::transportation::train::RailWagon;
 use crate::utils::scheduler::RunnableSystem;
 use crate::utils::time::Tick;
@@ -587,7 +587,7 @@ const START_COMMANDS: &str = r#"
               5027664915164504270
             ]
           },
-          "kind": "RailFretStation",
+          "kind": "RailFreightStation",
           "gen": {
             "NoWalkway": {
               "door_pos": 0

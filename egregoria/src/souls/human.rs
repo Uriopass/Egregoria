@@ -65,7 +65,7 @@ impl HumanDecisionKind {
             }
             HumanDecisionKind::DeliverAtBuilding(bid) => {
                 let Some(b) = map.buildings().get(bid) else { return true };
-                if matches!(b.kind, BuildingKind::RailFretStation) {
+                if matches!(b.kind, BuildingKind::RailFreightStation) {
                     let Some(b) = binfos.owner(bid) else { return true };
                     cbuf.exec_ent(b.0, move |e| {
                         if let Some(mut f) = e.comp_mut::<FreightStation>(b.0) {

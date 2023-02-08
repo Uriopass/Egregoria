@@ -45,7 +45,7 @@ pub struct LocomotiveReservation {
 pub enum RailWagonKind {
     Locomotive,
     Passenger,
-    Fret,
+    Freight,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -123,7 +123,7 @@ pub fn spawn_train(
             dec_force: 2.5,
             length: trainlength,
         },
-        DispatchKind::FretTrain,
+        DispatchKind::FreightTrain,
         LocomotiveReservation {
             cur_travers_dist: dist,
             waited_for: 0.0,

@@ -312,7 +312,7 @@ impl Gui {
 
                                 commands.push(WorldCommand::MapBuildSpecialBuilding {
                                     pos: args.obb,
-                                    kind: BuildingKind::RailFretStation,
+                                    kind: BuildingKind::RailFreightStation,
                                     gen: BuildingGen::NoWalkway {
                                         door_pos: Vec2::ZERO,
                                     },
@@ -322,7 +322,7 @@ impl Gui {
                             }),
                             w: 160.0,
                             h: 200.0,
-                            asset: "rail_fret_station.glb".to_string(),
+                            asset: "rail_freight_station.glb".to_string(),
                             road_snap: false,
                         });
                     }

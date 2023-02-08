@@ -13,7 +13,7 @@ pub(crate) struct InstancedRender {
     pub(crate) cars: InstancedMeshBuilder,
     pub(crate) locomotives: InstancedMeshBuilder,
     pub(crate) wagons_passenger: InstancedMeshBuilder,
-    pub(crate) wagons_fret: InstancedMeshBuilder,
+    pub(crate) wagons_freight: InstancedMeshBuilder,
     pub(crate) trucks: InstancedMeshBuilder,
     pub(crate) pedestrians: InstancedMeshBuilder,
 }
@@ -27,7 +27,7 @@ impl InstancedRender {
             ),
             cars: InstancedMeshBuilder::new(load_mesh(gfx, "simple_car.glb").unwrap()),
             locomotives: InstancedMeshBuilder::new(load_mesh(gfx, "train.glb").unwrap()),
-            wagons_fret: InstancedMeshBuilder::new(load_mesh(gfx, "wagon_fret.glb").unwrap()),
+            wagons_freight: InstancedMeshBuilder::new(load_mesh(gfx, "wagon_freight.glb").unwrap()),
             wagons_passenger: InstancedMeshBuilder::new(load_mesh(gfx, "wagon.glb").unwrap()),
             trucks: InstancedMeshBuilder::new(load_mesh(gfx, "truck.glb").unwrap()),
             pedestrians: InstancedMeshBuilder::new(load_mesh(gfx, "pedestrian.glb").unwrap()),
@@ -55,7 +55,7 @@ impl InstancedRender {
 
         self.locomotives.instances.clear();
         self.wagons_passenger.instances.clear();
-        self.wagons_fret.instances.clear();
+        self.wagons_freight.instances.clear();
         for (_, (trans, wagon)) in goria.world().query::<(&Transform, &RailWagon)>().iter() {
             let instance = MeshInstance {
                 pos: trans.position,
@@ -67,8 +67,8 @@ impl InstancedRender {
                 RailWagonKind::Passenger => {
                     self.wagons_passenger.instances.push(instance);
                 }
-                RailWagonKind::Fret => {
-                    self.wagons_fret.instances.push(instance);
+                RailWagonKind::Freight => {
+                    self.wagons_freight.instances.push(instance);
                 }
                 RailWagonKind::Locomotive => {
                     self.locomotives.instances.push(instance);
@@ -130,7 +130,7 @@ impl InstancedRender {
         if let Some(x) = self.wagons_passenger.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }
-        if let Some(x) = self.wagons_fret.build(fctx.gfx) {
+        if let Some(x) = self.wagons_freight.build(fctx.gfx) {
             fctx.objs.push(Box::new(x));
         }
     }

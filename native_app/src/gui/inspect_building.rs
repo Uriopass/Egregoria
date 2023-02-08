@@ -7,7 +7,7 @@ use egui::{Context, Ui, Widget};
 use crate::gui::{item_icon, InspectedEntity};
 use egregoria::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
 use egregoria::map_dynamic::BuildingInfos;
-use egregoria::souls::fret_station::{FreightStation, FreightTrainState};
+use egregoria::souls::freight_station::{FreightStation, FreightTrainState};
 use egregoria::souls::goods_company::{GoodsCompany, GoodsCompanyRegistry, Recipe};
 use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
 
@@ -24,7 +24,7 @@ pub(crate) fn inspect_building(
     let title: &str = match building.kind {
         BuildingKind::House => "House",
         BuildingKind::GoodsCompany(id) => &gregistry.descriptions[id].name,
-        BuildingKind::RailFretStation => "Rail Fret Station",
+        BuildingKind::RailFreightStation => "Rail Freight Station",
         BuildingKind::TrainStation => "Train Station",
         BuildingKind::ExternalTrading => "External Trading",
     };
@@ -42,8 +42,8 @@ pub(crate) fn inspect_building(
                 BuildingKind::GoodsCompany(_) => {
                     render_goodscompany(ui, uiworld, goria, building);
                 }
-                BuildingKind::RailFretStation => {
-                    render_fretstation(ui, uiworld, goria, building);
+                BuildingKind::RailFreightStation => {
+                    render_freightstation(ui, uiworld, goria, building);
                 }
                 BuildingKind::TrainStation => {}
                 BuildingKind::ExternalTrading => {}
@@ -92,16 +92,16 @@ fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Build
     }
 }
 
-fn render_fretstation(ui: &mut Ui, _uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
+fn render_freightstation(ui: &mut Ui, _uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
     let Some(owner) = goria.read::<BuildingInfos>().owner(b.id) else { return; };
 
-    let Some(fret) = goria.comp::<FreightStation>(owner.0) else { return; };
+    let Some(freight) = goria.comp::<FreightStation>(owner.0) else { return; };
 
-    ui.label(format!("Waiting cargo: {}", fret.waiting_cargo));
+    ui.label(format!("Waiting cargo: {}", freight.waiting_cargo));
 
     ui.add_space(10.0);
     ui.label("Trains:");
-    for (tid, state) in &fret.trains {
+    for (tid, state) in &freight.trains {
         ui.horizontal(|ui| {
             ui.label(format!("{tid:?} "));
             match state {

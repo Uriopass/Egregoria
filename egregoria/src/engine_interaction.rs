@@ -297,7 +297,7 @@ impl WorldCommand {
                 n_wagons,
                 lane,
             } => {
-                spawn_train(goria, dist, n_wagons, lane, RailWagonKind::Fret);
+                spawn_train(goria, dist, n_wagons, lane, RailWagonKind::Freight);
             }
             MapLoadParis => load_parismap(&mut goria.map_mut()),
             MapLoadTestField { pos, size, spacing } => {

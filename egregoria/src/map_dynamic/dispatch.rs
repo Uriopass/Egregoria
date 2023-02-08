@@ -15,7 +15,7 @@ const PRECISION_RADIUS_2: f32 = PRECISION_RADIUS * PRECISION_RADIUS;
 
 /// Dispatcher is used to query for the closest networked entity matching a condition
 /// For example:
-/// - A rail fret station will query for the closest train to it that is not already used by another station
+/// - A rail freight station will query for the closest train to it that is not already used by another station
 /// - A factory will query for a truck to deliver goods
 /// - A hospital will query for the closest injured person
 #[derive(Default, Serialize, Deserialize)]
@@ -43,14 +43,14 @@ struct DispatchPosition {
 /// Usually constant.
 #[derive(Serialize, Deserialize, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Inspect)]
 pub enum DispatchKind {
-    FretTrain,
+    FreightTrain,
     SmallTruck,
 }
 
 impl DispatchKind {
     pub fn lane_kind(self) -> LaneKind {
         match self {
-            DispatchKind::FretTrain => LaneKind::Rail,
+            DispatchKind::FreightTrain => LaneKind::Rail,
             DispatchKind::SmallTruck => LaneKind::Driving,
         }
     }
@@ -74,9 +74,9 @@ impl Dispatcher {
     ) {
         let mut disp: &mut DispatchOne = self
             .dispatches
-            .entry(DispatchKind::FretTrain)
-            .or_insert_with(|| DispatchOne::new(DispatchKind::FretTrain.lane_kind()));
-        let mut last_kind: DispatchKind = DispatchKind::FretTrain;
+            .entry(DispatchKind::FreightTrain)
+            .or_insert_with(|| DispatchOne::new(DispatchKind::FreightTrain.lane_kind()));
+        let mut last_kind: DispatchKind = DispatchKind::FreightTrain;
         for (ent, (trans, kind)) in query.iter() {
             if last_kind != *kind {
                 disp = self
@@ -371,8 +371,8 @@ mod tests {
 
         let mut register = |id: Entity, pos: f32| {
             d.dispatches
-                .entry(DispatchKind::FretTrain)
-                .or_insert(DispatchOne::new(DispatchKind::FretTrain.lane_kind()))
+                .entry(DispatchKind::FreightTrain)
+                .or_insert(DispatchOne::new(DispatchKind::FreightTrain.lane_kind()))
                 .register(id, &map, Vec3::x(pos))
         };
 
@@ -389,12 +389,12 @@ mod tests {
             d.query(
                 &map,
                 me,
-                DispatchKind::FretTrain,
+                DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(70.0)),
             ),
             Some(ent1)
         );
-        d.dispatches[&DispatchKind::FretTrain]
+        d.dispatches[&DispatchKind::FreightTrain]
             .reserved_by
             .contains_key(&Entity::from_bits((1 << 32) + 1).unwrap());
 
@@ -402,12 +402,12 @@ mod tests {
             d.query(
                 &map,
                 me,
-                DispatchKind::FretTrain,
+                DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(50.0)),
             ),
             Some(ent0)
         );
-        d.dispatches[&DispatchKind::FretTrain]
+        d.dispatches[&DispatchKind::FreightTrain]
             .reserved_by
             .contains_key(&Entity::from_bits(1 << 32).unwrap());
 
@@ -415,7 +415,7 @@ mod tests {
             .query(
                 &map,
                 me,
-                DispatchKind::FretTrain,
+                DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(50.0)),
             )
             .is_none());
@@ -424,7 +424,7 @@ mod tests {
             d.query(
                 &map,
                 me,
-                DispatchKind::FretTrain,
+                DispatchKind::FreightTrain,
                 DispatchQueryTarget::Lane(lid),
             ),
             Some(ent2)
@@ -470,8 +470,8 @@ mod tests {
 
         let mut register = |id: Entity, pos: f32| {
             d.dispatches
-                .entry(DispatchKind::FretTrain)
-                .or_insert(DispatchOne::new(DispatchKind::FretTrain.lane_kind()))
+                .entry(DispatchKind::FreightTrain)
+                .or_insert(DispatchOne::new(DispatchKind::FreightTrain.lane_kind()))
                 .register(id, &map, Vec3::x(pos))
         };
 
@@ -488,12 +488,12 @@ mod tests {
             d.query(
                 &map,
                 me,
-                DispatchKind::FretTrain,
+                DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(70.0)),
             ),
             Some(ent1)
         );
-        d.dispatches[&DispatchKind::FretTrain]
+        d.dispatches[&DispatchKind::FreightTrain]
             .reserved_by
             .contains_key(&Entity::from_bits((1 << 32) + 1).unwrap());
 
@@ -501,12 +501,12 @@ mod tests {
             d.query(
                 &map,
                 me,
-                DispatchKind::FretTrain,
+                DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(50.0)),
             ),
             Some(ent0)
         );
-        d.dispatches[&DispatchKind::FretTrain]
+        d.dispatches[&DispatchKind::FreightTrain]
             .reserved_by
             .contains_key(&Entity::from_bits(1 << 32).unwrap());
 
@@ -514,7 +514,7 @@ mod tests {
             .query(
                 &map,
                 me,
-                DispatchKind::FretTrain,
+                DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(50.0)),
             )
             .is_none());
@@ -523,7 +523,7 @@ mod tests {
             d.query(
                 &map,
                 me,
-                DispatchKind::FretTrain,
+                DispatchKind::FreightTrain,
                 DispatchQueryTarget::Lane(lid),
             ),
             Some(ent2)

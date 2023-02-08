@@ -116,7 +116,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
         }
         for v in to_clean {
             soul.trains.retain(|x| x.0 != v);
-            dispatch.free(DispatchKind::FretTrain, v.0)
+            dispatch.free(DispatchKind::FreightTrain, v.0)
         }
 
         // If enough goods are waiting, query for a train to take them to the external trading station
@@ -132,7 +132,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
         let Some(trainid) = dispatch.query(
             &map,
             me,
-            DispatchKind::FretTrain,
+            DispatchKind::FreightTrain,
             DispatchQueryTarget::Pos(destination),
         ) else {
             continue;
@@ -170,7 +170,7 @@ mod tests {
 
         test.apply(&[WorldCommand::MapBuildSpecialBuilding {
             pos: OBB::new(vec2(50.0, 50.0), vec2(1.0, 0.0), 5.0, 5.0),
-            kind: BuildingKind::RailFretStation,
+            kind: BuildingKind::RailFreightStation,
             gen: BuildingGen::NoWalkway {
                 door_pos: vec2(50.0, 50.0),
             },
@@ -183,7 +183,7 @@ mod tests {
             .map()
             .buildings()
             .iter()
-            .find(|(_, b)| matches!(b.kind, BuildingKind::RailFretStation))
+            .find(|(_, b)| matches!(b.kind, BuildingKind::RailFreightStation))
             .unwrap()
             .0;
 
