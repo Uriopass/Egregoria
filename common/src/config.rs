@@ -62,7 +62,8 @@ fn load_config_start() -> Config {
 }
 
 fn save_config(config: &Config) {
-    crate::saveload::JSONPretty::save_silent(config, "config");
+    let Ok(x) = crate::saveload::JSONPretty::encode(config) else { return; };
+    let _ = std::fs::write("assets/config.json", x);
 }
 
 lazy_static! {
