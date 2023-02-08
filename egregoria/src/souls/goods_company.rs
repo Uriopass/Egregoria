@@ -282,6 +282,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
                 company,
                 Workers::default(),
                 Sold::default(),
+                Bought::default(),
                 Transform::new(obb.center().z(height)),
             ),
         )
