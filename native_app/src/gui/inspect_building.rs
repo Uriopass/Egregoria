@@ -98,6 +98,7 @@ fn render_freightstation(ui: &mut Ui, _uiworld: &mut UiWorld, goria: &Egregoria,
     let Some(freight) = goria.comp::<FreightStation>(owner.0) else { return; };
 
     ui.label(format!("Waiting cargo: {}", freight.waiting_cargo));
+    ui.label(format!("Wanted cargo: {}", freight.wanted_cargo));
 
     ui.add_space(10.0);
     ui.label("Trains:");

@@ -1,8 +1,9 @@
 use super::desire::Work;
-use crate::economy::{find_trade_place, ItemID, ItemRegistry, Market, Sold, Workers};
+use crate::economy::{find_trade_place, Bought, ItemID, ItemRegistry, Market, Sold, Workers};
 use crate::map::{Building, BuildingGen, BuildingID, Map, Zone, MAX_ZONE_AREA};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
+use crate::souls::freight_station::FreightStation;
 use crate::transportation::VehicleID;
 use crate::utils::time::GameTime;
 use crate::{Egregoria, ParCommandBuffer, SoulID};
@@ -296,11 +297,11 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
     let rc = res.get().unwrap();
     let rd = res.get().unwrap();
     let re = res.get().unwrap();
-    for (ent, (a, b, c)) in world
-        .query::<(&mut GoodsCompany, &mut Sold, &Workers)>()
+    for (ent, (a, b, c, d)) in world
+        .query::<(&mut GoodsCompany, &mut Sold, &mut Bought, &Workers)>()
         .iter()
     {
-        company(delta, &rb, &rc, &rd, &re, ent, a, b, c, world);
+        company(delta, &rb, &rc, &rd, &re, ent, a, b, c, d, world);
     }
 }
 
@@ -313,6 +314,7 @@ pub fn company(
     me: Entity,
     company: &mut GoodsCompany,
     sold: &mut Sold,
+    bought: &mut Bought,
     workers: &Workers,
     world: &World,
 ) {
@@ -338,6 +340,22 @@ pub fn company(
             recipe.act(soul, bpos.xy(), market);
         });
         return;
+    }
+
+    for (_, trades) in bought.0.iter_mut() {
+        for trade in trades.drain(..) {
+            if let Some(owner_build) = find_trade_place(trade.seller, b.door_pos.xy(), binfos, map)
+            {
+                cbuf.exec_ent(soul.0, move |goria| {
+                    let (world, res) = goria.world_res();
+                    if let Some(owner) = res.get::<BuildingInfos>().unwrap().owner(owner_build) {
+                        if let Ok(mut f) = world.get::<&mut FreightStation>(owner.0) {
+                            f.wanted_cargo += 1;
+                        }
+                    }
+                });
+            }
+        }
     }
 
     if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next() {

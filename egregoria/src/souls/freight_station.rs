@@ -28,6 +28,7 @@ pub struct FreightStation {
     pub building: BuildingID,
     pub trains: Vec<(TrainID, FreightTrainState)>,
     pub waiting_cargo: u32,
+    pub wanted_cargo: u32,
 }
 
 pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Option<SoulID> {
@@ -37,6 +38,7 @@ pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Opti
         building,
         trains: Vec::with_capacity(MAX_TRAINS_PER_STATION),
         waiting_cargo: 0,
+        wanted_cargo: 0,
     };
     let b = map.buildings.get(building)?;
 
@@ -87,7 +89,8 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
                 FreightTrainState::Arriving => {
                     if itin.has_ended(0.0) {
                         *state = FreightTrainState::Loading;
-                        soul.waiting_cargo -= 10;
+                        soul.waiting_cargo = soul.waiting_cargo.saturating_sub(10);
+                        soul.wanted_cargo = soul.wanted_cargo.saturating_sub(10);
                         *itin = Itinerary::wait_until(time.timestamp + 10.0);
                     }
                 }
@@ -123,7 +126,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
         if soul.trains.len() >= MAX_TRAINS_PER_STATION {
             continue;
         }
-        if soul.waiting_cargo < 10 {
+        if soul.waiting_cargo + soul.wanted_cargo < 10 {
             continue;
         }
 
