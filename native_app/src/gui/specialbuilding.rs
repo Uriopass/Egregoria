@@ -1,5 +1,5 @@
 use super::Tool;
-use crate::gui::{ErrorTooltip, PotentialCommands};
+use crate::gui::{ErrorTooltip, InspectedBuilding, PotentialCommands};
 use crate::inputmap::{InputAction, InputMap};
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
 use crate::uiworld::UiWorld;
@@ -45,6 +45,24 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     if !matches!(tool, Tool::SpecialBuilding) {
         return;
+    }
+
+    for command in uiworld.received_commands().iter() {
+        if let WorldCommand::MapBuildSpecialBuilding { pos, kind, .. } = command {
+            if let Some(proj) = map
+                .spatial_map()
+                .query(pos.center(), ProjectFilter::BUILDING)
+                .next()
+            {
+                if let ProjectKind::Building(bid) = proj {
+                    if let Some(b) = map.buildings().get(bid) {
+                        if b.kind == *kind {
+                            uiworld.write::<InspectedBuilding>().e = Some(bid);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     if inp.act.contains(&InputAction::Rotate) {
