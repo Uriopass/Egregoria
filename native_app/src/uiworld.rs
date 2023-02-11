@@ -1,6 +1,6 @@
 use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
-use egregoria::Replay;
+use egregoria::{Egregoria, EgregoriaReplayLoader};
 use hecs::{Component, DynamicBundle, QueryOne};
 use hecs::{Entity, World};
 use resources::{Ref, RefMut, Resource};
@@ -15,7 +15,8 @@ pub(crate) struct UiWorld {
 
 #[derive(Default)]
 pub struct SaveLoadState {
-    pub please_load: Option<Replay>,
+    pub please_load: Option<EgregoriaReplayLoader>,
+    pub please_load_goria: Option<Egregoria>,
     pub please_save: bool,
     pub saving_status: Arc<AtomicBool>,
 }

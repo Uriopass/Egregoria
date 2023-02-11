@@ -11,7 +11,7 @@ impl Default for NetworkState {
 mod inner {
     use crate::game_loop::{State, Timings};
     use crate::gui::windows::settings::Settings;
-    use crate::uiworld::ReceivedCommands;
+    use crate::uiworld::{ReceivedCommands, SaveLoadState};
     use common::timestep::Timestep;
     use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 
@@ -26,6 +26,19 @@ mod inner {
         let timewarp = state.uiw.read::<Settings>().time_warp;
         let mut commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
         *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
+
+        let mut slstate = state.uiw.write::<SaveLoadState>();
+        if let Some(new_goria) = slstate.please_load_goria.take() {
+            *goria = new_goria;
+            log::info!("replaced goria");
+        }
+        if let Some(ref mut replay) = slstate.please_load {
+            if replay.advance(&mut goria, &mut state.game_schedule, 10) {
+                slstate.please_load = None;
+                log::info!("finished loading replay");
+            }
+            return;
+        }
 
         let sched = &mut state.game_schedule;
         let mut timings = state.uiw.write::<Timings>();
@@ -64,7 +77,7 @@ mod inner {
     use crate::game_loop::{State, Timings, VERSION};
     use crate::gui::windows::network::NetworkConnectionInfo;
     use crate::gui::windows::settings::Settings;
-    use crate::uiworld::ReceivedCommands;
+    use crate::uiworld::{ReceivedCommands, SaveLoadState};
     use common::timestep::Timestep;
     use egregoria::engine_interaction::{WorldCommand, WorldCommands};
     use egregoria::Egregoria;
@@ -90,6 +103,19 @@ mod inner {
         let timewarp = state.uiw.read::<Settings>().time_warp;
         let mut commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
         *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
+
+        let mut slstate = state.uiw.write::<SaveLoadState>();
+        if let Some(new_goria) = slstate.please_load_goria.take() {
+            *goria = new_goria;
+            log::info!("replaced goria");
+        }
+        if let Some(ref mut replay) = slstate.please_load {
+            if replay.advance(&mut goria, &mut state.game_schedule, 1) {
+                slstate.please_load = None;
+                log::info!("finished loading replay");
+            }
+            return;
+        }
 
         let mut net_state = state.uiw.write::<NetworkState>();
 

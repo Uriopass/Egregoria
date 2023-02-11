@@ -260,15 +260,6 @@ impl State {
                 status.store(false, Ordering::SeqCst);
             });
         }
-
-        // We might be saving egregoria, wait for it to finish
-        if let Ok(mut goria) = self.goria.try_write() {
-            if let Some(replay) = slstate.please_load.take() {
-                log::info!("loading replay");
-                let newgoria = Egregoria::from_replay(replay);
-                *goria = newgoria;
-            }
-        }
     }
 
     fn manage_settings(ctx: &mut Context, settings: &Settings) {

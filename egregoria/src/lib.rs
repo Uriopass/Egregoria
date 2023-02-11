@@ -97,6 +97,52 @@ pub struct Replay {
     pub commands: Vec<(Tick, WorldCommand)>,
 }
 
+pub struct EgregoriaReplayLoader {
+    pub replay: Replay,
+    pub pastt: Tick,
+    pub idx: usize,
+}
+
+impl EgregoriaReplayLoader {
+    pub fn advance(
+        &mut self,
+        goria: &mut Egregoria,
+        schedule: &mut SeqSchedule,
+        ticks: usize,
+    ) -> bool {
+        // iterate through tick grouped commands
+        let mut ticks_done = 0;
+        while self.idx < self.replay.commands.len() && ticks_done < ticks {
+            let curt = self.replay.commands[self.idx].0;
+            while self.pastt < curt {
+                goria.tick(schedule, &[]);
+                self.pastt.0 += 1;
+                ticks_done += 1;
+                if ticks_done >= ticks {
+                    return false;
+                }
+            }
+
+            let idx_start = self.idx;
+            while self.idx < self.replay.commands.len() && self.replay.commands[self.idx].0 == curt
+            {
+                self.idx += 1;
+            }
+            let command_slice = &self.replay.commands[idx_start..self.idx];
+
+            log::info!(
+                "[replay] acttick {:?} ({})",
+                self.pastt,
+                command_slice.len()
+            );
+            goria.tick(schedule, command_slice.iter().map(|(_, c)| c));
+            self.pastt.0 += 1;
+            ticks_done += 1;
+        }
+        self.idx >= self.replay.commands.len()
+    }
+}
+
 impl Egregoria {
     pub fn schedule() -> SeqSchedule {
         let mut schedule = SeqSchedule::default();
@@ -116,15 +162,31 @@ impl Egregoria {
         })
     }
 
-    pub fn from_replay(replay: Replay) -> Egregoria {
-        Self::_new(EgregoriaOptions::default(), Some(replay))
+    pub fn from_replay(replay: Replay) -> (Egregoria, EgregoriaReplayLoader) {
+        let mut goria = Egregoria {
+            world: Default::default(),
+            resources: Default::default(),
+        };
+
+        info!("Seed is {}", RNG_SEED);
+
+        unsafe {
+            for s in &INIT_FUNCS {
+                (s.f)(&mut goria);
+            }
+        }
+
+        (
+            goria,
+            EgregoriaReplayLoader {
+                replay,
+                pastt: Tick::default(),
+                idx: 0,
+            },
+        )
     }
 
     pub fn new_with_options(opts: EgregoriaOptions) -> Egregoria {
-        Self::_new(opts, None)
-    }
-
-    fn _new(opts: EgregoriaOptions, replay: Option<Replay>) -> Egregoria {
         let mut goria = Egregoria {
             world: Default::default(),
             resources: Default::default(),
@@ -137,33 +199,6 @@ impl Egregoria {
             for s in &INIT_FUNCS {
                 (s.f)(&mut goria);
             }
-        }
-
-        if let Some(replay) = replay {
-            let mut schedule = Egregoria::schedule();
-            let mut pastt = Tick::default();
-            let mut idx = 0;
-
-            // iterate through tick grouped commands
-            while idx < replay.commands.len() {
-                let curt = replay.commands[idx].0;
-                while pastt < curt {
-                    goria.tick(&mut schedule, &[]);
-                    pastt.0 += 1;
-                }
-
-                let idx_start = idx;
-                while idx < replay.commands.len() && replay.commands[idx].0 == curt {
-                    idx += 1;
-                }
-                let command_slice = &replay.commands[idx_start..idx];
-
-                log::info!("[replay] acttick {:?} ({})", pastt, command_slice.len());
-                goria.tick(&mut schedule, command_slice.iter().map(|(_, c)| c));
-                pastt.0 += 1;
-            }
-
-            return goria;
         }
 
         Init(Box::new(opts)).apply(&mut goria);

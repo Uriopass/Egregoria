@@ -1,7 +1,7 @@
 #![allow(unused)]
 use crate::uiworld::{SaveLoadState, UiWorld};
 use egregoria::Egregoria;
-use egui::{Color32, DroppedFile};
+use egui::{Color32, DroppedFile, Widget};
 use std::path::PathBuf;
 
 #[derive(Default)]
@@ -13,30 +13,6 @@ pub struct LoadState {
 pub(crate) fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, _: &Egregoria) {
     window.show(ui, |ui| {
         let mut lstate = uiw.write::<LoadState>();
-        /*
-        ui.label("Drop a file anywhere");
-
-        let inp = ui.input();
-        let dropped_files: &Vec<DroppedFile> = &inp.raw.dropped_files;
-        for file in dropped_files {
-            let Some(ref path) = file.path else { continue };
-            lstate.curpath = Some(path.clone());
-        }
-        drop(inp);
-
-        if let Some(ref path) = lstate.curpath {
-            ui.label(format!("path: {path:?}"));
-        }
-
-        if ui.button("Load").clicked() {
-            let replay = Egregoria::load_replay_from_disk("world");
-
-            if replay.is_none() {
-                lstate.load_fail = "Failed to load replay".to_string();
-            } else {
-                uiw.write::<SaveLoadState>().please_load = replay;
-            }
-        }*/
 
         let has_save = *ui
             .data()
@@ -48,14 +24,24 @@ pub(crate) fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWor
             if ui.button("Load world/world_replay.json").clicked() {
                 let replay = Egregoria::load_replay_from_disk("world");
 
-                if replay.is_none() {
-                    lstate.load_fail = "Failed to load replay".to_string();
+                if let Some(replay) = replay {
+                    let (goria, loader) = Egregoria::from_replay(replay);
+                    uiw.write::<SaveLoadState>().please_load = Some(loader);
+                    uiw.write::<SaveLoadState>().please_load_goria = Some(goria);
                 } else {
-                    uiw.write::<SaveLoadState>().please_load = replay;
+                    lstate.load_fail = "Failed to load replay".to_string();
                 }
             }
         } else {
             ui.label("No replay found in world/world_replay.json");
+        }
+
+        if let Some(loading) = uiw.read::<SaveLoadState>().please_load.as_ref() {
+            let ticks_done = loading.pastt.0;
+            let ticks_total = loading.replay.commands.last().map(|c| c.0 .0).unwrap_or(0);
+            egui::ProgressBar::new((ticks_done as f32) / (ticks_total as f32))
+                .text(format!("Loading replay: {ticks_done}/{ticks_total}"))
+                .ui(ui);
         }
 
         if !lstate.load_fail.is_empty() {
