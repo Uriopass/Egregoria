@@ -225,7 +225,7 @@ impl State {
         }
 
         if let Some(mut x) = self.immtess.meshbuilder.build(ctx.gfx) {
-            x.transparent = true;
+            x.skip_depth = true;
             ctx.draw(x)
         }
 

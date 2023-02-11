@@ -64,6 +64,7 @@ impl MeshBuilder {
             albedo: self.albedo.clone(),
             n_indices: self.indices.len() as u32,
             transparent: false,
+            skip_depth: false,
             double_sided: false,
         })
     }
@@ -77,6 +78,7 @@ pub struct Mesh {
     pub albedo_bg: Arc<wgpu::BindGroup>,
     pub n_indices: u32,
     pub transparent: bool,
+    pub skip_depth: bool,
     pub double_sided: bool,
 }
 
@@ -196,6 +198,9 @@ impl Drawable for Mesh {
         shadow_map: bool,
         proj: &'a wgpu::BindGroup,
     ) {
+        if self.skip_depth {
+            return;
+        }
         rp.set_pipeline(gfx.get_pipeline(LitMeshPipeline {
             alpha: self.transparent,
             smap: shadow_map,
