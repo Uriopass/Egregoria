@@ -100,24 +100,6 @@
     "price": 1000
   },
   {
-    "name": "Useless warehouse",
-    "bgen": {
-      "kind": "centered_door",
-      "vertical_factor": 1.0
-    },
-    "kind": "store",
-    "recipe": {
-      "consumption": [],
-      "production": [],
-      "complexity": 1000,
-      "storage_multiplier": 0
-    },
-    "n_workers": 100,
-    "size": 100.0,
-    "asset_location": "assets/sprites/warehouse.png",
-    "price": 1000
-  },
-  {
     "name": "Supermarket",
     "bgen": {
       "kind": "centered_door",
