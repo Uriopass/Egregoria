@@ -145,7 +145,7 @@ mod inner {
 
         let mut inputs_to_apply = None;
         match &mut *net_state {
-            NetworkState::Singleplayer(ref mut step) => unreachable!(),
+            NetworkState::Singleplayer(_) => unreachable!(),
             NetworkState::Server(ref mut server) => {
                 let polled =
                     server

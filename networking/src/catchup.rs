@@ -71,7 +71,7 @@ impl CatchUp {
             log::info!("{}: sending final catch up", c.name);
             net.send(
                 c.reliable,
-                &*encode(&ServerReliablePacket::ReadyToPlay {
+                &encode(&ServerReliablePacket::ReadyToPlay {
                     final_consumed_frame: c.ack,
                     final_inputs: inputs,
                 }),
@@ -83,7 +83,7 @@ impl CatchUp {
 
         let pack = ServerReliablePacket::CatchUp { inputs };
 
-        net.send(c.reliable, &*encode(&pack));
+        net.send(c.reliable, &encode(&pack));
     }
 
     pub fn disconnected(&mut self, id: AuthentID) {

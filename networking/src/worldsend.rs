@@ -59,11 +59,11 @@ impl WorldSend {
             }
 
             let to_send = MAX_WORLDSEND_PACKET_SIZE.min(state.data.len() - state.sent);
-            let is_over = (to_send < MAX_WORLDSEND_PACKET_SIZE).then(|| state.frame);
+            let is_over = (to_send < MAX_WORLDSEND_PACKET_SIZE).then_some(state.frame);
 
             net.send(
                 c.reliable,
-                &*encode(&ServerReliablePacket::WorldSend(WorldDataFragment {
+                &encode(&ServerReliablePacket::WorldSend(WorldDataFragment {
                     is_over,
                     data_size: state.data.len(),
                     data: Vec::from(&state.data[state.sent..state.sent + to_send]),
@@ -136,7 +136,7 @@ impl<W: DeserializeOwned> WorldReceive<W> {
             data_so_far.extend(fragment.data);
             if let Some(frame) = fragment.is_over {
                 log::info!("received last fragment at {:?}", frame);
-                net.send(tcp, &*encode(&ClientReliablePacket::WorldAck));
+                net.send(tcp, &encode(&ClientReliablePacket::WorldAck));
 
                 let d = decode(data_so_far);
 

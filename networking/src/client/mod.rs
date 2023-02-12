@@ -115,14 +115,14 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 NetEvent::Message(e, m) => {
                     match e.resource_id().adapter_id() == Transport::FramedTcp.id() {
                         true => {
-                            if let Some(packet) = decode(&*m) {
+                            if let Some(packet) = decode(&m) {
                                 self.message_reliable(packet);
                             } else {
                                 log::error!("could not decode reliable packet from server");
                             }
                         }
                         false => {
-                            if let Some(packet) = decode(&*m) {
+                            if let Some(packet) = decode(&m) {
                                 self.message_unreliable(packet)
                             } else {
                                 log::error!("could not decode unreliable packet from server");
@@ -179,7 +179,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 } = s
                 {
                     self.network
-                        .send(self.tcp, &*encode(&ClientReliablePacket::BeginCatchUp));
+                        .send(self.tcp, &encode(&ClientReliablePacket::BeginCatchUp));
                     return PollResult::GameWorld(input, world);
                 } else {
                     unreachable!()
@@ -193,7 +193,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 if let Some(x) = next_inputs.take() {
                     log::info!("{} catching up consumed inputs, asking for more", self.name);
                     self.network
-                        .send(self.tcp, &*encode(&ClientReliablePacket::CatchUpAck));
+                        .send(self.tcp, &encode(&ClientReliablePacket::CatchUpAck));
                     return PollResult::Input(x);
                 }
                 return PollResult::Wait(input);
@@ -242,10 +242,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                         .map(move |_| {
                             // unwrap ok: to_consume must be less than advance
                             let (inp, pack) = buffer.try_consume(&mut mk_input).unwrap();
-                            net.send(
-                                udp,
-                                &*encode(&ClientUnreliablePacket::Input { input: pack }),
-                            );
+                            net.send(udp, &encode(&ClientUnreliablePacket::Input { input: pack }));
                             decode_merged(id, inp, buffer.consumed_frame())
                         })
                         .collect();
@@ -273,7 +270,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 log::info!("{}: received challenge", self.name);
                 self.network.send(
                     self.udp,
-                    &*encode(&ClientUnreliablePacket::Connection(challenge)),
+                    &encode(&ClientUnreliablePacket::Connection(challenge)),
                 );
             }
             ServerReliablePacket::AuthentResponse(r) => match r {
@@ -288,7 +285,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                     };
                     self.step = Timestep::new(step);
                     self.network
-                        .send(self.tcp, &*encode(&ClientReliablePacket::WorldAck));
+                        .send(self.tcp, &encode(&ClientReliablePacket::WorldAck));
                 }
                 AuthentResponse::Refused { reason } => {
                     log::error!("authent refused :( reason: {}", reason);
@@ -385,7 +382,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                     name: self.name.clone(),
                     version: self.version.clone(),
                 };
-                self.network.send(self.tcp, &*encode(&connect));
+                self.network.send(self.tcp, &encode(&connect));
             }
         }
     }
@@ -401,7 +398,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                         (total as f32) / 1000000.0
                     )
                 } else {
-                    format!("Downloading map...")
+                    "Downloading map...".to_string()
                 }
             }
             ClientState::CatchingUp { .. } => "Catching up...".to_string(),

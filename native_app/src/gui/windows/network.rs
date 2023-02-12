@@ -44,7 +44,7 @@ pub(crate) fn network(
                 }
 
                 if ui.small_button("Start server").clicked() {
-                    if let Some(server) = crate::network::start_server(&mut *info, goria) {
+                    if let Some(server) = crate::network::start_server(&mut info, goria) {
                         *state = NetworkState::Server(server);
                     }
                 }
@@ -63,12 +63,12 @@ pub(crate) fn network(
             }
             NetworkState::Client(ref client) => {
                 ui.label(client.lock().unwrap().describe());
-                show_hashes(ui, goria, &mut *info);
+                show_hashes(ui, goria, &mut info);
             }
             NetworkState::Server(ref server) => {
                 ui.label("Running server");
                 ui.label(server.lock().unwrap().describe());
-                show_hashes(ui, goria, &mut *info);
+                show_hashes(ui, goria, &mut info);
             }
         }
     });

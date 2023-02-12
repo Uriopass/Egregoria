@@ -125,9 +125,9 @@ impl Authent {
             self.get_client_state_mut(e)
         {
             *unreliable = Some(e);
-            net.send(e, &*encode(&ServerUnreliablePacket::ReadyForAuth));
-            net.send(e, &*encode(&ServerUnreliablePacket::ReadyForAuth));
-            net.send(e, &*encode(&ServerUnreliablePacket::ReadyForAuth));
+            net.send(e, &encode(&ServerUnreliablePacket::ReadyForAuth));
+            net.send(e, &encode(&ServerUnreliablePacket::ReadyForAuth));
+            net.send(e, &encode(&ServerUnreliablePacket::ReadyForAuth));
         }
     }
 
@@ -146,7 +146,7 @@ impl Authent {
             },
         );
 
-        net.send(e, &*encode(&ServerReliablePacket::Challenge(id)));
+        net.send(e, &encode(&ServerReliablePacket::Challenge(id)));
     }
 
     pub fn disconnected(&mut self, e: Endpoint) -> Option<Client> {

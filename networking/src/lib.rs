@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use crate::authent::AuthentID;
 use common::saveload::{CompressedBincode, Encoder};
 use serde::de::DeserializeOwned;

@@ -178,7 +178,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
             for (playing, packet) in clients_playing.zip(inputs) {
                 self.network.send(
                     playing.unreliable,
-                    &*encode(&ServerUnreliablePacket::Input(packet)),
+                    &encode(&ServerUnreliablePacket::Input(packet)),
                 );
             }
 
@@ -245,7 +245,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
 
                 self.network.send(
                     e,
-                    &*encode(&ServerReliablePacket::AuthentResponse(auth_r.clone())),
+                    &encode(&ServerReliablePacket::AuthentResponse(auth_r.clone())),
                 );
 
                 match auth_r {
