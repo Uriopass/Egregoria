@@ -4,17 +4,17 @@ use ordered_float::OrderedFloat;
 use std::time::Instant;
 
 pub trait RunnableSystem {
-    fn run(&mut self, goria: &mut Egregoria);
+    fn run(&self, goria: &mut Egregoria);
     fn name(&self) -> &'static str;
 }
 
-pub struct RunnableFn<F: FnMut(&mut Egregoria)> {
+pub struct RunnableFn<F: Fn(&mut Egregoria)> {
     pub f: F,
     pub name: &'static str,
 }
 
-impl<F: FnMut(&mut Egregoria)> RunnableSystem for RunnableFn<F> {
-    fn run(&mut self, goria: &mut Egregoria) {
+impl<F: Fn(&mut Egregoria)> RunnableSystem for RunnableFn<F> {
+    fn run(&self, goria: &mut Egregoria) {
         (self.f)(goria)
     }
 

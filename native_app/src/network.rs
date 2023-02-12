@@ -1,5 +1,11 @@
 pub(crate) use self::inner::*;
+use crate::game_loop::{State, Timings};
+use crate::gui::windows::settings::Settings;
+use crate::uiworld::{ReceivedCommands, SaveLoadState};
 use common::timestep::Timestep;
+use egregoria::engine_interaction::{WorldCommand, WorldCommands};
+use egregoria::utils::scheduler::SeqSchedule;
+use egregoria::Egregoria;
 
 impl Default for NetworkState {
     fn default() -> Self {
@@ -9,11 +15,7 @@ impl Default for NetworkState {
 
 #[cfg(not(feature = "multiplayer"))]
 mod inner {
-    use crate::game_loop::{State, Timings};
-    use crate::gui::windows::settings::Settings;
-    use crate::uiworld::{ReceivedCommands, SaveLoadState};
-    use common::timestep::Timestep;
-    use egregoria::engine_interaction::{WorldCommand, WorldCommands};
+    use crate::network::{State, Timestep};
 
     #[allow(clippy::large_enum_variant)]
     pub(crate) enum NetworkState {
@@ -21,65 +23,85 @@ mod inner {
     }
 
     pub(crate) fn goria_update(state: &mut State) {
-        let mut goria = unwrap_orr!(state.goria.try_write(), return); // mut for tick
-
-        let timewarp = state.uiw.read::<Settings>().time_warp;
-        let mut commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
-        *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
-
-        let mut slstate = state.uiw.write::<SaveLoadState>();
-        if let Some(new_goria) = slstate.please_load_goria.take() {
-            *goria = new_goria;
-            log::info!("replaced goria");
-        }
-        if let Some(ref mut replay) = slstate.please_load {
-            if replay.advance(&mut goria, &mut state.game_schedule, 10) {
-                slstate.please_load = None;
-                log::info!("finished loading replay");
-            }
-            return;
-        }
-
-        let sched = &mut state.game_schedule;
-        let mut timings = state.uiw.write::<Timings>();
-
-        let mut has_commands = !commands.is_empty();
-
-        if has_commands && commands.iter().all(WorldCommand::is_instant) {
-            for v in commands.iter() {
-                v.apply(&mut goria);
-            }
-            commands = WorldCommands::default();
-            has_commands = false;
-        }
-
-        let mut net_state = state.uiw.write::<NetworkState>();
-
-        let crate::network::NetworkState::Singleplayer(ref mut step) = *net_state;
-
-        let mut commands_once = Some(commands.clone());
-        step.prepare_frame(timewarp);
-        while step.tick() || (has_commands && commands_once.is_some()) {
-            let t = goria.tick(sched, commands_once.take().unwrap_or_default().as_ref());
-            timings.world_update.add_value(t.as_secs_f32());
-        }
-
-        if commands_once.is_none() {
-            *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(commands);
-        } else {
-            *state.uiw.write::<WorldCommands>() = commands;
-        }
+        super::handle_singleplayer(state);
     }
+}
+
+#[allow(dead_code)]
+fn handle_singleplayer(state: &mut State) {
+    let mut goria = unwrap_orr!(state.goria.try_write(), return); // mut for tick
+
+    let timewarp = state.uiw.read::<Settings>().time_warp;
+    let mut commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
+    *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
+
+    if handle_replay(
+        &mut goria,
+        &mut state.game_schedule,
+        &mut state.uiw.write::<SaveLoadState>(),
+    ) {
+        return;
+    }
+
+    let sched = &mut state.game_schedule;
+    let mut timings = state.uiw.write::<Timings>();
+
+    let mut has_commands = !commands.is_empty();
+
+    if has_commands && commands.iter().all(WorldCommand::is_instant) {
+        for v in commands.iter() {
+            v.apply(&mut goria);
+        }
+        commands = WorldCommands::default();
+        has_commands = false;
+    }
+
+    let mut net_state = state.uiw.write::<NetworkState>();
+
+    #[allow(irrefutable_let_patterns)]
+    let NetworkState::Singleplayer(ref mut step) = *net_state else { return; };
+
+    let mut commands_once = Some(commands.clone());
+    step.prepare_frame(timewarp);
+    while step.tick() || (has_commands && commands_once.is_some()) {
+        let t = goria.tick(sched, commands_once.take().unwrap_or_default().as_ref());
+        timings.world_update.add_value(t.as_secs_f32());
+    }
+
+    if commands_once.is_none() {
+        *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(commands);
+    } else {
+        *state.uiw.write::<WorldCommands>() = commands;
+    }
+}
+
+fn handle_replay(
+    goria: &mut Egregoria,
+    schedule: &mut SeqSchedule,
+    slstate: &mut SaveLoadState,
+) -> bool {
+    if let Some(new_goria) = slstate.please_load_goria.take() {
+        *goria = new_goria;
+        log::info!("replaced goria");
+    }
+    if let Some(ref mut replay) = slstate.please_load {
+        if replay.advance(goria, schedule, 1) {
+            slstate.please_load = None;
+            log::info!("finished loading replay");
+        }
+        return true;
+    }
+    false
 }
 
 #[cfg(feature = "multiplayer")]
 mod inner {
     use crate::game_loop::{State, Timings, VERSION};
     use crate::gui::windows::network::NetworkConnectionInfo;
-    use crate::gui::windows::settings::Settings;
+    use crate::network::handle_replay;
     use crate::uiworld::{ReceivedCommands, SaveLoadState};
     use common::timestep::Timestep;
-    use egregoria::engine_interaction::{WorldCommand, WorldCommands};
+    use egregoria::engine_interaction::WorldCommands;
     use egregoria::Egregoria;
     use networking::{
         ConnectConf, Frame, PollResult, ServerConfiguration, ServerPollResult, VirtualClientConf,
@@ -98,22 +120,24 @@ mod inner {
     }
 
     pub(crate) fn goria_update(state: &mut State) {
+        if matches!(
+            *state.uiw.read::<NetworkState>(),
+            NetworkState::Singleplayer(_)
+        ) {
+            super::handle_singleplayer(state);
+            return;
+        }
+
         let mut goria = unwrap_orr!(state.goria.try_write(), return); // mut for tick
 
-        let timewarp = state.uiw.read::<Settings>().time_warp;
-        let mut commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
+        let commands = std::mem::take(&mut *state.uiw.write::<WorldCommands>());
         *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::default();
 
-        let mut slstate = state.uiw.write::<SaveLoadState>();
-        if let Some(new_goria) = slstate.please_load_goria.take() {
-            *goria = new_goria;
-            log::info!("replaced goria");
-        }
-        if let Some(ref mut replay) = slstate.please_load {
-            if replay.advance(&mut goria, &mut state.game_schedule, 1) {
-                slstate.please_load = None;
-                log::info!("finished loading replay");
-            }
+        if handle_replay(
+            &mut goria,
+            &mut state.game_schedule,
+            &mut state.uiw.write::<SaveLoadState>(),
+        ) {
             return;
         }
 
@@ -121,33 +145,7 @@ mod inner {
 
         let mut inputs_to_apply = None;
         match &mut *net_state {
-            NetworkState::Singleplayer(ref mut step) => {
-                let sched = &mut state.game_schedule;
-                let mut timings = state.uiw.write::<Timings>();
-
-                let mut has_commands = !commands.is_empty();
-
-                if has_commands && commands.iter().all(WorldCommand::is_instant) {
-                    has_commands = false;
-                    for v in commands.iter() {
-                        v.apply(&mut goria);
-                    }
-                    commands = WorldCommands::default();
-                }
-
-                let mut commands_once = Some(commands.clone());
-                step.prepare_frame(timewarp);
-                while step.tick() || (has_commands && commands_once.is_some()) {
-                    let t = goria.tick(sched, commands_once.take().unwrap_or_default().as_ref());
-                    timings.world_update.add_value(t.as_secs_f32());
-                }
-
-                if commands_once.is_none() {
-                    *state.uiw.write::<ReceivedCommands>() = ReceivedCommands::new(commands);
-                } else {
-                    *state.uiw.write::<WorldCommands>() = commands;
-                }
-            }
+            NetworkState::Singleplayer(ref mut step) => unreachable!(),
             NetworkState::Server(ref mut server) => {
                 let polled =
                     server

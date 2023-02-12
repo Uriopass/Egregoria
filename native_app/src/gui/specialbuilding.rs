@@ -49,16 +49,14 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     for command in uiworld.received_commands().iter() {
         if let WorldCommand::MapBuildSpecialBuilding { pos, kind, .. } = command {
-            if let Some(proj) = map
+            if let Some(ProjectKind::Building(bid)) = map
                 .spatial_map()
                 .query(pos.center(), ProjectFilter::BUILDING)
                 .next()
             {
-                if let ProjectKind::Building(bid) = proj {
-                    if let Some(b) = map.buildings().get(bid) {
-                        if b.kind == *kind {
-                            uiworld.write::<InspectedBuilding>().e = Some(bid);
-                        }
+                if let Some(b) = map.buildings().get(bid) {
+                    if b.kind == *kind {
+                        uiworld.write::<InspectedBuilding>().e = Some(bid);
                     }
                 }
             }
