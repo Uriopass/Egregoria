@@ -85,7 +85,7 @@ fn handle_replay(
         log::info!("replaced goria");
     }
     if let Some(ref mut replay) = slstate.please_load {
-        if replay.advance(goria, schedule, 1) {
+        if replay.advance(goria, schedule) {
             slstate.please_load = None;
             log::info!("finished loading replay");
         }

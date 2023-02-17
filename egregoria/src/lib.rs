@@ -101,24 +101,21 @@ pub struct EgregoriaReplayLoader {
     pub replay: Replay,
     pub pastt: Tick,
     pub idx: usize,
+    pub speed: usize,
 }
 
 impl EgregoriaReplayLoader {
-    pub fn advance(
-        &mut self,
-        goria: &mut Egregoria,
-        schedule: &mut SeqSchedule,
-        ticks: usize,
-    ) -> bool {
+    /// Returns true if the replay is finished
+    pub fn advance(&mut self, goria: &mut Egregoria, schedule: &mut SeqSchedule) -> bool {
         // iterate through tick grouped commands
         let mut ticks_done = 0;
-        while self.idx < self.replay.commands.len() && ticks_done < ticks {
+        while self.idx < self.replay.commands.len() && ticks_done < self.speed {
             let curt = self.replay.commands[self.idx].0;
             while self.pastt < curt {
                 goria.tick(schedule, &[]);
                 self.pastt.0 += 1;
                 ticks_done += 1;
-                if ticks_done >= ticks {
+                if ticks_done >= self.speed {
                     return false;
                 }
             }
@@ -182,6 +179,7 @@ impl Egregoria {
                 replay,
                 pastt: Tick::default(),
                 idx: 0,
+                speed: 1,
             },
         )
     }

@@ -36,12 +36,19 @@ pub(crate) fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWor
             ui.label("No replay found in world/world_replay.json");
         }
 
-        if let Some(loading) = uiw.read::<SaveLoadState>().please_load.as_ref() {
+        if let Some(ref mut loading) = uiw.write::<SaveLoadState>().please_load {
             let ticks_done = loading.pastt.0;
             let ticks_total = loading.replay.commands.last().map(|c| c.0 .0).unwrap_or(0);
             egui::ProgressBar::new((ticks_done as f32) / (ticks_total as f32))
                 .text(format!("Loading replay: {ticks_done}/{ticks_total}"))
                 .ui(ui);
+            if ui
+                .button("Go fast")
+                .on_hover_text("Load the replay faster")
+                .clicked()
+            {
+                loading.speed = 100;
+            }
         }
 
         if !lstate.load_fail.is_empty() {
