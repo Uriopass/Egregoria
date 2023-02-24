@@ -5,8 +5,10 @@ use crate::engine_interaction::{WorldCommand, WorldCommands};
 use crate::map::{BuildingID, LanePatternBuilder, ProjectFilter};
 use crate::map_dynamic::BuildingInfos;
 use crate::utils::scheduler::SeqSchedule;
+use crate::utils::time::Tick;
 use crate::{Egregoria, EgregoriaOptions};
 use common::logger::MyLog;
+use common::saveload::Encoder;
 use geom::{Vec2, Vec3};
 
 mod vehicles;
@@ -64,5 +66,19 @@ impl TestCtx {
     pub(crate) fn tick(&mut self) {
         self.g
             .tick(&mut self.sched, WorldCommands::default().as_ref());
+
+        let serialized = common::saveload::Bincode::encode(&self.g).unwrap();
+        let deserialized: Egregoria = common::saveload::Bincode::decode(&serialized).unwrap();
+
+        let testhashes = self.g.hashes();
+        for (key, hash) in deserialized.hashes().iter() {
+            assert_eq!(
+                testhashes.get(key),
+                Some(hash),
+                "key: {:?} at tick {}",
+                key,
+                self.g.read::<Tick>().0,
+            );
+        }
     }
 }
