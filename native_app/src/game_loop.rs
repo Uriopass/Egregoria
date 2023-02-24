@@ -180,7 +180,7 @@ impl State {
             MapRenderOptions {
                 show_arrows: self.uiw.read::<Tool>().show_arrows(),
             },
-            &mut self.immtess,
+            &mut self.uiw.write::<ImmediateDraw>(),
             ctx,
         );
 

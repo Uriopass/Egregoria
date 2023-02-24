@@ -32,7 +32,6 @@ struct MapBuilders {
     arrow_builder: SpriteBatchBuilder,
     crosswalk_builder: MeshBuilder,
     tess_map: Tesselator,
-    stop_signs: InstancedMeshBuilder,
 }
 
 impl MapMeshHandler {
@@ -119,7 +118,6 @@ impl MapMeshHandler {
             houses_mesh: MeshBuilder::new(gfx.palette()),
             buildmeshes,
             zonemeshes,
-            stop_signs: InstancedMeshBuilder::new(load_mesh(gfx, "stop_sign.glb").unwrap()),
         };
 
         Self {
@@ -172,7 +170,6 @@ impl MapMeshHandler {
                         .map(|(a, b, _)| (a.build(ctx.gfx), b.build(ctx.gfx)))
                         .collect::<Vec<_>>(),
                 ),
-                Arc::new(b.stop_signs.build(ctx.gfx)),
             ];
         }
 
@@ -480,7 +477,6 @@ impl MapBuilders {
     fn map_mesh(&mut self, map: &Map) {
         let tess = &mut self.tess_map;
         tess.meshbuilder.clear();
-        self.stop_signs.instances.clear();
 
         let low_col: LinearColor = common::config().road_low_col.into();
         let mid_col: LinearColor = common::config().road_mid_col.into();
@@ -497,26 +493,6 @@ impl MapBuilders {
             let cut = road.interfaced_points();
             let first_dir = unwrap_cont!(cut.first_dir());
             let last_dir = unwrap_cont!(cut.last_dir());
-
-            if inters[road.dst].light_policy.is_stop_signs() {
-                self.stop_signs.instances.push(MeshInstance {
-                    pos: cut.last()
-                        + last_dir.perp_up() * (road.width * 0.5 - 3.0)
-                        + last_dir * -1.3,
-                    dir: last_dir.perp_up(),
-                    tint: LinearColor::WHITE,
-                });
-            }
-
-            if inters[road.src].light_policy.is_stop_signs() {
-                self.stop_signs.instances.push(MeshInstance {
-                    pos: cut.first()
-                        - first_dir.perp_up() * (road.width * 0.5 - 3.0)
-                        - first_dir * -1.3,
-                    dir: last_dir.perp_up(),
-                    tint: LinearColor::WHITE,
-                });
-            }
 
             road_pylons(&mut tess.meshbuilder, terrain, road);
 

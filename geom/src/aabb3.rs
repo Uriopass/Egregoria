@@ -1,5 +1,5 @@
 use super::Vec3;
-use crate::Shape3;
+use crate::{Shape3, AABB};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -25,6 +25,14 @@ impl AABB3 {
         Self {
             ll: pos - size * 0.5,
             ur: pos + size * 0.5,
+        }
+    }
+
+    #[inline]
+    pub fn from_aabb(aabb: AABB, height: f32) -> Self {
+        Self {
+            ll: aabb.ll.z(-height),
+            ur: aabb.ur.z(height),
         }
     }
 

@@ -1,3 +1,4 @@
+use crate::rendering::immediate::ImmediateDraw;
 use crate::rendering::map_mesh::MapMeshHandler;
 use crate::Context;
 use common::FastMap;
@@ -5,11 +6,11 @@ use egregoria::map::{
     ChunkID, Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_RESOLUTION, CHUNK_SIZE,
 };
 use egregoria::Egregoria;
-use geom::{vec3, Camera, Color, InfiniteFrustrum, Intersect3, LinearColor, AABB3};
+use geom::{vec3, Camera, Circle, InfiniteFrustrum, Intersect3, LinearColor, AABB3};
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::terrain::TerrainRender;
 use wgpu_engine::{
-    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Tesselator, Water,
+    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Water,
 };
 
 const CSIZE: usize = CHUNK_SIZE as usize;
@@ -65,7 +66,7 @@ impl MapRenderer {
         }
     }
 
-    fn render_lane_signals(n: &Lane, sr: &mut Tesselator, time: u32) {
+    fn render_lane_signals(n: &Lane, draw: &mut ImmediateDraw, time: u32) {
         if n.control.is_always() {
             return;
         }
@@ -75,65 +76,41 @@ impl MapRenderer {
 
         let r_center = n.points.last() + (dir_perp * -3.5 + dir * -1.0).z(0.02);
 
-        // Stop sign
         if n.control.is_stop_sign() {
-            sr.set_color(LinearColor::WHITE);
-            sr.draw_regular_polygon(r_center, 0.5, 8, std::f32::consts::FRAC_PI_8);
-
-            sr.set_color(LinearColor::RED);
-            sr.draw_regular_polygon(r_center, 0.4, 8, std::f32::consts::FRAC_PI_8);
+            draw.mesh("stop_sign.glb".to_string(), r_center, dir_perp.z(0.0));
             return;
         }
 
-        // Traffic light
-        let size = 0.5; // light size
-
-        sr.color = Color::gray(0.2).into();
-        sr.draw_rect_cos_sin(r_center, size + 0.1, size * 3.0 + 0.1, dir);
-
-        for i in -1..2 {
-            sr.draw_circle(r_center + i as f32 * dir_perp.z0() * size, size * 0.5);
-        }
-        sr.set_color(match n.control.get_behavior(time) {
-            TrafficBehavior::RED | TrafficBehavior::STOP => LinearColor::RED,
-            TrafficBehavior::ORANGE => LinearColor::ORANGE,
-            TrafficBehavior::GREEN => LinearColor::GREEN,
-        });
-
-        let offset = match n.control.get_behavior(time) {
-            TrafficBehavior::RED => -size,
-            TrafficBehavior::ORANGE => 0.0,
-            TrafficBehavior::GREEN => size,
-            TrafficBehavior::STOP => unreachable!(),
+        let mesh = match n.control.get_behavior(time) {
+            TrafficBehavior::RED | TrafficBehavior::STOP => "traffic_light_red.glb",
+            TrafficBehavior::ORANGE => "traffic_light_orange.glb",
+            TrafficBehavior::GREEN => "traffic_light_green.glb",
         };
 
-        sr.draw_circle(r_center + offset * dir_perp.z0(), size * 0.5);
+        draw.mesh(mesh.to_string(), r_center, dir_perp.z(0.0));
     }
 
-    fn signals_render(map: &Map, time: u32, sr: &mut Tesselator) {
-        match sr.cull_rect {
-            Some(rect) => {
-                if rect.w().max(rect.h()) > 1500.0 {
-                    return;
-                }
-                for n in map
-                    .spatial_map()
-                    .query(rect, ProjectFilter::ROAD)
-                    .filter_map(|k| match k {
-                        ProjectKind::Road(id) => Some(id),
-                        _ => None,
-                    })
-                    .flat_map(|id| map.roads()[id].lanes_iter())
-                    .map(|(id, _)| &map.lanes()[id])
-                {
-                    Self::render_lane_signals(n, sr, time);
-                }
-            }
-            None => {
-                for n in map.lanes().values() {
-                    Self::render_lane_signals(n, sr, time);
-                }
-            }
+    fn signals_render(
+        map: &Map,
+        time: u32,
+        cam: &Camera,
+        frustrum: &InfiniteFrustrum,
+        draw: &mut ImmediateDraw,
+    ) {
+        let pos = cam.pos;
+
+        for n in map
+            .spatial_map()
+            .query(Circle::new(pos.xy(), 200.0), ProjectFilter::ROAD)
+            .filter_map(|k| match k {
+                ProjectKind::Road(id) => map.roads().get(id),
+                _ => None,
+            })
+            .filter(|x| frustrum.intersects(&x.points.bbox().expand(x.width)))
+            .flat_map(|r| r.lanes_iter())
+            .map(|(id, _)| &map.lanes()[id])
+        {
+            Self::render_lane_signals(n, draw, time);
         }
     }
 
@@ -243,7 +220,7 @@ impl MapRenderer {
         cam: &Camera,
         frustrum: &InfiniteFrustrum,
         options: MapRenderOptions,
-        tess: &mut Tesselator,
+        draw: &mut ImmediateDraw,
         ctx: &mut FrameContext<'_>,
     ) {
         self.terrain.draw_terrain(cam, frustrum, ctx);
@@ -252,7 +229,7 @@ impl MapRenderer {
 
         self.meshb.latest_mesh(map, options, ctx);
 
-        Self::signals_render(map, time, tess);
+        Self::signals_render(map, time, cam, frustrum, draw);
 
         ctx.draw(self.water.clone());
     }
