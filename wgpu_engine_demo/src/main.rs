@@ -1,4 +1,4 @@
-use geom::{vec3, Camera, LinearColor, Matrix4, Vec2};
+use geom::{vec3, Camera, LinearColor, Matrix4, Vec2, Vec3};
 use std::time::Instant;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{FrameContext, GfxContext, Mesh};
@@ -14,7 +14,7 @@ struct State {
 impl State {
     fn new(gfx: &mut GfxContext) -> Self {
         Self {
-            mesh: load_mesh(gfx, "flour_factory.glb").unwrap(),
+            mesh: load_mesh(gfx, "coal_power_plant.glb").unwrap(),
         }
     }
 
@@ -121,6 +121,7 @@ async fn run(el: EventLoop<()>, window: Window) {
                     } => {
                         camera.yaw.0   -= 0.001 * (delta.0 as f32);
                         camera.pitch.0 += 0.001 * (delta.1 as f32);
+                        camera.pitch.0 = camera.pitch.0.clamp(-1.5, 1.5);
                     }
                     _ => {}
                 }
@@ -160,16 +161,16 @@ async fn run(el: EventLoop<()>, window: Window) {
 
                     let cam_speed = if is_going_slow { 10.0 } else { 30.0 } * delta;
                     if is_going_forward {
-                        camera.pos -= camera.dir() * cam_speed;
+                        camera.pos -= camera.dir().xy().z0().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
                     }
                     if is_going_backward {
-                        camera.pos += camera.dir() * cam_speed;
+                        camera.pos += camera.dir().xy().z0().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
                     }
                     if is_going_left {
-                        camera.pos += camera.dir().perp_up() * cam_speed;
+                        camera.pos += camera.dir().perp_up().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
                     }
                     if is_going_right {
-                        camera.pos -= camera.dir().perp_up() * cam_speed;
+                        camera.pos -= camera.dir().perp_up().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
                     }
                     if is_going_up {
                         camera.pos += vec3(0.0, 0.0, 1.0) * cam_speed;
@@ -198,6 +199,7 @@ async fn run(el: EventLoop<()>, window: Window) {
                     params.ssao_falloff = inline_tweak::tweak!(0.00008);
                     params.ssao_base = inline_tweak::tweak!(0.01);
                     params.ssao_samples = inline_tweak::tweak!(8);
+                    params.shadow_mapping_enabled = 1;
 
                     let (mut enc, view) = gfx.start_frame(&sco);
                     gfx.render_objs(&mut enc, &view, |fc| state.render(fc));

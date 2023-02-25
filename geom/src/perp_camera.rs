@@ -86,11 +86,11 @@ impl Camera {
             dir.y = 0.01;
         }
 
-        let d = self.dist * 2.5;
+        let d = 100.0f32.max(self.dist * 2.5);
 
         let base = self.pos;
 
-        let view = look_at_rh(base + dir, base, self.up);
+        let view = look_at_rh(base + dir, -dir, self.up);
         let proj: Matrix4 = Ortho {
             left: -d,
             right: d,
