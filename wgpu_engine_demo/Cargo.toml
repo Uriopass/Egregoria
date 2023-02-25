@@ -1,0 +1,13 @@
+[package]
+name = "wgpu_engine_demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+common      = { path = "../common" }
+geom        = { path = "../geom" }
+wgpu_engine = { path = "../wgpu_engine" }
+winit       = "0.28.1"
+log         = { version = "0.4.11", features=["max_level_info", "release_max_level_info"] }
+inline_tweak = "1.0.8"
+beul        = "0.1.1"

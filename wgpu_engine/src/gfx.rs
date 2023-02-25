@@ -384,6 +384,8 @@ impl GfxContext {
     }
 
     pub fn start_frame(&mut self, sco: &SurfaceTexture) -> (Encoders, TextureView) {
+        self.render_params.upload_to_gpu(&self.queue);
+
         let end = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor {

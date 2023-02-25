@@ -1,14 +1,15 @@
 [workspace]
 members = [
+    "common",
     "egregoria",
-    "geom",
     "egui-inspect",
     "egui-inspect-derive",
-    "common",
+    "geom",
+    "headless",
     "native_app",
-    "wgpu_engine",
     "networking",
-    "headless"
+    "wgpu_engine",
+    "wgpu_engine_demo",
 ]
 
 resolver = "2"

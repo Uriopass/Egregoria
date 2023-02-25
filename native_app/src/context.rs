@@ -126,8 +126,6 @@ impl Context {
                         let params = self.gfx.render_params.value_mut();
                         params.time_always = (params.time_always + self.delta) % 3600.0;
                         params.sun_col = sun.z.max(0.0).sqrt().sqrt() * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
-                        params.sun_col = sun.z.max(0.0).sqrt().sqrt() * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
-                        params.sun_col = sun.z.max(0.0).sqrt().sqrt() * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
                         params.cam_pos = state.camera.camera.eye();
                         params.cam_dir = -state.camera.camera.dir();
                         params.sun = sun;
@@ -144,8 +142,6 @@ impl Context {
                         params.ssao_base = c.ssao_base;
                         params.ssao_samples = c.ssao_samples;
                         drop(c);
-
-                        self.gfx.render_params.upload_to_gpu(&self.gfx.queue);
 
                         let (mut enc, view) = self.gfx.start_frame(&sco);
                         self.gfx.render_objs(&mut enc, &view, |fc| state.render(fc));

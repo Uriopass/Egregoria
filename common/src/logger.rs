@@ -97,7 +97,7 @@ impl log::Log for MyLog {
         if r.level() > Level::Warn {
             let module_path = r
                 .module_path_static()
-                .and_then(|x| x.split(':').last())
+                //.and_then(|x| x.split(':').last())
                 .unwrap_or_else(|| r.target());
             write_log_stdout!(
                 self.log_file,

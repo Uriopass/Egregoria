@@ -3205,6 +3205,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "wgpu_engine_demo"
+version = "0.1.0"
+dependencies = [
+ "beul",
+ "common",
+ "geom",
+ "inline_tweak",
+ "log",
+ "wgpu_engine",
+ "winit",
+]
+
+[[package]]
 name = "widestring"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
