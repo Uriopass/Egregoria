@@ -8,18 +8,18 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{CursorGrabMode, Window, WindowBuilder};
 
 struct State {
-    stop_sign: Mesh,
+    mesh: Mesh,
 }
 
 impl State {
     fn new(gfx: &mut GfxContext) -> Self {
         Self {
-            stop_sign: load_mesh(gfx, "flour_factory.glb").unwrap(),
+            mesh: load_mesh(gfx, "flour_factory.glb").unwrap(),
         }
     }
 
     fn render(&mut self, fc: &mut FrameContext) {
-        fc.draw(self.stop_sign.clone());
+        fc.draw(self.mesh.clone());
     }
 }
 
@@ -40,6 +40,14 @@ async fn run(el: EventLoop<()>, window: Window) {
     let sun = vec3(1.0, 1.0, 1.0).normalize();
 
     let mut camera = Camera::new(vec3(0.0, 0.0, 0.0), 1000.0, 1000.0);
+    camera.dist = 0.0;
+    let mut is_going_forward = false;
+    let mut is_going_backward = false;
+    let mut is_going_left = false;
+    let mut is_going_right = false;
+    let mut is_going_up = false;
+    let mut is_going_down = false;
+    let mut is_going_slow = false;
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -60,6 +68,12 @@ async fn run(el: EventLoop<()>, window: Window) {
                         let _ = window.set_cursor_grab(CursorGrabMode::Confined);
                         window.set_cursor_visible(false);
                     }
+                    WindowEvent::CursorLeft {
+                        ..
+                    } => {
+                        let _ = window.set_cursor_grab(CursorGrabMode::None);
+                        window.set_cursor_visible(true);
+                    }
                     WindowEvent::KeyboardInput {
                         input:
                             winit::event::KeyboardInput {
@@ -75,14 +89,25 @@ async fn run(el: EventLoop<()>, window: Window) {
                     WindowEvent::KeyboardInput {
                         input:
                             winit::event::KeyboardInput {
-                                state: winit::event::ElementState::Pressed,
-                                scancode: 17,
+                                state,
+                                scancode,
                                 ..
                             },
                         ..
                     } => {
-                        camera.pos += 0.1 * camera.dir();
+                        let is_pressed = state == winit::event::ElementState::Pressed;
+                        match scancode {
+                            17 => is_going_forward = is_pressed,
+                            31 => is_going_backward = is_pressed,
+                            30 => is_going_left = is_pressed,
+                            32 => is_going_right = is_pressed,
+                            57 => is_going_up = is_pressed,
+                            42 => is_going_slow = is_pressed,
+                            29 => is_going_down = is_pressed,
+                            _ => {}
+                        }
                     }
+
                     _ => (),
                 }
             }
@@ -132,6 +157,27 @@ async fn run(el: EventLoop<()>, window: Window) {
                     let d = last_update.elapsed();
                     last_update = Instant::now();
                     let delta = d.as_secs_f32();
+
+                    let cam_speed = if is_going_slow { 10.0 } else { 30.0 } * delta;
+                    if is_going_forward {
+                        camera.pos -= camera.dir() * cam_speed;
+                    }
+                    if is_going_backward {
+                        camera.pos += camera.dir() * cam_speed;
+                    }
+                    if is_going_left {
+                        camera.pos += camera.dir().perp_up() * cam_speed;
+                    }
+                    if is_going_right {
+                        camera.pos -= camera.dir().perp_up() * cam_speed;
+                    }
+                    if is_going_up {
+                        camera.pos += vec3(0.0, 0.0, 1.0) * cam_speed;
+                    }
+                    if is_going_down {
+                        camera.pos -= vec3(0.0, 0.0, 1.0) * cam_speed;
+                    }
+
 
                     let viewproj = camera.build_view_projection_matrix();
                     let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
