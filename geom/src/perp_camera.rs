@@ -90,7 +90,7 @@ impl Camera {
 
         let base = self.pos;
 
-        let view = look_at_rh(base + dir, -dir, self.up);
+        let view = look_to_rh(base + dir, -dir, self.up);
         let proj: Matrix4 = Ortho {
             left: -d,
             right: d,

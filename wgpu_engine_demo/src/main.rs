@@ -31,6 +31,10 @@ async fn run(el: EventLoop<()>, window: Window) {
     )
     .await;
 
+    gfx.render_params.value_mut().shadow_mapping_enabled = 2048;
+    gfx.sun_shadowmap = GfxContext::mk_shadowmap(&gfx.device, 2048);
+    gfx.update_simplelit_bg();
+
     let mut state = State::new(&mut gfx);
 
     let mut frame: Option<_> = None;
@@ -199,7 +203,7 @@ async fn run(el: EventLoop<()>, window: Window) {
                     params.ssao_falloff = inline_tweak::tweak!(0.00008);
                     params.ssao_base = inline_tweak::tweak!(0.01);
                     params.ssao_samples = inline_tweak::tweak!(8);
-                    params.shadow_mapping_enabled = 1;
+                    params.shadow_mapping_enabled = 2048;
 
                     let (mut enc, view) = gfx.start_frame(&sco);
                     gfx.render_objs(&mut enc, &view, |fc| state.render(fc));
