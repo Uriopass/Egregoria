@@ -32,9 +32,9 @@ pub(crate) fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
         cur_proj.kind,
         ProjectKind::Inter(_) | ProjectKind::Road(_) | ProjectKind::Building(_)
     ) {
-        common::config().gui_danger
+        egregoria::config().gui_danger
     } else {
-        common::config().gui_disabled
+        egregoria::config().gui_disabled
     };
 
     draw.circle(cur_proj.pos.up(0.5), 2.0).color(col);

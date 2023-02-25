@@ -23,6 +23,8 @@ profiling     = "1.0.5"
 inline_tweak = { version = "1.0.8", features = ["release_tweak"] }
 pathfinding   = "4.2.1"
 serde-big-array = "0.5.0"
+lazy_static   = "1.4.0"
+arc-swap      = "1.3.0"
 
 [dev-dependencies]
 easybench = "1.1.0"

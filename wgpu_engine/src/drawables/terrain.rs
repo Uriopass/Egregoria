@@ -29,6 +29,7 @@ pub struct TerrainRender<const CSIZE: usize, const CRESOLUTION: usize> {
     indices: [(PBuffer, u32); LOD],
     instances: [(PBuffer, u32); LOD],
     bg: Arc<wgpu::BindGroup>,
+    border_col: LinearColor,
     cell_size: f32,
     w: u32,
     h: u32,
@@ -42,7 +43,7 @@ pub struct TerrainPrepared {
 }
 
 impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
-    pub fn new(gfx: &mut GfxContext, w: u32, h: u32) -> Self {
+    pub fn new(gfx: &mut GfxContext, w: u32, h: u32, col: LinearColor) -> Self {
         let (indices, vertices) = Self::generate_indices_mesh(gfx);
         let mut tex = Texture::create_fbo(
             &gfx.device,
@@ -82,6 +83,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             w,
             h,
             instances: collect_arrlod((0..LOD).map(|_| (PBuffer::new(BufferUsages::VERTEX), 0))),
+            border_col: col,
         }
     }
 
@@ -264,7 +266,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                     normal: if rev ^ !is_x { 1.0 } else { -1.0 }
                         * vec3(!is_x as i32 as f32, is_x as i32 as f32, 0.0),
                     uv: [0.0, 0.0],
-                    color: LinearColor::from(common::config().border_col).into(),
+                    color: self.border_col.into(),
                 })
                 .collect();
             mb.build(gfx)

@@ -61,7 +61,7 @@ impl MapRenderer {
                 .map(|id| (*id, (InstancedMeshBuilder::new(mesh.clone()), None)))
                 .collect(),
             terrain_dirt_id: 0,
-            terrain: TerrainRender::new(gfx, w, h),
+            terrain: TerrainRender::new(gfx, w, h, egregoria::config().border_col.into()),
             water: Water::new(gfx, (w * CHUNK_SIZE) as f32, (h * CHUNK_SIZE) as f32),
         }
     }

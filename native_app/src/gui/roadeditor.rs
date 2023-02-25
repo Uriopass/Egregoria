@@ -67,14 +67,14 @@ pub(crate) fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
         if Some(id) != state.inspect.as_ref().map(|x| x.id) {
             proj_pos = cur_proj.pos;
         }
-        proj_col = common::config().gui_primary;
+        proj_col = egregoria::config().gui_primary;
     } else {
-        proj_col = common::config().gui_disabled;
+        proj_col = egregoria::config().gui_disabled;
     }
 
     if inp.act.contains(&InputAction::Select) {
         if let ProjectKind::Inter(id) = cur_proj.kind {
-            proj_col = common::config().gui_success;
+            proj_col = egregoria::config().gui_success;
             proj_pos = cur_proj.pos;
             let inter = &map.intersections()[id];
             state.inspect = Some(IntersectionComponent {

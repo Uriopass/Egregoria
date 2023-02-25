@@ -80,9 +80,9 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     let base_col = if !isvalid {
         uiworld.write::<ErrorTooltip>().msg = Some(Cow::Owned(invalidmsg));
         uiworld.write::<ErrorTooltip>().isworld = true;
-        common::config().gui_danger
+        egregoria::config().gui_danger
     } else {
-        common::config().gui_primary
+        egregoria::config().gui_primary
     };
 
     for (p1, p2) in newpoly.iter().zip(newpoly.iter().cycle().skip(1)) {
@@ -120,7 +120,7 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     for (i, &p) in newpoly.iter().enumerate() {
         if Some((i, p, false)) == closest {
             draw.circle(p.z(1.1), 6.0)
-                .color(common::config().gui_success);
+                .color(egregoria::config().gui_success);
             continue;
         }
 
@@ -130,7 +130,7 @@ pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     for (i, p) in newpoly.segments().map(|s| s.center()).enumerate() {
         if Some((i, p, true)) == closest {
             draw.circle(p.z(1.1), 3.0)
-                .color(common::config().gui_success);
+                .color(egregoria::config().gui_success);
             continue;
         }
 

@@ -31,7 +31,8 @@ pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     let nearbylane = match nearbylane.and_then(|x| map.lanes().get(x)) {
         Some(x) => x,
         None => {
-            draw.circle(mpos, 10.0).color(common::config().gui_danger);
+            draw.circle(mpos, 10.0)
+                .color(egregoria::config().gui_danger);
             return;
         }
     };
@@ -50,11 +51,11 @@ pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     };
 
     if dist <= trainlength {
-        drawtrain(common::config().gui_danger);
+        drawtrain(egregoria::config().gui_danger);
         return;
     }
 
-    drawtrain(common::config().gui_primary);
+    drawtrain(egregoria::config().gui_primary);
 
     let cmd = WorldCommand::AddTrain {
         dist,

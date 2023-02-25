@@ -466,12 +466,9 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
- "arc-swap",
  "bincode",
- "egui-inspect",
  "geom",
  "inline_tweak",
- "lazy_static",
  "log",
  "log-panics",
  "miniz_oxide",
@@ -787,6 +784,7 @@ dependencies = [
 name = "egregoria"
 version = "0.1.0"
 dependencies = [
+ "arc-swap",
  "atomic_refcell",
  "common",
  "easybench",
@@ -795,6 +793,7 @@ dependencies = [
  "geom",
  "hecs",
  "inline_tweak",
+ "lazy_static",
  "log",
  "ordered-float",
  "pathfinding",

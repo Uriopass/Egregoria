@@ -70,7 +70,7 @@ pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
 
     if state.snap_to_grid && log_camheight < cutoff {
         let alpha = 1.0 - log_camheight / cutoff;
-        let col = common::config().gui_primary.a(alpha);
+        let col = egregoria::config().gui_primary.a(alpha);
         let screen = AABB::new(unproj.xy(), unproj.xy()).expand(300.0);
         let startx = (screen.ll.x / grid_size).ceil() * grid_size;
         let starty = (screen.ll.y / grid_size).ceil() * grid_size;
@@ -365,9 +365,9 @@ impl RoadBuildResource {
         let mut proj_pos = proj.pos;
         proj_pos.z += 0.1;
         let col = if is_valid {
-            common::config().gui_primary
+            egregoria::config().gui_primary
         } else {
-            common::config().gui_danger
+            egregoria::config().gui_danger
         };
 
         let interf = |ang: Vec2, proj: MapProject| match proj.kind {

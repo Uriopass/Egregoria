@@ -85,9 +85,9 @@ pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut draw = |obb, red| {
         let p = asset.to_string();
         let col = if red {
-            common::config().special_building_invalid_col
+            egregoria::config().special_building_invalid_col
         } else {
-            common::config().special_building_col
+            egregoria::config().special_building_col
         };
 
         if p.ends_with(".png") || p.ends_with(".jpg") {

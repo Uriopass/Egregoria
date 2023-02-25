@@ -62,6 +62,8 @@ use common::FastMap;
 use serde::de::Error;
 pub use utils::par_command_buffer::ParCommandBuffer;
 
+pub use utils::config::*;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 #[repr(transparent)]
 pub struct SoulID(pub Entity);

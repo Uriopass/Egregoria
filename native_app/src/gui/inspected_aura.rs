@@ -43,6 +43,6 @@ pub(crate) fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
 
         draw.obb(b.obb, b.height + 0.01)
-            .color(common::config().gui_primary);
+            .color(egregoria::config().gui_primary);
     }
 }

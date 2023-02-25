@@ -1,7 +1,6 @@
 use std::any::TypeId;
 use std::hash::{BuildHasher, Hash, Hasher};
 
-pub use config::*;
 pub use history::*;
 
 #[macro_export]
@@ -178,7 +177,6 @@ impl<'a, T> PartialEq for PtrCmp<'a, T> {
 
 impl<'a, T> Eq for PtrCmp<'a, T> {}
 
-pub mod config;
 pub mod history;
 pub mod logger;
 pub mod rand;

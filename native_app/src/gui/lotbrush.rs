@@ -28,8 +28,8 @@ pub(crate) fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     let kind = res.kind;
 
     let mut col = match kind {
-        LotKind::Unassigned => common::config().lot_unassigned_col,
-        LotKind::Residential => common::config().lot_residential_col,
+        LotKind::Unassigned => egregoria::config().lot_unassigned_col,
+        LotKind::Residential => egregoria::config().lot_residential_col,
     };
 
     col.a = 0.2;

@@ -125,7 +125,7 @@ impl MapMeshHandler {
             cache: vec![],
             cache_arrow: None,
             map_dirt_id: 0,
-            last_config: common::config_id(),
+            last_config: egregoria::config_id(),
         }
     }
 
@@ -135,7 +135,7 @@ impl MapMeshHandler {
         options: MapRenderOptions,
         ctx: &mut FrameContext<'_>,
     ) {
-        if map.dirt_id.0 != self.map_dirt_id || self.last_config != common::config_id() {
+        if map.dirt_id.0 != self.map_dirt_id || self.last_config != egregoria::config_id() {
             let b = &mut self.builders;
             b.map_mesh(map);
             b.arrows(map);
@@ -144,7 +144,7 @@ impl MapMeshHandler {
             b.houses_mesh(map);
             b.zone_mesh(map);
 
-            self.last_config = common::config_id();
+            self.last_config = egregoria::config_id();
             self.map_dirt_id = map.dirt_id.0;
 
             self.cache_arrow = Some(Arc::new(b.arrow_builder.build(ctx.gfx)));
@@ -478,10 +478,10 @@ impl MapBuilders {
         let tess = &mut self.tess_map;
         tess.meshbuilder.clear();
 
-        let low_col: LinearColor = common::config().road_low_col.into();
-        let mid_col: LinearColor = common::config().road_mid_col.into();
-        let hig_col: LinearColor = common::config().road_hig_col.into();
-        let line_col: LinearColor = common::config().road_line_col.into();
+        let low_col: LinearColor = egregoria::config().road_low_col.into();
+        let mid_col: LinearColor = egregoria::config().road_mid_col.into();
+        let hig_col: LinearColor = egregoria::config().road_hig_col.into();
+        let line_col: LinearColor = egregoria::config().road_line_col.into();
 
         let inters = map.intersections();
         let lanes = map.lanes();
@@ -605,8 +605,8 @@ impl MapBuilders {
         // Lots
         for lot in lots.values() {
             let col = match lot.kind {
-                LotKind::Unassigned => common::config().lot_unassigned_col,
-                LotKind::Residential => common::config().lot_residential_col,
+                LotKind::Unassigned => egregoria::config().lot_unassigned_col,
+                LotKind::Residential => egregoria::config().lot_residential_col,
             };
             tess.set_color(col);
             tess.draw_filled_polygon(&lot.shape.corners, lot.height + 0.3);
@@ -623,7 +623,7 @@ fn add_polyon(
         dir,
     }: PylonPosition,
 ) {
-    let color = LinearColor::from(common::config().road_pylon_col);
+    let color = LinearColor::from(egregoria::config().road_pylon_col);
     let color: [f32; 4] = color.into();
 
     let up = pos.up(-0.2);
@@ -799,7 +799,7 @@ fn intersection_mesh(meshb: &mut MeshBuilder, inter: &Intersection, roads: &Road
 
     polygon.simplify();
 
-    let col = LinearColor::from(common::config().road_mid_col).into();
+    let col = LinearColor::from(egregoria::config().road_mid_col).into();
     meshb.extend_with(|vertices, add_idx| {
         vertices.extend(polygon.iter().map(|pos| MeshVertex {
             position: pos.z(inter.pos.z - 0.001).into(),

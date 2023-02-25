@@ -1,5 +1,5 @@
-use crate::saveload::Encoder;
 use arc_swap::{ArcSwap, Guard};
+use common::saveload::Encoder;
 use egui_inspect::Inspect;
 use geom::Color;
 use lazy_static::lazy_static;
@@ -51,8 +51,8 @@ pub struct Config {
 }
 
 fn load_config_start() -> Config {
-    let c = crate::saveload::load_raw("assets/config.json")
-        .and_then(|x| serde_json::from_slice(&x).map_err(Into::into))
+    let c = common::saveload::load_raw("assets/config.json")
+        .and_then(|x| common::saveload::JSON::decode(&x).map_err(Into::into))
         .map_err(|x| {
             log::error!("couldn't read config: {}", x);
         })
@@ -62,7 +62,7 @@ fn load_config_start() -> Config {
 }
 
 fn save_config(config: &Config) {
-    let Ok(x) = crate::saveload::JSONPretty::encode(config) else { return; };
+    let Ok(x) = common::saveload::JSONPretty::encode(config) else { return; };
     let _ = std::fs::write("assets/config.json", x);
 }
 
