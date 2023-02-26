@@ -198,11 +198,6 @@ async fn run(el: EventLoop<()>, window: Window) {
                     params.sun = sun;
                     params.viewport = Vec2::new(gfx.size.0 as f32, gfx.size.1 as f32);
                     params.sun_shadow_proj = camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_enabled as f32);
-                    params.ssao_strength = inline_tweak::tweak!(0.64);
-                    params.ssao_radius = inline_tweak::tweak!(0.343);
-                    params.ssao_falloff = inline_tweak::tweak!(0.00008);
-                    params.ssao_base = inline_tweak::tweak!(0.01);
-                    params.ssao_samples = inline_tweak::tweak!(8);
                     params.shadow_mapping_enabled = 2048;
 
                     let (mut enc, view) = gfx.start_frame(&sco);

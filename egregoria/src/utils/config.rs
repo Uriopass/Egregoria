@@ -38,16 +38,6 @@ pub struct Config {
 
     pub special_building_col: Color,
     pub special_building_invalid_col: Color,
-
-    #[inspect(step = 0.01)]
-    pub ssao_strength: f32,
-    #[inspect(step = 0.001)]
-    pub ssao_radius: f32,
-    #[inspect(step = 0.00001)]
-    pub ssao_falloff: f32,
-    #[inspect(step = 0.01)]
-    pub ssao_base: f32,
-    pub ssao_samples: i32,
 }
 
 fn load_config_start() -> Config {

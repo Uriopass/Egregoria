@@ -52,16 +52,14 @@ var<private> sample_sphere: array<vec3<f32>,16u> = array<vec3<f32>,16u>(
     vec3<f32>( 0.0352,-0.0631, 0.5460), vec3<f32>(-0.4776, 0.2847,-0.0271)
     );
 
+const samples: i32 = 8;
+const total_strength: f32 = 0.64;
+const radius: f32 = 0.343;
+const falloff: f32 = 0.00008;
+const base: f32 = 0.01;
+
 @fragment
 fn frag(@location(0) in_uv: vec2<f32>) -> FragmentOutput {
-    let total_strength: f32 = params.ssao_strength;
-    let base: f32 = params.ssao_base;
-
-    let falloff: f32 = params.ssao_falloff;
-    let radius: f32 = params.ssao_radius;
-
-    let samples = params.ssao_samples;
-
     let xr: f32 = fastnoise(in_uv * 1000.0, 1.0);
     let yr: f32 = fastnoise(in_uv * 1000.0, 2.0);
     let zr: f32 = fastnoise(in_uv * 1000.0, 3.0);

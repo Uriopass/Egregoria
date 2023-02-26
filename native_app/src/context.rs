@@ -136,11 +136,6 @@ impl Context {
                         params.grass_col = c.grass_col.into();
                         params.sand_col = c.sand_col.into();
                         params.sea_col = c.sea_col.into();
-                        params.ssao_strength = c.ssao_strength;
-                        params.ssao_radius = c.ssao_radius;
-                        params.ssao_falloff = c.ssao_falloff;
-                        params.ssao_base = c.ssao_base;
-                        params.ssao_samples = c.ssao_samples;
                         drop(c);
 
                         let (mut enc, view) = self.gfx.start_frame(&sco);
