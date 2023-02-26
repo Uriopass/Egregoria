@@ -31,7 +31,7 @@ async fn run(el: EventLoop<()>, window: Window) {
     )
     .await;
 
-    gfx.render_params.value_mut().shadow_mapping_enabled = 2048;
+    gfx.render_params.value_mut().shadow_mapping_resolution = 2048;
     gfx.sun_shadowmap = GfxContext::mk_shadowmap(&gfx.device, 2048);
     gfx.update_simplelit_bg();
 
@@ -197,8 +197,8 @@ async fn run(el: EventLoop<()>, window: Window) {
                     params.cam_dir = camera.dir();
                     params.sun = sun;
                     params.viewport = Vec2::new(gfx.size.0 as f32, gfx.size.1 as f32);
-                    params.sun_shadow_proj = camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_enabled as f32);
-                    params.shadow_mapping_enabled = 2048;
+                    params.sun_shadow_proj = camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_resolution as f32);
+                    params.shadow_mapping_resolution = 2048;
 
                     let (mut enc, view) = gfx.start_frame(&sco);
                     gfx.render_objs(&mut enc, &view, |fc| state.render(fc));

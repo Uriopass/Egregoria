@@ -89,7 +89,7 @@ pub struct RenderParams {
     pub time: f32,
     pub time_always: f32,
     pub ssao_enabled: i32,
-    pub shadow_mapping_enabled: i32,
+    pub shadow_mapping_resolution: i32,
     pub realistic_sky: i32,
     pub grid_enabled: i32,
     pub _pad5: [f32; 3],
@@ -111,7 +111,7 @@ impl Default for RenderParams {
             time: 0.0,
             time_always: 0.0,
             ssao_enabled: 1,
-            shadow_mapping_enabled: 1,
+            shadow_mapping_resolution: 2048,
             realistic_sky: 1,
             grid_enabled: 1,
             _pad: 0.0,
@@ -442,7 +442,7 @@ impl GfxContext {
             drop(depth_prepass);
         }
         *enc_dep_ext = Some(prepass.finish());
-        if self.render_params.value().shadow_mapping_enabled != 0 {
+        if self.render_params.value().shadow_mapping_resolution != 0 {
             profiling::scope!("shadow pass");
             let mut smap_enc = self
                 .device

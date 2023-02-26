@@ -58,7 +58,7 @@ fn frag(@location(0) in_normal: vec3<f32>,
     }
 
     var shadow_v: f32 = 1.0;
-    if (params.shadow_mapping_enabled != 0) {
+    if (params.shadow_mapping_resolution != 0) {
         shadow_v = sampleShadow(in_wpos);
     }
 

@@ -4,7 +4,7 @@ fn sampleShadow(in_wpos: vec3<f32>) -> f32 {
     let corrected: vec3<f32> = light_local.xyz / light_local.w * vec3(0.5, -0.5, 1.0) + vec3(0.5, 0.5, 0.0);
 
     var total: f32 = 0.0;
-    let offset: f32 = 1.0 / f32(params.shadow_mapping_enabled);
+    let offset: f32 = 1.0 / f32(params.shadow_mapping_resolution);
 
     var x: i32;
 
