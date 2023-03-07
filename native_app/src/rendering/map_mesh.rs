@@ -12,7 +12,7 @@ use std::sync::Arc;
 use wgpu_engine::earcut::earcut;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
-    Drawable, FrameContext, GfxContext, InstancedMeshBuilder, MeshBuilder, MeshInstance,
+    Drawable, FrameContext, GfxContext, InstancedMeshBuilder, Material, MeshBuilder, MeshInstance,
     MeshVertex, SpriteBatchBuilder, Tesselator,
 };
 
@@ -90,7 +90,9 @@ impl MapMeshHandler {
             let floor = &z.floor;
             let filler = &z.filler;
 
-            let floor_mesh = MeshBuilder::new(gfx.texture(floor, "zone_floor_tex"));
+            let floor_tex = gfx.texture(floor, "zone_floor_tex");
+            let floor_mat = gfx.register_material(Material::new(gfx, floor_tex));
+            let floor_mesh = MeshBuilder::new(floor_mat);
 
             let m = match load_mesh(gfx, filler) {
                 Ok(m) => m,
@@ -108,14 +110,15 @@ impl MapMeshHandler {
             );
         }
 
+        let crosswalk_tex = gfx.texture("assets/sprites/crosswalk.png", "crosswalk");
+        let crosswalk_mat = gfx.register_material(Material::new(gfx, crosswalk_tex));
+        let houses_mat = gfx.register_material(Material::new(gfx, gfx.palette()));
         let builders = MapBuilders {
             arrow_builder,
             buildsprites,
-            crosswalk_builder: MeshBuilder::new(
-                gfx.texture("assets/sprites/crosswalk.png", "crosswalk"),
-            ),
+            crosswalk_builder: MeshBuilder::new(crosswalk_mat),
             tess_map: Tesselator::new(gfx, None, 15.0),
-            houses_mesh: MeshBuilder::new(gfx.palette()),
+            houses_mesh: MeshBuilder::new(houses_mat),
             buildmeshes,
             zonemeshes,
         };

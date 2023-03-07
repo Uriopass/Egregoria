@@ -1,6 +1,6 @@
 use crate::{
-    bg_layout_litmesh, pbuffer::PBuffer, Drawable, FrameContext, GfxContext, IndexType, Mesh,
-    MeshBuilder, MeshVertex, RenderParams, TerrainVertex, Texture, Uniform, VBDesc,
+    bg_layout_litmesh, pbuffer::PBuffer, Drawable, FrameContext, GfxContext, IndexType, Material,
+    Mesh, MeshBuilder, MeshVertex, RenderParams, TerrainVertex, Texture, Uniform, VBDesc,
 };
 use common::FastMap;
 use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Polygon, Vec2, AABB3};
@@ -214,13 +214,13 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         }));
     }
 
-    pub fn update_borders(&mut self, gfx: &GfxContext, height: &dyn Fn(Vec2) -> Option<f32>) {
+    pub fn update_borders(&mut self, gfx: &mut GfxContext, height: &dyn Fn(Vec2) -> Option<f32>) {
         let minx = unwrap_ret!(self.dirt_ids.keys().map(|x| x.0).min());
         let maxx = unwrap_ret!(self.dirt_ids.keys().map(|x| x.0).max()) + 1;
         let miny = unwrap_ret!(self.dirt_ids.keys().map(|x| x.1).min());
         let maxy = unwrap_ret!(self.dirt_ids.keys().map(|x| x.1).max()) + 1;
         let cell_size = self.cell_size;
-        let mk_bord = |start, end, c, is_x, rev| {
+        let mut mk_bord = |start, end, c, is_x, rev| {
             let c = c as f32 * CSIZE as f32;
             let flip = move |v: Vec2| {
                 if is_x {
@@ -251,7 +251,8 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 indices.push(b as IndexType);
                 indices.push(c as IndexType);
             });
-            let mut mb = MeshBuilder::new(gfx.palette());
+            let mat = gfx.register_material(Material::new(gfx, gfx.palette()));
+            let mut mb = MeshBuilder::new(mat);
             mb.indices = indices;
             mb.vertices = poly
                 .0

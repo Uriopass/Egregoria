@@ -172,7 +172,7 @@ impl Drawable for InstancedMesh {
         rp.set_pipeline(pipeline);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
-        rp.set_bind_group(2, &self.mesh.albedo_bg, &[]);
+        rp.set_bind_group(2, &gfx.material(self.mesh.material).bg, &[]);
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
@@ -196,7 +196,7 @@ impl Drawable for InstancedMesh {
 
         rp.set_bind_group(0, proj, &[]);
         if self.mesh.transparent {
-            rp.set_bind_group(1, &self.mesh.albedo_bg, &[]);
+            rp.set_bind_group(1, &gfx.material(self.mesh.material).bg, &[]);
         }
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));

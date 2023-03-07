@@ -94,7 +94,7 @@ impl State {
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
             goria: Arc::new(RwLock::new(goria)),
-            immtess: Tesselator::new(&ctx.gfx, None, 1.0),
+            immtess: Tesselator::new(&mut ctx.gfx, None, 1.0),
         }
     }
 

@@ -144,7 +144,8 @@ impl MapRenderer {
             self.terrain.dirt_id = ter.dirt_id.0;
         }
 
-        self.terrain.update_borders(&ctx.gfx, &|p| ter.height(p));
+        self.terrain
+            .update_borders(&mut ctx.gfx, &|p| ter.height(p));
     }
 
     pub(crate) fn build_trees(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {

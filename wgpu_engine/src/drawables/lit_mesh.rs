@@ -1,5 +1,7 @@
 use crate::pbuffer::PBuffer;
-use crate::{Drawable, GfxContext, IndexType, MeshVertex, RenderParams, Texture, Uniform, VBDesc};
+use crate::{
+    Drawable, GfxContext, IndexType, MaterialID, MeshVertex, RenderParams, Texture, Uniform, VBDesc,
+};
 use std::sync::Arc;
 use wgpu::{BindGroupLayout, BindGroupLayoutEntry, BufferUsages, Device, IndexFormat, RenderPass};
 
@@ -8,17 +10,17 @@ pub struct MeshBuilder {
     pub(crate) indices: Vec<IndexType>,
     pub(crate) vbuffer: PBuffer,
     pub(crate) ibuffer: PBuffer,
-    pub(crate) albedo: Arc<Texture>,
+    pub(crate) material: MaterialID,
 }
 
 impl MeshBuilder {
-    pub fn new(albedo: Arc<Texture>) -> Self {
+    pub fn new(material: MaterialID) -> Self {
         Self {
             vertices: vec![],
             indices: vec![],
             vbuffer: PBuffer::new(BufferUsages::VERTEX),
             ibuffer: PBuffer::new(BufferUsages::INDEX),
-            albedo,
+            material,
         }
     }
 
@@ -57,11 +59,7 @@ impl MeshBuilder {
         Some(Mesh {
             vertex_buffer: self.vbuffer.inner()?,
             index_buffer: self.ibuffer.inner()?,
-            albedo_bg: Arc::new(
-                self.albedo
-                    .bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device)),
-            ),
-            albedo: self.albedo.clone(),
+            material: self.material,
             n_indices: self.indices.len() as u32,
             transparent: false,
             skip_depth: false,
@@ -74,8 +72,7 @@ impl MeshBuilder {
 pub struct Mesh {
     pub vertex_buffer: Arc<wgpu::Buffer>,
     pub index_buffer: Arc<wgpu::Buffer>,
-    pub albedo: Arc<Texture>,
-    pub albedo_bg: Arc<wgpu::BindGroup>,
+    pub material: MaterialID,
     pub n_indices: u32,
     pub transparent: bool,
     pub skip_depth: bool,
@@ -184,7 +181,7 @@ impl Drawable for Mesh {
         }));
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
-        rp.set_bind_group(2, &self.albedo_bg, &[]);
+        rp.set_bind_group(2, &gfx.material(self.material).bg, &[]);
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);
@@ -210,7 +207,7 @@ impl Drawable for Mesh {
 
         rp.set_bind_group(0, proj, &[]);
         if self.transparent {
-            rp.set_bind_group(1, &self.albedo_bg, &[]);
+            rp.set_bind_group(1, &gfx.material(self.material).bg, &[]);
         }
         rp.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         rp.set_index_buffer(self.index_buffer.slice(..), IndexFormat::Uint32);

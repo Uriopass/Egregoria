@@ -1,4 +1,4 @@
-use crate::{GfxContext, IndexType, Mesh, MeshBuilder, MeshVertex, TextureBuilder};
+use crate::{GfxContext, IndexType, Material, Mesh, MeshBuilder, MeshVertex, TextureBuilder};
 use geom::{Matrix4, Quaternion, Vec2, Vec3};
 use gltf::image::Format;
 use gltf::json::texture::{MagFilter, MinFilter};
@@ -116,7 +116,7 @@ pub enum LoadMeshError {
     InvalidImage(ImageLoadError),
 }
 
-pub fn load_mesh(gfx: &GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshError> {
+pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshError> {
     let mut path = PathBuf::new();
     path.push("assets/models/");
     path.push(asset_name);
@@ -239,7 +239,9 @@ pub fn load_mesh(gfx: &GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshErr
     let albedo = load_image(gfx, data, tex.sampler()).map_err(LoadMeshError::InvalidImage)?;
     let transparent = albedo.transparent;
 
-    let mut meshb = MeshBuilder::new(albedo);
+    let matid = gfx.register_material(Material::new(gfx, albedo));
+
+    let mut meshb = MeshBuilder::new(matid);
     meshb.vertices = flat_vertices;
     meshb.indices = indices;
     let mut m = meshb.build(gfx).ok_or(LoadMeshError::NoVertices)?;

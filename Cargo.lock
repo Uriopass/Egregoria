@@ -3201,6 +3201,7 @@ dependencies = [
  "profiling",
  "raw-window-handle",
  "rayon",
+ "slotmap",
  "wgpu",
 ]
 

@@ -1,8 +1,9 @@
 use crate::terrain::TerrainPrepared;
 use crate::wgpu::SamplerBindingType;
 use crate::{
-    bg_layout_litmesh, compile_shader, CompiledModule, Drawable, IndexType, InstancedMesh, Mesh,
-    SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, VBDesc, Water,
+    bg_layout_litmesh, compile_shader, CompiledModule, Drawable, IndexType, InstancedMesh,
+    Material, MaterialID, MaterialMap, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform,
+    UvVertex, VBDesc, Water,
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
@@ -45,6 +46,8 @@ pub struct GfxContext {
         Vec<String>,
         Box<dyn for<'a> Fn(Vec<CompiledModule>, &'a GfxContext) -> RenderPipeline>,
     )>,
+    pub(crate) materials: MaterialMap,
+    pub(crate) default_material: Material,
     pub(crate) shader_cache: FastMap<String, CompiledModule>,
     pub(crate) shader_watcher: FastMap<String, (Vec<String>, Option<SystemTime>)>,
     pub(crate) tick: u64,
@@ -242,7 +245,6 @@ impl GfxContext {
 
         let mut me = Self {
             size: (win_width, win_height),
-            queue,
             sc_desc,
             update_sc: false,
             adapter,
@@ -250,6 +252,8 @@ impl GfxContext {
             surface,
             pipelines: HashMap::default(),
             pipelines_builders: vec![],
+            materials: Default::default(),
+            default_material: Material::new_default(&device, &queue),
             shader_cache: Default::default(),
             shader_watcher: Default::default(),
             tick: 0,
@@ -266,6 +270,7 @@ impl GfxContext {
             bnoise_bg,
             sun_shadowmap: Self::mk_shadowmap(&device, 2048),
             device,
+            queue,
         };
 
         me.update_simplelit_bg();
@@ -278,11 +283,11 @@ impl GfxContext {
         BackgroundPipeline::setup(&mut me);
         Water::setup(&mut me);
 
-        let p = TextureBuilder::from_path("assets/sprites/palette.png")
+        let palette = TextureBuilder::from_path("assets/sprites/palette.png")
             .with_label("palette")
             .with_sampler(Texture::nearest_sampler())
             .build(&me.device, &me.queue);
-        me.set_texture("assets/sprites/palette.png", p);
+        me.set_texture("assets/sprites/palette.png", palette);
 
         let gs = me.texture("assets/sprites/gradientsky.png", "gradient sky");
         let starfield = me.texture("assets/sprites/starfield.png", "starfield");
@@ -299,6 +304,14 @@ impl GfxContext {
         );
 
         me
+    }
+
+    pub fn register_material(&mut self, material: Material) -> MaterialID {
+        self.materials.insert(material)
+    }
+
+    pub fn material(&self, id: MaterialID) -> &Material {
+        self.materials.get(id).unwrap_or(&self.default_material)
     }
 
     pub fn mk_shadowmap(device: &Device, res: u32) -> Texture {
