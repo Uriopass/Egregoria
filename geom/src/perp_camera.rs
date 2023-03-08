@@ -86,8 +86,7 @@ impl Camera {
             dir.y = 0.01;
         }
 
-        let d = 100.0f32.max(self.dist * 2.5);
-
+        let d = self.dist * 2.5;
         let base = self.pos;
 
         let view = look_to_rh(base + dir, -dir, self.up);
