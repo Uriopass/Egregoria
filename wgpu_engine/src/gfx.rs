@@ -2,8 +2,8 @@ use crate::terrain::TerrainPrepared;
 use crate::wgpu::SamplerBindingType;
 use crate::{
     bg_layout_litmesh, compile_shader, CompiledModule, Drawable, IndexType, InstancedMesh,
-    Material, MaterialID, MaterialMap, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform,
-    UvVertex, VBDesc, Water,
+    Material, MaterialID, MaterialMap, Mesh, Texture, TextureBuilder, Uniform, UvVertex, VBDesc,
+    Water,
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
@@ -278,7 +278,7 @@ impl GfxContext {
         TerrainPrepared::setup(&mut me);
         Mesh::setup(&mut me);
         InstancedMesh::setup(&mut me);
-        SpriteBatch::setup(&mut me);
+        //SpriteBatch::setup(&mut me);
         SSAOPipeline::setup(&mut me);
         BackgroundPipeline::setup(&mut me);
         Water::setup(&mut me);

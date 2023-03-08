@@ -1,7 +1,7 @@
 #![allow(clippy::collapsible_else_if)]
 use crate::pbuffer::PBuffer;
 use crate::{
-    bg_layout_litmesh, Drawable, GfxContext, Mesh, MeshVertex, RenderParams, Texture, Uniform,
+    bg_layout_litmesh, Drawable, GfxContext, Material, Mesh, MeshVertex, RenderParams, Uniform,
     VBDesc,
 };
 use geom::{LinearColor, Vec3};
@@ -99,7 +99,7 @@ impl InstancedMesh {
                         &[
                             &gfx.projection.layout,
                             &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                            &Texture::bindgroup_layout(&gfx.device),
+                            &Material::bindgroup_layout(&gfx.device),
                             &bg_layout_litmesh(&gfx.device),
                         ],
                         vb,
@@ -150,7 +150,7 @@ impl InstancedMesh {
                             smap,
                             &[
                                 &gfx.projection.layout,
-                                &Texture::bindgroup_layout(&gfx.device),
+                                &Material::bindgroup_layout(&gfx.device),
                             ],
                             double_sided,
                         )

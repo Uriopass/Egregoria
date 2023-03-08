@@ -1,6 +1,7 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    Drawable, GfxContext, IndexType, MaterialID, MeshVertex, RenderParams, Texture, Uniform, VBDesc,
+    Drawable, GfxContext, IndexType, Material, MaterialID, MeshVertex, RenderParams, Uniform,
+    VBDesc,
 };
 use std::sync::Arc;
 use wgpu::{BindGroupLayout, BindGroupLayoutEntry, BufferUsages, Device, IndexFormat, RenderPass};
@@ -109,7 +110,7 @@ impl Mesh {
                         &[
                             &gfx.projection.layout,
                             &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                            &Texture::bindgroup_layout(&gfx.device),
+                            &Material::bindgroup_layout(&gfx.device),
                             &bg_layout_litmesh(&gfx.device),
                         ],
                         vb,
@@ -160,7 +161,7 @@ impl Mesh {
                             smap,
                             &[
                                 &gfx.projection.layout,
-                                &Texture::bindgroup_layout(&gfx.device),
+                                &Material::bindgroup_layout(&gfx.device),
                             ],
                             double_sided,
                         )

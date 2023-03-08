@@ -24,6 +24,7 @@ impl InstancedRender {
         InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 gfx.texture("assets/sprites/path_not_found.png", "path_not_found"),
+                gfx,
             ),
             cars: InstancedMeshBuilder::new(load_mesh(gfx, "simple_car.glb").unwrap()),
             locomotives: InstancedMeshBuilder::new(load_mesh(gfx, "train.glb").unwrap()),

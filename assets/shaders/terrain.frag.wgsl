@@ -87,6 +87,8 @@ fn frag(@location(0) in_normal: vec3<f32>,
                                       position.xy,
                                       normalize(in_normal),
                                       c.rgb,
+                                      0.0,
+                                      1.0,
                                       params.sun_col.rgb,
                                       shadow_v,
                                       ssao);

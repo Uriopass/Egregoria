@@ -52,7 +52,7 @@ impl MapMeshHandler {
             }
             buildsprites.insert(
                 BuildingKind::GoodsCompany(descr.id),
-                SpriteBatchBuilder::new(gfx.texture(asset, "goods_company_tex")),
+                SpriteBatchBuilder::new(gfx.texture(asset, "goods_company_tex"), gfx),
             );
         }
 

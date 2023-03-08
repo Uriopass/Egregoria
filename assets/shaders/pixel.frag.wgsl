@@ -8,6 +8,8 @@ struct FragmentOutput {
 
 @group(2) @binding(0) var t_albedo: texture_2d<f32>;
 @group(2) @binding(1) var s_albedo: sampler;
+@group(2) @binding(2) var<uniform> metallic: f32;
+@group(2) @binding(3) var<uniform> roughness: f32;
 
 @group(3) @binding(0) var t_ssao: texture_2d<f32>;
 @group(3) @binding(1) var s_ssao: sampler;
@@ -66,6 +68,8 @@ fn frag(@location(0) in_tint: vec4<f32>,
                                       position.xy,
                                       normal,
                                       c.rgb,
+                                      metallic,
+                                      roughness,
                                       params.sun_col.rgb,
                                       shadow_v,
                                       ssao);

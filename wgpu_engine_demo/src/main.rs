@@ -1,25 +1,49 @@
-use geom::{vec3, Camera, LinearColor, Matrix4, Vec2, Vec3};
+use geom::{vec3, Camera, LinearColor, Matrix4, Radians, Vec2, Vec3};
 use std::time::Instant;
 use wgpu_engine::meshload::load_mesh;
-use wgpu_engine::{FrameContext, GfxContext, Mesh};
+use wgpu_engine::{
+    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, Material, Mesh, MeshInstance,
+};
 use winit::dpi::PhysicalSize;
 use winit::event::{DeviceEvent, Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{CursorGrabMode, Window, WindowBuilder};
 
 struct State {
-    mesh: Mesh,
+    meshes: Vec<InstancedMesh>,
 }
 
 impl State {
     fn new(gfx: &mut GfxContext) -> Self {
-        Self {
-            mesh: load_mesh(gfx, "coal_power_plant.glb").unwrap(),
+        let mesh = load_mesh(gfx, "sphere.glb").unwrap();
+        let alb = gfx.material(mesh.material).albedo.clone();
+
+        let mut meshes = vec![];
+        for x in 0..=10 {
+            for z in 0..=10 {
+                let mut c = mesh.clone();
+
+                c.material = gfx.register_material(Material::new_raw(
+                    &gfx.device,
+                    alb.clone(),
+                    z as f32 / 10.0,
+                    x as f32 / 10.0,
+                ));
+                let mut i = InstancedMeshBuilder::new(c);
+                i.instances.push(MeshInstance {
+                    pos: 2.3 * vec3(x as f32, 0.0, z as f32),
+                    dir: Vec3::X,
+                    tint: LinearColor::WHITE,
+                });
+                meshes.push(i.build(gfx).unwrap());
+            }
         }
+
+        Self { meshes }
     }
 
     fn render(&mut self, fc: &mut FrameContext) {
-        fc.draw(self.mesh.clone());
+        fc.draw(self.meshes.clone());
     }
 }
 
@@ -41,10 +65,13 @@ async fn run(el: EventLoop<()>, window: Window) {
     let mut new_size: Option<PhysicalSize<u32>> = None;
     let mut last_update = Instant::now();
 
-    let sun = vec3(1.0, 1.0, 1.0).normalize();
+    let sun = vec3(1.0, -1.0, 1.0).normalize();
 
-    let mut camera = Camera::new(vec3(0.0, 0.0, 0.0), 1000.0, 1000.0);
+    let mut camera = Camera::new(vec3(9.0, -30.0, 13.0), 1000.0, 1000.0);
     camera.dist = 0.0;
+    camera.pitch = Radians(0.0);
+    camera.yaw = Radians(-std::f32::consts::PI / 2.0);
+
     let mut is_going_forward = false;
     let mut is_going_backward = false;
     let mut is_going_left = false;
@@ -183,7 +210,6 @@ async fn run(el: EventLoop<()>, window: Window) {
                         camera.pos -= vec3(0.0, 0.0, 1.0) * cam_speed;
                     }
 
-
                     let viewproj = camera.build_view_projection_matrix();
                     let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
 
@@ -197,7 +223,9 @@ async fn run(el: EventLoop<()>, window: Window) {
                     params.cam_dir = camera.dir();
                     params.sun = sun;
                     params.viewport = Vec2::new(gfx.size.0 as f32, gfx.size.1 as f32);
+                    camera.dist = 300.0;
                     params.sun_shadow_proj = camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_resolution as f32);
+                    camera.dist = 0.0;
                     params.shadow_mapping_resolution = 2048;
 
                     let (mut enc, view) = gfx.start_frame(&sco);

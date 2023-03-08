@@ -1,12 +1,14 @@
 use crate::pbuffer::PBuffer;
-use crate::{bg_layout_litmesh, Drawable, GfxContext, Texture, UvVertex, VBDesc};
+use crate::{
+    bg_layout_litmesh, Drawable, GfxContext, Material, MaterialID, Texture, UvVertex, VBDesc,
+};
 use geom::{LinearColor, Vec3};
 use std::path::PathBuf;
 use std::sync::Arc;
-use wgpu::{BindGroup, BufferUsages, IndexFormat, RenderPass, VertexAttribute, VertexBufferLayout};
+use wgpu::{BufferUsages, IndexFormat, RenderPass, VertexAttribute, VertexBufferLayout};
 
 pub struct SpriteBatchBuilder {
-    pub albedo: Arc<Texture>,
+    pub material: MaterialID,
     instances: Vec<InstanceRaw>,
     stretch_x: f32,
     stretch_y: f32,
@@ -16,12 +18,12 @@ pub struct SpriteBatchBuilder {
 pub struct SpriteBatch {
     instance_buf: Arc<wgpu::Buffer>,
     pub n_instances: u32,
-    pub albedo_bg: BindGroup,
+    pub material: MaterialID,
 }
 
 impl SpriteBatch {
-    pub fn builder(tex: Arc<Texture>) -> SpriteBatchBuilder {
-        SpriteBatchBuilder::new(tex)
+    pub fn builder(gfx: &mut GfxContext, tex: Arc<Texture>) -> SpriteBatchBuilder {
+        SpriteBatchBuilder::new(tex, gfx)
     }
 }
 
@@ -48,8 +50,9 @@ impl VBDesc for InstanceRaw {
 }
 
 impl SpriteBatchBuilder {
-    pub fn from_path(ctx: &mut GfxContext, path: impl Into<PathBuf>) -> Self {
-        Self::new(ctx.texture(path, "some spritebatch tex"))
+    pub fn from_path(gfx: &mut GfxContext, path: impl Into<PathBuf>) -> Self {
+        let tex = gfx.texture(path, "some spritebatch tex");
+        Self::new(tex, gfx)
     }
 
     pub fn clear(&mut self) {
@@ -66,16 +69,19 @@ impl SpriteBatchBuilder {
         self
     }
 
-    pub fn new(albedo: Arc<Texture>) -> Self {
-        let m = albedo.extent.width.max(albedo.extent.height) as f32;
+    pub fn new(albedo: Arc<Texture>, gfx: &mut GfxContext) -> Self {
+        let max_extent = albedo.extent.width.max(albedo.extent.height) as f32;
 
-        let stretch_x = 0.5 * albedo.extent.width as f32 / m;
-        let stretch_y = 0.5 * albedo.extent.height as f32 / m;
+        let stretch_x = 0.5 * albedo.extent.width as f32 / max_extent;
+        let stretch_y = 0.5 * albedo.extent.height as f32 / max_extent;
+
+        let mat = Material::new(gfx, albedo);
+        let matid = gfx.register_material(mat);
 
         Self {
             stretch_x,
             stretch_y,
-            albedo,
+            material: matid,
             instances: vec![],
             instance_sbuffer: PBuffer::new(BufferUsages::VERTEX),
         }
@@ -89,14 +95,10 @@ impl SpriteBatchBuilder {
         self.instance_sbuffer
             .write(gfx, bytemuck::cast_slice(&self.instances));
 
-        let albedo_bg = self
-            .albedo
-            .bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device));
-
         Some(SpriteBatch {
             instance_buf: self.instance_sbuffer.inner().unwrap(),
             n_instances: self.instances.len() as u32,
-            albedo_bg,
+            material: self.material,
         })
     }
 }
@@ -115,7 +117,7 @@ impl SpriteBatch {
                     &[
                         &gfx.projection.layout,
                         &gfx.render_params.layout,
-                        &Texture::bindgroup_layout(&gfx.device),
+                        &Material::bindgroup_layout(&gfx.device),
                         &bg_layout_litmesh(&gfx.device),
                     ],
                     &[UvVertex::desc(), InstanceRaw::desc()],
@@ -137,7 +139,7 @@ impl Drawable for SpriteBatch {
         rp.set_vertex_buffer(1, self.instance_buf.slice(..));
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
-        rp.set_bind_group(2, &self.albedo_bg, &[]);
+        rp.set_bind_group(2, &gfx.material(self.material).bg, &[]);
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
         rp.set_index_buffer(gfx.rect_indices.slice(..), IndexFormat::Uint32);
         rp.draw_indexed(0..6, 0, 0..self.n_instances);
