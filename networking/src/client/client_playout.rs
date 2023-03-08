@@ -1,7 +1,7 @@
 use crate::ring::Ring;
 use crate::{Frame, MergedInputs, PlayerInput};
 
-///       Playback buffer
+/// Playback buffer
 ///  --------------------------------------
 /// |  X  ;  X  ;  .  ;  .  ;  X  ;  X    |
 /// |        ^     ^           ^          |

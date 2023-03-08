@@ -5,7 +5,7 @@ use common::FastMap;
 
 type PartialInputs = FastMap<AuthentID, Vec<PlayerInput>>;
 
-///       Playback buffer
+///  Playback buffer
 ///  --------------------------------------
 /// |    past   |         future          |
 /// |  X  ;  X  |  .  ;  .  ;  X  ;  X    |
