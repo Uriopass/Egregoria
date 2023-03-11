@@ -2,7 +2,7 @@ use geom::{vec3, Camera, LinearColor, Matrix4, Radians, Vec2, Vec3};
 use std::time::Instant;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
-    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, Material, Mesh, MeshInstance,
+    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, Material, MeshInstance,
 };
 use winit::dpi::PhysicalSize;
 use winit::event::{DeviceEvent, Event, WindowEvent};
@@ -269,11 +269,11 @@ fn main() {
         window = wb;
     }
     let window = window
-        .with_inner_size(winit::dpi::PhysicalSize::new(
+        .with_inner_size(PhysicalSize::new(
             size.width as f32 * 0.8,
             size.height as f32 * 0.8,
         ))
-        .with_title(format!("WGPU Engine Demo for Egregoria"))
+        .with_title("WGPU Engine Demo for Egregoria")
         .build(&el)
         .expect("Failed to create window");
     beul::execute(run(el, window))
