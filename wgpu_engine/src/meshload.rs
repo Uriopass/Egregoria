@@ -139,7 +139,6 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
         let translation = node.transform();
         let rot_qat = Quaternion::from(translation.clone().decomposed().1);
         let mat = Matrix4::from(translation.matrix());
-        let invert_winding = mat.determinent() < 0.0;
 
         let primitive = unwrap_cont!(mesh.primitives().next());
         let reader = primitive.reader(|b| Some(&data.get(b.index())?.0[..b.length()]));
@@ -179,17 +178,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
             }
         }
 
-        for triangle in read_indices.chunks_exact(3) {
-            let (mut a, b, mut c) = if let [a, b, c] = *triangle {
-                (a, b, c)
-            } else {
-                continue;
-            };
-
-            if invert_winding {
-                std::mem::swap(&mut a, &mut c);
-            }
-
+        for &[a, b, c] in bytemuck::cast_slice::<u32, [u32; 3]>(&*read_indices) {
             if shade_smooth {
                 indices.push(vtx_offset + a as IndexType);
                 indices.push(vtx_offset + b as IndexType);
