@@ -79,6 +79,7 @@ async fn run(el: EventLoop<()>, window: Window) {
     let mut is_going_up = false;
     let mut is_going_down = false;
     let mut is_going_slow = false;
+    let mut is_captured = false;
 
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -98,12 +99,14 @@ async fn run(el: EventLoop<()>, window: Window) {
                     } => {
                         let _ = window.set_cursor_grab(CursorGrabMode::Confined);
                         window.set_cursor_visible(false);
+                        is_captured = true;
                     }
                     WindowEvent::CursorLeft {
                         ..
                     } => {
                         let _ = window.set_cursor_grab(CursorGrabMode::None);
                         window.set_cursor_visible(true);
+                        is_captured = false;
                     }
                     WindowEvent::KeyboardInput {
                         input:
@@ -116,6 +119,7 @@ async fn run(el: EventLoop<()>, window: Window) {
                     } => {
                         let _ = window.set_cursor_grab(CursorGrabMode::None);
                         window.set_cursor_visible(true);
+                        is_captured = false;
                     }
                     WindowEvent::KeyboardInput {
                         input:
@@ -150,9 +154,11 @@ async fn run(el: EventLoop<()>, window: Window) {
                     DeviceEvent::MouseMotion {
                         delta
                     } => {
-                        camera.yaw.0   -= 0.001 * (delta.0 as f32);
-                        camera.pitch.0 += 0.001 * (delta.1 as f32);
-                        camera.pitch.0 = camera.pitch.0.clamp(-1.5, 1.5);
+                        if is_captured {
+                            camera.yaw.0 -= 0.001 * (delta.0 as f32);
+                            camera.pitch.0 += 0.001 * (delta.1 as f32);
+                            camera.pitch.0 = camera.pitch.0.clamp(-1.5, 1.5);
+                        }
                     }
                     _ => {}
                 }
@@ -191,23 +197,25 @@ async fn run(el: EventLoop<()>, window: Window) {
                     let delta = d.as_secs_f32();
 
                     let cam_speed = if is_going_slow { 10.0 } else { 30.0 } * delta;
-                    if is_going_forward {
-                        camera.pos -= camera.dir().xy().z0().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
-                    }
-                    if is_going_backward {
-                        camera.pos += camera.dir().xy().z0().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
-                    }
-                    if is_going_left {
-                        camera.pos += camera.dir().perp_up().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
-                    }
-                    if is_going_right {
-                        camera.pos -= camera.dir().perp_up().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
-                    }
-                    if is_going_up {
-                        camera.pos += vec3(0.0, 0.0, 1.0) * cam_speed;
-                    }
-                    if is_going_down {
-                        camera.pos -= vec3(0.0, 0.0, 1.0) * cam_speed;
+                    if is_captured {
+                        if is_going_forward {
+                            camera.pos -= camera.dir().xy().z0().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
+                        }
+                        if is_going_backward {
+                            camera.pos += camera.dir().xy().z0().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
+                        }
+                        if is_going_left {
+                            camera.pos += camera.dir().perp_up().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
+                        }
+                        if is_going_right {
+                            camera.pos -= camera.dir().perp_up().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
+                        }
+                        if is_going_up {
+                            camera.pos += vec3(0.0, 0.0, 1.0) * cam_speed;
+                        }
+                        if is_going_down {
+                            camera.pos -= vec3(0.0, 0.0, 1.0) * cam_speed;
+                        }
                     }
 
                     let viewproj = camera.build_view_projection_matrix();
