@@ -21,12 +21,17 @@ pub(crate) struct InstancedRender {
 impl InstancedRender {
     pub(crate) fn new(gfx: &mut GfxContext) -> Self {
         defer!(log::info!("finished init of instanced render"));
+
+        let car = load_mesh(gfx, "simple_car.glb").unwrap();
+        let (mat, queue) = gfx.material_mut(car.material).unwrap();
+        queue.write_buffer(&mat.metallic, 0, bytemuck::cast_slice(&[1.0f32]));
+        queue.write_buffer(&mat.roughness, 0, bytemuck::cast_slice(&[0.1f32]));
         InstancedRender {
             path_not_found: SpriteBatchBuilder::new(
                 gfx.texture("assets/sprites/path_not_found.png", "path_not_found"),
                 gfx,
             ),
-            cars: InstancedMeshBuilder::new(load_mesh(gfx, "simple_car.glb").unwrap()),
+            cars: InstancedMeshBuilder::new(car),
             locomotives: InstancedMeshBuilder::new(load_mesh(gfx, "train.glb").unwrap()),
             wagons_freight: InstancedMeshBuilder::new(load_mesh(gfx, "wagon_freight.glb").unwrap()),
             wagons_passenger: InstancedMeshBuilder::new(load_mesh(gfx, "wagon.glb").unwrap()),
