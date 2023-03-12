@@ -20,6 +20,16 @@ impl State {
         let alb = gfx.material(mesh.material).albedo.clone();
 
         let mut meshes = vec![];
+
+        let bottle = load_mesh(gfx, "DamagedHelmet.glb").unwrap();
+        let mut i = InstancedMeshBuilder::new(bottle);
+        i.instances.push(MeshInstance {
+            pos: vec3(20.0, 20.0, 0.0),
+            dir: Vec3::X * 10.0,
+            tint: LinearColor::WHITE,
+        });
+        meshes.push(i.build(gfx).unwrap());
+
         for x in 0..=10 {
             for z in 0..=10 {
                 let mut c = mesh.clone();
@@ -199,7 +209,7 @@ async fn run(el: EventLoop<()>, window: Window) {
                     last_update = Instant::now();
                     let delta = d.as_secs_f32();
 
-                    let cam_speed = if is_going_slow { 10.0 } else { 30.0 } * delta;
+                    let cam_speed = if is_going_slow { 3.0 } else { 30.0 } * delta;
                     if is_captured {
                         if is_going_forward {
                             camera.pos -= camera.dir().xy().z0().try_normalize().unwrap_or(Vec3::ZERO) * cam_speed;
