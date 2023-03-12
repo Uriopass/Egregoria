@@ -1,4 +1,7 @@
-use crate::{GfxContext, IndexType, Material, Mesh, MeshBuilder, MeshVertex, TextureBuilder};
+use crate::{
+    GfxContext, IndexType, Material, Mesh, MeshBuilder, MeshVertex, MetallicRoughness,
+    TextureBuilder,
+};
 use geom::{Matrix4, Quaternion, Vec2, Vec3};
 use gltf::image::Format;
 use gltf::json::texture::{MagFilter, MinFilter};
@@ -126,7 +129,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
     let mut flat_vertices: Vec<MeshVertex> = vec![];
     let mut indices = vec![];
 
-    let (doc, data, images) = gltf::import(&path).map_err(LoadMeshError::GltfLoadError)?;
+    let (doc, data, mut images) = gltf::import(&path).map_err(LoadMeshError::GltfLoadError)?;
 
     let nodes = doc.nodes();
 
@@ -136,9 +139,9 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
 
     for node in nodes {
         let mesh = unwrap_cont!(node.mesh());
-        let translation = node.transform();
-        let rot_qat = Quaternion::from(translation.clone().decomposed().1);
-        let mat = Matrix4::from(translation.matrix());
+        let transform = node.transform();
+        let rot_qat = Quaternion::from(transform.clone().decomposed().1);
+        let transform_mat = Matrix4::from(transform.matrix());
 
         let primitive = unwrap_cont!(mesh.primitives().next());
         let reader = primitive.reader(|b| Some(&data.get(b.index())?.0[..b.length()]));
@@ -154,7 +157,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
             .zip(normals)
             .zip(uv)
             .map(|((p, n), uv)| {
-                let pos = mat * p.w(1.0);
+                let pos = transform_mat * p.w(1.0);
                 let pos = pos.xyz() / pos.w;
                 (pos, rot_qat * n, uv)
             })
@@ -215,20 +218,64 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
     }
 
     let mat = doc.materials().next().unwrap();
-    let tex = unwrap_or!(mat.pbr_metallic_roughness().base_color_texture(), {
+    let pbr_mr = mat.pbr_metallic_roughness();
+    let albedo_tex = unwrap_or!(pbr_mr.base_color_texture(), {
         return Err(LoadMeshError::NoBaseColorTexture);
     })
     .texture();
+    let metallic_v = pbr_mr.metallic_factor();
+    let roughness_v = pbr_mr.roughness_factor();
+
+    let mut metallic_roughness = MetallicRoughness::Static {
+        metallic: metallic_v,
+        roughness: roughness_v,
+    };
+
+    if let Some(metallic_roughness_tex) = pbr_mr.metallic_roughness_texture() {
+        let metallic_roughness_tex = metallic_roughness_tex.texture();
+        let idx = metallic_roughness_tex.source().index();
+        if idx > images.len() {
+            return Err(LoadMeshError::ImageNotFound);
+        }
+        let metallic_roughness_data = std::mem::replace(
+            &mut images[metallic_roughness_tex.source().index()],
+            gltf::image::Data {
+                pixels: vec![],
+                format: Format::R8,
+                width: 0,
+                height: 0,
+            },
+        );
+
+        let tex = load_image(
+            gfx,
+            metallic_roughness_data,
+            metallic_roughness_tex.sampler(),
+        )
+        .map_err(LoadMeshError::InvalidImage)?;
+        metallic_roughness = MetallicRoughness::Texture(tex);
+    }
 
     //    let sampler = tex.sampler().mag_filter().unwrap()
-    let data = unwrap_or!(images.into_iter().nth(tex.source().index()), {
+    let idx = albedo_tex.source().index();
+    if idx > images.len() {
         return Err(LoadMeshError::ImageNotFound);
-    });
+    }
+    let albedo_data = std::mem::replace(
+        &mut images[albedo_tex.source().index()],
+        gltf::image::Data {
+            pixels: vec![],
+            format: Format::R8,
+            width: 0,
+            height: 0,
+        },
+    );
 
-    let albedo = load_image(gfx, data, tex.sampler()).map_err(LoadMeshError::InvalidImage)?;
+    let albedo =
+        load_image(gfx, albedo_data, albedo_tex.sampler()).map_err(LoadMeshError::InvalidImage)?;
     let transparent = albedo.transparent;
 
-    let matid = gfx.register_material(Material::new(gfx, albedo));
+    let matid = gfx.register_material(Material::new(gfx, albedo, metallic_roughness));
 
     let mut meshb = MeshBuilder::new(matid);
     meshb.vertices = flat_vertices;

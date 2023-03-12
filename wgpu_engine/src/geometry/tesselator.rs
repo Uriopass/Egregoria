@@ -1,5 +1,5 @@
 use crate::geometry::earcut::earcut;
-use crate::{GfxContext, Material, MeshBuilder, MeshVertex};
+use crate::{GfxContext, Material, MeshBuilder, MeshVertex, MetallicRoughness};
 use geom::{vec3, Intersect, LinearColor, Segment, Vec2, Vec3, AABB};
 use itertools::Itertools;
 
@@ -13,7 +13,14 @@ pub struct Tesselator {
 
 impl Tesselator {
     pub fn new(gfx: &mut GfxContext, cull_rect: Option<AABB>, zoom: f32) -> Self {
-        let mat = gfx.register_material(Material::new(gfx, gfx.palette()));
+        let mat = gfx.register_material(Material::new(
+            gfx,
+            gfx.palette(),
+            MetallicRoughness::Static {
+                metallic: 0.0,
+                roughness: 1.0,
+            },
+        ));
 
         Tesselator {
             color: LinearColor::BLACK,

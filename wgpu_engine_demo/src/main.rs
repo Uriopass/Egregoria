@@ -3,6 +3,7 @@ use std::time::Instant;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, Material, MeshInstance,
+    MetallicRoughness,
 };
 use winit::dpi::PhysicalSize;
 use winit::event::{DeviceEvent, Event, WindowEvent};
@@ -26,8 +27,10 @@ impl State {
                 c.material = gfx.register_material(Material::new_raw(
                     &gfx.device,
                     alb.clone(),
-                    z as f32 / 10.0,
-                    x as f32 / 10.0,
+                    MetallicRoughness::Static {
+                        metallic: z as f32 / 10.0,
+                        roughness: x as f32 / 10.0,
+                    },
                 ));
                 let mut i = InstancedMeshBuilder::new(c);
                 i.instances.push(MeshInstance {

@@ -1,4 +1,7 @@
-use crate::{Drawable, GfxContext, Material, Mesh, MeshBuilder, MeshVertex, Texture, VBDesc};
+use crate::{
+    Drawable, GfxContext, Material, Mesh, MeshBuilder, MeshVertex, MetallicRoughness, Texture,
+    VBDesc,
+};
 use std::sync::Arc;
 use wgpu::{BindGroup, RenderPass, TextureSampleType};
 
@@ -13,7 +16,14 @@ struct WaterPipeline;
 
 impl Water {
     pub fn new(gfx: &mut GfxContext, w: f32, h: f32) -> Self {
-        let mat = gfx.register_material(Material::new(gfx, gfx.palette()));
+        let mat = gfx.register_material(Material::new(
+            gfx,
+            gfx.palette(),
+            MetallicRoughness::Static {
+                metallic: 0.0,
+                roughness: 1.0,
+            },
+        ));
         let mut mb = MeshBuilder::new(mat);
 
         mb.vertices.extend_from_slice(&[

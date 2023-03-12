@@ -1,6 +1,7 @@
 use crate::{
     bg_layout_litmesh, pbuffer::PBuffer, Drawable, FrameContext, GfxContext, IndexType, Material,
-    Mesh, MeshBuilder, MeshVertex, RenderParams, TerrainVertex, Texture, Uniform, VBDesc,
+    Mesh, MeshBuilder, MeshVertex, MetallicRoughness, RenderParams, TerrainVertex, Texture,
+    Uniform, VBDesc,
 };
 use common::FastMap;
 use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Polygon, Vec2, AABB3};
@@ -251,7 +252,14 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 indices.push(b as IndexType);
                 indices.push(c as IndexType);
             });
-            let mat = gfx.register_material(Material::new(gfx, gfx.palette()));
+            let mat = gfx.register_material(Material::new(
+                gfx,
+                gfx.palette(),
+                MetallicRoughness::Static {
+                    metallic: 0.0,
+                    roughness: 1.0,
+                },
+            ));
             let mut mb = MeshBuilder::new(mat);
             mb.indices = indices;
             mb.vertices = poly

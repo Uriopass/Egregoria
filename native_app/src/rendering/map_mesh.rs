@@ -13,7 +13,7 @@ use wgpu_engine::earcut::earcut;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
     Drawable, FrameContext, GfxContext, InstancedMeshBuilder, Material, MeshBuilder, MeshInstance,
-    MeshVertex, SpriteBatchBuilder, Tesselator,
+    MeshVertex, MetallicRoughness, SpriteBatchBuilder, Tesselator,
 };
 
 pub(crate) struct MapMeshHandler {
@@ -91,7 +91,14 @@ impl MapMeshHandler {
             let filler = &z.filler;
 
             let floor_tex = gfx.texture(floor, "zone_floor_tex");
-            let floor_mat = gfx.register_material(Material::new(gfx, floor_tex));
+            let floor_mat = gfx.register_material(Material::new(
+                gfx,
+                floor_tex,
+                MetallicRoughness::Static {
+                    metallic: 0.0,
+                    roughness: 1.0,
+                },
+            ));
             let floor_mesh = MeshBuilder::new(floor_mat);
 
             let m = match load_mesh(gfx, filler) {
@@ -111,8 +118,22 @@ impl MapMeshHandler {
         }
 
         let crosswalk_tex = gfx.texture("assets/sprites/crosswalk.png", "crosswalk");
-        let crosswalk_mat = gfx.register_material(Material::new(gfx, crosswalk_tex));
-        let houses_mat = gfx.register_material(Material::new(gfx, gfx.palette()));
+        let crosswalk_mat = gfx.register_material(Material::new(
+            gfx,
+            crosswalk_tex,
+            MetallicRoughness::Static {
+                metallic: 0.0,
+                roughness: 1.0,
+            },
+        ));
+        let houses_mat = gfx.register_material(Material::new(
+            gfx,
+            gfx.palette(),
+            MetallicRoughness::Static {
+                metallic: 0.0,
+                roughness: 1.0,
+            },
+        ));
         let builders = MapBuilders {
             arrow_builder,
             buildsprites,

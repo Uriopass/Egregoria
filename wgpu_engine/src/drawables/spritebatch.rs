@@ -1,6 +1,7 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    bg_layout_litmesh, Drawable, GfxContext, Material, MaterialID, Texture, UvVertex, VBDesc,
+    bg_layout_litmesh, Drawable, GfxContext, Material, MaterialID, MetallicRoughness, Texture,
+    UvVertex, VBDesc,
 };
 use geom::{LinearColor, Vec3};
 use std::path::PathBuf;
@@ -75,7 +76,14 @@ impl SpriteBatchBuilder {
         let stretch_x = 0.5 * albedo.extent.width as f32 / max_extent;
         let stretch_y = 0.5 * albedo.extent.height as f32 / max_extent;
 
-        let mat = Material::new(gfx, albedo);
+        let mat = Material::new(
+            gfx,
+            albedo,
+            MetallicRoughness::Static {
+                metallic: 0.0,
+                roughness: 1.0,
+            },
+        );
         let matid = gfx.register_material(mat);
 
         Self {

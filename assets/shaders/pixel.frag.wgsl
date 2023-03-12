@@ -8,8 +8,10 @@ struct FragmentOutput {
 
 @group(2) @binding(0) var t_albedo: texture_2d<f32>;
 @group(2) @binding(1) var s_albedo: sampler;
-@group(2) @binding(2) var<uniform> metallic: f32;
-@group(2) @binding(3) var<uniform> roughness: f32;
+@group(2) @binding(2) var<uniform> u_metallic: f32;
+@group(2) @binding(3) var<uniform> u_roughness: f32;
+@group(2) @binding(4) var t_metallic_roughness: texture_2d<f32>;
+@group(2) @binding(5) var s_metallic_rougness: sampler;
 
 @group(3) @binding(0) var t_ssao: texture_2d<f32>;
 @group(3) @binding(1) var s_ssao: sampler;
@@ -59,6 +61,17 @@ fn frag(@location(0) in_tint: vec4<f32>,
     var normal = normalize(in_normal);
     if (!front_facing) {
         normal = -normal;
+    }
+
+    var metallic: f32 = 1.0;
+    var roughness: f32 = 1.0;
+    if (u_metallic == -1.0) {
+        let sampled: vec2<f32> = textureSample(t_metallic_roughness, s_metallic_rougness, in_uv).gb;
+        roughness = sampled[0];
+        metallic = sampled[1];
+    } else {
+        metallic = u_metallic;
+        roughness = u_roughness;
     }
 
     let c = in_tint * albedo;

@@ -74,8 +74,7 @@ fn render(sun: vec3<f32>,
     let ambient: vec3<f32> = vec3(0.1) * albedo * ssao;
     var color: vec3<f32>   = ambient + Lo;
 
-    //color = color / (color + vec3(1.0));
-    //color = pow(color, vec3(1.0/2.2)) + dither(position);
+    color = color / (color + vec3(1.0));
     color += dither(position);
 
     return color;
