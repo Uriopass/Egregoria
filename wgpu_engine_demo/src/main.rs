@@ -21,14 +21,15 @@ impl State {
 
         let mut meshes = vec![];
 
-        let bottle = load_mesh(gfx, "DamagedHelmet.glb").unwrap();
-        let mut i = InstancedMeshBuilder::new(bottle);
-        i.instances.push(MeshInstance {
-            pos: vec3(20.0, 20.0, 0.0),
-            dir: Vec3::X * 10.0,
-            tint: LinearColor::WHITE,
-        });
-        meshes.push(i.build(gfx).unwrap());
+        if let Ok(m) = load_mesh(gfx, "DamagedHelmet.glb") {
+            let mut i = InstancedMeshBuilder::new(m);
+            i.instances.push(MeshInstance {
+                pos: vec3(20.0, 20.0, 0.0),
+                dir: Vec3::X * 10.0,
+                tint: LinearColor::WHITE,
+            });
+            meshes.push(i.build(gfx).unwrap());
+        }
 
         for x in 0..=10 {
             for z in 0..=10 {
