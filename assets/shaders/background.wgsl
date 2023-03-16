@@ -21,7 +21,7 @@ struct FragmentOutput {
 fn rsi(r0: vec3<f32>, rd: vec3<f32>, sr: f32) -> vec2<f32> {
     // ray-sphere intersection that assumes
     // the sphere is centered at the origin.
-    // No intersection when result.x > result.y
+    // No intersection when result.x > result.z
     let a: f32 = dot(rd, rd);
     let b: f32 = 2.0 * dot(rd, r0);
     let c: f32 = dot(r0, r0) - (sr * sr);
@@ -39,7 +39,7 @@ const PI: f32 = 3.141592;
 const iSteps: i32 = 12;
 const jSteps: i32 = 4;
 
-const r0: vec3<f32>    = vec3<f32>(0.0,6372000.0,0.0);          // ray origin
+const r0: vec3<f32>    = vec3<f32>(0.0,0.0,6372000.0);          // ray origin
 const iSun: f32        = 22.0;                           // intensity of the sun
 const rPlanet: f32     = 6371e3;                         // radius of the planet in meters
 const rAtmos: f32      = 6471e3;                         // radius of the atmosphere in meters
@@ -136,20 +136,12 @@ fn atmosphere(r: vec3<f32>, pSun: vec3<f32>) -> vec3<f32> {
     return iSun * (pRlh * kRlh * totalRlh + pMie * kMie * totalMie);
 }
 
-fn atan2(y: f32, x: f32) -> f32
-{
-    let s: bool = (abs(x) > abs(y));
-    return select(PI/2.0 - atan(y/x), atan(y/x), s);
-}
-
 @fragment
 fn frag(@location(0) in_pos: vec3<f32>, @builtin(position) position: vec4<f32>) -> FragmentOutput {
     var fsun: vec3<f32> = params.sun;
-    fsun = vec3(fsun.x, fsun.z, fsun.y);
     var pos: vec3<f32> = normalize(in_pos.xyz);
-    pos = vec3(pos.x, pos.z, pos.y);
 
-    let longitude: f32 = atan2(pos.x, pos.z);
+    let longitude: f32 = atan2(pos.x, pos.y);
 
     var color: vec3<f32>;
     if (params.realistic_sky != 0) {
@@ -158,13 +150,13 @@ fn frag(@location(0) in_pos: vec3<f32>, @builtin(position) position: vec4<f32>) 
             fsun           // normalized sun direction
         );
     } else {
-        color = textureSample(t_gradientsky, s_gradientsky, vec2(0.5 - fsun.y * 0.5, 1.0 - max(0.01, pos.y))).rgb;
+        color = textureSample(t_gradientsky, s_gradientsky, vec2(0.5 - fsun.z * 0.5, 1.0 - max(0.01, pos.y))).rgb;
     }
 
-    color = textureSample(t_environment, s_environment, vec3(pos.x, pos.z, pos.y)).rgb;
+    //color = textureSample(t_environment, s_environment, pos).rgb;
 
-    color = color + max(pos.y + 0.1, 0.0) * 5.0 * textureSample(t_starfield, s_starfield, vec2(longitude, pos.y)).rgb; // starfield
-    color = color + max(pos.y, 0.0) * 10000.0 * smoothstep(0.99993, 1.0, dot(fsun, pos)); // sun
+    color = color + max(pos.z + 0.1, 0.0) * 5.0 * textureSample(t_starfield, s_starfield, vec2(longitude, pos.z)).rgb; // starfield
+    color = color + max(pos.z, 0.0) * 10000.0 * smoothstep(0.99993, 1.0, dot(fsun, pos)); // sun
 
     // Apply exposure.
     let ocrgb = 1.0 - exp(-color) + dither(position.xy);
