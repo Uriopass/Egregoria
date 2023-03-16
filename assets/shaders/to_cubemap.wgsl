@@ -57,7 +57,7 @@ const TAU: f32 = 6.283185307179586476925;
 fn cartesian_to_spherical(v: vec3<f32>) -> vec2<f32> {
     let r: f32 = length(v);
     var theta: f32 = acos(v.z / r) / PI;
-    var phi: f32 = atan2(v.y, v.x) / TAU + 0.5;
+    var phi: f32 = -atan2(v.y, v.x) / TAU + 0.5;
 
     return vec2<f32>(phi, theta);
 }
