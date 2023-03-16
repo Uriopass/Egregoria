@@ -7,12 +7,9 @@ use crate::{
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
-use image::Rgba32FImage;
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
 use std::hash::Hash;
-use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
@@ -249,105 +246,15 @@ impl GfxContext {
             Arc::new(blue_noise),
         );
 
-        let f = File::open("assets/sprites/forgotten_miniland_2k.hdr")
-            .expect("Failed to open irradiance map");
-        let f = BufReader::new(f);
-        let irradiance = radiant::load(f).expect("Failed to load irradiance map");
+        let irradiance_texture =
+            TextureBuilder::from_path("assets/sprites/forgotten_miniland_2k.hdr")
+                .with_label("irradiance")
+                .with_srgb(false)
+                .with_mipmaps(false)
+                .with_sampler(Texture::linear_sampler())
+                .build(&device, &queue);
 
-        let data_mapped = irradiance
-            .data
-            .into_iter()
-            .map(|pixel| [pixel.r, pixel.g, pixel.b, 1.0])
-            .collect::<Vec<_>>();
-
-        let image_irradiance = image::DynamicImage::ImageRgba32F(
-            Rgba32FImage::from_raw(
-                irradiance.width as u32,
-                irradiance.height as u32,
-                bytemuck::cast_vec(data_mapped),
-            )
-            .expect("Failed to convert irradiance map to image"),
-        );
-        let irradiance_texture = TextureBuilder::from_img(image_irradiance)
-            .with_label("irradiance")
-            .with_srgb(false)
-            .with_mipmaps(false)
-            .with_sampler(Texture::linear_sampler())
-            .build(&device, &queue);
-
-        let cubemappipelayout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
-            label: None,
-            bind_group_layouts: &[&Texture::bindgroup_layout_complex(
-                &device,
-                TextureSampleType::Float { filterable: false },
-                1,
-                false,
-            )],
-            push_constant_ranges: &[],
-        });
-
-        let vert = compile_shader(&device, "to_cubemap.wgsl");
-        let frag = compile_shader(&device, "to_cubemap.wgsl");
-
-        let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&cubemappipelayout),
-            vertex: VertexState {
-                module: &vert,
-                entry_point: "vert",
-                buffers: &[],
-            },
-            primitive: Default::default(),
-            depth_stencil: None,
-            multisample: Default::default(),
-            fragment: Some(FragmentState {
-                module: &frag,
-                entry_point: "frag",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: TextureFormat::Rgba16Float,
-                    blend: None,
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            multiview: None,
-        });
-
-        let target_tex = TextureBuilder::empty(512, 512, 6, TextureFormat::Rgba16Float)
-            .with_label("irradiance cubemap")
-            .with_srgb(false)
-            .with_mipmaps(false)
-            .with_sampler(Texture::linear_sampler())
-            .build(&device, &queue);
-
-        let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
-            label: Some("cubemap encoder"),
-        });
-        for i in 0..6 {
-            let bg = irradiance_texture.bindgroup(&device, &cubemapline.get_bind_group_layout(0));
-            let view = target_tex.texture.create_view(&TextureViewDescriptor {
-                label: None,
-                format: None,
-                dimension: Some(TextureViewDimension::D2),
-                aspect: Default::default(),
-                base_mip_level: 0,
-                mip_level_count: None,
-                base_array_layer: i,
-                array_layer_count: None,
-            });
-            let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
-                label: None,
-                color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: Default::default(),
-                })],
-                depth_stencil_attachment: None,
-            });
-            pass.set_pipeline(&cubemapline);
-            pass.set_bind_group(0, &bg, &[]);
-            pass.draw(i * 6..i * 6 + 6, 0..1);
-        }
-        queue.submit(Some(enc.finish()));
+        let target_tex = Self::make_cubemap(&device, &queue, irradiance_texture);
 
         let mut me = Self {
             size: (win_width, win_height),
@@ -406,6 +313,82 @@ impl GfxContext {
         );
 
         me
+    }
+
+    fn make_cubemap(device: &Device, queue: &Queue, equirectangular_tex: Texture) -> Texture {
+        let cubemappipelayout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+            label: None,
+            bind_group_layouts: &[&Texture::bindgroup_layout_complex(
+                &device,
+                TextureSampleType::Float { filterable: false },
+                1,
+                false,
+            )],
+            push_constant_ranges: &[],
+        });
+
+        let cubemap_shader = compile_shader(&device, "to_cubemap.wgsl");
+
+        let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&cubemappipelayout),
+            vertex: VertexState {
+                module: &cubemap_shader,
+                entry_point: "vert",
+                buffers: &[],
+            },
+            primitive: Default::default(),
+            depth_stencil: None,
+            multisample: Default::default(),
+            fragment: Some(FragmentState {
+                module: &cubemap_shader,
+                entry_point: "frag",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: TextureFormat::Rgba16Float,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            multiview: None,
+        });
+
+        let target_tex = TextureBuilder::empty(512, 512, 6, TextureFormat::Rgba16Float)
+            .with_label("irradiance cubemap")
+            .with_srgb(false)
+            .with_mipmaps(false)
+            .with_sampler(Texture::linear_sampler())
+            .build(&device, &queue);
+
+        let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("cubemap encoder"),
+        });
+        for i in 0..6 {
+            let bg = equirectangular_tex.bindgroup(&device, &cubemapline.get_bind_group_layout(0));
+            let view = target_tex.texture.create_view(&TextureViewDescriptor {
+                label: None,
+                format: None,
+                dimension: Some(TextureViewDimension::D2),
+                aspect: Default::default(),
+                base_mip_level: 0,
+                mip_level_count: None,
+                base_array_layer: i,
+                array_layer_count: None,
+            });
+            let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
+                label: None,
+                color_attachments: &[Some(RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: Default::default(),
+                })],
+                depth_stencil_attachment: None,
+            });
+            pass.set_pipeline(&cubemapline);
+            pass.set_bind_group(0, &bg, &[]);
+            pass.draw(i * 6..i * 6 + 6, 0..1);
+        }
+        queue.submit(Some(enc.finish()));
+        target_tex
     }
 
     pub fn register_material(&mut self, material: Material) -> MaterialID {

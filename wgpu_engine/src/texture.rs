@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::compile_shader;
-use image::{DynamicImage, GenericImageView};
+use image::{DynamicImage, GenericImageView, Rgba32FImage};
 use std::fs::File;
 use std::io::Read;
 use std::num::NonZeroU32;
@@ -282,6 +282,7 @@ impl TextureBuilder {
     }
 
     pub(crate) fn try_from_path(p: impl AsRef<Path>) -> Option<Self> {
+        let p = p.as_ref();
         let mut buf = vec![];
         let mut f = File::open(p).ok()?;
         f.read_to_end(&mut buf).ok()?;
@@ -289,6 +290,23 @@ impl TextureBuilder {
     }
 
     pub(crate) fn from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.starts_with(b"#?RADIANCE") {
+            let irradiance = radiant::load(bytes).ok()?;
+
+            let data_mapped = irradiance
+                .data
+                .into_iter()
+                .map(|pixel| [pixel.r, pixel.g, pixel.b, 1.0])
+                .collect::<Vec<_>>();
+
+            let image_irradiance = DynamicImage::ImageRgba32F(Rgba32FImage::from_raw(
+                irradiance.width as u32,
+                irradiance.height as u32,
+                bytemuck::cast_vec(data_mapped),
+            )?);
+            return Some(Self::from_img(image_irradiance));
+        }
+
         let img = image::load_from_memory(bytes).ok()?;
         Some(Self::from_img(img))
     }
