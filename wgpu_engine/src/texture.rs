@@ -10,7 +10,7 @@ use wgpu::{
     BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
     ImageCopyTexture, ImageDataLayout, PipelineLayoutDescriptor, SamplerBindingType,
     SamplerBorderColor, SamplerDescriptor, TextureFormat, TextureSampleType, TextureUsages,
-    TextureViewDescriptor,
+    TextureViewDescriptor, TextureViewDimension,
 };
 
 pub struct Texture {
@@ -238,7 +238,9 @@ impl Texture {
 }
 
 pub struct TextureBuilder {
-    img: DynamicImage,
+    img: Option<DynamicImage>,
+    dimensions: (u32, u32, u32),
+    format: Option<TextureFormat>,
     sampler: SamplerDescriptor<'static>,
     label: &'static str,
     srgb: bool,
@@ -293,7 +295,9 @@ impl TextureBuilder {
 
     pub(crate) fn from_img(img: DynamicImage) -> Self {
         Self {
-            img,
+            dimensions: (img.dimensions().0, img.dimensions().1, 1),
+            img: Some(img),
+            format: None,
             sampler: Texture::linear_sampler(),
             label: "texture without label",
             srgb: true,
@@ -301,49 +305,70 @@ impl TextureBuilder {
         }
     }
 
+    pub(crate) fn empty(w: u32, h: u32, d: u32, format: TextureFormat) -> Self {
+        Self {
+            img: None,
+            sampler: Texture::linear_sampler(),
+            dimensions: (w, h, d),
+            format: Some(format),
+            label: "empty texture without label",
+            srgb: true,
+            mipmaps: false,
+        }
+    }
+
     pub fn build(self, device: &Device, queue: &wgpu::Queue) -> Texture {
-        let img = self.img;
         let label = self.label;
 
-        let dimensions = img.dimensions();
-
         let extent = Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
-            depth_or_array_layers: 1,
+            width: self.dimensions.0,
+            height: self.dimensions.1,
+            depth_or_array_layers: self.dimensions.2,
         };
 
         let mut transparent = false;
+        let mut format = self.format;
+        let mut data = None;
 
-        let img = match img {
-            DynamicImage::ImageRgb8(_) => DynamicImage::ImageRgba8(img.to_rgba8()),
-            _ => {
-                for (_, _, pixel) in img.pixels() {
-                    if pixel.0[3] != 255 {
-                        transparent = true;
-                        break;
+        let img;
+        if let Some(img2) = self.img {
+            img = match img2 {
+                DynamicImage::ImageRgb8(_) => DynamicImage::ImageRgba8(img2.to_rgba8()),
+                _ => {
+                    for (_, _, pixel) in img2.pixels() {
+                        if pixel.0[3] != 255 {
+                            transparent = true;
+                            break;
+                        }
                     }
+                    img2
                 }
-                img
-            }
-        };
+            };
 
-        let (format, data, pixwidth): (TextureFormat, &[u8], u32) = match img {
-            DynamicImage::ImageRgba8(ref img) => (
-                if self.srgb {
-                    TextureFormat::Rgba8UnormSrgb
-                } else {
-                    TextureFormat::Rgba8Unorm
-                },
-                img,
-                4,
-            ),
-            DynamicImage::ImageLuma8(ref gray) => (TextureFormat::R8Unorm, gray, 1),
-            _ => unimplemented!("unsupported format {:?}", img.color()),
-        };
+            let (img_format, img_data, pixwidth): (TextureFormat, &[u8], u32) = match img {
+                DynamicImage::ImageRgba8(ref img) => (
+                    if self.srgb {
+                        TextureFormat::Rgba8UnormSrgb
+                    } else {
+                        TextureFormat::Rgba8Unorm
+                    },
+                    img,
+                    4,
+                ),
+                DynamicImage::ImageLuma8(ref gray) => (TextureFormat::R8Unorm, gray, 1),
+                DynamicImage::ImageRgba32F(ref img) => {
+                    (TextureFormat::Rgba32Float, bytemuck::cast_slice(img), 16)
+                }
+                _ => unimplemented!("unsupported format {:?}", img.color()),
+            };
+            format = Some(img_format);
+            data = Some((img_data, pixwidth));
+        }
+
+        let format = format.unwrap();
 
         let mip_level_count = if self.mipmaps {
-            let m = dimensions.0.min(dimensions.1);
+            let m = self.dimensions.0.min(self.dimensions.1);
             (m.next_power_of_two().trailing_zeros()).max(1)
         } else {
             1
@@ -362,27 +387,36 @@ impl TextureBuilder {
             view_formats: &[],
         });
 
-        queue.write_texture(
-            ImageCopyTexture {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: Default::default(),
-            },
-            data,
-            ImageDataLayout {
-                offset: 0,
-                bytes_per_row: NonZeroU32::new(pixwidth * extent.width),
-                rows_per_image: None,
-            },
-            extent,
-        );
+        if let Some((data, pixwidth)) = data {
+            queue.write_texture(
+                ImageCopyTexture {
+                    texture: &texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: Default::default(),
+                },
+                data,
+                ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: NonZeroU32::new(pixwidth * extent.width),
+                    rows_per_image: None,
+                },
+                extent,
+            );
 
-        if mip_level_count > 1 {
-            generate_mipmaps(device, queue, &texture, format, mip_level_count);
+            if mip_level_count > 1 {
+                generate_mipmaps(device, queue, &texture, format, mip_level_count);
+            }
         }
 
-        let view = texture.create_view(&TextureViewDescriptor::default());
+        let view = texture.create_view(&TextureViewDescriptor {
+            dimension: Some(if self.dimensions.2 <= 1 {
+                TextureViewDimension::D2
+            } else {
+                TextureViewDimension::Cube
+            }),
+            ..Default::default()
+        });
         let sampler = device.create_sampler(&self.sampler);
 
         Texture {

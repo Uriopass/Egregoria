@@ -7,20 +7,25 @@ use crate::{
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
+use image::Rgba32FImage;
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
 use std::hash::Hash;
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, Backends, BindGroupLayout, BindGroupLayoutDescriptor, BlendComponent, BlendState,
-    CommandBuffer, CommandEncoder, CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState,
-    Device, ErrorFilter, Face, FrontFace, IndexFormat, InstanceDescriptor, MultisampleState,
-    PrimitiveState, Queue, RenderPipeline, Surface, SurfaceConfiguration, SurfaceTexture,
-    TextureFormat, TextureSampleType, TextureUsages, TextureView, TextureViewDescriptor,
-    VertexBufferLayout,
+    Adapter, Backends, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
+    BlendComponent, BlendState, CommandBuffer, CommandEncoder, CommandEncoderDescriptor,
+    CompositeAlphaMode, DepthBiasState, Device, ErrorFilter, Face, FragmentState, FrontFace,
+    IndexFormat, InstanceDescriptor, MultisampleState, PipelineLayoutDescriptor, PrimitiveState,
+    Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
+    RenderPipelineDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureFormat,
+    TextureSampleType, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension,
+    VertexBufferLayout, VertexState,
 };
 
 pub struct FBOs {
@@ -60,6 +65,7 @@ pub struct GfxContext {
     pub(crate) screen_uv_vertices: wgpu::Buffer,
     pub(crate) rect_indices: wgpu::Buffer,
     pub sun_shadowmap: Texture,
+    pub environment_cube: Texture,
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
     pub sky_bg: wgpu::BindGroup,
@@ -243,6 +249,106 @@ impl GfxContext {
             Arc::new(blue_noise),
         );
 
+        let f = File::open("assets/sprites/forgotten_miniland_2k.hdr")
+            .expect("Failed to open irradiance map");
+        let f = BufReader::new(f);
+        let irradiance = radiant::load(f).expect("Failed to load irradiance map");
+
+        let data_mapped = irradiance
+            .data
+            .into_iter()
+            .map(|pixel| [pixel.r, pixel.g, pixel.b, 1.0])
+            .collect::<Vec<_>>();
+
+        let image_irradiance = image::DynamicImage::ImageRgba32F(
+            Rgba32FImage::from_raw(
+                irradiance.width as u32,
+                irradiance.height as u32,
+                bytemuck::cast_vec(data_mapped),
+            )
+            .expect("Failed to convert irradiance map to image"),
+        );
+        let irradiance_texture = TextureBuilder::from_img(image_irradiance)
+            .with_label("irradiance")
+            .with_srgb(false)
+            .with_mipmaps(false)
+            .with_sampler(Texture::linear_sampler())
+            .build(&device, &queue);
+
+        let cubemappipelayout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+            label: None,
+            bind_group_layouts: &[&Texture::bindgroup_layout_complex(
+                &device,
+                TextureSampleType::Float { filterable: false },
+                1,
+                false,
+            )],
+            push_constant_ranges: &[],
+        });
+
+        let vert = compile_shader(&device, "to_cubemap.wgsl");
+        let frag = compile_shader(&device, "to_cubemap.wgsl");
+
+        let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&cubemappipelayout),
+            vertex: VertexState {
+                module: &vert,
+                entry_point: "vert",
+                buffers: &[],
+            },
+            primitive: Default::default(),
+            depth_stencil: None,
+            multisample: Default::default(),
+            fragment: Some(FragmentState {
+                module: &frag,
+                entry_point: "frag",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: TextureFormat::Rgba16Float,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            multiview: None,
+        });
+
+        let target_tex = TextureBuilder::empty(512, 512, 6, TextureFormat::Rgba16Float)
+            .with_label("irradiance cubemap")
+            .with_srgb(false)
+            .with_mipmaps(false)
+            .with_sampler(Texture::linear_sampler())
+            .build(&device, &queue);
+
+        let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("cubemap encoder"),
+        });
+        for i in 0..6 {
+            let bg = irradiance_texture.bindgroup(&device, &cubemapline.get_bind_group_layout(0));
+            let view = target_tex.texture.create_view(&TextureViewDescriptor {
+                label: None,
+                format: None,
+                dimension: Some(TextureViewDimension::D2),
+                aspect: Default::default(),
+                base_mip_level: 0,
+                mip_level_count: None,
+                base_array_layer: i,
+                array_layer_count: None,
+            });
+            let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
+                label: None,
+                color_attachments: &[Some(RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: Default::default(),
+                })],
+                depth_stencil_attachment: None,
+            });
+            pass.set_pipeline(&cubemapline);
+            pass.set_bind_group(0, &bg, &[]);
+            pass.draw(i * 6..i * 6 + 6, 0..1);
+        }
+        queue.submit(Some(enc.finish()));
+
         let mut me = Self {
             size: (win_width, win_height),
             sc_desc,
@@ -271,6 +377,7 @@ impl GfxContext {
             sun_shadowmap: Self::mk_shadowmap(&device, 2048),
             device,
             queue,
+            environment_cube: target_tex,
         };
 
         me.update_simplelit_bg();
@@ -293,14 +400,9 @@ impl GfxContext {
         let starfield = me.texture("assets/sprites/starfield.png", "starfield");
 
         me.sky_bg = Texture::multi_bindgroup(
-            &[&*gs, &*starfield],
+            &[&*gs, &*starfield, &me.environment_cube],
             &me.device,
-            &Texture::bindgroup_layout_complex(
-                &me.device,
-                TextureSampleType::Float { filterable: true },
-                2,
-                false,
-            ),
+            &me.get_pipeline(BackgroundPipeline).get_bind_group_layout(2),
         );
 
         me
@@ -1071,17 +1173,70 @@ impl BackgroundPipeline {
             &["background"],
             Box::new(move |m, gfx| {
                 let bg = &m[0];
+
+                let entries: Vec<BindGroupLayoutEntry> = vec![
+                    BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::Cube,
+                            sample_type: TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    BindGroupLayoutEntry {
+                        binding: 5,
+                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ];
+                let bglayout_texs =
+                    gfx.device
+                        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                            entries: &entries,
+                            label: Some("Texture bindgroup layout"),
+                        });
+
                 gfx.color_pipeline(
                     "background",
                     &[
                         &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
                         &Texture::bindgroup_layout(&gfx.device),
-                        &Texture::bindgroup_layout_complex(
-                            &gfx.device,
-                            TextureSampleType::Float { filterable: true },
-                            2,
-                            false,
-                        ),
+                        &bglayout_texs,
                     ],
                     &[UvVertex::desc()],
                     bg,

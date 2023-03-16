@@ -13,6 +13,8 @@ struct FragmentOutput {
 @group(2) @binding(1) var s_gradientsky: sampler;
 @group(2) @binding(2) var t_starfield: texture_2d<f32>;
 @group(2) @binding(3) var s_starfield: sampler;
+@group(2) @binding(4) var t_environment: texture_cube<f32>;
+@group(2) @binding(5) var s_environment: sampler;
 
 #include "dither.wgsl"
 
@@ -158,6 +160,8 @@ fn frag(@location(0) in_pos: vec3<f32>, @builtin(position) position: vec4<f32>) 
     } else {
         color = textureSample(t_gradientsky, s_gradientsky, vec2(0.5 - fsun.y * 0.5, 1.0 - max(0.01, pos.y))).rgb;
     }
+
+    color = textureSample(t_environment, s_environment, vec3(pos.x, pos.z, pos.y)).rgb;
 
     color = color + max(pos.y + 0.1, 0.0) * 5.0 * textureSample(t_starfield, s_starfield, vec2(longitude, pos.y)).rgb; // starfield
     color = color + max(pos.y, 0.0) * 10000.0 * smoothstep(0.99993, 1.0, dot(fsun, pos)); // sun

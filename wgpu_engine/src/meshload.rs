@@ -22,6 +22,7 @@ pub fn load_image(
     gfx: &GfxContext,
     data: gltf::image::Data,
     sampl: gltf::texture::Sampler,
+    srgb: bool,
 ) -> Result<Arc<crate::Texture>, ImageLoadError> {
     let hash = common::hash_u64((
         &data.pixels,
@@ -45,7 +46,7 @@ pub fn load_image(
     let w = data.width;
     let h = data.height;
     let d = data.pixels;
-    let albedo_img = match data.format {
+    let img = match data.format {
         Format::R8 => DynamicImage::ImageLuma8(
             ImageBuffer::from_raw(w, h, d).ok_or(ImageLoadError::InvalidData)?,
         ),
@@ -99,9 +100,10 @@ pub fn load_image(
     };
 
     let tex = Arc::new(
-        TextureBuilder::from_img(albedo_img)
+        TextureBuilder::from_img(img)
             .with_label("some material albedo")
             .with_sampler(sampler)
+            .with_srgb(srgb)
             .build(&gfx.device, &gfx.queue),
     );
 
@@ -181,7 +183,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
             }
         }
 
-        for &[a, b, c] in bytemuck::cast_slice::<u32, [u32; 3]>(&*read_indices) {
+        for &[a, b, c] in bytemuck::cast_slice::<u32, [u32; 3]>(&read_indices) {
             if shade_smooth {
                 indices.push(vtx_offset + a as IndexType);
                 indices.push(vtx_offset + b as IndexType);
@@ -251,6 +253,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
             gfx,
             metallic_roughness_data,
             metallic_roughness_tex.sampler(),
+            false,
         )
         .map_err(LoadMeshError::InvalidImage)?;
         metallic_roughness = MetallicRoughness::Texture(tex);
@@ -271,8 +274,8 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
         },
     );
 
-    let albedo =
-        load_image(gfx, albedo_data, albedo_tex.sampler()).map_err(LoadMeshError::InvalidImage)?;
+    let albedo = load_image(gfx, albedo_data, albedo_tex.sampler(), true)
+        .map_err(LoadMeshError::InvalidImage)?;
     let transparent = albedo.transparent;
 
     let matid = gfx.register_material(Material::new(gfx, albedo, metallic_roughness));

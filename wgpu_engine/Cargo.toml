@@ -20,6 +20,7 @@ profiling = "1.0.1"
 rayon     = "1.5"
 beul      = "0.1.0"
 slotmap   = "1.0.6"
+radiant = { version = "0.3.0", features = ["bytemuck"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
 version = "0.15.0"
