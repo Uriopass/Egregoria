@@ -327,13 +327,14 @@ impl GfxContext {
             push_constant_ranges: &[],
         });
 
-        let cubemap_shader = compile_shader(&device, "to_cubemap.wgsl");
+        let cubemap_vert = compile_shader(&device, "to_cubemap.vert.wgsl");
+        let cubemap_frag = compile_shader(&device, "equirectangular_to_cubemap.frag.wgsl");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&cubemappipelayout),
             vertex: VertexState {
-                module: &cubemap_shader,
+                module: &cubemap_vert,
                 entry_point: "vert",
                 buffers: &[],
             },
@@ -341,7 +342,7 @@ impl GfxContext {
             depth_stencil: None,
             multisample: Default::default(),
             fragment: Some(FragmentState {
-                module: &cubemap_shader,
+                module: &cubemap_frag,
                 entry_point: "frag",
                 targets: &[Some(wgpu::ColorTargetState {
                     format: TextureFormat::Rgba16Float,
