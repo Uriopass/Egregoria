@@ -16,6 +16,8 @@ pub(crate) struct ZoneEditState {
     insert: bool,
 }
 
+/// ZoneEdit tool
+/// Allows to edit the zone of a building like a farm field or solarpanel field
 #[profiling::function]
 pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut inspected_b = uiworld.write::<InspectedBuilding>();

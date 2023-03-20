@@ -5,6 +5,8 @@ use wgpu_engine::{GfxContext, GuiRenderContext};
 use winit::event_loop::EventLoopWindowTarget;
 use winit::window::Window;
 
+/// EguiWrapper is a wrapper around egui and egui_wgpu
+/// It handles the rendering of the UI
 pub(crate) struct EguiWrapper {
     pub(crate) egui: egui::Context,
     pub(crate) renderer: renderer::Renderer,

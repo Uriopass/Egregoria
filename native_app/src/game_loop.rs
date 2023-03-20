@@ -27,6 +27,7 @@ use egregoria::utils::scheduler::SeqSchedule;
 
 pub(crate) const VERSION: &str = include_str!("../../VERSION");
 
+/// State is the main struct that contains all the state of the game and game UI.
 pub(crate) struct State {
     pub(crate) goria: Arc<RwLock<Egregoria>>,
 

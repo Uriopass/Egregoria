@@ -1,3 +1,5 @@
+/// History is a circular buffer of values that can be used to calculate an average
+/// of the last N values.
 pub struct History {
     pub values: Vec<f32>,
     pub start_value: u8,

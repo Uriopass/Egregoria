@@ -16,6 +16,7 @@ use wgpu_engine::{
 const CSIZE: usize = CHUNK_SIZE as usize;
 const CRESO: usize = CHUNK_RESOLUTION;
 
+/// Render the entire map including the terrain, trees, water etc
 pub(crate) struct MapRenderer {
     pub(crate) meshb: MapMeshHandler,
 

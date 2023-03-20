@@ -62,6 +62,9 @@ impl SingleMarket {
     }
 }
 
+/// Market handles good exchanging between souls themselves and the external market.
+/// When goods are exchanges between souls, money is not involved.
+/// When goods are exchanged with the external market, money is involved.
 #[derive(Serialize, Deserialize)]
 pub struct Market {
     markets: BTreeMap<ItemID, SingleMarket>,

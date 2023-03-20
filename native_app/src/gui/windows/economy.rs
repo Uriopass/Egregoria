@@ -22,6 +22,8 @@ struct EconomyState {
     pub tab: EconomyTab,
 }
 
+/// Economy window
+/// Shows the economy stats
 pub(crate) fn economy(
     window: egui::Window<'_>,
     ui: &egui::Context,

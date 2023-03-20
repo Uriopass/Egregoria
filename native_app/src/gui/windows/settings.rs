@@ -139,6 +139,8 @@ impl AsRef<str> for AutoSaveEvery {
     }
 }
 
+/// Settings window
+/// This window is used to change the settings of the game
 pub(crate) fn settings(
     window: egui::Window<'_>,
     ui: &Context,

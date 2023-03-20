@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
 use std::ops::Index;
 
+/// ItemDefinition is the definition of an item, as read from the items.json file.
 #[derive(Serialize, Deserialize)]
 struct ItemDefinition {
     name: String,
@@ -12,6 +13,7 @@ struct ItemDefinition {
     optout_exttrade: bool,
 }
 
+/// Item is the runtime representation of an item, such as meat, wood, etc.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Item {
     pub id: ItemID,

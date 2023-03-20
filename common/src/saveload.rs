@@ -1,3 +1,4 @@
+//! This module contains the `Encoder` trait, which is used to serialize and deserialize data.
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fs::File;

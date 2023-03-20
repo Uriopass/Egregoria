@@ -4,6 +4,7 @@ use std::io::{stdout, BufWriter, Write};
 use std::sync::Mutex;
 use std::time::Instant;
 
+/// A logger that logs to a file and stdout
 pub struct MyLog {
     start: Instant,
     log_file: Option<Mutex<BufWriter<File>>>,

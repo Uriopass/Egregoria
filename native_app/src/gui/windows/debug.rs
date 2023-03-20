@@ -61,6 +61,7 @@ impl Default for TestFieldProperties {
     }
 }
 
+/// debug window for various debug options
 pub(crate) fn debug(
     window: egui::Window<'_>,
     ui: &egui::Context,

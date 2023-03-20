@@ -34,6 +34,8 @@ pub(crate) struct RoadBuildResource {
     pub(crate) height_offset: f32,
 }
 
+/// Road building tool
+/// Allows to build roads and intersections
 #[profiling::function]
 pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let state = &mut *uiworld.write::<RoadBuildResource>();

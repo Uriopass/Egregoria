@@ -7,6 +7,8 @@ use egregoria::map::CHUNK_SIZE;
 use geom::{vec4, Camera, InfiniteFrustrum, Matrix4, Plane, Radians, Ray3, Vec2, Vec3, AABB};
 use wgpu_engine::Tesselator;
 
+/// CameraHandler3D is the camera handler for the 3D view
+/// It controls the camera using an orbit view
 pub(crate) struct CameraHandler3D {
     pub(crate) camera: Camera,
     pub(crate) lastscreenpos: Vec2,

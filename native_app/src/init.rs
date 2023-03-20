@@ -22,6 +22,8 @@ use serde::Serialize;
 
 pub(crate) static SOUNDS_LIST: include_dir::Dir = include_dir::include_dir!("assets/sounds");
 
+/// init is called at the beginning of the program to initialize the globals
+/// It is mostly to register types for serialization and initialization of the engine
 pub(crate) fn init() {
     egregoria::init::init();
     register_resource::<Settings>("settings");

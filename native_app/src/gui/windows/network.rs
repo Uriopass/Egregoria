@@ -14,6 +14,8 @@ pub(crate) struct NetworkConnectionInfo {
     hashes: BTreeMap<String, u64>,
 }
 
+/// Network window
+/// Allows to connect to a server or start a server
 #[cfg(feature = "multiplayer")]
 pub(crate) fn network(
     window: egui::Window<'_>,

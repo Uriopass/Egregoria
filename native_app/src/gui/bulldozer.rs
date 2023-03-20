@@ -12,6 +12,8 @@ pub(crate) struct BulldozerState {
     hold: bool,
 }
 
+/// Bulldozer tool
+/// Allows to remove roads, intersections and buildings
 #[profiling::function]
 pub(crate) fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool: &Tool = &uiworld.read::<Tool>();

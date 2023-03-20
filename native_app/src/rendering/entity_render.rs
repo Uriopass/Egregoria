@@ -8,6 +8,7 @@ use wgpu_engine::{
     FrameContext, GfxContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder,
 };
 
+/// Render all entities using instanced rendering for performance
 pub(crate) struct InstancedRender {
     pub(crate) path_not_found: SpriteBatchBuilder,
     pub(crate) cars: InstancedMeshBuilder,

@@ -4,6 +4,7 @@ use crate::map::{LanePattern, MapProject, MAX_ZONE_AREA};
 use crate::{BuildingKind, Egregoria, GoodsCompanyRegistry};
 use serde::{Deserialize, Serialize};
 
+/// The government represents the player.
 #[derive(Serialize, Deserialize)]
 pub struct Government {
     pub money: Money,

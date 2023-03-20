@@ -12,6 +12,8 @@ pub(crate) struct LotBrushResource {
     pub(crate) radius: f32,
 }
 
+/// Lot brush tool
+/// Allows to build houses on lots
 #[profiling::function]
 pub(crate) fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     let res = uiworld.read::<LotBrushResource>();

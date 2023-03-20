@@ -11,6 +11,7 @@ use egregoria::souls::freight_station::{FreightStation, FreightTrainState};
 use egregoria::souls::goods_company::{GoodsCompany, GoodsCompanyRegistry, Recipe};
 use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
 
+/// Inspect a specific building, showing useful information about it
 pub(crate) fn inspect_building(
     uiworld: &mut UiWorld,
     goria: &Egregoria,

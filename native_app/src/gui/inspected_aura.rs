@@ -6,6 +6,7 @@ use egregoria::transportation::Location;
 use egregoria::Egregoria;
 use geom::Color;
 
+/// InspectedAura shows the circle around the inspected entity
 #[profiling::function]
 pub(crate) fn inspected_aura(goria: &Egregoria, uiworld: &mut UiWorld) {
     let inspected = uiworld.write::<InspectedEntity>();

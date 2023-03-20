@@ -1,3 +1,6 @@
+//! Pseudo-random number generation.
+//! Useful for deterministic but random behavior based on provided seeds.
+
 // A single iteration of Bob Jenkins' One-At-A-Time hashing algorithm.
 fn hash(mut x: u32) -> u32 {
     x = x.wrapping_add(x << 10u32);

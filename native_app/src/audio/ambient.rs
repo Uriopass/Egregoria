@@ -5,6 +5,9 @@ use egregoria::Egregoria;
 use geom::{lerp, vec2, Camera, Vec2, AABB};
 use oddio::{Cycle, Gain};
 
+/// Ambient sounds
+/// These are sounds that are played in the background
+/// They are not tied to any entity
 pub(crate) struct Ambient {
     wind: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
     forest: Option<ControlHandle<Gain<Cycle<Stereo>>>>,

@@ -44,7 +44,7 @@ fn main() {
     {
         let window = WindowBuilder::new()
             .with_transparent(true)
-            .with_title("K4 Kahlberg")
+            .with_title("Egregoria")
             .with_inner_size(winit::dpi::PhysicalSize {
                 width: 1422,
                 height: 700,
@@ -80,6 +80,8 @@ fn main() {
         let window;
         #[cfg(target_os = "windows")]
         {
+            // Disable drag and drop on windows to allow cpal to init on the main thread
+            // https://github.com/rust-windowing/winit/issues/1185
             use winit::platform::windows::WindowBuilderExtWindows;
             window = wb.with_drag_and_drop(false);
         }

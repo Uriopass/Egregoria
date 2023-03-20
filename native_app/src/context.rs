@@ -13,6 +13,8 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 
+/// Context is the main struct that contains all the context of the game.
+/// It holds the necessary state for graphics, input, audio, and the window.
 pub(crate) struct Context {
     pub(crate) gfx: GfxContext,
     pub(crate) input: InputContext,
@@ -51,6 +53,8 @@ impl Context {
         }
     }
 
+    /// Start the game loop.
+    /// Handle the window events, update the game state, and render the frame.
     pub(crate) fn start(mut self, mut state: game_loop::State) {
         let mut frame: Option<_> = None;
         let mut new_size: Option<PhysicalSize<u32>> = None;

@@ -8,11 +8,14 @@ use geom::{Camera, AABB};
 use oddio::{Cycle, Gain, Seek, Speed, Stop};
 use slotmap::SecondaryMap;
 
+/// CarSound is the sound of a single car
 pub(crate) struct CarSound {
     road: Option<ControlHandle<Speed<Gain<Cycle<Stereo>>>>>,
     engine: Option<ControlHandle<Speed<Gain<Cycle<Stereo>>>>>,
 }
 
+/// CarSounds are sounds that are played when cars are near the player
+/// They are tied to a car entity
 pub(crate) struct CarSounds {
     sounds: SecondaryMap<GridHandle, CarSound>,
     generic_car_sound: Option<ControlHandle<Gain<Cycle<Stereo>>>>,

@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 
 const TRACKS: &[&str] = &["music2", "music1"];
 
+/// Music handles background music
 pub(crate) struct Music {
     track_id: usize,
     time_between_tracks: Duration,

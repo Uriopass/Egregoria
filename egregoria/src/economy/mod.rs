@@ -1,3 +1,12 @@
+//! Economy module
+//!
+//! This module contains all the code related to the economy of the game.
+//!
+//! The economy is divided in 2 parts:
+//!
+//! - The market, which is the place where goods are exchanged.
+//! - The government, which is the entity representing the player
+//!
 use crate::{GoodsCompanyRegistry, SoulID};
 use egui_inspect::Inspect;
 use hecs::World;

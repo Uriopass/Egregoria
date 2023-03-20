@@ -16,6 +16,9 @@ use wgpu_engine::{
     MeshVertex, MetallicRoughness, SpriteBatchBuilder, Tesselator,
 };
 
+/// This is the main struct that handles the map rendering.
+/// It is responsible for generating the meshes and sprites for the map
+/// That is, the mostly static things (roads, intersections, lights, buildings).
 pub(crate) struct MapMeshHandler {
     builders: MapBuilders,
     cache: Vec<Arc<dyn Drawable>>,

@@ -20,6 +20,8 @@ pub(crate) struct RoadEditorResource {
     pub(crate) dirty: bool,
 }
 
+/// RoadEditor tool
+/// Allows to edit intersections properties like turns and signals
 #[profiling::function]
 pub(crate) fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = uiworld.read::<Tool>();

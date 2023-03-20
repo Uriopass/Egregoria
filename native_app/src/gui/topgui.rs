@@ -66,6 +66,7 @@ impl Gui {
         ui.set_style(style);
     }
 
+    /// Root GUI entrypoint
     pub(crate) fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         self.menu_bar(ui, uiworld, goria);
 

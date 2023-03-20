@@ -31,6 +31,8 @@ pub(crate) struct SpecialBuildingResource {
     pub(crate) rotation: Degrees,
 }
 
+/// SpecialBuilding tool
+/// Allows to build special buildings like farms, factories, etc.
 #[profiling::function]
 pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut state = uiworld.write::<SpecialBuildingResource>();

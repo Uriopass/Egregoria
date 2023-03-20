@@ -9,6 +9,7 @@ use rayon::iter::ParallelIterator;
 use rayon::prelude::ParallelBridge;
 use std::sync::Mutex;
 
+/// Selectable allows to select entities by clicking on them
 #[profiling::function]
 pub(crate) fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut inspected = uiworld.write::<InspectedEntity>();

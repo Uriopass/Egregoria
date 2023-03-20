@@ -16,6 +16,8 @@ use egui_inspect::{Inspect, InspectArgs};
 use geom::{Transform, Vec2};
 use hecs::{Component, Entity};
 
+/// Inspect window
+/// Allows to inspect an entity
 pub(crate) struct InspectRenderer {
     pub(crate) entity: Entity,
 }

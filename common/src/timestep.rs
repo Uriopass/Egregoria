@@ -2,6 +2,9 @@ use std::time::{Duration, Instant};
 
 pub const UP_DT: Duration = Duration::from_millis(20);
 
+/// A timestep that can be used to update the game state.
+/// It will try to keep a constant update rate.
+/// Based on https://gafferongames.com/post/fix_your_timestep/
 pub struct Timestep {
     last_time: Instant,
     acc: Duration,
