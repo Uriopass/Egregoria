@@ -856,6 +856,7 @@ impl GfxContext {
                 self.read_texture("assets/sprites/blue_noise_512.png")
                     .expect("blue noise not initialized"),
                 &self.sun_shadowmap,
+                &self.diffuse_irradiance_cube,
             ],
             &self.device,
             &bg_layout_litmesh(&self.device),

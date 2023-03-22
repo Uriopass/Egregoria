@@ -15,6 +15,8 @@ struct FragmentOutput {
 @group(3) @binding(3) var s_bnoise: sampler;
 @group(3) @binding(4) var t_sun_smap: texture_depth_2d;
 @group(3) @binding(5) var s_sun_smap: sampler_comparison;
+@group(3) @binding(6) var t_diffuse_irradiance: texture_cube<f32>;
+@group(3) @binding(7) var s_diffuse_irradiance: sampler;
 
 #include "shadow.wgsl"
 #include "render.wgsl"
@@ -81,15 +83,18 @@ fn frag(@location(0) in_normal: vec3<f32>,
     c = mix(params.sand_col, c, smoothstep(-5.0, 0.0, in_wpos.z));
     c = mix(params.sea_col, c, smoothstep(-25.0, -20.0, in_wpos.z));
 
+    let ambient: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, in_normal).rgb;
+
     let final_rgb: vec3<f32> = render(params.sun,
                                       params.cam_pos.xyz,
                                       in_wpos,
                                       position.xy,
                                       normalize(in_normal),
                                       c.rgb,
+                                      params.sun_col.rgb,
+                                      ambient,
                                       0.0,
                                       1.0,
-                                      params.sun_col.rgb,
                                       shadow_v,
                                       ssao);
     return FragmentOutput(vec4(final_rgb, c.a));

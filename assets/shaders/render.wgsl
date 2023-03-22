@@ -4,6 +4,11 @@ fn fresnelSchlick(cosTheta: f32, F0: vec3<f32>) -> vec3<f32> {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+fn fresnelSchlickRoughness(cosTheta: f32, F0: vec3<f32>, roughness: f32) -> vec3<f32>
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 const PI: f32 = 3.14159265359;
 
 fn DistributionGGX(N: vec3<f32>, H: vec3<f32>, roughness: f32) -> f32 {
@@ -43,9 +48,10 @@ fn render(sun: vec3<f32>,
           position: vec2<f32>,
           normal: vec3<f32>,
           albedo: vec3<f32>,
+          sun_col: vec3<f32>,
+          ambient_diffuse: vec3<f32>,
           metallic: f32,
           roughness: f32,
-          sun_col: vec3<f32>,
           shadow_v: f32,
           ssao: f32) -> vec3<f32>  {
     let V: vec3<f32> = normalize(cam - wpos);
@@ -71,7 +77,10 @@ fn render(sun: vec3<f32>,
 
     let Lo: vec3<f32> = (kD * albedo * ssao / PI + specular) * (4.0 * shadow_v * sun_col) * NdotL;
 
-    let ambient: vec3<f32> = vec3(0.1) * albedo * ssao;
+    let dkS: vec3<f32> = fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
+    let dkD: vec3<f32> = 1.0 - dkS;
+
+    let ambient: vec3<f32> = 0.2 * dkD * ambient_diffuse * albedo * ssao;
     var color: vec3<f32>   = ambient + Lo;
 
     color = color / (color + vec3(1.0));

@@ -19,6 +19,8 @@ struct FragmentOutput {
 @group(3) @binding(3) var s_bnoise: sampler;
 @group(3) @binding(4) var t_sun_smap: texture_depth_2d;
 @group(3) @binding(5) var s_sun_smap: sampler_comparison;
+@group(3) @binding(6) var t_diffuse_irradiance: texture_cube<f32>;
+@group(3) @binding(7) var s_diffuse_irradiance: sampler;
 
 #include "shadow.wgsl"
 #include "render.wgsl"
@@ -74,6 +76,8 @@ fn frag(@location(0) in_tint: vec4<f32>,
         roughness = u_roughness;
     }
 
+    let ambient: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, normal).rgb;
+
     let c = in_tint * albedo;
     let final_rgb: vec3<f32> = render(params.sun,
                                       params.cam_pos.xyz,
@@ -81,9 +85,10 @@ fn frag(@location(0) in_tint: vec4<f32>,
                                       position.xy,
                                       normal,
                                       c.rgb,
+                                      params.sun_col.rgb,
+                                      ambient,
                                       metallic,
                                       roughness,
-                                      params.sun_col.rgb,
                                       shadow_v,
                                       ssao);
 

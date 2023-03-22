@@ -222,11 +222,12 @@ pub struct LitMeshDepthSMap;
 pub enum BgLayoutTextureType {
     Shadow,
     Float,
+    Cube,
 }
 
 pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
     use BgLayoutTextureType::*;
-    bg_layout_texs(device, [Float, Float, Shadow].into_iter())
+    bg_layout_texs(device, [Float, Float, Shadow, Cube].into_iter())
 }
 pub fn bg_layout_texs(
     device: &Device,
@@ -241,7 +242,11 @@ pub fn bg_layout_texs(
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
+                        view_dimension: if matches!(bgtype, BgLayoutTextureType::Cube) {
+                            wgpu::TextureViewDimension::Cube
+                        } else {
+                            wgpu::TextureViewDimension::D2
+                        },
                         sample_type: if matches!(bgtype, BgLayoutTextureType::Shadow) {
                             wgpu::TextureSampleType::Depth
                         } else {
