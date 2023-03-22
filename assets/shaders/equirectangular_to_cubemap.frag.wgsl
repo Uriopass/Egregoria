@@ -16,7 +16,7 @@ fn cartesian_to_spherical(v: vec3<f32>) -> vec2<f32> {
 }
 
 @fragment
-fn frag(@builtin(position) pos: vec4<f32>, @location(0) wpos: vec3<f32>) -> FragmentOutput {
+fn frag(@location(0) wpos: vec3<f32>) -> FragmentOutput {
     let uv1 = cartesian_to_spherical(wpos);
     let dim: vec2<i32> = textureDimensions(t, 0);
     let uv: vec2<i32> = vec2<i32>(i32(uv1.x * f32(dim.x)) % dim.x, i32(uv1.y * f32(dim.y)) % dim.y);
