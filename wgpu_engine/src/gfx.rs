@@ -369,7 +369,7 @@ impl GfxContext {
         let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
             label: Some("cubemap encoder"),
         });
-        for i in 0..6 {
+        for face in 0..6 {
             let bg = equirectangular_tex.bindgroup(&device, &cubemapline.get_bind_group_layout(0));
             let view = target_tex.texture.create_view(&TextureViewDescriptor {
                 label: None,
@@ -378,7 +378,7 @@ impl GfxContext {
                 aspect: Default::default(),
                 base_mip_level: 0,
                 mip_level_count: None,
-                base_array_layer: i,
+                base_array_layer: face,
                 array_layer_count: None,
             });
             let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
@@ -392,7 +392,7 @@ impl GfxContext {
             });
             pass.set_pipeline(&cubemapline);
             pass.set_bind_group(0, &bg, &[]);
-            pass.draw(i * 6..i * 6 + 6, 0..1);
+            pass.draw(face * 6..face * 6 + 6, 0..1);
         }
         queue.submit(Some(enc.finish()));
         target_tex

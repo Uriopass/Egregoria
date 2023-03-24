@@ -2,6 +2,7 @@ struct FragmentOutput {
     @location(0) out_cube: vec4<f32>,
 }
 
+// equirectangular tex (rg16f is not filterable)
 @group(0) @binding(0) var t: texture_2d<f32>;
 
 const PI: f32 = 3.141592653589793238462;
