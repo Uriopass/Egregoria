@@ -235,7 +235,6 @@ impl GfxContext {
         let blue_noise = TextureBuilder::from_path("assets/sprites/blue_noise_512.png")
             .with_label("blue noise")
             .with_srgb(false)
-            .with_mipmaps(false)
             .with_sampler(Texture::nearest_sampler())
             .build(&device, &queue);
 
@@ -251,7 +250,6 @@ impl GfxContext {
             TextureBuilder::from_path("assets/sprites/forgotten_miniland_2k.hdr")
                 .with_label("irradiance")
                 .with_srgb(false)
-                .with_mipmaps(false)
                 .with_sampler(Texture::linear_sampler())
                 .build(&device, &queue);
 
@@ -290,6 +288,10 @@ impl GfxContext {
             environment_cube,
             diffuse_irradiance_cube,
         };
+        me.shader_cache.insert(
+            "mipmap.wgsl".to_string(),
+            compile_shader(&me.device, "mipmap.wgsl"),
+        );
 
         me.update_simplelit_bg();
 
@@ -304,6 +306,7 @@ impl GfxContext {
         let palette = TextureBuilder::from_path("assets/sprites/palette.png")
             .with_label("palette")
             .with_sampler(Texture::nearest_sampler())
+            .with_mipmaps(me.mipmap_module())
             .build(&me.device, &me.queue);
         me.set_texture("assets/sprites/palette.png", palette);
 
@@ -360,7 +363,6 @@ impl GfxContext {
         let target_tex = TextureBuilder::empty(512, 512, 6, TextureFormat::Rgba16Float)
             .with_label("irradiance cubemap")
             .with_srgb(false)
-            .with_mipmaps(false)
             .with_sampler(Texture::linear_sampler())
             .build(&device, &queue);
 
@@ -458,7 +460,6 @@ impl GfxContext {
         let diffuse_irradiance_tex = TextureBuilder::empty(32, 32, 6, TextureFormat::Rgba16Float)
             .with_label("irradiance cubemap")
             .with_srgb(false)
-            .with_mipmaps(false)
             .with_sampler(Texture::linear_sampler())
             .build(&device, &queue);
 
@@ -539,9 +540,11 @@ impl GfxContext {
         if let Some(tex) = self.texture_cache_paths.get(&p) {
             return Some(tex.clone());
         }
+
         let tex = Arc::new(
             TextureBuilder::try_from_path(&p)?
                 .with_label(label)
+                .with_mipmaps(self.mipmap_module())
                 .build(&self.device, &self.queue),
         );
         self.texture_cache_paths.insert(p, tex.clone());
@@ -1058,6 +1061,16 @@ impl GfxContext {
         for sname in to_invalidate {
             log::info!("invalidating shader {}", sname);
             self.invalidate(&sname);
+        }
+    }
+
+    pub fn mipmap_module(&self) -> CompiledModule {
+        // Safety: added at startup
+        unsafe {
+            self.shader_cache
+                .get("mipmap.wgsl")
+                .unwrap_unchecked()
+                .clone()
         }
     }
 

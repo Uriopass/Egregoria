@@ -103,6 +103,7 @@ pub fn load_image(
         TextureBuilder::from_img(img)
             .with_label("some material albedo")
             .with_sampler(sampler)
+            .with_mipmaps(gfx.mipmap_module())
             .with_srgb(srgb)
             .build(&gfx.device, &gfx.queue),
     );

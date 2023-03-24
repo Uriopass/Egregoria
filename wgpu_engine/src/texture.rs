@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::compile_shader;
+use crate::CompiledModule;
 use image::{DynamicImage, GenericImageView, Rgba32FImage};
 use std::fs::File;
 use std::io::Read;
@@ -244,7 +244,7 @@ pub struct TextureBuilder {
     sampler: SamplerDescriptor<'static>,
     label: &'static str,
     srgb: bool,
-    mipmaps: bool,
+    mipmaps: Option<CompiledModule>,
 }
 
 impl TextureBuilder {
@@ -263,8 +263,8 @@ impl TextureBuilder {
         self
     }
 
-    pub fn with_mipmaps(mut self, mipmaps: bool) -> Self {
-        self.mipmaps = mipmaps;
+    pub fn with_mipmaps(mut self, mipmaps: CompiledModule) -> Self {
+        self.mipmaps = Some(mipmaps);
         self
     }
 
@@ -319,7 +319,7 @@ impl TextureBuilder {
             sampler: Texture::linear_sampler(),
             label: "texture without label",
             srgb: true,
-            mipmaps: true,
+            mipmaps: None,
         }
     }
 
@@ -331,7 +331,7 @@ impl TextureBuilder {
             format: Some(format),
             label: "empty texture without label",
             srgb: true,
-            mipmaps: false,
+            mipmaps: None,
         }
     }
 
@@ -385,7 +385,7 @@ impl TextureBuilder {
 
         let format = format.unwrap();
 
-        let mip_level_count = if self.mipmaps {
+        let mip_level_count = if self.mipmaps.is_some() {
             let m = self.dimensions.0.min(self.dimensions.1);
             (m.next_power_of_two().trailing_zeros()).max(1)
         } else {
@@ -423,7 +423,9 @@ impl TextureBuilder {
             );
 
             if mip_level_count > 1 {
-                generate_mipmaps(device, queue, &texture, format, mip_level_count);
+                if let Some(module) = self.mipmaps {
+                    generate_mipmaps(device, queue, &texture, format, mip_level_count, module);
+                }
             }
         }
 
@@ -454,9 +456,8 @@ fn generate_mipmaps(
     texture: &wgpu::Texture,
     format: TextureFormat,
     mip_count: u32,
+    module: CompiledModule,
 ) {
-    let module = compile_shader(device, "mipmap.wgsl");
-
     let bglayout = Texture::bindgroup_layout(device);
 
     let layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
