@@ -62,7 +62,7 @@ pub struct GfxContext {
     pub(crate) rect_indices: wgpu::Buffer,
     pub sun_shadowmap: Texture,
     pub environment_cube: Texture,
-    pub specular_irradiance_cube: Texture,
+    pub specular_prefilter_cube: Texture,
     pub diffuse_irradiance_cube: Texture,
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
@@ -257,8 +257,8 @@ impl GfxContext {
         let environment_cube = Self::make_environment_cubemap(&device, &queue, irradiance_texture);
         let diffuse_irradiance_cube =
             Self::make_diffuse_irradiance(&device, &queue, &environment_cube);
-        let specular_irradiance_cube =
-            Self::make_specular_irradiance(&device, &queue, &environment_cube);
+        let specular_prefilter_cube =
+            Self::make_specular_prefilter(&device, &queue, &environment_cube);
 
         let mut me = Self {
             size: (win_width, win_height),
@@ -289,7 +289,7 @@ impl GfxContext {
             device,
             queue,
             environment_cube,
-            specular_irradiance_cube,
+            specular_prefilter_cube,
             diffuse_irradiance_cube,
         };
         me.shader_cache.insert(
@@ -483,7 +483,7 @@ impl GfxContext {
         diffuse_irradiance_tex
     }
 
-    pub fn make_specular_irradiance(
+    pub fn make_specular_prefilter(
         device: &Device,
         queue: &Queue,
         environment_map: &Texture,
@@ -498,7 +498,7 @@ impl GfxContext {
         });
 
         let cubemap_vert = compile_shader(device, "to_cubemap.vert.wgsl");
-        let cubemap_frag = compile_shader(device, "specular_irradiance.frag.wgsl");
+        let cubemap_frag = compile_shader(device, "specular_prefilter.frag.wgsl");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
@@ -523,24 +523,23 @@ impl GfxContext {
             multiview: None,
         });
 
-        let specular_irradiance_tex =
-            TextureBuilder::empty(128, 128, 6, TextureFormat::Rgba16Float)
-                .with_label("specular irradiance cubemap")
-                .with_srgb(false)
-                .with_sampler(Texture::linear_sampler())
-                .with_mipmaps_no_gen()
-                .build(device, queue);
+        let specular_prefilter_tex = TextureBuilder::empty(128, 128, 6, TextureFormat::Rgba16Float)
+            .with_label("specular prefilter cubemap")
+            .with_srgb(false)
+            .with_sampler(Texture::linear_sampler())
+            .with_mipmaps_no_gen()
+            .build(device, queue);
 
         let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
-            label: Some("specular irradiance encoder"),
+            label: Some("specular prefilter encoder"),
         });
 
         let bg = environment_map.bindgroup(device, &bg_layout);
         for face in 0..6 {
-            for mip in 0..specular_irradiance_tex.n_mips() {
-                let roughness = mip as f32 / (specular_irradiance_tex.n_mips() - 1) as f32;
+            for mip in 0..specular_prefilter_tex.n_mips() {
+                let roughness = mip as f32 / (specular_prefilter_tex.n_mips() - 1) as f32;
                 let roughness = Uniform::new(roughness, device);
-                let view = specular_irradiance_tex
+                let view = specular_prefilter_tex
                     .texture
                     .create_view(&TextureViewDescriptor {
                         label: None,
@@ -553,7 +552,7 @@ impl GfxContext {
                         array_layer_count: None,
                     });
                 let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
-                    label: Some(format!("specular irradiance face {face} mip {mip}").as_str()),
+                    label: Some(format!("specular prefilter face {face} mip {mip}").as_str()),
                     color_attachments: &[Some(RenderPassColorAttachment {
                         view: &view,
                         resolve_target: None,
@@ -570,7 +569,7 @@ impl GfxContext {
 
         queue.submit(Some(enc.finish()));
 
-        specular_irradiance_tex
+        specular_prefilter_tex
     }
 
     pub fn register_material(&mut self, material: Material) -> MaterialID {
