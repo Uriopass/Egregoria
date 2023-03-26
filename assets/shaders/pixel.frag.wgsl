@@ -29,6 +29,8 @@ struct FragmentOutput {
 #include "shadow.wgsl"
 #include "render.wgsl"
 
+const MAX_REFLECTION_LOD: f32 = 4.0;
+
 @fragment
 fn frag(@location(0) in_tint: vec4<f32>,
         @location(1) in_normal: vec3<f32>,
@@ -65,17 +67,31 @@ fn frag(@location(0) in_tint: vec4<f32>,
         roughness = u_roughness;
     }
 
-    let ambient: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, normal).rgb;
-
+    let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, normal).rgb;
     let c = in_tint * albedo;
+
+    let V: vec3<f32> = normalize(params.cam_pos.xyz - in_wpos);
+    let R: vec3<f32> = reflect(-V, normal);
+
+    let prefilteredColor: vec3<f32> = textureSampleLevel(t_prefilter_specular, s_prefilter_specular, R, roughness * MAX_REFLECTION_LOD).rgb;
+
+    var F0: vec3<f32> = vec3<f32>(0.04);
+    F0                = mix(F0, c.rgb, vec3(metallic));
+
+    let F_spec: vec3<f32>   = fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
+    let envBRDF: vec2<f32>  = textureSampleLevel(t_brdf_lut, s_brdf_lut, vec2(max(dot(normal, V), 0.0), roughness), 0.0).rg;
+    let specular: vec3<f32> = prefilteredColor * (F_spec * envBRDF.x + envBRDF.y);
+
     let final_rgb: vec3<f32> = render(params.sun,
-                                      params.cam_pos.xyz,
-                                      in_wpos,
+                                      V,
                                       position.xy,
                                       normal,
                                       c.rgb,
+                                      F0,
+                                      F_spec,
                                       params.sun_col.rgb,
-                                      ambient,
+                                      irradiance_diffuse,
+                                      specular,
                                       metallic,
                                       roughness,
                                       shadow_v,

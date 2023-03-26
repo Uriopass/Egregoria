@@ -24,7 +24,7 @@ impl State {
         if let Ok(m) = load_mesh(gfx, "DamagedHelmet.glb") {
             let mut i = InstancedMeshBuilder::new(m);
             i.instances.push(MeshInstance {
-                pos: vec3(20.0, 20.0, 0.0),
+                pos: vec3(50.0, 00.0, 0.0),
                 dir: Vec3::X * 10.0,
                 tint: LinearColor::WHITE,
             });

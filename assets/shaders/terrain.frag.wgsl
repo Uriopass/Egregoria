@@ -87,18 +87,25 @@ fn frag(@location(0) in_normal: vec3<f32>,
     c = mix(params.sand_col, c, smoothstep(-5.0, 0.0, in_wpos.z));
     c = mix(params.sea_col, c, smoothstep(-25.0, -20.0, in_wpos.z));
 
-    let ambient: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, in_normal).rgb;
+    let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, in_normal).rgb;
+    let V: vec3<f32> = normalize(params.cam_pos.xyz - in_wpos);
+    let F0: vec3<f32> = vec3(0.04);
+    let roughness: f32 = 1.0;
+    let normal: vec3<f32> = normalize(in_normal);
+    let F_spec: vec3<f32> = fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
 
     let final_rgb: vec3<f32> = render(params.sun,
-                                      params.cam_pos.xyz,
-                                      in_wpos,
+                                      V,
                                       position.xy,
-                                      normalize(in_normal),
+                                      normal,
                                       c.rgb,
+                                      F0,
+                                      F_spec,
                                       params.sun_col.rgb,
-                                      ambient,
+                                      irradiance_diffuse,
+                                      vec3(0.0),
                                       0.0,
-                                      1.0,
+                                      roughness,
                                       shadow_v,
                                       ssao);
     return FragmentOutput(vec4(final_rgb, c.a));

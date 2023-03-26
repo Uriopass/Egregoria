@@ -42,22 +42,20 @@ fn GeometrySmith(N: vec3<f32>, V: vec3<f32>, L: vec3<f32>, roughness: f32) -> f3
 }
 
 fn render(sun: vec3<f32>,
-          cam: vec3<f32>,
-          wpos: vec3<f32>,
+          V: vec3<f32>,
           position: vec2<f32>,
           normal: vec3<f32>,
           albedo: vec3<f32>,
+          F0: vec3<f32>,
+          F_spec: vec3<f32>,
           sun_col: vec3<f32>,
-          ambient_diffuse: vec3<f32>,
+          irradiance_diffuse: vec3<f32>,
+          specular: vec3<f32>,
           metallic: f32,
           roughness: f32,
           shadow_v: f32,
           ssao: f32) -> vec3<f32>  {
-    let V: vec3<f32> = normalize(cam - wpos);
     let H: vec3<f32> = normalize(sun + V);
-
-    var F0: vec3<f32> = vec3<f32>(0.04);
-    F0      = mix(F0, albedo, vec3(metallic));
 
     let NDF: f32 = DistributionGGX(normal, H, roughness);
     let G: f32   = GeometrySmith(normal, V, sun, roughness);
@@ -72,14 +70,15 @@ fn render(sun: vec3<f32>,
 
     let numerator: vec3<f32>      = NDF * G * F;
     let denominator: f32    = 4.0 * max(dot(normal, V), 0.0) * NdotL  + 0.0001;
-    let specular: vec3<f32> = numerator / denominator;
+    let specular_light: vec3<f32> = numerator / denominator;
 
-    let Lo: vec3<f32> = (kD * albedo * ssao / PI + specular) * (4.0 * shadow_v * sun_col) * NdotL;
+    let Lo: vec3<f32> = (kD * albedo * ssao / PI + specular_light) * (4.0 * shadow_v * sun_col) * NdotL;
 
-    let dkS: vec3<f32> = fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
-    let dkD: vec3<f32> = 1.0 - dkS;
+    let dkS: vec3<f32> = F_spec;
+    var dkD: vec3<f32> = 1.0 - dkS;
+    dkD *= 1.0 - vec3(metallic);
 
-    let ambient: vec3<f32> = 0.2 * dkD * ambient_diffuse * albedo * ssao;
+    let ambient: vec3<f32> = (0.2 * dkD * irradiance_diffuse * albedo + specular) * ssao;
     var color: vec3<f32>   = ambient + Lo;
 
     color = color / (color + vec3(1.0));

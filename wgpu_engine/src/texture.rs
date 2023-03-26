@@ -270,6 +270,7 @@ pub struct TextureBuilder {
     srgb: bool,
     mipmaps: Option<CompiledModule>,
     mipmaps_no_gen: bool,
+    fixed_mipmaps: Option<u32>,
 }
 
 impl TextureBuilder {
@@ -295,6 +296,11 @@ impl TextureBuilder {
 
     pub fn with_mipmaps_no_gen(mut self) -> Self {
         self.mipmaps_no_gen = true;
+        self
+    }
+
+    pub fn with_fixed_mipmaps(mut self, v: u32) -> Self {
+        self.fixed_mipmaps = Some(v);
         self
     }
 
@@ -351,6 +357,7 @@ impl TextureBuilder {
             srgb: true,
             mipmaps: None,
             mipmaps_no_gen: false,
+            fixed_mipmaps: None,
         }
     }
 
@@ -364,6 +371,7 @@ impl TextureBuilder {
             srgb: true,
             mipmaps: None,
             mipmaps_no_gen: false,
+            fixed_mipmaps: None,
         }
     }
 
@@ -417,12 +425,17 @@ impl TextureBuilder {
 
         let format = format.unwrap();
 
-        let mip_level_count = if self.mipmaps.is_some() || self.mipmaps_no_gen {
-            let m = self.dimensions.0.min(self.dimensions.1);
-            (m.next_power_of_two().trailing_zeros()).max(1)
-        } else {
-            1
-        };
+        let mip_level_count =
+            if self.mipmaps.is_some() || self.mipmaps_no_gen || self.fixed_mipmaps.is_some() {
+                if let Some(v) = self.fixed_mipmaps {
+                    v
+                } else {
+                    let m = self.dimensions.0.min(self.dimensions.1);
+                    (m.next_power_of_two().trailing_zeros()).max(1)
+                }
+            } else {
+                1
+            };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some(label),

@@ -321,7 +321,7 @@ impl GfxContext {
         let starfield = me.texture("assets/sprites/starfield.png", "starfield");
 
         me.sky_bg = Texture::multi_bindgroup(
-            &[&*gs, &*starfield, &me.diffuse_irradiance_cube],
+            &[&*gs, &*starfield, &me.environment_cube],
             &me.device,
             &me.get_pipeline(BackgroundPipeline).get_bind_group_layout(2),
         );
@@ -530,7 +530,7 @@ impl GfxContext {
             .with_label("specular prefilter cubemap")
             .with_srgb(false)
             .with_sampler(Texture::linear_sampler())
-            .with_mipmaps_no_gen()
+            .with_fixed_mipmaps(5)
             .build(device, queue);
 
         let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
