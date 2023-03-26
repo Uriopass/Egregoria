@@ -18,10 +18,10 @@ use wgpu::{
     Adapter, Backends, BindGroupLayout, BlendComponent, BlendState, CommandBuffer, CommandEncoder,
     CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device, ErrorFilter, Face,
     FragmentState, FrontFace, IndexFormat, InstanceDescriptor, MultisampleState,
-    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPassColorAttachment,
-    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, Surface, SurfaceConfiguration,
-    SurfaceTexture, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
-    TextureViewDimension, VertexBufferLayout, VertexState,
+    PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, SamplerDescriptor, Surface,
+    SurfaceConfiguration, SurfaceTexture, TextureFormat, TextureUsages, TextureView,
+    TextureViewDescriptor, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 
 pub struct FBOs {
@@ -64,6 +64,7 @@ pub struct GfxContext {
     pub environment_cube: Texture,
     pub specular_prefilter_cube: Texture,
     pub diffuse_irradiance_cube: Texture,
+    pub split_sum_brdf_lut: Texture,
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
     pub sky_bg: wgpu::BindGroup,
@@ -259,6 +260,7 @@ impl GfxContext {
             Self::make_diffuse_irradiance(&device, &queue, &environment_cube);
         let specular_prefilter_cube =
             Self::make_specular_prefilter(&device, &queue, &environment_cube);
+        let split_sum_brdf_lut = Self::make_split_sum_brdf_lut(&device, &queue);
 
         let mut me = Self {
             size: (win_width, win_height),
@@ -291,6 +293,7 @@ impl GfxContext {
             environment_cube,
             specular_prefilter_cube,
             diffuse_irradiance_cube,
+            split_sum_brdf_lut,
         };
         me.shader_cache.insert(
             "mipmap.wgsl".to_string(),
@@ -570,6 +573,74 @@ impl GfxContext {
         queue.submit(Some(enc.finish()));
 
         specular_prefilter_tex
+    }
+
+    fn make_split_sum_brdf_lut(device: &Device, queue: &Queue) -> Texture {
+        let brdf_tex = TextureBuilder::empty(512, 512, 1, TextureFormat::Rg16Float)
+            .with_label("brdf split sum lut")
+            .with_srgb(false)
+            .with_sampler(SamplerDescriptor {
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                ..Texture::linear_sampler()
+            })
+            .build(device, queue);
+
+        let pipelayout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+            label: None,
+            bind_group_layouts: &[],
+            push_constant_ranges: &[],
+        });
+
+        let brdf_convolution_module = compile_shader(device, "brdf_convolution.wgsl");
+
+        let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&pipelayout),
+            vertex: VertexState {
+                module: &brdf_convolution_module,
+                entry_point: "vert",
+                buffers: &[],
+            },
+            primitive: PrimitiveState {
+                topology: PrimitiveTopology::TriangleStrip,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: Default::default(),
+            fragment: Some(FragmentState {
+                module: &brdf_convolution_module,
+                entry_point: "frag",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: TextureFormat::Rg16Float,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            multiview: None,
+        });
+
+        let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("brd lut encoder"),
+        });
+
+        let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
+            label: Some("brdf lut"),
+            color_attachments: &[Some(RenderPassColorAttachment {
+                view: &brdf_tex.view,
+                resolve_target: None,
+                ops: Default::default(),
+            })],
+            depth_stencil_attachment: None,
+        });
+        pass.set_pipeline(&cubemapline);
+        pass.draw(0..4, 0..1);
+        drop(pass);
+
+        queue.submit(Some(enc.finish()));
+
+        brdf_tex
     }
 
     pub fn register_material(&mut self, material: Material) -> MaterialID {
