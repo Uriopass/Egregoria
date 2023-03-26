@@ -220,5 +220,15 @@ pub struct LitMeshDepth;
 pub struct LitMeshDepthSMap;
 
 pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
-    Texture::bindgroup_layout(device, [TL::Float, TL::Float, TL::Depth, TL::Cube])
+    Texture::bindgroup_layout(
+        device,
+        [
+            TL::Float,
+            TL::Float,
+            TL::Depth,
+            TL::Cube,
+            TL::Cube,
+            TL::Float,
+        ],
+    )
 }

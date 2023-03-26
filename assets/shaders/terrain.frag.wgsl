@@ -9,14 +9,18 @@ struct FragmentOutput {
 @group(2) @binding(0) var t_terraindata: texture_2d<f32>;
 @group(2) @binding(1) var s_terraindata: sampler;
 
-@group(3) @binding(0) var t_ssao: texture_2d<f32>;
-@group(3) @binding(1) var s_ssao: sampler;
-@group(3) @binding(2) var t_bnoise: texture_2d<f32>;
-@group(3) @binding(3) var s_bnoise: sampler;
-@group(3) @binding(4) var t_sun_smap: texture_depth_2d;
-@group(3) @binding(5) var s_sun_smap: sampler_comparison;
-@group(3) @binding(6) var t_diffuse_irradiance: texture_cube<f32>;
-@group(3) @binding(7) var s_diffuse_irradiance: sampler;
+@group(3) @binding(0)  var t_ssao: texture_2d<f32>;
+@group(3) @binding(1)  var s_ssao: sampler;
+@group(3) @binding(2)  var t_bnoise: texture_2d<f32>;
+@group(3) @binding(3)  var s_bnoise: sampler;
+@group(3) @binding(4)  var t_sun_smap: texture_depth_2d;
+@group(3) @binding(5)  var s_sun_smap: sampler_comparison;
+@group(3) @binding(6)  var t_diffuse_irradiance: texture_cube<f32>;
+@group(3) @binding(7)  var s_diffuse_irradiance: sampler;
+@group(3) @binding(8)  var t_prefilter_specular: texture_cube<f32>;
+@group(3) @binding(9)  var s_prefilter_specular: sampler;
+@group(3) @binding(10) var t_brdf_lut: texture_2d<f32>;
+@group(3) @binding(11) var s_brdf_lut: sampler;
 
 #include "shadow.wgsl"
 #include "render.wgsl"

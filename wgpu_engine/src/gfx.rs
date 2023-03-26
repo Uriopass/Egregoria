@@ -1005,6 +1005,8 @@ impl GfxContext {
                     .expect("blue noise not initialized"),
                 &self.sun_shadowmap,
                 &self.diffuse_irradiance_cube,
+                &self.specular_prefilter_cube,
+                &self.split_sum_brdf_lut,
             ],
             &self.device,
             &bg_layout_litmesh(&self.device),
