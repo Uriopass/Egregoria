@@ -3,13 +3,14 @@ use crate::wgpu::SamplerBindingType;
 use crate::{
     bg_layout_litmesh, compile_shader, CompiledModule, Drawable, IndexType, InstancedMesh,
     Material, MaterialID, MaterialMap, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform,
-    UvVertex, VBDesc, Water,
+    UvVertex, VBDesc, Water, TL,
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
+use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
@@ -63,6 +64,7 @@ pub struct GfxContext {
     pub(crate) rect_indices: wgpu::Buffer,
     pub sun_shadowmap: Texture,
     pub environment_cube: Texture,
+    pub specular_irradiance_cube: Texture,
     pub diffuse_irradiance_cube: Texture,
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
@@ -238,7 +240,8 @@ impl GfxContext {
             .with_sampler(Texture::nearest_sampler())
             .build(&device, &queue);
 
-        let bnoise_bg = blue_noise.bindgroup(&device, &Texture::bindgroup_layout(&device));
+        let bnoise_bg =
+            blue_noise.bindgroup(&device, &Texture::bindgroup_layout(&device, [TL::Float]));
 
         let mut textures = FastMap::default();
         textures.insert(
@@ -253,9 +256,11 @@ impl GfxContext {
                 .with_sampler(Texture::linear_sampler())
                 .build(&device, &queue);
 
-        let environment_cube = Self::make_cubemap(&device, &queue, irradiance_texture);
+        let environment_cube = Self::make_environment_cubemap(&device, &queue, irradiance_texture);
         let diffuse_irradiance_cube =
             Self::make_diffuse_irradiance(&device, &queue, &environment_cube);
+        let specular_irradiance_cube =
+            Self::make_specular_irradiance(&device, &queue, &environment_cube);
 
         let mut me = Self {
             size: (win_width, win_height),
@@ -286,6 +291,7 @@ impl GfxContext {
             device,
             queue,
             environment_cube,
+            specular_irradiance_cube,
             diffuse_irradiance_cube,
         };
         me.shader_cache.insert(
@@ -322,15 +328,14 @@ impl GfxContext {
         me
     }
 
-    fn make_cubemap(device: &Device, queue: &Queue, equirectangular_tex: Texture) -> Texture {
+    fn make_environment_cubemap(
+        device: &Device,
+        queue: &Queue,
+        equirectangular_tex: Texture,
+    ) -> Texture {
         let cubemappipelayout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[&Texture::bindgroup_layout_complex(
-                &device,
-                TextureSampleType::Float { filterable: false },
-                1,
-                false,
-            )],
+            bind_group_layouts: &[&Texture::bindgroup_layout(device, [TL::NonfilterableFloat])],
             push_constant_ranges: &[],
         });
 
@@ -382,7 +387,7 @@ impl GfxContext {
                 array_layer_count: None,
             });
             let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
-                label: None,
+                label: Some(format!("environment cubemap face {}", face).as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
@@ -403,28 +408,8 @@ impl GfxContext {
         queue: &Queue,
         environment_map: &Texture,
     ) -> Texture {
-        let entries: Vec<BindGroupLayoutEntry> = vec![
-            BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Texture {
-                    multisampled: false,
-                    view_dimension: wgpu::TextureViewDimension::Cube,
-                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                },
-                count: None,
-            },
-            BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                count: None,
-            },
-        ];
-        let bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &entries,
-            label: Some("diffuse irradiance bindgroup layout"),
-        });
+        let bg_layout = Texture::bindgroup_layout(device, [TL::Cube]);
+
         let cubemappipelayout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bg_layout],
@@ -432,7 +417,7 @@ impl GfxContext {
         });
 
         let cubemap_vert = compile_shader(&device, "to_cubemap.vert.wgsl");
-        let cubemap_frag = compile_shader(&device, "convolute_irradiance.frag.wgsl");
+        let cubemap_frag = compile_shader(&device, "convolute_diffuse_irradiance.frag.wgsl");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
@@ -468,7 +453,7 @@ impl GfxContext {
         });
 
         let bg = environment_map.bindgroup(&device, &bg_layout);
-        for i in 0..6 {
+        for face in 0..6 {
             let view = diffuse_irradiance_tex
                 .texture
                 .create_view(&TextureViewDescriptor {
@@ -478,11 +463,11 @@ impl GfxContext {
                     aspect: Default::default(),
                     base_mip_level: 0,
                     mip_level_count: None,
-                    base_array_layer: i,
+                    base_array_layer: face,
                     array_layer_count: None,
                 });
             let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
-                label: None,
+                label: Some(format!("diffuse irradiance face {}", face).as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
@@ -492,12 +477,97 @@ impl GfxContext {
             });
             pass.set_pipeline(&cubemapline);
             pass.set_bind_group(0, &bg, &[]);
-            pass.draw(i * 6..i * 6 + 6, 0..1);
+            pass.draw(face * 6..face * 6 + 6, 0..1);
         }
 
         queue.submit(Some(enc.finish()));
 
         diffuse_irradiance_tex
+    }
+
+    pub fn make_specular_irradiance(
+        device: &Device,
+        queue: &Queue,
+        environment_map: &Texture,
+    ) -> Texture {
+        let bg_layout = Texture::bindgroup_layout(device, [TL::Cube]);
+
+        let cubemappipelayout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
+            label: None,
+            bind_group_layouts: &[&bg_layout],
+            push_constant_ranges: &[],
+        });
+
+        let cubemap_vert = compile_shader(&device, "to_cubemap.vert.wgsl");
+        let cubemap_frag = compile_shader(&device, "specular_irradiance.frag.wgsl");
+
+        let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&cubemappipelayout),
+            vertex: VertexState {
+                module: &cubemap_vert,
+                entry_point: "vert",
+                buffers: &[],
+            },
+            primitive: Default::default(),
+            depth_stencil: None,
+            multisample: Default::default(),
+            fragment: Some(FragmentState {
+                module: &cubemap_frag,
+                entry_point: "frag",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: TextureFormat::Rgba16Float,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            multiview: None,
+        });
+
+        let specular_irradiance_tex = TextureBuilder::empty(32, 32, 6, TextureFormat::Rgba16Float)
+            .with_label("specular irradiance cubemap")
+            .with_srgb(false)
+            .with_sampler(Texture::linear_sampler())
+            .with_mipmaps_no_gen()
+            .build(&device, &queue);
+
+        let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
+            label: Some("specular irradiance encoder"),
+        });
+
+        let bg = environment_map.bindgroup(&device, &bg_layout);
+        for face in 0..6 {
+            for mip in 0..specular_irradiance_tex.n_mips() {
+                let view = specular_irradiance_tex
+                    .texture
+                    .create_view(&TextureViewDescriptor {
+                        label: None,
+                        format: None,
+                        dimension: Some(TextureViewDimension::D2),
+                        aspect: Default::default(),
+                        base_mip_level: mip,
+                        mip_level_count: Some(NonZeroU32::new(1).unwrap()),
+                        base_array_layer: face,
+                        array_layer_count: None,
+                    });
+                let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
+                    label: Some(format!("specular irradiance face {} mip {}", face, mip).as_str()),
+                    color_attachments: &[Some(RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: Default::default(),
+                    })],
+                    depth_stencil_attachment: None,
+                });
+                pass.set_pipeline(&cubemapline);
+                pass.set_bind_group(0, &bg, &[]);
+                pass.draw(face * 6..face * 6 + 6, 0..1);
+            }
+        }
+
+        queue.submit(Some(enc.finish()));
+
+        specular_irradiance_tex
     }
 
     pub fn register_material(&mut self, material: Material) -> MaterialID {
@@ -826,11 +896,13 @@ impl GfxContext {
         let depth = Texture::create_depth_texture(device, size, samples);
         let depth_bg = depth.bindgroup(
             device,
-            &Texture::bindgroup_layout_complex(
-                device,
-                TextureSampleType::Float { filterable: false },
-                1,
-                samples > 1,
+            &Texture::bindgroup_layout(
+                &device,
+                [if samples > 1 {
+                    TL::NonfilterableFloatMultisampled
+                } else {
+                    TL::NonfilterableFloat
+                }],
             ),
         );
         FBOs {
@@ -1340,7 +1412,7 @@ impl BackgroundPipeline {
                     "background",
                     &[
                         &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                        &Texture::bindgroup_layout(&gfx.device),
+                        &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
                         &bglayout_texs,
                     ],
                     &[UvVertex::desc()],

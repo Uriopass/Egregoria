@@ -1,10 +1,10 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    Drawable, GfxContext, IndexType, Material, MaterialID, MeshVertex, RenderParams, Uniform,
-    VBDesc,
+    Drawable, GfxContext, IndexType, Material, MaterialID, MeshVertex, RenderParams, Texture,
+    Uniform, VBDesc, TL,
 };
 use std::sync::Arc;
-use wgpu::{BindGroupLayout, BindGroupLayoutEntry, BufferUsages, Device, IndexFormat, RenderPass};
+use wgpu::{BindGroupLayout, BufferUsages, Device, IndexFormat, RenderPass};
 
 pub struct MeshBuilder {
     pub(crate) vertices: Vec<MeshVertex>,
@@ -219,60 +219,6 @@ impl Drawable for Mesh {
 pub struct LitMeshDepth;
 pub struct LitMeshDepthSMap;
 
-pub enum BgLayoutTextureType {
-    Shadow,
-    Float,
-    Cube,
-}
-
 pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
-    use BgLayoutTextureType::*;
-    bg_layout_texs(device, [Float, Float, Shadow, Cube].into_iter())
-}
-pub fn bg_layout_texs(
-    device: &Device,
-    it: impl Iterator<Item = BgLayoutTextureType>,
-) -> BindGroupLayout {
-    let entries: Vec<BindGroupLayoutEntry> = it
-        .enumerate()
-        .flat_map(|(i, bgtype)| {
-            vec![
-                BindGroupLayoutEntry {
-                    binding: (i * 2) as u32,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: if matches!(bgtype, BgLayoutTextureType::Cube) {
-                            wgpu::TextureViewDimension::Cube
-                        } else {
-                            wgpu::TextureViewDimension::D2
-                        },
-                        sample_type: if matches!(bgtype, BgLayoutTextureType::Shadow) {
-                            wgpu::TextureSampleType::Depth
-                        } else {
-                            wgpu::TextureSampleType::Float { filterable: true }
-                        },
-                    },
-                    count: None,
-                },
-                BindGroupLayoutEntry {
-                    binding: (i * 2 + 1) as u32,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(
-                        if matches!(bgtype, BgLayoutTextureType::Shadow) {
-                            wgpu::SamplerBindingType::Comparison
-                        } else {
-                            wgpu::SamplerBindingType::Filtering
-                        },
-                    ),
-                    count: None,
-                },
-            ]
-            .into_iter()
-        })
-        .collect::<Vec<_>>();
-    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        entries: &entries,
-        label: Some("Texture bindgroup layout"),
-    })
+    Texture::bindgroup_layout(device, [TL::Float, TL::Float, TL::Depth, TL::Cube])
 }

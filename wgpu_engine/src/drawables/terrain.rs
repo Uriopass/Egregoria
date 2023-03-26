@@ -1,7 +1,7 @@
 use crate::{
     bg_layout_litmesh, pbuffer::PBuffer, Drawable, FrameContext, GfxContext, IndexType, Material,
     Mesh, MeshBuilder, MeshVertex, MetallicRoughness, RenderParams, TerrainVertex, Texture,
-    Uniform, VBDesc,
+    Uniform, VBDesc, TL,
 };
 use common::FastMap;
 use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Polygon, Vec2, AABB3};
@@ -11,8 +11,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 use wgpu::{
     BufferUsages, Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, IndexFormat, Origin3d,
-    RenderPass, TextureFormat, TextureSampleType, TextureUsages, VertexAttribute,
-    VertexBufferLayout,
+    RenderPass, TextureFormat, TextureUsages, VertexAttribute, VertexBufferLayout,
 };
 
 const LOD: usize = 4;
@@ -67,12 +66,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         Self {
             bg: Arc::new(tex.bindgroup(
                 &gfx.device,
-                &Texture::bindgroup_layout_complex(
-                    &gfx.device,
-                    TextureSampleType::Float { filterable: false },
-                    1,
-                    false,
-                ),
+                &Texture::bindgroup_layout(&gfx.device, [TL::NonfilterableFloat]),
             )),
             dirt_ids: Default::default(),
             terrain_tex: Arc::new(tex),
@@ -365,11 +359,9 @@ impl VBDesc for TerrainInstance {
 
 impl TerrainPrepared {
     pub(crate) fn setup(gfx: &mut GfxContext) {
-        let terrainlayout = Rc::new(Texture::bindgroup_layout_complex(
+        let terrainlayout = Rc::new(Texture::bindgroup_layout(
             &gfx.device,
-            TextureSampleType::Float { filterable: false },
-            1,
-            false,
+            [TL::NonfilterableFloat],
         ));
 
         let lay1 = terrainlayout.clone();

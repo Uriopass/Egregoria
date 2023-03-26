@@ -1,9 +1,9 @@
 use crate::{
     Drawable, GfxContext, Material, Mesh, MeshBuilder, MeshVertex, MetallicRoughness, Texture,
-    VBDesc,
+    VBDesc, TL,
 };
 use std::sync::Arc;
-use wgpu::{BindGroup, RenderPass, TextureSampleType};
+use wgpu::{BindGroup, RenderPass};
 
 #[derive(Clone)]
 pub struct Water {
@@ -51,8 +51,10 @@ impl Water {
         let mesh = mb.build(gfx).unwrap();
 
         let wavy = gfx.texture("assets/sprites/wavy.jpeg", "wavy");
-        let wavy_bg =
-            Arc::new(wavy.bindgroup(&gfx.device, &Texture::bindgroup_layout(&gfx.device)));
+        let wavy_bg = Arc::new(wavy.bindgroup(
+            &gfx.device,
+            &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
+        ));
 
         Self { mesh, wavy_bg }
     }
@@ -68,13 +70,15 @@ impl Water {
                 let layouts = &[
                     &gfx.projection.layout,
                     &gfx.render_params.layout,
-                    &Texture::bindgroup_layout_complex(
+                    &Texture::bindgroup_layout(
                         &gfx.device,
-                        TextureSampleType::Float { filterable: false },
-                        1,
-                        gfx.samples > 1,
+                        [if gfx.samples > 1 {
+                            TL::NonfilterableFloatMultisampled
+                        } else {
+                            TL::NonfilterableFloat
+                        }],
                     ),
-                    &Texture::bindgroup_layout(&gfx.device),
+                    &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
                 ];
 
                 gfx.color_pipeline(

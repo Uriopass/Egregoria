@@ -8,9 +8,9 @@ use std::num::NonZeroU32;
 use std::path::Path;
 use wgpu::{
     BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
-    ImageCopyTexture, ImageDataLayout, PipelineLayoutDescriptor, SamplerBindingType,
-    SamplerBorderColor, SamplerDescriptor, TextureFormat, TextureSampleType, TextureUsages,
-    TextureViewDescriptor, TextureViewDimension,
+    ImageCopyTexture, ImageDataLayout, PipelineLayoutDescriptor, SamplerBorderColor,
+    SamplerDescriptor, TextureFormat, TextureSampleType, TextureUsages, TextureViewDescriptor,
+    TextureViewDimension,
 };
 
 pub struct Texture {
@@ -20,6 +20,16 @@ pub struct Texture {
     pub format: TextureFormat,
     pub extent: Extent3d,
     pub transparent: bool,
+}
+
+/// TextureLayout
+pub enum TL {
+    Depth,
+    DepthMultisampled,
+    Float,
+    NonfilterableFloat,
+    NonfilterableFloatMultisampled,
+    Cube,
 }
 
 impl Texture {
@@ -106,29 +116,52 @@ impl Texture {
             .create_view(&TextureViewDescriptor::default())
     }
 
-    pub fn bindgroup_layout_complex(
-        device: &Device,
-        sample_type: TextureSampleType,
-        n_tex: u32,
-        multisampled: bool,
-    ) -> BindGroupLayout {
-        let entries: Vec<BindGroupLayoutEntry> = (0..n_tex)
-            .flat_map(|i| {
+    pub fn n_mips(&self) -> u32 {
+        self.texture.mip_level_count()
+    }
+
+    pub fn bindgroup_layout(device: &Device, it: impl IntoIterator<Item = TL>) -> BindGroupLayout {
+        let entries: Vec<BindGroupLayoutEntry> = it
+            .into_iter()
+            .enumerate()
+            .flat_map(|(i, bgtype)| {
                 vec![
                     BindGroupLayoutEntry {
-                        binding: i * 2,
+                        binding: (i * 2) as u32,
                         visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                         ty: wgpu::BindingType::Texture {
-                            multisampled,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type,
+                            multisampled: matches!(
+                                bgtype,
+                                TL::NonfilterableFloatMultisampled | TL::DepthMultisampled
+                            ),
+                            view_dimension: if matches!(bgtype, TL::Cube) {
+                                TextureViewDimension::Cube
+                            } else {
+                                TextureViewDimension::D2
+                            },
+                            sample_type: if matches!(bgtype, TL::Depth | TL::DepthMultisampled) {
+                                TextureSampleType::Depth
+                            } else {
+                                TextureSampleType::Float {
+                                    filterable: !matches!(
+                                        bgtype,
+                                        TL::NonfilterableFloat | TL::NonfilterableFloatMultisampled
+                                    ),
+                                }
+                            },
                         },
                         count: None,
                     },
                     BindGroupLayoutEntry {
-                        binding: i * 2 + 1,
+                        binding: (i * 2 + 1) as u32,
                         visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
+                        ty: wgpu::BindingType::Sampler(
+                            if matches!(bgtype, TL::Depth | TL::DepthMultisampled) {
+                                wgpu::SamplerBindingType::Comparison
+                            } else {
+                                wgpu::SamplerBindingType::Filtering
+                            },
+                        ),
                         count: None,
                     },
                 ]
@@ -139,15 +172,6 @@ impl Texture {
             entries: &entries,
             label: Some("Texture bindgroup layout"),
         })
-    }
-
-    pub fn bindgroup_layout(device: &Device) -> BindGroupLayout {
-        Self::bindgroup_layout_complex(
-            device,
-            TextureSampleType::Float { filterable: true },
-            1,
-            false,
-        )
     }
 
     pub fn bindgroup(&self, device: &Device, layout: &BindGroupLayout) -> BindGroup {
@@ -245,6 +269,7 @@ pub struct TextureBuilder {
     label: &'static str,
     srgb: bool,
     mipmaps: Option<CompiledModule>,
+    mipmaps_no_gen: bool,
 }
 
 impl TextureBuilder {
@@ -265,6 +290,11 @@ impl TextureBuilder {
 
     pub fn with_mipmaps(mut self, mipmaps: CompiledModule) -> Self {
         self.mipmaps = Some(mipmaps);
+        self
+    }
+
+    pub fn with_mipmaps_no_gen(mut self) -> Self {
+        self.mipmaps_no_gen = true;
         self
     }
 
@@ -320,6 +350,7 @@ impl TextureBuilder {
             label: "texture without label",
             srgb: true,
             mipmaps: None,
+            mipmaps_no_gen: false,
         }
     }
 
@@ -332,6 +363,7 @@ impl TextureBuilder {
             label: "empty texture without label",
             srgb: true,
             mipmaps: None,
+            mipmaps_no_gen: false,
         }
     }
 
@@ -385,7 +417,7 @@ impl TextureBuilder {
 
         let format = format.unwrap();
 
-        let mip_level_count = if self.mipmaps.is_some() {
+        let mip_level_count = if self.mipmaps.is_some() || self.mipmaps_no_gen {
             let m = self.dimensions.0.min(self.dimensions.1);
             (m.next_power_of_two().trailing_zeros()).max(1)
         } else {
@@ -458,7 +490,7 @@ fn generate_mipmaps(
     mip_count: u32,
     module: CompiledModule,
 ) {
-    let bglayout = Texture::bindgroup_layout(device);
+    let bglayout = Texture::bindgroup_layout(device, [TL::Float]);
 
     let layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
         label: None,
