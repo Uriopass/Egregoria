@@ -65,6 +65,7 @@ A GitHub Action tests the builds on Ubuntu.
 An Egregor is an autonomous psychic entity made up of, and influencing, the thoughts of a group of people.  
 It represents emergence at its purest form, where individuals come together to become a collective force.
 
-## Special thanks to
+## Credits
 
 - [`@dabreegster`](https://github.com/dabreegster): For inspiration on the map model
+- PBR Shaders are adapted from [LearnOpenGL](https://learnopengl.com/PBR/Theory)

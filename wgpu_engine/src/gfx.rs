@@ -489,10 +489,11 @@ impl GfxContext {
         environment_map: &Texture,
     ) -> Texture {
         let bg_layout = Texture::bindgroup_layout(device, [TL::Cube]);
+        let roughness_layout = Uniform::<f32>::bindgroup_layout(device);
 
         let cubemappipelayout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[&bg_layout],
+            bind_group_layouts: &[&bg_layout, &roughness_layout],
             push_constant_ranges: &[],
         });
 
@@ -522,12 +523,13 @@ impl GfxContext {
             multiview: None,
         });
 
-        let specular_irradiance_tex = TextureBuilder::empty(32, 32, 6, TextureFormat::Rgba16Float)
-            .with_label("specular irradiance cubemap")
-            .with_srgb(false)
-            .with_sampler(Texture::linear_sampler())
-            .with_mipmaps_no_gen()
-            .build(device, queue);
+        let specular_irradiance_tex =
+            TextureBuilder::empty(128, 128, 6, TextureFormat::Rgba16Float)
+                .with_label("specular irradiance cubemap")
+                .with_srgb(false)
+                .with_sampler(Texture::linear_sampler())
+                .with_mipmaps_no_gen()
+                .build(device, queue);
 
         let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
             label: Some("specular irradiance encoder"),
@@ -536,6 +538,8 @@ impl GfxContext {
         let bg = environment_map.bindgroup(device, &bg_layout);
         for face in 0..6 {
             for mip in 0..specular_irradiance_tex.n_mips() {
+                let roughness = mip as f32 / (specular_irradiance_tex.n_mips() - 1) as f32;
+                let roughness = Uniform::new(roughness, device);
                 let view = specular_irradiance_tex
                     .texture
                     .create_view(&TextureViewDescriptor {
@@ -559,6 +563,7 @@ impl GfxContext {
                 });
                 pass.set_pipeline(&cubemapline);
                 pass.set_bind_group(0, &bg, &[]);
+                pass.set_bind_group(1, &roughness.bindgroup, &[]);
                 pass.draw(face * 6..face * 6 + 6, 0..1);
             }
         }

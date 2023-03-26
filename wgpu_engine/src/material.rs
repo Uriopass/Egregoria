@@ -155,7 +155,7 @@ impl Material {
             entries: &[
                 BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
                         view_dimension: wgpu::TextureViewDimension::D2,
@@ -165,7 +165,7 @@ impl Material {
                 },
                 BindGroupLayoutEntry {
                     binding: 1,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                     count: None,
                 },
@@ -191,7 +191,7 @@ impl Material {
                 },
                 BindGroupLayoutEntry {
                     binding: 4,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
                         view_dimension: wgpu::TextureViewDimension::D2,
@@ -201,7 +201,7 @@ impl Material {
                 },
                 BindGroupLayoutEntry {
                     binding: 5,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                     count: None,
                 },
