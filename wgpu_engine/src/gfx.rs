@@ -1,5 +1,4 @@
 use crate::terrain::TerrainPrepared;
-use crate::wgpu::SamplerBindingType;
 use crate::{
     bg_layout_litmesh, compile_shader, CompiledModule, Drawable, IndexType, InstancedMesh,
     Material, MaterialID, MaterialMap, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform,
@@ -16,14 +15,13 @@ use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, Backends, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-    BlendComponent, BlendState, CommandBuffer, CommandEncoder, CommandEncoderDescriptor,
-    CompositeAlphaMode, DepthBiasState, Device, ErrorFilter, Face, FragmentState, FrontFace,
-    IndexFormat, InstanceDescriptor, MultisampleState, PipelineLayoutDescriptor, PrimitiveState,
-    Queue, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, Surface, SurfaceConfiguration, SurfaceTexture, TextureFormat,
-    TextureSampleType, TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension,
-    VertexBufferLayout, VertexState,
+    Adapter, Backends, BindGroupLayout, BlendComponent, BlendState, CommandBuffer, CommandEncoder,
+    CommandEncoderDescriptor, CompositeAlphaMode, DepthBiasState, Device, ErrorFilter, Face,
+    FragmentState, FrontFace, IndexFormat, InstanceDescriptor, MultisampleState,
+    PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, Surface, SurfaceConfiguration,
+    SurfaceTexture, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
+    TextureViewDimension, VertexBufferLayout, VertexState,
 };
 
 pub struct FBOs {
@@ -706,7 +704,7 @@ impl GfxContext {
             });
 
         {
-            let mut depth_prepass = prepass.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut depth_prepass = prepass.begin_render_pass(&RenderPassDescriptor {
                 label: None,
                 color_attachments: &[],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
@@ -732,7 +730,7 @@ impl GfxContext {
                 .create_command_encoder(&CommandEncoderDescriptor {
                     label: Some("shadow map encoder"),
                 });
-            let mut sun_shadow_pass = smap_enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut sun_shadow_pass = smap_enc.begin_render_pass(&RenderPassDescriptor {
                 label: None,
                 color_attachments: &[],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
@@ -765,9 +763,9 @@ impl GfxContext {
                 .depth
                 .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
 
-            let mut ssao_pass = encs.end.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut ssao_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
                 label: None,
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(RenderPassColorAttachment {
                     view: &self.fbos.ssao.view,
                     resolve_target: None,
                     ops: wgpu::Operations {
@@ -793,9 +791,9 @@ impl GfxContext {
 
         {
             profiling::scope!("main render pass");
-            let mut render_pass = encs.end.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
                 label: None,
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(RenderPassColorAttachment {
                     view: &self.fbos.color_msaa,
                     resolve_target: Some(frame),
                     ops: wgpu::Operations {
@@ -822,9 +820,9 @@ impl GfxContext {
 
         {
             profiling::scope!("bg pass");
-            let mut bg_pass = encs.end.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut bg_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
                 label: None,
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                color_attachments: &[Some(RenderPassColorAttachment {
                     view: &self.fbos.color_msaa,
                     resolve_target: Some(frame),
                     ops: wgpu::Operations {
@@ -950,7 +948,7 @@ impl GfxContext {
     ) -> RenderPipeline {
         let render_pipeline_layout =
             self.device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                .create_pipeline_layout(&PipelineLayoutDescriptor {
                     label: Some(label),
                     bind_group_layouts: layouts,
                     push_constant_ranges: &[],
@@ -969,15 +967,15 @@ impl GfxContext {
             write_mask: wgpu::ColorWrites::ALL,
         })];
 
-        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
+        let render_pipeline_desc = RenderPipelineDescriptor {
             label: Some(label),
             layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
+            vertex: VertexState {
                 module: vert_shader,
                 entry_point: "vert",
                 buffers: vertex_buffers,
             },
-            fragment: Some(wgpu::FragmentState {
+            fragment: Some(FragmentState {
                 module: frag_shader,
                 entry_point: "frag",
                 targets: &color_states,
@@ -1036,21 +1034,21 @@ impl GfxContext {
     ) -> RenderPipeline {
         let render_pipeline_layout =
             self.device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                .create_pipeline_layout(&PipelineLayoutDescriptor {
                     label: Some("depth pipeline"),
                     bind_group_layouts: layouts,
                     push_constant_ranges: &[],
                 });
 
-        let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
+        let render_pipeline_desc = RenderPipelineDescriptor {
             label: Some("depth pipeline"),
             layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
+            vertex: VertexState {
                 module: vert_shader,
                 entry_point: "vert",
                 buffers: vertex_buffers,
             },
-            fragment: frag_shader.map(|frag_shader| wgpu::FragmentState {
+            fragment: frag_shader.map(|frag_shader| FragmentState {
                 module: frag_shader,
                 entry_point: "frag",
                 targets: &[],
@@ -1264,41 +1262,23 @@ struct SSAOPipeline;
 
 impl SSAOPipeline {
     pub fn setup(gfx: &mut GfxContext) {
-        let render_pipeline_layout =
-            gfx.device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("ssao pipeline"),
-                    bind_group_layouts: &[
-                        &gfx.device
-                            .create_bind_group_layout(&BindGroupLayoutDescriptor {
-                                label: Some("ssao depth bg layout"),
-                                entries: &[
-                                    wgpu::BindGroupLayoutEntry {
-                                        binding: 0,
-                                        visibility: wgpu::ShaderStages::FRAGMENT,
-                                        ty: wgpu::BindingType::Texture {
-                                            multisampled: cfg!(not(target_arch = "wasm32")),
-                                            view_dimension: wgpu::TextureViewDimension::D2,
-                                            sample_type: TextureSampleType::Float {
-                                                filterable: false,
-                                            },
-                                        },
-                                        count: None,
-                                    },
-                                    wgpu::BindGroupLayoutEntry {
-                                        binding: 1,
-                                        visibility: wgpu::ShaderStages::FRAGMENT,
-                                        ty: wgpu::BindingType::Sampler(
-                                            SamplerBindingType::Filtering,
-                                        ),
-                                        count: None,
-                                    },
-                                ],
-                            }),
-                        &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                    ],
-                    push_constant_ranges: &[],
-                });
+        let render_pipeline_layout = gfx
+            .device
+            .create_pipeline_layout(&PipelineLayoutDescriptor {
+                label: Some("ssao pipeline"),
+                bind_group_layouts: &[
+                    &Texture::bindgroup_layout(
+                        &gfx.device,
+                        [if gfx.samples > 1 {
+                            TL::NonfilterableFloatMultisampled
+                        } else {
+                            TL::NonfilterableFloat
+                        }],
+                    ),
+                    &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                ],
+                push_constant_ranges: &[],
+            });
 
         let color_states = [Some(wgpu::ColorTargetState {
             format: gfx.fbos.ssao.format,
@@ -1315,15 +1295,15 @@ impl SSAOPipeline {
             Box::new(move |m, gfx| {
                 let ssao = &m[0];
 
-                let render_pipeline_desc = wgpu::RenderPipelineDescriptor {
+                let render_pipeline_desc = RenderPipelineDescriptor {
                     label: None,
                     layout: Some(&render_pipeline_layout),
-                    vertex: wgpu::VertexState {
+                    vertex: VertexState {
                         module: ssao,
                         entry_point: "vert",
                         buffers: &[UvVertex::desc()],
                     },
-                    fragment: Some(wgpu::FragmentState {
+                    fragment: Some(FragmentState {
                         module: ssao,
                         entry_point: "frag",
                         targets: &color_states,
@@ -1350,63 +1330,8 @@ impl BackgroundPipeline {
             &["background"],
             Box::new(move |m, gfx| {
                 let bg = &m[0];
-
-                let entries: Vec<BindGroupLayoutEntry> = vec![
-                    BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    BindGroupLayoutEntry {
-                        binding: 3,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    BindGroupLayoutEntry {
-                        binding: 4,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::Cube,
-                            sample_type: TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    BindGroupLayoutEntry {
-                        binding: 5,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ];
                 let bglayout_texs =
-                    gfx.device
-                        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                            entries: &entries,
-                            label: Some("Texture bindgroup layout"),
-                        });
+                    Texture::bindgroup_layout(&gfx.device, [TL::Float, TL::Float, TL::Cube]);
 
                 gfx.color_pipeline(
                     "background",
