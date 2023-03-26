@@ -339,8 +339,8 @@ impl GfxContext {
             push_constant_ranges: &[],
         });
 
-        let cubemap_vert = compile_shader(&device, "to_cubemap.vert.wgsl");
-        let cubemap_frag = compile_shader(&device, "equirectangular_to_cubemap.frag.wgsl");
+        let cubemap_vert = compile_shader(device, "to_cubemap.vert.wgsl");
+        let cubemap_frag = compile_shader(device, "equirectangular_to_cubemap.frag.wgsl");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
@@ -369,13 +369,13 @@ impl GfxContext {
             .with_label("irradiance cubemap")
             .with_srgb(false)
             .with_sampler(Texture::linear_sampler())
-            .build(&device, &queue);
+            .build(device, queue);
 
         let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
             label: Some("cubemap encoder"),
         });
         for face in 0..6 {
-            let bg = equirectangular_tex.bindgroup(&device, &cubemapline.get_bind_group_layout(0));
+            let bg = equirectangular_tex.bindgroup(device, &cubemapline.get_bind_group_layout(0));
             let view = target_tex.texture.create_view(&TextureViewDescriptor {
                 label: None,
                 format: None,
@@ -387,7 +387,7 @@ impl GfxContext {
                 array_layer_count: None,
             });
             let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
-                label: Some(format!("environment cubemap face {}", face).as_str()),
+                label: Some(format!("environment cubemap face {face}").as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
@@ -416,8 +416,8 @@ impl GfxContext {
             push_constant_ranges: &[],
         });
 
-        let cubemap_vert = compile_shader(&device, "to_cubemap.vert.wgsl");
-        let cubemap_frag = compile_shader(&device, "convolute_diffuse_irradiance.frag.wgsl");
+        let cubemap_vert = compile_shader(device, "to_cubemap.vert.wgsl");
+        let cubemap_frag = compile_shader(device, "convolute_diffuse_irradiance.frag.wgsl");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
@@ -446,13 +446,13 @@ impl GfxContext {
             .with_label("irradiance cubemap")
             .with_srgb(false)
             .with_sampler(Texture::linear_sampler())
-            .build(&device, &queue);
+            .build(device, queue);
 
         let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
             label: Some("cubemap encoder"),
         });
 
-        let bg = environment_map.bindgroup(&device, &bg_layout);
+        let bg = environment_map.bindgroup(device, &bg_layout);
         for face in 0..6 {
             let view = diffuse_irradiance_tex
                 .texture
@@ -467,7 +467,7 @@ impl GfxContext {
                     array_layer_count: None,
                 });
             let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
-                label: Some(format!("diffuse irradiance face {}", face).as_str()),
+                label: Some(format!("diffuse irradiance face {face}").as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
@@ -498,8 +498,8 @@ impl GfxContext {
             push_constant_ranges: &[],
         });
 
-        let cubemap_vert = compile_shader(&device, "to_cubemap.vert.wgsl");
-        let cubemap_frag = compile_shader(&device, "specular_irradiance.frag.wgsl");
+        let cubemap_vert = compile_shader(device, "to_cubemap.vert.wgsl");
+        let cubemap_frag = compile_shader(device, "specular_irradiance.frag.wgsl");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
@@ -529,13 +529,13 @@ impl GfxContext {
             .with_srgb(false)
             .with_sampler(Texture::linear_sampler())
             .with_mipmaps_no_gen()
-            .build(&device, &queue);
+            .build(device, queue);
 
         let mut enc = device.create_command_encoder(&CommandEncoderDescriptor {
             label: Some("specular irradiance encoder"),
         });
 
-        let bg = environment_map.bindgroup(&device, &bg_layout);
+        let bg = environment_map.bindgroup(device, &bg_layout);
         for face in 0..6 {
             for mip in 0..specular_irradiance_tex.n_mips() {
                 let view = specular_irradiance_tex
@@ -551,7 +551,7 @@ impl GfxContext {
                         array_layer_count: None,
                     });
                 let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
-                    label: Some(format!("specular irradiance face {} mip {}", face, mip).as_str()),
+                    label: Some(format!("specular irradiance face {face} mip {mip}").as_str()),
                     color_attachments: &[Some(RenderPassColorAttachment {
                         view: &view,
                         resolve_target: None,
@@ -897,7 +897,7 @@ impl GfxContext {
         let depth_bg = depth.bindgroup(
             device,
             &Texture::bindgroup_layout(
-                &device,
+                device,
                 [if samples > 1 {
                     TL::NonfilterableFloatMultisampled
                 } else {
