@@ -1,13 +1,11 @@
-use crate::{
-    Drawable, GfxContext, Material, Mesh, MeshBuilder, MeshVertex, MetallicRoughness, Texture,
-    VBDesc, TL,
-};
+use crate::{Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, Texture, VBDesc, TL};
 use std::sync::Arc;
 use wgpu::{BindGroup, RenderPass};
 
 #[derive(Clone)]
 pub struct Water {
     mesh: Mesh,
+    n_indices: u32,
     wavy_bg: Arc<BindGroup>,
 }
 
@@ -16,15 +14,7 @@ struct WaterPipeline;
 
 impl Water {
     pub fn new(gfx: &mut GfxContext, w: f32, h: f32) -> Self {
-        let mat = gfx.register_material(Material::new(
-            gfx,
-            gfx.palette(),
-            MetallicRoughness::Static {
-                metallic: 0.0,
-                roughness: 1.0,
-            },
-        ));
-        let mut mb = MeshBuilder::new(mat);
+        let mut mb = MeshBuilder::new_without_mat();
 
         mb.vertices.extend_from_slice(&[
             MeshVertex {
@@ -56,7 +46,11 @@ impl Water {
             &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
         ));
 
-        Self { mesh, wavy_bg }
+        Self {
+            mesh,
+            n_indices: 6,
+            wavy_bg,
+        }
     }
 
     pub(crate) fn setup(gfx: &mut GfxContext) {
@@ -107,6 +101,6 @@ impl Drawable for Water {
 
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        rp.draw_indexed(0..self.mesh.n_indices, 0, 0..1);
+        rp.draw_indexed(0..self.n_indices, 0, 0..1);
     }
 }

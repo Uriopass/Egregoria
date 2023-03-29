@@ -17,7 +17,7 @@ struct State {
 impl State {
     fn new(gfx: &mut GfxContext) -> Self {
         let mesh = load_mesh(gfx, "sphere.glb").unwrap();
-        let alb = gfx.material(mesh.material).albedo.clone();
+        let alb = gfx.material(mesh.materials[0].0).albedo.clone();
 
         let mut meshes = vec![];
 
@@ -35,7 +35,7 @@ impl State {
             for z in 0..=10 {
                 let mut c = mesh.clone();
 
-                c.material = gfx.register_material(Material::new_raw(
+                c.materials[0].0 = gfx.register_material(Material::new_raw(
                     &gfx.device,
                     alb.clone(),
                     MetallicRoughness::Static {

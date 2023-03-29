@@ -83,7 +83,7 @@ impl<T> Uniform<T> {
                 },
                 count: None,
             }],
-            label: Some(format!("{} {}", "bglayout for", std::any::type_name::<T>()).as_ref()),
+            label: Some(format!("bglayout for {}", std::any::type_name::<T>()).as_ref()),
         })
     }
 }

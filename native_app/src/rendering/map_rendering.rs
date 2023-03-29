@@ -75,7 +75,7 @@ impl MapRenderer {
         let dir = n.orientation_from(n.dst);
         let dir_perp = dir.perpendicular();
 
-        let r_center = n.points.last() + (dir_perp * -3.5 + dir * -1.0).z(0.02);
+        let r_center = n.points.last() + (dir_perp * -4.5 + dir * -1.5).z(0.02);
 
         if n.control.is_stop_sign() {
             draw.mesh("stop_sign.glb".to_string(), r_center, dir_perp.z(0.0));

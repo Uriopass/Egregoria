@@ -21,6 +21,8 @@ pub struct Material {
     pub metallic_v: wgpu::Buffer,
     pub roughness_v: wgpu::Buffer,
     pub metallic_roughness_tex: Option<Arc<Texture>>,
+    pub double_sided: bool,
+    pub transparent: bool,
 }
 
 pub enum MetallicRoughness {
@@ -145,7 +147,9 @@ impl Material {
             metallic_v: metallic_buf,
             roughness_v: roughness_buf,
             metallic_roughness_tex: metallic_roughness.into_texture(),
+            double_sided: false,
             albedo,
+            transparent: false,
         }
     }
 

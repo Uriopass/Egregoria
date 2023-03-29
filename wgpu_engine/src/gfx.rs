@@ -5,7 +5,7 @@ use crate::{
     UvVertex, VBDesc, Water, TL,
 };
 use common::FastMap;
-use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
+use geom::{vec2, vec3, LinearColor, Matrix4, Vec2, Vec3, Vec4};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
@@ -248,14 +248,7 @@ impl GfxContext {
             Arc::new(blue_noise),
         );
 
-        let irradiance_texture =
-            TextureBuilder::from_path("assets/sprites/forgotten_miniland_2k.hdr")
-                .with_label("irradiance")
-                .with_srgb(false)
-                .with_sampler(Texture::linear_sampler())
-                .build(&device, &queue);
-
-        let environment_cube = Self::make_environment_cubemap(&device, &queue, irradiance_texture);
+        let environment_cube = Self::make_environment_cubemap(&device, &queue);
         let diffuse_irradiance_cube =
             Self::make_diffuse_irradiance(&device, &queue, &environment_cube);
         let specular_prefilter_cube =
@@ -329,19 +322,17 @@ impl GfxContext {
         me
     }
 
-    fn make_environment_cubemap(
-        device: &Device,
-        queue: &Queue,
-        equirectangular_tex: Texture,
-    ) -> Texture {
+    fn make_environment_cubemap(device: &Device, queue: &Queue) -> Texture {
         let cubemappipelayout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[&Texture::bindgroup_layout(device, [TL::NonfilterableFloat])],
+            bind_group_layouts: &[&Uniform::<()>::bindgroup_layout(device)],
             push_constant_ranges: &[],
         });
 
+        let sun_pos: Uniform<Vec4> = Uniform::new(vec3(1.0, -1.0, 1.0).normalize().w(0.0), device);
+
         let cubemap_vert = compile_shader(device, "to_cubemap.vert.wgsl");
-        let cubemap_frag = compile_shader(device, "equirectangular_to_cubemap.frag.wgsl");
+        let cubemap_frag = compile_shader(device, "atmosphere_cubemap.frag.wgsl");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
@@ -376,7 +367,6 @@ impl GfxContext {
             label: Some("cubemap encoder"),
         });
         for face in 0..6 {
-            let bg = equirectangular_tex.bindgroup(device, &cubemapline.get_bind_group_layout(0));
             let view = target_tex.texture.create_view(&TextureViewDescriptor {
                 label: None,
                 format: None,
@@ -397,7 +387,7 @@ impl GfxContext {
                 depth_stencil_attachment: None,
             });
             pass.set_pipeline(&cubemapline);
-            pass.set_bind_group(0, &bg, &[]);
+            pass.set_bind_group(0, &sun_pos.bindgroup, &[]);
             pass.draw(face * 6..face * 6 + 6, 0..1);
         }
         queue.submit(Some(enc.finish()));

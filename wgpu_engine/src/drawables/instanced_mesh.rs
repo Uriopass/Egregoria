@@ -163,21 +163,25 @@ impl InstancedMesh {
 
 impl Drawable for InstancedMesh {
     fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
-        let pipeline = &gfx.get_pipeline(InstancedMeshPipeline {
-            alpha: false,
-            smap: false,
-            depth: false,
-            double_sided: self.mesh.double_sided,
-        });
-        rp.set_pipeline(pipeline);
         rp.set_bind_group(0, &gfx.projection.bindgroup, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);
-        rp.set_bind_group(2, &gfx.material(self.mesh.material).bg, &[]);
         rp.set_bind_group(3, &gfx.simplelit_bg, &[]);
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);
-        rp.draw_indexed(0..self.mesh.n_indices, 0, 0..self.n_instances);
+
+        for (mat, offset, length) in self.mesh.iter_materials() {
+            let mat = gfx.material(mat);
+            let pipeline = &gfx.get_pipeline(InstancedMeshPipeline {
+                alpha: false,
+                smap: false,
+                depth: false,
+                double_sided: mat.double_sided,
+            });
+            rp.set_pipeline(pipeline);
+            rp.set_bind_group(2, &mat.bg, &[]);
+            rp.draw_indexed(offset..offset + length, 0, 0..self.n_instances);
+        }
     }
 
     fn draw_depth<'a>(
@@ -187,20 +191,24 @@ impl Drawable for InstancedMesh {
         shadow_map: bool,
         proj: &'a wgpu::BindGroup,
     ) {
-        rp.set_pipeline(gfx.get_pipeline(InstancedMeshPipeline {
-            alpha: self.mesh.transparent,
-            smap: shadow_map,
-            depth: true,
-            double_sided: self.mesh.double_sided,
-        }));
-
         rp.set_bind_group(0, proj, &[]);
-        if self.mesh.transparent {
-            rp.set_bind_group(1, &gfx.material(self.mesh.material).bg, &[]);
-        }
         rp.set_vertex_buffer(0, self.mesh.vertex_buffer.slice(..));
         rp.set_vertex_buffer(1, self.instance_buffer.slice(..));
         rp.set_index_buffer(self.mesh.index_buffer.slice(..), IndexFormat::Uint32);
-        rp.draw_indexed(0..self.mesh.n_indices, 0, 0..self.n_instances);
+
+        for (mat, offset, length) in self.mesh.iter_materials() {
+            let mat = gfx.material(mat);
+            rp.set_pipeline(gfx.get_pipeline(InstancedMeshPipeline {
+                alpha: mat.transparent,
+                smap: shadow_map,
+                depth: true,
+                double_sided: mat.double_sided,
+            }));
+
+            if mat.transparent {
+                rp.set_bind_group(1, &mat.bg, &[]);
+            }
+            rp.draw_indexed(offset..offset + length, 0, 0..self.n_instances);
+        }
     }
 }

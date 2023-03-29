@@ -307,6 +307,17 @@ impl From<LinearColor> for Color {
     }
 }
 
+impl From<[f32; 4]> for LinearColor {
+    fn from(value: [f32; 4]) -> Self {
+        Self {
+            r: value[0],
+            g: value[1],
+            b: value[2],
+            a: value[3],
+        }
+    }
+}
+
 impl Mul<LinearColor> for f32 {
     type Output = LinearColor;
 

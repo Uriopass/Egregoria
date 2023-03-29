@@ -236,7 +236,7 @@ impl AudioContext {
     }
 
     pub(crate) fn is_all_ready(&self) -> bool {
-        self.cache.read().unwrap().len() >= self.preloading.len()
+        self.cache.read().unwrap().len() >= self.preloading.len() && !cfg!(debug_assertions)
     }
 
     pub(crate) fn play_with_control<S: 'static>(

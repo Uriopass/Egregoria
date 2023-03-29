@@ -3219,6 +3219,7 @@ dependencies = [
  "raw-window-handle",
  "rayon",
  "slotmap",
+ "smallvec",
  "wgpu",
 ]
 

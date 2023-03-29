@@ -1,4 +1,4 @@
-use geom::{Matrix4, Vec3};
+use geom::{Matrix4, Vec3, Vec4};
 
 /// Trait is needed to use bytemuck's conversion on external types
 pub trait ToU8Slice: Sized {
@@ -40,6 +40,7 @@ macro_rules! u8slice_impl_external {
 
 u8slice_impl_external!(Matrix4);
 u8slice_impl_external!(Vec3);
+u8slice_impl_external!(Vec4);
 
 impl ToU8Slice for f32 {
     fn cast_slice(self_slice: &[f32]) -> &[u8] {
