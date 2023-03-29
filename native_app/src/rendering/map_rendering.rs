@@ -3,7 +3,8 @@ use crate::rendering::map_mesh::MapMeshHandler;
 use crate::Context;
 use common::FastMap;
 use egregoria::map::{
-    ChunkID, Lane, Map, ProjectFilter, ProjectKind, TrafficBehavior, CHUNK_RESOLUTION, CHUNK_SIZE,
+    ChunkID, Lane, LaneID, LaneKind, Map, ProjectFilter, ProjectKind, TrafficBehavior,
+    CHUNK_RESOLUTION, CHUNK_SIZE,
 };
 use egregoria::Egregoria;
 use geom::{vec3, Camera, Circle, InfiniteFrustrum, Intersect3, LinearColor, AABB3};
@@ -91,6 +92,26 @@ impl MapRenderer {
         draw.mesh(mesh.to_string(), r_center, dir_perp.z(0.0));
     }
 
+    fn render_lanes(
+        map: &Map,
+        lanes: impl Iterator<Item = (LaneID, LaneKind)>,
+        draw: &mut ImmediateDraw,
+        time: u32,
+    ) {
+        let mut peek = lanes.peekable();
+
+        while let Some((lane_id, kind)) = peek.next() {
+            let peek = peek.peek();
+            if let Some((_, peek_kind)) = peek {
+                if peek_kind == &kind {
+                    continue;
+                }
+            }
+            let Some(lane) = map.lanes().get(lane_id) else { continue };
+            Self::render_lane_signals(lane, draw, time);
+        }
+    }
+
     fn signals_render(
         map: &Map,
         time: u32,
@@ -100,18 +121,28 @@ impl MapRenderer {
     ) {
         let pos = cam.pos;
 
-        for n in map
+        for kind in map
             .spatial_map()
             .query(Circle::new(pos.xy(), 200.0), ProjectFilter::ROAD)
-            .filter_map(|k| match k {
-                ProjectKind::Road(id) => map.roads().get(id),
-                _ => None,
-            })
-            .filter(|x| frustrum.intersects(&x.points.bbox().expand(x.width)))
-            .flat_map(|r| r.lanes_iter())
-            .map(|(id, _)| &map.lanes()[id])
         {
-            Self::render_lane_signals(n, draw, time);
+            let ProjectKind::Road(id) = kind else { continue };
+            let Some(r) = map.roads().get(id) else { continue };
+            if !frustrum.intersects(&r.points.bbox().expand(r.width)) {
+                continue;
+            }
+
+            Self::render_lanes(
+                map,
+                r.outgoing_lanes_from(r.dst).iter().copied(),
+                draw,
+                time,
+            );
+            Self::render_lanes(
+                map,
+                r.outgoing_lanes_from(r.src).iter().copied(),
+                draw,
+                time,
+            );
         }
     }
 
