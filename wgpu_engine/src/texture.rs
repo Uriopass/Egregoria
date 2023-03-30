@@ -4,7 +4,7 @@ use crate::CompiledModule;
 use image::{DynamicImage, GenericImageView, Rgba32FImage};
 use std::fs::File;
 use std::io::Read;
-use std::num::NonZeroU32;
+use std::num::{NonZeroU32, NonZeroU8};
 use std::path::Path;
 use wgpu::{
     BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
@@ -482,7 +482,16 @@ impl TextureBuilder {
             }),
             ..Default::default()
         });
-        let sampler = device.create_sampler(&self.sampler);
+
+        let mut sampl = self.sampler.clone();
+        if mip_level_count > 1
+            && (sampl.min_filter == wgpu::FilterMode::Linear
+                || sampl.mag_filter == wgpu::FilterMode::Linear)
+        {
+            sampl.anisotropy_clamp = Some(NonZeroU8::new(16).unwrap());
+        }
+
+        let sampler = device.create_sampler(&sampl);
 
         Texture {
             texture,
