@@ -24,6 +24,8 @@ pub struct TerrainRender<const CSIZE: usize, const CRESOLUTION: usize> {
     pub dirt_id: u32,
     dirt_ids: FastMap<(u32, u32), u32>,
     terrain_tex: Arc<Texture>,
+    #[allow(unused)]
+    grass_tex: Arc<Texture>, // kept alive
     borders: Arc<Vec<Mesh>>,
     vertices: [PBuffer; LOD],
     indices: [(PBuffer, u32); LOD],
@@ -43,7 +45,13 @@ pub struct TerrainPrepared {
 }
 
 impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUTION> {
-    pub fn new(gfx: &mut GfxContext, w: u32, h: u32, col: LinearColor) -> Self {
+    pub fn new(
+        gfx: &mut GfxContext,
+        w: u32,
+        h: u32,
+        col: LinearColor,
+        grass: Arc<Texture>,
+    ) -> Self {
         let (indices, vertices) = Self::generate_indices_mesh(gfx);
         let mut tex = Texture::create_fbo(
             &gfx.device,
@@ -64,12 +72,14 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
 
         defer!(log::info!("finished init of terrain render"));
         Self {
-            bg: Arc::new(tex.bindgroup(
+            bg: Arc::new(Texture::multi_bindgroup(
+                &[&tex, &grass],
                 &gfx.device,
-                &Texture::bindgroup_layout(&gfx.device, [TL::NonfilterableFloat]),
+                &Texture::bindgroup_layout(&gfx.device, [TL::NonfilterableFloat, TL::Float]),
             )),
             dirt_ids: Default::default(),
             terrain_tex: Arc::new(tex),
+            grass_tex: grass,
             borders: Arc::new(vec![]),
             indices,
             vertices,
@@ -361,7 +371,7 @@ impl TerrainPrepared {
     pub(crate) fn setup(gfx: &mut GfxContext) {
         let terrainlayout = Rc::new(Texture::bindgroup_layout(
             &gfx.device,
-            [TL::NonfilterableFloat],
+            [TL::NonfilterableFloat, TL::Float],
         ));
 
         let lay1 = terrainlayout.clone();

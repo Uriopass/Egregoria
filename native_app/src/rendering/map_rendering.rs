@@ -52,6 +52,8 @@ impl MapRenderer {
         let w = goria.map().terrain.width;
         let h = goria.map().terrain.height;
 
+        let grass = gfx.texture("assets/sprites/grass.jpg", "grass");
+
         defer!(log::info!("finished init of road render"));
         MapRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
@@ -63,7 +65,7 @@ impl MapRenderer {
                 .map(|id| (*id, (InstancedMeshBuilder::new(mesh.clone()), None)))
                 .collect(),
             terrain_dirt_id: 0,
-            terrain: TerrainRender::new(gfx, w, h, egregoria::config().border_col.into()),
+            terrain: TerrainRender::new(gfx, w, h, egregoria::config().border_col.into(), grass),
             water: Water::new(gfx, (w * CHUNK_SIZE) as f32, (h * CHUNK_SIZE) as f32),
         }
     }
