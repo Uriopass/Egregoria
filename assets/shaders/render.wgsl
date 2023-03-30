@@ -81,7 +81,11 @@ fn render(sun: vec3<f32>,
     let ambient: vec3<f32> = (0.2 * dkD * irradiance_diffuse * albedo + specular) * ssao;
     var color: vec3<f32>   = ambient + Lo;
 
-    color = color / (color + vec3(1.0));
+    //color = aces(color);
+    color = 1.830796 * color / (color * 1.24068 + vec3(1.682186)); // approx of 1 - exp(-color) using scikit
+    //color = color / (1.0 + color);
+    //color = 1.0 - exp(-color);
+
     color += dither(position);
 
     return color;
