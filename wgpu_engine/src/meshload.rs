@@ -259,7 +259,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
     let exts = doc
         .extensions_used()
         .fold(String::new(), |a, b| a + ", " + b);
-    if exts.len() > 0 {
+    if !exts.is_empty() {
         log::warn!("extension not supported: {}", exts)
     }
     let nodes = doc.nodes();
