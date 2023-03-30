@@ -256,6 +256,12 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
 
     let (doc, data, mut images) = gltf::import(&path).map_err(LoadMeshError::GltfLoadError)?;
 
+    let exts = doc
+        .extensions_used()
+        .fold(String::new(), |a, b| a + ", " + b);
+    if exts.len() > 0 {
+        log::warn!("extension not supported: {}", exts)
+    }
     let nodes = doc.nodes();
 
     let mats = load_materials(gfx, &doc, &mut images)?;
