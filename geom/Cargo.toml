@@ -11,4 +11,4 @@ ordered-float = { version = "3.4.0", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 fnv           = "1.0.3"
 inline_tweak = "1.0.8"
-flat_spatial = "0.5.0"
+flat_spatial = { workspace = true }

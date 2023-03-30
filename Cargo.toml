@@ -15,6 +15,11 @@ members = [
 resolver = "2"
 default-members = ["native_app"]
 
+[workspace.dependencies]
+hecs = "0.10.0"
+egui = "0.21.0"
+flat_spatial = "0.5.0"
+
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]
 opt-level = 1

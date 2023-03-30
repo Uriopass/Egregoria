@@ -11,13 +11,13 @@ ordered-float = { version = "3.4.0", default-features = false }
 serde         = { version = "1.0", features = ["derive"] }
 log           = "0.4.11"
 egui-inspect = { path = "../egui-inspect"}
-flat_spatial = { version = "0.5.0", features=["serde"] }
+flat_spatial = { workspace = true, features=["serde"] }
 geom          = { path = "../geom" }
 common        = { path = "../common" }
 slotmap       = { version = "1.0.2", default-features = false, features = ["serde", "unstable"] }
 rayon         = "1.5.1"
 atomic_refcell = "0.1.6"
-hecs         = { version = "0.9.0", features=["column-serialize"] }
+hecs         = { workspace = true, features=["column-serialize"] }
 resources     = "1.1.0"
 profiling     = "1.0.5"
 inline_tweak = { version = "1.0.8", features = ["release_tweak"] }
