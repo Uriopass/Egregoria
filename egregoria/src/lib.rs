@@ -78,7 +78,7 @@ pub struct Egregoria {
 const RNG_SEED: u64 = 123;
 const VERSION: &str = include_str!("../../VERSION");
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct EgregoriaOptions {
     pub terrain_size: u32,
     pub save_replay: bool,
@@ -417,7 +417,16 @@ impl<'de> Deserialize<'de> for Egregoria {
             )));
         }
 
-        let mut goria = Self::new(false);
+        let mut goria = Self {
+            world: World::new(),
+            resources: Resources::default(),
+        };
+
+        unsafe {
+            for s in &INIT_FUNCS {
+                (s.f)(&mut goria);
+            }
+        }
 
         goria.world = goriadeser.world.0;
 

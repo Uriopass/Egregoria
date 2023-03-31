@@ -19,14 +19,38 @@ use wgpu::{AddressMode, FilterMode};
 pub enum ImageLoadError {
     InvalidFormat(Format),
     InvalidData,
+    ImageNotFound,
+    /// Two materials refer to the same texture, not supported for now because of srgb handling
+    ImageAlreadyUsed,
 }
 
 pub fn load_image(
     gfx: &GfxContext,
-    data: Data,
-    sampl: gltf::texture::Sampler,
+    matname: Option<&str>,
+    tex: &gltf::Texture,
+    images: &mut [Data],
     srgb: bool,
 ) -> Result<Arc<Texture>, ImageLoadError> {
+    let idx = tex.source().index();
+    if idx > images.len() {
+        return Err(ImageLoadError::ImageNotFound);
+    }
+    let data = std::mem::replace(
+        &mut images[tex.source().index()],
+        Data {
+            pixels: vec![],
+            format: Format::R8,
+            width: 0xDEAD,
+            height: 0,
+        },
+    );
+
+    if data.pixels.is_empty() && data.width == 0xDEAD {
+        return Err(ImageLoadError::ImageAlreadyUsed);
+    }
+
+    let sampl = tex.sampler();
+
     let hash = common::hash_u64((
         &data.pixels,
         data.width,
@@ -118,7 +142,7 @@ pub fn load_image(
 
     let tex = Arc::new(
         TextureBuilder::from_img(img)
-            .with_label("some material albedo")
+            .with_label(tex.name().or(matname).unwrap_or("mesh texture"))
             .with_sampler(sampler)
             .with_mipmaps(gfx.mipmap_module())
             .with_srgb(srgb)
@@ -146,59 +170,18 @@ fn load_materials(
         };
 
         if let Some(metallic_roughness_tex) = pbr_mr.metallic_roughness_texture() {
-            let metallic_roughness_tex = metallic_roughness_tex.texture();
-            let idx = metallic_roughness_tex.source().index();
-            if idx > images.len() {
-                return Err(LoadMeshError::ImageNotFound);
-            }
-            let metallic_roughness_data = std::mem::replace(
-                &mut images[metallic_roughness_tex.source().index()],
-                Data {
-                    pixels: vec![],
-                    format: Format::R8,
-                    width: 0xDEAD,
-                    height: 0,
-                },
-            );
-
-            if metallic_roughness_data.pixels.is_empty() && metallic_roughness_data.width == 0xDEAD
-            {
-                return Err(LoadMeshError::ImageAlreadyUsed);
-            }
-
-            let tex = load_image(
+            metallic_roughness = MetallicRoughness::Texture(load_image(
                 gfx,
-                metallic_roughness_data,
-                metallic_roughness_tex.sampler(),
+                gltfmat.name(),
+                &metallic_roughness_tex.texture(),
+                &mut *images,
                 false,
-            )
-            .map_err(LoadMeshError::InvalidImage)?;
-            metallic_roughness = MetallicRoughness::Texture(tex);
+            )?);
         }
 
         let albedo;
         if let Some(albedo_tex) = pbr_mr.base_color_texture() {
-            let albedo_tex = albedo_tex.texture();
-            let idx = albedo_tex.source().index();
-            if idx > images.len() {
-                return Err(LoadMeshError::ImageNotFound);
-            }
-            let albedo_data = std::mem::replace(
-                &mut images[albedo_tex.source().index()],
-                Data {
-                    pixels: vec![],
-                    format: Format::R8,
-                    width: 0xDEAD,
-                    height: 0,
-                },
-            );
-
-            if albedo_data.pixels.is_empty() && albedo_data.width == 0xDEAD {
-                return Err(LoadMeshError::ImageAlreadyUsed);
-            }
-
-            albedo = load_image(gfx, albedo_data, albedo_tex.sampler(), true)
-                .map_err(LoadMeshError::InvalidImage)?;
+            albedo = load_image(gfx, gltfmat.name(), &albedo_tex.texture(), images, true)?;
         } else {
             let v: LinearColor = LinearColor::from(pbr_mr.base_color_factor());
             let srgb: Color = v.into();
@@ -214,7 +197,7 @@ fn load_materials(
                     ]),
                 )))
                 .with_srgb(true)
-                .with_label("some material albedo 1x1")
+                .with_label(&format!("{}: albedo 1x1", gltfmat.name().unwrap_or("mat")))
                 .with_sampler(Texture::nearest_sampler())
                 .build(&gfx.device, &gfx.queue),
             );
@@ -237,10 +220,13 @@ pub enum LoadMeshError {
     NoMaterial,
     NoIndices,
     NoVertices,
-    ImageNotFound,
-    /// Two materials refer to the same texture, not supported for now because of srgb handling
-    ImageAlreadyUsed,
     InvalidImage(ImageLoadError),
+}
+
+impl From<ImageLoadError> for LoadMeshError {
+    fn from(value: ImageLoadError) -> Self {
+        LoadMeshError::InvalidImage(value)
+    }
 }
 
 pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMeshError> {

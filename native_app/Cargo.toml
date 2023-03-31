@@ -3,10 +3,8 @@ name = "native_app"
 version = "0.4.3"
 authors = ["Douady Pâris <paris.douady@hotmail.fr>"]
 edition = "2021"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
 bytemuck      = "1.7.2"
 egregoria     = { path = "../egregoria" }
 geom          = { path = "../geom" }

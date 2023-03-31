@@ -261,20 +261,20 @@ impl Texture {
     }
 }
 
-pub struct TextureBuilder {
+pub struct TextureBuilder<'a> {
     img: Option<DynamicImage>,
     dimensions: (u32, u32, u32),
     format: Option<TextureFormat>,
     sampler: SamplerDescriptor<'static>,
-    label: &'static str,
+    label: &'a str,
     srgb: bool,
     mipmaps: Option<CompiledModule>,
     mipmaps_no_gen: bool,
     fixed_mipmaps: Option<u32>,
 }
 
-impl TextureBuilder {
-    pub fn with_label(mut self, label: &'static str) -> Self {
+impl<'a> TextureBuilder<'a> {
+    pub fn with_label(mut self, label: &'a str) -> Self {
         self.label = label;
         self
     }
@@ -376,8 +376,6 @@ impl TextureBuilder {
     }
 
     pub fn build(self, device: &Device, queue: &wgpu::Queue) -> Texture {
-        let label = self.label;
-
         let extent = Extent3d {
             width: self.dimensions.0,
             height: self.dimensions.1,
@@ -438,7 +436,7 @@ impl TextureBuilder {
             };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some(label),
+            label: Some(self.label),
             size: extent,
             mip_level_count,
             sample_count: 1,
@@ -469,7 +467,15 @@ impl TextureBuilder {
 
             if mip_level_count > 1 {
                 if let Some(module) = self.mipmaps {
-                    generate_mipmaps(device, queue, &texture, format, mip_level_count, module);
+                    generate_mipmaps(
+                        device,
+                        queue,
+                        &texture,
+                        format,
+                        mip_level_count,
+                        module,
+                        &self.label,
+                    );
                 }
             }
         }
@@ -511,6 +517,7 @@ fn generate_mipmaps(
     format: TextureFormat,
     mip_count: u32,
     module: CompiledModule,
+    label: &str,
 ) {
     let bglayout = Texture::bindgroup_layout(device, [TL::Float]);
 
@@ -576,6 +583,7 @@ fn generate_mipmaps(
         })
         .collect::<Vec<_>>();
 
+    let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
     for target_mip in 1..mip_count as usize {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
@@ -592,24 +600,21 @@ fn generate_mipmaps(
             label: None,
         });
 
-        let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor { label: None });
-        {
-            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &views[target_mip],
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
-                        store: true,
-                    },
-                })],
-                depth_stencil_attachment: None,
-            });
-            rpass.set_pipeline(&pipeline);
-            rpass.set_bind_group(0, &bind_group, &[]);
-            rpass.draw(0..4, 0..1);
-        }
-        queue.submit(Some(encoder.finish()));
+        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some(&format!("mip generation for {} - {}", label, target_mip)),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &views[target_mip],
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::WHITE),
+                    store: true,
+                },
+            })],
+            depth_stencil_attachment: None,
+        });
+        rpass.set_pipeline(&pipeline);
+        rpass.set_bind_group(0, &bind_group, &[]);
+        rpass.draw(0..4, 0..1);
     }
+    queue.submit(Some(encoder.finish()));
 }
