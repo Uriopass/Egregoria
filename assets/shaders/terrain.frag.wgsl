@@ -122,7 +122,7 @@ fn frag(@location(0) in_normal: vec3<f32>,
 
     let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, in_normal).rgb;
     let V: vec3<f32> = normalize(params.cam_pos.xyz - in_wpos);
-    let F0: vec3<f32> = vec3(0.04);
+    let F0: vec3<f32> = vec3(0.02);
     let roughness: f32 = 1.0;
     let normal: vec3<f32> = normalize(in_normal);
     let F_spec: vec3<f32> = F0; // simplified with constant folding: fresnelSchlickRoughness(max(dot(normal, V), 0.0), F0, roughness);
