@@ -770,7 +770,7 @@ impl GfxContext {
 
         {
             let mut depth_prepass = prepass.begin_render_pass(&RenderPassDescriptor {
-                label: None,
+                label: Some("depth prepass"),
                 color_attachments: &[],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.fbos.depth.view,
@@ -796,7 +796,7 @@ impl GfxContext {
                     label: Some("shadow map encoder"),
                 });
             let mut sun_shadow_pass = smap_enc.begin_render_pass(&RenderPassDescriptor {
-                label: None,
+                label: Some("sun shadow pass"),
                 color_attachments: &[],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.sun_shadowmap.view,
@@ -829,7 +829,7 @@ impl GfxContext {
                 .bindgroup(&self.device, &pipeline.get_bind_group_layout(0));
 
             let mut ssao_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
-                label: None,
+                label: Some("ssao pass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
                     view: &self.fbos.ssao.view,
                     resolve_target: None,
@@ -857,7 +857,7 @@ impl GfxContext {
         {
             profiling::scope!("main render pass");
             let mut render_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
-                label: None,
+                label: Some("main render pass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
                     view: &self.fbos.color_msaa,
                     resolve_target: Some(frame),
@@ -886,7 +886,7 @@ impl GfxContext {
         {
             profiling::scope!("bg pass");
             let mut bg_pass = encs.end.begin_render_pass(&RenderPassDescriptor {
-                label: None,
+                label: Some("bg pass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
                     view: &self.fbos.color_msaa,
                     resolve_target: Some(frame),
