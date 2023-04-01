@@ -97,9 +97,10 @@ impl MapMeshHandler {
             let floor_mat = gfx.register_material(Material::new(
                 gfx,
                 floor_tex,
-                MetallicRoughness::Static {
+                MetallicRoughness {
                     metallic: 0.0,
                     roughness: 1.0,
+                    tex: None,
                 },
             ));
             let floor_mesh = MeshBuilder::new(floor_mat);
@@ -124,17 +125,19 @@ impl MapMeshHandler {
         let crosswalk_mat = gfx.register_material(Material::new(
             gfx,
             crosswalk_tex,
-            MetallicRoughness::Static {
+            MetallicRoughness {
                 metallic: 0.0,
                 roughness: 1.0,
+                tex: None,
             },
         ));
         let houses_mat = gfx.register_material(Material::new(
             gfx,
             gfx.palette(),
-            MetallicRoughness::Static {
+            MetallicRoughness {
                 metallic: 0.0,
                 roughness: 1.0,
+                tex: None,
             },
         ));
         let builders = MapBuilders {

@@ -4,14 +4,21 @@ struct FragmentOutput {
     @location(0) out_color: vec4<f32>,
 }
 
+const HAS_METALLIC_ROUGHNESS_TEXTURE: u32 = 1u;
+
+struct MaterialParams {
+    flags: u32,
+    metallic: f32,
+    roughness: f32,
+}
+
 @group(1) @binding(0) var<uniform> params: RenderParams;
 
 @group(2) @binding(0) var t_albedo: texture_2d<f32>;
 @group(2) @binding(1) var s_albedo: sampler;
-@group(2) @binding(2) var<uniform> u_metallic: f32;
-@group(2) @binding(3) var<uniform> u_roughness: f32;
-@group(2) @binding(4) var t_metallic_roughness: texture_2d<f32>;
-@group(2) @binding(5) var s_metallic_rougness: sampler;
+@group(2) @binding(2) var<uniform> u_mat: MaterialParams;
+@group(2) @binding(3) var t_metallic_roughness: texture_2d<f32>;
+@group(2) @binding(4) var s_metallic_rougness: sampler;
 
 @group(3) @binding(0)  var t_ssao: texture_2d<f32>;
 @group(3) @binding(1)  var s_ssao: sampler;
@@ -52,15 +59,12 @@ fn frag(@location(0) in_tint: vec4<f32>,
 
     var normal = normalize(in_normal);
 
-    var metallic: f32 = 1.0;
-    var roughness: f32 = 1.0;
-    if (u_metallic == -1.0) {
+    var metallic: f32 = u_mat.metallic;
+    var roughness: f32 = u_mat.roughness;
+    if ((u_mat.flags & HAS_METALLIC_ROUGHNESS_TEXTURE) != 0u) {
         let sampled: vec2<f32> = textureSample(t_metallic_roughness, s_metallic_rougness, in_uv).gb;
-        roughness = sampled[0];
-        metallic = sampled[1];
-    } else {
-        metallic = u_metallic;
-        roughness = u_roughness;
+        roughness = sampled[0] * roughness;
+        metallic = sampled[1] * metallic;
     }
 
     let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, normal).rgb;

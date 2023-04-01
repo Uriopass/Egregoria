@@ -259,9 +259,10 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             let mat = gfx.register_material(Material::new(
                 gfx,
                 gfx.palette(),
-                MetallicRoughness::Static {
+                MetallicRoughness {
                     metallic: 0.0,
                     roughness: 1.0,
+                    tex: None,
                 },
             ));
             let mut mb = MeshBuilder::new(mat);

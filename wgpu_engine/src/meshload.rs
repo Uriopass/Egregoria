@@ -164,13 +164,14 @@ fn load_materials(
         let metallic_v = pbr_mr.metallic_factor();
         let roughness_v = pbr_mr.roughness_factor();
 
-        let mut metallic_roughness = MetallicRoughness::Static {
+        let mut metallic_roughness = MetallicRoughness {
             metallic: metallic_v,
             roughness: roughness_v,
+            tex: None,
         };
 
         if let Some(metallic_roughness_tex) = pbr_mr.metallic_roughness_texture() {
-            metallic_roughness = MetallicRoughness::Texture(load_image(
+            metallic_roughness.tex = Some(load_image(
                 gfx,
                 gltfmat.name(),
                 &metallic_roughness_tex.texture(),

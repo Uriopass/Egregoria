@@ -1,4 +1,4 @@
-use crate::{GfxContext, Texture, TextureBuilder};
+use crate::{GfxContext, Texture, TextureBuilder, ToU8Slice};
 use image::DynamicImage;
 use slotmap::new_key_type;
 use std::sync::Arc;
@@ -18,47 +18,29 @@ pub type MaterialMap = slotmap::SlotMap<MaterialID, Material>;
 pub struct Material {
     pub bg: BindGroup,
     pub albedo: Arc<Texture>,
-    pub metallic_v: wgpu::Buffer,
-    pub roughness_v: wgpu::Buffer,
+    pub mat_params: wgpu::Buffer,
     pub metallic_roughness_tex: Option<Arc<Texture>>,
     pub double_sided: bool,
     pub transparent: bool,
 }
 
-pub enum MetallicRoughness {
-    Static { metallic: f32, roughness: f32 },
-    Texture(Arc<Texture>),
+pub struct MetallicRoughness {
+    pub metallic: f32,
+    pub roughness: f32,
+    pub tex: Option<Arc<Texture>>,
 }
 
-impl MetallicRoughness {
-    pub fn metallic_value(&self) -> f32 {
-        match self {
-            MetallicRoughness::Static { metallic, .. } => *metallic,
-            MetallicRoughness::Texture(_) => -1.0,
-        }
-    }
+const HAS_METALLIC_ROUGHNESS_TEXTURE: u32 = 1 << 0;
 
-    pub fn roughness_value(&self) -> f32 {
-        match self {
-            MetallicRoughness::Static { roughness, .. } => *roughness,
-            MetallicRoughness::Texture(_) => -1.0,
-        }
-    }
-
-    pub fn as_texture(&self) -> Option<&Arc<Texture>> {
-        match self {
-            MetallicRoughness::Static { .. } => None,
-            MetallicRoughness::Texture(tex) => Some(tex),
-        }
-    }
-
-    pub fn into_texture(self) -> Option<Arc<Texture>> {
-        match self {
-            MetallicRoughness::Static { .. } => None,
-            MetallicRoughness::Texture(tex) => Some(tex),
-        }
-    }
+#[derive(Copy, Clone)]
+#[repr(C)]
+struct MaterialParams {
+    flags: u32,
+    metallic: f32,
+    roughness: f32,
 }
+
+u8slice_impl!(MaterialParams);
 
 impl Material {
     pub fn new(
@@ -66,23 +48,27 @@ impl Material {
         albedo: Arc<Texture>,
         metallic_roughness: MetallicRoughness,
     ) -> Self {
-        Self::new_raw(&gfx.device, albedo, metallic_roughness)
+        Self::new_raw(&gfx.device, albedo, metallic_roughness, gfx.palette_ref())
     }
 
     pub fn new_raw(
         device: &Device,
         albedo: Arc<Texture>,
         metallic_roughness: MetallicRoughness,
+        bogus_tex: &Texture,
     ) -> Self {
-        let metallic_buf = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("metallic"),
-            contents: &metallic_roughness.metallic_value().to_le_bytes(),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
+        let mut flags = 0;
+        if metallic_roughness.tex.is_some() {
+            flags |= HAS_METALLIC_ROUGHNESS_TEXTURE;
+        }
 
-        let roughness_buf = device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("roughness"),
-            contents: &metallic_roughness.roughness_value().to_le_bytes(),
+        let mat_params = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("metallic"),
+            contents: ToU8Slice::cast_slice(std::slice::from_ref(&MaterialParams {
+                roughness: metallic_roughness.roughness,
+                metallic: metallic_roughness.metallic,
+                flags,
+            })),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -100,38 +86,31 @@ impl Material {
             wgpu::BindGroupEntry {
                 binding: 2,
                 resource: wgpu::BindingResource::Buffer(BufferBinding {
-                    buffer: &metallic_buf,
-                    offset: 0,
-                    size: None,
-                }),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: wgpu::BindingResource::Buffer(BufferBinding {
-                    buffer: &roughness_buf,
+                    buffer: &mat_params,
                     offset: 0,
                     size: None,
                 }),
             },
         ];
 
-        if let Some(metallic_roughness_tex) = metallic_roughness.as_texture() {
+        if let Some(ref metallic_roughness_tex) = metallic_roughness.tex {
             entries.push(wgpu::BindGroupEntry {
-                binding: 4,
+                binding: 3,
                 resource: wgpu::BindingResource::TextureView(&metallic_roughness_tex.view),
             });
             entries.push(wgpu::BindGroupEntry {
-                binding: 5,
+                binding: 4,
                 resource: wgpu::BindingResource::Sampler(&metallic_roughness_tex.sampler),
             });
         } else {
+            // used as placeholder
             entries.push(wgpu::BindGroupEntry {
-                binding: 4,
-                resource: wgpu::BindingResource::TextureView(&albedo.view),
+                binding: 3,
+                resource: wgpu::BindingResource::TextureView(&bogus_tex.view),
             });
             entries.push(wgpu::BindGroupEntry {
-                binding: 5,
-                resource: wgpu::BindingResource::Sampler(&albedo.sampler),
+                binding: 4,
+                resource: wgpu::BindingResource::Sampler(&bogus_tex.sampler),
             });
         }
 
@@ -144,9 +123,8 @@ impl Material {
 
         Self {
             bg,
-            metallic_v: metallic_buf,
-            roughness_v: roughness_buf,
-            metallic_roughness_tex: metallic_roughness.into_texture(),
+            mat_params,
+            metallic_roughness_tex: metallic_roughness.tex,
             double_sided: false,
             albedo,
             transparent: false,
@@ -178,23 +156,15 @@ impl Material {
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: Default::default(),
-                        min_binding_size: Some(BufferSize::new(4).unwrap()),
+                        min_binding_size: Some(
+                            BufferSize::new(std::mem::size_of::<MaterialParams>() as u64).unwrap(),
+                        ),
                         has_dynamic_offset: false,
                     },
                     count: None,
                 },
                 BindGroupLayoutEntry {
                     binding: 3,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: Default::default(),
-                        min_binding_size: Some(BufferSize::new(4).unwrap()),
-                        has_dynamic_offset: false,
-                    },
-                    count: None,
-                },
-                BindGroupLayoutEntry {
-                    binding: 4,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
@@ -204,7 +174,7 @@ impl Material {
                     count: None,
                 },
                 BindGroupLayoutEntry {
-                    binding: 5,
+                    binding: 4,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                     count: None,
@@ -218,14 +188,19 @@ impl Material {
             TextureBuilder::from_img(DynamicImage::ImageRgba8(image::RgbaImage::new(1, 1)))
                 .build(device, queue),
         );
+        let bogus = Arc::new(
+            TextureBuilder::empty(1, 1, 1, wgpu::TextureFormat::Rgba8Unorm).build(device, queue),
+        );
 
         Self::new_raw(
             device,
             albedo,
-            MetallicRoughness::Static {
+            MetallicRoughness {
                 roughness: 0.5,
                 metallic: 0.0,
+                tex: None,
             },
+            &bogus,
         )
     }
 }

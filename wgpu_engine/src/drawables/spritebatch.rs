@@ -79,9 +79,10 @@ impl SpriteBatchBuilder {
         let mat = Material::new(
             gfx,
             albedo,
-            MetallicRoughness::Static {
+            MetallicRoughness {
                 metallic: 0.0,
                 roughness: 1.0,
+                tex: None,
             },
         );
         let matid = gfx.register_material(mat);

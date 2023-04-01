@@ -695,6 +695,13 @@ impl GfxContext {
             .clone()
     }
 
+    pub fn palette_ref(&self) -> &Texture {
+        &self
+            .texture_cache_paths
+            .get(&*PathBuf::from("assets/sprites/palette.png"))
+            .expect("palette not loaded")
+    }
+
     pub fn set_vsync(&mut self, vsync: bool) {
         let present_mode = if vsync {
             wgpu::PresentMode::AutoVsync
