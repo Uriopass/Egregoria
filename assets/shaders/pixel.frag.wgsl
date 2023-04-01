@@ -37,7 +37,6 @@ fn frag(@location(0) in_tint: vec4<f32>,
         @location(2) in_wpos: vec3<f32>,
         @location(3) in_uv: vec2<f32>,
         @builtin(position) position: vec4<f32>,
-        @builtin(front_facing) front_facing: bool,
         ) -> FragmentOutput {
 
     let albedo: vec4<f32> = textureSample(t_albedo, s_albedo, in_uv);
@@ -52,9 +51,6 @@ fn frag(@location(0) in_tint: vec4<f32>,
     }
 
     var normal = normalize(in_normal);
-    if (!front_facing) {
-        normal = -normal;
-    }
 
     var metallic: f32 = 1.0;
     var roughness: f32 = 1.0;
