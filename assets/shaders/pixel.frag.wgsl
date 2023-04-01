@@ -64,7 +64,7 @@ fn frag(@location(0) in_tint: vec4<f32>,
     if ((u_mat.flags & HAS_METALLIC_ROUGHNESS_TEXTURE) != 0u) {
         let sampled: vec2<f32> = textureSample(t_metallic_roughness, s_metallic_rougness, in_uv).gb;
         roughness = sampled[0] * roughness;
-        metallic = sampled[1] * metallic;
+        metallic  = sampled[1] * metallic;
     }
 
     let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, normal).rgb;

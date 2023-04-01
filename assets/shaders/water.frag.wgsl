@@ -56,8 +56,6 @@ fn frag(@location(0) _in_tint: vec4<f32>,
     let t: f32 = params.time;
     let sun: vec3<f32> = params.sun;
     let cam: vec3<f32> = params.cam_pos.xyz;
-//    let normal: vec3<f32> = normalize(vec3<f32>(0.05 * sin(t + wpos.x * 0.01), 0.05 * sin(wpos.y * 0.01), 1.0));
-    //let normal: vec3<f32> = vec3(0.0, 0.0, 1.0);
     var normal = gerstnerWaveNormal(wpos.xy * 0.01, params.time_always);
     let sun_col: vec3<f32> = params.sun_col.xyz;
 
@@ -65,15 +63,6 @@ fn frag(@location(0) _in_tint: vec4<f32>,
     let wavy2: vec3<f32> = textureSample(t_wavy, s_wavy, 30.0 + params.time_always * 0.01 - wpos.yx * vec2(0.001, -0.001)).xzy;
     normal = normalize(normal + wavy * 0.15 + wavy2 * 0.1);
 
-/*
-    let d_bg: f32 = depthh;
-    let wpos_bg_w: vec4<f32> = params.invproj * vec4<f32>(position.xy / params.viewport * 2.0 - 1.0, d_bg, 1.0);
-    let wpos_bg: vec3<f32> = wpos_bg_w.xyz / wpos_bg_w.w;
-
-    let d: f32 = 1.0 / position.z;
-    let d_bg_2: f32 = 1.0 / d_bg;
-    let diffdepth = wpos_bg.z;
-    */
 
     let R: vec3<f32> = normalize(2.0 * normal * dot(normal,sun) - sun);
     let V: vec3<f32> = normalize(cam - wpos);
@@ -87,17 +76,14 @@ fn frag(@location(0) _in_tint: vec4<f32>,
 
     let sun_contrib: f32 = clamp(dot(normal, sun), 0.0, 1.0);
 
-    //let base_color: vec3<f32> = vec3<f32>(0.1, 0.25, 0.5 + reflected.z * 0.5);
+
     let base_color: vec3<f32> = 0.6 * vec3<f32>(0.262, 0.396, 0.508);
     let ambiant: vec3<f32> = 0.05 * base_color;
-    //let sunpower: f32 = 0.85 * sun_contrib + 0.5 * specular;
+
     let sunpower: f32 = 0.95 * reflect_coeff * max(0.0, sqrt(sun.z));
 
     var final_rgb: vec3<f32> = ambiant + sunpower * (mix(sun_col, base_color, 1.0 - specular));
-    //final_rgb = vec3<f32>(select(0.5, 1.0, diffdepth > 0.0));
-    //final_rgb = final_rgb + 0.05 * vec3<f32>(smoothstep(40.0, 0.0,  diffdepth - 20.0));
-    //final_rgb = vec3<f32>(-diffdepth * 0.01);
-    //final_rgb = vec3<f32>(position.xy * 0.001, 0.0);
+
     return FragmentOutput(
         vec4<f32>(final_rgb, 0.9 + reflect_coeff * 0.1),
     );

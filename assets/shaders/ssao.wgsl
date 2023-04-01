@@ -69,7 +69,6 @@ fn frag(@location(0) in_uv: vec2<f32>) -> FragmentOutput {
     let depth: f32 = sample_depth(pos);
 
     let derivative: vec2<f32> = derivative(pos, depth);
-//    let normal: vec3<f32> = cross(vec3(1, 0, derivative.x), vec3(0, 1, derivative.y));
 
     let radius_depth: f32 = radius * depth;
     var occlusion: f32 = 0.0;

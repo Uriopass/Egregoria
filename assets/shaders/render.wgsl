@@ -10,10 +10,9 @@ fn fresnelSchlickRoughness(cosTheta: f32, F0: vec3<f32>, roughness: f32) -> vec3
 
 const PI: f32 = 3.14159265359;
 
-fn DistributionGGX(N: vec3<f32>, H: vec3<f32>, roughness: f32) -> f32 {
+fn DistributionGGX(NdotH: f32, roughness: f32) -> f32 {
     let a: f32      = roughness*roughness;
     let a2: f32     = a*a;
-    let NdotH: f32  = max(dot(N, H), 0.0);
     let NdotH2: f32 = NdotH*NdotH;
 
     let num: f32   = a2;
@@ -32,9 +31,8 @@ fn GeometrySchlickGGX(NdotV: f32, roughness: f32) -> f32 {
 
     return num / denom;
 }
-fn GeometrySmith(N: vec3<f32>, V: vec3<f32>, L: vec3<f32>, roughness: f32) -> f32 {
-    let NdotV: f32 = max(dot(N, V), 0.0);
-    let NdotL: f32 = max(dot(N, L), 0.0);
+
+fn GeometrySmith(NdotV: f32, NdotL: f32, roughness: f32) -> f32 {
     let ggx2: f32  = GeometrySchlickGGX(NdotV, roughness);
     let ggx1: f32  = GeometrySchlickGGX(NdotL, roughness);
 
@@ -56,9 +54,11 @@ fn render(sun: vec3<f32>,
           shadow_v: f32,
           ssao: f32) -> vec3<f32>  {
     let H: vec3<f32> = normalize(sun + V);
+    let NdotL: f32 = max(dot(normal, sun), 0.0);
+    let NdotV: f32 = max(dot(normal, V), 0.0);
 
-    let NDF: f32 = DistributionGGX(normal, H, roughness);
-    let G: f32   = GeometrySmith(normal, V, sun, roughness);
+    let NDF: f32 = DistributionGGX(dot(normal, H), roughness);
+    let G: f32   = GeometrySmith(NdotV, NdotL, roughness);
     let F: vec3<f32>  = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
     let kS: vec3<f32> = F;
@@ -66,10 +66,9 @@ fn render(sun: vec3<f32>,
 
     kD *= 1.0 - vec3(metallic);
 
-    let NdotL: f32 = max(dot(normal, sun), 0.0);
 
     let numerator: vec3<f32>      = NDF * G * F;
-    let denominator: f32    = 4.0 * max(dot(normal, V), 0.0) * NdotL  + 0.0001;
+    let denominator: f32    = 4.0 * max(NdotV, 0.0) * NdotL  + 0.0001;
     let specular_light: vec3<f32> = numerator / denominator;
 
     let Lo: vec3<f32> = (kD * albedo * ssao / PI + specular_light) * (4.0 * shadow_v * sun_col) * NdotL;

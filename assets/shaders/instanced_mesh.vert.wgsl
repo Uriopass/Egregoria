@@ -22,7 +22,7 @@ fn vert(@location(0) in_pos: vec3<f32>,
         @location(6) in_instance_tint: vec4<f32>) -> VertexOutput {
     let x: vec3<f32> = in_instance_dir;
     let y: vec3<f32> = cross(vec3(0.0, 0.0, 1.0), x); // Z up
-    let z: vec3<f32> = cross(x, normalize(y));
+    let z: vec3<f32> = cross(x, y);
 
     let off: vec3<f32> = in_pos.x * x + in_pos.y * y + in_pos.z * z + in_instance_pos;
     let normal: vec3<f32> = in_normal.x * x + in_normal.y * y + in_normal.z * z;

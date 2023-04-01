@@ -28,26 +28,33 @@ struct FragmentOutput {
 #include "render.wgsl"
 
 fn grid(in_wpos: vec3<f32>, wpos_fwidth_x: f32) -> f32 {
-    let level: f32 = wpos_fwidth_x*20.0;//length(vec2(dFdx(in_wpos.x), dFdy(in_wpos.x))) * 0.02;
+    let level: f32 = wpos_fwidth_x * 20.0;
+
+    let max_w: f32 = level * 100.0;
+    let min_w: f32 = level;
+
+    var curgrid: vec2<f32> = in_wpos.xy / 10000.0;
+    var isIn: f32 = 0.0;
 
     var w: f32 = 10000.0;
-    var isIn: f32 = 0.0;
-    var curgrid: vec2<f32> = in_wpos.xy / 10000.0;
-
-    while(w > level*100.0) {
+    while (w > max_w) {
         w /= 5.0;
         curgrid *= 5.0;
     }
 
-    while(w > level) {
+    while (w > min_w) {
         let moved: vec2<f32> = fract(curgrid);
         let v: f32 = min(min(moved.x, moved.y), min(1.0 - moved.x, 1.0 - moved.y));
 
-        let isOk: f32 = (1.0 - smoothstep(0.004, 0.00415, v)) * 2.0 * (1.0 - smoothstep(level*100.0*0.5, level*100.0, w));
+        let threshold1: f32 = smoothstep(0.004, 0.00415, v);
+        let threshold2: f32 = smoothstep(max_w * 0.5, max_w, w);
+        let isOk: f32 = (1.0 - threshold1) * 2.0 * (1.0 - threshold2);
+
         isIn = max(isIn, isOk);
         w /= 5.0;
         curgrid *= 5.0;
     }
+
     return isIn;
 }
 

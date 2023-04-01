@@ -41,7 +41,6 @@ fn frag(@location(0) in_pos: vec3<f32>, @builtin(position) position: vec4<f32>) 
     color = color + max(pos.z + 0.1, 0.0) * 5.0 * textureSample(t_starfield, s_starfield, vec2(longitude, pos.z)).rgb; // starfield
     color = color + max(pos.z, 0.0) * 10000.0 * smoothstep(0.99993, 1.0, dot(fsun, pos)); // sun
 
-    // Apply exposure.
     let ocrgb = 1.830796 * color / (color * 1.24068 + vec3(1.682186)) + dither(position.xy);
     return FragmentOutput(vec4(ocrgb.r, ocrgb.g, ocrgb.b, 1.0));
 }

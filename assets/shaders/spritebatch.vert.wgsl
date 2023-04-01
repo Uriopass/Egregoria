@@ -21,7 +21,7 @@ fn vert(@location(0) in_pos: vec3<f32>,
         @location(5) in_scale: vec2<f32>) -> VertexOutput {
     let x: vec3<f32> = in_dir;
     let y: vec3<f32> = cross(vec3(0.0, 0.0, 1.0), x); // Z up
-    let z: vec3<f32> = cross(x, normalize(y));
+    let z: vec3<f32> = cross(x, y);
 
     let scaled: vec3<f32> = vec3(in_pos.xy * in_scale, in_pos.z);
     let wpos: vec3<f32> = scaled.x * x + scaled.y * y + scaled.z * z + in_instance_pos;
