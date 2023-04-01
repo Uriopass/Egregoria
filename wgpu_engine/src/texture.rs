@@ -474,7 +474,7 @@ impl<'a> TextureBuilder<'a> {
                         format,
                         mip_level_count,
                         module,
-                        &self.label,
+                        self.label,
                     );
                 }
             }
@@ -601,7 +601,7 @@ fn generate_mipmaps(
         });
 
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some(&format!("mip generation for {} - {}", label, target_mip)),
+            label: Some(&format!("mip generation for {label} - {target_mip}")),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &views[target_mip],
                 resolve_target: None,

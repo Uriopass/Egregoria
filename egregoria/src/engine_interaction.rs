@@ -304,7 +304,7 @@ impl WorldCommand {
                 load_testfield(&mut goria.map_mut(), pos, size, spacing)
             }
             ResetSave => {
-                let opts = goria.read::<EgregoriaOptions>().clone();
+                let opts = *goria.read::<EgregoriaOptions>();
                 *goria = Egregoria::new_with_options(opts);
             }
             UpdateTransform(e, t) => {
