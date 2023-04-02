@@ -105,7 +105,6 @@ impl InstancedMesh {
                         vb,
                         vert,
                         frag,
-                        0,
                         double_sided,
                     )
                 }),

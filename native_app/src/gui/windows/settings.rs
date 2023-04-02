@@ -15,6 +15,7 @@ pub(crate) enum ShadowQuality {
     Low,
     Medium,
     High,
+    TooHigh,
 }
 
 impl AsRef<str> for ShadowQuality {
@@ -24,6 +25,7 @@ impl AsRef<str> for ShadowQuality {
             ShadowQuality::Low => "Low",
             ShadowQuality::Medium => "Medium",
             ShadowQuality::High => "High",
+            ShadowQuality::TooHigh => "Too High",
         }
     }
 }
@@ -35,6 +37,7 @@ impl From<u8> for ShadowQuality {
             1 => ShadowQuality::Low,
             2 => ShadowQuality::Medium,
             3 => ShadowQuality::High,
+            4 => ShadowQuality::TooHigh,
             _ => ShadowQuality::High,
         }
     }
@@ -46,6 +49,7 @@ impl ShadowQuality {
             ShadowQuality::Low => Some(512),
             ShadowQuality::Medium => Some(1024),
             ShadowQuality::High => Some(2048),
+            ShadowQuality::TooHigh => Some(4096),
             ShadowQuality::NoShadows => None,
         }
     }
@@ -198,7 +202,7 @@ pub(crate) fn settings(
 
             // shadow quality combobox
             let mut id = settings.shadows as u8 as usize;
-            egui::ComboBox::from_label("Shadow Quality").show_index(ui, &mut id, 4, |i| {
+            egui::ComboBox::from_label("Shadow Quality").show_index(ui, &mut id, 5, |i| {
                 ShadowQuality::from(i as u8).as_ref().to_string()
             });
             settings.shadows = ShadowQuality::from(id as u8);

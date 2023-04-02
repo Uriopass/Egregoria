@@ -1017,7 +1017,6 @@ impl GfxContext {
         vertex_buffers: &[VertexBufferLayout<'_>],
         vert_shader: &CompiledModule,
         frag_shader: &CompiledModule,
-        depth_bias: i32,
         double_sided: bool,
     ) -> RenderPipeline {
         let render_pipeline_layout =
@@ -1065,8 +1064,8 @@ impl GfxContext {
                 depth_compare: wgpu::CompareFunction::GreaterEqual,
                 stencil: Default::default(),
                 bias: DepthBiasState {
-                    constant: depth_bias,
-                    slope_scale: 0.2 * depth_bias.signum() as f32,
+                    constant: 0,
+                    slope_scale: 0.0,
                     clamp: 0.0,
                 },
             }),
@@ -1417,7 +1416,6 @@ impl BackgroundPipeline {
                     &[UvVertex::desc()],
                     bg,
                     bg,
-                    0,
                     false,
                 )
             }),

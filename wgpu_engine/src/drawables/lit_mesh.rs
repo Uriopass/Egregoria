@@ -157,7 +157,6 @@ impl Mesh {
                         vb,
                         vert,
                         frag,
-                        0,
                         double_sided,
                     )
                 }),

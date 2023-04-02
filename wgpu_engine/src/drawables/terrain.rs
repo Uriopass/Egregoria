@@ -398,7 +398,6 @@ impl TerrainPrepared {
                     &[TerrainVertex::desc(), TerrainInstance::desc()],
                     vert,
                     frag,
-                    0,
                     false,
                 )
             }),

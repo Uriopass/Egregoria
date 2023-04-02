@@ -81,7 +81,6 @@ impl Water {
                     &[MeshVertex::desc()],
                     vert,
                     frag,
-                    0,
                     false,
                 )
             }),
