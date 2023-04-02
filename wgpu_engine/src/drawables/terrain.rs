@@ -1,7 +1,7 @@
 use crate::{
     bg_layout_litmesh, pbuffer::PBuffer, Drawable, FrameContext, GfxContext, IndexType, Material,
     Mesh, MeshBuilder, MeshVertex, MetallicRoughness, RenderParams, TerrainVertex, Texture,
-    Uniform, VBDesc, TL,
+    Uniform, TL,
 };
 use common::FastMap;
 use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Polygon, Vec2, AABB3};
@@ -358,8 +358,8 @@ u8slice_impl!(TerrainInstance);
 
 const ATTRS: &[VertexAttribute] = &wgpu::vertex_attr_array![1 => Float32x2];
 
-impl VBDesc for TerrainInstance {
-    fn desc<'a>() -> VertexBufferLayout<'a> {
+impl TerrainInstance {
+    fn desc() -> VertexBufferLayout<'static> {
         VertexBufferLayout {
             array_stride: std::mem::size_of::<Self>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,

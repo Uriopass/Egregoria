@@ -34,7 +34,7 @@ struct MaterialParams {
 @group(3) @binding(11) var s_brdf_lut: sampler;
 
 #include "shadow.wgsl"
-#include "render.wgsl"
+#include "pbr/render.wgsl"
 
 const MAX_REFLECTION_LOD: f32 = 4.0;
 

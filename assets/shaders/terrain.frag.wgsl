@@ -1,4 +1,6 @@
 #include "render_params.wgsl"
+#include "shadow.wgsl"
+#include "pbr/render.wgsl"
 
 struct FragmentOutput {
     @location(0) out_color: vec4<f32>,
@@ -23,9 +25,6 @@ struct FragmentOutput {
 @group(3) @binding(9)  var s_prefilter_specular: sampler;
 @group(3) @binding(10) var t_brdf_lut: texture_2d<f32>;
 @group(3) @binding(11) var s_brdf_lut: sampler;
-
-#include "shadow.wgsl"
-#include "render.wgsl"
 
 fn grid(in_wpos: vec3<f32>, wpos_fwidth_x: f32) -> f32 {
     let level: f32 = wpos_fwidth_x * 20.0;

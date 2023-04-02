@@ -1,7 +1,7 @@
 use crate::pbuffer::PBuffer;
 use crate::{
     bg_layout_litmesh, Drawable, GfxContext, Material, MaterialID, MetallicRoughness, Texture,
-    UvVertex, VBDesc,
+    UvVertex,
 };
 use geom::{LinearColor, Vec3};
 use std::path::PathBuf;
@@ -39,8 +39,8 @@ struct InstanceRaw {
 
 u8slice_impl!(InstanceRaw);
 
-impl VBDesc for InstanceRaw {
-    fn desc<'a>() -> VertexBufferLayout<'a> {
+impl InstanceRaw {
+    fn desc() -> VertexBufferLayout<'static> {
         const ARR: &[VertexAttribute; 4] = &wgpu::vertex_attr_array![2 => Float32x4, 3 => Float32x3, 4 => Float32x3, 5 => Float32x2];
         VertexBufferLayout {
             array_stride: std::mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,

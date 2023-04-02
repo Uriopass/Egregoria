@@ -1,4 +1,4 @@
-use crate::{Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, Texture, VBDesc, TL};
+use crate::{Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, Texture, TL};
 use std::sync::Arc;
 use wgpu::{BindGroup, RenderPass};
 

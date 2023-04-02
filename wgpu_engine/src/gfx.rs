@@ -1,8 +1,7 @@
 use crate::terrain::TerrainPrepared;
 use crate::{
-    bg_layout_litmesh, compile_shader, CompiledModule, Drawable, IndexType, InstancedMesh,
-    Material, MaterialID, MaterialMap, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform,
-    UvVertex, VBDesc, Water, TL,
+    bg_layout_litmesh, compile_shader, CompiledModule, Drawable, IndexType, Material, MaterialID,
+    MaterialMap, Mesh, SpriteBatch, Texture, TextureBuilder, Uniform, UvVertex, Water, TL,
 };
 use common::FastMap;
 use geom::{vec2, vec3, LinearColor, Matrix4, Vec2, Vec3, Vec4};
@@ -297,7 +296,6 @@ impl GfxContext {
 
         TerrainPrepared::setup(&mut me);
         Mesh::setup(&mut me);
-        InstancedMesh::setup(&mut me);
         SpriteBatch::setup(&mut me);
         SSAOPipeline::setup(&mut me);
         BackgroundPipeline::setup(&mut me);
@@ -408,7 +406,7 @@ impl GfxContext {
         });
 
         let cubemap_vert = compile_shader(device, "to_cubemap.vert.wgsl");
-        let cubemap_frag = compile_shader(device, "convolute_diffuse_irradiance.frag.wgsl");
+        let cubemap_frag = compile_shader(device, "pbr/convolute_diffuse_irradiance.frag.wgsl");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
@@ -491,7 +489,7 @@ impl GfxContext {
         });
 
         let cubemap_vert = compile_shader(device, "to_cubemap.vert.wgsl");
-        let cubemap_frag = compile_shader(device, "specular_prefilter.frag.wgsl");
+        let cubemap_frag = compile_shader(device, "pbr/specular_prefilter.frag.wgsl");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
@@ -583,7 +581,7 @@ impl GfxContext {
             push_constant_ranges: &[],
         });
 
-        let brdf_convolution_module = compile_shader(device, "brdf_convolution.wgsl");
+        let brdf_convolution_module = compile_shader(device, "pbr/brdf_convolution.wgsl");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
