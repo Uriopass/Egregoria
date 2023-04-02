@@ -54,8 +54,8 @@ var<private> sample_sphere: array<vec3<f32>,16u> = array<vec3<f32>,16u>(
 
 const samples: i32 = 8;
 const total_strength: f32 = 0.64;
-const radius: f32 = 0.343;
-const falloff: f32 = 0.00008;
+const radius: f32 = 1.343;
+const falloff: f32 = 0.0008;
 const base: f32 = 0.01;
 
 @fragment
@@ -70,20 +70,18 @@ fn frag(@location(0) in_uv: vec2<f32>) -> FragmentOutput {
 
     let derivative: vec2<f32> = derivative(pos, depth);
 
-    let radius_depth: f32 = radius * depth;
+    let radius_depth: f32 = max(0.001, radius * depth);
     var occlusion: f32 = 0.0;
     for(var i=0; i < samples; i++) {
         let ii: i32 = i;
         let ray: vec3<f32> = radius_depth * reflect(sample_sphere[ii], random);
-/*        if (dot(ray, normal) < 0.0) {
-            ray = -ray;
-        }*/
+
         let off: vec2<f32> = uv2s(ray.xy);
 
         let occ_depth: f32 = sample_depth(pos + vec2<i32>(off));
         let difference: f32 = occ_depth - depth;
-        let dcorrected: f32 = difference - dot(off, derivative);
-        //dcorrected = dcorrected * depth;
+        var dcorrected: f32 = difference - dot(off, derivative);
+        dcorrected = dcorrected / depth;
         //dcorrected = dcorrected - ray.z;
 
         occlusion += smoothstep(falloff, falloff * 2.0, dcorrected);
