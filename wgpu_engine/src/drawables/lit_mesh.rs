@@ -183,14 +183,26 @@ impl Mesh {
                         alpha: false,
                         depth: true,
                     };
-                    gfx.register_pipeline(
-                        pipeline_depth,
-                        &[vert_shader],
-                        Box::new(move |m, gfx| {
-                            let vert = &m[0];
-                            gfx.depth_pipeline(vb, vert, None, smap, double_sided)
-                        }),
-                    );
+                    if smap {
+                        gfx.register_pipeline(
+                            pipeline_depth,
+                            &[vert_shader, "shadow_depth_write.frag"],
+                            Box::new(move |m, gfx| {
+                                let vert = &m[0];
+                                let frag = &m[1];
+                                gfx.depth_pipeline(vb, vert, Some(frag), smap, double_sided)
+                            }),
+                        );
+                    } else {
+                        gfx.register_pipeline(
+                            pipeline_depth,
+                            &[vert_shader],
+                            Box::new(move |m, gfx| {
+                                let vert = &m[0];
+                                gfx.depth_pipeline(vb, vert, None, smap, double_sided)
+                            }),
+                        );
+                    }
 
                     let pipeline_depth_alpha = MeshPipeline {
                         instanced,

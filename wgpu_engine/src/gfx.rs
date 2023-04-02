@@ -663,7 +663,17 @@ impl GfxContext {
         let texture = device.create_texture(&desc);
 
         let view = texture.create_view(&TextureViewDescriptor::default());
-        let sampler = device.create_sampler(&Texture::depth_compare_sampler());
+        let sampler = device.create_sampler(&SamplerDescriptor {
+            label: None,
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            compare: None,
+            ..Default::default()
+        });
         Texture {
             texture,
             view,
@@ -1180,8 +1190,8 @@ impl GfxContext {
                 stencil: Default::default(),
                 bias: if shadow_map {
                     DepthBiasState {
-                        constant: 1,
-                        slope_scale: 1.75,
+                        constant: 0,
+                        slope_scale: 0.0,
                         clamp: 0.0,
                     }
                 } else {

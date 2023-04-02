@@ -25,7 +25,7 @@ struct MaterialParams {
 @group(3) @binding(2)  var t_bnoise: texture_2d<f32>;
 @group(3) @binding(3)  var s_bnoise: sampler;
 @group(3) @binding(4)  var t_sun_smap: texture_depth_2d_array;
-@group(3) @binding(5)  var s_sun_smap: sampler_comparison;
+@group(3) @binding(5)  var s_sun_smap: sampler;
 @group(3) @binding(6)  var t_diffuse_irradiance: texture_cube<f32>;
 @group(3) @binding(7)  var s_diffuse_irradiance: sampler;
 @group(3) @binding(8)  var t_prefilter_specular: texture_cube<f32>;
@@ -54,7 +54,7 @@ fn frag(@location(0) in_tint: vec4<f32>,
 
     var shadow_v: f32 = 1.0;
     if (params.shadow_mapping_resolution != 0) {
-        shadow_v = sampleShadow(in_wpos);
+        shadow_v = sampleShadow(in_wpos, params.shadow_mapping_resolution, t_sun_smap, s_sun_smap);
     }
 
     var normal = normalize(in_normal);

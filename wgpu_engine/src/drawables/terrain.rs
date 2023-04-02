@@ -405,22 +405,43 @@ impl TerrainPrepared {
 
         for smap in [false, true] {
             let lay2 = terrainlayout.clone();
-            gfx.register_pipeline(
-                TerrainPipeline { depth: true, smap },
-                &["terrain.vert"],
-                Box::new(move |m, gfx| {
-                    let vert = &m[0];
 
-                    gfx.depth_pipeline_bglayout(
-                        &[TerrainVertex::desc(), TerrainInstance::desc()],
-                        vert,
-                        None,
-                        smap,
-                        &[&gfx.projection.layout, &gfx.render_params.layout, &lay2],
-                        false,
-                    )
-                }),
-            );
+            if smap {
+                gfx.register_pipeline(
+                    TerrainPipeline { depth: true, smap },
+                    &["terrain.vert", "terrain_shadow.frag"],
+                    Box::new(move |m, gfx| {
+                        let vert = &m[0];
+                        let frag = &m[1];
+
+                        gfx.depth_pipeline_bglayout(
+                            &[TerrainVertex::desc(), TerrainInstance::desc()],
+                            vert,
+                            Some(frag),
+                            smap,
+                            &[&gfx.projection.layout, &gfx.render_params.layout, &lay2],
+                            false,
+                        )
+                    }),
+                );
+            } else {
+                gfx.register_pipeline(
+                    TerrainPipeline { depth: true, smap },
+                    &["terrain.vert"],
+                    Box::new(move |m, gfx| {
+                        let vert = &m[0];
+
+                        gfx.depth_pipeline_bglayout(
+                            &[TerrainVertex::desc(), TerrainInstance::desc()],
+                            vert,
+                            None,
+                            smap,
+                            &[&gfx.projection.layout, &gfx.render_params.layout, &lay2],
+                            false,
+                        )
+                    }),
+                );
+            }
         }
     }
 

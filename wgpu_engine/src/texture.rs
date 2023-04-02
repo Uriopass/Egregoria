@@ -158,14 +158,7 @@ impl Texture {
                     BindGroupLayoutEntry {
                         binding: (i * 2 + 1) as u32,
                         visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(
-                            if matches!(bgtype, TL::Depth | TL::DepthMultisampled | TL::DepthArray)
-                            {
-                                wgpu::SamplerBindingType::Comparison
-                            } else {
-                                wgpu::SamplerBindingType::Filtering
-                            },
-                        ),
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
                 ]
@@ -221,21 +214,6 @@ impl Texture {
             entries: &entries,
             label: None,
         })
-    }
-
-    pub fn depth_compare_sampler() -> SamplerDescriptor<'static> {
-        SamplerDescriptor {
-            label: None,
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            compare: Some(wgpu::CompareFunction::LessEqual),
-            border_color: None,
-            ..Default::default()
-        }
     }
 
     pub fn linear_sampler() -> SamplerDescriptor<'static> {
