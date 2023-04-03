@@ -10,8 +10,8 @@ use wgpu::{
 #[derive(Clone)]
 pub struct PBuffer {
     inner: Option<Arc<wgpu::Buffer>>,
-    len: u64,
-    capacity: u64,
+    len: u32,
+    capacity: u32,
     usage: BufferUsages,
 }
 
@@ -30,7 +30,7 @@ impl PBuffer {
     }
 
     pub fn write_qd(&mut self, queue: &Queue, device: &Device, data: &[u8]) {
-        self.len = data.len() as u64;
+        self.len = data.len() as u32;
         if self.len == 0 {
             return;
         }
@@ -59,7 +59,7 @@ impl PBuffer {
                 resource: BindingResource::Buffer(BufferBinding {
                     buffer,
                     offset: 0,
-                    size: Some(BufferSize::new(self.len)?),
+                    size: Some(BufferSize::new(self.len as u64)?),
                 }),
             }],
         }))
@@ -101,10 +101,10 @@ impl PBuffer {
     }
 }
 
-fn mk_buffer(device: &Device, usage: BufferUsages, size: u64) -> Arc<wgpu::Buffer> {
+fn mk_buffer(device: &Device, usage: BufferUsages, size: u32) -> Arc<wgpu::Buffer> {
     Arc::new(device.create_buffer(&BufferDescriptor {
         label: Some("pbuffer"),
-        size,
+        size: size as u64,
         usage: usage | BufferUsages::COPY_DST,
         mapped_at_creation: false,
     }))
