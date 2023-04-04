@@ -25,7 +25,7 @@ impl State {
             let mut i = InstancedMeshBuilder::new(m);
             i.instances.push(MeshInstance {
                 pos: vec3(50.0, 00.0, 0.0),
-                dir: Vec3::X * 10.0,
+                dir: Vec3::X,
                 tint: LinearColor::WHITE,
             });
             meshes.push(i.build(gfx).unwrap());
@@ -38,10 +38,12 @@ impl State {
                 c.materials[0].0 = gfx.register_material(Material::new_raw(
                     &gfx.device,
                     alb.clone(),
-                    MetallicRoughness::Static {
+                    MetallicRoughness {
                         metallic: z as f32 / 10.0,
                         roughness: x as f32 / 10.0,
+                        tex: None,
                     },
+                    &gfx.palette(),
                 ));
                 let mut i = InstancedMeshBuilder::new(c);
                 i.instances.push(MeshInstance {
