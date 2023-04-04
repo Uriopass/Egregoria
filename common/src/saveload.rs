@@ -127,12 +127,12 @@ impl Encoder for CompressedBincode {
 
     fn encode(x: &impl Serialize) -> Result<Vec<u8>> {
         let encoded = &*Bincode::encode(x)?;
-        let compressed = miniz_oxide::deflate::compress_to_vec(encoded, 1); // bigger level values take far too long and only compress a bit better (about 5%)
+        let compressed = miniz_oxide::deflate::compress_to_vec_zlib(encoded, 1); // bigger level values take far too long and only compress a bit better (about 5%)
         Ok(compressed)
     }
 
     fn decode<T: DeserializeOwned>(x: &[u8]) -> Result<T> {
-        let v = &miniz_oxide::inflate::decompress_to_vec(x)
+        let v = &miniz_oxide::inflate::decompress_to_vec_zlib(x)
             .map_err(|_| std::io::Error::new(ErrorKind::Other, "could not decode zipped file"))?;
         Bincode::decode(v)
     }
