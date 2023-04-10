@@ -144,6 +144,10 @@ impl AudioContext {
     }
 
     fn decode(name: &str) -> Option<StoredAudio> {
+        #[cfg(debug_assertions)]
+        if name.starts_with("music") {
+            return None;
+        }
         let p = format!("assets/sounds/{name}.ogg");
         let t = Instant::now();
         let buf = match common::saveload::load_raw(&p) {
