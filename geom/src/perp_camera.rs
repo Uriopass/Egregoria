@@ -94,7 +94,7 @@ impl Camera {
         let mut cascades = Vec::with_capacity(4);
 
         //        for cascade in [0.0, 300.0, 2000.0, 30000.0].windows(2) {
-        for dist in [200.0f32, 1000.0, 5000.0] {
+        for dist in [150.0f32, 1000.0, 5000.0] {
             /*
             let cascade: [f32; 2] = cascade.try_into().unwrap();
             let c = frustrum.create_cascade(cascade[0], cascade[1]);
