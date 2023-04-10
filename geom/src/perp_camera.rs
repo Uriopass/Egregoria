@@ -15,7 +15,7 @@
 // Modified for the Egregoria project by the Egregoria developers.
 
 use crate::matrix4::Matrix4;
-use crate::{vec2, Radians, Vec3, Vec4};
+use crate::{vec2, vec3, InfiniteFrustrum, Radians, Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Serialize, Deserialize)]
@@ -80,47 +80,101 @@ impl Camera {
         proj * view
     }
 
-    pub fn build_sun_shadowmap_matrix(&self, mut dir: Vec3, resolution: f32) -> Matrix4 {
+    pub fn build_sun_shadowmap_matrix(
+        center_cam: Vec3,
+        mut dir: Vec3,
+        resolution: f32,
+        _frustrum: &InfiniteFrustrum,
+    ) -> Vec<Matrix4> {
         if dir.x == 0.0 && dir.y == 0.0 {
             dir.x = 0.01;
             dir.y = 0.01;
         }
 
-        let d = self.dist * 2.5;
-        let base = self.pos;
+        let mut cascades = Vec::with_capacity(4);
 
-        let view = look_to_rh(base + dir, -dir, self.up);
-        let proj: Matrix4 = Ortho {
-            left: -d,
-            right: d,
-            bottom: -d,
-            top: d,
-            near: -d * 1.2,
-            far: d * 1.2,
+        //        for cascade in [0.0, 300.0, 2000.0, 30000.0].windows(2) {
+        for dist in [200.0f32, 1000.0, 5000.0] {
+            /*
+            let cascade: [f32; 2] = cascade.try_into().unwrap();
+            let c = frustrum.create_cascade(cascade[0], cascade[1]);
+
+            let mut center = c.points.iter().sum::<Vec3>() / c.points.len() as f32;
+             */
+
+            //            let mut points = &c.points;
+            //            let v;
+            //            if cascade[1] == 30000.0 {
+            let v = [
+                center_cam + vec3(-dist, -dist, -30.0),
+                center_cam + vec3(dist, -dist, -30.0),
+                center_cam + vec3(dist, dist, -30.0),
+                center_cam + vec3(-dist, dist, -30.0),
+                center_cam + vec3(-dist, -dist, 150.0),
+                center_cam + vec3(dist, -dist, 150.0),
+                center_cam + vec3(dist, dist, 150.0),
+                center_cam + vec3(-dist, dist, 150.0),
+            ];
+            let points = &v;
+            let center = center_cam;
+
+            let light_view = look_to_rh(center + dir, -dir, vec3(0.0, 0.0, 1.0));
+
+            let mut near: f32 = f32::INFINITY;
+            let mut far: f32 = f32::NEG_INFINITY;
+            let mut left: f32 = f32::INFINITY;
+            let mut right: f32 = f32::NEG_INFINITY;
+            let mut bottom: f32 = f32::INFINITY;
+            let mut top: f32 = f32::NEG_INFINITY;
+
+            for &p in points {
+                let p = vec3(p.x, p.y, p.z);
+                let p = light_view * p.w(1.0);
+                near = near.min(p.z);
+                far = far.max(p.z);
+                left = left.min(p.x);
+                right = right.max(p.x);
+                bottom = bottom.min(p.y);
+                top = top.max(p.y);
+            }
+
+            let proj: Matrix4 = Ortho {
+                left,
+                right,
+                bottom,
+                top,
+                near: near + near.signum() * 300.0,
+                far,
+            }
+            .into();
+            let projview = proj * light_view;
+            let projview = texelsnap(resolution, projview);
+
+            cascades.push(opengl_to_wgpu_matrix() * projview)
         }
-        .into();
-        // texel snapping
-        let projview = proj * view;
 
-        let proj_base = projview * Vec4::from([0.0, 0.0, 0.0, 1.0]);
-
-        let texcoord = vec2(proj_base.x, proj_base.y) * 0.5 * resolution;
-
-        let rounded = (texcoord + vec2(0.5, 0.5)).floor();
-
-        let dtex = rounded - texcoord;
-
-        let dtex_orig = dtex / (0.5 * resolution);
-
-        let rounding = Matrix4::from([
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [dtex_orig.x, dtex_orig.y, 0.0, 1.0],
-        ]);
-
-        opengl_to_wgpu_matrix() * (rounding * projview)
+        cascades
     }
+}
+
+pub fn texelsnap(resolution: f32, projview: Matrix4) -> Matrix4 {
+    let proj_base = projview * Vec4::from([0.0, 0.0, 0.0, 1.0]);
+
+    let texcoord = vec2(proj_base.x, proj_base.y) * 0.5 * resolution;
+
+    let rounded = (texcoord + vec2(0.5, 0.5)).floor();
+
+    let dtex = rounded - texcoord;
+
+    let dtex_orig = dtex / (0.5 * resolution);
+
+    let rounding = Matrix4::from([
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [dtex_orig.x, dtex_orig.y, 0.0, 1.0],
+    ]);
+    rounding * projview
 }
 
 #[derive(Debug, Copy, Clone)]

@@ -126,7 +126,7 @@ pub fn unpark(goria: &mut Egregoria, vehicle: VehicleID) {
     let mut v = unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0));
     let w = v.kind.width();
 
-    if let VehicleState::Parked(spot) = std::mem::replace(&mut (*v).state, VehicleState::Driving) {
+    if let VehicleState::Parked(spot) = std::mem::replace(&mut v.state, VehicleState::Driving) {
         drop(v);
         goria.write::<ParkingManagement>().free(spot);
     } else {

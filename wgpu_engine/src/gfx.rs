@@ -19,7 +19,7 @@ use wgpu::{
     FragmentState, FrontFace, IndexFormat, InstanceDescriptor, MultisampleState,
     PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment,
     RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, SamplerDescriptor, Surface,
-    SurfaceConfiguration, SurfaceTexture, TextureFormat, TextureUsages, TextureView,
+    SurfaceConfiguration, SurfaceTexture, TextureAspect, TextureFormat, TextureUsages, TextureView,
     TextureViewDescriptor, TextureViewDimension, VertexBufferLayout, VertexState,
 };
 
@@ -52,7 +52,7 @@ pub struct GfxContext {
     pub(crate) shader_watcher: FastMap<String, (Vec<String>, Option<SystemTime>)>,
     pub(crate) tick: u64,
     pub(crate) projection: Uniform<Matrix4>,
-    pub(crate) sun_projection: Uniform<Matrix4>,
+    pub(crate) sun_projection: [Uniform<Matrix4>; 3],
     pub render_params: Uniform<RenderParams>,
     pub(crate) texture_cache_paths: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) texture_cache_bytes: Mutex<HashMap<u64, Arc<Texture>, common::TransparentHasherU64>>,
@@ -81,7 +81,7 @@ pub struct Encoders {
 #[repr(C)]
 pub struct RenderParams {
     pub inv_proj: Matrix4,
-    pub sun_shadow_proj: Matrix4,
+    pub sun_shadow_proj: [Matrix4; 3],
     pub cam_pos: Vec3,
     pub _pad: f32,
     pub cam_dir: Vec3,
@@ -106,7 +106,7 @@ impl Default for RenderParams {
     fn default() -> Self {
         Self {
             inv_proj: Matrix4::zero(),
-            sun_shadow_proj: Matrix4::zero(),
+            sun_shadow_proj: [Matrix4::zero(); 3],
             sun_col: Default::default(),
             grass_col: Default::default(),
             sand_col: Default::default(),
@@ -269,7 +269,7 @@ impl GfxContext {
             shader_watcher: Default::default(),
             tick: 0,
             projection,
-            sun_projection: Uniform::new(Matrix4::zero(), &device),
+            sun_projection: [(); 3].map(|_| Uniform::new(Matrix4::zero(), &device)),
             render_params: Uniform::new(Default::default(), &device),
             texture_cache_paths: textures,
             texture_cache_bytes: Default::default(),
@@ -644,9 +644,34 @@ impl GfxContext {
     }
 
     pub fn mk_shadowmap(device: &Device, res: u32) -> Texture {
-        let mut smap = Texture::create_depth_texture(device, (res, res), 1);
-        smap.sampler = device.create_sampler(&Texture::depth_compare_sampler());
-        smap
+        let format = TextureFormat::Depth32Float;
+        let extent = wgpu::Extent3d {
+            width: res,
+            height: res,
+            depth_or_array_layers: 3,
+        };
+        let desc = wgpu::TextureDescriptor {
+            format,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
+            size: extent,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            label: Some("shadow map texture"),
+            view_formats: &[],
+        };
+        let texture = device.create_texture(&desc);
+
+        let view = texture.create_view(&TextureViewDescriptor::default());
+        let sampler = device.create_sampler(&Texture::depth_compare_sampler());
+        Texture {
+            texture,
+            view,
+            sampler,
+            format,
+            extent,
+            transparent: false,
+        }
     }
 
     pub fn set_texture(&mut self, path: impl Into<PathBuf>, tex: Texture) {
@@ -694,8 +719,7 @@ impl GfxContext {
     }
 
     pub fn palette_ref(&self) -> &Texture {
-        &self
-            .texture_cache_paths
+        self.texture_cache_paths
             .get(&*PathBuf::from("assets/sprites/palette.png"))
             .expect("palette not loaded")
     }
@@ -731,11 +755,17 @@ impl GfxContext {
                 label: Some("End encoder"),
             });
 
-        *self.sun_projection.value_mut() = self.render_params.value().sun_shadow_proj;
+        for (uni, mat) in self
+            .sun_projection
+            .iter_mut()
+            .zip(self.render_params.value().sun_shadow_proj)
+        {
+            *uni.value_mut() = mat;
+            uni.upload_to_gpu(&self.queue);
+        }
 
         self.projection.upload_to_gpu(&self.queue);
         self.render_params.upload_to_gpu(&self.queue);
-        self.sun_projection.upload_to_gpu(&self.queue);
 
         (
             Encoders {
@@ -800,28 +830,37 @@ impl GfxContext {
                 .create_command_encoder(&CommandEncoderDescriptor {
                     label: Some("shadow map encoder"),
                 });
-            let mut sun_shadow_pass = smap_enc.begin_render_pass(&RenderPassDescriptor {
-                label: Some("sun shadow pass"),
-                color_attachments: &[],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self.sun_shadowmap.view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: true,
+            for (i, u) in self.sun_projection.iter().enumerate() {
+                let sun_view = self
+                    .sun_shadowmap
+                    .texture
+                    .create_view(&TextureViewDescriptor {
+                        label: Some("sun shadow view"),
+                        format: Some(self.sun_shadowmap.format),
+                        dimension: Some(TextureViewDimension::D2),
+                        aspect: TextureAspect::DepthOnly,
+                        base_mip_level: 0,
+                        mip_level_count: None,
+                        base_array_layer: i as u32,
+                        array_layer_count: Some(NonZeroU32::new(1).unwrap()),
+                    });
+                let mut sun_shadow_pass = smap_enc.begin_render_pass(&RenderPassDescriptor {
+                    label: Some("sun shadow pass"),
+                    color_attachments: &[],
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: &sun_view,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: true,
+                        }),
+                        stencil_ops: None,
                     }),
-                    stencil_ops: None,
-                }),
-            });
+                });
 
-            for obj in objsref.iter() {
-                obj.draw_depth(
-                    self,
-                    &mut sun_shadow_pass,
-                    true,
-                    &self.sun_projection.bindgroup,
-                );
+                for obj in objsref.iter() {
+                    obj.draw_depth(self, &mut sun_shadow_pass, true, &u.bindgroup);
+                }
             }
-            drop(sun_shadow_pass);
             *enc_smap_ext = Some(smap_enc.finish());
         }
 

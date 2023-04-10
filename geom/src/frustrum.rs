@@ -2,7 +2,7 @@ use crate::{minmax3, Intersect3, Plane, Shape3, Vec3, AABB3};
 
 pub struct Frustrum {
     /// [near, left, right, bottom, top, far]
-    planes: [Plane; 6],
+    pub planes: [Plane; 6],
     /// Plane intersection points.
     ///
     /// - n: near, f: far
@@ -12,9 +12,9 @@ pub struct Frustrum {
     /// all pointing inwards
     ///
     /// [nlt, nrt, nlb, nrb, flt, frt, flb, frb]
-    points: [Vec3; 8],
+    pub points: [Vec3; 8],
     /// Bounding box of the frustrum.
-    aabb: AABB3,
+    pub aabb: AABB3,
 }
 
 impl Frustrum {

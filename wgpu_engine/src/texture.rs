@@ -8,9 +8,8 @@ use std::num::{NonZeroU32, NonZeroU8};
 use std::path::Path;
 use wgpu::{
     BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
-    ImageCopyTexture, ImageDataLayout, PipelineLayoutDescriptor, SamplerBorderColor,
-    SamplerDescriptor, TextureFormat, TextureSampleType, TextureUsages, TextureViewDescriptor,
-    TextureViewDimension,
+    ImageCopyTexture, ImageDataLayout, PipelineLayoutDescriptor, SamplerDescriptor, TextureFormat,
+    TextureSampleType, TextureUsages, TextureViewDescriptor, TextureViewDimension,
 };
 
 pub struct Texture {
@@ -26,6 +25,7 @@ pub struct Texture {
 pub enum TL {
     Depth,
     DepthMultisampled,
+    DepthArray,
     Float,
     NonfilterableFloat,
     NonfilterableFloatMultisampled,
@@ -134,12 +134,15 @@ impl Texture {
                                 bgtype,
                                 TL::NonfilterableFloatMultisampled | TL::DepthMultisampled
                             ),
-                            view_dimension: if matches!(bgtype, TL::Cube) {
-                                TextureViewDimension::Cube
-                            } else {
-                                TextureViewDimension::D2
+                            view_dimension: match bgtype {
+                                TL::Cube => TextureViewDimension::Cube,
+                                TL::DepthArray => TextureViewDimension::D2Array,
+                                _ => TextureViewDimension::D2,
                             },
-                            sample_type: if matches!(bgtype, TL::Depth | TL::DepthMultisampled) {
+                            sample_type: if matches!(
+                                bgtype,
+                                TL::Depth | TL::DepthMultisampled | TL::DepthArray
+                            ) {
                                 TextureSampleType::Depth
                             } else {
                                 TextureSampleType::Float {
@@ -156,7 +159,8 @@ impl Texture {
                         binding: (i * 2 + 1) as u32,
                         visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                         ty: wgpu::BindingType::Sampler(
-                            if matches!(bgtype, TL::Depth | TL::DepthMultisampled) {
+                            if matches!(bgtype, TL::Depth | TL::DepthMultisampled | TL::DepthArray)
+                            {
                                 wgpu::SamplerBindingType::Comparison
                             } else {
                                 wgpu::SamplerBindingType::Filtering
@@ -229,7 +233,7 @@ impl Texture {
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Nearest,
             compare: Some(wgpu::CompareFunction::LessEqual),
-            border_color: Some(SamplerBorderColor::OpaqueWhite),
+            border_color: None,
             ..Default::default()
         }
     }

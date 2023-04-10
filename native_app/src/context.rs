@@ -3,7 +3,7 @@ use crate::game_loop;
 use crate::init::SOUNDS_LIST;
 use crate::input::InputContext;
 use egregoria::utils::time::GameTime;
-use geom::{vec2, vec3, LinearColor};
+use geom::{vec2, vec3, Camera, LinearColor};
 use std::time::Instant;
 use wgpu_engine::GfxContext;
 use winit::window::Window;
@@ -135,7 +135,7 @@ impl Context {
                         params.sun = sun;
                         params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);
                         params.sun_shadow_proj =
-                            state.camera.camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_resolution as f32);
+                            Camera::build_sun_shadowmap_matrix(state.camera.camera.pos, sun, params.shadow_mapping_resolution as f32, &state.camera.frustrum).try_into().unwrap();
                         let c = egregoria::config();
                         params.grass_col = c.grass_col.into();
                         params.sand_col = c.sand_col.into();

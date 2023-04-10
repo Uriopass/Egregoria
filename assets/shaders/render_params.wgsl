@@ -1,6 +1,6 @@
 struct RenderParams {
     invproj: mat4x4<f32>,
-    sunproj: mat4x4<f32>,
+    sunproj: array<mat4x4<f32>, 3>,
     cam_pos: vec4<f32>,
     cam_dir: vec4<f32>,
     sun: vec3<f32>,

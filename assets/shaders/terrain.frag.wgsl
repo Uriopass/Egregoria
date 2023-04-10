@@ -17,7 +17,7 @@ struct FragmentOutput {
 @group(3) @binding(1)  var s_ssao: sampler;
 @group(3) @binding(2)  var t_bnoise: texture_2d<f32>;
 @group(3) @binding(3)  var s_bnoise: sampler;
-@group(3) @binding(4)  var t_sun_smap: texture_depth_2d;
+@group(3) @binding(4)  var t_sun_smap: texture_depth_2d_array;
 @group(3) @binding(5)  var s_sun_smap: sampler_comparison;
 @group(3) @binding(6)  var t_diffuse_irradiance: texture_cube<f32>;
 @group(3) @binding(7)  var s_diffuse_irradiance: sampler;

@@ -1,5 +1,20 @@
 fn sampleShadow(in_wpos: vec3<f32>) -> f32 {
-    let light_local: vec4<f32> = params.sunproj * vec4(in_wpos, 1.0);
+    var cascade_idx = 0;
+    for (var i = 0 ; i < 3 ; i++) {
+        let light_local: vec4<f32> = params.sunproj[i] * vec4(in_wpos, 1.0);
+        let corrected: vec3<f32> = light_local.xyz / light_local.w * vec3(0.5, -0.5, 1.0) + vec3(0.5, 0.5, 0.0);
+
+        if (corrected.z >= 0.1 && corrected.z <= 1.0 && corrected.x >= 0.0 && corrected.x <= 1.0 && corrected.y >= 0.0 && corrected.y <= 1.0) {
+            cascade_idx = i;
+            break;
+        }
+    }
+
+    return sampleOneShadow(in_wpos, cascade_idx);
+}
+
+fn sampleOneShadow(in_wpos: vec3<f32>, index: i32) -> f32 {
+    let light_local: vec4<f32> = params.sunproj[index] * vec4(in_wpos, 1.0);
 
     let corrected: vec3<f32> = light_local.xyz / light_local.w * vec3(0.5, -0.5, 1.0) + vec3(0.5, 0.5, 0.0);
 
@@ -12,14 +27,12 @@ fn sampleShadow(in_wpos: vec3<f32>) -> f32 {
         x = -1;
         for (; x <= 1; x++) {
             let shadow_coord: vec3<f32> = corrected + vec3(f32(x), f32(y), -1.0) * offset;
-            total += textureSampleCompare(t_sun_smap, s_sun_smap, shadow_coord.xy, shadow_coord.z);
+            total += textureSampleCompare(t_sun_smap, s_sun_smap, shadow_coord.xy, index, shadow_coord.z);
         }
     }
-
-    total = total / 9.0;
-
-    if (light_local.z >= 1.0) {
+    if (corrected.z < 0.0 || corrected.z > 1.0 || corrected.x < 0.0 || corrected.x > 1.0 || corrected.y < 0.0 || corrected.y > 1.0) {
         return 1.0;
     }
-    return mix(total, 1.0, clamp(dot(light_local.xy, light_local.xy), 0.0, 1.0));
+
+    return total / 9.0;
 }

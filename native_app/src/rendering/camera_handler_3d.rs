@@ -25,8 +25,10 @@ impl CameraHandler3D {
         let viewproj = self.camera.build_view_projection_matrix();
         let inv_viewproj = viewproj.invert().unwrap_or_else(Matrix4::zero);
 
-        self.frustrum =
-            InfiniteFrustrum::from_reversez_invviewproj(self.camera.eye(), inv_viewproj);
+        if inline_tweak::tweak!(true) {
+            self.frustrum =
+                InfiniteFrustrum::from_reversez_invviewproj(self.camera.eye(), inv_viewproj);
+        }
 
         ctx.gfx.set_proj(viewproj);
         ctx.gfx.set_inv_proj(inv_viewproj);

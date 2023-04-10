@@ -406,6 +406,15 @@ impl Vec3 {
     }
 
     #[inline]
+    pub fn z0(self) -> Self {
+        Self {
+            x: self.x,
+            y: self.y,
+            z: 0.0,
+        }
+    }
+
+    #[inline]
     pub fn cross(self, other: Vec3) -> Self {
         Self {
             x: self.y * other.z - self.z * other.y,

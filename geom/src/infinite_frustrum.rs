@@ -1,4 +1,4 @@
-use crate::{Intersect3, Matrix4, Plane, Shape3, Vec3, Vec4, AABB3};
+use crate::{Frustrum, Intersect3, Matrix4, Plane, Shape3, Vec3, Vec4, AABB3};
 
 /// A [`Frustrum'] with infinite far plane.
 /// The planes must be in the following order:
@@ -33,6 +33,20 @@ impl InfiniteFrustrum {
         let top = Plane::from_points(nlt, flt, nrt);
 
         Self::new([near, left, right, bottom, top])
+    }
+
+    pub fn create_cascade(&self, near_dist: f32, far_dist: f32) -> Frustrum {
+        debug_assert!(near_dist < far_dist);
+        let old_near = self.planes[0];
+
+        let near = Plane::new(old_near.n, old_near.o + near_dist);
+        let far = Plane::new(old_near.n, old_near.o + far_dist);
+        let left = self.planes[1];
+        let right = self.planes[2];
+        let bottom = self.planes[3];
+        let top = self.planes[4];
+
+        Frustrum::new([near, left, right, bottom, top, far])
     }
 }
 

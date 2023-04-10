@@ -22,12 +22,12 @@ macro_rules! u8slice_impl {
 #[derive(Copy, Clone)]
 struct NewType<T>(T);
 
+unsafe impl<T> bytemuck::Zeroable for NewType<T> {}
+unsafe impl<T: Copy + 'static> bytemuck::Pod for NewType<T> {}
+
 #[macro_export]
 macro_rules! u8slice_impl_external {
     ($t: ty) => {
-        unsafe impl bytemuck::Pod for NewType<$t> {}
-        unsafe impl bytemuck::Zeroable for NewType<$t> {}
-
         impl ToU8Slice for $t {
             fn cast_slice<'a>(self_slice: &'a [Self]) -> &'a [u8] {
                 let v: &'a [NewType<$t>] =
