@@ -1,16 +1,26 @@
 fn sampleShadow(in_wpos: vec3<f32>) -> f32 {
     var cascade_idx = 0;
+    var blend = 0.0;
     for (var i = 0 ; i < 3 ; i++) {
         let light_local: vec4<f32> = params.sunproj[i] * vec4(in_wpos, 1.0);
         let corrected: vec3<f32> = light_local.xyz / light_local.w * vec3(0.5, -0.5, 1.0) + vec3(0.5, 0.5, 0.0);
 
         if (corrected.z >= 0.1 && corrected.z <= 1.0 && corrected.x >= 0.0 && corrected.x <= 1.0 && corrected.y >= 0.0 && corrected.y <= 1.0) {
             cascade_idx = i;
+            blend = smoothstep(0.5, 1.0, 2.0 * length(corrected.xy - vec2(0.5, 0.5)));
             break;
         }
     }
 
-    return sampleOneShadow(in_wpos, cascade_idx);
+    var s1 = 0.0;
+    var s2 = 0.0;
+    if (blend > 1e-3) {
+        s2 = sampleOneShadow(in_wpos, (cascade_idx + 1)%4);
+    }
+    if (blend < 1.0 - 1e-3) {
+        s1 = sampleOneShadow(in_wpos, cascade_idx);
+    }
+    return mix(s1, s2, blend);
 }
 
 fn sampleOneShadow(in_wpos: vec3<f32>, index: i32) -> f32 {
