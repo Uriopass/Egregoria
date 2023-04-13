@@ -81,7 +81,7 @@ impl Camera {
     }
 
     pub fn build_sun_shadowmap_matrix(
-        center_cam: Vec3,
+        &self,
         mut dir: Vec3,
         resolution: f32,
         _frustrum: &InfiniteFrustrum,
@@ -90,11 +90,17 @@ impl Camera {
             dir.x = 0.01;
             dir.y = 0.01;
         }
+        let center_cam = self.pos;
 
         let mut cascades = Vec::with_capacity(4);
 
+        let m = (self.dist.floor() * 0.5).min(100.0).max(10.0);
+
+        let z_down = -10.0;
+        let z_up = 30.0 + m;
+
         //        for cascade in [0.0, 300.0, 2000.0, 30000.0].windows(2) {
-        for dist in [150.0f32, 1000.0, 5000.0] {
+        for dist in [m * 2.5, m * 6.25, m * 15.5, m * 50.0] {
             /*
             let cascade: [f32; 2] = cascade.try_into().unwrap();
             let c = frustrum.create_cascade(cascade[0], cascade[1]);
@@ -106,14 +112,14 @@ impl Camera {
             //            let v;
             //            if cascade[1] == 30000.0 {
             let v = [
-                center_cam + vec3(-dist, -dist, -30.0),
-                center_cam + vec3(dist, -dist, -30.0),
-                center_cam + vec3(dist, dist, -30.0),
-                center_cam + vec3(-dist, dist, -30.0),
-                center_cam + vec3(-dist, -dist, 150.0),
-                center_cam + vec3(dist, -dist, 150.0),
-                center_cam + vec3(dist, dist, 150.0),
-                center_cam + vec3(-dist, dist, 150.0),
+                center_cam + vec3(-dist, -dist, z_down),
+                center_cam + vec3(dist, -dist, z_down),
+                center_cam + vec3(dist, dist, z_down),
+                center_cam + vec3(-dist, dist, z_down),
+                center_cam + vec3(-dist, -dist, z_up),
+                center_cam + vec3(dist, -dist, z_up),
+                center_cam + vec3(dist, dist, z_up),
+                center_cam + vec3(-dist, dist, z_up),
             ];
             let points = &v;
             let center = center_cam;

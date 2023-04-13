@@ -52,7 +52,7 @@ pub struct GfxContext {
     pub(crate) shader_watcher: FastMap<String, (Vec<String>, Option<SystemTime>)>,
     pub(crate) tick: u64,
     pub(crate) projection: Uniform<Matrix4>,
-    pub(crate) sun_projection: [Uniform<Matrix4>; 3],
+    pub(crate) sun_projection: [Uniform<Matrix4>; N_CASCADES],
     pub render_params: Uniform<RenderParams>,
     pub(crate) texture_cache_paths: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) texture_cache_bytes: Mutex<HashMap<u64, Arc<Texture>, common::TransparentHasherU64>>,
@@ -77,11 +77,13 @@ pub struct Encoders {
     pub end: CommandEncoder,
 }
 
+pub const N_CASCADES: usize = 4;
+
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct RenderParams {
     pub inv_proj: Matrix4,
-    pub sun_shadow_proj: [Matrix4; 3],
+    pub sun_shadow_proj: [Matrix4; N_CASCADES],
     pub cam_pos: Vec3,
     pub _pad: f32,
     pub cam_dir: Vec3,
@@ -106,7 +108,7 @@ impl Default for RenderParams {
     fn default() -> Self {
         Self {
             inv_proj: Matrix4::zero(),
-            sun_shadow_proj: [Matrix4::zero(); 3],
+            sun_shadow_proj: [Matrix4::zero(); N_CASCADES],
             sun_col: Default::default(),
             grass_col: Default::default(),
             sand_col: Default::default(),
@@ -269,7 +271,7 @@ impl GfxContext {
             shader_watcher: Default::default(),
             tick: 0,
             projection,
-            sun_projection: [(); 3].map(|_| Uniform::new(Matrix4::zero(), &device)),
+            sun_projection: [(); 4].map(|_| Uniform::new(Matrix4::zero(), &device)),
             render_params: Uniform::new(Default::default(), &device),
             texture_cache_paths: textures,
             texture_cache_bytes: Default::default(),
@@ -648,7 +650,7 @@ impl GfxContext {
         let extent = wgpu::Extent3d {
             width: res,
             height: res,
-            depth_or_array_layers: 3,
+            depth_or_array_layers: N_CASCADES as u32,
         };
         let desc = wgpu::TextureDescriptor {
             format,

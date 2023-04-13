@@ -1,7 +1,7 @@
 fn sampleShadow(in_wpos: vec3<f32>) -> f32 {
     var cascade_idx = 0;
     var blend = 0.0;
-    for (var i = 0 ; i < 3 ; i++) {
+    for (var i = 0 ; i < N_SHADOWS ; i++) {
         let light_local: vec4<f32> = params.sunproj[i] * vec4(in_wpos, 1.0);
         let corrected: vec3<f32> = light_local.xyz / light_local.w * vec3(0.5, -0.5, 1.0) + vec3(0.5, 0.5, 0.0);
 

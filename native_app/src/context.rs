@@ -135,7 +135,7 @@ impl Context {
                         params.sun = sun;
                         params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);
                         params.sun_shadow_proj =
-                            Camera::build_sun_shadowmap_matrix(state.camera.camera.pos, sun, params.shadow_mapping_resolution as f32, &state.camera.frustrum).try_into().unwrap();
+                            state.camera.camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_resolution as f32, &state.camera.frustrum).try_into().unwrap();
                         let c = egregoria::config();
                         params.grass_col = c.grass_col.into();
                         params.sand_col = c.sand_col.into();
