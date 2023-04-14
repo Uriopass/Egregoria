@@ -1056,7 +1056,6 @@ impl GfxContext {
         vertex_buffers: &[VertexBufferLayout<'_>],
         vert_shader: &CompiledModule,
         frag_shader: &CompiledModule,
-        double_sided: bool,
     ) -> RenderPipeline {
         let render_pipeline_layout =
             self.device
@@ -1093,7 +1092,7 @@ impl GfxContext {
                 targets: &color_states,
             }),
             primitive: PrimitiveState {
-                cull_mode: (!double_sided).then_some(Face::Back),
+                cull_mode: Some(Face::Back),
                 front_face: FrontFace::Ccw,
                 ..Default::default()
             },
@@ -1123,7 +1122,6 @@ impl GfxContext {
         vert_shader: &CompiledModule,
         frag_shader: Option<&CompiledModule>,
         shadow_map: bool,
-        double_sided: bool,
     ) -> RenderPipeline {
         self.depth_pipeline_bglayout(
             vertex_buffers,
@@ -1131,7 +1129,6 @@ impl GfxContext {
             frag_shader,
             shadow_map,
             &[&self.projection.layout],
-            double_sided,
         )
     }
 
@@ -1142,7 +1139,6 @@ impl GfxContext {
         frag_shader: Option<&CompiledModule>,
         shadow_map: bool,
         layouts: &[&BindGroupLayout],
-        double_sided: bool,
     ) -> RenderPipeline {
         let render_pipeline_layout =
             self.device
@@ -1167,7 +1163,7 @@ impl GfxContext {
             }),
             primitive: PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
-                cull_mode: (!double_sided).then_some(Face::Back),
+                cull_mode: Some(Face::Back),
                 front_face: FrontFace::Ccw,
                 ..Default::default()
             },
@@ -1455,7 +1451,6 @@ impl BackgroundPipeline {
                     &[UvVertex::desc()],
                     bg,
                     bg,
-                    false,
                 )
             }),
         );

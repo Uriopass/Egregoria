@@ -398,7 +398,6 @@ impl TerrainPrepared {
                     &[TerrainVertex::desc(), TerrainInstance::desc()],
                     vert,
                     frag,
-                    false,
                 )
             }),
         );
@@ -417,7 +416,6 @@ impl TerrainPrepared {
                         None,
                         smap,
                         &[&gfx.projection.layout, &gfx.render_params.layout, &lay2],
-                        false,
                     )
                 }),
             );

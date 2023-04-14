@@ -20,34 +20,20 @@ pub enum ImageLoadError {
     InvalidFormat(Format),
     InvalidData,
     ImageNotFound,
-    /// Two materials refer to the same texture, not supported for now because of srgb handling
-    ImageAlreadyUsed,
 }
 
 pub fn load_image(
     gfx: &GfxContext,
     matname: Option<&str>,
     tex: &gltf::Texture,
-    images: &mut [Data],
+    images: &[Data],
     srgb: bool,
 ) -> Result<Arc<Texture>, ImageLoadError> {
     let idx = tex.source().index();
     if idx > images.len() {
         return Err(ImageLoadError::ImageNotFound);
     }
-    let data = std::mem::replace(
-        &mut images[tex.source().index()],
-        Data {
-            pixels: vec![],
-            format: Format::R8,
-            width: 0xDEAD,
-            height: 0,
-        },
-    );
-
-    if data.pixels.is_empty() && data.width == 0xDEAD {
-        return Err(ImageLoadError::ImageAlreadyUsed);
-    }
+    let data = images[tex.source().index()].clone();
 
     let sampl = tex.sampler();
 
@@ -155,7 +141,7 @@ pub fn load_image(
 fn load_materials(
     gfx: &mut GfxContext,
     doc: &Document,
-    images: &mut Vec<Data>,
+    images: &[Data],
 ) -> Result<Vec<MaterialID>, LoadMeshError> {
     let mut v = Vec::with_capacity(doc.materials().len());
     for gltfmat in doc.materials() {
@@ -175,7 +161,7 @@ fn load_materials(
                 gfx,
                 gltfmat.name(),
                 &metallic_roughness_tex.texture(),
-                &mut *images,
+                images,
                 false,
             )?);
         }
@@ -206,7 +192,6 @@ fn load_materials(
         let transparent = albedo.transparent;
         let mut gfxmat = Material::new(gfx, albedo, metallic_roughness);
         gfxmat.transparent = transparent;
-        gfxmat.double_sided = gltfmat.double_sided();
         let matid = gfx.register_material(gfxmat);
         v.push(matid)
     }
@@ -241,7 +226,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
     let mut indices = vec![];
     let mut materials_idx = SmallVec::new();
 
-    let (doc, data, mut images) = gltf::import(&path).map_err(LoadMeshError::GltfLoadError)?;
+    let (doc, data, images) = gltf::import(&path).map_err(LoadMeshError::GltfLoadError)?;
 
     let exts = doc
         .extensions_used()
@@ -251,7 +236,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
     }
     let nodes = doc.nodes();
 
-    let mats = load_materials(gfx, &doc, &mut images)?;
+    let mats = load_materials(gfx, &doc, &images)?;
 
     for node in nodes {
         let mesh = unwrap_cont!(node.mesh());
@@ -347,15 +332,10 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
     let m = meshb.build(gfx).ok_or(LoadMeshError::NoVertices)?;
 
     log::info!(
-        "loaded mesh {:?} in {}ms ({} tris{})",
+        "loaded mesh {:?} in {}ms ({} tris)",
         path,
         1000.0 * t.elapsed().as_secs_f32(),
         m.materials.iter().map(|x| x.1).sum::<u32>() / 3,
-        if m.materials.iter().any(|x| gfx.material(x.0).double_sided) {
-            ", double sided"
-        } else {
-            ""
-        }
     );
 
     Ok(m)

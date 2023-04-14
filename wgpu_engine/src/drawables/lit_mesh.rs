@@ -127,7 +127,6 @@ pub(crate) struct MeshPipeline {
     pub(crate) alpha: bool,
     pub(crate) smap: bool,
     pub(crate) depth: bool,
-    pub(crate) double_sided: bool,
 }
 
 const VB_INSTANCED: &[VertexBufferLayout] = &[MeshVertex::desc(), MeshInstance::desc()];
@@ -144,81 +143,74 @@ impl Mesh {
 
             let vb: &[VertexBufferLayout] = if instanced { VB_INSTANCED } else { VB };
 
-            for double_sided in [false, true] {
-                let pipeline = MeshPipeline {
-                    instanced,
-                    double_sided,
-                    alpha: false,
-                    smap: false,
-                    depth: false,
-                };
+            let pipeline = MeshPipeline {
+                instanced,
+                alpha: false,
+                smap: false,
+                depth: false,
+            };
 
+            gfx.register_pipeline(
+                pipeline,
+                &[vert_shader, "pixel.frag"],
+                Box::new(move |m, gfx| {
+                    let vert = &m[0];
+                    let frag = &m[1];
+                    gfx.color_pipeline(
+                        "lit_mesh",
+                        &[
+                            &gfx.projection.layout,
+                            &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                            &Material::bindgroup_layout(&gfx.device),
+                            &bg_layout_litmesh(&gfx.device),
+                        ],
+                        vb,
+                        vert,
+                        frag,
+                    )
+                }),
+            );
+
+            for smap in [false, true] {
+                let pipeline_depth = MeshPipeline {
+                    instanced,
+                    smap,
+                    alpha: false,
+                    depth: true,
+                };
                 gfx.register_pipeline(
-                    pipeline,
-                    &[vert_shader, "pixel.frag"],
+                    pipeline_depth,
+                    &[vert_shader],
                     Box::new(move |m, gfx| {
                         let vert = &m[0];
-                        let frag = &m[1];
-                        gfx.color_pipeline(
-                            "lit_mesh",
-                            &[
-                                &gfx.projection.layout,
-                                &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                                &Material::bindgroup_layout(&gfx.device),
-                                &bg_layout_litmesh(&gfx.device),
-                            ],
-                            vb,
-                            vert,
-                            frag,
-                            double_sided,
-                        )
+                        gfx.depth_pipeline(vb, vert, None, smap)
                     }),
                 );
 
-                for smap in [false, true] {
-                    let pipeline_depth = MeshPipeline {
-                        instanced,
-                        smap,
-                        double_sided,
-                        alpha: false,
-                        depth: true,
-                    };
-                    gfx.register_pipeline(
-                        pipeline_depth,
-                        &[vert_shader],
-                        Box::new(move |m, gfx| {
-                            let vert = &m[0];
-                            gfx.depth_pipeline(vb, vert, None, smap, double_sided)
-                        }),
-                    );
-
-                    let pipeline_depth_alpha = MeshPipeline {
-                        instanced,
-                        smap,
-                        double_sided,
-                        alpha: true,
-                        depth: true,
-                    };
-                    gfx.register_pipeline(
-                        pipeline_depth_alpha,
-                        &[vert_shader, "alpha_discard.frag"],
-                        Box::new(move |m, gfx| {
-                            let vert = &m[0];
-                            let frag = &m[1];
-                            gfx.depth_pipeline_bglayout(
-                                vb,
-                                vert,
-                                Some(frag),
-                                smap,
-                                &[
-                                    &gfx.projection.layout,
-                                    &Material::bindgroup_layout(&gfx.device),
-                                ],
-                                double_sided,
-                            )
-                        }),
-                    );
-                }
+                let pipeline_depth_alpha = MeshPipeline {
+                    instanced,
+                    smap,
+                    alpha: true,
+                    depth: true,
+                };
+                gfx.register_pipeline(
+                    pipeline_depth_alpha,
+                    &[vert_shader, "alpha_discard.frag"],
+                    Box::new(move |m, gfx| {
+                        let vert = &m[0];
+                        let frag = &m[1];
+                        gfx.depth_pipeline_bglayout(
+                            vb,
+                            vert,
+                            Some(frag),
+                            smap,
+                            &[
+                                &gfx.projection.layout,
+                                &Material::bindgroup_layout(&gfx.device),
+                            ],
+                        )
+                    }),
+                );
             }
         }
     }
@@ -239,7 +231,6 @@ impl Drawable for Mesh {
                 alpha: false,
                 smap: false,
                 depth: false,
-                double_sided: mat.double_sided,
             }));
             rp.set_bind_group(2, &mat.bg, &[]);
             rp.draw_indexed(offset..offset + length, 0, 0..1);
@@ -267,7 +258,6 @@ impl Drawable for Mesh {
                 alpha: mat.transparent,
                 smap: shadow_map,
                 depth: true,
-                double_sided: mat.double_sided,
             }));
 
             if mat.transparent {

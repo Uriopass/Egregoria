@@ -20,7 +20,6 @@ pub struct Material {
     pub albedo: Arc<Texture>,
     pub mat_params: wgpu::Buffer,
     pub metallic_roughness_tex: Option<Arc<Texture>>,
-    pub double_sided: bool,
     pub transparent: bool,
 }
 
@@ -125,7 +124,6 @@ impl Material {
             bg,
             mat_params,
             metallic_roughness_tex: metallic_roughness.tex,
-            double_sided: false,
             albedo,
             transparent: false,
         }

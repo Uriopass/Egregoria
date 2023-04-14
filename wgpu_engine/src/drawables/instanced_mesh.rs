@@ -82,7 +82,6 @@ impl Drawable for InstancedMesh {
                 alpha: false,
                 smap: false,
                 depth: false,
-                double_sided: mat.double_sided,
             });
             rp.set_pipeline(pipeline);
             rp.set_bind_group(2, &mat.bg, &[]);
@@ -109,7 +108,6 @@ impl Drawable for InstancedMesh {
                 alpha: mat.transparent,
                 smap: shadow_map,
                 depth: true,
-                double_sided: mat.double_sided,
             }));
 
             if mat.transparent {

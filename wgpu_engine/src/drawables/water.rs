@@ -75,14 +75,7 @@ impl Water {
                     &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
                 ];
 
-                gfx.color_pipeline(
-                    "water pipeline",
-                    layouts,
-                    &[MeshVertex::desc()],
-                    vert,
-                    frag,
-                    false,
-                )
+                gfx.color_pipeline("water pipeline", layouts, &[MeshVertex::desc()], vert, frag)
             }),
         );
     }
