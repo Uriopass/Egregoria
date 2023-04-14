@@ -3,7 +3,7 @@ use crate::game_loop;
 use crate::init::SOUNDS_LIST;
 use crate::input::InputContext;
 use egregoria::utils::time::GameTime;
-use geom::{vec2, vec3, Camera, LinearColor};
+use geom::{vec2, vec3, LinearColor};
 use std::time::Instant;
 use wgpu_engine::GfxContext;
 use winit::window::Window;

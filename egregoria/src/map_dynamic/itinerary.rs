@@ -172,14 +172,14 @@ impl Itinerary {
         Some(it)
     }
 
-    fn advance(&mut self, map: &Map) -> Option<Vec3> {
+    fn advance(&mut self, map: &Map, position: Vec3) -> Option<Vec3> {
         let v = self.reversed_local_path.pop();
 
         if self.reversed_local_path.is_empty() {
             if let ItineraryKind::Route(ref mut r, pathkind) = self.kind {
                 r.cur = r.reversed_route.pop()?;
 
-                let mut points = match r.cur.points(map) {
+                let points = match r.cur.points(map) {
                     Some(x) => x,
                     None => {
                         *self = Self::wait_for_reroute(pathkind, r.end_pos);
@@ -188,16 +188,14 @@ impl Itinerary {
                 };
 
                 if r.reversed_route.is_empty() {
-                    let (proj_pos, id) = points.project_segment(r.end_pos);
-                    #[allow(clippy::indexing_slicing)]
-                    self.reversed_local_path.push(r.end_pos);
-                    self.reversed_local_path.push(proj_pos);
-                    self.reversed_local_path
-                        .extend(points.as_slice()[..id].iter().rev());
+                    self.reversed_local_path = pathkind
+                        .local_route(map, r.cur.destination_lane(), position, r.end_pos)
+                        .unwrap_or(points)
+                        .into_vec();
                 } else {
-                    points.reverse();
                     self.reversed_local_path = points.into_vec();
                 }
+                self.reversed_local_path.reverse();
             }
         }
         v
@@ -217,12 +215,12 @@ impl Itinerary {
                 dist_to_move -= dist;
                 position = p;
                 if self.is_terminal() {
-                    self.advance(map);
+                    self.advance(map, position);
                     return p;
                 }
 
                 if self.remaining_points() > 1 {
-                    self.advance(map);
+                    self.advance(map, position);
                     continue;
                 }
 
@@ -232,7 +230,7 @@ impl Itinerary {
                 });
 
                 if k.can_pass(time, map.lanes()) {
-                    self.advance(map);
+                    self.advance(map, position);
                     continue;
                 }
                 return p;
