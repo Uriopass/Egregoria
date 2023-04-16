@@ -101,6 +101,17 @@ impl State {
 
     #[profiling::function]
     pub(crate) fn update(&mut self, ctx: &mut Context) {
+        if self
+            .uiw
+            .read::<WorldCommands>()
+            .iter()
+            .any(|x| matches!(x, WorldCommand::ResetSave))
+        {
+            self.reset();
+        }
+
+        crate::network::goria_update(self);
+
         if !self.egui_render.last_mouse_captured {
             let goria = self.goria.read().unwrap();
             let map = goria.map();
@@ -117,17 +128,6 @@ impl State {
             !self.egui_render.last_mouse_captured,
         );
         crate::gui::run_ui_systems(&self.goria.read().unwrap(), &mut self.uiw);
-
-        if self
-            .uiw
-            .read::<WorldCommands>()
-            .iter()
-            .any(|x| matches!(x, WorldCommand::ResetSave))
-        {
-            self.reset();
-        }
-
-        crate::network::goria_update(self);
 
         self.uiw.write::<Timings>().all.add_value(ctx.delta);
         self.uiw.write::<Timings>().per_game_system = self.game_schedule.times();
