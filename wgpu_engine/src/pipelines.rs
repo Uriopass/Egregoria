@@ -1,5 +1,6 @@
 use crate::{compile_shader, CompiledModule, GfxContext};
 use common::FastMap;
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::path::Path;
@@ -68,6 +69,35 @@ impl Pipelines {
                 module
             })
             .clone()
+    }
+
+    pub fn get_pipeline(
+        &mut self,
+        gfx: &GfxContext,
+        obj: impl PipelineBuilder,
+        device: &Device,
+    ) -> &'static RenderPipeline {
+        let hash = common::hash_type_u64(&obj);
+        match self.pipelines.entry(hash) {
+            Entry::Occupied(o) => o.get(),
+            Entry::Vacant(v) => {
+                let mut deps = Vec::new();
+                let pipeline = obj.build(gfx, |name| {
+                    deps.push(name.to_string());
+                    Pipelines::get_module(
+                        &mut self.shader_cache,
+                        &mut self.shader_watcher,
+                        &device,
+                        name,
+                    )
+                });
+                for dep in deps {
+                    self.pipelines_deps.entry(dep).or_default().insert(hash);
+                }
+                // ok to leak, we don't expect to build them many times in release
+                *v.insert(Box::leak(Box::new(pipeline)))
+            }
+        }
     }
 
     pub fn invalidate(&mut self, device: &Device, shader_name: &str) {

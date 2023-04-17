@@ -7,7 +7,6 @@ use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use std::cell::RefCell;
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::num::NonZeroU32;
@@ -879,33 +878,8 @@ impl GfxContext {
     }
 
     pub fn get_pipeline(&self, obj: impl PipelineBuilder) -> &'static RenderPipeline {
-        let hash = common::hash_type_u64(&obj);
         let pipelines = &mut *self.pipelines.try_borrow_mut().unwrap();
-        let pipeline = match pipelines.pipelines.entry(hash) {
-            Entry::Occupied(o) => o.get(),
-            Entry::Vacant(v) => {
-                let mut deps = Vec::new();
-                let pipeline = obj.build(self, |name| {
-                    deps.push(name.to_string());
-                    Pipelines::get_module(
-                        &mut pipelines.shader_cache,
-                        &mut pipelines.shader_watcher,
-                        &self.device,
-                        name,
-                    )
-                });
-                for dep in deps {
-                    pipelines
-                        .pipelines_deps
-                        .entry(dep)
-                        .or_default()
-                        .insert(hash);
-                }
-                // ok to leak, we don't expect to build them many times in release
-                *v.insert(Box::leak(Box::new(pipeline)))
-            }
-        };
-        pipeline
+        pipelines.get_pipeline(self, obj, &self.device)
     }
 
     pub fn mipmap_module(&self) -> CompiledModule {
