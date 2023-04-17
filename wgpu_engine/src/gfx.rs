@@ -98,7 +98,6 @@ pub struct RenderParams {
     pub time_always: f32,
     pub ssao_enabled: i32,
     pub shadow_mapping_resolution: i32,
-    pub realistic_sky: i32,
     pub grid_enabled: i32,
     pub _pad5: [f32; 3],
 }
@@ -120,7 +119,6 @@ impl Default for RenderParams {
             time_always: 0.0,
             ssao_enabled: 1,
             shadow_mapping_resolution: 2048,
-            realistic_sky: 1,
             grid_enabled: 1,
             _pad: 0.0,
             _pad2: 0.0,
@@ -303,11 +301,10 @@ impl GfxContext {
             .build(&me.device, &me.queue);
         me.set_texture("assets/sprites/palette.png", palette);
 
-        let gs = me.texture("assets/sprites/gradientsky.png", "gradient sky");
         let starfield = me.texture("assets/sprites/starfield.png", "starfield");
 
         me.sky_bg = Texture::multi_bindgroup(
-            &[&*gs, &*starfield, &me.pbr.environment_cube],
+            &[&*starfield, &me.pbr.environment_cube],
             &me.device,
             &me.get_pipeline(BackgroundPipeline).get_bind_group_layout(2),
         );
@@ -1131,8 +1128,7 @@ impl BackgroundPipeline {
             &["background"],
             Box::new(move |m, gfx| {
                 let bg = &m[0];
-                let bglayout_texs =
-                    Texture::bindgroup_layout(&gfx.device, [TL::Float, TL::Float, TL::Cube]);
+                let bglayout_texs = Texture::bindgroup_layout(&gfx.device, [TL::Float, TL::Cube]);
 
                 gfx.color_pipeline(
                     "background",

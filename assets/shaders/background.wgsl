@@ -9,12 +9,10 @@ struct FragmentOutput {
 @group(1) @binding(0) var t_bnoise: texture_2d<f32>;
 @group(1) @binding(1) var s_bnoise: sampler;
 
-@group(2) @binding(0) var t_gradientsky: texture_2d<f32>;
-@group(2) @binding(1) var s_gradientsky: sampler;
-@group(2) @binding(2) var t_starfield: texture_2d<f32>;
-@group(2) @binding(3) var s_starfield: sampler;
-@group(2) @binding(4) var t_environment: texture_cube<f32>;
-@group(2) @binding(5) var s_environment: sampler;
+@group(2) @binding(0) var t_starfield: texture_2d<f32>;
+@group(2) @binding(1) var s_starfield: sampler;
+@group(2) @binding(2) var t_environment: texture_cube<f32>;
+@group(2) @binding(3) var s_environment: sampler;
 
 #include "dither.wgsl"
 #include "atmosphere.wgsl"
@@ -27,15 +25,10 @@ fn frag(@location(0) in_pos: vec3<f32>, @builtin(position) position: vec4<f32>) 
 
     let longitude: f32 = atan2(pos.x, pos.y);
 
-    var color: vec3<f32>;
-    if (params.realistic_sky != 0) {
-        color = atmosphere(
-            pos,           // normalized ray direction
-            fsun           // normalized sun direction
-        );
-    } else {
-        color = textureSample(t_gradientsky, s_gradientsky, vec2(0.5 - fsun.z * 0.5, 1.0 - max(0.01, pos.y))).rgb;
-    }
+    var color: vec3<f32> = atmosphere(
+        pos,           // normalized ray direction
+        fsun           // normalized sun direction
+    );
 
     //color = textureSampleLevel(t_environment, s_environment, pos, 0.0).rgb;
 

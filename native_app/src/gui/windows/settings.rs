@@ -67,7 +67,6 @@ pub(crate) struct Settings {
     pub(crate) vsync: bool,
     pub(crate) ssao: bool,
     pub(crate) shadows: ShadowQuality,
-    pub(crate) realistic_sky: bool,
     pub(crate) terrain_grid: bool,
 
     pub(crate) gui_scale: f32,
@@ -96,7 +95,6 @@ impl Default for Settings {
             ssao: true,
             shadows: ShadowQuality::High,
             camera_smooth_tightness: 1.0,
-            realistic_sky: true,
             camera_fov: 60.0,
             terrain_grid: true,
             gui_scale: 1.0,
@@ -196,7 +194,6 @@ pub(crate) fn settings(
             ui.label(format!("Graphics - {fps:.1}FPS"));
 
             ui.checkbox(&mut settings.fullscreen, "Fullscreen");
-            ui.checkbox(&mut settings.realistic_sky, "Realistic sky");
             ui.checkbox(&mut settings.terrain_grid, "Terrain Grid");
             ui.checkbox(&mut settings.ssao, "Ambient Occlusion (SSAO)");
 

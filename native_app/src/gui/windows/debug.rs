@@ -103,7 +103,7 @@ pub(crate) fn debug(
         if ui.small_button("set dawn").clicked() {
             uiworld.commands().set_game_time(GameTime::new(
                 0.1,
-                time + daysecleft as f64 + 18.0 * GameTime::HOUR as f64,
+                time + daysecleft as f64 + 21.0 * GameTime::HOUR as f64,
             ));
         }
 

@@ -275,7 +275,6 @@ impl State {
         ctx.gfx.set_vsync(settings.vsync);
         let params = ctx.gfx.render_params.value_mut();
         params.ssao_enabled = settings.ssao as i32;
-        params.realistic_sky = settings.realistic_sky as i32;
         params.grid_enabled = settings.terrain_grid as i32;
         params.shadow_mapping_resolution = settings.shadows.size().unwrap_or(0) as i32;
 
