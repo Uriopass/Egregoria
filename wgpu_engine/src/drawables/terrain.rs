@@ -1,17 +1,16 @@
 use crate::{
-    bg_layout_litmesh, pbuffer::PBuffer, Drawable, FrameContext, GfxContext, IndexType, Material,
-    Mesh, MeshBuilder, MeshVertex, MetallicRoughness, RenderParams, TerrainVertex, Texture,
-    Uniform, TL,
+    bg_layout_litmesh, pbuffer::PBuffer, CompiledModule, Drawable, FrameContext, GfxContext,
+    IndexType, Material, Mesh, MeshBuilder, MeshVertex, MetallicRoughness, PipelineBuilder,
+    RenderParams, TerrainVertex, Texture, Uniform, TL,
 };
 use common::FastMap;
 use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Polygon, Vec2, AABB3};
 use std::num::NonZeroU32;
 use std::ops::Sub;
-use std::rc::Rc;
 use std::sync::Arc;
 use wgpu::{
     BufferUsages, Extent3d, FilterMode, ImageCopyTexture, ImageDataLayout, IndexFormat, Origin3d,
-    RenderPass, TextureFormat, TextureUsages, VertexAttribute, VertexBufferLayout,
+    RenderPass, RenderPipeline, TextureFormat, TextureUsages, VertexAttribute, VertexBufferLayout,
 };
 
 const LOD: usize = 4;
@@ -369,59 +368,6 @@ impl TerrainInstance {
 }
 
 impl TerrainPrepared {
-    pub(crate) fn setup(gfx: &mut GfxContext) {
-        let terrainlayout = Rc::new(Texture::bindgroup_layout(
-            &gfx.device,
-            [TL::NonfilterableFloat, TL::Float],
-        ));
-
-        let lay1 = terrainlayout.clone();
-
-        gfx.register_pipeline(
-            TerrainPipeline {
-                depth: false,
-                smap: false,
-            },
-            &["terrain.vert", "terrain.frag"],
-            Box::new(move |m, gfx| {
-                let vert = &m[0];
-                let frag = &m[1];
-
-                gfx.color_pipeline(
-                    "terrain",
-                    &[
-                        &gfx.projection.layout,
-                        &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                        &lay1,
-                        &bg_layout_litmesh(&gfx.device),
-                    ],
-                    &[TerrainVertex::desc(), TerrainInstance::desc()],
-                    vert,
-                    frag,
-                )
-            }),
-        );
-
-        for smap in [false, true] {
-            let lay2 = terrainlayout.clone();
-            gfx.register_pipeline(
-                TerrainPipeline { depth: true, smap },
-                &["terrain.vert"],
-                Box::new(move |m, gfx| {
-                    let vert = &m[0];
-
-                    gfx.depth_pipeline_bglayout(
-                        &[TerrainVertex::desc(), TerrainInstance::desc()],
-                        vert,
-                        None,
-                        smap,
-                        &[&gfx.projection.layout, &gfx.render_params.layout, &lay2],
-                    )
-                }),
-            );
-        }
-    }
-
     fn set_buffers<'a>(&'a self, rp: &mut RenderPass<'a>) {
         for lod in 0..LOD {
             let (ind, n_indices) = &self.indices[lod];
@@ -437,6 +383,47 @@ impl TerrainPrepared {
             rp.set_index_buffer(ind.slice().unwrap(), IndexFormat::Uint32);
             rp.draw_indexed(0..*n_indices, 0, 0..*n_instances);
         }
+    }
+}
+
+impl PipelineBuilder for TerrainPipeline {
+    fn build(
+        &self,
+        gfx: &GfxContext,
+        mut mk_module: impl FnMut(&str) -> CompiledModule,
+    ) -> RenderPipeline {
+        let terrainlayout =
+            Texture::bindgroup_layout(&gfx.device, [TL::NonfilterableFloat, TL::Float]);
+        let vert = &mk_module("terrain.vert");
+
+        if !self.depth {
+            let frag = &mk_module("terrain.frag");
+
+            return gfx.color_pipeline(
+                "terrain",
+                &[
+                    &gfx.projection.layout,
+                    &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                    &terrainlayout,
+                    &bg_layout_litmesh(&gfx.device),
+                ],
+                &[TerrainVertex::desc(), TerrainInstance::desc()],
+                vert,
+                frag,
+            );
+        }
+
+        gfx.depth_pipeline_bglayout(
+            &[TerrainVertex::desc(), TerrainInstance::desc()],
+            vert,
+            None,
+            self.smap,
+            &[
+                &gfx.projection.layout,
+                &gfx.render_params.layout,
+                &terrainlayout,
+            ],
+        )
     }
 }
 

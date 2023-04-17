@@ -1,12 +1,14 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    bg_layout_litmesh, Drawable, GfxContext, Material, MaterialID, MetallicRoughness, Texture,
-    UvVertex,
+    bg_layout_litmesh, CompiledModule, Drawable, GfxContext, Material, MaterialID,
+    MetallicRoughness, PipelineBuilder, Texture, UvVertex,
 };
 use geom::{LinearColor, Vec3};
 use std::path::PathBuf;
 use std::sync::Arc;
-use wgpu::{BufferUsages, IndexFormat, RenderPass, VertexAttribute, VertexBufferLayout};
+use wgpu::{
+    BufferUsages, IndexFormat, RenderPass, RenderPipeline, VertexAttribute, VertexBufferLayout,
+};
 
 pub struct SpriteBatchBuilder {
     pub material: MaterialID,
@@ -112,29 +114,27 @@ impl SpriteBatchBuilder {
     }
 }
 
-impl SpriteBatch {
-    pub fn setup(gfx: &mut GfxContext) {
-        gfx.register_pipeline(
-            SBPipeline,
-            &["spritebatch.vert", "pixel.frag"],
-            Box::new(move |m, gfx| {
-                let vert = &m[0];
-                let frag = &m[1];
+impl PipelineBuilder for SBPipeline {
+    fn build(
+        &self,
+        gfx: &GfxContext,
+        mut mk_module: impl FnMut(&str) -> CompiledModule,
+    ) -> RenderPipeline {
+        let vert = &mk_module("spritebatch.vert");
+        let frag = &mk_module("pixel.frag");
 
-                gfx.color_pipeline(
-                    "spritebatch",
-                    &[
-                        &gfx.projection.layout,
-                        &gfx.render_params.layout,
-                        &Material::bindgroup_layout(&gfx.device),
-                        &bg_layout_litmesh(&gfx.device),
-                    ],
-                    &[UvVertex::desc(), InstanceRaw::desc()],
-                    vert,
-                    frag,
-                )
-            }),
-        );
+        gfx.color_pipeline(
+            "spritebatch",
+            &[
+                &gfx.projection.layout,
+                &gfx.render_params.layout,
+                &Material::bindgroup_layout(&gfx.device),
+                &bg_layout_litmesh(&gfx.device),
+            ],
+            &[UvVertex::desc(), InstanceRaw::desc()],
+            vert,
+            frag,
+        )
     }
 }
 

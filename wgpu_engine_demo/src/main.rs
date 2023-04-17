@@ -1,4 +1,4 @@
-use geom::{vec3, Camera, LinearColor, Matrix4, Radians, Vec2, Vec3};
+use geom::{vec3, Camera, InfiniteFrustrum, LinearColor, Matrix4, Plane, Radians, Vec2, Vec3};
 use std::time::Instant;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
@@ -248,7 +248,7 @@ async fn run(el: EventLoop<()>, window: Window) {
                     params.sun = sun;
                     params.viewport = Vec2::new(gfx.size.0 as f32, gfx.size.1 as f32);
                     camera.dist = 300.0;
-                    params.sun_shadow_proj = camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_resolution as f32);
+                    params.sun_shadow_proj = camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_resolution as f32, &InfiniteFrustrum::new([Plane::X; 5])).try_into().unwrap();
                     camera.dist = 0.0;
                     params.shadow_mapping_resolution = 2048;
 

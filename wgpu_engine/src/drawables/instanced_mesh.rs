@@ -77,7 +77,7 @@ impl Drawable for InstancedMesh {
 
         for (mat, offset, length) in self.mesh.iter_materials() {
             let mat = gfx.material(mat);
-            let pipeline = &gfx.get_pipeline(MeshPipeline {
+            let pipeline = gfx.get_pipeline(MeshPipeline {
                 instanced: true,
                 alpha: false,
                 smap: false,

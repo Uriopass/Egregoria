@@ -1,11 +1,14 @@
-use crate::{compile_shader, GfxContext, Texture, TextureBuilder, Uniform, TL};
+use crate::{
+    compile_shader, CompiledModule, GfxContext, PipelineBuilder, Texture, TextureBuilder, Uniform,
+    TL,
+};
 use geom::{Vec3, Vec4};
 use std::num::NonZeroU32;
 use wgpu::{
     BlendState, CommandEncoder, CommandEncoderDescriptor, Device, FragmentState, LoadOp,
     Operations, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, Queue,
-    RenderPassColorAttachment, RenderPassDescriptor, RenderPipelineDescriptor, SamplerDescriptor,
-    TextureFormat, TextureViewDescriptor, TextureViewDimension, VertexState,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
+    SamplerDescriptor, TextureFormat, TextureViewDescriptor, TextureViewDimension, VertexState,
 };
 
 pub struct PBR {
@@ -218,7 +221,7 @@ impl PBR {
             push_constant_ranges: &[],
         });
 
-        let brdf_convolution_module = compile_shader(device, "pbr/brdf_convolution.wgsl");
+        let brdf_convolution_module = compile_shader(device, "pbr/brdf_convolution");
 
         let cubemapline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
@@ -267,14 +270,18 @@ impl PBR {
 
         brdf_tex
     }
+}
 
-    pub fn setup(gfx: &mut GfxContext) {
-        gfx.register_pipeline(
-            PBRPipeline::Environment,
-            &["to_cubemap.vert", "atmosphere_cubemap.frag"],
-            Box::new(|m, gfx| {
-                let cubemap_vert = &m[0];
-                let cubemap_frag = &m[1];
+impl PipelineBuilder for PBRPipeline {
+    fn build(
+        &self,
+        gfx: &GfxContext,
+        mut mk_module: impl FnMut(&str) -> CompiledModule,
+    ) -> RenderPipeline {
+        match self {
+            PBRPipeline::Environment => {
+                let cubemap_vert = &mk_module("to_cubemap.vert");
+                let cubemap_frag = &mk_module("atmosphere_cubemap.frag");
                 let cubemappipelayout =
                     gfx.device
                         .create_pipeline_layout(&PipelineLayoutDescriptor {
@@ -306,15 +313,10 @@ impl PBR {
                         }),
                         multiview: None,
                     })
-            }),
-        );
-
-        gfx.register_pipeline(
-            PBRPipeline::DiffuseIrradiance,
-            &["to_cubemap.vert", "pbr/convolute_diffuse_irradiance.frag"],
-            Box::new(|m, gfx| {
-                let cubemap_vert = &m[0];
-                let cubemap_frag = &m[1];
+            }
+            PBRPipeline::DiffuseIrradiance => {
+                let cubemap_vert = &mk_module("to_cubemap.vert");
+                let cubemap_frag = &mk_module("pbr/convolute_diffuse_irradiance.frag");
                 let bg_layout = Texture::bindgroup_layout(&gfx.device, [TL::Cube]);
                 let params_layout = Uniform::<()>::bindgroup_layout(&gfx.device);
 
@@ -349,15 +351,10 @@ impl PBR {
                         }),
                         multiview: None,
                     })
-            }),
-        );
-
-        gfx.register_pipeline(
-            PBRPipeline::SpecularPrefilter,
-            &["to_cubemap.vert", "pbr/specular_prefilter.frag"],
-            Box::new(|m, gfx| {
-                let cubemap_vert = &m[0];
-                let cubemap_frag = &m[1];
+            }
+            PBRPipeline::SpecularPrefilter => {
+                let cubemap_vert = &mk_module("to_cubemap.vert");
+                let cubemap_frag = &mk_module("pbr/specular_prefilter.frag");
                 let bg_layout = Texture::bindgroup_layout(&gfx.device, [TL::Cube]);
                 let params_layout = Uniform::<()>::bindgroup_layout(&gfx.device);
 
@@ -392,7 +389,7 @@ impl PBR {
                         }),
                         multiview: None,
                     })
-            }),
-        );
+            }
+        }
     }
 }

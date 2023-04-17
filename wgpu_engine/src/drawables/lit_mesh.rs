@@ -1,11 +1,14 @@
 use crate::pbuffer::PBuffer;
 use crate::{
-    Drawable, GfxContext, IndexType, Material, MaterialID, MeshInstance, MeshVertex, RenderParams,
-    Texture, Uniform, TL,
+    CompiledModule, Drawable, GfxContext, IndexType, Material, MaterialID, MeshInstance,
+    MeshVertex, PipelineBuilder, RenderParams, Texture, Uniform, TL,
 };
 use smallvec::SmallVec;
 use std::sync::Arc;
-use wgpu::{BindGroupLayout, BufferUsages, Device, IndexFormat, RenderPass, VertexBufferLayout};
+use wgpu::{
+    BindGroupLayout, BufferUsages, Device, IndexFormat, RenderPass, RenderPipeline,
+    VertexBufferLayout,
+};
 
 pub struct MeshBuilder {
     pub(crate) vertices: Vec<MeshVertex>,
@@ -132,87 +135,51 @@ pub(crate) struct MeshPipeline {
 const VB_INSTANCED: &[VertexBufferLayout] = &[MeshVertex::desc(), MeshInstance::desc()];
 const VB: &[VertexBufferLayout] = &[MeshVertex::desc()];
 
-impl Mesh {
-    pub fn setup(gfx: &mut GfxContext) {
-        for instanced in [false, true] {
-            let vert_shader = if instanced {
-                "instanced_mesh.vert"
-            } else {
-                "lit_mesh.vert"
-            };
+impl PipelineBuilder for MeshPipeline {
+    fn build(
+        &self,
+        gfx: &GfxContext,
+        mut mk_module: impl FnMut(&str) -> CompiledModule,
+    ) -> RenderPipeline {
+        let vert = if self.instanced {
+            mk_module("instanced_mesh.vert")
+        } else {
+            mk_module("lit_mesh.vert")
+        };
 
-            let vb: &[VertexBufferLayout] = if instanced { VB_INSTANCED } else { VB };
+        let vb: &[VertexBufferLayout] = if self.instanced { VB_INSTANCED } else { VB };
 
-            let pipeline = MeshPipeline {
-                instanced,
-                alpha: false,
-                smap: false,
-                depth: false,
-            };
-
-            gfx.register_pipeline(
-                pipeline,
-                &[vert_shader, "pixel.frag"],
-                Box::new(move |m, gfx| {
-                    let vert = &m[0];
-                    let frag = &m[1];
-                    gfx.color_pipeline(
-                        "lit_mesh",
-                        &[
-                            &gfx.projection.layout,
-                            &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
-                            &Material::bindgroup_layout(&gfx.device),
-                            &bg_layout_litmesh(&gfx.device),
-                        ],
-                        vb,
-                        vert,
-                        frag,
-                    )
-                }),
+        if !self.depth {
+            let frag = mk_module("pixel.frag");
+            return gfx.color_pipeline(
+                "lit_mesh",
+                &[
+                    &gfx.projection.layout,
+                    &Uniform::<RenderParams>::bindgroup_layout(&gfx.device),
+                    &Material::bindgroup_layout(&gfx.device),
+                    &bg_layout_litmesh(&gfx.device),
+                ],
+                vb,
+                &vert,
+                &frag,
             );
-
-            for smap in [false, true] {
-                let pipeline_depth = MeshPipeline {
-                    instanced,
-                    smap,
-                    alpha: false,
-                    depth: true,
-                };
-                gfx.register_pipeline(
-                    pipeline_depth,
-                    &[vert_shader],
-                    Box::new(move |m, gfx| {
-                        let vert = &m[0];
-                        gfx.depth_pipeline(vb, vert, None, smap)
-                    }),
-                );
-
-                let pipeline_depth_alpha = MeshPipeline {
-                    instanced,
-                    smap,
-                    alpha: true,
-                    depth: true,
-                };
-                gfx.register_pipeline(
-                    pipeline_depth_alpha,
-                    &[vert_shader, "alpha_discard.frag"],
-                    Box::new(move |m, gfx| {
-                        let vert = &m[0];
-                        let frag = &m[1];
-                        gfx.depth_pipeline_bglayout(
-                            vb,
-                            vert,
-                            Some(frag),
-                            smap,
-                            &[
-                                &gfx.projection.layout,
-                                &Material::bindgroup_layout(&gfx.device),
-                            ],
-                        )
-                    }),
-                );
-            }
         }
+
+        if !self.alpha {
+            return gfx.depth_pipeline(vb, &vert, None, self.smap);
+        }
+
+        let frag = mk_module("alpha_discard.frag");
+        gfx.depth_pipeline_bglayout(
+            vb,
+            &vert,
+            Some(&frag),
+            self.smap,
+            &[
+                &gfx.projection.layout,
+                &Material::bindgroup_layout(&gfx.device),
+            ],
+        )
     }
 }
 

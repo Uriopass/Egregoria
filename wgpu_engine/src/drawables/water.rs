@@ -1,6 +1,9 @@
-use crate::{Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, Texture, TL};
+use crate::{
+    CompiledModule, Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, PipelineBuilder, Texture,
+    TL,
+};
 use std::sync::Arc;
-use wgpu::{BindGroup, RenderPass};
+use wgpu::{BindGroup, RenderPass, RenderPipeline};
 
 #[derive(Clone)]
 pub struct Water {
@@ -52,32 +55,32 @@ impl Water {
             wavy_bg,
         }
     }
+}
 
-    pub(crate) fn setup(gfx: &mut GfxContext) {
-        gfx.register_pipeline(
-            WaterPipeline,
-            &["lit_mesh.vert", "water.frag"],
-            Box::new(move |m, gfx| {
-                let vert = &m[0];
-                let frag = &m[1];
+impl PipelineBuilder for WaterPipeline {
+    fn build(
+        &self,
+        gfx: &GfxContext,
+        mut mk_module: impl FnMut(&str) -> CompiledModule,
+    ) -> RenderPipeline {
+        let vert = &mk_module("lit_mesh.vert");
+        let frag = &mk_module("water.frag");
 
-                let layouts = &[
-                    &gfx.projection.layout,
-                    &gfx.render_params.layout,
-                    &Texture::bindgroup_layout(
-                        &gfx.device,
-                        [if gfx.samples > 1 {
-                            TL::NonfilterableFloatMultisampled
-                        } else {
-                            TL::NonfilterableFloat
-                        }],
-                    ),
-                    &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
-                ];
+        let layouts = &[
+            &gfx.projection.layout,
+            &gfx.render_params.layout,
+            &Texture::bindgroup_layout(
+                &gfx.device,
+                [if gfx.samples > 1 {
+                    TL::NonfilterableFloatMultisampled
+                } else {
+                    TL::NonfilterableFloat
+                }],
+            ),
+            &Texture::bindgroup_layout(&gfx.device, [TL::Float]),
+        ];
 
-                gfx.color_pipeline("water pipeline", layouts, &[MeshVertex::desc()], vert, frag)
-            }),
-        );
+        gfx.color_pipeline("water pipeline", layouts, &[MeshVertex::desc()], vert, frag)
     }
 }
 

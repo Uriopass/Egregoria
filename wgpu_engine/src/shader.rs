@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::time::Instant;
 use wgpu::{Device, ShaderModule};
 
 #[derive(Clone)]
@@ -33,9 +34,15 @@ fn mk_module(data: String, device: &Device) -> ShaderModule {
 
 /// if type isn't provided it will be detected by looking at extension
 pub fn compile_shader(device: &Device, name: &str) -> CompiledModule {
+    let t = Instant::now();
+    defer!(log::info!(
+        "compiling shader {} took {:?}",
+        name,
+        t.elapsed()
+    ));
     let mut p = PathBuf::new();
     p.push("assets/shaders");
-    p.push(name);
+    p.push(format!("{name}.wgsl"));
 
     let mut source = std::fs::read_to_string(&p)
         .map_err(|e| {

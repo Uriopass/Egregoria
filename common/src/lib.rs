@@ -80,19 +80,18 @@ macro_rules! unwrap_contlog {
         }
     };
 }
+pub struct DeferFn<V, T: FnOnce() -> V>(pub Option<T>);
+
+impl<V, T: FnOnce() -> V> Drop for DeferFn<V, T> {
+    fn drop(&mut self) {
+        (self.0.take().unwrap())();
+    }
+}
 
 #[macro_export]
 macro_rules! defer {
     ($e: expr) => {
-        struct Defer;
-
-        impl Drop for Defer {
-            fn drop(&mut self) {
-                $e
-            }
-        }
-
-        let _guard = Defer;
+        let _guard = $crate::DeferFn(Some(move || $e));
     };
 }
 
@@ -151,7 +150,7 @@ where
 
 #[inline]
 /// Hashes the object's type plus content to make sure that the hash is unique even across zero sized types
-pub fn hash_type_u64<T>(obj: T) -> u64
+pub fn hash_type_u64<T>(obj: &T) -> u64
 where
     T: Hash + 'static,
 {
