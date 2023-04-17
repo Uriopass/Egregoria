@@ -64,7 +64,8 @@ fn replace_imports(base: &Path, src: String, deps: &mut Vec<String>) -> String {
                 let mut p = base.to_path_buf();
                 p.pop();
                 p.push(loc);
-                let mut s = std::fs::read_to_string(p).expect("could not find included file");
+                let mut s = std::fs::read_to_string(p)
+                    .unwrap_or_else(|_| panic!("could not find included file {loc}"));
                 s = replace_imports(base, s, deps);
                 return Cow::Owned(s);
             }

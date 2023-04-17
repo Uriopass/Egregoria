@@ -3221,6 +3221,7 @@ dependencies = [
  "geom",
  "gltf",
  "image",
+ "inline_tweak",
  "itertools",
  "log",
  "profiling",

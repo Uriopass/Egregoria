@@ -70,6 +70,7 @@ pub struct GfxContext {
 }
 
 pub struct Encoders {
+    pub pbr: Option<CommandBuffer>,
     pub smap: Option<CommandBuffer>,
     pub depth_prepass: Option<CommandBuffer>,
     pub end: CommandEncoder,
@@ -295,12 +296,6 @@ impl GfxContext {
         BackgroundPipeline::setup(&mut me);
         Water::setup(&mut me);
 
-        let mut enc = me.device.create_command_encoder(&CommandEncoderDescriptor {
-            label: Some("init encoder"),
-        });
-        me.pbr.update(&me, &mut enc);
-        me.queue.submit(Some(enc.finish()));
-
         let palette = TextureBuilder::from_path("assets/sprites/palette.png")
             .with_label("palette")
             .with_sampler(Texture::nearest_sampler())
@@ -458,6 +453,7 @@ impl GfxContext {
 
         (
             Encoders {
+                pbr: None,
                 smap: None,
                 depth_prepass: None,
                 end,
@@ -485,14 +481,23 @@ impl GfxContext {
         let enc_dep_ext = &mut encs.depth_prepass;
         let enc_smap_ext = &mut encs.smap;
 
-        profiling::scope!("depth prepass");
-        let mut prepass = self
-            .device
-            .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("depth prepass encoder"),
-            });
-
         {
+            profiling::scope!("pbr prepass");
+            let mut pbr_enc = self
+                .device
+                .create_command_encoder(&CommandEncoderDescriptor {
+                    label: Some("init encoder"),
+                });
+            self.pbr.update(self, &mut pbr_enc);
+            encs.pbr = Some(pbr_enc.finish());
+        }
+        {
+            profiling::scope!("depth prepass");
+            let mut prepass = self
+                .device
+                .create_command_encoder(&CommandEncoderDescriptor {
+                    label: Some("depth prepass encoder"),
+                });
             let mut depth_prepass = prepass.begin_render_pass(&RenderPassDescriptor {
                 label: Some("depth prepass"),
                 color_attachments: &[],
@@ -510,8 +515,8 @@ impl GfxContext {
                 obj.draw_depth(self, &mut depth_prepass, false, &self.projection.bindgroup);
             }
             drop(depth_prepass);
+            *enc_dep_ext = Some(prepass.finish());
         }
-        *enc_dep_ext = Some(prepass.finish());
         if self.render_params.value().shadow_mapping_resolution != 0 {
             profiling::scope!("shadow pass");
             let mut smap_enc = self
@@ -670,6 +675,7 @@ impl GfxContext {
             encoder
                 .depth_prepass
                 .into_iter()
+                .chain(encoder.pbr)
                 .chain(encoder.smap)
                 .chain(Some(encoder.end.finish())),
         );
