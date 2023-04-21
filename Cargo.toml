@@ -17,8 +17,11 @@ default-members = ["native_app"]
 
 [workspace.dependencies]
 hecs = "0.10.0"
-egui = "0.21.0"
+egui = { git = "https://github.com/niklaskorz/egui", branch = "wgpu-next" }
 flat_spatial = "0.5.0"
+egui-wgpu = { git = "https://github.com/niklaskorz/egui", branch = "wgpu-next" }
+egui_extras = { git = "https://github.com/niklaskorz/egui", branch = "wgpu-next" }
+egui-winit = { git = "https://github.com/niklaskorz/egui", branch = "wgpu-next", default-features = false }
 
 # Set the settings for build scripts and proc-macros.
 [profile.dev.build-override]

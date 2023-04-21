@@ -9,7 +9,6 @@ use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::num::NonZeroU32;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use wgpu::util::{backend_bits_from_env, BufferInitDescriptor, DeviceExt};
@@ -193,7 +192,7 @@ impl GfxContext {
         let format = *capabilities
             .formats
             .iter()
-            .find(|x| x.describe().srgb)
+            .find(|x| x.is_srgb())
             .unwrap_or_else(|| &capabilities.formats[0]);
 
         let sc_desc = SurfaceConfiguration {
@@ -520,7 +519,7 @@ impl GfxContext {
                         base_mip_level: 0,
                         mip_level_count: None,
                         base_array_layer: i as u32,
-                        array_layer_count: Some(NonZeroU32::new(1).unwrap()),
+                        array_layer_count: Some(1),
                     });
                 let mut sun_shadow_pass = smap_enc.begin_render_pass(&RenderPassDescriptor {
                     label: Some("sun shadow pass"),

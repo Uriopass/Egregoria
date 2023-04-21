@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 geom      = { path = "../geom" }
 common    = { path = "../common" }
-wgpu      = { version = "0.15.0", default-features = false, features=["wgsl"] }
+wgpu      = { version = "0.16.0", default-features = false, features=["wgsl"] }
 bytemuck  = "1.7.2"
 image     = { version = "0.24.3", default-features = false, features = ["png"] }
 log       = "0.4.11"
@@ -18,14 +18,14 @@ gltf      = { git = "https://github.com/gltf-rs/gltf", default-features=false, f
 itertools = { version = "0.10.0", default-features = false }
 profiling = "1.0.1"
 rayon     = "1.5"
-beul      = "0.1.0"
+beul      = "1.0.0"
 slotmap   = "1.0.6"
 radiant = { version = "0.3.0", features = ["bytemuck"] }
 smallvec = "1.10.0"
 inline_tweak = "1.0.8"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies.wgpu]
-version = "0.15.0"
+version = "0.16.0"
 features = ["webgl"]
 
 [features]

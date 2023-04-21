@@ -3,7 +3,6 @@ use crate::{
     TL,
 };
 use geom::{Vec3, Vec4};
-use std::num::NonZeroU32;
 use wgpu::{
     BlendState, CommandEncoder, CommandEncoderDescriptor, Device, FragmentState, LoadOp,
     Operations, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, Queue,
@@ -179,7 +178,7 @@ impl PBR {
                             dimension: Some(TextureViewDimension::D2),
                             aspect: Default::default(),
                             base_mip_level: mip,
-                            mip_level_count: Some(NonZeroU32::new(1).unwrap()),
+                            mip_level_count: Some(1),
                             base_array_layer: face,
                             array_layer_count: None,
                         });

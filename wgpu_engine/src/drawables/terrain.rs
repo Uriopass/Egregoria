@@ -5,7 +5,6 @@ use crate::{
 };
 use common::FastMap;
 use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Polygon, Vec2, AABB3};
-use std::num::NonZeroU32;
 use std::ops::Sub;
 use std::sync::Arc;
 use wgpu::{
@@ -155,10 +154,8 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             &contents,
             ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(
-                    NonZeroU32::new((w * 4).max(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)).unwrap(),
-                ),
-                rows_per_image: Some(NonZeroU32::new(h).unwrap()),
+                bytes_per_row: Some((w * 4).max(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)),
+                rows_per_image: Some(h),
             },
             Extent3d {
                 width: w,

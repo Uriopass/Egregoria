@@ -4,7 +4,6 @@ use crate::CompiledModule;
 use image::{DynamicImage, GenericImageView, Rgba32FImage};
 use std::fs::File;
 use std::io::Read;
-use std::num::{NonZeroU32, NonZeroU8};
 use std::path::Path;
 use wgpu::{
     BindGroup, BindGroupLayout, BindGroupLayoutEntry, CommandEncoderDescriptor, Device, Extent3d,
@@ -463,7 +462,7 @@ impl<'a> TextureBuilder<'a> {
                 data,
                 ImageDataLayout {
                     offset: 0,
-                    bytes_per_row: NonZeroU32::new(pixwidth * extent.width),
+                    bytes_per_row: Some(pixwidth * extent.width),
                     rows_per_image: None,
                 },
                 extent,
@@ -498,7 +497,7 @@ impl<'a> TextureBuilder<'a> {
             && (sampl.min_filter == wgpu::FilterMode::Linear
                 || sampl.mag_filter == wgpu::FilterMode::Linear)
         {
-            sampl.anisotropy_clamp = Some(NonZeroU8::new(16).unwrap());
+            sampl.anisotropy_clamp = 16;
         }
 
         let sampler = device.create_sampler(&sampl);
@@ -580,7 +579,7 @@ fn generate_mipmaps(
                 dimension: None,
                 aspect: wgpu::TextureAspect::All,
                 base_mip_level: mip,
-                mip_level_count: NonZeroU32::new(1),
+                mip_level_count: Some(1),
                 base_array_layer: 0,
                 array_layer_count: None,
             })
