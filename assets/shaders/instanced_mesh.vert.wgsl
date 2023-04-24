@@ -20,11 +20,12 @@ fn vert(@location(0) in_pos: vec3<f32>,
         @location(4) in_instance_pos: vec3<f32>,
         @location(5) in_instance_dir: vec3<f32>,
         @location(6) in_instance_tint: vec4<f32>) -> VertexOutput {
-    let x: vec3<f32> = in_instance_dir;
-    let y: vec3<f32> = cross(vec3(0.0, 0.0, 1.0), x); // Z up
-    let z: vec3<f32> = cross(x, normalize(y));
+    let s: f32 = length(in_instance_dir);
+    let x: vec3<f32> = in_instance_dir / s;
+    let y: vec3<f32> = normalize(vec3(-x.y, x.x, 0.0)); // Z up
+    let z: vec3<f32> = normalize(cross(x, y));
 
-    let off: vec3<f32> = in_pos.x * x + in_pos.y * y + in_pos.z * z + in_instance_pos;
+    let off: vec3<f32> = s * (in_pos.x * x + in_pos.y * y + in_pos.z * z) + in_instance_pos;
     let normal: vec3<f32> = in_normal.x * x + in_normal.y * y + in_normal.z * z;
 
     let position: vec4<f32> = global.u_view_proj * vec4(off, 1.0);
