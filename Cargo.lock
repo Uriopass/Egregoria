@@ -1224,9 +1224,9 @@ checksum = "a257582fdcde896fd96463bf2d40eefea0580021c0712a0e2b028b60b47a837a"
 
 [[package]]
 name = "inline_tweak"
-version = "1.0.8"
+version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7033e97b20277cc0d043226d1940fa7719ff08d2305d1fc7421e53066d00eb4b"
+checksum = "bb5714115b937a13a7d44b894f08dbabada434c2c1117904c2ead11fa8d4fafc"
 dependencies = [
  "lazy_static",
 ]

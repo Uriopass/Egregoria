@@ -20,7 +20,7 @@ atomic_refcell = "0.1.6"
 hecs         = { workspace = true, features=["column-serialize"] }
 resources     = "1.1.0"
 profiling     = "1.0.5"
-inline_tweak = { version = "1.0.8", features = ["release_tweak"] }
+inline_tweak = { version = "1.0.9", features = ["release_tweak"] }
 pathfinding   = "4.2.1"
 serde-big-array = "0.5.0"
 lazy_static   = "1.4.0"
