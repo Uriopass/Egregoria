@@ -1,7 +1,7 @@
 use crate::pbuffer::PBuffer;
 use crate::{
     CompiledModule, Drawable, GfxContext, IndexType, Material, MaterialID, MeshInstance,
-    MeshVertex, PipelineBuilder, RenderParams, Texture, Uniform, TL,
+    MeshVertex, MikktGeometry, PipelineBuilder, RenderParams, Texture, Uniform, TL,
 };
 use smallvec::SmallVec;
 use std::sync::Arc;
@@ -17,6 +17,37 @@ pub struct MeshBuilder {
     pub(crate) ibuffer: PBuffer,
     /// List of materialID and the starting offset
     pub(crate) materials: SmallVec<[(MaterialID, u32); 1]>,
+}
+
+impl MikktGeometry for MeshBuilder {
+    fn num_faces(&self) -> usize {
+        self.indices.len() / 3
+    }
+
+    fn num_vertices_of_face(&self, _face: usize) -> usize {
+        3
+    }
+
+    fn position(&self, face: usize, vert: usize) -> [f32; 3] {
+        let i = self.indices[face * 3 + vert] as usize;
+        self.vertices[i].position
+    }
+
+    fn normal(&self, face: usize, vert: usize) -> [f32; 3] {
+        let i = self.indices[face * 3 + vert] as usize;
+        self.vertices[i].normal.into()
+    }
+
+    fn tex_coord(&self, face: usize, vert: usize) -> [f32; 2] {
+        let i = self.indices[face * 3 + vert] as usize;
+        self.vertices[i].uv
+    }
+
+    fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
+        log::info!("{}", tangent[3]);
+        let i = self.indices[face * 3 + vert] as usize;
+        self.vertices[i].tangent = tangent;
+    }
 }
 
 impl MeshBuilder {
@@ -67,6 +98,12 @@ impl MeshBuilder {
             indices.push(index + offset);
         };
         f(vertices, &mut x);
+    }
+
+    pub fn compute_tangents(&mut self) {
+        if !crate::geometry::generate_tangents(self) {
+            log::warn!("failed to generate tangents");
+        }
     }
 
     pub fn build(&mut self, gfx: &GfxContext) -> Option<Mesh> {
