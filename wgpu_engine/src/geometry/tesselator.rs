@@ -72,6 +72,7 @@ impl Tesselator {
                 color,
                 normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             });
 
             for i in 0..n_pointsu32 {
@@ -82,6 +83,7 @@ impl Tesselator {
                     color,
                     normal,
                     uv: [0.0; 2],
+                    tangent: [0.0; 4],
                 });
                 index_push(0);
                 index_push(i + 1);
@@ -112,6 +114,7 @@ impl Tesselator {
                 color,
                 normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             }));
 
             earcut(points, |x, y, z| {
@@ -145,12 +148,14 @@ impl Tesselator {
                 color,
                 normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             });
             vertices.push(MeshVertex {
                 position: (p + Vec3::x(r - halfthick)).into(),
                 color,
                 normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             });
 
             for i in 0..n_pointsu32 {
@@ -163,12 +168,14 @@ impl Tesselator {
                     color,
                     normal,
                     uv: [0.0; 2],
+                    tangent: [0.0; 4],
                 });
                 vertices.push(MeshVertex {
                     position: p2.into(),
                     color,
                     normal,
                     uv: [0.0; 2],
+                    tangent: [0.0; 4],
                 });
                 index_push(i * 2 + 2);
                 index_push(i * 2 + 1);
@@ -217,24 +224,28 @@ impl Tesselator {
                 color,
                 normal: self.normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             },
             MeshVertex {
                 position: points[1].into(),
                 color,
                 normal: self.normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             },
             MeshVertex {
                 position: points[2].into(),
                 color,
                 normal: self.normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             },
             MeshVertex {
                 position: points[3].into(),
                 color,
                 normal: self.normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             },
         ];
         self.meshbuilder.extend(&verts, &[2, 1, 0, 3, 2, 0]);
@@ -271,24 +282,28 @@ impl Tesselator {
                 color,
                 normal: self.normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             },
             MeshVertex {
                 position: points[1].into(),
                 color,
                 normal: self.normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             },
             MeshVertex {
                 position: points[2].into(),
                 color,
                 normal: self.normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             },
             MeshVertex {
                 position: points[3].into(),
                 color,
                 normal: self.normal,
                 uv: [0.0; 2],
+                tangent: [0.0; 4],
             },
         ];
 
@@ -372,6 +387,7 @@ impl Tesselator {
                     color,
                     normal,
                     uv: [0.0; 2],
+                    tangent: [0.0; 4],
                 });
             };
 

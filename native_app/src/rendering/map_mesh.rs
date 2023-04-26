@@ -279,6 +279,7 @@ impl MapBuilders {
                             uv: uv.into(),
                             normal: Vec3::Z,
                             color: [1.0; 4],
+                            tangent: [0.0; 4],
                         };
 
                         vertices.push(mk_v(pos - perp, Vec2::ZERO));
@@ -413,6 +414,7 @@ impl MapBuilders {
                         normal: Vec3::Z,
                         uv: ((*p + avg) * 0.05).into(),
                         color: [1.0; 4],
+                        tangent: [0.0; 4],
                     });
                 }
 
@@ -458,6 +460,7 @@ impl MapBuilders {
                             normal: nor,
                             uv: [0.0; 2],
                             color: col.into(),
+                            tangent: [0.0; 4],
                         })
                     }
 
@@ -698,6 +701,7 @@ fn add_polyon(
                     normal,
                     uv: [0.0; 2],
                     color,
+                    tangent: [0.0; 4],
                 })
             };
 
@@ -836,6 +840,7 @@ fn intersection_mesh(meshb: &mut MeshBuilder, inter: &Intersection, roads: &Road
             normal: Vec3::Z,
             uv: [0.0; 2],
             color: col,
+            tangent: [0.0; 4],
         }));
         earcut(&polygon.0, |a, b, c| {
             add_idx(a as u32);

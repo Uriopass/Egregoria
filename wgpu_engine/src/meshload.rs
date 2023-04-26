@@ -284,6 +284,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
                         normal: *normal,
                         uv: (*uv).into(),
                         color: [1.0, 1.0, 1.0, 1.0],
+                        tangent: [0.0; 4],
                     })
                 }
             }
@@ -307,6 +308,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
                     normal: t_normal,
                     uv: u.into(),
                     color: [1.0, 1.0, 1.0, 1.0],
+                    tangent: [0.0; 4],
                 };
 
                 indices.push(flat_vertices.len() as IndexType);

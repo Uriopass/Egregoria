@@ -277,6 +277,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                         * vec3(!is_x as i32 as f32, is_x as i32 as f32, 0.0),
                     uv: [0.0, 0.0],
                     color: self.border_col.into(),
+                    tangent: [0.0; 4],
                 })
                 .collect();
             mb.build(gfx)

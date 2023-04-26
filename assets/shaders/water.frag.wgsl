@@ -50,8 +50,9 @@ fn gerstnerWaveNormal(p: vec2<f32>, t: f32) -> vec3<f32> {
 @fragment
 fn frag(@location(0) _in_tint: vec4<f32>,
         @location(1) _in_normal: vec3<f32>,
-        @location(2) wpos: vec3<f32>,
-        @location(3) _in_uv: vec2<f32>,
+        @location(2) _in_tangent: vec4<f32>,
+        @location(3) wpos: vec3<f32>,
+        @location(4) _in_uv: vec2<f32>,
         @builtin(position) position: vec4<f32>) -> FragmentOutput {
     let t: f32 = params.time;
     let sun: vec3<f32> = params.sun;

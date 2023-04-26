@@ -5,8 +5,9 @@ struct Uniforms {
 struct VertexOutput {
     @location(0) out_color: vec4<f32>,
     @location(1) out_normal: vec3<f32>,
-    @location(2) out_wpos: vec3<f32>,
-    @location(3) out_uv: vec2<f32>,
+    @location(2) out_tangent: vec4<f32>,
+    @location(3) out_wpos: vec3<f32>,
+    @location(4) out_uv: vec2<f32>,
     @builtin(position) member: vec4<f32>,
 }
 
@@ -28,5 +29,5 @@ fn vert(@location(0) in_pos: vec3<f32>,
 
     let position = globals.u_view_proj * vec4(wpos, 1.0);
 
-    return VertexOutput(in_tint, z, wpos, in_uv, position);
+    return VertexOutput(in_tint, z, vec4(0.0), wpos, in_uv, position);
 }
