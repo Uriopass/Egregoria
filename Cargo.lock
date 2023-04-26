@@ -730,7 +730,7 @@ checksum = "355215cf95ddc4db0459d5313c9b146bedd43453305e3f0f1c4e8fde7f8d3884"
 [[package]]
 name = "ecolor"
 version = "0.21.0"
-source = "git+https://github.com/niklaskorz/egui?branch=wgpu-next#9aad6290e4d7a9c1c4807255c82355a29db80fc6"
+source = "git+https://github.com/emilk/egui?branch=master#f76eefb98d23cbf71989255aafe75a07d343f6ed"
 dependencies = [
  "bytemuck",
 ]
@@ -763,7 +763,7 @@ dependencies = [
 [[package]]
 name = "egui"
 version = "0.21.0"
-source = "git+https://github.com/niklaskorz/egui?branch=wgpu-next#9aad6290e4d7a9c1c4807255c82355a29db80fc6"
+source = "git+https://github.com/emilk/egui?branch=master#f76eefb98d23cbf71989255aafe75a07d343f6ed"
 dependencies = [
  "ahash 0.8.3",
  "epaint",
@@ -793,11 +793,12 @@ dependencies = [
 [[package]]
 name = "egui-wgpu"
 version = "0.21.0"
-source = "git+https://github.com/niklaskorz/egui?branch=wgpu-next#9aad6290e4d7a9c1c4807255c82355a29db80fc6"
+source = "git+https://github.com/emilk/egui?branch=master#f76eefb98d23cbf71989255aafe75a07d343f6ed"
 dependencies = [
  "bytemuck",
  "epaint",
  "log",
+ "thiserror",
  "type-map",
  "wgpu",
 ]
@@ -805,7 +806,7 @@ dependencies = [
 [[package]]
 name = "egui-winit"
 version = "0.21.1"
-source = "git+https://github.com/niklaskorz/egui?branch=wgpu-next#9aad6290e4d7a9c1c4807255c82355a29db80fc6"
+source = "git+https://github.com/emilk/egui?branch=master#f76eefb98d23cbf71989255aafe75a07d343f6ed"
 dependencies = [
  "egui",
  "instant",
@@ -817,7 +818,7 @@ dependencies = [
 [[package]]
 name = "egui_extras"
 version = "0.21.0"
-source = "git+https://github.com/niklaskorz/egui?branch=wgpu-next#9aad6290e4d7a9c1c4807255c82355a29db80fc6"
+source = "git+https://github.com/emilk/egui?branch=master#f76eefb98d23cbf71989255aafe75a07d343f6ed"
 dependencies = [
  "egui",
  "serde",
@@ -832,7 +833,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "emath"
 version = "0.21.0"
-source = "git+https://github.com/niklaskorz/egui?branch=wgpu-next#9aad6290e4d7a9c1c4807255c82355a29db80fc6"
+source = "git+https://github.com/emilk/egui?branch=master#f76eefb98d23cbf71989255aafe75a07d343f6ed"
 dependencies = [
  "bytemuck",
 ]
@@ -840,7 +841,7 @@ dependencies = [
 [[package]]
 name = "epaint"
 version = "0.21.0"
-source = "git+https://github.com/niklaskorz/egui?branch=wgpu-next#9aad6290e4d7a9c1c4807255c82355a29db80fc6"
+source = "git+https://github.com/emilk/egui?branch=master#f76eefb98d23cbf71989255aafe75a07d343f6ed"
 dependencies = [
  "ab_glyph",
  "ahash 0.8.3",
