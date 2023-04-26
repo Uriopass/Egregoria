@@ -86,6 +86,7 @@ impl SpriteBatchBuilder {
                 roughness: 1.0,
                 tex: None,
             },
+            None,
         );
         let matid = gfx.register_material(mat);
 

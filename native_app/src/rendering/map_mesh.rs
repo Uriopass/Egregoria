@@ -102,6 +102,7 @@ impl MapMeshHandler {
                     roughness: 1.0,
                     tex: None,
                 },
+                None,
             ));
             let floor_mesh = MeshBuilder::new(floor_mat);
 
@@ -130,6 +131,7 @@ impl MapMeshHandler {
                 roughness: 1.0,
                 tex: None,
             },
+            None,
         ));
         let houses_mat = gfx.register_material(Material::new(
             gfx,
@@ -139,6 +141,7 @@ impl MapMeshHandler {
                 roughness: 1.0,
                 tex: None,
             },
+            None,
         ));
         let builders = MapBuilders {
             arrow_builder,

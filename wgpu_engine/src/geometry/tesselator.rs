@@ -21,6 +21,7 @@ impl Tesselator {
                 roughness: 1.0,
                 tex: None,
             },
+            None,
         ));
 
         Tesselator {

@@ -19,7 +19,8 @@ pub struct Material {
     pub bg: BindGroup,
     pub albedo: Arc<Texture>,
     pub mat_params: wgpu::Buffer,
-    pub metallic_roughness_tex: Option<Arc<Texture>>,
+    pub metallic_roughness_map: Option<Arc<Texture>>,
+    pub normal_map: Option<Arc<Texture>>,
     pub transparent: bool,
 }
 
@@ -29,7 +30,8 @@ pub struct MetallicRoughness {
     pub tex: Option<Arc<Texture>>,
 }
 
-const HAS_METALLIC_ROUGHNESS_TEXTURE: u32 = 1 << 0;
+const HAS_METALLIC_ROUGHNESS_MAP: u32 = 1 << 0;
+const HAS_NORMAL_MAP: u32 = 1 << 1;
 
 #[derive(Copy, Clone)]
 #[repr(C)]
@@ -46,19 +48,30 @@ impl Material {
         gfx: &GfxContext,
         albedo: Arc<Texture>,
         metallic_roughness: MetallicRoughness,
+        normal_map: Option<Arc<Texture>>,
     ) -> Self {
-        Self::new_raw(&gfx.device, albedo, metallic_roughness, gfx.palette_ref())
+        Self::new_raw(
+            &gfx.device,
+            albedo,
+            metallic_roughness,
+            normal_map,
+            gfx.palette_ref(),
+        )
     }
 
     pub fn new_raw(
         device: &Device,
         albedo: Arc<Texture>,
         metallic_roughness: MetallicRoughness,
+        normal_map: Option<Arc<Texture>>,
         bogus_tex: &Texture,
     ) -> Self {
         let mut flags = 0;
         if metallic_roughness.tex.is_some() {
-            flags |= HAS_METALLIC_ROUGHNESS_TEXTURE;
+            flags |= HAS_METALLIC_ROUGHNESS_MAP;
+        }
+        if normal_map.is_some() {
+            flags |= HAS_NORMAL_MAP;
         }
 
         let mat_params = device.create_buffer_init(&BufferInitDescriptor {
@@ -113,6 +126,27 @@ impl Material {
             });
         }
 
+        if let Some(ref normal_map) = normal_map {
+            entries.push(wgpu::BindGroupEntry {
+                binding: 5,
+                resource: wgpu::BindingResource::TextureView(&normal_map.view),
+            });
+            entries.push(wgpu::BindGroupEntry {
+                binding: 6,
+                resource: wgpu::BindingResource::Sampler(&normal_map.sampler),
+            });
+        } else {
+            // used as placeholder
+            entries.push(wgpu::BindGroupEntry {
+                binding: 5,
+                resource: wgpu::BindingResource::TextureView(&bogus_tex.view),
+            });
+            entries.push(wgpu::BindGroupEntry {
+                binding: 6,
+                resource: wgpu::BindingResource::Sampler(&bogus_tex.sampler),
+            });
+        }
+
         let bgdesc = BindGroupDescriptor {
             layout,
             entries: &entries,
@@ -123,9 +157,10 @@ impl Material {
         Self {
             bg,
             mat_params,
-            metallic_roughness_tex: metallic_roughness.tex,
+            metallic_roughness_map: metallic_roughness.tex,
             albedo,
             transparent: false,
+            normal_map,
         }
     }
 
@@ -177,6 +212,22 @@ impl Material {
                     ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
                     count: None,
                 },
+                BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                BindGroupLayoutEntry {
+                    binding: 6,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(SamplerBindingType::Filtering),
+                    count: None,
+                },
             ],
         })
     }
@@ -198,6 +249,7 @@ impl Material {
                 metallic: 0.0,
                 tex: None,
             },
+            None,
             &bogus,
         )
     }

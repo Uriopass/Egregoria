@@ -142,8 +142,9 @@ fn load_materials(
     gfx: &mut GfxContext,
     doc: &Document,
     images: &[Data],
-) -> Result<Vec<MaterialID>, LoadMeshError> {
+) -> Result<(Vec<MaterialID>, bool), LoadMeshError> {
     let mut v = Vec::with_capacity(doc.materials().len());
+    let mut needs_tangents = false;
     for gltfmat in doc.materials() {
         let pbr_mr = gltfmat.pbr_metallic_roughness();
 
@@ -164,6 +165,18 @@ fn load_materials(
                 images,
                 false,
             )?);
+        }
+
+        let mut normal = None;
+        if let Some(normal_tex) = gltfmat.normal_texture() {
+            normal = Some(load_image(
+                gfx,
+                gltfmat.name(),
+                &normal_tex.texture(),
+                images,
+                false,
+            )?);
+            needs_tangents = true;
         }
 
         let albedo;
@@ -190,13 +203,13 @@ fn load_materials(
             );
         }
         let transparent = albedo.transparent;
-        let mut gfxmat = Material::new(gfx, albedo, metallic_roughness);
+        let mut gfxmat = Material::new(gfx, albedo, metallic_roughness, normal);
         gfxmat.transparent = transparent;
         let matid = gfx.register_material(gfxmat);
         v.push(matid)
     }
     debug_assert_eq!(v.len(), doc.materials().len());
-    Ok(v)
+    Ok((v, needs_tangents))
 }
 
 #[derive(Debug)]
@@ -236,7 +249,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
     }
     let nodes = doc.nodes();
 
-    let mats = load_materials(gfx, &doc, &images)?;
+    let (mats, needs_tangents) = load_materials(gfx, &doc, &images)?;
 
     for node in nodes {
         let mesh = unwrap_cont!(node.mesh());
@@ -331,13 +344,17 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
     meshb.vertices = flat_vertices;
     meshb.indices = indices;
     meshb.materials = materials_idx;
+    if needs_tangents {
+        meshb.compute_tangents();
+    }
     let m = meshb.build(gfx).ok_or(LoadMeshError::NoVertices)?;
 
     log::info!(
-        "loaded mesh {:?} in {}ms ({} tris)",
+        "loaded mesh {:?} in {}ms ({} tris){}",
         path,
         1000.0 * t.elapsed().as_secs_f32(),
         m.materials.iter().map(|x| x.1).sum::<u32>() / 3,
+        if needs_tangents { " (tangents)" } else { "" }
     );
 
     Ok(m)

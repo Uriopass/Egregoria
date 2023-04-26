@@ -260,6 +260,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                     roughness: 1.0,
                     tex: None,
                 },
+                None,
             ));
             let mut mb = MeshBuilder::new(mat);
             mb.indices = indices;

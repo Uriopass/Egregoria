@@ -5,6 +5,7 @@ struct FragmentOutput {
 }
 
 const HAS_METALLIC_ROUGHNESS_TEXTURE: u32 = 1u;
+const HAS_NORMAL_MAP: u32 = 2u;
 
 struct MaterialParams {
     flags: u32,
@@ -19,6 +20,8 @@ struct MaterialParams {
 @group(2) @binding(2) var<uniform> u_mat: MaterialParams;
 @group(2) @binding(3) var t_metallic_roughness: texture_2d<f32>;
 @group(2) @binding(4) var s_metallic_rougness: sampler;
+@group(2) @binding(5) var t_normal: texture_2d<f32>;
+@group(2) @binding(6) var s_normal: sampler;
 
 @group(3) @binding(0)  var t_ssao: texture_2d<f32>;
 @group(3) @binding(1)  var s_ssao: sampler;
@@ -58,7 +61,16 @@ fn frag(@location(0) in_tint: vec4<f32>,
         shadow_v = sampleShadow(in_wpos);
     }
 
-    var normal = normalize(in_normal);
+    var normal = in_normal;
+    if ((u_mat.flags & HAS_NORMAL_MAP) != 0u) {
+        let vNt: vec3<f32> = textureSample(t_normal, s_normal, in_uv).rgb * 2.0 - 1.0;
+        let vT = in_tangent.xyz;
+        let sign = in_tangent.w;
+        // http://www.mikktspace.com/
+        let vB = sign * cross(normal, vT);
+        normal = vNt.x * vT + vNt.y * vB + vNt.z * normal;
+    }
+    normal = normalize(normal);
 
     var metallic: f32 = u_mat.metallic;
     var roughness: f32 = u_mat.roughness;
@@ -67,6 +79,9 @@ fn frag(@location(0) in_tint: vec4<f32>,
         roughness = sampled[0] * roughness;
         metallic  = sampled[1] * metallic;
     }
+
+
+
 
     let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, normal).rgb;
     let c = in_tint * albedo;
