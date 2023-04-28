@@ -44,7 +44,6 @@ impl MikktGeometry for MeshBuilder {
     }
 
     fn set_tangent_encoded(&mut self, tangent: [f32; 4], face: usize, vert: usize) {
-        log::info!("{}", tangent[3]);
         let i = self.indices[face * 3 + vert] as usize;
         self.vertices[i].tangent = tangent;
     }
