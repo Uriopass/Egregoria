@@ -748,14 +748,7 @@ impl GfxContext {
 
         let color_states = [Some(wgpu::ColorTargetState {
             format: self.sc_desc.format,
-            blend: Some(BlendState {
-                color: BlendComponent {
-                    src_factor: wgpu::BlendFactor::SrcAlpha,
-                    dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                    operation: wgpu::BlendOperation::Add,
-                },
-                alpha: BlendComponent::REPLACE,
-            }),
+            blend: Some(BlendState::ALPHA_BLENDING),
             write_mask: wgpu::ColorWrites::ALL,
         })];
 
