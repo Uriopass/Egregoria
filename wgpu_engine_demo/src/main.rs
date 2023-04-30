@@ -43,6 +43,7 @@ impl State {
                         roughness: x as f32 / 10.0,
                         tex: None,
                     },
+                    None,
                     &gfx.palette(),
                 ));
                 let mut i = InstancedMeshBuilder::new(c);

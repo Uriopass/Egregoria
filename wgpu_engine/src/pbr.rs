@@ -98,13 +98,14 @@ impl PBR {
                     base_mip_level: 0,
                     mip_level_count: None,
                     base_array_layer: face,
-                    array_layer_count: None,
+                    array_layer_count: Some(1),
                 },
             ));
         }
 
-        let mut specular_views = Vec::new();
-        let mut specular_uniforms = Vec::new();
+        let mut specular_views =
+            Vec::with_capacity((specular_prefilter_cube.n_mips() * 6) as usize);
+        let mut specular_uniforms = Vec::with_capacity(specular_prefilter_cube.n_mips() as usize);
         for mip in 0..specular_prefilter_cube.n_mips() {
             let params = Uniform::new(SpecularParams::default(), device);
             specular_uniforms.push(params);
@@ -118,7 +119,7 @@ impl PBR {
                         base_mip_level: mip,
                         mip_level_count: Some(1),
                         base_array_layer: face,
-                        array_layer_count: None,
+                        array_layer_count: Some(1),
                     },
                 ));
             }
@@ -180,7 +181,7 @@ impl PBR {
                 time100: (gfx.tick % 100) as u32,
             },
         );
-        for face in 0..6 {
+        for face in 0..6u32 {
             let view = &self.diffuse_views[face as usize];
             let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
                 label: Some(format!("diffuse irradiance face {face}").as_str()),
@@ -214,7 +215,7 @@ impl PBR {
                     time100: (gfx.tick % 100) as u32,
                 },
             );
-            for face in gfx.tick % 2 * 3..gfx.tick % 2 * 3 + 3 {
+            for face in (gfx.tick % 2) * 3..(gfx.tick % 2) * 3 + 3 {
                 let face = face as u32;
                 let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
                     label: Some(format!("specular prefilter face {face} mip {mip}").as_str()),
