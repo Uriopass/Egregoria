@@ -7,11 +7,12 @@ use egregoria::map::{
     CHUNK_RESOLUTION, CHUNK_SIZE,
 };
 use egregoria::Egregoria;
-use geom::{vec3, Camera, Circle, InfiniteFrustrum, Intersect3, LinearColor, AABB3};
+use flat_spatial::AABBGrid;
+use geom::{vec3, Camera, Circle, InfiniteFrustrum, Intersect3, LinearColor, Vec3, AABB3, V3};
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::terrain::TerrainRender;
 use wgpu_engine::{
-    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, MeshInstance, Water,
+    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, LampLights, MeshInstance, Water,
 };
 
 const CSIZE: usize = CHUNK_SIZE as usize;
@@ -248,6 +249,52 @@ impl MapRenderer {
     }
 
     #[profiling::function]
+    pub fn lampposts(&self, map: &Map, ctx: &mut FrameContext<'_>) {
+        let lamps = &mut ctx.gfx.lamplights;
+        if ctx.gfx.tick != 1 {
+            return;
+        }
+
+        let mut by_chunk: AABBGrid<(), geom::AABB3> =
+            flat_spatial::AABBGrid::new(LampLights::LIGHTCHUNK_SIZE as i32);
+
+        let mut add_light = |p: Vec3| {
+            by_chunk.insert(AABB3::centered(p, Vec3::splat(30.0)), ());
+        };
+
+        for x in map.roads().values() {
+            let w = x.width * 0.5 - 5.0;
+            for (point, dir) in x.points().equipoints_dir(45.0, true) {
+                add_light(point + dir.perp_up() * w + 10.0 * V3::Z);
+                add_light(point - dir.perp_up() * w + 10.0 * V3::Z);
+            }
+        }
+        for i in map.intersections().values() {
+            add_light(i.pos + 10.0 * V3::Z);
+        }
+
+        for (cell_idx, cell) in by_chunk.storage().cells.iter() {
+            if cell.objs.is_empty() {
+                continue;
+            }
+            if cell_idx.0 < 0 || cell_idx.1 < 0 {
+                continue;
+            }
+            let mut i = 0;
+            let lamp_poss: [Option<Vec3>; 4] = [(); 4].map(|_| {
+                let v = cell
+                    .objs
+                    .get(i)
+                    .and_then(|x| by_chunk.get(x.0))
+                    .map(|x| x.aabb.center());
+                i += 1;
+                v
+            });
+            lamps.register_update((cell_idx.0 as u16, cell_idx.1 as u16), lamp_poss);
+        }
+    }
+
+    #[profiling::function]
     pub(crate) fn render(
         &mut self,
         map: &Map,
@@ -258,6 +305,8 @@ impl MapRenderer {
         draw: &mut ImmediateDraw,
         ctx: &mut FrameContext<'_>,
     ) {
+        self.lampposts(map, ctx);
+
         self.terrain.draw_terrain(cam, frustrum, ctx);
 
         self.trees(map, cam, frustrum, ctx);

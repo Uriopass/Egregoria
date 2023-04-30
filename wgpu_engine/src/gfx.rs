@@ -1,7 +1,7 @@
 use crate::pbr::PBR;
 use crate::{
-    bg_layout_litmesh, CompiledModule, Drawable, IndexType, Material, MaterialID, MaterialMap,
-    PipelineBuilder, Pipelines, Texture, TextureBuilder, Uniform, UvVertex, TL,
+    bg_layout_litmesh, CompiledModule, Drawable, IndexType, LampLights, Material, MaterialID,
+    MaterialMap, PipelineBuilder, Pipelines, Texture, TextureBuilder, Uniform, UvVertex, TL,
 };
 use common::FastMap;
 use geom::{vec2, LinearColor, Matrix4, Vec2, Vec3};
@@ -41,7 +41,7 @@ pub struct GfxContext {
 
     pub(crate) materials: MaterialMap,
     pub(crate) default_material: Material,
-    pub(crate) tick: u64,
+    pub tick: u64,
     pub(crate) pipelines: RefCell<Pipelines>,
     pub(crate) projection: Uniform<Matrix4>,
     pub(crate) sun_projection: [Uniform<Matrix4>; N_CASCADES],
@@ -53,6 +53,8 @@ pub struct GfxContext {
     pub(crate) rect_indices: wgpu::Buffer,
     pub sun_shadowmap: Texture,
     pub pbr: PBR,
+    pub lamplights: LampLights,
+
     pub simplelit_bg: wgpu::BindGroup,
     pub bnoise_bg: wgpu::BindGroup,
     pub sky_bg: wgpu::BindGroup,
@@ -262,6 +264,7 @@ impl GfxContext {
             sky_bg: Uniform::new([0.0f32; 4], &device).bindgroup,       // bogus
             bnoise_bg,
             sun_shadowmap: Self::mk_shadowmap(&device, 2048),
+            lamplights: LampLights::new(&device, &queue),
             device,
             queue,
             pbr,
@@ -422,6 +425,7 @@ impl GfxContext {
 
         self.projection.upload_to_gpu(&self.queue);
         self.render_params.upload_to_gpu(&self.queue);
+        self.lamplights.apply_changes(&self.queue);
 
         (
             Encoders {

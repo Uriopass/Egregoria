@@ -18,7 +18,7 @@ default-members = ["native_app"]
 [workspace.dependencies]
 hecs = "0.10.0"
 egui = { git = "https://github.com/emilk/egui", branch = "master" }
-flat_spatial = "0.5.0"
+flat_spatial = "0.5.1"
 egui-wgpu = { git = "https://github.com/emilk/egui", branch = "master" }
 egui_extras = { git = "https://github.com/emilk/egui", branch = "master" }
 egui-winit = { git = "https://github.com/emilk/egui", branch = "master", default-features = false }

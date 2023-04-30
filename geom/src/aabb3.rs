@@ -1,5 +1,5 @@
 use super::Vec3;
-use crate::{Shape3, AABB};
+use crate::{Intersect3, Shape3, AABB};
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -105,5 +105,16 @@ impl AABB3 {
             && point.y >= self.ll.y - tolerance
             && point.z <= self.ur.z + tolerance
             && point.z >= self.ll.z - tolerance
+    }
+}
+
+impl Intersect3<AABB3> for AABB3 {
+    fn intersects(&self, shape: &AABB3) -> bool {
+        self.ll.x <= shape.ur.x
+            && self.ur.x >= shape.ll.x
+            && self.ll.y <= shape.ur.y
+            && self.ur.y >= shape.ll.y
+            && self.ll.z <= shape.ur.z
+            && self.ur.z >= shape.ll.z
     }
 }
