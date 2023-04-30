@@ -20,7 +20,8 @@ fn cartesian_to_spherical(v: vec3<f32>) -> vec2<f32> {
 fn frag(@location(0) wpos: vec3<f32>) -> FragmentOutput {
     let color: vec3<f32> = atmosphere(
         normalize(wpos),                // normalized ray direction
-        sun_pos.xyz // normalized sun direction
+        sun_pos.xyz, // normalized sun direction
+        3.40282347E+38,
     );
     let v: vec4<f32> =  vec4(color, 1.0);
     return FragmentOutput(v);

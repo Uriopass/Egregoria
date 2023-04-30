@@ -131,7 +131,9 @@ fn frag(@location(0) in_normal: vec3<f32>,
     c = mix(params.sea_col.rgb, c, smoothstep(-25.0, -20.0, in_wpos.z));
 
     let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, in_normal).rgb;
-    let V: vec3<f32> = normalize(params.cam_pos.xyz - in_wpos);
+    let V_denorm: vec3<f32> = params.cam_pos.xyz - in_wpos;
+    let depth: f32 = length(V_denorm);
+    let V: vec3<f32> = V_denorm / depth;
     let F0: vec3<f32> = vec3(0.02);
     let roughness: f32 = 1.0;
     let normal: vec3<f32> = normalize(in_normal);
@@ -153,7 +155,8 @@ fn frag(@location(0) in_normal: vec3<f32>,
                                       ssao,
                                       t_lightdata,
                                       t_lightdata2,
-                                      in_wpos
+                                      in_wpos,
+                                      depth
                                       );
     return FragmentOutput(vec4(final_rgb, 1.0));
 }

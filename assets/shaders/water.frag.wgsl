@@ -1,4 +1,6 @@
 #include "render_params.wgsl"
+#include "atmosphere.wgsl"
+#include "tonemap.wgsl"
 
 struct FragmentOutput {
     @location(0) out_color: vec4<f32>,
@@ -60,30 +62,31 @@ fn frag(@location(0) _in_tint: vec4<f32>,
     var normal = gerstnerWaveNormal(wpos.xy * 0.01, params.time_always);
     let sun_col: vec3<f32> = params.sun_col.xyz;
 
-    let wavy: vec3<f32> = textureSample(t_wavy, s_wavy, params.time_always * 0.02 + wpos.xy * 0.001).xzy;
-    let wavy2: vec3<f32> = textureSample(t_wavy, s_wavy, 30.0 + params.time_always * 0.01 - wpos.yx * vec2(0.001, -0.001)).xzy;
+    let wavy: vec3<f32> = textureSample(t_wavy, s_wavy, params.time_always * 0.02 + wpos.xy * 0.001).xyz * 2.0 - 1.0;
+    let wavy2: vec3<f32> = textureSample(t_wavy, s_wavy, 30.0 + params.time_always * 0.01 - wpos.yx * vec2(0.001, -0.001)).xyz * 2.0 - 1.0;
     normal = normalize(normal + wavy * 0.15 + wavy2 * 0.1);
 
-
     let R: vec3<f32> = normalize(2.0 * normal * dot(normal,sun) - sun);
-    let V: vec3<f32> = normalize(cam - wpos);
+    let cam_to_wpos: vec3<f32> = cam - wpos;
+    let depth: f32 = length(cam_to_wpos);
+    let V: vec3<f32> = cam_to_wpos / depth;
 
     let reflect_coeff = 1.0 - dot(V, normal);
 
     var specular: f32 = clamp(dot(R, V), 0.0, 1.0);
-    specular = pow(specular, 10.0);
+    specular = pow(specular, 5.0);
 
     let reflected: vec3<f32> = reflect(-V, normal);
 
+    let reflected_atmo = atmosphere(reflected, sun, 1e38);
+    let view_atmo = atmosphere(-V, sun, depth * 0.2);
+
     let sun_contrib: f32 = clamp(dot(normal, sun), 0.0, 1.0);
 
+    let base_color: vec3<f32> = 0.03 * vec3<f32>(0.262, 0.396, 0.508);
+    let sunpower: f32 = 0.1 * reflect_coeff;
 
-    let base_color: vec3<f32> = 0.6 * vec3<f32>(0.262, 0.396, 0.508);
-    let ambiant: vec3<f32> = 0.05 * base_color;
-
-    let sunpower: f32 = 0.95 * reflect_coeff * max(0.0, sqrt(sun.z));
-
-    var final_rgb: vec3<f32> = ambiant + sunpower * (mix(sun_col, base_color, 1.0 - specular));
+    var final_rgb: vec3<f32> = tonemap(base_color + view_atmo + sunpower * reflected_atmo);
 
     return FragmentOutput(
         vec4<f32>(final_rgb, 0.9 + reflect_coeff * 0.1),

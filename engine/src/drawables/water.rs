@@ -1,6 +1,6 @@
 use crate::{
     CompiledModule, Drawable, GfxContext, Mesh, MeshBuilder, MeshVertex, PipelineBuilder, Texture,
-    TL,
+    TextureBuilder, TL,
 };
 use std::sync::Arc;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
@@ -43,7 +43,13 @@ impl Water {
         // unwrap ok: we just added vertices
         let mesh = mb.build(gfx).unwrap();
 
-        let wavy = gfx.texture("assets/sprites/wavy.jpeg", "wavy");
+        let wavy = TextureBuilder::try_from_path("assets/sprites/wavy.jpeg")
+            .expect("no wavy texture")
+            .with_label("wavy")
+            .with_mipmaps(gfx.mipmap_module())
+            .with_srgb(false)
+            .build(&gfx.device, &gfx.queue);
+
         let wavy_bg = Arc::new(wavy.bindgroup(
             &gfx.device,
             &Texture::bindgroup_layout(&gfx.device, [TL::Float]),

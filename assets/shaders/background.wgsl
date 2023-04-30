@@ -27,7 +27,8 @@ fn frag(@location(0) in_pos: vec3<f32>, @builtin(position) position: vec4<f32>) 
 
     var color: vec3<f32> = atmosphere(
         pos,           // normalized ray direction
-        fsun           // normalized sun direction
+        fsun,          // normalized sun direction
+        3.40282347E+38,
     );
 
     //color = textureSampleLevel(t_environment, s_environment, pos, 0.0).rgb;

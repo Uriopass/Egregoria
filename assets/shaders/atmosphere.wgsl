@@ -20,7 +20,7 @@ const PI: f32 = 3.141592653589793238462;
 const iSteps: i32 = 12;
 const jSteps: i32 = 4;
 
-const r0: vec3<f32>    = vec3<f32>(0.0,0.0,6372000.0);          // ray origin
+const r0: vec3<f32>    = vec3<f32>(0.0,0.0,6371500.0);          // ray origin
 const iSun: f32        = 22.0;                           // intensity of the sun
 const rPlanet: f32     = 6371e3;                         // radius of the planet in meters
 const rAtmos: f32      = 6471e3;                         // radius of the atmosphere in meters
@@ -31,14 +31,21 @@ const shMie: f32       = 1.2e3;                          // Mie scale height
 const g: f32           = 0.758;                          // Mie preferred scattering direction
 
 // r and pSun are normalized
-fn atmosphere(r: vec3<f32>, pSun: vec3<f32>) -> vec3<f32> {
+fn atmosphere(r: vec3<f32>, pSun: vec3<f32>, maxDepth: f32) -> vec3<f32> {
     // Calculate the step size of the primary ray.
     var p: vec2<f32> = rsi(r0, r, rAtmos);
     if (p.x > p.y) {
         return vec3(0.0,0.0,0.0);
     }
-    p.y = min(p.y, rsi(r0, r, rPlanet).x);
-    let iStepSize: f32 = (p.y - p.x) / f32(iSteps);
+    p.y = rsi(r0, r, rPlanet).x;
+
+    var iDist: f32 = min(maxDepth, p.y - p.x);
+
+    if (r.z < 0.0) {
+        iDist = min(1000.0 / -r.z, iDist);
+    }
+
+    let iStepSize: f32 = iDist / f32(iSteps);
 
     // Initialize the primary ray time.
     var iTime: f32 = iStepSize * 0.375;
@@ -60,7 +67,6 @@ fn atmosphere(r: vec3<f32>, pSun: vec3<f32>) -> vec3<f32> {
 
     // Sample the primary ray.
     for (var i: i32 = 0; i < iSteps; i++) {
-
         // Calculate the primary ray sample position.
         let iPos: vec3<f32> = r0 + r * iTime;
 
@@ -113,11 +119,18 @@ fn atmosphere(r: vec3<f32>, pSun: vec3<f32>) -> vec3<f32> {
         iTime += iStepSize;
     }
 
-    let backgroundLight: vec3<f32> = mix(vec3(0.0116, 0.027, 0.0423), // light blue (horizon)
+    var backgroundLight: vec3<f32> = vec3(0.0);
+
+     if (maxDepth > 1e30) {
+     backgroundLight = mix(vec3(0.0116, 0.027, 0.0423), // light blue (horizon)
                                          vec3(0.0036, 0.013, 0.0194), // dark blue
                                          saturate(2.0 * sqrt(r.z)))   // gradient
                                           * 0.4                       // power
                                           * smoothstep(-0.3, 0.1, r.z); // black at bottom
+     } else {
+         totalRlh *= 0.4;
+         totalMie *= 0.8;
+     }
 
     // Calculate and return the final color.
     return backgroundLight + iSun * (pRlh * kRlh * totalRlh + pMie * kMie * totalMie);
