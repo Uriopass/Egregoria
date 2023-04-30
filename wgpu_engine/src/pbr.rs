@@ -178,7 +178,7 @@ impl PBR {
         self.diffuse_uniform.write_direct(
             &gfx.queue,
             &DiffuseParams {
-                time100: (gfx.tick % 97) as u32,
+                time100: ((gfx.tick * 7) % 97) as u32,
             },
         );
         for face in 0..6u32 {
@@ -212,7 +212,7 @@ impl PBR {
                 &gfx.queue,
                 &SpecularParams {
                     roughness,
-                    time100: ((gfx.tick / 2) % 97) as u32,
+                    time100: ((gfx.tick * 7) % 97) as u32,
                 },
             );
             for face in 0..3 {
