@@ -178,7 +178,7 @@ impl PBR {
         self.diffuse_uniform.write_direct(
             &gfx.queue,
             &DiffuseParams {
-                time100: (gfx.tick % 100) as u32,
+                time100: (gfx.tick % 97) as u32,
             },
         );
         for face in 0..6u32 {
@@ -212,11 +212,11 @@ impl PBR {
                 &gfx.queue,
                 &SpecularParams {
                     roughness,
-                    time100: (gfx.tick % 100) as u32,
+                    time100: ((gfx.tick / 2) % 97) as u32,
                 },
             );
-            for face in (gfx.tick % 2) * 3..(gfx.tick % 2) * 3 + 3 {
-                let face = face as u32;
+            for face in 0..3 {
+                let face = face as u32 + ((gfx.tick % 2) * 3) as u32;
                 let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
                     label: Some(format!("specular prefilter face {face} mip {mip}").as_str()),
                     color_attachments: &[Some(RenderPassColorAttachment {

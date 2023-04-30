@@ -126,8 +126,10 @@ impl Pipelines {
     pub fn check_shader_updates(&mut self, device: &Device) {
         let mut to_invalidate = HashSet::new();
         for (sname, (parents, entry)) in &mut self.shader_watcher {
-            let meta =
-                unwrap_cont!(std::fs::metadata(Path::new(&format!("assets/shaders/{sname}"))).ok());
+            let meta = unwrap_cont!(std::fs::metadata(Path::new(&format!(
+                "assets/shaders/{sname}.wgsl"
+            )))
+            .ok());
             let filetime = unwrap_cont!(meta.modified().ok());
             match entry.as_mut() {
                 Some(entry) => {

@@ -12,7 +12,7 @@ struct Params {
 
 @group(1) @binding(0) var<uniform> params: Params;
 
-const SAMPLE_COUNT: u32 = 20u;
+const SAMPLE_COUNT: u32 = 30u;
 
 #include "sample.wgsl"
 
@@ -41,8 +41,8 @@ fn frag(@location(0) wpos: vec3<f32>) -> FragmentOutput {
     var totalWeight: f32 = 0.0;
     var color: vec3<f32> = vec3(0.0);
 
-    for(var i: u32 = params.time100; i < SAMPLE_COUNT*100u; i += 100u) {
-        let Xi: vec2<f32> = Hammersley(i, SAMPLE_COUNT*100u);
+    for(var i: u32 = params.time100; i < SAMPLE_COUNT*97u; i += 97u) {
+        let Xi: vec2<f32> = Hammersley(i, SAMPLE_COUNT*97u);
 
         let H: vec3<f32>  = ImportanceSampleGGX(Xi, normal, params.roughness);
         let L: vec3<f32>  = normalize(2.0 * dot(V, H) * H - V);

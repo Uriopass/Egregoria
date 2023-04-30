@@ -24,8 +24,8 @@ fn frag(@location(0) wpos: vec3<f32>) -> FragmentOutput {
     var irradiance: vec3<f32> = vec3(0.0);
     var totalWeight: f32 = 0.0;
 
-    for(var i: u32 = params.time100; i < SAMPLE_COUNT*100u; i += 100u) {
-        let Xi: vec2<f32> = Hammersley(i, SAMPLE_COUNT*100u);
+    for(var i: u32 = params.time100; i < SAMPLE_COUNT*97u; i += 97u) {
+        let Xi: vec2<f32> = Hammersley(i, SAMPLE_COUNT*97u);
         let ts: vec3<f32> = HemisphereSampleuniform(Xi); // tangeant space
 
         let ws: vec3<f32> = ts.x * right + ts.y * up + ts.z * normal; // world space
