@@ -4,16 +4,24 @@ use crate::{
 };
 use geom::{Vec3, Vec4};
 use wgpu::{
-    BlendState, CommandEncoder, CommandEncoderDescriptor, Device, FragmentState, LoadOp,
+    BindGroup, BlendState, CommandEncoder, CommandEncoderDescriptor, Device, FragmentState, LoadOp,
     Operations, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, Queue,
     RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-    SamplerDescriptor, TextureFormat, TextureViewDescriptor, TextureViewDimension, VertexState,
+    SamplerDescriptor, TextureFormat, TextureView, TextureViewDescriptor, TextureViewDimension,
+    VertexState,
 };
 
 pub struct PBR {
     pub environment_cube: Texture,
+    environment_uniform: Uniform<Vec4>,
+    environment_bg: BindGroup,
     pub specular_prefilter_cube: Texture,
+    cube_views: Vec<TextureView>,
+    specular_views: Vec<TextureView>,
+    specular_uniforms: Vec<Uniform<SpecularParams>>,
     pub diffuse_irradiance_cube: Texture,
+    diffuse_uniform: Uniform<DiffuseParams>,
+    diffuse_views: Vec<TextureView>,
     pub split_sum_brdf_lut: Texture,
 }
 
@@ -25,14 +33,14 @@ enum PBRPipeline {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Default, Copy, Clone, Debug)]
 struct SpecularParams {
     roughness: f32,
     time100: u32,
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Default, Copy, Clone, Debug)]
 struct DiffuseParams {
     time100: u32,
 }
@@ -61,13 +69,76 @@ impl PBR {
             .with_fixed_mipmaps(5)
             .build(device, queue);
 
+        let diffuse_uniform = Uniform::new(DiffuseParams::default(), device);
+        let environment_uniform = Uniform::new(Vec4::default(), device);
+
+        let mut cube_views = Vec::new();
+        let mut diffuse_views = Vec::new();
+        for face in 0..6 {
+            cube_views.push(
+                environment_cube
+                    .texture
+                    .create_view(&TextureViewDescriptor {
+                        label: Some("environment cube view"),
+                        format: None,
+                        dimension: Some(TextureViewDimension::D2),
+                        aspect: Default::default(),
+                        base_mip_level: 0,
+                        mip_level_count: None,
+                        base_array_layer: face,
+                        array_layer_count: None,
+                    }),
+            );
+            diffuse_views.push(diffuse_irradiance_cube.texture.create_view(
+                &TextureViewDescriptor {
+                    label: Some("irradiance cube view"),
+                    format: None,
+                    dimension: Some(TextureViewDimension::D2),
+                    aspect: Default::default(),
+                    base_mip_level: 0,
+                    mip_level_count: None,
+                    base_array_layer: face,
+                    array_layer_count: None,
+                },
+            ));
+        }
+
+        let mut specular_views = Vec::new();
+        let mut specular_uniforms = Vec::new();
+        for mip in 0..specular_prefilter_cube.n_mips() {
+            let params = Uniform::new(SpecularParams::default(), device);
+            specular_uniforms.push(params);
+            for face in 0..6 {
+                specular_views.push(specular_prefilter_cube.texture.create_view(
+                    &TextureViewDescriptor {
+                        label: None,
+                        format: None,
+                        dimension: Some(TextureViewDimension::D2),
+                        aspect: Default::default(),
+                        base_mip_level: mip,
+                        mip_level_count: Some(1),
+                        base_array_layer: face,
+                        array_layer_count: None,
+                    },
+                ));
+            }
+        }
+
         let split_sum_brdf_lut = Self::make_split_sum_brdf_lut(device, queue);
 
         Self {
+            environment_bg: environment_cube
+                .bindgroup(device, &Texture::bindgroup_layout(device, [TL::Cube])),
             environment_cube,
             diffuse_irradiance_cube,
             specular_prefilter_cube,
             split_sum_brdf_lut,
+            specular_uniforms,
+            specular_views,
+            cube_views,
+            environment_uniform,
+            diffuse_uniform,
+            diffuse_views,
         }
     }
 
@@ -77,64 +148,40 @@ impl PBR {
         self.write_specular_prefilter(gfx, enc);
     }
 
+    #[profiling::function]
     fn write_environment_cubemap(&self, gfx: &GfxContext, sun_pos: Vec3, enc: &mut CommandEncoder) {
-        let sun_pos: Uniform<Vec4> = Uniform::new(sun_pos.normalize().w(0.0), &gfx.device);
+        self.environment_uniform
+            .write_direct(&gfx.queue, &sun_pos.normalize().w(0.0));
         let pipe = gfx.get_pipeline(PBRPipeline::Environment);
 
-        for face in 0..6 {
-            let view = self
-                .environment_cube
-                .texture
-                .create_view(&TextureViewDescriptor {
-                    label: None,
-                    format: None,
-                    dimension: Some(TextureViewDimension::D2),
-                    aspect: Default::default(),
-                    base_mip_level: 0,
-                    mip_level_count: None,
-                    base_array_layer: face,
-                    array_layer_count: None,
-                });
+        for face in 0..6u32 {
+            let view = &self.cube_views[face as usize];
             let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
                 label: Some(format!("environment cubemap face {face}").as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &view,
+                    view,
                     resolve_target: None,
                     ops: Default::default(),
                 })],
                 depth_stencil_attachment: None,
             });
             pass.set_pipeline(pipe);
-            pass.set_bind_group(0, &sun_pos.bindgroup, &[]);
+            pass.set_bind_group(0, &self.environment_uniform.bindgroup, &[]);
             pass.draw(face * 6..face * 6 + 6, 0..1);
         }
     }
 
+    #[profiling::function]
     pub fn write_diffuse_irradiance(&self, gfx: &GfxContext, enc: &mut CommandEncoder) {
         let pipe = gfx.get_pipeline(PBRPipeline::DiffuseIrradiance);
-        let bg = self
-            .environment_cube
-            .bindgroup(&gfx.device, &pipe.get_bind_group_layout(0));
-        let params = Uniform::new(
-            DiffuseParams {
+        self.diffuse_uniform.write_direct(
+            &gfx.queue,
+            &DiffuseParams {
                 time100: (gfx.tick % 100) as u32,
             },
-            &gfx.device,
         );
         for face in 0..6 {
-            let view = self
-                .diffuse_irradiance_cube
-                .texture
-                .create_view(&TextureViewDescriptor {
-                    label: None,
-                    format: None,
-                    dimension: Some(TextureViewDimension::D2),
-                    aspect: Default::default(),
-                    base_mip_level: 0,
-                    mip_level_count: None,
-                    base_array_layer: face,
-                    array_layer_count: None,
-                });
+            let view = &self.diffuse_views[face as usize];
             let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
                 label: Some(format!("diffuse irradiance face {face}").as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
@@ -148,44 +195,31 @@ impl PBR {
                 depth_stencil_attachment: None,
             });
             pass.set_pipeline(pipe);
-            pass.set_bind_group(0, &bg, &[]);
-            pass.set_bind_group(1, &params.bindgroup, &[]);
+            pass.set_bind_group(0, &self.environment_bg, &[]);
+            pass.set_bind_group(1, &self.diffuse_uniform.bindgroup, &[]);
             pass.draw(face * 6..face * 6 + 6, 0..1);
         }
     }
 
+    #[profiling::function]
     pub fn write_specular_prefilter(&self, gfx: &GfxContext, enc: &mut CommandEncoder) {
         let pipe = gfx.get_pipeline(PBRPipeline::SpecularPrefilter);
-        let bg = self
-            .environment_cube
-            .bindgroup(&gfx.device, &pipe.get_bind_group_layout(0));
         for mip in 0..self.specular_prefilter_cube.n_mips() {
             let roughness = mip as f32 / (self.specular_prefilter_cube.n_mips() - 1) as f32;
-            for face in 0..6 {
-                let params = Uniform::new(
-                    SpecularParams {
-                        roughness,
-                        time100: (gfx.tick % 100) as u32,
-                    },
-                    &gfx.device,
-                );
-                let view =
-                    self.specular_prefilter_cube
-                        .texture
-                        .create_view(&TextureViewDescriptor {
-                            label: None,
-                            format: None,
-                            dimension: Some(TextureViewDimension::D2),
-                            aspect: Default::default(),
-                            base_mip_level: mip,
-                            mip_level_count: Some(1),
-                            base_array_layer: face,
-                            array_layer_count: None,
-                        });
+            let uni = &self.specular_uniforms[mip as usize];
+            uni.write_direct(
+                &gfx.queue,
+                &SpecularParams {
+                    roughness,
+                    time100: (gfx.tick % 100) as u32,
+                },
+            );
+            for face in gfx.tick % 2 * 3..gfx.tick % 2 * 3 + 3 {
+                let face = face as u32;
                 let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
                     label: Some(format!("specular prefilter face {face} mip {mip}").as_str()),
                     color_attachments: &[Some(RenderPassColorAttachment {
-                        view: &view,
+                        view: &self.specular_views[mip as usize * 6 + face as usize],
                         resolve_target: None,
                         ops: Operations {
                             load: LoadOp::Load,
@@ -195,8 +229,8 @@ impl PBR {
                     depth_stencil_attachment: None,
                 });
                 pass.set_pipeline(pipe);
-                pass.set_bind_group(0, &bg, &[]);
-                pass.set_bind_group(1, &params.bindgroup, &[]);
+                pass.set_bind_group(0, &self.environment_bg, &[]);
+                pass.set_bind_group(1, &uni.bindgroup, &[]);
                 pass.draw(face * 6..face * 6 + 6, 0..1);
             }
         }

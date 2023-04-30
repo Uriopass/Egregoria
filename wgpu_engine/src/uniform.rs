@@ -68,6 +68,12 @@ where
             self.changed.store(false, Ordering::SeqCst);
         }
     }
+
+    pub fn write_direct(&self, queue: &wgpu::Queue, value: &T) {
+        let data = ToU8Slice::cast_slice(std::slice::from_ref(value));
+        queue.write_buffer(&self.buffer, 0, data);
+        self.changed.store(false, Ordering::SeqCst);
+    }
 }
 
 impl<T> Uniform<T> {

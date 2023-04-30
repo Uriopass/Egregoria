@@ -12,7 +12,7 @@ struct Params {
 
 @group(1) @binding(0) var<uniform> params: Params;
 
-const SAMPLE_COUNT: u32 = 10u;
+const SAMPLE_COUNT: u32 = 20u;
 
 #include "sample.wgsl"
 
@@ -58,5 +58,5 @@ fn frag(@location(0) wpos: vec3<f32>) -> FragmentOutput {
     }
     color = color / totalWeight;
 
-    return FragmentOutput(vec4(color, 0.02));
+    return FragmentOutput(vec4(color, 0.04));
 }

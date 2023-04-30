@@ -11,7 +11,7 @@ struct Params {
 
 @group(1) @binding(0) var<uniform> params: Params;
 
-const SAMPLE_COUNT: u32 = 10u;
+const SAMPLE_COUNT: u32 = 16u;
 
 #include "sample.wgsl"
 
