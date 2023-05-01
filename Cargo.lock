@@ -2929,6 +2929,7 @@ dependencies = [
  "inline_tweak",
  "itertools",
  "log",
+ "ordered-float",
  "profiling",
  "radiant",
  "raw-window-handle",

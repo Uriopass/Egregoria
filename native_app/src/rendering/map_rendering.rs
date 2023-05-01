@@ -28,6 +28,8 @@ pub(crate) struct MapRenderer {
     trees_builders: FastMap<ChunkID, (InstancedMeshBuilder, Option<(Option<InstancedMesh>, u32)>)>,
     pub(crate) terrain_dirt_id: u32,
     water: Water,
+
+    lampposts_dirtid: u32,
 }
 
 pub struct MapRenderOptions {
@@ -68,6 +70,7 @@ impl MapRenderer {
             terrain_dirt_id: 0,
             terrain: TerrainRender::new(gfx, w, h, egregoria::config().border_col.into(), grass),
             water: Water::new(gfx, (w * CHUNK_SIZE) as f32, (h * CHUNK_SIZE) as f32),
+            lampposts_dirtid: 0,
         }
     }
 
@@ -249,27 +252,39 @@ impl MapRenderer {
     }
 
     #[profiling::function]
-    pub fn lampposts(&self, map: &Map, ctx: &mut FrameContext<'_>) {
-        let lamps = &mut ctx.gfx.lamplights;
-        if ctx.gfx.tick != 1 {
+    pub fn lampposts(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {
+        if self.lampposts_dirtid == map.dirt_id.0 {
             return;
         }
+        self.lampposts_dirtid = map.dirt_id.0;
+        let lamps = &mut ctx.gfx.lamplights;
 
         let mut by_chunk: AABBGrid<(), geom::AABB3> =
             flat_spatial::AABBGrid::new(LampLights::LIGHTCHUNK_SIZE as i32);
 
         let mut add_light = |p: Vec3| {
-            by_chunk.insert(AABB3::centered(p, Vec3::splat(30.0)), ());
+            by_chunk.insert(AABB3::centered(p, Vec3::splat(64.0)), ());
         };
 
-        for x in map.roads().values() {
-            let w = x.width * 0.5 - 5.0;
-            for (point, dir) in x.points().equipoints_dir(45.0, true) {
+        for road in map.roads().values() {
+            if road.lanes_iter().all(|(_, kind)| kind.is_rail()) {
+                continue;
+            }
+            let w = road.width * 0.5 - 5.0;
+            for (point, dir) in road.points().equipoints_dir(45.0, true) {
                 add_light(point + dir.perp_up() * w + 10.0 * V3::Z);
                 add_light(point - dir.perp_up() * w + 10.0 * V3::Z);
             }
         }
         for i in map.intersections().values() {
+            if i.roads
+                .iter()
+                .filter_map(|&rid| map.roads().get(rid))
+                .all(|r| r.lanes_iter().all(|(_, kind)| kind.is_rail()))
+            {
+                continue;
+            }
+
             add_light(i.pos + 10.0 * V3::Z);
         }
 
@@ -280,16 +295,12 @@ impl MapRenderer {
             if cell_idx.0 < 0 || cell_idx.1 < 0 {
                 continue;
             }
-            let mut i = 0;
-            let lamp_poss: [Option<Vec3>; 4] = [(); 4].map(|_| {
-                let v = cell
-                    .objs
-                    .get(i)
-                    .and_then(|x| by_chunk.get(x.0))
-                    .map(|x| x.aabb.center());
-                i += 1;
-                v
-            });
+
+            let lamp_poss = cell
+                .objs
+                .iter()
+                .filter_map(|x| by_chunk.get(x.0))
+                .map(|x| x.aabb.center());
             lamps.register_update((cell_idx.0 as u16, cell_idx.1 as u16), lamp_poss);
         }
     }

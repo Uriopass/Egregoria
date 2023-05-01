@@ -55,7 +55,7 @@ impl Pipelines {
 
                 for dep in module.get_deps() {
                     shader_watcher
-                        .entry(dep.to_string())
+                        .entry(dep.trim_end_matches(".wgsl").to_string())
                         .or_insert((vec![], None))
                         .0
                         .push(key.to_string());

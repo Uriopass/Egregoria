@@ -37,6 +37,8 @@ struct MaterialParams {
 @group(3) @binding(11) var s_brdf_lut: sampler;
 @group(3) @binding(12) var t_lightdata: texture_2d<u32>;
 @group(3) @binding(13) var s_lightdata: sampler;
+@group(3) @binding(14) var t_lightdata2: texture_2d<u32>;
+@group(3) @binding(15) var s_lightdata2: sampler;
 
 #include "shadow.wgsl"
 #include "pbr/render.wgsl"
@@ -82,9 +84,6 @@ fn frag(@location(0) in_tint: vec4<f32>,
         metallic  = sampled[1] * metallic;
     }
 
-    let chunk_id: vec2<u32> = vec2<u32>(u32(in_wpos.x / 32.0), u32(in_wpos.y / 32.0));
-    let lightdata: vec4<u32> = textureLoad(t_lightdata, chunk_id, 0);
-
     let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, normal).rgb;
     let c = in_tint * albedo;
 
@@ -114,8 +113,8 @@ fn frag(@location(0) in_tint: vec4<f32>,
                                       roughness,
                                       shadow_v,
                                       ssao,
-                                      lightdata,
-                                      chunk_id,
+                                      t_lightdata,
+                                      t_lightdata2,
                                       in_wpos
                                       );
 

@@ -285,6 +285,7 @@ pub fn bg_layout_litmesh(device: &Device) -> BindGroupLayout {
             TL::Cube,
             TL::Float,
             TL::UInt,
+            TL::UInt,
         ],
     )
 }

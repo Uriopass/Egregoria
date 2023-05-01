@@ -53,6 +53,11 @@ fn decodeLight(chunk: vec2<u32>, light: u32) -> vec3<f32> {
     );
 }
 
+fn lightPower(wpos: vec3<f32>, light: vec3<f32>) -> f32 {
+    let dist: f32 = 1.0 - min(length(wpos - light) / 32.0, 1.0);
+    return dist * dist;
+}
+
 fn render(sun: vec3<f32>,
           V: vec3<f32>,
           position: vec2<f32>,
@@ -67,10 +72,13 @@ fn render(sun: vec3<f32>,
           roughness: f32,
           shadow_v: f32,
           ssao: f32,
-          lightdata: vec4<u32>,
-          chunk_id: vec2<u32>,
+          t_lightdata: texture_2d<u32>,
+          t_lightdata2: texture_2d<u32>,
           wpos: vec3<f32>
           ) -> vec3<f32>  {
+    let chunk_id: vec2<u32> = vec2<u32>(u32(wpos.x / LIGHTCHUNK_SIZE), u32(wpos.y / LIGHTCHUNK_SIZE));
+    let lightdata: vec4<u32> = textureLoad(t_lightdata, chunk_id, 0);
+
     let H: vec3<f32> = normalize(sun + V);
     let NdotL: f32 = max(dot(normal, sun), 0.0);
     let NdotV: f32 = max(dot(normal, V), 0.0);
@@ -97,20 +105,45 @@ fn render(sun: vec3<f32>,
 
 
     var mind: f32 = 0.0;
+    var c: f32 = 0.0;
     if(lightdata.x != 0u) {
-        mind = mind + pow(1.0 - min(1.0, length(wpos - decodeLight(chunk_id, lightdata.x)) * 0.03333), 2.0);
+        mind += lightPower(wpos, decodeLight(chunk_id, lightdata.x));
+        c += 1.0;
     }
     if(lightdata.y != 0u) {
-        mind = mind + pow(1.0 - min(1.0, length(wpos - decodeLight(chunk_id, lightdata.y)) * 0.03333), 2.0);
+        mind = mind + lightPower(wpos, decodeLight(chunk_id, lightdata.y));
+        c += 1.0;
     }
     if(lightdata.z != 0u) {
-        mind = mind + pow(1.0 - min(1.0, length(wpos - decodeLight(chunk_id, lightdata.z)) * 0.03333), 2.0);
+        mind = mind + lightPower(wpos, decodeLight(chunk_id, lightdata.z));
+        c += 1.0;
     }
     if(lightdata.w != 0u) {
-        mind = mind + pow(1.0 - min(1.0, length(wpos - decodeLight(chunk_id, lightdata.w)) * 0.03333), 2.0);
+        mind = mind + lightPower(wpos, decodeLight(chunk_id, lightdata.w));
+        c += 1.0;
+        let lightdata2: vec4<u32> = textureLoad(t_lightdata2, chunk_id, 0);
+        if(lightdata2.x != 0u) {
+            mind += lightPower(wpos, decodeLight(chunk_id, lightdata2.x));
+            c += 1.0;
+        }
+        if(lightdata2.y != 0u) {
+            mind = mind + lightPower(wpos, decodeLight(chunk_id, lightdata2.y));
+            c += 1.0;
+        }
+        if(lightdata2.z != 0u) {
+            mind = mind + lightPower(wpos, decodeLight(chunk_id, lightdata2.z));
+            c += 1.0;
+        }
+        if(lightdata2.w != 0u) {
+            mind = mind + lightPower(wpos, decodeLight(chunk_id, lightdata2.w));
+            c += 1.0;
+        }
     }
 
-    let ambient: vec3<f32> = (0.2 * dkD * (mind + irradiance_diffuse) * albedo + specular) * ssao;
+    if (c == 8.0) {
+    }
+
+    let ambient: vec3<f32> = (0.2 * dkD * (0.1 + mind * 2.0 + irradiance_diffuse) * albedo + specular) * ssao;
     var color: vec3<f32>   = ambient + Lo;
 
     color = tonemap(color);
