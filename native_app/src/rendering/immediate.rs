@@ -2,6 +2,7 @@
 
 use common::{AudioKind, FastMap};
 use geom::{LinearColor, Polygon, Vec2, Vec3, AABB, OBB};
+use std::borrow::Cow;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatch, Tesselator};
 
@@ -52,7 +53,7 @@ pub(crate) enum OrderKind {
         z: f32,
     },
     Mesh {
-        path: String,
+        path: Cow<'static, str>,
         pos: Vec3,
         dir: Vec3,
     },
@@ -177,8 +178,17 @@ impl ImmediateDraw {
         self.builder(OrderKind::TexturedOBB { obb, path, z })
     }
 
-    pub(crate) fn mesh(&mut self, path: String, pos: Vec3, dir: Vec3) -> ImmediateBuilder<'_> {
-        self.builder(OrderKind::Mesh { path, pos, dir })
+    pub(crate) fn mesh(
+        &mut self,
+        path: impl Into<Cow<'static, str>>,
+        pos: Vec3,
+        dir: Vec3,
+    ) -> ImmediateBuilder<'_> {
+        self.builder(OrderKind::Mesh {
+            path: path.into(),
+            pos,
+            dir,
+        })
     }
 
     pub(crate) fn clear_persistent(&mut self) {
@@ -237,15 +247,15 @@ impl ImmediateDraw {
                     ));
                 }
                 OrderKind::Mesh { ref path, pos, dir } => {
-                    let m = self.mesh_cache.get_mut(path);
+                    let m = self.mesh_cache.get_mut(path.as_ref());
                     let i = if let Some(x) = m {
                         x
                     } else {
                         self.mesh_cache.insert(
-                            path.clone(),
+                            path.to_string(),
                             InstancedMeshBuilder::new(load_mesh(ctx.gfx, path).unwrap()),
                         );
-                        self.mesh_cache.get_mut(path).unwrap()
+                        self.mesh_cache.get_mut(path.as_ref()).unwrap()
                     };
 
                     i.instances.push(MeshInstance {

@@ -116,35 +116,35 @@ fn render(sun: vec3<f32>,
 
     if(lightdata.x != 0u) {
         let light = decodeLight(chunk_id, lightdata.x);
-        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(0.5), 1.0, ssao);
+        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
     }
     if(lightdata.y != 0u) {
         let light = decodeLight(chunk_id, lightdata.y);
-        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(0.5), 1.0, ssao);
+        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
     }
     if(lightdata.z != 0u) {
         let light = decodeLight(chunk_id, lightdata.z);
-        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(0.5), 1.0, ssao);
+        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
     }
     if(lightdata.w != 0u) {
         let light = decodeLight(chunk_id, lightdata.w);
-        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(0.5), 1.0, ssao);
+        Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
         let lightdata2: vec4<u32> = textureLoad(t_lightdata2, chunk_id, 0);
         if(lightdata2.x != 0u) {
             let light = decodeLight(chunk_id, lightdata2.x);
-            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(0.5), 1.0, ssao);
+            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
         }
         if(lightdata2.y != 0u) {
             let light = decodeLight(chunk_id, lightdata2.y);
-            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(0.5), 1.0, ssao);
+            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
         }
         if(lightdata2.z != 0u) {
             let light = decodeLight(chunk_id, lightdata2.z);
-            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(0.5), 1.0, ssao);
+            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
         }
         if(lightdata2.w != 0u) {
             let light = decodeLight(chunk_id, lightdata2.w);
-            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(0.5), 1.0, ssao);
+            Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
         }
     }
 

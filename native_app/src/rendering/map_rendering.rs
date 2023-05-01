@@ -85,7 +85,7 @@ impl MapRenderer {
         let r_center = n.points.last() + (dir_perp * -4.5 + dir * -1.5).z(0.02);
 
         if n.control.is_stop_sign() {
-            draw.mesh("stop_sign.glb".to_string(), r_center, dir_perp.z(0.0));
+            draw.mesh("stop_sign.glb", r_center, dir_perp.z(0.0));
             return;
         }
 
@@ -95,7 +95,7 @@ impl MapRenderer {
             TrafficBehavior::GREEN => "traffic_light_green.glb",
         };
 
-        draw.mesh(mesh.to_string(), r_center, dir_perp.z(0.0));
+        draw.mesh(mesh, r_center, dir_perp.z(0.0));
     }
 
     fn render_lanes(
@@ -135,6 +135,13 @@ impl MapRenderer {
             let Some(r) = map.roads().get(id) else { continue };
             if !frustrum.intersects(&r.points.bbox().expand(r.width)) {
                 continue;
+            }
+
+            if !r.lanes_iter().all(|(_, kind)| kind.is_rail()) {
+                let w = r.width * 0.5 - 3.0;
+                for (point, dir) in r.points().equipoints_dir(45.0, true) {
+                    draw.mesh("streetlamp.glb", point - dir.perp_up() * w, dir.perp_up());
+                }
             }
 
             Self::render_lanes(
@@ -272,8 +279,8 @@ impl MapRenderer {
             }
             let w = road.width * 0.5 - 5.0;
             for (point, dir) in road.points().equipoints_dir(45.0, true) {
-                add_light(point + dir.perp_up() * w + 8.0 * V3::Z);
-                add_light(point - dir.perp_up() * w + 8.0 * V3::Z);
+                add_light(point + 8.0 * V3::Z);
+                //add_light(point - dir.perp_up() * w + 8.0 * V3::Z);
             }
         }
         for i in map.intersections().values() {
