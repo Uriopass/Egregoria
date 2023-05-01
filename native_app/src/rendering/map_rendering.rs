@@ -272,8 +272,8 @@ impl MapRenderer {
             }
             let w = road.width * 0.5 - 5.0;
             for (point, dir) in road.points().equipoints_dir(45.0, true) {
-                add_light(point + dir.perp_up() * w + 10.0 * V3::Z);
-                add_light(point - dir.perp_up() * w + 10.0 * V3::Z);
+                add_light(point + dir.perp_up() * w + 8.0 * V3::Z);
+                add_light(point - dir.perp_up() * w + 8.0 * V3::Z);
             }
         }
         for i in map.intersections().values() {
@@ -285,7 +285,7 @@ impl MapRenderer {
                 continue;
             }
 
-            add_light(i.pos + 10.0 * V3::Z);
+            add_light(i.pos + 8.0 * V3::Z);
         }
 
         for (cell_idx, cell) in by_chunk.storage().cells.iter() {

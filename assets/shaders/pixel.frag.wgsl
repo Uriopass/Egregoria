@@ -85,7 +85,7 @@ fn frag(@location(0) in_tint: vec4<f32>,
     }
 
     let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, normal).rgb;
-    let c = in_tint * albedo;
+    let c = mix(in_tint, vec4(1.0), metallic) * albedo;
 
     let V: vec3<f32> = normalize(params.cam_pos.xyz - in_wpos);
     let R: vec3<f32> = reflect(-V, normal);

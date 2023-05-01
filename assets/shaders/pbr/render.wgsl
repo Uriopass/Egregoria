@@ -88,7 +88,7 @@ fn calc_light(Lo: vec3<f32>,
     let denominator: f32    = 4.0 * max(NdotV, 0.0) * NdotL  + 0.0001;
     let specular_light: vec3<f32> = numerator / denominator;
 
-    return Lo + (kD * albedo * ssao / PI + specular_light) * shadow_v * col * NdotL;
+    return Lo + (kD * albedo * (0.7 + ssao * 0.3) / PI + specular_light) * shadow_v * col * NdotL;
 }
 
 fn render(sun: vec3<f32>,
