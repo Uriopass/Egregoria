@@ -186,7 +186,7 @@ impl PBR {
             let mut pass = enc.begin_render_pass(&RenderPassDescriptor {
                 label: Some(format!("diffuse irradiance face {face}").as_str()),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &view,
+                    view,
                     resolve_target: None,
                     ops: Operations {
                         load: LoadOp::Load,

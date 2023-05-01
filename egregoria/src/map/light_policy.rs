@@ -2,18 +2,13 @@ use crate::map::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLigh
 use egui_inspect::{egui, egui::Ui, Inspect, InspectArgs};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LightPolicy {
     NoLights,
     StopSigns,
     Lights,
+    #[default]
     Auto,
-}
-
-impl Default for LightPolicy {
-    fn default() -> Self {
-        LightPolicy::Auto
-    }
 }
 
 impl LightPolicy {

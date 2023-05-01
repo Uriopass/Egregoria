@@ -277,10 +277,8 @@ impl MapRenderer {
             if road.lanes_iter().all(|(_, kind)| kind.is_rail()) {
                 continue;
             }
-            let w = road.width * 0.5 - 5.0;
-            for (point, dir) in road.points().equipoints_dir(45.0, true) {
+            for (point, _) in road.points().equipoints_dir(45.0, true) {
                 add_light(point + 8.0 * V3::Z);
-                //add_light(point - dir.perp_up() * w + 8.0 * V3::Z);
             }
         }
         for i in map.intersections().values() {

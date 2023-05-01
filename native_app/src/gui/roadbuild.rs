@@ -13,17 +13,12 @@ use geom::{PolyLine3, Spline3, Vec2, Vec3};
 use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub(crate) enum BuildState {
+    #[default]
     Hover,
     Start(MapProject),
     Interpolation(Vec2, MapProject),
-}
-
-impl Default for BuildState {
-    fn default() -> Self {
-        Hover
-    }
 }
 
 #[derive(Default)]

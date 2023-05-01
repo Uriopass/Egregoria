@@ -104,8 +104,9 @@ impl Default for InspectedEntity {
     }
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
 pub(crate) enum Tool {
+    #[default]
     Hand,
     RoadbuildStraight,
     RoadbuildCurved,
@@ -171,11 +172,5 @@ impl UiTextures {
 
     pub(crate) fn try_get(&self, name: &str) -> Option<TextureId> {
         self.textures.get(name).map(TextureHandle::id)
-    }
-}
-
-impl Default for Tool {
-    fn default() -> Self {
-        Tool::Hand
     }
 }

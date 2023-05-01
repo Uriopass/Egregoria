@@ -33,8 +33,9 @@ pub struct Itinerary {
     reversed_local_path: Vec<Vec3>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub enum ItineraryKind {
+    #[default]
     None,
     WaitUntil(f64),
     Simple(Vec3),
@@ -336,12 +337,6 @@ impl Itinerary {
 
     pub fn is_none(&self) -> bool {
         matches!(self.kind, ItineraryKind::None)
-    }
-}
-
-impl Default for ItineraryKind {
-    fn default() -> Self {
-        ItineraryKind::None
     }
 }
 

@@ -87,7 +87,7 @@ impl Pipelines {
                     Pipelines::get_module(
                         &mut self.shader_cache,
                         &mut self.shader_watcher,
-                        &device,
+                        device,
                         name,
                     )
                 });
@@ -95,7 +95,7 @@ impl Pipelines {
                     self.pipelines_deps.entry(dep).or_default().insert(hash);
                 }
                 // ok to leak, we don't expect to build them many times in release
-                *v.insert(Box::leak(Box::new(pipeline)))
+                v.insert(Box::leak(Box::new(pipeline)))
             }
         }
     }
