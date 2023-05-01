@@ -29,6 +29,7 @@ pub enum TL {
     NonfilterableFloat,
     NonfilterableFloatMultisampled,
     Cube,
+    UInt,
 }
 
 impl Texture {
@@ -138,18 +139,17 @@ impl Texture {
                                 TL::DepthArray => TextureViewDimension::D2Array,
                                 _ => TextureViewDimension::D2,
                             },
-                            sample_type: if matches!(
-                                bgtype,
-                                TL::Depth | TL::DepthMultisampled | TL::DepthArray
-                            ) {
-                                TextureSampleType::Depth
-                            } else {
-                                TextureSampleType::Float {
+                            sample_type: match bgtype {
+                                TL::Depth | TL::DepthMultisampled | TL::DepthArray => {
+                                    TextureSampleType::Depth
+                                }
+                                TL::UInt => TextureSampleType::Uint,
+                                _ => TextureSampleType::Float {
                                     filterable: !matches!(
                                         bgtype,
                                         TL::NonfilterableFloat | TL::NonfilterableFloatMultisampled
                                     ),
-                                }
+                                },
                             },
                         },
                         count: None,

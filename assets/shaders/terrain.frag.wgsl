@@ -25,6 +25,8 @@ struct FragmentOutput {
 @group(3) @binding(9)  var s_prefilter_specular: sampler;
 @group(3) @binding(10) var t_brdf_lut: texture_2d<f32>;
 @group(3) @binding(11) var s_brdf_lut: sampler;
+@group(3) @binding(12) var t_lightdata: texture_2d<u32>;
+@group(3) @binding(13) var s_lightdata: sampler;
 
 fn grid(in_wpos: vec3<f32>, wpos_fwidth_x: f32) -> f32 {
     let level: f32 = wpos_fwidth_x * 20.0;
@@ -126,6 +128,9 @@ fn frag(@location(0) in_normal: vec3<f32>,
     c = mix(params.sand_col.rgb, c, smoothstep(-5.0, 0.0, in_wpos.z));
     c = mix(params.sea_col.rgb, c, smoothstep(-25.0, -20.0, in_wpos.z));
 
+    let chunk_id: vec2<u32> = vec2<u32>(u32(in_wpos.x / 32.0), u32(in_wpos.y / 32.0));
+    let lightdata: vec4<u32> = textureLoad(t_lightdata, chunk_id, 0);
+
     let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, in_normal).rgb;
     let V: vec3<f32> = normalize(params.cam_pos.xyz - in_wpos);
     let F0: vec3<f32> = vec3(0.02);
@@ -146,6 +151,10 @@ fn frag(@location(0) in_normal: vec3<f32>,
                                       0.0,
                                       roughness,
                                       shadow_v,
-                                      ssao);
+                                      ssao,
+                                      lightdata,
+                                      chunk_id,
+                                      in_wpos
+                                      );
     return FragmentOutput(vec4(final_rgb, 1.0));
 }

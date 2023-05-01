@@ -699,6 +699,7 @@ impl GfxContext {
                 &self.pbr.diffuse_irradiance_cube,
                 &self.pbr.specular_prefilter_cube,
                 &self.pbr.split_sum_brdf_lut,
+                &self.lamplights.lightdata,
             ],
             &self.device,
             &bg_layout_litmesh(&self.device),

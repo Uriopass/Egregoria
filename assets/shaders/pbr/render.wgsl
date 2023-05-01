@@ -40,6 +40,19 @@ fn GeometrySmith(NdotV: f32, NdotL: f32, roughness: f32) -> f32 {
     return ggx1 * ggx2;
 }
 
+const LIGHTCHUNK_SIZE: f32 = 32.0;
+
+fn decodeLight(chunk: vec2<u32>, light: u32) -> vec3<f32> {
+    let x: u32 = light >> 20u;
+    let y: u32 = (light >> 8u) & (0xFFFu);
+    let z: u32 = light & 0xFFu;
+    return vec3<f32>(
+        f32(x) / f32(1u << 12u) * (LIGHTCHUNK_SIZE * 3.0) - LIGHTCHUNK_SIZE + f32(chunk.x) * LIGHTCHUNK_SIZE,
+        f32(y) / f32(1u << 12u) * (LIGHTCHUNK_SIZE * 3.0) - LIGHTCHUNK_SIZE + f32(chunk.y) * LIGHTCHUNK_SIZE,
+        f32(z) / f32(1u << 8u) * (LIGHTCHUNK_SIZE * 3.0) - LIGHTCHUNK_SIZE
+    );
+}
+
 fn render(sun: vec3<f32>,
           V: vec3<f32>,
           position: vec2<f32>,
@@ -53,7 +66,11 @@ fn render(sun: vec3<f32>,
           metallic: f32,
           roughness: f32,
           shadow_v: f32,
-          ssao: f32) -> vec3<f32>  {
+          ssao: f32,
+          lightdata: vec4<u32>,
+          chunk_id: vec2<u32>,
+          wpos: vec3<f32>
+          ) -> vec3<f32>  {
     let H: vec3<f32> = normalize(sun + V);
     let NdotL: f32 = max(dot(normal, sun), 0.0);
     let NdotV: f32 = max(dot(normal, V), 0.0);
@@ -78,12 +95,28 @@ fn render(sun: vec3<f32>,
     var dkD: vec3<f32> = 1.0 - dkS;
     dkD *= 1.0 - vec3(metallic);
 
-    let ambient: vec3<f32> = (0.2 * dkD * irradiance_diffuse * albedo + specular) * ssao;
+
+    var mind: f32 = 0.0;
+    if(lightdata.x != 0u) {
+        mind = mind + pow(1.0 - min(1.0, length(wpos - decodeLight(chunk_id, lightdata.x)) * 0.03333), 2.0);
+    }
+    if(lightdata.y != 0u) {
+        mind = mind + pow(1.0 - min(1.0, length(wpos - decodeLight(chunk_id, lightdata.y)) * 0.03333), 2.0);
+    }
+    if(lightdata.z != 0u) {
+        mind = mind + pow(1.0 - min(1.0, length(wpos - decodeLight(chunk_id, lightdata.z)) * 0.03333), 2.0);
+    }
+    if(lightdata.w != 0u) {
+        mind = mind + pow(1.0 - min(1.0, length(wpos - decodeLight(chunk_id, lightdata.w)) * 0.03333), 2.0);
+    }
+
+    let ambient: vec3<f32> = (0.2 * dkD * (mind + irradiance_diffuse) * albedo + specular) * ssao;
     var color: vec3<f32>   = ambient + Lo;
 
     color = tonemap(color);
 
     color += dither(position);
+
 
     return color;
 }

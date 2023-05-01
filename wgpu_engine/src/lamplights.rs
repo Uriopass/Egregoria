@@ -78,7 +78,7 @@ impl LampLights {
         let origin = Vec3::new(
             chunk.0 as f32 * Self::LIGHTCHUNK_SIZE as f32,
             chunk.1 as f32 * Self::LIGHTCHUNK_SIZE as f32,
-            -5.0,
+            0.0,
         );
         let mut encoded_lights = [EncodedLight(0); 4];
         for (i, light) in lights.iter().enumerate() {
