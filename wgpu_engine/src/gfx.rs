@@ -48,6 +48,8 @@ pub struct GfxContext {
     pub render_params: Uniform<RenderParams>,
     pub(crate) texture_cache_paths: FastMap<PathBuf, Arc<Texture>>,
     pub(crate) texture_cache_bytes: Mutex<HashMap<u64, Arc<Texture>, common::TransparentHasherU64>>,
+    pub(crate) null_texture: Texture,
+
     pub(crate) samples: u32,
     pub(crate) screen_uv_vertices: wgpu::Buffer,
     pub(crate) rect_indices: wgpu::Buffer,
@@ -240,6 +242,10 @@ impl GfxContext {
         );
 
         let pbr = PBR::new(&device, &queue);
+        let null_texture = TextureBuilder::empty(1, 1, 1, TextureFormat::Rgba8Unorm)
+            .with_srgb(false)
+            .with_label("null texture")
+            .build(&device, &queue);
 
         let mut me = Self {
             size: (win_width, win_height),
@@ -250,13 +256,14 @@ impl GfxContext {
             surface,
             pipelines: RefCell::new(Pipelines::new(&device)),
             materials: Default::default(),
-            default_material: Material::new_default(&device, &queue),
+            default_material: Material::new_default(&device, &queue, &null_texture),
             tick: 0,
             projection,
             sun_projection: [(); 4].map(|_| Uniform::new(Matrix4::zero(), &device)),
             render_params: Uniform::new(Default::default(), &device),
             texture_cache_paths: textures,
             texture_cache_bytes: Default::default(),
+            null_texture,
             samples,
             screen_uv_vertices,
             rect_indices,

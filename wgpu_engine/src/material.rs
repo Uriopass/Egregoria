@@ -55,7 +55,7 @@ impl Material {
             albedo,
             metallic_roughness,
             normal_map,
-            gfx.palette_ref(),
+            &gfx.null_texture,
         )
     }
 
@@ -232,13 +232,10 @@ impl Material {
         })
     }
 
-    pub fn new_default(device: &Device, queue: &Queue) -> Self {
+    pub fn new_default(device: &Device, queue: &Queue, null_tex: &Texture) -> Self {
         let albedo = Arc::new(
             TextureBuilder::from_img(DynamicImage::ImageRgba8(image::RgbaImage::new(1, 1)))
                 .build(device, queue),
-        );
-        let bogus = Arc::new(
-            TextureBuilder::empty(1, 1, 1, wgpu::TextureFormat::Rgba8Unorm).build(device, queue),
         );
 
         Self::new_raw(
@@ -250,7 +247,7 @@ impl Material {
                 tex: None,
             },
             None,
-            &bogus,
+            null_tex,
         )
     }
 }
