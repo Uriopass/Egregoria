@@ -139,6 +139,16 @@ impl Road {
         })
     }
 
+    pub fn has_sidewalks(&self) -> bool {
+        self.lanes_forward
+            .iter()
+            .any(|(_, kind)| matches!(kind, LaneKind::Walking))
+            || self
+                .lanes_backward
+                .iter()
+                .any(|(_, kind)| matches!(kind, LaneKind::Walking))
+    }
+
     pub fn parking_next_to(&self, lane: &Lane) -> Option<LaneID> {
         let lanes = if lane.src == self.src {
             &self.lanes_forward

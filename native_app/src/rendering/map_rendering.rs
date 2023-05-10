@@ -82,7 +82,7 @@ impl MapRenderer {
         let dir = n.orientation_from(n.dst);
         let dir_perp = dir.perpendicular();
 
-        let r_center = n.points.last() + (dir_perp * -4.5 + dir * -1.5).z(0.02);
+        let r_center = n.points.last() + (dir_perp * -5.2 + dir * -1.5).z(0.02);
 
         if n.control.is_stop_sign() {
             draw.mesh("stop_sign.glb", r_center, dir_perp.z(0.0));
@@ -138,7 +138,13 @@ impl MapRenderer {
             }
 
             if !r.lanes_iter().all(|(_, kind)| kind.is_rail()) {
-                let w = r.width * 0.5 - 3.0;
+                let has_sidewalks = r.has_sidewalks();
+                let offset = if has_sidewalks {
+                    LaneKind::Walking.width()
+                } else {
+                    0.0
+                };
+                let w = r.width * 0.5 - offset;
                 for (point, dir) in r.points().equipoints_dir(45.0, true) {
                     draw.mesh("streetlamp.glb", point - dir.perp_up() * w, dir.perp_up());
                 }
