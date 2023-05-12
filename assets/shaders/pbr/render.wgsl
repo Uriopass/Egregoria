@@ -158,7 +158,7 @@ fn render(sun: vec3<f32>,
     var dkD: vec3<f32> = 1.0 - dkS;
     dkD *= 1.0 - vec3(metallic);
 
-    let ambient: vec3<f32> = (0.2 * dkD * (0.1 + irradiance_diffuse) * albedo + specular) * ssao;
+    let ambient: vec3<f32> = (0.2 * dkD * (0.15 + irradiance_diffuse) * albedo + specular) * ssao;
     var color: vec3<f32>   = ambient + Lo * 4.0;
 
     color = tonemap(color);
