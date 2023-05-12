@@ -112,8 +112,13 @@ fn render(sun: vec3<f32>,
     let chunk_id: vec2<u32> = vec2<u32>(u32(wpos.x / LIGHTCHUNK_SIZE), u32(wpos.y / LIGHTCHUNK_SIZE));
     let lightdata: vec4<u32> = textureLoad(t_lightdata, chunk_id, 0);
 
-    var Lo: vec3<f32> = calc_light(vec3(0.0), sun, V, normal, albedo, metallic, roughness,  F0, sun_col, shadow_v, ssao);
 
+    var Lo: vec3<f32> = vec3(0.0);
+
+    if(sun.z >= 0.0) {
+       Lo = calc_light(vec3(0.0), sun, V, normal, albedo, metallic, roughness,  F0, sun_col, shadow_v, ssao);
+    }
+    if(sun.z < 0.1) {
     if(lightdata.x != 0u) {
         let light = decodeLight(chunk_id, lightdata.x);
         Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
@@ -146,6 +151,7 @@ fn render(sun: vec3<f32>,
             let light = decodeLight(chunk_id, lightdata2.w);
             Lo = calc_light(Lo, normalize(light - wpos), V, normal, albedo, metallic, roughness, F0, lightPower(wpos, light) * vec3(1.0), 1.0, ssao);
         }
+    }
     }
 
     let dkS: vec3<f32> = F_spec;

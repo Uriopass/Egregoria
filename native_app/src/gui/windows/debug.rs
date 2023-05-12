@@ -89,7 +89,7 @@ pub(crate) fn debug(
         if ui.small_button("set morning").clicked() {
             uiworld.commands().set_game_time(GameTime::new(
                 0.1,
-                time + daysecleft as f64 + 7.0 * GameTime::HOUR as f64,
+                time + daysecleft as f64 + 5.5 * GameTime::HOUR as f64,
             ));
         }
 
