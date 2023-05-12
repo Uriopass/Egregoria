@@ -1,6 +1,7 @@
 ![Screenshot of Egregoria 1](assets/screen2.jpg)
 ![Screenshot of Egregoria 2](assets/screen3.jpg)
 ![Screenshot of Egregoria 3](assets/screen5.jpg)
+![Screenshot of Egregoria 3](assets/screen1.jpg)
 
 [![Build status](https://github.com/Uriopass/Egregoria/workflows/rust-build/badge.svg)](#)
 [![Discord](https://img.shields.io/discord/709730057949544488?label=discord)](https://discord.gg/CAaZhUJ)
