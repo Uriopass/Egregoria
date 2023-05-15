@@ -59,7 +59,6 @@ use crate::transportation::train::RailWagon;
 use crate::utils::scheduler::RunnableSystem;
 use crate::utils::time::Tick;
 use common::FastMap;
-use serde::de::Error;
 pub use utils::par_command_buffer::ParCommandBuffer;
 
 pub use utils::config::*;
@@ -410,11 +409,17 @@ impl<'de> Deserialize<'de> for Egregoria {
             t.elapsed().as_secs_f32()
         );
 
-        if goriadeser.version != VERSION {
-            return Err(Error::custom(format!(
-                "couldn't load save, incompatible version! save is: {} - game is: {}",
-                goriadeser.version, VERSION
-            )));
+        let cur_version_parts = VERSION.split('.').collect::<Vec<_>>();
+        let deser_parts = goriadeser.version.split('.').collect::<Vec<_>>();
+
+        if cur_version_parts[0] != deser_parts[0]
+            || (cur_version_parts[0] == "0" && cur_version_parts[1] != deser_parts[1])
+        {
+            log::warn!(
+                "incompatible version, save might be corrupted! save is: {} - game is: {}",
+                goriadeser.version,
+                VERSION
+            );
         }
 
         let mut goria = Self {
