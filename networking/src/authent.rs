@@ -1,7 +1,7 @@
 use crate::packets::{AuthentResponse, ServerReliablePacket, ServerUnreliablePacket};
 use crate::{encode, hash_str, Frame, UserID};
 use common::{FastMap, FastSet};
-use message_io::network::{Endpoint, Network};
+use message_io::network::{Endpoint, NetworkController};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -119,7 +119,7 @@ impl Authent {
         None
     }
 
-    pub fn udp_connect(&mut self, e: Endpoint, id: AuthentID, net: &mut Network) {
+    pub fn udp_connect(&mut self, e: Endpoint, id: AuthentID, net: &mut NetworkController) {
         self.addr_to_client.insert(e.addr(), id);
         if let Some(ClientConnectState::Connecting { unreliable, .. }) =
             self.get_client_state_mut(e)
@@ -131,7 +131,7 @@ impl Authent {
         }
     }
 
-    pub fn tcp_connected(&mut self, e: Endpoint, net: &mut Network) {
+    pub fn tcp_connected(&mut self, e: Endpoint, net: &mut NetworkController) {
         log::info!("connected:{}", e);
 
         let id = self.next_auth_id();

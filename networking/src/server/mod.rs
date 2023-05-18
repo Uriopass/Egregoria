@@ -1,8 +1,7 @@
 use std::io;
 use std::time::Duration;
 
-use message_io::events::EventQueue;
-use message_io::network::{Endpoint, NetEvent, Network, Transport};
+use message_io::network::{Endpoint, NetEvent, NetworkController, NetworkProcessor, Transport};
 use serde::Serialize;
 
 use crate::authent::{Authent, AuthentID, ClientGameState};
@@ -46,8 +45,8 @@ struct VirtualClient {
 }
 
 pub struct Server<WORLD: Serialize, INPUT> {
-    network: Network,
-    events: EventQueue<NetEvent>,
+    network: NetworkController,
+    events: Option<NetworkProcessor>,
 
     authent: Authent,
     v_client: Option<VirtualClient>,
@@ -67,7 +66,7 @@ pub struct Server<WORLD: Serialize, INPUT> {
 
 impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WORLD, INPUT> {
     pub fn start(conf: ServerConfiguration) -> io::Result<Self> {
-        let (mut network, events) = Network::split();
+        let (network, events) = message_io::network::split();
 
         let port = conf.port.unwrap_or(DEFAULT_PORT);
         let (_, tcp_addr) = network.listen(Transport::FramedTcp, format!("0.0.0.0:{}", port))?;
@@ -81,7 +80,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
 
         Ok(Self {
             network,
-            events,
+            events: Some(events),
             step: Timestep::new(conf.period),
             buffer: ServerPlayoutBuffer::new(conf.start_frame),
             v_client,
@@ -102,28 +101,36 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
         frame: Frame,
         local_inputs: Option<INPUT>,
     ) -> ServerPollResult<INPUT> {
-        while let Some(ev) = self.events.try_receive() {
-            match ev {
-                NetEvent::Message(e, data) => match is_reliable(&e) {
-                    true => {
-                        if let Some(packet) = decode::<ClientReliablePacket>(&data) {
-                            let _ = self.message_reliable(e, packet, world, frame);
-                        } else {
-                            log::error!("client sent invalid reliable packet");
+        let mut called = true;
+        let mut events = self.events.take().unwrap();
+        while called {
+            called = false;
+            events.process_poll_event(Some(Duration::ZERO), |ev| {
+                called = true;
+                match ev {
+                    NetEvent::Message(e, data) => match is_reliable(&e) {
+                        true => {
+                            if let Some(packet) = decode::<ClientReliablePacket>(&data) {
+                                let _ = self.message_reliable(e, packet, world, frame);
+                            } else {
+                                log::error!("client sent invalid reliable packet");
+                            }
                         }
-                    }
-                    false => {
-                        if let Some(packet) = decode::<ClientUnreliablePacket>(&data) {
-                            let _ = self.message_unreliable(e, packet);
-                        } else {
-                            log::error!("client sent invalid unreliable packet");
+                        false => {
+                            if let Some(packet) = decode::<ClientUnreliablePacket>(&data) {
+                                let _ = self.message_unreliable(e, packet);
+                            } else {
+                                log::error!("client sent invalid unreliable packet");
+                            }
                         }
-                    }
-                },
-                NetEvent::Connected(e, _) => self.tcp_connected(e),
-                NetEvent::Disconnected(e) => self.tcp_disconnected(e),
-            }
+                    },
+                    NetEvent::Accepted(e, _) => self.tcp_connected(e),
+                    NetEvent::Disconnected(e) => self.tcp_disconnected(e),
+                    NetEvent::Connected(_, _) => {}
+                }
+            });
         }
+        self.events = Some(events);
 
         self.send_merged_inputs();
         self.send_long_running();

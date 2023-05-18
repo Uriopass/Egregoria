@@ -242,7 +242,7 @@ mod inner {
     pub(crate) fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
         let mut s = info.ip.to_string();
         if !s.contains(':') {
-            s += ":80"
+            s += ":23019"
         }
         let parsed_addr = match s.to_socket_addrs() {
             Ok(x) => match x.into_iter().next() {
@@ -263,7 +263,7 @@ mod inner {
         let client = match networking::Client::connect(ConnectConf {
             name: info.name.clone(),
             addr: parsed_addr.ip(),
-            port: if port != 80 { Some(port) } else { None },
+            port: if port != 23019 { Some(port) } else { None },
             frame_buffer_advance: 8,
             version: VERSION.to_string(),
         }) {

@@ -12,7 +12,7 @@ serde         = "1.0"
 serde_json    = "1.0.59"
 log           = "0.4.11"
 geom          = { path = "../geom" }
-miniz_oxide   = "0.6.2"
+miniz_oxide   = "0.7"
 rustc-hash    = "1.1.0"
 inline_tweak  = {version = "1.0.8"}
 log-panics    = { version = "2.0.0", features=["with-backtrace"] }

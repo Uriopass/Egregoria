@@ -2,7 +2,7 @@ use crate::authent::{Client, ClientGameState};
 use crate::packets::{ClientReliablePacket, ServerReliablePacket, WorldDataFragment};
 use crate::{decode, encode, AuthentID, Frame, MAX_WORLDSEND_PACKET_SIZE};
 use common::FastMap;
-use message_io::network::{Endpoint, Network};
+use message_io::network::{Endpoint, NetworkController};
 use serde::de::DeserializeOwned;
 
 #[derive(Eq, PartialEq)]
@@ -47,7 +47,7 @@ impl WorldSend {
         }
     }
 
-    pub fn update(&mut self, c: &mut Client, net: &mut Network) {
+    pub fn update(&mut self, c: &mut Client, net: &mut NetworkController) {
         if let Some(state) = self.send_state.get_mut(&c.id) {
             if state.status == WorldSendStatus::Over {
                 self.send_state.remove(&c.id);
@@ -123,7 +123,12 @@ impl<W> Default for WorldReceive<W> {
 }
 
 impl<W: DeserializeOwned> WorldReceive<W> {
-    pub fn handle(&mut self, fragment: WorldDataFragment, net: &mut Network, tcp: Endpoint) {
+    pub fn handle(
+        &mut self,
+        fragment: WorldDataFragment,
+        net: &mut NetworkController,
+        tcp: Endpoint,
+    ) {
         if let WorldReceive::Downloading {
             ref mut datasize,
             ref mut data_so_far,

@@ -2,7 +2,7 @@ use crate::authent::{Client, ClientGameState};
 use crate::packets::ServerReliablePacket;
 use crate::{encode, AuthentID, Frame, MergedInputs};
 use common::FastMap;
-use message_io::network::Network;
+use message_io::network::NetworkController;
 
 struct CatchUpState {
     inputs: Vec<MergedInputs>,
@@ -48,7 +48,7 @@ impl CatchUp {
         }
     }
 
-    pub fn update(&mut self, c: &mut Client, net: &mut Network) {
+    pub fn update(&mut self, c: &mut Client, net: &mut NetworkController) {
         let state = match self.frame_history.get_mut(&c.id) {
             Some(x) => x,
             None => return,

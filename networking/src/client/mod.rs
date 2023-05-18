@@ -1,8 +1,8 @@
 use std::io;
 use std::net::{IpAddr, SocketAddr};
+use std::time::Duration;
 
-use message_io::events::EventQueue;
-use message_io::network::{Endpoint, NetEvent, Network, Transport};
+use message_io::network::{Endpoint, NetEvent, NetworkController, NetworkProcessor, Transport};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -62,8 +62,8 @@ enum ClientState<W, I> {
 }
 
 pub struct Client<WORLD: DeserializeOwned, INPUT: Serialize + DeserializeOwned + Default> {
-    network: Network,
-    events: EventQueue<NetEvent>,
+    network: NetworkController,
+    events: Option<NetworkProcessor>,
     tcp: Endpoint,
     udp: Endpoint,
 
@@ -88,7 +88,7 @@ pub struct ConnectConf {
 
 impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I> {
     pub fn connect(conf: ConnectConf) -> io::Result<Self> {
-        let (mut network, events) = Network::split();
+        let (network, events) = message_io::network::split();
         let addr = conf.addr;
         let port = conf.port.unwrap_or(DEFAULT_PORT);
         let (tcp, _) = network.connect(Transport::FramedTcp, SocketAddr::new(addr, port))?;
@@ -96,7 +96,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
 
         Ok(Self {
             network,
-            events,
+            events: Some(events),
             tcp,
             udp,
             state: ClientState::Connecting,
@@ -110,38 +110,46 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
 
     #[allow(clippy::collapsible_if)]
     pub fn poll(&mut self, input: I) -> PollResult<W, I> {
-        while let Some(x) = self.events.try_receive() {
-            match x {
-                NetEvent::Message(e, m) => {
-                    match e.resource_id().adapter_id() == Transport::FramedTcp.id() {
-                        true => {
-                            if let Some(packet) = decode(&m) {
-                                self.message_reliable(packet);
-                            } else {
-                                log::error!("could not decode reliable packet from server");
+        let mut called = true;
+        let mut events = self.events.take().unwrap();
+        while called {
+            called = false;
+            events.process_poll_event(Some(Duration::ZERO), |x| {
+                called = true;
+                match x {
+                    NetEvent::Message(e, m) => {
+                        match e.resource_id().adapter_id() == Transport::FramedTcp.id() {
+                            true => {
+                                if let Some(packet) = decode(&m) {
+                                    self.message_reliable(packet);
+                                } else {
+                                    log::error!("could not decode reliable packet from server");
+                                }
                             }
-                        }
-                        false => {
-                            if let Some(packet) = decode(&m) {
-                                self.message_unreliable(packet)
-                            } else {
-                                log::error!("could not decode unreliable packet from server");
+                            false => {
+                                if let Some(packet) = decode(&m) {
+                                    self.message_unreliable(packet)
+                                } else {
+                                    log::error!("could not decode unreliable packet from server");
+                                }
                             }
                         }
                     }
-                }
-                NetEvent::Connected(e, _) => {
-                    log::info!("connected {}", e)
-                }
-                NetEvent::Disconnected(_) => {
-                    if !matches!(self.state, ClientState::Disconnected { .. }) {
-                        self.state = ClientState::Disconnected {
-                            reason: "connection lost".to_string(),
+                    NetEvent::Connected(e, _) => {
+                        log::info!("connected {}", e)
+                    }
+                    NetEvent::Disconnected(_) => {
+                        if !matches!(self.state, ClientState::Disconnected { .. }) {
+                            self.state = ClientState::Disconnected {
+                                reason: "connection lost".to_string(),
+                            }
                         }
                     }
+                    NetEvent::Accepted(_, _) => {}
                 }
-            }
+            });
         }
+        self.events = Some(events);
 
         match self.state {
             ClientState::Disconnected { ref reason } => {
