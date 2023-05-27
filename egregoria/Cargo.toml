@@ -15,7 +15,7 @@ flat_spatial = { workspace = true, features=["serde"] }
 geom          = { path = "../geom" }
 common        = { path = "../common" }
 slotmap       = { version = "1.0.2", default-features = false, features = ["serde", "unstable"] }
-rayon         = "1.5.1"
+rayon         = "1.6"
 atomic_refcell = "0.1.6"
 hecs         = { workspace = true, features=["column-serialize"] }
 resources     = "1.1.0"

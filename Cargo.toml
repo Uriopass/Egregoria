@@ -17,11 +17,11 @@ default-members = ["native_app"]
 
 [workspace.dependencies]
 hecs = "0.10.0"
-egui = { git = "https://github.com/emilk/egui", branch = "master" }
+egui = "0.22.0"
 flat_spatial = "0.5.1"
-egui-wgpu = { git = "https://github.com/emilk/egui", branch = "master" }
-egui_extras = { git = "https://github.com/emilk/egui", branch = "master" }
-egui-winit = { git = "https://github.com/emilk/egui", branch = "master", default-features = false }
+egui-wgpu = "0.22.0"
+egui_extras = "0.22.0"
+egui-winit = { version = "0.22.0", default-features = false }
 ordered-float = { version = "3.4.0", default-features = false }
 
 # Set the settings for build scripts and proc-macros.

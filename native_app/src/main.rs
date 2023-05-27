@@ -34,6 +34,9 @@ async fn run(el: EventLoop<()>, window: Window) {
 }
 
 fn main() {
+    #[cfg(feature = "profile")]
+    profiling::tracy_client::Client::start();
+
     profiling::register_thread!("Main Thread");
 
     init::init();

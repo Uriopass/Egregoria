@@ -9,7 +9,7 @@ use std::time::Duration;
 
 const SETTINGS_SAVE_NAME: &str = "settings";
 
-#[derive(Serialize, Deserialize, Copy, Clone)]
+#[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq)]
 pub(crate) enum ShadowQuality {
     NoShadows,
     Low,
@@ -55,7 +55,7 @@ impl ShadowQuality {
     }
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
 pub(crate) struct Settings {
     pub(crate) camera_border_move: bool,
@@ -102,7 +102,7 @@ impl Default for Settings {
     }
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[repr(u8)]
 pub(crate) enum AutoSaveEvery {
     Never,
@@ -158,6 +158,7 @@ pub(crate) fn settings(
         .vscroll(true)
         .collapsible(false)
         .show(ui, |ui| {
+            let before = settings.clone();
             ui.label("Gameplay");
 
             let mut id = settings.auto_save_every as u8 as usize;
@@ -319,6 +320,8 @@ pub(crate) fn settings(
                     })
                 });
 
-            common::saveload::JSONPretty::save_silent(&*settings, SETTINGS_SAVE_NAME);
+            if *settings != before {
+                common::saveload::JSONPretty::save_silent(&*settings, SETTINGS_SAVE_NAME);
+            }
         });
 }
