@@ -7,7 +7,6 @@ use crate::utils::time::GameTime;
 use crate::ParCommandBuffer;
 use geom::{angle_lerpxy, Ray, Transform, Vec2, Vec3};
 use hecs::{Entity, World};
-use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 
 #[profiling::function]
@@ -24,7 +23,7 @@ pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
             &Collider,
         )>()
         .iter_batched(32)
-        .par_bridge()
+        //.par_bridge()
         .for_each(|batch| {
             batch.for_each(|(ent, (a, b, c, d, e))| {
                 vehicle_decision(ra, rb, rc, ent, a, b, c, d, e);
@@ -82,7 +81,7 @@ pub fn vehicle_state_update_system(world: &mut World, resources: &mut Resources)
     world
         .query::<(&mut Vehicle, &mut Transform, &mut Speed)>()
         .iter_batched(32)
-        .par_bridge()
+        //.par_bridge()
         .for_each(|batch| {
             batch.for_each(|(ent, (a, b, c))| {
                 vehicle_state_update(ra, rb, rc, ent, a, b, c);

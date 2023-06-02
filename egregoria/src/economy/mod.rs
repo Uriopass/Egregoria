@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
 use std::iter::Sum;
-use std::ops::{Add, AddAssign, Div, Mul, SubAssign};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, SubAssign};
 
 mod ecostats;
 mod government;
@@ -34,6 +34,7 @@ const WORKER_CONSUMPTION_PER_SECOND: Money = Money::new_cents(1);
 /// Money in cents, can be negative when expressing debt.
 #[derive(Default, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd)]
 #[serde(transparent)]
+#[repr(transparent)]
 pub struct Money(i64);
 
 impl Display for Money {
@@ -48,6 +49,14 @@ impl Display for Money {
             Display::fmt(&cent, f)?;
         }
         f.write_str("$")
+    }
+}
+
+impl Neg for Money {
+    type Output = Money;
+
+    fn neg(self) -> Self::Output {
+        Money(-self.0)
     }
 }
 
@@ -130,6 +139,10 @@ impl Money {
     pub fn cents(&self) -> i64 {
         self.0
     }
+
+    pub fn bucks(&self) -> i64 {
+        self.0 / 100
+    }
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -201,6 +214,7 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
                 .0
                 .push(trade.buyer.soul());
         }
+        gvt.money += trade.money_delta;
 
         match trade.seller {
             TradeTarget::Soul(id) => {
@@ -210,10 +224,7 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
                     }
                 }
             }
-            TradeTarget::ExternalTrade => {
-                let singlem = m.m(trade.kind);
-                gvt.money -= (singlem.ext_value + singlem.transport_cost) * trade.qty as i64;
-            }
+            TradeTarget::ExternalTrade => {}
         }
 
         match trade.buyer {
@@ -222,10 +233,7 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
                     v.0.entry(trade.kind).or_default().push(trade);
                 }
             }
-            TradeTarget::ExternalTrade => {
-                let singlem = m.m(trade.kind);
-                gvt.money += (singlem.ext_value - singlem.transport_cost) * trade.qty as i64;
-            }
+            TradeTarget::ExternalTrade => {}
         }
     }
 }

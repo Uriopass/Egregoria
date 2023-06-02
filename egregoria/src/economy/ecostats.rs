@@ -1,4 +1,4 @@
-use crate::economy::{ItemID, ItemRegistry, Trade, TradeTarget};
+use crate::economy::{ItemID, ItemRegistry, Money, Trade, TradeTarget};
 use serde::{Deserialize, Serialize};
 use serde_big_array::BigArray;
 use std::collections::BTreeMap;
@@ -14,13 +14,16 @@ pub const LEVEL_NAMES: [&str; 4] = ["10m", "1h", "10h", "50h"];
 #[derive(Serialize, Deserialize)]
 pub struct ItemHistoryLevel {
     #[serde(with = "BigArray")]
-    pub past_ring: [u32; HISTORY_SIZE],
+    pub past_ring_items: [i64; HISTORY_SIZE],
+    #[serde(with = "BigArray")]
+    pub past_ring_money: [Money; HISTORY_SIZE],
 }
 
 impl Default for ItemHistoryLevel {
     fn default() -> Self {
         Self {
-            past_ring: [0; HISTORY_SIZE],
+            past_ring_items: [0; HISTORY_SIZE],
+            past_ring_money: [Money::ZERO; HISTORY_SIZE],
         }
     }
 }
@@ -76,8 +79,10 @@ impl ItemHistories {
         let h = self.m.get_mut(&item).unwrap();
         for (level, cursor) in h.levels.iter_mut().zip(&self.cursors) {
             // Safety: the cursor is modulo HISTORY_SIZE
-            let lvl = unsafe { level.past_ring.get_unchecked_mut(*cursor) };
-            *lvl = lvl.saturating_add(trade.qty as u32);
+            let lvl = unsafe { level.past_ring_items.get_unchecked_mut(*cursor) };
+            *lvl = lvl.saturating_add(trade.qty as i64);
+            let lvl = unsafe { level.past_ring_money.get_unchecked_mut(*cursor) };
+            lvl.0 = lvl.0.saturating_add(trade.money_delta.0);
         }
     }
 
@@ -86,7 +91,8 @@ impl ItemHistories {
             if tick % *freq == 0 {
                 *c = (*c + 1) % HISTORY_SIZE;
                 self.m.values_mut().for_each(|h| {
-                    h.levels[c_i].past_ring[*c] = 0;
+                    h.levels[c_i].past_ring_money[*c] = Money::ZERO;
+                    h.levels[c_i].past_ring_items[*c] = 0;
                 });
             }
         }

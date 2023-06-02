@@ -10,8 +10,6 @@ use egui_inspect::Inspect;
 use geom::{angle_lerpxy, Color, Transform, Vec3};
 use hecs::Entity;
 use hecs::World;
-use rayon::iter::ParallelBridge;
-use rayon::prelude::*;
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 
@@ -91,7 +89,7 @@ pub fn pedestrian_decision_system(world: &mut World, resources: &mut Resources) 
     world
         .query::<(&mut Itinerary, &mut Transform, &mut Speed, &mut Pedestrian)>()
         .iter_batched(32)
-        .par_bridge()
+        //.par_bridge()
         .for_each(|batch| batch.for_each(|(_, (a, b, c, d))| pedestrian_decision(ra, a, b, c, d)))
 }
 

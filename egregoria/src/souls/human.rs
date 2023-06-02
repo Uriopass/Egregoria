@@ -10,7 +10,6 @@ use crate::{BuildingKind, Egregoria, FreightStation, Map, ParCommandBuffer, Soul
 use egui_inspect::Inspect;
 use geom::Transform;
 use hecs::{Entity, World};
-use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 
@@ -106,7 +105,7 @@ pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
             Option<&mut Work>,
         )>()
         .iter_batched(32)
-        .par_bridge()
+        //.par_bridge()
         .for_each(|batch| {
             batch.for_each(|(ent, (a, b, c, d, e, f, g, h))| {
                 update_decision(ra, rb, rc, rd, ent, a, b, c, d, e, f, g, h);

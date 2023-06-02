@@ -5,7 +5,6 @@ use egui_inspect::egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Follower, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, World};
-use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 
@@ -396,7 +395,7 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
     world
         .query::<(&mut Transform, &Speed, &mut Itinerary)>()
         .iter_batched(32)
-        .par_bridge()
+        //.par_bridge()
         .for_each(|chunk| {
             chunk.for_each(|(_, (trans, kin, it))| {
                 trans.position = it.update_rail(

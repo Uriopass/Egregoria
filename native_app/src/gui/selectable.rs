@@ -5,8 +5,6 @@ use egregoria::engine_interaction::Selectable;
 use egregoria::map::ProjectFilter;
 use egregoria::Egregoria;
 use geom::Transform;
-use rayon::iter::ParallelIterator;
-use rayon::prelude::ParallelBridge;
 use std::sync::Mutex;
 
 /// Selectable allows to select entities by clicking on them
@@ -30,7 +28,7 @@ pub(crate) fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
             .world()
             .query::<(&Transform, &Selectable)>()
             .iter_batched(16)
-            .par_bridge()
+            //.par_bridge()
             .for_each(|chunk| {
                 let mut v = f32::INFINITY;
                 let mut ent = None;

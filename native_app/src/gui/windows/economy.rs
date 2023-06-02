@@ -17,9 +17,17 @@ enum EconomyTab {
     MarketPrices,
 }
 
+#[derive(Copy, Clone, Default)]
+enum HistoryType {
+    #[default]
+    Money,
+    Items,
+}
+
 struct EconomyState {
     pub curlevel: usize,
     pub tab: EconomyTab,
+    pub hist_type: HistoryType,
 }
 
 /// Economy window
@@ -33,6 +41,7 @@ pub(crate) fn economy(
     uiw.check_present(|| EconomyState {
         curlevel: 0,
         tab: EconomyTab::ImportExports,
+        hist_type: Default::default(),
     });
     let mut state = uiw.write::<EconomyState>();
     let ecostats = goria.read::<EcoStats>();
@@ -78,14 +87,33 @@ pub(crate) fn economy(
                         state.curlevel = i;
                     }
                 }
+                if matches!(state.tab, EconomyTab::ImportExports) {
+                    ui.separator();
+                    if ui
+                        .selectable_label(matches!(state.hist_type, HistoryType::Money), "Money")
+                        .clicked()
+                    {
+                        state.hist_type = HistoryType::Money
+                    }
+                    if ui
+                        .selectable_label(matches!(state.hist_type, HistoryType::Items), "Items")
+                        .clicked()
+                    {
+                        state.hist_type = HistoryType::Items;
+                    }
+                }
             });
 
             let seconds_per_step = LEVEL_FREQS[state.curlevel] as f64 * UP_DT.as_secs_f64();
             let xs: Vec<f64> = (0..HISTORY_SIZE)
                 .map(|i| i as f64 * seconds_per_step)
                 .collect();
-            let EconomyState { curlevel, ref tab } = *state;
-            let render_history = |ui: &mut Ui, history: &ItemHistories| {
+            let EconomyState {
+                curlevel,
+                ref tab,
+                hist_type,
+            } = *state;
+            let render_history = |ui: &mut Ui, history: &ItemHistories, hist_type: HistoryType| {
                 let filterid = ui.id().with("filter");
                 let mut filter = ui.data_mut(|d| {
                     d.get_temp_mut_or_insert_with(filterid, HashSet::new)
@@ -106,7 +134,16 @@ pub(crate) fn economy(
                             if !filter.is_empty() && !filter.contains(&id) {
                                 continue;
                             }
-                            let maxval = *history.past_ring.iter().max().unwrap();
+                            let holder;
+                            let ring = match hist_type {
+                                HistoryType::Items => &history.past_ring_items,
+                                HistoryType::Money => {
+                                    holder = history.past_ring_money.map(|x| x.bucks().abs());
+                                    &holder
+                                }
+                            };
+
+                            let maxval = *ring.iter().max().unwrap();
                             if maxval == 0 {
                                 continue;
                             }
@@ -125,9 +162,9 @@ pub(crate) fn economy(
                             let c_next = (cursor + 1) % HISTORY_SIZE;
 
                             let mut first_zeros = false;
-                            let heights = history.past_ring[c_next..HISTORY_SIZE]
+                            let heights = ring[c_next..HISTORY_SIZE]
                                 .iter()
-                                .chain(history.past_ring[0..c_next].iter())
+                                .chain(ring[0..c_next].iter())
                                 .copied()
                                 .zip(xs.iter())
                                 .map(|(v, x)| [*x, v as f64])
@@ -175,11 +212,25 @@ pub(crate) fn economy(
                         ui.horizontal(|ui| {
                             ui.add_space(ui.available_width());
                         });
+                        let mut overall_total = 0;
                         egui::Grid::new("ecogrid").show(ui, |ui| {
                             let mut histories: Vec<_> = history
                                 .iter_histories(curlevel)
-                                .map(|(id, level)| (id, level.past_ring.iter().sum::<u32>()))
-                                .filter(|(_, x)| *x > 0)
+                                .map(|(id, level)| {
+                                    (id, {
+                                        match hist_type {
+                                            HistoryType::Items => {
+                                                level.past_ring_items.iter().sum::<i64>()
+                                            }
+                                            HistoryType::Money => level
+                                                .past_ring_money
+                                                .iter()
+                                                .map(|x| x.bucks().abs())
+                                                .sum::<i64>(),
+                                        }
+                                    })
+                                })
+                                .filter(|(_, x)| *x != 0)
                                 .collect();
                             histories.sort_by_key(|(_, sum)| Reverse(*sum));
 
@@ -193,10 +244,19 @@ pub(crate) fn economy(
                                         filter.remove(&id);
                                     }
                                 }
-                                ui.label(sum.to_string());
+                                let suffix = match hist_type {
+                                    HistoryType::Items => "",
+                                    HistoryType::Money => "$",
+                                };
+                                ui.label(format!("{}{}", sum, suffix));
                                 ui.end_row();
+                                overall_total += sum;
                             }
                         });
+                        if matches!(hist_type, HistoryType::Money) {
+                            ui.separator();
+                            ui.label(format!("Total: {}$", overall_total));
+                        }
                     });
                 ui.data_mut(move |d| {
                     d.insert_temp(filterid, filter);
@@ -205,20 +265,24 @@ pub(crate) fn economy(
 
             match tab {
                 EconomyTab::ImportExports => {
+                    let (label_left, label_right) = match hist_type {
+                        HistoryType::Items => ("Imports", "Exports"),
+                        HistoryType::Money => ("Expenses", "Income"),
+                    };
                     ui.columns(2, |ui| {
                         ui[0].push_id(0, |ui| {
-                            ui.label("Imports");
-                            render_history(ui, &ecostats.imports);
+                            ui.label(label_left);
+                            render_history(ui, &ecostats.imports, hist_type);
                         });
                         ui[1].push_id(1, |ui| {
-                            ui.label("Exports");
-                            render_history(ui, &ecostats.exports);
+                            ui.label(label_right);
+                            render_history(ui, &ecostats.exports, hist_type);
                         });
                     });
                 }
                 EconomyTab::InternalTrade => {
                     ui.push_id(2, |ui| {
-                        render_history(ui, &ecostats.internal_trade);
+                        render_history(ui, &ecostats.internal_trade, HistoryType::Items);
                     });
                 }
                 EconomyTab::MarketPrices => {

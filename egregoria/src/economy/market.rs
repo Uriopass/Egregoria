@@ -97,6 +97,7 @@ pub struct Trade {
     pub seller: TradeTarget,
     pub qty: i32,
     pub kind: ItemID,
+    pub money_delta: Money, // money delta from the govt point of view, positive means we gained money
 }
 
 pub fn find_trade_place(
@@ -262,6 +263,7 @@ impl Market {
                             seller: TradeTarget::Soul(seller),
                             qty: qty_buy,
                             kind,
+                            money_delta: Money::ZERO,
                         },
                         score,
                     ))
@@ -273,6 +275,8 @@ impl Market {
                 sell_orders,
                 capital,
                 optout_exttrade,
+                ext_value,
+                transport_cost,
                 ..
             } = market;
 
@@ -333,6 +337,7 @@ impl Market {
                         seller: TradeTarget::ExternalTrade,
                         qty: qty_buy,
                         kind,
+                        money_delta: -(*transport_cost + *ext_value * qty_buy as i64), // we buy from external so we pay
                     });
                 }
 
@@ -355,6 +360,7 @@ impl Market {
                         seller: TradeTarget::Soul(seller),
                         qty: qty_sell,
                         kind,
+                        money_delta: *transport_cost + *ext_value * qty_sell as i64,
                     });
                 }
             }

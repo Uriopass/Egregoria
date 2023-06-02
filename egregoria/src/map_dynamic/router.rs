@@ -9,7 +9,6 @@ use crate::{Egregoria, ParCommandBuffer};
 use egui_inspect::Inspect;
 use geom::{Spline3, Transform, Vec3};
 use hecs::{Component, Entity, Ref, World};
-use rayon::prelude::{ParallelBridge, ParallelIterator};
 use resources::Resources;
 use serde::{Deserialize, Serialize};
 
@@ -134,7 +133,7 @@ pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
             &mut Speed,
         )>()
         .iter_batched(32)
-        .par_bridge()
+        //.par_bridge()
         .for_each(|batch| {
             batch.for_each(|(e, (a, b, c, d, f))| routing_update(ra, rb, e, a, b, c, d, f, world))
         });
