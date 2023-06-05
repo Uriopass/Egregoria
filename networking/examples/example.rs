@@ -73,7 +73,8 @@ pub fn main() {
     }
 
     for _ in 1usize.. {
-        if let PollResult::Input(inp) = client2.poll(IncrA) {
+        let res = client2.poll(IncrA);
+        if let PollResult::Input(inp) = res {
             for inp in inp {
                 log::info!(
                     "client got input from server: {:?} w is now {} {} {}",
@@ -95,7 +96,7 @@ pub fn serv_c() {
         incr_a: 0,
         incr_b: 0,
         tick: 5,
-        pad: vec![0; 10000000],
+        pad: vec![0; 100000],
     };
 
     let mut serv = Server::start(ServerConfiguration {

@@ -1,13 +1,12 @@
-use std::io;
 use std::net::{IpAddr, SocketAddr};
-use std::time::Duration;
 
-use message_io::network::{Endpoint, NetEvent, NetworkController, NetworkProcessor, Transport};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use client_playout::ClientPlayoutBuffer;
 
+use crate::connection_client::ConnectionClient;
+use crate::connections::ConnectionsError;
 use crate::packets::{
     AuthentResponse, ClientReliablePacket, ClientUnreliablePacket, ServerReliablePacket,
     ServerUnreliablePacket,
@@ -62,10 +61,7 @@ enum ClientState<W, I> {
 }
 
 pub struct Client<WORLD: DeserializeOwned, INPUT: Serialize + DeserializeOwned + Default> {
-    network: NetworkController,
-    events: Option<NetworkProcessor>,
-    tcp: Endpoint,
-    udp: Endpoint,
+    net: ConnectionClient,
 
     name: String,
     version: String,
@@ -87,18 +83,15 @@ pub struct ConnectConf {
 }
 
 impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I> {
-    pub fn connect(conf: ConnectConf) -> io::Result<Self> {
-        let (network, events) = message_io::network::split();
+    pub fn connect(conf: ConnectConf) -> Result<Self, ConnectionsError> {
         let addr = conf.addr;
         let port = conf.port.unwrap_or(DEFAULT_PORT);
-        let (tcp, _) = network.connect(Transport::FramedTcp, SocketAddr::new(addr, port))?;
-        let (udp, _) = network.connect(Transport::Udp, SocketAddr::new(addr, port))?;
+        let saddr = SocketAddr::new(addr, port);
+
+        let net = ConnectionClient::new(saddr)?;
 
         Ok(Self {
-            network,
-            events: Some(events),
-            tcp,
-            udp,
+            net,
             state: ClientState::Connecting,
             name: conf.name,
             lag_compensate: conf.frame_buffer_advance,
@@ -110,46 +103,36 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
 
     #[allow(clippy::collapsible_if)]
     pub fn poll(&mut self, input: I) -> PollResult<W, I> {
-        let mut called = true;
-        let mut events = self.events.take().unwrap();
-        while called {
-            called = false;
-            events.process_poll_event(Some(Duration::ZERO), |x| {
-                called = true;
-                match x {
-                    NetEvent::Message(e, m) => {
-                        match e.resource_id().adapter_id() == Transport::FramedTcp.id() {
-                            true => {
-                                if let Some(packet) = decode(&m) {
-                                    self.message_reliable(packet);
-                                } else {
-                                    log::error!("could not decode reliable packet from server");
-                                }
-                            }
-                            false => {
-                                if let Some(packet) = decode(&m) {
-                                    self.message_unreliable(packet)
-                                } else {
-                                    log::error!("could not decode unreliable packet from server");
-                                }
-                            }
-                        }
-                    }
-                    NetEvent::Connected(e, _) => {
-                        log::info!("connected {}", e)
-                    }
-                    NetEvent::Disconnected(_) => {
-                        if !matches!(self.state, ClientState::Disconnected { .. }) {
-                            self.state = ClientState::Disconnected {
-                                reason: "connection lost".to_string(),
-                            }
-                        }
-                    }
-                    NetEvent::Accepted(_, _) => {}
-                }
-            });
+        //log::info!("{:?}", &self.state);
+        if self.net.is_disconnected() {
+            if !matches!(self.state, ClientState::Disconnected { .. }) {
+                self.state = ClientState::Disconnected {
+                    reason: "connection lost".to_string(),
+                };
+            }
         }
-        self.events = Some(events);
+
+        loop {
+            let v = self.net.recv_tcp();
+            if v.is_empty() {
+                break;
+            }
+            for data in v {
+                if let Some(packet) = decode(&data) {
+                    let _ = self.message_reliable(packet);
+                } else {
+                    log::error!("could not decode reliable packet from server");
+                }
+            }
+        }
+
+        while let Some(data) = self.net.recv_udp() {
+            if let Some(packet) = decode(&data) {
+                let _ = self.message_unreliable(packet);
+            } else {
+                log::error!("could not decode unreliable packet from server");
+            }
+        }
 
         match self.state {
             ClientState::Disconnected { ref reason } => {
@@ -186,8 +169,8 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                     ..
                 } = s
                 {
-                    self.network
-                        .send(self.tcp, &encode(&ClientReliablePacket::BeginCatchUp));
+                    self.net
+                        .send_tcp(encode(&ClientReliablePacket::BeginCatchUp));
                     return PollResult::GameWorld(input, world);
                 } else {
                     unreachable!()
@@ -200,8 +183,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
             } => {
                 if let Some(x) = next_inputs.take() {
                     log::info!("{} catching up consumed inputs, asking for more", self.name);
-                    self.network
-                        .send(self.tcp, &encode(&ClientReliablePacket::CatchUpAck));
+                    self.net.send_tcp(encode(&ClientReliablePacket::CatchUpAck));
                     return PollResult::Input(x);
                 }
                 return PollResult::Wait(input);
@@ -243,14 +225,13 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 if to_consume > 0 {
                     assert!(to_consume <= advance);
 
-                    let net = &mut self.network;
-                    let udp = self.udp;
+                    let net = &mut self.net;
 
                     let multi: Vec<_> = (0..to_consume)
                         .map(move |_| {
                             // unwrap ok: to_consume must be less than advance
                             let (inp, pack) = buffer.try_consume(&mut mk_input).unwrap();
-                            net.send(udp, &encode(&ClientUnreliablePacket::Input { input: pack }));
+                            net.send_udp(encode(&ClientUnreliablePacket::Input { input: pack }));
                             decode_merged(id, inp, buffer.consumed_frame())
                         })
                         .collect();
@@ -269,17 +250,15 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                 log::info!("{}: received world fragment", self.name);
 
                 if let ClientState::Downloading { ref mut wr, .. } = self.state {
-                    wr.handle(fragment, &mut self.network, self.tcp);
+                    wr.handle(fragment, &self.net);
                 } else {
                     log::error!("received world but was not downloading.. weird");
                 }
             }
             ServerReliablePacket::Challenge(challenge) => {
                 log::info!("{}: received challenge", self.name);
-                self.network.send(
-                    self.udp,
-                    &encode(&ClientUnreliablePacket::Connection(challenge)),
-                );
+                self.net
+                    .send_udp(encode(&ClientUnreliablePacket::Connection(challenge)));
             }
             ServerReliablePacket::AuthentResponse(r) => match r {
                 AuthentResponse::Accepted { id, period: step } => {
@@ -292,8 +271,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                         id,
                     };
                     self.step = Timestep::new(step);
-                    self.network
-                        .send(self.tcp, &encode(&ClientReliablePacket::WorldAck));
+                    self.net.send_tcp(encode(&ClientReliablePacket::WorldAck));
                 }
                 AuthentResponse::Refused { reason } => {
                     log::error!("authent refused :( reason: {}", reason);
@@ -390,7 +368,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
                     name: self.name.clone(),
                     version: self.version.clone(),
                 };
-                self.network.send(self.tcp, &encode(&connect));
+                self.net.send_tcp(encode(&connect));
             }
         }
     }

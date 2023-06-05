@@ -3,7 +3,7 @@ use crate::{Frame, MergedInputs, PlayerInput};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub(crate) enum ServerUnreliablePacket {
     Input(Vec<(Frame, MergedInputs)>),
     ReadyForAuth,

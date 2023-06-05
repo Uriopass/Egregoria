@@ -1,6 +1,7 @@
 use crate::Frame;
 
 const RING_SIZE: usize = 128;
+#[derive(Debug)]
 pub struct Ring<T: Default> {
     ring: [T; RING_SIZE],
 }

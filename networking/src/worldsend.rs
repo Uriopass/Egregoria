@@ -1,8 +1,9 @@
 use crate::authent::{Client, ClientGameState};
+use crate::connection_client::ConnectionClient;
+use crate::connections::Connections;
 use crate::packets::{ClientReliablePacket, ServerReliablePacket, WorldDataFragment};
 use crate::{decode, encode, AuthentID, Frame, MAX_WORLDSEND_PACKET_SIZE};
 use common::FastMap;
-use message_io::network::{Endpoint, NetworkController};
 use serde::de::DeserializeOwned;
 
 #[derive(Eq, PartialEq)]
@@ -43,11 +44,13 @@ impl WorldSend {
                 state.status = WorldSendStatus::Over
             }
         } else {
-            log::error!("ack ing a non existing world send");
+            log::warn!(
+                "ack ing a non existing world send. can be caused by udp duplication. is ok.",
+            );
         }
     }
 
-    pub fn update(&mut self, c: &mut Client, net: &mut NetworkController) {
+    pub fn update(&mut self, c: &mut Client, net: &Connections) {
         if let Some(state) = self.send_state.get_mut(&c.id) {
             if state.status == WorldSendStatus::Over {
                 self.send_state.remove(&c.id);
@@ -61,9 +64,9 @@ impl WorldSend {
             let to_send = MAX_WORLDSEND_PACKET_SIZE.min(state.data.len() - state.sent);
             let is_over = (to_send < MAX_WORLDSEND_PACKET_SIZE).then_some(state.frame);
 
-            net.send(
-                c.reliable,
-                &encode(&ServerReliablePacket::WorldSend(WorldDataFragment {
+            net.send_tcp(
+                c.tcp_addr,
+                encode(&ServerReliablePacket::WorldSend(WorldDataFragment {
                     is_over,
                     data_size: state.data.len(),
                     data: Vec::from(&state.data[state.sent..state.sent + to_send]),
@@ -71,10 +74,10 @@ impl WorldSend {
             );
 
             if is_over.is_some() {
-                log::info!("{}: sending final world fragment", c.name);
+                log::info!("sending final world fragment to {}", c.name);
                 state.status = WorldSendStatus::WaitingForFinalAck;
             } else {
-                log::info!("{}: sending world fragment", c.name);
+                log::info!("sending world fragment to {}", c.name);
             }
 
             state.sent += to_send;
@@ -123,12 +126,7 @@ impl<W> Default for WorldReceive<W> {
 }
 
 impl<W: DeserializeOwned> WorldReceive<W> {
-    pub fn handle(
-        &mut self,
-        fragment: WorldDataFragment,
-        net: &mut NetworkController,
-        tcp: Endpoint,
-    ) {
+    pub fn handle(&mut self, fragment: WorldDataFragment, net: &ConnectionClient) {
         if let WorldReceive::Downloading {
             ref mut datasize,
             ref mut data_so_far,
@@ -141,7 +139,7 @@ impl<W: DeserializeOwned> WorldReceive<W> {
             data_so_far.extend(fragment.data);
             if let Some(frame) = fragment.is_over {
                 log::info!("received last fragment at {:?}", frame);
-                net.send(tcp, &encode(&ClientReliablePacket::WorldAck));
+                net.send_tcp(encode(&ClientReliablePacket::WorldAck));
 
                 let d = decode(data_so_far);
 

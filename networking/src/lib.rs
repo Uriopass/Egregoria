@@ -12,6 +12,8 @@ use std::ops::Add;
 mod authent;
 mod catchup;
 mod client;
+mod connection_client;
+mod connections;
 mod packets;
 mod ring;
 mod server;

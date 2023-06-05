@@ -1,14 +1,21 @@
+use crate::connections::Connections;
 use crate::packets::{AuthentResponse, ServerReliablePacket, ServerUnreliablePacket};
 use crate::{encode, hash_str, Frame, UserID};
 use common::{FastMap, FastSet};
-use message_io::network::{Endpoint, NetworkController};
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 use std::net::SocketAddr;
 use std::time::Duration;
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Copy, Clone, Hash, Debug)]
 #[repr(transparent)]
-pub(crate) struct AuthentID(u32);
+pub(crate) struct AuthentID(pub(crate) u32);
+
+impl Display for AuthentID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
 
 impl AuthentID {
     pub const VIRTUAL_ID: AuthentID = AuthentID(0);
@@ -27,16 +34,16 @@ pub(crate) struct Client {
     pub uid: UserID,
     pub name: String,
     pub ack: Frame,
-    pub reliable: Endpoint,
-    pub unreliable: Endpoint,
+    pub udp_addr: SocketAddr,
+    pub tcp_addr: SocketAddr,
     pub state: ClientGameState,
 }
 
 enum ClientConnectState {
     Connecting {
         id: AuthentID,
-        reliable: Endpoint,
-        unreliable: Option<Endpoint>,
+        tcp_addr: SocketAddr,
+        udp_addr: Option<SocketAddr>,
     },
     Connected(Client),
 }
@@ -69,21 +76,21 @@ impl Authent {
 
     pub fn tcp_client_auth(
         &mut self,
-        e: Endpoint,
+        addr: SocketAddr,
         ack: Frame,
         name: String,
         version: String,
         period: Duration,
     ) -> Option<AuthentResponse> {
-        let v = self.get_client_state_mut(e)?;
+        let v = self.get_client_state_mut(addr)?;
 
         if let ClientConnectState::Connecting {
             id,
-            reliable,
-            unreliable: Some(unreliable),
+            tcp_addr,
+            udp_addr: Some(udp_addr),
         } = *v
         {
-            log::info!("client authenticated: {}@{}", name, e.addr());
+            log::info!("client authenticated: {}@{}", name, addr);
             let hash = hash_str(&name);
 
             if self.register(name.clone()) {
@@ -102,13 +109,14 @@ impl Authent {
             }
 
             // Unwrap ok: already checked right before
-            *self.get_client_state_mut(e).unwrap() = ClientConnectState::Connected(Client {
+            *self.get_client_state_mut(tcp_addr).unwrap() = ClientConnectState::Connected(Client {
                 id,
                 uid: UserID(hash),
                 name,
                 ack,
-                reliable,
-                unreliable,
+
+                udp_addr,
+                tcp_addr,
                 state: ClientGameState::Downloading,
             });
 
@@ -119,50 +127,46 @@ impl Authent {
         None
     }
 
-    pub fn udp_connect(&mut self, e: Endpoint, id: AuthentID, net: &mut NetworkController) {
-        self.addr_to_client.insert(e.addr(), id);
-        if let Some(ClientConnectState::Connecting { unreliable, .. }) =
-            self.get_client_state_mut(e)
+    pub fn udp_connect(&mut self, addr: SocketAddr, id: AuthentID, net: &Connections) {
+        log::info!("udp connect: {}", addr);
+        self.addr_to_client.insert(addr, id);
+        if let Some(ClientConnectState::Connecting { udp_addr, .. }) =
+            self.get_client_state_mut(addr)
         {
-            *unreliable = Some(e);
-            net.send(e, &encode(&ServerUnreliablePacket::ReadyForAuth));
-            net.send(e, &encode(&ServerUnreliablePacket::ReadyForAuth));
-            net.send(e, &encode(&ServerUnreliablePacket::ReadyForAuth));
+            *udp_addr = Some(addr);
+            net.send_udp(addr, encode(&ServerUnreliablePacket::ReadyForAuth));
+            net.send_udp(addr, encode(&ServerUnreliablePacket::ReadyForAuth));
+            net.send_udp(addr, encode(&ServerUnreliablePacket::ReadyForAuth));
         }
     }
 
-    pub fn tcp_connected(&mut self, e: Endpoint, net: &mut NetworkController) {
-        log::info!("connected:{}", e);
+    pub fn tcp_connected(&mut self, tcp_addr: SocketAddr, net: &Connections) {
+        log::info!("connected: {}", tcp_addr);
 
         let id = self.next_auth_id();
-        self.addr_to_client.insert(e.addr(), id);
+        self.addr_to_client.insert(tcp_addr, id);
 
         self.clients.insert(
             id,
             ClientConnectState::Connecting {
                 id,
-                reliable: e,
-                unreliable: None,
+                tcp_addr,
+                udp_addr: None,
             },
         );
 
-        net.send(e, &encode(&ServerReliablePacket::Challenge(id)));
+        net.send_tcp(tcp_addr, encode(&ServerReliablePacket::Challenge(id)));
     }
 
-    pub fn disconnected(&mut self, e: Endpoint) -> Option<Client> {
-        let id = self.addr_to_client.remove(&e.addr())?;
+    pub fn disconnected(&mut self, tcp_addr: SocketAddr) -> Option<Client> {
+        let id = self.addr_to_client.remove(&tcp_addr)?;
         let client = self.clients.remove(&id)?;
 
-        if let ClientConnectState::Connecting {
-            unreliable: Some(unreliable),
-            ..
-        } = client
-        {
-            self.addr_to_client.remove(&unreliable.addr());
+        if let ClientConnectState::Connecting { .. } = client {
             return None;
         }
         if let ClientConnectState::Connected(c) = client {
-            self.addr_to_client.remove(&c.unreliable.addr());
+            self.addr_to_client.remove(&c.udp_addr);
             self.n_connected_clients -= 1;
             self.names.remove(&c.name);
 
@@ -171,15 +175,15 @@ impl Authent {
         None
     }
 
-    pub fn get_client(&self, e: Endpoint) -> Option<&Client> {
+    pub fn get_client(&self, addr: SocketAddr) -> Option<&Client> {
         self.addr_to_client
-            .get(&e.addr())
+            .get(&addr)
             .and_then(|x| self.clients.get(x))
             .and_then(ClientConnectState::as_connected)
     }
 
-    pub fn get_client_mut(&mut self, e: Endpoint) -> Option<&mut Client> {
-        self.get_client_state_mut(e)
+    pub fn get_client_mut(&mut self, addr: SocketAddr) -> Option<&mut Client> {
+        self.get_client_state_mut(addr)
             .and_then(ClientConnectState::as_connected_mut)
     }
 
@@ -204,10 +208,10 @@ impl Authent {
         AuthentID(self.seq)
     }
 
-    fn get_client_state_mut(&mut self, e: Endpoint) -> Option<&mut ClientConnectState> {
+    fn get_client_state_mut(&mut self, addr: SocketAddr) -> Option<&mut ClientConnectState> {
         let clients = &mut self.clients;
         self.addr_to_client
-            .get(&e.addr())
+            .get(&addr)
             .and_then(move |x| clients.get_mut(x))
     }
 }

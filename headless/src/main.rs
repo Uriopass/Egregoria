@@ -53,7 +53,7 @@ fn main() {
     }) {
         Ok(x) => x,
         Err(e) => {
-            log::error!("could not start server: {}", e);
+            log::error!("could not start server: {:?}", e);
             return;
         }
     };

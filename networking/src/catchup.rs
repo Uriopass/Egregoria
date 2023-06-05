@@ -1,8 +1,8 @@
 use crate::authent::{Client, ClientGameState};
+use crate::connections::Connections;
 use crate::packets::ServerReliablePacket;
 use crate::{encode, AuthentID, Frame, MergedInputs};
 use common::FastMap;
-use message_io::network::NetworkController;
 
 struct CatchUpState {
     inputs: Vec<MergedInputs>,
@@ -48,7 +48,7 @@ impl CatchUp {
         }
     }
 
-    pub fn update(&mut self, c: &mut Client, net: &mut NetworkController) {
+    pub fn update(&mut self, c: &mut Client, net: &Connections) {
         let state = match self.frame_history.get_mut(&c.id) {
             Some(x) => x,
             None => return,
@@ -69,9 +69,9 @@ impl CatchUp {
 
         if diff <= 30 {
             log::info!("{}: sending final catch up", c.name);
-            net.send(
-                c.reliable,
-                &encode(&ServerReliablePacket::ReadyToPlay {
+            net.send_tcp(
+                c.tcp_addr,
+                encode(&ServerReliablePacket::ReadyToPlay {
                     final_consumed_frame: c.ack,
                     final_inputs: inputs,
                 }),
@@ -83,7 +83,7 @@ impl CatchUp {
 
         let pack = ServerReliablePacket::CatchUp { inputs };
 
-        net.send(c.reliable, &encode(&pack));
+        net.send_tcp(c.tcp_addr, encode(&pack));
     }
 
     pub fn disconnected(&mut self, id: AuthentID) {

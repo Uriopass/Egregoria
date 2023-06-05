@@ -7,6 +7,7 @@ use crate::{Frame, MergedInputs, PlayerInput};
 /// |        ^     ^           ^          |
 /// | consumed    missing    advance      |
 ///  -------------------------------------
+#[derive(Debug)]
 pub(crate) struct ClientPlayoutBuffer {
     future: Ring<Option<MergedInputs>>,
     last_n_inputs: Vec<(Frame, PlayerInput)>,
