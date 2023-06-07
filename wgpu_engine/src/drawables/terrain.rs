@@ -449,6 +449,9 @@ impl Drawable for TerrainPrepared {
         shadow_map: bool,
         proj: &'a wgpu::BindGroup,
     ) {
+        if shadow_map {
+            return;
+        }
         rp.set_pipeline(gfx.get_pipeline(TerrainPipeline {
             depth: true,
             smap: shadow_map,
