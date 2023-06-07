@@ -3,7 +3,7 @@ use crate::inputmap::{Bindings, InputMap};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
-use egui::{Align2, Context, Widget};
+use egui::{Align2, Color32, Context, Widget};
 use egui_extras::Column;
 use std::time::Duration;
 
@@ -192,6 +192,11 @@ pub(crate) fn settings(
             let fps = 1.0 / uiworld.read::<Timings>().all.avg();
 
             ui.separator();
+            #[cfg(debug_assertions)]
+            ui.colored_label(
+                Color32::BROWN,
+                "shouldn't be looking at FPS in debug mode! use --release",
+            );
             ui.label(format!("Graphics - {fps:.1}FPS"));
 
             ui.checkbox(&mut settings.fullscreen, "Fullscreen");
