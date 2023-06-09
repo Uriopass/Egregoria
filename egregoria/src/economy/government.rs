@@ -13,14 +13,14 @@ pub struct Government {
 impl Default for Government {
     fn default() -> Self {
         Self {
-            money: Money::new_base(150_000),
+            money: Money::new_bucks(150_000),
         }
     }
 }
 
 impl Government {
     pub fn action_cost(action: &WorldCommand, goria: &Egregoria) -> Money {
-        Money::new_base(match action {
+        Money::new_bucks(match action {
             WorldCommand::MapBuildHouse(_) => 100,
             WorldCommand::AddTrain { n_wagons, .. } => 1000 + 100 * (*n_wagons as i64),
             WorldCommand::MapMakeConnection { from, to, pat, .. } => {
@@ -38,7 +38,7 @@ impl Government {
 
                 let oldarea = b.zone.as_ref().map_or(0.0, |z| z.area);
                 let newarea = z.area;
-                return Money::new_base(
+                return Money::new_bucks(
                     (newarea - oldarea) as i64 * zonedescr.price_per_area / MAX_ZONE_AREA as i64,
                 );
             }

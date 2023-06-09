@@ -31,18 +31,16 @@ pub struct SingleMarket {
     buy_orders: BTreeMap<SoulID, BuyOrder>,
     sell_orders: BTreeMap<SoulID, SellOrder>,
     pub ext_value: Money,
-    pub transport_cost: Money,
     optout_exttrade: bool,
 }
 
 impl SingleMarket {
-    pub fn new(ext_value: Money, transport_cost: Money, optout_exttrade: bool) -> Self {
+    pub fn new(ext_value: Money, optout_exttrade: bool) -> Self {
         Self {
             capital: Default::default(),
             buy_orders: Default::default(),
             sell_orders: Default::default(),
             ext_value,
-            transport_cost,
             optout_exttrade,
         }
     }
@@ -123,16 +121,11 @@ pub fn find_trade_place(
 
 impl Market {
     pub fn new(registry: &ItemRegistry, companies: &GoodsCompanyRegistry) -> Self {
-        let prices = calculate_prices(registry, companies);
+        let prices = calculate_prices(registry, companies, 1.25);
         Self {
             markets: registry
                 .iter()
-                .map(|v| {
-                    (
-                        v.id,
-                        SingleMarket::new(prices[&v.id], Money::new_base(10), v.optout_exttrade),
-                    )
-                })
+                .map(|v| (v.id, SingleMarket::new(prices[&v.id], v.optout_exttrade)))
                 .collect(),
             all_trades: Default::default(),
             potential: Default::default(),
@@ -276,7 +269,6 @@ impl Market {
                 capital,
                 optout_exttrade,
                 ext_value,
-                transport_cost,
                 ..
             } = market;
 
@@ -337,7 +329,7 @@ impl Market {
                         seller: TradeTarget::ExternalTrade,
                         qty: qty_buy,
                         kind,
-                        money_delta: -(*transport_cost + *ext_value * qty_buy as i64), // we buy from external so we pay
+                        money_delta: -(*ext_value * qty_buy as i64), // we buy from external so we pay
                     });
                 }
 
@@ -360,7 +352,7 @@ impl Market {
                         seller: TradeTarget::Soul(seller),
                         qty: qty_sell,
                         kind,
-                        money_delta: *transport_cost + *ext_value * qty_sell as i64,
+                        money_delta: *ext_value * qty_sell as i64,
                     });
                 }
             }
@@ -377,6 +369,7 @@ impl Market {
 fn calculate_prices(
     registry: &ItemRegistry,
     companies: &GoodsCompanyRegistry,
+    price_multiplier: f32,
 ) -> BTreeMap<ItemID, Money> {
     let mut item_graph: BTreeMap<ItemID, Vec<GoodsCompanyID>> = BTreeMap::new();
     for (id, company) in companies.descriptions.iter() {
@@ -392,6 +385,7 @@ fn calculate_prices(
         item_graph: &BTreeMap<ItemID, Vec<GoodsCompanyID>>,
         item: &Item,
         prices: &mut BTreeMap<ItemID, Money>,
+        price_multiplier: f32,
     ) {
         if prices.contains_key(&item.id) {
             return;
@@ -402,7 +396,14 @@ fn calculate_prices(
             let company = &companies.descriptions[comp];
             let mut price_consumption = Money::ZERO;
             for &(itemid, qty) in &company.recipe.consumption {
-                calculate_price_inner(registry, companies, item_graph, &registry[itemid], prices);
+                calculate_price_inner(
+                    registry,
+                    companies,
+                    item_graph,
+                    &registry[itemid],
+                    prices,
+                    price_multiplier,
+                );
                 price_consumption += prices[&itemid] * qty as i64;
             }
             let qty = company
@@ -416,7 +417,11 @@ fn calculate_prices(
                 * company.n_workers as i64
                 * WORKER_CONSUMPTION_PER_SECOND;
 
-            let newprice = (price_consumption + price_workers) / qty;
+            let newprice = (price_consumption
+                + Money::new_inner((price_workers.inner() as f32 * price_multiplier) as i64))
+                / qty;
+
+            log::info!("{:?} {}", item.id, newprice);
 
             minprice = minprice.map(|x: Money| x.min(newprice)).or(Some(newprice));
         }
@@ -425,7 +430,14 @@ fn calculate_prices(
     }
 
     for item in registry.iter() {
-        calculate_price_inner(registry, companies, &item_graph, item, &mut prices);
+        calculate_price_inner(
+            registry,
+            companies,
+            &item_graph,
+            item,
+            &mut prices,
+            price_multiplier,
+        );
     }
 
     prices
@@ -549,7 +561,7 @@ mod tests {
                 zone: None,
             });
 
-        let prices = super::calculate_prices(&registry, &companies);
+        let prices = super::calculate_prices(&registry, &companies, 1.0);
 
         assert_eq!(prices.len(), 2);
         let price_cereal = 2 * WORKER_CONSUMPTION_PER_SECOND;

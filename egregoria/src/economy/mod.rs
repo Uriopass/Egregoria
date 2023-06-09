@@ -39,8 +39,8 @@ pub struct Money(i64);
 
 impl Display for Money {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&(self.0 / 100), f)?;
-        let cent = self.0 % 100;
+        Display::fmt(&(self.bucks()), f)?;
+        let cent = (self.0 % 10000) / 100;
         if cent > 0 {
             f.write_str(".")?;
             if cent < 10 {
@@ -62,7 +62,7 @@ impl Neg for Money {
 
 impl Sum for Money {
     fn sum<I: Iterator<Item = Money>>(iter: I) -> Self {
-        iter.fold(Money::new_base(0), |a, b| a + b)
+        iter.fold(Money::ZERO, |a, b| a + b)
     }
 }
 
@@ -128,20 +128,28 @@ impl Money {
     pub const ZERO: Money = Money(0);
     pub const MAX: Money = Money(i64::MAX);
 
+    pub const fn new_inner(inner: i64) -> Self {
+        Self(inner)
+    }
+
     pub const fn new_cents(cents: i64) -> Self {
-        Self(cents)
+        Self(cents * 100)
     }
 
-    pub const fn new_base(base: i64) -> Self {
-        Self(base * 100)
+    pub const fn new_bucks(base: i64) -> Self {
+        Self(base * 10000)
     }
 
-    pub fn cents(&self) -> i64 {
+    pub fn inner(&self) -> i64 {
         self.0
     }
 
-    pub fn bucks(&self) -> i64 {
+    pub fn cents(&self) -> i64 {
         self.0 / 100
+    }
+
+    pub fn bucks(&self) -> i64 {
+        self.0 / 10000
     }
 }
 
