@@ -5,7 +5,7 @@ use common::saveload::Encoder;
 use egregoria::Egregoria;
 use egui::{Align2, Color32, Context, Widget};
 use egui_extras::Column;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const SETTINGS_SAVE_NAME: &str = "settings";
 
@@ -189,7 +189,19 @@ pub(crate) fn settings(
                 ui.label("Camera Field of View (FOV)");
             });
 
-            let fps = 1.0 / uiworld.read::<Timings>().all.avg();
+            let mut fps_to_show = 0.0;
+            ui.data_mut(|data| {
+                let (fps, instant) = data
+                    .get_temp_mut_or_insert_with(ui.make_persistent_id("fps"), || {
+                        (0.0, Instant::now())
+                    });
+                if *fps == 0.0 || instant.elapsed() > Duration::from_millis(300) {
+                    *fps = 1.0 / uiworld.read::<Timings>().all.avg();
+                    *instant = Instant::now();
+                }
+
+                fps_to_show = *fps;
+            });
 
             ui.separator();
             #[cfg(debug_assertions)]
@@ -197,7 +209,7 @@ pub(crate) fn settings(
                 Color32::BROWN,
                 "shouldn't be looking at FPS in debug mode! use --release",
             );
-            ui.label(format!("Graphics - {fps:.1}FPS"));
+            ui.label(format!("Graphics - {fps_to_show:.1}FPS"));
 
             ui.checkbox(&mut settings.fullscreen, "Fullscreen");
             ui.checkbox(&mut settings.terrain_grid, "Terrain Grid");
