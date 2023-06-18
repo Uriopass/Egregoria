@@ -312,8 +312,7 @@ impl MapRenderer {
         self.lampposts_dirtid = map.dirt_id.0;
         let lamps = &mut ctx.gfx.lamplights;
 
-        let mut by_chunk: AABBGrid<(), geom::AABB3> =
-            flat_spatial::AABBGrid::new(LampLights::LIGHTCHUNK_SIZE as i32);
+        let mut by_chunk: AABBGrid<(), AABB3> = AABBGrid::new(LampLights::LIGHTCHUNK_SIZE as i32);
 
         let mut add_light = |p: Vec3| {
             by_chunk.insert(AABB3::centered(p, Vec3::splat(64.0)), ());

@@ -67,6 +67,7 @@ impl Gui {
     }
 
     /// Root GUI entrypoint
+    #[profiling::function]
     pub(crate) fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         self.menu_bar(ui, uiworld, goria);
 
@@ -83,6 +84,7 @@ impl Gui {
         self.tooltip(ui, uiworld, goria);
     }
 
+    #[profiling::function]
     pub(crate) fn tooltip(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         let tooltip = std::mem::take(&mut *uiworld.write::<ErrorTooltip>());
         if let Some(msg) = tooltip.msg {
@@ -119,6 +121,7 @@ impl Gui {
         });
     }
 
+    #[profiling::function]
     pub(crate) fn auto_save(&mut self, uiworld: &mut UiWorld) {
         let every = uiworld.read::<Settings>().auto_save_every.into();
         if let Some(every) = every {
@@ -130,11 +133,16 @@ impl Gui {
         }
 
         if self.last_gui_save.elapsed() > Duration::from_secs(1) {
-            common::saveload::JSONPretty::save_silent(self, "gui");
+            if let Ok(data) = common::saveload::JSONPretty::encode(self) {
+                rayon::spawn(move || {
+                    let _ = std::fs::write(common::saveload::JSONPretty::filename("gui"), data);
+                });
+            }
             self.last_gui_save = Instant::now();
         }
     }
 
+    #[profiling::function]
     pub(crate) fn toolbox(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         #[derive(Copy, Clone)]
         pub(crate) enum Tab {
@@ -588,6 +596,7 @@ impl Gui {
         }
     }
 
+    #[profiling::function]
     pub(crate) fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         let inspected_building = *uiworld.read::<InspectedBuilding>();
         if let Some(b) = inspected_building.e {
@@ -614,6 +623,7 @@ impl Gui {
         *uiworld.write::<InspectedEntity>() = inspected;
     }
 
+    #[profiling::function]
     pub(crate) fn time_controls(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         let time = goria.read::<GameTime>().daytime;
         let warp = &mut uiworld.write::<Settings>().time_warp;
@@ -678,6 +688,7 @@ impl Gui {
             });
     }
 
+    #[profiling::function]
     pub(crate) fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         //let _t = ui.push_style_var(StyleVar::ItemSpacing([3.0, 0.0]));
 
