@@ -3,7 +3,7 @@ use crate::inputmap::{Bindings, InputMap};
 use crate::uiworld::UiWorld;
 use common::saveload::Encoder;
 use egregoria::Egregoria;
-use egui::{Align2, Color32, Context, Widget};
+use egui::{Align2, Context, Widget};
 use egui_extras::Column;
 use std::time::{Duration, Instant};
 
@@ -158,7 +158,7 @@ pub(crate) fn settings(
         .vscroll(true)
         .collapsible(false)
         .show(ui, |ui| {
-            let before = settings.clone();
+            let before = *settings;
             ui.label("Gameplay");
 
             let mut id = settings.auto_save_every as u8 as usize;
@@ -206,7 +206,7 @@ pub(crate) fn settings(
             ui.separator();
             #[cfg(debug_assertions)]
             ui.colored_label(
-                Color32::BROWN,
+                egui::Color32::BROWN,
                 "shouldn't be looking at FPS in debug mode! use --release",
             );
             ui.label(format!("Graphics - {fps_to_show:.1}FPS"));

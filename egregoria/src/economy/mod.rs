@@ -209,7 +209,7 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
     resources
         .get_mut::<EcoStats>()
         .unwrap()
-        .advance(tick, &trades);
+        .advance(tick, trades);
 
     for &trade in trades.iter() {
         log::debug!("A trade was made! {:?}", trade);
