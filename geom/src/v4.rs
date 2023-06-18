@@ -10,6 +10,34 @@ pub struct Vec4 {
     pub w: f32,
 }
 impl Vec4 {
+    pub const X: Self = Self {
+        x: 1.0,
+        y: 0.0,
+        z: 0.0,
+        w: 0.0,
+    };
+
+    pub const Y: Self = Self {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+        w: 0.0,
+    };
+
+    pub const Z: Self = Self {
+        x: 0.0,
+        y: 0.0,
+        z: 1.0,
+        w: 0.0,
+    };
+
+    pub const W: Self = Self {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+        w: 1.0,
+    };
+
     pub fn dot(&self, other: &Vec4) -> f32 {
         (self.x * other.x + self.y * other.y) + (self.z * other.z + self.w * other.w)
     }

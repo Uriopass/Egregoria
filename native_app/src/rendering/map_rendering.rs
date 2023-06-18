@@ -8,11 +8,16 @@ use egregoria::map::{
 };
 use egregoria::Egregoria;
 use flat_spatial::AABBGrid;
-use geom::{vec3, Camera, Circle, InfiniteFrustrum, Intersect3, LinearColor, Vec3, AABB3, V3};
+use geom::{
+    vec3, vec4, Camera, Circle, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Vec3, AABB3, V3,
+};
+use std::ops::Mul;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::terrain::TerrainRender;
+use wgpu_engine::wgpu::RenderPass;
 use wgpu_engine::{
-    FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, LampLights, MeshInstance, Water,
+    Drawable, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, LampLights,
+    MeshInstance, Water,
 };
 
 const CSIZE: usize = CHUNK_SIZE as usize;
@@ -243,6 +248,41 @@ impl MapRenderer {
 
         let camcenter = cam.pos.xy();
 
+        struct TreeMesh(InstancedMesh, Vec3);
+
+        impl Drawable for TreeMesh {
+            fn draw<'a>(&'a self, gfx: &'a GfxContext, rp: &mut RenderPass<'a>) {
+                self.0.draw(gfx, rp);
+            }
+            fn draw_depth<'a>(
+                &'a self,
+                gfx: &'a GfxContext,
+                rp: &mut RenderPass<'a>,
+                shadow_cascade: Option<&Matrix4>,
+                proj: &'a wgpu_engine::wgpu::BindGroup,
+            ) {
+                if let Some(v) = shadow_cascade {
+                    let pos = v.mul(self.1.w(1.0));
+
+                    let margin = v.mul(vec4(
+                        CHUNK_SIZE as f32 * 1.5,
+                        CHUNK_SIZE as f32 * 1.5,
+                        100.0,
+                        0.0,
+                    )) * pos.w;
+
+                    if pos.x.abs() > pos.w + margin.x.abs()
+                        || pos.y.abs() > pos.w + margin.y.abs()
+                        || pos.z < -margin.z.abs()
+                        || pos.z > pos.w + margin.z.abs()
+                    {
+                        return;
+                    }
+                }
+                self.0.draw_depth(gfx, rp, shadow_cascade, proj);
+            }
+        }
+
         for (cid, (_, meshes)) in self.trees_builders.iter() {
             let chunkcenter = vec3(
                 (cid.0 * CHUNK_SIZE + CHUNK_SIZE / 2) as f32,
@@ -259,7 +299,7 @@ impl MapRenderer {
             }
 
             if let Some((Some(mesh), _)) = meshes {
-                ctx.draw(mesh.clone());
+                ctx.draw(TreeMesh(mesh.clone(), chunkcenter));
             }
         }
     }

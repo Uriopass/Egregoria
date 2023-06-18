@@ -506,7 +506,7 @@ impl GfxContext {
             });
 
             for obj in objsref.iter() {
-                obj.draw_depth(self, &mut depth_prepass, false, &self.projection.bindgroup);
+                obj.draw_depth(self, &mut depth_prepass, None, &self.projection.bindgroup);
             }
             drop(depth_prepass);
             *enc_dep_ext = Some(prepass.finish());
@@ -546,7 +546,7 @@ impl GfxContext {
                 });
 
                 for obj in objsref.iter() {
-                    obj.draw_depth(self, &mut sun_shadow_pass, true, &u.bindgroup);
+                    obj.draw_depth(self, &mut sun_shadow_pass, Some(u.value()), &u.bindgroup);
                 }
             }
             *enc_smap_ext = Some(smap_enc.finish());

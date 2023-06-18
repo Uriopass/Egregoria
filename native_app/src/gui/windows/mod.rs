@@ -89,6 +89,7 @@ impl GUIWindows {
         }
     }
 
+    #[profiling::function]
     pub(crate) fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         if uiworld
             .write::<InputMap>()

@@ -1,7 +1,7 @@
 #![allow(clippy::collapsible_else_if)]
 use crate::pbuffer::PBuffer;
 use crate::{Drawable, GfxContext, Mesh, MeshPipeline};
-use geom::{LinearColor, Vec3};
+use geom::{LinearColor, Matrix4, Vec3};
 use std::sync::Arc;
 use wgpu::{BufferUsages, IndexFormat, RenderPass, VertexAttribute, VertexBufferLayout};
 
@@ -93,7 +93,7 @@ impl Drawable for InstancedMesh {
         &'a self,
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
-        shadow_map: bool,
+        shadow_cascade: Option<&Matrix4>,
         proj: &'a wgpu::BindGroup,
     ) {
         rp.set_bind_group(0, proj, &[]);
@@ -106,7 +106,7 @@ impl Drawable for InstancedMesh {
             rp.set_pipeline(gfx.get_pipeline(MeshPipeline {
                 instanced: true,
                 alpha: mat.transparent,
-                smap: shadow_map,
+                smap: shadow_cascade.is_some(),
                 depth: true,
             }));
 

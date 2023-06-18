@@ -3,6 +3,7 @@ use crate::{
     CompiledModule, Drawable, GfxContext, IndexType, Material, MaterialID, MeshInstance,
     MeshVertex, MikktGeometry, PipelineBuilder, RenderParams, Texture, Uniform, TL,
 };
+use geom::Matrix4;
 use smallvec::SmallVec;
 use std::sync::Arc;
 use wgpu::{
@@ -244,7 +245,7 @@ impl Drawable for Mesh {
         &'a self,
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
-        shadow_map: bool,
+        shadow_cascade: Option<&Matrix4>,
         proj: &'a wgpu::BindGroup,
     ) {
         if self.skip_depth {
@@ -259,7 +260,7 @@ impl Drawable for Mesh {
             rp.set_pipeline(gfx.get_pipeline(MeshPipeline {
                 instanced: false,
                 alpha: mat.transparent,
-                smap: shadow_map,
+                smap: shadow_cascade.is_some(),
                 depth: true,
             }));
 

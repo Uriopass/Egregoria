@@ -4,7 +4,9 @@ use crate::{
     RenderParams, TerrainVertex, Texture, Uniform, TL,
 };
 use common::FastMap;
-use geom::{vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Polygon, Vec2, AABB3};
+use geom::{
+    vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Polygon, Vec2, AABB3,
+};
 use std::ops::Sub;
 use std::sync::Arc;
 use wgpu::{
@@ -446,15 +448,15 @@ impl Drawable for TerrainPrepared {
         &'a self,
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
-        shadow_map: bool,
+        shadow_cascade: Option<&Matrix4>,
         proj: &'a wgpu::BindGroup,
     ) {
-        if shadow_map {
+        if shadow_cascade.is_some() {
             return;
         }
         rp.set_pipeline(gfx.get_pipeline(TerrainPipeline {
             depth: true,
-            smap: shadow_map,
+            smap: false,
         }));
         rp.set_bind_group(0, proj, &[]);
         rp.set_bind_group(1, &gfx.render_params.bindgroup, &[]);

@@ -1,4 +1,5 @@
 use crate::{Drawable, GfxContext, SpriteBatch};
+use geom::Matrix4;
 use wgpu::RenderPass;
 
 pub struct MultiSpriteBatch {
@@ -14,10 +15,10 @@ impl Drawable for MultiSpriteBatch {
         &'a self,
         gfx: &'a GfxContext,
         rp: &mut RenderPass<'a>,
-        shadow_map: bool,
+        shadow_cascade: Option<&Matrix4>,
         proj: &'a wgpu::BindGroup,
     ) {
-        self.sbs.draw_depth(gfx, rp, shadow_map, proj);
+        self.sbs.draw_depth(gfx, rp, shadow_cascade, proj);
     }
 }
 
