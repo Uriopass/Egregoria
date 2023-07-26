@@ -232,13 +232,13 @@ impl PolyLine3 {
         self.points_dirs_manual().into_iter(dists)
     }
 
-    pub fn points_dirs_manual(&self) -> PointsAlongs<'_> {
+    pub fn points_dirs_manual(&self) -> PointsAlongs3<'_> {
         let mut windows = self.points.windows(2);
         let (dir, dist) = windows
             .next()
             .and_then(|w| (w[1] - w[0]).dir_dist())
             .unwrap_or((Vec3::X, 0.0));
-        PointsAlongs {
+        PointsAlongs3 {
             windows,
             lastp: self.first(),
             dir,
@@ -423,7 +423,7 @@ impl Index<usize> for PolyLine3 {
     }
 }
 
-pub struct PointsAlongs<'a> {
+pub struct PointsAlongs3<'a> {
     windows: Windows<'a, Vec3>,
     lastp: Vec3,
     dir: Vec3,
@@ -431,7 +431,7 @@ pub struct PointsAlongs<'a> {
     partial: f32,
 }
 
-impl<'a> PointsAlongs<'a> {
+impl<'a> PointsAlongs3<'a> {
     pub fn next(&mut self, d: f32) -> Option<(Vec3, Vec3)> {
         while d > self.partial + self.dist {
             let w = self.windows.next()?;

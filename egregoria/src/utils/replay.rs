@@ -35,7 +35,7 @@ impl EgregoriaReplayLoader {
                 goria.tick(schedule, &[]);
                 self.pastt.0 += 1;
                 ticks_left -= 1;
-                if ticks_left <= 0 {
+                if ticks_left == 0 {
                     return false;
                 }
             }
