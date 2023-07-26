@@ -5,11 +5,11 @@ use crate::transportation::{
     put_pedestrian_in_coworld, unpark, Location, Vehicle, VehicleID, VehicleState,
 };
 use crate::utils::par_command_buffer::ComponentDrop;
+use crate::utils::resources::Resources;
 use crate::{Egregoria, ParCommandBuffer};
 use egui_inspect::Inspect;
 use geom::{Spline3, Transform, Vec3};
 use hecs::{Component, Entity, Ref, World};
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 
 #[derive(Inspect, Serialize, Deserialize)]

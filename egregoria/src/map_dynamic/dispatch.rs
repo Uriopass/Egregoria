@@ -1,9 +1,9 @@
 use crate::map::{LaneID, LaneKind, TraverseDirection};
 use crate::utils::par_command_buffer::ComponentDrop;
+use crate::utils::resources::Resources;
 use crate::Map;
 use geom::{Transform, Vec3};
 use hecs::{Entity, QueryBorrow, World};
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;

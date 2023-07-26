@@ -11,6 +11,7 @@ use common::logger::MyLog;
 use common::saveload::Encoder;
 use geom::{Vec2, Vec3};
 
+mod test_iso;
 mod vehicles;
 
 pub(crate) struct TestCtx {

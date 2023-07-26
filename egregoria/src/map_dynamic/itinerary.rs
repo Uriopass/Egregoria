@@ -1,11 +1,11 @@
 use crate::map::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
+use crate::utils::resources::Resources;
 use crate::utils::time::{GameTime, Tick};
 use crate::Speed;
 use egui_inspect::egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Follower, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, World};
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

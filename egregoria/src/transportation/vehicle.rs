@@ -3,13 +3,13 @@ use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject, Speed};
 use crate::utils::par_command_buffer::ComponentDrop;
 use crate::utils::rand_provider::RandProvider;
+use crate::utils::resources::Resources;
 use crate::utils::time::GameInstant;
 use crate::Egregoria;
 use egui_inspect::Inspect;
 use geom::Transform;
 use geom::{Color, Spline3, Vec3};
 use hecs::Entity;
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 
 /// The duration for the parking animation.

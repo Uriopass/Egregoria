@@ -1,16 +1,17 @@
 use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
+use egregoria::utils::resources::{Ref, RefMut, Resources};
 use egregoria::{Egregoria, EgregoriaReplayLoader};
 use hecs::{Component, DynamicBundle, QueryOne};
 use hecs::{Entity, World};
-use resources::{Ref, RefMut, Resource};
+use std::any::Any;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 #[derive(Default)]
 pub(crate) struct UiWorld {
     pub(crate) world: World,
-    resources: resources::Resources,
+    resources: Resources,
 }
 
 #[derive(Default)]
@@ -56,28 +57,28 @@ impl UiWorld {
         self.world.query_one_mut::<&mut T>(e).ok()
     }
 
-    pub(crate) fn try_write<T: Resource>(&self) -> Option<RefMut<T>> {
+    pub(crate) fn try_write<T: Any + Send + Sync>(&self) -> Option<RefMut<T>> {
         self.resources.get_mut().ok()
     }
 
-    pub(crate) fn write<T: Resource>(&self) -> RefMut<T> {
+    pub(crate) fn write<T: Any + Send + Sync>(&self) -> RefMut<T> {
         self.resources
             .get_mut()
             .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub(crate) fn read<T: Resource>(&self) -> Ref<T> {
+    pub(crate) fn read<T: Any + Send + Sync>(&self) -> Ref<T> {
         self.resources
             .get()
             .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub(crate) fn insert<T: Resource>(&mut self, res: T) {
+    pub(crate) fn insert<T: Any + Send + Sync>(&mut self, res: T) {
         self.resources.insert(res);
     }
 
-    pub(crate) fn check_present<T: Resource>(&mut self, res: fn() -> T) {
-        self.resources.entry::<T>().or_insert_with(res);
+    pub(crate) fn check_present<T: Any + Send + Sync>(&mut self, res: fn() -> T) {
+        self.resources.get_mut_or_insert_with(res);
     }
 
     fn load_from_disk(&mut self) {

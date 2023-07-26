@@ -28,7 +28,7 @@ impl MyLog {
             .map(|f| Mutex::new(BufWriter::new(f)));
         }
 
-        #[cfg(debug_assertions)]
+        #[cfg(any(debug_assertions, test))]
         {
             log_file = None;
         }

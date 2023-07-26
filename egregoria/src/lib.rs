@@ -12,14 +12,15 @@ use crate::physics::{Collider, Speed};
 use crate::souls::add_souls_to_empty_buildings;
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::goods_company::{GoodsCompany, GoodsCompanyRegistry};
-use crate::souls::human::HumanDecision;
+use crate::souls::human::{BasicWorker, HumanDecision};
 use crate::transportation::train::{Locomotive, LocomotiveReservation};
 use crate::transportation::{Pedestrian, Vehicle};
+use crate::utils::resources::{Ref, RefMut, Resources};
 use common::saveload::Encoder;
 use geom::{Transform, Vec3};
 use hecs::{Component, Entity, World};
-use resources::{Ref, RefMut, Resource, Resources};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::any::Any;
 use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::time::{Duration, Instant};
@@ -48,6 +49,7 @@ pub mod map;
 pub mod map_dynamic;
 pub mod physics;
 pub mod souls;
+#[cfg(test)]
 mod tests;
 pub mod transportation;
 pub mod utils;
@@ -59,9 +61,9 @@ use crate::transportation::train::RailWagon;
 use crate::utils::scheduler::RunnableSystem;
 use crate::utils::time::Tick;
 use common::FastMap;
-pub use utils::par_command_buffer::ParCommandBuffer;
-
 pub use utils::config::*;
+pub use utils::par_command_buffer::ParCommandBuffer;
+pub use utils::replay::*;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 #[repr(transparent)]
@@ -89,55 +91,6 @@ impl Default for EgregoriaOptions {
             terrain_size: 50,
             save_replay: true,
         }
-    }
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct Replay {
-    pub enabled: bool,
-    pub commands: Vec<(Tick, WorldCommand)>,
-}
-
-pub struct EgregoriaReplayLoader {
-    pub replay: Replay,
-    pub pastt: Tick,
-    pub idx: usize,
-    pub speed: usize,
-}
-
-impl EgregoriaReplayLoader {
-    /// Returns true if the replay is finished
-    pub fn advance(&mut self, goria: &mut Egregoria, schedule: &mut SeqSchedule) -> bool {
-        // iterate through tick grouped commands
-        let mut ticks_done = 0;
-        while self.idx < self.replay.commands.len() && ticks_done < self.speed {
-            let curt = self.replay.commands[self.idx].0;
-            while self.pastt < curt {
-                goria.tick(schedule, &[]);
-                self.pastt.0 += 1;
-                ticks_done += 1;
-                if ticks_done >= self.speed {
-                    return false;
-                }
-            }
-
-            let idx_start = self.idx;
-            while self.idx < self.replay.commands.len() && self.replay.commands[self.idx].0 == curt
-            {
-                self.idx += 1;
-            }
-            let command_slice = &self.replay.commands[idx_start..self.idx];
-
-            log::info!(
-                "[replay] acttick {:?} ({})",
-                self.pastt,
-                command_slice.len()
-            );
-            goria.tick(schedule, command_slice.iter().map(|(_, c)| c));
-            self.pastt.0 += 1;
-            ticks_done += 1;
-        }
-        self.idx >= self.replay.commands.len()
     }
 }
 
@@ -181,6 +134,7 @@ impl Egregoria {
                 pastt: Tick::default(),
                 idx: 0,
                 speed: 1,
+                advance_n_ticks: 0,
             },
         )
     }
@@ -221,6 +175,27 @@ impl Egregoria {
     }
     pub fn world_mut_unchecked(&mut self) -> &mut World {
         &mut self.world
+    }
+
+    pub fn assert_equal(&self, other: &Self) {
+        assert_eq!(
+            self.resources.iter().count(),
+            other.resources.iter().count()
+        );
+
+        let serhashes = self.hashes();
+        let deserhashes = other.hashes();
+
+        for (key, hash) in deserhashes.iter() {
+            assert_eq!(serhashes.get(key), Some(hash), "key: {:?}", key,);
+        }
+
+        for (key, hash) in serhashes.iter() {
+            if deserhashes.get(key).is_some() {
+                continue;
+            }
+            assert_eq!(deserhashes.get(key), Some(hash), "key: {:?}", key,);
+        }
     }
 
     #[profiling::function]
@@ -307,21 +282,21 @@ impl Egregoria {
         self.world.get::<&mut T>(e).ok()
     }
 
-    pub fn write_or_default<T: Resource + Default>(&mut self) -> RefMut<T> {
-        self.resources.entry::<T>().or_default()
+    pub fn write_or_default<T: Any + Send + Sync + Default>(&mut self) -> RefMut<T> {
+        self.resources.get_mut_or_default::<T>()
     }
 
-    pub fn try_write<T: Resource>(&self) -> Option<RefMut<T>> {
+    pub fn try_write<T: Any + Send + Sync>(&self) -> Option<RefMut<T>> {
         self.resources.get_mut().ok()
     }
 
-    pub fn write<T: Resource>(&self) -> RefMut<T> {
+    pub fn write<T: Any + Send + Sync>(&self) -> RefMut<T> {
         self.resources
             .get_mut()
             .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub fn read<T: Resource>(&self) -> Ref<T> {
+    pub fn read<T: Any + Send + Sync>(&self) -> Ref<T> {
         self.resources
             .get()
             .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
@@ -335,7 +310,7 @@ impl Egregoria {
         self.resources.get_mut().unwrap()
     }
 
-    pub fn insert<T: Resource>(&mut self, res: T) {
+    pub fn insert<T: Any + Send + Sync>(&mut self, res: T) {
         self.resources.insert(res);
     }
 }
@@ -497,9 +472,14 @@ macro_rules! register {
                 archetype: &hecs::Archetype,
                 mut out: S,
             ) -> Result<S::Ok, S::Error> {
+                let mut tot = 0;
                 $(
+                    if archetype.has::<$t>() {
+                        tot += 1;
+                    }
                     hecs::serialize::column::try_serialize_id::<$t, _, _>(archetype, &ComponentId::$p, &mut out)?;
                 )+
+                assert_eq!(tot, archetype.component_types().len());
                 out.end()
             }
 
@@ -591,6 +571,7 @@ register!(
         LocomotiveReservation => _22,
         FreightStation => _23,
         DispatchKind => _24,
+        BasicWorker => _26,
 );
 
 const START_COMMANDS: &str = r#"
@@ -650,7 +631,7 @@ const START_COMMANDS: &str = r#"
       }
     ],
     [
-      1,
+      0,
       {
         "MapMakeConnection": {
           "from": {
@@ -693,7 +674,7 @@ const START_COMMANDS: &str = r#"
       }
     ],
     [
-      2,
+      0,
       {
         "MapMakeConnection": {
           "from": {
@@ -736,7 +717,7 @@ const START_COMMANDS: &str = r#"
       }
     ],
     [
-      3,
+      0,
       {
         "MapMakeConnection": {
           "from": {
@@ -779,7 +760,7 @@ const START_COMMANDS: &str = r#"
       }
     ],
     [
-      4,
+      0,
       {
         "MapMakeConnection": {
           "from": {
@@ -817,7 +798,7 @@ const START_COMMANDS: &str = r#"
       }
     ],
     [
-      5,
+      0,
       {
         "MapMakeConnection": {
           "from": {
@@ -855,7 +836,7 @@ const START_COMMANDS: &str = r#"
       }
     ],
     [
-      6,
+      0,
       {
         "MapMakeConnection": {
           "from": {
@@ -898,7 +879,7 @@ const START_COMMANDS: &str = r#"
       }
     ],
     [
-      7,
+      0,
       {
         "MapMakeConnection": {
           "from": {
@@ -936,7 +917,7 @@ const START_COMMANDS: &str = r#"
       }
     ],
     [
-      8,
+      0,
       {
         "MapMakeConnection": {
           "from": {
@@ -974,7 +955,7 @@ const START_COMMANDS: &str = r#"
       }
     ],
     [
-      9,
+      0,
       {
         "MapMakeConnection": {
           "from": {
@@ -1016,7 +997,7 @@ const START_COMMANDS: &str = r#"
         }
       }
     ],
-    [ 10,
+    [ 0,
       {
         "AddTrain": {
           "dist": 150.0,

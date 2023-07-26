@@ -7,10 +7,10 @@
 //! - The market, which is the place where goods are exchanged.
 //! - The government, which is the entity representing the player
 //!
+use crate::utils::resources::Resources;
 use crate::{GoodsCompanyRegistry, SoulID};
 use egui_inspect::Inspect;
 use hecs::World;
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};

@@ -1,4 +1,5 @@
 use std::any::TypeId;
+use std::cmp::Ordering;
 use std::hash::{BuildHasher, Hash, Hasher};
 
 pub use history::*;
@@ -160,21 +161,44 @@ where
     hasher.finish()
 }
 
-pub struct PtrCmp<'a, T>(pub &'a T);
+pub struct AccessCmp<'a, T, F>(pub &'a T, pub F);
 
-impl<'a, T> Hash for PtrCmp<'a, T> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write_usize(self.0 as *const T as usize)
+impl<'a, T, F, U> PartialOrd<Self> for AccessCmp<'a, T, F>
+where
+    F: Fn(&'a T) -> U,
+    U: PartialOrd<U>,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.1(self.0).partial_cmp(&other.1(other.0))
     }
 }
 
-impl<'a, T> PartialEq for PtrCmp<'a, T> {
+impl<'a, T, F, U> Ord for AccessCmp<'a, T, F>
+where
+    F: Fn(&'a T) -> U,
+    U: Ord,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.1(self.0).cmp(&other.1(other.0))
+    }
+}
+
+impl<'a, T, F, U> PartialEq for AccessCmp<'a, T, F>
+where
+    F: Fn(&'a T) -> U,
+    U: PartialEq<U>,
+{
     fn eq(&self, other: &Self) -> bool {
-        std::ptr::eq(self.0, other.0)
+        self.1(self.0).eq(&other.1(other.0))
     }
 }
 
-impl<'a, T> Eq for PtrCmp<'a, T> {}
+impl<'a, T, F, U> Eq for AccessCmp<'a, T, F>
+where
+    F: Fn(&'a T) -> U,
+    U: Eq,
+{
+}
 
 pub mod history;
 pub mod logger;

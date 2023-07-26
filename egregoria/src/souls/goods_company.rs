@@ -5,13 +5,13 @@ use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
 use crate::souls::freight_station::FreightStation;
 use crate::transportation::VehicleID;
+use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use common::saveload::Encoder;
 use egui_inspect::Inspect;
 use geom::{Transform, Vec2};
 use hecs::{Entity, World};
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
 

@@ -413,8 +413,6 @@ fn calculate_prices(
                 + Money::new_inner((price_workers.inner() as f32 * price_multiplier) as i64))
                 / qty;
 
-            log::info!("{:?} {}", item.id, newprice);
-
             minprice = minprice.map(|x: Money| x.min(newprice)).or(Some(newprice));
         }
 

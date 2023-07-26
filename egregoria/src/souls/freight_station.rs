@@ -1,11 +1,11 @@
 use crate::map::{BuildingID, BuildingKind, Map, PathKind};
 use crate::map_dynamic::{BuildingInfos, DispatchKind, DispatchQueryTarget, Dispatcher, Itinerary};
 use crate::transportation::train::TrainID;
+use crate::utils::resources::Resources;
 use crate::utils::time::{GameTime, Tick};
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::Transform;
 use hecs::World;
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, Inspect)]

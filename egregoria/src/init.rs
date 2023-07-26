@@ -13,6 +13,7 @@ use crate::transportation::road::{vehicle_decision_system, vehicle_state_update_
 use crate::transportation::train::{
     locomotive_system, train_reservations_update, TrainReservations,
 };
+use crate::utils::resources::Resources;
 use crate::utils::time::Tick;
 use crate::{
     add_souls_to_empty_buildings, utils, CollisionWorld, Egregoria, EgregoriaOptions, GameTime,
@@ -21,7 +22,6 @@ use crate::{
 };
 use common::saveload::Encoder;
 use hecs::World;
-use resources::Resources;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 

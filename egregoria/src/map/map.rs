@@ -663,9 +663,9 @@ impl Map {
 
     #[cfg(debug_assertions)]
     pub fn check_invariants(&self) {
-        if std::env::var("MAP_INVARIANT_CHECK").is_err() {
+        /*if std::env::var("MAP_INVARIANT_CHECK").is_err() {
             return;
-        }
+        }*/
         for inter in self.intersections.values() {
             log::debug!("{:?}", inter.id);
             assert!(!inter.roads.is_empty());

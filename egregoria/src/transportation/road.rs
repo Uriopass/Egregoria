@@ -3,11 +3,11 @@ use crate::map_dynamic::{Itinerary, OBJECTIVE_OK_DIST};
 use crate::physics::Speed;
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::transportation::{Vehicle, VehicleState, TIME_TO_PARK};
+use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
 use crate::ParCommandBuffer;
 use geom::{angle_lerpxy, Ray, Transform, Vec2, Vec3};
 use hecs::{Entity, World};
-use resources::Resources;
 
 #[profiling::function]
 pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {

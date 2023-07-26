@@ -2,10 +2,10 @@ use crate::economy::Market;
 use crate::map_dynamic::{DispatchKind, Router};
 use crate::physics::Collider;
 use crate::transportation::Vehicle;
+use crate::utils::resources::Resources;
 use crate::{Egregoria, SoulID};
 use hecs::{Component, Entity};
-use resources::{Resource, Resources};
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
@@ -43,7 +43,7 @@ impl ParCommandBuffer {
             .push(Box::new(f))
     }
 
-    pub fn exec_on<T: Resource>(
+    pub fn exec_on<T: Any + Send + Sync>(
         &self,
         e: Entity,
         f: impl for<'a> FnOnce(&'a mut T) + 'static + Send,

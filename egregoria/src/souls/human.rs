@@ -5,14 +5,15 @@ use crate::souls::desire::{BuyFood, Home, Work};
 use crate::transportation::{
     spawn_parked_vehicle, spawn_pedestrian, Location, VehicleID, VehicleKind,
 };
+use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
 use crate::{BuildingKind, Egregoria, FreightStation, Map, ParCommandBuffer, SoulID};
 use egui_inspect::Inspect;
 use geom::Transform;
 use hecs::{Entity, World};
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize, Default)]
 pub struct BasicWorker;
 
 #[derive(Inspect, Serialize, Deserialize, Default)]

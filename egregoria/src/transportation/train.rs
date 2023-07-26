@@ -1,11 +1,11 @@
 use crate::map::{IntersectionID, LaneID, Map, TraverseKind};
 use crate::map_dynamic::{DispatchKind, ItineraryFollower2, ItineraryKind};
+use crate::utils::resources::Resources;
 use crate::{Egregoria, GameTime, Itinerary, ItineraryLeader, Selectable, Speed};
 use egui_inspect::Inspect;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use hecs::{Entity, View, World};
 use ordered_float::OrderedFloat;
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;

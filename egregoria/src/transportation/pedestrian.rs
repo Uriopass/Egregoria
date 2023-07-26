@@ -4,13 +4,13 @@ use crate::map_dynamic::{BuildingInfos, Itinerary};
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject, Speed};
 use crate::transportation::Location;
 use crate::utils::rand_provider::RandProvider;
+use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
 use crate::{Egregoria, SoulID};
 use egui_inspect::Inspect;
 use geom::{angle_lerpxy, Color, Transform, Vec3};
 use hecs::Entity;
 use hecs::World;
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Inspect)]

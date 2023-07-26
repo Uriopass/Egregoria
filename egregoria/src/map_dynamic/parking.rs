@@ -1,8 +1,8 @@
-use crate::map::{LaneKind, Map, ParkingSpot, ParkingSpotID, ParkingSpots};
-use common::PtrCmp;
+use crate::map::{Lane, LaneKind, Map, ParkingSpot, ParkingSpotID, ParkingSpots};
+use common::AccessCmp;
 use geom::Vec3;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeSet, HashSet};
+use std::collections::BTreeSet;
 use std::option::Option::None;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -52,13 +52,15 @@ impl ParkingManagement {
 
         let depth = 7;
 
-        let mut potential = HashSet::new();
-        potential.insert(PtrCmp(lane));
-        let mut next = HashSet::new();
+        let idget = |l: &Lane| l.id;
+
+        let mut potential = BTreeSet::new();
+        potential.insert(AccessCmp(lane, idget));
+        let mut next = BTreeSet::new();
         let intersections = map.intersections();
         let roads = map.roads();
         for _ in 0..depth {
-            for lane in potential.drain() {
+            for lane in potential.iter() {
                 let lane = lane.0;
 
                 let inter_dst = unwrap_or!(intersections.get(lane.dst), continue);
@@ -67,13 +69,13 @@ impl ParkingManagement {
                 next.extend(
                     inter_dst
                         .turns_from(lane.id)
-                        .flat_map(|(turn, _)| Some(PtrCmp(map.lanes().get(turn.dst)?))),
+                        .flat_map(|(turn, _)| Some(AccessCmp(map.lanes().get(turn.dst)?, idget))),
                 );
 
                 next.extend(
                     inter_src
                         .turns_to(lane.id)
-                        .flat_map(|(turn, _)| Some(PtrCmp(map.lanes().get(turn.src)?))),
+                        .flat_map(|(turn, _)| Some(AccessCmp(map.lanes().get(turn.src)?, idget))),
                 );
 
                 let parent = unwrap_or!(roads.get(lane.parent), continue);

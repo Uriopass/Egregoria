@@ -1,12 +1,12 @@
 use crate::transportation::Vehicle;
 use crate::utils::par_command_buffer::ComponentDrop;
+use crate::utils::resources::Resources;
 use egui_inspect::Inspect;
 use egui_inspect::InspectVec2Rotation;
 use flat_spatial::grid::GridHandle;
 use geom::Transform;
 use geom::Vec2;
 use hecs::{Entity, World};
-use resources::Resources;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, Serialize, Deserialize, Inspect)]

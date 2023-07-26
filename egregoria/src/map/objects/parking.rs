@@ -19,8 +19,8 @@ pub struct ParkingSpot {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ParkingSpots {
-    spots: SlotMap<ParkingSpotID, ParkingSpot>,
-    lane_spots: SecondaryMap<LaneID, Vec<ParkingSpotID>>,
+    pub(crate) spots: SlotMap<ParkingSpotID, ParkingSpot>,
+    pub(crate) lane_spots: SecondaryMap<LaneID, Vec<ParkingSpotID>>,
     pub(crate) reuse_spot: Grid<ParkingSpotID, Vec2>,
 }
 
@@ -71,7 +71,7 @@ impl ParkingSpots {
 
     pub fn generate_spots(&mut self, lane: &Lane) {
         debug_assert!(matches!(lane.kind, LaneKind::Parking));
-
+        log::info!("generating spots for {:?}", lane.id);
         if self.lane_spots.contains_key(lane.id) {
             self.remove_to_reuse(lane.id);
         }
@@ -100,6 +100,7 @@ impl ParkingSpots {
 
                         reuse.remove_maintain(h);
                         if let Some(p) = spots.get_mut(spot_id) {
+                            log::info!("{:?} r{}", spot_id, pos);
                             *p = ParkingSpot {
                                 parent,
                                 trans: Transform::new_dir(pos, dir),
@@ -111,10 +112,12 @@ impl ParkingSpots {
                     }
                 }
 
-                spots.insert(ParkingSpot {
+                let k = spots.insert(ParkingSpot {
                     parent,
                     trans: Transform::new_dir(pos, dir),
-                })
+                });
+                log::info!("{:?} {}", k, pos);
+                k
             })
             .collect();
 

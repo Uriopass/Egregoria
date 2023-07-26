@@ -44,13 +44,41 @@ pub(crate) fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWor
             egui::ProgressBar::new((ticks_done as f32) / (ticks_total as f32))
                 .text(format!("Loading replay: {ticks_done}/{ticks_total}"))
                 .ui(ui);
-            if ui
-                .button("Go fast")
-                .on_hover_text("Load the replay faster")
-                .clicked()
-            {
-                loading.speed = 100;
-            }
+            ui.horizontal(|ui| {
+                if ui.button("||").clicked() {
+                    loading.speed = 0;
+                }
+                if ui
+                    .button(">")
+                    .on_hover_text("Load the replay faster")
+                    .clicked()
+                {
+                    loading.speed = 1;
+                }
+                if ui
+                    .button(">>>")
+                    .on_hover_text("Load the replay faster")
+                    .clicked()
+                {
+                    loading.speed = 100;
+                }
+                if ui.button("1").clicked() {
+                    loading.speed = 0;
+                    loading.advance_n_ticks = 1;
+                }
+                if ui.button("10").clicked() {
+                    loading.speed = 0;
+                    loading.advance_n_ticks = 10;
+                }
+                if ui.button("100").clicked() {
+                    loading.speed = 0;
+                    loading.advance_n_ticks = 100;
+                }
+                if ui.button("1000").clicked() {
+                    loading.speed = 0;
+                    loading.advance_n_ticks = 1000;
+                }
+            });
         }
 
         if !lstate.load_fail.is_empty() {
