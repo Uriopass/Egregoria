@@ -16,16 +16,14 @@ pub struct ConnectionClient {
 impl ConnectionClient {
     pub fn new(addr: SocketAddr) -> Result<Self, ConnectionsError> {
         let udp_sock = UdpSocket::bind(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0)))
-            .map_err(|e| ConnectionsError::UdpBind(e))?;
+            .map_err(ConnectionsError::UdpBind)?;
 
         let (udp_send_conn, udp_recv) = channel();
         let (udp_send, udp_recv_conn) = channel();
 
-        udp_sock
-            .connect(addr)
-            .map_err(|e| ConnectionsError::UdpBind(e))?;
+        udp_sock.connect(addr).map_err(ConnectionsError::UdpBind)?;
 
-        let tcp_stream = TcpStream::connect(addr).map_err(|e| ConnectionsError::TcpBind(e))?;
+        let tcp_stream = TcpStream::connect(addr).map_err(ConnectionsError::TcpBind)?;
 
         let _ = tcp_stream.set_nodelay(true);
 
@@ -88,15 +86,14 @@ impl ConnectionClient {
         disconnected: Arc<AtomicBool>,
     ) {
         let udp_sock_cpy = udp_sock.try_clone().unwrap();
-        std::thread::spawn(move || loop {
-            match udp_recv.recv() {
-                Ok(data) => match udp_sock_cpy.send(&data) {
+        std::thread::spawn(move || {
+            while let Ok(data) = udp_recv.recv() {
+                match udp_sock_cpy.send(&data) {
                     Ok(_) => {}
                     Err(e) => {
                         log::error!("udp send error: {}", e);
                     }
-                },
-                Err(_) => break,
+                }
             }
         });
 
@@ -136,7 +133,7 @@ impl ConnectionClient {
 
         std::thread::spawn(move || loop {
             match tcp_recv.recv() {
-                Ok(data) if data.len() > 0 => {
+                Ok(data) if !data.is_empty() => {
                     match tcp_stream.write_all(&(data.len() as u32).to_le_bytes()) {
                         Ok(_) => {}
                         Err(_) => {

@@ -1,23 +1,19 @@
 use crate::map::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use crate::utils::resources::Resources;
 use crate::utils::time::{GameTime, Tick};
-use crate::Speed;
+use crate::world::TrainID;
+use crate::World;
 use egui_inspect::egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Follower, Polyline3Queue, Transform, Vec3};
-use hecs::{Entity, World};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Inspect, Debug, Serialize, Deserialize)]
 pub struct ItineraryFollower {
-    pub leader: Entity,
-    pub follower: Follower,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ItineraryFollower2 {
-    pub leader: Entity,
+    pub leader: TrainID,
+    #[inspect(skip)]
     pub head: Follower,
+    #[inspect(skip)]
     pub tail: Follower,
 }
 
@@ -392,50 +388,23 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
     let time = &*resources.get::<GameTime>().unwrap();
     let map = &*resources.get::<Map>().unwrap();
     let tick = *resources.get::<Tick>().unwrap();
-    world
-        .query::<(&mut Transform, &Speed, &mut Itinerary)>()
-        .iter_batched(32)
-        //.par_bridge()
-        .for_each(|chunk| {
-            chunk.for_each(|(_, (trans, kin, it))| {
-                trans.position = it.update_rail(
-                    trans.position,
-                    kin.speed * time.delta,
-                    tick,
-                    time.seconds,
-                    map,
-                );
-            })
-        });
-    world
-        .query::<(&Transform, &mut ItineraryLeader)>()
-        .iter_batched(32)
-        .for_each(|chunk| {
-            chunk.for_each(|(_, (trans, leader))| {
-                leader.past.push(trans.position);
-            })
-        });
-    world
-        .query::<(&mut Transform, &mut ItineraryFollower)>()
-        .iter_batched(32)
-        .for_each(|chunk| {
-            chunk.for_each(|(_, (trans, follow))| {
-                let leader = unwrap_orr!(world.get::<&ItineraryLeader>(follow.leader), return);
-                let (pos, dir) = follow.follower.update(&leader.past);
-                trans.position = pos;
-                trans.dir = dir;
-            })
-        });
-    world
-        .query::<(&mut Transform, &mut ItineraryFollower2)>()
-        .iter_batched(32)
-        .for_each(|chunk| {
-            chunk.for_each(|(_, (trans, follow))| {
-                let leader = unwrap_orr!(world.get::<&ItineraryLeader>(follow.leader), return);
-                let (pos, dir) = follow.head.update(&leader.past);
-                let (pos2, dir2) = follow.tail.update(&leader.past);
-                trans.position = (pos + pos2) * 0.5;
-                trans.dir = (dir + dir2).try_normalize().unwrap_or(dir);
-            })
-        });
+
+    world.query_it_trans_speed().for_each(
+        |(it, trans, speed): (&mut Itinerary, &mut Transform, f32)| {
+            trans.position =
+                it.update_rail(trans.position, speed * time.delta, tick, time.seconds, map);
+        },
+    );
+
+    world.trains.values_mut().for_each(|train| {
+        train.leader.past.push(train.trans.position);
+    });
+
+    world.wagons.values_mut().for_each(|wagon| {
+        let leader = &unwrap_ret!(world.trains.get(wagon.itfollower.leader)).leader;
+        let (pos, dir) = wagon.itfollower.head.update(&leader.past);
+        let (pos2, dir2) = wagon.itfollower.tail.update(&leader.past);
+        wagon.trans.position = (pos + pos2) * 0.5;
+        wagon.trans.dir = (dir + dir2).try_normalize().unwrap_or(dir);
+    });
 }

@@ -66,6 +66,7 @@ impl Resources {
         )?)
     }
 
+    // TODO: try_get_mut instead of get_mut
     pub fn get_mut<T: Any + Send + Sync>(&self) -> Result<RefMut<T>, CantGetResource> {
         Ok(RefMut::from_lock(
             self.resources

@@ -1,11 +1,20 @@
 use crate::gui::{InspectedBuilding, InspectedEntity, Tool};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::UiWorld;
-use egregoria::engine_interaction::Selectable;
 use egregoria::map::ProjectFilter;
-use egregoria::Egregoria;
-use geom::Transform;
-use std::sync::Mutex;
+use egregoria::{AnyEntity, Egregoria};
+use geom::Vec2;
+
+pub fn select_radius(id: AnyEntity) -> f32 {
+    match id {
+        AnyEntity::VehicleID(_) => 5.0,
+        AnyEntity::TrainID(_) => 10.0,
+        AnyEntity::WagonID(_) => 10.0,
+        AnyEntity::FreightStationID(_) => 0.0,
+        AnyEntity::CompanyID(_) => 0.0,
+        AnyEntity::HumanID(_) => 3.0,
+    }
+}
 
 /// Selectable allows to select entities by clicking on them
 #[profiling::function]
@@ -19,34 +28,23 @@ pub(crate) fn selectable(goria: &Egregoria, uiworld: &mut UiWorld) {
         && matches!(*tool, Tool::Hand)
         && !inspected.dontclear
     {
-        let mut inspectcpy = *inspected;
-        inspectcpy.dist2 = f32::INFINITY;
-        let protec = Mutex::new(inspectcpy);
         let unproj = unwrap_ret!(inp.unprojected);
 
-        goria
-            .world()
-            .query::<(&Transform, &Selectable)>()
-            .iter_batched(16)
-            //.par_bridge()
-            .for_each(|chunk| {
-                let mut v = f32::INFINITY;
-                let mut ent = None;
-                for (e, (trans, select)) in chunk {
-                    let dist2 = (trans.position.xy() - unproj.xy()).mag2();
-                    if dist2 >= select.radius * select.radius || dist2 >= v {
-                        continue;
-                    }
-                    v = dist2;
-                    ent = Some(e);
+        let w = goria.world();
+
+        inspected.dist2 = f32::INFINITY;
+        inspected.e = None;
+
+        w.query_selectable_pos()
+            .for_each(|(id, pos): (AnyEntity, Vec2)| {
+                let dist2 = (pos - unproj.xy()).mag2();
+                let rad = select_radius(id);
+                if dist2 >= rad * rad || dist2 >= inspected.dist2 {
+                    return;
                 }
-                let mut inspected = protec.lock().unwrap();
-                if inspected.dist2 >= v {
-                    inspected.e = ent;
-                    inspected.dist2 = v;
-                }
+                inspected.dist2 = dist2;
+                inspected.e = Some(id);
             });
-        *inspected = protec.into_inner().unwrap();
     }
 
     if inp.just_act.contains(&InputAction::Select)

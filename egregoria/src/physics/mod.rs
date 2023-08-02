@@ -1,18 +1,25 @@
 use crate::transportation::Vehicle;
-use crate::utils::par_command_buffer::ComponentDrop;
 use crate::utils::resources::Resources;
+use crate::{Egregoria, World};
 use egui_inspect::Inspect;
 use egui_inspect::InspectVec2Rotation;
 use flat_spatial::grid::GridHandle;
 use geom::Transform;
 use geom::Vec2;
-use hecs::{Entity, World};
 use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Formatter};
 
-#[derive(Clone, Default, Debug, Serialize, Deserialize, Inspect)]
-pub struct Speed {
-    pub speed: f32,
+#[derive(Clone, Default, Serialize, Deserialize)]
+#[repr(transparent)]
+pub struct Speed(pub f32);
+
+impl Debug for Speed {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:.1}m/s", self.0)
+    }
 }
+
+debug_inspect_impl!(Speed);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PhysicsGroup {
@@ -54,29 +61,31 @@ pub struct Collider(pub GridHandle);
 
 debug_inspect_impl!(Collider);
 
+impl Collider {
+    pub fn destroy(self) -> impl FnOnce(&mut Egregoria) {
+        move |goria| {
+            let cw = &mut goria.write::<CollisionWorld>();
+            cw.remove_maintain(self.0);
+        }
+    }
+}
+
 #[profiling::function]
 pub fn coworld_synchronize(world: &mut World, resources: &mut Resources) {
     let mut coworld = resources.get_mut::<CollisionWorld>().unwrap();
-    world
-        .query_mut::<(&Transform, &Speed, &Collider, Option<&Vehicle>)>()
-        .into_iter()
-        .for_each(|(_, (trans, kin, coll, v))| {
+
+    world.query_trans_speed_coll_vehicle().for_each(
+        |(trans, kin, coll, v): (&Transform, &Speed, Collider, Option<&Vehicle>)| {
             coworld.set_position(coll.0, trans.position.xy());
             let (_, po) = coworld.get_mut(coll.0).unwrap(); // Unwrap ok: handle is deleted only when entity is deleted too
             po.dir = trans.dir.xy();
-            po.speed = kin.speed;
+            po.speed = kin.0;
             po.height = trans.position.z;
             if let Some(v) = v {
                 po.flag = v.flag;
             }
-        });
-    coworld.maintain();
-}
+        },
+    );
 
-impl ComponentDrop for Collider {
-    fn drop(&mut self, res: &mut Resources, _: Entity) {
-        res.get_mut::<CollisionWorld>()
-            .unwrap()
-            .remove_maintain(self.0);
-    }
+    coworld.maintain();
 }

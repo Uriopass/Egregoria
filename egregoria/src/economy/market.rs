@@ -79,6 +79,8 @@ pub enum TradeTarget {
     ExternalTrade,
 }
 
+debug_inspect_impl!(TradeTarget);
+
 impl TradeTarget {
     pub(crate) fn soul(self) -> SoulID {
         match self {
@@ -88,7 +90,7 @@ impl TradeTarget {
     }
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Inspect, Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Trade {
     pub buyer: TradeTarget,
     pub seller: TradeTarget,
@@ -438,19 +440,19 @@ mod tests {
     use super::Market;
     use crate::economy::{ItemRegistry, WORKER_CONSUMPTION_PER_SECOND};
     use crate::souls::goods_company::{CompanyKind, GoodsCompanyDescription, Recipe};
+    use crate::world::CompanyID;
     use crate::{map::BuildingGen, GoodsCompanyRegistry, SoulID};
     use geom::{vec2, Vec2};
-    use hecs::Entity;
 
-    fn mk_ent(id: u64) -> Entity {
-        Entity::from_bits(id).unwrap()
+    fn mk_ent(id: u64) -> CompanyID {
+        CompanyID::from(slotmap::KeyData::from_ffi(id))
     }
 
     #[test]
     fn test_match_orders() {
-        let seller = SoulID(mk_ent((1 << 32) | 1));
-        let seller_far = SoulID(mk_ent((1 << 32) | 2));
-        let buyer = SoulID(mk_ent((1 << 32) | 3));
+        let seller = SoulID::GoodsCompany(mk_ent((1 << 32) | 1));
+        let seller_far = SoulID::GoodsCompany(mk_ent((1 << 32) | 2));
+        let buyer = SoulID::GoodsCompany(mk_ent((1 << 32) | 3));
 
         let mut registry = ItemRegistry::default();
 

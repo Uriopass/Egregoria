@@ -5,37 +5,40 @@ use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::transportation::{Vehicle, VehicleState, TIME_TO_PARK};
 use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
+use crate::world::{VehicleEnt, VehicleID};
 use crate::ParCommandBuffer;
+use crate::World;
 use geom::{angle_lerpxy, Ray, Transform, Vec2, Vec3};
-use hecs::{Entity, World};
+use slotmap::Key;
 
 #[profiling::function]
 pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
     let rb = &*resources.get().unwrap();
     let rc = &*resources.get().unwrap();
-    world
-        .query::<(
-            &mut Itinerary,
-            &mut Transform,
-            &mut Speed,
-            &mut Vehicle,
-            &Collider,
-        )>()
-        .iter_batched(32)
-        //.par_bridge()
-        .for_each(|batch| {
-            batch.for_each(|(ent, (a, b, c, d, e))| {
-                vehicle_decision(ra, rb, rc, ent, a, b, c, d, e);
-            })
-        })
+
+    world.vehicles.iter_mut().for_each(|(ent, v)| {
+        let Some(ref coll) = v.collider else { return; };
+
+        vehicle_decision(
+            ra,
+            rb,
+            rc,
+            ent,
+            &mut v.it,
+            &mut v.trans,
+            &mut v.speed,
+            &mut v.vehicle,
+            coll,
+        );
+    });
 }
 
 pub fn vehicle_decision(
     map: &Map,
     time: &GameTime,
     cow: &CollisionWorld,
-    me: Entity,
+    me: VehicleID,
     it: &mut Itinerary,
     trans: &mut Transform,
     kin: &mut Speed,
@@ -78,26 +81,31 @@ pub fn vehicle_state_update_system(world: &mut World, resources: &mut Resources)
     let ra = &*resources.get().unwrap();
     let rb = &*resources.get().unwrap();
     let rc = &*resources.get().unwrap();
-    world
-        .query::<(&mut Vehicle, &mut Transform, &mut Speed)>()
-        .iter_batched(32)
-        //.par_bridge()
-        .for_each(|batch| {
-            batch.for_each(|(ent, (a, b, c))| {
-                vehicle_state_update(ra, rb, rc, ent, a, b, c);
-            })
-        })
+
+    world.vehicles.iter_mut().for_each(|(ent, v)| {
+        vehicle_state_update(
+            ra,
+            rb,
+            rc,
+            ent,
+            &mut v.vehicle,
+            &mut v.trans,
+            &mut v.speed,
+            &mut v.collider,
+        );
+    });
 }
 
 /// Decides whether a vehicle should change states, from parked to unparking to driving etc
 pub fn vehicle_state_update(
-    buf: &ParCommandBuffer,
+    buf: &ParCommandBuffer<VehicleEnt>,
     time: &GameTime,
     map: &Map,
-    ent: Entity,
+    ent: VehicleID,
     vehicle: &mut Vehicle,
     trans: &mut Transform,
     kin: &mut Speed,
+    coll: &mut Option<Collider>,
 ) {
     match vehicle.state {
         VehicleState::RoadToPark(_, ref mut t, _) => {
@@ -105,8 +113,11 @@ pub fn vehicle_state_update(
             *t += time.delta / TIME_TO_PARK;
 
             if *t >= 1.0 {
-                buf.remove_component_drop::<Collider>(ent);
-                kin.speed = 0.0;
+                let v = coll.take();
+                if let Some(x) = v {
+                    buf.exec_ent(ent, x.destroy());
+                }
+                kin.0 = 0.0;
                 let spot = match std::mem::replace(&mut vehicle.state, VehicleState::Driving) {
                     VehicleState::RoadToPark(_, _, spot) => spot,
                     _ => unreachable!(),
@@ -173,12 +184,12 @@ fn physics(
 
     trans.dir = angle_lerpxy(trans.dir, desired_dir, vehicle.ang_velocity * time.delta);
 
-    kin.speed = speed;
+    kin.0 = speed;
 }
 
 /// Decide the appropriate velocity and direction to aim for.
 pub fn calc_decision<'a>(
-    me: Entity,
+    me: VehicleID,
     vehicle: &mut Vehicle,
     map: &Map,
     time: &GameTime,
@@ -213,7 +224,7 @@ pub fn calc_decision<'a>(
             vehicle.state = VehicleState::Driving;
         }
     } else if speed.abs() < 0.2 && front_dist < 1.5 {
-        let me_u64: u64 = me.to_bits().get();
+        let me_u64: u64 = me.data().as_ffi();
         if me_u64 == flag {
             vehicle.state = VehicleState::Panicking(time.instant());
             log::info!("gridlock!")

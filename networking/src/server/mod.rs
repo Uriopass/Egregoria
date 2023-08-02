@@ -192,10 +192,10 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
         for c in self.authent.iter_mut() {
             match c.state {
                 ClientGameState::Downloading => {
-                    self.worldsend.update(c, &mut self.net);
+                    self.worldsend.update(c, &self.net);
                 }
                 ClientGameState::CatchingUp => {
-                    self.catchup.update(c, &mut self.net);
+                    self.catchup.update(c, &self.net);
                 }
                 _ => {}
             }
@@ -219,7 +219,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
                 }
             }
             ClientUnreliablePacket::Connection(id) => {
-                self.authent.udp_connect(addr, id, &mut self.net);
+                self.authent.udp_connect(addr, id, &self.net);
             }
         }
         Some(())
@@ -285,7 +285,7 @@ impl<WORLD: 'static + Serialize, INPUT: Serialize + DeserializeOwned> Server<WOR
     }
 
     fn tcp_connected(&mut self, addr: SocketAddr) {
-        self.authent.tcp_connected(addr, &mut self.net)
+        self.authent.tcp_connected(addr, &self.net)
     }
 
     fn tcp_disconnected(&mut self, tcp_addr: SocketAddr) {

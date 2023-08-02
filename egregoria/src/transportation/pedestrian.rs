@@ -1,16 +1,11 @@
-use crate::engine_interaction::Selectable;
-use crate::map::BuildingID;
-use crate::map_dynamic::{BuildingInfos, Itinerary};
+use crate::map_dynamic::Itinerary;
 use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject, Speed};
-use crate::transportation::Location;
 use crate::utils::rand_provider::RandProvider;
 use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
-use crate::{Egregoria, SoulID};
+use crate::World;
 use egui_inspect::Inspect;
 use geom::{angle_lerpxy, Color, Transform, Vec3};
-use hecs::Entity;
-use hecs::World;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Inspect)]
@@ -20,24 +15,6 @@ pub struct Pedestrian {
 }
 
 const PED_SIZE: f32 = 0.5;
-
-pub fn spawn_pedestrian(goria: &mut Egregoria, house: BuildingID) -> Option<Entity> {
-    let _color = random_pedestrian_shirt_color(&mut goria.write::<RandProvider>());
-
-    let hpos = goria.map().buildings().get(house)?.door_pos;
-    let p = Pedestrian::new(&mut goria.write::<RandProvider>());
-    let e = goria.world.spawn((
-        Transform::new(hpos),
-        Location::Building(house),
-        p,
-        Itinerary::NONE,
-        Speed::default(),
-        Selectable::new(3.0),
-    ));
-
-    goria.write::<BuildingInfos>().get_in(house, SoulID(e));
-    Some(e)
-}
 
 pub fn put_pedestrian_in_coworld(coworld: &mut CollisionWorld, pos: Vec3) -> Collider {
     Collider(coworld.insert(
@@ -51,7 +28,7 @@ pub fn put_pedestrian_in_coworld(coworld: &mut CollisionWorld, pos: Vec3) -> Col
 }
 
 impl Pedestrian {
-    fn new(r: &mut RandProvider) -> Self {
+    pub(crate) fn new(r: &mut RandProvider) -> Self {
         Self {
             walking_speed: (0.8 + r.next_f32() * 0.8),
             walk_anim: 0.0,
@@ -86,11 +63,10 @@ pub fn random_pedestrian_shirt_color(r: &mut RandProvider) -> Color {
 #[profiling::function]
 pub fn pedestrian_decision_system(world: &mut World, resources: &mut Resources) {
     let ra = &*resources.get().unwrap();
-    world
-        .query::<(&mut Itinerary, &mut Transform, &mut Speed, &mut Pedestrian)>()
-        .iter_batched(32)
+    world.humans
+        .values_mut()
         //.par_bridge()
-        .for_each(|batch| batch.for_each(|(_, (a, b, c, d))| pedestrian_decision(ra, a, b, c, d)))
+        .for_each(|human| pedestrian_decision(ra, &mut human.it, &mut human.trans, &mut human.speed, &mut human.pedestrian))
 }
 
 pub fn pedestrian_decision(
@@ -102,7 +78,7 @@ pub fn pedestrian_decision(
 ) {
     let (desired_v, desired_dir) = calc_decision(pedestrian, trans, it);
 
-    pedestrian.walk_anim += 7.0 * kin.speed * time.delta / pedestrian.walking_speed;
+    pedestrian.walk_anim += 7.0 * kin.0 * time.delta / pedestrian.walking_speed;
     pedestrian.walk_anim %= 2.0 * std::f32::consts::PI;
     physics(kin, trans, time, desired_v, desired_dir);
 }
@@ -116,10 +92,10 @@ pub fn physics(
     desired_velocity: f32,
     desired_dir: Vec3,
 ) {
-    let diff = desired_velocity - kin.speed;
+    let diff = desired_velocity - kin.0;
     let mag = diff.min(time.delta * PEDESTRIAN_ACC);
     if mag > 0.0 {
-        kin.speed += mag;
+        kin.0 += mag;
     }
     const ANG_VEL: f32 = 1.0;
     trans.dir = angle_lerpxy(trans.dir, desired_dir, ANG_VEL * time.delta);

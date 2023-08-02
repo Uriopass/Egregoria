@@ -1,16 +1,14 @@
 use crate::map::{BuildingID, Map, PathKind};
 use crate::map_dynamic::{Itinerary, ParkingManagement, ParkingReserveError, SpotReservation};
-use crate::physics::{Collider, CollisionWorld, Speed};
-use crate::transportation::{
-    put_pedestrian_in_coworld, unpark, Location, Vehicle, VehicleID, VehicleState,
-};
-use crate::utils::par_command_buffer::ComponentDrop;
+use crate::physics::CollisionWorld;
+use crate::transportation::{put_pedestrian_in_coworld, unpark, Location, VehicleState};
 use crate::utils::resources::Resources;
-use crate::{Egregoria, ParCommandBuffer};
+use crate::world::{HumanEnt, HumanID, VehicleEnt, VehicleID};
+use crate::{ParCommandBuffer, World};
 use egui_inspect::Inspect;
 use geom::{Spline3, Transform, Vec3};
-use hecs::{Component, Entity, Ref, World};
 use serde::{Deserialize, Serialize};
+use slotmap::SlotMap;
 
 #[derive(Inspect, Serialize, Deserialize)]
 pub struct Router {
@@ -56,30 +54,21 @@ debug_inspect_impl!(RoutingStep);
 
 #[profiling::function]
 pub fn routing_changed_system(world: &mut World, resources: &mut Resources) {
-    let ra = &*resources.get().unwrap();
-    let rb = &mut *resources.get_mut().unwrap();
-    world
-        .query::<(&mut Router, &Location)>()
-        .iter()
-        .for_each(|(_, (a, b))| {
-            routing_changed(ra, rb, a, b, world);
-        });
-}
+    let map: &Map = &resources.get().unwrap();
+    let parking: &mut ParkingManagement = &mut resources.get_mut().unwrap();
 
-pub fn routing_changed(
-    map: &Map,
-    parking: &mut ParkingManagement,
-    router: &mut Router,
-    loc: &Location,
-    world: &World,
-) {
-    if router.cur_dest != router.target_dest {
+    world.humans.values_mut().for_each(|h| {
+        let router = &mut h.router;
+        let loc = &h.location;
+        if router.cur_dest == router.target_dest {
+            return;
+        }
         let dest = unwrap_ret!(router.target_dest);
 
         router.clear_steps(parking);
         match dest {
             Destination::Outside(pos) => {
-                router.steps = match router.steps_to(pos, parking, map, loc, world) {
+                router.steps = match router.steps_to(pos, parking, map, loc, &world.vehicles) {
                     Ok(x) => x,
                     Err(e) => {
                         router.last_error = Some(e);
@@ -103,7 +92,7 @@ pub fn routing_changed(
                     }
                 };
                 let door_pos = bobj.door_pos;
-                router.steps = match router.steps_to(door_pos, parking, map, loc, world) {
+                router.steps = match router.steps_to(door_pos, parking, map, loc, &world.vehicles) {
                     Ok(x) => x,
                     Err(e) => {
                         router.last_error = Some(e);
@@ -117,206 +106,190 @@ pub fn routing_changed(
         router.cur_dest = router.target_dest;
 
         router.steps.reverse();
-    }
+    });
 }
 
 #[profiling::function]
 pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
-    let ra = &*resources.get().unwrap();
-    let rb = &*resources.get().unwrap();
-    world
-        .query::<(
-            &Transform,
-            &Itinerary,
-            &mut Router,
-            &mut Location,
-            &mut Speed,
-        )>()
-        .iter_batched(32)
-        //.par_bridge()
-        .for_each(|batch| {
-            batch.for_each(|(e, (a, b, c, d, f))| routing_update(ra, rb, e, a, b, c, d, f, world))
-        });
-}
+    let map: &Map = &resources.get().unwrap();
+    let cbuf_human: &ParCommandBuffer<HumanEnt> = &resources.get().unwrap();
+    let cbuf_vehicle: &ParCommandBuffer<VehicleEnt> = &resources.get().unwrap();
 
-pub fn routing_update(
-    map: &Map,
-    cbuf: &ParCommandBuffer,
-    body: Entity,
-    trans: &Transform,
-    itin: &Itinerary,
-    router: &mut Router,
-    loc: &mut Location,
-    kin: &mut Speed,
-    world: &World,
-) {
-    if router.cur_step.is_none() && router.steps.is_empty() {
-        return;
-    }
+    world.humans.iter_mut().for_each(|(body, h)| {
+        if h.router.cur_step.is_none() && h.router.steps.is_empty() {
+            return;
+        }
 
-    let pos = match *loc {
-        Location::Outside => trans.position,
-        Location::Vehicle(id) => comp::<Transform>(world, id.0)
-            .map(|x| x.position)
-            .unwrap_or_else(|| trans.position),
-        Location::Building(id) => map
-            .buildings()
-            .get(id)
-            .map(|b| b.door_pos)
-            .unwrap_or_else(|| trans.position),
-    };
+        let trans: &Transform = &h.trans;
+        let itin: &Itinerary = &h.it;
 
-    let mut cur_step_over = true;
-
-    if let Some(ref step) = router.cur_step {
-        cur_step_over = match *step {
-            RoutingStep::WalkTo(_) => itin.has_ended(0.0),
-            RoutingStep::DriveTo(vehicle, _) => comp::<Itinerary>(world, vehicle.0)
-                .map(|x| x.has_ended(0.0))
-                .unwrap_or(true),
-            RoutingStep::Park(vehicle, _) => comp::<Vehicle>(world, vehicle.0)
-                .map(|x| matches!(x.state, VehicleState::Parked(_)))
-                .unwrap_or(true),
-            RoutingStep::Unpark(_) => true,
-            RoutingStep::GetInVehicle(_) => true,
-            RoutingStep::GetOutVehicle(_) => true,
-            RoutingStep::GetInBuilding(_) => true,
-            RoutingStep::GetOutBuilding(_) => true,
-        };
-    }
-    let mut next_step_ready = true;
-
-    if let Some(step) = router.steps.last() {
-        next_step_ready = match *step {
-            RoutingStep::WalkTo(_) => true,
-            RoutingStep::DriveTo(_, _) => true,
-            RoutingStep::Park(_, _) => true,
-            RoutingStep::Unpark(_) => true,
-            RoutingStep::GetInVehicle(vehicle) => comp::<Transform>(world, vehicle.0)
-                .map(|x| x.position.is_close(pos, 3.0))
-                .unwrap_or(true),
-            RoutingStep::GetOutVehicle(_) => true,
-            RoutingStep::GetInBuilding(build) => map
+        let pos = match h.location {
+            Location::Outside => trans.position,
+            Location::Vehicle(id) => world
+                .vehicles
+                .get(id)
+                .map(|x| x.trans.position)
+                .unwrap_or_else(|| trans.position),
+            Location::Building(id) => map
                 .buildings()
-                .get(build)
-                .map(|b| b.door_pos.is_close(pos, 3.0))
-                .unwrap_or(true),
-            RoutingStep::GetOutBuilding(_) => true,
+                .get(id)
+                .map(|b| b.door_pos)
+                .unwrap_or_else(|| trans.position),
         };
-    }
 
-    if !(next_step_ready && cur_step_over) {
-        return;
-    }
+        let mut cur_step_over = true;
 
-    router.cur_step = router.steps.pop();
+        if let Some(ref step) = h.router.cur_step {
+            cur_step_over = match *step {
+                RoutingStep::WalkTo(_) => itin.has_ended(0.0),
+                RoutingStep::DriveTo(vehicle, _) => world
+                    .vehicles
+                    .get(vehicle)
+                    .map(|x| &x.it)
+                    .map(|x| x.has_ended(0.0))
+                    .unwrap_or(true),
+                RoutingStep::Park(vehicle, _) => world
+                    .vehicles
+                    .get(vehicle)
+                    .map(|x| &x.vehicle)
+                    .map(|x| matches!(x.state, VehicleState::Parked(_)))
+                    .unwrap_or(true),
+                RoutingStep::Unpark(_) => true,
+                RoutingStep::GetInVehicle(_) => true,
+                RoutingStep::GetOutVehicle(_) => true,
+                RoutingStep::GetInBuilding(_) => true,
+                RoutingStep::GetOutBuilding(_) => true,
+            };
+        }
+        let mut next_step_ready = true;
 
-    if let Some(ref mut next_step) = router.cur_step {
-        match *next_step {
-            RoutingStep::WalkTo(obj) => {
-                cbuf.add_component(body, Itinerary::wait_for_reroute(PathKind::Pedestrian, obj));
-            }
-            RoutingStep::DriveTo(vehicle, obj) => {
-                let route = Itinerary::wait_for_reroute(PathKind::Vehicle, obj);
-                cbuf.add_component(vehicle.0, route);
-            }
-            RoutingStep::Park(vehicle, ref mut spot) => {
-                if let Some(x) = spot.take() {
-                    if !x.exists(&map.parking) {
-                        router.reset_dest();
-                        return;
-                    }
-
-                    cbuf.exec_ent(vehicle.0, park(vehicle, x));
-                }
-            }
-            RoutingStep::Unpark(vehicle) => {
-                cbuf.exec_ent(vehicle.0, move |goria| unpark(goria, vehicle));
-            }
-            RoutingStep::GetInVehicle(vehicle) => {
-                if !world.contains(vehicle.0) {
-                    router.reset_dest();
-                    return;
-                }
-                *loc = Location::Vehicle(vehicle);
-                walk_inside(body, cbuf, kin);
-            }
-            RoutingStep::GetOutVehicle(vehicle) => {
-                let pos = comp::<Transform>(world, vehicle.0)
-                    .map(|vtrans| vtrans.position + vtrans.dir.cross(Vec3::Z) * 2.0)
-                    .unwrap_or(pos);
-                walk_outside(body, pos, cbuf, loc);
-            }
-            RoutingStep::GetInBuilding(build) => {
-                if !map.buildings().contains_key(build) {
-                    router.reset_dest();
-                    return;
-                }
-                *loc = Location::Building(build);
-                walk_inside(body, cbuf, kin);
-            }
-            RoutingStep::GetOutBuilding(build) => {
-                let wpos = map
+        if let Some(step) = h.router.steps.last() {
+            next_step_ready = match *step {
+                RoutingStep::WalkTo(_) => true,
+                RoutingStep::DriveTo(_, _) => true,
+                RoutingStep::Park(_, _) => true,
+                RoutingStep::Unpark(_) => true,
+                RoutingStep::GetInVehicle(vehicle) => world
+                    .vehicles
+                    .get(vehicle)
+                    .map(|v| v.trans.position.is_close(pos, 3.0))
+                    .unwrap_or(true),
+                RoutingStep::GetOutVehicle(_) => true,
+                RoutingStep::GetInBuilding(build) => map
                     .buildings()
                     .get(build)
-                    .map(|x| x.door_pos)
-                    .unwrap_or(pos);
-                walk_outside(body, wpos, cbuf, loc);
+                    .map(|b| b.door_pos.is_close(pos, 3.0))
+                    .unwrap_or(true),
+                RoutingStep::GetOutBuilding(_) => true,
+            };
+        }
+
+        if !(next_step_ready && cur_step_over) {
+            return;
+        }
+
+        h.router.cur_step = h.router.steps.pop();
+
+        if let Some(ref mut next_step) = h.router.cur_step {
+            match *next_step {
+                RoutingStep::WalkTo(obj) => {
+                    h.it = Itinerary::wait_for_reroute(PathKind::Pedestrian, obj);
+                }
+                RoutingStep::DriveTo(vehicle, obj) => {
+                    let route = Itinerary::wait_for_reroute(PathKind::Vehicle, obj);
+                    if let Some(x) = world.vehicles.get_mut(vehicle) {
+                        x.it = route
+                    }
+                }
+                RoutingStep::Park(vehicle, ref mut spot) => {
+                    if let Some(spot_resa) = spot.take() {
+                        if !spot_resa.exists(&map.parking) {
+                            h.router.reset_dest();
+                            return;
+                        }
+
+                        if let Some(vehicle) = world.vehicles.get_mut(vehicle) {
+                            park(map, vehicle, spot_resa)
+                        }
+                    }
+                }
+                RoutingStep::Unpark(vehicle) => {
+                    cbuf_vehicle.exec_ent(vehicle, move |goria| unpark(goria, vehicle));
+                }
+                RoutingStep::GetInVehicle(vehicle) => {
+                    if !world.vehicles.contains_key(vehicle) {
+                        h.router.reset_dest();
+                        return;
+                    }
+                    h.location = Location::Vehicle(vehicle);
+                    walk_inside(body, h, cbuf_human);
+                }
+                RoutingStep::GetOutVehicle(vehicle) => {
+                    let pos = world
+                        .vehicles
+                        .get(vehicle)
+                        .map(|v| v.trans)
+                        .map(|vtrans| vtrans.position + vtrans.dir.cross(Vec3::Z) * 2.0)
+                        .unwrap_or(pos);
+                    walk_outside(body, pos, cbuf_human, &mut h.location);
+                }
+                RoutingStep::GetInBuilding(build) => {
+                    if !map.buildings().contains_key(build) {
+                        h.router.reset_dest();
+                        return;
+                    }
+                    h.location = Location::Building(build);
+                    walk_inside(body, h, cbuf_human);
+                }
+                RoutingStep::GetOutBuilding(build) => {
+                    let wpos = map
+                        .buildings()
+                        .get(build)
+                        .map(|x| x.door_pos)
+                        .unwrap_or(pos);
+                    walk_outside(body, wpos, cbuf_human, &mut h.location);
+                }
             }
         }
+    })
+}
+
+fn walk_inside(body: HumanID, h: &mut HumanEnt, cbuf: &ParCommandBuffer<HumanEnt>) {
+    if let Some(coll) = h.collider.take() {
+        cbuf.exec_ent(body, coll.destroy());
     }
+    h.speed.0 = 0.0;
 }
 
-impl ComponentDrop for Router {
-    fn drop(&mut self, res: &mut Resources, _: Entity) {
-        self.clear_steps(&mut res.get_mut::<ParkingManagement>().unwrap())
-    }
-}
-
-fn comp<T: Component>(sw: &World, e: Entity) -> Option<Ref<T>> {
-    sw.get::<&T>(e).ok()
-}
-
-fn walk_inside(body: Entity, cbuf: &ParCommandBuffer, kin: &mut Speed) {
-    cbuf.remove_component_drop::<Collider>(body);
-    kin.speed = 0.0;
-    cbuf.add_component(body, Itinerary::NONE)
-}
-
-fn walk_outside(body: Entity, pos: Vec3, cbuf: &ParCommandBuffer, loc: &mut Location) {
+fn walk_outside(body: HumanID, pos: Vec3, cbuf: &ParCommandBuffer<HumanEnt>, loc: &mut Location) {
     *loc = Location::Outside;
     cbuf.exec_ent(body, move |goria| {
-        unwrap_ret!(goria.comp_mut::<Transform>(body)).position = pos;
         let coll = put_pedestrian_in_coworld(&mut goria.write::<CollisionWorld>(), pos);
-        goria.add_comp(body, coll);
+        let h = unwrap_ret!(goria.world.humans.get_mut(body));
+        h.trans.position = pos;
+        h.collider = Some(coll);
     });
 }
 
-fn park(vehicle: VehicleID, spot_resa: SpotReservation) -> impl FnOnce(&mut Egregoria) {
-    move |goria| {
-        let trans = unwrap_ret!(goria.comp::<Transform>(vehicle.0));
-        let map = goria.map();
-        let spot = match spot_resa.get(&map.parking) {
-            Some(x) => x,
-            None => {
-                log::warn!("Couldn't park at {:?} because it doesn't exist", spot_resa);
-                return;
-            }
-        };
+fn park(map: &Map, vehicle: &mut VehicleEnt, spot_resa: SpotReservation) {
+    let trans = vehicle.trans;
+    let spot = match spot_resa.get(&map.parking) {
+        Some(x) => x,
+        None => {
+            log::warn!("Couldn't park at {:?} because it doesn't exist", spot_resa);
+            return;
+        }
+    };
 
-        let s = Spline3 {
-            from: trans.position,
-            to: spot.trans.position,
-            from_derivative: trans.dir * 2.0,
-            to_derivative: spot.trans.dir * 2.0,
-        };
-        drop(map);
-        drop(trans);
+    let s = Spline3 {
+        from: trans.position,
+        to: spot.trans.position,
+        from_derivative: trans.dir * 2.0,
+        to_derivative: spot.trans.dir * 2.0,
+    };
 
-        unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0)).state =
-            VehicleState::RoadToPark(s, 0.0, spot_resa);
-        unwrap_ret!(goria.comp_mut::<Speed>(vehicle.0)).speed = 0.0;
-    }
+    vehicle.vehicle.state = VehicleState::RoadToPark(s, 0.0, spot_resa);
+    vehicle.speed.0 = 0.0;
 }
 
 impl Router {
@@ -336,7 +309,7 @@ impl Router {
         self.vehicle = v;
     }
 
-    fn clear_steps(&mut self, parking: &mut ParkingManagement) {
+    pub(crate) fn clear_steps(&mut self, parking: &mut ParkingManagement) {
         for s in self.steps.drain(..).chain(self.cur_step.take()) {
             if let RoutingStep::Park(_, Some(spot)) = s {
                 parking.free(spot);
@@ -365,7 +338,7 @@ impl Router {
         parking: &mut ParkingManagement,
         map: &Map,
         loc: &Location,
-        world: &World,
+        cars: &SlotMap<VehicleID, VehicleEnt>,
     ) -> Result<Vec<RoutingStep>, RouterError> {
         let mut steps = vec![];
         if let Location::Building(cur_build) = loc {
@@ -385,8 +358,8 @@ impl Router {
             };
 
             if !matches!(loc, Location::Vehicle(_)) {
-                if let Some(trans) = comp::<Transform>(world, car.0) {
-                    steps.push(RoutingStep::WalkTo(trans.position));
+                if let Some(pos) = cars.get(car).map(|x| x.trans.position) {
+                    steps.push(RoutingStep::WalkTo(pos));
                     steps.push(RoutingStep::GetInVehicle(car));
                     steps.push(RoutingStep::Unpark(car));
                 } else {

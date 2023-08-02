@@ -2,8 +2,8 @@ use crate::map::BuildingID;
 use crate::map_dynamic::{Destination, Router};
 use crate::souls::human::HumanDecisionKind;
 use crate::transportation::Location;
-use crate::transportation::VehicleID;
 use crate::utils::time::{GameTime, RecTimeInterval, SECONDS_PER_HOUR};
+use crate::world::VehicleID;
 use egui_inspect::Inspect;
 use serde::{Deserialize, Serialize};
 

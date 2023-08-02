@@ -1,14 +1,14 @@
 use crate::uiworld::UiWorld;
-use egregoria::economy::{ItemRegistry, Market, Workers};
+use egregoria::economy::{ItemRegistry, Market};
 use egregoria::engine_interaction::WorldCommand;
-use egregoria::Egregoria;
+use egregoria::{Egregoria, SoulID};
 use egui::{Context, Ui, Widget};
 
 use crate::gui::{item_icon, InspectedEntity};
 use egregoria::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
 use egregoria::map_dynamic::BuildingInfos;
-use egregoria::souls::freight_station::{FreightStation, FreightTrainState};
-use egregoria::souls::goods_company::{GoodsCompany, GoodsCompanyRegistry, Recipe};
+use egregoria::souls::freight_station::FreightTrainState;
+use egregoria::souls::goods_company::{GoodsCompanyRegistry, Recipe};
 use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
 
 /// Inspect a specific building, showing useful information about it
@@ -82,28 +82,27 @@ fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Build
     let mut inspected = uiworld.write::<InspectedEntity>();
 
     if ui.button(format!("Owner: {owner:?}")).clicked() {
-        inspected.e = Some(owner.0);
+        inspected.e = Some(owner.into());
     }
 
     ui.label("Currently in the house:");
     for &soul in info.inside.iter() {
         if ui.button(format!("{soul:?}")).clicked() {
-            inspected.e = Some(soul.0);
+            inspected.e = Some(soul.into());
         }
     }
 }
 
 fn render_freightstation(ui: &mut Ui, _uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
-    let Some(owner) = goria.read::<BuildingInfos>().owner(b.id) else { return; };
+    let Some(SoulID::FreightStation(owner)) = goria.read::<BuildingInfos>().owner(b.id) else { return; };
+    let Some(freight) = goria.world().get(owner) else { return; };
 
-    let Some(freight) = goria.comp::<FreightStation>(owner.0) else { return; };
-
-    ui.label(format!("Waiting cargo: {}", freight.waiting_cargo));
-    ui.label(format!("Wanted cargo: {}", freight.wanted_cargo));
+    ui.label(format!("Waiting cargo: {}", freight.f.waiting_cargo));
+    ui.label(format!("Wanted cargo: {}", freight.f.wanted_cargo));
 
     ui.add_space(10.0);
     ui.label("Trains:");
-    for (tid, state) in &freight.trains {
+    for (tid, state) in &freight.f.trains {
         ui.horizontal(|ui| {
             ui.label(format!("{tid:?} "));
             match state {
@@ -124,9 +123,10 @@ fn render_freightstation(ui: &mut Ui, _uiworld: &mut UiWorld, goria: &Egregoria,
 fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
     let owner = goria.read::<BuildingInfos>().owner(b.id);
 
-    let Some(soul) = owner else { return; };
-    let Some(goods) = goria.comp::<GoodsCompany>(soul.0) else { return; };
-    let Some(workers) = goria.comp::<Workers>(soul.0) else { return; };
+    let Some(SoulID::GoodsCompany(c_id)) = owner else { return; };
+    let Some(c) = goria.world().companies.get(c_id) else { return; };
+    let goods = &c.comp;
+    let workers = &c.workers;
 
     let market = goria.read::<Market>();
     let itemregistry = goria.read::<ItemRegistry>();
@@ -156,7 +156,7 @@ fn render_goodscompany(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b:
 
     let jobopening = itemregistry.id("job-opening");
     for (&id, m) in market.iter() {
-        let Some(v) = m.capital(soul) else { continue };
+        let Some(v) = m.capital(c_id.into()) else { continue };
         if id == jobopening && v == 0 {
             continue;
         }

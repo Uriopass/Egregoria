@@ -2,15 +2,12 @@ use crate::init::{INIT_FUNCS, SAVELOAD_FUNCS};
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::utils::resources::{Ref, RefMut, Resources};
 use egregoria::{Egregoria, EgregoriaReplayLoader};
-use hecs::{Component, DynamicBundle, QueryOne};
-use hecs::{Entity, World};
 use std::any::Any;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 #[derive(Default)]
 pub(crate) struct UiWorld {
-    pub(crate) world: World,
     resources: Resources,
 }
 
@@ -41,20 +38,6 @@ impl UiWorld {
 
     pub(crate) fn received_commands(&self) -> Ref<ReceivedCommands> {
         self.read::<ReceivedCommands>()
-    }
-
-    pub(crate) fn add_comp(&mut self, e: Entity, c: impl DynamicBundle) {
-        if self.world.insert(e, c).is_err() {
-            log::error!("trying to add component to entity but it doesn't exist");
-        }
-    }
-
-    pub(crate) fn comp<T: Component>(&self, e: Entity) -> Option<QueryOne<&T>> {
-        self.world.query_one::<&T>(e).ok()
-    }
-
-    pub(crate) fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
-        self.world.query_one_mut::<&mut T>(e).ok()
     }
 
     pub(crate) fn try_write<T: Any + Send + Sync>(&self) -> Option<RefMut<T>> {

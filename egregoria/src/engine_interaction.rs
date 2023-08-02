@@ -8,29 +8,11 @@ use crate::map_dynamic::BuildingInfos;
 use crate::transportation::train::{spawn_train, RailWagonKind};
 use crate::utils::time::{GameTime, Tick};
 use crate::{Egregoria, EgregoriaOptions, Replay};
-use geom::{vec3, Transform, Vec2, OBB};
-use hecs::Entity;
+use geom::{vec3, Vec2, OBB};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::time::Instant;
 use WorldCommand::*;
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Selectable {
-    pub radius: f32,
-}
-
-impl Selectable {
-    pub fn new(radius: f32) -> Self {
-        Self { radius }
-    }
-}
-
-impl Default for Selectable {
-    fn default() -> Self {
-        Self { radius: 5.0 }
-    }
-}
 
 #[derive(Clone, Default)]
 pub struct WorldCommands {
@@ -85,7 +67,6 @@ pub enum WorldCommand {
     },
     ResetSave,
     SetGameTime(GameTime),
-    UpdateTransform(Entity, Transform),
 }
 
 impl AsRef<[WorldCommand]> for WorldCommands {
@@ -121,10 +102,6 @@ impl WorldCommands {
 
     pub fn map_load_testfield(&mut self, pos: Vec2, size: u32, spacing: f32) {
         self.commands.push(MapLoadTestField { pos, size, spacing })
-    }
-
-    pub fn update_transform(&mut self, e: Entity, trans: Transform) {
-        self.commands.push(UpdateTransform(e, trans))
     }
 
     pub fn reset_save(&mut self) {
@@ -212,7 +189,6 @@ impl WorldCommand {
                 | MapUpdateIntersectionPolicy { .. }
                 | UpdateZone { .. }
                 | SetGameTime(_)
-                | UpdateTransform(_, _)
         )
     }
 
@@ -306,11 +282,6 @@ impl WorldCommand {
             ResetSave => {
                 let opts = *goria.read::<EgregoriaOptions>();
                 *goria = Egregoria::new_with_options(opts);
-            }
-            UpdateTransform(e, t) => {
-                if let Some(mut x) = goria.comp_mut(e) {
-                    *x = t
-                }
             }
             Init(ref opts) => {
                 if opts.save_replay {

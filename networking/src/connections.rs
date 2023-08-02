@@ -24,6 +24,7 @@ pub(crate) struct FramedTcpReceiver {
     buf: Vec<u8>,
 }
 
+#[allow(clippy::type_complexity)]
 pub struct Connections {
     udp_send: Sender<Packet>,
     udp_recv: Receiver<Packet>,
@@ -40,13 +41,13 @@ pub enum ConnectionsError {
 
 impl Connections {
     pub fn new(addr: SocketAddr) -> Result<Self, ConnectionsError> {
-        let udp_sock = UdpSocket::bind(addr).map_err(|e| ConnectionsError::UdpBind(e))?;
+        let udp_sock = UdpSocket::bind(addr).map_err(ConnectionsError::UdpBind)?;
         let (udp_send_conn, udp_recv) = channel();
         let (udp_send, udp_recv_conn) = channel();
 
         let (tcp_conn_events_send, tcp_conn_events_recv) = channel();
 
-        let tcp_listener = TcpListener::bind(addr).map_err(|e| ConnectionsError::TcpBind(e))?;
+        let tcp_listener = TcpListener::bind(addr).map_err(ConnectionsError::TcpBind)?;
 
         Self::start_process_threads(
             udp_sock,
@@ -91,7 +92,7 @@ impl Connections {
             match event {
                 TcpConnEvent::New { send, recv, addr } => {
                     self.tcp_conns
-                        .insert(addr.clone(), (FramedTcpReceiver::new(), recv, send));
+                        .insert(addr, (FramedTcpReceiver::new(), recv, send));
                     newconns.push(addr);
                 }
                 TcpConnEvent::Killed { addr } => {
@@ -110,7 +111,7 @@ impl Connections {
 
             frame.recv(&v, |d| {
                 packets.push(Packet {
-                    addr: addr.clone(),
+                    addr: *addr,
                     data: d,
                 })
             });
@@ -126,15 +127,14 @@ impl Connections {
         tcp_conn_events_send: Sender<TcpConnEvent>,
     ) {
         let udp_sock_cpy = udp_sock.try_clone().unwrap();
-        std::thread::spawn(move || loop {
-            match udp_recv.recv() {
-                Ok(Packet { addr, data }) => match udp_sock_cpy.send_to(&data, addr) {
+        std::thread::spawn(move || {
+            while let Ok(Packet { addr, data }) = udp_recv.recv() {
+                match udp_sock_cpy.send_to(&data, addr) {
                     Ok(_) => {}
                     Err(e) => {
                         log::error!("udp send error: {}", e);
                     }
-                },
-                Err(_) => break,
+                }
             }
         });
 
@@ -183,7 +183,7 @@ impl Connections {
 
                     std::thread::spawn(move || loop {
                         match recv_from_tcp.recv() {
-                            Ok(data) if data.len() > 0 => {
+                            Ok(data) if !data.is_empty() => {
                                 match stream.write_all(&(data.len() as u32).to_le_bytes()) {
                                     Ok(_) => {}
                                     Err(_) => {

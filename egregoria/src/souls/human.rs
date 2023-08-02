@@ -1,20 +1,20 @@
 use crate::economy::{Bought, ItemRegistry, Market};
 use crate::map::BuildingID;
-use crate::map_dynamic::{BuildingInfos, Destination, Router};
+use crate::map_dynamic::{BuildingInfos, Destination, Itinerary, Router};
+use crate::physics::Speed;
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::transportation::{
-    spawn_parked_vehicle, spawn_pedestrian, Location, VehicleID, VehicleKind,
+    random_pedestrian_shirt_color, spawn_parked_vehicle, Location, Pedestrian, VehicleKind,
 };
+use crate::utils::rand_provider::RandProvider;
 use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
-use crate::{BuildingKind, Egregoria, FreightStation, Map, ParCommandBuffer, SoulID};
+use crate::world::{FreightStationEnt, HumanEnt, HumanID, VehicleID};
+use crate::World;
+use crate::{BuildingKind, Egregoria, Map, ParCommandBuffer, SoulID};
 use egui_inspect::Inspect;
 use geom::Transform;
-use hecs::{Entity, World};
 use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Default)]
-pub struct BasicWorker;
 
 #[derive(Inspect, Serialize, Deserialize, Default)]
 pub struct HumanDecision {
@@ -45,13 +45,13 @@ impl HumanDecisionKind {
         router: &mut Router,
         binfos: &BuildingInfos,
         map: &Map,
-        cbuf: &ParCommandBuffer,
+        cbuf_freight: &ParCommandBuffer<FreightStationEnt>,
     ) -> bool {
         match *self {
             HumanDecisionKind::GoTo(dest) => router.go_to(dest),
             HumanDecisionKind::MultiStack(ref mut decisions) => {
                 if let Some(d) = decisions.last_mut() {
-                    if d.update(router, binfos, map, cbuf) {
+                    if d.update(router, binfos, map, cbuf_freight) {
                         decisions.pop();
                     }
                     false
@@ -66,10 +66,10 @@ impl HumanDecisionKind {
             HumanDecisionKind::DeliverAtBuilding(bid) => {
                 let Some(b) = map.buildings().get(bid) else { return true };
                 if matches!(b.kind, BuildingKind::RailFreightStation) {
-                    let Some(b) = binfos.owner(bid) else { return true };
-                    cbuf.exec_ent(b.0, move |e| {
-                        if let Some(mut f) = e.comp_mut::<FreightStation>(b.0) {
-                            f.waiting_cargo += 1;
+                    let Some(SoulID::FreightStation(fid)) = binfos.owner(bid) else { return true };
+                    cbuf_freight.exec_ent(fid, move |e| {
+                        if let Some(mut f) = e.world.freight_stations.get_mut(fid) {
+                            f.f.waiting_cargo += 1;
                         }
                     });
                 }
@@ -94,33 +94,36 @@ pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
     let rb = &*resources.get().unwrap();
     let rc = &*resources.get().unwrap();
     let rd = &*resources.get().unwrap();
-    world
-        .query::<(
-            &Transform,
-            &Location,
-            &mut Router,
-            &mut Bought,
-            &mut HumanDecision,
-            Option<&mut BuyFood>,
-            Option<&mut Home>,
-            Option<&mut Work>,
-        )>()
-        .iter_batched(32)
-        //.par_bridge()
-        .for_each(|batch| {
-            batch.for_each(|(ent, (a, b, c, d, e, f, g, h))| {
-                update_decision(ra, rb, rc, rd, ent, a, b, c, d, e, f, g, h);
-            })
-        })
+    let re = &*resources.get().unwrap();
+
+    world.humans.iter_mut().for_each(|(ent, h)| {
+        update_decision(
+            ra,
+            rb,
+            rc,
+            rd,
+            re,
+            ent,
+            &h.trans,
+            &h.location,
+            &mut h.router,
+            &mut h.bought,
+            &mut h.decision,
+            Some(&mut h.food),
+            Some(&mut h.home),
+            h.work.as_mut(),
+        )
+    });
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn update_decision(
-    cbuf: &ParCommandBuffer,
+    cbuf: &ParCommandBuffer<HumanEnt>,
+    cbuf_freight: &ParCommandBuffer<FreightStationEnt>,
     time: &GameTime,
     binfos: &BuildingInfos,
     map: &Map,
-    me: Entity,
+    me: HumanID,
     trans: &Transform,
     loc: &Location,
     router: &mut Router,
@@ -136,11 +139,10 @@ pub fn update_decision(
     }
     let pos = trans.position;
     decision.wait = (30.0 + common::rand::rand2(pos.x, pos.y) * 50.0) as u8;
-    if !decision.kind.update(router, binfos, map, cbuf) {
+    if !decision.kind.update(router, binfos, map, cbuf_freight) {
         return;
     }
 
-    let soul = SoulID(me);
     let mut decision_id = NextDesire::None;
     let mut max_score = f32::NEG_INFINITY;
 
@@ -176,47 +178,53 @@ pub fn update_decision(
         NextDesire::Home(home) => decision.kind = home.apply(),
         NextDesire::Work(work) => decision.kind = work.apply(loc, router),
         NextDesire::Food(food) => {
-            decision.kind = food.apply(cbuf, binfos, map, time, soul, trans, loc, bought)
+            decision.kind = food.apply(cbuf, binfos, map, time, me, trans, loc, bought)
         }
         NextDesire::None => {}
     }
 }
 
 #[profiling::function]
-pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<SoulID> {
+pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<HumanID> {
     let map = goria.map();
     let housepos = map.buildings().get(house)?.door_pos;
     drop(map);
 
-    let human = SoulID(spawn_pedestrian(goria, house)?);
-    let car = spawn_parked_vehicle(goria, VehicleKind::Car, housepos);
+    let _color = random_pedestrian_shirt_color(&mut goria.write::<RandProvider>());
 
-    let mut m = goria.write::<Market>();
-    {}
+    let hpos = goria.map().buildings().get(house)?.door_pos;
+    let p = Pedestrian::new(&mut goria.write::<RandProvider>());
+
     let registry = goria.read::<ItemRegistry>();
-    m.buy(human, housepos.xy(), registry.id("job-opening"), 1);
-    drop(m);
-
-    goria.write::<BuildingInfos>().set_owner(house, human);
-
     let time = goria.read::<GameTime>().instant();
 
     let food = BuyFood::new(time, &registry);
     drop(registry);
 
-    goria
-        .world
-        .insert(
-            human.0,
-            (
-                HumanDecision::default(),
-                Home::new(house),
-                food,
-                Bought::default(),
-                Router::new(car),
-                BasicWorker,
-            ),
-        )
-        .unwrap();
-    Some(human)
+    let car = spawn_parked_vehicle(goria, VehicleKind::Car, housepos);
+
+    let id = goria.world.insert(HumanEnt {
+        trans: Transform::new(hpos),
+        location: Location::Building(house),
+        pedestrian: p,
+        it: Itinerary::NONE,
+        speed: Speed::default(),
+        decision: HumanDecision::default(),
+        home: Home::new(house),
+        food,
+        bought: Bought::default(),
+        router: Router::new(car),
+        collider: None,
+        work: None,
+    });
+
+    let soul = SoulID::Human(id);
+    let mut m = goria.write::<Market>();
+    let registry = goria.read::<ItemRegistry>();
+    m.buy(soul, housepos.xy(), registry.id("job-opening"), 1);
+
+    goria.write::<BuildingInfos>().get_in(house, soul);
+    goria.write::<BuildingInfos>().set_owner(house, soul);
+
+    Some(id)
 }

@@ -14,7 +14,6 @@ networking    = { path = "../networking", optional=true }
 flat_spatial  = { workspace = true }
 log           = { version = "0.4.11", features=["max_level_info", "release_max_level_info"] }
 inline_tweak  = "1.0.6"
-hecs          = { workspace = true }
 ordered-float = { workspace = true }
 serde         = "1.0"
 oddio         = "0.6.2"

@@ -1,5 +1,4 @@
 use common::FastMap;
-use hecs::Entity;
 use std::borrow::Cow;
 use std::path::Path;
 
@@ -9,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::uiworld::UiWorld;
 use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::BuildingID;
-use egregoria::Egregoria;
+use egregoria::{AnyEntity, Egregoria};
 use roadbuild::RoadBuildResource;
 
 pub(crate) mod bulldozer;
@@ -89,7 +88,7 @@ pub(crate) struct InspectedBuilding {
 
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct InspectedEntity {
-    pub(crate) e: Option<Entity>,
+    pub(crate) e: Option<AnyEntity>,
     pub(crate) dist2: f32,
     pub(crate) dontclear: bool,
 }

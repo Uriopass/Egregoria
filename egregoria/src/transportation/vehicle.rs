@@ -1,25 +1,16 @@
-use crate::engine_interaction::Selectable;
 use crate::map_dynamic::{Itinerary, ParkingManagement, SpotReservation};
-use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject, Speed};
-use crate::utils::par_command_buffer::ComponentDrop;
+use crate::physics::{Collider, CollisionWorld, PhysicsGroup, PhysicsObject};
 use crate::utils::rand_provider::RandProvider;
-use crate::utils::resources::Resources;
 use crate::utils::time::GameInstant;
+use crate::world::{VehicleEnt, VehicleID};
 use crate::Egregoria;
 use egui_inspect::Inspect;
 use geom::Transform;
 use geom::{Color, Spline3, Vec3};
-use hecs::Entity;
 use serde::{Deserialize, Serialize};
 
 /// The duration for the parking animation.
 pub const TIME_TO_PARK: f32 = 4.0;
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[repr(transparent)]
-pub struct VehicleID(pub Entity);
-
-debug_inspect_impl!(VehicleID);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum VehicleState {
@@ -52,18 +43,8 @@ pub struct Vehicle {
     pub flag: u64,
 }
 
-impl ComponentDrop for Vehicle {
-    fn drop(&mut self, res: &mut Resources, _: Entity) {
-        if let VehicleState::Parked(resa) | VehicleState::RoadToPark(_, _, resa) =
-            std::mem::replace(&mut self.state, VehicleState::Driving)
-        {
-            res.get_mut::<ParkingManagement>().unwrap().free(resa);
-        }
-    }
-}
-
 #[must_use]
-pub fn put_vehicle_in_coworld(goria: &mut Egregoria, w: f32, trans: Transform) -> Collider {
+pub fn put_vehicle_in_coworld(goria: &Egregoria, w: f32, trans: Transform) -> Collider {
     Collider(goria.write::<CollisionWorld>().insert(
         trans.position.xy(),
         PhysicsObject {
@@ -123,20 +104,22 @@ impl VehicleKind {
 }
 
 pub fn unpark(goria: &mut Egregoria, vehicle: VehicleID) {
-    let mut v = unwrap_ret!(goria.comp_mut::<Vehicle>(vehicle.0));
-    let w = v.kind.width();
+    let v = unwrap_ret!(goria.world.vehicles.get_mut(vehicle));
+    let w = v.vehicle.kind.width();
+    let trans = v.trans;
 
-    if let VehicleState::Parked(spot) = std::mem::replace(&mut v.state, VehicleState::Driving) {
-        drop(v);
+    if let VehicleState::Parked(spot) =
+        std::mem::replace(&mut v.vehicle.state, VehicleState::Driving)
+    {
         goria.write::<ParkingManagement>().free(spot);
     } else {
-        drop(v);
         log::warn!("Trying to unpark {:?} that wasn't parked", vehicle);
     }
 
-    let trans = *unwrap_ret!(goria.comp::<Transform>(vehicle.0));
     let coll = put_vehicle_in_coworld(goria, w, trans);
-    goria.add_comp(vehicle.0, coll);
+
+    let mut v = unwrap_ret!(goria.world.vehicles.get_mut(vehicle));
+    v.collider = Some(coll);
 }
 
 pub fn spawn_parked_vehicle(
@@ -162,13 +145,13 @@ pub fn spawn_parked_vehicle(
         _ => Color::WHITE,
     };
 
-    Some(VehicleID(make_vehicle_entity(
+    Some(make_vehicle_entity(
         goria,
         pos,
         Vehicle::new(kind, spot_id, tint),
         it,
         false,
-    )))
+    ))
 }
 
 pub fn make_vehicle_entity(
@@ -177,19 +160,20 @@ pub fn make_vehicle_entity(
     vehicle: Vehicle,
     it: Itinerary,
     mk_collider: bool,
-) -> Entity {
+) -> VehicleID {
     let w = vehicle.kind.width();
-    let e = goria
-        .world
-        .spawn((trans, Speed::default(), Selectable::default(), vehicle, it));
 
+    let mut collider = None;
     if mk_collider {
-        let c = put_vehicle_in_coworld(goria, w, trans);
-        #[allow(clippy::unwrap_used)] // literally just added to the world
-        let _ = goria.world.insert_one(e, c);
+        collider = Some(put_vehicle_in_coworld(goria, w, trans));
     }
-
-    e
+    goria.world.insert(VehicleEnt {
+        trans,
+        speed: Default::default(),
+        vehicle,
+        it,
+        collider,
+    })
 }
 
 pub fn get_random_car_color(r: &mut RandProvider) -> Color {

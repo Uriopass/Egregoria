@@ -1,11 +1,13 @@
 use crate::map::{BuildingID, BuildingKind, Map, PathKind};
-use crate::map_dynamic::{BuildingInfos, DispatchKind, DispatchQueryTarget, Dispatcher, Itinerary};
-use crate::transportation::train::TrainID;
+use crate::map_dynamic::{
+    BuildingInfos, DispatchID, DispatchKind, DispatchQueryTarget, Dispatcher, Itinerary,
+};
 use crate::utils::resources::Resources;
 use crate::utils::time::{GameTime, Tick};
+use crate::world::{FreightStationEnt, FreightStationID, TrainID};
+use crate::World;
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use geom::Transform;
-use hecs::World;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, Inspect)]
@@ -31,7 +33,10 @@ pub struct FreightStation {
     pub wanted_cargo: u32,
 }
 
-pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Option<SoulID> {
+pub fn freight_station_soul(
+    goria: &mut Egregoria,
+    building: BuildingID,
+) -> Option<FreightStationID> {
     let map = goria.map();
 
     let f = FreightStation {
@@ -49,48 +54,50 @@ pub fn freight_station_soul(goria: &mut Egregoria, building: BuildingID) -> Opti
 
     drop(map);
 
-    let soul = SoulID(goria.world.spawn((
+    let id = goria.world.insert(FreightStationEnt {
         f,
-        Transform::new_dir(pos.z(height), axis[1].z(0.0).normalize()),
-    )));
+        trans: Transform::new_dir(pos.z(height), axis[1].z(0.0).normalize()),
+    });
 
-    goria.write::<BuildingInfos>().set_owner(building, soul);
+    goria
+        .write::<BuildingInfos>()
+        .set_owner(building, SoulID::FreightStation(id));
 
-    Some(soul)
+    Some(id)
 }
 
 pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
-    let cbuf = resources.get::<ParCommandBuffer>().unwrap();
+    let cbuf = resources
+        .get::<ParCommandBuffer<FreightStationEnt>>()
+        .unwrap();
     let mut dispatch = resources.get_mut::<Dispatcher>().unwrap();
     let map = resources.get::<Map>().unwrap();
     let time = resources.get::<GameTime>().unwrap();
     let tick = *resources.get::<Tick>().unwrap();
 
-    let mut trainqry = world.query::<(&Transform, &mut Itinerary)>();
-    let mut train = trainqry.view();
-
-    for (me, (pos, soul)) in world
-        .query::<(&Transform, &mut FreightStation)>()
-        .into_iter()
-    {
-        if !map.buildings.contains_key(soul.building) {
+    for (me, f) in world.freight_stations.iter_mut() {
+        let pos = f.trans;
+        let station = &mut f.f;
+        if !map.buildings.contains_key(station.building) {
             cbuf.kill(me);
             continue;
         }
 
         // update our trains, and remove the ones that are done
         let mut to_clean = vec![];
-        for (trainid, state) in &mut soul.trains {
-            let Some((tpos, itin)) = train.get_mut(trainid.0) else {
+        for (trainid, state) in &mut station.trains {
+            let Some(train) = world.trains.get_mut(*trainid) else {
                 to_clean.push(*trainid);
                 continue
             };
+            let itin = &mut train.it;
+
             match state {
                 FreightTrainState::Arriving => {
                     if itin.has_ended(0.0) {
                         *state = FreightTrainState::Loading;
-                        soul.waiting_cargo = soul.waiting_cargo.saturating_sub(100);
-                        soul.wanted_cargo = soul.wanted_cargo.saturating_sub(100);
+                        station.waiting_cargo = station.waiting_cargo.saturating_sub(100);
+                        station.wanted_cargo = station.wanted_cargo.saturating_sub(100);
                         *itin = Itinerary::wait_until(time.timestamp + 10.0);
                     }
                 }
@@ -100,7 +107,7 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
                         let bpos = map.buildings[ext].obb.center().z(0.0);
 
                         *itin = if let Some(r) =
-                            Itinerary::route(tick, tpos.position, bpos, &map, PathKind::Rail)
+                            Itinerary::route(tick, train.trans.position, bpos, &map, PathKind::Rail)
                         {
                             r
                         } else {
@@ -118,38 +125,42 @@ pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
             }
         }
         for v in to_clean {
-            soul.trains.retain(|x| x.0 != v);
-            dispatch.free(DispatchKind::FreightTrain, v.0)
+            station.trains.retain(|x| x.0 != v);
+            dispatch.free(v)
         }
 
         // If enough goods are waiting, query for a train to take them to the external trading station
-        if soul.trains.len() >= MAX_TRAINS_PER_STATION {
+        if station.trains.len() >= MAX_TRAINS_PER_STATION {
             continue;
         }
-        if soul.waiting_cargo + soul.wanted_cargo < 10 {
+        if station.waiting_cargo + station.wanted_cargo < 10 {
             continue;
         }
 
         let destination = pos.position + pos.dir * 75.0 - pos.dir.perp_up() * 40.0;
 
-        let Some(trainid) = dispatch.query(
+        let Some(DispatchID::FreightTrain(trainid)) = dispatch.query(
             &map,
-            me,
             DispatchKind::FreightTrain,
             DispatchQueryTarget::Pos(destination),
         ) else {
             continue;
         };
-        let trainid = TrainID(trainid);
 
-        let (tpos, titin) = train.get_mut(trainid.0).unwrap();
+        let train = world.trains.get_mut(trainid).unwrap();
 
-        *titin = unwrap_or!(
-            Itinerary::route(tick, tpos.position, destination, &map, PathKind::Rail,),
+        train.it = unwrap_or!(
+            Itinerary::route(
+                tick,
+                train.trans.position,
+                destination,
+                &map,
+                PathKind::Rail,
+            ),
             continue
         );
 
-        soul.trains.push((trainid, FreightTrainState::Arriving));
+        station.trains.push((trainid, FreightTrainState::Arriving));
     }
 }
 
@@ -159,7 +170,7 @@ mod tests {
     use crate::map_dynamic::BuildingInfos;
     use crate::souls::human::{spawn_human, HumanDecisionKind};
     use crate::tests::TestCtx;
-    use crate::{BuildingKind, FreightStation, HumanDecision, WorldCommand};
+    use crate::{BuildingKind, SoulID, WorldCommand};
     use geom::{vec2, vec3, OBB};
 
     #[test]
@@ -189,23 +200,22 @@ mod tests {
             .unwrap()
             .0;
 
-        test.g.comp_mut::<HumanDecision>(human.0).unwrap().kind =
-            HumanDecisionKind::DeliverAtBuilding(station);
+        test.g
+            .world_mut_unchecked()
+            .humans
+            .get_mut(human)
+            .unwrap()
+            .decision
+            .kind = HumanDecisionKind::DeliverAtBuilding(station);
 
         let binfos = test.g.read::<BuildingInfos>();
-        let stationsoul = binfos.owner(station).unwrap();
+        let SoulID::FreightStation(stationsoul) = binfos.owner(station).unwrap() else { panic!() };
         drop(binfos);
 
         for _ in 0..100 {
             test.tick();
 
-            if test
-                .g
-                .comp::<FreightStation>(stationsoul.0)
-                .unwrap()
-                .waiting_cargo
-                == 1
-            {
+            if test.g.get(stationsoul).unwrap().f.waiting_cargo == 1 {
                 return;
             }
         }

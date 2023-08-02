@@ -1,30 +1,22 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::type_complexity)]
 
-use crate::economy::{Bought, Sold, Workers};
-use crate::engine_interaction::{Selectable, WorldCommand};
+use crate::engine_interaction::WorldCommand;
 use crate::map::{BuildingKind, Map};
-use crate::map_dynamic::{
-    DispatchKind, Itinerary, ItineraryFollower, ItineraryFollower2, ItineraryLeader, Router,
-};
+use crate::map_dynamic::{Itinerary, ItineraryLeader};
 use crate::physics::CollisionWorld;
-use crate::physics::{Collider, Speed};
+use crate::physics::Speed;
 use crate::souls::add_souls_to_empty_buildings;
-use crate::souls::desire::{BuyFood, Home, Work};
-use crate::souls::goods_company::{GoodsCompany, GoodsCompanyRegistry};
-use crate::souls::human::{BasicWorker, HumanDecision};
-use crate::transportation::train::{Locomotive, LocomotiveReservation};
-use crate::transportation::{Pedestrian, Vehicle};
+use crate::souls::goods_company::GoodsCompanyRegistry;
 use crate::utils::resources::{Ref, RefMut, Resources};
 use common::saveload::Encoder;
-use geom::{Transform, Vec3};
-use hecs::{Component, Entity, World};
+use derive_more::{From, TryInto};
+use geom::Vec3;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::any::Any;
 use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::time::{Duration, Instant};
-use transportation::Location;
 use utils::rand_provider::RandProvider;
 use utils::scheduler::SeqSchedule;
 use utils::time::{GameTime, SECONDS_PER_DAY, SECONDS_PER_HOUR};
@@ -53,11 +45,12 @@ pub mod souls;
 mod tests;
 pub mod transportation;
 pub mod utils;
+mod world;
+
+pub use world::*;
 
 use crate::engine_interaction::WorldCommand::Init;
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
-use crate::souls::freight_station::FreightStation;
-use crate::transportation::train::RailWagon;
 use crate::utils::scheduler::RunnableSystem;
 use crate::utils::time::Tick;
 use common::FastMap;
@@ -65,9 +58,37 @@ pub use utils::config::*;
 pub use utils::par_command_buffer::ParCommandBuffer;
 pub use utils::replay::*;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
-#[repr(transparent)]
-pub struct SoulID(pub Entity);
+#[derive(
+    Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash, From, TryInto,
+)]
+pub enum SoulID {
+    Human(HumanID),
+    GoodsCompany(CompanyID),
+    FreightStation(FreightStationID),
+}
+
+impl From<SoulID> for AnyEntity {
+    fn from(value: SoulID) -> Self {
+        match value {
+            SoulID::Human(id) => AnyEntity::HumanID(id),
+            SoulID::GoodsCompany(id) => AnyEntity::CompanyID(id),
+            SoulID::FreightStation(id) => AnyEntity::FreightStationID(id),
+        }
+    }
+}
+
+impl TryFrom<AnyEntity> for SoulID {
+    type Error = ();
+
+    fn try_from(value: AnyEntity) -> Result<Self, Self::Error> {
+        match value {
+            AnyEntity::HumanID(id) => Ok(SoulID::Human(id)),
+            AnyEntity::CompanyID(id) => Ok(SoulID::GoodsCompany(id)),
+            AnyEntity::FreightStationID(id) => Ok(SoulID::FreightStation(id)),
+            _ => Err(()),
+        }
+    }
+}
 
 debug_inspect_impl!(SoulID);
 
@@ -232,7 +253,7 @@ impl Egregoria {
 
     pub fn hashes(&self) -> BTreeMap<String, u64> {
         let mut hashes = BTreeMap::new();
-        let ser = common::saveload::Bincode::encode(&SerWorld(&self.world)).unwrap();
+        let ser = common::saveload::Bincode::encode(&self.world).unwrap();
         hashes.insert("world".to_string(), common::hash_u64(&*ser));
 
         unsafe {
@@ -264,22 +285,20 @@ impl Egregoria {
         }
     }
 
-    pub fn pos(&self, e: Entity) -> Option<Vec3> {
-        self.comp::<Transform>(e).map(|x| x.position)
+    pub fn pos<E: WorldTransform>(&self, id: E) -> Option<Vec3> {
+        self.world.pos(id)
     }
 
-    pub(crate) fn add_comp(&mut self, e: Entity, c: impl Component) {
-        if self.world.insert_one(e, c).is_err() {
-            log::error!("trying to add component to entity but it doesn't exist");
-        }
+    pub fn pos_any(&self, id: AnyEntity) -> Option<Vec3> {
+        self.world.pos_any(id)
     }
 
-    pub fn comp<T: Component>(&self, e: Entity) -> Option<hecs::Ref<T>> {
-        self.world.get::<&T>(e).ok()
+    pub fn get<E: EntityID>(&self, id: E) -> Option<&E::Entity> {
+        self.world.get(id)
     }
 
-    pub fn comp_mut<T: Component>(&mut self, e: Entity) -> Option<hecs::RefMut<T>> {
-        self.world.get::<&mut T>(e).ok()
+    pub fn contains(&self, id: AnyEntity) -> bool {
+        self.world.contains(id)
     }
 
     pub fn write_or_default<T: Any + Send + Sync + Default>(&mut self) -> RefMut<T> {
@@ -315,17 +334,6 @@ impl Egregoria {
     }
 }
 
-struct SerWorld<'a>(&'a World);
-
-impl<'a> Serialize for SerWorld<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        hecs::serialize::column::serialize(self.0, &mut SerContext, serializer)
-    }
-}
-
 impl Serialize for Egregoria {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -345,7 +353,7 @@ impl Serialize for Egregoria {
         log::info!("took {}s to serialize resources", t.elapsed().as_secs_f32());
 
         let v = EgregoriaSer {
-            world: SerWorld(&self.world),
+            world: &self.world,
             version: VERSION.to_string(),
             res: m,
         }
@@ -357,14 +365,14 @@ impl Serialize for Egregoria {
 
 #[derive(Serialize)]
 struct EgregoriaSer<'a> {
-    world: SerWorld<'a>,
+    world: &'a World,
     version: String,
     res: FastMap<String, Vec<u8>>,
 }
 
 #[derive(Deserialize)]
 struct EgregoriaDeser {
-    world: DeserWorld,
+    world: World,
     version: String,
     res: FastMap<String, Vec<u8>>,
 }
@@ -398,7 +406,7 @@ impl<'de> Deserialize<'de> for Egregoria {
         }
 
         let mut goria = Self {
-            world: World::new(),
+            world: World::default(),
             resources: Resources::default(),
         };
 
@@ -408,7 +416,7 @@ impl<'de> Deserialize<'de> for Egregoria {
             }
         }
 
-        goria.world = goriadeser.world.0;
+        goria.world = goriadeser.world;
 
         unsafe {
             for l in &SAVELOAD_FUNCS {
@@ -426,153 +434,6 @@ impl<'de> Deserialize<'de> for Egregoria {
         Ok(goria)
     }
 }
-
-struct DeserWorld(World);
-
-impl<'de> Deserialize<'de> for DeserWorld {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        hecs::serialize::column::deserialize(&mut DeserContext::default(), deserializer)
-            .map(DeserWorld)
-    }
-}
-
-struct SerContext;
-
-#[derive(Default)]
-struct DeserContext {
-    components: Vec<ComponentId>,
-}
-
-macro_rules! register {
-    ($($t: ty => $p:ident),+,) => {
-        #[derive(Serialize, Deserialize)]
-        enum ComponentId {
-            $(
-                $p,
-            )+
-        }
-
-        impl hecs::serialize::column::SerializeContext for SerContext {
-            fn component_count(&self, archetype: &hecs::Archetype) -> usize {
-                archetype.component_types()
-                    .filter(|&t| {
-                    $(
-                        t == std::any::TypeId::of::<$t>() ||
-                    )+
-                    false
-                    })
-                    .count()
-            }
-
-            fn serialize_component_ids<S: serde::ser::SerializeTuple>(
-                &mut self,
-                archetype: &hecs::Archetype,
-                mut out: S,
-            ) -> Result<S::Ok, S::Error> {
-                let mut tot = 0;
-                $(
-                    if archetype.has::<$t>() {
-                        tot += 1;
-                    }
-                    hecs::serialize::column::try_serialize_id::<$t, _, _>(archetype, &ComponentId::$p, &mut out)?;
-                )+
-                assert_eq!(tot, archetype.component_types().len());
-                out.end()
-            }
-
-            fn serialize_components<S: serde::ser::SerializeTuple>(
-                &mut self,
-                archetype: &hecs::Archetype,
-                mut out: S,
-            ) -> Result<S::Ok, S::Error> {
-                $(
-                    hecs::serialize::column::try_serialize::<$t, _>(archetype, &mut out)?;
-                )+
-                out.end()
-            }
-        }
-
-        impl hecs::serialize::column::DeserializeContext for DeserContext {
-            fn deserialize_component_ids<'de, A>(
-                &mut self,
-                mut seq: A,
-            ) -> Result<hecs::ColumnBatchType, A::Error>
-            where
-                A: serde::de::SeqAccess<'de>,
-            {
-                self.components.clear(); // Discard data from the previous archetype
-                let mut batch = hecs::ColumnBatchType::new();
-                while let Some(id) = seq.next_element()? {
-                    match id {
-                        $(
-                            ComponentId::$p => {
-                                batch.add::<$t>();
-                            },
-                        )+
-                    }
-                    self.components.push(id);
-                }
-                Ok(batch)
-            }
-
-            fn deserialize_components<'de, A>(
-                &mut self,
-                entity_count: u32,
-                mut seq: A,
-                batch: &mut hecs::ColumnBatchBuilder,
-            ) -> Result<(), A::Error>
-            where
-                A: serde::de::SeqAccess<'de>,
-            {
-                // Decode component data in the order that the component IDs appeared
-                for component in &self.components {
-                    match *component {
-                        $(
-                        ComponentId::$p => {
-                            hecs::serialize::column::deserialize_column::<$t, _>(entity_count, &mut seq, batch)?;
-                        },
-                        )+
-                    }
-                }
-                Ok(())
-            }
-        }
-    };
-}
-
-pub struct NoSerialize;
-
-register!(
-        Transform => _0,
-        Bought => _1,
-        BuyFood => _2,
-        Collider => _3,
-        GoodsCompany => _4,
-        Home => _5,
-        HumanDecision => _6,
-        Itinerary => _7,
-        Speed => _8,
-        Location => _9,
-        Pedestrian => _10,
-        Router => _11,
-        Selectable => _12,
-        Sold => _13,
-        Vehicle => _14,
-        Work => _15,
-        Workers => _16,
-        Locomotive => _17,
-        RailWagon => _18,
-        ItineraryLeader => _20,
-        ItineraryFollower => _21,
-        ItineraryFollower2 => _25,
-        LocomotiveReservation => _22,
-        FreightStation => _23,
-        DispatchKind => _24,
-        BasicWorker => _26,
-);
 
 const START_COMMANDS: &str = r#"
 [

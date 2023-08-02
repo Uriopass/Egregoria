@@ -3,10 +3,10 @@ use crate::init::init;
 use crate::map::{Map, MapProject, ProjectKind};
 use crate::utils::scheduler::SeqSchedule;
 use crate::utils::time::Tick;
+use crate::World;
 use crate::{Egregoria, Replay};
 use common::logger::MyLog;
 use common::saveload::Encoder;
-use hecs::World;
 
 static REPLAY: &'static [u8] = include_bytes!("world_replay.json");
 
@@ -23,16 +23,16 @@ fn check_coherent(map: &Map, proj: MapProject) {
 }
 
 fn check_eq(w1: &World, w2: &World) -> bool {
-    for (c1, c2) in w1.iter().zip(w2.iter()) {
-        if c1.entity().id() != c2.entity().id() {
-            println!("{:?} {:?}", c1.entity(), c2.entity());
+    for (c1, c2) in w1.entities().zip(w2.entities()) {
+        if c1 != c2 {
+            println!("{:?} {:?}", c1, c2);
             return false;
         }
     }
     true
 }
 
-//#[test]
+//#[test] // uncomment when slotmap has been forked
 fn test_world_survives_serde() {
     init();
     MyLog::init();

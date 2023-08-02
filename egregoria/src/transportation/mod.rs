@@ -6,6 +6,7 @@ pub mod road;
 pub mod train;
 mod vehicle;
 
+use crate::world::VehicleID;
 pub use pedestrian::*;
 pub use vehicle::*;
 

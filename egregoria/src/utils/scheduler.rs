@@ -1,4 +1,5 @@
-use crate::{Egregoria, ParCommandBuffer};
+use crate::world::{CompanyEnt, HumanEnt, TrainEnt, VehicleEnt, WagonEnt};
+use crate::{Egregoria, FreightStationEnt, ParCommandBuffer};
 use common::History;
 use ordered_float::OrderedFloat;
 use std::time::Instant;
@@ -42,7 +43,12 @@ impl SeqSchedule {
 
             sys.run(goria);
 
-            ParCommandBuffer::apply(goria);
+            ParCommandBuffer::<VehicleEnt>::apply(goria);
+            ParCommandBuffer::<HumanEnt>::apply(goria);
+            ParCommandBuffer::<TrainEnt>::apply(goria);
+            ParCommandBuffer::<WagonEnt>::apply(goria);
+            ParCommandBuffer::<FreightStationEnt>::apply(goria);
+            ParCommandBuffer::<CompanyEnt>::apply(goria);
 
             let elapsed = start.elapsed();
 

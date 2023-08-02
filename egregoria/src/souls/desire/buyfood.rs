@@ -4,6 +4,7 @@ use crate::map_dynamic::{BuildingInfos, Destination};
 use crate::souls::human::HumanDecisionKind;
 use crate::transportation::Location;
 use crate::utils::time::{GameInstant, GameTime};
+use crate::world::{HumanEnt, HumanID};
 use crate::{Map, ParCommandBuffer, SoulID};
 use egui_inspect::Inspect;
 use geom::Transform;
@@ -54,11 +55,11 @@ impl BuyFood {
 
     pub fn apply(
         &mut self,
-        cbuf: &ParCommandBuffer,
+        cbuf: &ParCommandBuffer<HumanEnt>,
         binfos: &BuildingInfos,
         map: &Map,
         time: &GameTime,
-        soul: SoulID,
+        id: HumanID,
         trans: &Transform,
         loc: &Location,
         bought: &mut Bought,
@@ -68,8 +69,8 @@ impl BuyFood {
             BuyFoodState::Empty => {
                 let pos = trans.position;
                 let bread = self.bread;
-                cbuf.exec_on(soul.0, move |market: &mut Market| {
-                    market.buy(soul, pos.xy(), bread, 1)
+                cbuf.exec_on(id, move |market: &mut Market| {
+                    market.buy(SoulID::Human(id), pos.xy(), bread, 1)
                 });
                 self.state = BuyFoodState::WaitingForTrade;
                 Yield
@@ -88,7 +89,7 @@ impl BuyFood {
                 if loc == &Location::Building(b) {
                     self.state = BuyFoodState::Empty;
                     self.last_ate = time.instant();
-                    log::debug!("{:?} ate at {:?}", soul, b);
+                    log::debug!("{:?} ate at {:?}", id, b);
                     Yield
                 } else {
                     GoTo(Destination::Building(b))

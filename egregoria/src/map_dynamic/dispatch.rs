@@ -1,12 +1,12 @@
 use crate::map::{LaneID, LaneKind, TraverseDirection};
-use crate::utils::par_command_buffer::ComponentDrop;
 use crate::utils::resources::Resources;
-use crate::Map;
-use geom::{Transform, Vec3};
-use hecs::{Entity, QueryBorrow, World};
+use crate::world::{TrainID, VehicleID};
+use crate::{Map, World};
+use derive_more::From;
+use geom::Vec3;
 use serde::{Deserialize, Serialize};
 use std::collections::btree_map::Entry;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// How precise the dispatcher is. Caches dispatchable entities's positions and relation to map but only in precision circle.
 /// So if a dispatchable entity moves less than the precision, nothing will be updated.
@@ -23,12 +23,27 @@ pub struct Dispatcher {
     dispatches: BTreeMap<DispatchKind, DispatchOne>,
 }
 
+#[derive(Debug, Copy, Clone, PartialOrd, Ord, Eq, PartialEq, Serialize, Deserialize, From)]
+pub enum DispatchID {
+    FreightTrain(TrainID),
+    SmallTruck(VehicleID),
+}
+
+impl From<DispatchID> for DispatchKind {
+    fn from(id: DispatchID) -> Self {
+        match id {
+            DispatchID::FreightTrain(_) => DispatchKind::FreightTrain,
+            DispatchID::SmallTruck(_) => DispatchKind::SmallTruck,
+        }
+    }
+}
+
 /// Dispatcher specialized to one kind
 #[derive(Serialize, Deserialize)]
 struct DispatchOne {
-    positions: BTreeMap<Entity, DispatchPosition>,
-    lanes: BTreeMap<LaneID, Vec<Entity>>,
-    reserved_by: BTreeMap<Entity, Entity>,
+    positions: BTreeMap<DispatchID, DispatchPosition>,
+    lanes: BTreeMap<LaneID, Vec<DispatchID>>,
+    reserved_by: BTreeSet<DispatchID>,
     lanekind: LaneKind,
 }
 
@@ -66,43 +81,41 @@ pub enum DispatchQueryTarget {
 impl Dispatcher {
     /// Updates the dispatcher cache about the dispatachable entities to know where they are relative
     /// to the map, so that queries can be answered quickly
-    pub fn update(
-        &mut self,
-        map: &Map,
-        world: &World,
-        mut query: QueryBorrow<(&Transform, &DispatchKind)>,
-    ) {
-        let mut disp: &mut DispatchOne = self
+    pub fn update(&mut self, map: &Map, world: &World) {
+        let disp_trains = self
             .dispatches
             .entry(DispatchKind::FreightTrain)
             .or_insert_with(|| DispatchOne::new(DispatchKind::FreightTrain.lane_kind()));
-        let mut last_kind: DispatchKind = DispatchKind::FreightTrain;
-        for (ent, (trans, kind)) in query.iter() {
-            if last_kind != *kind {
-                disp = self
-                    .dispatches
-                    .entry(*kind)
-                    .or_insert_with(|| DispatchOne::new(kind.lane_kind()));
-                last_kind = *kind;
-            }
 
-            if let Entry::Occupied(o) = disp.reserved_by.entry(ent) {
-                if !world.contains(*o.get()) {
-                    o.remove();
-                } else {
-                    continue;
-                }
-            }
-            disp.register(ent, map, trans.position);
-        }
+        world.trains.iter().for_each(|(ent, train)| {
+            disp_trains.register(DispatchID::FreightTrain(ent), map, train.trans.position);
+        });
+
+        /*
+        let disp_trucks = self
+            .dispatches
+            .entry(DispatchKind::SmallTruck)
+            .or_insert_with(|| DispatchOne::new(DispatchKind::SmallTruck.lane_kind()));
+
+        world.vehicles.iter().for_each(|(ent, truck)| {
+            disp_trucks.register(DispatchID::Truck(ent), map, truck.trans.position);
+        })*/
     }
 
     /// Frees the entity as it is no longer used
     /// For example if a train is no longer used by a station, it should be freed so that other stations can use it
     /// It should be re-added to the cache at the next update iteration
-    pub fn free(&mut self, kind: DispatchKind, ent: Entity) {
+    pub fn free(&mut self, ent: impl Into<DispatchID>) {
+        let ent: DispatchID = ent.into();
+        let kind: DispatchKind = ent.into();
         let Some(disp) = self.dispatches.get_mut(&kind) else { return };
         disp.reserved_by.remove(&ent);
+    }
+
+    pub fn unregister(&mut self, id: DispatchID) {
+        let kind = id.into();
+        let Some(disp) = self.dispatches.get_mut(&kind) else { return };
+        disp.unregister(id);
     }
 
     /// Reserves an entity that is closest to the target (if it is found) and returns it
@@ -111,13 +124,12 @@ impl Dispatcher {
     pub fn query(
         &mut self,
         map: &Map,
-        me: Entity,
         kind: DispatchKind,
         target: DispatchQueryTarget,
-    ) -> Option<Entity> {
+    ) -> Option<DispatchID> {
         let disp = self.dispatches.get_mut(&kind)?;
         let best_ent = disp.query(map, kind, target)?;
-        disp.reserve(best_ent, me);
+        disp.reserve(best_ent);
         Some(best_ent)
     }
 }
@@ -125,14 +137,14 @@ impl Dispatcher {
 impl DispatchOne {
     fn new(lanekind: LaneKind) -> Self {
         Self {
-            positions: BTreeMap::new(),
-            lanes: BTreeMap::new(),
-            reserved_by: BTreeMap::new(),
+            positions: Default::default(),
+            lanes: Default::default(),
+            reserved_by: Default::default(),
             lanekind,
         }
     }
 
-    fn register(&mut self, id: Entity, map: &Map, pos: Vec3) {
+    fn register(&mut self, id: DispatchID, map: &Map, pos: Vec3) {
         let ent = self.positions.entry(id);
 
         let lanekind = self.lanekind;
@@ -182,8 +194,8 @@ impl DispatchOne {
         }
     }
 
-    fn reserve(&mut self, id: Entity, me: Entity) {
-        self.reserved_by.insert(id, me);
+    fn reserve(&mut self, id: DispatchID) {
+        self.reserved_by.insert(id);
         let Some(pos) = self.positions.remove(&id) else {
             log::error!("Dispatcher: trying to reserve an entity that is not in the cache");
             return;
@@ -191,9 +203,9 @@ impl DispatchOne {
         self.lanes.get_mut(&pos.lane).unwrap().retain(|e| *e != id);
     }
 
-    pub fn unregister(&mut self, id: Entity) {
-        self.reserved_by.remove(&id);
+    pub fn unregister(&mut self, id: DispatchID) {
         let Some(pos) = self.positions.remove(&id) else { return };
+        self.reserved_by.remove(&id);
         self.lanes.get_mut(&pos.lane).unwrap().retain(|e| *e != id);
     }
 
@@ -204,7 +216,7 @@ impl DispatchOne {
         map: &Map,
         kind: DispatchKind,
         target: DispatchQueryTarget,
-    ) -> Option<Entity> {
+    ) -> Option<DispatchID> {
         // todo: handle the case where there are few entities in the cache
         // todo: probably some kind of astar on good candidates
 
@@ -268,15 +280,7 @@ impl DispatchOne {
 pub fn dispatch_system(world: &mut World, resources: &mut Resources) {
     let mut dispatcher = resources.get_mut::<Dispatcher>().unwrap();
     let map = resources.get::<Map>().unwrap();
-    dispatcher.update(&map, world, world.query());
-}
-
-impl ComponentDrop for DispatchKind {
-    fn drop(&mut self, goria: &mut Resources, ent: Entity) {
-        let Ok(mut dispatcher) = goria.get_mut::<Dispatcher>() else { return };
-        let Some(one) = dispatcher.dispatches.get_mut(self) else { return };
-        one.unregister(ent);
-    }
+    dispatcher.update(&map, world);
 }
 
 #[cfg(test)]
@@ -284,6 +288,11 @@ mod tests {
     use super::*;
     use crate::map::{LanePatternBuilder, MapProject, ProjectKind};
     use common::rand::rand2;
+
+    fn mk_ent(id: u64) -> DispatchID {
+        DispatchID::FreightTrain(TrainID::from(KeyData::from_ffi(id)))
+    }
+
     #[test]
     fn dispatch_one_register_one_works() {
         let mut disp = DispatchOne::new(LaneKind::Rail);
@@ -301,7 +310,7 @@ mod tests {
         let lanes: Vec<LaneID> = map.roads[r].lanes_iter().map(|(id, _)| id).collect();
 
         // first insert
-        let ent = Entity::from_bits(1 << 32).unwrap();
+        let ent = mk_ent(1 << 32);
         disp.register(ent, &map, Vec3::new(0.0, 0.0, 0.0));
         assert_eq!(disp.positions.len(), 1);
         assert_eq!(disp.lanes.len(), 1);
@@ -309,14 +318,14 @@ mod tests {
         assert!(lanes.contains(disp.lanes.keys().next().unwrap()));
 
         // second insert in same lane
-        let ent2 = Entity::from_bits(1 << 32 + 1).unwrap();
+        let ent2 = mk_ent(1 << 32 + 1);
         disp.register(ent2, &map, Vec3::new(0.0, 0.0, 0.0));
         assert_eq!(disp.positions.len(), 2);
         assert_eq!(disp.lanes.len(), 1);
         assert_eq!(disp.lanes.values().next().unwrap(), &vec![ent, ent2]);
 
         // insert in another lane
-        let ent3 = Entity::from_bits(1 << 32 + 2).unwrap();
+        let ent3 = mk_ent(1 << 32 + 2);
         disp.register(ent3, &map, Vec3::new(100.0, 10.0, 0.0));
         assert_eq!(disp.positions.len(), 3);
         assert_eq!(disp.lanes.len(), 2);
@@ -369,17 +378,16 @@ mod tests {
 
         let (lid, _) = map.roads[r].lanes_iter().next().unwrap();
 
-        let mut register = |id: Entity, pos: f32| {
+        let mut register = |id: DispatchID, pos: f32| {
             d.dispatches
                 .entry(DispatchKind::FreightTrain)
                 .or_insert(DispatchOne::new(DispatchKind::FreightTrain.lane_kind()))
                 .register(id, &map, Vec3::x(pos))
         };
 
-        let ent0 = Entity::from_bits(1 << 32).unwrap();
-        let ent1 = Entity::from_bits((1 << 32) + 1).unwrap();
-        let ent2 = Entity::from_bits((1 << 32) + 2).unwrap();
-        let me = Entity::from_bits((1 << 32) + 3).unwrap();
+        let ent0 = mk_ent(1 << 32);
+        let ent1 = mk_ent((1 << 32) + 1);
+        let ent2 = mk_ent((1 << 32) + 2);
 
         register(ent0, 0.0);
         register(ent1, 10.0);
@@ -388,7 +396,6 @@ mod tests {
         assert_eq!(
             d.query(
                 &map,
-                me,
                 DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(70.0)),
             ),
@@ -396,12 +403,11 @@ mod tests {
         );
         d.dispatches[&DispatchKind::FreightTrain]
             .reserved_by
-            .contains_key(&Entity::from_bits((1 << 32) + 1).unwrap());
+            .contains(&mk_ent((1 << 32) + 1));
 
         assert_eq!(
             d.query(
                 &map,
-                me,
                 DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(50.0)),
             ),
@@ -409,12 +415,11 @@ mod tests {
         );
         d.dispatches[&DispatchKind::FreightTrain]
             .reserved_by
-            .contains_key(&Entity::from_bits(1 << 32).unwrap());
+            .contains(&mk_ent(1 << 32));
 
         assert!(d
             .query(
                 &map,
-                me,
                 DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(50.0)),
             )
@@ -423,7 +428,6 @@ mod tests {
         assert_eq!(
             d.query(
                 &map,
-                me,
                 DispatchKind::FreightTrain,
                 DispatchQueryTarget::Lane(lid),
             ),
@@ -468,17 +472,16 @@ mod tests {
 
         let (lid, _) = map.roads[r2].lanes_iter().next().unwrap();
 
-        let mut register = |id: Entity, pos: f32| {
+        let mut register = |id: DispatchID, pos: f32| {
             d.dispatches
                 .entry(DispatchKind::FreightTrain)
                 .or_insert(DispatchOne::new(DispatchKind::FreightTrain.lane_kind()))
                 .register(id, &map, Vec3::x(pos))
         };
 
-        let ent0 = Entity::from_bits(1 << 32).unwrap();
-        let ent1 = Entity::from_bits((1 << 32) + 1).unwrap();
-        let ent2 = Entity::from_bits((1 << 32) + 2).unwrap();
-        let me = Entity::from_bits((1 << 32) + 3).unwrap();
+        let ent0 = mk_ent(1 << 32);
+        let ent1 = mk_ent((1 << 32) + 1);
+        let ent2 = mk_ent((1 << 32) + 2);
 
         register(ent0, 0.0);
         register(ent1, 10.0);
@@ -487,7 +490,6 @@ mod tests {
         assert_eq!(
             d.query(
                 &map,
-                me,
                 DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(70.0)),
             ),
@@ -495,12 +497,11 @@ mod tests {
         );
         d.dispatches[&DispatchKind::FreightTrain]
             .reserved_by
-            .contains_key(&Entity::from_bits((1 << 32) + 1).unwrap());
+            .contains(&mk_ent((1 << 32) + 1));
 
         assert_eq!(
             d.query(
                 &map,
-                me,
                 DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(50.0)),
             ),
@@ -508,12 +509,11 @@ mod tests {
         );
         d.dispatches[&DispatchKind::FreightTrain]
             .reserved_by
-            .contains_key(&Entity::from_bits(1 << 32).unwrap());
+            .contains(&mk_ent(1 << 32));
 
         assert!(d
             .query(
                 &map,
-                me,
                 DispatchKind::FreightTrain,
                 DispatchQueryTarget::Pos(Vec3::x(50.0)),
             )
@@ -522,7 +522,6 @@ mod tests {
         assert_eq!(
             d.query(
                 &map,
-                me,
                 DispatchKind::FreightTrain,
                 DispatchQueryTarget::Lane(lid),
             ),
@@ -532,6 +531,7 @@ mod tests {
 
     use crate::map::procgen::load_parismap;
     use easybench::bench;
+    use slotmap::KeyData;
 
     #[test]
     fn bench_query() {
@@ -575,7 +575,7 @@ mod tests {
 
         for i in 0..100 {
             start.register(
-                Entity::from_bits((1 << 32) + i).unwrap(),
+                mk_ent((1 << 32) + i),
                 &m,
                 Vec3::new(
                     minx + w * rand2(i as f32, 2.0),
@@ -604,7 +604,7 @@ mod tests {
 
         for i in 100..1000 {
             start.register(
-                Entity::from_bits((1 << 32) + i).unwrap(),
+                mk_ent((1 << 32) + i),
                 &m,
                 Vec3::new(
                     minx + w * rand2(i as f32, 2.0),
@@ -633,7 +633,7 @@ mod tests {
 
         for i in 1000..10000 {
             start.register(
-                Entity::from_bits((1 << 32) + i).unwrap(),
+                mk_ent((1 << 32) + i),
                 &m,
                 Vec3::new(
                     minx + w * rand2(i as f32, 2.0),

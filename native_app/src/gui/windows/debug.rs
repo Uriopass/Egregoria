@@ -4,15 +4,14 @@ use crate::game_loop::Timings;
 use crate::gui::InspectedEntity;
 use crate::network::NetworkState;
 use crate::uiworld::UiWorld;
-use egregoria::map_dynamic::{Itinerary, ParkingManagement};
+use egregoria::map_dynamic::ParkingManagement;
 use egregoria::physics::CollisionWorld;
 use egregoria::utils::time::{GameTime, Tick, SECONDS_PER_DAY};
-use egregoria::Egregoria;
+use egregoria::{Egregoria, TrainID};
 
 use crate::inputmap::InputMap;
 use egregoria::map::{IntersectionID, Map, RoadSegmentKind, TraverseKind};
 use egregoria::transportation::train::TrainReservations;
-use egregoria::transportation::{Pedestrian, Vehicle};
 use egui::Widget;
 use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use wgpu_engine::Tesselator;
@@ -170,14 +169,8 @@ pub(crate) fn debug(
             uiworld.commands().reset_save();
         }
 
-        ui.label(format!(
-            "{} pedestrians",
-            goria.world().query::<&Pedestrian>().iter().count()
-        ));
-        ui.label(format!(
-            "{} vehicles",
-            goria.world().query::<&Vehicle>().iter().count()
-        ));
+        ui.label(format!("{} pedestrians", goria.world().humans.len()));
+        ui.label(format!("{} vehicles", goria.world().vehicles.len()));
 
         ui.separator();
         ui.label("Game system times");
@@ -449,48 +442,36 @@ pub(crate) fn debug_trainreservations(
     }
     let selected = uiworld.read::<InspectedEntity>().e?;
 
-    for (me, (itin, kin, loco, locores)) in goria
-        .world()
-        .query::<(
-            &Itinerary,
-            &egregoria::physics::Speed,
-            &egregoria::transportation::train::Locomotive,
-            &egregoria::transportation::train::LocomotiveReservation,
-        )>()
-        .iter()
-    {
-        if me != selected {
-            continue;
-        }
-        if let Some(travers) = itin.get_travers() {
-            let dist_to_next = travers
-                .kind
-                .length(map.lanes(), map.intersections())
-                .unwrap_or(0.0)
-                - locores.cur_travers_dist;
+    let t_id: TrainID = selected.try_into().ok()?;
+    let t = goria.world().trains.get(t_id)?;
 
-            let stop_dist = kin.speed * kin.speed / (2.0 * loco.dec_force);
-            for (v, _, _, _) in egregoria::transportation::train::traverse_forward(
-                &map,
-                itin,
-                stop_dist + 15.0,
-                dist_to_next,
-                loco.length + 50.0,
-            ) {
-                match v {
-                    TraverseKind::Lane(_) => {}
-                    TraverseKind::Turn(t) => {
-                        if map
-                            .intersections()
-                            .get(t.parent)
-                            .map(|i| i.roads.len() <= 2)
-                            .unwrap_or(true)
-                        {
-                            continue;
-                        }
-                        tess.draw_circle(map.intersections().get(t.parent)?.pos.up(3.0), 3.5);
-                    }
+    let travers = t.it.get_travers()?;
+    let dist_to_next = travers
+        .kind
+        .length(map.lanes(), map.intersections())
+        .unwrap_or(0.0)
+        - t.res.cur_travers_dist;
+
+    let stop_dist = t.speed.0 * t.speed.0 / (2.0 * t.locomotive.dec_force);
+    for (v, _, _, _) in egregoria::transportation::train::traverse_forward(
+        &map,
+        &t.it,
+        stop_dist + 15.0,
+        dist_to_next,
+        t.locomotive.length + 50.0,
+    ) {
+        match v {
+            TraverseKind::Lane(_) => {}
+            TraverseKind::Turn(t) => {
+                if map
+                    .intersections()
+                    .get(t.parent)
+                    .map(|i| i.roads.len() <= 2)
+                    .unwrap_or(true)
+                {
+                    continue;
                 }
+                tess.draw_circle(map.intersections().get(t.parent)?.pos.up(3.0), 3.5);
             }
         }
     }
@@ -505,9 +486,9 @@ pub(crate) fn debug_pathfinder(
 ) -> Option<()> {
     let map: &Map = &goria.map();
     let selected = uiworld.read::<InspectedEntity>().e?;
-    let pos = goria.pos(selected)?;
+    let pos = goria.pos_any(selected)?;
 
-    let itinerary = goria.comp::<Itinerary>(selected)?;
+    let itinerary = goria.world().it_any(selected)?;
 
     tess.set_color(LinearColor::GREEN);
     tess.draw_polyline(

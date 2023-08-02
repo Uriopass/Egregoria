@@ -1,17 +1,16 @@
 use super::desire::Work;
-use crate::economy::{find_trade_place, Bought, ItemID, ItemRegistry, Market, Sold, Workers};
+use crate::economy::{find_trade_place, ItemID, ItemRegistry, Market};
 use crate::map::{Building, BuildingGen, BuildingID, Map, Zone, MAX_ZONE_AREA};
 use crate::map_dynamic::BuildingInfos;
 use crate::souls::desire::WorkKind;
-use crate::souls::freight_station::FreightStation;
-use crate::transportation::VehicleID;
 use crate::utils::resources::Resources;
 use crate::utils::time::GameTime;
+use crate::world::{CompanyEnt, HumanEnt, HumanID, VehicleID};
+use crate::World;
 use crate::{Egregoria, ParCommandBuffer, SoulID};
 use common::saveload::Encoder;
 use egui_inspect::Inspect;
 use geom::{Transform, Vec2};
-use hecs::{Entity, World};
 use serde::{Deserialize, Serialize};
 use slotmap::{new_key_type, SlotMap};
 
@@ -238,7 +237,7 @@ pub struct GoodsCompany {
     pub max_workers: i32,
     /// In [0; 1] range, to show how much has been made until new product
     pub progress: f32,
-    pub driver: Option<SoulID>,
+    pub driver: Option<HumanID>,
     pub trucks: Vec<VehicleID>,
 }
 
@@ -256,9 +255,17 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
     let height = b.height;
     drop(map);
 
-    let e = goria.world.spawn(());
+    let id = goria.world.insert(CompanyEnt {
+        trans: Transform::new(obb.center().z(height)),
+        comp: company,
+        workers: Default::default(),
+        sold: Default::default(),
+        bought: Default::default(),
+    });
 
-    let soul = SoulID(e);
+    let company = &goria.world.get(id).unwrap().comp;
+
+    let soul = SoulID::GoodsCompany(id);
 
     let job_opening = goria.read::<ItemRegistry>().id("job-opening");
 
@@ -274,141 +281,122 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
         .write::<BuildingInfos>()
         .set_owner(company.building, soul);
 
-    goria
-        .world
-        .insert(
-            e,
-            (
-                company,
-                Workers::default(),
-                Sold::default(),
-                Bought::default(),
-                Transform::new(obb.center().z(height)),
-            ),
-        )
-        .unwrap();
-
     Some(soul)
 }
 
 #[profiling::function]
 pub fn company_system(world: &mut World, res: &mut Resources) {
     let delta = res.get::<GameTime>().unwrap().delta;
-    let rb = res.get().unwrap();
-    let rc = res.get().unwrap();
-    let rd = res.get().unwrap();
-    let re = res.get().unwrap();
-    for (ent, (a, b, c, d)) in world
-        .query::<(&mut GoodsCompany, &mut Sold, &mut Bought, &Workers)>()
-        .iter()
-    {
-        company(delta, &rb, &rc, &rd, &re, ent, a, b, c, d, world);
-    }
-}
+    let cbuf: &ParCommandBuffer<CompanyEnt> = &res.get().unwrap();
+    let cbuf_human: &ParCommandBuffer<HumanEnt> = &res.get().unwrap();
+    let binfos: &BuildingInfos = &res.get().unwrap();
+    let market: &Market = &res.get().unwrap();
+    let map: &Map = &res.get().unwrap();
 
-pub fn company(
-    delta: f32,
-    cbuf: &ParCommandBuffer,
-    binfos: &BuildingInfos,
-    market: &Market,
-    map: &Map,
-    me: Entity,
-    company: &mut GoodsCompany,
-    sold: &mut Sold,
-    bought: &mut Bought,
-    workers: &Workers,
-    world: &World,
-) {
-    let n_workers = workers.0.len();
-    let soul = SoulID(me);
-    let b: &Building = unwrap_or!(map.buildings.get(company.building), {
-        cbuf.kill(me);
-        return;
-    });
-
-    if company.recipe.should_produce(soul, market) {
-        company.progress += company.productivity(n_workers, b.zone.as_ref())
-            / company.recipe.complexity as f32
-            * delta;
-    }
-
-    if company.progress >= 1.0 {
-        company.progress -= 1.0;
-        let recipe = company.recipe.clone();
-        let bpos = b.door_pos;
-
-        cbuf.exec_on(soul.0, move |market| {
-            recipe.act(soul, bpos.xy(), market);
+    world.companies.iter_mut().for_each(|(me, c)| {
+        let n_workers = c.workers.0.len();
+        let soul = SoulID::GoodsCompany(me);
+        let b: &Building = unwrap_or!(map.buildings.get(c.comp.building), {
+            cbuf.kill(me);
+            return;
         });
-        return;
-    }
 
-    for (_, trades) in bought.0.iter_mut() {
-        for trade in trades.drain(..) {
-            if let Some(owner_build) = find_trade_place(trade.seller, b.door_pos.xy(), binfos, map)
-            {
-                cbuf.exec_ent(soul.0, move |goria| {
-                    let (world, res) = goria.world_res();
-                    if let Some(owner) = res.get::<BuildingInfos>().unwrap().owner(owner_build) {
-                        if let Ok(mut f) = world.get::<&mut FreightStation>(owner.0) {
-                            f.wanted_cargo += 1;
+        if c.comp.recipe.should_produce(soul, market) {
+            c.comp.progress += c.comp.productivity(n_workers, b.zone.as_ref())
+                / c.comp.recipe.complexity as f32
+                * delta;
+        }
+
+        if c.comp.progress >= 1.0 {
+            c.comp.progress -= 1.0;
+            let recipe = c.comp.recipe.clone();
+            let bpos = b.door_pos;
+
+            cbuf.exec_on(me, move |market| {
+                recipe.act(soul, bpos.xy(), market);
+            });
+            return;
+        }
+
+        for (_, trades) in c.bought.0.iter_mut() {
+            for trade in trades.drain(..) {
+                if let Some(owner_build) =
+                    find_trade_place(trade.seller, b.door_pos.xy(), binfos, map)
+                {
+                    cbuf.exec_ent(me, move |goria| {
+                        let (world, res) = goria.world_res();
+                        if let Some(SoulID::FreightStation(owner)) =
+                            res.get::<BuildingInfos>().unwrap().owner(owner_build)
+                        {
+                            if let Some(mut f) = world.freight_stations.get_mut(owner) {
+                                f.f.wanted_cargo += 1;
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        if let Some(trade) = c.sold.0.drain(..1.min(c.sold.0.len())).next() {
+            if let Some(driver) = c.comp.driver {
+                if let Some(ref mut w) = world.humans.get(driver).and_then(|h| h.work) {
+                    if matches!(
+                        w.kind,
+                        WorkKind::Driver {
+                            deliver_order: None,
+                            ..
+                        }
+                    ) {
+                        if let Some(owner_build) =
+                            find_trade_place(trade.buyer, b.door_pos.xy(), binfos, map)
+                        {
+                            cbuf.exec_ent(me, move |goria| {
+                                if let Some(ref mut w) =
+                                    goria.world.humans.get(driver).and_then(|h| h.work)
+                                {
+                                    if let WorkKind::Driver {
+                                        ref mut deliver_order,
+                                        ..
+                                    } = w.kind
+                                    {
+                                        *deliver_order = Some(owner_build)
+                                    }
+                                }
+                            })
+                        } else {
+                            log::warn!("driver can't find the place to deliver for {:?}", &trade);
                         }
                     }
+                }
+            }
+        }
+
+        for &worker in c.workers.0.iter() {
+            let Some(w) = world.humans.get(worker) else { continue; };
+
+            if w.work.is_none() {
+                let mut kind = WorkKind::Worker;
+
+                if let Some(truck) = c.comp.trucks.get(0) {
+                    if matches!(c.comp.kind, CompanyKind::Factory { .. }) && c.comp.driver.is_none()
+                    {
+                        kind = WorkKind::Driver {
+                            deliver_order: None,
+                            truck: *truck,
+                        };
+
+                        c.comp.driver = Some(worker);
+                    }
+                }
+
+                let offset = common::rand::randu(common::hash_u64(worker) as u32);
+
+                let b = c.comp.building;
+                cbuf_human.exec_ent(worker, move |goria| {
+                    let Some(w) = goria.world.humans.get_mut(worker) else { return };
+                    w.work = Some(Work::new(b, kind, offset));
                 });
             }
         }
-    }
-
-    if let Some(trade) = sold.0.drain(..1.min(sold.0.len())).next() {
-        if let Some(driver) = company.driver {
-            if let Ok(w) = world.get::<&Work>(driver.0) {
-                if matches!(
-                    w.kind,
-                    WorkKind::Driver {
-                        deliver_order: None,
-                        ..
-                    }
-                ) {
-                    if let Some(owner_build) =
-                        find_trade_place(trade.buyer, b.door_pos.xy(), binfos, map)
-                    {
-                        cbuf.exec_ent(soul.0, move |goria| {
-                            if let Some(mut w) = goria.comp_mut::<Work>(driver.0) {
-                                if let WorkKind::Driver {
-                                    ref mut deliver_order,
-                                    ..
-                                } = w.kind
-                                {
-                                    *deliver_order = Some(owner_build)
-                                }
-                            }
-                        })
-                    } else {
-                        log::warn!("driver can't find the place to deliver for {:?}", &trade);
-                    }
-                }
-            }
-        }
-    }
-
-    for &worker in workers.0.iter() {
-        if world.get::<&Work>(worker.0).is_err() {
-            let mut kind = WorkKind::Worker;
-
-            if let Some(truck) = company.trucks.get(0) {
-                if matches!(company.kind, CompanyKind::Factory { .. }) && company.driver.is_none() {
-                    kind = WorkKind::Driver {
-                        deliver_order: None,
-                        truck: *truck,
-                    };
-
-                    company.driver = Some(worker);
-                }
-            }
-
-            let offset = common::rand::randu(common::hash_u64(worker) as u32);
-
-            cbuf.add_component(worker.0, Work::new(company.building, kind, offset))
-        }
-    }
+    });
 }

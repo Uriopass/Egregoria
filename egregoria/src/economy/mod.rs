@@ -8,9 +8,9 @@
 //! - The government, which is the entity representing the player
 //!
 use crate::utils::resources::Resources;
+use crate::World;
 use crate::{GoodsCompanyRegistry, SoulID};
 use egui_inspect::Inspect;
-use hecs::World;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
@@ -22,8 +22,8 @@ mod government;
 mod item;
 mod market;
 
-use crate::souls::human::BasicWorker;
 use crate::utils::time::{Tick, TICKS_PER_SECOND};
+use crate::world::HumanID;
 pub use ecostats::*;
 pub use government::*;
 pub use item::*;
@@ -36,6 +36,8 @@ const WORKER_CONSUMPTION_PER_SECOND: Money = Money::new_cents(1);
 #[serde(transparent)]
 #[repr(transparent)]
 pub struct Money(i64);
+
+debug_inspect_impl!(Money);
 
 impl Display for Money {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -153,14 +155,14 @@ impl Money {
     }
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Inspect, Default, Serialize, Deserialize)]
 pub struct Sold(pub Vec<Trade>);
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Inspect, Default, Serialize, Deserialize)]
 pub struct Bought(pub BTreeMap<ItemID, Vec<Trade>>);
 
-#[derive(Debug, Default, Serialize, Deserialize, Inspect)]
-pub struct Workers(pub Vec<SoulID>);
+#[derive(Inspect, Debug, Default, Serialize, Deserialize)]
+pub struct Workers(pub Vec<HumanID>);
 
 #[cfg(not(test))]
 const ITEMS_PATH: &str = "assets/items.json";
@@ -193,7 +195,7 @@ pub fn init_market(_: &mut World, res: &mut Resources) {
 
 #[profiling::function]
 pub fn market_update(world: &mut World, resources: &mut Resources) {
-    let n_workers = world.query::<&BasicWorker>().into_iter().len();
+    let n_workers = world.humans.len();
 
     let mut m = resources.get_mut::<Market>().unwrap();
     let job_opening = resources.get::<ItemRegistry>().unwrap().id("job-opening");
@@ -215,20 +217,18 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
         log::debug!("A trade was made! {:?}", trade);
 
         if trade.kind == job_opening {
-            // Jobs are guaranteed to not be external
-            world
-                .get::<&mut Workers>(trade.seller.soul().0)
-                .expect("employer has no component Workers")
-                .0
-                .push(trade.buyer.soul());
+            if let SoulID::GoodsCompany(id) = trade.seller.soul() {
+                let comp = world.companies.get_mut(id).unwrap();
+                comp.workers.0.push(trade.buyer.soul().try_into().unwrap())
+            }
         }
         gvt.money += trade.money_delta;
 
         match trade.seller {
             TradeTarget::Soul(id) => {
                 if trade.kind != job_opening {
-                    if let Ok(mut v) = world.get::<&mut Sold>(id.0) {
-                        v.0.push(trade)
+                    if let SoulID::GoodsCompany(id) = id {
+                        world.companies.get_mut(id).unwrap().sold.0.push(trade);
                     }
                 }
             }
@@ -236,11 +236,17 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
         }
 
         match trade.buyer {
-            TradeTarget::Soul(id) => {
-                if let Ok(mut v) = world.get::<&mut Bought>(id.0) {
-                    v.0.entry(trade.kind).or_default().push(trade);
+            TradeTarget::Soul(SoulID::Human(id)) => {
+                if let Some(h) = world.humans.get_mut(id) {
+                    h.bought.0.entry(trade.kind).or_default().push(trade);
                 }
             }
+            TradeTarget::Soul(SoulID::GoodsCompany(id)) => {
+                if let Some(c) = world.companies.get_mut(id) {
+                    c.bought.0.entry(trade.kind).or_default().push(trade)
+                }
+            }
+            TradeTarget::Soul(SoulID::FreightStation(_)) => {}
             TradeTarget::ExternalTrade => {}
         }
     }

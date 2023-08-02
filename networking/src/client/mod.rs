@@ -128,7 +128,7 @@ impl<W: DeserializeOwned, I: Serialize + DeserializeOwned + Default> Client<W, I
 
         while let Some(data) = self.net.recv_udp() {
             if let Some(packet) = decode(&data) {
-                let _ = self.message_unreliable(packet);
+                self.message_unreliable(packet);
             } else {
                 log::error!("could not decode unreliable packet from server");
             }

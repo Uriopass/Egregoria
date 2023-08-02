@@ -16,7 +16,6 @@ resolver = "2"
 default-members = ["native_app"]
 
 [workspace.dependencies]
-hecs = "0.10.0"
 egui = "0.22.0"
 flat_spatial = "0.5.1"
 egui-wgpu = "0.22.0"
