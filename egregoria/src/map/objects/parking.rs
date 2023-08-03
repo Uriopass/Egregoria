@@ -3,7 +3,7 @@ use flat_spatial::Grid;
 use geom::{Transform, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use slotmap::{new_key_type, SecondaryMap, SlotMap};
+use slotmapd::{new_key_type, SecondaryMap, SlotMap};
 
 new_key_type! {
     pub struct ParkingSpotID;
@@ -71,7 +71,6 @@ impl ParkingSpots {
 
     pub fn generate_spots(&mut self, lane: &Lane) {
         debug_assert!(matches!(lane.kind, LaneKind::Parking));
-        log::info!("generating spots for {:?}", lane.id);
         if self.lane_spots.contains_key(lane.id) {
             self.remove_to_reuse(lane.id);
         }
@@ -100,7 +99,6 @@ impl ParkingSpots {
 
                         reuse.remove_maintain(h);
                         if let Some(p) = spots.get_mut(spot_id) {
-                            log::info!("{:?} r{}", spot_id, pos);
                             *p = ParkingSpot {
                                 parent,
                                 trans: Transform::new_dir(pos, dir),
@@ -116,7 +114,6 @@ impl ParkingSpots {
                     parent,
                     trans: Transform::new_dir(pos, dir),
                 });
-                log::info!("{:?} {}", k, pos);
                 k
             })
             .collect();

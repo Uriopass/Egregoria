@@ -9,7 +9,7 @@ use crate::world::{VehicleEnt, VehicleID};
 use crate::ParCommandBuffer;
 use crate::World;
 use geom::{angle_lerpxy, Ray, Transform, Vec2, Vec3};
-use slotmap::Key;
+use slotmapd::Key;
 
 #[profiling::function]
 pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {

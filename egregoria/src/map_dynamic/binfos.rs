@@ -1,7 +1,7 @@
 use crate::map::BuildingID;
 use crate::SoulID;
 use serde::{Deserialize, Serialize};
-use slotmap::SecondaryMap;
+use slotmapd::SecondaryMap;
 use std::collections::BTreeMap;
 
 #[derive(Clone, Default, Serialize, Deserialize, Debug)]

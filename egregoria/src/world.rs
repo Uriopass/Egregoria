@@ -16,8 +16,8 @@ use crate::{impl_entity, impl_trans, SoulID};
 use derive_more::{From, TryInto};
 use geom::{Transform, Vec2, Vec3};
 use serde::Deserialize;
-use slotmap::__impl::Serialize;
-use slotmap::{new_key_type, SlotMap};
+use slotmapd::__impl::Serialize;
+use slotmapd::{new_key_type, SlotMap};
 
 new_key_type! {
     pub struct VehicleID;
@@ -316,7 +316,7 @@ pub trait Entity: 'static + Sized + Send {
 }
 
 /// A trait that describes an entity id to be able to find an Entity from an ID
-pub trait EntityID: 'static + slotmap::Key + Send {
+pub trait EntityID: 'static + slotmapd::Key + Send {
     type Entity: Entity<ID = Self>;
 }
 

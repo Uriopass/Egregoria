@@ -4,7 +4,7 @@ use crate::souls::goods_company::GoodsCompanyID;
 use egui_inspect::debug_inspect_impl;
 use geom::{Color, Polygon, Vec2, Vec3, OBB};
 use serde::{Deserialize, Serialize};
-use slotmap::new_key_type;
+use slotmapd::new_key_type;
 
 new_key_type! {
     pub struct BuildingID;

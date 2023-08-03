@@ -2,7 +2,7 @@ use crate::map::{IntersectionID, Lanes, Road, RoadID, TrafficControl, TraverseDi
 use egui_inspect::Inspect;
 use geom::{PolyLine3, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
-use slotmap::new_key_type;
+use slotmapd::new_key_type;
 
 new_key_type! {
     pub struct LaneID;

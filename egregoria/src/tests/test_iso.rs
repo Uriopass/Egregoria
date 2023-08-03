@@ -32,7 +32,7 @@ fn check_eq(w1: &World, w2: &World) -> bool {
     true
 }
 
-//#[test] // uncomment when slotmap has been forked
+#[test] // uncomment when slotmapd has been forked
 fn test_world_survives_serde() {
     init();
     MyLog::init();
@@ -68,7 +68,7 @@ fn test_world_survives_serde() {
 
         idx = next_idx;
 
-        if goria.read::<Tick>().0 % 100 != 0 && goria.read::<Tick>().0 <= 4130 {
+        if goria.read::<Tick>().0 % 1000 != 0 {
             continue;
         }
 

@@ -7,7 +7,7 @@ use egregoria::Egregoria;
 use egui::plot::{Line, PlotPoints};
 use egui::{Align2, Color32, Ui};
 use geom::Color;
-use slotmap::Key;
+use slotmapd::Key;
 use std::cmp::Reverse;
 use std::collections::HashSet;
 

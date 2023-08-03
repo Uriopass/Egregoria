@@ -1,6 +1,6 @@
 use crate::{GfxContext, Texture, TextureBuilder, ToU8Slice};
 use image::DynamicImage;
-use slotmap::new_key_type;
+use slotmapd::new_key_type;
 use std::sync::Arc;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -13,7 +13,7 @@ new_key_type! {
     pub struct MaterialID;
 }
 
-pub type MaterialMap = slotmap::SlotMap<MaterialID, Material>;
+pub type MaterialMap = slotmapd::SlotMap<MaterialID, Material>;
 
 pub struct Material {
     pub bg: BindGroup,

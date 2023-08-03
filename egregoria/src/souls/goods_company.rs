@@ -12,7 +12,7 @@ use common::saveload::Encoder;
 use egui_inspect::Inspect;
 use geom::{Transform, Vec2};
 use serde::{Deserialize, Serialize};
-use slotmap::{new_key_type, SlotMap};
+use slotmapd::{new_key_type, SlotMap};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Inspect)]
 pub struct Recipe {

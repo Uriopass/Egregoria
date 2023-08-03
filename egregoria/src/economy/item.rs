@@ -1,7 +1,7 @@
 use common::saveload::Encoder;
 use common::FastMap;
 use serde::{Deserialize, Serialize};
-use slotmap::{new_key_type, SlotMap};
+use slotmapd::{new_key_type, SlotMap};
 use std::ops::Index;
 
 /// ItemDefinition is the definition of an item, as read from the items.json file.

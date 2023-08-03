@@ -6,7 +6,7 @@ use egregoria::Egregoria;
 use flat_spatial::grid::GridHandle;
 use geom::{Camera, AABB};
 use oddio::{Cycle, Gain, Seek, Speed, Stop};
-use slotmap::SecondaryMap;
+use slotmapd::SecondaryMap;
 
 /// CarSound is the sound of a single car
 pub(crate) struct CarSound {

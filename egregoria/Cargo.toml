@@ -14,7 +14,7 @@ egui-inspect = { path = "../egui-inspect"}
 flat_spatial = { workspace = true, features=["serde"] }
 geom          = { path = "../geom" }
 common        = { path = "../common" }
-slotmap       = { version = "1.0.2", default-features = false, features = ["serde", "unstable"] }
+slotmapd       = { version = "1.0", default-features = false, features = ["serde", "unstable"] }
 rayon         = "1.6"
 atomic_refcell = "0.1.6"
 profiling     = "1.0.5"

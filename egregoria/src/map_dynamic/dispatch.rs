@@ -531,7 +531,7 @@ mod tests {
 
     use crate::map::procgen::load_parismap;
     use easybench::bench;
-    use slotmap::KeyData;
+    use slotmapd::KeyData;
 
     #[test]
     fn bench_query() {

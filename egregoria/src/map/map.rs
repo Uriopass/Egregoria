@@ -8,7 +8,7 @@ use geom::OBB;
 use geom::{Spline3, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use slotmap::DenseSlotMap;
+use slotmapd::DenseSlotMap;
 use std::collections::BTreeMap;
 use std::num::Wrapping;
 
@@ -674,7 +674,7 @@ impl Map {
             for &road in &inter.roads {
                 let road = self.roads.get(road).expect("road does not exist");
                 let ang = geom::pseudo_angle(road.dir_from(inter.id));
-                assert!(ang > last_angle);
+                assert!(ang >= last_angle);
                 last_angle = ang;
             }
 

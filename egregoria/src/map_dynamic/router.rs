@@ -8,7 +8,7 @@ use crate::{ParCommandBuffer, World};
 use egui_inspect::Inspect;
 use geom::{Spline3, Transform, Vec3};
 use serde::{Deserialize, Serialize};
-use slotmap::SlotMap;
+use slotmapd::SlotMap;
 
 #[derive(Inspect, Serialize, Deserialize)]
 pub struct Router {

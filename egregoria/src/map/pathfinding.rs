@@ -6,7 +6,7 @@ use common::hash_u64;
 use geom::{PolyLine3, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use slotmap::Key;
+use slotmapd::Key;
 
 pub trait Pathfinder {
     fn path(

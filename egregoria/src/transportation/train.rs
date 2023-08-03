@@ -7,7 +7,7 @@ use egui_inspect::Inspect;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use slotmap::SlotMap;
+use slotmapd::SlotMap;
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 

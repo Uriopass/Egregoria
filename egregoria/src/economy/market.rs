@@ -445,7 +445,7 @@ mod tests {
     use geom::{vec2, Vec2};
 
     fn mk_ent(id: u64) -> CompanyID {
-        CompanyID::from(slotmap::KeyData::from_ffi(id))
+        CompanyID::from(slotmapd::KeyData::from_ffi(id))
     }
 
     #[test]

@@ -6,7 +6,7 @@ use geom::Spline3;
 use geom::{BoldLine, PolyLine3};
 use geom::{Vec2, Vec3};
 use serde::{Deserialize, Serialize};
-use slotmap::new_key_type;
+use slotmapd::new_key_type;
 
 new_key_type! {
     pub struct RoadID;

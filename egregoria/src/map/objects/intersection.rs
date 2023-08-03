@@ -6,7 +6,7 @@ use geom::{pseudo_angle, Circle};
 use geom::{Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use slotmap::new_key_type;
+use slotmapd::new_key_type;
 use std::collections::BTreeSet;
 
 new_key_type! {

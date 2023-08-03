@@ -3,7 +3,7 @@ use geom::Vec2;
 use geom::OBB;
 use geom::{Circle, Vec3};
 use serde::{Deserialize, Serialize};
-use slotmap::new_key_type;
+use slotmapd::new_key_type;
 
 new_key_type! {
     pub struct LotID;
