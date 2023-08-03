@@ -8,15 +8,15 @@ use geom::OBB;
 use geom::{Spline3, Vec2, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use slotmapd::DenseSlotMap;
+use slotmapd::HopSlotMap;
 use std::collections::BTreeMap;
 use std::num::Wrapping;
 
-pub type Roads = DenseSlotMap<RoadID, Road>;
-pub type Lanes = DenseSlotMap<LaneID, Lane>;
-pub type Intersections = DenseSlotMap<IntersectionID, Intersection>;
-pub type Buildings = DenseSlotMap<BuildingID, Building>;
-pub type Lots = DenseSlotMap<LotID, Lot>;
+pub type Roads = HopSlotMap<RoadID, Road>;
+pub type Lanes = HopSlotMap<LaneID, Lane>;
+pub type Intersections = HopSlotMap<IntersectionID, Intersection>;
+pub type Buildings = HopSlotMap<BuildingID, Building>;
+pub type Lots = HopSlotMap<LotID, Lot>;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct MapProject {

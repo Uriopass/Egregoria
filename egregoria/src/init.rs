@@ -22,7 +22,7 @@ use crate::{
     ParCommandBuffer, RandProvider, Replay, RunnableSystem, RNG_SEED, SECONDS_PER_DAY,
     SECONDS_PER_HOUR,
 };
-use common::saveload::Encoder;
+use common::saveload::{Bincode, Encoder};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -52,25 +52,25 @@ pub fn init() {
     register_resource_noserialize::<ParCommandBuffer<WagonEnt>>();
     register_resource_noserialize::<ParCommandBuffer<FreightStationEnt>>();
     register_resource_noserialize::<ParCommandBuffer<CompanyEnt>>();
-    register_resource_noinit::<Market>("market");
-    register_resource_noinit::<EcoStats>("ecostats");
-    register_resource_noinit::<EgregoriaOptions>("egregoriaoptions");
+    register_resource_noinit::<Market, Bincode>("market");
+    register_resource_noinit::<EcoStats, Bincode>("ecostats");
+    register_resource_noinit::<EgregoriaOptions, Bincode>("egregoriaoptions");
 
     register_init(init_market);
 
-    register_resource("tick", Tick::default);
-    register_resource("map", Map::default);
-    register_resource("train_reservations", TrainReservations::default);
-    register_resource("government", Government::default);
-    register_resource("pmanagement", ParkingManagement::default);
-    register_resource("binfos", BuildingInfos::default);
-    register_resource("game_time", || {
+    register_resource_default::<Tick, Bincode>("tick");
+    register_resource_default::<Map, Bincode>("map");
+    register_resource_default::<TrainReservations, Bincode>("train_reservations");
+    register_resource_default::<Government, Bincode>("government");
+    register_resource_default::<ParkingManagement, Bincode>("pmanagement");
+    register_resource_default::<BuildingInfos, Bincode>("binfos");
+    register_resource::<GameTime, Bincode>("game_time", || {
         GameTime::new(0.0, SECONDS_PER_DAY as f64 + 10.0 * SECONDS_PER_HOUR as f64)
     });
-    register_resource("coworld", || CollisionWorld::new(100));
-    register_resource("randprovider", || RandProvider::new(RNG_SEED));
-    register_resource("dispatcher", Dispatcher::default);
-    register_resource("replay", Replay::default);
+    register_resource::<CollisionWorld, Bincode>("coworld", || CollisionWorld::new(100));
+    register_resource::<RandProvider, Bincode>("randprovider", || RandProvider::new(RNG_SEED));
+    register_resource_default::<Dispatcher, Bincode>("dispatcher");
+    register_resource_default::<Replay, Bincode>("replay");
 }
 
 pub struct InitFunc {
@@ -128,7 +128,16 @@ fn register_resource_noserialize<T: 'static + Default + Send + Sync>() {
     }
 }
 
-fn register_resource<T: 'static + Send + Sync + Serialize + DeserializeOwned>(
+fn register_resource_default<
+    T: 'static + Send + Sync + Serialize + DeserializeOwned + Default,
+    E: Encoder,
+>(
+    name: &'static str,
+) {
+    register_resource::<T, E>(name, T::default);
+}
+
+fn register_resource<T: 'static + Send + Sync + Serialize + DeserializeOwned, E: Encoder>(
     name: &'static str,
     initializer: impl Fn() -> T + 'static,
 ) {
@@ -136,21 +145,19 @@ fn register_resource<T: 'static + Send + Sync + Serialize + DeserializeOwned>(
         INIT_FUNCS.push(InitFunc {
             f: Box::new(move |uiw| uiw.insert(initializer())),
         });
-        register_resource_noinit::<T>(name);
+        register_resource_noinit::<T, E>(name);
     }
 }
 
-fn register_resource_noinit<T: 'static + Send + Sync + Serialize + DeserializeOwned>(
+fn register_resource_noinit<T: 'static + Send + Sync + Serialize + DeserializeOwned, E: Encoder>(
     name: &'static str,
 ) {
     unsafe {
         SAVELOAD_FUNCS.push(SaveLoadFunc {
             name,
-            save: Box::new(move |uiworld| {
-                <common::saveload::Bincode as Encoder>::encode(&*uiworld.read::<T>()).unwrap()
-            }),
+            save: Box::new(move |uiworld| E::encode(&*uiworld.read::<T>()).unwrap()),
             load: Box::new(move |uiworld, data| {
-                if let Ok(res) = <common::saveload::Bincode as Encoder>::decode::<T>(&data) {
+                if let Ok(res) = E::decode::<T>(&data) {
                     uiworld.insert(res);
                 }
             }),

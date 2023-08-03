@@ -198,25 +198,27 @@ impl Egregoria {
         &mut self.world
     }
 
-    pub fn assert_equal(&self, other: &Self) {
-        assert_eq!(
-            self.resources.iter().count(),
-            other.resources.iter().count()
-        );
-
-        let serhashes = self.hashes();
-        let deserhashes = other.hashes();
-
-        for (key, hash) in deserhashes.iter() {
-            assert_eq!(serhashes.get(key), Some(hash), "key: {:?}", key,);
+    pub fn is_equal(&self, other: &Self) -> bool {
+        if self.resources.iter().count() != other.resources.iter().count() {
+            return false;
         }
 
-        for (key, hash) in serhashes.iter() {
-            if deserhashes.get(key).is_some() {
-                continue;
+        unsafe {
+            for l in &SAVELOAD_FUNCS {
+                let a = (l.save)(self);
+                let b = (l.save)(other);
+
+                if a != b {
+                    std::fs::write(format!("{}_a.json", l.name), &*String::from_utf8_lossy(&a))
+                        .unwrap();
+                    std::fs::write(format!("{}_b.json", l.name), &*String::from_utf8_lossy(&b))
+                        .unwrap();
+                    return false;
+                }
             }
-            assert_eq!(deserhashes.get(key), Some(hash), "key: {:?}", key,);
         }
+
+        true
     }
 
     #[profiling::function]

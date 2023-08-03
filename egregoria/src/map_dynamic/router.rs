@@ -8,7 +8,7 @@ use crate::{ParCommandBuffer, World};
 use egui_inspect::Inspect;
 use geom::{Spline3, Transform, Vec3};
 use serde::{Deserialize, Serialize};
-use slotmapd::SlotMap;
+use slotmapd::HopSlotMap;
 
 #[derive(Inspect, Serialize, Deserialize)]
 pub struct Router {
@@ -338,7 +338,7 @@ impl Router {
         parking: &mut ParkingManagement,
         map: &Map,
         loc: &Location,
-        cars: &SlotMap<VehicleID, VehicleEnt>,
+        cars: &HopSlotMap<VehicleID, VehicleEnt>,
     ) -> Result<Vec<RoutingStep>, RouterError> {
         let mut steps = vec![];
         if let Location::Building(cur_build) = loc {

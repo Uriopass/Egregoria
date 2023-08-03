@@ -7,7 +7,7 @@ use egui_inspect::Inspect;
 use geom::{PolyLine3, Polyline3Queue, Transform, Vec3};
 use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
-use slotmapd::SlotMap;
+use slotmapd::HopSlotMap;
 use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 
@@ -358,7 +358,7 @@ pub fn locomotive_desired_speed(
     me: TrainID,
     map: &Map,
     reservs: &TrainReservations,
-    locos: &SlotMap<TrainID, TrainEnt>,
+    locos: &HopSlotMap<TrainID, TrainEnt>,
     t: &TrainEnt,
 ) -> f32 {
     if matches!(

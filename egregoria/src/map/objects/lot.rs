@@ -4,6 +4,7 @@ use geom::OBB;
 use geom::{Circle, Vec3};
 use serde::{Deserialize, Serialize};
 use slotmapd::new_key_type;
+use std::collections::BTreeSet;
 
 new_key_type! {
     pub struct LotID;
@@ -110,10 +111,10 @@ impl Lot {
 
     pub fn remove_intersecting_lots(map: &mut Map, road: RoadID) {
         let r = unwrap_retlog!(map.roads.get(road), "{:?} does not exist", road);
-        let mut to_remove = map
+        let mut to_remove: BTreeSet<_> = map
             .spatial_map
             .query(r.boldline(), ProjectFilter::LOT)
-            .collect::<Vec<_>>();
+            .collect();
 
         let mut rp = |p: Circle| to_remove.extend(map.spatial_map.query(p, ProjectFilter::LOT));
         rp(unwrap_ret!(map.intersections.get(r.src)).bcircle(&map.roads));

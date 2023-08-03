@@ -17,7 +17,7 @@ use derive_more::{From, TryInto};
 use geom::{Transform, Vec2, Vec3};
 use serde::Deserialize;
 use slotmapd::__impl::Serialize;
-use slotmapd::{new_key_type, SlotMap};
+use slotmapd::{new_key_type, HopSlotMap};
 
 new_key_type! {
     pub struct VehicleID;
@@ -185,12 +185,12 @@ impl GoriaDrop for CompanyEnt {
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct World {
-    pub vehicles: SlotMap<VehicleID, VehicleEnt>,
-    pub humans: SlotMap<HumanID, HumanEnt>,
-    pub trains: SlotMap<TrainID, TrainEnt>,
-    pub wagons: SlotMap<WagonID, WagonEnt>,
-    pub freight_stations: SlotMap<FreightStationID, FreightStationEnt>,
-    pub companies: SlotMap<CompanyID, CompanyEnt>,
+    pub vehicles: HopSlotMap<VehicleID, VehicleEnt>,
+    pub humans: HopSlotMap<HumanID, HumanEnt>,
+    pub trains: HopSlotMap<TrainID, TrainEnt>,
+    pub wagons: HopSlotMap<WagonID, WagonEnt>,
+    pub freight_stations: HopSlotMap<FreightStationID, FreightStationEnt>,
+    pub companies: HopSlotMap<CompanyID, CompanyEnt>,
 }
 
 impl World {
@@ -198,11 +198,11 @@ impl World {
         <<E as EntityID>::Entity as Entity>::storage(self).get(id)
     }
 
-    pub fn storage<E: Entity>(&self) -> &SlotMap<E::ID, E> {
+    pub fn storage<E: Entity>(&self) -> &HopSlotMap<E::ID, E> {
         E::storage(self)
     }
 
-    pub fn storage_id<E: EntityID>(&self, _: E) -> &SlotMap<E, E::Entity> {
+    pub fn storage_id<E: EntityID>(&self, _: E) -> &HopSlotMap<E, E::Entity> {
         E::Entity::storage(self)
     }
 
@@ -311,8 +311,8 @@ impl World {
 pub trait Entity: 'static + Sized + Send {
     type ID: EntityID<Entity = Self>;
 
-    fn storage(w: &World) -> &SlotMap<Self::ID, Self>;
-    fn storage_mut(w: &mut World) -> &mut SlotMap<Self::ID, Self>;
+    fn storage(w: &World) -> &HopSlotMap<Self::ID, Self>;
+    fn storage_mut(w: &mut World) -> &mut HopSlotMap<Self::ID, Self>;
 }
 
 /// A trait that describes an entity id to be able to find an Entity from an ID
@@ -345,11 +345,11 @@ mod macros {
             impl Entity for $obj {
                 type ID = $id;
 
-                fn storage(w: &World) -> &SlotMap<Self::ID, Self> {
+                fn storage(w: &World) -> &HopSlotMap<Self::ID, Self> {
                     &w.$s
                 }
 
-                fn storage_mut(w: &mut World) -> &mut SlotMap<Self::ID, Self> {
+                fn storage_mut(w: &mut World) -> &mut HopSlotMap<Self::ID, Self> {
                     &mut w.$s
                 }
             }

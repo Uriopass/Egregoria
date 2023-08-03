@@ -1,4 +1,5 @@
 use crate::map::{BuildingID, IntersectionID, LotID, Map, RoadID};
+use derive_more::From;
 use flat_spatial::aabbgrid::AABBGridHandle;
 use flat_spatial::AABBGrid;
 use geom::{Circle, Intersect, Shape, ShapeEnum, Vec2, AABB};
@@ -6,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::{BitOr, Neg, Sub};
 
-#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize, From)]
 pub enum ProjectKind {
     Inter(IntersectionID),
     Road(RoadID),
@@ -14,21 +15,6 @@ pub enum ProjectKind {
     Lot(LotID),
     Ground,
 }
-
-macro_rules! impl_from_pk {
-    ($t: ty, $e: expr) => {
-        impl From<$t> for ProjectKind {
-            fn from(x: $t) -> Self {
-                $e(x)
-            }
-        }
-    };
-}
-
-impl_from_pk!(IntersectionID, ProjectKind::Inter);
-impl_from_pk!(RoadID, ProjectKind::Road);
-impl_from_pk!(BuildingID, ProjectKind::Building);
-impl_from_pk!(LotID, ProjectKind::Lot);
 
 impl ProjectKind {
     pub fn to_lot(self) -> Option<LotID> {
