@@ -121,7 +121,10 @@ impl Map {
         interpoint: Option<Vec2>,
         pattern: &LanePattern,
     ) -> Option<(IntersectionID, RoadID)> {
-        if !from.kind.check_valid(self) || !to.kind.check_valid(self) {
+        if !from.kind.check_valid(self)
+            || !to.kind.check_valid(self)
+            || from.pos.distance(to.pos) < 1.0
+        {
             return None;
         }
 
