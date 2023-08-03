@@ -52,7 +52,7 @@ pub use world::*;
 use crate::engine_interaction::WorldCommand::Init;
 use crate::init::{GSYSTEMS, INIT_FUNCS, SAVELOAD_FUNCS};
 use crate::utils::scheduler::RunnableSystem;
-use crate::utils::time::Tick;
+use crate::utils::time::{Tick, SECONDS_PER_REALTIME_SECOND};
 use common::FastMap;
 pub use utils::config::*;
 pub use utils::par_command_buffer::ParCommandBuffer;
@@ -240,7 +240,10 @@ impl Egregoria {
         const WORLD_TICK_DT: f32 = 0.05;
         {
             let mut time = self.write::<GameTime>();
-            *time = GameTime::new(WORLD_TICK_DT, time.timestamp + WORLD_TICK_DT as f64);
+            *time = GameTime::new(
+                WORLD_TICK_DT,
+                time.timestamp + SECONDS_PER_REALTIME_SECOND as f64 * WORLD_TICK_DT as f64,
+            );
         }
 
         game_schedule.execute(self);

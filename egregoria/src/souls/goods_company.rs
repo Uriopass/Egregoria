@@ -286,7 +286,7 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
 
 #[profiling::function]
 pub fn company_system(world: &mut World, res: &mut Resources) {
-    let delta = res.get::<GameTime>().unwrap().delta;
+    let delta = res.get::<GameTime>().unwrap().realdelta;
     let cbuf: &ParCommandBuffer<CompanyEnt> = &res.get().unwrap();
     let cbuf_human: &ParCommandBuffer<HumanEnt> = &res.get().unwrap();
     let binfos: &BuildingInfos = &res.get().unwrap();

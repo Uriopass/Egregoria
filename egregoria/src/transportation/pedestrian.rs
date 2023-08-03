@@ -78,7 +78,7 @@ pub fn pedestrian_decision(
 ) {
     let (desired_v, desired_dir) = calc_decision(pedestrian, trans, it);
 
-    pedestrian.walk_anim += 7.0 * kin.0 * time.delta / pedestrian.walking_speed;
+    pedestrian.walk_anim += 7.0 * kin.0 * time.realdelta / pedestrian.walking_speed;
     pedestrian.walk_anim %= 2.0 * std::f32::consts::PI;
     physics(kin, trans, time, desired_v, desired_dir);
 }
@@ -93,12 +93,12 @@ pub fn physics(
     desired_dir: Vec3,
 ) {
     let diff = desired_velocity - kin.0;
-    let mag = diff.min(time.delta * PEDESTRIAN_ACC);
+    let mag = diff.min(time.realdelta * PEDESTRIAN_ACC);
     if mag > 0.0 {
         kin.0 += mag;
     }
     const ANG_VEL: f32 = 1.0;
-    trans.dir = angle_lerpxy(trans.dir, desired_dir, ANG_VEL * time.delta);
+    trans.dir = angle_lerpxy(trans.dir, desired_dir, ANG_VEL * time.realdelta);
 }
 
 pub fn calc_decision(

@@ -110,7 +110,7 @@ pub fn vehicle_state_update(
     match vehicle.state {
         VehicleState::RoadToPark(_, ref mut t, _) => {
             // Vehicle is on rails when parking.
-            *t += time.delta / TIME_TO_PARK;
+            *t += time.realdelta / TIME_TO_PARK;
 
             if *t >= 1.0 {
                 let v = coll.take();
@@ -168,21 +168,21 @@ fn physics(
 
     let speed = speed
         + (desired_speed - speed).clamp(
-            -time.delta * kind.deceleration(),
-            time.delta * kind.acceleration(),
+        -time.realdelta * kind.deceleration(),
+        time.realdelta * kind.acceleration(),
         );
 
     let max_ang_vel = (speed.abs() / kind.min_turning_radius()).clamp(0.0, 3.0);
 
     let approx_angle = trans.dir.distance(desired_dir);
 
-    vehicle.ang_velocity += time.delta * kind.ang_acc();
+    vehicle.ang_velocity += time.realdelta * kind.ang_acc();
     vehicle.ang_velocity = vehicle
         .ang_velocity
         .min(4.0 * approx_angle)
         .min(max_ang_vel);
 
-    trans.dir = angle_lerpxy(trans.dir, desired_dir, vehicle.ang_velocity * time.delta);
+    trans.dir = angle_lerpxy(trans.dir, desired_dir, vehicle.ang_velocity * time.realdelta);
 
     kin.0 = speed;
 }
@@ -200,7 +200,7 @@ pub fn calc_decision<'a>(
 ) -> (f32, Vec3) {
     let default_return = (0.0, trans.dir);
     if vehicle.wait_time > 0.0 {
-        vehicle.wait_time -= time.delta;
+        vehicle.wait_time -= time.realdelta;
         return default_return;
     }
     let objective: Vec3 = unwrap_or!(it.get_point(), return default_return);

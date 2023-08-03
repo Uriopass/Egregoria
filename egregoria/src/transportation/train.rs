@@ -336,21 +336,21 @@ pub fn locomotive_system(world: &mut World, resources: &mut Resources) {
         t.trans.dir = desired_dir;
 
         t.speed.0 += (desired_speed - t.speed.0).clamp(
-            -time.delta * t.locomotive.dec_force,
-            time.delta * t.locomotive.acc_force,
+            -time.realdelta * t.locomotive.dec_force,
+            time.realdelta * t.locomotive.acc_force,
         );
         if t.speed.0 <= 0.001 {
-            t.res.waited_for += time.delta;
+            t.res.waited_for += time.realdelta;
         } else {
             t.res.waited_for = 0.0;
         }
         for v in t.res.past_travers.values_mut() {
-            *v += t.speed.0 * time.delta;
+            *v += t.speed.0 * time.realdelta;
             if t.res.waited_for > 60.0 {
-                *v += 0.1 * time.delta;
+                *v += 0.1 * time.realdelta;
             }
         }
-        t.res.cur_travers_dist += t.speed.0 * time.delta;
+        t.res.cur_travers_dist += t.speed.0 * time.realdelta;
     }
 }
 

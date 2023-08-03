@@ -1,7 +1,8 @@
 use egui_inspect::Inspect;
 use serde::{Deserialize, Serialize};
 
-pub const SECONDS_PER_HOUR: i32 = 200;
+pub const SECONDS_PER_REALTIME_SECOND: i32 = 15;
+pub const SECONDS_PER_HOUR: i32 = 3600;
 pub const HOURS_PER_DAY: i32 = 24;
 pub const SECONDS_PER_DAY: i32 = SECONDS_PER_HOUR * HOURS_PER_DAY;
 pub const TICKS_PER_SECOND: u32 = 50;
@@ -22,13 +23,13 @@ pub struct GameInstant {
 /// `GameTime` is subject to timewarp
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct GameTime {
-    /// Monotonic time in seconds elapsed since the start of the game.
+    /// Monotonic time in (game) seconds elapsed since the start of the game.
     pub timestamp: f64,
 
-    /// Time elapsed since the last frame
-    pub delta: f32,
+    /// Real time elapsed since the last frame, useful for animations
+    pub realdelta: f32,
 
-    /// Time in seconds elapsed since the start of the game
+    /// Game time in seconds elapsed since the start of the game
     pub seconds: u32,
 
     /// Information about the time of the current day
@@ -162,7 +163,7 @@ impl GameTime {
         let seconds = timestamp as u32;
         GameTime {
             timestamp,
-            delta,
+            realdelta: delta,
             seconds,
             daytime: DayTime::new(seconds as i32),
         }
@@ -177,7 +178,9 @@ impl GameTime {
     /// Returns true every freq seconds
     pub fn tick(&self, freq: u32) -> bool {
         let time_near = (self.seconds / freq * freq) as f64;
-        self.timestamp > time_near && (self.timestamp - self.delta as f64) <= time_near
+        self.timestamp > time_near
+            && (self.timestamp - SECONDS_PER_REALTIME_SECOND as f64 * self.realdelta as f64)
+                <= time_near
     }
 
     pub fn daysec(&self) -> f64 {
