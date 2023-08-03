@@ -153,7 +153,7 @@ impl State {
         self.all_audio
             .update(&self.goria.read().unwrap(), &mut self.uiw, &mut ctx.audio);
 
-        self.manage_entity_follow();
+        FollowEntity::update_camera(self);
         self.camera.update(ctx);
     }
 
@@ -286,23 +286,6 @@ impl State {
         }
 
         ctx.audio.set_settings(settings);
-    }
-
-    fn manage_entity_follow(&mut self) {
-        if self
-            .uiw
-            .read::<InputMap>()
-            .just_act
-            .contains(&InputAction::Close)
-        {
-            self.uiw.write::<FollowEntity>().0.take();
-        }
-
-        if let Some(e) = self.uiw.read::<FollowEntity>().0 {
-            if let Some(pos) = self.goria.read().unwrap().pos_any(e) {
-                self.camera.follow(pos);
-            }
-        }
     }
 
     fn manage_io(&mut self, ctx: &mut Context) {

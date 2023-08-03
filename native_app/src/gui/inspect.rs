@@ -92,7 +92,7 @@ impl InspectRenderer {
 
         {
             let mut follow = uiworld.write::<FollowEntity>();
-            follow.update(ui, entity);
+            follow.update_ui(ui, entity);
         }
 
         if let Ok(soul) = SoulID::try_from(entity) {

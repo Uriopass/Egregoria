@@ -83,7 +83,7 @@ pub(crate) struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            camera_border_move: true,
+            camera_border_move: false,
             camera_smooth: true,
             music_volume_percent: 100.0,
             effects_volume_percent: 100.0,
