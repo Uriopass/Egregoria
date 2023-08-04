@@ -8,14 +8,14 @@ use egregoria::Egregoria;
 use egui_inspect::Inspect;
 
 #[derive(Copy, Clone, Default, Inspect)]
-pub(crate) struct BulldozerState {
+pub struct BulldozerState {
     hold: bool,
 }
 
 /// Bulldozer tool
 /// Allows to remove roads, intersections and buildings
 #[profiling::function]
-pub(crate) fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn bulldozer(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool: &Tool = &uiworld.read::<Tool>();
 
     if !matches!(*tool, Tool::Bulldozer) {

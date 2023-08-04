@@ -14,7 +14,7 @@ use BuildState::{Hover, Interpolation, Start};
 use ProjectKind::{Building, Ground, Inter, Road};
 
 #[derive(Copy, Clone, Debug, Default)]
-pub(crate) enum BuildState {
+pub enum BuildState {
     #[default]
     Hover,
     Start(MapProject),
@@ -22,17 +22,17 @@ pub(crate) enum BuildState {
 }
 
 #[derive(Default)]
-pub(crate) struct RoadBuildResource {
-    pub(crate) build_state: BuildState,
-    pub(crate) pattern_builder: LanePatternBuilder,
-    pub(crate) snap_to_grid: bool,
-    pub(crate) height_offset: f32,
+pub struct RoadBuildResource {
+    pub build_state: BuildState,
+    pub pattern_builder: LanePatternBuilder,
+    pub snap_to_grid: bool,
+    pub height_offset: f32,
 }
 
 /// Road building tool
 /// Allows to build roads and intersections
 #[profiling::function]
-pub(crate) fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn roadbuild(goria: &Egregoria, uiworld: &mut UiWorld) {
     let state = &mut *uiworld.write::<RoadBuildResource>();
     let immdraw = &mut *uiworld.write::<ImmediateDraw>();
     let immsound = &mut *uiworld.write::<ImmediateSound>();
@@ -350,7 +350,7 @@ fn check_intersect(
 }
 
 impl RoadBuildResource {
-    pub(crate) fn update_drawing(
+    pub fn update_drawing(
         &self,
         map: &Map,
         immdraw: &mut ImmediateDraw,

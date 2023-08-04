@@ -11,30 +11,30 @@ use geom::{Degrees, Intersect, Vec3, OBB};
 use ordered_float::OrderedFloat;
 use std::borrow::Cow;
 
-pub(crate) struct SpecialBuildArgs {
-    pub(crate) obb: OBB,
-    pub(crate) mpos: Vec3,
+pub struct SpecialBuildArgs {
+    pub obb: OBB,
+    pub mpos: Vec3,
 }
 
-pub(crate) struct SpecialBuildKind {
-    pub(crate) make: Box<dyn Fn(&SpecialBuildArgs) -> Vec<WorldCommand> + Send + Sync + 'static>,
-    pub(crate) w: f32,
-    pub(crate) h: f32,
-    pub(crate) asset: String,
-    pub(crate) road_snap: bool,
+pub struct SpecialBuildKind {
+    pub make: Box<dyn Fn(&SpecialBuildArgs) -> Vec<WorldCommand> + Send + Sync + 'static>,
+    pub w: f32,
+    pub h: f32,
+    pub asset: String,
+    pub road_snap: bool,
 }
 
 #[derive(Default)]
-pub(crate) struct SpecialBuildingResource {
-    pub(crate) opt: Option<SpecialBuildKind>,
-    pub(crate) last_obb: Option<OBB>,
-    pub(crate) rotation: Degrees,
+pub struct SpecialBuildingResource {
+    pub opt: Option<SpecialBuildKind>,
+    pub last_obb: Option<OBB>,
+    pub rotation: Degrees,
 }
 
 /// SpecialBuilding tool
 /// Allows to build special buildings like farms, factories, etc.
 #[profiling::function]
-pub(crate) fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn specialbuilding(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut state = uiworld.write::<SpecialBuildingResource>();
     let tool = *uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();

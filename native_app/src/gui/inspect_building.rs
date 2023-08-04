@@ -12,12 +12,7 @@ use egregoria::souls::goods_company::{GoodsCompanyRegistry, Recipe};
 use egui_inspect::{Inspect, InspectArgs, InspectVec2Rotation};
 
 /// Inspect a specific building, showing useful information about it
-pub(crate) fn inspect_building(
-    uiworld: &mut UiWorld,
-    goria: &Egregoria,
-    ui: &Context,
-    id: BuildingID,
-) {
+pub fn inspect_building(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id: BuildingID) {
     let map = goria.map();
     let Some(building) = map.buildings().get(id) else { return; };
     let gregistry = goria.read::<GoodsCompanyRegistry>();

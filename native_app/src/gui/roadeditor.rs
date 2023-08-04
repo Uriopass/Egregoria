@@ -8,22 +8,22 @@ use egregoria::Egregoria;
 use geom::Color;
 
 #[derive(Clone)]
-pub(crate) struct IntersectionComponent {
-    pub(crate) id: IntersectionID,
-    pub(crate) turn_policy: TurnPolicy,
-    pub(crate) light_policy: LightPolicy,
+pub struct IntersectionComponent {
+    pub id: IntersectionID,
+    pub turn_policy: TurnPolicy,
+    pub light_policy: LightPolicy,
 }
 
 #[derive(Default)]
-pub(crate) struct RoadEditorResource {
-    pub(crate) inspect: Option<IntersectionComponent>,
-    pub(crate) dirty: bool,
+pub struct RoadEditorResource {
+    pub inspect: Option<IntersectionComponent>,
+    pub dirty: bool,
 }
 
 /// RoadEditor tool
 /// Allows to edit intersections properties like turns and signals
 #[profiling::function]
-pub(crate) fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();
     let mut state = uiworld.write::<RoadEditorResource>();

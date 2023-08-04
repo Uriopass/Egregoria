@@ -5,7 +5,7 @@ use egui_inspect::{Inspect, InspectArgs};
 
 /// Config window
 /// Allows to change the real-time dev-only config
-pub(crate) fn config(window: egui::Window<'_>, ui: &egui::Context, _: &mut UiWorld, _: &Egregoria) {
+pub fn config(window: egui::Window<'_>, ui: &egui::Context, _: &mut UiWorld, _: &Egregoria) {
     window
         .default_size([600.0, 500.0])
         .vscroll(true)

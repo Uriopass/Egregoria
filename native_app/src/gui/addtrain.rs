@@ -13,7 +13,7 @@ use std::option::Option::None;
 /// Addtrain handles the "Adding a train" tool
 /// It allows to add a train to any rail lane
 #[profiling::function]
-pub(crate) fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn addtrain(goria: &Egregoria, uiworld: &mut UiWorld) {
     let tool = *uiworld.read::<Tool>();
     if !matches!(tool, Tool::Train) {
         return;

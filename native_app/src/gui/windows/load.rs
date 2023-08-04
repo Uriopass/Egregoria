@@ -12,7 +12,7 @@ pub struct LoadState {
 
 /// Load window
 /// Allows to load a replay from disk and play it
-pub(crate) fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, _: &Egregoria) {
+pub fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, _: &Egregoria) {
     window.show(ui, |ui| {
         let mut lstate = uiw.write::<LoadState>();
 

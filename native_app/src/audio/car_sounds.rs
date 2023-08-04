@@ -9,20 +9,20 @@ use oddio::{Cycle, Gain, Seek, Speed, Stop};
 use slotmapd::SecondaryMap;
 
 /// CarSound is the sound of a single car
-pub(crate) struct CarSound {
+pub struct CarSound {
     road: Option<ControlHandle<Speed<Gain<Cycle<Stereo>>>>>,
     engine: Option<ControlHandle<Speed<Gain<Cycle<Stereo>>>>>,
 }
 
 /// CarSounds are sounds that are played when cars are near the player
 /// They are tied to a car entity
-pub(crate) struct CarSounds {
+pub struct CarSounds {
     sounds: SecondaryMap<GridHandle, CarSound>,
     generic_car_sound: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
 }
 
 impl CarSounds {
-    pub(crate) fn new(ctx: &mut AudioContext) -> Self {
+    pub fn new(ctx: &mut AudioContext) -> Self {
         Self {
             sounds: SecondaryMap::new(),
             generic_car_sound: ctx.play_with_control(
@@ -37,12 +37,7 @@ impl CarSounds {
         }
     }
 
-    pub(crate) fn update(
-        &mut self,
-        goria: &Egregoria,
-        uiworld: &mut UiWorld,
-        ctx: &mut AudioContext,
-    ) {
+    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
         let coworld = goria.read::<CollisionWorld>();
         let campos = uiworld.read::<Camera>().eye();
         let cambox = AABB::new(campos.xy(), campos.xy()).expand(100.0);

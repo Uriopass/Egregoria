@@ -1,4 +1,4 @@
-pub(crate) use self::inner::*;
+pub use self::inner::*;
 use crate::game_loop::{State, Timings};
 use crate::gui::windows::settings::Settings;
 use crate::uiworld::{ReceivedCommands, SaveLoadState};
@@ -18,11 +18,11 @@ mod inner {
     use crate::network::{State, Timestep};
 
     #[allow(clippy::large_enum_variant)]
-    pub(crate) enum NetworkState {
+    pub enum NetworkState {
         Singleplayer(Timestep),
     }
 
-    pub(crate) fn goria_update(state: &mut State) {
+    pub fn goria_update(state: &mut State) {
         super::handle_singleplayer(state);
     }
 }
@@ -109,17 +109,17 @@ mod inner {
     use std::net::ToSocketAddrs;
     use std::sync::Mutex;
 
-    pub(crate) type Client = Mutex<networking::Client<Egregoria, WorldCommands>>;
-    pub(crate) type Server = Mutex<networking::Server<Egregoria, WorldCommands>>;
+    pub type Client = Mutex<networking::Client<Egregoria, WorldCommands>>;
+    pub type Server = Mutex<networking::Server<Egregoria, WorldCommands>>;
 
     #[allow(clippy::large_enum_variant)]
-    pub(crate) enum NetworkState {
+    pub enum NetworkState {
         Singleplayer(Timestep),
         Client(Client),
         Server(Server),
     }
 
-    pub(crate) fn goria_update(state: &mut State) {
+    pub fn goria_update(state: &mut State) {
         if matches!(
             *state.uiw.read::<NetworkState>(),
             NetworkState::Singleplayer(_)
@@ -215,10 +215,7 @@ mod inner {
         }
     }
 
-    pub(crate) fn start_server(
-        info: &mut NetworkConnectionInfo,
-        goria: &Egregoria,
-    ) -> Option<Server> {
+    pub fn start_server(info: &mut NetworkConnectionInfo, goria: &Egregoria) -> Option<Server> {
         let server = match networking::Server::start(ServerConfiguration {
             start_frame: Frame(goria.get_tick()),
             period: common::timestep::UP_DT,
@@ -239,7 +236,7 @@ mod inner {
         Some(Mutex::new(server))
     }
 
-    pub(crate) fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
+    pub fn start_client(info: &mut NetworkConnectionInfo) -> Option<Client> {
         let mut s = info.ip.to_string();
         if !s.contains(':') {
             s += ":23019"

@@ -8,18 +8,18 @@ use wgpu_engine::{
 };
 
 /// Render all entities using instanced rendering for performance
-pub(crate) struct InstancedRender {
-    pub(crate) path_not_found: SpriteBatchBuilder,
-    pub(crate) cars: InstancedMeshBuilder,
-    pub(crate) locomotives: InstancedMeshBuilder,
-    pub(crate) wagons_passenger: InstancedMeshBuilder,
-    pub(crate) wagons_freight: InstancedMeshBuilder,
-    pub(crate) trucks: InstancedMeshBuilder,
-    pub(crate) pedestrians: InstancedMeshBuilder,
+pub struct InstancedRender {
+    pub path_not_found: SpriteBatchBuilder,
+    pub cars: InstancedMeshBuilder,
+    pub locomotives: InstancedMeshBuilder,
+    pub wagons_passenger: InstancedMeshBuilder,
+    pub wagons_freight: InstancedMeshBuilder,
+    pub trucks: InstancedMeshBuilder,
+    pub pedestrians: InstancedMeshBuilder,
 }
 
 impl InstancedRender {
-    pub(crate) fn new(gfx: &mut GfxContext) -> Self {
+    pub fn new(gfx: &mut GfxContext) -> Self {
         defer!(log::info!("finished init of instanced render"));
 
         let car = load_mesh(gfx, "simple_car.glb").unwrap();
@@ -38,7 +38,7 @@ impl InstancedRender {
     }
 
     #[profiling::function]
-    pub(crate) fn render(&mut self, goria: &Egregoria, fctx: &mut FrameContext<'_>) {
+    pub fn render(&mut self, goria: &Egregoria, fctx: &mut FrameContext<'_>) {
         self.cars.instances.clear();
         self.trucks.instances.clear();
         self.pedestrians.instances.clear();

@@ -24,25 +24,25 @@ const CSIZE: usize = CHUNK_SIZE as usize;
 const CRESO: usize = CHUNK_RESOLUTION;
 
 /// Render the entire map including the terrain, trees, water etc
-pub(crate) struct MapRenderer {
-    pub(crate) meshb: MapMeshHandler,
+pub struct MapRenderer {
+    pub meshb: MapMeshHandler,
 
     terrain: TerrainRender<CSIZE, CRESO>,
 
     #[allow(clippy::type_complexity)]
     trees_builders: FastMap<ChunkID, (InstancedMeshBuilder, Option<(Option<InstancedMesh>, u32)>)>,
-    pub(crate) terrain_dirt_id: u32,
+    pub terrain_dirt_id: u32,
     water: Water,
 
     lampposts_dirtid: u32,
 }
 
 pub struct MapRenderOptions {
-    pub(crate) show_arrows: bool,
+    pub show_arrows: bool,
 }
 
 impl MapRenderer {
-    pub(crate) fn reset(&mut self) {
+    pub fn reset(&mut self) {
         self.terrain_dirt_id = 0;
         self.terrain.reset();
 
@@ -54,7 +54,7 @@ impl MapRenderer {
 }
 
 impl MapRenderer {
-    pub(crate) fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
+    pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         let mesh = load_mesh(gfx, "pine.glb").expect("could not load pine");
 
         let w = goria.map().terrain.width;
@@ -170,7 +170,7 @@ impl MapRenderer {
         }
     }
 
-    pub(crate) fn terrain_update(&mut self, ctx: &mut Context, goria: &Egregoria) {
+    pub fn terrain_update(&mut self, ctx: &mut Context, goria: &Egregoria) {
         let map = goria.map();
         let ter = &map.terrain;
         if ter.dirt_id.0 == self.terrain.dirt_id {
@@ -204,7 +204,7 @@ impl MapRenderer {
             .update_borders(&mut ctx.gfx, &|p| ter.height(p));
     }
 
-    pub(crate) fn build_trees(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {
+    pub fn build_trees(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {
         if map.terrain.dirt_id.0 == self.terrain_dirt_id {
             return;
         }
@@ -237,7 +237,7 @@ impl MapRenderer {
         }
     }
 
-    pub(crate) fn trees(
+    pub fn trees(
         &mut self,
         map: &Map,
         cam: &Camera,
@@ -356,7 +356,7 @@ impl MapRenderer {
     }
 
     #[profiling::function]
-    pub(crate) fn render(
+    pub fn render(
         &mut self,
         map: &Map,
         time: u32,

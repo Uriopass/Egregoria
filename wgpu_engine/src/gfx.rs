@@ -169,14 +169,14 @@ impl GfxContext {
                 compatible_surface: Some(&surface),
             })
             .await
-            .expect(
-                "failed to find a suitable adapter, have you installed necessary vulkan libraries?",
-            );
+            .expect("failed to find a suitable adapter");
 
         let limit = if cfg!(target_arch = "wasm32") {
             wgpu::Limits::downlevel_webgl2_defaults()
         } else {
-            wgpu::Limits::default()
+            let mut l = wgpu::Limits::default();
+            l.max_storage_textures_per_shader_stage = 2;
+            l
         };
 
         let (device, queue) = adapter
@@ -189,7 +189,7 @@ impl GfxContext {
                 None,
             )
             .await
-            .expect("could not find device, have you installed necessary vulkan libraries?");
+            .expect("failed to find a suitable device");
 
         let capabilities = surface.get_capabilities(&adapter);
 

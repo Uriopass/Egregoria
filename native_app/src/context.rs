@@ -15,17 +15,17 @@ use winit::{
 
 /// Context is the main struct that contains all the context of the game.
 /// It holds the necessary state for graphics, input, audio, and the window.
-pub(crate) struct Context {
-    pub(crate) gfx: GfxContext,
-    pub(crate) input: InputContext,
-    pub(crate) audio: AudioContext,
-    pub(crate) window: Window,
-    pub(crate) el: Option<EventLoop<()>>,
-    pub(crate) delta: f32,
+pub struct Context {
+    pub gfx: GfxContext,
+    pub input: InputContext,
+    pub audio: AudioContext,
+    pub window: Window,
+    pub el: Option<EventLoop<()>>,
+    pub delta: f32,
 }
 
 impl Context {
-    pub(crate) async fn new(el: EventLoop<()>, window: Window) -> Self {
+    pub async fn new(el: EventLoop<()>, window: Window) -> Self {
         let gfx = GfxContext::new(
             &window,
             window.inner_size().width,
@@ -55,7 +55,7 @@ impl Context {
 
     /// Start the game loop.
     /// Handle the window events, update the game state, and render the frame.
-    pub(crate) fn start(mut self, mut state: game_loop::State) {
+    pub fn start(mut self, mut state: game_loop::State) {
         let mut frame: Option<_> = None;
         let mut new_size: Option<PhysicalSize<u32>> = None;
         let mut last_update = Instant::now();

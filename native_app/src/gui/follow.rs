@@ -6,7 +6,7 @@ use egui::Ui;
 /// FollowEntity is a component that tells the camera to follow an entity
 /// Entity is defined by a function that returns the position of the entity
 #[derive(Default)]
-pub struct FollowEntity(pub(crate) Option<AnyEntity>);
+pub struct FollowEntity(pub Option<AnyEntity>);
 
 impl FollowEntity {
     pub fn update_ui(&mut self, ui: &mut Ui, entity: AnyEntity) {

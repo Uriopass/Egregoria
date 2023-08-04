@@ -19,11 +19,11 @@ use wgpu_engine::{
 /// This is the main struct that handles the map rendering.
 /// It is responsible for generating the meshes and sprites for the map
 /// That is, the mostly static things (roads, intersections, lights, buildings).
-pub(crate) struct MapMeshHandler {
+pub struct MapMeshHandler {
     builders: MapBuilders,
     cache: Vec<Arc<dyn Drawable>>,
     cache_arrow: Option<Arc<dyn Drawable>>,
-    pub(crate) map_dirt_id: u32,
+    pub map_dirt_id: u32,
     last_config: usize,
 }
 
@@ -38,7 +38,7 @@ struct MapBuilders {
 }
 
 impl MapMeshHandler {
-    pub(crate) fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
+    pub fn new(gfx: &mut GfxContext, goria: &Egregoria) -> Self {
         let arrow_builder = SpriteBatchBuilder::from_path(gfx, "assets/sprites/arrow_one_way.png");
 
         let mut buildsprites = FastMap::default();
@@ -162,7 +162,7 @@ impl MapMeshHandler {
         }
     }
 
-    pub(crate) fn latest_mesh(
+    pub fn latest_mesh(
         &mut self,
         map: &Map,
         options: MapRenderOptions,

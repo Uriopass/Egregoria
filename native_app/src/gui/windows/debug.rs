@@ -17,12 +17,12 @@ use geom::{Camera, Color, LinearColor, Spline3, Vec2};
 use wgpu_engine::Tesselator;
 
 #[derive(Default)]
-pub(crate) struct DebugState {
+pub struct DebugState {
     connectivity: (u32, Vec<Vec<IntersectionID>>),
 }
 
-pub(crate) struct DebugObjs(
-    pub(crate)  Vec<(
+pub struct DebugObjs(
+    pub  Vec<(
         bool,
         &'static str,
         fn(&mut Tesselator, &Egregoria, &UiWorld) -> Option<()>,
@@ -61,7 +61,7 @@ impl Default for TestFieldProperties {
 }
 
 /// debug window for various debug options
-pub(crate) fn debug(
+pub fn debug(
     window: egui::Window<'_>,
     ui: &egui::Context,
     uiworld: &mut UiWorld,
@@ -187,7 +187,7 @@ pub(crate) fn debug(
     });
 }
 
-pub(crate) fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
+pub fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     for road in goria.map().roads().values() {
         if let RoadSegmentKind::Curved((fr_dr, to_der)) = road.segment {
             let fr = road.points.first();
@@ -207,7 +207,7 @@ pub(crate) fn debug_spline(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld
     Some(())
 }
 
-pub(crate) fn debug_lots(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
+pub fn debug_lots(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     tess.set_color(Color::RED);
     for lot in goria.map().lots().values() {
         tess.draw_circle(lot.shape.corners[0].z(lot.height), 1.0);
@@ -216,11 +216,7 @@ pub(crate) fn debug_lots(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) 
     Some(())
 }
 
-pub(crate) fn debug_road_points(
-    tess: &mut Tesselator,
-    goria: &Egregoria,
-    _: &UiWorld,
-) -> Option<()> {
+pub fn debug_road_points(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     let map = goria.map();
     tess.set_color(Color::RED.a(0.5));
     for (_, road) in map.roads() {
@@ -257,11 +253,7 @@ pub(crate) fn debug_road_points(
     Some(())
 }
 
-pub(crate) fn debug_connectivity(
-    tess: &mut Tesselator,
-    goria: &Egregoria,
-    uiw: &UiWorld,
-) -> Option<()> {
+pub fn debug_connectivity(tess: &mut Tesselator, goria: &Egregoria, uiw: &UiWorld) -> Option<()> {
     use egregoria::map::pathfinding_crate::directed::strongly_connected_components::strongly_connected_components;
     let mut state = uiw.write::<DebugState>();
     let map = goria.map();
@@ -326,7 +318,7 @@ fn debug_coworld(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Optio
 }
 
 /*
-pub(crate) fn debug_obb(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -> Option<()> {
+pub fn debug_obb(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -> Option<()> {
     let time = goria.read::<GameTime>();
     let mouse = uiworld.read::<MouseInfo>().unprojected;
 
@@ -388,7 +380,7 @@ pub(crate) fn debug_obb(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWo
 }
 */
 
-pub(crate) fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
+pub fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     let map: &Map = &goria.map();
     let pm = goria.read::<ParkingManagement>();
 
@@ -406,7 +398,7 @@ pub(crate) fn debug_parking(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorl
     Some(())
 }
 
-pub(crate) fn debug_trainreservations(
+pub fn debug_trainreservations(
     tess: &mut Tesselator,
     goria: &Egregoria,
     uiworld: &UiWorld,
@@ -479,11 +471,7 @@ pub(crate) fn debug_trainreservations(
     Some(())
 }
 
-pub(crate) fn debug_pathfinder(
-    tess: &mut Tesselator,
-    goria: &Egregoria,
-    uiworld: &UiWorld,
-) -> Option<()> {
+pub fn debug_pathfinder(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -> Option<()> {
     let map: &Map = &goria.map();
     let selected = uiworld.read::<InspectedEntity>().e?;
     let pos = goria.pos_any(selected)?;
@@ -543,7 +531,7 @@ pub(crate) fn debug_pathfinder(
 }
 
 /*
-pub(crate) fn debug_rays(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -> Option<()> {
+pub fn debug_rays(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiWorld) -> Option<()> {
     let time = goria.read::<GameTime>();
     let time = time.timestamp * 0.2;
     let c = time.cos() as f32;
@@ -577,11 +565,7 @@ pub(crate) fn debug_rays(tess: &mut Tesselator, goria: &Egregoria, uiworld: &UiW
     Some(())
 }*/
 
-pub(crate) fn debug_spatialmap(
-    tess: &mut Tesselator,
-    goria: &Egregoria,
-    _: &UiWorld,
-) -> Option<()> {
+pub fn debug_spatialmap(tess: &mut Tesselator, goria: &Egregoria, _: &UiWorld) -> Option<()> {
     let map: &Map = &goria.map();
     for r in map.spatial_map().debug_grid() {
         tess.set_color(LinearColor::BLUE.a(0.1));

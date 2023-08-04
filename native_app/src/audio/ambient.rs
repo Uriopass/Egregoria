@@ -8,13 +8,13 @@ use oddio::{Cycle, Gain};
 /// Ambient sounds
 /// These are sounds that are played in the background
 /// They are not tied to any entity
-pub(crate) struct Ambient {
+pub struct Ambient {
     wind: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
     forest: Option<ControlHandle<Gain<Cycle<Stereo>>>>,
 }
 
 impl Ambient {
-    pub(crate) fn new(ctx: &mut AudioContext) -> Self {
+    pub fn new(ctx: &mut AudioContext) -> Self {
         let wind = ctx.play_with_control(
             "calm_wind",
             |s| {
@@ -37,7 +37,7 @@ impl Ambient {
         Self { wind, forest }
     }
 
-    pub(crate) fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld) {
+    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld) {
         let eye = uiworld.read::<Camera>().eye();
         let map = goria.map();
 

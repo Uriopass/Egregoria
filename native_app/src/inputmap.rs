@@ -8,7 +8,7 @@ use winit::event::ScanCode;
 
 // Either combinations can work
 #[derive(Serialize, Deserialize)]
-pub(crate) struct InputCombinations(pub(crate) Vec<InputCombination>);
+pub struct InputCombinations(pub Vec<InputCombination>);
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 enum UnitInput {
@@ -20,7 +20,7 @@ enum UnitInput {
 }
 
 #[derive(Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
-pub(crate) enum InputAction {
+pub enum InputAction {
     GoLeft,
     GoRight,
     GoForward,
@@ -42,7 +42,7 @@ pub(crate) enum InputAction {
 
 // All unit inputs need to match
 #[derive(Serialize, Deserialize, Clone)]
-pub(crate) struct InputCombination(Vec<UnitInput>);
+pub struct InputCombination(Vec<UnitInput>);
 
 #[derive(Default)]
 struct InputTree {
@@ -51,17 +51,17 @@ struct InputTree {
 }
 
 #[derive(Default)]
-pub(crate) struct InputMap {
-    pub(crate) just_act: FastSet<InputAction>,
-    pub(crate) act: FastSet<InputAction>,
-    pub(crate) wheel: f32,
-    pub(crate) unprojected: Option<Vec3>,
-    pub(crate) screen: Vec2,
+pub struct InputMap {
+    pub just_act: FastSet<InputAction>,
+    pub act: FastSet<InputAction>,
+    pub wheel: f32,
+    pub unprojected: Option<Vec3>,
+    pub screen: Vec2,
     input_tree: InputTree,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Bindings(pub(crate) BTreeMap<InputAction, InputCombinations>);
+pub struct Bindings(pub BTreeMap<InputAction, InputCombinations>);
 
 use InputAction::*;
 use KeyCode as K;
@@ -119,7 +119,7 @@ impl InputMap {
         self.input_tree = InputTree::new(bindings);
     }
 
-    pub(crate) fn prepare_frame(&mut self, input: &InputContext, kb: bool, mouse: bool) {
+    pub fn prepare_frame(&mut self, input: &InputContext, kb: bool, mouse: bool) {
         self.just_act.clear();
         let empty1 = FastSet::default();
         let empty2 = FastSet::default();
@@ -213,7 +213,7 @@ impl Debug for InputAction {
 }
 
 impl InputTree {
-    pub(crate) fn new(bindings: &Bindings) -> Self {
+    pub fn new(bindings: &Bindings) -> Self {
         let mut root = Self {
             actions: Vec::new(),
             childs: Default::default(),
@@ -243,7 +243,7 @@ impl InputTree {
         root
     }
 
-    pub(crate) fn query(
+    pub fn query(
         &self,
         kb: &FastSet<KeyCode>,
         kb_scans: &FastSet<ScanCode>,

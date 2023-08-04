@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 const SETTINGS_SAVE_NAME: &str = "settings";
 
 #[derive(Serialize, Deserialize, Copy, Clone, Eq, PartialEq)]
-pub(crate) enum ShadowQuality {
+pub enum ShadowQuality {
     NoShadows,
     Low,
     Medium,
@@ -44,7 +44,7 @@ impl From<u8> for ShadowQuality {
 }
 
 impl ShadowQuality {
-    pub(crate) fn size(&self) -> Option<u32> {
+    pub fn size(&self) -> Option<u32> {
         match self {
             ShadowQuality::Low => Some(512),
             ShadowQuality::Medium => Some(1024),
@@ -57,27 +57,27 @@ impl ShadowQuality {
 
 #[derive(Copy, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(default)]
-pub(crate) struct Settings {
-    pub(crate) camera_border_move: bool,
-    pub(crate) camera_smooth: bool,
-    pub(crate) camera_smooth_tightness: f32,
-    pub(crate) camera_fov: f32,
+pub struct Settings {
+    pub camera_border_move: bool,
+    pub camera_smooth: bool,
+    pub camera_smooth_tightness: f32,
+    pub camera_fov: f32,
 
-    pub(crate) fullscreen: bool,
-    pub(crate) vsync: bool,
-    pub(crate) ssao: bool,
-    pub(crate) shadows: ShadowQuality,
-    pub(crate) terrain_grid: bool,
+    pub fullscreen: bool,
+    pub vsync: bool,
+    pub ssao: bool,
+    pub shadows: ShadowQuality,
+    pub terrain_grid: bool,
 
-    pub(crate) gui_scale: f32,
+    pub gui_scale: f32,
 
-    pub(crate) music_volume_percent: f32,
-    pub(crate) effects_volume_percent: f32,
-    pub(crate) ui_volume_percent: f32,
+    pub music_volume_percent: f32,
+    pub effects_volume_percent: f32,
+    pub ui_volume_percent: f32,
 
     #[serde(skip)]
-    pub(crate) time_warp: u32,
-    pub(crate) auto_save_every: AutoSaveEvery,
+    pub time_warp: u32,
+    pub auto_save_every: AutoSaveEvery,
 }
 
 impl Default for Settings {
@@ -104,7 +104,7 @@ impl Default for Settings {
 
 #[derive(Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[repr(u8)]
-pub(crate) enum AutoSaveEvery {
+pub enum AutoSaveEvery {
     Never,
     OneMinute,
     FiveMinutes,
@@ -143,12 +143,7 @@ impl AsRef<str> for AutoSaveEvery {
 
 /// Settings window
 /// This window is used to change the settings of the game
-pub(crate) fn settings(
-    window: egui::Window<'_>,
-    ui: &Context,
-    uiworld: &mut UiWorld,
-    _: &Egregoria,
-) {
+pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _: &Egregoria) {
     let mut settings = uiworld.write::<Settings>();
     let [_, h]: [f32; 2] = ui.available_rect().size().into();
 

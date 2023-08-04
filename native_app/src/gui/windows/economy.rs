@@ -32,12 +32,7 @@ struct EconomyState {
 
 /// Economy window
 /// Shows the economy stats
-pub(crate) fn economy(
-    window: egui::Window<'_>,
-    ui: &egui::Context,
-    uiw: &mut UiWorld,
-    goria: &Egregoria,
-) {
+pub fn economy(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, goria: &Egregoria) {
     uiw.check_present(|| EconomyState {
         curlevel: 0,
         tab: EconomyTab::ImportExports,

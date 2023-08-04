@@ -7,15 +7,15 @@ use egregoria::Egregoria;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-pub(crate) struct LotBrushResource {
-    pub(crate) kind: LotKind,
-    pub(crate) radius: f32,
+pub struct LotBrushResource {
+    pub kind: LotKind,
+    pub radius: f32,
 }
 
 /// Lot brush tool
 /// Allows to build houses on lots
 #[profiling::function]
-pub(crate) fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn lotbrush(goria: &Egregoria, uiworld: &mut UiWorld) {
     let res = uiworld.read::<LotBrushResource>();
     let tool = *uiworld.read::<Tool>();
     let inp = uiworld.read::<InputMap>();

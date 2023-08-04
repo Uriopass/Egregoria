@@ -7,17 +7,17 @@ use winit::window::Window;
 
 /// EguiWrapper is a wrapper around egui and egui_wgpu
 /// It handles the rendering of the UI
-pub(crate) struct EguiWrapper {
-    pub(crate) egui: egui::Context,
-    pub(crate) renderer: renderer::Renderer,
+pub struct EguiWrapper {
+    pub egui: egui::Context,
+    pub renderer: renderer::Renderer,
     platform: egui_winit::State,
-    pub(crate) last_mouse_captured: bool,
-    pub(crate) last_kb_captured: bool,
+    pub last_mouse_captured: bool,
+    pub last_kb_captured: bool,
     pub to_remove: Vec<TextureId>,
 }
 
 impl EguiWrapper {
-    pub(crate) fn new(gfx: &mut GfxContext, el: &EventLoopWindowTarget<()>) -> Self {
+    pub fn new(gfx: &mut GfxContext, el: &EventLoopWindowTarget<()>) -> Self {
         let egui = egui::Context::default();
 
         let platform = egui_winit::State::new(el);
@@ -34,7 +34,7 @@ impl EguiWrapper {
         }
     }
 
-    pub(crate) fn render(
+    pub fn render(
         &mut self,
         gfx: GuiRenderContext<'_, '_>,
         window: &Window,
@@ -107,7 +107,7 @@ impl EguiWrapper {
         self.last_kb_captured = self.egui.wants_keyboard_input();
     }
 
-    pub(crate) fn handle_event(&mut self, e: &winit::event::WindowEvent<'_>) {
+    pub fn handle_event(&mut self, e: &winit::event::WindowEvent<'_>) {
         if let winit::event::WindowEvent::KeyboardInput {
             input:
                 winit::event::KeyboardInput {

@@ -11,12 +11,12 @@ use egui_inspect::{Inspect, InspectArgs};
 
 /// Inspect window
 /// Allows to inspect an entity
-pub(crate) struct InspectRenderer {
-    pub(crate) entity: AnyEntity,
+pub struct InspectRenderer {
+    pub entity: AnyEntity,
 }
 
 impl InspectRenderer {
-    pub(crate) fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui) {
+    pub fn render(&mut self, uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui) {
         let entity = self.entity;
         ui.label(format!("{:?}", self.entity));
 

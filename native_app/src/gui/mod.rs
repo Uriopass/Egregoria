@@ -11,27 +11,27 @@ use egregoria::map::BuildingID;
 use egregoria::{AnyEntity, Egregoria};
 use roadbuild::RoadBuildResource;
 
-pub(crate) mod bulldozer;
-pub(crate) mod follow;
-pub(crate) mod inspect;
-pub(crate) mod inspected_aura;
-pub(crate) mod lotbrush;
-pub(crate) mod roadbuild;
-pub(crate) mod roadeditor;
-pub(crate) mod selectable;
-pub(crate) mod specialbuilding;
-pub(crate) mod topgui;
+pub mod bulldozer;
+pub mod follow;
+pub mod inspect;
+pub mod inspected_aura;
+pub mod lotbrush;
+pub mod roadbuild;
+pub mod roadeditor;
+pub mod selectable;
+pub mod specialbuilding;
+pub mod topgui;
 
-pub(crate) mod addtrain;
-pub(crate) mod inspect_building;
-pub(crate) mod windows;
-pub(crate) mod zoneedit;
+pub mod addtrain;
+pub mod inspect_building;
+pub mod windows;
+pub mod zoneedit;
 
-pub(crate) use follow::FollowEntity;
-pub(crate) use topgui::*;
+pub use follow::FollowEntity;
+pub use topgui::*;
 
 #[profiling::function]
-pub(crate) fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn run_ui_systems(goria: &Egregoria, uiworld: &mut UiWorld) {
     bulldozer::bulldozer(goria, uiworld);
     inspected_aura::inspected_aura(goria, uiworld);
     lotbrush::lotbrush(goria, uiworld);
@@ -81,16 +81,16 @@ impl PotentialCommands {
 }
 
 #[derive(Copy, Clone, Debug, Default)]
-pub(crate) struct InspectedBuilding {
-    pub(crate) e: Option<BuildingID>,
-    pub(crate) dontclear: bool,
+pub struct InspectedBuilding {
+    pub e: Option<BuildingID>,
+    pub dontclear: bool,
 }
 
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct InspectedEntity {
-    pub(crate) e: Option<AnyEntity>,
-    pub(crate) dist2: f32,
-    pub(crate) dontclear: bool,
+pub struct InspectedEntity {
+    pub e: Option<AnyEntity>,
+    pub dist2: f32,
+    pub dontclear: bool,
 }
 
 impl Default for InspectedEntity {
@@ -104,7 +104,7 @@ impl Default for InspectedEntity {
 }
 
 #[derive(Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq)]
-pub(crate) enum Tool {
+pub enum Tool {
     #[default]
     Hand,
     RoadbuildStraight,
@@ -117,7 +117,7 @@ pub(crate) enum Tool {
 }
 
 impl Tool {
-    pub(crate) fn is_roadbuild(&self) -> bool {
+    pub fn is_roadbuild(&self) -> bool {
         matches!(self, Tool::RoadbuildStraight | Tool::RoadbuildCurved)
     }
 
@@ -134,12 +134,12 @@ impl Tool {
 }
 
 #[derive(Default)]
-pub(crate) struct UiTextures {
+pub struct UiTextures {
     textures: FastMap<String, TextureHandle>,
 }
 
 impl UiTextures {
-    pub(crate) fn new(ctx: &mut egui::Context) -> Self {
+    pub fn new(ctx: &mut egui::Context) -> Self {
         let texdirs = [("assets/ui", ""), ("assets/ui/icons", "icon/")];
 
         let mut textures: FastMap<String, TextureHandle> = Default::default();
@@ -165,11 +165,11 @@ impl UiTextures {
         Self { textures }
     }
 
-    pub(crate) fn get(&self, name: &str) -> TextureId {
+    pub fn get(&self, name: &str) -> TextureId {
         self.textures.get(name).unwrap().id()
     }
 
-    pub(crate) fn try_get(&self, name: &str) -> Option<TextureId> {
+    pub fn try_get(&self, name: &str) -> Option<TextureId> {
         self.textures.get(name).map(TextureHandle::id)
     }
 }

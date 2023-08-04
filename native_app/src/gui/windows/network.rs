@@ -6,10 +6,10 @@ use egui::{Context, RichText, Ui};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeMap;
 
-pub(crate) struct NetworkConnectionInfo {
-    pub(crate) name: String,
-    pub(crate) ip: String,
-    pub(crate) error: String,
+pub struct NetworkConnectionInfo {
+    pub name: String,
+    pub ip: String,
+    pub error: String,
     show_hashes: bool,
     hashes: BTreeMap<String, u64>,
 }
@@ -17,12 +17,7 @@ pub(crate) struct NetworkConnectionInfo {
 /// Network window
 /// Allows to connect to a server or start a server
 #[cfg(feature = "multiplayer")]
-pub(crate) fn network(
-    window: egui::Window<'_>,
-    ui: &Context,
-    uiworld: &mut UiWorld,
-    goria: &Egregoria,
-) {
+pub fn network(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
     window.show(ui, |ui| {
         let mut state = uiworld.write::<NetworkState>();
         let mut info = uiworld.write::<NetworkConnectionInfo>();

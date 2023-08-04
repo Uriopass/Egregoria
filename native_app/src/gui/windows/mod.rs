@@ -6,14 +6,14 @@ use crate::uiworld::UiWorld;
 use egregoria::Egregoria;
 
 mod config;
-pub(crate) mod debug;
+pub mod debug;
 mod economy;
-pub(crate) mod load;
+pub mod load;
 #[cfg(feature = "multiplayer")]
-pub(crate) mod network;
-pub(crate) mod settings;
+pub mod network;
+pub mod settings;
 
-pub(crate) trait GUIWindow: Send + Sync {
+pub trait GUIWindow: Send + Sync {
     fn render_window(
         &mut self,
         window: egui::Window<'_>,
@@ -45,7 +45,7 @@ struct GUIWindowStruct {
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
-pub(crate) struct GUIWindows {
+pub struct GUIWindows {
     #[serde(skip)]
     windows: Vec<GUIWindowStruct>,
     opened: Vec<bool>,
@@ -69,7 +69,7 @@ impl Default for GUIWindows {
 }
 
 impl GUIWindows {
-    pub(crate) fn insert(&mut self, name: &'static str, w: impl GUIWindow + 'static, opened: bool) {
+    pub fn insert(&mut self, name: &'static str, w: impl GUIWindow + 'static, opened: bool) {
         self.windows.push(GUIWindowStruct {
             w: Box::new(w),
             name,
@@ -79,7 +79,7 @@ impl GUIWindows {
         }
     }
 
-    pub(crate) fn menu(&mut self, ui: &mut Ui) {
+    pub fn menu(&mut self, ui: &mut Ui) {
         if self.opened.len() < self.windows.len() {
             self.opened
                 .extend(std::iter::repeat(false).take(self.windows.len() - self.opened.len()))
@@ -90,7 +90,7 @@ impl GUIWindows {
     }
 
     #[profiling::function]
-    pub(crate) fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         if uiworld
             .write::<InputMap>()
             .just_act

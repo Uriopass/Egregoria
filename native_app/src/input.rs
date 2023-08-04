@@ -6,18 +6,18 @@ use winit::event::{
 };
 
 #[derive(Default)]
-pub(crate) struct InputContext {
-    pub(crate) mouse: MouseInfo,
-    pub(crate) keyboard: KeyboardInfo,
+pub struct InputContext {
+    pub mouse: MouseInfo,
+    pub keyboard: KeyboardInfo,
 }
 
 impl InputContext {
-    pub(crate) fn end_frame(&mut self) {
+    pub fn end_frame(&mut self) {
         self.keyboard.last_characters.clear();
         self.mouse.wheel_delta = 0.0;
     }
 
-    pub(crate) fn handle(&mut self, event: &WindowEvent<'_>) -> bool {
+    pub fn handle(&mut self, event: &WindowEvent<'_>) -> bool {
         match event {
             WindowEvent::ReceivedCharacter(c) => {
                 self.keyboard.last_characters.push(*c);
@@ -82,17 +82,17 @@ impl InputContext {
 }
 
 #[derive(Clone, Default)]
-pub(crate) struct MouseInfo {
-    pub(crate) wheel_delta: f32,
-    pub(crate) screen: Vec2,
-    pub(crate) pressed: FastSet<MouseButton>,
+pub struct MouseInfo {
+    pub wheel_delta: f32,
+    pub screen: Vec2,
+    pub pressed: FastSet<MouseButton>,
 }
 
 #[derive(Clone, Default)]
-pub(crate) struct KeyboardInfo {
-    pub(crate) pressed: FastSet<KeyCode>,
-    pub(crate) pressed_scancode: FastSet<ScanCode>,
-    pub(crate) last_characters: Vec<char>,
+pub struct KeyboardInfo {
+    pub pressed: FastSet<KeyCode>,
+    pub pressed_scancode: FastSet<ScanCode>,
+    pub last_characters: Vec<char>,
 }
 
 impl From<winit::event::MouseButton> for MouseButton {
@@ -277,7 +277,7 @@ impl From<VirtualKeyCode> for KeyCode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, Serialize, Deserialize)]
-pub(crate) enum MouseButton {
+pub enum MouseButton {
     Left,
     Right,
     Middle,
@@ -296,7 +296,7 @@ impl KeyCode {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[repr(u32)]
 #[serde(from = "u32", into = "u32")]
-pub(crate) enum KeyCode {
+pub enum KeyCode {
     Key1,
     Key2,
     Key3,

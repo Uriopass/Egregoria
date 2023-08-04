@@ -7,7 +7,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 #[derive(Default)]
-pub(crate) struct UiWorld {
+pub struct UiWorld {
     resources: Resources,
 }
 
@@ -21,7 +21,7 @@ pub struct SaveLoadState {
 
 #[allow(dead_code)]
 impl UiWorld {
-    pub(crate) fn init() -> UiWorld {
+    pub fn init() -> UiWorld {
         let mut w = UiWorld::default();
         unsafe {
             for s in &INIT_FUNCS {
@@ -32,35 +32,35 @@ impl UiWorld {
         w
     }
 
-    pub(crate) fn commands(&self) -> RefMut<WorldCommands> {
+    pub fn commands(&self) -> RefMut<WorldCommands> {
         self.write::<WorldCommands>()
     }
 
-    pub(crate) fn received_commands(&self) -> Ref<ReceivedCommands> {
+    pub fn received_commands(&self) -> Ref<ReceivedCommands> {
         self.read::<ReceivedCommands>()
     }
 
-    pub(crate) fn try_write<T: Any + Send + Sync>(&self) -> Option<RefMut<T>> {
+    pub fn try_write<T: Any + Send + Sync>(&self) -> Option<RefMut<T>> {
         self.resources.get_mut().ok()
     }
 
-    pub(crate) fn write<T: Any + Send + Sync>(&self) -> RefMut<T> {
+    pub fn write<T: Any + Send + Sync>(&self) -> RefMut<T> {
         self.resources
             .get_mut()
             .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub(crate) fn read<T: Any + Send + Sync>(&self) -> Ref<T> {
+    pub fn read<T: Any + Send + Sync>(&self) -> Ref<T> {
         self.resources
             .get()
             .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
     }
 
-    pub(crate) fn insert<T: Any + Send + Sync>(&mut self, res: T) {
+    pub fn insert<T: Any + Send + Sync>(&mut self, res: T) {
         self.resources.insert(res);
     }
 
-    pub(crate) fn check_present<T: Any + Send + Sync>(&mut self, res: fn() -> T) {
+    pub fn check_present<T: Any + Send + Sync>(&mut self, res: fn() -> T) {
         self.resources.get_mut_or_insert_with(res);
     }
 
@@ -72,7 +72,7 @@ impl UiWorld {
         }
     }
 
-    pub(crate) fn save_to_disk(&self) {
+    pub fn save_to_disk(&self) {
         unsafe {
             for l in &SAVELOAD_FUNCS {
                 (l.save)(self);
@@ -82,14 +82,14 @@ impl UiWorld {
 }
 
 #[derive(Default)]
-pub(crate) struct ReceivedCommands(WorldCommands);
+pub struct ReceivedCommands(WorldCommands);
 
 impl ReceivedCommands {
     #[allow(dead_code)]
-    pub(crate) fn new(commands: WorldCommands) -> Self {
+    pub fn new(commands: WorldCommands) -> Self {
         Self(commands)
     }
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &WorldCommand> {
+    pub fn iter(&self) -> impl Iterator<Item = &WorldCommand> {
         self.0.iter()
     }
 }

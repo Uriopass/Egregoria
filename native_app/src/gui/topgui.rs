@@ -29,20 +29,20 @@ use std::time::{Duration, Instant};
 
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
-pub(crate) struct Gui {
-    pub(crate) windows: GUIWindows,
+pub struct Gui {
+    pub windows: GUIWindows,
     #[serde(skip)]
-    pub(crate) last_save: Instant,
+    pub last_save: Instant,
     #[serde(skip)]
-    pub(crate) last_gui_save: Instant,
+    pub last_gui_save: Instant,
     #[serde(skip)]
-    pub(crate) n_cars: i32,
+    pub n_cars: i32,
     #[serde(skip)]
-    pub(crate) n_pedestrians: i32,
+    pub n_pedestrians: i32,
     #[serde(skip)]
-    pub(crate) depause_warp: u32,
+    pub depause_warp: u32,
     #[serde(skip)]
-    pub(crate) hidden: bool,
+    pub hidden: bool,
 }
 
 impl Default for Gui {
@@ -68,7 +68,7 @@ impl Gui {
 
     /// Root GUI entrypoint
     #[profiling::function]
-    pub(crate) fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         self.menu_bar(ui, uiworld, goria);
 
         Self::inspector(ui, uiworld, goria);
@@ -85,7 +85,7 @@ impl Gui {
     }
 
     #[profiling::function]
-    pub(crate) fn tooltip(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn tooltip(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         let tooltip = std::mem::take(&mut *uiworld.write::<ErrorTooltip>());
         if let Some(msg) = tooltip.msg {
             if !(tooltip.isworld && ui.is_pointer_over_area()) {
@@ -122,7 +122,7 @@ impl Gui {
     }
 
     #[profiling::function]
-    pub(crate) fn auto_save(&mut self, uiworld: &mut UiWorld) {
+    pub fn auto_save(&mut self, uiworld: &mut UiWorld) {
         let every = uiworld.read::<Settings>().auto_save_every.into();
         if let Some(every) = every {
             if self.last_save.elapsed() > every {
@@ -143,9 +143,9 @@ impl Gui {
     }
 
     #[profiling::function]
-    pub(crate) fn toolbox(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn toolbox(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         #[derive(Copy, Clone)]
-        pub(crate) enum Tab {
+        pub enum Tab {
             Hand,
             Roadbuild,
             Roadcurved,
@@ -597,7 +597,7 @@ impl Gui {
     }
 
     #[profiling::function]
-    pub(crate) fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         let inspected_building = *uiworld.read::<InspectedBuilding>();
         if let Some(b) = inspected_building.e {
             inspect_building(uiworld, goria, ui, b);
@@ -624,7 +624,7 @@ impl Gui {
     }
 
     #[profiling::function]
-    pub(crate) fn time_controls(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn time_controls(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         let time = goria.read::<GameTime>().daytime;
         let warp = &mut uiworld.write::<Settings>().time_warp;
         let depause_warp = &mut self.depause_warp;
@@ -689,7 +689,7 @@ impl Gui {
     }
 
     #[profiling::function]
-    pub(crate) fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+    pub fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         //let _t = ui.push_style_var(StyleVar::ItemSpacing([3.0, 0.0]));
 
         egui::TopBottomPanel::top("top_menu").show(ui, |ui| {
@@ -771,7 +771,7 @@ impl Gui {
     }
 }
 
-pub(crate) fn item_icon(ui: &mut Ui, uiworld: &UiWorld, item: &Item, multiplier: i32) -> Response {
+pub fn item_icon(ui: &mut Ui, uiworld: &UiWorld, item: &Item, multiplier: i32) -> Response {
     ui.horizontal(move |ui| {
         if let Some(id) = uiworld
             .read::<UiTextures>()
@@ -791,7 +791,7 @@ pub(crate) fn item_icon(ui: &mut Ui, uiworld: &UiWorld, item: &Item, multiplier:
     .inner
 }
 
-pub(crate) enum ExitState {
+pub enum ExitState {
     NoExit,
     ExitAsk,
     Saving,

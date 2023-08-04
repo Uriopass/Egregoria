@@ -25,17 +25,17 @@ use common::saveload::Encoder;
 use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::utils::scheduler::SeqSchedule;
 
-pub(crate) const VERSION: &str = include_str!("../../VERSION");
+pub const VERSION: &str = include_str!("../../VERSION");
 
 /// State is the main struct that contains all the state of the game and game UI.
-pub(crate) struct State {
-    pub(crate) goria: Arc<RwLock<Egregoria>>,
+pub struct State {
+    pub goria: Arc<RwLock<Egregoria>>,
 
-    pub(crate) uiw: UiWorld,
+    pub uiw: UiWorld,
 
-    pub(crate) game_schedule: SeqSchedule,
+    pub game_schedule: SeqSchedule,
 
-    pub(crate) camera: CameraHandler3D,
+    pub camera: CameraHandler3D,
 
     egui_render: EguiWrapper,
 
@@ -48,7 +48,7 @@ pub(crate) struct State {
 }
 
 impl State {
-    pub(crate) fn new(ctx: &mut Context) -> Self {
+    pub fn new(ctx: &mut Context) -> Self {
         let camera = CameraHandler3D::load(ctx.gfx.size);
 
         let mut egui_render = EguiWrapper::new(&mut ctx.gfx, ctx.el.as_ref().unwrap());
@@ -100,7 +100,7 @@ impl State {
     }
 
     #[profiling::function]
-    pub(crate) fn update(&mut self, ctx: &mut Context) {
+    pub fn update(&mut self, ctx: &mut Context) {
         if self
             .uiw
             .read::<WorldCommands>()
@@ -157,14 +157,14 @@ impl State {
         self.camera.update(ctx);
     }
 
-    pub(crate) fn reset(&mut self) {
+    pub fn reset(&mut self) {
         self.road_renderer.reset();
         self.road_renderer.terrain_dirt_id = 0;
         self.road_renderer.meshb.map_dirt_id = 0;
     }
 
     #[profiling::function]
-    pub(crate) fn render(&mut self, ctx: &mut FrameContext<'_>) {
+    pub fn render(&mut self, ctx: &mut FrameContext<'_>) {
         let start = Instant::now();
         let goria = self.goria.read().unwrap();
 
@@ -237,7 +237,7 @@ impl State {
     }
 
     #[profiling::function]
-    pub(crate) fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext<'_, '_>) {
+    pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext<'_, '_>) {
         let gui = &mut self.gui;
         let uiworld = &mut self.uiw;
         let pixels_per_point = uiworld.read::<Settings>().gui_scale;
@@ -304,20 +304,20 @@ impl State {
         drop(map);
     }
 
-    pub(crate) fn event(&mut self, event: &winit::event::WindowEvent<'_>) {
+    pub fn event(&mut self, event: &winit::event::WindowEvent<'_>) {
         self.egui_render.handle_event(event);
     }
 
-    pub(crate) fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {
+    pub fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {
         self.camera
             .resize(ctx, size.width as f32, size.height as f32);
     }
 }
 
 #[derive(Default)]
-pub(crate) struct Timings {
-    pub(crate) all: History,
-    pub(crate) world_update: History,
-    pub(crate) render: History,
-    pub(crate) per_game_system: Vec<(String, f32)>,
+pub struct Timings {
+    pub all: History,
+    pub world_update: History,
+    pub render: History,
+    pub per_game_system: Vec<(String, f32)>,
 }

@@ -18,14 +18,14 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, RwLock};
 use std::time::{Duration, Instant};
 
-pub(crate) struct GameAudio {
+pub struct GameAudio {
     music: Music,
     ambiant: Ambient,
     carsounds: CarSounds,
 }
 
 impl GameAudio {
-    pub(crate) fn new(ctx: &mut AudioContext) -> Self {
+    pub fn new(ctx: &mut AudioContext) -> Self {
         defer!(log::info!("finished init of game audio"));
         Self {
             music: Music::new(),
@@ -34,12 +34,7 @@ impl GameAudio {
         }
     }
 
-    pub(crate) fn update(
-        &mut self,
-        goria: &Egregoria,
-        uiworld: &mut UiWorld,
-        ctx: &mut AudioContext,
-    ) {
+    pub fn update(&mut self, goria: &Egregoria, uiworld: &mut UiWorld, ctx: &mut AudioContext) {
         self.music.update(ctx);
         self.ambiant.update(goria, uiworld);
         self.carsounds.update(goria, uiworld, ctx);
@@ -50,7 +45,7 @@ type StoredAudio = Arc<Frames<[Sample; 2]>>;
 
 // We allow dead_code because we need to keep OutputStream alive for it to work
 #[allow(dead_code)]
-pub(crate) struct AudioContext {
+pub struct AudioContext {
     stream: Option<cpal::Stream>,
     scene_handle: Option<Handle<Mixer<[Sample; 2]>>>,
     cache: Arc<RwLock<FastMap<String, StoredAudio>>>,
@@ -66,7 +61,7 @@ type Stereo = [Sample; 2];
 type BaseSignal = FramesSignal<Stereo>;
 
 impl AudioContext {
-    pub(crate) fn empty<T: Debug>(x: T) -> Self {
+    pub fn empty<T: Debug>(x: T) -> Self {
         log::error!("Couldn't initialize audio because: {:?}", x);
         Self {
             stream: None,
@@ -75,7 +70,7 @@ impl AudioContext {
             preloading: Default::default(),
         }
     }
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         let host = cpal::default_host();
         let device = match host.default_output_device() {
             Some(x) => x,
@@ -122,7 +117,7 @@ impl AudioContext {
         }
     }
 
-    pub(crate) fn preload<'a>(&mut self, sounds: impl Iterator<Item = &'a str> + Send + 'static) {
+    pub fn preload<'a>(&mut self, sounds: impl Iterator<Item = &'a str> + Send + 'static) {
         sounds.for_each(move |v| {
             self.preloading.insert(v.to_string());
             let s = v.to_string();
@@ -135,7 +130,7 @@ impl AudioContext {
         });
     }
 
-    pub(crate) fn g_volume(&self, kind: AudioKind) -> f32 {
+    pub fn g_volume(&self, kind: AudioKind) -> f32 {
         match kind {
             AudioKind::Music => f32::from_bits(MUSIC_SHARED.load(Ordering::Relaxed)),
             AudioKind::Effect => f32::from_bits(EFFECT_SHARED.load(Ordering::Relaxed)),
@@ -224,7 +219,7 @@ impl AudioContext {
         None
     }
 
-    pub(crate) fn play(&mut self, name: &'static str, kind: AudioKind) {
+    pub fn play(&mut self, name: &'static str, kind: AudioKind) {
         let vol = self.g_volume(kind);
         if let Some(ref mut h) = self.scene_handle {
             if let Some(x) = Self::get(&self.preloading, &self.cache, name) {
@@ -239,11 +234,11 @@ impl AudioContext {
         }
     }
 
-    pub(crate) fn is_all_ready(&self) -> bool {
+    pub fn is_all_ready(&self) -> bool {
         self.cache.read().unwrap().len() >= self.preloading.len()
     }
 
-    pub(crate) fn play_with_control<S: 'static>(
+    pub fn play_with_control<S: 'static>(
         &mut self,
         name: &'static str,
         transform: impl FnOnce(StoredAudio) -> S,
@@ -266,7 +261,7 @@ impl AudioContext {
         None
     }
 
-    pub(crate) fn set_settings(&mut self, settings: &Settings) {
+    pub fn set_settings(&mut self, settings: &Settings) {
         let ui_volume = (settings.ui_volume_percent / 100.0).powi(2);
         if (f32::from_bits(UI_SHARED.load(Ordering::Relaxed)) - ui_volume).abs() > f32::EPSILON {
             UI_SHARED.store(ui_volume.to_bits(), Ordering::Relaxed);
@@ -288,7 +283,7 @@ impl AudioContext {
     }
 }
 
-pub(crate) struct GlobalGain<T: ?Sized> {
+pub struct GlobalGain<T: ?Sized> {
     volume: RefCell<Smoothed<f32>>,
     kind: AudioKind,
     inner: T,
@@ -345,14 +340,14 @@ impl<T> Filter for GlobalGain<T> {
     }
 }
 
-pub(crate) struct FadeIn<T: ?Sized> {
+pub struct FadeIn<T: ?Sized> {
     fadetime: f32,
     advance: RefCell<f32>,
     inner: T,
 }
 
 impl<T> FadeIn<T> {
-    pub(crate) fn new(signal: T, fadetime: f32) -> Self {
+    pub fn new(signal: T, fadetime: f32) -> Self {
         Self {
             fadetime,
             advance: RefCell::new(0.0),

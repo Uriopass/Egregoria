@@ -10,7 +10,7 @@ use ordered_float::OrderedFloat;
 use std::borrow::Cow;
 
 #[derive(Debug, Copy, Clone, Default)]
-pub(crate) struct ZoneEditState {
+pub struct ZoneEditState {
     offset: Option<Vec2>,
     i: usize,
     insert: bool,
@@ -19,7 +19,7 @@ pub(crate) struct ZoneEditState {
 /// ZoneEdit tool
 /// Allows to edit the zone of a building like a farm field or solarpanel field
 #[profiling::function]
-pub(crate) fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
+pub fn zoneedit(goria: &Egregoria, uiworld: &mut UiWorld) {
     let mut inspected_b = uiworld.write::<InspectedBuilding>();
     let mut state = uiworld.write::<ZoneEditState>();
     let mut potentialcommand = uiworld.write::<PotentialCommands>();
