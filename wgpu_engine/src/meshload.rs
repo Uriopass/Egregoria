@@ -340,7 +340,7 @@ pub fn load_mesh(gfx: &mut GfxContext, asset_name: &str) -> Result<Mesh, LoadMes
         return Err(LoadMeshError::NoIndices);
     }
 
-    let mut meshb = MeshBuilder::new_without_mat();
+    let mut meshb = MeshBuilder::<false>::new_without_mat();
     meshb.vertices = flat_vertices;
     meshb.indices = indices;
     meshb.materials = materials_idx;

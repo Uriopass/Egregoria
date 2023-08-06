@@ -4,7 +4,6 @@ use geom::{vec2, Intersect, Radians, Vec2, AABB};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::num::Wrapping;
 
 pub const CHUNK_SIZE: u32 = 1024;
 pub const CHUNK_RESOLUTION: usize = 32;
@@ -14,7 +13,17 @@ pub const CELL_SIZE: f32 = CHUNK_SIZE as f32 / CHUNK_RESOLUTION as f32;
 pub struct Chunk {
     pub trees: Vec<Tree>,
     pub heights: [[f32; CHUNK_RESOLUTION]; CHUNK_RESOLUTION],
-    pub dirt_id: Wrapping<u32>,
+}
+
+impl Chunk {
+    pub fn rect(id: ChunkID) -> AABB {
+        let ll = vec2(
+            id.0 as f32 * CHUNK_SIZE as f32,
+            id.1 as f32 * CHUNK_SIZE as f32,
+        );
+        let ur = ll + vec2(CHUNK_SIZE as f32, CHUNK_SIZE as f32);
+        AABB::new(ll, ur)
+    }
 }
 
 impl Default for Chunk {
@@ -22,7 +31,6 @@ impl Default for Chunk {
         Self {
             trees: Default::default(),
             heights: Default::default(),
-            dirt_id: Wrapping(1),
         }
     }
 }
@@ -37,10 +45,16 @@ pub struct Tree {
 
 pub type ChunkID = (u32, u32);
 
+pub fn chunk_id(v: Vec2) -> ChunkID {
+    if v.x < 0.0 || v.y < 0.0 {
+        return (0, 0);
+    }
+    (v.x as u32 / CHUNK_SIZE, v.y as u32 / CHUNK_SIZE)
+}
+
 #[derive(Clone)]
 pub struct Terrain {
     pub chunks: BTreeMap<ChunkID, Chunk>,
-    pub dirt_id: Wrapping<u32>,
     pub width: u32,
     pub height: u32,
 }
@@ -57,7 +71,6 @@ impl Terrain {
     pub fn new(w: u32, h: u32) -> Self {
         let mut me = Self {
             chunks: Default::default(),
-            dirt_id: Wrapping(1),
             width: w,
             height: h,
         };
@@ -75,30 +88,23 @@ impl Terrain {
         me
     }
 
-    pub fn remove_near(&mut self, obj: impl Intersect<Vec2>) {
-        let mut v = false;
+    pub fn remove_near(&mut self, obj: impl Intersect<Vec2>, mut f: impl FnMut(ChunkID)) {
         for cell in self.chunks_iter(obj.bbox()) {
             let chunk = unwrap_cont!(self.chunks.get_mut(&cell));
-            let mut vcell = false;
+            let mut changed = false;
             chunk.trees.retain(|t| {
-                let rem = obj.intersects(&t.pos);
-                vcell |= rem;
-                !rem
+                let delete_tree = obj.intersects(&t.pos);
+                changed |= delete_tree;
+                !delete_tree
             });
-            chunk.dirt_id += Wrapping(vcell as u32);
-            v |= vcell;
+            if changed {
+                f(cell);
+            }
         }
-        self.dirt_id += Wrapping(v as u32)
     }
 
     pub fn cell(p: Vec2) -> (u32, u32) {
-        if p.x < 0.0 || p.y < 0.0 {
-            return (0, 0);
-        }
-        (
-            p.x as u32 / CHUNK_SIZE - (p.x < 0.0) as u32,
-            p.y as u32 / CHUNK_SIZE - (p.y < 0.0) as u32,
-        )
+        chunk_id(p)
     }
 
     fn chunks_iter(&self, aabb: AABB) -> impl Iterator<Item = (u32, u32)> {
@@ -238,7 +244,6 @@ struct SerializedChunk {
 #[derive(Serialize, Deserialize)]
 struct SerializedTerrain {
     v: Vec<((u32, u32), SerializedChunk)>,
-    dirt_id: u32,
     w: u32,
     h: u32,
 }
@@ -246,7 +251,6 @@ struct SerializedTerrain {
 impl From<SerializedTerrain> for Terrain {
     fn from(ser: SerializedTerrain) -> Self {
         let mut t = Terrain {
-            dirt_id: Wrapping(ser.dirt_id),
             width: ser.w,
             height: ser.h,
             ..Self::default()
@@ -264,7 +268,6 @@ impl From<SerializedTerrain> for Terrain {
                 Chunk {
                     trees,
                     heights: v.heights,
-                    dirt_id: Wrapping(1),
                 },
             );
         }
@@ -276,7 +279,6 @@ impl From<&Terrain> for SerializedTerrain {
     fn from(ter: &Terrain) -> Self {
         let mut t = SerializedTerrain {
             v: vec![],
-            dirt_id: ter.dirt_id.0,
             w: ter.width,
             h: ter.height,
         };

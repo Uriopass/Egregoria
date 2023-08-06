@@ -3,7 +3,6 @@ use crate::{
     IndexType, Material, Mesh, MeshBuilder, MeshVertex, MetallicRoughness, PipelineBuilder,
     RenderParams, TerrainVertex, Texture, Uniform, TL,
 };
-use common::FastMap;
 use geom::{
     vec2, vec3, Camera, InfiniteFrustrum, Intersect3, LinearColor, Matrix4, Polygon, Vec2, AABB3,
 };
@@ -21,8 +20,6 @@ pub struct TerrainChunk {
 }
 
 pub struct TerrainRender<const CSIZE: usize, const CRESOLUTION: usize> {
-    pub dirt_id: u32,
-    dirt_ids: FastMap<(u32, u32), u32>,
     terrain_tex: Arc<Texture>,
     #[allow(unused)]
     grass_tex: Arc<Texture>, // kept alive
@@ -77,13 +74,11 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 &gfx.device,
                 &Texture::bindgroup_layout(&gfx.device, [TL::NonfilterableFloat, TL::Float]),
             )),
-            dirt_ids: Default::default(),
             terrain_tex: Arc::new(tex),
             grass_tex: grass,
             borders: Arc::new(vec![]),
             indices,
             vertices,
-            dirt_id: 0,
             cell_size: CSIZE as f32 / CRESOLUTION as f32,
             w,
             h,
@@ -92,27 +87,12 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         }
     }
 
-    pub fn reset(&mut self) {
-        self.dirt_id = 0;
-        self.dirt_ids.clear();
-    }
-
     pub fn update_chunk(
         &mut self,
         gfx: &mut GfxContext,
-        dirtid: u32,
         cell: (u32, u32),
         chunk: &[[f32; CRESOLUTION]; CRESOLUTION],
     ) -> bool {
-        if self
-            .dirt_ids
-            .get(&cell)
-            .map(|x| *x == dirtid)
-            .unwrap_or_default()
-        {
-            return false;
-        }
-
         let mut contents = Vec::with_capacity(CRESOLUTION * CRESOLUTION);
 
         let extrax = cell.0 + 1 == self.w;
@@ -166,7 +146,6 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             },
         );
 
-        self.dirt_ids.insert(cell, dirtid);
         true
     }
 
@@ -217,11 +196,17 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
         }));
     }
 
-    pub fn update_borders(&mut self, gfx: &mut GfxContext, height: &dyn Fn(Vec2) -> Option<f32>) {
-        let minx = unwrap_ret!(self.dirt_ids.keys().map(|x| x.0).min());
-        let maxx = unwrap_ret!(self.dirt_ids.keys().map(|x| x.0).max()) + 1;
-        let miny = unwrap_ret!(self.dirt_ids.keys().map(|x| x.1).min());
-        let maxy = unwrap_ret!(self.dirt_ids.keys().map(|x| x.1).max()) + 1;
+    pub fn update_borders(
+        &mut self,
+        min: (u32, u32),
+        max: (u32, u32),
+        gfx: &mut GfxContext,
+        height: &dyn Fn(Vec2) -> Option<f32>,
+    ) {
+        let minx = min.0;
+        let maxx = min.1 + 1;
+        let miny = max.0;
+        let maxy = max.1 + 1;
         let cell_size = self.cell_size;
         let mut mk_bord = |start, end, c, is_x, rev| {
             let c = c as f32 * CSIZE as f32;
@@ -264,7 +249,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
                 },
                 None,
             ));
-            let mut mb = MeshBuilder::new(mat);
+            let mut mb = MeshBuilder::<false>::new(mat);
             mb.indices = indices;
             mb.vertices = poly
                 .0

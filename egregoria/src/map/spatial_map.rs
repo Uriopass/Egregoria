@@ -1,4 +1,4 @@
-use crate::map::{BuildingID, IntersectionID, LotID, Map, RoadID};
+use crate::map::{BuildingID, CanonicalPosition, IntersectionID, LotID, Map, RoadID};
 use derive_more::From;
 use flat_spatial::aabbgrid::AABBGridHandle;
 use flat_spatial::AABBGrid;
@@ -22,6 +22,28 @@ impl ProjectKind {
             Some(id)
         } else {
             None
+        }
+    }
+
+    pub fn canonical_position(&self, map: &Map) -> Vec2 {
+        match *self {
+            ProjectKind::Inter(id) => map
+                .intersections
+                .get(id)
+                .map_or(Vec2::ZERO, CanonicalPosition::canonical_position),
+            ProjectKind::Road(id) => map
+                .roads
+                .get(id)
+                .map_or(Vec2::ZERO, CanonicalPosition::canonical_position),
+            ProjectKind::Building(id) => map
+                .buildings
+                .get(id)
+                .map_or(Vec2::ZERO, CanonicalPosition::canonical_position),
+            ProjectKind::Lot(id) => map
+                .lots
+                .get(id)
+                .map_or(Vec2::ZERO, CanonicalPosition::canonical_position),
+            ProjectKind::Ground => Vec2::ZERO,
         }
     }
 

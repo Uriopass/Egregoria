@@ -1,8 +1,9 @@
 use crate::map::serializing::SerializedMap;
 use crate::map::{
     Building, BuildingGen, BuildingID, BuildingKind, Intersection, IntersectionID, Lane, LaneID,
-    LaneKind, LanePattern, Lot, LotID, LotKind, ParkingSpotID, ParkingSpots, ProjectFilter,
-    ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain, Zone,
+    LaneKind, LanePattern, Lot, LotID, LotKind, MapSubscriber, MapSubscribers, ParkingSpotID,
+    ParkingSpots, ProjectFilter, ProjectKind, Road, RoadID, RoadSegmentKind, SpatialMap, Terrain,
+    UpdateType, Zone,
 };
 use geom::OBB;
 use geom::{Spline3, Vec2, Vec3};
@@ -10,7 +11,6 @@ use ordered_float::OrderedFloat;
 use serde::{Deserialize, Serialize};
 use slotmapd::HopSlotMap;
 use std::collections::BTreeMap;
-use std::num::Wrapping;
 
 pub type Roads = HopSlotMap<RoadID, Road>;
 pub type Lanes = HopSlotMap<LaneID, Lane>;
@@ -34,7 +34,7 @@ pub struct Map {
     pub(crate) bkinds: BTreeMap<BuildingKind, Vec<BuildingID>>,
     pub terrain: Terrain,
     pub parking: ParkingSpots,
-    pub dirt_id: Wrapping<u32>,
+    pub subscribers: MapSubscribers,
 }
 
 defer_serialize!(Map, SerializedMap);
@@ -56,28 +56,26 @@ impl Map {
             buildings: Buildings::default(),
             lots: Lots::default(),
             terrain: Terrain::default(),
-            dirt_id: Wrapping(1),
             spatial_map: SpatialMap::default(),
             bkinds: Default::default(),
+            subscribers: Default::default(),
         }
     }
 
     pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection)) {
         info!("update_intersection {:?}", id);
-        self.dirt_id += Wrapping(1);
 
-        let inter = unwrap_ret!(self.intersections.get_mut(id));
+        let inter: &mut Intersection = unwrap_ret!(self.intersections.get_mut(id));
         f(inter);
         inter.update_traffic_control(&mut self.lanes, &self.roads);
         inter.update_turns(&self.lanes, &self.roads);
 
+        self.subscribers.dispatch(UpdateType::Road, inter);
         self.check_invariants()
     }
 
     pub fn remove_intersection(&mut self, src: IntersectionID) {
         info!("remove_intersection {:?}", src);
-        self.dirt_id += Wrapping(1);
-
         self.remove_intersection_inner(src);
 
         self.check_invariants()
@@ -85,9 +83,11 @@ impl Map {
 
     fn remove_intersection_inner(&mut self, src: IntersectionID) {
         let inter = unwrap_ret!(self.intersections.remove(src));
+        self.subscribers.dispatch(UpdateType::Road, &inter);
 
         for road in inter.roads {
             let r = unwrap_cont!(self.remove_road_inner(road));
+
             let o = unwrap_cont!(r.other_end(src));
             self.invalidate(o);
         }
@@ -95,13 +95,17 @@ impl Map {
         self.spatial_map.remove(src);
     }
 
+    pub fn dispatch_all(&self) {
+        self.subscribers
+            .dispatch_all(self.terrain.chunks.keys().copied())
+    }
+
     pub fn remove_building(&mut self, b: BuildingID) -> Option<Building> {
         info!("remove_building {:?}", b);
 
         let b = self.buildings.remove(b)?;
         self.spatial_map.remove(b.id);
-
-        self.dirt_id += Wrapping(1);
+        self.subscribers.dispatch(UpdateType::Building, &b);
 
         if b.kind.is_cached_in_bkinds() {
             self.bkinds
@@ -154,11 +158,14 @@ impl Map {
 
     pub fn update_zone(&mut self, id: BuildingID, f: impl FnOnce(&mut Zone)) {
         let Some(b) = self.buildings.get_mut(id) else { return; };
-        let Some(ref mut z) = b.zone else { return; };
+        self.subscribers.dispatch(UpdateType::Building, b);
 
+        let Some(ref mut z) = b.zone else { return; };
         f(z);
 
-        self.terrain.remove_near(&z.poly);
+        self.terrain.remove_near(&z.poly, |c| {
+            self.subscribers.dispatch_chunk(UpdateType::Terrain, c)
+        });
 
         self.spatial_map.insert(id, z.poly.clone());
 
@@ -168,7 +175,6 @@ impl Map {
             .collect();
         self.clean_lots_inner(toclean);
 
-        self.dirt_id += Wrapping(1);
         self.check_invariants()
     }
 
@@ -190,11 +196,12 @@ impl Map {
             gen,
             zone
         );
-        self.dirt_id += Wrapping(1);
 
         self.clean_lots_inner(self.spatial_map.query(obb, ProjectFilter::LOT).collect());
 
-        self.terrain.remove_near(obb.expand(10.0));
+        self.terrain.remove_near(obb.expand(10.0), |c| {
+            self.subscribers.dispatch_chunk(UpdateType::Terrain, c)
+        });
 
         let v = Building::make(
             &mut self.buildings,
@@ -218,10 +225,9 @@ impl Map {
 
     pub fn build_house(&mut self, id: LotID) -> Option<BuildingID> {
         info!("build house on {:?}", id);
-        self.dirt_id += Wrapping(1);
 
         let lot = self.lots.remove(id)?;
-
+        self.subscribers.dispatch(UpdateType::Road, &lot);
         self.spatial_map.remove(lot.id);
 
         let v = Building::make(
@@ -233,6 +239,10 @@ impl Map {
             BuildingGen::House,
             None,
         );
+        if let Some(id) = v {
+            self.subscribers
+                .dispatch(UpdateType::Building, &self.buildings[id]);
+        }
         self.check_invariants();
         v
     }
@@ -240,17 +250,20 @@ impl Map {
     pub fn remove_road(&mut self, road_id: RoadID) -> Option<Road> {
         info!("remove_road {:?}", road_id);
 
-        self.dirt_id += Wrapping(1);
-
         let v = self.remove_road_inner(road_id);
         self.check_invariants();
         v
+    }
+
+    pub fn subscribe(&self, filter: UpdateType) -> MapSubscriber {
+        self.subscribers.subscribe(filter)
     }
 
     fn clean_lots_inner(&mut self, to_clean: Vec<ProjectKind>) {
         for id in to_clean {
             if let ProjectKind::Lot(id) = id {
                 self.spatial_map.remove(id);
+                self.subscribers.dispatch(UpdateType::Road, &self.lots[id]);
 
                 unwrap_contlog!(
                     &self.lots.remove(id),
@@ -262,6 +275,7 @@ impl Map {
 
     fn remove_road_inner(&mut self, road_id: RoadID) -> Option<Road> {
         let road = self.remove_raw_road(road_id)?;
+        self.subscribers.dispatch(UpdateType::Road, &road);
 
         for (id, _) in road.lanes_iter() {
             self.parking.remove_spots(id);
@@ -285,7 +299,7 @@ impl Map {
         match self.lots.get_mut(lot) {
             Some(lot) => {
                 lot.kind = kind;
-                self.dirt_id += Wrapping(1);
+                self.subscribers.dispatch(UpdateType::Road, lot);
             }
             None => log::warn!("trying to set kind of non-existing lot {:?}", lot),
         }
@@ -295,7 +309,7 @@ impl Map {
         info!("clear");
         let before = std::mem::replace(self, Self::empty());
         self.terrain = before.terrain;
-        self.dirt_id = before.dirt_id + Wrapping(1);
+        self.subscribers.dispatch_clear();
 
         self.check_invariants();
     }
@@ -303,14 +317,17 @@ impl Map {
     // Private mutating
 
     pub(crate) fn add_intersection(&mut self, pos: Vec3) -> IntersectionID {
-        Intersection::make(&mut self.intersections, &mut self.spatial_map, pos)
+        let id = Intersection::make(&mut self.intersections, &mut self.spatial_map, pos);
+        self.subscribers
+            .dispatch(UpdateType::Building, &self.intersections[id]);
+        id
     }
 
     fn invalidate(&mut self, id: IntersectionID) {
         info!("invalidate {:?}", id);
 
-        self.dirt_id += Wrapping(1);
         let inter = unwrap_ret!(self.intersections.get_mut(id));
+        self.subscribers.dispatch(UpdateType::Road, inter);
 
         if inter.roads.is_empty() {
             self.remove_intersection_inner(id);
@@ -324,6 +341,7 @@ impl Map {
                 self.roads.get(x),
                 "intersection has unexisting road in list"
             );
+            self.subscribers.dispatch(UpdateType::Road, road);
 
             let oend_id = unwrap_cont!(road.other_end(id));
 
@@ -377,6 +395,7 @@ impl Map {
             log::error!("Trying to split unexisting road");
             return None;
         });
+        self.subscribers.dispatch(UpdateType::Road, &r);
 
         for (id, _) in r.lanes_iter() {
             self.parking.remove_to_reuse(id);
@@ -474,7 +493,6 @@ impl Map {
             "connect {:?} {:?} {:?} {:?}",
             src_id, dst_id, pattern, segment
         );
-        self.dirt_id += Wrapping(1);
 
         let src = self.intersections.get(src_id)?;
         let dst = self.intersections.get(dst_id)?;
@@ -505,7 +523,9 @@ impl Map {
         let r = &self.roads[id];
         let mut b = r.boldline();
         b.expand(40.0);
-        self.terrain.remove_near(&b);
+        self.terrain.remove_near(&b, |c| {
+            self.subscribers.dispatch_chunk(UpdateType::Terrain, c)
+        });
 
         Some(id)
     }

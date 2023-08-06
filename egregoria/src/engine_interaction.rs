@@ -65,7 +65,6 @@ pub enum WorldCommand {
         building: BuildingID,
         zone: Zone,
     },
-    ResetSave,
     SetGameTime(GameTime),
 }
 
@@ -102,10 +101,6 @@ impl WorldCommands {
 
     pub fn map_load_testfield(&mut self, pos: Vec2, size: u32, spacing: f32) {
         self.commands.push(MapLoadTestField { pos, size, spacing })
-    }
-
-    pub fn reset_save(&mut self) {
-        self.commands.push(ResetSave)
     }
 
     pub fn set_game_time(&mut self, gt: GameTime) {
@@ -278,10 +273,6 @@ impl WorldCommand {
             MapLoadParis => load_parismap(&mut goria.map_mut()),
             MapLoadTestField { pos, size, spacing } => {
                 load_testfield(&mut goria.map_mut(), pos, size, spacing)
-            }
-            ResetSave => {
-                let opts = *goria.read::<EgregoriaOptions>();
-                *goria = Egregoria::new_with_options(opts);
             }
             Init(ref opts) => {
                 if opts.save_replay {

@@ -1,10 +1,10 @@
 use crate::rendering::immediate::ImmediateDraw;
 use crate::rendering::map_mesh::MapMeshHandler;
 use crate::Context;
-use common::FastMap;
+use common::{FastMap, FastSet};
 use egregoria::map::{
-    ChunkID, Lane, LaneID, LaneKind, Map, ProjectFilter, ProjectKind, TrafficBehavior,
-    CHUNK_RESOLUTION, CHUNK_SIZE,
+    ChunkID, Lane, LaneID, LaneKind, Map, MapSubscriber, ProjectFilter, ProjectKind,
+    TrafficBehavior, UpdateType, CHUNK_RESOLUTION, CHUNK_SIZE,
 };
 use egregoria::Egregoria;
 use flat_spatial::AABBGrid;
@@ -17,7 +17,7 @@ use wgpu_engine::terrain::TerrainRender;
 use wgpu_engine::wgpu::RenderPass;
 use wgpu_engine::{
     Drawable, FrameContext, GfxContext, InstancedMesh, InstancedMeshBuilder, LampLights,
-    MeshInstance, Water,
+    LightChunkID, MeshInstance, Water,
 };
 
 const CSIZE: usize = CHUNK_SIZE as usize;
@@ -28,29 +28,20 @@ pub struct MapRenderer {
     pub meshb: MapMeshHandler,
 
     terrain: TerrainRender<CSIZE, CRESO>,
+    terrain_sub: MapSubscriber,
 
-    #[allow(clippy::type_complexity)]
-    trees_builders: FastMap<ChunkID, (InstancedMeshBuilder, Option<(Option<InstancedMesh>, u32)>)>,
-    pub terrain_dirt_id: u32,
+    tree_builder: InstancedMeshBuilder<false>,
+    trees_cache: FastMap<ChunkID, InstancedMesh>,
+    tree_sub: MapSubscriber,
+
     water: Water,
 
-    lampposts_dirtid: u32,
+    lamp_memory: FastSet<LightChunkID>,
+    lamp_sub: MapSubscriber,
 }
 
 pub struct MapRenderOptions {
     pub show_arrows: bool,
-}
-
-impl MapRenderer {
-    pub fn reset(&mut self) {
-        self.terrain_dirt_id = 0;
-        self.terrain.reset();
-
-        self.meshb.map_dirt_id = 0;
-        for v in self.trees_builders.values_mut() {
-            v.1 = None;
-        }
-    }
 }
 
 impl MapRenderer {
@@ -62,20 +53,26 @@ impl MapRenderer {
 
         let grass = gfx.texture("assets/sprites/grass.jpg", "grass");
 
+        let terrain = TerrainRender::new(gfx, w, h, egregoria::config().border_col.into(), grass);
+
+        /*
+        let ter = &goria.map().terrain;
+        let minchunk = *ter.chunks.keys().min().unwrap();
+        let maxchunk = *ter.chunks.keys().max().unwrap();
+        terrain.update_borders(minchunk, maxchunk, gfx, &|p| ter.height(p));
+         */
+
         defer!(log::info!("finished init of road render"));
         MapRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
-            trees_builders: goria
-                .map()
-                .terrain
-                .chunks
-                .keys()
-                .map(|id| (*id, (InstancedMeshBuilder::new(mesh.clone()), None)))
-                .collect(),
-            terrain_dirt_id: 0,
-            terrain: TerrainRender::new(gfx, w, h, egregoria::config().border_col.into(), grass),
+            tree_builder: InstancedMeshBuilder::new(mesh.clone()),
+            trees_cache: FastMap::default(),
+            tree_sub: goria.map().subscribe(UpdateType::Terrain),
+            terrain,
             water: Water::new(gfx, (w * CHUNK_SIZE) as f32, (h * CHUNK_SIZE) as f32),
-            lampposts_dirtid: 0,
+            terrain_sub: goria.map().subscribe(UpdateType::Terrain),
+            lamp_sub: goria.map().subscribe(UpdateType::Road),
+            lamp_memory: Default::default(),
         }
     }
 
@@ -173,17 +170,14 @@ impl MapRenderer {
     pub fn terrain_update(&mut self, ctx: &mut Context, goria: &Egregoria) {
         let map = goria.map();
         let ter = &map.terrain;
-        if ter.dirt_id.0 == self.terrain.dirt_id {
-            return;
-        }
 
         let mut update_count = 0;
-        for &cell in ter.chunks.keys() {
+        while let Some(cell) = self.terrain_sub.take_one_updated_chunk() {
             let chunk = unwrap_retlog!(ter.chunks.get(&cell), "trying to update nonexistent chunk");
 
             if self
                 .terrain
-                .update_chunk(&mut ctx.gfx, chunk.dirt_id.0, cell, &chunk.heights)
+                .update_chunk(&mut ctx.gfx, cell, &chunk.heights)
             {
                 update_count += 1;
                 #[cfg(not(debug_assertions))]
@@ -196,44 +190,31 @@ impl MapRenderer {
                 }
             }
         }
-        if update_count == 0 {
-            self.terrain.dirt_id = ter.dirt_id.0;
-        }
-
-        self.terrain
-            .update_borders(&mut ctx.gfx, &|p| ter.height(p));
     }
 
     pub fn build_trees(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {
-        if map.terrain.dirt_id.0 == self.terrain_dirt_id {
-            return;
-        }
-        self.terrain_dirt_id = map.terrain.dirt_id.0;
-
-        for (chunkid, (builder, mesh_dirt)) in &mut self.trees_builders {
-            let chunk = if let Some(x) = map.terrain.chunks.get(chunkid) {
+        for chunkid in self.tree_sub.take_updated_chunks() {
+            let chunk = if let Some(x) = map.terrain.chunks.get(&chunkid) {
                 x
             } else {
                 continue;
             };
 
-            if let Some((_, dirt)) = mesh_dirt {
-                if *dirt == chunk.dirt_id.0 {
-                    continue;
-                }
-            }
-
-            builder.instances.clear();
+            self.tree_builder.instances.clear();
 
             for t in &chunk.trees {
-                builder.instances.push(MeshInstance {
+                self.tree_builder.instances.push(MeshInstance {
                     pos: t.pos.z(map.terrain.height(t.pos).unwrap_or_default()),
                     dir: t.dir.z0() * t.size * 0.2,
                     tint: ((1.0 - t.size * 0.05) * t.col * LinearColor::WHITE).a(1.0),
                 });
             }
 
-            *mesh_dirt = Some((builder.build(ctx.gfx), chunk.dirt_id.0));
+            if let Some(m) = self.tree_builder.build(ctx.gfx) {
+                self.trees_cache.insert(chunkid, m);
+            } else {
+                self.trees_cache.remove(&chunkid);
+            }
         }
     }
 
@@ -283,7 +264,7 @@ impl MapRenderer {
             }
         }
 
-        for (cid, (_, meshes)) in self.trees_builders.iter() {
+        for (cid, mesh) in self.trees_cache.iter() {
             let chunkcenter = vec3(
                 (cid.0 * CHUNK_SIZE + CHUNK_SIZE / 2) as f32,
                 (cid.1 * CHUNK_SIZE + CHUNK_SIZE / 2) as f32,
@@ -298,19 +279,18 @@ impl MapRenderer {
                 continue;
             }
 
-            if let Some((Some(mesh), _)) = meshes {
-                ctx.draw(TreeMesh(mesh.clone(), chunkcenter));
-            }
+            ctx.draw(TreeMesh(mesh.clone(), chunkcenter));
         }
     }
 
     #[profiling::function]
     pub fn lampposts(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {
-        if self.lampposts_dirtid == map.dirt_id.0 {
+        if self.lamp_sub.take_updated_chunks().next().is_none() {
             return;
         }
-        self.lampposts_dirtid = map.dirt_id.0;
         let lamps = &mut ctx.gfx.lamplights;
+
+        let mut to_clean = std::mem::take(&mut self.lamp_memory);
 
         let mut by_chunk: AABBGrid<(), AABB3> = AABBGrid::new(LampLights::LIGHTCHUNK_SIZE as i32);
 
@@ -345,6 +325,7 @@ impl MapRenderer {
             if cell_idx.0 < 0 || cell_idx.1 < 0 {
                 continue;
             }
+            to_clean.remove(&(cell_idx.0 as u16, cell_idx.1 as u16));
 
             let lamp_poss = cell
                 .objs
@@ -352,6 +333,10 @@ impl MapRenderer {
                 .filter_map(|x| by_chunk.get(x.0))
                 .map(|x| x.aabb.center());
             lamps.register_update((cell_idx.0 as u16, cell_idx.1 as u16), lamp_poss);
+        }
+
+        for chunk in to_clean {
+            lamps.register_update(chunk, std::iter::empty());
         }
     }
 

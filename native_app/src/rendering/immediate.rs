@@ -4,7 +4,9 @@ use common::{AudioKind, FastMap};
 use geom::{LinearColor, Polygon, Vec2, Vec3, AABB, OBB};
 use std::borrow::Cow;
 use wgpu_engine::meshload::load_mesh;
-use wgpu_engine::{FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatch, Tesselator};
+use wgpu_engine::{
+    FrameContext, InstancedMeshBuilder, MeshInstance, SpriteBatchBuilder, Tesselator,
+};
 
 #[derive(Default)]
 pub struct ImmediateSound {
@@ -69,7 +71,7 @@ pub struct ImmediateOrder {
 pub struct ImmediateDraw {
     pub orders: Vec<ImmediateOrder>,
     pub persistent_orders: Vec<ImmediateOrder>,
-    pub mesh_cache: FastMap<String, InstancedMeshBuilder>,
+    pub mesh_cache: FastMap<String, InstancedMeshBuilder<true>>,
 }
 
 pub struct ImmediateBuilder<'a> {
@@ -195,7 +197,7 @@ impl ImmediateDraw {
         self.persistent_orders.clear();
     }
 
-    pub fn apply(&mut self, tess: &mut Tesselator, ctx: &mut FrameContext<'_>) {
+    pub fn apply(&mut self, tess: &mut Tesselator<true>, ctx: &mut FrameContext<'_>) {
         for ImmediateOrder { kind, color } in
             self.persistent_orders.iter().chain(self.orders.iter())
         {
@@ -240,7 +242,7 @@ impl ImmediateDraw {
                 OrderKind::TexturedOBB { obb, ref path, z } => {
                     let tex = unwrap_cont!(ctx.gfx.try_texture(path, "some immediate obb"));
                     ctx.objs.push(Box::new(
-                        SpriteBatch::builder(ctx.gfx, tex)
+                        SpriteBatchBuilder::<false>::new(tex, ctx.gfx)
                             .push(obb.center().z(z), obb.axis()[0].z0(), *color, (1.0, 1.0))
                             .build(ctx.gfx)
                             .unwrap(),

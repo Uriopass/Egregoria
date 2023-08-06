@@ -27,6 +27,7 @@ pub mod procgen {
     pub use presets::*;
 }
 
+mod change_detection;
 mod light_policy;
 #[allow(clippy::module_inception)]
 mod map;
@@ -40,6 +41,7 @@ mod turn_policy;
 
 // Use self or else it would be ambiguous with "pathfinding" crate
 pub use self::pathfinding::*;
+pub use change_detection::*;
 pub use light_policy::*;
 pub use map::*;
 pub use spatial_map::*;

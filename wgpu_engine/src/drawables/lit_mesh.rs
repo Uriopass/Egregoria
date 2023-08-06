@@ -11,16 +11,15 @@ use wgpu::{
     VertexBufferLayout,
 };
 
-pub struct MeshBuilder {
+pub struct MeshBuilder<const PERSISTENT: bool> {
     pub(crate) vertices: Vec<MeshVertex>,
     pub(crate) indices: Vec<IndexType>,
-    pub(crate) vbuffer: PBuffer,
-    pub(crate) ibuffer: PBuffer,
+    pub(crate) vi_buffers: Option<Box<(PBuffer, PBuffer)>>,
     /// List of materialID and the starting offset
     pub(crate) materials: SmallVec<[(MaterialID, u32); 1]>,
 }
 
-impl MikktGeometry for MeshBuilder {
+impl<const PERSISTENT: bool> MikktGeometry for MeshBuilder<PERSISTENT> {
     fn num_faces(&self) -> usize {
         self.indices.len() / 3
     }
@@ -50,13 +49,17 @@ impl MikktGeometry for MeshBuilder {
     }
 }
 
-impl MeshBuilder {
+impl<const PERSISTENT: bool> MeshBuilder<PERSISTENT> {
     pub fn new(mat: MaterialID) -> Self {
         Self {
             vertices: vec![],
             indices: vec![],
-            vbuffer: PBuffer::new(BufferUsages::VERTEX),
-            ibuffer: PBuffer::new(BufferUsages::INDEX),
+            vi_buffers: PERSISTENT.then(|| {
+                Box::new((
+                    PBuffer::new(BufferUsages::VERTEX),
+                    PBuffer::new(BufferUsages::INDEX),
+                ))
+            }),
             materials: smallvec::smallvec![(mat, 0)],
         }
     }
@@ -65,8 +68,12 @@ impl MeshBuilder {
         Self {
             vertices: vec![],
             indices: vec![],
-            vbuffer: PBuffer::new(BufferUsages::VERTEX),
-            ibuffer: PBuffer::new(BufferUsages::INDEX),
+            vi_buffers: PERSISTENT.then(|| {
+                Box::new((
+                    PBuffer::new(BufferUsages::VERTEX),
+                    PBuffer::new(BufferUsages::INDEX),
+                ))
+            }),
             materials: Default::default(),
         }
     }
@@ -111,9 +118,24 @@ impl MeshBuilder {
             return None;
         }
 
-        self.vbuffer
-            .write(gfx, bytemuck::cast_slice(&self.vertices));
-        self.ibuffer.write(gfx, bytemuck::cast_slice(&self.indices));
+        let mut tmpv;
+        let mut tmpi;
+        let vbuffer;
+        let ibuffer;
+
+        if PERSISTENT {
+            let x = self.vi_buffers.as_deref_mut().unwrap();
+            vbuffer = &mut x.0;
+            ibuffer = &mut x.1;
+        } else {
+            tmpv = PBuffer::new(BufferUsages::VERTEX);
+            tmpi = PBuffer::new(BufferUsages::INDEX);
+            vbuffer = &mut tmpv;
+            ibuffer = &mut tmpi;
+        }
+
+        vbuffer.write(gfx, bytemuck::cast_slice(&self.vertices));
+        ibuffer.write(gfx, bytemuck::cast_slice(&self.indices));
 
         // convert materials to mesh format (from offsets to lengths)
         let mut materials = SmallVec::with_capacity(self.materials.len());
@@ -131,8 +153,8 @@ impl MeshBuilder {
         }
 
         Some(Mesh {
-            vertex_buffer: self.vbuffer.inner()?,
-            index_buffer: self.ibuffer.inner()?,
+            vertex_buffer: vbuffer.inner()?,
+            index_buffer: ibuffer.inner()?,
             materials,
             skip_depth: false,
         })

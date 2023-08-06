@@ -9,13 +9,13 @@ use wgpu_engine::{
 
 /// Render all entities using instanced rendering for performance
 pub struct InstancedRender {
-    pub path_not_found: SpriteBatchBuilder,
-    pub cars: InstancedMeshBuilder,
-    pub locomotives: InstancedMeshBuilder,
-    pub wagons_passenger: InstancedMeshBuilder,
-    pub wagons_freight: InstancedMeshBuilder,
-    pub trucks: InstancedMeshBuilder,
-    pub pedestrians: InstancedMeshBuilder,
+    pub path_not_found: SpriteBatchBuilder<true>,
+    pub cars: InstancedMeshBuilder<true>,
+    pub locomotives: InstancedMeshBuilder<true>,
+    pub wagons_passenger: InstancedMeshBuilder<true>,
+    pub wagons_freight: InstancedMeshBuilder<true>,
+    pub trucks: InstancedMeshBuilder<true>,
+    pub pedestrians: InstancedMeshBuilder<true>,
 }
 
 impl InstancedRender {

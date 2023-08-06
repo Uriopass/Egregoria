@@ -28,18 +28,18 @@ impl MeshInstance {
     }
 }
 
-pub struct InstancedMeshBuilder {
+pub struct InstancedMeshBuilder<const PERSISTENT: bool> {
     mesh: Mesh,
-    ibuffer: PBuffer,
+    ibuffer: Option<Box<PBuffer>>,
     pub instances: Vec<MeshInstance>,
 }
 
-impl InstancedMeshBuilder {
+impl<const PERSISTENT: bool> InstancedMeshBuilder<PERSISTENT> {
     pub fn new(mesh: Mesh) -> Self {
         InstancedMeshBuilder {
             mesh,
             instances: Vec::with_capacity(4),
-            ibuffer: PBuffer::new(BufferUsages::VERTEX),
+            ibuffer: PERSISTENT.then(|| Box::new(PBuffer::new(BufferUsages::VERTEX))),
         }
     }
 
@@ -48,12 +48,22 @@ impl InstancedMeshBuilder {
             return None;
         }
 
-        self.ibuffer
-            .write(gfx, bytemuck::cast_slice(&self.instances));
+        let mut temp;
+        let ibuffer;
+        if PERSISTENT {
+            unsafe {
+                ibuffer = self.ibuffer.as_deref_mut().unwrap_unchecked();
+            }
+        } else {
+            temp = PBuffer::new(BufferUsages::VERTEX);
+            ibuffer = &mut temp;
+        }
+
+        ibuffer.write(gfx, bytemuck::cast_slice(&self.instances));
 
         Some(InstancedMesh {
             mesh: self.mesh.clone(),
-            instance_buffer: self.ibuffer.inner()?,
+            instance_buffer: ibuffer.inner()?,
             n_instances: self.instances.len() as u32,
         })
     }

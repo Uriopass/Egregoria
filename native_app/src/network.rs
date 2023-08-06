@@ -82,6 +82,7 @@ fn handle_replay(
 ) -> bool {
     if let Some(new_goria) = slstate.please_load_goria.take() {
         *goria = new_goria;
+        slstate.render_reset = true;
         log::info!("replaced goria");
     }
     if let Some(ref mut replay) = slstate.please_load {

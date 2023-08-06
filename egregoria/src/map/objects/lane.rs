@@ -44,7 +44,7 @@ impl LaneKind {
     }
 
     #[inline]
-    pub fn width(self) -> f32 {
+    pub const fn width(self) -> f32 {
         match self {
             LaneKind::Driving | LaneKind::Biking | LaneKind::Bus => 4.0,
             LaneKind::Parking => 2.5,

@@ -3,15 +3,15 @@ use crate::{GfxContext, Material, MeshBuilder, MeshVertex, MetallicRoughness};
 use geom::{vec3, Intersect, LinearColor, Segment, Vec2, Vec3, AABB};
 use itertools::Itertools;
 
-pub struct Tesselator {
+pub struct Tesselator<const PERSISTENT: bool> {
     pub color: LinearColor,
-    pub meshbuilder: MeshBuilder,
+    pub meshbuilder: MeshBuilder<PERSISTENT>,
     pub cull_rect: Option<AABB>,
     pub zoom: f32,
     pub normal: Vec3,
 }
 
-impl Tesselator {
+impl<const PERSISTENT: bool> Tesselator<PERSISTENT> {
     pub fn new(gfx: &mut GfxContext, cull_rect: Option<AABB>, zoom: f32) -> Self {
         let mat = gfx.register_material(Material::new(
             gfx,
@@ -32,9 +32,7 @@ impl Tesselator {
             normal: Vec3::Z,
         }
     }
-}
 
-impl Tesselator {
     pub fn draw_circle(&mut self, p: Vec3, r: f32) -> bool {
         if r <= 0.0
             || self

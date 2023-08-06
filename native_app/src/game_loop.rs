@@ -22,7 +22,6 @@ use crate::rendering::egui_wrapper::EguiWrapper;
 use crate::rendering::{CameraHandler3D, InstancedRender, MapRenderOptions, MapRenderer};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
-use egregoria::engine_interaction::{WorldCommand, WorldCommands};
 use egregoria::utils::scheduler::SeqSchedule;
 
 pub const VERSION: &str = include_str!("../../VERSION");
@@ -40,9 +39,9 @@ pub struct State {
     egui_render: EguiWrapper,
 
     instanced_renderer: InstancedRender,
-    road_renderer: MapRenderer,
+    map_renderer: MapRenderer,
     gui: Gui,
-    immtess: Tesselator,
+    immtess: Tesselator<true>,
 
     all_audio: GameAudio,
 }
@@ -85,32 +84,29 @@ impl State {
 
         defer!(log::info!("finished init of game loop"));
 
-        Self {
+        let me = Self {
             uiw: uiworld,
             game_schedule,
             camera,
             egui_render,
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
-            road_renderer: MapRenderer::new(&mut ctx.gfx, &goria),
+            map_renderer: MapRenderer::new(&mut ctx.gfx, &goria),
             gui,
             all_audio: GameAudio::new(&mut ctx.audio),
             goria: Arc::new(RwLock::new(goria)),
             immtess: Tesselator::new(&mut ctx.gfx, None, 1.0),
-        }
+        };
+        me.goria.write().unwrap().map().dispatch_all();
+        me
     }
 
     #[profiling::function]
     pub fn update(&mut self, ctx: &mut Context) {
-        if self
-            .uiw
-            .read::<WorldCommands>()
-            .iter()
-            .any(|x| matches!(x, WorldCommand::ResetSave))
-        {
-            self.reset();
-        }
-
         crate::network::goria_update(self);
+
+        if std::mem::take(&mut self.uiw.write::<SaveLoadState>().render_reset) {
+            self.reset(ctx);
+        }
 
         if !self.egui_render.last_mouse_captured {
             let goria = self.goria.read().unwrap();
@@ -141,7 +137,7 @@ impl State {
         Self::manage_settings(ctx, &self.uiw.read::<Settings>());
         self.manage_io(ctx);
 
-        self.road_renderer
+        self.map_renderer
             .terrain_update(ctx, &self.goria.read().unwrap());
 
         ctx.gfx
@@ -157,10 +153,9 @@ impl State {
         self.camera.update(ctx);
     }
 
-    pub fn reset(&mut self) {
-        self.road_renderer.reset();
-        self.road_renderer.terrain_dirt_id = 0;
-        self.road_renderer.meshb.map_dirt_id = 0;
+    pub fn reset(&mut self, ctx: &mut Context) {
+        self.map_renderer = MapRenderer::new(&mut ctx.gfx, &self.goria.read().unwrap());
+        self.goria.write().unwrap().map().dispatch_all();
     }
 
     #[profiling::function]
@@ -173,7 +168,7 @@ impl State {
 
         let time: GameTime = *self.goria.read().unwrap().read::<GameTime>();
 
-        self.road_renderer.render(
+        self.map_renderer.render(
             &goria.map(),
             time.seconds,
             &self.camera.camera,

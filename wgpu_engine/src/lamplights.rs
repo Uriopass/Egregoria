@@ -25,6 +25,8 @@ impl EncodedLight {
     }
 }
 
+pub type LightChunkID = (u16, u16);
+
 struct LightChunkUpdate {
     x: u16,
     y: u16,
@@ -74,7 +76,7 @@ impl LampLights {
         }
     }
 
-    pub fn chunk_id(&self, pos: Vec3) -> (u16, u16) {
+    pub fn chunk_id(&self, pos: Vec3) -> LightChunkID {
         let x = pos.x / Self::LIGHTCHUNK_SIZE as f32;
         let y = pos.y / Self::LIGHTCHUNK_SIZE as f32;
         let xu = if x < Self::LIGHTMAP_SIZE as f32 && x >= 0.0 {
@@ -90,7 +92,7 @@ impl LampLights {
         (xu, yu)
     }
 
-    pub fn register_update(&mut self, chunk: (u16, u16), lights: impl Iterator<Item = Vec3>) {
+    pub fn register_update(&mut self, chunk: LightChunkID, lights: impl Iterator<Item = Vec3>) {
         let origin = Vec3::new(
             chunk.0 as f32 * Self::LIGHTCHUNK_SIZE as f32,
             chunk.1 as f32 * Self::LIGHTCHUNK_SIZE as f32,

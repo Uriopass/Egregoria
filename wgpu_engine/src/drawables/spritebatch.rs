@@ -10,24 +10,18 @@ use wgpu::{
     BufferUsages, IndexFormat, RenderPass, RenderPipeline, VertexAttribute, VertexBufferLayout,
 };
 
-pub struct SpriteBatchBuilder {
+pub struct SpriteBatchBuilder<const PERSISTENT: bool> {
     pub material: MaterialID,
     instances: Vec<InstanceRaw>,
     stretch_x: f32,
     stretch_y: f32,
-    pub instance_sbuffer: PBuffer,
+    pub instance_sbuffer: Option<Box<PBuffer>>,
 }
 
 pub struct SpriteBatch {
     instance_buf: Arc<wgpu::Buffer>,
     pub n_instances: u32,
     pub material: MaterialID,
-}
-
-impl SpriteBatch {
-    pub fn builder(gfx: &mut GfxContext, tex: Arc<Texture>) -> SpriteBatchBuilder {
-        SpriteBatchBuilder::new(tex, gfx)
-    }
 }
 
 #[repr(C)]
@@ -52,7 +46,7 @@ impl InstanceRaw {
     }
 }
 
-impl SpriteBatchBuilder {
+impl<const PERSISTENT: bool> SpriteBatchBuilder<PERSISTENT> {
     pub fn from_path(gfx: &mut GfxContext, path: impl Into<PathBuf>) -> Self {
         let tex = gfx.texture(path, "some spritebatch tex");
         Self::new(tex, gfx)
@@ -95,7 +89,7 @@ impl SpriteBatchBuilder {
             stretch_y,
             material: matid,
             instances: vec![],
-            instance_sbuffer: PBuffer::new(BufferUsages::VERTEX),
+            instance_sbuffer: PERSISTENT.then(|| Box::new(PBuffer::new(BufferUsages::VERTEX))),
         }
     }
 
@@ -104,11 +98,22 @@ impl SpriteBatchBuilder {
             return None;
         }
 
-        self.instance_sbuffer
-            .write(gfx, bytemuck::cast_slice(&self.instances));
+        let mut temp;
+        let ibuffer;
+
+        if PERSISTENT {
+            unsafe {
+                ibuffer = self.instance_sbuffer.as_deref_mut().unwrap_unchecked();
+            }
+        } else {
+            temp = PBuffer::new(BufferUsages::VERTEX);
+            ibuffer = &mut temp;
+        }
+
+        ibuffer.write(gfx, bytemuck::cast_slice(&self.instances));
 
         Some(SpriteBatch {
-            instance_buf: self.instance_sbuffer.inner().unwrap(),
+            instance_buf: ibuffer.inner().unwrap(),
             n_instances: self.instances.len() as u32,
             material: self.material,
         })

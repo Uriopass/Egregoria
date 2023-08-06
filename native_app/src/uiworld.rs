@@ -15,6 +15,7 @@ pub struct UiWorld {
 pub struct SaveLoadState {
     pub please_load: Option<EgregoriaReplayLoader>,
     pub please_load_goria: Option<Egregoria>,
+    pub render_reset: bool,
     pub please_save: bool,
     pub saving_status: Arc<AtomicBool>,
 }

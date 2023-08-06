@@ -1,4 +1,4 @@
-use crate::map::{Map, ProjectFilter, ProjectKind, RoadID};
+use crate::map::{Map, ProjectFilter, ProjectKind, RoadID, UpdateType};
 use geom::Vec2;
 use geom::OBB;
 use geom::{Circle, Vec3};
@@ -89,6 +89,7 @@ impl Lot {
                 let l = Lot::try_make(map, road, pos + axis * (w + 1.0), axis.xy(), size);
                 if let Some(id) = l {
                     lots.push(id);
+                    map.subscribers.dispatch(UpdateType::Road, &map.lots[id]);
 
                     d += size * 0.5 + 2.0;
                     size = picksize();

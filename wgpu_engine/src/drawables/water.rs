@@ -17,7 +17,7 @@ struct WaterPipeline;
 
 impl Water {
     pub fn new(gfx: &mut GfxContext, w: f32, h: f32) -> Self {
-        let mut mb = MeshBuilder::new_without_mat();
+        let mut mb = MeshBuilder::<false>::new_without_mat();
 
         mb.vertices.extend_from_slice(&[
             MeshVertex {
