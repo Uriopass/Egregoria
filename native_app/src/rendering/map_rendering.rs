@@ -3,8 +3,8 @@ use crate::rendering::map_mesh::MapMeshHandler;
 use crate::Context;
 use common::{FastMap, FastSet};
 use egregoria::map::{
-    ChunkID, Lane, LaneID, LaneKind, Map, MapSubscriber, ProjectFilter, ProjectKind,
-    TrafficBehavior, UpdateType, CHUNK_RESOLUTION, CHUNK_SIZE,
+    chunk_id, Chunk, ChunkID, Lane, LaneID, LaneKind, Map, MapSubscriber, ProjectFilter,
+    ProjectKind, TrafficBehavior, UpdateType, CHUNK_RESOLUTION, CHUNK_SIZE,
 };
 use egregoria::Egregoria;
 use flat_spatial::AABBGrid;
@@ -36,7 +36,8 @@ pub struct MapRenderer {
 
     water: Water,
 
-    lamp_memory: FastSet<LightChunkID>,
+    lamp_memory: FastMap<LightChunkID, Vec<Vec3>>,
+    lamp_road_memory: FastMap<ChunkID, Vec<(LightChunkID, Vec3)>>,
     lamp_sub: MapSubscriber,
 }
 
@@ -73,6 +74,7 @@ impl MapRenderer {
             terrain_sub: goria.map().subscribe(UpdateType::Terrain),
             lamp_sub: goria.map().subscribe(UpdateType::Road),
             lamp_memory: Default::default(),
+            lamp_road_memory: Default::default(),
         }
     }
 
@@ -283,60 +285,100 @@ impl MapRenderer {
         }
     }
 
-    #[profiling::function]
     pub fn lampposts(&mut self, map: &Map, ctx: &mut FrameContext<'_>) {
-        if self.lamp_sub.take_updated_chunks().next().is_none() {
-            return;
+        profiling::scope!("lampposts");
+
+        let mut to_reupload: FastSet<LightChunkID> = Default::default();
+        for chunk in self.lamp_sub.take_updated_chunks() {
+            let lamp_chunk_memory = self.lamp_road_memory.entry(chunk).or_default();
+            for (chunk_id, lamp) in lamp_chunk_memory.drain(..) {
+                let Some(lamps) = self.lamp_memory.get_mut(&chunk_id) else { continue };
+                let Some(idx) = lamps.iter().position(|x| *x == lamp) else { continue };
+                to_reupload.insert(chunk_id);
+                lamps.swap_remove(idx);
+            }
+
+            let mut by_chunk: AABBGrid<(), AABB3> =
+                AABBGrid::new(LampLights::LIGHTCHUNK_SIZE as i32);
+
+            let mut add_light = |p: Vec3| {
+                by_chunk.insert(AABB3::centered(p, Vec3::splat(64.0)), ());
+            };
+
+            let mut chunk_roads = vec![];
+            let mut chunk_inter = vec![];
+
+            map.spatial_map()
+                .query(
+                    Chunk::rect(chunk),
+                    ProjectFilter::ROAD | ProjectFilter::INTER,
+                )
+                .for_each(|proj| {
+                    if chunk_id(proj.canonical_position(map)) != chunk {
+                        return;
+                    }
+                    match proj {
+                        ProjectKind::Road(rid) => chunk_roads.push(rid),
+                        ProjectKind::Inter(iid) => chunk_inter.push(iid),
+                        _ => unreachable!(),
+                    }
+                });
+
+            let roads = map.roads();
+            let inters = map.intersections();
+
+            for road in chunk_roads {
+                let road = &roads[road];
+                if road.lanes_iter().all(|(_, kind)| kind.is_rail()) {
+                    continue;
+                }
+                for (point, _) in road.points().equipoints_dir(45.0, true) {
+                    add_light(point + 8.0 * V3::Z);
+                }
+            }
+            for i in chunk_inter {
+                let i = &inters[i];
+                if i.roads
+                    .iter()
+                    .filter_map(|&rid| map.roads().get(rid))
+                    .all(|r| r.lanes_iter().all(|(_, kind)| kind.is_rail()))
+                {
+                    continue;
+                }
+
+                add_light(i.pos + 8.0 * V3::Z);
+            }
+
+            for (cell_idx, cell) in by_chunk.storage().cells.iter() {
+                if cell.objs.is_empty() {
+                    continue;
+                }
+                if cell_idx.0 < 0 || cell_idx.1 < 0 {
+                    continue;
+                }
+
+                let lamp_poss = cell
+                    .objs
+                    .iter()
+                    .filter_map(|x| by_chunk.get(x.0))
+                    .map(|x| x.aabb.center());
+
+                let lchunk_id = (cell_idx.0 as u16, cell_idx.1 as u16);
+                let lamp_light_memory = self.lamp_memory.entry(lchunk_id).or_default();
+
+                for v in lamp_poss {
+                    lamp_light_memory.push(v);
+                    lamp_chunk_memory.push((lchunk_id, v));
+                }
+                to_reupload.insert(lchunk_id);
+            }
         }
-        let lamps = &mut ctx.gfx.lamplights;
 
-        let mut to_clean = std::mem::take(&mut self.lamp_memory);
-
-        let mut by_chunk: AABBGrid<(), AABB3> = AABBGrid::new(LampLights::LIGHTCHUNK_SIZE as i32);
-
-        let mut add_light = |p: Vec3| {
-            by_chunk.insert(AABB3::centered(p, Vec3::splat(64.0)), ());
-        };
-
-        for road in map.roads().values() {
-            if road.lanes_iter().all(|(_, kind)| kind.is_rail()) {
-                continue;
-            }
-            for (point, _) in road.points().equipoints_dir(45.0, true) {
-                add_light(point + 8.0 * V3::Z);
-            }
-        }
-        for i in map.intersections().values() {
-            if i.roads
-                .iter()
-                .filter_map(|&rid| map.roads().get(rid))
-                .all(|r| r.lanes_iter().all(|(_, kind)| kind.is_rail()))
-            {
-                continue;
-            }
-
-            add_light(i.pos + 8.0 * V3::Z);
-        }
-
-        for (cell_idx, cell) in by_chunk.storage().cells.iter() {
-            if cell.objs.is_empty() {
-                continue;
-            }
-            if cell_idx.0 < 0 || cell_idx.1 < 0 {
-                continue;
-            }
-            to_clean.remove(&(cell_idx.0 as u16, cell_idx.1 as u16));
-
-            let lamp_poss = cell
-                .objs
-                .iter()
-                .filter_map(|x| by_chunk.get(x.0))
-                .map(|x| x.aabb.center());
-            lamps.register_update((cell_idx.0 as u16, cell_idx.1 as u16), lamp_poss);
-        }
-
-        for chunk in to_clean {
-            lamps.register_update(chunk, std::iter::empty());
+        for chunk in to_reupload {
+            let lamps = &self.lamp_memory[&chunk];
+            ctx.gfx
+                .lamplights
+                .register_update(chunk, lamps.iter().copied());
         }
     }
 

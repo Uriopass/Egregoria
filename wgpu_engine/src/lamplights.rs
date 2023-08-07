@@ -76,7 +76,7 @@ impl LampLights {
         }
     }
 
-    pub fn chunk_id(&self, pos: Vec3) -> LightChunkID {
+    pub fn chunk_id(pos: Vec3) -> LightChunkID {
         let x = pos.x / Self::LIGHTCHUNK_SIZE as f32;
         let y = pos.y / Self::LIGHTCHUNK_SIZE as f32;
         let xu = if x < Self::LIGHTMAP_SIZE as f32 && x >= 0.0 {

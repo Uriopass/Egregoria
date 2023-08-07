@@ -63,7 +63,7 @@ pub fn load_parismap(map: &mut Map) {
         long = (long - CENTER_B) * scale / f64::cos(long / 180.0 * std::f64::consts::PI);
         lat = (lat - CENTER_A) * scale;
 
-        let pos = vec2(lat as f32, long as f32) + v000.0, 8000.0);
+        let pos = vec2(lat as f32, long as f32) + vec2(12000.0, 8000.0);
 
         let n = g.query_around(pos, 50.0).next();
         if let Some((h, _)) = n {
