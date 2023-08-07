@@ -66,7 +66,7 @@ impl MapRenderer {
         defer!(log::info!("finished init of road render"));
         MapRenderer {
             meshb: MapMeshHandler::new(gfx, goria),
-            tree_builder: InstancedMeshBuilder::new(mesh.clone()),
+            tree_builder: InstancedMeshBuilder::new(mesh),
             trees_cache: FastMap::default(),
             tree_sub: goria.map().subscribe(UpdateType::Terrain),
             terrain,

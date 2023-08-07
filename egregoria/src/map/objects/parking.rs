@@ -110,11 +110,10 @@ impl ParkingSpots {
                     }
                 }
 
-                let k = spots.insert(ParkingSpot {
+                spots.insert(ParkingSpot {
                     parent,
                     trans: Transform::new_dir(pos, dir),
-                });
-                k
+                })
             })
             .collect();
 

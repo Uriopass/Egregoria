@@ -9,7 +9,7 @@ pub const CHUNK_SIZE: u32 = 1024;
 pub const CHUNK_RESOLUTION: usize = 32;
 pub const CELL_SIZE: f32 = CHUNK_SIZE as f32 / CHUNK_RESOLUTION as f32;
 
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Chunk {
     pub trees: Vec<Tree>,
     pub heights: [[f32; CHUNK_RESOLUTION]; CHUNK_RESOLUTION],
@@ -23,15 +23,6 @@ impl Chunk {
         );
         let ur = ll + vec2(CHUNK_SIZE as f32, CHUNK_SIZE as f32);
         AABB::new(ll, ur)
-    }
-}
-
-impl Default for Chunk {
-    fn default() -> Self {
-        Self {
-            trees: Default::default(),
-            heights: Default::default(),
-        }
     }
 }
 
