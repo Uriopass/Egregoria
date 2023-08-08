@@ -22,7 +22,7 @@ impl State {
         let mut meshes = vec![];
 
         if let Ok(m) = load_mesh(gfx, "DamagedHelmet.glb") {
-            let mut i = InstancedMeshBuilder::new(m);
+            let mut i = InstancedMeshBuilder::<true>::new(m);
             i.instances.push(MeshInstance {
                 pos: vec3(50.0, 00.0, 0.0),
                 dir: Vec3::X,
@@ -48,7 +48,7 @@ impl State {
                     None,
                     &gfx.palette(),
                 ));
-                let mut i = InstancedMeshBuilder::new(c);
+                let mut i = InstancedMeshBuilder::<true>::new(c);
                 i.instances.push(MeshInstance {
                     pos: 2.3 * vec3(x as f32, 0.0, z as f32),
                     dir: Vec3::X,
