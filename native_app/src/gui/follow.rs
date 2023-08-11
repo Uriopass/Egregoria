@@ -40,7 +40,7 @@ impl FollowEntity {
 
         if let Some(e) = state.uiw.read::<FollowEntity>().0 {
             if let Some(pos) = state.goria.read().unwrap().pos_any(e) {
-                state.camera.follow(pos);
+                state.uiw.camera_mut().follow(pos);
             }
         }
     }

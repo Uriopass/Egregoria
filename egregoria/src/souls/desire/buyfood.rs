@@ -21,7 +21,7 @@ debug_inspect_impl!(BuyFoodState);
 
 #[derive(Inspect, Clone, Serialize, Deserialize, Debug)]
 pub struct BuyFood {
-    last_ate: GameInstant,
+    pub last_ate: GameInstant,
     state: BuyFoodState,
     bread: ItemID,
 }

@@ -1,5 +1,6 @@
 use egui_inspect::Inspect;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 
 pub const SECONDS_PER_REALTIME_SECOND: i32 = 15;
 pub const SECONDS_PER_HOUR: i32 = 3600;
@@ -192,6 +193,19 @@ impl GameInstant {
     /// Time elapsed since instant was taken, in seconds
     pub fn elapsed(&self, time: &GameTime) -> f64 {
         time.timestamp - self.timestamp
+    }
+}
+
+impl Display for GameInstant {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let d = GameTime::new(0.0, self.timestamp);
+        write!(f, "{}", d.daytime)
+    }
+}
+
+impl Display for DayTime {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}d {:02}:{:02}", self.day, self.hour, self.second)
     }
 }
 

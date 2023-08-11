@@ -18,6 +18,7 @@ use geom::{Transform, Vec2, Vec3};
 use serde::Deserialize;
 use slotmapd::__impl::Serialize;
 use slotmapd::{new_key_type, HopSlotMap};
+use std::fmt::{Display, Formatter};
 
 new_key_type! {
     pub struct VehicleID;
@@ -427,5 +428,18 @@ impl<
             .chain(self.2)
             .chain(self.3)
             .chain(self.4)
+    }
+}
+
+impl Display for AnyEntity {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AnyEntity::HumanID(id) => write!(f, "{:?}", id),
+            AnyEntity::VehicleID(id) => write!(f, "{:?}", id),
+            AnyEntity::TrainID(id) => write!(f, "{:?}", id),
+            AnyEntity::WagonID(id) => write!(f, "{:?}", id),
+            AnyEntity::FreightStationID(id) => write!(f, "{:?}", id),
+            AnyEntity::CompanyID(id) => write!(f, "{:?}", id),
+        }
     }
 }

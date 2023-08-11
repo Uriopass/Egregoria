@@ -24,6 +24,7 @@ pub mod topgui;
 
 pub mod addtrain;
 pub mod inspect_building;
+pub mod inspect_human;
 pub mod windows;
 pub mod zoneedit;
 

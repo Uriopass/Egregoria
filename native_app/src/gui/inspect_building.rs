@@ -4,7 +4,8 @@ use egregoria::engine_interaction::WorldCommand;
 use egregoria::{Egregoria, SoulID};
 use egui::{Context, Ui, Widget};
 
-use crate::gui::{item_icon, InspectedEntity};
+use crate::gui::inspect::entity_link;
+use crate::gui::item_icon;
 use egregoria::map::{Building, BuildingID, BuildingKind, Zone, MAX_ZONE_AREA};
 use egregoria::map_dynamic::BuildingInfos;
 use egregoria::souls::freight_station::FreightTrainState;
@@ -72,19 +73,17 @@ pub fn inspect_building(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, 
 fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
     let binfos = goria.read::<BuildingInfos>();
     let Some(info) = binfos.get(b.id) else { return; };
-    let Some(owner) = info.owner else { return; };
+    let Some(SoulID::Human(owner)) = info.owner else { return; };
 
-    let mut inspected = uiworld.write::<InspectedEntity>();
-
-    if ui.button(format!("Owner: {owner:?}")).clicked() {
-        inspected.e = Some(owner.into());
-    }
+    ui.horizontal(|ui| {
+        ui.label("Owner");
+        entity_link(uiworld, goria, ui, owner.into());
+    });
 
     ui.label("Currently in the house:");
     for &soul in info.inside.iter() {
-        if ui.button(format!("{soul:?}")).clicked() {
-            inspected.e = Some(soul.into());
-        }
+        let SoulID::Human(soul) = soul else { continue; };
+        entity_link(uiworld, goria, ui, soul.into());
     }
 }
 

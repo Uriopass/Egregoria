@@ -1,5 +1,6 @@
 use crate::gui::bulldozer::BulldozerState;
 use crate::gui::inspect_building::inspect_building;
+use crate::gui::inspect_human::inspect_human;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
@@ -19,7 +20,7 @@ use egregoria::map::{
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::{GameTime, SECONDS_PER_HOUR};
-use egregoria::Egregoria;
+use egregoria::{AnyEntity, Egregoria};
 use egui::{Align2, Color32, Context, Frame, Id, Response, RichText, Style, Ui, Widget, Window};
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
@@ -596,8 +597,8 @@ impl Gui {
         }
     }
 
-    #[profiling::function]
     pub fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        profiling::scope!("topgui::inspector");
         let inspected_building = *uiworld.read::<InspectedBuilding>();
         if let Some(b) = inspected_building.e {
             inspect_building(uiworld, goria, ui, b);
@@ -607,16 +608,24 @@ impl Gui {
         let e = unwrap_or!(inspected.e, return);
 
         let mut is_open = true;
-        Window::new("Inspect")
-            .default_size([400.0, 500.0])
-            .default_pos([30.0, 160.0])
-            .resizable(true)
-            .open(&mut is_open)
-            .show(ui, |ui| {
-                let mut ins = crate::gui::inspect::InspectRenderer { entity: e };
-                ins.render(uiworld, goria, ui);
-                inspected.e = Some(ins.entity);
-            });
+        match e {
+            AnyEntity::HumanID(id) => {
+                is_open = inspect_human(uiworld, goria, ui, id);
+            }
+            _ => {
+                Window::new("Inspect")
+                    .default_size([400.0, 500.0])
+                    .default_pos([30.0, 160.0])
+                    .resizable(true)
+                    .open(&mut is_open)
+                    .show(ui, |ui| {
+                        let mut ins = crate::gui::inspect::InspectRenderer { entity: e };
+                        ins.render(uiworld, goria, ui);
+                        inspected.e = Some(ins.entity);
+                    });
+            }
+        }
+
         if !is_open {
             inspected.e = None;
         }

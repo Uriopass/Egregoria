@@ -34,8 +34,6 @@ pub struct State {
 
     pub game_schedule: SeqSchedule,
 
-    pub camera: CameraHandler3D,
-
     egui_render: EguiWrapper,
 
     instanced_renderer: InstancedRender,
@@ -74,6 +72,7 @@ impl State {
 
         let gui: Gui = common::saveload::JSON::load("gui").unwrap_or_default();
         uiworld.insert(camera.camera);
+        uiworld.insert(camera);
 
         log::info!("version is {}", VERSION);
 
@@ -87,7 +86,6 @@ impl State {
         let me = Self {
             uiw: uiworld,
             game_schedule,
-            camera,
             egui_render,
             instanced_renderer: InstancedRender::new(&mut ctx.gfx),
             map_renderer: MapRenderer::new(&mut ctx.gfx, &goria),
@@ -111,9 +109,12 @@ impl State {
         if !self.egui_render.last_mouse_captured {
             let goria = self.goria.read().unwrap();
             let map = goria.map();
-            let unproj = self.camera.unproject(ctx.input.mouse.screen, |p| {
-                map.terrain.height(p).map(|x| x + 0.01)
-            });
+            let unproj = self
+                .uiw
+                .read::<CameraHandler3D>()
+                .unproject(ctx.input.mouse.screen, |p| {
+                    map.terrain.height(p).map(|x| x + 0.01)
+                });
 
             self.uiw.write::<InputMap>().unprojected = unproj;
         }
@@ -149,7 +150,7 @@ impl State {
             .update(&self.goria.read().unwrap(), &mut self.uiw, &mut ctx.audio);
 
         FollowEntity::update_camera(self);
-        self.camera.update(ctx);
+        self.uiw.camera_mut().update(ctx);
     }
 
     pub fn reset(&mut self, ctx: &mut Context) {
@@ -157,21 +158,22 @@ impl State {
         self.goria.write().unwrap().map().dispatch_all();
     }
 
-    #[profiling::function]
     pub fn render(&mut self, ctx: &mut FrameContext<'_>) {
+        profiling::scope!("main render");
         let start = Instant::now();
         let goria = self.goria.read().unwrap();
 
         self.immtess.meshbuilder.clear();
-        self.camera.cull_tess(&mut self.immtess);
+        let camera = self.uiw.read::<CameraHandler3D>();
+        camera.cull_tess(&mut self.immtess);
 
         let time: GameTime = *self.goria.read().unwrap().read::<GameTime>();
 
         self.map_renderer.render(
             &goria.map(),
             time.seconds,
-            &self.camera.camera,
-            &self.camera.frustrum,
+            &camera.camera,
+            &camera.frustrum,
             MapRenderOptions {
                 show_arrows: self.uiw.read::<Tool>().show_arrows(),
             },
@@ -286,14 +288,14 @@ impl State {
         let goria = self.goria.read().unwrap();
         let map = goria.map();
         //        self.camera.movespeed = settings.camera_sensibility / 100.0;
-        self.camera.camera_movement(
+        self.uiw.camera_mut().camera_movement(
             ctx,
             ctx.delta,
             &self.uiw.read::<InputMap>(),
             &self.uiw.read::<Settings>(),
             |p| map.terrain.height(p),
         );
-        *self.uiw.write::<Camera>() = self.camera.camera;
+        *self.uiw.write::<Camera>() = self.uiw.read::<CameraHandler3D>().camera;
 
         drop(map);
     }
@@ -303,7 +305,8 @@ impl State {
     }
 
     pub fn resized(&mut self, ctx: &mut Context, size: PhysicalSize<u32>) {
-        self.camera
+        self.uiw
+            .write::<CameraHandler3D>()
             .resize(ctx, size.width as f32, size.height as f32);
     }
 }

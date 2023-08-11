@@ -1,6 +1,8 @@
 use crate::gui::follow::FollowEntity;
+use crate::gui::{InspectedBuilding, InspectedEntity};
 use crate::uiworld::UiWorld;
 use egregoria::economy::{ItemRegistry, Market};
+use egregoria::map::BuildingID;
 use egregoria::transportation::Location;
 use egregoria::{
     AnyEntity, CompanyEnt, Egregoria, FreightStationEnt, HumanEnt, SoulID, TrainEnt, VehicleEnt,
@@ -144,6 +146,24 @@ impl InspectRenderer {
                     });
                 });
             }
+        }
+    }
+}
+
+pub fn building_link(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, b: BuildingID) {
+    if ui.link(format!("{:?}", b)).clicked() {
+        uiworld.write::<InspectedBuilding>().e = Some(b);
+        if let Some(b) = goria.map().buildings().get(b) {
+            uiworld.camera_mut().targetpos = b.door_pos;
+        }
+    }
+}
+
+pub fn entity_link(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, e: AnyEntity) {
+    if ui.link(format!("{}", e)).clicked() {
+        uiworld.write::<InspectedEntity>().e = Some(e);
+        if let Some(pos) = goria.pos_any(e) {
+            uiworld.camera_mut().targetpos = pos
         }
     }
 }

@@ -2,6 +2,7 @@ use crate::audio::AudioContext;
 use crate::game_loop;
 use crate::init::SOUNDS_LIST;
 use crate::input::InputContext;
+use crate::rendering::CameraHandler3D;
 use egregoria::utils::time::GameTime;
 use geom::{vec2, vec3, LinearColor};
 use std::time::Instant;
@@ -130,12 +131,14 @@ impl Context {
                         let params = self.gfx.render_params.value_mut();
                         params.time_always = (params.time_always + self.delta) % 3600.0;
                         params.sun_col = sun.z.max(0.0).sqrt().sqrt() * LinearColor::new(1.0, 0.95 + sun.z * 0.05, 0.95 + sun.z * 0.05, 1.0);
-                        params.cam_pos = state.camera.camera.eye();
-                        params.cam_dir = -state.camera.camera.dir();
+                        let camera = state.uiw.read::<CameraHandler3D>();
+                        params.cam_pos = camera.camera.eye();
+                        params.cam_dir = -camera.camera.dir();
                         params.sun = sun;
                         params.viewport = vec2(self.gfx.size.0 as f32, self.gfx.size.1 as f32);
                         params.sun_shadow_proj =
-                            state.camera.camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_resolution as f32, &state.camera.frustrum).try_into().unwrap();
+                            camera.camera.build_sun_shadowmap_matrix(sun, params.shadow_mapping_resolution as f32, &camera.frustrum).try_into().unwrap();
+                        drop(camera);
                         let c = egregoria::config();
                         params.grass_col = c.grass_col.into();
                         params.sand_col = c.sand_col.into();

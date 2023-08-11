@@ -15,6 +15,7 @@ use geom::Vec3;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::any::Any;
 use std::collections::BTreeMap;
+use std::fmt::{Display, Formatter};
 use std::hash::Hash;
 use std::time::{Duration, Instant};
 use utils::rand_provider::RandProvider;
@@ -65,6 +66,16 @@ pub enum SoulID {
     Human(HumanID),
     GoodsCompany(CompanyID),
     FreightStation(FreightStationID),
+}
+
+impl Display for SoulID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SoulID::Human(id) => write!(f, "{:?}", id),
+            SoulID::GoodsCompany(id) => write!(f, "{:?}", id),
+            SoulID::FreightStation(id) => write!(f, "{:?}", id),
+        }
+    }
 }
 
 impl From<SoulID> for AnyEntity {

@@ -61,6 +61,10 @@ impl UiWorld {
         self.resources.insert(res);
     }
 
+    pub fn camera_mut(&self) -> RefMut<crate::rendering::CameraHandler3D> {
+        self.write::<crate::rendering::CameraHandler3D>()
+    }
+
     pub fn check_present<T: Any + Send + Sync>(&mut self, res: fn() -> T) {
         self.resources.get_mut_or_insert_with(res);
     }

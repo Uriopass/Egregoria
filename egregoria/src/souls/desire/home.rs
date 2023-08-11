@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Inspect, Clone, Serialize, Deserialize, Debug)]
 pub struct Home {
-    house: BuildingID,
+    pub house: BuildingID,
 }
 
 impl Home {

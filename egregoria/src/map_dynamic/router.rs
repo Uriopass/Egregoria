@@ -14,7 +14,7 @@ use slotmapd::HopSlotMap;
 pub struct Router {
     steps: Vec<RoutingStep>,
     cur_step: Option<RoutingStep>,
-    target_dest: Option<Destination>,
+    pub target_dest: Option<Destination>,
     cur_dest: Option<Destination>,
     vehicle: Option<VehicleID>,
     pub personal_car: Option<VehicleID>,
