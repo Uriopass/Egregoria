@@ -43,6 +43,6 @@ beul = "1.0.0"
 egui-winit = { workspace = true }
 getrandom = { version = "0.2", features = ["js"] } # used by ahash used by egui
 console_error_panic_hook = "0.1"
-console_log = "0.2"
+console_log = "1.0"
 web-sys = "0.3"
 wasm-bindgen-futures = "0.4"
