@@ -171,7 +171,7 @@ impl GfxContext {
             .await
             .expect("failed to find a suitable adapter");
 
-        let limit = wgpu::Limits::downlevel_webgl2_defaults();
+        let limit = wgpu::Limits::default();
 
         let (device, queue) = adapter
             .request_device(
