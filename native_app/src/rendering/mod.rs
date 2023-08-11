@@ -6,5 +6,4 @@ mod camera_handler_3d;
 pub mod egui_wrapper;
 mod entity_render;
 pub mod immediate;
-mod map_mesh;
 mod map_rendering;

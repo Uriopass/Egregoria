@@ -100,7 +100,7 @@ impl State {
         me
     }
 
-    #[profiling::function]
+    //#[profiling::function]
     pub fn update(&mut self, ctx: &mut Context) {
         crate::network::goria_update(self);
 
@@ -137,8 +137,7 @@ impl State {
         Self::manage_settings(ctx, &self.uiw.read::<Settings>());
         self.manage_io(ctx);
 
-        self.map_renderer
-            .terrain_update(ctx, &self.goria.read().unwrap());
+        self.map_renderer.update(&self.goria.read().unwrap(), ctx);
 
         ctx.gfx
             .set_time(self.goria.read().unwrap().read::<GameTime>().timestamp as f32);
