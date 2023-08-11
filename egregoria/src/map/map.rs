@@ -213,6 +213,11 @@ impl Map {
             zone,
         );
 
+        if let Some(id) = v {
+            self.subscribers
+                .dispatch(UpdateType::Building, &self.buildings[id]);
+        }
+
         if kind.is_cached_in_bkinds() {
             if let Some(id) = v {
                 self.bkinds.entry(kind).or_default().push(id);
