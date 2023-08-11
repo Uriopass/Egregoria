@@ -122,7 +122,7 @@ impl Road {
     }
 
     /// Returns lanes in left to right order from the source
-    pub fn lanes_iter(&self) -> impl DoubleEndedIterator<Item = (LaneID, LaneKind)> + '_ {
+    pub fn lanes_iter(&self) -> impl DoubleEndedIterator<Item = (LaneID, LaneKind)> + Clone + '_ {
         self.lanes_forward
             .iter()
             .rev()

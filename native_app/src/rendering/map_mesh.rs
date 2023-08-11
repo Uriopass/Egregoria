@@ -234,15 +234,32 @@ impl MapMeshHandler {
 
 impl MapBuilders {
     fn arrows(&mut self, road: &Road, lanes: &Lanes) {
+        let has_forward = road
+            .outgoing_lanes_from(road.src)
+            .iter()
+            .filter(|(_, kind)| kind.needs_arrows())
+            .count()
+            > 0;
+        let has_backward = road
+            .outgoing_lanes_from(road.dst)
+            .iter()
+            .filter(|(_, kind)| kind.needs_arrows())
+            .count()
+            > 0;
+        let is_two_way = has_forward && has_backward;
+
+        if is_two_way {
+            return;
+        }
+
+        let n_arrows = ((road.length() / 50.0) as i32).max(1);
+
         let fade =
             (road.length() - 5.0 - road.interface_from(road.src) - road.interface_from(road.dst))
                 .mul(0.2)
                 .clamp(0.0, 1.0);
 
-        let r_lanes = road.lanes_iter().filter(|(_, kind)| kind.needs_arrows());
-        let n_arrows = ((road.length() / 50.0) as i32).max(1);
-
-        for (id, _) in r_lanes {
+        for (id, _) in road.lanes_iter().filter(|(_, kind)| kind.needs_arrows()) {
             let lane = &lanes[id];
             let l = lane.points.length();
             for i in 0..n_arrows {
