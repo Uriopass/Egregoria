@@ -39,11 +39,11 @@ impl Resources {
             .map(|resource| downcast_resource(resource.into_inner().unwrap()))
     }
 
-    pub fn get_mut_or_default<T: Any + Send + Sync + Default>(&mut self) -> RefMut<T> {
-        self.get_mut_or_insert_with(Default::default)
+    pub fn write_or_default<T: Any + Send + Sync + Default>(&mut self) -> RefMut<T> {
+        self.write_or_insert_with(Default::default)
     }
 
-    pub fn get_mut_or_insert_with<T: Any + Send + Sync>(
+    pub fn write_or_insert_with<T: Any + Send + Sync>(
         &mut self,
         f: impl FnOnce() -> T,
     ) -> RefMut<T> {
@@ -58,11 +58,11 @@ impl Resources {
         }
     }
 
-    pub fn get<T: Any + Send + Sync>(&self) -> Ref<T> {
+    pub fn read<T: Any + Send + Sync>(&self) -> Ref<T> {
         Ref::from_lock(self.resources.get(&TypeId::of::<T>()).unwrap()).unwrap()
     }
 
-    pub fn try_get<T: Any + Send + Sync>(&self) -> Result<Ref<T>, CantGetResource> {
+    pub fn try_read<T: Any + Send + Sync>(&self) -> Result<Ref<T>, CantGetResource> {
         Ok(Ref::from_lock(
             self.resources
                 .get(&TypeId::of::<T>())
@@ -70,11 +70,11 @@ impl Resources {
         )?)
     }
 
-    pub fn get_mut<T: Any + Send + Sync>(&self) -> RefMut<T> {
+    pub fn write<T: Any + Send + Sync>(&self) -> RefMut<T> {
         RefMut::from_lock(self.resources.get(&TypeId::of::<T>()).unwrap()).unwrap()
     }
 
-    pub fn try_get_mut<T: Any + Send + Sync>(&self) -> Result<RefMut<T>, CantGetResource> {
+    pub fn try_write<T: Any + Send + Sync>(&self) -> Result<RefMut<T>, CantGetResource> {
         Ok(RefMut::from_lock(
             self.resources
                 .get(&TypeId::of::<T>())

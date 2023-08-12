@@ -385,9 +385,9 @@ impl Inspect<ItineraryKind> for ItineraryKind {
 
 #[profiling::function]
 pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
-    let time = &*resources.get::<GameTime>();
-    let map = &*resources.get::<Map>();
-    let tick = *resources.get::<Tick>();
+    let time = &*resources.read::<GameTime>();
+    let map = &*resources.read::<Map>();
+    let tick = *resources.read::<Tick>();
 
     world.query_it_trans_speed().for_each(
         |(it, trans, speed): (&mut Itinerary, &mut Transform, f32)| {

@@ -264,7 +264,7 @@ impl Egregoria {
     }
 
     pub fn get_tick(&self) -> u32 {
-        self.resources.get::<Tick>().0
+        self.resources.read::<Tick>().0
     }
 
     pub fn hashes(&self) -> BTreeMap<String, u64> {
@@ -295,7 +295,7 @@ impl Egregoria {
 
     pub fn save_to_disk(&self, save_name: &str) {
         common::saveload::CompressedBincode::save(&self, save_name);
-        let rep = self.resources.get::<Replay>();
+        let rep = self.resources.read::<Replay>();
         if rep.enabled {
             common::saveload::JSONPretty::save(&*rep, &format!("{save_name}_replay"));
         }
@@ -318,27 +318,27 @@ impl Egregoria {
     }
 
     pub fn write_or_default<T: Any + Send + Sync + Default>(&mut self) -> RefMut<T> {
-        self.resources.get_mut_or_default::<T>()
+        self.resources.write_or_default::<T>()
     }
 
     pub fn try_write<T: Any + Send + Sync>(&self) -> Option<RefMut<T>> {
-        self.resources.try_get_mut().ok()
+        self.resources.try_write().ok()
     }
 
     pub fn write<T: Any + Send + Sync>(&self) -> RefMut<T> {
-        self.resources.get_mut()
+        self.resources.write()
     }
 
     pub fn read<T: Any + Send + Sync>(&self) -> Ref<T> {
-        self.resources.get()
+        self.resources.read()
     }
 
     pub fn map(&self) -> Ref<'_, Map> {
-        self.resources.get()
+        self.resources.read()
     }
 
     pub(crate) fn map_mut(&self) -> RefMut<'_, Map> {
-        self.resources.get_mut()
+        self.resources.write()
     }
 
     pub fn insert<T: Any + Send + Sync>(&mut self, res: T) {

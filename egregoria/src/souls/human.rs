@@ -132,11 +132,11 @@ enum NextDesire<'a> {
 
 #[profiling::function]
 pub fn update_decision_system(world: &mut World, resources: &mut Resources) {
-    let ra = &*resources.get();
-    let rb = &*resources.get();
-    let rc = &*resources.get();
-    let rd = &*resources.get();
-    let re = &*resources.get();
+    let ra = &*resources.read();
+    let rb = &*resources.read();
+    let rc = &*resources.read();
+    let rd = &*resources.read();
+    let re = &*resources.read();
 
     world.humans.iter_mut().for_each(|(ent, h)| {
         update_decision(

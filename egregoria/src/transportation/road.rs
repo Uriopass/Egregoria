@@ -13,9 +13,9 @@ use slotmapd::Key;
 
 #[profiling::function]
 pub fn vehicle_decision_system(world: &mut World, resources: &mut Resources) {
-    let ra = &*resources.get();
-    let rb = &*resources.get();
-    let rc = &*resources.get();
+    let ra = &*resources.read();
+    let rb = &*resources.read();
+    let rc = &*resources.read();
 
     world.vehicles.iter_mut().for_each(|(ent, v)| {
         let Some(ref coll) = v.collider else { return; };
@@ -78,9 +78,9 @@ pub fn vehicle_decision(
 
 #[profiling::function]
 pub fn vehicle_state_update_system(world: &mut World, resources: &mut Resources) {
-    let ra = &*resources.get();
-    let rb = &*resources.get();
-    let rc = &*resources.get();
+    let ra = &*resources.read();
+    let rb = &*resources.read();
+    let rc = &*resources.read();
 
     world.vehicles.iter_mut().for_each(|(ent, v)| {
         vehicle_state_update(

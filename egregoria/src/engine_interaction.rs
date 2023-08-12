@@ -191,7 +191,7 @@ impl WorldCommand {
         let cost = Government::action_cost(self, goria);
         goria.write::<Government>().money -= cost;
 
-        let mut rep = goria.resources.get_mut::<Replay>();
+        let mut rep = goria.resources.write::<Replay>();
         if rep.enabled {
             let tick = goria.read::<Tick>();
             rep.commands.push((*tick, self.clone()));
@@ -276,7 +276,7 @@ impl WorldCommand {
             }
             Init(ref opts) => {
                 if opts.save_replay {
-                    let mut rep = goria.resources.get_mut::<Replay>();
+                    let mut rep = goria.resources.write::<Replay>();
                     rep.enabled = true;
                     let tick = goria.read::<Tick>();
                     rep.commands.push((*tick, Init(opts.clone())));

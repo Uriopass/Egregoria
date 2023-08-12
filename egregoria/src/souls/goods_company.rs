@@ -286,12 +286,12 @@ pub fn company_soul(goria: &mut Egregoria, company: GoodsCompany) -> Option<Soul
 
 #[profiling::function]
 pub fn company_system(world: &mut World, res: &mut Resources) {
-    let delta = res.get::<GameTime>().realdelta;
-    let cbuf: &ParCommandBuffer<CompanyEnt> = &res.get();
-    let cbuf_human: &ParCommandBuffer<HumanEnt> = &res.get();
-    let binfos: &BuildingInfos = &res.get();
-    let market: &Market = &res.get();
-    let map: &Map = &res.get();
+    let delta = res.read::<GameTime>().realdelta;
+    let cbuf: &ParCommandBuffer<CompanyEnt> = &res.read();
+    let cbuf_human: &ParCommandBuffer<HumanEnt> = &res.read();
+    let binfos: &BuildingInfos = &res.read();
+    let market: &Market = &res.read();
+    let map: &Map = &res.read();
 
     world.companies.iter_mut().for_each(|(me, c)| {
         let n_workers = c.workers.0.len();
@@ -326,7 +326,7 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
                     cbuf.exec_ent(me, move |goria| {
                         let (world, res) = goria.world_res();
                         if let Some(SoulID::FreightStation(owner)) =
-                            res.get::<BuildingInfos>().owner(owner_build)
+                            res.read::<BuildingInfos>().owner(owner_build)
                         {
                             if let Some(mut f) = world.freight_stations.get_mut(owner) {
                                 f.f.wanted_cargo += 1;

@@ -42,15 +42,15 @@ impl UiWorld {
     }
 
     pub fn try_write<T: Any + Send + Sync>(&self) -> Option<RefMut<T>> {
-        self.resources.try_get_mut().ok()
+        self.resources.try_write().ok()
     }
 
     pub fn write<T: Any + Send + Sync>(&self) -> RefMut<T> {
-        self.resources.get_mut()
+        self.resources.write()
     }
 
     pub fn read<T: Any + Send + Sync>(&self) -> Ref<T> {
-        self.resources.get()
+        self.resources.read()
     }
 
     pub fn insert<T: Any + Send + Sync>(&mut self, res: T) {
@@ -62,7 +62,7 @@ impl UiWorld {
     }
 
     pub fn check_present<T: Any + Send + Sync>(&mut self, res: fn() -> T) {
-        self.resources.get_mut_or_insert_with(res);
+        self.resources.write_or_insert_with(res);
     }
 
     fn load_from_disk(&mut self) {

@@ -62,7 +62,7 @@ pub fn random_pedestrian_shirt_color(r: &mut RandProvider) -> Color {
 
 #[profiling::function]
 pub fn pedestrian_decision_system(world: &mut World, resources: &mut Resources) {
-    let ra = &*resources.get();
+    let ra = &*resources.read();
     world.humans
         .values_mut()
         //.par_bridge()
