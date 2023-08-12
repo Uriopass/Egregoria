@@ -16,6 +16,7 @@ mod usize;
 mod vec;
 
 pub use super::*;
+use egui::Ui;
 
 /// Options for using the default rendering style for the element. The options here are a superset
 /// of all other options since "default" could be any of the widgets
@@ -55,4 +56,14 @@ pub trait Inspect<T: ?Sized> {
     /// on the type.
     fn render_mut(data: &mut T, label: &'static str, ui: &mut egui::Ui, args: &InspectArgs)
         -> bool;
+}
+
+impl<T, I: Inspect<T>> Inspect<Box<T>> for Box<I> {
+    fn render(data: &Box<T>, label: &'static str, ui: &mut Ui, args: &InspectArgs) {
+        I::render(data, label, ui, args)
+    }
+
+    fn render_mut(data: &mut Box<T>, label: &'static str, ui: &mut Ui, args: &InspectArgs) -> bool {
+        I::render_mut(data, label, ui, args)
+    }
 }

@@ -14,6 +14,7 @@ use crate::World;
 use crate::{BuildingKind, Egregoria, Map, ParCommandBuffer, SoulID};
 use egui_inspect::Inspect;
 use geom::Transform;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 #[derive(Inspect, Serialize, Deserialize, Default)]
@@ -31,7 +32,48 @@ pub enum HumanDecisionKind {
     MultiStack(Vec<HumanDecisionKind>),
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Gender {
+    M,
+    F,
+}
+
+debug_inspect_impl!(Gender);
+
+#[derive(Inspect, Serialize, Deserialize)]
+pub struct PersonalInfo {
+    pub name: String,
+    pub age: u8,
+    pub gender: Gender,
+}
+
 debug_inspect_impl!(HumanDecisionKind);
+
+static FIRST_NAMES_BYTES: &'static str = include_str!("first_names.txt");
+static LAST_NAMES_BYTES: &'static str = include_str!("names.txt");
+
+lazy_static! {
+    static ref LAST_NAMES: Vec<&'static str> = LAST_NAMES_BYTES.split('\n').collect();
+    static ref FIRST_NAMES: Vec<&'static str> = FIRST_NAMES_BYTES.split('\n').collect();
+}
+
+impl PersonalInfo {
+    pub fn new(rng: &mut RandProvider) -> Self {
+        let age = (rng.next_f32() * 30.0 + 20.0) as u8;
+        let gender = match rng.next_u32() % 2 {
+            0 => Gender::M,
+            1 => Gender::F,
+            _ => unreachable!(),
+        };
+
+        let first_name = FIRST_NAMES[rng.next_u32() as usize % FIRST_NAMES.len()];
+        let last_name = LAST_NAMES[rng.next_u32() as usize % LAST_NAMES.len()];
+
+        let name = format!("{} {}", first_name, last_name);
+
+        Self { name, age, gender }
+    }
+}
 
 impl Default for HumanDecisionKind {
     fn default() -> Self {
@@ -184,8 +226,8 @@ pub fn update_decision(
     }
 }
 
-#[profiling::function]
 pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<HumanID> {
+    profiling::scope!("spawn_human");
     let map = goria.map();
     let housepos = map.buildings().get(house)?.door_pos;
     drop(map);
@@ -203,6 +245,8 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<HumanID> 
 
     let car = spawn_parked_vehicle(goria, VehicleKind::Car, housepos);
 
+    let personal_info = Box::new(PersonalInfo::new(&mut goria.write::<RandProvider>()));
+
     let id = goria.world.insert(HumanEnt {
         trans: Transform::new(hpos),
         location: Location::Building(house),
@@ -216,6 +260,7 @@ pub fn spawn_human(goria: &mut Egregoria, house: BuildingID) -> Option<HumanID> 
         router: Router::new(car),
         collider: None,
         work: None,
+        personal_info,
     });
 
     let soul = SoulID::Human(id);

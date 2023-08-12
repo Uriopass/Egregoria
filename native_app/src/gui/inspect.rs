@@ -10,6 +10,7 @@ use egregoria::{
 };
 use egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
+use slotmapd::Key;
 
 /// Inspect window
 /// Allows to inspect an entity
@@ -151,7 +152,7 @@ impl InspectRenderer {
 }
 
 pub fn building_link(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, b: BuildingID) {
-    if ui.link(format!("{:?}", b)).clicked() {
+    if ui.link(format!("{:?}", b.data())).clicked() {
         uiworld.write::<InspectedBuilding>().e = Some(b);
         if let Some(b) = goria.map().buildings().get(b) {
             uiworld.camera_mut().targetpos = b.door_pos;
@@ -160,7 +161,18 @@ pub fn building_link(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, b: B
 }
 
 pub fn entity_link(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, e: AnyEntity) {
-    if ui.link(format!("{}", e)).clicked() {
+    let linkname = match e {
+        AnyEntity::HumanID(id) => {
+            if let Some(human) = goria.world().humans.get(id) {
+                format!("{}", human.personal_info.name)
+            } else {
+                "???".to_string()
+            }
+        }
+        _ => format!("{}", e),
+    };
+
+    if ui.link(linkname).clicked() {
         uiworld.write::<InspectedEntity>().e = Some(e);
         if let Some(pos) = goria.pos_any(e) {
             uiworld.camera_mut().targetpos = pos

@@ -7,7 +7,7 @@ use crate::physics::{Collider, CollisionWorld, Speed};
 use crate::souls::desire::{BuyFood, Home, Work};
 use crate::souls::freight_station::FreightStation;
 use crate::souls::goods_company::GoodsCompany;
-use crate::souls::human::HumanDecision;
+use crate::souls::human::{HumanDecision, PersonalInfo};
 use crate::transportation::train::{Locomotive, LocomotiveReservation, RailWagon};
 use crate::transportation::{Location, Pedestrian, Vehicle, VehicleKind, VehicleState};
 use crate::utils::par_command_buffer::GoriaDrop;
@@ -87,18 +87,21 @@ impl GoriaDrop for VehicleEnt {
 #[derive(Inspect, Serialize, Deserialize)]
 pub struct HumanEnt {
     pub trans: Transform,
+    pub speed: Speed,
     pub location: Location,
     pub pedestrian: Pedestrian,
-    pub it: Itinerary,
-    pub speed: Speed,
     pub collider: Option<Collider>,
+
+    pub router: Router,
+    pub it: Itinerary,
 
     pub decision: HumanDecision,
     pub home: Home,
     pub food: BuyFood,
     pub bought: Bought,
-    pub router: Router,
     pub work: Option<Work>,
+
+    pub personal_info: Box<PersonalInfo>,
 }
 
 impl GoriaDrop for HumanEnt {

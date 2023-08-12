@@ -23,6 +23,8 @@ pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id:
             if cfg!(debug_assertions) {
                 ui.label(format!("{:?}", id));
             }
+            let pinfo = &human.personal_info;
+            ui.label(format!("{}{:?} • {}", pinfo.age, pinfo.gender, pinfo.name));
 
             match human.location {
                 Location::Outside => {}
