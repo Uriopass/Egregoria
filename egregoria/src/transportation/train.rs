@@ -90,7 +90,7 @@ pub fn spawn_train(
 ) -> Option<TrainID> {
     let (world, res) = goria.world_res();
 
-    let map = res.get::<Map>().ok()?;
+    let map = res.get::<Map>();
     let lane = map.lanes().get(lane)?;
 
     let (locopos, locodir) = lane.points.point_dir_along(dist);
@@ -197,8 +197,8 @@ pub fn traverse_forward<'a>(
 
 #[profiling::function]
 pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
-    let map = &*resources.get::<Map>().unwrap();
-    let reservations = &mut *resources.get_mut::<TrainReservations>().unwrap();
+    let map = &*resources.get::<Map>();
+    let reservations = &mut *resources.get_mut::<TrainReservations>();
     let lanes = map.lanes();
     let inters = map.intersections();
     world.trains.iter_mut().for_each(move |(me, train)| {
@@ -305,9 +305,9 @@ pub fn train_reservations_update(world: &mut World, resources: &mut Resources) {
 
 #[profiling::function]
 pub fn locomotive_system(world: &mut World, resources: &mut Resources) {
-    let map: &Map = &resources.get().unwrap();
-    let time: &GameTime = &resources.get().unwrap();
-    let reservs: &TrainReservations = &resources.get().unwrap();
+    let map: &Map = &resources.get();
+    let time: &GameTime = &resources.get();
+    let reservs: &TrainReservations = &resources.get();
 
     // asume iter order stays the same
     let mut desired_speeds = Vec::with_capacity(world.trains.len());

@@ -176,20 +176,19 @@ const COMPANIES_PATH: &str = "../assets/companies.json";
 
 pub fn init_market(_: &mut World, res: &mut Resources) {
     res.get_mut::<ItemRegistry>()
-        .unwrap()
         .load_item_definitions(&common::saveload::load_string(ITEMS_PATH).unwrap());
 
-    res.get_mut::<GoodsCompanyRegistry>().unwrap().load(
+    res.get_mut::<GoodsCompanyRegistry>().load(
         &common::saveload::load_string(COMPANIES_PATH).unwrap(),
-        &res.get::<ItemRegistry>().unwrap(),
+        &res.get::<ItemRegistry>(),
     );
 
     let market = Market::new(
-        &res.get::<ItemRegistry>().unwrap(),
-        &res.get::<GoodsCompanyRegistry>().unwrap(),
+        &res.get::<ItemRegistry>(),
+        &res.get::<GoodsCompanyRegistry>(),
     );
     res.insert(market);
-    let stats = EcoStats::new(&res.get::<ItemRegistry>().unwrap());
+    let stats = EcoStats::new(&res.get::<ItemRegistry>());
     res.insert(stats);
 }
 
@@ -197,10 +196,10 @@ pub fn init_market(_: &mut World, res: &mut Resources) {
 pub fn market_update(world: &mut World, resources: &mut Resources) {
     let n_workers = world.humans.len();
 
-    let mut m = resources.get_mut::<Market>().unwrap();
-    let job_opening = resources.get::<ItemRegistry>().unwrap().id("job-opening");
-    let mut gvt = resources.get_mut::<Government>().unwrap();
-    let tick = resources.get::<Tick>().unwrap().0;
+    let mut m = resources.get_mut::<Market>();
+    let job_opening = resources.get::<ItemRegistry>().id("job-opening");
+    let mut gvt = resources.get_mut::<Government>();
+    let tick = resources.get::<Tick>().0;
 
     if tick % TICKS_PER_SECOND == 0 {
         gvt.money -= n_workers as i64 * WORKER_CONSUMPTION_PER_SECOND;
@@ -208,10 +207,7 @@ pub fn market_update(world: &mut World, resources: &mut Resources) {
 
     let trades = m.make_trades();
 
-    resources
-        .get_mut::<EcoStats>()
-        .unwrap()
-        .advance(tick, trades);
+    resources.get_mut::<EcoStats>().advance(tick, trades);
 
     for &trade in trades.iter() {
         log::debug!("A trade was made! {:?}", trade);

@@ -65,20 +65,17 @@ pub struct VehicleEnt {
 impl GoriaDrop for VehicleEnt {
     fn goria_drop(mut self, id: VehicleID, res: &mut Resources) {
         if let Some(collider) = self.collider {
-            res.get_mut::<CollisionWorld>()
-                .unwrap()
-                .remove_maintain(collider.0);
+            res.get_mut::<CollisionWorld>().remove_maintain(collider.0);
         }
 
         if let VehicleState::Parked(resa) | VehicleState::RoadToPark(_, _, resa) =
             std::mem::replace(&mut self.vehicle.state, VehicleState::Driving)
         {
-            res.get_mut::<ParkingManagement>().unwrap().free(resa);
+            res.get_mut::<ParkingManagement>().free(resa);
         }
 
         if matches!(self.vehicle.kind, VehicleKind::Truck) {
             res.get_mut::<Dispatcher>()
-                .unwrap()
                 .unregister(DispatchID::SmallTruck(id))
         }
     }
@@ -107,15 +104,13 @@ pub struct HumanEnt {
 impl GoriaDrop for HumanEnt {
     fn goria_drop(mut self, id: HumanID, res: &mut Resources) {
         if let Some(collider) = self.collider {
-            res.get_mut::<CollisionWorld>()
-                .unwrap()
-                .remove_maintain(collider.0);
+            res.get_mut::<CollisionWorld>().remove_maintain(collider.0);
         }
 
-        res.get_mut::<Market>().unwrap().remove(SoulID::Human(id));
+        res.get_mut::<Market>().remove(SoulID::Human(id));
 
         self.router
-            .clear_steps(&mut res.get_mut::<ParkingManagement>().unwrap())
+            .clear_steps(&mut res.get_mut::<ParkingManagement>())
     }
 }
 
@@ -133,7 +128,6 @@ pub struct TrainEnt {
 impl GoriaDrop for TrainEnt {
     fn goria_drop(self, id: TrainID, res: &mut Resources) {
         res.get_mut::<Dispatcher>()
-            .unwrap()
             .unregister(DispatchID::FreightTrain(id));
     }
 }
@@ -158,11 +152,9 @@ pub struct FreightStationEnt {
 
 impl GoriaDrop for FreightStationEnt {
     fn goria_drop(self, id: FreightStationID, res: &mut Resources) {
-        res.get_mut::<Market>()
-            .unwrap()
-            .remove(SoulID::FreightStation(id));
+        res.get_mut::<Market>().remove(SoulID::FreightStation(id));
 
-        let mut d = res.get_mut::<Dispatcher>().unwrap();
+        let mut d = res.get_mut::<Dispatcher>();
         for (id, _) in self.f.trains {
             d.free(id);
         }
@@ -181,9 +173,7 @@ pub struct CompanyEnt {
 
 impl GoriaDrop for CompanyEnt {
     fn goria_drop(self, id: CompanyID, res: &mut Resources) {
-        res.get_mut::<Market>()
-            .unwrap()
-            .remove(SoulID::GoodsCompany(id));
+        res.get_mut::<Market>().remove(SoulID::GoodsCompany(id));
     }
 }
 

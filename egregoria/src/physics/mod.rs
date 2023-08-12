@@ -72,7 +72,7 @@ impl Collider {
 
 #[profiling::function]
 pub fn coworld_synchronize(world: &mut World, resources: &mut Resources) {
-    let mut coworld = resources.get_mut::<CollisionWorld>().unwrap();
+    let mut coworld = resources.get_mut::<CollisionWorld>();
 
     world.query_trans_speed_coll_vehicle().for_each(
         |(trans, kin, coll, v): (&Transform, &Speed, Collider, Option<&Vehicle>)| {

@@ -54,8 +54,8 @@ debug_inspect_impl!(RoutingStep);
 
 #[profiling::function]
 pub fn routing_changed_system(world: &mut World, resources: &mut Resources) {
-    let map: &Map = &resources.get().unwrap();
-    let parking: &mut ParkingManagement = &mut resources.get_mut().unwrap();
+    let map: &Map = &resources.get();
+    let parking: &mut ParkingManagement = &mut resources.get_mut();
 
     world.humans.values_mut().for_each(|h| {
         let router = &mut h.router;
@@ -111,9 +111,9 @@ pub fn routing_changed_system(world: &mut World, resources: &mut Resources) {
 
 #[profiling::function]
 pub fn routing_update_system(world: &mut World, resources: &mut Resources) {
-    let map: &Map = &resources.get().unwrap();
-    let cbuf_human: &ParCommandBuffer<HumanEnt> = &resources.get().unwrap();
-    let cbuf_vehicle: &ParCommandBuffer<VehicleEnt> = &resources.get().unwrap();
+    let map: &Map = &resources.get();
+    let cbuf_human: &ParCommandBuffer<HumanEnt> = &resources.get();
+    let cbuf_vehicle: &ParCommandBuffer<VehicleEnt> = &resources.get();
 
     world.humans.iter_mut().for_each(|(body, h)| {
         if h.router.cur_step.is_none() && h.router.steps.is_empty() {

@@ -278,8 +278,8 @@ impl DispatchOne {
 }
 
 pub fn dispatch_system(world: &mut World, resources: &mut Resources) {
-    let mut dispatcher = resources.get_mut::<Dispatcher>().unwrap();
-    let map = resources.get::<Map>().unwrap();
+    let mut dispatcher = resources.get_mut::<Dispatcher>();
+    let map = resources.get::<Map>();
     dispatcher.update(&map, world);
 }
 

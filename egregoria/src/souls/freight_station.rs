@@ -67,13 +67,11 @@ pub fn freight_station_soul(
 }
 
 pub fn freight_station_system(world: &mut World, resources: &mut Resources) {
-    let cbuf = resources
-        .get::<ParCommandBuffer<FreightStationEnt>>()
-        .unwrap();
-    let mut dispatch = resources.get_mut::<Dispatcher>().unwrap();
-    let map = resources.get::<Map>().unwrap();
-    let time = resources.get::<GameTime>().unwrap();
-    let tick = *resources.get::<Tick>().unwrap();
+    let cbuf = resources.get::<ParCommandBuffer<FreightStationEnt>>();
+    let mut dispatch = resources.get_mut::<Dispatcher>();
+    let map = resources.get::<Map>();
+    let time = resources.get::<GameTime>();
+    let tick = *resources.get::<Tick>();
 
     for (me, f) in world.freight_stations.iter_mut() {
         let pos = f.trans;

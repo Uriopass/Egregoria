@@ -58,7 +58,11 @@ impl Resources {
         }
     }
 
-    pub fn get<T: Any + Send + Sync>(&self) -> Result<Ref<T>, CantGetResource> {
+    pub fn get<T: Any + Send + Sync>(&self) -> Ref<T> {
+        Ref::from_lock(self.resources.get(&TypeId::of::<T>()).unwrap()).unwrap()
+    }
+
+    pub fn try_get<T: Any + Send + Sync>(&self) -> Result<Ref<T>, CantGetResource> {
         Ok(Ref::from_lock(
             self.resources
                 .get(&TypeId::of::<T>())
@@ -66,8 +70,11 @@ impl Resources {
         )?)
     }
 
-    // TODO: try_get_mut instead of get_mut
-    pub fn get_mut<T: Any + Send + Sync>(&self) -> Result<RefMut<T>, CantGetResource> {
+    pub fn get_mut<T: Any + Send + Sync>(&self) -> RefMut<T> {
+        RefMut::from_lock(self.resources.get(&TypeId::of::<T>()).unwrap()).unwrap()
+    }
+
+    pub fn try_get_mut<T: Any + Send + Sync>(&self) -> Result<RefMut<T>, CantGetResource> {
         Ok(RefMut::from_lock(
             self.resources
                 .get(&TypeId::of::<T>())

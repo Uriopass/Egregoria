@@ -42,19 +42,15 @@ impl UiWorld {
     }
 
     pub fn try_write<T: Any + Send + Sync>(&self) -> Option<RefMut<T>> {
-        self.resources.get_mut().ok()
+        self.resources.try_get_mut().ok()
     }
 
     pub fn write<T: Any + Send + Sync>(&self) -> RefMut<T> {
-        self.resources
-            .get_mut()
-            .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
+        self.resources.get_mut()
     }
 
     pub fn read<T: Any + Send + Sync>(&self) -> Ref<T> {
-        self.resources
-            .get()
-            .unwrap_or_else(|_| panic!("Couldn't fetch resource {}", std::any::type_name::<T>()))
+        self.resources.get()
     }
 
     pub fn insert<T: Any + Send + Sync>(&mut self, res: T) {
