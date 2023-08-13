@@ -794,7 +794,7 @@ fn earcut_inner(
         return;
     }
 
-    if hole_indices.len() > 0 {
+    if !hole_indices.is_empty() {
         outer_node = eliminate_holes(&mut ll, data, hole_indices, outer_node);
     }
 
@@ -1115,12 +1115,12 @@ mod tests {
 
     // turn a polygon in a multi-dimensional array form (e.g. as in GeoJSON)
     // into a form Earcut accepts
-    pub fn flatten(data: &Vec<Vec<Vec<f32>>>) -> (Vec<f32>, Vec<usize>, usize) {
+    pub fn flatten(data: &[Vec<Vec<f32>>]) -> (Vec<f32>, Vec<usize>, usize) {
         (
             data.iter()
+                .flatten()
+                .flatten()
                 .cloned()
-                .flatten()
-                .flatten()
                 .collect::<Vec<f32>>(), // flat data
             data.iter()
                 .take(data.len() - 1)
@@ -1174,24 +1174,19 @@ mod tests {
                 n.z,
             ));
         }
-        return s;
+        s
     }
 
-    fn deviation(
-        data: &Vec<f32>,
-        hole_indices: &Vec<usize>,
-        dims: usize,
-        triangles: &Vec<usize>,
-    ) -> f32 {
+    fn deviation(data: &[f32], hole_indices: &[usize], dims: usize, triangles: &[usize]) -> f32 {
         if DIM != dims {
             return f32::NAN;
         }
-        let mut indices = hole_indices.clone();
+        let mut indices: Vec<_> = hole_indices.to_vec();
         indices.push(data.len() / DIM);
         let (ix, iy) = (indices.iter(), indices.iter().skip(1));
-        let body_area = signed_area(&data, 0, indices[0] * DIM).abs();
+        let body_area = signed_area(data, 0, indices[0] * DIM).abs();
         let polygon_area = ix.zip(iy).fold(body_area, |a, (ix, iy)| {
-            a - signed_area(&data, ix * DIM, iy * DIM).abs()
+            a - signed_area(data, ix * DIM, iy * DIM).abs()
         });
 
         let i = triangles.iter().skip(0).step_by(3).map(|x| x * DIM);
@@ -1210,7 +1205,7 @@ mod tests {
 
     fn cycles_report(ll: &LinkedLists) -> String {
         if ll.nodes.len() == 1 {
-            return format!("[]");
+            return "[]".to_string();
         }
         let mut markv: Vec<usize> = Vec::new();
         markv.resize(ll.nodes.len(), 0);
@@ -1370,10 +1365,10 @@ mod tests {
 
         let m = vec![0.0, 0.0, 0.5, 0.5, 1.0, 0.0, 0.5, 0.4];
         let (ll, _) = linked_list(&m, 0, m.len(), true);
-        assert!(is_ear(&ll, 4, 1, 2) == false);
-        assert!(is_ear(&ll, 1, 2, 3) == true);
-        assert!(is_ear(&ll, 2, 3, 4) == false);
-        assert!(is_ear(&ll, 3, 4, 1) == true);
+        assert!(!is_ear(&ll, 4, 1, 2));
+        assert!(is_ear(&ll, 1, 2, 3));
+        assert!(!is_ear(&ll, 2, 3, 4));
+        assert!(is_ear(&ll, 3, 4, 1));
 
         let m = vec![0.0, 0.0, 0.5, 0.5, 1.0, 0.0];
         let (ll, _) = linked_list(&m, 0, m.len(), true);
@@ -1511,10 +1506,10 @@ mod tests {
         let m = vec![0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
         let (ll, _) = linked_list(&m, 0, m.len(), true);
 
-        assert!(false == intersects_polygon(&ll, ll.noderef(0), ll.noderef(2)));
-        assert!(false == intersects_polygon(&ll, ll.noderef(2), ll.noderef(0)));
-        assert!(false == intersects_polygon(&ll, ll.noderef(1), ll.noderef(3)));
-        assert!(false == intersects_polygon(&ll, ll.noderef(3), ll.noderef(1)));
+        assert!(!intersects_polygon(&ll, ll.noderef(0), ll.noderef(2)));
+        assert!(!intersects_polygon(&ll, ll.noderef(2), ll.noderef(0)));
+        assert!(!intersects_polygon(&ll, ll.noderef(1), ll.noderef(3)));
+        assert!(!intersects_polygon(&ll, ll.noderef(3), ll.noderef(1)));
 
         let m = vec![0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.1, 0.1, 0.9, 1.0, 0.0, 1.0];
         let (ll, _) = linked_list(&m, 0, m.len(), true);
@@ -1547,35 +1542,39 @@ mod tests {
                 );
             };
         }
-        ti!(false, 0 + 1, 2 + 1, 0 + 1, 1 + 1);
-        ti!(false, 0 + 1, 2 + 1, 1 + 1, 2 + 1);
-        ti!(false, 0 + 1, 2 + 1, 2 + 1, 3 + 1);
-        ti!(false, 0 + 1, 2 + 1, 3 + 1, 0 + 1);
-        ti!(true, 0 + 1, 2 + 1, 3 + 1, 1 + 1);
-        ti!(true, 0 + 1, 2 + 1, 1 + 1, 3 + 1);
-        ti!(true, 2 + 1, 0 + 1, 3 + 1, 1 + 1);
-        ti!(true, 2 + 1, 0 + 1, 1 + 1, 3 + 1);
-        ti!(false, 0 + 1, 1 + 1, 2 + 1, 3 + 1);
-        ti!(false, 1 + 1, 0 + 1, 2 + 1, 3 + 1);
-        ti!(false, 0 + 1, 0 + 1, 2 + 1, 3 + 1);
-        ti!(false, 0 + 1, 1 + 1, 3 + 1, 2 + 1);
-        ti!(false, 1 + 1, 0 + 1, 3 + 1, 2 + 1);
+        ti!(false, 1, 2 + 1, 1, 1 + 1);
+        ti!(false, 1, 2 + 1, 1 + 1, 2 + 1);
+        ti!(false, 1, 2 + 1, 2 + 1, 3 + 1);
+        ti!(false, 1, 2 + 1, 3 + 1, 1);
+        ti!(true, 1, 2 + 1, 3 + 1, 1 + 1);
+        ti!(true, 1, 2 + 1, 1 + 1, 3 + 1);
+        ti!(true, 2 + 1, 1, 3 + 1, 1 + 1);
+        ti!(true, 2 + 1, 1, 1 + 1, 3 + 1);
+        ti!(false, 1, 1 + 1, 2 + 1, 3 + 1);
+        ti!(false, 1 + 1, 1, 2 + 1, 3 + 1);
+        ti!(false, 1, 1, 2 + 1, 3 + 1);
+        ti!(false, 1, 1 + 1, 3 + 1, 2 + 1);
+        ti!(false, 1 + 1, 1, 3 + 1, 2 + 1);
 
-        ti!(true, 0 + 1, 2 + 1, 2 + 1, 0 + 1); // special cases
-        ti!(true, 0 + 1, 2 + 1, 0 + 1, 2 + 1);
+        ti!(true, 1, 2 + 1, 2 + 1, 1); // special cases
+        ti!(true, 1, 2 + 1, 1, 2 + 1);
 
         let m = vec![0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.1, 0.1, 0.9, 1.0, 0.0, 1.0];
         let (ll, _) = linked_list(&m, 0, m.len(), true);
-        assert_eq!(
-            false,
-            pseudo_intersects(&ll.nodes[4], &ll.nodes[5], &ll.nodes[1], &ll.nodes[3])
-        );
+        assert!(!pseudo_intersects(
+            &ll.nodes[4],
+            &ll.nodes[5],
+            &ll.nodes[1],
+            &ll.nodes[3]
+        ));
 
         // special case
-        assert_eq!(
-            true,
-            pseudo_intersects(&ll.nodes[4], &ll.nodes[5], &ll.nodes[3], &ll.nodes[1])
-        );
+        assert!(pseudo_intersects(
+            &ll.nodes[4],
+            &ll.nodes[5],
+            &ll.nodes[3],
+            &ll.nodes[1]
+        ));
     }
 
     #[test]
@@ -1749,7 +1748,7 @@ mod tests {
             triangles.push(c);
         });
         assert!(cycle_len(&ll, 1) == 7);
-        assert!(triangles.len() == 0);
+        assert!(triangles.is_empty());
 
         // second test - we have three points that immediately cause
         // self intersection. so it should, in theory, detect and clean

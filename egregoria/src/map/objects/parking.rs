@@ -52,7 +52,7 @@ impl ParkingSpots {
     }
 
     pub fn random_spot(&self, rng: u64) -> Option<ParkingSpotID> {
-        if self.spots.len() == 0 {
+        if self.spots.is_empty() {
             return None;
         }
         let mut iter = self.spots.keys();

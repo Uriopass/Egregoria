@@ -277,7 +277,7 @@ impl Itinerary {
                 let rng = common::hash_u64((tick.0, r.cur.kind));
 
                 if let Some((lp, new_route)) =
-                    Self::random_route(rng, position, tick, &map, pathkind)
+                    Self::random_route(rng, position, tick, map, pathkind)
                 {
                     self.reversed_local_path = lp;
                     *r = new_route;

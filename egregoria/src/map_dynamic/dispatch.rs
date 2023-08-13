@@ -318,14 +318,14 @@ mod tests {
         assert!(lanes.contains(disp.lanes.keys().next().unwrap()));
 
         // second insert in same lane
-        let ent2 = mk_ent(1 << 32 + 1);
+        let ent2 = mk_ent((1 << 32) + 1);
         disp.register(ent2, &map, Vec3::new(0.0, 0.0, 0.0));
         assert_eq!(disp.positions.len(), 2);
         assert_eq!(disp.lanes.len(), 1);
         assert_eq!(disp.lanes.values().next().unwrap(), &vec![ent, ent2]);
 
         // insert in another lane
-        let ent3 = mk_ent(1 << 32 + 2);
+        let ent3 = mk_ent((1 << 32) + 2);
         disp.register(ent3, &map, Vec3::new(100.0, 10.0, 0.0));
         assert_eq!(disp.positions.len(), 3);
         assert_eq!(disp.lanes.len(), 2);

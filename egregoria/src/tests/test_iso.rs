@@ -9,7 +9,7 @@ use common::saveload::{Bincode, Encoder};
 use geom::vec3;
 use quickcheck::{Arbitrary, Gen};
 
-static REPLAY: &'static [u8] = include_bytes!("world_replay.json");
+static REPLAY: &[u8] = include_bytes!("world_replay.json");
 
 fn check_coherent(map: &Map, proj: MapProject) {
     match proj.kind {
