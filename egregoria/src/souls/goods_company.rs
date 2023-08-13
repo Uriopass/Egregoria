@@ -328,7 +328,7 @@ pub fn company_system(world: &mut World, res: &mut Resources) {
                         if let Some(SoulID::FreightStation(owner)) =
                             res.read::<BuildingInfos>().owner(owner_build)
                         {
-                            if let Some(mut f) = world.freight_stations.get_mut(owner) {
+                            if let Some(f) = world.freight_stations.get_mut(owner) {
                                 f.f.wanted_cargo += 1;
                             }
                         }

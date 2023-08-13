@@ -118,7 +118,7 @@ pub fn unpark(goria: &mut Egregoria, vehicle: VehicleID) {
 
     let coll = put_vehicle_in_coworld(goria, w, trans);
 
-    let mut v = unwrap_ret!(goria.world.vehicles.get_mut(vehicle));
+    let v = unwrap_ret!(goria.world.vehicles.get_mut(vehicle));
     v.collider = Some(coll);
 }
 
