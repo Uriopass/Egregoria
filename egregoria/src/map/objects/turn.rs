@@ -113,11 +113,11 @@ impl Turn {
                 let center_dir_dst = (pos_dst.xy() - center).normalize();
 
                 let ang = center_dir_dst.angle(center_dir_src).abs();
-                if ang >= Radians::from(Degrees(41.0)).0 {
-                    let a = center_dir_src.rotated_by_angle(Radians::from_deg(20.0));
+                if ang >= Radians::from(Degrees(21.0)).0 {
+                    let a = center_dir_src.rotated_by_angle(Radians::from_deg(10.0));
                     let mut ang_a = a.angle_cossin();
 
-                    let b = center_dir_dst.rotated_by_angle(Radians::from_deg(-20.0));
+                    let b = center_dir_dst.rotated_by_angle(Radians::from_deg(-10.0));
                     let ang_b = b.angle_cossin();
 
                     if ang_a > ang_b {
@@ -167,19 +167,19 @@ impl Turn {
     ) -> impl Iterator<Item = Vec2> {
         let a = (pos_src.xy() - center)
             .normalize()
-            .rotated_by_angle(Radians::from_deg(20.0));
+            .rotated_by_angle(Radians::from_deg(10.0));
         let mut ang_a = a.angle_cossin();
 
         let b = (pos_dst.xy() - center)
             .normalize()
-            .rotated_by_angle(Radians::from_deg(-20.0));
+            .rotated_by_angle(Radians::from_deg(-10.0));
         let mut ang_b = b.angle_cossin();
 
         if ang_a > ang_b {
             ang_a -= Radians::TAU;
         }
 
-        let diff = (ang_b - ang_a).min(Radians::from_deg(50.0));
+        let diff = (ang_b - ang_a).min(Radians::from_deg(80.0));
 
         ang_a += diff * 0.4;
         ang_b -= diff * 0.4;

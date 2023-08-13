@@ -910,7 +910,7 @@ fn intersection_mesh(
                     .normalize()
                     .angle((next_right - center).normalize())
                     .abs();
-                if ang >= Radians::from_deg(41.0).0 {
+                if ang >= Radians::from_deg(21.0).0 {
                     polygon.extend(Turn::gen_roundabout(
                         left.z(0.0),
                         next_right.z(0.0),

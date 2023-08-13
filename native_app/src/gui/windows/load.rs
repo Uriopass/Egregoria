@@ -22,6 +22,10 @@ pub fn load(window: egui::Window<'_>, ui: &egui::Context, uiw: &mut UiWorld, _: 
             })
         });
 
+        if ui.button("New Game").clicked() {
+            uiw.write::<SaveLoadState>().please_load_goria = Some(Egregoria::new(true));
+        }
+
         if has_save {
             if ui.button("Load world/world_replay.json").clicked() {
                 let replay = Egregoria::load_replay_from_disk("world");

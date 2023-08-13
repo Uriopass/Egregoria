@@ -2,7 +2,7 @@ use egui_inspect::Inspect;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-pub const SECONDS_PER_REALTIME_SECOND: i32 = 15;
+pub const SECONDS_PER_REALTIME_SECOND: u32 = 15;
 pub const SECONDS_PER_HOUR: i32 = 3600;
 pub const HOURS_PER_DAY: i32 = 24;
 pub const SECONDS_PER_DAY: i32 = SECONDS_PER_HOUR * HOURS_PER_DAY;

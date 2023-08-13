@@ -1,4 +1,5 @@
 use crate::map::{Intersection, LaneID, Lanes, Roads, TrafficControl, TrafficLightSchedule};
+use crate::utils::time::SECONDS_PER_REALTIME_SECOND;
 use egui_inspect::{egui, egui::Ui, Inspect, InspectArgs};
 use serde::{Deserialize, Serialize};
 
@@ -72,17 +73,17 @@ impl LightPolicy {
     }
 
     fn lights(in_road_lanes: Vec<Vec<LaneID>>, inter: &Intersection, lanes: &mut Lanes) {
-        let n_cycles = (in_road_lanes.len() + 1) / 2;
-        let cycle_size = 14;
-        let orange_length = 4;
+        let n_cycles = ((in_road_lanes.len() + 1) / 2) as u16;
+        let cycle_size = 14 * SECONDS_PER_REALTIME_SECOND as u16;
+        let orange_length = 4 * SECONDS_PER_REALTIME_SECOND as u16;
 
         let total_length = cycle_size * n_cycles;
 
-        let offset = inter.id.as_ffi();
-        let inter_offset: usize =
-            (common::rand::rand(offset as f32) * total_length as f32) as usize;
+        let inter_offset =
+            (common::rand::rand(inter.id.as_ffi() as f32) * total_length as f32) as u16;
 
         for (i, incoming_lanes) in in_road_lanes.into_iter().enumerate() {
+            let i = i as u16;
             let light = TrafficControl::Light(TrafficLightSchedule::from_basic(
                 cycle_size - orange_length,
                 orange_length,

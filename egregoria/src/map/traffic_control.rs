@@ -16,15 +16,15 @@ impl TrafficBehavior {
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct TrafficLightSchedule {
-    period: usize,
-    green: usize,
-    orange: usize,
-    red: usize,
-    offset: usize,
+    period: u16,
+    green: u16,
+    orange: u16,
+    red: u16,
+    offset: u16,
 }
 
 impl TrafficLightSchedule {
-    pub fn from_basic(green: usize, orange: usize, red: usize, offset: usize) -> Self {
+    pub fn from_basic(green: u16, orange: u16, red: u16, offset: u16) -> Self {
         Self {
             period: green + orange + red,
             green,
@@ -59,7 +59,8 @@ impl TrafficControl {
         match self {
             TrafficControl::Always => TrafficBehavior::GREEN,
             TrafficControl::Light(schedule) => {
-                let remainder = (seconds as usize + schedule.offset) % schedule.period;
+                let remainder =
+                    ((seconds % schedule.period as u32) as u16 + schedule.offset) % schedule.period;
                 if remainder < schedule.green {
                     TrafficBehavior::GREEN
                 } else if remainder < schedule.green + schedule.orange {

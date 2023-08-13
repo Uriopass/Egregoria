@@ -300,7 +300,13 @@ impl Itinerary {
         if !pathkind.authorized_lane(lane.kind) {
             return None;
         }
-        let itin = Itinerary::route(tick, position, lane.points.last(), map, pathkind)?;
+        let itin = Itinerary::route(
+            tick,
+            position,
+            lane.points.point_along(lane.points.length() * 0.5),
+            map,
+            pathkind,
+        )?;
         if let ItineraryKind::Route(r, _) = itin.kind {
             return Some((itin.reversed_local_path, r));
         }

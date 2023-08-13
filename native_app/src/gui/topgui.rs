@@ -146,8 +146,8 @@ impl Gui {
         }
     }
 
-    #[profiling::function]
     pub fn toolbox(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        profiling::scope!("topgui::toolbox");
         #[derive(Copy, Clone)]
         pub enum Tab {
             Hand,
@@ -241,6 +241,7 @@ impl Gui {
                         );
                         ui.add_space(10.0);
                         ui.label("Turn policy");
+                        let had_roundabout = v.turn_policy.roundabout.is_some();
                         *dirty |= <TurnPolicy as Inspect<TurnPolicy>>::render_mut(
                             &mut v.turn_policy,
                             "Turn policy",
@@ -251,6 +252,9 @@ impl Gui {
                                 ..Default::default()
                             },
                         );
+                        if !had_roundabout && v.turn_policy.roundabout.is_some() {
+                            v.light_policy = LightPolicy::StopSigns;
+                        }
                     });
             }
         }
