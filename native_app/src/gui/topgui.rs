@@ -21,7 +21,10 @@ use egregoria::map::{
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::{GameTime, SECONDS_PER_HOUR};
 use egregoria::{AnyEntity, Egregoria};
-use egui::{Align2, Color32, Context, Frame, Id, Response, RichText, Style, Ui, Widget, Window};
+use egui::{
+    Align2, Color32, Context, Frame, Id, LayerId, Response, RichText, Rounding, Stroke, Style, Ui,
+    Widget, Window,
+};
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Polygon, Vec2};
 use serde::{Deserialize, Serialize};
@@ -70,6 +73,8 @@ impl Gui {
     /// Root GUI entrypoint
     #[profiling::function]
     pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        self.time_controls(ui, uiworld, goria);
+
         self.menu_bar(ui, uiworld, goria);
 
         Self::inspector(ui, uiworld, goria);
@@ -77,8 +82,6 @@ impl Gui {
         self.windows.render(ui, uiworld, goria);
 
         Self::toolbox(ui, uiworld, goria);
-
-        self.time_controls(ui, uiworld, goria);
 
         self.auto_save(uiworld);
 
@@ -632,8 +635,8 @@ impl Gui {
         *uiworld.write::<InspectedEntity>() = inspected;
     }
 
-    #[profiling::function]
     pub fn time_controls(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        profiling::scope!("topgui::time_controls");
         let time = goria.read::<GameTime>().daytime;
         let warp = &mut uiworld.write::<Settings>().time_warp;
         let depause_warp = &mut self.depause_warp;
@@ -648,6 +651,19 @@ impl Gui {
                 *depause_warp = *warp;
                 *warp = 0;
             }
+        }
+
+        if *warp == 0 {
+            let p = ui.layer_painter(LayerId::background());
+            p.rect(
+                ui.screen_rect(),
+                Rounding::none(),
+                Color32::from_rgba_premultiplied(0, 0, 0, 0),
+                Stroke {
+                    width: 7.0,
+                    color: Color32::from_rgba_premultiplied(196, 0, 0, 196),
+                },
+            );
         }
 
         let [_, h]: [f32; 2] = ui.available_rect().size().into();

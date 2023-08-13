@@ -106,7 +106,7 @@ impl Turn {
         if matches!(self.kind, TurnKind::Driving | TurnKind::WalkingCorner)
             && parent.is_roundabout()
         {
-            if let Some(radius) = parent.turn_policy.roundabout_radius {
+            if let Some(rp) = parent.turn_policy.roundabout {
                 let center = parent.pos.xy();
 
                 let center_dir_src = (pos_src.xy() - center).normalize();
@@ -124,10 +124,10 @@ impl Turn {
                         ang_a -= TAU;
                     }
 
-                    let mut turn_radius = radius * (1.0 - 0.5 * (ang_b - ang_a) / TAU);
+                    let mut turn_radius = rp.radius * (1.0 - 0.5 * (ang_b - ang_a) / TAU);
 
                     if matches!(self.kind, TurnKind::WalkingCorner) {
-                        turn_radius = radius + 3.0;
+                        turn_radius = rp.radius + 3.0;
                     }
 
                     self.points.extend(

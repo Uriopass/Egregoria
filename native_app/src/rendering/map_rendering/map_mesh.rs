@@ -903,7 +903,7 @@ fn intersection_mesh(
         let next_right = firstp.xy() + dst_orient.perpendicular() * getw(next_road);
 
         if inter.is_roundabout() {
-            if let Some(radius) = inter.turn_policy.roundabout_radius {
+            if let Some(rp) = inter.turn_policy.roundabout {
                 let center = inter.pos.xy();
 
                 let ang = (-src_orient).angle(dst_orient).abs();
@@ -913,12 +913,12 @@ fn intersection_mesh(
                         next_right.z(0.0),
                         src_orient,
                         dst_orient,
-                        radius + 3.0,
+                        rp.radius + 3.0,
                         center,
                     ));
 
                     tess.set_color(center_col);
-                    tess.draw_circle(center.z(inter.pos.z + 0.01), radius * 0.5);
+                    tess.draw_circle(center.z(inter.pos.z + 0.01), rp.radius * 0.5);
 
                     continue;
                 }

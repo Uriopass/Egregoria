@@ -20,10 +20,7 @@ impl<T: Inspect<T> + Default> Inspect<Option<T>> for OptionDefault {
     ) -> bool {
         let mut changed = false;
         let mut is_some = data.is_some();
-        if ui
-            .checkbox(&mut is_some, format!("{label}: enabled"))
-            .changed()
-        {
+        if ui.checkbox(&mut is_some, label).changed() {
             changed = true;
             if is_some {
                 *data = Some(T::default());
@@ -32,8 +29,11 @@ impl<T: Inspect<T> + Default> Inspect<Option<T>> for OptionDefault {
             }
         }
 
+        let mut args = args.clone();
+        args.header = Some(false);
+
         match data {
-            Some(value) => changed |= <T as Inspect<T>>::render_mut(value, label, ui, args),
+            Some(value) => changed |= <T as Inspect<T>>::render_mut(value, label, ui, &args),
             None => {}
         }
 

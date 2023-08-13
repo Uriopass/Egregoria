@@ -125,10 +125,10 @@ impl Intersection {
         }
 
         if self.is_roundabout() {
-            if let Some(radius) = self.turn_policy.roundabout_radius {
+            if let Some(rb) = self.turn_policy.roundabout {
                 for &r in &self.roads {
                     let r = &mut roads[r];
-                    r.max_interface(id, radius * 1.1 + 5.0);
+                    r.max_interface(id, rb.radius * 1.1 + 5.0);
                 }
             }
         }
@@ -185,7 +185,7 @@ impl Intersection {
     }
 
     pub fn is_roundabout(&self) -> bool {
-        self.turn_policy.roundabout_radius.is_some() && self.roads.len() > 1
+        self.turn_policy.roundabout.is_some() && self.roads.len() > 1
     }
 
     pub fn undirected_neighbors<'a>(
