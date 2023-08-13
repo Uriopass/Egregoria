@@ -1161,6 +1161,6 @@ mod tests {
 
     #[test]
     fn test_angle_cossin() {
-        assert_eq!(vec2(1.0, 0.0).angle_cossin(), 0.0);
+        assert_eq!(vec2(1.0, 0.0).angle_cossin(), Radians::ZERO);
     }
 }

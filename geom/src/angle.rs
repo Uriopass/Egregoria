@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 use std::f32::consts::{PI, TAU};
 use std::ops::{Add, AddAssign, Mul, Sub, SubAssign};
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialOrd, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialOrd, PartialEq, Default)]
 #[serde(from = "f32", into = "f32")]
 #[repr(transparent)]
 pub struct Degrees(pub f32);
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialOrd, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialOrd, PartialEq, Default)]
 #[serde(from = "f32", into = "f32")]
 #[repr(transparent)]
 pub struct Radians(pub f32);
@@ -17,6 +17,7 @@ impl Radians {
     pub const HALFPI: Self = Radians(std::f32::consts::FRAC_PI_2);
     pub const PI: Self = Radians(PI);
     pub const TAU: Self = Radians(TAU);
+    pub const ZERO: Self = Radians(0.0);
 
     pub fn vec2(self) -> Vec2 {
         Vec2 {
