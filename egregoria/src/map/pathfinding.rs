@@ -18,6 +18,7 @@ pub trait Pathfinder {
     ) -> Option<Vec<Traversable>>;
     fn nearest_lane(&self, map: &Map, pos: Vec3) -> Option<LaneID>;
     fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3>;
+    fn authorized_lane(&self, kind: LaneKind) -> bool;
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
@@ -55,6 +56,14 @@ impl Pathfinder for PathKind {
             PathKind::Pedestrian => PedestrianPath.local_route(map, lane, start, end),
             PathKind::Vehicle => CarPath.local_route(map, lane, start, end),
             PathKind::Rail => RailPath.local_route(map, lane, start, end),
+        }
+    }
+
+    fn authorized_lane(&self, kind: LaneKind) -> bool {
+        match self {
+            PathKind::Pedestrian => PedestrianPath.authorized_lane(kind),
+            PathKind::Vehicle => CarPath.authorized_lane(kind),
+            PathKind::Rail => RailPath.authorized_lane(kind),
         }
     }
 }
@@ -145,6 +154,10 @@ impl Pathfinder for PedestrianPath {
         v.push(end);
         Some(PolyLine3::new(v))
     }
+
+    fn authorized_lane(&self, kind: LaneKind) -> bool {
+        matches!(kind, LaneKind::Walking)
+    }
 }
 
 struct RailPath;
@@ -166,6 +179,10 @@ impl Pathfinder for RailPath {
 
     fn local_route(&self, map: &Map, lane: LaneID, start: Vec3, end: Vec3) -> Option<PolyLine3> {
         CarPath.local_route(map, lane, start, end)
+    }
+
+    fn authorized_lane(&self, kind: LaneKind) -> bool {
+        matches!(kind, LaneKind::Rail)
     }
 }
 
@@ -274,5 +291,9 @@ impl Pathfinder for CarPath {
         v.extend_from_slice(segs);
         v.push(p_end);
         Some(PolyLine3::new(v))
+    }
+
+    fn authorized_lane(&self, kind: LaneKind) -> bool {
+        matches!(kind, LaneKind::Driving | LaneKind::Bus)
     }
 }

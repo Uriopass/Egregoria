@@ -228,6 +228,13 @@ impl Vec2 {
         f32::atan2(Self::perp_dot(self, other), Self::dot(self, other))
     }
 
+    /// Returns the angle in range [-pi; pi] such that if v is unitary
+    /// v == (angle.cos(), angle.sin())
+    #[inline]
+    pub fn angle_cossin(self) -> f32 {
+        f32::atan2(self.y, self.x)
+    }
+
     #[inline]
     pub fn from_angle(angle: Radians) -> Vec2 {
         Self {
@@ -370,7 +377,8 @@ impl Vec2 {
     }
 
     #[inline]
-    pub fn rotated_by_angle(self, angle: f32) -> Self {
+    /// Rotates self by angle in radians counter-clockwise
+    pub fn rotated_by_angle(self, angle: Radians) -> Self {
         self.rotated_by(vec2(angle.cos(), angle.sin()))
     }
 }
@@ -1137,5 +1145,22 @@ impl From<[f64; 2]> for Vec2d {
     #[inline]
     fn from(v: [f64; 2]) -> Self {
         Self { x: v[0], y: v[1] }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::f32::consts::FRAC_PI_2;
+
+    #[test]
+    fn test_rotate() {
+        let v = vec2(1.0, 0.0);
+        assert!(vec2(0.0, 1.0).approx_eq(v.rotated_by_angle(Radians(FRAC_PI_2))))
+    }
+
+    #[test]
+    fn test_angle_cossin() {
+        assert_eq!(vec2(1.0, 0.0).angle_cossin(), 0.0);
     }
 }

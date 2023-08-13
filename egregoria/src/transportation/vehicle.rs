@@ -81,7 +81,7 @@ impl VehicleKind {
 
     pub fn min_turning_radius(self) -> f32 {
         match self {
-            VehicleKind::Car => 1.5,
+            VehicleKind::Car => 0.5,
             VehicleKind::Truck => 3.0,
             VehicleKind::Bus => 4.0,
         }
@@ -128,17 +128,22 @@ pub fn spawn_parked_vehicle(
     near: Vec3,
 ) -> Option<VehicleID> {
     let map = goria.map();
-
-    let it = Itinerary::NONE;
-
     let mut pm = goria.write::<ParkingManagement>();
-
     let spot_id = pm.reserve_near(near, &map).ok()?;
+    drop((map, pm));
 
+    spawn_parked_vehicle_with_spot(goria, kind, spot_id)
+}
+
+pub fn spawn_parked_vehicle_with_spot(
+    goria: &mut Egregoria,
+    kind: VehicleKind,
+    spot_id: SpotReservation,
+) -> Option<VehicleID> {
+    let map = goria.map();
+    let it = Itinerary::NONE;
     let pos = spot_id.get(&map.parking).unwrap().trans; // Unwrap ok: Gotten using reserve_near
-
     drop(map);
-    drop(pm);
 
     let tint = match kind {
         VehicleKind::Car => get_random_car_color(&mut goria.write::<RandProvider>()),

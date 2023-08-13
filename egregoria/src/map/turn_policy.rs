@@ -1,14 +1,16 @@
 use crate::map::{Intersection, IntersectionID, LaneID, LaneKind, Lanes, Roads, TurnID, TurnKind};
-use egui_inspect::Inspect;
+use egui_inspect::{Inspect, OptionDefault};
 use geom::{vec2, Vec2};
 use serde::{Deserialize, Serialize};
 use std::iter::{Extend, Iterator};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize, Inspect)]
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize, Inspect)]
 pub struct TurnPolicy {
     pub back_turns: bool,
     pub left_turns: bool,
     pub crosswalks: bool,
+    #[inspect(min_value = 10.0, max_value = 50.0, proxy_type = "OptionDefault")]
+    pub roundabout_radius: Option<f32>,
 }
 
 impl Default for TurnPolicy {
@@ -17,6 +19,7 @@ impl Default for TurnPolicy {
             back_turns: false,
             left_turns: true,
             crosswalks: true,
+            roundabout_radius: Some(20.0),
         }
     }
 }

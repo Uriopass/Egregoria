@@ -164,7 +164,7 @@ pub fn entity_link(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, e: Any
     let linkname = match e {
         AnyEntity::HumanID(id) => {
             if let Some(human) = goria.world().humans.get(id) {
-                format!("{}", human.personal_info.name)
+                human.personal_info.name.to_string()
             } else {
                 "???".to_string()
             }

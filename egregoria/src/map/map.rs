@@ -65,12 +65,10 @@ impl Map {
     pub fn update_intersection(&mut self, id: IntersectionID, f: impl Fn(&mut Intersection)) {
         info!("update_intersection {:?}", id);
 
-        let inter: &mut Intersection = unwrap_ret!(self.intersections.get_mut(id));
+        let Some(inter) = self.intersections.get_mut(id) else { return; };
         f(inter);
-        inter.update_traffic_control(&mut self.lanes, &self.roads);
-        inter.update_turns(&self.lanes, &self.roads);
+        self.invalidate(id);
 
-        self.subscribers.dispatch(UpdateType::Road, inter);
         self.check_invariants()
     }
 

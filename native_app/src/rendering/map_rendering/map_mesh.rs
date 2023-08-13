@@ -3,11 +3,11 @@ use common::FastMap;
 use egregoria::map::{
     chunk_id, Building, BuildingKind, CanonicalPosition, Chunk, ChunkID, Intersection, LaneKind,
     Lanes, LotKind, Map, MapSubscriber, ProjectFilter, ProjectKind, PylonPosition, Road, Roads,
-    Terrain, TurnKind, UpdateType, CROSSWALK_WIDTH,
+    Terrain, Turn, TurnKind, UpdateType, CROSSWALK_WIDTH,
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
-use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Spline, Vec2, Vec3};
+use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
 use std::ops::{Mul, Neg};
 use std::sync::Arc;
 use wgpu_engine::earcut::earcut;
@@ -456,7 +456,7 @@ impl MapBuilders {
                 });
             }
 
-            earcut(&zone.0, |a, b, c| {
+            earcut(&zone.0, &[], |a, b, c| {
                 add_index(a as u32);
                 add_index(b as u32);
                 add_index(c as u32);
@@ -496,7 +496,7 @@ impl MapBuilders {
 
                 projected.simplify();
 
-                earcut(&projected.0, |mut a, b, mut c| {
+                earcut(&projected.0, &[], |mut a, b, mut c| {
                     if reverse {
                         std::mem::swap(&mut a, &mut c);
                     }
@@ -660,7 +660,7 @@ impl MapBuilders {
             self.crosswalks(inter, lanes);
 
             inter_pylon(&mut self.tess_map.meshbuilder, terrain, inter, roads);
-            intersection_mesh(&mut self.tess_map.meshbuilder, inter, roads);
+            intersection_mesh(&mut self.tess_map, &hig_col, inter, roads);
 
             // Walking corners
             for turn in inter
@@ -846,7 +846,12 @@ fn inter_pylon(
     );
 }
 
-fn intersection_mesh(meshb: &mut MeshBuilder<false>, inter: &Intersection, roads: &Roads) {
+fn intersection_mesh(
+    tess: &mut Tesselator<false>,
+    center_col: &LinearColor,
+    inter: &Intersection,
+    roads: &Roads,
+) {
     let id = inter.id;
 
     let getw = |road: &Road| {
@@ -878,9 +883,9 @@ fn intersection_mesh(meshb: &mut MeshBuilder<false>, inter: &Intersection, roads
             firstdir = ip.first_dir();
         }
 
-        let src_orient = unwrap_cont!(firstdir).xy();
+        let src_orient = -unwrap_cont!(firstdir).xy();
 
-        let left = firstp.xy() - src_orient.perpendicular() * getw(road);
+        let left = firstp.xy() + src_orient.perpendicular() * getw(road);
 
         let ip = next_road.interfaced_points();
 
@@ -897,20 +902,30 @@ fn intersection_mesh(meshb: &mut MeshBuilder<false>, inter: &Intersection, roads
         let dst_orient = unwrap_cont!(firstdir).xy();
         let next_right = firstp.xy() + dst_orient.perpendicular() * getw(next_road);
 
-        let ang = (-src_orient).angle(dst_orient);
+        if inter.is_roundabout() {
+            if let Some(radius) = inter.turn_policy.roundabout_radius {
+                let center = inter.pos.xy();
 
-        const TURN_ANG_ADD: f32 = 0.29;
-        const TURN_ANG_MUL: f32 = 0.36;
-        const TURN_MUL: f32 = 0.46;
+                let ang = (-src_orient).angle(dst_orient).abs();
+                if ang >= Radians::from_deg(41.0).0 {
+                    polygon.extend(Turn::gen_roundabout(
+                        left.z(0.0),
+                        next_right.z(0.0),
+                        src_orient,
+                        dst_orient,
+                        radius + 3.0,
+                        center,
+                    ));
 
-        let dist = (next_right - left).mag() * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL) * TURN_MUL;
+                    tess.set_color(center_col);
+                    tess.draw_circle(center.z(inter.pos.z + 0.01), radius * 0.5);
 
-        let spline = Spline {
-            from: left,
-            to: next_right,
-            from_derivative: -src_orient * dist,
-            to_derivative: dst_orient * dist,
-        };
+                    continue;
+                }
+            }
+        }
+
+        let spline = Turn::spline(left, next_right, src_orient, dst_orient);
 
         polygon.extend(spline.smart_points(1.0, 0.0, 1.0));
     }
@@ -918,7 +933,7 @@ fn intersection_mesh(meshb: &mut MeshBuilder<false>, inter: &Intersection, roads
     polygon.simplify();
 
     let col = LinearColor::from(egregoria::config().road_mid_col).into();
-    meshb.extend_with(|vertices, add_idx| {
+    tess.meshbuilder.extend_with(move |vertices, add_idx| {
         vertices.extend(polygon.iter().map(|pos| MeshVertex {
             position: pos.z(inter.pos.z - 0.001).into(),
             normal: Vec3::Z,
@@ -926,7 +941,7 @@ fn intersection_mesh(meshb: &mut MeshBuilder<false>, inter: &Intersection, roads
             color: col,
             tangent: [0.0; 4],
         }));
-        earcut(&polygon.0, |a, b, c| {
+        earcut(&polygon.0, &[], |a, b, c| {
             add_idx(a as u32);
             add_idx(b as u32);
             add_idx(c as u32);

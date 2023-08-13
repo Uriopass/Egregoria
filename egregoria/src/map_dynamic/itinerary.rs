@@ -1,4 +1,4 @@
-use crate::map::{Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
+use crate::map::{LaneID, Map, PathKind, Pathfinder, Traversable, TraverseDirection, TraverseKind};
 use crate::utils::resources::Resources;
 use crate::utils::time::{GameTime, Tick};
 use crate::world::TrainID;
@@ -7,6 +7,7 @@ use egui_inspect::egui::Ui;
 use egui_inspect::{Inspect, InspectArgs};
 use geom::{Follower, Polyline3Queue, Transform, Vec3};
 use serde::{Deserialize, Serialize};
+use slotmapd::KeyData;
 
 #[derive(Inspect, Debug, Serialize, Deserialize)]
 pub struct ItineraryFollower {
@@ -40,6 +41,7 @@ pub enum ItineraryKind {
         dest: Vec3,
         wait_ticks: u16,
     },
+    Random(Route, PathKind),
 }
 
 #[derive(Debug, Serialize, Deserialize, Inspect)]
@@ -63,6 +65,23 @@ impl Itinerary {
         Self {
             kind: ItineraryKind::Simple(*path.last().unwrap()),
             reversed_local_path: path,
+        }
+    }
+
+    pub fn random(kind: PathKind) -> Self {
+        Self {
+            kind: ItineraryKind::Random(
+                Route {
+                    reversed_route: vec![],
+                    end_pos: Vec3::ZERO,
+                    cur: Traversable::new(
+                        TraverseKind::Lane(LaneID::from(KeyData::from_ffi(0))),
+                        TraverseDirection::Forward,
+                    ),
+                },
+                kind,
+            ),
+            reversed_local_path: vec![],
         }
     }
 
@@ -172,7 +191,9 @@ impl Itinerary {
         let v = self.reversed_local_path.pop();
 
         if self.reversed_local_path.is_empty() {
-            if let ItineraryKind::Route(ref mut r, pathkind) = self.kind {
+            if let ItineraryKind::Route(ref mut r, pathkind)
+            | ItineraryKind::Random(ref mut r, pathkind) = self.kind
+            {
                 r.cur = r.reversed_route.pop()?;
 
                 let points = match r.cur.points(map) {
@@ -197,7 +218,7 @@ impl Itinerary {
         v
     }
 
-    pub fn update_rail(
+    pub fn update(
         &mut self,
         mut position: Vec3,
         mut dist_to_move: f32,
@@ -250,7 +271,40 @@ impl Itinerary {
                 return position;
             });
         }
+
+        if let ItineraryKind::Random(ref mut r, pathkind) = self.kind {
+            if r.reversed_route.is_empty() {
+                let rng = common::hash_u64((tick.0, r.cur.kind));
+
+                if let Some((lp, new_route)) =
+                    Self::random_route(rng, position, tick, &map, pathkind)
+                {
+                    self.reversed_local_path = lp;
+                    *r = new_route;
+                }
+            }
+        }
+
         position
+    }
+
+    fn random_route(
+        rng: u64,
+        position: Vec3,
+        tick: Tick,
+        map: &Map,
+        pathkind: PathKind,
+    ) -> Option<(Vec<Vec3>, Route)> {
+        let lanes = &map.lanes;
+        let lane = lanes.values().nth(rng as usize % lanes.len())?;
+        if !pathkind.authorized_lane(lane.kind) {
+            return None;
+        }
+        let itin = Itinerary::route(tick, position, lane.points.last(), map, pathkind)?;
+        if let ItineraryKind::Route(r, _) = itin.kind {
+            return Some((itin.reversed_local_path, r));
+        }
+        None
     }
 
     pub fn end_pos(&self) -> Option<Vec3> {
@@ -258,7 +312,7 @@ impl Itinerary {
             ItineraryKind::None => None,
             ItineraryKind::WaitUntil(_) | ItineraryKind::WaitForReroute { .. } => None,
             ItineraryKind::Simple(e) => Some(e),
-            ItineraryKind::Route(ref r, _) => Some(r.end_pos),
+            ItineraryKind::Route(ref r, _) | ItineraryKind::Random(ref r, _) => Some(r.end_pos),
         }
     }
 
@@ -271,7 +325,8 @@ impl Itinerary {
             ItineraryKind::None | ItineraryKind::WaitUntil(_) => true,
             ItineraryKind::WaitForReroute { .. } => false,
             ItineraryKind::Simple(_) => self.remaining_points() <= 1,
-            ItineraryKind::Route(Route { reversed_route, .. }, _) => {
+            ItineraryKind::Route(Route { reversed_route, .. }, _)
+            | ItineraryKind::Random(Route { reversed_route, .. }, _) => {
                 reversed_route.is_empty() && self.remaining_points() <= 1
             }
         }
@@ -290,7 +345,8 @@ impl Itinerary {
             | ItineraryKind::WaitUntil(_)
             | ItineraryKind::WaitForReroute { .. } => None,
             ItineraryKind::Simple(e) => Some(e),
-            ItineraryKind::Route(Route { end_pos, .. }, _) => Some(end_pos),
+            ItineraryKind::Route(Route { end_pos, .. }, _)
+            | ItineraryKind::Random(Route { end_pos, .. }, _) => Some(end_pos),
         }
     }
 
@@ -300,12 +356,16 @@ impl Itinerary {
             | ItineraryKind::WaitUntil(_)
             | ItineraryKind::Simple(_)
             | ItineraryKind::WaitForReroute { .. } => None,
-            ItineraryKind::Route(Route { cur, .. }, _) => Some(cur),
+            ItineraryKind::Route(Route { cur, .. }, _)
+            | ItineraryKind::Random(Route { cur, .. }, _) => Some(cur),
         }
     }
 
-    pub fn kind(&self) -> &ItineraryKind {
-        &self.kind
+    pub fn get_route(&self) -> Option<&Route> {
+        match &self.kind {
+            ItineraryKind::Route(r, _) | ItineraryKind::Random(r, _) => Some(r),
+            _ => None,
+        }
     }
 
     pub fn local_path(&self) -> &[Vec3] {
@@ -325,13 +385,23 @@ impl Itinerary {
                     ref reversed_route, ..
                 },
                 _,
+            )
+            | ItineraryKind::Random(
+                Route {
+                    ref reversed_route, ..
+                },
+                _,
             ) => reversed_route.is_empty() && self.reversed_local_path.is_empty(),
             _ => self.reversed_local_path.is_empty(),
         }
     }
 
-    pub fn is_none(&self) -> bool {
-        matches!(self.kind, ItineraryKind::None)
+    pub fn is_none_or_wait(&self) -> bool {
+        matches!(self.kind, ItineraryKind::None | ItineraryKind::WaitUntil(_))
+    }
+
+    pub fn is_simple(&self) -> bool {
+        matches!(self.kind, ItineraryKind::Simple(_))
     }
 }
 
@@ -347,7 +417,7 @@ impl Inspect<ItineraryKind> for ItineraryKind {
             ItineraryKind::Simple(e) => {
                 ui.label(format!("Simple {label} to {e}"));
             }
-            ItineraryKind::Route(ref r, _) => {
+            ItineraryKind::Route(ref r, _) | ItineraryKind::Random(ref r, _) => {
                 <Route as Inspect<Route>>::render(r, label, ui, args);
             }
             ItineraryKind::WaitForReroute { wait_ticks, .. } => {
@@ -372,7 +442,7 @@ impl Inspect<ItineraryKind> for ItineraryKind {
             ItineraryKind::Simple(e) => {
                 ui.label(format!("Simple {label} to {e}"));
             }
-            ItineraryKind::Route(ref mut r, _) => {
+            ItineraryKind::Route(ref mut r, _) | ItineraryKind::Random(ref mut r, _) => {
                 return <Route as Inspect<Route>>::render_mut(r, label, ui, args);
             }
             ItineraryKind::WaitForReroute { wait_ticks, .. } => {
@@ -391,7 +461,7 @@ pub fn itinerary_update(world: &mut World, resources: &mut Resources) {
 
     world.query_it_trans_speed().for_each(
         |(it, trans, speed): (&mut Itinerary, &mut Transform, f32)| {
-            trans.position = it.update_rail(
+            trans.position = it.update(
                 trans.position,
                 speed * time.realdelta,
                 tick,

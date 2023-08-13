@@ -39,6 +39,20 @@ impl ParkingManagement {
         !self.reserved_spots.contains(&spot)
     }
 
+    pub fn reserve_random_free_spot(
+        &mut self,
+        spots: &ParkingSpots,
+        rng: u64,
+    ) -> Option<SpotReservation> {
+        for i_try in 0..3 {
+            let Some(spot) = spots.random_spot(rng.wrapping_add(i_try)) else { continue; };
+            if self.reserved_spots.insert(spot) {
+                return Some(SpotReservation(spot));
+            }
+        }
+        None
+    }
+
     pub fn reserve_near(
         &mut self,
         near: Vec3,

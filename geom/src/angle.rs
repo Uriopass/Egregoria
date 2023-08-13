@@ -23,6 +23,10 @@ impl Radians {
         }
     }
 
+    pub fn from_deg(deg: f32) -> Self {
+        Self(deg * (PI / 180.0))
+    }
+
     pub fn normalize(&mut self) {
         self.0 %= std::f32::consts::TAU;
     }

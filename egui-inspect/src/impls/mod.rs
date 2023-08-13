@@ -17,6 +17,7 @@ mod vec;
 
 pub use super::*;
 use egui::Ui;
+pub use option::OptionDefault;
 
 /// Options for using the default rendering style for the element. The options here are a superset
 /// of all other options since "default" could be any of the widgets

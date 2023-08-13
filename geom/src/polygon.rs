@@ -52,6 +52,11 @@ impl Polygon {
     }
 
     #[inline]
+    pub fn push(&mut self, v: Vec2) {
+        self.0.push(v);
+    }
+
+    #[inline]
     pub fn split_segment(&mut self, seg: usize, coeff: f32) -> &mut Self {
         let Segment { src, dst } = self.segment(seg);
         self.0.insert(seg + 1, src + (dst - src) * coeff);

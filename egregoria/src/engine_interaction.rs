@@ -2,10 +2,12 @@ use crate::economy::Government;
 use crate::map::procgen::{load_parismap, load_testfield};
 use crate::map::{
     BuildingGen, BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LanePatternBuilder,
-    LightPolicy, LotID, Map, MapProject, ProjectKind, RoadID, Terrain, TurnPolicy, Zone,
+    LightPolicy, LotID, Map, MapProject, PathKind, ProjectKind, RoadID, Terrain, TurnPolicy, Zone,
 };
-use crate::map_dynamic::BuildingInfos;
+use crate::map_dynamic::{BuildingInfos, Itinerary, ParkingManagement};
 use crate::transportation::train::{spawn_train, RailWagonKind};
+use crate::transportation::{spawn_parked_vehicle_with_spot, unpark, VehicleKind};
+use crate::utils::rand_provider::RandProvider;
 use crate::utils::time::{GameTime, Tick};
 use crate::{Egregoria, EgregoriaOptions, Replay};
 use geom::{vec3, Vec2, OBB};
@@ -28,6 +30,9 @@ pub enum WorldCommand {
     MapRemoveRoad(RoadID),
     MapRemoveBuilding(BuildingID),
     MapBuildHouse(LotID),
+    SpawnRandomCars {
+        n_cars: usize,
+    },
     AddTrain {
         dist: f32,
         n_wagons: u32,
@@ -294,6 +299,23 @@ impl WorldCommand {
                 let mut map = goria.map_mut();
 
                 map.update_zone(building, move |z| *z = zone.clone());
+            }
+            SpawnRandomCars { n_cars } => {
+                for _ in 0..n_cars {
+                    let mut pm = goria.write::<ParkingManagement>();
+                    let map = goria.map();
+                    let mut rng = goria.write::<RandProvider>();
+
+                    let Some(spot) = pm.reserve_random_free_spot(&map.parking, rng.next_u64()) else { continue; };
+
+                    drop((map, pm, rng));
+
+                    let Some(v_id) = spawn_parked_vehicle_with_spot(goria, VehicleKind::Car, spot) else { continue; };
+                    unpark(goria, v_id);
+
+                    goria.world.vehicles.get_mut(v_id).unwrap().it =
+                        Itinerary::random(PathKind::Vehicle);
+                }
             }
         }
     }

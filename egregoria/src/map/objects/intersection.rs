@@ -87,7 +87,7 @@ impl Intersection {
         self.turns = std::mem::take(&mut self.turns)
             .into_iter()
             .map(|mut x| {
-                x.make_points(lanes);
+                x.make_points(lanes, self);
                 x
             })
             .collect();
@@ -122,6 +122,15 @@ impl Intersection {
         for &r in &self.roads {
             let r = &mut roads[r];
             r.set_interface(id, Self::empty_interface(r.width));
+        }
+
+        if self.is_roundabout() {
+            if let Some(radius) = self.turn_policy.roundabout_radius {
+                for &r in &self.roads {
+                    let r = &mut roads[r];
+                    r.max_interface(id, radius * 1.1 + 5.0);
+                }
+            }
         }
 
         if self.roads.len() <= 1 {
@@ -173,6 +182,10 @@ impl Intersection {
             max_inter = max_inter.max(min_dist);
         }
         max_inter
+    }
+
+    pub fn is_roundabout(&self) -> bool {
+        self.turn_policy.roundabout_radius.is_some() && self.roads.len() > 1
     }
 
     pub fn undirected_neighbors<'a>(

@@ -116,7 +116,7 @@ impl<const PERSISTENT: bool> Tesselator<PERSISTENT> {
                 tangent: [0.0; 4],
             }));
 
-            earcut(points, |x, y, z| {
+            earcut(points, &[], |x, y, z| {
                 index_push(x as u32);
                 index_push(y as u32);
                 index_push(z as u32);

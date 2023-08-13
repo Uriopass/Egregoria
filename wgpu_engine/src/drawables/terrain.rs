@@ -231,7 +231,7 @@ impl<const CSIZE: usize, const CRESOLUTION: usize> TerrainRender<CSIZE, CRESOLUT
             poly.simplify();
 
             let mut indices = vec![];
-            crate::earcut::earcut(&poly.0, |mut a, b, mut c| {
+            crate::earcut::earcut(&poly.0, &[], |mut a, b, mut c| {
                 if rev {
                     std::mem::swap(&mut a, &mut c);
                 }

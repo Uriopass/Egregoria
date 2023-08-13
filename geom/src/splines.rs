@@ -229,6 +229,34 @@ impl Spline {
             .chain(std::iter::once(end))
     }
 
+    pub fn into_smart_points_t(
+        self,
+        detail: f32,
+        start: f32,
+        end: f32,
+    ) -> impl Iterator<Item = f32> {
+        let detail = detail.abs();
+
+        std::iter::once(start)
+            .chain(OwnedSmartPoints {
+                spline: self,
+                t: start,
+                end,
+                detail,
+            })
+            .chain(std::iter::once(end))
+    }
+
+    pub fn into_smart_points(
+        self,
+        detail: f32,
+        start: f32,
+        end: f32,
+    ) -> impl Iterator<Item = Vec2> {
+        self.into_smart_points_t(detail, start, end)
+            .map(move |t| self.get(t))
+    }
+
     pub fn points(&self, n: usize) -> impl Iterator<Item = Vec2> + '_ {
         (0..n).map(move |i| {
             let c = i as f32 / (n - 1) as f32;
@@ -261,6 +289,25 @@ pub struct SmartPoints<'a> {
 }
 
 impl<'a> Iterator for SmartPoints<'a> {
+    type Item = f32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.t += self.spline.step(self.t, self.detail);
+        if self.t > self.end {
+            return None;
+        }
+        Some(self.t)
+    }
+}
+
+pub struct OwnedSmartPoints {
+    spline: Spline,
+    t: f32,
+    end: f32,
+    detail: f32,
+}
+
+impl Iterator for OwnedSmartPoints {
     type Item = f32;
 
     fn next(&mut self) -> Option<Self::Item> {

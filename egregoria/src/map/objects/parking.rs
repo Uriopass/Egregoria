@@ -51,6 +51,14 @@ impl ParkingSpots {
         }
     }
 
+    pub fn random_spot(&self, rng: u64) -> Option<ParkingSpotID> {
+        if self.spots.len() == 0 {
+            return None;
+        }
+        let mut iter = self.spots.keys();
+        iter.nth(rng as usize % self.spots.len())
+    }
+
     pub fn clean_reuse(&mut self) -> u32 {
         let mut has_reused = 0;
         for (_, spot) in self.reuse_spot.clear() {

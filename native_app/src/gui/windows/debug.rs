@@ -9,6 +9,7 @@ use egregoria::utils::time::{GameTime, Tick, SECONDS_PER_DAY};
 use egregoria::{Egregoria, TrainID};
 
 use crate::inputmap::InputMap;
+use egregoria::engine_interaction::WorldCommand;
 use egregoria::map::{
     IntersectionID, Map, MapSubscriber, RoadSegmentKind, TraverseKind, UpdateType,
 };
@@ -136,6 +137,11 @@ pub fn debug(
 
         if ui.small_button("load Paris map").clicked() {
             uiworld.commands().map_load_paris();
+        }
+        if ui.small_button("Spawn 10 random cars").clicked() {
+            uiworld
+                .commands()
+                .push(WorldCommand::SpawnRandomCars { n_cars: 10 })
         }
         ui.separator();
         let mut state = uiworld.write::<TestFieldProperties>();
@@ -502,7 +508,7 @@ pub fn debug_pathfinder(
         tess.draw_stroke(p.up(0.18), pos.up(0.18), 1.0);
     }
 
-    if let egregoria::map_dynamic::ItineraryKind::Route(r, _) = itinerary.kind() {
+    if let Some(r) = itinerary.get_route() {
         tess.set_color(LinearColor::RED);
         for (i, l) in r.reversed_route.iter().enumerate() {
             if let Some(l) = l.raw_points(map) {

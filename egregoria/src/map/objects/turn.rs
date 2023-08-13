@@ -1,9 +1,10 @@
-use crate::map::{IntersectionID, LaneID, Lanes};
-use geom::PolyLine3;
+use crate::map::{Intersection, IntersectionID, LaneID, Lanes};
+use geom::{Degrees, PolyLine3, Radians, Vec2};
 use geom::{Spline, Vec3};
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 use std::cmp::Ordering;
+use std::f32::consts::TAU;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub struct TurnID {
@@ -85,9 +86,9 @@ impl Turn {
         }
     }
 
-    pub fn make_points(&mut self, lanes: &Lanes) {
-        let src_lane = unwrap_ret!(lanes.get(self.id.src));
-        let dst_lane = unwrap_ret!(lanes.get(self.id.dst));
+    pub fn make_points(&mut self, lanes: &Lanes, parent: &Intersection) {
+        let Some(src_lane) = lanes.get(self.id.src) else { return; };
+        let Some(dst_lane) = lanes.get(self.id.dst) else { return; };
 
         let pos_src = src_lane.get_inter_node_pos(self.id.parent);
         let pos_dst = dst_lane.get_inter_node_pos(self.id.parent);
@@ -102,20 +103,51 @@ impl Turn {
         let src_dir = -src_lane.orientation_from(self.id.parent);
         let dst_dir = dst_lane.orientation_from(self.id.parent);
 
-        let ang = src_dir.angle(dst_dir);
+        if matches!(self.kind, TurnKind::Driving | TurnKind::WalkingCorner)
+            && parent.is_roundabout()
+        {
+            if let Some(radius) = parent.turn_policy.roundabout_radius {
+                let center = parent.pos.xy();
 
-        let dist =
-            (pos_dst - pos_src).magn() * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL) * TURN_MUL;
+                let center_dir_src = (pos_src.xy() - center).normalize();
+                let center_dir_dst = (pos_dst.xy() - center).normalize();
 
-        let derivative_src = src_dir * dist;
-        let derivative_dst = dst_dir * dist;
+                let ang = center_dir_dst.angle(center_dir_src).abs();
+                if ang >= Radians::from(Degrees(41.0)).0 {
+                    let a = center_dir_src.rotated_by_angle(Radians::from_deg(20.0));
+                    let mut ang_a = a.angle_cossin();
 
-        let spline = Spline {
-            from: pos_src.xy(),
-            to: pos_dst.xy(),
-            from_derivative: derivative_src,
-            to_derivative: derivative_dst,
-        };
+                    let b = center_dir_dst.rotated_by_angle(Radians::from_deg(-20.0));
+                    let ang_b = b.angle_cossin();
+
+                    if ang_a > ang_b {
+                        ang_a -= TAU;
+                    }
+
+                    let mut turn_radius = radius * (1.0 - 0.5 * (ang_b - ang_a) / TAU);
+
+                    if matches!(self.kind, TurnKind::WalkingCorner) {
+                        turn_radius = radius + 3.0;
+                    }
+
+                    self.points.extend(
+                        Self::gen_roundabout(
+                            pos_src,
+                            pos_dst,
+                            src_dir,
+                            dst_dir,
+                            turn_radius,
+                            center,
+                        )
+                        .skip(1)
+                        .map(|x| x.z(pos_src.z)),
+                    );
+                    return;
+                }
+            }
+        }
+
+        let spline = Self::spline(pos_src.xy(), pos_dst.xy(), src_dir, dst_dir);
 
         self.points.extend(
             spline
@@ -123,5 +155,82 @@ impl Turn {
                 .skip(1)
                 .map(|x| x.z(pos_src.z)),
         );
+    }
+
+    pub fn gen_roundabout(
+        pos_src: Vec3,
+        pos_dst: Vec3,
+        src_dir: Vec2,
+        dst_dir: Vec2,
+        radius: f32,
+        center: Vec2,
+    ) -> impl Iterator<Item = Vec2> {
+        let a = (pos_src.xy() - center)
+            .normalize()
+            .rotated_by_angle(Radians::from_deg(20.0));
+        let mut ang_a = a.angle_cossin();
+
+        let b = (pos_dst.xy() - center)
+            .normalize()
+            .rotated_by_angle(Radians::from_deg(-20.0));
+        let ang_b = b.angle_cossin();
+
+        if ang_a > ang_b {
+            ang_a -= TAU;
+        }
+
+        let sp1 = Self::spline(
+            pos_src.xy(),
+            center + a * radius,
+            src_dir,
+            -a.perpendicular(),
+        );
+        let sp2 = Self::circular_arc(center, ang_a, ang_b, radius);
+        let sp3 = Self::spline(
+            center + b * radius,
+            pos_dst.xy(),
+            -b.perpendicular(),
+            dst_dir,
+        );
+
+        sp1.into_smart_points(0.3, 0.0, 1.0)
+            .chain(sp2.skip(1))
+            .chain(sp3.into_smart_points(0.3, 0.0, 1.0).skip(1))
+    }
+
+    /// Return points of a circular arc in counter-clockwise order from ang_a to ang_b, assuming ang_a < ang_b
+    pub fn circular_arc(
+        center: Vec2,
+        ang_a: f32,
+        ang_b: f32,
+        radius: f32,
+    ) -> impl Iterator<Item = Vec2> {
+        const PRECISION: f32 = 1.0 / 0.1; // denominator is angular step in radians
+
+        let ang = ang_b - ang_a;
+        let n = (ang.abs() * PRECISION).ceil() as usize;
+        let ang_step = ang / n as f32;
+
+        (0..=n).map(move |i| {
+            let ang = ang_a + ang_step * i as f32;
+            center + Vec2::new(ang.cos(), ang.sin()) * radius
+        })
+    }
+
+    /// Return points of a nice spline from `from` to `to` with derivatives `from_dir` and `to_dir`
+    pub fn spline(from: Vec2, to: Vec2, from_dir: Vec2, to_dir: Vec2) -> Spline {
+        let ang = from_dir.angle(to_dir);
+
+        let dist = (to - from).mag() * (TURN_ANG_ADD + ang.abs() * TURN_ANG_MUL) * TURN_MUL;
+
+        let derivative_src = from_dir * dist;
+        let derivative_dst = to_dir * dist;
+
+        Spline {
+            from,
+            to,
+            from_derivative: derivative_src,
+            to_derivative: derivative_dst,
+        }
     }
 }

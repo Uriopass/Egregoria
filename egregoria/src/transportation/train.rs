@@ -1,5 +1,5 @@
 use crate::map::{IntersectionID, LaneID, Map, TraverseKind};
-use crate::map_dynamic::{ItineraryFollower, ItineraryKind};
+use crate::map_dynamic::ItineraryFollower;
 use crate::utils::resources::Resources;
 use crate::world::{TrainEnt, TrainID, WagonEnt};
 use crate::{Egregoria, GameTime, Itinerary, ItineraryLeader, Speed, World};
@@ -171,14 +171,12 @@ pub fn traverse_forward<'a>(
     mut acc: f32,
     until_length: f32,
 ) -> impl Iterator<Item = (TraverseKind, f32, f32, f32)> + 'a {
-    let mut it = None;
-    if let ItineraryKind::Route(route, _) = itin.kind() {
-        it = Some(route);
-    }
+    let route = itin.get_route();
     let lanes = map.lanes();
     let inters = map.intersections();
     let mut acc_inter = 0.0;
-    it.into_iter()
+    route
+        .into_iter()
         .flat_map(move |route| route.reversed_route.iter().rev())
         .filter_map(move |v| {
             let oldacc = acc;
@@ -361,10 +359,7 @@ pub fn locomotive_desired_speed(
     locos: &HopSlotMap<TrainID, TrainEnt>,
     t: &TrainEnt,
 ) -> f32 {
-    if matches!(
-        t.it.kind(),
-        ItineraryKind::None | ItineraryKind::WaitUntil(_)
-    ) {
+    if t.it.is_none_or_wait() {
         return 0.0;
     }
 
@@ -423,7 +418,7 @@ pub fn locomotive_desired_speed(
     }
 
     let mut on_last_lane = false;
-    if let ItineraryKind::Route(r, _) = t.it.kind() {
+    if let Some(r) = t.it.get_route() {
         if r.reversed_route.is_empty()
             || (lastid.is_some() && lastid == r.reversed_route.first().map(|x| x.kind))
         {
@@ -431,7 +426,7 @@ pub fn locomotive_desired_speed(
         }
     }
 
-    if matches!(t.it.kind(), ItineraryKind::Simple(_)) {
+    if t.it.is_simple() {
         on_last_lane = true
     }
 

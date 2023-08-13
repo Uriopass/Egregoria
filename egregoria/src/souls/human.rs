@@ -49,8 +49,8 @@ pub struct PersonalInfo {
 
 debug_inspect_impl!(HumanDecisionKind);
 
-static FIRST_NAMES_BYTES: &'static str = include_str!("first_names.txt");
-static LAST_NAMES_BYTES: &'static str = include_str!("names.txt");
+static FIRST_NAMES_BYTES: &str = include_str!("first_names.txt");
+static LAST_NAMES_BYTES: &str = include_str!("names.txt");
 
 lazy_static! {
     static ref LAST_NAMES: Vec<&'static str> = LAST_NAMES_BYTES.split('\n').collect();

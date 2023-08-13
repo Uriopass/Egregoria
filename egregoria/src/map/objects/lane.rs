@@ -324,6 +324,7 @@ impl Lane {
         }
     }
 
+    /// Returns the vector pointing to the lane from the intersection center
     pub fn orientation_from(&self, id: IntersectionID) -> Vec2 {
         if id == self.src {
             self.points.first_dir().unwrap_or(Vec3::X).xy()
