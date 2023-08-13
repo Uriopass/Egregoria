@@ -2,9 +2,10 @@ use crate::economy::Government;
 use crate::map::procgen::{load_parismap, load_testfield};
 use crate::map::{
     BuildingGen, BuildingID, BuildingKind, IntersectionID, LaneID, LanePattern, LanePatternBuilder,
-    LightPolicy, LotID, Map, MapProject, PathKind, ProjectKind, RoadID, Terrain, TurnPolicy, Zone,
+    LightPolicy, LotID, Map, MapProject, ProjectKind, RoadID, Terrain, TurnPolicy, Zone,
 };
-use crate::map_dynamic::{BuildingInfos, Itinerary, ParkingManagement};
+use crate::map_dynamic::{BuildingInfos, ParkingManagement};
+use crate::transportation::testing_vehicles::RandomVehicles;
 use crate::transportation::train::{spawn_train, RailWagonKind};
 use crate::transportation::{spawn_parked_vehicle_with_spot, unpark, VehicleKind};
 use crate::utils::rand_provider::RandProvider;
@@ -14,6 +15,7 @@ use geom::{vec3, Vec2, OBB};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::time::Instant;
+
 use WorldCommand::*;
 
 #[derive(Clone, Default)]
@@ -313,8 +315,7 @@ impl WorldCommand {
                     let Some(v_id) = spawn_parked_vehicle_with_spot(goria, VehicleKind::Car, spot) else { continue; };
                     unpark(goria, v_id);
 
-                    goria.world.vehicles.get_mut(v_id).unwrap().it =
-                        Itinerary::random(PathKind::Vehicle);
+                    goria.write::<RandomVehicles>().vehicles.insert(v_id);
                 }
             }
         }

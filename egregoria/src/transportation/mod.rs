@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod pedestrian;
 pub mod road;
+pub mod testing_vehicles;
 pub mod train;
 mod vehicle;
 

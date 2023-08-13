@@ -204,6 +204,7 @@ pub mod history;
 pub mod logger;
 pub mod rand;
 pub mod saveload;
+pub mod scroll;
 pub mod timestep;
 
 pub use inline_tweak as tw;

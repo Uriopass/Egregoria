@@ -10,6 +10,7 @@ use crate::souls::goods_company::{company_system, GoodsCompanyRegistry};
 use crate::souls::human::update_decision_system;
 use crate::transportation::pedestrian_decision_system;
 use crate::transportation::road::{vehicle_decision_system, vehicle_state_update_system};
+use crate::transportation::testing_vehicles::{random_vehicles_update, RandomVehicles};
 use crate::transportation::train::{
     locomotive_system, train_reservations_update, TrainReservations,
 };
@@ -41,6 +42,7 @@ pub fn init() {
     register_system("market_update", market_update);
     register_system("train_reservations_update", train_reservations_update);
     register_system("freight_station", freight_station_system);
+    register_system("random_vehicles", random_vehicles_update);
 
     register_system_goria("add_souls_to_empty_buildings", add_souls_to_empty_buildings);
 
@@ -58,6 +60,7 @@ pub fn init() {
 
     register_init(init_market);
 
+    register_resource_default::<RandomVehicles, Bincode>("random_vehicles");
     register_resource_default::<Tick, Bincode>("tick");
     register_resource_default::<Map, Bincode>("map");
     register_resource_default::<TrainReservations, Bincode>("train_reservations");
