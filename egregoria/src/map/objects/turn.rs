@@ -121,10 +121,10 @@ impl Turn {
                     let ang_b = b.angle_cossin();
 
                     if ang_a > ang_b {
-                        ang_a -= TAU;
+                        ang_a -= Radians::TAU;
                     }
 
-                    let mut turn_radius = rp.radius * (1.0 - 0.5 * (ang_b - ang_a) / TAU);
+                    let mut turn_radius = rp.radius * (1.0 - 0.5 * (ang_b.0 - ang_a.0) / TAU);
 
                     if matches!(self.kind, TurnKind::WalkingCorner) {
                         turn_radius = rp.radius + 3.0;
@@ -173,11 +173,19 @@ impl Turn {
         let b = (pos_dst.xy() - center)
             .normalize()
             .rotated_by_angle(Radians::from_deg(-20.0));
-        let ang_b = b.angle_cossin();
+        let mut ang_b = b.angle_cossin();
 
         if ang_a > ang_b {
-            ang_a -= TAU;
+            ang_a -= Radians::TAU;
         }
+
+        let diff = (ang_b - ang_a).min(Radians::from_deg(50.0));
+
+        ang_a += diff * 0.4;
+        ang_b -= diff * 0.4;
+
+        let a = ang_a.vec2();
+        let b = ang_b.vec2();
 
         let sp1 = Self::spline(
             pos_src.xy(),
@@ -201,19 +209,19 @@ impl Turn {
     /// Return points of a circular arc in counter-clockwise order from ang_a to ang_b, assuming ang_a < ang_b
     pub fn circular_arc(
         center: Vec2,
-        ang_a: f32,
-        ang_b: f32,
+        ang_a: Radians,
+        ang_b: Radians,
         radius: f32,
     ) -> impl Iterator<Item = Vec2> {
         const PRECISION: f32 = 1.0 / 0.1; // denominator is angular step in radians
 
         let ang = ang_b - ang_a;
-        let n = (ang.abs() * PRECISION).ceil() as usize;
-        let ang_step = ang / n as f32;
+        let n = (ang.0.abs() * PRECISION).ceil() as usize;
+        let ang_step = Radians(ang.0 / n as f32);
 
         (0..=n).map(move |i| {
-            let ang = ang_a + ang_step * i as f32;
-            center + Vec2::new(ang.cos(), ang.sin()) * radius
+            let ang = ang_a + Radians(ang_step.0 * i as f32);
+            center + ang.vec2() * radius
         })
     }
 

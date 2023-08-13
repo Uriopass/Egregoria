@@ -906,7 +906,10 @@ fn intersection_mesh(
             if let Some(rp) = inter.turn_policy.roundabout {
                 let center = inter.pos.xy();
 
-                let ang = (-src_orient).angle(dst_orient).abs();
+                let ang = (left - center)
+                    .normalize()
+                    .angle((next_right - center).normalize())
+                    .abs();
                 if ang >= Radians::from_deg(41.0).0 {
                     polygon.extend(Turn::gen_roundabout(
                         left.z(0.0),

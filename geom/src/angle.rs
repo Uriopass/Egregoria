@@ -1,6 +1,6 @@
 use crate::Vec2;
 use serde::{Deserialize, Serialize};
-use std::f32::consts::PI;
+use std::f32::consts::{PI, TAU};
 use std::ops::{Add, AddAssign, Mul, Sub, SubAssign};
 
 #[derive(Serialize, Deserialize, Copy, Clone, PartialOrd, PartialEq, Default)]
@@ -15,6 +15,8 @@ pub struct Radians(pub f32);
 
 impl Radians {
     pub const HALFPI: Self = Radians(std::f32::consts::FRAC_PI_2);
+    pub const PI: Self = Radians(PI);
+    pub const TAU: Self = Radians(TAU);
 
     pub fn vec2(self) -> Vec2 {
         Vec2 {
@@ -28,7 +30,7 @@ impl Radians {
     }
 
     pub fn normalize(&mut self) {
-        self.0 %= std::f32::consts::TAU;
+        self.0 %= TAU;
     }
 
     pub fn cos(self) -> f32 {

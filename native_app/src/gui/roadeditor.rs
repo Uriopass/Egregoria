@@ -87,7 +87,7 @@ pub fn roadeditor(goria: &Egregoria, uiworld: &mut UiWorld) {
         }
     }
 
-    imm_draw.circle(proj_pos, 10.0).color(proj_col);
+    imm_draw.circle(proj_pos.up(0.1), 10.0).color(proj_col);
 
     if state.dirty {
         if let Some(interc) = &state.inspect {

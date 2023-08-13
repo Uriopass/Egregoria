@@ -231,8 +231,8 @@ impl Vec2 {
     /// Returns the angle in range [-pi; pi] such that if v is unitary
     /// v == (angle.cos(), angle.sin())
     #[inline]
-    pub fn angle_cossin(self) -> f32 {
-        f32::atan2(self.y, self.x)
+    pub fn angle_cossin(self) -> Radians {
+        Radians(f32::atan2(self.y, self.x))
     }
 
     #[inline]
