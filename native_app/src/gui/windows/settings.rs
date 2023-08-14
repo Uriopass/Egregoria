@@ -71,6 +71,7 @@ pub struct Settings {
 
     pub gui_scale: f32,
 
+    pub master_volume_percent: f32,
     pub music_volume_percent: f32,
     pub effects_volume_percent: f32,
     pub ui_volume_percent: f32,
@@ -85,6 +86,7 @@ impl Default for Settings {
         Self {
             camera_border_move: false,
             camera_smooth: true,
+            master_volume_percent: 100.0,
             music_volume_percent: 100.0,
             effects_volume_percent: 100.0,
             ui_volume_percent: 100.0,
@@ -234,6 +236,13 @@ pub fn settings(window: egui::Window<'_>, ui: &Context, uiworld: &mut UiWorld, _
             ui.separator();
             ui.label("Audio");
 
+            ui.horizontal(|ui| {
+                ui.add(
+                    egui::Slider::new(&mut settings.master_volume_percent, 0.0..=100.0)
+                        .custom_formatter(|x, _| format!("{x:.0}%")),
+                );
+                ui.label("Master volume");
+            });
             ui.horizontal(|ui| {
                 ui.add(
                     egui::Slider::new(&mut settings.music_volume_percent, 0.0..=100.0)

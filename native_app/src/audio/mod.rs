@@ -52,6 +52,7 @@ pub struct AudioContext {
     preloading: FastSet<String>,
 }
 
+static MASTER_SHARED: AtomicU32 = AtomicU32::new(0);
 static MUSIC_SHARED: AtomicU32 = AtomicU32::new(0);
 static EFFECT_SHARED: AtomicU32 = AtomicU32::new(0);
 static UI_SHARED: AtomicU32 = AtomicU32::new(0);
@@ -131,11 +132,13 @@ impl AudioContext {
     }
 
     pub fn g_volume(&self, kind: AudioKind) -> f32 {
-        match kind {
-            AudioKind::Music => f32::from_bits(MUSIC_SHARED.load(Ordering::Relaxed)),
-            AudioKind::Effect => f32::from_bits(EFFECT_SHARED.load(Ordering::Relaxed)),
-            AudioKind::Ui => f32::from_bits(UI_SHARED.load(Ordering::Relaxed)),
-        }
+        let master = f32::from_bits(MASTER_SHARED.load(Ordering::Relaxed));
+        master
+            * match kind {
+                AudioKind::Music => f32::from_bits(MUSIC_SHARED.load(Ordering::Relaxed)),
+                AudioKind::Effect => f32::from_bits(EFFECT_SHARED.load(Ordering::Relaxed)),
+                AudioKind::Ui => f32::from_bits(UI_SHARED.load(Ordering::Relaxed)),
+            }
     }
 
     fn decode(name: &str) -> Option<StoredAudio> {
@@ -262,6 +265,13 @@ impl AudioContext {
     }
 
     pub fn set_settings(&mut self, settings: &Settings) {
+        let master_volume = (settings.master_volume_percent / 100.0).powi(2);
+        if (f32::from_bits(MASTER_SHARED.load(Ordering::Relaxed)) - master_volume).abs()
+            > f32::EPSILON
+        {
+            MASTER_SHARED.store(master_volume.to_bits(), Ordering::Relaxed);
+        }
+
         let ui_volume = (settings.ui_volume_percent / 100.0).powi(2);
         if (f32::from_bits(UI_SHARED.load(Ordering::Relaxed)) - ui_volume).abs() > f32::EPSILON {
             UI_SHARED.store(ui_volume.to_bits(), Ordering::Relaxed);
@@ -294,7 +304,8 @@ impl<T: Signal<Frame = [Sample; 2]>> Signal for GlobalGain<T> {
 
     fn sample(&self, interval: f32, out: &mut [Self::Frame]) {
         fn upd(x: &AtomicU32, gain: &mut std::cell::RefMut<Smoothed<f32>>) {
-            let shared = f32::from_bits(x.load(Ordering::Relaxed));
+            let master = f32::from_bits(MASTER_SHARED.load(Ordering::Relaxed));
+            let shared = master * f32::from_bits(x.load(Ordering::Relaxed));
             if gain.get() != shared {
                 gain.set(shared);
             }
@@ -323,7 +334,7 @@ impl<T: Signal<Frame = [Sample; 2]>> Signal for GlobalGain<T> {
             let g = gain.get();
             x[0] *= g;
             x[1] *= g;
-            gain.advance(interval / 0.1);
+            gain.advance(interval * 30.0);
         }
     }
 
