@@ -50,6 +50,10 @@ impl LightPolicy {
                 if in_road_lanes.len() <= 2 {
                     return;
                 }
+                if in_road_lanes.len() == 3 {
+                    Self::stop_signs(in_road_lanes, lanes);
+                    return;
+                }
 
                 if inter.turn_policy.left_turns {
                     Self::lights(in_road_lanes, inter, lanes);
