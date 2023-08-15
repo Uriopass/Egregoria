@@ -1,8 +1,9 @@
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, RwLock};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use winit::dpi::PhysicalSize;
+use winit::event_loop::ControlFlow;
 use winit::window::{Fullscreen, Window};
 
 use crate::rendering::immediate::{ImmediateDraw, ImmediateSound};
@@ -16,7 +17,7 @@ use crate::audio::GameAudio;
 use crate::context::Context;
 use crate::gui::windows::debug::DebugObjs;
 use crate::gui::windows::settings::Settings;
-use crate::gui::{FollowEntity, Gui, Tool, UiTextures};
+use crate::gui::{ExitState, FollowEntity, Gui, Tool, UiTextures};
 use crate::inputmap::{Bindings, InputAction, InputMap};
 use crate::rendering::egui_wrapper::EguiWrapper;
 use crate::rendering::{CameraHandler3D, InstancedRender, MapRenderOptions, MapRenderer};
@@ -98,8 +99,8 @@ impl State {
         me
     }
 
-    //#[profiling::function]
     pub fn update(&mut self, ctx: &mut Context) {
+        profiling::scope!("game_loop::update");
         crate::network::goria_update(self);
 
         if std::mem::take(&mut self.uiw.write::<SaveLoadState>().render_reset) {
@@ -159,7 +160,7 @@ impl State {
     }
 
     pub fn render(&mut self, ctx: &mut FrameContext<'_>) {
-        profiling::scope!("main render");
+        profiling::scope!("game_loop::render");
         let start = Instant::now();
         let goria = self.goria.read().unwrap();
 
@@ -232,8 +233,8 @@ impl State {
             .add_value(start.elapsed().as_secs_f32());
     }
 
-    #[profiling::function]
     pub fn render_gui(&mut self, window: &Window, ctx: GuiRenderContext<'_, '_>) {
+        profiling::scope!("game_loop::render_gui");
         let gui = &mut self.gui;
         let uiworld = &mut self.uiw;
         let pixels_per_point = uiworld.read::<Settings>().gui_scale;
@@ -256,6 +257,23 @@ impl State {
                 cpy.read().unwrap().save_to_disk("world");
                 status.store(false, Ordering::SeqCst);
             });
+        }
+    }
+
+    pub fn exit(&mut self, control_flow: &mut ControlFlow) {
+        if self.gui.last_save.elapsed() < Duration::from_secs(30) {
+            *control_flow = ControlFlow::Exit;
+            return;
+        }
+        let mut estate = self.uiw.write::<ExitState>();
+        match *estate {
+            ExitState::NoExit => {
+                *estate = ExitState::ExitAsk;
+            }
+            ExitState::ExitAsk => {
+                *control_flow = ControlFlow::Exit;
+            }
+            ExitState::Saving => {}
         }
     }
 

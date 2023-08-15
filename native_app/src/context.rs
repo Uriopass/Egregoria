@@ -74,7 +74,9 @@ impl Context {
                             new_size = Some(physical_size);
                             frame.take();
                         }
-                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                        WindowEvent::CloseRequested => {
+                            state.exit(control_flow);
+                        },
                         _ => (),
                     }
                 }

@@ -678,8 +678,8 @@ impl Gui {
             });
     }
 
-    #[profiling::function]
     pub fn menu_bar(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        profiling::scope!("topgui::menu_bar");
         //let _t = ui.push_style_var(StyleVar::ItemSpacing([3.0, 0.0]));
 
         egui::TopBottomPanel::top("top_menu").show(ui, |ui| {
@@ -707,10 +707,12 @@ impl Gui {
                     ExitState::NoExit => {}
                     ExitState::ExitAsk | ExitState::Saving => {
                         let [w, h]: [f32; 2] = ui.available_size().into();
+                        let mut opened = true;
                         Window::new("Exit Menu")
                             .default_pos([w * 0.5, h * 0.5])
                             .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
                             .auto_sized()
+                            .open(&mut opened)
                             .show(ui.ctx(), |ui| {
                                 //let _tok = ui.push_style_var(StyleVar::ItemSpacing([2.0, 5.0]));
                                 if let ExitState::Saving = *estate {
@@ -728,13 +730,21 @@ impl Gui {
                                         *estate = ExitState::Saving;
                                     }
                                 }
-                                if ui.button("Exit").clicked() {
+                                if ui.button("Exit without saving").clicked() {
                                     std::process::exit(0);
                                 }
                                 if ui.button("Cancel").clicked() {
                                     *estate = ExitState::NoExit;
                                 }
                             });
+                        if !opened
+                            || uiworld
+                                .read::<InputMap>()
+                                .just_act
+                                .contains(&InputAction::Close)
+                        {
+                            *estate = ExitState::NoExit;
+                        }
                     }
                 }
 
