@@ -95,3 +95,14 @@ fn entity_link_inner(uiworld: &mut UiWorld, goria: &Egregoria, ui: &mut Ui, e: A
         }
     }
 }
+
+pub fn follow_button(uiworld: &UiWorld, ui: &mut Ui, id: impl Into<AnyEntity>) {
+    follow_button_inner(uiworld, ui, id.into())
+}
+
+fn follow_button_inner(uiworld: &UiWorld, ui: &mut Ui, id: AnyEntity) {
+    let mut follow = uiworld.write::<FollowEntity>();
+    if follow.0 != Some(id) && ui.small_button("follow").clicked() {
+        follow.0 = Some(id);
+    }
+}

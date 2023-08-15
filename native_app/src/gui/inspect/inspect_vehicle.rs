@@ -1,4 +1,4 @@
-use crate::gui::inspect::entity_link;
+use crate::gui::inspect::{entity_link, follow_button};
 use crate::uiworld::UiWorld;
 use egregoria::transportation::VehicleState;
 use egregoria::{Egregoria, VehicleID};
@@ -47,6 +47,8 @@ pub fn inspect_vehicle(
                     });
                 }
             }
+
+            follow_button(uiworld, ui, id);
         });
 
     is_open

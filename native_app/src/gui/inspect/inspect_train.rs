@@ -1,8 +1,9 @@
+use crate::gui::inspect::follow_button;
 use crate::uiworld::UiWorld;
 use egregoria::{Egregoria, TrainID};
 use egui::Context;
 
-pub fn inspect_train(_uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id: TrainID) -> bool {
+pub fn inspect_train(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id: TrainID) -> bool {
     let Some(t) = goria.get(id) else { return false; };
 
     let mut is_open = true;
@@ -16,6 +17,8 @@ pub fn inspect_train(_uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id
             }
 
             ui.label(format!("Going at {:.0}km/h", t.speed.0));
+
+            follow_button(uiworld, ui, id);
         });
 
     is_open

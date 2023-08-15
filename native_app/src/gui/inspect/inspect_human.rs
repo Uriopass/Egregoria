@@ -4,10 +4,10 @@ use egregoria::economy::{ItemRegistry, Market};
 use egregoria::map_dynamic::Destination;
 use egregoria::souls::desire::WorkKind;
 use egregoria::transportation::Location;
-use egregoria::{AnyEntity, Egregoria, HumanID};
+use egregoria::{Egregoria, HumanID};
 
-use crate::gui::inspect::building_link;
-use crate::gui::{item_icon, FollowEntity};
+use crate::gui::inspect::{building_link, follow_button};
+use crate::gui::item_icon;
 use crate::uiworld::UiWorld;
 
 /// Inspect a specific building, showing useful information about it
@@ -109,9 +109,7 @@ pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id:
                 item_icon(ui, uiworld, item, v);
             }
 
-            if ui.small_button("follow").clicked() {
-                uiworld.write::<FollowEntity>().0 = Some(AnyEntity::HumanID(id));
-            }
+            follow_button(uiworld, ui, id);
         });
     is_open
 }
