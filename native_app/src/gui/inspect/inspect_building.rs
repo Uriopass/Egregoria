@@ -77,17 +77,17 @@ fn render_house(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Build
 
     ui.horizontal(|ui| {
         ui.label("Owner");
-        entity_link(uiworld, goria, ui, owner.into());
+        entity_link(uiworld, goria, ui, owner);
     });
 
     ui.label("Currently in the house:");
     for &soul in info.inside.iter() {
         let SoulID::Human(soul) = soul else { continue; };
-        entity_link(uiworld, goria, ui, soul.into());
+        entity_link(uiworld, goria, ui, soul);
     }
 }
 
-fn render_freightstation(ui: &mut Ui, _uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
+fn render_freightstation(ui: &mut Ui, uiworld: &mut UiWorld, goria: &Egregoria, b: &Building) {
     let Some(SoulID::FreightStation(owner)) = goria.read::<BuildingInfos>().owner(b.id) else { return; };
     let Some(freight) = goria.world().get(owner) else { return; };
 
@@ -98,7 +98,7 @@ fn render_freightstation(ui: &mut Ui, _uiworld: &mut UiWorld, goria: &Egregoria,
     ui.label("Trains:");
     for (tid, state) in &freight.f.trains {
         ui.horizontal(|ui| {
-            ui.label(format!("{tid:?} "));
+            entity_link(uiworld, goria, ui, *tid);
             match state {
                 FreightTrainState::Arriving => {
                     ui.label("Arriving");

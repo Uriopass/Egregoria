@@ -19,10 +19,9 @@ debug_inspect_impl!(WorkKind);
 
 #[derive(Inspect, Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Work {
-    workplace: BuildingID,
-    work_inter: RecTimeInterval,
+    pub workplace: BuildingID,
+    pub work_inter: RecTimeInterval,
     pub kind: WorkKind,
-    on_mission: bool,
 }
 
 impl Work {
@@ -34,7 +33,6 @@ impl Work {
                 (18, (offset * SECONDS_PER_HOUR as f32) as i32),
             ),
             kind,
-            on_mission: false,
         }
     }
 
@@ -67,7 +65,7 @@ impl Work {
     }
 
     pub fn score(&self, time: &GameTime) -> f32 {
-        if self.on_mission || self.work_inter.dist_until(time.daytime) == 0 {
+        if self.work_inter.dist_until(time.daytime) == 0 {
             0.5
         } else {
             0.0

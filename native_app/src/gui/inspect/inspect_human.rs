@@ -61,14 +61,18 @@ pub fn inspect_human(uiworld: &mut UiWorld, goria: &Egregoria, ui: &Context, id:
             ui.label(format!("Last ate: {}", human.food.last_ate));
 
             if let Some(x) = human.work {
-                match x.kind {
-                    WorkKind::Driver { .. } => {
-                        ui.label("Work: Driver");
+                ui.horizontal(|ui| {
+                    ui.label("Working at");
+                    building_link(uiworld, goria, ui, x.workplace);
+                    match x.kind {
+                        WorkKind::Driver { .. } => {
+                            ui.label("as a driver");
+                        }
+                        WorkKind::Worker => {
+                            ui.label("as a worker");
+                        }
                     }
-                    WorkKind::Worker => {
-                        ui.label("Work: Worker");
-                    }
-                }
+                });
             }
 
             let market = goria.read::<Market>();

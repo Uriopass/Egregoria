@@ -11,6 +11,7 @@ use egregoria::map::BuildingID;
 use egregoria::{AnyEntity, Egregoria};
 use roadbuild::RoadBuildResource;
 
+pub mod addtrain;
 pub mod bulldozer;
 pub mod follow;
 pub mod inspect;
@@ -21,10 +22,6 @@ pub mod roadeditor;
 pub mod selectable;
 pub mod specialbuilding;
 pub mod topgui;
-
-pub mod addtrain;
-pub mod inspect_building;
-pub mod inspect_human;
 pub mod windows;
 pub mod zoneedit;
 

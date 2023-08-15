@@ -1,15 +1,11 @@
 use crate::gui::bulldozer::BulldozerState;
-use crate::gui::inspect_building::inspect_building;
-use crate::gui::inspect_human::inspect_human;
+use crate::gui::inspect::inspector;
 use crate::gui::lotbrush::LotBrushResource;
 use crate::gui::roadeditor::RoadEditorResource;
 use crate::gui::specialbuilding::{SpecialBuildKind, SpecialBuildingResource};
 use crate::gui::windows::settings::Settings;
 use crate::gui::windows::GUIWindows;
-use crate::gui::{
-    ErrorTooltip, InspectedBuilding, InspectedEntity, PotentialCommands, RoadBuildResource, Tool,
-    UiTextures,
-};
+use crate::gui::{ErrorTooltip, PotentialCommands, RoadBuildResource, Tool, UiTextures};
 use crate::inputmap::{InputAction, InputMap};
 use crate::uiworld::{SaveLoadState, UiWorld};
 use common::saveload::Encoder;
@@ -20,7 +16,7 @@ use egregoria::map::{
 };
 use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::utils::time::{GameTime, SECONDS_PER_HOUR};
-use egregoria::{AnyEntity, Egregoria};
+use egregoria::Egregoria;
 use egui::{
     Align2, Color32, Context, Frame, Id, LayerId, Response, RichText, Rounding, Stroke, Style, Ui,
     Widget, Window,
@@ -71,13 +67,13 @@ impl Gui {
     }
 
     /// Root GUI entrypoint
-    #[profiling::function]
     pub fn render(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
+        profiling::scope!("topgui::render");
         self.time_controls(ui, uiworld, goria);
 
         self.menu_bar(ui, uiworld, goria);
 
-        Self::inspector(ui, uiworld, goria);
+        inspector(ui, uiworld, goria);
 
         self.windows.render(ui, uiworld, goria);
 
@@ -602,41 +598,6 @@ impl Gui {
                     }
                 });
         }
-    }
-
-    pub fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
-        profiling::scope!("topgui::inspector");
-        let inspected_building = *uiworld.read::<InspectedBuilding>();
-        if let Some(b) = inspected_building.e {
-            inspect_building(uiworld, goria, ui, b);
-        }
-
-        let mut inspected = *uiworld.read::<InspectedEntity>();
-        let e = unwrap_or!(inspected.e, return);
-
-        let mut is_open = true;
-        match e {
-            AnyEntity::HumanID(id) => {
-                is_open = inspect_human(uiworld, goria, ui, id);
-            }
-            _ => {
-                Window::new("Inspect")
-                    .default_size([400.0, 500.0])
-                    .default_pos([30.0, 160.0])
-                    .resizable(true)
-                    .open(&mut is_open)
-                    .show(ui, |ui| {
-                        let mut ins = crate::gui::inspect::InspectRenderer { entity: e };
-                        ins.render(uiworld, goria, ui);
-                        inspected.e = Some(ins.entity);
-                    });
-            }
-        }
-
-        if !is_open {
-            inspected.e = None;
-        }
-        *uiworld.write::<InspectedEntity>() = inspected;
     }
 
     pub fn time_controls(&mut self, ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {

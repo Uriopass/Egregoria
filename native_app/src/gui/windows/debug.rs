@@ -20,7 +20,8 @@ use wgpu_engine::Tesselator;
 
 #[derive(Default)]
 pub struct DebugState {
-    connectivity: (Option<MapSubscriber>, Vec<Vec<IntersectionID>>),
+    pub connectivity: (Option<MapSubscriber>, Vec<Vec<IntersectionID>>),
+    pub debug_inspector: bool,
 }
 
 pub struct DebugObjs(
@@ -48,7 +49,7 @@ impl Default for DebugObjs {
 }
 
 #[derive(Clone)]
-struct TestFieldProperties {
+pub struct TestFieldProperties {
     size: u32,
     spacing: f32,
 }
@@ -70,12 +71,14 @@ pub fn debug(
     goria: &Egregoria,
 ) {
     window.show(ui, |ui| {
-        uiworld.check_present(TestFieldProperties::default);
-
         let mut objs = uiworld.write::<DebugObjs>();
         for (val, name, _) in &mut objs.0 {
             ui.checkbox(val, *name);
         }
+        ui.checkbox(
+            &mut uiworld.write::<DebugState>().debug_inspector,
+            "Debug inspector",
+        );
         drop(objs);
 
         let time = goria.read::<GameTime>().timestamp;
