@@ -28,6 +28,7 @@ pub struct MapRenderer {
 
 pub struct MapRenderOptions {
     pub show_arrows: bool,
+    pub show_lots: bool,
 }
 
 impl MapRenderer {

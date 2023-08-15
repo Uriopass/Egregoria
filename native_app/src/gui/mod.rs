@@ -129,6 +129,13 @@ impl Tool {
                 | Tool::Train
         )
     }
+
+    pub fn show_lots(&self) -> bool {
+        matches!(
+            self,
+            Tool::RoadbuildStraight | Tool::RoadbuildCurved | Tool::Bulldozer | Tool::LotBrush
+        )
+    }
 }
 
 #[derive(Default)]

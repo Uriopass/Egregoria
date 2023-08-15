@@ -179,6 +179,7 @@ impl State {
             &camera.frustrum,
             MapRenderOptions {
                 show_arrows: self.uiw.read::<Tool>().show_arrows(),
+                show_lots: self.uiw.read::<Tool>().show_lots(),
             },
             &mut self.uiw.write::<ImmediateDraw>(),
             ctx,

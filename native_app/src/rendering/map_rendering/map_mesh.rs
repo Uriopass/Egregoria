@@ -9,12 +9,12 @@ use egregoria::souls::goods_company::GoodsCompanyRegistry;
 use egregoria::Egregoria;
 use geom::{minmax, vec2, vec3, Color, LinearColor, PolyLine3, Polygon, Radians, Vec2, Vec3};
 use std::ops::{Mul, Neg};
-use std::sync::Arc;
+use std::rc::Rc;
 use wgpu_engine::earcut::earcut;
 use wgpu_engine::meshload::load_mesh;
 use wgpu_engine::{
-    Drawable, FrameContext, GfxContext, InstancedMeshBuilder, Material, MeshBuilder, MeshInstance,
-    MeshVertex, MetallicRoughness, SpriteBatchBuilder, Tesselator,
+    Drawable, FrameContext, GfxContext, InstancedMeshBuilder, Material, Mesh, MeshBuilder,
+    MeshInstance, MeshVertex, MetallicRoughness, SpriteBatch, SpriteBatchBuilder, Tesselator,
 };
 
 /// This is the main struct that handles the map rendering.
@@ -22,11 +22,17 @@ use wgpu_engine::{
 /// That is, the mostly static things (roads, intersections, lights, buildings).
 pub struct MapMeshHandler {
     builders: MapBuilders,
-    cache_road: FastMap<ChunkID, Vec<Arc<dyn Drawable>>>,
-    cache_build: FastMap<ChunkID, Vec<Arc<dyn Drawable>>>,
-    cache_arrows: FastMap<ChunkID, Arc<dyn Drawable>>,
+    cache: FastMap<ChunkID, CachedObj>,
     road_sub: MapSubscriber,
     building_sub: MapSubscriber,
+}
+
+#[derive(Default)]
+struct CachedObj {
+    road: Vec<Rc<dyn Drawable>>,
+    build: Vec<Rc<dyn Drawable>>,
+    lots: Option<Mesh>,
+    arrows: Option<SpriteBatch>,
 }
 
 struct MapBuilders {
@@ -37,6 +43,7 @@ struct MapBuilders {
     arrow_builder: SpriteBatchBuilder<false>,
     crosswalk_builder: MeshBuilder<false>,
     tess_map: Tesselator<false>,
+    tess_lots: Tesselator<false>,
 }
 
 impl MapMeshHandler {
@@ -153,13 +160,12 @@ impl MapMeshHandler {
             houses_mesh: MeshBuilder::new(houses_mat),
             buildmeshes,
             zonemeshes,
+            tess_lots: Tesselator::new(gfx, None, 15.0),
         };
 
         Self {
             builders,
-            cache_road: Default::default(),
-            cache_build: Default::default(),
-            cache_arrows: Default::default(),
+            cache: Default::default(),
             road_sub: goria.map().subscribe(UpdateType::Road),
             building_sub: goria.map().subscribe(UpdateType::Building),
         }
@@ -175,58 +181,58 @@ impl MapMeshHandler {
             let b = &mut self.builders;
             b.map_mesh(map, chunk);
 
-            self.cache_road.insert(
-                chunk,
-                vec![
-                    Arc::new(b.tess_map.meshbuilder.build(ctx.gfx)),
-                    Arc::new(b.crosswalk_builder.build(ctx.gfx)),
-                ],
-            );
+            let cached = self.cache.entry(chunk).or_default();
 
-            self.cache_arrows
-                .insert(chunk, Arc::new(b.arrow_builder.build(ctx.gfx)));
+            cached.road = vec![
+                Rc::new(b.tess_map.meshbuilder.build(ctx.gfx)),
+                Rc::new(b.crosswalk_builder.build(ctx.gfx)),
+            ];
+
+            cached.lots = b.tess_lots.meshbuilder.build(ctx.gfx);
+            cached.arrows = b.arrow_builder.build(ctx.gfx);
         }
 
         for chunk in self.building_sub.take_updated_chunks() {
             let b = &mut self.builders;
             b.buildings_mesh(map, chunk);
 
-            self.cache_build.insert(
-                chunk,
-                vec![
-                    Arc::new(
-                        b.buildsprites
-                            .values_mut()
-                            .flat_map(|x| x.build(ctx.gfx))
-                            .collect::<Vec<_>>(),
-                    ),
-                    Arc::new(
-                        b.buildmeshes
-                            .values_mut()
-                            .flat_map(|x| x.build(ctx.gfx))
-                            .collect::<Vec<_>>(),
-                    ),
-                    Arc::new(b.houses_mesh.build(ctx.gfx)),
-                    Arc::new(
-                        b.zonemeshes
-                            .values_mut()
-                            .map(|(a, b, _)| (a.build(ctx.gfx), b.build(ctx.gfx)))
-                            .collect::<Vec<_>>(),
-                    ),
-                ],
-            );
+            let cached = self.cache.entry(chunk).or_default();
+
+            cached.build = vec![
+                Rc::new(
+                    b.buildsprites
+                        .values_mut()
+                        .flat_map(|x| x.build(ctx.gfx))
+                        .collect::<Vec<_>>(),
+                ),
+                Rc::new(
+                    b.buildmeshes
+                        .values_mut()
+                        .flat_map(|x| x.build(ctx.gfx))
+                        .collect::<Vec<_>>(),
+                ),
+                Rc::new(b.houses_mesh.build(ctx.gfx)),
+                Rc::new(
+                    b.zonemeshes
+                        .values_mut()
+                        .map(|(a, b, _)| (a.build(ctx.gfx), b.build(ctx.gfx)))
+                        .collect::<Vec<_>>(),
+                ),
+            ];
         }
 
-        for v in self.cache_road.values() {
-            ctx.draw(v.clone());
-        }
-        for v in self.cache_build.values() {
-            ctx.draw(v.clone());
-        }
-
-        if options.show_arrows {
-            for v in self.cache_arrows.values() {
-                ctx.draw(v.clone());
+        for v in self.cache.values() {
+            ctx.draw(v.build.clone());
+            ctx.draw(v.road.clone());
+            if options.show_arrows {
+                if let Some(ref x) = v.arrows {
+                    ctx.draw(x.clone());
+                }
+            }
+            if options.show_lots {
+                if let Some(ref x) = v.lots {
+                    ctx.draw(x.clone());
+                }
             }
         }
     }
@@ -540,6 +546,7 @@ impl MapBuilders {
         self.arrow_builder.clear();
         self.crosswalk_builder.clear();
         self.tess_map.meshbuilder.clear();
+        self.tess_lots.meshbuilder.clear();
 
         let low_col: LinearColor = egregoria::config().road_low_col.into();
         let mid_col: LinearColor = egregoria::config().road_mid_col.into();
@@ -719,8 +726,8 @@ impl MapBuilders {
                 LotKind::Unassigned => egregoria::config().lot_unassigned_col,
                 LotKind::Residential => egregoria::config().lot_residential_col,
             };
-            self.tess_map.set_color(col);
-            self.tess_map
+            self.tess_lots.set_color(col);
+            self.tess_lots
                 .draw_filled_polygon(&lot.shape.corners, lot.height + 0.3);
         }
     }

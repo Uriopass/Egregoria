@@ -18,6 +18,7 @@ pub struct SpriteBatchBuilder<const PERSISTENT: bool> {
     pub instance_sbuffer: Option<Box<PBuffer>>,
 }
 
+#[derive(Clone)]
 pub struct SpriteBatch {
     instance_buf: Arc<wgpu::Buffer>,
     pub n_instances: u32,

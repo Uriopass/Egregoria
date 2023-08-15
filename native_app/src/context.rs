@@ -83,9 +83,11 @@ impl Context {
                 Event::MainEventsCleared => match frame.take() {
                     None => {
                         if let Some(new_size) = new_size.take() {
-                            self.gfx.resize(new_size.width, new_size.height);
-                            state.resized(&mut self, new_size);
-                            self.gfx.update_sc = false;
+                            if new_size.height != 0 ||new_size.width != 0 {
+                                self.gfx.resize(new_size.width, new_size.height);
+                                state.resized(&mut self, new_size);
+                                self.gfx.update_sc = false;
+                            }
                         }
 
                         let size = self.gfx.size;
