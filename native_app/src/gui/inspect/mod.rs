@@ -39,7 +39,7 @@ pub fn inspector(ui: &Context, uiworld: &mut UiWorld, goria: &Egregoria) {
         AnyEntity::WagonID(id) if !force_debug_inspect => {
             let Some(w) = goria.world().get(id) else { return; };
             let train_id = w.itfollower.leader;
-            is_open = inspect_train(uiworld, goria, ui, train_id);
+            uiworld.write::<InspectedEntity>().e = Some(AnyEntity::TrainID(train_id));
         }
         AnyEntity::TrainID(id) if !force_debug_inspect => {
             is_open = inspect_train(uiworld, goria, ui, id);
