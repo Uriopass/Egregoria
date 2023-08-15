@@ -258,6 +258,9 @@ impl DispatchOne {
         }) {
             let Some(ents) = self.lanes.get(&lane) else { continue };
             for ent in ents {
+                if self.reserved_by.contains(ent) {
+                    continue;
+                }
                 let pos = self.positions.get(ent).unwrap();
                 let dist = -pos.dist_along; // since dist_along is from start to end, a good dist_along is one that is big
                 if lane == target_lane && pos.dist_along > start_along {
